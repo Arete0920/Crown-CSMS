@@ -9,7 +9,6 @@ import './styles/crown.css';
 import './styles/launch-shell.css';
 import { crownTheme } from './theme/crownTheme';
 import { router } from './routes/router.jsx';
-import { AutoLoginGate } from './components/AutoLoginGate.jsx';
 import AuthProvider from './auth/AuthProvider.jsx';
 import AppErrorBoundary from './components/system/AppErrorBoundary.jsx';
 import StartupGuard from './components/system/StartupGuard.jsx';
@@ -25,13 +24,11 @@ ReactDOM.createRoot(rootElement).render(
     <ThemeProvider theme={crownTheme}>
       <CssBaseline enableColorScheme />
       <AuthProvider>
-        <AutoLoginGate>
-          <StartupGuard>
-            <AppErrorBoundary>
-              <RouterProvider router={router} />
-            </AppErrorBoundary>
-          </StartupGuard>
-        </AutoLoginGate>
+        <StartupGuard>
+          <AppErrorBoundary>
+            <RouterProvider router={router} />
+          </AppErrorBoundary>
+        </StartupGuard>
       </AuthProvider>
     </ThemeProvider>
   </React.StrictMode>

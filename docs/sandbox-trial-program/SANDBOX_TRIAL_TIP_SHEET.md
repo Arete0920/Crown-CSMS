@@ -2,47 +2,53 @@
 
 **Product:** CROWN - Christian School Management Solution
 
-Thank you for participating in the CROWN sandbox trial. This sandbox helps your school evaluate workflows, dashboards, usability, and implementation fit before any production rollout.
+The CROWN sandbox is a passwordless demonstration environment for evaluating workflows, dashboards, usability, and implementation fit before any production rollout.
 
-## Start with the right mindset
+## How access works
 
-The sandbox is a trial environment, not a production system. Use it to explore how CROWN could support daily operations, leadership visibility, and family/student workflows.
+1. Open the sandbox link supplied by CROWN.
+2. Choose guided or self-guided exploration.
+3. Select the role you want to demonstrate.
+4. CROWN creates a temporary sandbox session and opens that role's starting dashboard.
+
+No buyer email address or password is required. An invite link may control who can open the sandbox, but the evaluator does not complete a credential login.
+
+## Sandbox school
+
+Heritage Christian Academy is the only sandbox school. The school context should remain Heritage throughout the demonstration.
 
 ## Recommended first steps
 
-1. Log in with the sandbox credentials provided.
-2. Confirm that you can access the correct school or demo environment.
-3. Open the main dashboard and review navigation.
-4. Visit three to five dashboards most relevant to your role.
-5. Try one or two core workflows.
-6. Record anything that is confusing, missing, slow, or especially useful.
+1. Launch the School Administrator role.
+2. Confirm Heritage Christian Academy is displayed.
+3. Review the main dashboard and navigation.
+4. Use the guided system explorer to visit the modules most relevant to the evaluation.
+5. Try one or two supported workflows using fictional demo data.
+6. Switch roles from the sandbox controls when demonstrating teacher, admissions, finance, parent, or student perspectives.
+7. Record anything that is confusing, disconnected, missing, slow, or especially useful.
 
 ## What to test first
 
-**School leadership:** main dashboard, school administrator dashboard, financial/revenue views, communications, registrar, and reporting areas.
+**School leadership:** school administrator dashboard, enrollment, attendance, finance, communications, registrar, reporting, and governance-safe summaries.
 
-**Admissions/enrollment teams:** admissions, application flow, school selection, inquiry tracking, and family-facing workflow clarity.
+**Admissions and enrollment:** inquiry tracking, applications, decisions, enrollment progression, and downstream handoff.
 
-**Academic teams:** gradebook, attendance, scheduling, student care, registrar, and classroom-related views.
+**Academic teams:** gradebook, attendance, scheduling, student support, registrar, and classroom workflows.
 
-**Operations teams:** transportation, food service, facilities, activities/athletics, extended care, summer camp, and communications.
+**Operations teams:** transportation, food service, facilities, activities, extended care, safety, health, and communications.
 
-**Finance teams:** billing, financial aid, revenue operations, advancement, and accounting-related views.
+**Finance teams:** billing, financial aid, tuition and receivables, accounting-related views, and family account context.
 
-## Helpful feedback examples
+## Data rules
 
-- I expected to find attendance reports under ____, but they were under ____.
-- This dashboard answered ____ well, but I still needed ____.
-- The terminology ____ does not match how our school describes this process.
-- This workflow would be useful if it also included ____.
-- This step was confusing because ____.
+Use only fictional sandbox data. Do not enter real student, child, family, staff, financial, health, safety, or disciplinary information.
 
 ## Priority guide
 
 | Priority | Meaning |
 |----------|---------|
-| Critical | Cannot log in, wrong school context, or major workflow blocked |
-| High | Important workflow is missing, confusing, or unusable |
+| Critical | Sandbox will not launch, Heritage context is lost, role session fails, or a major workflow is blocked |
+| High | Important workflow is missing, disconnected, confusing, or unusable |
 | Medium | Usability issue, unclear wording, missing field, or workflow improvement |
 | Low | Nice-to-have feature, preference, or future enhancement idea |
 
@@ -50,16 +56,18 @@ The sandbox is a trial environment, not a production system. Use it to explore h
 
 | Day | Focus |
 |-----|-------|
-| Day 1 | Login, navigation, dashboard review |
+| Day 1 | Passwordless launch, Heritage context, navigation, and leadership dashboard |
 | Day 2 | Role-specific workflows |
 | Day 3 | Admissions, attendance, billing, communications, registrar, or gradebook |
 | Day 4 | Operations dashboards, reports, wizards, and integrations |
-| Day 5 | Submit feedback and identify whether your school wants a deeper implementation conversation |
+| Day 5 | Submit feedback and identify whether the school wants a deeper implementation conversation |
 
 ## Final review questions
 
-1. Which workflows were most useful?
-2. Which workflows were confusing or incomplete?
-3. Which dashboards gave leadership the clearest value?
-4. What would need to be true for your school to adopt CROWN?
-5. Who else at your school should review the sandbox?
+1. Did every selected role launch without requesting credentials?
+2. Did Heritage Christian Academy remain selected throughout the session?
+3. Could you move through the full system without manually editing URLs?
+4. Which workflows were most useful?
+5. Which workflows were confusing, disconnected, or incomplete?
+6. Which dashboards gave leadership the clearest value?
+7. What would need to be true for your school to adopt CROWN?

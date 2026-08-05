@@ -13,34 +13,43 @@ import {
 } from "../sandbox/sandboxExperience";
 
 describe("sandbox experience catalog", () => {
-  it("defines school, daycare, and camp tracks", () => {
-    expect(SANDBOX_TRACKS.map((track) => track.key)).toEqual(["school", "daycare", "camp"]);
+  it("defines only the school track", () => {
+    expect(SANDBOX_TRACKS.map((track) => track.key)).toEqual(["school"]);
   });
 
-  it("defines at least one archetype for each track", () => {
-    for (const key of ["school", "daycare", "camp"]) {
-      expect(getTrackSchools(key).length).toBeGreaterThan(0);
-    }
+  it("defines exactly one sandbox school: Heritage Christian Academy", () => {
+    expect(SANDBOX_SCHOOL_ARCHETYPES).toHaveLength(1);
+    expect(SANDBOX_SCHOOL_ARCHETYPES[0]).toMatchObject({
+      key: "heritage-core",
+      name: "Heritage Christian Academy",
+      track: "school",
+      demo_data_only: true,
+    });
+    expect(getTrackSchools("school")).toHaveLength(1);
+    expect(getTrackSchools("daycare")).toEqual([]);
+    expect(getTrackSchools("camp")).toEqual([]);
   });
 
-  it("defines persona coverage for each track", () => {
+  it("keeps every sandbox persona tied only to Heritage and the school track", () => {
     expect(SANDBOX_PERSONAS.length).toBeGreaterThanOrEqual(5);
+    for (const persona of SANDBOX_PERSONAS) {
+      expect(persona.trackKeys).toEqual(["school"]);
+      expect(persona.defaultSchoolId).toBe(SANDBOX_SCHOOL_ARCHETYPES[0].id);
+    }
     expect(getTrackPersonas("school").map((persona) => persona.value)).toContain("student");
-    expect(getTrackPersonas("daycare").map((persona) => persona.value)).not.toContain("student");
-    expect(getTrackPersonas("camp").map((persona) => persona.value)).toContain("student");
   });
 
-  it("falls back safely for unknown keys", () => {
+  it("falls back safely to Heritage for unknown keys", () => {
     expect(getSandboxTrack("unknown").key).toBe("school");
     expect(getSandboxPersona("unknown").value).toBe("school_admin");
     expect(getSandboxSchool("unknown").key).toBe("heritage-core");
   });
 
-  it("builds login URLs with track, mode, persona, school, and tour context", () => {
+  it("always builds sandbox URLs with the Heritage school id", () => {
     const href = getSandboxLoginHref(
       "finance_director",
-      "sandbox-school-grace-covenant-school",
-      "school",
+      "unknown-school-id",
+      "unknown-track",
       "self-guided"
     );
     const url = new URL(href, "https://example.test");
@@ -50,15 +59,7 @@ describe("sandbox experience catalog", () => {
     expect(url.searchParams.get("experience")).toBe("school");
     expect(url.searchParams.get("guidance")).toBe("self-guided");
     expect(url.searchParams.get("role")).toBe("finance_director");
-    expect(url.searchParams.get("school")).toBe("sandbox-school-grace-covenant-school");
+    expect(url.searchParams.get("school")).toBe(SANDBOX_SCHOOL_ARCHETYPES[0].id);
     expect(url.searchParams.get("tour")).toBeTruthy();
-  });
-
-  it("keeps every visible archetype tied to a known track", () => {
-    const trackKeys = SANDBOX_TRACKS.map((track) => track.key);
-    for (const school of SANDBOX_SCHOOL_ARCHETYPES) {
-      expect(trackKeys).toContain(school.track);
-      expect(school.demo_data_only).not.toBe(false);
-    }
   });
 });

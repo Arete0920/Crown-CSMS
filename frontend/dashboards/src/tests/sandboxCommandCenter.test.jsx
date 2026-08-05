@@ -16,7 +16,7 @@ afterEach(() => {
 });
 
 describe("SandboxCommandCenter", () => {
-  it("renders guided context from URL params with standalone page semantics", () => {
+  it("normalizes legacy guided URL context to the Heritage school experience", () => {
     globalThis.history.pushState(
       {},
       "",
@@ -28,9 +28,9 @@ describe("SandboxCommandCenter", () => {
     expect(screen.getByRole("main", { name: "Sandbox command center" })).toBeTruthy();
     expect(screen.getByRole("heading", { level: 1, name: "Guided proof path" })).toBeTruthy();
     expect(screen.getByText("Camp Proof")).toBeTruthy();
-    expect(screen.getByText("Camp / Summer Program Demo")).toBeTruthy();
-    expect(screen.getByText("Program Director")).toBeTruthy();
-    expect(screen.getAllByText("Cedar Ridge Summer Camp").length).toBeGreaterThan(0);
+    expect(screen.getByText("School Demo")).toBeTruthy();
+    expect(screen.getByText("School Administrator")).toBeTruthy();
+    expect(screen.getAllByText("Heritage Christian Academy").length).toBeGreaterThan(0);
     expect(screen.getByText(/Demo data only/)).toBeTruthy();
   });
 
@@ -56,7 +56,7 @@ describe("SandboxCommandCenter", () => {
     expect(screen.getByText("Parent / Guardian")).toBeTruthy();
   });
 
-  it("records feedback request without exposing entered personal data", async () => {
+  it("records normalized Heritage feedback context without exposing entered personal data", async () => {
     const telemetry = await import("../sandbox/sandboxApi");
     globalThis.history.pushState({}, "", "/dashboard?experience=daycare&guidance=guided&role=teacher");
 
@@ -66,7 +66,7 @@ describe("SandboxCommandCenter", () => {
     expect(telemetry.recordSandboxEvent).toHaveBeenCalledWith(
       expect.objectContaining({
         event: "feedback_requested",
-        track: "daycare",
+        track: "school",
         guidance: "guided",
         persona: "teacher",
       })

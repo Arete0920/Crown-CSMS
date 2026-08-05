@@ -1,111 +1,70 @@
-# Crown2026 — DEMO_MODE Policy
+# CROWN Demo and Sandbox Mode Policy
 
-> **Phase 7.1 artifact** · Locked 2026-02-25 · Do not modify without Director sign-off.
+## 1. Purpose
 
----
+CROWN distinguishes two controlled non-production capabilities:
 
-## 1. What DEMO_MODE is
+- **Backend demo mode** supports seeded-data demonstrations and non-production operational safeguards.
+- **Heritage sandbox mode** provides an evaluator-facing, passwordless preview of Heritage Christian Academy.
 
-DEMO_MODE is a **runtime environment flag** that enables a live-backend presentation of Crown2026
-for investor and partner demos. It is **not** a fallback data layer; the API must be reachable and
-returning real (seeded) data.
+Neither capability is a silent fallback data layer. API and session failures must remain visible.
 
----
+## 2. Backend demo mode
 
-## 2. The flag — single source of truth
-
-### Backend
-
-| Item | Value |
-|------|-------|
+| Item | Contract |
+|------|----------|
 | Setting | `settings.CROWN_DEMO_MODE` |
-| Type | `bool` |
-| Default | `False` |
 | Env variable | `CROWN_DEMO_MODE=true` |
-| Production guard | `_assert_not_prod_true("CROWN_DEMO_MODE", CROWN_DEMO_MODE)` in `settings.py` |
-| Write-block middleware | `backend/core/middleware.py` — blocks all mutating HTTP methods |
+| Default | `False` |
+| Production guard | `_assert_not_prod_true("CROWN_DEMO_MODE", CROWN_DEMO_MODE)` |
+| Write protection | Demo-mode middleware may block mutating HTTP methods |
 
-All backend code **must** read `getattr(settings, "CROWN_DEMO_MODE", False)`.
-Direct `os.environ.get("CROWN_DEMO_MODE")` reads are **prohibited** (inconsistent parse,
-bypasses the prod-guard assertion).
+Backend code must read the parsed Django setting rather than directly interpreting the environment variable.
 
-### Frontend
+## 3. Heritage sandbox entry
 
-| Item | Value |
-|------|-------|
-| Vite env var | `VITE_DEMO_MODE=1` |
-| Auto-login | `VITE_DEMO_AUTO_LOGIN=1` (only with `VITE_DEMO_MODE=1`) |
-| Demo credentials | `VITE_DEMO_USER`, `VITE_DEMO_PASS`, `VITE_DEMO_SCHOOL_ID` |
+The Heritage sandbox is not a credential login flow.
 
----
+- Evaluators select a permitted role.
+- The frontend creates a temporary role-scoped session through `POST /api/v1/sandbox/session/`.
+- An approved invite is required unless a controlled open-session window is explicitly enabled.
+- Heritage Christian Academy is the only exposed sandbox school.
+- The frontend must not request, display, prefill, copy, or store a sandbox username or password.
+- The sandbox flow must not call `/api/v1/auth/token/`.
+- `VITE_DEMO_USER`, `VITE_DEMO_PASS`, and `VITE_DEMO_AUTO_LOGIN` are obsolete and prohibited for sandbox entry.
 
-## 3. Prohibited pattern — silent demo fallback (REMOVED)
+Normal authentication for real production users remains unchanged.
 
-The following pattern was present in `StudentDashboard.jsx` and `ParentDashboard.jsx` and has been
-**permanently removed** as of this phase:
+## 4. Prohibited silent fallback
 
-```jsx
-// PROHIBITED — silent catch swallows API failure and renders fake data
-.catch((err) => {
-  if (IS_DEMO_MODE) {
-    setData(DEMO_STATIC_DATA); // silently uses hardcoded data
-  } else {
-    setError(err.message);
-  }
-});
-```
-
-**Why it was dangerous:** An API failure in a demo or production environment would silently render
-stale hardcoded numbers to users (or investors), with no indication that the data was not live.
-If the API is down, the user must see an error — in every mode.
-
----
-
-## 4. Required pattern — error-first
-
-All dashboard fetch hooks must follow this pattern:
+Dashboard request failures must produce an explicit error. Catch blocks may not silently replace failed live data with static sample data.
 
 ```jsx
-useEffect(() => {
-  fetchData()
-    .then(setData)
-    .catch((err) => {
-      setError(`Dashboard unavailable — API error: ${err.message}`);
-    });
-}, []);
+fetchData()
+  .then(setData)
+  .catch((error) => {
+    setError(`Dashboard unavailable - API error: ${error.message}`);
+  });
 ```
 
-The `<ErrorBanner>` component (already present in all dashboards) renders when `error` is non-empty.
-There is no silent fallback — not in demo mode, not in production.
+## 5. Permitted controlled uses
 
----
+| Component | Permitted use |
+|-----------|---------------|
+| Backend demo-mode middleware | Non-production write protection |
+| Localhost-only developer token endpoint | Developer tooling, separate from sandbox entry |
+| Health endpoint demo-mode indicator | Operational visibility |
+| Explicit deterministic seeded responses | Only where documented and never as a hidden fallback |
+| Heritage sandbox session endpoint | Passwordless evaluator session provisioning |
+| Credential auto-login wrappers or public credential manifests | Prohibited |
 
-## 5. Permitted DEMO_MODE uses
+## 6. Production boundary
 
-| File | What it does | Permitted |
-|------|-------------|-----------|
-| `backend/core/middleware.py` | Blocks POST/PUT/PATCH/DELETE | ✅ Yes |
-| `backend/crown_api/dev_token_views.py` | Demo JWT endpoint (gated to CROWN_DEMO_MODE + localhost) | ✅ Yes |
-| `backend/crown_api/health_views.py` | Exposes `demo_mode: bool` in `/api/health/` | ✅ Yes |
-| `backend/graduation/views_breakdown.py` | Returns deterministic breakdown for demo | ✅ Yes — explicit, not a fallback |
-| `frontend/dashboards/src/utils/demoAutoLogin.ts` | Auto-login gate (`VITE_DEMO_MODE=1 && VITE_DEMO_AUTO_LOGIN=1`) | ✅ Yes |
-| `frontend/dashboards/src/components/AutoLoginGate.jsx` | Wrapper for auto-login gate | ✅ Yes |
-| `frontend/dashboards/src/components/DevJwtPanel.jsx` | Shows dev JWT panel only in demo mode | ✅ Yes |
-| `frontend/dashboards/src/pages/GradebookRO.jsx` | Hides dev panels when `isDemoMode` | ✅ Yes |
-| Any dashboard catch block silently rendering static data | — | ❌ **PROHIBITED** |
-
----
-
-## 6. Prod guard
-
-`settings.py` calls `_assert_not_prod_true("CROWN_DEMO_MODE", CROWN_DEMO_MODE)` at import time.
-If `CROWN_DEMO_MODE=true` is set while `CROWN_IS_PROD=true`, Django will **refuse to start**.
-This is intentional and must never be bypassed.
-
----
+`CROWN_DEMO_MODE=true` must remain rejected when the application is configured as production. The Heritage sandbox exception is separately bounded by its school, invite/session, role, and tenant checks and must not weaken production tenant authentication.
 
 ## 7. Change log
 
-| Date | PR | Author | Change |
-|------|----|--------|--------|
-| 2026-02-25 | #425 | Phase 7.1 | Initial policy; removed `catch→setDemoData` from StudentDashboard + ParentDashboard; fixed ops_views.py to use settings instead of os.environ |
+| Date | Change |
+|------|--------|
+| 2026-02-25 | Initial demo-mode policy and removal of silent dashboard fallback behavior |
+| 2026-08-05 | Reconciled policy with the passwordless, Heritage-only sandbox session contract; retired credential auto-login configuration and artifacts |
