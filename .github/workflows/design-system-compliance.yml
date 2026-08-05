@@ -1,0 +1,45 @@
+name: Design System Compliance
+
+on:
+  pull_request:
+    paths:
+      - 'frontend/dashboards/src/**'
+      - 'frontend/dashboards/scripts/check-visual-system.mjs'
+      - 'frontend/dashboards/visual-system-baseline.json'
+      - 'frontend/dashboards/package.json'
+      - '.github/workflows/design-system-compliance.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: design-system-compliance-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  visual-system:
+    name: Visual token and style compliance
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '20'
+
+      - name: Run CROWN visual-system audit
+        working-directory: frontend/dashboards
+        run: npm run check:visual-system
+
+      - name: Upload visual-system report
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: crown-visual-system-report
+          path: frontend/dashboards/visual-system-report.json
+          if-no-files-found: error
+          retention-days: 30
