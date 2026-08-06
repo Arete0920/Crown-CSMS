@@ -184,7 +184,13 @@ export default function CrownLayout({ title, subtitle, right, children, mainClas
         />
       ) : null}
 
-      <aside className={`crown-sidebar ${sidebarOpen ? "is-open" : ""}`.trim()}>
+      <aside
+        className={`crown-sidebar ${sidebarOpen ? "is-open" : ""}`.trim()}
+        style={{
+          background: "linear-gradient(180deg, var(--crown-primary-strong), var(--crown-primary-deep))",
+          color: "var(--crown-surface)",
+        }}
+      >
         <div className="crown-sidebar-header">
           <h1>Crown</h1>
           <button
