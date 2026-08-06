@@ -1,0 +1,68 @@
+name: Temporary Current Main Audit Repair
+
+on:
+  push:
+    branches:
+      - agent/current-main-audit-repair
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+        with:
+          ref: agent/current-main-audit-repair
+          fetch-depth: 0
+      - uses: actions/setup-python@7f4fc3e22c37d6ff65e88745f38bd3157c663f7c
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/dashboards/package-lock.json
+      - name: Apply repairs
+        run: python scripts/execution/tmp_current_main_audit_repair.py
+      - name: Regenerate and validate
+        env:
+          DJANGO_SETTINGS_MODULE: crown_api.settings
+          DJANGO_SECRET_KEY: ci-current-main-audit-secret-7L9m2Q4v8X1p5R0s6T3u9W2y7Z4a8B1c
+          SECRET_KEY: ci-current-main-audit-secret-7L9m2Q4v8X1p5R0s6T3u9W2y7Z4a8B1c
+          DJANGO_DEBUG: '0'
+          DEBUG: '0'
+          DJANGO_ENV: production
+          CROWN_ENV: prod
+          ALLOWED_HOSTS: localhost,127.0.0.1,testserver
+          DATABASE_URL: sqlite:///./ci_current_main.sqlite3
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          cd frontend/dashboards
+          npm install --package-lock-only --ignore-scripts
+          npm ci
+          npx playwright install --with-deps chromium
+          npm audit --audit-level=moderate
+          npm run lint
+          npm run test:contracts
+          npm run build
+          cd ../..
+          python -c "import os,sys; sys.path.insert(0,'backend'); os.environ.setdefault('DJANGO_SETTINGS_MODULE','crown_api.settings'); import django; django.setup(); from django.conf import settings; db=settings.DATABASES['default']; assert db['ENGINE']=='django.db.backends.sqlite3', db; assert 'sslmode' not in db.get('OPTIONS',{}), db; print('SQLite configuration excludes PostgreSQL sslmode: PASS')"
+          cd backend
+          python manage.py check --deploy
+      - name: Commit and self-remove
+        run: |
+          set -euo pipefail
+          rm -f .github/workflows/tmp-current-main-audit-repair.yml
+          rm -f scripts/execution/tmp_current_main_audit_repair.py
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git diff --cached --check
+          git status --short
+          git commit -m 'fix(audit): make current-main evidence truthful'
+          git push origin HEAD:agent/current-main-audit-repair
