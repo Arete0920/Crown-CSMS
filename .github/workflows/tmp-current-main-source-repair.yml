@@ -53,9 +53,11 @@ jobs:
               DATABASES["default"].setdefault("OPTIONS", {})
               DATABASES["default"]["OPTIONS"]["sslmode"] = "require"
           '''
-          if old not in text:
+          if old in text:
+              text = text.replace(old, new, 1)
+          elif new not in text:
               raise SystemExit('Expected database SSL block not found')
-          settings.write_text(text.replace(old, new, 1), encoding='utf-8')
+          settings.write_text(text, encoding='utf-8')
 
           package = Path('frontend/dashboards/package.json')
           data = json.loads(package.read_text(encoding='utf-8'))
@@ -88,13 +90,70 @@ jobs:
           python -c "import os,sys; sys.path.insert(0,'backend'); os.environ.setdefault('DJANGO_SETTINGS_MODULE','crown_api.settings'); import django; django.setup(); from django.conf import settings; db=settings.DATABASES['default']; assert db['ENGINE']=='django.db.backends.sqlite3', db; assert 'sslmode' not in db.get('OPTIONS',{}), db; print('SQLite configuration excludes PostgreSQL sslmode: PASS')"
           cd backend
           python manage.py check --deploy
-      - name: Commit validated source repairs
-        shell: bash
+      - name: Create detached validated source commit
+        shell: python
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          PARENT_SHA: ${{ github.sha }}
         run: |
-          set -euo pipefail
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add backend/crown_api/settings.py frontend/dashboards/package.json frontend/dashboards/package-lock.json
-          git diff --cached --check
-          git commit -m 'fix(audit): harden database and dependency evidence'
-          git push origin HEAD:agent/current-main-audit-repair
+          import json
+          import os
+          import pathlib
+          import urllib.request
+
+          repository = os.environ['REPOSITORY']
+          token = os.environ['GH_TOKEN']
+          parent = os.environ['PARENT_SHA']
+          api = f'https://api.github.com/repos/{repository}'
+
+          def request(method, path, payload=None):
+              data = None if payload is None else json.dumps(payload).encode('utf-8')
+              req = urllib.request.Request(
+                  api + path,
+                  data=data,
+                  method=method,
+                  headers={
+                      'Accept': 'application/vnd.github+json',
+                      'Authorization': f'Bearer {token}',
+                      'X-GitHub-Api-Version': '2022-11-28',
+                      'User-Agent': 'crown-audit-source-repair',
+                  },
+              )
+              with urllib.request.urlopen(req) as response:
+                  return json.load(response)
+
+          parent_commit = request('GET', f'/git/commits/{parent}')
+          entries = []
+          for path in (
+              'backend/crown_api/settings.py',
+              'frontend/dashboards/package.json',
+              'frontend/dashboards/package-lock.json',
+          ):
+              content = pathlib.Path(path).read_text(encoding='utf-8')
+              blob = request('POST', '/git/blobs', {'content': content, 'encoding': 'utf-8'})
+              entries.append({'path': path, 'mode': '100644', 'type': 'blob', 'sha': blob['sha']})
+          entries.append({
+              'path': '.github/workflows/tmp-current-main-source-repair.yml',
+              'mode': '100644',
+              'type': 'blob',
+              'sha': None,
+          })
+          tree = request('POST', '/git/trees', {
+              'base_tree': parent_commit['tree']['sha'],
+              'tree': entries,
+          })
+          commit = request('POST', '/git/commits', {
+              'message': 'fix(audit): harden database and dependency evidence',
+              'tree': tree['sha'],
+              'parents': [parent],
+          })
+          pathlib.Path('detached-repair-commit.txt').write_text(commit['sha'] + '\n', encoding='utf-8')
+          print(f"Detached validated commit: {commit['sha']}")
+      - name: Upload detached commit reference
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: current-main-detached-source-${{ github.sha }}
+          retention-days: 7
+          if-no-files-found: error
+          path: detached-repair-commit.txt
