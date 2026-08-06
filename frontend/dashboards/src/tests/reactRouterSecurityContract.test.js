@@ -26,10 +26,10 @@ describe('React Router security dependency contract', () => {
     expect(manifest.dependencies['react-dom']).toBe('19.2.7');
     expect(manifest.dependencies['@azure/msal-browser']).toBe('5.17.1');
     expect(manifest.dependencies['@azure/msal-react']).toBe('5.5.3');
-    expect(manifest.overrides.postcss).toBe('8.5.18');
+    expect(manifest.overrides.postcss).toBe('8.5.23');
     expect(lockfile.packages['node_modules/react-router'].version).toBe('8.3.0');
     expect(lockfile.packages).not.toHaveProperty(`node_modules/${forbiddenPackage}`);
-    expect(lockfile.packages['node_modules/postcss'].version).toBe('8.5.18');
+    expect(lockfile.packages['node_modules/postcss'].version).toBe('8.5.23');
   });
 
   it('contains no source imports from the removed compatibility package', () => {

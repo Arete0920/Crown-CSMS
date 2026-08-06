@@ -42,8 +42,8 @@ jobs:
     timeout-minutes: 75
     env:
       DJANGO_SETTINGS_MODULE: crown_api.settings
-      DJANGO_SECRET_KEY: ci-current-main-not-secret
-      SECRET_KEY: ci-current-main-not-secret
+      DJANGO_SECRET_KEY: ci-current-main-audit-secret-2026-not-for-production-use-only-9f4a2b7c
+      SECRET_KEY: ci-current-main-audit-secret-2026-not-for-production-use-only-9f4a2b7c
       DJANGO_DEBUG: "0"
       DEBUG: "0"
       DJANGO_ENV: production
@@ -95,6 +95,11 @@ jobs:
         working-directory: frontend/dashboards
         shell: bash
         run: npm ci
+
+      - name: Install Playwright Chromium
+        working-directory: frontend/dashboards
+        shell: bash
+        run: npx playwright install --with-deps chromium
 
       - name: Run clean-worktree evidence gates
         if: ${{ github.event_name != 'workflow_dispatch' || inputs.run_deep_dashboard_gate == true }}
