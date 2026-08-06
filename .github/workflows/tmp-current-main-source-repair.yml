@@ -6,7 +6,7 @@ on:
       - agent/current-main-audit-repair
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: tmp-current-main-source-repair
@@ -70,6 +70,20 @@ jobs:
           data.setdefault("overrides", {})["postcss"] = "8.5.23"
           package.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
 
+          audit = Path(".github/workflows/current-main-audit.yml")
+          text = audit.read_text(encoding="utf-8")
+          text = text.replace(
+              "ci-current-main-not-secret",
+              "ci-current-main-audit-secret-2026-not-for-production-use-only-9f4a2b7c",
+          )
+          anchor = "      - name: Install frontend dependencies\n        working-directory: frontend/dashboards\n        shell: bash\n        run: npm ci\n"
+          addition = anchor + "\n      - name: Install Playwright Chromium\n        working-directory: frontend/dashboards\n        shell: bash\n        run: npx playwright install --with-deps chromium\n"
+          if "Install Playwright Chromium" not in text:
+              if text.count(anchor) != 1:
+                  raise SystemExit("Expected frontend dependency anchor not found exactly once")
+              text = text.replace(anchor, addition, 1)
+          audit.write_text(text, encoding="utf-8")
+
       - name: Refresh lockfile
         working-directory: frontend/dashboards
         shell: bash
@@ -86,12 +100,17 @@ jobs:
         shell: bash
         run: npm ci
 
+      - name: Install Playwright Chromium
+        working-directory: frontend/dashboards
+        shell: bash
+        run: npx playwright install --with-deps chromium
+
       - name: Validate backend database configuration
         shell: bash
         env:
           DJANGO_SETTINGS_MODULE: crown_api.settings
-          DJANGO_SECRET_KEY: ci-current-main-audit-secret-7L9m2Q4v8X1p5R0s6T3u9W2y7Z4a8B1c
-          SECRET_KEY: ci-current-main-audit-secret-7L9m2Q4v8X1p5R0s6T3u9W2y7Z4a8B1c
+          DJANGO_SECRET_KEY: ci-current-main-audit-secret-2026-not-for-production-use-only-9f4a2b7c
+          SECRET_KEY: ci-current-main-audit-secret-2026-not-for-production-use-only-9f4a2b7c
           DJANGO_DEBUG: "0"
           DEBUG: "0"
           DJANGO_ENV: production
@@ -124,16 +143,24 @@ jobs:
           npm run build
           npm audit --audit-level=moderate
 
-      - name: Commit validated source repairs
+      - name: Verify exact repair shape
         shell: bash
         run: |
-          git config user.name "CROWN Audit Repair Bot"
-          git config user.email "actions@users.noreply.github.com"
-          git add backend/crown_api/settings.py frontend/dashboards/package.json frontend/dashboards/package-lock.json
-          git diff --cached --check
-          if git diff --cached --quiet; then
-            echo "No source changes remain to commit."
-            exit 0
-          fi
-          git commit -m "fix(audit): harden database and dependency evidence"
-          git push origin HEAD:agent/current-main-audit-repair
+          set -euo pipefail
+          git diff --check
+          grep -F 'django.db.backends.postgresql' backend/crown_api/settings.py
+          grep -F '"postcss": "8.5.23"' frontend/dashboards/package.json
+          grep -F 'npx playwright install --with-deps chromium' .github/workflows/current-main-audit.yml
+          test "$(grep -c 'ci-current-main-audit-secret-2026-not-for-production-use-only-9f4a2b7c' .github/workflows/current-main-audit.yml)" -eq 2
+
+      - name: Upload validated source repair
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: current-main-source-repair-${{ github.sha }}
+          retention-days: 7
+          if-no-files-found: error
+          path: |
+            .github/workflows/current-main-audit.yml
+            backend/crown_api/settings.py
+            frontend/dashboards/package.json
+            frontend/dashboards/package-lock.json
