@@ -29,6 +29,23 @@ describe('MicrosoftProductLogo', () => {
     expect(fallback.getAttribute('title')).toMatch(/Official Microsoft-hosted product assets only/i);
   });
 
+  it('uses a decorative compact fallback inside an already labelled launcher', () => {
+    const { container } = render(
+      <MicrosoftProductLogo
+        product="unknown_app"
+        label="Unknown App"
+        compactFallback
+        decorative
+      />,
+    );
+
+    const fallback = container.querySelector('.microsoft-product-approved-fallback.is-compact');
+    expect(fallback).not.toBeNull();
+    expect(fallback.getAttribute('aria-hidden')).toBe('true');
+    expect(fallback.textContent).toBe('');
+    expect(fallback.querySelector('svg')).not.toBeNull();
+  });
+
   it('returns null when the product is unknown and fallback content is disabled', () => {
     render(<MicrosoftProductLogo product="unknown_app" label="Unknown App" showTextWhenMissing={false} />);
 
