@@ -67,7 +67,7 @@ export default function TableWidget({ widget, onExpand }) {
                     {typeof cell === "number" ? (
                       <span
                         style={{
-                          background: "rgba(255,93,93,0.15)",
+                          background: "var(--crown-compat-color-b62326d628)",
                           color: "var(--crown-danger)",
                           borderRadius: 6,
                           padding: "2px 7px",

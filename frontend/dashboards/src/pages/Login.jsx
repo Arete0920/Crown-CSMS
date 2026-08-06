@@ -13,7 +13,7 @@ export default function Login() {
       <Box
         sx={{
           flex: 1,
-          background: "linear-gradient(135deg, #1B3A6F 0%, #274C91 100%)",
+          background: "linear-gradient(135deg, var(--crown-compat-color-cf2d163b11) 0%, var(--crown-compat-color-2ffcf011e0) 100%)",
           color: "var(--crown-surface)",
           p: 6,
           display: "flex",
@@ -24,7 +24,7 @@ export default function Login() {
         <Typography variant="h1" sx={{ color: "var(--crown-surface)", mb: 1 }}>
           Crown2026
         </Typography>
-        <Typography variant="body1" sx={{ color: "rgba(255,255,255,0.72)" }}>
+        <Typography variant="body1" sx={{ color: "var(--crown-compat-color-b287e65b63)" }}>
           School information system
         </Typography>
       </Box>
@@ -39,7 +39,7 @@ export default function Login() {
           bgcolor: "background.default",
         }}
       >
-        <Paper sx={{ p: 5, width: 360, boxShadow: "0 4px 24px rgba(0,0,0,0.08)" }}>
+        <Paper sx={{ p: 5, width: 360, boxShadow: "0 4px 24px var(--crown-compat-color-a70919eca5)" }}>
           <Stack spacing={2.5}>
             <Typography variant="h2" sx={{ mb: 0.5 }}>
               Sign In

@@ -397,7 +397,7 @@ export function AcademicsDashboard() {
           style={{
             position: 'fixed',
             inset: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            backgroundColor: 'var(--crown-compat-color-8691ae8f8e)',
             display: 'flex',
             justifyContent: 'flex-end',
             zIndex: 1000,

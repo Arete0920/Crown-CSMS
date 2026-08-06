@@ -7,9 +7,9 @@ import { csvEscape, downloadTextFile } from '../lib/export/csv';
 import { useAsyncPageData } from '../hooks/useAsyncPageData';
 import { usePersistentTableState } from '../hooks/usePersistentTableState';
 
-const SM = { fontSize: '0.75rem', padding: '3px 10px', cursor: 'pointer', borderRadius: '4px', border: '1px solid #1976d2', background: 'transparent', color: '#1976d2' };
-const SM_ON = { ...SM, background: '#1976d2', color: '#fff' };
-const BTN = { fontSize: '0.875rem', padding: '5px 15px', cursor: 'pointer', borderRadius: '4px', border: '1px solid #1976d2', background: 'transparent', color: '#1976d2' };
+const SM = { fontSize: '0.75rem', padding: '3px 10px', cursor: 'pointer', borderRadius: '4px', border: '1px solid var(--crown-compat-color-cb69c739b8)', background: 'transparent', color: 'var(--crown-compat-color-cb69c739b8)' };
+const SM_ON = { ...SM, background: 'var(--crown-compat-color-cb69c739b8)', color: 'var(--crown-compat-color-e08de71387)' };
+const BTN = { fontSize: '0.875rem', padding: '5px 15px', cursor: 'pointer', borderRadius: '4px', border: '1px solid var(--crown-compat-color-cb69c739b8)', background: 'transparent', color: 'var(--crown-compat-color-cb69c739b8)' };
 const ROW = { display: 'flex', gap: '8px', alignItems: 'center' };
 const LABEL = { margin: 0, fontSize: '0.875rem' };
 
@@ -176,18 +176,18 @@ export default function CommunicationsThreadsList() {
             {loadingThread ? (
               <p style={LABEL}>Loading messages...</p>
             ) : threadError ? (
-              <p style={{ margin: 0, fontSize: '0.875rem', color: '#d32f2f' }}>
+              <p style={{ margin: 0, fontSize: '0.875rem', color: 'var(--crown-compat-color-589c0cbec4)' }}>
                 {threadError?.message || 'Unable to load thread detail.'}
               </p>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 {(threadDetail?.messages || []).slice(-10).map((message, index) => (
-                  <div key={message.id || index} style={{ padding: '12px', borderRadius: '8px', backgroundColor: '#f5f5f5' }}>
+                  <div key={message.id || index} style={{ padding: '12px', borderRadius: '8px', backgroundColor: 'var(--crown-compat-color-f62328dee8)' }}>
                     <p style={{ margin: 0, fontSize: '0.875rem', fontWeight: 600 }}>
                       {message.author_name || message.author || 'Sender'}
                     </p>
                     <p style={LABEL}>{message.body || message.message || '(No content)'}</p>
-                    <span style={{ fontSize: '0.75rem', color: '#757575' }}>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--crown-compat-color-81cbc44d1a)' }}>
                       {formatDateTime(message.created_at || message.sent_at)}
                     </span>
                   </div>

@@ -41,7 +41,7 @@ export default function DrilldownDrawer({ open, title, onClose, children }) {
         style={{
           position: "absolute",
           inset: 0,
-          background: "rgba(0,0,0,0.55)",
+          background: "var(--crown-compat-color-e16ece2e23)",
           border: 0,
           padding: 0,
           margin: 0,

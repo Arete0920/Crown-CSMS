@@ -38,7 +38,7 @@ export default function Step2Periods({ context, setContext, goNext, goPrev, step
           <input className="crown-input" placeholder="Name" value={p.name} onChange={e => updatePeriod(i, "name", e.target.value)} style={{ flex: 2 }} />
           <input className="crown-input" placeholder="08:00" value={p.start_time} onChange={e => updatePeriod(i, "start_time", e.target.value)} style={{ flex: 1 }} />
           <input className="crown-input" placeholder="08:55" value={p.end_time} onChange={e => updatePeriod(i, "end_time", e.target.value)} style={{ flex: 1 }} />
-          <button className="crown-btn" onClick={() => removePeriod(i)} style={{ color: "red" }}>✕</button>
+          <button className="crown-btn" onClick={() => removePeriod(i)} style={{ color: "var(--crown-danger)" }}>✕</button>
         </div>
       ))}
       <button className="crown-btn" onClick={addPeriod}>+ Add Period</button>

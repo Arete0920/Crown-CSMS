@@ -47,7 +47,7 @@ export default function AdvancementDashboard() {
   }, []);
 
   if (loading) return <p aria-busy="true">Loading advancement data</p>;
-  if (error)   return <p role="alert" style={{ color: "red" }}>Error: {error}</p>;
+  if (error)   return <p role="alert" style={{ color: "var(--crown-danger)" }}>Error: {error}</p>;
   if (!data)   return null;
 
   return (
@@ -134,12 +134,12 @@ function KpiCard({ label, value }) {
       role="region"
       aria-label={label}
       style={{
-        background: "#fff", border: "1px solid #e2e8f0", borderRadius: 8,
-        padding: "16px 20px", boxShadow: "0 1px 3px rgba(0,0,0,.06)",
+        background: "var(--crown-compat-color-e08de71387)", border: "1px solid var(--crown-compat-color-3b313dfb66)", borderRadius: 8,
+        padding: "16px 20px", boxShadow: "0 1px 3px var(--crown-compat-color-bae00db0cd)",
       }}
     >
-      <p style={{ margin: 0, fontSize: 13, color: "#64748b" }}>{label}</p>
-      <p style={{ margin: "4px 0 0", fontSize: 22, fontWeight: 700, color: "#1e293b" }}>{value}</p>
+      <p style={{ margin: 0, fontSize: 13, color: "var(--crown-compat-color-6b3d6d843d)" }}>{label}</p>
+      <p style={{ margin: "4px 0 0", fontSize: 22, fontWeight: 700, color: "var(--crown-compat-color-dbd729b0a3)" }}>{value}</p>
     </div>
   );
 }
@@ -147,7 +147,7 @@ function KpiCard({ label, value }) {
 function CampaignRow({ campaign }) {
   const pct = campaign.progress_percent || 0;
   return (
-    <div style={{ marginBottom: 12, padding: "12px 16px", border: "1px solid #e2e8f0", borderRadius: 8 }}>
+    <div style={{ marginBottom: 12, padding: "12px 16px", border: "1px solid var(--crown-compat-color-3b313dfb66)", borderRadius: 8 }}>
       <div style={{ display: "flex", justifyContent: "space-between" }}>
         <strong>{campaign.name}</strong>
         <span>{pct}%</span>
@@ -158,16 +158,16 @@ function CampaignRow({ campaign }) {
         aria-valuemin={0}
         aria-valuemax={100}
         aria-label={`${campaign.name} progress`}
-        style={{ marginTop: 6, height: 8, background: "#e2e8f0", borderRadius: 4 }}
+        style={{ marginTop: 6, height: 8, background: "var(--crown-compat-color-3b313dfb66)", borderRadius: 4 }}
       >
-        <div style={{ width: `${Math.min(pct, 100)}%`, height: "100%", background: "#6366f1", borderRadius: 4 }} />
+        <div style={{ width: `${Math.min(pct, 100)}%`, height: "100%", background: "var(--crown-compat-color-3398ce8a61)", borderRadius: 4 }} />
       </div>
-      <p style={{ margin: "4px 0 0", fontSize: 12, color: "#64748b" }}>
+      <p style={{ margin: "4px 0 0", fontSize: 12, color: "var(--crown-compat-color-6b3d6d843d)" }}>
         Raised: {fmtCurrency(campaign.raised)} / Goal: {fmtCurrency(campaign.goal)}
       </p>
     </div>
   );
 }
 
-const TH = { padding: "8px 12px", textAlign: "left", borderBottom: "2px solid #e2e8f0", fontSize: 13, color: "#475569" };
-const TD = { padding: "8px 12px", borderBottom: "1px solid #f1f5f9", fontSize: 14 };
+const TH = { padding: "8px 12px", textAlign: "left", borderBottom: "2px solid var(--crown-compat-color-3b313dfb66)", fontSize: 13, color: "var(--crown-compat-color-833631aa32)" };
+const TD = { padding: "8px 12px", borderBottom: "1px solid var(--crown-compat-color-4702b16c05)", fontSize: 14 };

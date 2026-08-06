@@ -143,7 +143,7 @@ export default function TermStructureWizard() {
             ))}
           </select>
 
-          {error && <p style={{ color: "red" }}>{error}</p>}
+          {error && <p style={{ color: "var(--crown-danger)" }}>{error}</p>}
 
           <button
             onClick={handleConfigure}
@@ -226,7 +226,7 @@ export default function TermStructureWizard() {
 
           <button onClick={addPeriod} style={{ marginBottom: 20 }}>+ Add Period</button>
 
-          {error && <p style={{ color: "red" }}>{error}</p>}
+          {error && <p style={{ color: "var(--crown-danger)" }}>{error}</p>}
 
           <div>
             <button onClick={() => { setPhase("configure"); setError(null); }} style={{ marginRight: 12 }}>

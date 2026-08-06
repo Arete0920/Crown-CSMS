@@ -141,24 +141,24 @@ export default function GivePage() {
   const inputStyle = {
     width: "100%",
     padding: "0.6rem 0.9rem",
-    border: "1px solid #d1d5db",
+    border: "1px solid var(--crown-compat-color-9643a6d44f)",
     borderRadius: 6,
     fontSize: "0.95rem",
     boxSizing: "border-box",
   };
-  const labelStyle = { display: "block", fontWeight: 600, marginBottom: 4, fontSize: "0.9rem", color: "#374151" };
+  const labelStyle = { display: "block", fontWeight: 600, marginBottom: 4, fontSize: "0.9rem", color: "var(--crown-compat-color-a95c525e33)" };
   const fieldStyle = { marginBottom: "1rem" };
   const cardStyle = {
-    background: "#fff",
-    border: "1px solid #e5e7eb",
+    background: "var(--crown-compat-color-e08de71387)",
+    border: "1px solid var(--crown-compat-color-bfd4f8ffca)",
     borderRadius: 10,
     padding: "1.5rem",
     marginBottom: "2rem",
-    boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
+    boxShadow: "0 1px 3px var(--crown-compat-color-957060f46c)",
   };
 
   return (
-    <div style={{ maxWidth: 620, margin: "0 auto", padding: "2rem 1rem", fontFamily: "system-ui, sans-serif" }}>
+    <div style={{ maxWidth: 620, margin: "0 auto", padding: "2rem 1rem", fontFamily: "var(--crown-font-family)" }}>
       <h1 style={{ fontSize: "1.6rem", fontWeight: 700, marginBottom: "2rem" }}>Give</h1>
 
       {/* ---- One-time gift ---- */}
@@ -166,12 +166,12 @@ export default function GivePage() {
         <h2 style={{ fontSize: "1.15rem", fontWeight: 700, marginBottom: "1.25rem" }}>One-time Gift</h2>
 
         {giftResult && (
-          <div style={{ background: "#dcfce7", border: "1px solid #15803d", borderRadius: 6, padding: "0.75rem 1rem", marginBottom: "1rem", color: "#15803d", fontWeight: 600 }}>
+          <div style={{ background: "var(--crown-compat-color-64033be9a6)", border: "1px solid var(--crown-compat-color-7d4ff8ff7b)", borderRadius: 6, padding: "0.75rem 1rem", marginBottom: "1rem", color: "var(--crown-compat-color-7d4ff8ff7b)", fontWeight: 600 }}>
             Gift created! ID: {giftResult.id}  Status: {giftResult.status}
           </div>
         )}
         {giftError && (
-          <div style={{ background: "#fee2e2", border: "1px solid #b91c1c", borderRadius: 6, padding: "0.75rem 1rem", marginBottom: "1rem", color: "#b91c1c" }}>
+          <div style={{ background: "var(--crown-compat-color-4b54505300)", border: "1px solid var(--crown-compat-color-59dbd12595)", borderRadius: 6, padding: "0.75rem 1rem", marginBottom: "1rem", color: "var(--crown-compat-color-59dbd12595)" }}>
             {giftError}
           </div>
         )}
@@ -188,9 +188,9 @@ export default function GivePage() {
                   style={{
                     padding: "0.4rem 0.9rem",
                     border: "1px solid",
-                    borderColor: giftForm.amount === String(a) ? "#1e40af" : "#d1d5db",
-                    background: giftForm.amount === String(a) ? "#eff6ff" : "#fff",
-                    color: giftForm.amount === String(a) ? "#1e40af" : "#374151",
+                    borderColor: giftForm.amount === String(a) ? "var(--crown-compat-color-1d4a6b66ff)" : "var(--crown-compat-color-9643a6d44f)",
+                    background: giftForm.amount === String(a) ? "var(--crown-compat-color-61eaaf6f10)" : "var(--crown-compat-color-e08de71387)",
+                    color: giftForm.amount === String(a) ? "var(--crown-compat-color-1d4a6b66ff)" : "var(--crown-compat-color-a95c525e33)",
                     borderRadius: 6,
                     cursor: "pointer",
                     fontWeight: 600,
@@ -234,7 +234,7 @@ export default function GivePage() {
               checked={giftForm.restricted}
               onChange={(e) => setGiftForm((f) => ({ ...f, restricted: e.target.checked }))}
             />
-            <label htmlFor="restricted" style={{ fontWeight: 400, fontSize: "0.9rem", color: "#374151" }}>
+            <label htmlFor="restricted" style={{ fontWeight: 400, fontSize: "0.9rem", color: "var(--crown-compat-color-a95c525e33)" }}>
               Restrict this gift to a specific purpose
             </label>
           </div>
@@ -271,8 +271,8 @@ export default function GivePage() {
             style={{
               width: "100%",
               padding: "0.75rem",
-              background: "#1e40af",
-              color: "#fff",
+              background: "var(--crown-compat-color-1d4a6b66ff)",
+              color: "var(--crown-compat-color-e08de71387)",
               border: "none",
               borderRadius: 6,
               fontWeight: 700,
@@ -290,12 +290,12 @@ export default function GivePage() {
         <h2 style={{ fontSize: "1.15rem", fontWeight: 700, marginBottom: "1.25rem" }}>Recurring Pledge</h2>
 
         {pledgeResult && (
-          <div style={{ background: "#dcfce7", border: "1px solid #15803d", borderRadius: 6, padding: "0.75rem 1rem", marginBottom: "1rem", color: "#15803d", fontWeight: 600 }}>
+          <div style={{ background: "var(--crown-compat-color-64033be9a6)", border: "1px solid var(--crown-compat-color-7d4ff8ff7b)", borderRadius: 6, padding: "0.75rem 1rem", marginBottom: "1rem", color: "var(--crown-compat-color-7d4ff8ff7b)", fontWeight: 600 }}>
             Pledge created! ${pledgeResult.total_amount} {pledgeResult.frequency}  Status: {pledgeResult.status}
           </div>
         )}
         {pledgeError && (
-          <div style={{ background: "#fee2e2", border: "1px solid #b91c1c", borderRadius: 6, padding: "0.75rem 1rem", marginBottom: "1rem", color: "#b91c1c" }}>
+          <div style={{ background: "var(--crown-compat-color-4b54505300)", border: "1px solid var(--crown-compat-color-59dbd12595)", borderRadius: 6, padding: "0.75rem 1rem", marginBottom: "1rem", color: "var(--crown-compat-color-59dbd12595)" }}>
             {pledgeError}
           </div>
         )}
@@ -326,9 +326,9 @@ export default function GivePage() {
                   style={{
                     padding: "0.4rem 0.9rem",
                     border: "1px solid",
-                    borderColor: pledgeForm.frequency === value ? "#1e40af" : "#d1d5db",
-                    background: pledgeForm.frequency === value ? "#eff6ff" : "#fff",
-                    color: pledgeForm.frequency === value ? "#1e40af" : "#374151",
+                    borderColor: pledgeForm.frequency === value ? "var(--crown-compat-color-1d4a6b66ff)" : "var(--crown-compat-color-9643a6d44f)",
+                    background: pledgeForm.frequency === value ? "var(--crown-compat-color-61eaaf6f10)" : "var(--crown-compat-color-e08de71387)",
+                    color: pledgeForm.frequency === value ? "var(--crown-compat-color-1d4a6b66ff)" : "var(--crown-compat-color-a95c525e33)",
                     borderRadius: 6,
                     cursor: "pointer",
                     fontWeight: 600,
@@ -372,8 +372,8 @@ export default function GivePage() {
             style={{
               width: "100%",
               padding: "0.75rem",
-              background: "#15803d",
-              color: "#fff",
+              background: "var(--crown-compat-color-7d4ff8ff7b)",
+              color: "var(--crown-compat-color-e08de71387)",
               border: "none",
               borderRadius: 6,
               fontWeight: 700,

@@ -78,14 +78,14 @@ export default function KpiFlipCard({
             display: 'flex',
             flexDirection: 'column',
             justifyContent: 'space-between',
-            boxShadow: '0 2px 8px rgba(15,23,42,0.18)',
+            boxShadow: '0 2px 8px var(--crown-compat-color-9588d47ed9)',
           }}
         >
           {/* Label */}
           <div style={{
             fontSize: 10,
             fontWeight: 700,
-            color: 'rgba(255,255,255,0.65)',
+            color: 'var(--crown-compat-color-26eaf932d3)',
             textTransform: 'uppercase',
             letterSpacing: 0.9,
           }}>
@@ -96,7 +96,7 @@ export default function KpiFlipCard({
           <div style={{
             fontSize: 34,
             fontWeight: 900,
-            color: '#ffffff',
+            color: 'var(--crown-compat-color-f2074b6cef)',
             lineHeight: 1,
             letterSpacing: -0.5,
           }}>
@@ -109,14 +109,14 @@ export default function KpiFlipCard({
               <span style={{
                 fontSize: 11,
                 fontWeight: 600,
-                color: trendUp ? '#86efac' : '#fca5a5',
+                color: trendUp ? 'var(--crown-compat-color-52cca7c6db)' : 'var(--crown-compat-color-42705fa9a6)',
               }}>
                 {trendUp ? '▲' : '▼'} {trend}
               </span>
             ) : <span />}
             <span style={{
               fontSize: 9,
-              color: 'rgba(255,255,255,0.38)',
+              color: 'var(--crown-compat-color-3d92bff672)',
               letterSpacing: 0.6,
               textTransform: 'uppercase',
             }}>
@@ -140,14 +140,14 @@ export default function KpiFlipCard({
             display: 'flex',
             flexDirection: 'column',
             justifyContent: 'space-between',
-            boxShadow: '0 2px 8px rgba(15,23,42,0.18)',
+            boxShadow: '0 2px 8px var(--crown-compat-color-9588d47ed9)',
           }}
         >
           {/* Label (repeated for orientation) */}
           <div style={{
             fontSize: 10,
             fontWeight: 700,
-            color: 'rgba(255,255,255,0.75)',
+            color: 'var(--crown-compat-color-7e73c8b211)',
             textTransform: 'uppercase',
             letterSpacing: 0.9,
           }}>
@@ -157,7 +157,7 @@ export default function KpiFlipCard({
           {/* Definition */}
           <div style={{
             fontSize: 11,
-            color: '#ffffff',
+            color: 'var(--crown-compat-color-f2074b6cef)',
             lineHeight: 1.55,
             flex: 1,
             overflow: 'hidden',
@@ -174,7 +174,7 @@ export default function KpiFlipCard({
               style={{
                 fontSize: 11,
                 fontWeight: 700,
-                color: '#ffffff',
+                color: 'var(--crown-compat-color-f2074b6cef)',
                 textDecoration: 'underline',
                 display: 'inline-flex',
                 alignItems: 'center',
@@ -186,7 +186,7 @@ export default function KpiFlipCard({
           ) : dataSource ? (
             <div style={{
               fontSize: 10,
-              color: 'rgba(255,255,255,0.72)',
+              color: 'var(--crown-compat-color-b287e65b63)',
               letterSpacing: 0.3,
             }}>
               Source: {dataSource}

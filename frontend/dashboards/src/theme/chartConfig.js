@@ -7,14 +7,14 @@
  *   <Line stroke={chartDefaults.stroke} dot={false} />
  */
 export const chartDefaults = {
-  stroke:      "#1B3A6F",
+  stroke:      "var(--crown-compat-color-cf2d163b11)",
   strokeWidth: 2,
-  gridStroke:  "#E5E7EB",
+  gridStroke:  "var(--crown-compat-color-bfd4f8ffca)",
   tooltipStyle: {
-    backgroundColor: "#fff",
-    border:          "1px solid rgba(0,0,0,0.1)",
+    backgroundColor: "var(--crown-compat-color-e08de71387)",
+    border:          "1px solid var(--crown-compat-color-4f6d03b417)",
     borderRadius:    8,
     fontSize:        13,
   },
-  colors: ["#1B3A6F", "#2E7D32", "#ED6C02", "#6B7280", "#D32F2F"],
+  colors: ["var(--crown-compat-color-cf2d163b11)", "var(--crown-compat-color-96f8d201a4)", "var(--crown-compat-color-819c87f4e0)", "var(--crown-compat-color-66341b70b3)", "var(--crown-compat-color-589c0cbec4)"],
 };

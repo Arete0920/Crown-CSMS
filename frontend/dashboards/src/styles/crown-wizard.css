@@ -16,9 +16,9 @@
 }
 
 .crown-wizard-step-pill {
-  border: 1px solid var(--crown-border, #d6e3f5);
-  background: var(--crown-card, #ffffff);
-  color: var(--crown-muted, #42566e);
+  border: 1px solid var(--crown-border, var(--crown-compat-color-b89dd2451e));
+  background: var(--crown-card, var(--crown-compat-color-f2074b6cef));
+  color: var(--crown-muted, var(--crown-compat-color-74d26b72f4));
   padding: 5px 10px;
   border-radius: 999px;
   font-size: 12px;
@@ -28,16 +28,16 @@
 }
 
 .crown-wizard-step-pill.active {
-  border-color: var(--crown-primary-strong, #1e4faf);
-  color: var(--crown-primary-strong, #1e4faf);
-  background: var(--crown-primary-faint, #edf3ff);
-  box-shadow: 0 0 0 2px rgba(30, 79, 175, 0.14);
+  border-color: var(--crown-primary-strong, var(--crown-compat-color-135d678f70));
+  color: var(--crown-primary-strong, var(--crown-compat-color-135d678f70));
+  background: var(--crown-primary-faint, var(--crown-compat-color-611a1e8ce2));
+  box-shadow: 0 0 0 2px var(--crown-compat-color-85f7ac1fa7);
 }
 
 .crown-wizard-step-pill.done {
-  border-color: rgba(31, 122, 69, 0.32);
-  color: var(--crown-success, #1f7a45);
-  background: var(--crown-success-soft, #dcfce7);
+  border-color: var(--crown-compat-color-701e8a0033);
+  color: var(--crown-success, var(--crown-compat-color-65efe5a3cb));
+  background: var(--crown-success-soft, var(--crown-compat-color-64033be9a6));
 }
 
 .crown-wizard-actions {
@@ -47,7 +47,7 @@
   gap: 12px;
   margin-top: 18px;
   padding-top: 14px;
-  border-top: 1px solid var(--crown-border, #d6e3f5);
+  border-top: 1px solid var(--crown-border, var(--crown-compat-color-b89dd2451e));
 }
 
 .crown-wizard-actions-right {
@@ -59,9 +59,9 @@
 
 /* Alerts */
 .crown-alert {
-  border: 1px solid rgba(255,93,93,0.35);
-  background: rgba(255,93,93,0.10);
-  color: #551313;
+  border: 1px solid var(--crown-compat-color-4a037ab478);
+  background: var(--crown-compat-color-c7fcf47cb6);
+  color: var(--crown-compat-color-524b4ebf7d);
   padding: 10px 12px;
   border-radius: 10px;
   margin: 10px 0;
@@ -69,9 +69,9 @@
 }
 
 .crown-alert.success {
-  border-color: rgba(78,225,138,0.40);
-  background: rgba(78,225,138,0.09);
-  color: #14532d;
+  border-color: var(--crown-compat-color-6617dbbec0);
+  background: var(--crown-compat-color-48fc9efa49);
+  color: var(--crown-compat-color-cf99080ba8);
 }
 
 /* Table variants used inside wizard steps */
@@ -80,7 +80,7 @@
   border-collapse: separate;
   border-spacing: 0;
   border-radius: 10px;
-  border: 1px solid var(--crown-border, #d6e3f5);
+  border: 1px solid var(--crown-border, var(--crown-compat-color-b89dd2451e));
   overflow: hidden;
   font-size: 13px;
 }
@@ -88,17 +88,17 @@
 .crown-table th,
 .crown-table td {
   padding: 9px 12px;
-  border-bottom: 1px solid var(--crown-border, #d6e3f5);
+  border-bottom: 1px solid var(--crown-border, var(--crown-compat-color-b89dd2451e));
   text-align: left;
   vertical-align: top;
 }
 
 .crown-table th {
   font-weight: 600;
-  background: var(--crown-surface-soft, #f2f7ff);
-  color: var(--crown-muted, #42566e);
+  background: var(--crown-surface-soft, var(--crown-compat-color-819fc5493f));
+  color: var(--crown-muted, var(--crown-compat-color-74d26b72f4));
 }
 
 .crown-table tbody tr:hover {
-  background: rgba(212,175,55,0.05);
+  background: var(--crown-compat-color-8178950a62);
 }

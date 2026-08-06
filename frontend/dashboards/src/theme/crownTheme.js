@@ -37,11 +37,11 @@ export const crownTheme = createTheme({
       styleOverrides: {
         root: {
           border: `1px solid ${colors.border}`,
-          boxShadow: "0 8px 20px rgba(23, 63, 145, 0.08)",
+          boxShadow: "0 8px 20px var(--crown-compat-color-55abd9e574)",
           transition: "all 150ms ease-in-out",
           "&:hover": {
             transform: "translateY(-2px)",
-            boxShadow: "0 12px 24px rgba(23, 63, 145, 0.12)",
+            boxShadow: "0 12px 24px var(--crown-compat-color-16b1bb0c6f)",
           },
         },
       },
@@ -58,7 +58,7 @@ export const crownTheme = createTheme({
       styleOverrides: {
         root: {
           border: `1px solid ${colors.border}`,
-          boxShadow: "0 6px 18px rgba(23, 63, 145, 0.08)",
+          boxShadow: "0 6px 18px var(--crown-compat-color-55abd9e574)",
         },
       },
     },

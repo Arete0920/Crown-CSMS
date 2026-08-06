@@ -53,7 +53,7 @@ export default function CourseCatalogWizard() {
             </div>
           ))}
           <button type="button" onClick={() => setCatalog(p => [...p, emptyCourse()])}>+ Add Course</button>
-          {err && <p style={{ color: "red" }}>{err}</p>}
+          {err && <p style={{ color: "var(--crown-danger)" }}>{err}</p>}
           <button type="submit">Commit Catalog</button>
         </form>
       )}

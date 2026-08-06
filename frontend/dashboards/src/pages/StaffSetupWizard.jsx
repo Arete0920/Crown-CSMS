@@ -56,7 +56,7 @@ export default function StaffSetupWizard() {
             </div>
           ))}
           <button type="button" onClick={() => setRoster(p => [...p, emptyStaff()])}>+ Add Row</button>
-          {err && <p style={{ color: "red" }}>{err}</p>}
+          {err && <p style={{ color: "var(--crown-danger)" }}>{err}</p>}
           <button type="submit">Commit Staff</button>
         </form>
       )}

@@ -332,7 +332,7 @@ export default function EnrollmentPeriodWizard() {
               ].map(([label, val]) => (
                 <tr key={label}>
                   <td style={{ padding: '6px 12px', fontWeight: 600, background: 'var(--crown-surface-2)', width: '40%' }}>{label}</td>
-                  <td style={{ padding: '6px 12px', fontFamily: 'monospace' }}>{val}</td>
+                  <td style={{ padding: '6px 12px', fontFamily: "var(--crown-font-mono)" }}>{val}</td>
                 </tr>
               ))}
             </tbody>

@@ -53,7 +53,7 @@ export default function PromotionWizard() {
             </div>
           ))}
           <button type="button" onClick={() => setRules(p => [...p, emptyRule(p.length)])}>+ Add Rule</button>
-          {err && <p style={{ color: "red" }}>{err}</p>}
+          {err && <p style={{ color: "var(--crown-danger)" }}>{err}</p>}
           <button type="submit">Commit Promotion Map</button>
         </form>
       )}
