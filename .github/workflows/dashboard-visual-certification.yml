@@ -52,7 +52,7 @@ jobs:
         working-directory: frontend/dashboards
         run: |
           test -f test-results/visual-dashboard-review/manifest.json
-          node -e 'const m=require("./test-results/visual-dashboard-review/manifest.json"); if(m.expectedScreenshots!==78 || m.screenshots.length!==78){throw new Error(`Expected 78 screenshots; manifest has ${m.screenshots.length}`)}'
+          node -e 'const m=require("./test-results/visual-dashboard-review/manifest.json"); if(m.expectedScreenshots!==84 || m.screenshots.length!==84){throw new Error(`Expected 84 screenshots; manifest has ${m.screenshots.length}`)}'
 
       - name: Upload dashboard visual evidence
         if: always()
