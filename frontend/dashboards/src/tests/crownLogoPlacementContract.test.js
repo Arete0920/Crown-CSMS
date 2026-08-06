@@ -13,6 +13,6 @@ describe('CROWN logo placement contract', () => {
     expect(CROWN_UI_LOGOS.sidebarExpanded).toBe(CROWN_LOGOS.horizontal);
     expect(CROWN_UI_LOGOS.sidebarCollapsed).toBe(CROWN_LOGOS.mark);
     expect(CROWN_UI_LOGOS.loginBrand).toBe(CROWN_LOGOS.primaryStacked);
-    expect(CROWN_UI_LOGOS.dashboardHero).toBe(CROWN_LOGOS.monochromeWhite);
+    expect(CROWN_UI_LOGOS.dashboardHero).toBe(CROWN_LOGOS.horizontal);
   });
 });
