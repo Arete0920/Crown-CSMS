@@ -20,19 +20,19 @@ const crownReact = {
       },
       create(context) {
         return {
-          JSXOpeningElement(node) {
-            if (node.name.type === "JSXNamespacedName") return;
-            let name;
-            if (node.name.type === "JSXIdentifier") {
-              name = node.name.name;
-              if (intrinsicTagName.test(name)) return;
-            } else if (node.name.type === "JSXMemberExpression") {
-              let object = node.name.object;
-              while (object?.type === "JSXMemberExpression") object = object.object;
-              name = object?.name;
-            }
-            if (name) context.sourceCode.markVariableAsUsed(name, node);
-          },
+JSXOpeningElement(node) {
+  if (node.name.type === "JSXNamespacedName") return;
+  let name;
+  if (node.name.type === "JSXIdentifier") {
+    name = node.name.name;
+    if (intrinsicTagName.test(name)) return;
+  } else if (node.name.type === "JSXMemberExpression") {
+    let object = node.name.object;
+    while (object?.type === "JSXMemberExpression") object = object.object;
+    name = object?.name;
+  }
+  if (name) context.sourceCode.markVariableAsUsed(name, node);
+},
         };
       },
     },
@@ -42,14 +42,6 @@ const crownReact = {
 export default [
   { ignores: ["dist/**", "build/**", "node_modules/**"] },
   js.configs.recommended,
-  {
-    files: ["scripts/**/*.{js,mjs,cjs}"],
-    languageOptions: {
-      ecmaVersion: 2022,
-      sourceType: "module",
-      globals: { ...globals.node, ...globals.es2021 },
-    },
-  },
   {
     files: ["src/**/*.{js,jsx}"],
     ...a11yRecommended,
