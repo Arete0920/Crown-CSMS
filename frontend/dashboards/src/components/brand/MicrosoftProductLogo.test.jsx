@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import MicrosoftProductLogo from './MicrosoftProductLogo';
 
@@ -8,20 +8,25 @@ afterEach(() => {
 });
 
 describe('MicrosoftProductLogo', () => {
-  it('renders a professional labelled fallback when licensed product assets are unavailable', () => {
+  it('renders the approved Microsoft-hosted product image when configured', () => {
     render(<MicrosoftProductLogo product="teams" label="Microsoft Teams" />);
+
+    const image = screen.getByRole('img', { name: 'Microsoft Teams' });
+    expect(image.getAttribute('src')).toMatch(/res-1\.cdn\.office\.net\/.*teams_48x1\.svg$/);
+    expect(image.getAttribute('width')).toBe('24');
+    expect(image.getAttribute('height')).toBe('24');
+  });
+
+  it('falls back to a professional full-label treatment when the image fails', () => {
+    render(<MicrosoftProductLogo product="teams" label="Microsoft Teams" />);
+
+    fireEvent.error(screen.getByRole('img', { name: 'Microsoft Teams' }));
 
     const fallback = screen.getByLabelText('Microsoft Teams');
     expect(fallback.tagName).toBe('SPAN');
     expect(fallback.textContent).toBe('Microsoft Teams');
     expect(fallback.querySelector('svg')).not.toBeNull();
-    expect(fallback.getAttribute('title')).toMatch(/Official Microsoft assets only/i);
-  });
-
-  it('renders no logo when the asset is unverified and fallback content is disabled', () => {
-    render(<MicrosoftProductLogo product="teams" label="Microsoft Teams" showTextWhenMissing={false} />);
-
-    expect(screen.queryByLabelText('Microsoft Teams')).toBeNull();
+    expect(fallback.getAttribute('title')).toMatch(/Official Microsoft-hosted product assets only/i);
   });
 
   it('returns null when the product is unknown and fallback content is disabled', () => {
