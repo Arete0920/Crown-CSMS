@@ -5,3 +5,5 @@ The canonical CROWN logo family on this branch was rebuilt from the stored Drive
 The restored family preserves the gold crown-and-cross mark and gold CROWN wordmark from the stored source, removes the obsolete dark presentation background and old descriptor, and provides distinct stacked, horizontal, compact, wordmark, mark, badge, and monochrome applications for the light-royal product system.
 
 Merge acceptance requires exact-head lint, component and contract tests, production build, responsive Playwright screenshots, representative multi-role route proof, successful Microsoft product-image loading, zero ambiguous letter placeholders, zero unresolved review threads, and an immutable evidence artifact tied to the exact commit.
+
+The final evidence manifest must record the exact Git commit, all nine distinct logo blob identifiers, responsive viewport results, representative role routes, Microsoft image-load results, browser error counts, and artifact digest so the buyer-facing presentation can be reproduced without relying on screenshots alone.
