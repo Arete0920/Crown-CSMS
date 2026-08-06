@@ -46,7 +46,11 @@ describe('buyer-facing brand visual integrity', () => {
 
   it('presents a labeled Microsoft 365 Education launcher', () => {
     expect(heroHeaderSource).toContain('Microsoft 365 Education');
-    expect(heroHeaderSource).toContain('Open Microsoft');
+    expect(heroHeaderSource).toContain('Microsoft Teams');
+    expect(heroHeaderSource).toContain('Microsoft Outlook');
+    expect(heroHeaderSource).toContain('Microsoft Word');
+    expect(heroHeaderSource).toContain('Microsoft Excel');
+    expect(heroHeaderSource).toContain('Microsoft OneDrive');
     expect(heroHeaderSource).not.toContain('label="Calendar"');
   });
 });
