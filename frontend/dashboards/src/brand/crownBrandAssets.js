@@ -16,10 +16,11 @@ export const CROWN_LOGOS = {
   monochromeWhite: '/brand/crown/logo/crown-logo-monochrome-white.svg',
 };
 
-// UI placements are aliases to the canonical logo system. This prevents the
-// application from drifting into separate one-off logo drawings.
+// UI placements resolve only to canonical brand assets. Expanded client
+// surfaces use the approved horizontal crown-and-cross lockup; the compact
+// crown mark is reserved for collapsed navigation and icon-scale contexts.
 export const CROWN_UI_LOGOS = {
-  sidebarExpanded: CROWN_LOGOS.compact,
+  sidebarExpanded: CROWN_LOGOS.horizontal,
   sidebarCollapsed: CROWN_LOGOS.mark,
   topnavHorizontal: CROWN_LOGOS.horizontal,
   loginBrand: CROWN_LOGOS.primaryStacked,
