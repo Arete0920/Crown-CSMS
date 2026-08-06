@@ -41,7 +41,7 @@ describe('shared client experience contract', () => {
     const assetMap = readProjectFile('src/brand/crownBrandAssets.js');
 
     expect(assetMap).not.toContain('/brand/crown/ui/');
-    expect(assetMap).toContain('sidebarExpanded: CROWN_LOGOS.compact');
+    expect(assetMap).toContain('sidebarExpanded: CROWN_LOGOS.horizontal');
     expect(assetMap).toContain('loginBrand: CROWN_LOGOS.primaryStacked');
     expect(assetMap).toContain('dashboardHero: CROWN_LOGOS.horizontal');
   });
