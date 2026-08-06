@@ -10,7 +10,13 @@
 }
 
 .launch-m365-shortcuts {
-  grid-template-columns: repeat(5, minmax(96px, 1fr));
+  grid-template-columns: repeat(5, minmax(140px, 1fr));
+}
+
+.launch-m365-shortcut {
+  min-height: 76px;
+  text-align: center;
+  line-height: 1.25;
 }
 
 .launch-m365-shortcut-icon .microsoft-product-approved-fallback.is-compact {
@@ -22,11 +28,17 @@
 
 @media (max-width: 1220px) {
   .launch-m365-shortcuts {
-    grid-template-columns: repeat(3, minmax(120px, 1fr));
+    grid-template-columns: repeat(3, minmax(150px, 1fr));
   }
 }
 
-@media (max-width: 640px) {
+@media (max-width: 760px) {
+  .launch-m365-shortcuts {
+    grid-template-columns: repeat(2, minmax(140px, 1fr));
+  }
+}
+
+@media (max-width: 480px) {
   .launch-m365-shortcuts {
     grid-template-columns: 1fr;
   }
