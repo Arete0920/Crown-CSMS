@@ -4,5 +4,7 @@
   "centralizedLiteralColors": 351,
   "themeComponentLayerMovedTo": "frontend/dashboards/src/styles/launch-shell.css",
   "expectedResponsiveScreenshots": 84,
-  "stylelintEmptyRootBlockRemoved": true
+  "stylelintEmptyRootBlockRemoved": true,
+  "muiRuntimePaintRestored": true,
+  "certifiedSidebarContrastRestored": true
 }
