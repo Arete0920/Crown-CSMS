@@ -16,6 +16,8 @@ export default function MicrosoftProductLogo({
   label,
   className = '',
   showTextWhenMissing = true,
+  compactFallback = false,
+  decorative = false,
 }) {
   const src = getMicrosoftLogoPath(product);
   const displayLabel = label || product;
@@ -29,12 +31,13 @@ export default function MicrosoftProductLogo({
   if ((!src || imgFailed) && showTextWhenMissing) {
     return (
       <span
-        className={`microsoft-product-approved-fallback ${className}`.trim()}
+        className={`microsoft-product-approved-fallback ${compactFallback ? 'is-compact' : ''} ${className}`.trim()}
         title={MICROSOFT_ASSET_POLICY}
-        aria-label={displayLabel}
+        aria-hidden={decorative ? true : undefined}
+        aria-label={decorative ? undefined : displayLabel}
       >
         <CrownIcon name={PRODUCT_ICONS[product] || 'dashboard'} size={18} />
-        <span>{displayLabel}</span>
+        {compactFallback ? null : <span>{displayLabel}</span>}
       </span>
     );
   }
@@ -44,7 +47,8 @@ export default function MicrosoftProductLogo({
   return (
     <img
       src={src}
-      alt={displayLabel}
+      alt={decorative ? '' : displayLabel}
+      aria-hidden={decorative ? true : undefined}
       width="24"
       height="24"
       className={`microsoft-product-logo microsoft-product-logo-${product} ${className}`.trim()}
