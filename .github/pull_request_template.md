@@ -7,15 +7,25 @@
 - Technical direction and acceptance authority: TC Megahan
 - Production authorization granted by this PR: no
 
-## Human ownership and AI assistance
+## Contributors and verification
 
 - Human owner:
 - Evidence-backed contributors:
-- AI assistance: none / limited / material — describe scope
+- Implementation support:
 - Human verification:
 - Unverified attribution:
 
-AI tools are implementation aids, not owners, authors, independent reviewers, approvers, or release authorities. Contributor credit must be supported by durable evidence.
+Contributor credit must be supported by durable evidence. Implementation support is not independent review, approval, certification authority, or release authority.
+
+## Change-management classification
+
+- [ ] This PR represents one coherent, independently reversible outcome.
+- [ ] Related implementation, tests, documentation, workflow corrections, and review fixes are consolidated here.
+- [ ] No existing open PR already covers this outcome.
+- [ ] A separate PR is justified by an independent risk or rollback boundary, if related work exists.
+- [ ] This PR is not being used only to trigger an audit or evidence run when a persistent workflow is available.
+
+Policy: `docs/governance/CHANGE_MANAGEMENT.md`
 
 ## Active lane
 
@@ -31,7 +41,7 @@ AI tools are implementation aids, not owners, authors, independent reviewers, ap
 
 ## Purpose
 
-<!-- One sentence: what does this PR do? -->
+<!-- One sentence: what coherent outcome does this PR complete? -->
 
 ## Scope and blast radius
 
@@ -43,9 +53,18 @@ AI tools are implementation aids, not owners, authors, independent reviewers, ap
 
 - Everything else
 
-## AI-pattern remediation record
+## Separate-PR justification
 
-Complete this section when the PR addresses issue #1432 or an AI-pattern finding.
+Complete this section when related work is already open or recently superseded.
+
+- Existing related PR or branch:
+- Independent risk or rollback boundary:
+- Why the work cannot remain in the existing PR:
+- Expected disposition of related work:
+
+## Pattern-remediation record
+
+Complete this section when the PR addresses issue #1432 or a generated-pattern finding.
 
 - Finding IDs:
 - Baseline behavior:
@@ -54,7 +73,7 @@ Complete this section when the PR addresses issue #1432 or an AI-pattern finding
 - Replacement or deletion analysis:
 - Remaining findings:
 
-An AI-pattern finding is a maintainability, verification, or provenance indicator. It is not proof of authorship.
+A pattern finding is a maintainability, verification, or provenance indicator. It is not proof of authorship.
 
 ## Lane guard
 
