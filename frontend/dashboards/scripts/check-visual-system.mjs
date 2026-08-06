@@ -58,7 +58,7 @@ function visualContexts(text, extension) {
 }
 
 if (!fs.existsSync(ROOT)) {
-  console.error('Run this command from frontend/dashboards.');
+  process.stderr.write('Run this command from frontend/dashboards.\n');
   process.exit(1);
 }
 
@@ -155,15 +155,17 @@ fs.writeFileSync(
   ) + '\n'
 );
 
-console.log(`CROWN visual-system scan: ${findings.length} blocking finding(s)`);
-for (const [rule, count] of Object.entries(counts).sort()) console.log(`${rule}: ${count}`);
+process.stdout.write(`CROWN visual-system scan: ${findings.length} blocking finding(s)\n`);
+for (const [rule, count] of Object.entries(counts).sort()) {
+  process.stdout.write(`${rule}: ${count}\n`);
+}
 for (const [rule, count] of Object.entries(exceptionCounts).sort()) {
-  console.log(`classified-exception ${rule}: ${count}`);
+  process.stdout.write(`classified-exception ${rule}: ${count}\n`);
 }
 
 if (findings.length) {
   for (const item of findings.slice(0, 200)) {
-    console.error(`ERROR ${item.rule} ${item.file}:${item.line} ${item.value}`);
+    process.stderr.write(`ERROR ${item.rule} ${item.file}:${item.line} ${item.value}\n`);
   }
   process.exit(1);
 }
