@@ -1,0 +1,113 @@
+name: Design System 1887 Runtime Diagnostic
+
+on:
+  push:
+    branches:
+      - agent/design-system-1887-final
+    paths:
+      - .github/workflows/design-system-1887-runtime-diagnostic.yml
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+        with:
+          ref: agent/design-system-1887-final
+
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: "22.22.0"
+          cache: npm
+          cache-dependency-path: frontend/dashboards/package-lock.json
+
+      - name: Install and build
+        working-directory: frontend/dashboards
+        run: |
+          npm ci
+          npm run build
+          npx playwright install --with-deps chromium
+
+      - name: Start preview
+        working-directory: frontend/dashboards
+        run: |
+          npm run preview -- --host 127.0.0.1 --port 4173 --strictPort > runtime-preview.log 2>&1 &
+          echo $! > runtime-preview.pid
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent http://127.0.0.1:4173/index.html >/dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat runtime-preview.log
+          exit 1
+
+      - name: Capture browser diagnostics
+        working-directory: frontend/dashboards
+        run: |
+          mkdir -p test-results/runtime-diagnostic
+          node --input-type=module <<'NODE'
+          import { chromium } from '@playwright/test';
+          import { writeFile } from 'node:fs/promises';
+
+          const browser = await chromium.launch();
+          const results = [];
+          for (const pathname of ['/index.html', '/', '/sandbox']) {
+            const page = await browser.newPage();
+            const events = [];
+            page.on('console', (message) => events.push({ type: 'console', level: message.type(), text: message.text() }));
+            page.on('pageerror', (error) => events.push({ type: 'pageerror', text: error.stack || error.message }));
+            page.on('requestfailed', (request) => events.push({
+              type: 'requestfailed',
+              url: request.url(),
+              failure: request.failure()?.errorText || 'unknown',
+            }));
+            let navigationError = null;
+            try {
+              await page.goto(`http://127.0.0.1:4173${pathname}`, {
+                waitUntil: 'domcontentloaded',
+                timeout: 60_000,
+              });
+            } catch (error) {
+              navigationError = error.stack || error.message;
+            }
+            await page.waitForTimeout(5_000);
+            const state = await page.evaluate(() => ({
+              url: location.href,
+              title: document.title,
+              bodyText: document.body?.innerText || '',
+              rootHtml: document.querySelector('#root')?.innerHTML || '',
+              rootText: document.querySelector('#root')?.textContent || '',
+              bodyDisplay: getComputedStyle(document.body).display,
+              bodyVisibility: getComputedStyle(document.body).visibility,
+              bodyOpacity: getComputedStyle(document.body).opacity,
+              paints: performance.getEntriesByType('paint').map((entry) => ({ name: entry.name, startTime: entry.startTime })),
+            }));
+            await page.screenshot({
+              path: `test-results/runtime-diagnostic/${pathname.replaceAll('/', '_') || '_root'}.png`,
+              fullPage: true,
+            });
+            results.push({ pathname, navigationError, events, state });
+            await page.close();
+          }
+          await browser.close();
+          await writeFile('test-results/runtime-diagnostic/diagnostic.json', JSON.stringify(results, null, 2) + '\n');
+          console.log(JSON.stringify(results, null, 2));
+          NODE
+
+      - name: Upload diagnostics
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: design-system-1887-runtime-diagnostic-${{ github.sha }}
+          if-no-files-found: error
+          retention-days: 7
+          path: |
+            frontend/dashboards/test-results/runtime-diagnostic
+            frontend/dashboards/runtime-preview.log
