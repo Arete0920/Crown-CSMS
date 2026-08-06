@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import CrownIcon from '../icons/CrownIcon.jsx';
 import { getMicrosoftLogoPath, MICROSOFT_ASSET_POLICY } from '../../brand/microsoftBrandAssets';
 
@@ -22,6 +22,10 @@ export default function MicrosoftProductLogo({
   const [failedSrc, setFailedSrc] = useState(null);
   const imgFailed = failedSrc === src;
 
+  useEffect(() => {
+    setFailedSrc(null);
+  }, [src]);
+
   if ((!src || imgFailed) && showTextWhenMissing) {
     return (
       <span
@@ -41,8 +45,10 @@ export default function MicrosoftProductLogo({
     <img
       src={src}
       alt={displayLabel}
+      width="24"
+      height="24"
       className={`microsoft-product-logo microsoft-product-logo-${product} ${className}`.trim()}
-      loading="lazy"
+      loading="eager"
       decoding="async"
       title={MICROSOFT_ASSET_POLICY}
       onError={() => setFailedSrc(src)}
