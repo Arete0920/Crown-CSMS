@@ -1,0 +1,139 @@
+name: Temporary Current Main Source Repair
+
+on:
+  push:
+    branches:
+      - agent/current-main-audit-repair
+
+permissions:
+  contents: write
+
+concurrency:
+  group: tmp-current-main-source-repair
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout repair branch
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+        with:
+          ref: agent/current-main-audit-repair
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@7f4fc3e22c37d6ff65e88745f38bd3157c663f7c
+        with:
+          python-version: "3.12"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/dashboards/package-lock.json
+
+      - name: Apply source repairs
+        shell: python
+        run: |
+          from pathlib import Path
+          import json
+
+          settings = Path("backend/crown_api/settings.py")
+          text = settings.read_text(encoding="utf-8")
+          old = '''if DATABASE_URL and _env_is_prod():
+              DATABASES["default"].setdefault("OPTIONS", {})
+              DATABASES["default"]["OPTIONS"]["sslmode"] = "require"
+          '''
+          new = '''if (
+              DATABASE_URL
+              and _env_is_prod()
+              and DATABASES["default"].get("ENGINE")
+              in {
+                  "django.db.backends.postgresql",
+                  "django.db.backends.postgresql_psycopg2",
+              }
+          ):
+              DATABASES["default"].setdefault("OPTIONS", {})
+              DATABASES["default"]["OPTIONS"]["sslmode"] = "require"
+          '''
+          if old in text:
+              text = text.replace(old, new, 1)
+          elif new not in text:
+              raise SystemExit("Expected database SSL block not found")
+          settings.write_text(text, encoding="utf-8")
+
+          package = Path("frontend/dashboards/package.json")
+          data = json.loads(package.read_text(encoding="utf-8"))
+          data.setdefault("overrides", {})["postcss"] = "8.5.23"
+          package.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
+
+      - name: Refresh lockfile
+        working-directory: frontend/dashboards
+        shell: bash
+        run: npm install --package-lock-only --ignore-scripts
+
+      - name: Install backend dependencies
+        shell: bash
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Install frontend dependencies
+        working-directory: frontend/dashboards
+        shell: bash
+        run: npm ci
+
+      - name: Validate backend database configuration
+        shell: bash
+        env:
+          DJANGO_SETTINGS_MODULE: crown_api.settings
+          DJANGO_SECRET_KEY: ci-current-main-audit-secret-7L9m2Q4v8X1p5R0s6T3u9W2y7Z4a8B1c
+          SECRET_KEY: ci-current-main-audit-secret-7L9m2Q4v8X1p5R0s6T3u9W2y7Z4a8B1c
+          DJANGO_DEBUG: "0"
+          DEBUG: "0"
+          DJANGO_ENV: production
+          CROWN_ENV: prod
+          ALLOWED_HOSTS: localhost,127.0.0.1,testserver
+          DATABASE_URL: sqlite:///./ci_current_main.sqlite3
+        run: |
+          python - <<'PY'
+          import os
+          import sys
+          sys.path.insert(0, "backend")
+          os.environ.setdefault("DJANGO_SETTINGS_MODULE", "crown_api.settings")
+          import django
+          django.setup()
+          from django.conf import settings
+          database = settings.DATABASES["default"]
+          assert database["ENGINE"] == "django.db.backends.sqlite3", database
+          assert "sslmode" not in database.get("OPTIONS", {}), database
+          print("SQLite configuration excludes PostgreSQL sslmode: PASS")
+          PY
+          cd backend
+          python manage.py check --deploy
+
+      - name: Validate frontend and dependency audit
+        working-directory: frontend/dashboards
+        shell: bash
+        run: |
+          npm run lint
+          npm run test:contracts
+          npm run build
+          npm audit --audit-level=moderate
+
+      - name: Commit validated source repairs
+        shell: bash
+        run: |
+          git config user.name "CROWN Audit Repair Bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add backend/crown_api/settings.py frontend/dashboards/package.json frontend/dashboards/package-lock.json
+          git diff --cached --check
+          if git diff --cached --quiet; then
+            echo "No source changes remain to commit."
+            exit 0
+          fi
+          git commit -m "fix(audit): harden database and dependency evidence"
+          git push origin HEAD:agent/current-main-audit-repair
