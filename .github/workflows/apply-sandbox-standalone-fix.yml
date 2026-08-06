@@ -7,7 +7,6 @@ on:
 
 permissions:
   contents: write
-  actions: write
 
 jobs:
   apply-and-verify:
@@ -26,60 +25,41 @@ jobs:
         run: |
           set -euo pipefail
           python3 - <<'PY'
+          import re
           from pathlib import Path
 
           path = Path("frontend/dashboards/src/pages/SandboxLandingPage.jsx")
           text = path.read_text(encoding="utf-8")
 
           import_line = 'import CrownLayout from "../components/crown/CrownLayout";\n'
-          opening = '''      <CrownLayout
-                  title="Guided Proof Sandbox"
-                  subtitle="Explore CROWN with safe fictional data and launch role-specific proof paths."
-                  mainClassName="sandbox-root"
-                >
-                  <section className="sandbox-hero">'''
-          opening_normal = '''      <CrownLayout
-                title="Guided Proof Sandbox"
-                subtitle="Explore CROWN with safe fictional data and launch role-specific proof paths."
-                mainClassName="sandbox-root"
-              >
-                <section className="sandbox-hero">'''
-          expected_opening = '''      <CrownLayout
-        title="Guided Proof Sandbox"
-        subtitle="Explore CROWN with safe fictional data and launch role-specific proof paths."
-        mainClassName="sandbox-root"
-      >
-        <section className="sandbox-hero">'''
-          closing = '''        </section>
-      </CrownLayout>'''
+          if text.count(import_line) != 1:
+              raise SystemExit("Expected exactly one CrownLayout import")
+          text = text.replace(import_line, "", 1)
 
-          replacements = [
-              (import_line, ""),
-              (expected_opening, '''      <main className="sandbox-root">
-        <section className="sandbox-hero">'''),
-              (closing, '''        </section>
-      </main>'''),
-              ('.track-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }', '.track-grid { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }'),
-              ('.school-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: 16px; }', '.school-grid { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); margin-top: 16px; }'),
-              (
-                  '.primary-link { display: inline-flex; justify-content: center; align-items: center; border-radius: 10px; background: linear-gradient(120deg, var(--crown-compat-color-f4ce79ce58) 0%, var(--crown-compat-color-550e1aa105) 100%); color: white; text-decoration: none; padding: 10px 12px; font-weight: 800; font-size: 14px; border: 0; cursor: pointer; }',
-                  '.primary-link { display: inline-flex; justify-content: center; align-items: center; border-radius: 10px; background: linear-gradient(120deg, var(--crown-compat-color-f4ce79ce58) 0%, var(--crown-compat-color-550e1aa105) 100%) !important; color: white !important; -webkit-text-fill-color: white !important; text-decoration: none; padding: 10px 12px; font-weight: 800; font-size: 14px; border: 0; cursor: pointer; }',
-              ),
-          ]
+          opening_pattern = re.compile(r'      <CrownLayout\n        title="Guided Proof Sandbox"\n        subtitle="Explore CROWN with safe fictional data and launch role-specific proof paths\."\n        mainClassName="sandbox-root"\n      >\n        <section className="sandbox-hero">')
+          text, opening_count = opening_pattern.subn('      <main className="sandbox-root">\n        <section className="sandbox-hero">', text, count=1)
+          if opening_count != 1:
+              raise SystemExit(f"Expected one CrownLayout opening block; found {opening_count}")
 
-          for old, new in replacements:
-              count = text.count(old)
-              if count != 1:
-                  raise SystemExit(f"Expected exactly one occurrence for bounded replacement, found {count}: {old[:100]!r}")
+          closing = '        </section>\n      </CrownLayout>'
+          if text.count(closing) != 1:
+              raise SystemExit("Expected exactly one CrownLayout closing block")
+          text = text.replace(closing, '        </section>\n      </main>', 1)
+
+          replacements = {
+              '.track-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }': '.track-grid { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }',
+              '.school-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: 16px; }': '.school-grid { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); margin-top: 16px; }',
+              '.primary-link { display: inline-flex; justify-content: center; align-items: center; border-radius: 10px; background: linear-gradient(120deg, var(--crown-compat-color-f4ce79ce58) 0%, var(--crown-compat-color-550e1aa105) 100%); color: white; text-decoration: none; padding: 10px 12px; font-weight: 800; font-size: 14px; border: 0; cursor: pointer; }': '.primary-link { display: inline-flex; justify-content: center; align-items: center; border-radius: 10px; background: linear-gradient(120deg, var(--crown-compat-color-f4ce79ce58) 0%, var(--crown-compat-color-550e1aa105) 100%) !important; color: white !important; -webkit-text-fill-color: white !important; text-decoration: none; padding: 10px 12px; font-weight: 800; font-size: 14px; border: 0; cursor: pointer; }',
+          }
+          for old, new in replacements.items():
+              if text.count(old) != 1:
+                  raise SystemExit(f"Expected exactly one bounded style target: {old[:80]}")
               text = text.replace(old, new, 1)
 
           if "CrownLayout" in text:
-              raise SystemExit("CrownLayout reference remains in standalone sandbox landing page")
+              raise SystemExit("CrownLayout reference remains")
           if '<main className="sandbox-root">' not in text:
-              raise SystemExit("Standalone sandbox main wrapper was not installed")
-          if "background: linear-gradient" not in text or "!important" not in text:
-              raise SystemExit("Sandbox role-button contrast repair was not installed")
-
+              raise SystemExit("Standalone sandbox wrapper missing")
           path.write_text(text, encoding="utf-8")
           PY
 
