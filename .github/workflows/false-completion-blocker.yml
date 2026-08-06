@@ -2,6 +2,18 @@ name: False Completion Blocker
 
 on:
   workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - "scripts/execution/996_false_completion_blocker_gate.ps1"
+      - "docs/CURRENT_RELEASE_STATUS.md"
+      - "docs/release/final-95-plus-sprint/**"
+      - "frontend/dashboards/src/config/dashboardTemplates/**"
+      - "frontend/dashboards/src/hooks/useDashboardData.js"
+      - "frontend/dashboards/src/routes/wizards.js"
+      - "backend/crown_api/dashboards/**"
+      - "backend/crown_api/tests/test_dashboard_snapshot_summary_api.py"
+      - ".github/workflows/false-completion-blocker.yml"
   push:
     branches: [main]
     paths:
@@ -9,8 +21,10 @@ on:
       - "docs/CURRENT_RELEASE_STATUS.md"
       - "docs/release/final-95-plus-sprint/**"
       - "frontend/dashboards/src/config/dashboardTemplates/**"
+      - "frontend/dashboards/src/hooks/useDashboardData.js"
       - "frontend/dashboards/src/routes/wizards.js"
       - "backend/crown_api/dashboards/**"
+      - "backend/crown_api/tests/test_dashboard_snapshot_summary_api.py"
       - ".github/workflows/false-completion-blocker.yml"
 
 permissions:
@@ -23,7 +37,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Run false-completion blocker gate
         shell: pwsh
