@@ -1,0 +1,110 @@
+name: Apply Sandbox Standalone Landing Fix
+
+on:
+  push:
+    branches:
+      - fix/sandbox-standalone-landing-20260806
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  apply-and-verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repair branch
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Apply bounded standalone sandbox repair
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path("frontend/dashboards/src/pages/SandboxLandingPage.jsx")
+          text = path.read_text(encoding="utf-8")
+
+          import_line = 'import CrownLayout from "../components/crown/CrownLayout";\n'
+          opening = '''      <CrownLayout
+                  title="Guided Proof Sandbox"
+                  subtitle="Explore CROWN with safe fictional data and launch role-specific proof paths."
+                  mainClassName="sandbox-root"
+                >
+                  <section className="sandbox-hero">'''
+          opening_normal = '''      <CrownLayout
+                title="Guided Proof Sandbox"
+                subtitle="Explore CROWN with safe fictional data and launch role-specific proof paths."
+                mainClassName="sandbox-root"
+              >
+                <section className="sandbox-hero">'''
+          expected_opening = '''      <CrownLayout
+        title="Guided Proof Sandbox"
+        subtitle="Explore CROWN with safe fictional data and launch role-specific proof paths."
+        mainClassName="sandbox-root"
+      >
+        <section className="sandbox-hero">'''
+          closing = '''        </section>
+      </CrownLayout>'''
+
+          replacements = [
+              (import_line, ""),
+              (expected_opening, '''      <main className="sandbox-root">
+        <section className="sandbox-hero">'''),
+              (closing, '''        </section>
+      </main>'''),
+              ('.track-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }', '.track-grid { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }'),
+              ('.school-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: 16px; }', '.school-grid { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); margin-top: 16px; }'),
+              (
+                  '.primary-link { display: inline-flex; justify-content: center; align-items: center; border-radius: 10px; background: linear-gradient(120deg, var(--crown-compat-color-f4ce79ce58) 0%, var(--crown-compat-color-550e1aa105) 100%); color: white; text-decoration: none; padding: 10px 12px; font-weight: 800; font-size: 14px; border: 0; cursor: pointer; }',
+                  '.primary-link { display: inline-flex; justify-content: center; align-items: center; border-radius: 10px; background: linear-gradient(120deg, var(--crown-compat-color-f4ce79ce58) 0%, var(--crown-compat-color-550e1aa105) 100%) !important; color: white !important; -webkit-text-fill-color: white !important; text-decoration: none; padding: 10px 12px; font-weight: 800; font-size: 14px; border: 0; cursor: pointer; }',
+              ),
+          ]
+
+          for old, new in replacements:
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f"Expected exactly one occurrence for bounded replacement, found {count}: {old[:100]!r}")
+              text = text.replace(old, new, 1)
+
+          if "CrownLayout" in text:
+              raise SystemExit("CrownLayout reference remains in standalone sandbox landing page")
+          if '<main className="sandbox-root">' not in text:
+              raise SystemExit("Standalone sandbox main wrapper was not installed")
+          if "background: linear-gradient" not in text or "!important" not in text:
+              raise SystemExit("Sandbox role-button contrast repair was not installed")
+
+          path.write_text(text, encoding="utf-8")
+          PY
+
+      - name: Set up Node 24
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: frontend/dashboards/package-lock.json
+
+      - name: Verify repaired frontend
+        working-directory: frontend/dashboards
+        run: |
+          set -euo pipefail
+          npm ci
+          npm run lint
+          npm run build
+
+      - name: Commit bounded repair and remove one-shot workflow
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "CROWN Sandbox Repair"
+          git config user.email "actions@users.noreply.github.com"
+          git add frontend/dashboards/src/pages/SandboxLandingPage.jsx
+          git rm .github/workflows/apply-sandbox-standalone-fix.yml
+          git commit -m "fix(sandbox): render evaluator landing without authenticated shell"
+          git push origin HEAD:fix/sandbox-standalone-landing-20260806
