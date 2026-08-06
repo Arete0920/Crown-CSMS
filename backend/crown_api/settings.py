@@ -458,7 +458,15 @@ X_FRAME_OPTIONS                 = "DENY"
 # ---------------------------------------------------------------------------
 # Database SSL enforcement (PostgreSQL prod only)
 # ---------------------------------------------------------------------------
-if DATABASE_URL and _env_is_prod():
+if (
+    DATABASE_URL
+    and _env_is_prod()
+    and DATABASES["default"].get("ENGINE")
+    in {
+        "django.db.backends.postgresql",
+        "django.db.backends.postgresql_psycopg2",
+    }
+):
     DATABASES["default"].setdefault("OPTIONS", {})
     DATABASES["default"]["OPTIONS"]["sslmode"] = "require"
 
