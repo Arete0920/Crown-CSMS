@@ -90,7 +90,7 @@ export default function CrownHeroHeader({
               key={shortcut.product}
               href={shortcut.href}
               target="_blank"
-              rel="noreferrer"
+              rel="noopener noreferrer"
               className="launch-m365-shortcut"
               aria-label={`Open Microsoft ${shortcut.label}`}
             >
@@ -98,7 +98,8 @@ export default function CrownHeroHeader({
                 <MicrosoftProductLogo
                   product={shortcut.product}
                   label={`Microsoft ${shortcut.label}`}
-                  showTextWhenMissing={false}
+                  compactFallback
+                  decorative
                 />
               </span>
               <span>{shortcut.label}</span>
