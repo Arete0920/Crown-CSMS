@@ -8,15 +8,15 @@ export default function ErrorBanner({ title = "Something went wrong", message, c
       role="alert"
       style={{
         marginBottom: 12,
-        background: "#fde8e8",
-        border: "1px solid #dc2626",
-        color: "#4a1111",
+        background: "var(--crown-compat-color-f19de237c6)",
+        border: "1px solid var(--crown-compat-color-3871da3420)",
+        color: "var(--crown-compat-color-5e76dc6d1c)",
       }}
     >
       <div style={{ fontWeight: 700, marginBottom: 6 }}>{title}</div>
       <div style={{ whiteSpace: "pre-wrap" }}>{message}</div>
       {correlationId ? (
-        <div style={{ marginTop: 8, fontFamily: "monospace", opacity: 0.9 }}>
+        <div style={{ marginTop: 8, fontFamily: "var(--crown-font-mono)", opacity: 0.9 }}>
           correlation_id: {correlationId}
         </div>
       ) : null}

@@ -11,40 +11,39 @@
 
 :root {
   /* Brand */
-  --crown-brand:    #1f3a5f;    /* deep royal blue */
-  --crown-accent:   #b08d57;    /* warm gold */
-  --crown-ink:      #0b1220;    /* near-black */
-  --crown-muted:    #5b677a;
+    /* deep royal blue */
+    /* warm gold */
+    /* near-black */
+
 
   /* Surfaces */
-  --crown-bg:        #f5f7fb;
-  --crown-surface:   #ffffff;
-  --crown-surface-2: #f0f3fa;
+
+
+
 
   /* Borders + shadows */
-  --crown-border:  rgba(15, 23, 42, 0.12);
-  --crown-shadow:  0 8px 24px rgba(15, 23, 42, 0.10);
+
+
 
   /* Radius */
-  --crown-radius:    16px;
-  --crown-radius-sm: 12px;
+
+
 
   /* Typography */
-  --crown-font: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto,
-    Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+
 
   /* Status / health colors (light-mode calibrated) */
-  --crown-ok:     #166534;   /* green text on light bg */
-  --crown-warn:   #92400e;   /* amber text on light bg */
-  --crown-danger: #991b1b;   /* red text on light bg */
-  --crown-gold:   #b08d57;   /* warm gold (= accent) */
-  --crown-info:   #1e40af;   /* info blue */
+   /* green text on light bg */
+   /* amber text on light bg */
+   /* red text on light bg */
+   /* warm gold (= accent) */
+   /* info blue */
 
   /* Status surface fills */
-  --crown-ok-bg:     #dcfce7;
-  --crown-warn-bg:   #fef9c3;
-  --crown-danger-bg: #fee2e2;
-  --crown-info-bg:   #dbeafe;
+
+
+
+
 }
 
 html,
@@ -56,7 +55,7 @@ body {
   margin: 0;
   font-family: var(--crown-font);
   color: var(--crown-ink);
-  background: var(--crown-bg);
+  background: var(--crown-compat-scope-0d67ec4e07);
 }
 
 /* ── Layout ─────────────────────────────────────────────── */
@@ -69,8 +68,8 @@ body {
 .crown-sidebar {
   width: 260px;
   flex-shrink: 0;
-  background: linear-gradient(180deg, var(--crown-brand), #142944);
-  color: #fff;
+  background: linear-gradient(180deg, var(--crown-brand), var(--crown-compat-color-ede086cb4d));
+  color: var(--crown-compat-color-e08de71387);
   padding: 18px;
   box-sizing: border-box;
 }
@@ -88,8 +87,8 @@ body {
   font-size: 12px;
   padding: 6px 10px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.10);
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: var(--crown-compat-color-9dd30a3408);
+  border: 1px solid var(--crown-compat-color-ff34edd940);
 }
 
 .crown-main {
@@ -98,7 +97,7 @@ body {
   padding: 22px;
   box-sizing: border-box;
   color: var(--crown-ink) !important;
-  background-color: var(--crown-bg) !important;
+  background-color: var(--crown-compat-scope-0d67ec4e07) !important;
 }
 
 /* ── Page header ─────────────────────────────────────────── */
@@ -119,7 +118,7 @@ body {
 
 .crown-subtitle {
   margin: 6px 0 0 0;
-  color: var(--crown-muted);
+  color: var(--crown-compat-scope-a141731ea8);
   font-size: 13px;
 }
 
@@ -127,7 +126,7 @@ body {
 
 .crown-card {
   background: var(--crown-surface);
-  border: 1px solid var(--crown-border);
+  border: 1px solid var(--crown-compat-scope-cb1768c9bf);
   border-radius: var(--crown-radius);
   box-shadow: var(--crown-shadow);
   padding: 16px;
@@ -171,7 +170,7 @@ body {
   padding: 10px 12px;
   font-weight: 700;
   font-size: 13px;
-  border: 1px solid var(--crown-border);
+  border: 1px solid var(--crown-compat-scope-cb1768c9bf);
   background: var(--crown-surface);
   color: var(--crown-ink);
   cursor: pointer;
@@ -188,8 +187,8 @@ body {
   padding: 6px 10px;
   border-radius: 999px;
   background: var(--crown-surface-2);
-  border: 1px solid var(--crown-border);
-  color: var(--crown-muted);
+  border: 1px solid var(--crown-compat-scope-cb1768c9bf);
+  color: var(--crown-compat-scope-a141731ea8);
 }
 
 /* ── Tables ──────────────────────────────────────────────── */
@@ -203,18 +202,18 @@ table {
 thead th {
   text-align: left;
   font-size: 12px;
-  color: var(--crown-muted);
+  color: var(--crown-compat-scope-a141731ea8);
   padding: 10px 12px;
-  border-bottom: 1px solid var(--crown-border);
+  border-bottom: 1px solid var(--crown-compat-scope-cb1768c9bf);
 }
 
 tbody td {
   padding: 10px 12px;
-  border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+  border-bottom: 1px solid var(--crown-compat-color-e19a38f714);
 }
 
 tbody tr:hover {
-  background: rgba(176, 141, 87, 0.06);
+  background: var(--crown-compat-color-9724074c83);
 }
 
 /* ── Micro-interactions ───────────────────────────────────────────────────── */
@@ -237,7 +236,7 @@ button:active,
 /* Eliminate heavy box-shadows — replaced by subtle border + small elevation */
 .crown-card,
 .crown-section {
-  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08) !important;
+  box-shadow: 0 2px 8px var(--crown-compat-color-16cf596261) !important;
 }
 
 /* Consistent button shape */
@@ -254,7 +253,7 @@ button, .MuiButton-root {
 .crown-field label {
   font-size: 12px;
   font-weight: 600;
-  color: var(--crown-muted);
+  color: var(--crown-compat-scope-a141731ea8);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -264,7 +263,7 @@ button, .MuiButton-root {
 body,
 .crown-app {
   color: var(--crown-ink) !important;
-  background-color: var(--crown-bg) !important;
+  background-color: var(--crown-compat-scope-0d67ec4e07) !important;
 }
 
 /* Restore readable buttons on light pages */
@@ -273,15 +272,15 @@ button,
 a.crown-btn {
   color: var(--crown-ink) !important;
   background-color: var(--crown-surface) !important;
-  border-color: var(--crown-border) !important;
+  border-color: var(--crown-compat-scope-cb1768c9bf) !important;
   -webkit-text-fill-color: var(--crown-ink) !important;
 }
 
 .crown-btn-primary {
   background-color: var(--crown-brand) !important;
-  color: #ffffff !important;
+  color: var(--crown-compat-color-f2074b6cef) !important;
   border-color: transparent !important;
-  -webkit-text-fill-color: #ffffff !important;
+  -webkit-text-fill-color: var(--crown-compat-color-f2074b6cef) !important;
 }
 
 /* Light-mode inputs */
@@ -293,14 +292,14 @@ a.crown-btn {
 .crown-section textarea {
   color: var(--crown-ink) !important;
   background-color: var(--crown-surface) !important;
-  border: 1px solid var(--crown-border) !important;
+  border: 1px solid var(--crown-compat-scope-cb1768c9bf) !important;
   -webkit-text-fill-color: var(--crown-ink) !important;
   caret-color: var(--crown-ink) !important;
 }
 
 .crown-main input::placeholder,
 .crown-main textarea::placeholder {
-  color: var(--crown-muted) !important;
-  -webkit-text-fill-color: var(--crown-muted) !important;
+  color: var(--crown-compat-scope-a141731ea8) !important;
+  -webkit-text-fill-color: var(--crown-compat-scope-a141731ea8) !important;
   opacity: 1 !important;
 }

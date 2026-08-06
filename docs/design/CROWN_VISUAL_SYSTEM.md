@@ -61,3 +61,9 @@ From `frontend/dashboards`, run `npm run check:visual-system` to scan frontend s
 - inline JSX visual styles requiring migration.
 
 The scanner reports the current migration inventory. CI blocks newly introduced findings above the reviewed baseline once that baseline file is established and reduced to intentional exceptions only.
+
+## Issue #1887 completion contract
+
+`crown-theme.css` is token-only. Shared shell and component rules are owned by `launch-shell.css`. Exact-value `--crown-compat-*` tokens preserve reviewed legacy rendering while removing distributed palette declarations; new work must use semantic tokens. Direct color literals and custom `--crown-*` definitions outside the token authority fail CI. Direct font stacks are replaced by `--crown-font-family` or `--crown-font-mono`; framework semantic values and dynamic geometry remain permitted.
+
+Responsive evidence includes the passwordless Heritage `/sandbox` launcher and `/sandbox/command-center` plus all dashboard inventory routes at desktop, tablet, and mobile widths. This visual inventory does not expand the certified production persona scope in issue #1619.

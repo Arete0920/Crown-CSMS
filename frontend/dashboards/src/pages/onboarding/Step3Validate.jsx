@@ -64,7 +64,7 @@ export default function Step3Validate({ context, setContext, goBack, goNext, ste
                     <tr key={i}>
                       <td>{e.row}</td>
                       <td>{e.field}</td>
-                      <td style={{ color: "rgb(255,120,120)" }}>{e.message}</td>
+                      <td style={{ color: "var(--crown-compat-color-682b1df168)" }}>{e.message}</td>
                     </tr>
                   ))}
                 </tbody>

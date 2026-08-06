@@ -23,7 +23,7 @@ export const pctFromCell = (cell) => {
  */
 export const bgForPct = (pct) => {
   if (pct == null) return undefined;
-  if (pct >= 90) return "rgba(34, 197, 94, 0.10)";   // subtle green (passes)
-  if (pct >= 70) return "rgba(234, 179, 8, 0.12)";   // subtle amber (monitor)
-  return "rgba(239, 68, 68, 0.10)";                  // subtle red (at-risk)
+  if (pct >= 90) return "var(--crown-compat-color-b329ae315c)";   // subtle green (passes)
+  if (pct >= 70) return "var(--crown-compat-color-ca11b75ca9)";   // subtle amber (monitor)
+  return "var(--crown-compat-color-ea2e992388)";                  // subtle red (at-risk)
 };

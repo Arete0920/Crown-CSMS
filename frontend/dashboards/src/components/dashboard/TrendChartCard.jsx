@@ -41,7 +41,7 @@ export default function TrendChartCard({
         <ResponsiveContainer width="100%" height="100%" minHeight={220}>
           {type === 'bar' ? (
             <BarChart data={rows}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.08)" />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--crown-compat-color-a70919eca5)" />
               <XAxis dataKey="label" tick={{ fill: 'var(--crown-muted)', fontSize: 11 }} />
               <YAxis tick={{ fill: 'var(--crown-muted)', fontSize: 11 }} />
               <Tooltip />
@@ -57,7 +57,7 @@ export default function TrendChartCard({
             </BarChart>
           ) : (
             <LineChart data={rows}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.08)" />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--crown-compat-color-a70919eca5)" />
               <XAxis dataKey="label" tick={{ fill: 'var(--crown-muted)', fontSize: 11 }} />
               <YAxis tick={{ fill: 'var(--crown-muted)', fontSize: 11 }} />
               <Tooltip />

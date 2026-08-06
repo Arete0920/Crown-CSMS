@@ -56,7 +56,7 @@ export default function Step6Verify({ context, stepIndex, totalSteps, steps }) {
                     {plans.map((plan) => (
                       <tr key={plan.plan_id} style={{ borderBottom: "1px solid var(--crown-border)" }}>
                         <td style={{ padding: "6px 14px" }}>{plan.name}</td>
-                        <td style={{ padding: "6px 14px", fontFamily: "monospace", fontSize: 11 }}>{plan.plan_id}</td>
+                        <td style={{ padding: "6px 14px", fontFamily: "var(--crown-font-mono)", fontSize: 11 }}>{plan.plan_id}</td>
                       </tr>
                     ))}
                   </tbody>

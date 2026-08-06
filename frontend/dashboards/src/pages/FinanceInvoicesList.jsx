@@ -7,9 +7,9 @@ import { csvEscape, downloadTextFile } from '../lib/export/csv';
 import { useAsyncPageData } from '../hooks/useAsyncPageData';
 import { usePersistentTableState } from '../hooks/usePersistentTableState';
 
-const SM = { fontSize: '0.75rem', padding: '3px 10px', cursor: 'pointer', borderRadius: '4px', border: '1px solid #1976d2', background: 'transparent', color: '#1976d2' };
-const SM_ON = { ...SM, background: '#1976d2', color: '#fff' };
-const BTN = { fontSize: '0.875rem', padding: '5px 15px', cursor: 'pointer', borderRadius: '4px', border: '1px solid #1976d2', background: 'transparent', color: '#1976d2' };
+const SM = { fontSize: '0.75rem', padding: '3px 10px', cursor: 'pointer', borderRadius: '4px', border: '1px solid var(--crown-compat-color-cb69c739b8)', background: 'transparent', color: 'var(--crown-compat-color-cb69c739b8)' };
+const SM_ON = { ...SM, background: 'var(--crown-compat-color-cb69c739b8)', color: 'var(--crown-compat-color-e08de71387)' };
+const BTN = { fontSize: '0.875rem', padding: '5px 15px', cursor: 'pointer', borderRadius: '4px', border: '1px solid var(--crown-compat-color-cb69c739b8)', background: 'transparent', color: 'var(--crown-compat-color-cb69c739b8)' };
 const ROW = { display: 'flex', gap: '8px', alignItems: 'center' };
 const LABEL = { margin: 0, fontSize: '0.875rem' };
 

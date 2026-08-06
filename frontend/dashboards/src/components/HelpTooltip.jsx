@@ -46,7 +46,7 @@ export function HelpTooltip({ slug, label = "Help" }) {
         className="help-tooltip-btn"
         style={{
           background: "none",
-          border: "1px solid #999",
+          border: "1px solid var(--crown-compat-color-3837b152fe)",
           borderRadius: "50%",
           width: 18,
           height: 18,
@@ -66,13 +66,13 @@ export function HelpTooltip({ slug, label = "Help" }) {
           style={{
             position: "absolute",
             zIndex: 999,
-            background: "#fff",
-            border: "1px solid #ddd",
+            background: "var(--crown-compat-color-e08de71387)",
+            border: "1px solid var(--crown-compat-color-4d32d7d0c0)",
             borderRadius: 4,
             padding: "10px 14px",
             minWidth: 220,
             maxWidth: 360,
-            boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+            boxShadow: "0 2px 8px var(--crown-compat-color-59b051b478)",
             top: 22,
             left: 0,
           }}

@@ -52,7 +52,7 @@ export default function Step2LoadStudents({ context, setContext, goNext, goPrev,
             placeholder={"00000000-0000-0000-0000-000000000000\n11111111-1111-1111-1111-111111111111"}
             value={raw}
             onChange={(e) => setRaw(e.target.value)}
-            style={{ width: "100%", fontFamily: "monospace", fontSize: 12 }}
+            style={{ width: "100%", fontFamily: "var(--crown-font-mono)", fontSize: 12 }}
           />
           <div style={{ fontSize: 11, color: "var(--crown-muted)", marginTop: 4 }}>
             Detected: {parseIds(raw).length} IDs

@@ -44,7 +44,7 @@ export default function Step2Codes({ context, setContext, goNext, goPrev, stepIn
           <label style={{ display: "flex", gap: 4, alignItems: "center", whiteSpace: "nowrap" }}>
             <input type="checkbox" checked={c.counts_absent} onChange={e => updateCode(i, "counts_absent", e.target.checked)} /> Absent
           </label>
-          <button className="crown-btn" onClick={() => removeCode(i)} style={{ color: "red" }}>✕</button>
+          <button className="crown-btn" onClick={() => removeCode(i)} style={{ color: "var(--crown-danger)" }}>✕</button>
         </div>
       ))}
       <button className="crown-btn" onClick={addCode}>+ Add Code</button>

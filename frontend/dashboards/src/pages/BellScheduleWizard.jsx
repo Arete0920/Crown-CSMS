@@ -101,13 +101,13 @@ function PhaseConfig({ onDone }) {
                 value={academicYearId}
                 onChange={e => setAcademicYearId(e.target.value)}
                 placeholder="UUID of the academic year"
-                style={{ width: "100%", padding: "6px 8px", boxSizing: "border-box", fontFamily: "monospace" }}
+                style={{ width: "100%", padding: "6px 8px", boxSizing: "border-box", fontFamily: "var(--crown-font-mono)" }}
               />
             </td>
           </tr>
         </tbody>
       </table>
-      {err && <p style={{ color: "red", marginTop: 12 }}>{err}</p>}
+      {err && <p style={{ color: "var(--crown-danger)", marginTop: 12 }}>{err}</p>}
       <button
         onClick={handleSubmit}
         disabled={busy}
@@ -156,7 +156,7 @@ function BlockTable({ blocks, onChange }) {
               <td style={{ ...tdS, textAlign: "center" }}><input type="checkbox" checked={b.is_instructional} onChange={e => update(i, "is_instructional", e.target.checked)} /></td>
               <td style={{ ...tdS, textAlign: "center" }}><input type="checkbox" checked={b.is_lunch} onChange={e => update(i, "is_lunch", e.target.checked)} /></td>
               <td style={{ ...tdS, textAlign: "center" }}><input type="checkbox" checked={b.is_break} onChange={e => update(i, "is_break", e.target.checked)} /></td>
-              <td style={tdS}><button onClick={() => removeBlock(i)} title="Remove block" style={{ color: "red", background: "none", border: "none", cursor: "pointer", fontSize: 16 }}>?</button></td>
+              <td style={tdS}><button onClick={() => removeBlock(i)} title="Remove block" style={{ color: "var(--crown-danger)", background: "none", border: "none", cursor: "pointer", fontSize: 16 }}>?</button></td>
             </tr>
           ))}
         </tbody>
@@ -231,7 +231,7 @@ function PhaseBlocks({ sessionId, scheduleMode, onDone }) {
                   style={{ padding: "4px 8px", width: 100, textTransform: "uppercase" }}
                 />
                 {templates.length > 2 && (
-                  <button onClick={() => removeTemplate(i)} style={{ color: "red", background: "none", border: "none", cursor: "pointer" }}>? Remove</button>
+                  <button onClick={() => removeTemplate(i)} style={{ color: "var(--crown-danger)", background: "none", border: "none", cursor: "pointer" }}>? Remove</button>
                 )}
               </>
             )}
@@ -244,7 +244,7 @@ function PhaseBlocks({ sessionId, scheduleMode, onDone }) {
         <button onClick={addTemplate} style={{ fontSize: 12, marginBottom: 16 }}>+ Add template</button>
       )}
 
-      {err && <p style={{ color: "red", marginTop: 8 }}>{err}</p>}
+      {err && <p style={{ color: "var(--crown-danger)", marginTop: 8 }}>{err}</p>}
       <div style={{ marginTop: 8 }}>
         <button
           onClick={handleSubmit}
@@ -277,7 +277,7 @@ function PhaseDone({ result, onReset }) {
           ].map(([k, v]) => (
             <tr key={k}>
               <td style={{ padding: "4px 16px 4px 0", fontWeight: 600 }}>{k}</td>
-              <td style={{ padding: "4px 0", fontFamily: "monospace", fontSize: 13 }}>{String(v)}</td>
+              <td style={{ padding: "4px 0", fontFamily: "var(--crown-font-mono)", fontSize: 13 }}>{String(v)}</td>
             </tr>
           ))}
         </tbody>

@@ -38,9 +38,9 @@ export default function Step6Verify({ context, setContext, stepIndex, totalSteps
   }
 
   function statusColor(status) {
-    if (status === "ok" || status === "pass") return "rgba(78,225,138,0.9)";
+    if (status === "ok" || status === "pass") return "var(--crown-compat-color-954ebe3140)";
     if (status === "warning") return "var(--crown-gold)";
-    return "rgb(255,120,120)";
+    return "var(--crown-compat-color-682b1df168)";
   }
 
   return (

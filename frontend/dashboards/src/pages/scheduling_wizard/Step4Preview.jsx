@@ -47,7 +47,7 @@ export default function Step4Preview({ context, goNext, goPrev, stepIndex, total
             <tbody>
               {courses.map((c, i) => (
                 <tr key={i} style={{ borderBottom: "1px solid var(--crown-border)" }}>
-                  <td style={{ padding: "6px 12px", fontFamily: "monospace", fontWeight: 600 }}>{c.code}</td>
+                  <td style={{ padding: "6px 12px", fontFamily: "var(--crown-font-mono)", fontWeight: 600 }}>{c.code}</td>
                   <td style={{ padding: "6px 12px" }}>{c.name}</td>
                   <td style={{ padding: "6px 12px", color: "var(--crown-muted)" }}>{c.department || "—"}</td>
                   <td style={{ padding: "6px 12px", textAlign: "right" }}>{c.credits}</td>
@@ -71,7 +71,7 @@ export default function Step4Preview({ context, goNext, goPrev, stepIndex, total
             <tbody>
               {sections.map((s, i) => (
                 <tr key={i} style={{ borderBottom: "1px solid var(--crown-border)" }}>
-                  <td style={{ padding: "6px 12px", fontFamily: "monospace", fontWeight: 600 }}>{s.course_code}</td>
+                  <td style={{ padding: "6px 12px", fontFamily: "var(--crown-font-mono)", fontWeight: 600 }}>{s.course_code}</td>
                   <td style={{ padding: "6px 12px" }}>{s.teacher_name || "—"}</td>
                   <td style={{ padding: "6px 12px" }}>{s.grade_band || "—"}</td>
                 </tr>

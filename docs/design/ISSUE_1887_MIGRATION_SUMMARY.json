@@ -1,0 +1,10 @@
+{
+  "centralizedTokenAdditions": 390,
+  "scopedCompatibilityAliases": 9,
+  "centralizedLiteralColors": 351,
+  "themeComponentLayerMovedTo": "frontend/dashboards/src/styles/launch-shell.css",
+  "expectedResponsiveScreenshots": 84,
+  "stylelintEmptyRootBlockRemoved": true,
+  "muiRuntimePaintRestored": true,
+  "certifiedSidebarContrastRestored": true
+}

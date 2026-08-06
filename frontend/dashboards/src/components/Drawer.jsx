@@ -28,7 +28,7 @@ export default function Drawer({
         style={{
           position: "fixed",
           inset: 0,
-          background: "rgba(0,0,0,0.25)",
+          background: "var(--crown-compat-color-5338a3860b)",
           zIndex: 1000,
           border: 0,
           padding: 0,
@@ -48,7 +48,7 @@ export default function Drawer({
           width,
           background: "var(--crown-surface)",
           zIndex: 1001,
-          boxShadow: "-8px 0 24px rgba(0,0,0,0.15)",
+          boxShadow: "-8px 0 24px var(--crown-compat-color-59b051b478)",
           display: "flex",
           flexDirection: "column",
           border: 0,

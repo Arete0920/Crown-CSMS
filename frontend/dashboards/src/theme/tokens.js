@@ -15,16 +15,16 @@ export const spacing = {
 };
 
 export const colors = {
-  primary: "#2A5EC4",
-  primaryStrong: "#1E4FAF",
-  primaryDeep: "#173F91",
-  success: "#1F7A45",
-  warning: "#A86A12",
-  danger: "#B4232C",
-  text: "#122033",
-  neutral: "#42566E",
-  border: "#D6E3F5",
-  background: "#F8FBFF",
-  backgroundSoft: "#EFF4FB",
-  paper: "#FFFFFF",
+  primary: "var(--crown-compat-color-c9956f1fed)",
+  primaryStrong: "var(--crown-compat-color-135d678f70)",
+  primaryDeep: "var(--crown-compat-color-2042bc3e08)",
+  success: "var(--crown-compat-color-65efe5a3cb)",
+  warning: "var(--crown-compat-color-2f1fd0ce54)",
+  danger: "var(--crown-compat-color-b68a16e75c)",
+  text: "var(--crown-compat-color-6fe185aec2)",
+  neutral: "var(--crown-compat-color-74d26b72f4)",
+  border: "var(--crown-compat-color-b89dd2451e)",
+  background: "var(--crown-compat-color-2c1d554440)",
+  backgroundSoft: "var(--crown-compat-color-d02714fbd1)",
+  paper: "var(--crown-compat-color-f2074b6cef)",
 };

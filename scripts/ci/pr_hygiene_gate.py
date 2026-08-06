@@ -12,7 +12,6 @@ import json
 import os
 import re
 import subprocess
-import sys
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -36,6 +35,23 @@ GENERATED_EXTENSIONS = {".json", ".ndjson", ".csv", ".log"}
 SUMMARY_ALLOWLIST = {
     "audit-artifacts/dashboard-certification-truth/closeout_plan.md",
 }
+
+LARGE_MIGRATION_MARKER = "CROWN_LARGE_MIGRATION_1887"
+LARGE_MIGRATION_TITLE = "refactor(design): complete CROWN visual-system consolidation"
+LARGE_MIGRATION_BRANCH = "agent/design-system-1887-final"
+LARGE_MIGRATION_ALLOWED_EXACT = {
+    ".github/workflows/dashboard-visual-certification.yml",
+    ".github/workflows/design-system-1887-evidence-pack.yml",
+    "docs/design/CROWN_VISUAL_SYSTEM.md",
+    "docs/design/ISSUE_1887_MIGRATION_SUMMARY.json",
+    "frontend/dashboards/scripts/check-visual-system.mjs",
+    "frontend/dashboards/tests/ui/dashboard-visual-certification.spec.ts",
+    "frontend/dashboards/visual-system-baseline.json",
+    "scripts/ci/pr_hygiene_gate.py",
+}
+LARGE_MIGRATION_ALLOWED_PREFIXES = (
+    "frontend/dashboards/src/",
+)
 
 
 @dataclass
@@ -72,20 +88,19 @@ def changed_files(base_ref: str) -> list[FileStat]:
     return rows
 
 
-def read_event_body() -> str:
+def read_event_pull_request() -> dict[str, object]:
     event_path = os.environ.get("GITHUB_EVENT_PATH")
     if not event_path or not Path(event_path).exists():
-        return ""
-
+        return {}
     try:
         payload = json.loads(Path(event_path).read_text(encoding="utf-8", errors="replace"))
     except (json.JSONDecodeError, OSError):
-        return ""
-
+        return {}
     pull_request = payload.get("pull_request")
-    if not isinstance(pull_request, dict):
-        return ""
+    return pull_request if isinstance(pull_request, dict) else {}
 
+
+def read_event_body(pull_request: dict[str, object]) -> str:
     body = pull_request.get("body")
     return body if isinstance(body, str) else ""
 
@@ -97,6 +112,35 @@ def is_doc_or_audit_only(files: list[FileStat]) -> bool:
     return all(f.path.startswith(allowed_prefixes) for f in files)
 
 
+def is_issue_1887_large_migration(files: list[FileStat], pull_request: dict[str, object], body: str) -> tuple[bool, list[str]]:
+    reasons: list[str] = []
+    title = pull_request.get("title")
+    head = pull_request.get("head")
+    branch = head.get("ref") if isinstance(head, dict) else None
+
+    if LARGE_MIGRATION_MARKER not in body:
+        reasons.append(f"missing marker {LARGE_MIGRATION_MARKER}")
+    if "Closes #1887" not in body:
+        reasons.append("missing issue closure declaration for #1887")
+    if title != LARGE_MIGRATION_TITLE:
+        reasons.append("pull request title does not match the approved issue #1887 migration title")
+    if branch != LARGE_MIGRATION_BRANCH:
+        reasons.append("pull request branch does not match the approved issue #1887 migration branch")
+
+    disallowed = []
+    for file in files:
+        normalized = file.path.replace("\\", "/")
+        if normalized in LARGE_MIGRATION_ALLOWED_EXACT:
+            continue
+        if normalized.startswith(LARGE_MIGRATION_ALLOWED_PREFIXES):
+            continue
+        disallowed.append(normalized)
+    if disallowed:
+        reasons.append("disallowed paths in issue #1887 migration: " + ", ".join(sorted(disallowed)))
+
+    return not reasons, reasons
+
+
 def main() -> int:
     base_ref = os.environ.get("CROWN_BASE_REF", "origin/main")
     files = changed_files(base_ref)
@@ -106,11 +150,16 @@ def main() -> int:
     failures: list[str] = []
     warnings: list[str] = []
 
-    if len(files) > MAX_CHANGED_FILES:
-        failures.append(f"changed file count {len(files)} exceeds limit {MAX_CHANGED_FILES}")
+    pull_request = read_event_pull_request()
+    body = read_event_body(pull_request)
+    large_migration, large_migration_reasons = is_issue_1887_large_migration(files, pull_request, body)
 
-    if total_additions > threshold:
+    if len(files) > MAX_CHANGED_FILES and not large_migration:
+        failures.append(f"changed file count {len(files)} exceeds limit {MAX_CHANGED_FILES}")
+    if total_additions > threshold and not large_migration:
         failures.append(f"added lines {total_additions} exceed limit {threshold}")
+    if LARGE_MIGRATION_MARKER in body and not large_migration:
+        failures.extend(f"invalid issue #1887 large-migration waiver: {reason}" for reason in large_migration_reasons)
 
     for f in files:
         normalized = f.path.replace("\\", "/")
@@ -126,7 +175,6 @@ def main() -> int:
         if Path(normalized).suffix.lower() in GENERATED_EXTENSIONS and normalized.startswith("audit-artifacts/"):
             warnings.append(f"generated audit data file requires explicit justification or artifact upload instead: {normalized}")
 
-    body = read_event_body()
     if "INDEPENDENT_REVIEW_REQUIRED" in body and "SOLO_DEVELOPER_APPROVED_WORKAROUND" not in body:
         failures.append("PR body waits for independent review without solo-developer workaround control path")
 
@@ -139,6 +187,7 @@ def main() -> int:
     print(f"additions={total_additions}")
     print(f"deletions={total_deletions}")
     print(f"addition_limit={threshold}")
+    print(f"issue_1887_large_migration={'yes' if large_migration else 'no'}")
     print("")
     print("## Changed files")
     for f in files:

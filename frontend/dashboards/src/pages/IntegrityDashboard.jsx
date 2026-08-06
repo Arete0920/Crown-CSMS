@@ -43,7 +43,7 @@ function CheckRow({ label, ok = true }) {
       <span style={{ fontSize: 16, color: ok ? 'var(--crown-ok)' : 'var(--crown-danger)' }}>
         {ok ? '[ok]' : '[x]'}
       </span>
-      <span style={{ fontSize: 13, fontFamily: 'monospace', color: 'var(--crown-ink)' }}>{label}</span>
+      <span style={{ fontSize: 13, fontFamily: "var(--crown-font-mono)", color: 'var(--crown-ink)' }}>{label}</span>
     </div>
   );
 }
@@ -64,7 +64,7 @@ function CopyButton({ text }) {
         marginLeft: 6,
         padding: '1px 7px',
         fontSize: 11,
-        fontFamily: 'monospace',
+        fontFamily: "var(--crown-font-mono)",
         color: copied ? 'var(--crown-ok)' : 'var(--crown-muted)',
         background: copied ? 'var(--crown-ok-bg)' : 'var(--crown-surface-2)',
         border: '1px solid',
@@ -90,7 +90,7 @@ function ShaLink({ sha, url }) {
           href={url}
           target="_blank"
           rel="noreferrer"
-          style={{ fontFamily: 'monospace', fontSize: 13, color: 'var(--crown-brand)', textDecoration: 'none', fontWeight: 600 }}
+          style={{ fontFamily: "var(--crown-font-mono)", fontSize: 13, color: 'var(--crown-brand)', textDecoration: 'none', fontWeight: 600 }}
         >
           {short}
         </a>
@@ -125,7 +125,7 @@ function CopyProofButton({ data }) {
         marginLeft: 8,
         padding: '2px 10px',
         fontSize: 11,
-        fontFamily: 'monospace',
+        fontFamily: "var(--crown-font-mono)",
         color: copied ? 'var(--crown-ok)' : 'var(--crown-brand)',
         background: copied ? 'var(--crown-ok-bg)' : 'var(--crown-surface-2)',
         border: '1px solid',
@@ -207,7 +207,7 @@ export default function IntegrityDashboard() {
                   </tr>
                   <tr>
                     <td style={{ padding: '6px 0', color: 'var(--crown-muted)' }}>Version</td>
-                    <td style={{ fontFamily: 'monospace', color: 'var(--crown-ink)' }}>{data.version}</td>
+                    <td style={{ fontFamily: "var(--crown-font-mono)", color: 'var(--crown-ink)' }}>{data.version}</td>
                   </tr>
                   <tr>
                     <td style={{ padding: '6px 0', color: 'var(--crown-muted)' }}>Checked at</td>
@@ -222,7 +222,7 @@ export default function IntegrityDashboard() {
                           href={data.github_tag_url}
                           target="_blank"
                           rel="noreferrer"
-                          style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--crown-brand)', textDecoration: 'none' }}
+                          style={{ fontFamily: "var(--crown-font-mono)", fontSize: 12, color: 'var(--crown-brand)', textDecoration: 'none' }}
                         >
                           {data.prod_deploy_tag}
                         </a>
@@ -260,7 +260,7 @@ export default function IntegrityDashboard() {
               <div key={gate.id} style={{ padding: '8px 0', borderBottom: '1px solid var(--crown-border)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
                   <span style={{ color: 'var(--crown-ok)', fontSize: 15 }}>?</span>
-                  <span style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--crown-ink)', fontWeight: 600 }}>{gate.id}</span>
+                  <span style={{ fontFamily: "var(--crown-font-mono)", fontSize: 12, color: 'var(--crown-ink)', fontWeight: 600 }}>{gate.id}</span>
                   <span style={{ fontSize: 11, color: 'var(--crown-muted)' }}>PR #{gate.added_pr}</span>
                 </div>
                 <div style={{ fontSize: 12, color: 'var(--crown-muted)', paddingLeft: 24 }}>{gate.description}</div>

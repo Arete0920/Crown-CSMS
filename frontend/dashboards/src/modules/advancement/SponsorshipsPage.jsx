@@ -86,7 +86,7 @@ export default function SponsorshipsPage() {
   }
 
   if (loading) return <p aria-busy="true">Loading sponsorship packages...</p>;
-  if (error) return <p role="alert" style={{ color: "red" }}>Error: {error}</p>;
+  if (error) return <p role="alert" style={{ color: "var(--crown-danger)" }}>Error: {error}</p>;
 
   return (
     <div aria-label="Sponsorship Packages">
@@ -96,7 +96,7 @@ export default function SponsorshipsPage() {
       </div>
 
       {showForm && (
-        <form onSubmit={handleCreate} aria-label="Create Sponsorship Package" style={{ marginBottom: 20, padding: 16, border: "1px solid #e2e8f0", borderRadius: 8 }}>
+        <form onSubmit={handleCreate} aria-label="Create Sponsorship Package" style={{ marginBottom: 20, padding: 16, border: "1px solid var(--crown-compat-color-3b313dfb66)", borderRadius: 8 }}>
           <h3 style={{ margin: "0 0 12px" }}>New Sponsorship Package</h3>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             <Field label="Package Name *" value={form.name} onChange={(v) => setForm({ ...form, name: v })} required />
@@ -104,13 +104,13 @@ export default function SponsorshipsPage() {
             <Field label="Placement Type" value={form.placement_type} onChange={(v) => setForm({ ...form, placement_type: v })} />
             <Field label="Duration" value={form.duration} onChange={(v) => setForm({ ...form, duration: v })} />
             <div style={{ gridColumn: "1 / -1" }}>
-              <label htmlFor="sponsorship-description" style={{ fontSize: 12, color: "#64748b", display: "block", marginBottom: 4 }}>Description</label>
+              <label htmlFor="sponsorship-description" style={{ fontSize: 12, color: "var(--crown-compat-color-6b3d6d843d)", display: "block", marginBottom: 4 }}>Description</label>
               <textarea
                 id="sponsorship-description"
                 value={form.description}
                 onChange={(e) => setForm({ ...form, description: e.target.value })}
                 rows={3}
-                style={{ width: "100%", padding: "8px 10px", border: "1px solid #cbd5e1", borderRadius: 6, boxSizing: "border-box", resize: "vertical" }}
+                style={{ width: "100%", padding: "8px 10px", border: "1px solid var(--crown-compat-color-e2442d83b3)", borderRadius: 6, boxSizing: "border-box", resize: "vertical" }}
               />
             </div>
           </div>
@@ -122,25 +122,25 @@ export default function SponsorshipsPage() {
       )}
 
       {packages.length === 0 ? (
-        <p style={{ color: "#94a3b8", textAlign: "center", padding: 32 }}>No sponsorship packages yet.</p>
+        <p style={{ color: "var(--crown-compat-color-b5e2bc59ff)", textAlign: "center", padding: 32 }}>No sponsorship packages yet.</p>
       ) : (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 16 }}>
           {packages.map((pkg) => (
-            <article key={pkg.id} aria-label={pkg.name} style={{ border: "1px solid #e2e8f0", borderRadius: 8, padding: 20, background: "#fff" }}>
+            <article key={pkg.id} aria-label={pkg.name} style={{ border: "1px solid var(--crown-compat-color-3b313dfb66)", borderRadius: 8, padding: 20, background: "var(--crown-compat-color-e08de71387)" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                 <h3 style={{ margin: 0, fontSize: 16 }}>{pkg.name}</h3>
-                <span style={{ fontWeight: 700, fontSize: 20, color: "#6366f1" }}>${Number(pkg.price).toLocaleString()}</span>
+                <span style={{ fontWeight: 700, fontSize: 20, color: "var(--crown-compat-color-3398ce8a61)" }}>${Number(pkg.price).toLocaleString()}</span>
               </div>
-              {pkg.description && <p style={{ margin: "8px 0 4px", fontSize: 13, color: "#475569" }}>{pkg.description}</p>}
-              <div style={{ marginTop: 8, fontSize: 12, color: "#64748b" }}>
+              {pkg.description && <p style={{ margin: "8px 0 4px", fontSize: 13, color: "var(--crown-compat-color-833631aa32)" }}>{pkg.description}</p>}
+              <div style={{ marginTop: 8, fontSize: 12, color: "var(--crown-compat-color-6b3d6d843d)" }}>
                 {pkg.placement_type && <div>Placement: <strong>{pkg.placement_type}</strong></div>}
                 {pkg.duration && <div>Duration: <strong>{pkg.duration}</strong></div>}
               </div>
               <div style={{ marginTop: 12 }}>
                 <span style={{
                   display: "inline-block", padding: "2px 8px", borderRadius: 12, fontSize: 11, fontWeight: 600,
-                  background: pkg.active ? "#dcfce7" : "#f1f5f9",
-                  color: pkg.active ? "#16a34a" : "#94a3b8",
+                  background: pkg.active ? "var(--crown-compat-color-64033be9a6)" : "var(--crown-compat-color-4702b16c05)",
+                  color: pkg.active ? "var(--crown-compat-color-3c5c1ab6c5)" : "var(--crown-compat-color-b5e2bc59ff)",
                 }}>
                   {pkg.active ? "Active" : "Inactive"}
                 </span>
@@ -158,14 +158,14 @@ function Field({ label, value, onChange, type = "text", required = false }) {
 
   return (
     <div>
-      <label htmlFor={inputId} style={{ fontSize: 12, color: "#64748b", display: "block", marginBottom: 4 }}>{label}</label>
+      <label htmlFor={inputId} style={{ fontSize: 12, color: "var(--crown-compat-color-6b3d6d843d)", display: "block", marginBottom: 4 }}>{label}</label>
       <input
         id={inputId}
         type={type}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         required={required}
-        style={{ width: "100%", padding: "8px 10px", border: "1px solid #cbd5e1", borderRadius: 6, boxSizing: "border-box" }}
+        style={{ width: "100%", padding: "8px 10px", border: "1px solid var(--crown-compat-color-e2442d83b3)", borderRadius: 6, boxSizing: "border-box" }}
       />
     </div>
   );

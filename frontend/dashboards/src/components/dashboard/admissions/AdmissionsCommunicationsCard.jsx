@@ -31,7 +31,7 @@ export default function AdmissionsCommunicationsCard() {
             key={item.title}
             style={{
               border: '1px solid var(--crown-border)',
-              background: '#f8fafc',
+              background: 'var(--crown-compat-color-46461f86fd)',
               borderRadius: 10,
               padding: 10,
             }}
