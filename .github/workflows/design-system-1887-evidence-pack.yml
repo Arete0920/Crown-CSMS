@@ -1,0 +1,52 @@
+name: Design System 1887 Evidence Pack
+
+on:
+  push:
+    branches:
+      - agent/design-system-1887-final
+    paths:
+      - .github/workflows/design-system-1887-evidence-pack.yml
+
+permissions:
+  contents: read
+
+jobs:
+  evidence:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout final branch
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22.22.0'
+          cache: npm
+          cache-dependency-path: frontend/dashboards/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend/dashboards
+        run: npm ci
+
+      - name: Install Chromium
+        working-directory: frontend/dashboards
+        run: npx playwright install --with-deps chromium
+
+      - name: Run 84-image visual certification
+        working-directory: frontend/dashboards
+        run: npx playwright test tests/ui/dashboard-visual-certification.spec.ts --workers=1 --reporter=line
+
+      - name: Verify manifest and package evidence
+        working-directory: frontend/dashboards
+        run: |
+          node -e 'const m=require("./test-results/visual-dashboard-review/manifest.json"); if(m.expectedScreenshots!==84 || m.screenshots.length!==84) throw new Error(`Expected 84 screenshots; received ${m.screenshots.length}`)'
+          tar -czf /tmp/design-system-1887-visual-proof.tgz -C test-results visual-dashboard-review
+
+      - name: Upload evidence archive
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: design-system-1887-visual-proof
+          path: /tmp/design-system-1887-visual-proof.tgz
+          if-no-files-found: error
+          retention-days: 14
