@@ -117,7 +117,7 @@ export function TranscriptRO() {
                 </tr>
                 <tr>
                   <td style={{ paddingRight: 16, fontWeight: 500 }}>Student ID:</td>
-                  <td style={{ fontFamily: "monospace", fontSize: 12 }}>
+                  <td style={{ fontFamily: "var(--crown-font-mono)", fontSize: 12 }}>
                     {transcript.student.student_id}
                   </td>
                 </tr>

@@ -640,7 +640,7 @@ function JourneyStagePanel({ context, stepIndex }) {
         borderRadius: 8,
         padding: "10px 12px",
         marginBottom: 12,
-        background: "var(--crown-bg, #f8fafc)",
+        background: "var(--crown-bg, var(--crown-compat-color-46461f86fd))",
       }}
     >
       <div style={{ marginBottom: 6, fontSize: 12, color: "var(--crown-muted)" }}>
@@ -691,7 +691,7 @@ function StepFrame({
             borderRadius: 8,
             padding: "10px 12px",
             marginBottom: 12,
-            background: "var(--crown-bg, #f8fafc)",
+            background: "var(--crown-bg, var(--crown-compat-color-46461f86fd))",
             fontSize: 12,
           }}
         >
@@ -700,7 +700,7 @@ function StepFrame({
           </div>
           <div style={{ display: "grid", gap: 4 }}>
             {readiness.checkpoints.map((checkpoint) => (
-              <div key={checkpoint.label} style={{ color: checkpoint.done ? "var(--crown-success, #1b8f4b)" : "var(--crown-muted)" }}>
+              <div key={checkpoint.label} style={{ color: checkpoint.done ? "var(--crown-success, var(--crown-compat-color-e5727f4aca))" : "var(--crown-muted)" }}>
                 {checkpoint.done ? "✓" : "○"} {checkpoint.label}
               </div>
             ))}

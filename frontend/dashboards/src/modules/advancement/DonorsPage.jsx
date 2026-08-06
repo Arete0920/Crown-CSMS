@@ -95,7 +95,7 @@ export default function DonorsPage() {
   };
 
   if (loading) return <p aria-busy="true">Loading donors...</p>;
-  if (error) return <p role="alert" style={{ color: "red" }}>Error: {error}</p>;
+  if (error) return <p role="alert" style={{ color: "var(--crown-danger)" }}>Error: {error}</p>;
 
   return (
     <div aria-label="Donors">
@@ -109,32 +109,32 @@ export default function DonorsPage() {
         placeholder="Search by name, email, or organization..."
         value={search}
         onChange={(event) => setSearch(event.target.value)}
-        style={{ width: "100%", padding: "8px 12px", marginBottom: 16, border: "1px solid #e2e8f0", borderRadius: 6 }}
+        style={{ width: "100%", padding: "8px 12px", marginBottom: 16, border: "1px solid var(--crown-compat-color-3b313dfb66)", borderRadius: 6 }}
       />
 
       {showForm && (
-        <form onSubmit={handleCreate} aria-label="Add Donor Form" style={{ marginBottom: 20, padding: 16, border: "1px solid #e2e8f0", borderRadius: 8 }}>
+        <form onSubmit={handleCreate} aria-label="Add Donor Form" style={{ marginBottom: 20, padding: 16, border: "1px solid var(--crown-compat-color-3b313dfb66)", borderRadius: 8 }}>
           <h3 style={{ margin: "0 0 12px" }}>New Donor</h3>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             <div>
-              <label htmlFor="donor-name" style={{ fontSize: 12, color: "#64748b", display: "block", marginBottom: 4 }}>Full Name *</label>
+              <label htmlFor="donor-name" style={{ fontSize: 12, color: "var(--crown-compat-color-6b3d6d843d)", display: "block", marginBottom: 4 }}>Full Name *</label>
               <input id="donor-name" type="text" value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} required style={INPUT_STYLE} />
             </div>
             <div>
-              <label htmlFor="donor-email" style={{ fontSize: 12, color: "#64748b", display: "block", marginBottom: 4 }}>Email</label>
+              <label htmlFor="donor-email" style={{ fontSize: 12, color: "var(--crown-compat-color-6b3d6d843d)", display: "block", marginBottom: 4 }}>Email</label>
               <input id="donor-email" type="email" value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} style={INPUT_STYLE} />
             </div>
             <div>
-              <label htmlFor="donor-phone" style={{ fontSize: 12, color: "#64748b", display: "block", marginBottom: 4 }}>Phone</label>
+              <label htmlFor="donor-phone" style={{ fontSize: 12, color: "var(--crown-compat-color-6b3d6d843d)", display: "block", marginBottom: 4 }}>Phone</label>
               <input id="donor-phone" type="text" value={form.phone} onChange={(event) => setForm({ ...form, phone: event.target.value })} style={INPUT_STYLE} />
             </div>
             <div>
-              <label htmlFor="donor-organization" style={{ fontSize: 12, color: "#64748b", display: "block", marginBottom: 4 }}>Organization</label>
+              <label htmlFor="donor-organization" style={{ fontSize: 12, color: "var(--crown-compat-color-6b3d6d843d)", display: "block", marginBottom: 4 }}>Organization</label>
               <input id="donor-organization" type="text" value={form.organization} onChange={(event) => setForm({ ...form, organization: event.target.value })} style={INPUT_STYLE} />
             </div>
             <div>
-              <label htmlFor="donor-type" style={{ fontSize: 12, color: "#64748b", display: "block", marginBottom: 4 }}>Donor Type</label>
-              <select id="donor-type" value={form.donor_type} onChange={(event) => setForm({ ...form, donor_type: event.target.value })} style={{ width: "100%", padding: "8px 10px", border: "1px solid #cbd5e1", borderRadius: 6 }}>
+              <label htmlFor="donor-type" style={{ fontSize: 12, color: "var(--crown-compat-color-6b3d6d843d)", display: "block", marginBottom: 4 }}>Donor Type</label>
+              <select id="donor-type" value={form.donor_type} onChange={(event) => setForm({ ...form, donor_type: event.target.value })} style={{ width: "100%", padding: "8px 10px", border: "1px solid var(--crown-compat-color-e2442d83b3)", borderRadius: 6 }}>
                 {DONOR_TYPES.map((type) => <option key={type} value={type}>{type.charAt(0).toUpperCase() + type.slice(1)}</option>)}
               </select>
             </div>
@@ -156,7 +156,7 @@ export default function DonorsPage() {
         </thead>
         <tbody>
           {filtered.length === 0 && (
-            <tr><td colSpan={5} style={{ padding: 16, textAlign: "center", color: "#94a3b8" }}>No donors found.</td></tr>
+            <tr><td colSpan={5} style={{ padding: 16, textAlign: "center", color: "var(--crown-compat-color-b5e2bc59ff)" }}>No donors found.</td></tr>
           )}
           {filtered.map((donor) => (
             <tr key={donor.id}>
@@ -173,6 +173,6 @@ export default function DonorsPage() {
   );
 }
 
-const INPUT_STYLE = { width: "100%", padding: "8px 10px", border: "1px solid #cbd5e1", borderRadius: 6, boxSizing: "border-box" };
-const TH = { padding: "8px 12px", textAlign: "left", borderBottom: "2px solid #e2e8f0", fontSize: 13, color: "#475569" };
-const TD = { padding: "8px 12px", borderBottom: "1px solid #f1f5f9", fontSize: 14 };
+const INPUT_STYLE = { width: "100%", padding: "8px 10px", border: "1px solid var(--crown-compat-color-e2442d83b3)", borderRadius: 6, boxSizing: "border-box" };
+const TH = { padding: "8px 12px", textAlign: "left", borderBottom: "2px solid var(--crown-compat-color-3b313dfb66)", fontSize: 13, color: "var(--crown-compat-color-833631aa32)" };
+const TD = { padding: "8px 12px", borderBottom: "1px solid var(--crown-compat-color-4702b16c05)", fontSize: 14 };

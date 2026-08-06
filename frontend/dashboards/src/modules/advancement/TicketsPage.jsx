@@ -90,7 +90,7 @@ export default function TicketsPage() {
   }
 
   if (loading) return <p aria-busy="true">Loading tickets</p>;
-  if (error)   return <p role="alert" style={{ color: "red" }}>Error: {error}</p>;
+  if (error)   return <p role="alert" style={{ color: "var(--crown-danger)" }}>Error: {error}</p>;
 
   return (
     <div aria-label="Tickets">
@@ -106,7 +106,7 @@ export default function TicketsPage() {
           id="event-filter"
           value={filterEvent}
           onChange={(e) => handleFilterChange(e.target.value)}
-          style={{ padding: "6px 10px", border: "1px solid #cbd5e1", borderRadius: 6 }}
+          style={{ padding: "6px 10px", border: "1px solid var(--crown-compat-color-e2442d83b3)", borderRadius: 6 }}
         >
           <option value="">All Events</option>
           {events.map((ev) => <option key={ev.id} value={ev.id}>{ev.name}</option>)}
@@ -115,13 +115,13 @@ export default function TicketsPage() {
 
       {/* Purchase form */}
       {showPurchase && (
-        <form onSubmit={handlePurchase} aria-label="Purchase Ticket Form" style={{ marginBottom: 20, padding: 16, border: "1px solid #e2e8f0", borderRadius: 8 }}>
+        <form onSubmit={handlePurchase} aria-label="Purchase Ticket Form" style={{ marginBottom: 20, padding: 16, border: "1px solid var(--crown-compat-color-3b313dfb66)", borderRadius: 8 }}>
           <h3 style={{ margin: "0 0 12px" }}>Purchase Ticket</h3>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
             <div>
-              <label htmlFor="ticket-purchase-event" style={{ fontSize: 12, color: "#64748b", display: "block", marginBottom: 4 }}>Event *</label>
+              <label htmlFor="ticket-purchase-event" style={{ fontSize: 12, color: "var(--crown-compat-color-6b3d6d843d)", display: "block", marginBottom: 4 }}>Event *</label>
               <select id="ticket-purchase-event" required value={form.event_id} onChange={(e) => setForm({ ...form, event_id: e.target.value })}
-                style={{ width: "100%", padding: "8px 10px", border: "1px solid #cbd5e1", borderRadius: 6 }}>
+                style={{ width: "100%", padding: "8px 10px", border: "1px solid var(--crown-compat-color-e2442d83b3)", borderRadius: 6 }}>
                 <option value="">Select event</option>
                 {events.map((ev) => <option key={ev.id} value={ev.id}>{ev.name}</option>)}
               </select>
@@ -146,7 +146,7 @@ export default function TicketsPage() {
         </thead>
         <tbody>
           {tickets.length === 0 && (
-            <tr><td colSpan={6} style={{ padding: 16, textAlign: "center", color: "#94a3b8" }}>No tickets found.</td></tr>
+            <tr><td colSpan={6} style={{ padding: 16, textAlign: "center", color: "var(--crown-compat-color-b5e2bc59ff)" }}>No tickets found.</td></tr>
           )}
           {tickets.map((t) => (
             <tr key={t.id}>
@@ -157,8 +157,8 @@ export default function TicketsPage() {
               <td style={TD}>
                 <span style={{
                   display: "inline-block", padding: "2px 8px", borderRadius: 12, fontSize: 12, fontWeight: 600,
-                  background: t.checked_in ? "#dcfce7" : "#fef9c3",
-                  color: t.checked_in ? "#16a34a" : "#92400e",
+                  background: t.checked_in ? "var(--crown-compat-color-64033be9a6)" : "var(--crown-compat-color-7ab95ffc4e)",
+                  color: t.checked_in ? "var(--crown-compat-color-3c5c1ab6c5)" : "var(--crown-compat-color-90b141cff8)",
                 }}>
                   {t.checked_in ? "Checked In" : "Not Checked In"}
                 </span>
@@ -186,12 +186,12 @@ export default function TicketsPage() {
 function Field({ label, value, onChange, type = "text", required = false }) {
   return (
     <div>
-      <label style={{ fontSize: 12, color: "#64748b", display: "block", marginBottom: 4 }}>{label}</label>
+      <label style={{ fontSize: 12, color: "var(--crown-compat-color-6b3d6d843d)", display: "block", marginBottom: 4 }}>{label}</label>
       <input type={type} value={value} onChange={(e) => onChange(e.target.value)} required={required}
-        style={{ width: "100%", padding: "8px 10px", border: "1px solid #cbd5e1", borderRadius: 6, boxSizing: "border-box" }} />
+        style={{ width: "100%", padding: "8px 10px", border: "1px solid var(--crown-compat-color-e2442d83b3)", borderRadius: 6, boxSizing: "border-box" }} />
     </div>
   );
 }
 
-const TH = { padding: "8px 12px", textAlign: "left", borderBottom: "2px solid #e2e8f0", fontSize: 13, color: "#475569" };
-const TD = { padding: "8px 12px", borderBottom: "1px solid #f1f5f9", fontSize: 14 };
+const TH = { padding: "8px 12px", textAlign: "left", borderBottom: "2px solid var(--crown-compat-color-3b313dfb66)", fontSize: 13, color: "var(--crown-compat-color-833631aa32)" };
+const TD = { padding: "8px 12px", borderBottom: "1px solid var(--crown-compat-color-4702b16c05)", fontSize: 14 };

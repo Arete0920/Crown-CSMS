@@ -38,324 +38,369 @@
   --crown-shadow-soft: 0 8px 24px rgba(23, 63, 145, 0.07);
   --crown-shadow-card: 0 14px 34px rgba(23, 63, 145, 0.09);
   --crown-shadow-lift: 0 20px 48px rgba(23, 63, 145, 0.12);
-}
 
-html {
-  background: var(--crown-bg);
-}
-
-body {
-  background:
-    radial-gradient(circle at 10% 0%, rgba(30, 79, 175, 0.12), transparent 32rem),
-    radial-gradient(circle at 90% 5%, rgba(194, 138, 36, 0.08), transparent 30rem),
-    linear-gradient(180deg, var(--crown-bg) 0%, var(--crown-bg-soft) 100%);
-  color: var(--crown-text);
-  text-rendering: optimizeLegibility;
-}
-
-a {
-  color: var(--crown-primary-strong);
-  text-decoration-thickness: 2px;
-  text-underline-offset: 3px;
-}
-
-button,
-[role="button"],
-a,
-input,
-select,
-textarea {
-  transition:
-    transform 140ms ease,
-    box-shadow 140ms ease,
-    border-color 140ms ease,
-    background-color 140ms ease,
-    color 140ms ease;
-}
-
-button:focus-visible,
-a:focus-visible,
-input:focus-visible,
-select:focus-visible,
-textarea:focus-visible {
-  outline: 3px solid rgba(59, 130, 246, 0.34);
-  outline-offset: 2px;
-}
-
-.crown-page {
-  min-height: 100vh;
-  background:
-    radial-gradient(circle at 15% 10%, rgba(59, 130, 246, 0.13), transparent 28rem),
-    radial-gradient(circle at 85% 0%, rgba(139, 92, 246, 0.08), transparent 32rem),
-    linear-gradient(180deg, var(--crown-bg) 0%, var(--crown-bg-soft) 100%);
-  color: var(--crown-text);
-}
-
-.crown-shell {
-  width: min(1440px, calc(100% - 32px));
-  margin: 0 auto;
-  padding: 24px 0 48px;
-}
-
-.crown-card {
-  background: rgba(255, 255, 255, 0.94);
-  border: 1px solid var(--crown-border);
-  border-radius: var(--crown-radius-lg);
-  box-shadow: var(--crown-shadow-card);
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
-}
-
-.crown-card-soft {
-  background: linear-gradient(180deg, #ffffff 0%, var(--crown-surface-soft) 100%);
-  border: 1px solid var(--crown-border);
-  border-radius: var(--crown-radius-lg);
-  box-shadow: var(--crown-shadow-soft);
-}
-
-.crown-card-section {
-  padding: 22px;
-}
-
-.crown-page-header {
-  display: flex;
-  justify-content: space-between;
-  gap: 20px;
-  align-items: flex-start;
-  margin-bottom: 24px;
-}
-
-.crown-eyebrow {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  color: var(--crown-primary-strong);
-  background: var(--crown-primary-faint);
-  border: 1px solid var(--crown-border);
-  border-radius: 999px;
-  padding: 6px 10px;
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-.crown-title {
-  margin: 10px 0 6px;
-  color: var(--crown-text);
-  font-size: clamp(28px, 3vw, 42px);
-  line-height: 1.05;
-  font-weight: 850;
-  letter-spacing: -0.035em;
-}
-
-.crown-subtitle {
-  max-width: 780px;
-  color: var(--crown-muted);
-  font-size: 16px;
-  line-height: 1.6;
-}
-
-.crown-grid {
-  display: grid;
-  gap: 18px;
-}
-
-.crown-grid-2 {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.crown-grid-3 {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-
-.crown-grid-4 {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-}
-
-.crown-kpi {
-  padding: 18px;
-}
-
-.crown-kpi-label {
-  color: var(--crown-muted);
-  font-size: 13px;
-  font-weight: 800;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-}
-
-.crown-kpi-value {
-  margin-top: 8px;
-  color: var(--crown-text);
-  font-size: 34px;
-  line-height: 1;
-  font-weight: 850;
-  letter-spacing: -0.035em;
-}
-
-.crown-kpi-context {
-  margin-top: 10px;
-  color: var(--crown-muted);
-  font-size: 14px;
-  line-height: 1.45;
-}
-
-.crown-button-primary {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid var(--crown-primary-strong);
-  border-radius: 14px;
-  background: linear-gradient(180deg, var(--crown-primary) 0%, var(--crown-primary-strong) 100%);
-  color: #ffffff;
-  min-height: 42px;
-  padding: 10px 16px;
-  font-weight: 800;
-  box-shadow: 0 10px 24px rgba(37, 99, 235, 0.22);
-  text-decoration: none;
-}
-
-.crown-button-primary:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 14px 32px rgba(37, 99, 235, 0.28);
-}
-
-.crown-button-secondary {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid var(--crown-border-strong);
-  border-radius: 14px;
-  background: #ffffff;
-  color: var(--crown-primary-strong);
-  min-height: 42px;
-  padding: 10px 16px;
-  font-weight: 800;
-  text-decoration: none;
-}
-
-.crown-button-secondary:hover {
-  background: var(--crown-primary-faint);
-  transform: translateY(-1px);
-}
-
-.crown-status {
-  display: inline-flex;
-  align-items: center;
-  border-radius: 999px;
-  padding: 5px 10px;
-  font-size: 12px;
-  font-weight: 800;
-  border: 1px solid transparent;
-  white-space: nowrap;
-}
-
-.crown-status-pass {
-  background: var(--crown-success-soft);
-  color: #166534;
-  border-color: #bbf7d0;
-}
-
-.crown-status-review {
-  background: var(--crown-warning-soft);
-  color: #92400e;
-  border-color: #fde68a;
-}
-
-.crown-status-fail {
-  background: var(--crown-danger-soft);
-  color: #991b1b;
-  border-color: #fecaca;
-}
-
-.crown-table {
-  width: 100%;
-  border-collapse: separate;
-  border-spacing: 0;
-  overflow: hidden;
-  border: 1px solid var(--crown-border);
-  border-radius: var(--crown-radius-lg);
-  background: #ffffff;
-}
-
-.crown-table th {
-  background: var(--crown-primary-faint);
-  color: var(--crown-text);
-  text-align: left;
-  font-size: 12px;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  padding: 12px 14px;
-  border-bottom: 1px solid var(--crown-border);
-}
-
-.crown-table td {
-  padding: 13px 14px;
-  border-bottom: 1px solid var(--crown-border);
-  color: var(--crown-text);
-}
-
-.crown-empty-state {
-  padding: 32px;
-  text-align: center;
-  border: 1px dashed var(--crown-border-strong);
-  border-radius: var(--crown-radius-lg);
-  background: rgba(255, 255, 255, 0.78);
-}
-
-.crown-form-control {
-  width: 100%;
-  border: 1px solid var(--crown-border-strong);
-  border-radius: 14px;
-  background: #ffffff;
-  color: var(--crown-text);
-  min-height: 42px;
-  padding: 10px 12px;
-}
-
-.crown-form-label {
-  display: block;
-  color: var(--crown-text);
-  font-size: 13px;
-  font-weight: 800;
-  margin-bottom: 6px;
-}
-
-.crown-form-help {
-  color: var(--crown-muted);
-  font-size: 13px;
-  line-height: 1.45;
-  margin-top: 6px;
-}
-
-@media (max-width: 1080px) {
-  .crown-grid-4 {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .crown-grid-3 {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (max-width: 720px) {
-  .crown-shell {
-    width: min(100% - 20px, 1440px);
-    padding-top: 16px;
-  }
-
-  .crown-grid-2,
-  .crown-grid-3,
-  .crown-grid-4 {
-    grid-template-columns: 1fr;
-  }
-
-  .crown-page-header {
-    flex-direction: column;
-  }
-
-  .crown-title {
-    font-size: 30px;
-  }
+  /* Issue #1887 compatibility authority. Exact values preserve reviewed rendering.
+     New work must prefer the semantic tokens defined above. */
+  --crown-compat-color-00ebd71c27: #1d4a9b;
+  --crown-compat-color-00f71480c5: rgba(12, 44, 105, 0.48);
+  --crown-compat-color-014f984c0f: rgba(24, 90, 189, 0.35);
+  --crown-compat-color-0299833f91: rgb(31 58 95 / 4%);
+  --crown-compat-color-039a117702: rgb(176 141 87 / 4%);
+  --crown-compat-color-04fd6eaa1f: #f5f3ff;
+  --crown-compat-color-054a720537: rgba(216, 230, 255, 0.7);
+  --crown-compat-color-0578810107: rgba(198,165,74,0);
+  --crown-compat-color-05f1c462d9: #f7b7b7;
+  --crown-compat-color-09dff71fa9: #81c784;
+  --crown-compat-color-09e540a84f: rgba(11, 29, 49, 0.12);
+  --crown-compat-color-0b9e16331c: rgba(30, 41, 59, 0.72);
+  --crown-compat-color-0d4e639a52: rgba(255, 255, 255, 0.28);
+  --crown-compat-color-0dcdbfad72: #b42318;
+  --crown-compat-color-0e5f72a097: rgba(120, 170, 255, 0.6);
+  --crown-compat-color-0e684e5160: #0f172a;
+  --crown-compat-color-0e8825e7fc: rgba(255, 255, 255, 0.9);
+  --crown-compat-color-0ee823eb5e: #f7fbff;
+  --crown-compat-color-0f64de779d: #1C3550;
+  --crown-compat-color-0fa95da1ce: rgba(0, 0, 0, 0.15);
+  --crown-compat-color-1248f9ab2f: rgba(255,255,255,0.8);
+  --crown-compat-color-135d678f70: #1e4faf;
+  --crown-compat-color-13b406d84d: #b45309;
+  --crown-compat-color-14a5dafae2: #ffebee;
+  --crown-compat-color-152e1b478d: #fff3cd;
+  --crown-compat-color-1588a009e3: #7a5317;
+  --crown-compat-color-1601ae143a: #2841;
+  --crown-compat-color-166130d001: #edf4ff;
+  --crown-compat-color-16ab3935d5: #78350f;
+  --crown-compat-color-16b1bb0c6f: rgba(23, 63, 145, 0.12);
+  --crown-compat-color-16cf596261: rgba(15, 23, 42, 0.08);
+  --crown-compat-color-177804c225: #9ca3af;
+  --crown-compat-color-17a67ab8c6: #CBD8E6;
+  --crown-compat-color-1bc883d299: rgba(255, 255, 255, 0.55);
+  --crown-compat-color-1c758dd42e: rgba(100, 175, 255, 0.6);
+  --crown-compat-color-1ce6ed74e4: rgba(37, 99, 235, 0.18);
+  --crown-compat-color-1d4a6b66ff: #1e40af;
+  --crown-compat-color-1d776348c5: rgba(23, 63, 145, 0.24);
+  --crown-compat-color-1e4f21b1d6: #fffaf0;
+  --crown-compat-color-1eceb30284: #f4f8fd;
+  --crown-compat-color-202a5f0a18: #eef4fb;
+  --crown-compat-color-2042bc3e08: #173F91;
+  --crown-compat-color-208292b733: rgba(255, 255, 255, 0.12);
+  --crown-compat-color-215a182c64: rgba(255, 255, 255, 0.65);
+  --crown-compat-color-21b23e7ef3: #183556;
+  --crown-compat-color-22028368ab: #fecaca;
+  --crown-compat-color-23331bceb6: #315da9;
+  --crown-compat-color-239fda32ef: rgba(252, 211, 77, 0.7);
+  --crown-compat-color-23a9d88c00: rgba(37, 99, 235, 0.14);
+  --crown-compat-color-250ad8267b: #5f6f89;
+  --crown-compat-color-251a7b8506: #f59e0b;
+  --crown-compat-color-25396490a2: #fcd34d;
+  --crown-compat-color-26c4c50b73: #ffc107;
+  --crown-compat-color-26eaf932d3: rgba(255,255,255,0.65);
+  --crown-compat-color-27194e3acc: rgba(16, 124, 65, 0.35);
+  --crown-compat-color-283a98ed21: rgba(253, 230, 138, 0.92);
+  --crown-compat-color-2bfbe87360: rgba(255,255,255,0.2);
+  --crown-compat-color-2c1d554440: #f8fbff;
+  --crown-compat-color-2c565f8f06: #a7f3d0;
+  --crown-compat-color-2d49ad97a9: #f0f8ff;
+  --crown-compat-color-2d55e9cc1b: rgba(0,0,0,.35);
+  --crown-compat-color-2f1fd0ce54: #A86A12;
+  --crown-compat-color-2fcc0c461d: #1A6FA8;
+  --crown-compat-color-2ffcf011e0: #274C91;
+  --crown-compat-color-30abb8ea87: #ff9800;
+  --crown-compat-color-3398ce8a61: #6366f1;
+  --crown-compat-color-367b305ec0: rgba(59, 130, 246, 0.18);
+  --crown-compat-color-3837b152fe: #999;
+  --crown-compat-color-3871da3420: #dc2626;
+  --crown-compat-color-3a473dceb4: rgb(31 58 95 / 6%);
+  --crown-compat-color-3ad3168e09: #d6e2ee;
+  --crown-compat-color-3b083f95dc: rgba(248, 251, 255, 0.94);
+  --crown-compat-color-3b313dfb66: #e2e8f0;
+  --crown-compat-color-3b4c2494f3: rgba(255, 255, 255, 0.98);
+  --crown-compat-color-3c5c1ab6c5: #16a34a;
+  --crown-compat-color-3d8375c7f4: rgba(255, 255, 255, 0.15);
+  --crown-compat-color-3d92bff672: rgba(255,255,255,0.38);
+  --crown-compat-color-3eab845a58: rgba(245, 158, 11, 0.12);
+  --crown-compat-color-3fc313e42d: rgba(37, 99, 235, 0.28);
+  --crown-compat-color-3fd4e05297: #fde68a;
+  --crown-compat-color-3fe2c08e8f: #0c223c;
+  --crown-compat-color-4109805f65: #1e3a8a;
+  --crown-compat-color-41248e4681: #bae6fd;
+  --crown-compat-color-42705fa9a6: #fca5a5;
+  --crown-compat-color-42710ab808: rgba(31, 42, 68, 0.28);
+  --crown-compat-color-4363483eb0: #004687;
+  --crown-compat-color-43cd697f8b: rgba(98, 100, 167, 0.35);
+  --crown-compat-color-43e3474ee6: rgba(255,255,255,0.86);
+  --crown-compat-color-44ad1d8af4: rgba(148, 163, 184, 0.22);
+  --crown-compat-color-46461f86fd: #f8fafc;
+  --crown-compat-color-466b65c373: rgba(198,165,74,0.2);
+  --crown-compat-color-46ac265693: #C4A65A;
+  --crown-compat-color-4702b16c05: #f1f5f9;
+  --crown-compat-color-473325cf52: rgba(59, 130, 246, 0.34);
+  --crown-compat-color-4853e24b33: #4c1d95;
+  --crown-compat-color-48fc9efa49: rgba(78,225,138,0.09);
+  --crown-compat-color-49983e5c51: #0c4a6e;
+  --crown-compat-color-49c00fe872: rgba(30, 74, 122, 0.12);
+  --crown-compat-color-49c183c398: #153a83;
+  --crown-compat-color-4a037ab478: rgba(255,93,93,0.35);
+  --crown-compat-color-4b54505300: #FEE2E2;
+  --crown-compat-color-4b9a93f150: #172033;
+  --crown-compat-color-4c6baf4a7d: #4419;
+  --crown-compat-color-4c9657c739: #fff1f2;
+  --crown-compat-color-4d32d7d0c0: #ddd;
+  --crown-compat-color-4dbf72a094: rgba(255,255,255,0.88);
+  --crown-compat-color-4f6d03b417: rgba(0,0,0,0.1);
+  --crown-compat-color-4fbf3e96cb: rgb(217 83 79 / 8%);
+  --crown-compat-color-50870daaaf: #ddd6fe;
+  --crown-compat-color-5089217ef2: rgba(255,255,255,0.15);
+  --crown-compat-color-50f9ae6a7d: rgba(3, 100, 184, 0.35);
+  --crown-compat-color-5106142d0d: #fef3c7;
+  --crown-compat-color-523c4be52b: #dfe8f2;
+  --crown-compat-color-524b4ebf7d: #551313;
+  --crown-compat-color-5269b5e050: rgba(239, 246, 255, 0.9);
+  --crown-compat-color-52b8cea069: #dfbe75;
+  --crown-compat-color-52cca7c6db: #86efac;
+  --crown-compat-color-52e92a0778: #1f6f3e;
+  --crown-compat-color-5338a3860b: rgba(0,0,0,0.25);
+  --crown-compat-color-54c30687fc: #e1e9f2;
+  --crown-compat-color-54c972b66c: #eef6ff;
+  --crown-compat-color-550e1aa105: #1e4a7a;
+  --crown-compat-color-55abd9e574: rgba(23, 63, 145, 0.08);
+  --crown-compat-color-568054669b: #4cab50;
+  --crown-compat-color-57b27ef25d: rgba(9, 31, 55, 0.22);
+  --crown-compat-color-580546adf4: #666;
+  --crown-compat-color-58218d7102: rgba(255,255,255,0.82);
+  --crown-compat-color-589c0cbec4: #D32F2F;
+  --crown-compat-color-58a558915f: #102843;
+  --crown-compat-color-59b051b478: rgba(0,0,0,0.15);
+  --crown-compat-color-59d5798058: rgb(76 175 80 / 8%);
+  --crown-compat-color-59dbd12595: #b91c1c;
+  --crown-compat-color-5b218e748f: #0284c7;
+  --crown-compat-color-5ddee158d1: rgba(255, 255, 255, 0.45);
+  --crown-compat-color-5e76dc6d1c: #4a1111;
+  --crown-compat-color-604b18e053: rgba(255, 255, 255, 0.95);
+  --crown-compat-color-611a1e8ce2: #edf3ff;
+  --crown-compat-color-613ac46859: rgb(76 175 80 / 4%);
+  --crown-compat-color-61d5dd5b45: rgba(180, 138, 43, 0.07);
+  --crown-compat-color-61eaaf6f10: #eff6ff;
+  --crown-compat-color-62760b63ce: #16324f;
+  --crown-compat-color-629fc6b780: #f3f8ff;
+  --crown-compat-color-63a3fc9a2c: #059669;
+  --crown-compat-color-64033be9a6: #dcfce7;
+  --crown-compat-color-64ce0c9f4e: #0831;
+  --crown-compat-color-65efe5a3cb: #1f7a45;
+  --crown-compat-color-6617dbbec0: rgba(78,225,138,0.40);
+  --crown-compat-color-66341b70b3: #6B7280;
+  --crown-compat-color-682b1df168: rgb(255,120,120);
+  --crown-compat-color-68c96baa87: rgba(15, 23, 42, 0.35);
+  --crown-compat-color-69142783e8: rgba(255,255,255,0.04);
+  --crown-compat-color-6b3d6d843d: #64748b;
+  --crown-compat-color-6b74c588d9: rgba(96, 165, 250, 0.2);
+  --crown-compat-color-6bfc709c41: rgba(80, 200, 120, 0.6);
+  --crown-compat-color-6dde3342ba: #d99a2b;
+  --crown-compat-color-6fe185aec2: #122033;
+  --crown-compat-color-701e8a0033: rgba(31, 122, 69, 0.32);
+  --crown-compat-color-71158e06f1: #991b1b;
+  --crown-compat-color-71ab4c08b7: #f3dfb4;
+  --crown-compat-color-741d305bb8: #dde1e7;
+  --crown-compat-color-74d26b72f4: #42566e;
+  --crown-compat-color-762ef00dc3: #fffbeb;
+  --crown-compat-color-765fc95883: rgba(30, 41, 59, 0.78);
+  --crown-compat-color-7691aaa644: #304a63;
+  --crown-compat-color-76d1073e3e: #e7c987;
+  --crown-compat-color-7705d1144a: #4d3200;
+  --crown-compat-color-77528fe234: #d1fae5;
+  --crown-compat-color-776b3df44c: rgba(215, 184, 129, 0.26);
+  --crown-compat-color-79e14fa136: rgba(148, 163, 184, 0.18);
+  --crown-compat-color-7ab95ffc4e: #fef9c3;
+  --crown-compat-color-7beae9beff: #5b6e83;
+  --crown-compat-color-7d4ff8ff7b: #15803d;
+  --crown-compat-color-7e73c8b211: rgba(255,255,255,0.75);
+  --crown-compat-color-7ffdfdbc25: #fff7d8;
+  --crown-compat-color-8055297a4e: #c79a4a;
+  --crown-compat-color-80dcfeb3e3: #fecdd3;
+  --crown-compat-color-80e0759046: #c9d7e6;
+  --crown-compat-color-81123f39c0: rgba(255, 255, 255, 0.3);
+  --crown-compat-color-813fde524e: rgba(16, 121, 91, 0.25);
+  --crown-compat-color-8178950a62: rgba(212,175,55,0.05);
+  --crown-compat-color-819c87f4e0: #ED6C02;
+  --crown-compat-color-819fc5493f: #f2f7ff;
+  --crown-compat-color-81cbc44d1a: #757575;
+  --crown-compat-color-82e7a0aaa3: rgba(255, 255, 255, 0.94);
+  --crown-compat-color-833631aa32: #475569;
+  --crown-compat-color-83ffc2bc2b: rgba(15, 23, 42, 0.05);
+  --crown-compat-color-85605ac205: rgb(217 83 79 / 15%);
+  --crown-compat-color-85f7ac1fa7: rgba(30, 79, 175, 0.14);
+  --crown-compat-color-86271ac984: rgba(180, 138, 43, 0.28);
+  --crown-compat-color-8691ae8f8e: rgba(0, 0, 0, 0.5);
+  --crown-compat-color-86e78d440f: #ecfdf5;
+  --crown-compat-color-8820ca3754: rgba(255,255,255,0.03);
+  --crown-compat-color-88bf600799: rgba(255, 255, 255, 0.06);
+  --crown-compat-color-89871d580c: rgba(180, 181, 220, 0.6);
+  --crown-compat-color-8a461cdcbc: rgba(255,255,255,0.4);
+  --crown-compat-color-8b8f7c3d45: #22c55e;
+  --crown-compat-color-8ba2177bc1: rgba(191, 219, 254, 0.8);
+  --crown-compat-color-8c857e7d93: #f3f4f6;
+  --crown-compat-color-8e47de7f3c: #112a46;
+  --crown-compat-color-8f251077d9: rgba(26, 111, 168, 0.35);
+  --crown-compat-color-905109969a: #183a63;
+  --crown-compat-color-90b141cff8: #92400e;
+  --crown-compat-color-9228ddcf62: rgba(37,99,235,0.12);
+  --crown-compat-color-928ee44540: #93c5fd;
+  --crown-compat-color-92cef0afb6: #bbf7d0;
+  --crown-compat-color-92cef8f402: rgba(37, 99, 235, 0.2);
+  --crown-compat-color-93e04fc54a: rgba(31, 119, 186, 0.06);
+  --crown-compat-color-9469fd3c91: #fffbef;
+  --crown-compat-color-95084e1138: rgb(31 58 95 / 2%);
+  --crown-compat-color-954ebe3140: rgba(78,225,138,0.9);
+  --crown-compat-color-957060f46c: rgba(0,0,0,0.06);
+  --crown-compat-color-9588d47ed9: rgba(15,23,42,0.18);
+  --crown-compat-color-9643a6d44f: #d1d5db;
+  --crown-compat-color-96f8d201a4: #2E7D32;
+  --crown-compat-color-9724074c83: rgba(176, 141, 87, 0.06);
+  --crown-compat-color-9821c21ac8: rgb(31 58 95 / 8%);
+  --crown-compat-color-990c3b7dbb: rgba(0,0,0,.08);
+  --crown-compat-color-9969945c89: #d9534f;
+  --crown-compat-color-9a2bce03d6: #fff7e0;
+  --crown-compat-color-9bc4f65939: #333;
+  --crown-compat-color-9c173caba3: #eef5ff;
+  --crown-compat-color-9cc55b664e: rgba(255,255,255,0.45);
+  --crown-compat-color-9d2fa2fa45: #c8daf5;
+  --crown-compat-color-9d51147977: #1887;
+  --crown-compat-color-9dd30a3408: rgba(255, 255, 255, 0.10);
+  --crown-compat-color-9f034e1f1a: #334155;
+  --crown-compat-color-a0a995c036: rgba(216, 230, 255, 0.75);
+  --crown-compat-color-a1adec2ba3: rgba(176,141,87,0.38);
+  --crown-compat-color-a4ae7958b6: #f0f9ff;
+  --crown-compat-color-a6055220ca: #fff5e4;
+  --crown-compat-color-a70919eca5: rgba(0,0,0,0.08);
+  --crown-compat-color-a744b12de6: rgba(176,141,87,0.45);
+  --crown-compat-color-a95c525e33: #374151;
+  --crown-compat-color-a9a96a31c0: rgba(255,93,93,0.12);
+  --crown-compat-color-a9c8c941d5: #f8d58a;
+  --crown-compat-color-aad74fb5bd: rgba(96, 165, 250, 0.25);
+  --crown-compat-color-ab65cb5c9b: rgb(0 0 0 / 2%);
+  --crown-compat-color-abb132f730: #b08d57;
+  --crown-compat-color-ac46624811: rgba(15, 23, 42, 0.04);
+  --crown-compat-color-acbf093aca: rgba(0, 120, 212, 0.35);
+  --crown-compat-color-acec48178c: #c6a54a;
+  --crown-compat-color-ad8260e36d: #f9fafb;
+  --crown-compat-color-b01b359f4f: rgba(248, 250, 252, 0.82);
+  --crown-compat-color-b11aedc78d: #065f46;
+  --crown-compat-color-b1925ae209: #dbeafe;
+  --crown-compat-color-b1be72453d: #536a82;
+  --crown-compat-color-b22391d982: rgba(219, 234, 254, 0.85);
+  --crown-compat-color-b287e65b63: rgba(255,255,255,0.72);
+  --crown-compat-color-b329ae315c: rgba(34, 197, 94, 0.10);
+  --crown-compat-color-b44638be47: #efd8a8;
+  --crown-compat-color-b45265002c: rgba(255, 255, 255, 0.22);
+  --crown-compat-color-b5cf969cd7: #ef9a9a;
+  --crown-compat-color-b5e2bc59ff: #94a3b8;
+  --crown-compat-color-b62326d628: rgba(255,93,93,0.15);
+  --crown-compat-color-b68a16e75c: #B4232C;
+  --crown-compat-color-b749cc2591: rgba(255,255,255,0.12);
+  --crown-compat-color-b79b5fa3a8: #555;
+  --crown-compat-color-b89dd2451e: #d6e3f5;
+  --crown-compat-color-b8a0803a54: rgba(255,255,255,0.6);
+  --crown-compat-color-b9669148c0: #bfdbfe;
+  --crown-compat-color-bae00db0cd: rgba(0,0,0,.06);
+  --crown-compat-color-bb741ad553: #7c3aed;
+  --crown-compat-color-bba72e0781: #fef2f2;
+  --crown-compat-color-bc34b408ea: rgba(255, 255, 255, 0.88);
+  --crown-compat-color-bcb7254751: #10243c;
+  --crown-compat-color-bccbfae6dd: rgba(16, 121, 91, 0.06);
+  --crown-compat-color-bef0e9e801: #e0e7ff;
+  --crown-compat-color-bf2da6c391: rgba(194, 138, 36, 0.08);
+  --crown-compat-color-bf645a12ce: #b71c1c;
+  --crown-compat-color-bfd4f8ffca: #E5E7EB;
+  --crown-compat-color-c0f782e6dc: rgba(37, 99, 235, 0.1);
+  --crown-compat-color-c2234e7403: rgba(248, 250, 252, 0.86);
+  --crown-compat-color-c34f5a2a4d: rgba(255,255,255,0.08);
+  --crown-compat-color-c36d4cdccd: #ef4444;
+  --crown-compat-color-c4dcfe6c94: #fff3d6;
+  --crown-compat-color-c5c7a76d72: rgba(255,255,255,0.5);
+  --crown-compat-color-c5e1eccf6c: #fce7f3;
+  --crown-compat-color-c6d42be6b7: #1111;
+  --crown-compat-color-c7fcf47cb6: rgba(255,93,93,0.10);
+  --crown-compat-color-c801d51c67: rgba(255,255,255,0.92);
+  --crown-compat-color-c9022f2670: rgba(66, 109, 187, 0.08);
+  --crown-compat-color-c9956f1fed: #2A5EC4;
+  --crown-compat-color-c9f7becaea: rgba(37, 99, 235, 0.22);
+  --crown-compat-color-ca11b75ca9: rgba(234, 179, 8, 0.12);
+  --crown-compat-color-cb69c739b8: #1976d2;
+  --crown-compat-color-cd57c62bd8: rgba(148, 163, 184, 0.28);
+  --crown-compat-color-cdb857b3fa: rgb(255 152 0 / 4%);
+  --crown-compat-color-cdf53bae31: #fbf6e8;
+  --crown-compat-color-cf2d163b11: #1B3A6F;
+  --crown-compat-color-cf8be8404e: #f4f8ff;
+  --crown-compat-color-cf99080ba8: #14532d;
+  --crown-compat-color-cfadc979a6: rgba(37, 99, 235, 0.35);
+  --crown-compat-color-cffc2b6633: rgba(15, 23, 42, 0.1);
+  --crown-compat-color-d02714fbd1: #EFF4FB;
+  --crown-compat-color-d139a66934: #1d4ed8;
+  --crown-compat-color-d371ff6396: rgba(255, 255, 255, 0.1);
+  --crown-compat-color-d94a0933d7: rgba(255, 255, 255, 0.2);
+  --crown-compat-color-d960c354a3: #8f1d1a;
+  --crown-compat-color-d9b0cb11c3: #4421;
+  --crown-compat-color-dbd729b0a3: #1e293b;
+  --crown-compat-color-dc68f2e156: rgba(255,255,255,0.7);
+  --crown-compat-color-dd15e6f7d4: #111827;
+  --crown-compat-color-dd61731472: rgb(76 175 80 / 15%);
+  --crown-compat-color-de9b5a6dd3: rgba(20,20,30,.92);
+  --crown-compat-color-df49e3f406: #e8f5e9;
+  --crown-compat-color-dfd375a042: rgba(37, 99, 235, 0.12);
+  --crown-compat-color-e025697a27: #1f3a5f;
+  --crown-compat-color-e08de71387: #fff;
+  --crown-compat-color-e16ece2e23: rgba(0,0,0,0.55);
+  --crown-compat-color-e19a38f714: rgba(15, 23, 42, 0.06);
+  --crown-compat-color-e21c21ccc2: #166534;
+  --crown-compat-color-e2442d83b3: #cbd5e1;
+  --crown-compat-color-e460033f2b: #C28A24;
+  --crown-compat-color-e5630c697b: rgba(11, 29, 49, 0.14);
+  --crown-compat-color-e5727f4aca: #1b8f4b;
+  --crown-compat-color-e62cf6dec0: rgba(16, 24, 40, 0.08);
+  --crown-compat-color-e673e909d7: rgba(30, 79, 175, 0.12);
+  --crown-compat-color-e76c451694: rgba(29, 78, 216, 0.22);
+  --crown-compat-color-e7b00c296b: #2563eb;
+  --crown-compat-color-e81fcc6b0b: #1b5e20;
+  --crown-compat-color-e93a99255b: rgba(255,255,255,0.55);
+  --crown-compat-color-e9df860ed9: #2847;
+  --crown-compat-color-ea1e459fee: rgba(255,255,255,0.9);
+  --crown-compat-color-ea2e992388: rgba(239, 68, 68, 0.10);
+  --crown-compat-color-eafa2ab918: rgba(255,255,255,0.35);
+  --crown-compat-color-ede086cb4d: #142944;
+  --crown-compat-color-eefca49d8b: #4a90e2;
+  --crown-compat-color-efbd8e5769: rgba(255, 255, 255, 0.85);
+  --crown-compat-color-effb26a3ee: #0E1D30;
+  --crown-compat-color-f19de237c6: #fde8e8;
+  --crown-compat-color-f2074b6cef: #ffffff;
+  --crown-compat-color-f2bb8fe853: rgba(180, 138, 43, 0.08);
+  --crown-compat-color-f49b5e5470: #881337;
+  --crown-compat-color-f4ce79ce58: #12345a;
+  --crown-compat-color-f5699ac25e: rgba(239, 246, 255, 0.78);
+  --crown-compat-color-f58ca8ec83: rgba(59, 130, 246, 0.13);
+  --crown-compat-color-f62328dee8: #f5f5f5;
+  --crown-compat-color-f6a93a8e2e: rgba(255,255,255,0.28);
+  --crown-compat-color-f7610ac45c: rgb(217 83 79 / 4%);
+  --crown-compat-color-f817da3b5d: #d8e6ff;
+  --crown-compat-color-f83c4d5daf: #1f2a44;
+  --crown-compat-color-f87977fa7b: rgba(100, 180, 255, 0.6);
+  --crown-compat-color-f8e175950d: #FBBF24;
+  --crown-compat-color-f94ddf364a: rgba(37, 99, 235, 0.16);
+  --crown-compat-color-f9ebd0b9c4: rgba(139, 92, 246, 0.08);
+  --crown-compat-color-fb799d5623: rgba(255, 255, 255, 0.78);
+  --crown-compat-color-fd3259d37c: rgba(255,255,255,.15);
+  --crown-compat-color-fe7253aecb: rgba(180, 138, 43, 0.35);
+  --crown-compat-color-ff34edd940: rgba(255, 255, 255, 0.18);
+  --crown-compat-color-ff588a7538: rgba(66, 109, 187, 0.34);
+  --crown-compat-color-fff712ee45: #3b526a;
+  --crown-compat-scope-0d67ec4e07: #f5f7fb;
+  --crown-compat-scope-135f899f7e: #991b1b;
+  --crown-compat-scope-77e504f5b5: #b08d57;
+  --crown-compat-scope-930e4f7f39: 22px;
+  --crown-compat-scope-a141731ea8: #5b677a;
+  --crown-compat-scope-ae6d90195b: #b08d57;
+  --crown-compat-scope-cb1768c9bf: rgba(15, 23, 42, 0.12);
+  --crown-compat-scope-dd4c73a119: 12px;
+  --crown-compat-scope-f52347a046: 0 18px 45px rgba(15, 23, 42, 0.08);
+  --crown-font-family: Inter, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --crown-font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace;
 }

@@ -240,16 +240,16 @@ export default function LoginPage() {
     <>
       <style>{`
         :root {
-          --lp-navy-900: var(--crown-primary-deep, #173F91);
-          --lp-navy-700: var(--crown-primary-strong, #1E4FAF);
-          --lp-slate-100: var(--crown-bg-soft, #EFF4FB);
-          --lp-slate-200: var(--crown-border, #D6E3F5);
-          --lp-slate-500: var(--crown-muted, #42566E);
-          --lp-gold-500: var(--crown-gold, #C28A24);
-          --lp-gold-100: var(--crown-gold-soft, #FFF3D6);
-          --lp-danger-100: var(--crown-danger-soft, #FEE2E2);
-          --lp-danger-600: var(--crown-danger, #B4232C);
-          --lp-white: var(--crown-surface, #FFFFFF);
+          --lp-navy-900: var(--crown-primary-deep, var(--crown-compat-color-2042bc3e08));
+          --lp-navy-700: var(--crown-primary-strong, var(--crown-compat-color-135d678f70));
+          --lp-slate-100: var(--crown-bg-soft, var(--crown-compat-color-d02714fbd1));
+          --lp-slate-200: var(--crown-border, var(--crown-compat-color-b89dd2451e));
+          --lp-slate-500: var(--crown-muted, var(--crown-compat-color-74d26b72f4));
+          --lp-gold-500: var(--crown-gold, var(--crown-compat-color-e460033f2b));
+          --lp-gold-100: var(--crown-gold-soft, var(--crown-compat-color-c4dcfe6c94));
+          --lp-danger-100: var(--crown-danger-soft, var(--crown-compat-color-4b54505300));
+          --lp-danger-600: var(--crown-danger, var(--crown-compat-color-b68a16e75c));
+          --lp-white: var(--crown-surface, var(--crown-compat-color-f2074b6cef));
         }
 
         *, *::before, *::after { box-sizing: border-box; }
@@ -259,12 +259,12 @@ export default function LoginPage() {
           display: grid;
           grid-template-columns: minmax(280px, 42%) minmax(320px, 58%);
           font-family: var(--crown-font);
-          background: linear-gradient(150deg, #EFF4FB 0%, #F8FBFF 70%);
-          color: #0E1D30;
+          background: linear-gradient(150deg, var(--crown-compat-color-d02714fbd1) 0%, var(--crown-compat-color-2c1d554440) 70%);
+          color: var(--crown-compat-color-effb26a3ee);
         }
 
         .login-brand {
-          background: radial-gradient(130% 130% at 10% 20%, #1E4A7A 0%, var(--lp-navy-900) 72%);
+          background: radial-gradient(130% 130% at 10% 20%, var(--crown-compat-color-550e1aa105) 0%, var(--lp-navy-900) 72%);
           color: var(--lp-white);
           padding: 42px 38px;
           display: flex;
@@ -282,7 +282,7 @@ export default function LoginPage() {
           width: 300px;
           height: 300px;
           border-radius: 50%;
-          background: radial-gradient(circle, rgba(198,165,74,0.2) 0%, rgba(198,165,74,0) 72%);
+          background: radial-gradient(circle, var(--crown-compat-color-466b65c373) 0%, var(--crown-compat-color-0578810107) 72%);
           pointer-events: none;
         }
 
@@ -303,7 +303,7 @@ export default function LoginPage() {
         .brand-mark .crown-brand-text-fallback,
         .brand-mark .crown-brand-text-fallback strong,
         .brand-mark .crown-brand-text-fallback span {
-          color: #FFFFFF;
+          color: var(--crown-compat-color-f2074b6cef);
         }
 
         .brand-title {
@@ -328,14 +328,14 @@ export default function LoginPage() {
 
         .brand-trust {
           margin: 0 0 18px;
-          color: rgba(255,255,255,0.88);
+          color: var(--crown-compat-color-4dbf72a094);
           font-size: 15px;
           line-height: 1.5;
         }
 
         .brand-guidance {
           margin: 0 0 14px;
-          color: rgba(255,255,255,0.72);
+          color: var(--crown-compat-color-b287e65b63);
           font-size: 14px;
           line-height: 1.5;
         }
@@ -345,7 +345,7 @@ export default function LoginPage() {
           padding-left: 18px;
           display: grid;
           gap: 8px;
-          color: rgba(255,255,255,0.9);
+          color: var(--crown-compat-color-ea1e459fee);
           font-size: 14px;
         }
 
@@ -354,8 +354,8 @@ export default function LoginPage() {
           z-index: 1;
           margin-top: 24px;
           padding-top: 16px;
-          border-top: 1px solid rgba(255,255,255,0.15);
-          color: rgba(255,255,255,0.82);
+          border-top: 1px solid var(--crown-compat-color-5089217ef2);
+          color: var(--crown-compat-color-58218d7102);
           font-size: 12px;
         }
 
@@ -371,7 +371,7 @@ export default function LoginPage() {
           max-width: 500px;
           background: var(--lp-white);
           border-radius: 16px;
-          box-shadow: 0 10px 32px rgba(11, 29, 49, 0.14);
+          box-shadow: 0 10px 32px var(--crown-compat-color-e5630c697b);
           border: 1px solid var(--lp-slate-200);
           padding: 24px;
         }
@@ -381,8 +381,8 @@ export default function LoginPage() {
           align-items: center;
           gap: 6px;
           border-radius: 999px;
-          background: #EDF4FF;
-          border: 1px solid #C8DAF5;
+          background: var(--crown-compat-color-166130d001);
+          border: 1px solid var(--crown-compat-color-9d2fa2fa45);
           color: var(--lp-navy-700);
           padding: 5px 11px;
           font-size: 12px;
@@ -395,13 +395,13 @@ export default function LoginPage() {
           margin: 0;
           font-family: var(--crown-font);
           font-size: 31px;
-          color: #112A46;
+          color: var(--crown-compat-color-8e47de7f3c);
           line-height: 1.15;
         }
 
         .login-subtitle {
           margin: 8px 0 12px;
-          color: #304A63;
+          color: var(--crown-compat-color-7691aaa644);
           font-size: 15px;
           line-height: 1.45;
         }
@@ -409,7 +409,7 @@ export default function LoginPage() {
         .warning-banner {
           border: 1px solid var(--lp-gold-500);
           background: var(--lp-gold-100);
-          color: #7A5317;
+          color: var(--crown-compat-color-1588a009e3);
           padding: 10px 12px;
           border-radius: 10px;
           font-size: 13px;
@@ -428,27 +428,27 @@ export default function LoginPage() {
           display: block;
           margin-bottom: 5px;
           font-size: 13px;
-          color: #1C3550;
+          color: var(--crown-compat-color-0f64de779d);
           font-weight: 700;
         }
 
         .field-input,
         .field-select {
           width: 100%;
-          border: 1px solid #CBD8E6 !important;
+          border: 1px solid var(--crown-compat-color-17a67ab8c6) !important;
           border-radius: 9px;
           padding: 10px 11px;
           font-size: 14px;
-          color: #102843 !important;
-          caret-color: #102843 !important;
-          -webkit-text-fill-color: #102843 !important;
+          color: var(--crown-compat-color-58a558915f) !important;
+          caret-color: var(--crown-compat-color-58a558915f) !important;
+          -webkit-text-fill-color: var(--crown-compat-color-58a558915f) !important;
           background: var(--lp-white) !important;
           background-color: var(--lp-white) !important;
         }
 
         .field-input::placeholder {
-          color: #5B6E83 !important;
-          -webkit-text-fill-color: #5B6E83 !important;
+          color: var(--crown-compat-color-7beae9beff) !important;
+          -webkit-text-fill-color: var(--crown-compat-color-7beae9beff) !important;
           opacity: 1;
         }
 
@@ -456,9 +456,9 @@ export default function LoginPage() {
         .field-select:focus,
         .btn-signin:focus,
         .btn-microsoft:focus {
-          outline: 2px solid rgba(26, 111, 168, 0.35);
+          outline: 2px solid var(--crown-compat-color-8f251077d9);
           outline-offset: 2px;
-          border-color: #1A6FA8;
+          border-color: var(--crown-compat-color-2fcc0c461d);
         }
 
         .btn-signin {
@@ -467,8 +467,8 @@ export default function LoginPage() {
           border: 0;
           border-radius: 10px;
           background: linear-gradient(120deg, var(--lp-navy-900) 0%, var(--lp-navy-700) 100%);
-          color: #FFFFFF !important;
-          -webkit-text-fill-color: #FFFFFF !important;
+          color: var(--crown-compat-color-f2074b6cef) !important;
+          -webkit-text-fill-color: var(--crown-compat-color-f2074b6cef) !important;
           padding: 12px 14px;
           font-size: 15px;
           font-weight: 700;
@@ -487,10 +487,10 @@ export default function LoginPage() {
         .btn-microsoft {
           margin-top: 10px;
           width: 100%;
-          border: 1px solid #C9D7E6;
+          border: 1px solid var(--crown-compat-color-80e0759046);
           border-radius: 10px;
-          background: #FFFFFF;
-          color: #183556;
+          background: var(--crown-compat-color-f2074b6cef);
+          color: var(--crown-compat-color-21b23e7ef3);
           padding: 10px 12px;
           font-size: 14px;
           font-weight: 700;
@@ -498,7 +498,7 @@ export default function LoginPage() {
         }
 
         .error-banner {
-          border: 1px solid #F7B7B7;
+          border: 1px solid var(--crown-compat-color-05f1c462d9);
           background: var(--lp-danger-100);
           color: var(--lp-danger-600);
           border-radius: 9px;
@@ -516,7 +516,7 @@ export default function LoginPage() {
 
         .product-footer {
           margin: 13px 0 0;
-          color: #3B526A;
+          color: var(--crown-compat-color-fff712ee45);
           font-size: 12px;
           text-align: center;
           font-weight: 600;

@@ -165,7 +165,7 @@ export default function BestAvailableCheckout({ eventId, maxQty = 8 }) {
       <div style={styles.container}>
         <div style={styles.card}>
           <div style={{ fontSize: 48, marginBottom: 12 }}></div>
-          <h2 style={{ ...styles.heading, color: "#16a34a" }}>Seats Found!</h2>
+          <h2 style={{ ...styles.heading, color: "var(--crown-compat-color-3c5c1ab6c5)" }}>Seats Found!</h2>
           <p style={styles.subtext}>
             {result.seat_ids?.length} seat{result.seat_ids?.length !== 1 ? "s" : ""} reserved for you.
             Redirecting to checkout
@@ -184,9 +184,9 @@ export default function BestAvailableCheckout({ eventId, maxQty = 8 }) {
   }
 
   return (
-    <div style={{ padding: 24, maxWidth: 560, margin: "0 auto", fontFamily: "system-ui, sans-serif" }}>
+    <div style={{ padding: 24, maxWidth: 560, margin: "0 auto", fontFamily: "var(--crown-font-family)" }}>
       <h2 style={{ marginBottom: 4 }}>Get Tickets</h2>
-      <p style={{ color: "#6b7280", fontSize: 14, marginBottom: 24 }}>
+      <p style={{ color: "var(--crown-compat-color-66341b70b3)", fontSize: 14, marginBottom: 24 }}>
         We'll find the best available seats for you automatically.
       </p>
 
@@ -199,9 +199,9 @@ export default function BestAvailableCheckout({ eventId, maxQty = 8 }) {
             onClick={() => setQty(n)}
             style={{
               width: 40, height: 40, borderRadius: 8, border: "1px solid",
-              borderColor: qty === n ? "#2563eb" : "#d1d5db",
-              background: qty === n ? "#2563eb" : "#fff",
-              color: qty === n ? "#fff" : "#374151",
+              borderColor: qty === n ? "var(--crown-compat-color-e7b00c296b)" : "var(--crown-compat-color-9643a6d44f)",
+              background: qty === n ? "var(--crown-compat-color-e7b00c296b)" : "var(--crown-compat-color-e08de71387)",
+              color: qty === n ? "var(--crown-compat-color-e08de71387)" : "var(--crown-compat-color-a95c525e33)",
               fontWeight: qty === n ? 700 : 400,
               cursor: "pointer", fontSize: 15,
             }}
@@ -224,16 +224,16 @@ export default function BestAvailableCheckout({ eventId, maxQty = 8 }) {
                   onClick={() => toggleSection(section)}
                   style={{
                     padding: "8px 16px", borderRadius: 8, border: "1px solid",
-                    borderColor: selected ? "#2563eb" : "#d1d5db",
-                    background: selected ? "#eff6ff" : "#fff",
-                    color: selected ? "#1d4ed8" : "#374151",
+                    borderColor: selected ? "var(--crown-compat-color-e7b00c296b)" : "var(--crown-compat-color-9643a6d44f)",
+                    background: selected ? "var(--crown-compat-color-61eaaf6f10)" : "var(--crown-compat-color-e08de71387)",
+                    color: selected ? "var(--crown-compat-color-d139a66934)" : "var(--crown-compat-color-a95c525e33)",
                     fontWeight: selected ? 600 : 400,
                     cursor: "pointer", fontSize: 13,
                   }}
                 >
                   {section}
                   {price_cents > 0 && (
-                    <span style={{ marginLeft: 6, color: "#6b7280" }}>
+                    <span style={{ marginLeft: 6, color: "var(--crown-compat-color-66341b70b3)" }}>
                       ${(price_cents / 100).toFixed(0)}/seat
                     </span>
                   )}
@@ -246,7 +246,7 @@ export default function BestAvailableCheckout({ eventId, maxQty = 8 }) {
 
       {/* Estimated total */}
       {estimatedTotal() !== null && (
-        <p style={{ fontSize: 13, color: "#6b7280", marginBottom: 16 }}>
+        <p style={{ fontSize: 13, color: "var(--crown-compat-color-66341b70b3)", marginBottom: 16 }}>
           Estimated total: ~<strong>${estimatedTotal()}</strong>
           {preferredSections.size === 0 ? " (varies by section)" : ""}
         </p>
@@ -272,8 +272,8 @@ export default function BestAvailableCheckout({ eventId, maxQty = 8 }) {
       </div>
 
       {error && (
-        <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 8,
-                      padding: "10px 14px", color: "#dc2626", fontSize: 14, marginBottom: 16 }}>
+        <div style={{ background: "var(--crown-compat-color-bba72e0781)", border: "1px solid var(--crown-compat-color-22028368ab)", borderRadius: 8,
+                      padding: "10px 14px", color: "var(--crown-compat-color-3871da3420)", fontSize: 14, marginBottom: 16 }}>
           {error}
         </div>
       )}
@@ -282,7 +282,7 @@ export default function BestAvailableCheckout({ eventId, maxQty = 8 }) {
         onClick={findAndCheckout}
         disabled={loading}
         style={{
-          width: "100%", padding: "12px 0", background: "#2563eb", color: "#fff",
+          width: "100%", padding: "12px 0", background: "var(--crown-compat-color-e7b00c296b)", color: "var(--crown-compat-color-e08de71387)",
           border: "none", borderRadius: 8, fontWeight: 700, fontSize: 16,
           cursor: loading ? "wait" : "pointer",
           opacity: loading ? 0.7 : 1,
@@ -291,7 +291,7 @@ export default function BestAvailableCheckout({ eventId, maxQty = 8 }) {
         {loading ? "Finding your seats" : `Get ${qty} Best Seat${qty !== 1 ? "s" : ""} `}
       </button>
 
-      <p style={{ fontSize: 12, color: "#9ca3af", marginTop: 12, textAlign: "center" }}>
+      <p style={{ fontSize: 12, color: "var(--crown-compat-color-177804c225)", marginTop: 12, textAlign: "center" }}>
         Seats will be held for 10 minutes while you complete checkout.
         Tickets delivered by email as PDF.
       </p>
@@ -305,22 +305,22 @@ export default function BestAvailableCheckout({ eventId, maxQty = 8 }) {
 const styles = {
   container: {
     minHeight: "70vh", display: "flex", alignItems: "center",
-    justifyContent: "center", fontFamily: "system-ui, sans-serif",
+    justifyContent: "center", fontFamily: "var(--crown-font-family)",
   },
   card: {
-    background: "#fff", borderRadius: 12, padding: "40px 48px",
+    background: "var(--crown-compat-color-e08de71387)", borderRadius: 12, padding: "40px 48px",
     textAlign: "center", maxWidth: 480, width: "100%",
-    boxShadow: "0 4px 24px rgba(0,0,0,0.08)",
+    boxShadow: "0 4px 24px var(--crown-compat-color-a70919eca5)",
   },
-  heading: { fontSize: 24, fontWeight: 700, marginBottom: 8, color: "#111827" },
-  subtext: { fontSize: 15, color: "#374151", marginBottom: 16, lineHeight: 1.5 },
-  infoBox: { background: "#f3f4f6", borderRadius: 8, padding: 16, textAlign: "left", marginTop: 16 },
+  heading: { fontSize: 24, fontWeight: 700, marginBottom: 8, color: "var(--crown-compat-color-dd15e6f7d4)" },
+  subtext: { fontSize: 15, color: "var(--crown-compat-color-a95c525e33)", marginBottom: 16, lineHeight: 1.5 },
+  infoBox: { background: "var(--crown-compat-color-8c857e7d93)", borderRadius: 8, padding: 16, textAlign: "left", marginTop: 16 },
   infoRow: { display: "flex", justifyContent: "space-between", marginBottom: 8, fontSize: 14 },
-  label: { color: "#6b7280" },
-  value: { fontWeight: 600, color: "#111827" },
-  fieldLabel: { display: "block", fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 8 },
+  label: { color: "var(--crown-compat-color-66341b70b3)" },
+  value: { fontWeight: 600, color: "var(--crown-compat-color-dd15e6f7d4)" },
+  fieldLabel: { display: "block", fontSize: 13, fontWeight: 600, color: "var(--crown-compat-color-a95c525e33)", marginBottom: 8 },
   input: {
-    padding: "10px 14px", border: "1px solid #d1d5db",
+    padding: "10px 14px", border: "1px solid var(--crown-compat-color-9643a6d44f)",
     borderRadius: 8, fontSize: 15, outline: "none", width: "100%",
     boxSizing: "border-box",
   },

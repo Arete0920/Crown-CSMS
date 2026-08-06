@@ -156,7 +156,7 @@ export default function FeeScheduleWizard() {
     return (
       <CrownLayout title="Fee Schedule Setup" subtitle="Wizard #14 — Fee Schedule Setup">
         <Step title="Error">
-          <p style={{ color: "red" }}>{err}</p>
+          <p style={{ color: "var(--crown-danger)" }}>{err}</p>
           <button onClick={() => { setPhase("configure"); setErr(null); }}>Restart</button>
         </Step>
       </CrownLayout>
@@ -167,7 +167,7 @@ export default function FeeScheduleWizard() {
     return (
       <CrownLayout title="Fee Schedule Setup" subtitle="Wizard #14 — Fee Schedule Setup">
         <Step title="Fee Schedule Created">
-          <p style={{ color: "green" }}>
+          <p style={{ color: "var(--crown-success)" }}>
             {result?.message || "Fee schedule created successfully."}
           </p>
           <ul>
@@ -193,7 +193,7 @@ export default function FeeScheduleWizard() {
     return (
       <CrownLayout title="Fee Schedule Setup" subtitle="Wizard #14 — Fee Schedule Setup">
         <Step title="Step 2 of 2 — Fee Lines">
-          {err && <p style={{ color: "red" }}>{err}</p>}
+          {err && <p style={{ color: "var(--crown-danger)" }}>{err}</p>}
           <form onSubmit={handleLines}>
             {lines.map((line, idx) => (
               <div key={idx} style={{ border: "1px solid var(--crown-border)", borderRadius: 4, padding: 12, marginBottom: 12 }}>
@@ -242,7 +242,7 @@ export default function FeeScheduleWizard() {
                   </label>
                   &nbsp;&nbsp;
                   {lines.length > 1 && (
-                    <button type="button" onClick={() => removeLine(idx)} style={{ color: "red" }}>
+                    <button type="button" onClick={() => removeLine(idx)} style={{ color: "var(--crown-danger)" }}>
                       Remove
                     </button>
                   )}
@@ -263,7 +263,7 @@ export default function FeeScheduleWizard() {
   return (
     <CrownLayout title="Fee Schedule Setup" subtitle="Wizard #14 — Fee Schedule Setup">
       <Step title="Step 1 of 2 — Schedule Details">
-        {err && <p style={{ color: "red" }}>{err}</p>}
+        {err && <p style={{ color: "var(--crown-danger)" }}>{err}</p>}
         <form onSubmit={handleConfigure}>
           <div style={{ marginBottom: 10 }}>
             <label>Schedule Name&nbsp;

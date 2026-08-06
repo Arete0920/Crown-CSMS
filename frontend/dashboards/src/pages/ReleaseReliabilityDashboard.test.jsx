@@ -2,7 +2,7 @@
 /**
  * Release Reliability Dashboard — browser title and metrics proof.
  *
- * Closes: tcmegahan/Crown2026#1111
+ * Closes: tcmegahan/Crown2026var(--crown-compat-color-c6d42be6b7)
  *
  * Proof scope:
  *   1. Template resolves with key 'releaseReliability'.

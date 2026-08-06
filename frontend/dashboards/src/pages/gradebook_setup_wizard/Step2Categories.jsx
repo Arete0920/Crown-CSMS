@@ -39,7 +39,7 @@ export default function Step2Categories({ context, setContext, goNext, goPrev, s
           <input className="crown-input" placeholder="Name" value={c.name} onChange={e => updateCategory(i, "name", e.target.value)} style={{ flex: 2 }} />
           <input className="crown-input" type="number" min={0} max={100} placeholder="Weight %" value={c.weight_percent} onChange={e => updateCategory(i, "weight_percent", e.target.value)} style={{ flex: 1 }} />
           <input className="crown-input" type="number" min={0} placeholder="Sort" value={c.sort_order} onChange={e => updateCategory(i, "sort_order", e.target.value)} style={{ flex: 1 }} />
-          <button className="crown-btn" onClick={() => removeCategory(i)} style={{ color: "red" }}>✕</button>
+          <button className="crown-btn" onClick={() => removeCategory(i)} style={{ color: "var(--crown-danger)" }}>✕</button>
         </div>
       ))}
       <p style={{ fontWeight: "bold", color: totalWeight !== 0 && totalWeight !== 100 ? "red" : "inherit" }}>

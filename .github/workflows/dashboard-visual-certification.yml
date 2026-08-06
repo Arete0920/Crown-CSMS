@@ -32,7 +32,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: "20"
+          node-version: "22.22.0"
           cache: npm
           cache-dependency-path: frontend/dashboards/package-lock.json
 
@@ -52,7 +52,7 @@ jobs:
         working-directory: frontend/dashboards
         run: |
           test -f test-results/visual-dashboard-review/manifest.json
-          node -e 'const m=require("./test-results/visual-dashboard-review/manifest.json"); if(m.expectedScreenshots!==78 || m.screenshots.length!==78){throw new Error(`Expected 78 screenshots; manifest has ${m.screenshots.length}`)}'
+          node -e 'const m=require("./test-results/visual-dashboard-review/manifest.json"); if(m.expectedScreenshots!==84 || m.screenshots.length!==84){throw new Error(`Expected 84 screenshots; manifest has ${m.screenshots.length}`)}'
 
       - name: Upload dashboard visual evidence
         if: always()

@@ -78,11 +78,11 @@ export default function DevJwtPanel() {
         width: 320,
         padding: 12,
         borderRadius: 12,
-        background: "rgba(20,20,30,.92)",
+        background: "var(--crown-compat-color-de9b5a6dd3)",
         color: "var(--crown-surface)",
         zIndex: 9999,
-        fontFamily: "system-ui, -apple-system, Segoe UI, Roboto, Arial",
-        boxShadow: "0 10px 30px rgba(0,0,0,.35)",
+        fontFamily: "var(--crown-font-family)",
+        boxShadow: "0 10px 30px var(--crown-compat-color-2d55e9cc1b)",
       }}
     >
       <div style={{ fontWeight: 700, marginBottom: 6 }}>Dev JWT Login</div>
@@ -118,7 +118,7 @@ export default function DevJwtPanel() {
             borderRadius: 10,
             border: 0,
             cursor: "pointer",
-            background: "rgba(255,255,255,.15)",
+            background: "var(--crown-compat-color-fd3259d37c)",
             color: "var(--crown-surface)",
           }}
         >

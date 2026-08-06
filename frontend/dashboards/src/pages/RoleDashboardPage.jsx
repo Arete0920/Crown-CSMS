@@ -19,7 +19,7 @@ function WidgetSkeleton() {
       className="crown-card"
       style={{
         height: 140,
-        background: "linear-gradient(90deg, var(--crown-subtle) 25%, rgba(255,255,255,0.04) 50%, var(--crown-subtle) 75%)",
+        background: "linear-gradient(90deg, var(--crown-subtle) 25%, var(--crown-compat-color-69142783e8) 50%, var(--crown-subtle) 75%)",
         backgroundSize: "400px 100%",
         animation: "crown-shimmer 1.4s ease infinite",
         borderRadius: "var(--crown-radius)",
@@ -133,7 +133,7 @@ export default function RoleDashboardPage() {
         <div
           role="alert"
           style={{
-            background: "rgba(255,93,93,0.12)",
+            background: "var(--crown-compat-color-a9a96a31c0)",
             border: "1px solid var(--crown-danger)",
             borderRadius: 10,
             color: "var(--crown-danger)",

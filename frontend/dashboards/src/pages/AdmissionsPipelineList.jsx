@@ -8,10 +8,10 @@ import { useAsyncPageData } from '../hooks/useAsyncPageData';
 import { usePersistentTableState } from '../hooks/usePersistentTableState';
 import { useApiAction } from '../hooks/useApiAction';
 
-const SM = { fontSize: '0.75rem', padding: '3px 10px', cursor: 'pointer', borderRadius: '4px', border: '1px solid #1976d2', background: 'transparent', color: '#1976d2' };
-const SM_ON = { ...SM, background: '#1976d2', color: '#fff' };
-const BTN = { fontSize: '0.875rem', padding: '5px 15px', cursor: 'pointer', borderRadius: '4px', border: '1px solid #1976d2', background: 'transparent', color: '#1976d2' };
-const BTN_FILLED = { ...BTN, background: '#1976d2', color: '#fff' };
+const SM = { fontSize: '0.75rem', padding: '3px 10px', cursor: 'pointer', borderRadius: '4px', border: '1px solid var(--crown-compat-color-cb69c739b8)', background: 'transparent', color: 'var(--crown-compat-color-cb69c739b8)' };
+const SM_ON = { ...SM, background: 'var(--crown-compat-color-cb69c739b8)', color: 'var(--crown-compat-color-e08de71387)' };
+const BTN = { fontSize: '0.875rem', padding: '5px 15px', cursor: 'pointer', borderRadius: '4px', border: '1px solid var(--crown-compat-color-cb69c739b8)', background: 'transparent', color: 'var(--crown-compat-color-cb69c739b8)' };
+const BTN_FILLED = { ...BTN, background: 'var(--crown-compat-color-cb69c739b8)', color: 'var(--crown-compat-color-e08de71387)' };
 const ROW = { display: 'flex', gap: '8px', alignItems: 'center' };
 const LABEL = { margin: 0, fontSize: '0.875rem' };
 
@@ -116,13 +116,13 @@ function HouseholdReviewDrawer({
         <h6 style={{ margin: 0, marginBottom: '1rem', fontWeight: 700, fontSize: '1.25rem' }}>Household Admissions Review</h6>
 
         {enrollResult ? (
-          <div role="alert" style={{ padding: '8px 16px', borderRadius: '4px', background: enrollResult.ok ? '#e8f5e9' : '#ffebee', color: enrollResult.ok ? '#1b5e20' : '#b71c1c', border: `1px solid ${enrollResult.ok ? '#81c784' : '#ef9a9a'}`, marginBottom: '8px' }}>
+          <div role="alert" style={{ padding: '8px 16px', borderRadius: '4px', background: enrollResult.ok ? 'var(--crown-compat-color-df49e3f406)' : 'var(--crown-compat-color-14a5dafae2)', color: enrollResult.ok ? 'var(--crown-compat-color-e81fcc6b0b)' : 'var(--crown-compat-color-bf645a12ce)', border: `1px solid ${enrollResult.ok ? 'var(--crown-compat-color-09dff71fa9)' : 'var(--crown-compat-color-b5cf969cd7)'}`, marginBottom: '8px' }}>
             {enrollResult.message}
           </div>
         ) : null}
 
         {enrollError ? (
-          <div role="alert" style={{ padding: '8px 16px', borderRadius: '4px', background: '#ffebee', color: '#b71c1c', border: '1px solid #ef9a9a', marginBottom: '8px' }}>
+          <div role="alert" style={{ padding: '8px 16px', borderRadius: '4px', background: 'var(--crown-compat-color-14a5dafae2)', color: 'var(--crown-compat-color-bf645a12ce)', border: '1px solid var(--crown-compat-color-b5cf969cd7)', marginBottom: '8px' }}>
             {enrollError.message}
           </div>
         ) : null}

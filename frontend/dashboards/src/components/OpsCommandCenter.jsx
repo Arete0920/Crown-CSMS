@@ -141,7 +141,7 @@ export default function OpsCommandCenter() {
                 </div>
                 <div style={{ fontSize: 13, marginBottom: 6 }}>{a.detail}</div>
                 {a.metric && (
-                  <div style={{ fontSize: 11, color: "var(--crown-muted)", fontFamily: "monospace" }}>
+                  <div style={{ fontSize: 11, color: "var(--crown-muted)", fontFamily: "var(--crown-font-mono)" }}>
                     metric: {a.metric} • value: {JSON.stringify(a.value)} • threshold: {JSON.stringify(a.threshold)}
                   </div>
                 )}

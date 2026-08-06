@@ -28,7 +28,7 @@ export default function Step4Preview({ context, goNext, goPrev, stepIndex, total
         {adds.length > 0 && (
           <div>
             <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 6, color: "var(--crown-ok)" }}>Adding ({adds.length})</div>
-            <ul style={{ margin: 0, padding: "0 0 0 18px", fontSize: 12, fontFamily: "monospace" }}>
+            <ul style={{ margin: 0, padding: "0 0 0 18px", fontSize: 12, fontFamily: "var(--crown-font-mono)" }}>
               {adds.map((c) => <li key={c.student_id}>{c.student_id}</li>)}
             </ul>
           </div>
@@ -37,7 +37,7 @@ export default function Step4Preview({ context, goNext, goPrev, stepIndex, total
         {removes.length > 0 && (
           <div>
             <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 6, color: "var(--crown-danger)" }}>Removing ({removes.length})</div>
-            <ul style={{ margin: 0, padding: "0 0 0 18px", fontSize: 12, fontFamily: "monospace" }}>
+            <ul style={{ margin: 0, padding: "0 0 0 18px", fontSize: 12, fontFamily: "var(--crown-font-mono)" }}>
               {removes.map((c) => <li key={c.student_id}>{c.student_id}</li>)}
             </ul>
           </div>

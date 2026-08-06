@@ -79,10 +79,10 @@ export default function WizardHub() {
             <div
               key={w.slug}
               style={{
-                border: "1px solid rgba(255,255,255,0.12)",
+                border: "1px solid var(--crown-compat-color-b749cc2591)",
                 borderRadius: 12,
                 padding: "14px 16px",
-                background: "rgba(255,255,255,0.04)",
+                background: "var(--crown-compat-color-69142783e8)",
               }}
             >
               <div style={{ fontWeight: 600, marginBottom: 4 }}>{w.title}</div>
@@ -90,7 +90,7 @@ export default function WizardHub() {
                 style={{
                   fontSize: 12,
                   opacity: 0.55,
-                  fontFamily: "monospace",
+                  fontFamily: "var(--crown-font-mono)",
                   marginBottom: 12,
                 }}
               >

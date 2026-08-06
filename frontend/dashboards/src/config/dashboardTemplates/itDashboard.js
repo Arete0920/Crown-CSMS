@@ -31,7 +31,7 @@ export default {
   ],
 
   priorities: [
-    { title: 'Resolve overdue ticket #4421', detail: 'Open >14 days â€” escalation policy triggered.', state: 'Today', tone: 'warn' },
+    { title: 'Resolve overdue ticket var(--crown-compat-color-d9b0cb11c3)', detail: 'Open >14 days â€” escalation policy triggered.', state: 'Today', tone: 'warn' },
     { title: 'Bring 7 devices back into compliance', detail: 'Run remediation playbook before Friday audit.', state: 'This week', tone: 'warn' },
     { title: 'Confirm SSL cert renewal vendor', detail: '42-day expiry window â€” order today to avoid lapse.', state: 'This week', tone: 'warn' },
   ],
@@ -46,7 +46,7 @@ export default {
     { key: 'tickets', icon: 'TK', title: 'Helpdesk Tickets', status: 'Watch', statusTone: 'warn',
       mainKpi: '12 open / 1 overdue', summary: 'Support volume normal; one ticket exceeds 14-day SLA.',
       kpis: [{ label: 'Open', value: '12' }, { label: 'Overdue', value: '1' }, { label: 'Resolved MTD', value: '47' }, { label: 'Avg time to close', value: '2.4 d' }],
-      details: ['Ticket #4421 â€” overdue, owner reassignment needed', '5 tickets escalated to Tier 2', '47 tickets resolved this month', 'CSAT score 4.6/5 last survey'],
+      details: ['Ticket var(--crown-compat-color-d9b0cb11c3) â€” overdue, owner reassignment needed', '5 tickets escalated to Tier 2', '47 tickets resolved this month', 'CSAT score 4.6/5 last survey'],
       primaryActionLabel: 'Open Ticket Queue', backActionLabel: 'Review SLA',
       primaryActionHref: '/it', backActionHref: '/it', lastUpdated: '8:35 AM' },
     { key: 'devices', icon: 'DV', title: 'Devices & Compliance', status: 'Watch', statusTone: 'warn',
@@ -92,7 +92,7 @@ export default {
     'Deploy d196ab66 promoted to production successfully.',
     '12 new devices imaged and joined to domain.',
     'Auto-remediation playbook ran on 4 non-compliant endpoints.',
-    'Tier 2 escalation closed for ticket #4419.',
+    'Tier 2 escalation closed for ticket var(--crown-compat-color-4c6baf4a7d).',
     'Backup verification job completed without errors overnight.',
   ],
 

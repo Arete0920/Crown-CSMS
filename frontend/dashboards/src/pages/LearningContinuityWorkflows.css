@@ -18,7 +18,7 @@
 
 .learning-authority-statement {
   border-left: 5px solid var(--crown-royal-600);
-  background: rgba(239, 246, 255, 0.78);
+  background: var(--crown-compat-color-f5699ac25e);
   border-radius: 14px;
   color: var(--crown-slate-700);
   line-height: 1.55;
@@ -27,8 +27,8 @@
 }
 
 .learning-authority-card {
-  border: 1px solid rgba(148, 163, 184, 0.22);
-  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid var(--crown-compat-color-44ad1d8af4);
+  background: var(--crown-compat-color-0e8825e7fc);
   border-radius: var(--crown-radius);
   box-shadow: var(--crown-shadow);
   margin-bottom: 20px;
@@ -42,9 +42,9 @@
 }
 
 .learning-authority-grid article {
-  border: 1px solid rgba(148, 163, 184, 0.22);
+  border: 1px solid var(--crown-compat-color-44ad1d8af4);
   border-radius: 18px;
-  background: rgba(248, 250, 252, 0.86);
+  background: var(--crown-compat-color-c2234e7403);
   padding: 14px;
 }
 
@@ -70,9 +70,9 @@
   grid-template-columns: 190px 210px 120px 140px minmax(0, 1fr);
   gap: 12px;
   align-items: center;
-  border: 1px solid rgba(148, 163, 184, 0.18);
+  border: 1px solid var(--crown-compat-color-79e14fa136);
   border-radius: 16px;
-  background: rgba(248, 250, 252, 0.82);
+  background: var(--crown-compat-color-b01b359f4f);
   padding: 13px 14px;
 }
 
@@ -82,7 +82,7 @@
   font-weight: 900;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  background: rgba(239, 246, 255, 0.9);
+  background: var(--crown-compat-color-5269b5e050);
 }
 
 .learning-record-row small {
@@ -98,15 +98,15 @@
 }
 
 .learning-record-detail-card {
-  border: 1px solid rgba(148, 163, 184, 0.22);
-  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid var(--crown-compat-color-44ad1d8af4);
+  background: var(--crown-compat-color-0e8825e7fc);
   border-radius: var(--crown-radius);
   box-shadow: var(--crown-shadow);
   padding: 20px;
 }
 
 .learning-record-detail-block {
-  border-top: 1px solid rgba(148, 163, 184, 0.18);
+  border-top: 1px solid var(--crown-compat-color-79e14fa136);
   margin-top: 14px;
   padding-top: 14px;
 }
@@ -133,9 +133,9 @@
 }
 
 .learning-workflow-ordered-list li {
-  border: 1px solid rgba(148, 163, 184, 0.18);
+  border: 1px solid var(--crown-compat-color-79e14fa136);
   border-radius: 16px;
-  background: rgba(248, 250, 252, 0.82);
+  background: var(--crown-compat-color-b01b359f4f);
   padding: 13px 14px;
 }
 

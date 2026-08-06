@@ -85,28 +85,28 @@ export default function StorePage() {
   }
 
   if (loading) return <p aria-busy="true">Loading store...</p>;
-  if (error) return <p role="alert" style={{ color: "red" }}>Error: {error}</p>;
+  if (error) return <p role="alert" style={{ color: "var(--crown-danger)" }}>Error: {error}</p>;
 
   return (
     <div aria-label="Spirit Store">
       <h2>Spirit Store</h2>
       {items.length === 0 ? (
-        <p style={{ color: "#94a3b8", textAlign: "center", padding: 32 }}>No items in store.</p>
+        <p style={{ color: "var(--crown-compat-color-b5e2bc59ff)", textAlign: "center", padding: 32 }}>No items in store.</p>
       ) : (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 16 }}>
           {items.map((item) => (
             <article
               key={item.id}
               aria-label={item.name}
-              style={{ border: "1px solid #e2e8f0", borderRadius: 8, padding: 16, background: "#fff" }}
+              style={{ border: "1px solid var(--crown-compat-color-3b313dfb66)", borderRadius: 8, padding: 16, background: "var(--crown-compat-color-e08de71387)" }}
             >
               <h3 style={{ margin: "0 0 4px", fontSize: 16 }}>{item.name}</h3>
-              <p style={{ margin: "0 0 8px", fontSize: 13, color: "#64748b" }}>{item.description}</p>
+              <p style={{ margin: "0 0 8px", fontSize: 13, color: "var(--crown-compat-color-6b3d6d843d)" }}>{item.description}</p>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
                 <span style={{ fontWeight: 700, fontSize: 18 }}>${Number(item.price).toFixed(2)}</span>
                 <span style={{
                   fontSize: 12, fontWeight: 600,
-                  color: item.inventory < 5 ? "#dc2626" : "#16a34a",
+                  color: item.inventory < 5 ? "var(--crown-compat-color-3871da3420)" : "var(--crown-compat-color-3c5c1ab6c5)",
                 }}>
                   {item.inventory} in stock
                 </span>
@@ -120,7 +120,7 @@ export default function StorePage() {
                     value={quantities[item.id] || 1}
                     onChange={(e) => setQuantities({ ...quantities, [item.id]: e.target.value })}
                     aria-label={`Quantity for ${item.name}`}
-                    style={{ width: 60, padding: "6px 8px", border: "1px solid #cbd5e1", borderRadius: 6 }}
+                    style={{ width: 60, padding: "6px 8px", border: "1px solid var(--crown-compat-color-e2442d83b3)", borderRadius: 6 }}
                   />
                   <button
                     onClick={() => handlePurchase(item)}
@@ -131,7 +131,7 @@ export default function StorePage() {
                   </button>
                 </div>
               ) : (
-                <p style={{ color: "#dc2626", fontSize: 13, fontWeight: 600, margin: 0 }}>Out of Stock</p>
+                <p style={{ color: "var(--crown-compat-color-3871da3420)", fontSize: 13, fontWeight: 600, margin: 0 }}>Out of Stock</p>
               )}
             </article>
           ))}

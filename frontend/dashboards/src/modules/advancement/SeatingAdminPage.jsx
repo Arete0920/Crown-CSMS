@@ -169,26 +169,26 @@ export default function SeatingAdminPage() {
   return (
     <div style={{ padding: "1.5rem", maxWidth: 760 }}>
       <h2 style={{ marginBottom: "0.25rem" }}>Seating Map Admin</h2>
-      <p style={{ color: "#6b7280", marginBottom: "1.25rem" }}>
+      <p style={{ color: "var(--crown-compat-color-66341b70b3)", marginBottom: "1.25rem" }}>
         Edit the JSON layout for a seating map. Saving regenerates all Seat rows  only do
         this before tickets are sold for the affected events.
       </p>
 
       {loadingMaps ? (
-        <p style={{ color: "#6b7280" }}>Loading maps</p>
+        <p style={{ color: "var(--crown-compat-color-66341b70b3)" }}>Loading maps</p>
       ) : (
         <form onSubmit={handleSave}>
           {/* Map selector */}
           <label htmlFor="seating-map-select" style={{ display: "block", fontWeight: 500, marginBottom: "0.25rem" }}>`n            Seating Map`n          </label>
           {maps.length === 0 ? (
-            <p style={{ color: "#9ca3af", marginBottom: "1rem" }}>
+            <p style={{ color: "var(--crown-compat-color-177804c225)", marginBottom: "1rem" }}>
               No seating maps found. Create one via the API or admin.
             </p>
           ) : (
             <select
               value={selectedMapId}
               onChange={handleMapChange}
-              style={{ width: "100%", padding: "0.45rem", borderRadius: 5, border: "1px solid #d1d5db", marginBottom: "1rem" }}
+              style={{ width: "100%", padding: "0.45rem", borderRadius: 5, border: "1px solid var(--crown-compat-color-9643a6d44f)", marginBottom: "1rem" }}
             >
               {maps.map((m) => (
                 <option key={m.id} value={m.id}>
@@ -201,7 +201,7 @@ export default function SeatingAdminPage() {
           {/* Layout JSON editor */}
           <label htmlFor="seating-layout-json" style={{ display: "block", fontWeight: 500, marginBottom: "0.25rem" }}>`n            Layout JSON
             {seatCount !== null && (
-              <span style={{ marginLeft: "0.5rem", fontWeight: 400, color: "#6b7280", fontSize: "0.875rem" }}>
+              <span style={{ marginLeft: "0.5rem", fontWeight: 400, color: "var(--crown-compat-color-66341b70b3)", fontSize: "0.875rem" }}>
                 ({seatCount} seats)
               </span>
             )}
@@ -213,25 +213,25 @@ export default function SeatingAdminPage() {
             spellCheck={false}
             style={{
               width: "100%",
-              fontFamily: "monospace",
+              fontFamily: "var(--crown-font-mono)",
               fontSize: "0.85rem",
               padding: "0.6rem",
               borderRadius: 6,
-              border: parseError ? "1.5px solid #ef4444" : "1px solid #d1d5db",
+              border: parseError ? "1.5px solid var(--crown-compat-color-c36d4cdccd)" : "1px solid var(--crown-compat-color-9643a6d44f)",
               marginBottom: "0.4rem",
               boxSizing: "border-box",
             }}
           />
           {parseError && (
-            <div style={{ color: "#b91c1c", fontSize: "0.875rem", marginBottom: "0.75rem" }}>
+            <div style={{ color: "var(--crown-compat-color-59dbd12595)", fontSize: "0.875rem", marginBottom: "0.75rem" }}>
               {parseError}
             </div>
           )}
 
           {/* Schema hint */}
-          <details style={{ marginBottom: "1rem", fontSize: "0.82rem", color: "#6b7280" }}>
+          <details style={{ marginBottom: "1rem", fontSize: "0.82rem", color: "var(--crown-compat-color-66341b70b3)" }}>
             <summary style={{ cursor: "pointer" }}>Layout schema</summary>
-            <pre style={{ background: "#f3f4f6", borderRadius: 4, padding: "0.6rem", marginTop: "0.4rem" }}>
+            <pre style={{ background: "var(--crown-compat-color-8c857e7d93)", borderRadius: 4, padding: "0.6rem", marginTop: "0.4rem" }}>
 {`{
   "sections": [
     {
@@ -247,12 +247,12 @@ export default function SeatingAdminPage() {
           </details>
 
           {error && (
-            <div style={{ background: "#fee2e2", color: "#b91c1c", padding: "0.75rem", borderRadius: 6, marginBottom: "0.75rem" }}>
+            <div style={{ background: "var(--crown-compat-color-4b54505300)", color: "var(--crown-compat-color-59dbd12595)", padding: "0.75rem", borderRadius: 6, marginBottom: "0.75rem" }}>
               {error}
             </div>
           )}
           {result?.ok && (
-            <div style={{ background: "#dcfce7", color: "#15803d", padding: "0.75rem", borderRadius: 6, marginBottom: "0.75rem" }}>
+            <div style={{ background: "var(--crown-compat-color-64033be9a6)", color: "var(--crown-compat-color-7d4ff8ff7b)", padding: "0.75rem", borderRadius: 6, marginBottom: "0.75rem" }}>
                Layout saved  {result.seats_created} seats created.
             </div>
           )}
@@ -264,8 +264,8 @@ export default function SeatingAdminPage() {
               padding: "0.55rem 1.5rem",
               borderRadius: 6,
               border: "none",
-              background: "#2563eb",
-              color: "#fff",
+              background: "var(--crown-compat-color-e7b00c296b)",
+              color: "var(--crown-compat-color-e08de71387)",
               fontWeight: 500,
               cursor: saving || maps.length === 0 ? "not-allowed" : "pointer",
               opacity: saving || maps.length === 0 ? 0.6 : 1,

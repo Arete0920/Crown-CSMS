@@ -184,7 +184,13 @@ export default function CrownLayout({ title, subtitle, right, children, mainClas
         />
       ) : null}
 
-      <aside className={`crown-sidebar ${sidebarOpen ? "is-open" : ""}`.trim()}>
+      <aside
+        className={`crown-sidebar ${sidebarOpen ? "is-open" : ""}`.trim()}
+        style={{
+          background: "linear-gradient(180deg, var(--crown-primary-strong), var(--crown-primary-deep))",
+          color: "var(--crown-surface)",
+        }}
+      >
         <div className="crown-sidebar-header">
           <h1>Crown</h1>
           <button
@@ -224,7 +230,7 @@ export default function CrownLayout({ title, subtitle, right, children, mainClas
               <div
                 style={{
                   fontSize: 9, fontWeight: 800, letterSpacing: 1.2,
-                  textTransform: "uppercase", color: "rgba(255,255,255,0.72)",
+                  textTransform: "uppercase", color: "var(--crown-compat-color-b287e65b63)",
                   padding: "10px 10px 2px", marginTop: 4,
                 }}
               >
@@ -242,8 +248,8 @@ export default function CrownLayout({ title, subtitle, right, children, mainClas
                       padding: "5px 10px",
                       borderRadius: 5,
                       fontSize: 13,
-                      color: active ? "var(--crown-surface)" : "rgba(255,255,255,0.72)",
-                      background: active ? "rgba(255,255,255,0.15)" : "transparent",
+                      color: active ? "var(--crown-surface)" : "var(--crown-compat-color-b287e65b63)",
+                      background: active ? "var(--crown-compat-color-5089217ef2)" : "transparent",
                       fontWeight: active ? 700 : 400,
                       textDecoration: "none",
                       transition: "background 0.1s",
