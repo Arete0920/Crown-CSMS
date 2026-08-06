@@ -22,14 +22,25 @@ jobs:
           fetch-depth: 0
 
       - name: Restore runtime-safe JavaScript and TypeScript values
-        shell: bash
+        shell: python
         run: |
-          set -euo pipefail
-          cp frontend/dashboards/tests/ui/dashboard-visual-certification.spec.ts /tmp/dashboard-visual-certification.spec.ts
-          git fetch origin main
-          find frontend/dashboards/src -type f \( -name '*.js' -o -name '*.jsx' -o -name '*.ts' -o -name '*.tsx' \) -print0 \
-            | xargs -0 -r git checkout origin/main --
-          cp /tmp/dashboard-visual-certification.spec.ts frontend/dashboards/tests/ui/dashboard-visual-certification.spec.ts
+          import pathlib
+          import subprocess
+
+          root = pathlib.Path('frontend/dashboards')
+          visual_test = root / 'tests/ui/dashboard-visual-certification.spec.ts'
+          visual_test_content = visual_test.read_bytes()
+          subprocess.run(['git', 'fetch', 'origin', 'main'], check=True)
+          runtime_files = [
+              str(path) for path in (root / 'src').rglob('*')
+              if path.is_file() and path.suffix.lower() in {'.js', '.jsx', '.ts', '.tsx'}
+          ]
+          for index in range(0, len(runtime_files), 80):
+              subprocess.run(
+                  ['git', 'checkout', 'origin/main', '--', *runtime_files[index:index + 80]],
+                  check=True,
+              )
+          visual_test.write_bytes(visual_test_content)
 
       - name: Setup Node.js
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
