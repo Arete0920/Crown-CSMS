@@ -1,0 +1,63 @@
+name: Design System 1887 Style Repair
+
+on:
+  push:
+    branches:
+      - agent/design-system-1887-final
+    paths:
+      - .github/workflows/design-system-1887-style-repair.yml
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout repair branch
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+        with:
+          ref: agent/design-system-1887-final
+          fetch-depth: 0
+
+      - name: Remove empty root block
+        shell: python
+        run: |
+          from pathlib import Path
+          import re
+
+          path = Path("frontend/dashboards/src/features/dashboards/crown-dashboard.css")
+          source = path.read_text(encoding="utf-8")
+          repaired, count = re.subn(r"^:root\s*\{\s*\}\s*", "", source, count=1)
+          if count != 1:
+              raise SystemExit("Expected exactly one leading empty :root block")
+          path.write_text(repaired, encoding="utf-8")
+
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: "22.22.0"
+          cache: npm
+          cache-dependency-path: frontend/dashboards/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: frontend/dashboards
+        run: npm ci
+
+      - name: Verify stylelint
+        working-directory: frontend/dashboards
+        run: |
+          npm install --no-save stylelint stylelint-config-standard
+          npx stylelint "src/**/*.css"
+
+      - name: Remove one-shot workflow
+        run: rm .github/workflows/design-system-1887-style-repair.yml
+
+      - name: Commit verified repair
+        run: |
+          git config user.name "CROWN policy automation"
+          git config user.email "noreply@github.com"
+          git add frontend/dashboards/src/features/dashboards/crown-dashboard.css .github/workflows/design-system-1887-style-repair.yml
+          git commit -m "fix(style): remove empty dashboard root block"
+          git push origin HEAD:agent/design-system-1887-final
