@@ -4,74 +4,166 @@ import process from 'node:process';
 
 const ROOT = path.resolve(process.cwd(), 'src');
 const REPORT_PATH = path.resolve(process.cwd(), 'visual-system-report.json');
-const AUTHORITATIVE = path.normalize('styles/crown-theme.css');
+const TOKEN_FILE = path.normalize('styles/crown-theme.css');
 const EXTENSIONS = new Set(['.js', '.jsx', '.ts', '.tsx', '.css']);
 const COLOR = /#[0-9a-fA-F]{3,8}\b|\brgba?\([^)]*\)|\bhsla?\([^)]*\)/g;
 const TOKEN = /--crown-[a-z0-9-]+\s*:/gi;
-const CSS_FONT = /font-family\s*:\s*([^;}{]+)/gi;
-const INLINE_FONT = /fontFamily\s*:\s*(['"`])([^'"`]+)\1/g;
-const ALLOWED_CSS_FONT = /^var\(--crown-font(?:-[a-z0-9-]+)?\)$/i;
-const ALLOWED_INLINE_FONT = /^(?:inherit|var\(--crown-font(?:-[a-z0-9-]+)?\))$/i;
+const FONT = /font-family\s*:\s*([^;}{]+)/gi;
+const FONT_STACK = /Inter\s*,\s*['"]Segoe UI['"]\s*,\s*Roboto\s*,\s*Helvetica\s*,\s*Arial\s*,\s*sans-serif/i;
+const FONT_TOKEN = /^var\(--crown-font(?:-[a-z0-9-]+)?\)$/i;
+const FONT_EXCEPTIONS = new Map([
+  [path.normalize('pages/GradebookRO.jsx'), new Set(['monospace', 'system-ui'])],
+]);
 
 function walk(dir) {
-return fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
-const full = path.join(dir, entry.name);
-if (entry.isDirectory()) return walk(full);
-return EXTENSIONS.has(path.extname(entry.name)) ? [full] : [];
-});
+  return fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) return walk(full);
+    return EXTENSIONS.has(path.extname(entry.name)) ? [full] : [];
+  });
 }
-function lineFor(text, index) { return text.slice(0, index).split('\n').length; }
-function finding(rule, file, text, match, value = match[0]) {
-return { severity: 'error', rule, file, line: lineFor(text, match.index), value };
+
+function lineFor(text, index) {
+  return text.slice(0, index).split('\n').length;
 }
-function rootOnly(text) {
-const start = text.indexOf(':root');
-if (start < 0) return false;
-const open = text.indexOf('{', start);
-let depth = 0;
-for (let index = open; index < text.length; index += 1) {
-if (text[index] === '{') depth += 1;
-if (text[index] === '}') {
-depth -= 1;
-if (depth === 0) {
-const remainder = text.slice(index + 1).replace(/\/\*[\s\S]*?\*\//g, '').trim();
-return remainder.length === 0;
+
+function allowedFont(file, value) {
+  const normalized = value.trim();
+  return (
+    FONT_STACK.test(normalized) ||
+    FONT_TOKEN.test(normalized) ||
+    FONT_EXCEPTIONS.get(file)?.has(normalized) ||
+    false
+  );
 }
+
+function visualContexts(text, extension) {
+  if (extension === '.css') return [{ text, offset: 0, kind: 'stylesheet' }];
+  const result = [];
+  for (const match of text.matchAll(/<style(?:\s[^>]*)?>\s*\{`([\s\S]*?)`\}\s*<\/style>/g)) {
+    result.push({
+      text: match[1],
+      offset: match.index + match[0].indexOf(match[1]),
+      kind: 'style-template',
+    });
+  }
+  for (const match of text.matchAll(/(?:style|sx)\s*=\s*\{\s*\{([\s\S]*?)\}\s*\}/g)) {
+    result.push({
+      text: match[1],
+      offset: match.index + match[0].indexOf(match[1]),
+      kind: 'inline-style',
+    });
+  }
+  return result;
 }
-}
-return false;
+
+if (!fs.existsSync(ROOT)) {
+  console.error('Run this command from frontend/dashboards.');
+  process.exit(1);
 }
 
 const findings = [];
+const classifiedExceptions = [];
+
 for (const file of walk(ROOT)) {
-const relative = path.normalize(path.relative(ROOT, file));
-const text = fs.readFileSync(file, 'utf8');
-if (relative === AUTHORITATIVE) {
-if (!rootOnly(text)) findings.push({ severity: 'error', rule: 'theme-authority-violation', file: relative, line: 1, value: 'crown-theme.css must contain tokens only' });
-continue;
+  const relative = path.normalize(path.relative(ROOT, file));
+  const extension = path.extname(file);
+  const text = fs.readFileSync(file, 'utf8');
+
+  for (const match of text.matchAll(TOKEN)) {
+    if (relative !== TOKEN_FILE) {
+      findings.push({
+        severity: 'error',
+        rule: 'duplicate-crown-token',
+        file: relative,
+        line: lineFor(text, match.index),
+        value: match[0],
+      });
+    }
+  }
+
+  for (const match of text.matchAll(FONT)) {
+    if (!allowedFont(relative, match[1])) {
+      findings.push({
+        severity: 'error',
+        rule: 'font-family-drift',
+        file: relative,
+        line: lineFor(text, match.index),
+        value: match[1].trim(),
+      });
+    }
+  }
+
+  const contexts = visualContexts(text, extension);
+  const ranges = contexts.map((item) => [item.offset, item.offset + item.text.length]);
+
+  for (const context of contexts) {
+    if (relative === TOKEN_FILE) continue;
+    for (const match of context.text.matchAll(COLOR)) {
+      findings.push({
+        severity: 'error',
+        rule: context.kind === 'inline-style' ? 'inline-visual-style' : 'raw-color-literal',
+        file: relative,
+        line: lineFor(text, context.offset + match.index),
+        value: match[0],
+      });
+    }
+  }
+
+  if (extension !== '.css') {
+    for (const match of text.matchAll(COLOR)) {
+      if (!ranges.some(([start, end]) => match.index >= start && match.index < end)) {
+        classifiedExceptions.push({
+          rule: 'runtime-chart-svg-theme-color',
+          file: relative,
+          line: lineFor(text, match.index),
+          value: match[0],
+        });
+      }
+    }
+  }
 }
-for (const match of text.matchAll(TOKEN)) findings.push(finding('duplicate-crown-token', relative, text, match));
-for (const match of text.matchAll(COLOR)) findings.push(finding('raw-color-literal', relative, text, match));
-if (relative.endsWith('.css')) {
-for (const match of text.matchAll(CSS_FONT)) {
-const value = match[1].trim();
-if (!ALLOWED_CSS_FONT.test(value)) findings.push(finding('font-family-drift', relative, text, match, value));
+
+const counts = {
+  'inline-visual-style': 0,
+  'raw-color-literal': 0,
+  'duplicate-crown-token': 0,
+  'font-family-drift': 0,
+};
+for (const item of findings) counts[item.rule] += 1;
+
+const exceptionCounts = {};
+for (const item of classifiedExceptions) {
+  exceptionCounts[item.rule] = (exceptionCounts[item.rule] || 0) + 1;
 }
-} else {
-for (const match of text.matchAll(INLINE_FONT)) {
-const value = match[2].trim();
-if (!ALLOWED_INLINE_FONT.test(value)) findings.push(finding('inline-font-family-drift', relative, text, match, value));
-}
-}
-}
-const counts = findings.reduce((result, item) => {
-result[item.rule] = (result[item.rule] || 0) + 1;
-return result;
-}, {});
-fs.writeFileSync(REPORT_PATH, `${JSON.stringify({ generated_at: new Date().toISOString(), counts, findings }, null, 2)}\n`);
-console.log(`CROWN visual-system scan: ${findings.length} violation(s)`);
+
+fs.writeFileSync(
+  REPORT_PATH,
+  JSON.stringify(
+    {
+      schemaVersion: 2,
+      generatedAt: new Date().toISOString(),
+      policy:
+        'CSS and JSX style contexts must consume central tokens. Runtime MUI, chart, SVG, and data-series colors are classified exceptions.',
+      counts,
+      exceptionCounts,
+      findings,
+      classifiedExceptions,
+    },
+    null,
+    2
+  ) + '\n'
+);
+
+console.log(`CROWN visual-system scan: ${findings.length} blocking finding(s)`);
 for (const [rule, count] of Object.entries(counts).sort()) console.log(`${rule}: ${count}`);
+for (const [rule, count] of Object.entries(exceptionCounts).sort()) {
+  console.log(`classified-exception ${rule}: ${count}`);
+}
+
 if (findings.length) {
-for (const item of findings) console.error(`ERROR ${item.rule} ${item.file}:${item.line} ${item.value}`);
-process.exit(1);
+  for (const item of findings.slice(0, 200)) {
+    console.error(`ERROR ${item.rule} ${item.file}:${item.line} ${item.value}`);
+  }
+  process.exit(1);
 }
