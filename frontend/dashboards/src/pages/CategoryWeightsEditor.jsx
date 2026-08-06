@@ -129,7 +129,7 @@ export function CategoryWeightsEditor() {
         <div style={{ marginLeft: "auto" }}>
           <span style={{ fontWeight: 500 }}>Active sum:</span>{" "}
           <b style={{ color: sumOk ? "green" : "red" }}>{activeSum.toFixed(2)}%</b>
-          {!sumOk && <span style={{ color: "red", marginLeft: 8 }}>(must be 0 or 100)</span>}
+          {!sumOk && <span style={{ color: "var(--crown-danger)", marginLeft: 8 }}>(must be 0 or 100)</span>}
         </div>
       </div>
 

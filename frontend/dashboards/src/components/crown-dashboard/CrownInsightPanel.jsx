@@ -30,18 +30,18 @@ export default function CrownInsightPanel({ kicker = 'Insight', title, chip, tre
         ) : (
           <ResponsiveContainer width="100%" height={240} minWidth={320} minHeight={220}>
             <LineChart data={trend} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-              <CartesianGrid stroke="#E2E8F0" strokeDasharray="4 6" vertical={false} />
-              <XAxis dataKey="month" stroke="#94A3B8" tickLine={false} axisLine={false} />
-              <YAxis stroke="#94A3B8" tickLine={false} axisLine={false} width={40} />
+              <CartesianGrid stroke="var(--crown-compat-color-3b313dfb66)" strokeDasharray="4 6" vertical={false} />
+              <XAxis dataKey="month" stroke="var(--crown-compat-color-b5e2bc59ff)" tickLine={false} axisLine={false} />
+              <YAxis stroke="var(--crown-compat-color-b5e2bc59ff)" tickLine={false} axisLine={false} width={40} />
               <Tooltip
-                cursor={{ stroke: '#93C5FD', strokeWidth: 1, strokeDasharray: '2 4' }}
+                cursor={{ stroke: 'var(--crown-compat-color-928ee44540)', strokeWidth: 1, strokeDasharray: '2 4' }}
                 contentStyle={{
                   borderRadius: 14,
-                  border: '1px solid #DBEAFE',
-                  boxShadow: '0 14px 28px rgba(37,99,235,0.12)',
+                  border: '1px solid var(--crown-compat-color-b1925ae209)',
+                  boxShadow: '0 14px 28px var(--crown-compat-color-9228ddcf62)',
                 }}
               />
-              <Line type="monotone" dataKey="value" stroke="#2563EB" strokeWidth={3} dot={{ r: 4, fill: '#FFFFFF', stroke: '#1D4ED8', strokeWidth: 2 }} activeDot={{ r: 5, fill: '#FBBF24' }} />
+              <Line type="monotone" dataKey="value" stroke="var(--crown-compat-color-e7b00c296b)" strokeWidth={3} dot={{ r: 4, fill: 'var(--crown-compat-color-f2074b6cef)', stroke: 'var(--crown-compat-color-d139a66934)', strokeWidth: 2 }} activeDot={{ r: 5, fill: 'var(--crown-compat-color-f8e175950d)' }} />
             </LineChart>
           </ResponsiveContainer>
         )}

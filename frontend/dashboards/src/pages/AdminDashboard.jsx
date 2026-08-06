@@ -199,7 +199,7 @@ export default function AdminDashboard() {
               goal={3000}
               percentLabel="78%"
               detail="2,340 of 3,000 annual service hours"
-              colorClass="#059669"
+              colorClass="var(--crown-compat-color-63a3fc9a2c)"
             />
           </Col>
 
@@ -225,12 +225,12 @@ export default function AdminDashboard() {
                 {
                   label: 'Current Year',
                   data: [365, 374, 382, 391, 397, 403, 409, 412],
-                  borderColor: '#004687',
+                  borderColor: 'var(--crown-compat-color-4363483eb0)',
                 },
                 {
                   label: 'Prior Year',
                   data: [352, 360, 367, 375, 382, 389, 393, 396],
-                  borderColor: '#C4A65A',
+                  borderColor: 'var(--crown-compat-color-46ac265693)',
                 },
               ]}
             />
@@ -245,7 +245,7 @@ export default function AdminDashboard() {
                 {
                   label: 'Attendance %',
                   data: [95, 94, 92, 91, 88, 90],
-                  borderColor: '#004687',
+                  borderColor: 'var(--crown-compat-color-4363483eb0)',
                 },
               ]}
               type="bar"

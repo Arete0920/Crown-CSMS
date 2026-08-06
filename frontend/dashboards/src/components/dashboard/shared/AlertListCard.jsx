@@ -15,8 +15,8 @@ function getChipProps(level) {
     return {
       color: 'warning',
       sx: {
-        '& .MuiChip-label': { color: '#4d3200', fontWeight: 600 },
-        bgcolor: '#f8d58a',
+        '& .MuiChip-label': { color: 'var(--crown-compat-color-7705d1144a)', fontWeight: 600 },
+        bgcolor: 'var(--crown-compat-color-a9c8c941d5)',
       },
     };
   }

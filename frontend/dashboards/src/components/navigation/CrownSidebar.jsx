@@ -15,9 +15,9 @@ function Section({ title, children }) {
     <Box
       sx={{
         mb: 0.75,
-        border: "1px solid rgba(255,255,255,0.12)",
+        border: "1px solid var(--crown-compat-color-b749cc2591)",
         borderRadius: 1.25,
-        backgroundColor: "rgba(255,255,255,0.03)",
+        backgroundColor: "var(--crown-compat-color-8820ca3754)",
       }}
     >
       <ListItemButton
@@ -33,7 +33,7 @@ function Section({ title, children }) {
                 fontSize: 10,
                 letterSpacing: 1.15,
                 textTransform: "uppercase",
-                color: "rgba(255,255,255,0.72)",
+                color: "var(--crown-compat-color-b287e65b63)",
               }}
             >
               {title}
@@ -72,11 +72,11 @@ function NavItem({ label, href }) {
         mb: 0.35,
         fontSize: 13,
         fontWeight: active ? 700 : 500,
-        color: active ? "#ffffff" : "rgba(255,255,255,0.8)",
-        backgroundColor: active ? "rgba(176,141,87,0.38)" : "transparent",
-        border: active ? "1px solid rgba(255,255,255,0.28)" : "1px solid transparent",
+        color: active ? "var(--crown-compat-color-f2074b6cef)" : "var(--crown-compat-color-1248f9ab2f)",
+        backgroundColor: active ? "var(--crown-compat-color-a1adec2ba3)" : "transparent",
+        border: active ? "1px solid var(--crown-compat-color-f6a93a8e2e)" : "1px solid transparent",
         '&:hover': {
-          backgroundColor: active ? "rgba(176,141,87,0.45)" : "rgba(255,255,255,0.08)",
+          backgroundColor: active ? "var(--crown-compat-color-a744b12de6)" : "var(--crown-compat-color-c34f5a2a4d)",
         },
       }}
     >

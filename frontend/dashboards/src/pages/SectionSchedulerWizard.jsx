@@ -60,7 +60,7 @@ export default function SectionSchedulerWizard() {
           <h2>Step 1 — Term Configuration</h2>
           <input placeholder="Academic Year ID (UUID)" value={ayId} onChange={e => setAyId(e.target.value)} required style={{ display: "block", marginBottom: 8 }} />
           <input placeholder="Term Code (e.g. S1, Q1)" value={termCode} onChange={e => setTermCode(e.target.value)} required style={{ display: "block", marginBottom: 8 }} />
-          {err && <p style={{ color: "red" }}>{err}</p>}
+          {err && <p style={{ color: "var(--crown-danger)" }}>{err}</p>}
           <button type="submit">Next: Define Sections</button>
         </form>
       )}
@@ -78,7 +78,7 @@ export default function SectionSchedulerWizard() {
             </div>
           ))}
           <button type="button" onClick={() => setSections(p => [...p, emptySection()])}>+ Add Section</button>
-          {err && <p style={{ color: "red" }}>{err}</p>}
+          {err && <p style={{ color: "var(--crown-danger)" }}>{err}</p>}
           <button type="submit">Commit Sections</button>
         </form>
       )}

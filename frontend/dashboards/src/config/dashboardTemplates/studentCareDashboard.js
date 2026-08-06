@@ -40,7 +40,7 @@ export default {
   prioritiesTitle: 'Care team priorities',
 
   alerts: [
-    { title: 'Student #0831 care plan escalated', detail: 'Behavioral incident â€” parent meeting requested.', tone: 'warn' },
+    { title: 'Student var(--crown-compat-color-64ce0c9f4e) care plan escalated', detail: 'Behavioral incident â€” parent meeting requested.', tone: 'warn' },
     { title: '3 care plans require goal updates', detail: 'Team review today â€” updates needed before Friday.', tone: 'warn' },
   ],
 
@@ -89,7 +89,7 @@ export default {
   ],
 
   activities: [
-    'Student #0831 care plan escalated â€” parent meeting requested.',
+    'Student var(--crown-compat-color-64ce0c9f4e) care plan escalated â€” parent meeting requested.',
     '3 care plan goal updates flagged for team review.',
     '7 family contacts queued for documentation.',
     'Monthly at-risk report drafted for principal.',

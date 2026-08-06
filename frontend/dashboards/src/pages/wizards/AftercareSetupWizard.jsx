@@ -150,7 +150,7 @@ export default function AftercareSetupWizard() {
       <Typography variant="subtitle2" sx={{ mb: 2 }}>Review Configuration</Typography>
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
       {saving && <CircularProgress size={20} sx={{ mb: 2 }} />}
-      <Typography variant="body2" component="pre" sx={{ fontFamily: "monospace", whiteSpace: "pre-wrap", fontSize: 12 }}>
+      <Typography variant="body2" component="pre" sx={{ fontFamily: "var(--crown-font-mono)", whiteSpace: "pre-wrap", fontSize: 12 }}>
         {JSON.stringify(cfg, null, 2)}
       </Typography>
     </Box>

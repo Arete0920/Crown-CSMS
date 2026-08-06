@@ -57,7 +57,7 @@ export default function Step4Preview({ context, goNext, goPrev, stepIndex, total
               <tbody>
                 {recipients.map((r, i) => (
                   <tr key={i} style={{ borderBottom: "1px solid var(--crown-border)" }}>
-                    <td style={{ padding: "6px 12px", fontFamily: "monospace", fontSize: 11 }}>{r.to}</td>
+                    <td style={{ padding: "6px 12px", fontFamily: "var(--crown-font-mono)", fontSize: 11 }}>{r.to}</td>
                     <td style={{ padding: "6px 12px" }}>{r.name || "—"}</td>
                   </tr>
                 ))}

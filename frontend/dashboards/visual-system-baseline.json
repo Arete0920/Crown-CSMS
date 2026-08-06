@@ -1,8 +1,3 @@
 {
-  "counts": {
-    "inline-visual-style": 2145,
-    "raw-color-literal": 934,
-    "duplicate-crown-token": 38,
-    "font-family-drift": 0
-  }
+  "counts": {}
 }

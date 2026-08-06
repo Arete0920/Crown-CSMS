@@ -40,7 +40,7 @@ export default {
   prioritiesTitle: 'Billing priorities',
 
   alerts: [
-    { title: 'NSF check returned â€” family #2847', detail: 'Check reissue requested. Finance notified.', tone: 'warn' },
+    { title: 'NSF check returned â€” family var(--crown-compat-color-e9df860ed9)', detail: 'Check reissue requested. Finance notified.', tone: 'warn' },
     { title: 'Payment portal maintenance window tonight', detail: 'Stripe scheduled 11 PMâ€“1 AM â€” no impact to invoicing.', tone: 'warn' },
   ],
 
@@ -90,8 +90,8 @@ export default {
 
   activities: [
     'April invoice batch queued â€” 412 families notified.',
-    'Payment plan #2841 brought current after family call.',
-    'NSF check #2847 flagged â€” reissue requested.',
+    'Payment plan var(--crown-compat-color-1601ae143a) brought current after family call.',
+    'NSF check var(--crown-compat-color-e9df860ed9) flagged â€” reissue requested.',
     'Late fee waiver submitted for admin review.',
     'Year-to-date billing summary exported for board.',
   ],

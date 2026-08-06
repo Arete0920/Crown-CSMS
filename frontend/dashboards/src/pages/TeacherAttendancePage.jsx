@@ -98,7 +98,7 @@ export default function TeacherAttendancePage() {
       </div>
 
       {msg && msg.startsWith("Saved") ? (
-        <div style={{ marginBottom: 12, color: "green" }}>{msg}</div>
+        <div style={{ marginBottom: 12, color: "var(--crown-success)" }}>{msg}</div>
       ) : (
         <ErrorBanner title="Attendance error" message={msg} />
       )}

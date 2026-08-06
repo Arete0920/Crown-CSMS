@@ -29,9 +29,9 @@ function authHeaders() {
 }
 
 const RESULT_STYLE = {
-  accepted: { color: "#15803d", bg: "#dcfce7", label: " Accepted" },
-  duplicate: { color: "#b45309", bg: "#fef3c7", label: " Duplicate  already checked in" },
-  invalid: { color: "#b91c1c", bg: "#fee2e2", label: " Invalid QR code" },
+  accepted: { color: "var(--crown-compat-color-7d4ff8ff7b)", bg: "var(--crown-compat-color-64033be9a6)", label: " Accepted" },
+  duplicate: { color: "var(--crown-compat-color-13b406d84d)", bg: "var(--crown-compat-color-5106142d0d)", label: " Duplicate  already checked in" },
+  invalid: { color: "var(--crown-compat-color-59dbd12595)", bg: "var(--crown-compat-color-4b54505300)", label: " Invalid QR code" },
 };
 
 export default function TicketCheckInPage() {
@@ -71,7 +71,7 @@ export default function TicketCheckInPage() {
   const resultStyle = lastScan ? RESULT_STYLE[lastScan.result] ?? RESULT_STYLE.invalid : null;
 
   return (
-    <div style={{ maxWidth: 560, margin: "0 auto", padding: "2rem 1rem", fontFamily: "system-ui, sans-serif" }}>
+    <div style={{ maxWidth: 560, margin: "0 auto", padding: "2rem 1rem", fontFamily: "var(--crown-font-family)" }}>
       <h1 style={{ fontSize: "1.5rem", fontWeight: 700, marginBottom: "1.5rem" }}>
         QR Ticket Check-In
       </h1>
@@ -108,7 +108,7 @@ export default function TicketCheckInPage() {
           style={{
             flex: 1,
             padding: "0.65rem 1rem",
-            border: "1px solid #d1d5db",
+            border: "1px solid var(--crown-compat-color-9643a6d44f)",
             borderRadius: 6,
             fontSize: "1rem",
           }}
@@ -118,8 +118,8 @@ export default function TicketCheckInPage() {
           disabled={scanning || !qrInput.trim()}
           style={{
             padding: "0.65rem 1.25rem",
-            background: "#1e40af",
-            color: "#fff",
+            background: "var(--crown-compat-color-1d4a6b66ff)",
+            color: "var(--crown-compat-color-e08de71387)",
             border: "none",
             borderRadius: 6,
             cursor: scanning ? "wait" : "pointer",
@@ -131,19 +131,19 @@ export default function TicketCheckInPage() {
       </form>
 
       {error && (
-        <div style={{ color: "#b91c1c", marginBottom: "1rem", fontSize: "0.9rem" }}>
+        <div style={{ color: "var(--crown-compat-color-59dbd12595)", marginBottom: "1rem", fontSize: "0.9rem" }}>
           Error: {error}
         </div>
       )}
 
       {history.length > 0 && (
         <>
-          <h2 style={{ fontSize: "1rem", fontWeight: 600, marginBottom: "0.75rem", color: "#374151" }}>
+          <h2 style={{ fontSize: "1rem", fontWeight: 600, marginBottom: "0.75rem", color: "var(--crown-compat-color-a95c525e33)" }}>
             Recent scans ({history.length})
           </h2>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.85rem" }}>
             <thead>
-              <tr style={{ borderBottom: "2px solid #e5e7eb", textAlign: "left" }}>
+              <tr style={{ borderBottom: "2px solid var(--crown-compat-color-bfd4f8ffca)", textAlign: "left" }}>
                 <th style={{ padding: "0.4rem 0.5rem" }}>Result</th>
                 <th style={{ padding: "0.4rem 0.5rem" }}>QR Attempted</th>
                 <th style={{ padding: "0.4rem 0.5rem" }}>Scanned At</th>
@@ -153,14 +153,14 @@ export default function TicketCheckInPage() {
               {history.map((s) => {
                 const rs = RESULT_STYLE[s.result] ?? RESULT_STYLE.invalid;
                 return (
-                  <tr key={s.id} style={{ borderBottom: "1px solid #f3f4f6" }}>
+                  <tr key={s.id} style={{ borderBottom: "1px solid var(--crown-compat-color-8c857e7d93)" }}>
                     <td style={{ padding: "0.4rem 0.5rem", color: rs.color, fontWeight: 600 }}>
                       {rs.label}
                     </td>
-                    <td style={{ padding: "0.4rem 0.5rem", fontFamily: "monospace" }}>
+                    <td style={{ padding: "0.4rem 0.5rem", fontFamily: "var(--crown-font-mono)" }}>
                       {s.qr_attempted}
                     </td>
-                    <td style={{ padding: "0.4rem 0.5rem", color: "#6b7280" }}>
+                    <td style={{ padding: "0.4rem 0.5rem", color: "var(--crown-compat-color-66341b70b3)" }}>
                       {s.scanned_at ? new Date(s.scanned_at).toLocaleTimeString() : ""}
                     </td>
                   </tr>

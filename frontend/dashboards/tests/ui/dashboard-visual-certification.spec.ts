@@ -37,6 +37,8 @@ const DASHBOARD_SURFACES = [
   { path: "/communications-director", role: "communications_director" },
   { path: "/pd", role: "pd_director" },
   { path: "/student-services", role: "student_services" },
+  { path: "/sandbox", role: "school_admin" },
+  { path: "/sandbox/command-center", role: "school_admin" },
 ] as const;
 
 const VIEWPORTS = [

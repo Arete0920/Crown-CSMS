@@ -12,11 +12,11 @@ export default function DegradationBadge({ visible = false }) {
       gap: '8px',
       padding: '10px 14px',
       marginBottom: '16px',
-      backgroundColor: 'var(--crown-warn-bg, #fff3cd)',
-      border: '1px solid var(--crown-warn, #ffc107)',
+      backgroundColor: 'var(--crown-warn-bg, var(--crown-compat-color-152e1b478d))',
+      border: '1px solid var(--crown-warn, var(--crown-compat-color-26c4c50b73))',
       borderRadius: '6px',
       fontSize: '13px',
-      color: 'var(--crown-ink, #333)',
+      color: 'var(--crown-ink, var(--crown-compat-color-9bc4f65939))',
       fontWeight: 500,
     }}>
       <span style={{ fontSize: '16px' }}>⚠️</span>

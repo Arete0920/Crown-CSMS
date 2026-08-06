@@ -63,7 +63,7 @@ export default function Step3StageRoster({ context, setContext, goNext, goPrev, 
             <tbody>
               {studentIds.map((id) => (
                 <tr key={id} style={{ borderBottom: "1px solid var(--crown-border)" }}>
-                  <td style={{ padding: "6px 8px", fontFamily: "monospace", fontSize: 11 }}>{id}</td>
+                  <td style={{ padding: "6px 8px", fontFamily: "var(--crown-font-mono)", fontSize: 11 }}>{id}</td>
                   <td style={{ padding: "6px 8px" }}>
                     <select
                       className="crown-input"

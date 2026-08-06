@@ -140,7 +140,7 @@ export default function AcademicYearWizard() {
     return (
       <CrownLayout title="Academic Year Rollover" subtitle="Wizard #15 — Academic Year Rollover">
         <Step title="Academic Year Created">
-          <p style={{ color: "green" }}>
+          <p style={{ color: "var(--crown-success)" }}>
             {result?.message || "Academic year created successfully."}
           </p>
           <ul>
@@ -164,7 +164,7 @@ export default function AcademicYearWizard() {
     return (
       <CrownLayout title="Academic Year Rollover" subtitle="Wizard #15 — Academic Year Rollover">
         <Step title="Step 2 of 2 — Academic Terms">
-          {err && <p style={{ color: "red" }}>{err}</p>}
+          {err && <p style={{ color: "var(--crown-danger)" }}>{err}</p>}
           <form onSubmit={handleTerms}>
             {terms.map((term, idx) => (
               <div key={idx} style={{ border: "1px solid var(--crown-border)", borderRadius: 4, padding: 12, marginBottom: 12 }}>
@@ -202,7 +202,7 @@ export default function AcademicYearWizard() {
                   </label>
                   &nbsp;
                   {terms.length > 1 && (
-                    <button type="button" onClick={() => removeTerm(idx)} style={{ color: "red" }}>
+                    <button type="button" onClick={() => removeTerm(idx)} style={{ color: "var(--crown-danger)" }}>
                       Remove
                     </button>
                   )}
@@ -223,7 +223,7 @@ export default function AcademicYearWizard() {
   return (
     <CrownLayout title="Academic Year Rollover" subtitle="Wizard #15 — Academic Year Rollover">
       <Step title="Step 1 of 2 — Year Details">
-        {err && <p style={{ color: "red" }}>{err}</p>}
+        {err && <p style={{ color: "var(--crown-danger)" }}>{err}</p>}
         <p style={{ color: "var(--crown-muted)", marginBottom: 16 }}>
           This wizard creates a new academic year and marks it as current.
           The previous current year will be deactivated automatically.

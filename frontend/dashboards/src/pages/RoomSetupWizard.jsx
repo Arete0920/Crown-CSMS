@@ -53,7 +53,7 @@ export default function RoomSetupWizard() {
             </div>
           ))}
           <button type="button" onClick={() => setRooms(p => [...p, emptyRoom()])}>+ Add Room</button>
-          {err && <p style={{ color: "red" }}>{err}</p>}
+          {err && <p style={{ color: "var(--crown-danger)" }}>{err}</p>}
           <button type="submit">Commit Rooms</button>
         </form>
       )}
