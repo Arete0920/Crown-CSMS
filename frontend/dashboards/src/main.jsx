@@ -7,6 +7,7 @@ import CssBaseline from '@mui/material/CssBaseline';
 import './styles/crown-theme.css';
 import './styles/crown.css';
 import './styles/launch-shell.css';
+import './styles/client-experience.css';
 import { crownTheme } from './theme/crownTheme';
 import { router } from './routes/router.jsx';
 import AuthProvider from './auth/AuthProvider.jsx';
