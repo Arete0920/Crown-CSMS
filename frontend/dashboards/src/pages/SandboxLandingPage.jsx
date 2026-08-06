@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import CrownLogo from "../components/brand/CrownLogo";
-import CrownLayout from "../components/crown/CrownLayout";
 import {
   SANDBOX_TRACKS,
   getSandboxSchool,
@@ -104,17 +103,17 @@ export default function SandboxLandingPage() {
         .sandbox-panel h2 { font-family: var(--crown-font); font-size: 34px; line-height: 1.15; margin: 0 0 10px; color: var(--crown-compat-color-8e47de7f3c); }
         .sandbox-panel p { color: var(--crown-compat-color-fff712ee45); line-height: 1.55; margin: 0 0 18px; }
         .track-grid, .mode-grid, .persona-grid, .school-grid { display: grid; gap: 12px; }
-        .track-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        .track-grid { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
         .mode-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); margin: 18px 0; }
         .persona-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: 14px; }
-        .school-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: 16px; }
+        .school-grid { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); margin-top: 16px; }
         .select-card, .persona-card, .school-card { border: 1px solid var(--crown-compat-color-3ad3168e09); border-radius: 16px; background: var(--crown-compat-color-f2074b6cef); padding: 14px; text-align: left; color: var(--crown-compat-color-62760b63ce); }
         button.select-card, button.persona-card { cursor: pointer; }
         .select-card.active { border-color: var(--crown-compat-color-550e1aa105); box-shadow: 0 0 0 3px var(--crown-compat-color-49c00fe872); background: var(--crown-compat-color-1eceb30284); }
         .card-title { font-weight: 800; margin-bottom: 4px; }
         .card-copy { font-size: 13px; color: var(--crown-compat-color-b1be72453d); line-height: 1.4; }
         .persona-card { display: grid; gap: 10px; }
-        .primary-link { display: inline-flex; justify-content: center; align-items: center; border-radius: 10px; background: linear-gradient(120deg, var(--crown-compat-color-f4ce79ce58) 0%, var(--crown-compat-color-550e1aa105) 100%); color: white; text-decoration: none; padding: 10px 12px; font-weight: 800; font-size: 14px; border: 0; cursor: pointer; }
+        .primary-link { display: inline-flex; justify-content: center; align-items: center; border-radius: 10px; background: linear-gradient(120deg, var(--crown-compat-color-f4ce79ce58) 0%, var(--crown-compat-color-550e1aa105) 100%) !important; color: white !important; -webkit-text-fill-color: white !important; text-decoration: none; padding: 10px 12px; font-weight: 800; font-size: 14px; border: 0; cursor: pointer; }
         .primary-link[disabled] { opacity: 0.62; cursor: wait; }
         .sandbox-warning, .sandbox-error, .sandbox-invite { margin-top: 18px; padding: 12px 14px; border-radius: 14px; font-weight: 800; font-size: 13px; line-height: 1.45; }
         .sandbox-warning { border: 1px solid var(--crown-compat-color-acec48178c); background: var(--crown-compat-color-cdf53bae31); color: var(--crown-compat-color-1588a009e3); }
@@ -125,11 +124,7 @@ export default function SandboxLandingPage() {
         @media (max-width: 720px) { .track-grid, .mode-grid, .persona-grid, .school-grid { grid-template-columns: 1fr; } }
       `}</style>
 
-      <CrownLayout
-        title="Guided Proof Sandbox"
-        subtitle="Explore CROWN with safe fictional data and launch role-specific proof paths."
-        mainClassName="sandbox-root"
-      >
+      <main className="sandbox-root">
         <section className="sandbox-hero">
           <aside className="sandbox-brand-card" aria-label="CROWN sandbox overview">
             <div>
@@ -230,7 +225,7 @@ export default function SandboxLandingPage() {
             </div>
           </section>
         </section>
-      </CrownLayout>
+      </main>
     </>
   );
 }
