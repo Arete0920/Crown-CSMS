@@ -29,13 +29,15 @@ jobs:
           path = Path("frontend/dashboards/src/components/crown/CrownLayout.jsx")
           source = path.read_text(encoding="utf-8")
           old = '      <aside className={`crown-sidebar ${sidebarOpen ? "is-open" : ""}`.trim()}>'
-          new = '''      <aside
-        className={`crown-sidebar ${sidebarOpen ? "is-open" : ""}`.trim()}
-        style={{
-          background: "linear-gradient(180deg, var(--crown-primary-strong), var(--crown-primary-deep))",
-          color: "var(--crown-surface)",
-        }}
-      >'''
+          new = (
+              '      <aside\n'
+              '        className={`crown-sidebar ${sidebarOpen ? "is-open" : ""}`.trim()}\n'
+              '        style={{\n'
+              '          background: "linear-gradient(180deg, var(--crown-primary-strong), var(--crown-primary-deep))",\n'
+              '          color: "var(--crown-surface)",\n'
+              '        }}\n'
+              '      >'
+          )
           if source.count(old) != 1:
               raise SystemExit("Expected exactly one Crown sidebar opening tag")
           path.write_text(source.replace(old, new), encoding="utf-8")
