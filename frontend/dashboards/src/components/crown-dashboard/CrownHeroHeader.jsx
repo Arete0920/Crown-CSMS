@@ -4,11 +4,11 @@ import MicrosoftProductLogo from '../brand/MicrosoftProductLogo';
 import CrownIcon from '../icons/CrownIcon.jsx';
 
 const MICROSOFT_SHORTCUTS = [
-  { product: 'teams', label: 'Teams', href: 'https://teams.microsoft.com/v2/' },
-  { product: 'outlook', label: 'Outlook', href: 'https://outlook.office.com/mail/' },
-  { product: 'word', label: 'Word', href: 'https://www.microsoft365.com/launch/word' },
-  { product: 'excel', label: 'Excel', href: 'https://www.microsoft365.com/launch/excel' },
-  { product: 'onedrive', label: 'OneDrive', href: 'https://www.microsoft365.com/launch/onedrive' },
+  { product: 'teams', label: 'Microsoft Teams', href: 'https://teams.microsoft.com/v2/' },
+  { product: 'outlook', label: 'Microsoft Outlook', href: 'https://outlook.office.com/mail/' },
+  { product: 'word', label: 'Microsoft Word', href: 'https://www.microsoft365.com/launch/word' },
+  { product: 'excel', label: 'Microsoft Excel', href: 'https://www.microsoft365.com/launch/excel' },
+  { product: 'onedrive', label: 'Microsoft OneDrive', href: 'https://www.microsoft365.com/launch/onedrive' },
 ];
 
 export default function CrownHeroHeader({
@@ -92,12 +92,12 @@ export default function CrownHeroHeader({
               target="_blank"
               rel="noopener noreferrer"
               className="launch-m365-shortcut"
-              aria-label={`Open Microsoft ${shortcut.label}`}
+              aria-label={`Open ${shortcut.label}`}
             >
               <span className="launch-m365-shortcut-icon" aria-hidden="true">
                 <MicrosoftProductLogo
                   product={shortcut.product}
-                  label={`Microsoft ${shortcut.label}`}
+                  label={shortcut.label}
                   compactFallback
                   decorative
                 />
