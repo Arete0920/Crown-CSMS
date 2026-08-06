@@ -64,6 +64,26 @@ function Search-RepoText {
     }
 }
 
+function Require-TextPattern {
+    param(
+        [string]$Path,
+        [string]$Pattern,
+        [string]$FindingId,
+        [string]$Area,
+        [string]$Evidence,
+        [string]$RequiredFix
+    )
+
+    $text = Read-TextFile $Path
+    if (-not $text) {
+        Add-Finding -Id $FindingId -Severity "BLOCKER" -Area $Area -File $Path -Evidence "Required file is missing or empty." -RequiredFix $RequiredFix
+        return
+    }
+    if ($text -notmatch $Pattern) {
+        Add-Finding -Id $FindingId -Severity "BLOCKER" -Area $Area -File $Path -Evidence $Evidence -RequiredFix $RequiredFix
+    }
+}
+
 $repoPath = Join-Path $base "01_repo_truth.txt"
 "=== REPO TRUTH ===" | Set-Content -Path $repoPath -Encoding UTF8
 git branch --show-current | Add-Content -Path $repoPath -Encoding UTF8
@@ -89,24 +109,54 @@ else {
     Add-Finding -Id "FC-004" -Severity "BLOCKER" -Area "release-authority" -File $currentReleaseStatus -Evidence "Missing canonical release status file." -RequiredFix "Restore canonical release status with current SHA and evidence links."
 }
 
-# 2. Dashboard templates with BASE_NOTE are preview/sandbox-backed unless explicitly hidden/non-shipping.
+# 2. Preview/scaffold data is blocking only when a shipping dashboard template uses it.
+$templateDir = "frontend/dashboards/src/config/dashboardTemplates"
 $templateFiles = @()
-if (Test-Path "frontend/dashboards/src/config/dashboardTemplates") {
-    $templateFiles = Get-ChildItem "frontend/dashboards/src/config/dashboardTemplates" -Filter "*.js" -Recurse | ForEach-Object FullName
+if (Test-Path $templateDir) {
+    $templateFiles = Get-ChildItem $templateDir -Filter "*Dashboard.js" -File -Recurse | ForEach-Object FullName
 }
-foreach ($file in $templateFiles) {
-    $text = Read-TextFile $file
-    if ($text -match "BASE_NOTE" -or $text -match "Sandbox preview data shown" -or $text -match "Connect backend for live records") {
-        Add-Finding -Id "FC-010" -Severity "BLOCKER" -Area "dashboard-live-data" -File $file -Evidence "Dashboard template references BASE_NOTE or sandbox-preview language." -RequiredFix "Either replace this dashboard with live service/API-backed metrics and provenance or keep it non-ready/non-production-visible."
+Search-RepoText -Paths $templateFiles -Pattern "BASE_NOTE|Sandbox preview data shown|Connect backend for live records" -Area "dashboard-live-data" -FindingId "FC-010" -RequiredFix "Replace preview/scaffold usage with live service/API-backed metrics and explicit provenance, or keep the dashboard non-production-visible." -Severity "BLOCKER"
+
+$baseDataFile = "frontend/dashboards/src/config/dashboardTemplates/_baseData.js"
+$baseDataText = Read-TextFile $baseDataFile
+if ($baseDataText -match "BASE_NOTE|Sandbox preview data shown|Connect backend for live records") {
+    Add-Finding -Id "FC-019" -Severity "DOCUMENTED_NON_SHIPPING" -Area "dashboard-fixtures" -File $baseDataFile -Evidence "Shared scaffold fixture remains defined, but no shipping dashboard template references the generic preview note." -RequiredFix "Retain only for bounded fallback/testing contexts; production fallback controls must remain enforced."
+}
+
+$dashboardHook = "frontend/dashboards/src/hooks/useDashboardData.js"
+Require-TextPattern -Path $dashboardHook -Pattern "isProduction[\s\S]*return !isProduction" -FindingId "FC-011" -Area "frontend-production-fallback" -Evidence "Frontend dashboard hook does not prove that scaffold fallback is disabled in production." -RequiredFix "Disable frontend scaffold fallback in production while retaining explicit sandbox behavior."
+Require-TextPattern -Path $dashboardHook -Pattern "if \(isSandbox\) return true" -FindingId "FC-012" -Area "frontend-sandbox-boundary" -Evidence "Frontend dashboard hook does not explicitly bound fallback behavior to sandbox/non-production contexts." -RequiredFix "Keep fallback behavior explicitly bounded to sandbox or non-production runtimes."
+
+# 3. Backend fixture definitions are not blockers by themselves. Prove that production cannot silently serve them.
+$dashboardViews = "backend/crown_api/dashboards/views.py"
+Require-TextPattern -Path $dashboardViews -Pattern "if \(_is_production_runtime\(\)\):\s*\r?\n\s*return False" -FindingId "FC-020" -Area "backend-production-sample-guard" -Evidence "Production runtime does not have an explicit default-deny sample-payload guard." -RequiredFix "Make production live/snapshot-only by default and return unavailable when no certified source exists."
+Require-TextPattern -Path $dashboardViews -Pattern "if not _sample_dashboard_payloads_allowed\(request\):" -FindingId "FC-021" -Area "backend-production-sample-guard" -Evidence "Dashboard endpoint does not invoke the sample-payload authorization guard before fixture generation." -RequiredFix "Require the sample authorization guard before any fixture builder can execute."
+Require-TextPattern -Path $dashboardViews -Pattern "dashboard_live_data_required" -FindingId "FC-022" -Area "backend-production-unavailable-state" -Evidence "Dashboard endpoint lacks an explicit unavailable response when certified live/snapshot data is absent." -RequiredFix "Return an explicit unavailable response rather than silently serving fixture data."
+Require-TextPattern -Path $dashboardViews -Pattern "served_from'\]\s*=\s*'snapshot'" -FindingId "FC-023" -Area "backend-snapshot-provenance" -Evidence "Snapshot responses are not explicitly labeled with snapshot provenance." -RequiredFix "Label snapshot payload provenance before returning it."
+
+$productionGuardTest = "backend/crown_api/tests/test_dashboard_snapshot_summary_api.py"
+Require-TextPattern -Path $productionGuardTest -Pattern "test_attendance_summary_rejects_sample_payload_in_production_without_snapshot" -FindingId "FC-024" -Area "backend-production-test" -Evidence "No regression test proves production rejection of sample dashboard payloads when a live/snapshot source is absent." -RequiredFix "Add a production-mode regression test for the live-data-required response."
+
+$fixtureFiles = @(
+    "backend/crown_api/dashboards/sample_payloads.py",
+    "backend/crown_api/dashboards/batch5_extra_payloads.py",
+    "backend/crown_api/dashboards/summary.py",
+    "backend/crown_api/dashboards/management/commands/seed_dashboard_snapshots.py"
+)
+foreach ($fixtureFile in $fixtureFiles) {
+    if (Test-Path $fixtureFile) {
+        Add-Finding -Id "FC-029" -Severity "DOCUMENTED_NON_SHIPPING" -Area "backend-dashboard-fixtures" -File $fixtureFile -Evidence "Fixture, seed, or legacy scaffold code is present but is not independently eligible for production completion." -RequiredFix "Keep production access behind the verified live/snapshot and environment guards; remove obsolete fixture code when no longer needed."
     }
 }
 
-# 3. Backend dashboard stubs are not production-complete data services.
-$backendDashboardFiles = @()
+# Legacy summary builders must remain disconnected from active URL/view imports.
+$backendDashboardPython = @()
 if (Test-Path "backend/crown_api/dashboards") {
-    $backendDashboardFiles = Get-ChildItem "backend/crown_api/dashboards" -Filter "*.py" -Recurse | ForEach-Object FullName
+    $backendDashboardPython = Get-ChildItem "backend/crown_api/dashboards" -Filter "*.py" -File -Recurse |
+        Where-Object { $_.FullName -notmatch "[\\/]summary\.py$" } |
+        ForEach-Object FullName
 }
-Search-RepoText -Paths $backendDashboardFiles -Pattern "Phase A stub|gracefully degrades to stub|sample_payload|sample payload|fallback" -Area "backend-dashboard-data" -FindingId "FC-020" -RequiredFix "Replace stubs/sample/fallback paths with live tenant-scoped services or keep the surface explicitly unavailable/non-ready." -Severity "BLOCKER"
+Search-RepoText -Paths $backendDashboardPython -Pattern "from \.summary import|import crown_api\.dashboards\.summary|from crown_api\.dashboards\.summary import" -Area "legacy-dashboard-reachability" -FindingId "FC-025" -RequiredFix "Remove the shipping import or replace legacy scaffold builders with tenant-scoped live services." -Severity "BLOCKER"
 
 # 4. WizardHub placeholder routes are not completed wizard workflows.
 $wizardRoutes = "frontend/dashboards/src/routes/wizards.js"
@@ -154,6 +204,7 @@ $findings | Export-Csv -Path $findingsPath -NoTypeInformation -Encoding UTF8
 
 $summaryPath = Join-Path $base "00_FALSE_COMPLETION_SUMMARY.md"
 $blockers = @($findings | Where-Object { $_.severity -eq "BLOCKER" })
+$documented = @($findings | Where-Object { $_.severity -eq "DOCUMENTED_NON_SHIPPING" })
 $md = New-Object System.Collections.Generic.List[string]
 $md.Add("# False Completion Blocker Gate")
 $md.Add("")
@@ -161,6 +212,7 @@ $md.Add("- Generated: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')")
 $md.Add("- Evidence root: $base")
 $md.Add("- Findings: $($findings.Count)")
 $md.Add("- Blockers: $($blockers.Count)")
+$md.Add("- Documented non-shipping findings: $($documented.Count)")
 $md.Add("")
 if ($blockers.Count -eq 0) {
     $md.Add("## Verdict")
@@ -173,6 +225,13 @@ if ($blockers.Count -eq 0) {
     $md.Add("")
     $md.Add("## Blocking findings")
     foreach ($finding in $blockers) {
+        $md.Add("- $($finding.id) [$($finding.area)] $($finding.file) :: $($finding.evidence)")
+    }
+}
+if ($documented.Count -gt 0) {
+    $md.Add("")
+    $md.Add("## Documented non-shipping findings")
+    foreach ($finding in $documented) {
         $md.Add("- $($finding.id) [$($finding.area)] $($finding.file) :: $($finding.evidence)")
     }
 }
