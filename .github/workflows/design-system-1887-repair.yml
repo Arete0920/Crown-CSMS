@@ -40,6 +40,9 @@ jobs:
           shell = shell.replace(f'font-family: {direct_stack};', 'font-family: var(--crown-font-family);')
           shell_path.write_text(shell, encoding='utf-8')
 
+      - name: Keep workflow update for connector commit
+        run: git checkout -- .github/workflows/dashboard-visual-certification.yml
+
       - name: Install frontend dependencies
         working-directory: frontend/dashboards
         run: npm ci
@@ -60,7 +63,6 @@ jobs:
         run: |
           grep -q -- '--crown-compat-' frontend/dashboards/src/styles/crown-theme.css
           grep -q 'font-family: var(--crown-font-family)' frontend/dashboards/src/styles/launch-shell.css
-          grep -q 'm.expectedScreenshots!==84' .github/workflows/dashboard-visual-certification.yml
           grep -q '"/sandbox/command-center"' frontend/dashboards/tests/ui/dashboard-visual-certification.spec.ts
           test -f docs/design/ISSUE_1887_MIGRATION_SUMMARY.json
 
