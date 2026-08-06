@@ -1,13 +1,14 @@
 import { useState } from 'react';
+import CrownIcon from '../icons/CrownIcon.jsx';
 import { getMicrosoftLogoPath, MICROSOFT_ASSET_POLICY } from '../../brand/microsoftBrandAssets';
 
-const FALLBACK_GLYPHS = {
-  teams: 'T',
-  outlook: 'O',
-  microsoft365: 'C',
-  word: 'W',
-  excel: 'X',
-  onedrive: 'D',
+const PRODUCT_ICONS = {
+  teams: 'chat',
+  outlook: 'mail',
+  microsoft365: 'dashboard',
+  word: 'document',
+  excel: 'spreadsheet',
+  onedrive: 'cloud',
 };
 
 export default function MicrosoftProductLogo({
@@ -18,18 +19,18 @@ export default function MicrosoftProductLogo({
 }) {
   const src = getMicrosoftLogoPath(product);
   const displayLabel = label || product;
-  const fallbackGlyph = FALLBACK_GLYPHS[product] || String(displayLabel).trim().charAt(0).toUpperCase();
   const [failedSrc, setFailedSrc] = useState(null);
   const imgFailed = failedSrc === src;
 
   if ((!src || imgFailed) && showTextWhenMissing) {
     return (
       <span
-        className={`microsoft-product-text-label ${className}`.trim()}
+        className={`microsoft-product-approved-fallback ${className}`.trim()}
         title={MICROSOFT_ASSET_POLICY}
         aria-label={displayLabel}
       >
-        {fallbackGlyph}
+        <CrownIcon name={PRODUCT_ICONS[product] || 'dashboard'} size={18} />
+        <span>{displayLabel}</span>
       </span>
     );
   }
