@@ -1,14 +1,14 @@
 import { Link, useInRouterContext } from 'react-router';
 import CrownLogo from '../brand/CrownLogo';
+import MicrosoftProductLogo from '../brand/MicrosoftProductLogo';
 import CrownIcon from '../icons/CrownIcon.jsx';
 
 const MICROSOFT_SHORTCUTS = [
-  { label: 'Teams', icon: 'chat', href: 'https://teams.microsoft.com/v2/' },
-  { label: 'Outlook', icon: 'mail', href: 'https://outlook.office.com/mail/' },
-  { label: 'Calendar', icon: 'calendar', href: 'https://outlook.office.com/calendar/' },
-  { label: 'Word', icon: 'document', href: 'https://www.microsoft365.com/launch/word' },
-  { label: 'Excel', icon: 'spreadsheet', href: 'https://www.microsoft365.com/launch/excel' },
-  { label: 'OneDrive', icon: 'cloud', href: 'https://www.microsoft365.com/launch/onedrive' },
+  { product: 'teams', label: 'Teams', href: 'https://teams.microsoft.com/v2/' },
+  { product: 'outlook', label: 'Outlook', href: 'https://outlook.office.com/mail/' },
+  { product: 'word', label: 'Word', href: 'https://www.microsoft365.com/launch/word' },
+  { product: 'excel', label: 'Excel', href: 'https://www.microsoft365.com/launch/excel' },
+  { product: 'onedrive', label: 'OneDrive', href: 'https://www.microsoft365.com/launch/onedrive' },
 ];
 
 export default function CrownHeroHeader({
@@ -87,15 +87,19 @@ export default function CrownHeroHeader({
         <div className="launch-m365-shortcuts">
           {MICROSOFT_SHORTCUTS.map((shortcut) => (
             <a
-              key={shortcut.label}
+              key={shortcut.product}
               href={shortcut.href}
               target="_blank"
               rel="noreferrer"
               className="launch-m365-shortcut"
-              aria-label={`Open ${shortcut.label}`}
+              aria-label={`Open Microsoft ${shortcut.label}`}
             >
               <span className="launch-m365-shortcut-icon" aria-hidden="true">
-                <CrownIcon name={shortcut.icon} size={20} />
+                <MicrosoftProductLogo
+                  product={shortcut.product}
+                  label={`Microsoft ${shortcut.label}`}
+                  showTextWhenMissing={false}
+                />
               </span>
               <span>{shortcut.label}</span>
             </a>
