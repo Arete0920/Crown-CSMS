@@ -2,20 +2,21 @@ import { Link, useInRouterContext } from 'react-router';
 import { getCurrentUserRoles } from '../../auth/roleAdapter';
 import { hasAnyRole } from '../../auth/roleAccess';
 import CrownLogo from '../brand/CrownLogo';
+import CrownIcon from '../icons/CrownIcon.jsx';
 
 const NAV_ITEMS = [
   {
     key: 'dashboard',
     label: 'Dashboard',
     href: '/dashboard',
-    glyph: 'D',
+    icon: 'dashboard',
     activePrefixes: ['/dashboard', '/teacher', '/teacher/dashboard', '/parent', '/parent/dashboard', '/student', '/student/dashboard'],
   },
   {
     key: 'school',
     label: 'School',
     href: '/school-admin',
-    glyph: 'S',
+    icon: 'school',
     roles: ['school_admin', 'head_of_school', 'admin', 'director', 'principal', 'super_admin'],
     activePrefixes: ['/school-admin', '/school-administrator', '/school-admin-dashboard'],
   },
@@ -23,7 +24,7 @@ const NAV_ITEMS = [
     key: 'administration',
     label: 'Control Center',
     href: '/master-control',
-    glyph: 'A',
+    icon: 'control',
     roles: ['school_admin', 'head_of_school', 'admin', 'director', 'principal', 'super_admin'],
     activePrefixes: ['/master-control', '/master-control-dashboard'],
   },
@@ -31,7 +32,7 @@ const NAV_ITEMS = [
     key: 'admissions',
     label: 'Admissions',
     href: '/admissions',
-    glyph: 'Ad',
+    icon: 'admissions',
     roles: ['school_admin', 'head_of_school', 'admin', 'director', 'principal', 'admissions', 'admissions_manager'],
     activePrefixes: ['/admissions', '/admissions-dashboard'],
   },
@@ -39,7 +40,7 @@ const NAV_ITEMS = [
     key: 'academics',
     label: 'Academics',
     href: '/gradebook',
-    glyph: 'Ac',
+    icon: 'academics',
     roles: ['school_admin', 'head_of_school', 'admin', 'director', 'principal', 'teacher', 'academic_admin', 'academics'],
     activePrefixes: ['/gradebook', '/gradebook-dashboard', '/scheduling-dashboard', '/curriculum-pd-dashboard', '/library-media-dashboard'],
   },
@@ -47,7 +48,7 @@ const NAV_ITEMS = [
     key: 'student-life',
     label: 'Student Life',
     href: '/student-life',
-    glyph: 'SL',
+    icon: 'studentLife',
     roles: ['school_admin', 'head_of_school', 'admin', 'director', 'principal', 'teacher', 'parent', 'student'],
     activePrefixes: ['/student-life', '/spiritual-life', '/athletics', '/activities-dashboard', '/activities-athletics-dashboard', '/student-care-dashboard', '/chaplain-dashboard', '/portrait-service-dashboard', '/volunteer-management-dashboard', '/alumni-relations-dashboard', '/extended-care-dashboard', '/safety-security-dashboard'],
   },
@@ -55,7 +56,7 @@ const NAV_ITEMS = [
     key: 'attendance',
     label: 'Attendance',
     href: '/attendance',
-    glyph: 'At',
+    icon: 'attendance',
     roles: ['school_admin', 'head_of_school', 'admin', 'director', 'principal', 'teacher', 'parent', 'student'],
     activePrefixes: ['/attendance', '/attendance-dashboard', '/teacher/attendance', '/parent/attendance'],
   },
@@ -63,7 +64,7 @@ const NAV_ITEMS = [
     key: 'finance',
     label: 'Finance',
     href: '/finance',
-    glyph: 'F',
+    icon: 'finance',
     roles: ['school_admin', 'head_of_school', 'admin', 'director', 'principal', 'finance', 'finance_admin', 'finance_director', 'biz_office', 'super_admin'],
     activePrefixes: ['/finance', '/billing', '/billing-dashboard', '/financial-aid', '/financial-aid-dashboard', '/revenue-operations-dashboard'],
   },
@@ -71,14 +72,14 @@ const NAV_ITEMS = [
     key: 'communications',
     label: 'Communications',
     href: '/communications',
-    glyph: 'C',
+    icon: 'communications',
     activePrefixes: ['/communications', '/communications-dashboard', '/communications-director'],
   },
   {
     key: 'reports',
     label: 'Reports',
     href: '/integrity',
-    glyph: 'R',
+    icon: 'reports',
     roles: ['school_admin', 'head_of_school', 'admin', 'director', 'principal', 'board', 'board_member', 'super_admin'],
     activePrefixes: ['/integrity', '/compliance-audit-dashboard', '/release-reliability-dashboard', '/dashboard-certification-center', '/network-benchmarking-dashboard'],
   },
@@ -86,7 +87,7 @@ const NAV_ITEMS = [
     key: 'settings',
     label: 'Settings',
     href: '/settings',
-    glyph: 'Se',
+    icon: 'settings',
     roles: ['school_admin', 'head_of_school', 'admin', 'director', 'principal', 'super_admin'],
     activePrefixes: ['/settings'],
   },
@@ -138,7 +139,9 @@ export default function CrownSidebar({
           const classes = active ? 'is-active' : '';
           const content = (
             <>
-              <span className="launch-nav-icon" aria-hidden="true">{item.glyph}</span>
+              <span className="launch-nav-icon" aria-hidden="true">
+                <CrownIcon name={item.icon} size={18} />
+              </span>
               <span>{item.label}</span>
             </>
           );
@@ -160,10 +163,10 @@ export default function CrownSidebar({
       </nav>
 
       <div className="launch-user-card">
-        <div className="launch-user-avatar">{user.initials || 'SJ'}</div>
+        <div className="launch-user-avatar" aria-hidden="true">{user.initials || 'SJ'}</div>
         <div>
           <div className="launch-user-name">{user.name || 'Sarah James'}</div>
-          <div className="launch-user-role">{user.role || 'Head of School'}</div>
+          <div className="launch-user-role" style={{ color: 'var(--crown-muted)' }}>{user.role || 'Head of School'}</div>
         </div>
       </div>
     </aside>

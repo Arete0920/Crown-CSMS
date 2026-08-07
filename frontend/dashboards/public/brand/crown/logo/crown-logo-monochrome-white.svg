@@ -1,10 +1,1 @@
-﻿<svg width="720" height="720" viewBox="0 0 720 720" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <path d="M210 80H510L543 275L360 640L177 275L210 80Z" fill="#0B2A5B" stroke="#F5B82E" stroke-width="22"/>
-  <path d="M245 130H475L498 278L360 575L222 278L245 130Z" fill="#123C7C" stroke="#E9EEF7" stroke-width="8"/>
-  <path d="M255 325L290 225L335 300L360 190L385 300L430 225L465 325" stroke="#F5B82E" stroke-width="24" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M265 360H455" stroke="#F5B82E" stroke-width="24" stroke-linecap="round"/>
-  <rect x="340" y="282" width="40" height="230" rx="6" fill="#F5B82E"/>
-  <rect x="278" y="350" width="164" height="40" rx="6" fill="#F5B82E"/>
-  <path d="M255 500C295 462 332 465 360 515C388 465 425 462 465 500" stroke="white" stroke-width="16" stroke-linecap="round"/>
-  <path d="M360 462V548" stroke="white" stroke-width="9" stroke-linecap="round"/>
-</svg>
+<svg width="1150" height="320" viewBox="0 0 1150 320" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc"><title id="title">CROWN white monochrome logo</title><desc id="desc">Christian School Management Solution</desc><defs><filter id="white" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 1 0"/></filter></defs><image href="crown-logo-horizontal-full-color.svg" x="0" y="0" width="1150" height="320" preserveAspectRatio="xMidYMid meet" filter="url(#white)"/></svg>

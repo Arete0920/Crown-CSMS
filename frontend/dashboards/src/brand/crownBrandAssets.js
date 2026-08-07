@@ -16,15 +16,18 @@ export const CROWN_LOGOS = {
   monochromeWhite: '/brand/crown/logo/crown-logo-monochrome-white.svg',
 };
 
+// UI placements resolve only to canonical brand assets. Expanded client
+// surfaces use the approved horizontal crown-and-cross lockup; the compact
+// crown mark is reserved for collapsed navigation and icon-scale contexts.
 export const CROWN_UI_LOGOS = {
-  sidebarExpanded: '/brand/crown/ui/crown-sidebar-expanded.svg',
-  sidebarCollapsed: '/brand/crown/ui/crown-sidebar-collapsed.svg',
-  topnavHorizontal: '/brand/crown/ui/crown-topnav-horizontal.svg',
-  loginBrand: '/brand/crown/ui/crown-login-brand.svg',
-  dashboardHero: '/brand/crown/ui/crown-dashboard-hero-logo.svg',
-  printHeader: '/brand/crown/ui/crown-print-header-logo.svg',
-  emailHeader: '/brand/crown/ui/crown-email-header-logo.svg',
-  reportCover: '/brand/crown/ui/crown-report-cover-logo.svg',
+  sidebarExpanded: CROWN_LOGOS.horizontal,
+  sidebarCollapsed: CROWN_LOGOS.mark,
+  topnavHorizontal: CROWN_LOGOS.horizontal,
+  loginBrand: CROWN_LOGOS.primaryStacked,
+  dashboardHero: CROWN_LOGOS.horizontal,
+  printHeader: CROWN_LOGOS.horizontal,
+  emailHeader: CROWN_LOGOS.horizontal,
+  reportCover: CROWN_LOGOS.primaryStacked,
 };
 
 export function getCrownLogoPath(variant = 'horizontal') {
