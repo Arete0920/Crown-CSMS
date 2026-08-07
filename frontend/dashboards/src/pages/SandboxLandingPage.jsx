@@ -15,6 +15,10 @@ import {
   storeSandboxSession,
 } from "../sandbox/sandboxApi";
 
+const ACCESSIBLE_ACCENT_STYLE = { color: "var(--crown-primary-deep)" };
+const ACCESSIBLE_SUPPORT_STYLE = { color: "var(--crown-muted)" };
+const ACCESSIBLE_WARNING_STYLE = { color: "var(--crown-text)" };
+
 function getInitialInvite() {
   const params = new URLSearchParams(globalThis.location?.search || "");
   return params.get("invite") || "";
@@ -95,7 +99,7 @@ export default function SandboxLandingPage() {
         <header className="sandbox-experience-header">
           <CrownLogo placement="loginBrand" className="sandbox-experience-logo" />
           <div className="sandbox-experience-header-copy">
-            <span className="sandbox-experience-kicker" role="heading" aria-level="2">Guided Proof Sandbox</span>
+            <span className="sandbox-experience-kicker" role="heading" aria-level="2" style={ACCESSIBLE_ACCENT_STYLE}>Guided Proof Sandbox</span>
             <h1>See the real CROWN workspace with safe fictional data.</h1>
             <p>
               Choose a school scenario and role. CROWN will create a protected demo session and open the same
@@ -111,9 +115,9 @@ export default function SandboxLandingPage() {
 
         <div className="sandbox-experience-layout">
           <aside className="sandbox-experience-steps" aria-label="Demonstration steps">
-            <div className="sandbox-step is-active"><span>1</span><div><strong>Choose the track</strong><small>Select the client scenario.</small></div></div>
-            <div className="sandbox-step"><span>2</span><div><strong>Choose guidance</strong><small>Use a guided or independent path.</small></div></div>
-            <div className="sandbox-step"><span>3</span><div><strong>Launch a role</strong><small>Enter the actual CROWN workspace.</small></div></div>
+            <div className="sandbox-step is-active"><span>1</span><div><strong>Choose the track</strong><small style={ACCESSIBLE_SUPPORT_STYLE}>Select the client scenario.</small></div></div>
+            <div className="sandbox-step"><span>2</span><div><strong>Choose guidance</strong><small style={ACCESSIBLE_SUPPORT_STYLE}>Use a guided or independent path.</small></div></div>
+            <div className="sandbox-step"><span>3</span><div><strong>Launch a role</strong><small style={ACCESSIBLE_SUPPORT_STYLE}>Enter the actual CROWN workspace.</small></div></div>
             <div className="sandbox-workspace-preview">
               <CrownIcon name="dashboard" size={24} />
               <div>
@@ -196,7 +200,7 @@ export default function SandboxLandingPage() {
               </div>
             </section>
 
-            <div className="sandbox-message is-warning">
+            <div className="sandbox-message is-warning" style={ACCESSIBLE_WARNING_STYLE}>
               Demo data only. Do not enter real student, camper, child, family, staff, financial, health, safety, or disciplinary records.
             </div>
           </section>
