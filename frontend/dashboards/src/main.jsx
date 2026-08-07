@@ -12,6 +12,7 @@ import { crownTheme } from './theme/crownTheme';
 import { router } from './routes/router.jsx';
 import AuthProvider from './auth/AuthProvider.jsx';
 import AppErrorBoundary from './components/system/AppErrorBoundary.jsx';
+import DisplayTextIntegrityGuard from './components/system/DisplayTextIntegrityGuard.jsx';
 import StartupGuard from './components/system/StartupGuard.jsx';
 
 const rootElement = document.getElementById('root');
@@ -27,6 +28,7 @@ ReactDOM.createRoot(rootElement).render(
       <AuthProvider>
         <StartupGuard>
           <AppErrorBoundary>
+            <DisplayTextIntegrityGuard />
             <RouterProvider router={router} />
           </AppErrorBoundary>
         </StartupGuard>
