@@ -120,14 +120,27 @@ describe('shared client experience contract', () => {
     expect(hero).toContain('displayHeroMessage');
   });
 
-  it('forces readable hero title and message contrast over legacy important rules', () => {
+  it('forces readable hero text contrast over legacy light-on-light rules', () => {
     const visualProof = readProjectFile('src/styles/visual-proof-integrity.css');
 
     expect(visualProof).toContain('.launch-hero-header .launch-hero-text .launch-hero-title');
     expect(visualProof).toMatch(/color:\s*var\(--crown-primary-deep\)\s*!important/);
     expect(visualProof).toContain('-webkit-text-fill-color: var(--crown-primary-deep) !important');
     expect(visualProof).toContain('.launch-hero-header .launch-hero-text .launch-hero-message');
-    expect(visualProof).toMatch(/color:\s*var\(--crown-muted\)\s*!important/);
+    expect(visualProof).toContain('.launch-hero-header .launch-hero-text .launch-hero-subtitle');
+    expect(visualProof).toContain('.launch-hero-header .launch-m365-note');
+    expect(visualProof).toContain('.launch-hero-header .launch-hero-user-label');
+    expect(visualProof).toMatch(/color:\s*var\(--crown-text\)\s*!important/);
+  });
+
+  it('keeps flip cards symmetric on desktop without oversized tablet or mobile cards', () => {
+    const visualProof = readProjectFile('src/styles/visual-proof-integrity.css');
+
+    expect(visualProof).toContain('.launch-dashboard-grid-module > .launch-flip-card');
+    expect(visualProof).toContain('height: 100%');
+    expect(visualProof).toContain('@media (max-width: 1180px)');
+    expect(visualProof).toContain('min-height: 0');
+    expect(visualProof).toContain('height: auto');
   });
 
   it('maps all UI placements back to the canonical CROWN logo system', () => {
