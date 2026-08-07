@@ -32,7 +32,11 @@ const requiredDashboardLabels = [
   'Student Care',
   'Activities & Athletics',
   'Communications',
+  'School Administrator',
+  'School Board',
+  'Master Control',
   'Admissions',
+  'Advancement',
   'HR',
   'Facilities',
   'Health Office',
@@ -40,13 +44,16 @@ const requiredDashboardLabels = [
   'Food Service',
   'IT Support',
   'Fine Arts',
+  'Athletics Director',
   'Library / Media',
   'Extended Care',
+  'Summer Camp',
   'Safety / Security',
   'Curriculum / PD Hub',
   'Chaplain / Spiritual Life',
   'Advancement Operations',
   'Volunteer Management',
+  'Portrait / Service Hours',
   'Alumni Relations',
   'Network Benchmarking',
   'Implementation Success',
@@ -57,6 +64,13 @@ const requiredDashboardLabels = [
   'Release Reliability',
   'Dashboard Certification Center',
 ];
+
+const dashboardCount = (registrySource.match(/createDashboard\(\{/g) || []).length;
+if (dashboardCount !== requiredDashboardLabels.length) {
+  fail(`Dashboard registry count ${dashboardCount} does not match canonical inventory ${requiredDashboardLabels.length}.`);
+} else {
+  pass(`Dashboard registry count matches canonical inventory: ${dashboardCount}`);
+}
 
 for (const label of requiredDashboardLabels) {
   if (!registrySource.includes(`label: '${label}'`) && !registrySource.includes(`label: "${label}"`)) {
