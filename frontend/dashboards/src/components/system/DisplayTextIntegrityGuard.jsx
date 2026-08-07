@@ -2,6 +2,9 @@ import { useEffect } from 'react';
 import { normalizeDisplayText } from '../../utils/displayTextIntegrity.js';
 
 const NORMALIZED_ATTRIBUTES = ['aria-label', 'title', 'placeholder', 'alt'];
+const NORMALIZED_ATTRIBUTE_SELECTOR = NORMALIZED_ATTRIBUTES
+  .map((attribute) => `[${attribute}]`)
+  .join(',');
 
 function normalizeTextNode(node) {
   if (!node || node.nodeType !== Node.TEXT_NODE) return;
@@ -41,7 +44,7 @@ function normalizeSubtree(root) {
   }
 
   if (root.querySelectorAll) {
-    root.querySelectorAll(NORMALIZED_ATTRIBUTES.map((attribute) => `[${attribute}]`).join(','))
+    root.querySelectorAll(NORMALIZED_ATTRIBUTE_SELECTOR)
       .forEach(normalizeElementAttributes);
   }
 }
