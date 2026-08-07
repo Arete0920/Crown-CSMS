@@ -207,9 +207,10 @@
 .launch-hero-message {
   max-width: 760px;
   margin: 4px 0 0;
-  color: var(--crown-muted);
-  font-size: 0.86rem;
-  line-height: 1.35;
+  color: var(--crown-text);
+  font-size: 0.94rem;
+  font-weight: 500;
+  line-height: 1.45;
 }
 
 .launch-hero-user {
@@ -231,8 +232,8 @@
 }
 
 .launch-hero-user-label {
-  color: var(--crown-subtle);
-  font-size: 0.68rem;
+  color: var(--crown-text);
+  font-size: 0.76rem;
   font-weight: 700;
 }
 
@@ -262,9 +263,10 @@
 }
 
 .launch-m365-note {
-  color: var(--crown-subtle);
-  font-size: 0.68rem;
-  line-height: 1.25;
+  color: var(--crown-muted);
+  font-size: 0.74rem;
+  font-weight: 600;
+  line-height: 1.35;
 }
 
 .launch-m365-shortcuts {
@@ -362,18 +364,22 @@
 /* Public demonstration gateway */
 .sandbox-experience {
   min-height: 100vh;
-  padding: 28px;
+  box-sizing: border-box;
+  width: 100%;
+  padding: clamp(18px, 2vw, 36px);
   background: linear-gradient(180deg, var(--crown-bg) 0%, var(--crown-bg-soft) 100%);
   color: var(--crown-text);
   font-family: var(--crown-font-family);
 }
 
 .sandbox-experience-header {
+  box-sizing: border-box;
   display: grid;
-  grid-template-columns: minmax(210px, 280px) minmax(0, 1fr) auto;
+  grid-template-columns: minmax(240px, 320px) minmax(0, 1fr) minmax(220px, auto);
   align-items: center;
-  gap: 30px;
-  max-width: 1380px;
+  gap: clamp(24px, 2vw, 40px);
+  width: 100%;
+  max-width: none;
   margin: 0 auto 22px;
   padding: 24px 28px;
   border: 1px solid var(--crown-border);
@@ -385,7 +391,7 @@
 .sandbox-experience-logo {
   display: block;
   width: 100%;
-  max-width: 260px;
+  max-width: 300px;
   height: auto;
 }
 
@@ -406,14 +412,16 @@
   margin: 8px 0 10px;
   color: var(--crown-primary-deep);
   font-family: var(--crown-font-family);
-  font-size: clamp(2rem, 3.5vw, 3.4rem);
+  font-size: clamp(2.4rem, 3.6vw, 4.5rem);
   line-height: 1.08;
 }
 
 .sandbox-experience-header p {
   margin: 0;
   max-width: 760px;
-  color: var(--crown-muted);
+  color: var(--crown-text);
+  font-size: clamp(1rem, 1.05vw, 1.18rem);
+  font-weight: 500;
   line-height: 1.6;
 }
 
@@ -437,9 +445,10 @@
 
 .sandbox-experience-layout {
   display: grid;
-  grid-template-columns: 280px minmax(0, 1fr);
-  gap: 22px;
-  max-width: 1380px;
+  grid-template-columns: clamp(280px, 19vw, 360px) minmax(0, 1fr);
+  gap: clamp(20px, 1.6vw, 30px);
+  width: 100%;
+  max-width: none;
   margin: 0 auto;
 }
 
@@ -518,7 +527,7 @@
 }
 
 .sandbox-experience-panel {
-  padding: 26px;
+  padding: clamp(24px, 2vw, 36px);
 }
 
 .sandbox-section + .sandbox-section {
@@ -596,7 +605,7 @@
 }
 
 .sandbox-persona-grid {
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
 }
 
 .sandbox-persona-card {

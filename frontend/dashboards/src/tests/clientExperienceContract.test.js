@@ -54,6 +54,28 @@ describe('shared client experience contract', () => {
     expect(commandCenter).toContain('Return to evaluator');
   });
 
+  it('keeps the sandbox fluid and enforces readable hero contrast', () => {
+    const styles = readProjectFile('src/styles/client-experience.css');
+
+    const sandboxHeader = styles.match(/\.sandbox-experience-header \{([\s\S]*?)\r?\n\s*\}/)?.[1] || '';
+    const sandboxLayout = styles.match(/\.sandbox-experience-layout \{([\s\S]*?)\r?\n\s*\}/)?.[1] || '';
+    const sandboxHeroCopy = styles.match(/\.sandbox-experience-header p \{([\s\S]*?)\r?\n\s*\}/)?.[1] || '';
+    const dashboardHeroCopy = styles.match(/\.launch-hero-message \{([\s\S]*?)\r?\n\s*\}/)?.[1] || '';
+    const dashboardHeroLabel = styles.match(/\.launch-hero-user-label \{([\s\S]*?)\r?\n\s*\}/)?.[1] || '';
+    const sandboxLogo = styles.match(/\.sandbox-experience-logo \{([\s\S]*?)\r?\n\s*\}/)?.[1] || '';
+
+    expect(sandboxHeader).toContain('width: 100%');
+    expect(sandboxHeader).toContain('max-width: none');
+    expect(sandboxLayout).toContain('width: 100%');
+    expect(sandboxLayout).toContain('max-width: none');
+    expect(styles).toContain('grid-template-columns: clamp(280px, 19vw, 360px) minmax(0, 1fr)');
+    expect(sandboxLogo).toContain('max-width: 300px');
+    expect(sandboxHeroCopy).toContain('color: var(--crown-text)');
+    expect(sandboxHeroCopy).toContain('font-weight: 500');
+    expect(dashboardHeroCopy).toContain('color: var(--crown-text)');
+    expect(dashboardHeroLabel).toContain('color: var(--crown-text)');
+  });
+
   it('uses the shared CROWN icon component instead of letter navigation glyphs', () => {
     const sidebar = readProjectFile('src/components/launch/CrownSidebar.jsx');
 
