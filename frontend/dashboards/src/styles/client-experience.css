@@ -7,12 +7,12 @@
 }
 
 .launch-shell {
-  grid-template-columns: 264px minmax(0, 1fr);
+  grid-template-columns: 232px minmax(0, 1fr);
   background: linear-gradient(180deg, var(--crown-bg) 0%, var(--crown-bg-soft) 100%);
 }
 
 .launch-shell.has-right-rail {
-  grid-template-columns: 264px minmax(0, 1fr) minmax(250px, 304px);
+  grid-template-columns: 232px minmax(0, 1fr) minmax(236px, 264px);
 }
 
 .launch-sidebar {
@@ -20,8 +20,8 @@
   top: 0;
   height: 100vh;
   overflow-y: auto;
-  gap: 18px;
-  padding: 20px 16px;
+  gap: 14px;
+  padding: 16px 12px;
   background: var(--crown-surface);
   border-right: 1px solid var(--crown-border);
   box-shadow: var(--crown-shadow-soft);
@@ -29,26 +29,29 @@
 
 .launch-brand-lockup {
   justify-content: flex-start;
-  min-height: 82px;
-  padding: 4px 8px 16px;
+  min-height: 62px;
+  padding: 2px 6px 12px;
 }
 
 .launch-brand-logo {
   width: 100%;
-  max-width: 224px;
-  max-height: 72px;
+  max-width: 188px;
+  max-height: 48px;
   object-fit: contain;
   object-position: left center;
 }
 
 .launch-sidebar-nav {
-  gap: 5px;
+  gap: 4px;
 }
 
 .launch-sidebar-nav a {
-  min-height: 44px;
+  min-height: 38px;
+  gap: 9px;
+  padding: 7px 9px;
   border-radius: var(--crown-radius-md);
   color: var(--crown-text);
+  font-size: 0.84rem;
   font-weight: 700;
 }
 
@@ -66,8 +69,8 @@
 }
 
 .launch-nav-icon {
-  width: 30px;
-  height: 30px;
+  width: 26px;
+  height: 26px;
   border-radius: var(--crown-radius-sm);
   background: var(--crown-primary-faint);
   color: var(--crown-primary-deep);
@@ -79,6 +82,7 @@
 }
 
 .launch-user-card {
+  padding: 9px;
   border-radius: var(--crown-radius-lg);
   background: var(--crown-primary-faint);
   border-color: var(--crown-border);
@@ -92,18 +96,18 @@
 }
 
 .launch-main {
-  padding: 20px 24px 32px;
+  padding: 14px 18px 24px;
 }
 
 .launch-right-rail {
-  padding-top: 20px;
+  padding: 14px 16px 24px 0;
 }
 
 .launch-hero-header {
   overflow: hidden;
-  margin-bottom: 20px;
+  margin-bottom: 12px;
   border: 1px solid var(--crown-border);
-  border-radius: var(--crown-radius-xl);
+  border-radius: 16px;
   background: var(--crown-surface);
   box-shadow: var(--crown-shadow-card);
 }
@@ -118,13 +122,15 @@
   z-index: 1;
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 14px 18px;
+  gap: 10px;
+  padding: 8px 12px;
   border-bottom: 1px solid var(--crown-border);
   background: var(--crown-surface-soft);
 }
 
 .launch-hero-header .launch-search {
+  min-width: 220px;
+  padding: 8px 11px;
   background: var(--crown-surface);
   border-color: var(--crown-border-strong);
 }
@@ -149,10 +155,12 @@
 }
 
 .launch-hero-action-btn {
+  padding: 7px 10px;
   color: var(--crown-primary-deep);
   background: var(--crown-surface);
   border-color: var(--crown-border);
   box-shadow: none;
+  font-size: 0.78rem;
   text-decoration: none;
 }
 
@@ -162,56 +170,60 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  gap: 24px;
-  padding: 24px 28px 20px;
+  gap: 16px;
+  padding: 12px 16px 10px;
   background: linear-gradient(135deg, var(--crown-surface) 0%, var(--crown-primary-faint) 100%);
 }
 
 .launch-hero-content {
   display: grid;
-  grid-template-columns: minmax(170px, 230px) minmax(0, 1fr);
+  grid-template-columns: minmax(112px, 150px) minmax(0, 1fr);
   align-items: center;
-  gap: 28px;
+  gap: 16px;
 }
 
 .launch-hero-brand {
-  padding-right: 24px;
+  padding-right: 16px;
   border-right: 1px solid var(--crown-border);
 }
 
 .launch-hero-brand .crown-logo {
   display: block;
   width: 100%;
-  max-width: 230px;
+  max-width: 150px;
+  max-height: 52px;
   height: auto;
+  object-fit: contain;
 }
 
 .launch-hero-title {
   margin: 0;
   color: var(--crown-primary-deep);
-  font-family: Georgia, 'Times New Roman', serif;
-  font-size: clamp(2rem, 3vw, 3rem);
-  line-height: 1.08;
+  font-family: var(--crown-font-family);
+  font-size: clamp(1.5rem, 1.9vw, 2rem);
+  line-height: 1.05;
 }
 
 .launch-hero-message {
-  margin: 10px 0 0;
+  max-width: 760px;
+  margin: 4px 0 0;
   color: var(--crown-muted);
-  font-size: 1rem;
-  line-height: 1.55;
+  font-size: 0.86rem;
+  line-height: 1.35;
 }
 
 .launch-hero-user {
   display: grid;
   justify-items: center;
-  gap: 7px;
-  min-width: 92px;
+  gap: 4px;
+  min-width: 70px;
 }
 
-.launch-hero-user-avatar {
+.launch-hero-user-avatar,
+.launch-hero-avatar-img {
   display: grid;
-  width: 52px;
-  height: 52px;
+  width: 40px;
+  height: 40px;
   place-items: center;
   border-radius: 50%;
   font-weight: 800;
@@ -220,7 +232,7 @@
 
 .launch-hero-user-label {
   color: var(--crown-subtle);
-  font-size: 0.75rem;
+  font-size: 0.68rem;
   font-weight: 700;
 }
 
@@ -228,22 +240,22 @@
   position: relative;
   z-index: 1;
   display: grid;
-  grid-template-columns: minmax(190px, 0.75fr) minmax(0, 2fr);
+  grid-template-columns: minmax(150px, 0.6fr) minmax(0, 2.4fr);
   align-items: center;
-  gap: 18px;
-  padding: 16px 20px;
+  gap: 12px;
+  padding: 8px 12px;
   border-top: 1px solid var(--crown-border);
   background: var(--crown-bg);
 }
 
 .launch-m365-heading {
   display: grid;
-  gap: 3px;
+  gap: 1px;
 }
 
 .launch-m365-kicker {
   color: var(--crown-primary-deep);
-  font-size: 0.82rem;
+  font-size: 0.7rem;
   font-weight: 800;
   letter-spacing: 0.03em;
   text-transform: uppercase;
@@ -251,29 +263,31 @@
 
 .launch-m365-note {
   color: var(--crown-subtle);
-  font-size: 0.78rem;
-  line-height: 1.35;
+  font-size: 0.68rem;
+  line-height: 1.25;
 }
 
 .launch-m365-shortcuts {
   display: grid;
-  grid-template-columns: repeat(6, minmax(84px, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(5, minmax(96px, 1fr));
+  gap: 6px;
 }
 
 .launch-m365-shortcut {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
-  gap: 8px;
-  min-height: 46px;
-  padding: 8px 10px;
+  gap: 6px;
+  min-height: 38px;
+  padding: 5px 8px;
   border: 1px solid var(--crown-border);
-  border-radius: var(--crown-radius-sm);
+  border-radius: 9px;
   background: var(--crown-surface);
   color: var(--crown-text);
-  font-size: 0.78rem;
+  font-size: 0.7rem;
   font-weight: 700;
+  line-height: 1.15;
+  text-align: left;
   text-decoration: none;
   transition: transform 140ms ease, border-color 140ms ease, box-shadow 140ms ease;
 }
@@ -286,12 +300,26 @@
 
 .launch-m365-shortcut-icon {
   display: grid;
-  width: 30px;
-  height: 30px;
+  width: 24px;
+  height: 24px;
   place-items: center;
-  border-radius: 9px;
+  border-radius: 7px;
   background: var(--crown-primary-faint);
   color: var(--crown-primary-deep);
+}
+
+.microsoft-product-logo {
+  display: block;
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+}
+
+.launch-m365-shortcut-icon .microsoft-product-approved-fallback.is-compact {
+  display: grid;
+  width: 22px;
+  height: 22px;
+  place-items: center;
 }
 
 .microsoft-product-approved-fallback {
@@ -306,6 +334,15 @@
 .launch-content {
   max-width: 1480px;
   margin: 0 auto;
+  gap: 14px;
+}
+
+.launch-dashboard-grid {
+  gap: 14px;
+}
+
+.launch-dashboard-grid-metrics-admin {
+  gap: 12px;
 }
 
 .launch-card,
@@ -315,6 +352,11 @@
   border-color: var(--crown-border);
   border-radius: var(--crown-radius-lg);
   box-shadow: var(--crown-shadow-soft);
+}
+
+.launch-metric-card,
+.launch-dashboard-metric-card {
+  border-radius: 16px;
 }
 
 /* Public demonstration gateway */
@@ -363,7 +405,7 @@
 .sandbox-experience-header h1 {
   margin: 8px 0 10px;
   color: var(--crown-primary-deep);
-  font-family: Georgia, 'Times New Roman', serif;
+  font-family: var(--crown-font-family);
   font-size: clamp(2rem, 3.5vw, 3.4rem);
   line-height: 1.08;
 }
@@ -496,7 +538,7 @@
 .sandbox-section-heading h2 {
   margin: 0;
   color: var(--crown-primary-deep);
-  font-family: Georgia, 'Times New Roman', serif;
+  font-family: var(--crown-font-family);
   font-size: 1.55rem;
 }
 
@@ -655,22 +697,41 @@
   color: var(--crown-danger);
 }
 
+@media (max-width: 1280px) {
+  .launch-shell {
+    grid-template-columns: 220px minmax(0, 1fr);
+  }
+
+  .launch-shell.has-right-rail {
+    grid-template-columns: 220px minmax(0, 1fr) minmax(236px, 252px);
+  }
+
+  .launch-hero-content {
+    grid-template-columns: minmax(100px, 132px) minmax(0, 1fr);
+    gap: 14px;
+  }
+
+  .launch-hero-brand .crown-logo {
+    max-width: 132px;
+  }
+
+  .launch-m365-shortcuts {
+    grid-template-columns: repeat(3, minmax(110px, 1fr));
+  }
+}
+
 @media (max-width: 1220px) {
   .launch-shell.has-right-rail {
-    grid-template-columns: 244px minmax(0, 1fr);
+    grid-template-columns: 220px minmax(0, 1fr);
   }
 
   .launch-right-rail {
     grid-column: 2;
-    padding: 0 24px 28px;
+    padding: 0 18px 24px;
   }
 
   .launch-m365-panel {
     grid-template-columns: 1fr;
-  }
-
-  .launch-m365-shortcuts {
-    grid-template-columns: repeat(3, minmax(120px, 1fr));
   }
 
   .sandbox-experience-header {
@@ -680,6 +741,26 @@
   .sandbox-experience-trust {
     grid-column: 1 / -1;
     grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 980px) {
+  .launch-hero-body {
+    padding: 12px 14px;
+  }
+
+  .launch-hero-content {
+    grid-template-columns: 1fr;
+  }
+
+  .launch-hero-brand {
+    display: none;
+  }
+
+  .launch-m365-heading {
+    grid-template-columns: auto 1fr;
+    align-items: baseline;
+    gap: 8px;
   }
 }
 
@@ -703,10 +784,6 @@
   .launch-right-rail {
     grid-column: 1;
     padding: 0 20px 28px;
-  }
-
-  .launch-hero-content {
-    grid-template-columns: 1fr;
   }
 
   .launch-hero-brand {
@@ -736,6 +813,12 @@
   }
 }
 
+@media (max-width: 760px) {
+  .launch-m365-shortcuts {
+    grid-template-columns: repeat(2, minmax(120px, 1fr));
+  }
+}
+
 @media (max-width: 640px) {
   .launch-main {
     padding: 12px;
@@ -755,8 +838,7 @@
   .launch-hero-user {
     grid-template-columns: auto 1fr;
     justify-self: start;
-    justify-items: start;
-    align-items: center;
+    place-items: center start;
   }
 
   .launch-m365-shortcuts,
