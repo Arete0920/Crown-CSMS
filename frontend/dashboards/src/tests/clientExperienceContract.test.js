@@ -7,6 +7,10 @@ import {
   MICROSOFT_ASSET_STATUS,
   MICROSOFT_LOGOS,
 } from '../brand/microsoftBrandAssets';
+import {
+  containsKnownDisplayMojibake,
+  normalizeDisplayText,
+} from '../utils/displayTextIntegrity.js';
 
 const projectRoot = path.resolve('.');
 const readProjectFile = (filePath) => readFileSync(path.resolve(projectRoot, filePath), 'utf8');
@@ -87,6 +91,56 @@ describe('shared client experience contract', () => {
     expect(hero).toContain('launch-hero-avatar-img');
     expect(hero).toContain('launch-hero-user-avatar');
     expect(hero).toContain('setAvatarFailed(true)');
+  });
+
+  it.each([
+    ['Teacher â€” English & History', 'Teacher — English & History'],
+    ['Attendance â€“ daily review', 'Attendance – daily review'],
+    ['Todayâ€™s priorities', 'Today’s priorities'],
+    ['â€œFaithful service', '“Faithful service'],
+    ['Moreâ€¦', 'More…'],
+  ])('normalizes known display mojibake: %s', (input, expected) => {
+    expect(containsKnownDisplayMojibake(input)).toBe(true);
+    expect(normalizeDisplayText(input)).toBe(expected);
+    expect(containsKnownDisplayMojibake(normalizeDisplayText(input))).toBe(false);
+  });
+
+  it('enforces display-text integrity across rendered text and accessibility labels', () => {
+    const guard = readProjectFile('src/components/system/DisplayTextIntegrityGuard.jsx');
+    const main = readProjectFile('src/main.jsx');
+    const hero = readProjectFile('src/components/crown-dashboard/CrownHeroHeader.jsx');
+
+    expect(main).toContain('DisplayTextIntegrityGuard');
+    expect(guard).toContain('MutationObserver');
+    expect(guard).toContain('characterData: true');
+    expect(guard).toContain('attributeFilter: NORMALIZED_ATTRIBUTES');
+    expect(guard).toContain("'aria-label'");
+    expect(guard).toContain("'placeholder'");
+    expect(hero).toContain('normalizeDisplayText');
+    expect(hero).toContain('displayHeroMessage');
+  });
+
+  it('forces readable hero text contrast over legacy light-on-light rules', () => {
+    const visualProof = readProjectFile('src/styles/visual-proof-integrity.css');
+
+    expect(visualProof).toContain('.launch-hero-header .launch-hero-text .launch-hero-title');
+    expect(visualProof).toMatch(/color:\s*var\(--crown-primary-deep\)\s*!important/);
+    expect(visualProof).toContain('-webkit-text-fill-color: var(--crown-primary-deep) !important');
+    expect(visualProof).toContain('.launch-hero-header .launch-hero-text .launch-hero-message');
+    expect(visualProof).toContain('.launch-hero-header .launch-hero-text .launch-hero-subtitle');
+    expect(visualProof).toContain('.launch-hero-header .launch-m365-note');
+    expect(visualProof).toContain('.launch-hero-header .launch-hero-user-label');
+    expect(visualProof).toMatch(/color:\s*var\(--crown-text\)\s*!important/);
+  });
+
+  it('keeps flip cards symmetric on desktop without oversized tablet or mobile cards', () => {
+    const visualProof = readProjectFile('src/styles/visual-proof-integrity.css');
+
+    expect(visualProof).toContain('.launch-dashboard-grid-module > .launch-flip-card');
+    expect(visualProof).toContain('height: 100%');
+    expect(visualProof).toContain('@media (max-width: 1180px)');
+    expect(visualProof).toContain('min-height: 0');
+    expect(visualProof).toContain('height: auto');
   });
 
   it('maps all UI placements back to the canonical CROWN logo system', () => {

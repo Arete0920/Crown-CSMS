@@ -6,6 +6,7 @@ const BASE = process.env.VITE_DEV_BASE_URL || "http://localhost:4173";
 const DEMO_SCHOOL_ID =
   process.env.CROWN_DEMO_SCHOOL_ID || "19801b59-8c05-4c84-9312-5d792e4e839d";
 const DEMO_TOKEN = process.env.CROWN_DEMO_TOKEN || "playwright-demo-token";
+const KNOWN_DISPLAY_MOJIBAKE = /\u00e2\u20ac(?:\u201d|\u201c|\u2122|\u0153|\u00a6)/u;
 
 // Visual-only route inventory. Presence here does not certify a persona as an
 // active supported dashboard role. Certified supported roles remain governed by
@@ -85,6 +86,50 @@ function screenshotRelativePath(viewport: string, routePath: string) {
   return `${viewport}/${slug}.png`;
 }
 
+async function assertFlipCardGeometry(page, viewport: (typeof VIEWPORTS)[number], routePath: string) {
+  const cards = await page.locator(".launch-dashboard-grid-module > .launch-flip-card").evaluateAll((elements) => (
+    elements
+      .filter((element) => (element as HTMLElement).offsetParent !== null)
+      .map((element) => {
+        const rect = element.getBoundingClientRect();
+        return {
+          top: Math.round(rect.top),
+          width: Math.round(rect.width),
+          height: Math.round(rect.height),
+          minHeight: getComputedStyle(element).minHeight,
+        };
+      })
+  ));
+
+  if (cards.length < 2) return;
+
+  const widthSpread = Math.max(...cards.map((card) => card.width)) - Math.min(...cards.map((card) => card.width));
+  expect(widthSpread, `${routePath} flip-card widths diverge at ${viewport.name}`).toBeLessThanOrEqual(2);
+
+  if (viewport.width <= 1180) {
+    expect(
+      cards.every((card) => card.minHeight !== "360px"),
+      `${routePath} retains oversized 360px flip-card minimum at ${viewport.name}`
+    ).toBe(true);
+    return;
+  }
+
+  const rows = new Map<number, typeof cards>();
+  cards.forEach((card) => {
+    const rowTop = [...rows.keys()].find((top) => Math.abs(top - card.top) <= 2) ?? card.top;
+    rows.set(rowTop, [...(rows.get(rowTop) || []), card]);
+  });
+
+  rows.forEach((rowCards, rowTop) => {
+    if (rowCards.length < 2) return;
+    const heightSpread = Math.max(...rowCards.map((card) => card.height)) - Math.min(...rowCards.map((card) => card.height));
+    expect(
+      heightSpread,
+      `${routePath} flip-card heights diverge in desktop row ${rowTop}`
+    ).toBeLessThanOrEqual(2);
+  });
+}
+
 async function appendManifestEntry(entry: {
   viewport: string;
   route: string;
@@ -152,6 +197,10 @@ test.describe("Dashboard visual evidence", () => {
         await expect(page.locator("body")).not.toContainText(
           /Not Authorized|Page Not Found|Application Error|Cannot find|\b404\b/i
         );
+        await expect(
+          page.locator("body"),
+          `${dashboard.path} contains known display mojibake at ${viewport.name}`
+        ).not.toContainText(KNOWN_DISPLAY_MOJIBAKE);
 
         const geometry = await page.evaluate(() => ({
           viewportWidth: window.innerWidth,
@@ -162,6 +211,8 @@ test.describe("Dashboard visual evidence", () => {
           Math.max(geometry.documentWidth, geometry.bodyWidth),
           `${dashboard.path} has horizontal page overflow at ${viewport.name}`
         ).toBeLessThanOrEqual(geometry.viewportWidth + 2);
+
+        await assertFlipCardGeometry(page, viewport, dashboard.path);
 
         const relativeScreenshot = screenshotRelativePath(viewport.name, dashboard.path);
         const screenshotPath = path.join(EVIDENCE_DIR, relativeScreenshot);
