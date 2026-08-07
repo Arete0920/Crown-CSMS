@@ -46,7 +46,7 @@ The historically exposed Ed25519 key is permanently retired and prohibited from 
 
 ## Ownership and provenance
 
-CROWN was created and developed primarily by TC Megahan as a solo developer, with limited support from two collaborators. TC served as Founder/Product Owner, principal product designer, architecture and workflow authority, primary developer, acceptance authority, and release authority.
+CROWN was created and developed primarily by TC Megahan. TC served as Founder/Product Owner, principal product designer, architecture and workflow authority, primary developer, acceptance authority, and release authority. Anthony Rizzo, Ayush Agarwal, and Jed Hansen were founding or early collaborators; specific work is attributed only where evidence supports it. Johnny Megahan and Evan Lesage are new collaborators and are not assigned historical contributions.
 
 Commercially available development and automated-assistance tools were used as engineering aids. They are not product owners, authorship authorities, independent reviewers, release authorities, or runtime dependencies. The controlled provenance record is `docs/provenance/CROWN_DEVELOPMENT_PROVENANCE.md`.
 

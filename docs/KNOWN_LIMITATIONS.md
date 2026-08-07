@@ -1,72 +1,51 @@
 # CROWN Known Limitations and Release Disposition
 
-**Status:** Canonical current limitations register  
-**Effective date:** 2026-07-31  
-**Repository basis:** `tcmegahan/Crown2026`  
-**Controlling program:** GitHub issue `#1619`
-
-This register records current repository, runtime, operational, legal, and buyer-handoff limitations. It does not authorize production, buyer turnover, payment processing, or legal-compliance claims.
+**Status:** Canonical limitations register  
+**Last reconciled:** 2026-08-07  
+**Certified release:** `17573fb649f74a3ba0f1b3fbc9e004108b3cf228`  
+**Immutable tag:** `prod-deploy-20260804-17573fb`  
+**Controlling authority:** GitHub issue #1619
 
 ## Current disposition
 
-- Production: **NOT APPROVED / NO-GO / HOLD**
-- Buyer operational turnover: **NOT APPROVED**
-- External payment processing: **DISABLED AND REQUIRED TO FAIL CLOSED**
-- Immutable release candidate: **NOT YET SELECTED**
-- Protected-history remediation: **NOT VERIFIED COMPLETE**
+- Bounded repository and production certification: **PASS / COMPLETE**
+- Supported-role RBAC and tenant certification: **PASS / COMPLETE**
+- Founder/Product Owner authorization: **RECORDED / ACCEPTED**
+- Payment processing: **DISABLED / FAIL CLOSED / NEW-OWNER ACTION**
+- Buyer diligence package: **READY**
+- Actual buyer turnover: **PENDING IDENTIFIED BUYER AND PARTY ACCEPTANCE**
 
-## Blocking limitations
+## Certified-scope limitations
 
-| ID | Limitation | Current status | Required closure evidence |
-|---|---|---|---|
-| KL-001 | Complete authenticated production-surface certification is not established on one deployed SHA. | OPEN / BLOCKING | Lane 1 evidence under `#1620` |
-| KL-002 | Role, RBAC, tenant-isolation, escalation-denial, object-authorization, and audit certification is incomplete. | OPEN / BLOCKING | Lane 2 evidence under `#1626` |
-| KL-003 | Application rollback and isolated database restore have not been demonstrated with accepted measured RTO/RPO. | OPEN / BLOCKING | Lane 3 evidence under `#1627` |
-| KL-004 | Operational secret retrieval, rotation, failed-rotation recovery, revocation, break-glass, and exposed-key retirement are not verified complete. | OPEN / BLOCKING | Lane 4 evidence under `#1628` |
-| KL-005 | Privacy, records, contracts, incident response, jurisdiction-specific obligations, and qualified legal disposition are incomplete. | OPEN / BLOCKING | Lane 5 evidence under `#1629` |
-| KL-006 | Exact-SHA CI, reproducible deployment, runtime identity, infrastructure, monitoring, alerting, and drift proof are incomplete. | OPEN / BLOCKING | Lane 6 evidence under `#1630` and `#1761` |
-| KL-007 | Canonical documentation, runbooks, evidence navigation, known limitations, and buyer-handoff reconciliation remain incomplete. | OPEN / BLOCKING | Lane 7 evidence under `#1631` |
-| KL-008 | Founder/Product Owner final authorization has not occurred. | OPEN / BLOCKING | Lane 8 authorization under `#1632` |
-| KL-009 | Backend coverage has not yet met the declared 75% threshold on the current audited source identity. | OPEN / BLOCKING | Exact-SHA coverage evidence and remediation under `#1794` |
-| KL-010 | Historical private-key exposure and clean-distribution remediation are not verified complete across retained refs and external copies. | OPEN / BLOCKING | Rotation, revocation, protected-history, and clean-bundle evidence |
+- Certification is bounded to the exact SHA, tag, deployment, routes, roles, and evidence recorded in #1619.
+- Parent, student, board, and auditor dashboards are not claimed as certified active personas.
+- Post-release commits do not silently replace the certified deployment.
+- Repository source presence does not establish completion of every dashboard, module, wizard, integration, or optional capability.
+- External payment processing is not selected, contracted, enabled, or certified.
 
-## Payment-processing limitation
+## Disclosed residual operational maturity
 
-No payment processor is approved for production. Card, ACH, autopay, processor webhook, refund, settlement, dispute, and external payment-confirmation behavior must remain disabled unless a future owner-authorized implementation is completed and certified.
+The following remain visible but were accepted as non-blocking for the bounded release:
 
-Provider-neutral billing, accounting, ledger, invoice, balance, payment-record, and payment-plan source material does not establish payment-processor readiness.
+- full rollback and isolated operational-backup restore with measured RTO/RPO;
+- exhaustive credential rotation, revocation, failed-rotation recovery, and break-glass;
+- expanded alert escalation and incident tabletop;
+- exhaustive vendor, DPA, region, subprocessor, jurisdiction, and contractual reconciliation;
+- synthetic correction, export, deletion, legal-hold, and restored-backup lifecycle exercises;
+- historical Git rewrite of the retired key;
+- payment-provider integration and activation;
+- buyer-controlled account creation, transfer, and seller-access removal.
 
-## Runtime and operational limitations
+A buyer, insurer, auditor, counsel, contract, or future owner may make any of these a transaction or operating condition.
 
-Repository checks do not prove:
+## Privacy and legal boundary
 
-- deployed frontend or backend identity;
-- authenticated persona behavior;
-- production tenant isolation;
-- successful rollback or database restore;
-- monitoring and alert delivery;
-- secret rotation or break-glass effectiveness;
-- external-service ownership or successor access.
+CROWN is not represented as FERPA certified, COPPA certified, universally compliant, regulator approved, or suitable for every customer or jurisdiction. Contracts, notices, subprocessors, retention and deletion practices, operating facts, and intended markets require qualified review.
 
-These limitations require current execution evidence from the same immutable release identity.
+## Handoff boundary
 
-## Privacy and legal limitations
+Repository readiness for diligence is not completed buyer turnover. External services, billing, domains, certificates, cloud resources, credentials, contracts, licenses, intellectual property, support responsibilities, and operating authority transfer separately under `docs/ownership/OWNER_HANDOFF.md`.
 
-CROWN is not represented as FERPA certified, COPPA certified, universally compliant, regulator approved, or legally suitable for every customer or jurisdiction. Current product behavior, policies, contracts, subprocessors, retention and deletion procedures, incident-response operations, and qualified legal review must be reconciled before stronger claims are made.
+## Historical-material rule
 
-## Buyer-handoff limitations
-
-Repository transfer alone does not transfer or verify:
-
-- cloud subscriptions and billing;
-- domains, DNS, certificates, email, Microsoft 365, or Entra registrations;
-- GitHub administrator authority, environments, secrets, variables, and approval rules;
-- monitoring, backup, recovery, and incident contacts;
-- payment, communications, analytics, or support accounts;
-- trademarks, contracts, licenses, assignments, or other intellectual-property records.
-
-Operational turnover requires verified successor identities, external-account transfer, credential rotation, clean-clone setup, exact-SHA evidence, accepted residual risk, and explicit owner authorization.
-
-## Historical records
-
-Earlier dated limitation registers, release scorecards, ship-candidate files, and completion boards are historical context only. They do not override this register, issue `#1619`, current exact-SHA evidence, deployed-runtime evidence, or explicit Founder/Product Owner authority.
+Older NO-GO records, candidate SHAs, lane plans, release boards, and completion claims are historical unless explicitly retained as current authority. They must not override #1619, the immutable tag, `docs/CURRENT_RELEASE_STATUS.md`, or current exact-identity evidence.

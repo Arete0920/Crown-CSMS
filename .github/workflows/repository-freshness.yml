@@ -1,0 +1,97 @@
+name: Repository Freshness
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - README.md
+      - docs/**
+      - scripts/release/verify_repository_freshness.py
+      - .github/workflows/repository-freshness.yml
+  push:
+    branches: [main]
+  schedule:
+    - cron: "17 6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: repository-freshness-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  release-authority:
+    name: Current release authority
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Reject stale or contradictory current-facing release claims
+        run: python scripts/release/verify_repository_freshness.py
+
+  live-frontend:
+    name: Live dashboards source matches current main
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      LIVE_FRONTEND_URL: ${{ vars.CROWN_LIVE_FRONTEND_URL || 'https://yellow-forest-0eecc8b0f.7.azurestaticapps.net' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Read deployed build identity
+        id: live
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --location \
+            --connect-timeout 15 --max-time 60 --retry 4 --retry-all-errors \
+            "${LIVE_FRONTEND_URL%/}/build.json" -o /tmp/crown-live-build.json
+          if ! live_sha="$(python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          try:
+              payload = json.loads(Path("/tmp/crown-live-build.json").read_text(encoding="utf-8"))
+              value = payload.get("build_sha") if isinstance(payload, dict) else None
+          except (OSError, json.JSONDecodeError):
+              raise SystemExit(1)
+          if not isinstance(value, str):
+              raise SystemExit(1)
+          print(value)
+          PY
+          )"; then
+            echo "::error::Live build.json is invalid JSON or does not contain build_sha"
+            exit 1
+          fi
+          if [[ ! "${live_sha}" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "::error::Live build.json did not provide a full 40-character build_sha"
+            exit 1
+          fi
+          echo "sha=${live_sha}" >> "${GITHUB_OUTPUT}"
+          echo "Live frontend build SHA: ${live_sha}"
+      - name: Compare deployed frontend with current main
+        shell: bash
+        env:
+          LIVE_SHA: ${{ steps.live.outputs.sha }}
+        run: |
+          set -euo pipefail
+          if ! git cat-file -e "${LIVE_SHA}^{commit}" 2>/dev/null; then
+            git fetch --no-tags --depth=1 origin "${LIVE_SHA}"
+          fi
+          if git diff --quiet "${LIVE_SHA}" HEAD -- frontend/dashboards; then
+            echo "Live frontend is source-equivalent to current main for frontend/dashboards."
+            exit 0
+          fi
+          echo "::error::Live frontend/dashboards source is stale relative to current main."
+          echo "Deployed SHA: ${LIVE_SHA}"
+          echo "Current main:  ${GITHUB_SHA}"
+          echo "Frontend paths that differ:"
+          git diff --name-only "${LIVE_SHA}" HEAD -- frontend/dashboards
+          exit 1
