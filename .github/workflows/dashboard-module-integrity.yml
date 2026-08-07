@@ -4,6 +4,12 @@ on:
   pull_request:
     paths:
       - "scripts/audit/verify_dashboard_module_integrity.py"
+      - "scripts/audit/verify_module_control_matrices.py"
+      - "docs/product/CROWN_MODULE_COMPLETION_MATRIX.md"
+      - "docs/product/CROWN_MODULE_DATA_OWNERSHIP_MATRIX.md"
+      - "docs/product/CROWN_MODULE_PERMISSION_MATRIX.md"
+      - "docs/product/CROWN_DASHBOARD_FIT_MATRIX.md"
+      - "docs/product/CROWN_MODULE_REVIEW_RACI.md"
       - "contracts/shell_backend_contract.json"
       - "backend/crown_api/dashboards/**"
       - "frontend/dashboards/src/config/dashboardRegistry.js"
@@ -20,6 +26,12 @@ on:
       - main
     paths:
       - "scripts/audit/verify_dashboard_module_integrity.py"
+      - "scripts/audit/verify_module_control_matrices.py"
+      - "docs/product/CROWN_MODULE_COMPLETION_MATRIX.md"
+      - "docs/product/CROWN_MODULE_DATA_OWNERSHIP_MATRIX.md"
+      - "docs/product/CROWN_MODULE_PERMISSION_MATRIX.md"
+      - "docs/product/CROWN_DASHBOARD_FIT_MATRIX.md"
+      - "docs/product/CROWN_MODULE_REVIEW_RACI.md"
       - "contracts/shell_backend_contract.json"
       - "backend/crown_api/dashboards/**"
       - "frontend/dashboards/src/config/dashboardRegistry.js"
@@ -58,10 +70,18 @@ jobs:
           set -euo pipefail
           python scripts/audit/verify_dashboard_module_integrity.py | tee dashboard-module-integrity.txt
 
-      - name: Upload integrity report
+      - name: Verify required module control matrices
+        shell: bash
+        run: |
+          set -euo pipefail
+          python scripts/audit/verify_module_control_matrices.py | tee module-control-matrices.txt
+
+      - name: Upload integrity reports
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: dashboard-module-integrity-report
-          path: dashboard-module-integrity.txt
+          path: |
+            dashboard-module-integrity.txt
+            module-control-matrices.txt
           if-no-files-found: warn
