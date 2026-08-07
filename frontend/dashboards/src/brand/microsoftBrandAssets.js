@@ -9,7 +9,7 @@ const MICROSOFT_PRODUCT_ICON_CDN = 'https://res-1.cdn.office.net/files/fabric-cd
 
 function approvedProductIcon(fileName) {
   return {
-    path: `${MICROSOFT_PRODUCT_ICON_CDN}/${fileName}`,
+    url: `${MICROSOFT_PRODUCT_ICON_CDN}/${fileName}`,
     status: MICROSOFT_ASSET_STATUS.APPROVED,
     source: 'Microsoft Office CDN',
   };
@@ -38,7 +38,7 @@ export const MICROSOFT_LOGOS = {
 export function getMicrosoftLogoPath(product) {
   const logo = MICROSOFT_LOGOS[product];
   if (!logo || logo.status !== MICROSOFT_ASSET_STATUS.APPROVED) return null;
-  return logo.path;
+  return logo.url || logo.path || null;
 }
 
 export function getMicrosoftLogoStatus(product) {
