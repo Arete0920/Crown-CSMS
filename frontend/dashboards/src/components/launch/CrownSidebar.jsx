@@ -166,7 +166,7 @@ export default function CrownSidebar({
         <div className="launch-user-avatar" aria-hidden="true">{user.initials || 'SJ'}</div>
         <div>
           <div className="launch-user-name">{user.name || 'Sarah James'}</div>
-          <div className="launch-user-role">{user.role || 'Head of School'}</div>
+          <div className="launch-user-role" style={{ color: 'var(--crown-muted)' }}>{user.role || 'Head of School'}</div>
         </div>
       </div>
     </aside>

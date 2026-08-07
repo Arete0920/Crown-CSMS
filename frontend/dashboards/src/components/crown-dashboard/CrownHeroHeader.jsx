@@ -12,6 +12,12 @@ const MICROSOFT_SHORTCUTS = [
   { product: 'onedrive', label: 'Microsoft OneDrive', href: 'https://www.microsoft365.com/launch/onedrive' },
 ];
 
+const ACCESSIBLE_HERO_ACTION_STYLE = {
+  color: 'var(--crown-primary-deep)',
+  background: 'var(--crown-surface)',
+  WebkitTextFillColor: 'var(--crown-primary-deep)',
+};
+
 export default function CrownHeroHeader({
   schoolName = 'Heritage Christian Academy',
   updatesCount = 3,
@@ -40,27 +46,27 @@ export default function CrownHeroHeader({
         </label>
 
         <div className="launch-topbar-actions launch-hero-topbar-actions">
-          <div className="launch-school-chip launch-hero-action-btn">{schoolName}</div>
+          <div className="launch-school-chip launch-hero-action-btn" style={ACCESSIBLE_HERO_ACTION_STYLE}>{schoolName}</div>
 
           {hasRouterContext ? (
-            <Link to="/settings" className="launch-icon-button launch-hero-action-btn">
+            <Link to="/settings" className="launch-icon-button launch-hero-action-btn" style={ACCESSIBLE_HERO_ACTION_STYLE}>
               <CrownIcon name="help" size={17} />
               Help
             </Link>
           ) : (
-            <a href="/settings" className="launch-icon-button launch-hero-action-btn">
+            <a href="/settings" className="launch-icon-button launch-hero-action-btn" style={ACCESSIBLE_HERO_ACTION_STYLE}>
               <CrownIcon name="help" size={17} />
               Help
             </a>
           )}
 
           {hasRouterContext ? (
-            <Link to="/communications" className="launch-icon-button launch-hero-action-btn">
+            <Link to="/communications" className="launch-icon-button launch-hero-action-btn" style={ACCESSIBLE_HERO_ACTION_STYLE}>
               <CrownIcon name="updates" size={17} />
               Updates <span className="launch-counter">{updatesCount}</span>
             </Link>
           ) : (
-            <a href="/communications" className="launch-icon-button launch-hero-action-btn">
+            <a href="/communications" className="launch-icon-button launch-hero-action-btn" style={ACCESSIBLE_HERO_ACTION_STYLE}>
               <CrownIcon name="updates" size={17} />
               Updates <span className="launch-counter">{updatesCount}</span>
             </a>
@@ -98,7 +104,7 @@ export default function CrownHeroHeader({
       <section className="launch-m365-panel" aria-label="Microsoft 365 Education shortcuts">
         <div className="launch-m365-heading">
           <span className="launch-m365-kicker">Microsoft 365 Education</span>
-          <span className="launch-m365-note">Connected tools for communication and productivity</span>
+          <span className="launch-m365-note" style={{ color: 'var(--crown-muted)' }}>Connected tools for communication and productivity</span>
         </div>
         <div className="launch-m365-shortcuts">
           {MICROSOFT_SHORTCUTS.map((shortcut) => (
