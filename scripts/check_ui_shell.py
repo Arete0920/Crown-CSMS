@@ -2,8 +2,9 @@
 """
 check_ui_shell.py — Crown UI Shell Gate
 
-Enforces that plain-React routed pages use CrownLayout instead of
+Enforces that plain-React routed application pages use CrownLayout instead of
 raw padding wrappers, root <h1> headings, or bespoke fontFamily shells.
+Standalone public/auth surfaces are explicitly exempted through SKIP.
 
 Rules (applied only to files NOT importing CrownLayout):
   [font-shell]   fontFamily system-ui in file (outer wrapper smell)
@@ -22,6 +23,7 @@ PAGES_DIR = Path("frontend/dashboards/src/pages")
 # Pages intentionally excluded from this gate
 SKIP = {
     "LoginPage.jsx",  # auth surface, standalone by design
+    "SandboxLandingPage.jsx",  # public evaluator, standalone by design; must not inherit authenticated app shell
     "TeacherDashboard.jsx",  # MUI
     "ClassroomsDashboard.jsx",  # MUI
     "AcademicsTeacherGrading.jsx",  # MUI
@@ -105,7 +107,7 @@ def main():
         total = sum(len(v) for v in all_violations.values())
         print(
             f"\n{total} violation(s) in {len(all_violations)} file(s).\n"
-            "Fix: import and wrap the page in CrownLayout.\n"
+            "Fix: import and wrap the page in CrownLayout, or add an explicitly justified standalone surface to SKIP.\n"
             "  Path: frontend/dashboards/src/components/crown/CrownLayout.jsx\n"
             "  Docs: docs/REFERENCE_MODULE_PATTERN.md"
         )
