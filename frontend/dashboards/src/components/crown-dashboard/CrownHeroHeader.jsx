@@ -3,6 +3,8 @@ import { Link, useInRouterContext } from 'react-router';
 import CrownLogo from '../brand/CrownLogo';
 import MicrosoftProductLogo from '../brand/MicrosoftProductLogo';
 import CrownIcon from '../icons/CrownIcon.jsx';
+import { normalizeDisplayText } from '../../utils/displayTextIntegrity.js';
+import '../../styles/visual-proof-integrity.css';
 
 const MICROSOFT_SHORTCUTS = [
   { product: 'teams', label: 'Microsoft Teams', href: 'https://teams.microsoft.com/v2/' },
@@ -18,6 +20,8 @@ const ACCESSIBLE_HERO_ACTION_STYLE = {
   WebkitTextFillColor: 'var(--crown-primary-deep)',
 };
 
+export const normalizeHeroDisplayText = normalizeDisplayText;
+
 export default function CrownHeroHeader({
   schoolName = 'Heritage Christian Academy',
   updatesCount = 3,
@@ -28,6 +32,7 @@ export default function CrownHeroHeader({
 }) {
   const hasRouterContext = useInRouterContext();
   const [avatarFailed, setAvatarFailed] = useState(false);
+  const displayHeroMessage = normalizeHeroDisplayText(heroMessage);
 
   useEffect(() => {
     setAvatarFailed(false);
@@ -81,12 +86,12 @@ export default function CrownHeroHeader({
           </div>
 
           <div className="launch-hero-text">
-            <h1 className="launch-hero-title">{title}</h1>
-            {heroMessage ? <p className="launch-hero-message">{heroMessage}</p> : null}
+            <h1 className="launch-hero-title">{normalizeDisplayText(title)}</h1>
+            {displayHeroMessage ? <p className="launch-hero-message">{displayHeroMessage}</p> : null}
           </div>
         </div>
 
-        <div className="launch-hero-user" aria-label={`Signed in as ${userInitials}`}>
+        <div className="launch-hero-user" aria-label={`Signed in as ${normalizeDisplayText(userInitials)}`}>
           {userAvatar && !avatarFailed ? (
             <img
               src={userAvatar}
@@ -95,7 +100,7 @@ export default function CrownHeroHeader({
               onError={() => setAvatarFailed(true)}
             />
           ) : (
-            <span className="launch-hero-user-avatar">{userInitials}</span>
+            <span className="launch-hero-user-avatar">{normalizeDisplayText(userInitials)}</span>
           )}
           <span className="launch-hero-user-label">Your workspace</span>
         </div>

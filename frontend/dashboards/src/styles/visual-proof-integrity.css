@@ -1,0 +1,15 @@
+/* Post-certification visual proof corrections.
+   This file is intentionally narrow: it resolves defects discovered by direct
+   inspection of the exact-head Playwright screenshots without changing the
+   shared layout model. */
+
+.launch-hero-header .launch-hero-text .launch-hero-title {
+  color: var(--crown-primary-deep) !important;
+  -webkit-text-fill-color: var(--crown-primary-deep) !important;
+  text-shadow: none !important;
+}
+
+.launch-hero-header .launch-hero-text .launch-hero-message {
+  color: var(--crown-muted) !important;
+  -webkit-text-fill-color: var(--crown-muted) !important;
+}

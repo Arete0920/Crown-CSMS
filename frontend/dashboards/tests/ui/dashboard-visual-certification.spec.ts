@@ -6,6 +6,7 @@ const BASE = process.env.VITE_DEV_BASE_URL || "http://localhost:4173";
 const DEMO_SCHOOL_ID =
   process.env.CROWN_DEMO_SCHOOL_ID || "19801b59-8c05-4c84-9312-5d792e4e839d";
 const DEMO_TOKEN = process.env.CROWN_DEMO_TOKEN || "playwright-demo-token";
+const KNOWN_DISPLAY_MOJIBAKE = /\u00e2\u20ac(?:\u201d|\u201c|\u2122|\u0153|\u00a6)/u;
 
 // Visual-only route inventory. Presence here does not certify a persona as an
 // active supported dashboard role. Certified supported roles remain governed by
@@ -152,6 +153,10 @@ test.describe("Dashboard visual evidence", () => {
         await expect(page.locator("body")).not.toContainText(
           /Not Authorized|Page Not Found|Application Error|Cannot find|\b404\b/i
         );
+        await expect(
+          page.locator("body"),
+          `${dashboard.path} contains known display mojibake at ${viewport.name}`
+        ).not.toContainText(KNOWN_DISPLAY_MOJIBAKE);
 
         const geometry = await page.evaluate(() => ({
           viewportWidth: window.innerWidth,
