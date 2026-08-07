@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import CrownLogo from "../components/brand/CrownLogo";
-import CrownLayout from "../components/crown/CrownLayout.jsx";
 import CrownIcon from "../components/icons/CrownIcon.jsx";
 import {
   SANDBOX_TRACKS,
@@ -94,7 +93,7 @@ export default function SandboxLandingPage() {
     : personas;
 
   return (
-    <CrownLayout mainClassName="sandbox-crown-layout">
+    <main className="sandbox-crown-layout">
       <div className="sandbox-experience">
         <header className="sandbox-experience-header">
           <CrownLogo placement="loginBrand" className="sandbox-experience-logo" />
@@ -133,7 +132,7 @@ export default function SandboxLandingPage() {
             {launchError ? <div className="sandbox-message is-error">{launchError}</div> : null}
 
             <section className="sandbox-section">
-              <div className="sandbox-section-heading"><span>1</span><div><h2>Pick a demo track</h2><p>Choose the school or ministry context you want to demonstrate.</p></div></div>
+              <div className="sandbox-section-heading"><span>1</span><div><h2>Confirm the demo track</h2><p>Heritage Christian Academy is the protected CROWN demonstration environment.</p></div></div>
               <div className="sandbox-choice-grid sandbox-track-grid">
                 {SANDBOX_TRACKS.map((track) => (
                   <button
@@ -206,6 +205,6 @@ export default function SandboxLandingPage() {
           </section>
         </div>
       </div>
-    </CrownLayout>
+    </main>
   );
 }
