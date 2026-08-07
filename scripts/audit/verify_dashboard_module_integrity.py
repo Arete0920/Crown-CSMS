@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """Cross-layer integrity audit for the canonical CROWN dashboard inventory.
 
-This is structural evidence only. It verifies inventory, data/config/backend
-coverage, effective production release state, shell/backend contract parity,
-and fail-closed navigation. It never promotes a module or claims live/runtime
-certification.
+This is structural evidence only. It verifies canonical inventory, frontend and
+backend coverage, authoritative release-state truth, explicit shell/backend API
+contract membership, and fail-closed role-scoped navigation. It does not promote
+modules or claim live/runtime certification.
 """
 
 from __future__ import annotations
@@ -18,7 +18,6 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 REGISTRY_PATH = ROOT / "frontend/dashboards/src/config/dashboardRegistry.js"
 PATHS_PATH = ROOT / "frontend/dashboards/src/routes/paths.js"
-RELEASE_STATE_PATH = ROOT / "frontend/dashboards/src/config/releaseState.js"
 DATA_REGISTRY_PATH = ROOT / "frontend/dashboards/src/config/dashboardDataRegistry.js"
 CERT_REGISTRY_PATH = ROOT / "frontend/dashboards/src/config/dashboardCertificationRegistry.js"
 SAMPLE_PAYLOADS_PATH = ROOT / "backend/crown_api/dashboards/sample_payloads.py"
@@ -73,11 +72,8 @@ CANONICAL_MODULES = [
 
 EXPECTED_KEYS = [key for key, _ in CANONICAL_MODULES]
 EXPECTED_LABELS = [label for _, label in CANONICAL_MODULES]
+EXPECTED_READY_KEYS = {"school-administrator", "release-reliability"}
 READY_STATES = {"ready", "live", "production"}
-EXPECTED_FAIL_CLOSED_OVERRIDES = {
-    "school-administrator": "draft",
-    "release-reliability": "draft",
-}
 
 failures: list[str] = []
 warnings: list[str] = []
@@ -159,6 +155,7 @@ def parse_registry(source: str, paths: dict[str, str]) -> list[dict[str, str]]:
         label = literal("label")
         release_state = literal("releaseState") or "draft"
         module_key = literal("moduleKey") or key
+        api_contract_key = literal("apiContractKey")
         path_token = re.search(r"^\s*path:\s*PATHS\.([A-Z0-9_]+)", block, flags=re.MULTILINE)
         path_literal = literal("path")
         path_value = paths.get(path_token.group(1), "") if path_token else path_literal
@@ -171,7 +168,8 @@ def parse_registry(source: str, paths: dict[str, str]) -> list[dict[str, str]]:
                 "label": label,
                 "path": path_value,
                 "moduleKey": module_key,
-                "rawReleaseState": release_state.lower(),
+                "apiContractKey": api_contract_key,
+                "releaseState": release_state.lower(),
             }
         )
     return entries
@@ -211,24 +209,8 @@ def parse_python_mapping_keys(source: str, marker: str) -> set[str]:
     }
 
 
-def parse_release_overrides(source: str) -> dict[str, str]:
-    marker = "const DASHBOARD_RELEASE_STATE_OVERRIDES = new Map(["
-    if marker not in source:
-        fail("fail-closed dashboard release-state override map not found")
-        return {}
-    body = source.split(marker, 1)[1].split("]);", 1)[0]
-    return {
-        key: state.lower()
-        for key, state in re.findall(
-            r"\[\s*['\"]([^'\"]+)['\"]\s*,\s*RELEASE_STATES\.([A-Z_]+)\s*\]",
-            body,
-        )
-    }
-
-
 registry_source = read(REGISTRY_PATH)
 paths_source = read(PATHS_PATH)
-release_state_source = read(RELEASE_STATE_PATH)
 data_source = read(DATA_REGISTRY_PATH)
 cert_source = read(CERT_REGISTRY_PATH)
 sample_source = read(SAMPLE_PAYLOADS_PATH)
@@ -274,31 +256,23 @@ else:
         EXPECTED_LABELS,
     )
 
-overrides = parse_release_overrides(release_state_source)
-if overrides != EXPECTED_FAIL_CLOSED_OVERRIDES:
-    fail(
-        "dashboard release-state fail-closed overrides drifted; "
-        f"expected={EXPECTED_FAIL_CLOSED_OVERRIDES} actual={overrides}"
-    )
+ready_entries = [entry for entry in registry_entries if entry["releaseState"] in READY_STATES]
+ready_keys = {entry["key"] for entry in ready_entries}
+non_ready = [entry for entry in registry_entries if entry["releaseState"] not in READY_STATES]
+if ready_keys != EXPECTED_READY_KEYS:
+    fail(f"authoritative ready dashboard set drifted; expected={sorted(EXPECTED_READY_KEYS)} actual={sorted(ready_keys)}")
 else:
-    passed("stale dashboard ready flags are fail-closed by shared release-state authority")
+    passed(f"authoritative ready dashboard set preserved: {sorted(ready_keys)}")
+if len(non_ready) != 38:
+    fail(f"non-ready dashboard count drifted; expected=38 actual={len(non_ready)}")
+else:
+    passed("non-ready dashboard count preserved: 38")
 
-raw_ready = [entry for entry in registry_entries if entry["rawReleaseState"] in READY_STATES]
-effective_ready = [
-    entry
-    for entry in raw_ready
-    if overrides.get(entry["key"], entry["rawReleaseState"]) in READY_STATES
-]
-non_ready = [entry for entry in registry_entries if entry not in effective_ready]
-passed(
-    f"release-state inventory parsed: raw_ready={len(raw_ready)} "
-    f"effective_ready={len(effective_ready)} non_ready={len(non_ready)}"
-)
-for entry in raw_ready:
-    if entry not in effective_ready:
+for entry in ready_entries:
+    if not entry["apiContractKey"]:
         warn(
-            f"legacy registry row {entry['key']} still says {entry['rawReleaseState']}; "
-            "shared release-state authority overrides it to draft until certification blockers close"
+            f"ready dashboard {entry['key']} has no explicit apiContractKey; "
+            "it remains outside shell/backend API contract membership"
         )
 
 try:
@@ -312,9 +286,10 @@ expected_dashboard_contract = sorted(
         {
             "moduleKey": entry["moduleKey"],
             "path": entry["path"],
-            "apiContractKey": entry["key"],
+            "apiContractKey": entry["apiContractKey"],
         }
-        for entry in effective_ready
+        for entry in ready_entries
+        if entry["apiContractKey"]
     ],
     key=lambda row: row["path"],
 )
@@ -326,11 +301,11 @@ actual_dashboard_contract = sorted(
 )
 if actual_dashboard_contract != expected_dashboard_contract:
     fail(
-        "effective-ready dashboard shell/backend contract mismatch: "
+        "explicit dashboard shell/backend contract mismatch: "
         f"expected={expected_dashboard_contract} actual={actual_dashboard_contract}"
     )
 else:
-    passed(f"effective-ready dashboard shell/backend contract aligned: {len(expected_dashboard_contract)} entries")
+    passed(f"explicit dashboard shell/backend contract aligned: {len(expected_dashboard_contract)} entries")
 
 if "CONTRACT_NAV_ITEMS" in layout_source or "FALLBACK_NAV" in layout_source:
     fail("CrownLayout contains broad static navigation that can override or replace role-scoped navigation")
@@ -354,8 +329,7 @@ if re.search(
 
 print("CROWN DASHBOARD MODULE INTEGRITY AUDIT")
 print(f"canonical_modules={len(EXPECTED_KEYS)}")
-print(f"raw_ready_modules={len(raw_ready)}")
-print(f"effective_ready_modules={len(effective_ready)}")
+print(f"ready_modules={len(ready_entries)}")
 print(f"non_ready_modules={len(non_ready)}")
 print(f"passes={len(passes)} warnings={len(warnings)} failures={len(failures)}")
 for message in passes:
