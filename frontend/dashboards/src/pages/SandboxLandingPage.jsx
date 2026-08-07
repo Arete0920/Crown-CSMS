@@ -17,6 +17,14 @@ import {
 const ACCESSIBLE_ACCENT_STYLE = { color: "var(--crown-primary-deep)" };
 const ACCESSIBLE_SUPPORT_STYLE = { color: "var(--crown-muted)" };
 const ACCESSIBLE_WARNING_STYLE = { color: "var(--crown-text)" };
+const SANDBOX_TITLE_STYLE = {
+  margin: "8px 0 10px",
+  color: "var(--crown-primary-deep)",
+  fontFamily: "var(--crown-font-family)",
+  fontSize: "clamp(2rem, 3.5vw, 3.4rem)",
+  fontWeight: 700,
+  lineHeight: 1.08,
+};
 
 function getInitialInvite() {
   const params = new URLSearchParams(globalThis.location?.search || "");
@@ -99,7 +107,7 @@ export default function SandboxLandingPage() {
           <CrownLogo placement="loginBrand" className="sandbox-experience-logo" />
           <div className="sandbox-experience-header-copy">
             <span className="sandbox-experience-kicker" role="heading" aria-level="2" style={ACCESSIBLE_ACCENT_STYLE}>Guided Proof Sandbox</span>
-            <h1>See the real CROWN workspace with safe fictional data.</h1>
+            <div role="heading" aria-level="1" style={SANDBOX_TITLE_STYLE}>See the real CROWN workspace with safe fictional data.</div>
             <p>
               Choose a school scenario and role. CROWN will create a protected demo session and open the same
               sidebar, dashboard blocks, workflows, and module surfaces used by client schools.
