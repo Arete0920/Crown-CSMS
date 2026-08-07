@@ -1,8 +1,22 @@
+import { useEffect, useState } from 'react';
 import { Link, useInRouterContext } from 'react-router';
 import CrownLogo from '../brand/CrownLogo';
 import MicrosoftProductLogo from '../brand/MicrosoftProductLogo';
+import CrownIcon from '../icons/CrownIcon.jsx';
 
-/* ── CrownHeroHeader ──────────────────────────────────────────────────── */
+const MICROSOFT_SHORTCUTS = [
+  { product: 'teams', label: 'Microsoft Teams', href: 'https://teams.microsoft.com/v2/' },
+  { product: 'outlook', label: 'Microsoft Outlook', href: 'https://outlook.office.com/mail/' },
+  { product: 'word', label: 'Microsoft Word', href: 'https://www.microsoft365.com/launch/word' },
+  { product: 'excel', label: 'Microsoft Excel', href: 'https://www.microsoft365.com/launch/excel' },
+  { product: 'onedrive', label: 'Microsoft OneDrive', href: 'https://www.microsoft365.com/launch/onedrive' },
+];
+
+const ACCESSIBLE_HERO_ACTION_STYLE = {
+  color: 'var(--crown-primary-deep)',
+  background: 'var(--crown-surface)',
+  WebkitTextFillColor: 'var(--crown-primary-deep)',
+};
 
 export default function CrownHeroHeader({
   schoolName = 'Heritage Christian Academy',
@@ -13,13 +27,17 @@ export default function CrownHeroHeader({
   heroMessage = null,
 }) {
   const hasRouterContext = useInRouterContext();
+  const [avatarFailed, setAvatarFailed] = useState(false);
+
+  useEffect(() => {
+    setAvatarFailed(false);
+  }, [userAvatar]);
 
   return (
     <header className="launch-hero-header">
-      {/* ── Top utility row ─────────────────────────────────────────── */}
       <div className="launch-hero-topbar">
         <label className="launch-search launch-hero-search" aria-label="Search">
-          <span className="launch-search-icon" aria-hidden="true" />
+          <CrownIcon name="search" size={18} className="launch-search-svg" />
           <input
             type="search"
             placeholder="Search students, workflows, and actions"
@@ -28,29 +46,35 @@ export default function CrownHeroHeader({
         </label>
 
         <div className="launch-topbar-actions launch-hero-topbar-actions">
-          <div className="launch-school-chip launch-hero-action-btn">{schoolName}</div>
+          <div className="launch-school-chip launch-hero-action-btn" style={ACCESSIBLE_HERO_ACTION_STYLE}>{schoolName}</div>
 
           {hasRouterContext ? (
-            <Link to="/settings" className="launch-icon-button launch-hero-action-btn">Help</Link>
+            <Link to="/settings" className="launch-icon-button launch-hero-action-btn" style={ACCESSIBLE_HERO_ACTION_STYLE}>
+              <CrownIcon name="help" size={17} />
+              Help
+            </Link>
           ) : (
-            <a href="/settings" className="launch-icon-button launch-hero-action-btn">Help</a>
+            <a href="/settings" className="launch-icon-button launch-hero-action-btn" style={ACCESSIBLE_HERO_ACTION_STYLE}>
+              <CrownIcon name="help" size={17} />
+              Help
+            </a>
           )}
 
           {hasRouterContext ? (
-            <Link to="/communications" className="launch-icon-button launch-hero-action-btn">
+            <Link to="/communications" className="launch-icon-button launch-hero-action-btn" style={ACCESSIBLE_HERO_ACTION_STYLE}>
+              <CrownIcon name="updates" size={17} />
               Updates <span className="launch-counter">{updatesCount}</span>
             </Link>
           ) : (
-            <a href="/communications" className="launch-icon-button launch-hero-action-btn">
+            <a href="/communications" className="launch-icon-button launch-hero-action-btn" style={ACCESSIBLE_HERO_ACTION_STYLE}>
+              <CrownIcon name="updates" size={17} />
               Updates <span className="launch-counter">{updatesCount}</span>
             </a>
           )}
         </div>
       </div>
 
-      {/* ── Hero body ───────────────────────────────────────────────── */}
       <div className="launch-hero-body">
-        {/* Left: content stack */}
         <div className="launch-hero-content">
           <div className="launch-hero-brand">
             <CrownLogo placement="dashboardHero" />
@@ -58,84 +82,53 @@ export default function CrownHeroHeader({
 
           <div className="launch-hero-text">
             <h1 className="launch-hero-title">{title}</h1>
-            {heroMessage && (
-              <p className="launch-hero-message">{heroMessage}</p>
-            )}
-          </div>
-
-          {/* MS 365 quick-launch */}
-          <div className="launch-hero-ms365-center">
-            <div className="launch-hero-ms365-chips">
-              <a
-                href="https://teams.microsoft.com"
-                target="_blank"
-                rel="noreferrer"
-                className="launch-ms-app-chip launch-ms-app-chip--teams"
-                aria-label="Open Microsoft Teams"
-              >
-                <MicrosoftProductLogo product="teams" label="Teams" />
-              </a>
-              <a
-                href="https://outlook.office365.com"
-                target="_blank"
-                rel="noreferrer"
-                className="launch-ms-app-chip launch-ms-app-chip--outlook"
-                aria-label="Open Outlook"
-              >
-                <MicrosoftProductLogo product="outlook" label="Outlook" />
-              </a>
-              <a
-                href="https://outlook.office365.com/calendar"
-                target="_blank"
-                rel="noreferrer"
-                className="launch-ms-app-chip launch-ms-app-chip--calendar"
-                aria-label="Open Calendar"
-              >
-                <MicrosoftProductLogo product="microsoft365" label="Calendar" />
-              </a>
-              <a
-                href="https://word.office.com"
-                target="_blank"
-                rel="noreferrer"
-                className="launch-ms-app-chip launch-ms-app-chip--word"
-                aria-label="Open Word"
-              >
-                <MicrosoftProductLogo product="word" label="Word" />
-              </a>
-              <a
-                href="https://excel.office.com"
-                target="_blank"
-                rel="noreferrer"
-                className="launch-ms-app-chip launch-ms-app-chip--excel"
-                aria-label="Open Excel"
-              >
-                <MicrosoftProductLogo product="excel" label="Excel" />
-              </a>
-              <a
-                href="https://onedrive.live.com"
-                target="_blank"
-                rel="noreferrer"
-                className="launch-ms-app-chip launch-ms-app-chip--onedrive"
-                aria-label="Open OneDrive"
-              >
-                <MicrosoftProductLogo product="onedrive" label="OneDrive" />
-              </a>
-            </div>
+            {heroMessage ? <p className="launch-hero-message">{heroMessage}</p> : null}
           </div>
         </div>
 
-        {/* Right: avatar */}
-        {userAvatar ? (
-          <img
-            src={userAvatar}
-            alt={userInitials}
-            className="launch-hero-avatar-img"
-            onError={(e) => {
-              e.currentTarget.style.display = 'none';
-            }}
-          />
-        ) : null}
+        <div className="launch-hero-user" aria-label={`Signed in as ${userInitials}`}>
+          {userAvatar && !avatarFailed ? (
+            <img
+              src={userAvatar}
+              alt=""
+              className="launch-hero-avatar-img"
+              onError={() => setAvatarFailed(true)}
+            />
+          ) : (
+            <span className="launch-hero-user-avatar">{userInitials}</span>
+          )}
+          <span className="launch-hero-user-label">Your workspace</span>
+        </div>
       </div>
+
+      <section className="launch-m365-panel" aria-label="Microsoft 365 Education shortcuts">
+        <div className="launch-m365-heading">
+          <span className="launch-m365-kicker">Microsoft 365 Education</span>
+          <span className="launch-m365-note" style={{ color: 'var(--crown-muted)' }}>Connected tools for communication and productivity</span>
+        </div>
+        <div className="launch-m365-shortcuts">
+          {MICROSOFT_SHORTCUTS.map((shortcut) => (
+            <a
+              key={shortcut.product}
+              href={shortcut.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="launch-m365-shortcut"
+              aria-label={`Open ${shortcut.label}`}
+            >
+              <span className="launch-m365-shortcut-icon" aria-hidden="true">
+                <MicrosoftProductLogo
+                  product={shortcut.product}
+                  label={shortcut.label}
+                  compactFallback
+                  decorative
+                />
+              </span>
+              <span>{shortcut.label}</span>
+            </a>
+          ))}
+        </div>
+      </section>
     </header>
   );
 }
