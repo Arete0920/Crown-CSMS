@@ -1,10 +1,8 @@
 // frontend/dashboards/tests/ui/nav-permissions.spec.ts
 //
 // Playwright seatbelt: proves sidebar is permission-derived.
-// The frontend fetches /api/v1/nav/ — in the Vite dev environment, the proxy
-// passes through to Django. If the backend is unreachable, the sidebar falls
-// back to FALLBACK_NAV, so assertions against absent role-specific links remain
-// meaningful.
+// The frontend fetches /api/v1/nav/ and must never broaden the role-scoped
+// response or fail open when that service is unavailable.
 //
 // Session setup: seed sessionStorage with role + schoolId so the frontend
 // sends the correct X-School-Id header to /api/v1/nav/.
@@ -52,7 +50,7 @@ test.describe("Nav is permission-derived — sidebar reflects role, not all link
     await expect(page.locator('aside a[href="/integrity"]')).toHaveCount(0);
   });
 
-  test("sidebar still renders links when nav API fails", async ({ page }) => {
+  test("CrownLayout fails closed when nav API is unavailable", async ({ page }) => {
     await page.route("**/api/v1/nav/**", (route) =>
       route.fulfill({
         status: 503,
@@ -62,14 +60,16 @@ test.describe("Nav is permission-derived — sidebar reflects role, not all link
     );
 
     await seedSession(page, "parent");
-    await page.goto(`${BASE}/parent`);
+    await page.goto(`${BASE}/wizards`);
     await page.waitForTimeout(1000);
 
-    const sidebarLinks = page.locator("aside a");
-    await expect(sidebarLinks.first()).toBeVisible();
+    await expect(page.locator("aside.crown-sidebar a")).toHaveCount(0);
+    await expect(page.getByText("Role-scoped navigation is temporarily unavailable.", { exact: true })).toBeVisible();
+    await expect(page.locator('aside a[href="/finance"]')).toHaveCount(0);
+    await expect(page.locator('aside a[href="/admin"]')).toHaveCount(0);
   });
 
-  test("CrownLayout renders group headers from the permission-derived nav response", async ({ page }) => {
+  test("CrownLayout preserves exactly the permission-derived nav response", async ({ page }) => {
     await page.route("**/api/v1/nav/**", (route) =>
       route.fulfill({
         status: 200,
@@ -92,5 +92,9 @@ test.describe("Nav is permission-derived — sidebar reflects role, not all link
     await expect(aside).toBeVisible();
     await expect(aside.getByText("Family", { exact: true })).toBeVisible();
     await expect(aside.locator('a[href="/parent"]')).toBeVisible();
+    await expect(aside.locator("a")).toHaveCount(1);
+    await expect(aside.locator('a[href="/finance"]')).toHaveCount(0);
+    await expect(aside.locator('a[href="/admin"]')).toHaveCount(0);
+    await expect(aside.locator('a[href="/board"]')).toHaveCount(0);
   });
 });
