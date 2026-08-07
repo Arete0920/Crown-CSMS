@@ -23,16 +23,6 @@ export const NON_READY_RELEASE_STATES = new Set([
   RELEASE_STATES.DISABLED,
 ]);
 
-// These registry rows predate the current dashboard-fit canon and still carry
-// stale `ready` flags. The fit matrix classifies School Administrator as
-// Scaffold and Release Reliability as Hybrid. Until their live/certified data,
-// freshness, backend dashboard-key access, performance, and independent-review
-// requirements are proven, production release-state evaluation must fail closed.
-const DASHBOARD_RELEASE_STATE_OVERRIDES = new Map([
-  ["school-administrator", RELEASE_STATES.DRAFT],
-  ["release-reliability", RELEASE_STATES.DRAFT],
-]);
-
 export const PLACEHOLDER_TEXT_PATTERN =
   /(coming soon|placeholder|under construction|not ready|unavailable|future module|future release)/i;
 
@@ -48,11 +38,6 @@ export function normalizeReleaseState(value) {
 }
 
 export function getReleaseState(routeLike = {}) {
-  const key = String(routeLike.key || routeLike.moduleKey || "").trim();
-  if (DASHBOARD_RELEASE_STATE_OVERRIDES.has(key)) {
-    return DASHBOARD_RELEASE_STATE_OVERRIDES.get(key);
-  }
-
   return normalizeReleaseState(
     routeLike.releaseState ||
       routeLike.release_status ||
