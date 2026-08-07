@@ -41,11 +41,16 @@ on:
         required: false
         default: "manual-swa-redeploy"
   push:
+    branches:
+      - main
     tags:
       - "prod-deploy-*"
+    paths:
+      - "frontend/dashboards/**"
+      - ".github/workflows/deploy-dashboard.yml"
 
 concurrency:
-  group: crown-dashboard-swa-deploy
+  group: crown-dashboard-swa-deploy-${{ github.ref_type }}
   cancel-in-progress: true
 
 jobs:
@@ -117,7 +122,6 @@ jobs:
 
       - name: Write build.json
         # Writes the proof artifact into public/ so Vite copies it to dist/ as-is.
-        # The file is gitignored; on the runner it is generated fresh every deploy.
         shell: bash
         run: |
           set -euo pipefail
