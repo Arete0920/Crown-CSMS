@@ -77,12 +77,12 @@ export function getFrontendDashboardContract() {
   return uniqueSorted(
     (Array.isArray(getDashboardRegistrySource()) ? getDashboardRegistrySource() : [])
       .filter((entry) => isProductionReady(entry))
+      .filter((entry) => entry.apiContractKey)
       .map((entry) => ({
-        moduleKey: String(entry.moduleKey || entry.key || "").trim(),
+        moduleKey: String(entry.moduleKey || "").trim(),
         path: normalizePath(entry.path),
-        apiContractKey: String(entry.apiContractKey || entry.key || "").trim(),
-      }))
-      .filter((entry) => entry.moduleKey && entry.path && entry.apiContractKey),
+        apiContractKey: String(entry.apiContractKey || "").trim(),
+      })),
     "path"
   );
 }
