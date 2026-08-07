@@ -9,7 +9,27 @@
   text-shadow: none !important;
 }
 
-.launch-hero-header .launch-hero-text .launch-hero-message {
-  color: var(--crown-muted) !important;
-  -webkit-text-fill-color: var(--crown-muted) !important;
+.launch-hero-header .launch-hero-text .launch-hero-message,
+.launch-hero-header .launch-hero-text .launch-hero-subtitle {
+  color: var(--crown-text) !important;
+  -webkit-text-fill-color: var(--crown-text) !important;
+}
+
+.launch-hero-header .launch-m365-note,
+.launch-hero-header .launch-hero-user-label {
+  color: var(--crown-text) !important;
+  -webkit-text-fill-color: var(--crown-text) !important;
+}
+
+/* Keep module flip cards symmetric within desktop rows without forcing
+   oversized cards after the module grid collapses for tablet and mobile. */
+.launch-dashboard-grid-module > .launch-flip-card {
+  height: 100%;
+}
+
+@media (max-width: 1180px) {
+  .launch-dashboard-grid-module > .launch-flip-card {
+    min-height: 0;
+    height: auto;
+  }
 }
