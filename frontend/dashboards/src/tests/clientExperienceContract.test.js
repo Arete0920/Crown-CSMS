@@ -8,7 +8,7 @@ import {
   MICROSOFT_LOGOS,
 } from '../brand/microsoftBrandAssets';
 
-const projectRoot = process.cwd();
+const projectRoot = path.resolve('.');
 const readProjectFile = (filePath) => readFileSync(path.resolve(projectRoot, filePath), 'utf8');
 
 const CANONICAL_LOGOS = [
