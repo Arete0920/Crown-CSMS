@@ -124,18 +124,7 @@ SHELL_BACKEND_CONTRACT = {
             "expectedJsonTopLevelKinds": ["array", "object"],
         },
     ],
-    "dashboardModules": [
-        {
-            "moduleKey": "release-reliability",
-            "path": "/release-reliability-dashboard",
-            "apiContractKey": "release-reliability",
-        },
-        {
-            "moduleKey": "school-administrator",
-            "path": "/school-admin-dashboard",
-            "apiContractKey": "school-administrator",
-        },
-    ],
+    "dashboardModules": [],
 }
 
 
