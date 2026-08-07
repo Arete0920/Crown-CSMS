@@ -18,7 +18,7 @@ on:
       - "backend/crown_api/**"
 
 concurrency:
-  group: proof-gradebook
+  group: proof-gradebook-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
