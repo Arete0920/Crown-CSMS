@@ -1,0 +1,66 @@
+name: Dashboard Module Integrity
+
+on:
+  pull_request:
+    paths:
+      - "scripts/audit/verify_dashboard_module_integrity.py"
+      - "contracts/shell_backend_contract.json"
+      - "backend/crown_api/dashboards/**"
+      - "frontend/dashboards/src/config/dashboardRegistry.js"
+      - "frontend/dashboards/src/config/dashboardDataRegistry.js"
+      - "frontend/dashboards/src/config/dashboardCertificationRegistry.js"
+      - "frontend/dashboards/src/contracts/shellBackendContract.js"
+      - "frontend/dashboards/src/components/crown/CrownLayout.jsx"
+      - "frontend/dashboards/src/routes/**"
+      - "frontend/dashboards/scripts/verify-dashboard-completeness.mjs"
+      - "frontend/dashboards/scripts/check-shell-backend-contract-parity.mjs"
+      - ".github/workflows/dashboard-module-integrity.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "scripts/audit/verify_dashboard_module_integrity.py"
+      - "contracts/shell_backend_contract.json"
+      - "backend/crown_api/dashboards/**"
+      - "frontend/dashboards/src/config/dashboardRegistry.js"
+      - "frontend/dashboards/src/config/dashboardDataRegistry.js"
+      - "frontend/dashboards/src/config/dashboardCertificationRegistry.js"
+      - "frontend/dashboards/src/contracts/shellBackendContract.js"
+      - "frontend/dashboards/src/components/crown/CrownLayout.jsx"
+      - "frontend/dashboards/src/routes/**"
+      - "frontend/dashboards/scripts/verify-dashboard-completeness.mjs"
+      - "frontend/dashboards/scripts/check-shell-backend-contract-parity.mjs"
+      - ".github/workflows/dashboard-module-integrity.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dashboard-module-integrity-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  dashboard-module-integrity:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Verify cross-layer dashboard module integrity
+        shell: bash
+        run: |
+          set -euo pipefail
+          python scripts/audit/verify_dashboard_module_integrity.py | tee dashboard-module-integrity.txt
+
+      - name: Upload integrity report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dashboard-module-integrity-report
+          path: dashboard-module-integrity.txt
+          if-no-files-found: warn
