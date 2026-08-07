@@ -33,6 +33,23 @@ describe('shared client experience contract', () => {
     expect(sandboxLanding).toContain('Guided Proof Sandbox');
   });
 
+  it('keeps the sandbox command center on the canonical CROWN client experience', () => {
+    const commandCenter = readProjectFile('src/sandbox/SandboxCommandCenter.jsx');
+
+    expect(commandCenter).not.toContain('<style');
+    expect(commandCenter).not.toContain('--crown-compat-color-');
+    expect(commandCenter).not.toContain('getTrackSchools');
+    expect(commandCenter).not.toContain('Switch track');
+    expect(commandCenter).toContain('CrownLogo');
+    expect(commandCenter).toContain('CrownIcon');
+    expect(commandCenter).toContain('sandbox-experience-header');
+    expect(commandCenter).toContain('sandbox-experience-panel');
+    expect(commandCenter).toContain('getSandboxLoginHref');
+    expect(commandCenter).toContain('submitSandboxFeedback');
+    expect(commandCenter).toContain('recordSandboxEvent');
+    expect(commandCenter).toContain('Return to evaluator');
+  });
+
   it('uses the shared CROWN icon component instead of letter navigation glyphs', () => {
     const sidebar = readProjectFile('src/components/launch/CrownSidebar.jsx');
 

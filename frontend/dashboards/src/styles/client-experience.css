@@ -395,7 +395,7 @@
 }
 
 .sandbox-experience-kicker {
-  color: var(--crown-gold);
+  color: var(--crown-primary-deep);
   font-size: 0.78rem;
   font-weight: 800;
   letter-spacing: 0.12em;
@@ -494,7 +494,7 @@
 
 .sandbox-step small {
   margin-top: 3px;
-  color: var(--crown-subtle);
+  color: var(--crown-muted);
   line-height: 1.35;
 }
 
@@ -689,7 +689,7 @@
 .sandbox-message.is-warning {
   margin-top: 24px;
   background: var(--crown-warning-soft);
-  color: var(--crown-warning);
+  color: var(--crown-text);
 }
 
 .sandbox-message.is-error {
