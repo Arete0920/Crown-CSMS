@@ -2,54 +2,38 @@
 
 **Status:** Controlled supporting record  
 **Owner:** TC Megahan, Founder/Product Owner  
-**Purpose:** Preserve a concise, accurate record of product creation, development responsibility, collaboration, and accountability.
+**Last reconciled:** 2026-08-07
 
 ## Development structure
 
-CROWN was created and developed primarily by TC Megahan as a solo developer. Two collaborators provided limited support during portions of the development lifecycle.
+CROWN was created and developed primarily by TC Megahan. TC served as Founder/Product Owner, principal product designer, architecture and workflow authority, primary developer and implementation lead, requirements and technical-direction authority, acceptance authority, and release authority.
 
-TC Megahan served as:
+Anthony Rizzo, Ayush Agarwal, and Jed Hansen were founding or early collaborators. Specific work must be attributed to an individual only when repository history, documentation, or other evidence supports that attribution.
 
-- Founder and Product Owner;
-- principal product designer;
-- architecture and workflow authority;
-- primary developer and implementation lead;
-- requirements and technical-direction authority;
-- validation and acceptance authority;
-- release authority.
+Johnny Megahan and Evan Lesage are new collaborators and are not assigned historical credit or prior contributions.
 
-The two collaborators were supporting contributors. They were not product owners, founders, architecture authorities, acceptance authorities, or release authorities. Their specific attribution should be stated only where it is operationally, legally, contractually, or evidentially necessary and supported by repository records.
-
-This provenance does not claim that TC personally authored every line of source code. File-, module-, or commit-level attribution remains governed by repository history and other available evidence.
+This record does not claim that TC personally authored every line of source code. File-, module-, and commit-level attribution remains governed by repository history and other evidence.
 
 ## Development tools
 
-Commercially available software-development tools, including automated code-assistance tools, were used during portions of implementation, debugging, testing, analysis, documentation, and repository maintenance.
+Commercial software-development and automated-assistance tools supported portions of implementation, debugging, testing, analysis, documentation, and repository maintenance. They were engineering aids, not product owners, authorship authorities, independent reviewers, acceptance authorities, release authorities, or runtime dependencies.
 
-These tools were development aids only. They did not own the product, establish requirements, approve architecture, perform independent human review, accept deliverables, authorize releases, or operate as runtime dependencies. Human judgment, source review, testing, and Founder/Product Owner acceptance remained controlling.
+CROWN does not require an artificial-intelligence service to operate.
 
-CROWN does not require an artificial-intelligence service to operate. Its runtime architecture is based on the application, database, identity, messaging, cloud, integration, and automation technologies identified in the canonical architecture documentation.
+## Accountability
 
-## Review and accountability
+Where independent review was unavailable, work used bounded changes, exact-commit checks, applicable automated review, resolution of known findings, and Founder/Product Owner acceptance. These controls do not constitute independent third-party certification.
 
-Where independent review was unavailable, work was controlled through bounded changes, exact-commit review, applicable automated checks, resolution of known in-scope defects, and Founder/Product Owner acceptance. Such controls do not constitute independent third-party certification or production authorization.
+## External presentation rules
 
-Historical commits, pull requests, branches, and comments may contain tool names, automated messages, development-environment details, or contributor metadata. Those records are retained as historical provenance. They are not current architecture or operating authority.
-
-## External presentation
-
-Owner-facing and diligence-facing descriptions should:
-
-- identify TC Megahan as the creator, Founder/Product Owner, principal product designer, architecture authority, primary developer, workflow designer, acceptance authority, and release authority;
-- describe the development structure accurately as one primary solo developer supported by two collaborators;
-- avoid implying that TC personally authored every line of code;
-- describe development tooling briefly and in vendor-neutral terms;
-- avoid unnecessary repetition of tool names or automated-assistance details;
-- distinguish automated checks from human review and acceptance;
-- avoid unsupported individual, module, or percentage attribution.
-
-No document should state or imply that development assistance was not used.
+- Lead with TC Megahan as creator and Founder/Product Owner.
+- Distinguish general early involvement from evidence-backed attribution of specific work.
+- Do not assign Anthony Rizzo, Ayush Agarwal, or Jed Hansen unsupported module-level credit.
+- Do not assign Johnny Megahan or Evan Lesage historical contributions.
+- Describe development tooling accurately and briefly.
+- Distinguish automated checks from independent human review.
+- Avoid unsupported authorship percentages or claims.
 
 ## Authority boundary
 
-This record documents development provenance only. It does not override canonical architecture, security, operations, ownership-transfer, contribution, or release-authority records.
+This record governs provenance only. It does not override architecture, security, operations, ownership-transfer, release, legal, or transaction authority.

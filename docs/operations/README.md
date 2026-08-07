@@ -1,108 +1,54 @@
 # CROWN Operations Documentation
 
 **Status:** Canonical operations gateway  
-**Owner:** CROWN Engineering  
-**Effective date:** 2026-07-31  
-**Last reviewed:** 2026-07-31  
-**Repository baseline reviewed:** `85a2816b35e4d41c0decf8d8fc3c9c3cd10df22c`
-
-## Authority
-
-This file is the entry point for deployment, release, incident, maintenance, rollback, restore, secret operations, and operational-readiness documentation.
-
-Documents under `docs/operations/` are current operational guidance only when linked from this gateway or explicitly designated canonical by `docs/canonical/CANONICAL_DOCUMENT_INDEX.md`.
-
-Material under `docs/ops/` is legacy supporting material pending file-by-file reconciliation. It may contain useful procedures or historical evidence, but it does not override this gateway, `docs/CURRENT_RELEASE_STATUS.md`, GitHub issue `#1619`, or a later approved runbook.
-
-Release evidence under `docs/release/` supports decisions; it is not, by itself, an operating procedure.
-
-## Mandatory freshness and supersession check
-
-Before any document, process, runbook, issue comment, workflow result, artifact, or historical evidence is used or changed, the reviewer must verify:
-
-1. the document's effective date and last-reviewed date;
-2. the exact repository SHA, deployed identity, environment, and workflow version to which it applies;
-3. the current controlling issue and whether that authority remains open and applicable;
-4. whether a later canonical document, merged PR, runbook, policy, contract, vendor record, or release decision supersedes it;
-5. whether referenced tools, dependencies, cloud resources, roles, vendors, credentials, and operational procedures still exist in the current configuration;
-6. whether evidence is repository-only, synthetic, pull-request merge-ref, deployed-runtime, or operational evidence;
-7. whether an old date or old SHA is being retained only as historical provenance rather than current authority.
-
-If date, source identity, authority, or supersession status is missing or ambiguous, stop and classify the material as `HISTORICAL OR UNVERIFIED` until it is reconciled. Do not silently modernize an old procedure, copy an old result into a current claim, or treat a closed historical issue as proof that its operational acceptance criteria were executed.
+**Last reconciled:** 2026-08-07  
+**Certified release:** `17573fb649f74a3ba0f1b3fbc9e004108b3cf228`  
+**Immutable tag:** `prod-deploy-20260804-17573fb`  
+**Production deployment run:** `30944978175`  
+**Controlling authority:** GitHub issue #1619
 
 ## Current posture
 
-CROWN is in bounded remediation before selection of a future immutable release candidate.
+The bounded supported production release is certified and deployed. Repository technical certification, exact-identity deployment, runtime health, supported-role RBAC and tenant evidence, and payment containment passed as recorded in #1619 and `docs/CURRENT_RELEASE_STATUS.md`.
 
-- Production: **NOT APPROVED / NO-GO / HOLD**
-- Buyer operational turnover: **NOT APPROVED**
-- External payment processing: **DISABLED AND REQUIRED TO FAIL CLOSED**
+External payment processing remains disabled and fail closed. Buyer-specific turnover remains pending an identified buyer. Post-release source changes do not replace the certified production identity unless separately authorized, deployed, and certified.
 
-Documentation does not prove that a procedure works. Deployment, rollback, restore, secret rotation, break-glass, monitoring, and incident procedures require current execution evidence before production approval.
+## Evidence boundary
 
-## Controlling operational lanes
+Documentation explains procedures; it does not prove an operational exercise occurred. The following remain disclosed residual maturity work unless separately executed and retained as evidence:
 
-- Lane 3 — rollback, database restore, resilience, and measured RTO/RPO: issue `#1627`
-- Lane 4 — secrets, privileged access, rotation, revocation, and break-glass operations: issue `#1628`
-- Lane 6 — exact-SHA CI/CD, deployment, infrastructure, observability, and monitoring: issue `#1630`
-- Lane 7 — release documentation, runbooks, evidence index, and buyer handoff: issue `#1631`
-- Lane 8 — final integrated authorization after all prerequisite lanes pass: issue `#1632`
+- full application rollback and isolated backup restore with measured RTO/RPO;
+- exhaustive credential rotation, revocation, failed-rotation recovery, and break-glass;
+- expanded monitoring escalation and incident tabletop;
+- privacy, contract, vendor, region, and jurisdiction reconciliation;
+- synthetic correction, export, deletion, legal-hold, and restored-backup lifecycle exercises.
 
-Closed historical issues such as `#1270`, `#1275`, `#1277`, `#1294`, and `#1296` are context only and are not current operational authorities.
+These are not retroactive blockers to the bounded release decision accepted in #1619. They may become transaction, contract, insurer, counsel, or successor requirements.
 
-## Required operating flow
+## Runbook register
 
-A reviewer or successor must be able to follow one documented path through:
+| Procedure | Current source | Verified status |
+|---|---|---|
+| Production deployment | Approved GitHub production workflow; run `30944978175` | Executed for certified release |
+| Release identity and health | `docs/CURRENT_RELEASE_STATUS.md` and #1619 | Passed for certified release |
+| Application rollback | `PRODUCTION_IMMUTABLE_ROLLBACK_DRILL.md` | Mechanics documented; full measured drill outstanding |
+| Database restore | `ISOLATED_POSTGRES_RESTORE_DRILL.md` | Mechanics documented; operational-backup drill outstanding |
+| Incident response | Repository guidance | Expanded tabletop outstanding |
+| Secret rotation/revocation | Repository and external controls | Exhaustive exercise outstanding |
+| Failed-rotation recovery | Repository guidance | Exercise outstanding |
+| Break-glass access | Repository guidance | Exercise outstanding |
+| Monitoring/alert delivery | Production health controls | Expanded delivery/acknowledgement exercise outstanding |
 
-1. environment and access prerequisites;
-2. configuration and secret dependencies;
-3. pre-deployment validation;
-4. deployment execution;
-5. health and tenant-integrity verification;
-6. rollback decision and execution;
-7. isolated database restore or manual recovery fallback;
-8. incident escalation and evidence capture;
-9. monitoring and alert validation;
-10. release-authority reconciliation.
+## Change and operating rules
 
-## Canonical runbook register
+- Confirm exact source, artifact, environment, workflow, and deployed identity before any operation.
+- Stop on identity mismatch, migration failure, failed health or tenant checks, missing authority, or unsafe recovery target.
+- Never infer current results from historical workflow output.
+- Use approved GitHub workflows and protected environments.
+- Keep payment processing disabled until a provider is selected, contracted, implemented, and certified.
+- Preserve timestamps, operator identity, exact SHAs, decisions, and retained evidence.
+- Treat `docs/ops/` as legacy supporting material unless explicitly reconciled here.
 
-The table below is the required navigation surface. A procedure marked `MISSING OR UNVERIFIED` is an explicit blocker and must not be inferred from historical files.
+## Transaction operations
 
-| Procedure | Canonical runbook | Operator | Required validation | Abort criteria | Evidence output | Status |
-|---|---|---|---|---|---|---|
-| Deployment | No canonical executable runbook linked yet | Authorized release operator | Exact source, artifact, migration, frontend, and backend identity | Identity mismatch, failed migration, failed health or tenant checks | Deployment log, artifact provenance, runtime SHA proof | **MISSING OR UNVERIFIED** |
-| Application rollback | [`PRODUCTION_IMMUTABLE_ROLLBACK_DRILL.md`](./PRODUCTION_IMMUTABLE_ROLLBACK_DRILL.md) | Authorized release or incident operator with protected production approval | Pre-rollback exact live SHA, immutable ACR image existence, post-rollback HTTP 200, `db=ok`, and exact live `build_sha` | Identity mismatch, missing immutable image, schema/data incompatibility, failed Azure mutation, failed health, or incomplete evidence | GitHub run, retained rollback artifact, operator identity, exact SHAs, timestamps, and measured elapsed seconds | **RUNNABLE MECHANICS / OPERATIONAL EVIDENCE OUTSTANDING** |
-| Database restore | [`ISOLATED_POSTGRES_RESTORE_DRILL.md`](./ISOLATED_POSTGRES_RESTORE_DRILL.md) | Authorized database/recovery operator | Archive preflight, isolated restore integrity, schema/migration checks, cleanup, and later operational-backup application validation | Backup integrity failure, environment ambiguity, destructive-target risk, failed reconciliation, or uncertain source/backup identity | Restore evidence JSON, retained artifact, timed operational restore record, measured RTO/RPO, and integrity proof | **RUNNABLE MECHANICS / OPERATIONAL EVIDENCE OUTSTANDING** |
-| Incident response | No canonical executable runbook linked yet | Incident commander or designated responder | Severity, containment, notification, evidence preservation, closure | Missing authority, unsafe containment step, evidence-loss risk | Incident timeline and decision record | **MISSING OR UNVERIFIED** |
-| Secret rotation and revocation | No canonical executable runbook linked yet | Authorized security/cloud administrator | Replacement works, prior credential revoked, audit trail retained | Replacement failure, inability to revoke, service-impact uncertainty | Rotation and revocation evidence | **MISSING OR UNVERIFIED** |
-| Failed-rotation recovery | No canonical executable runbook linked yet | Authorized security/cloud administrator | Service restored without reactivating compromised material | Unknown active credential, audit gap, uncontrolled rollback | Recovery record and final credential inventory | **MISSING OR UNVERIFIED** |
-| Break-glass access | No canonical executable runbook linked yet | Explicitly authorized emergency operator | Access is time-bound, logged, reviewed, and revoked | Unlogged access, unclear approver, inability to revoke | Approval, access, action, and revocation record | **MISSING OR UNVERIFIED** |
-| Monitoring and alert test | No canonical executable runbook linked yet | Authorized operations operator | Alert generated, delivered, acknowledged, and retained | Missing destination, silent failure, unverifiable identity | Alert-test and acknowledgement evidence | **MISSING OR UNVERIFIED** |
-
-## Runbook acceptance standard
-
-Each canonical runbook must identify:
-
-- purpose and scope;
-- authorized operator and approver;
-- required access, tools, credentials, environment, and source identity;
-- effective date, last-reviewed date, and supersession status;
-- exact commands or controlled steps;
-- validation checks and expected results;
-- abort and escalation criteria;
-- rollback or recovery path;
-- evidence files, timestamps, and retention location;
-- relation to the controlling lane issue and immutable release SHA.
-
-A checklist, architecture note, historical evidence packet, workflow definition, or issue comment is not an executable runbook unless it satisfies this standard and is linked from this gateway.
-
-## Consolidation rule
-
-New operational documents belong under `docs/operations/`. Do not add new material to `docs/ops/`.
-
-Existing files under `docs/ops/` must be inventoried before relocation or deletion. Each file must be classified as canonical, supporting, historical, superseded, generated evidence, or obsolete. Preserve Git history and identify replacements when material is superseded.
-
-## Review standard
-
-An authorized reviewer or successor must validate from a clean clone that the operational path is understandable without undocumented assistance. Ownership, credentials, external services, production access, and actual execution evidence remain subject to verified handoff and the controlling eight-lane program.
+An authorized successor must verify external-service ownership, credentials, billing, backups, alert destinations, incident contacts, clean-clone reproducibility, and accepted residual risks. Buyer-specific transfer does not occur until successor identities and party acceptance exist.

@@ -1,93 +1,58 @@
 # CROWN Owner Handoff
 
 **Status:** Canonical transfer guide  
-**Scope:** Repository, application, operations, security, diligence, and external-service ownership
+**Last reconciled:** 2026-08-07  
+**Certified release:** `17573fb649f74a3ba0f1b3fbc9e004108b3cf228`  
+**Immutable tag:** `prod-deploy-20260804-17573fb`  
+**Controlling authority:** GitHub issue #1619
 
 ## Current operating posture
 
-CROWN remains frozen and is not production-authorized. Buyer operational turnover and external payment processing are not approved. The controlling status is `docs/CURRENT_RELEASE_STATUS.md`.
+CROWN completed bounded repository and production certification for the exact release identity above. The repository and product are ready for buyer diligence and transaction-specific transfer.
 
-This guide describes the ownership-transfer process. It does not authorize deployment, production use, payment activation, or release.
+Actual buyer turnover remains pending an identified buyer, buyer acceptance, successor account creation, approved access transfer, credential rotation, and seller-access removal. External payment processing remains disabled, fails closed, and is deferred to the new owner.
+
+This guide does not expand the certified scope, certify unsupported personas, activate payments, provide legal certification, or claim that buyer-specific transfer actions have occurred.
 
 ## Repository start path
 
 1. `README.md`
-2. `docs/canonical/REPOSITORY_MANIFEST.md`
-3. `docs/canonical/CANONICAL_DOCUMENT_INDEX.md`
-4. `docs/CURRENT_RELEASE_STATUS.md`
+2. `docs/CURRENT_RELEASE_STATUS.md`
+3. GitHub issue #1619
+4. `docs/canonical/CANONICAL_DOCUMENT_INDEX.md`
 5. `docs/canonical/DILIGENCE_EVIDENCE_INDEX.md`
-6. `docs/engineering/DEV_SETUP.md`
-7. `docs/architecture/`
-8. `docs/security/`
+6. `docs/canonical/REPOSITORY_MANIFEST.md`
+7. `docs/architecture/ARCHITECTURE_MAP.md`
+8. `docs/engineering/DEV_SETUP.md`
 9. `docs/operations/README.md`
+10. `SECURITY.md`
 
 ## What transfers with the repository
 
-- application source and migrations;
-- backend and frontend tests;
-- CI and deployment definitions;
-- architecture and engineering documentation;
-- security policy and security-control definitions;
-- operational, rollback, restore, maintenance, and incident-response documentation;
-- canonical diligence navigation and recorded evidence boundaries;
-- dependency and lock files;
-- repository history, issues, pull requests, and release lineage.
+- application source, migrations, tests, and dependency locks;
+- CI, deployment, architecture, engineering, security, and operations material;
+- canonical diligence navigation and release authority;
+- repository history, issues, pull requests, tags, and release lineage.
 
-## External ownership that must be transferred separately
+## External ownership transferred separately
 
-The repository must not contain secret values. The authorized transfer process must separately assign and verify:
+The authorized transaction must inventory and transfer GitHub administration, Azure resources and billing, domains and DNS, certificates, email and Microsoft 365, Entra registrations, monitoring, backups, incident contacts, integration accounts, contracts, licenses, trademarks, and other intellectual-property records. Secret values must never be committed.
 
-- GitHub repository or organization administrator authority;
-- branch rules, environments, required checks, Actions secrets, variables, and deployment approvals;
-- Azure subscriptions, resource groups, applications, service principals, managed identities, Key Vaults, databases, storage, monitoring, and billing ownership;
-- domains, DNS, TLS certificates, email, Microsoft 365, and Entra registrations;
-- payment-processor, communications, analytics, support, and other integration accounts;
-- backup locations, recovery credentials, alert destinations, and incident contacts;
-- trademarks, product names, contracts, licenses, and other intellectual-property records.
+## Required transaction controls
 
-## Required transfer controls
+1. Identify and authorize the successor.
+2. Record buyer acceptance of the certified scope and disclosed residual risks.
+3. Add successor-controlled accounts before removing seller access.
+4. Transfer external-service ownership and billing.
+5. Rotate credentials, keys, certificates, tokens, webhooks, and recovery codes.
+6. Update `CODEOWNERS`, repository rules, environment approvers, contacts, and notifications.
+7. Verify a clean clone, setup, test, build, and approved deployment path.
+8. Verify the exact transferred SHA and deployed identity.
+9. Execute any transaction-required rollback, restore, rotation, monitoring, privacy, legal, or insurance work.
+10. Record final acceptance and seller-access removal.
 
-1. Inventory current administrators and external service owners.
-2. Add the authorized successor before removing the prior owner.
-3. Rotate credentials, keys, certificates, tokens, webhooks, and recovery codes.
-4. Update `CODEOWNERS`, repository rules, environment approvers, security contacts, and notification destinations.
-5. Verify that no personal workstation paths or personal credentials are required.
-6. Confirm dependency licenses, third-party notices, media licenses, and code-assignment records.
-7. Confirm that tracked data is synthetic and that no real school, student, family, employee, payment, health, or confidential customer data is present.
-8. Perform a clean clone and complete setup without undocumented assistance.
-9. Run the required backend, frontend, migration, security, dependency, and build checks on one exact commit.
-10. Complete rollback and restore exercises before production authorization.
-11. Reconcile every unresolved item in `docs/canonical/DILIGENCE_EVIDENCE_INDEX.md` with current exact-SHA evidence.
-12. Record explicit acceptance or rejection of residual risks by the authorized successor and current owner.
+## Certified and unresolved boundaries
 
-## Diligence review boundary
+Seller-complete technical certification is recorded in #1619. The following remain buyer-specific actions or disclosed operational maturity work unless separately executed: measured rollback/restore, exhaustive credential rotation and break-glass, expanded alert and incident exercises, jurisdiction and contract reconciliation, lifecycle data exercises, payment-provider activation, and final access transfer.
 
-The repository includes source, documentation, issues, pull requests, workflows, and historical lineage. These materials support diligence but do not independently prove:
-
-- current deployed-runtime identity;
-- operational secret ownership or successful rotation;
-- rollback or database-restore capability;
-- privacy or legal readiness;
-- production monitoring effectiveness;
-- payment-processor readiness;
-- buyer operational acceptance.
-
-The canonical diligence map is `docs/canonical/DILIGENCE_EVIDENCE_INDEX.md`. Any readiness conclusion must reconcile that index with current evidence from the exact transferred source SHA and, where applicable, the same deployed runtime and external services.
-
-## Release restart
-
-A future release restart requires:
-
-- explicit authorization from the then-current owner;
-- one immutable release-candidate commit;
-- current exact-commit CI and security results;
-- authenticated tenant and RBAC verification;
-- secrets and historical-key retirement verification;
-- rollback and restore proof;
-- exact-commit deployment and monitoring proof;
-- privacy, legal, licensing, and operational reconciliation;
-- a new documented GO/NO-GO decision.
-
-## Claim boundary
-
-Repository transfer does not establish production readiness, regulatory compliance, security certification, recovery certification, or customer suitability. Those claims require current evidence on the exact transferred and deployed release identity.
+Repository transfer alone does not establish legal compliance, payment readiness, customer suitability, or completion of transaction-specific turnover.
