@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { Link, useInRouterContext } from 'react-router';
 import CrownLogo from '../brand/CrownLogo';
 import MicrosoftProductLogo from '../brand/MicrosoftProductLogo';
@@ -15,10 +16,16 @@ export default function CrownHeroHeader({
   schoolName = 'Heritage Christian Academy',
   updatesCount = 3,
   userInitials = 'SJ',
+  userAvatar = null,
   title,
   heroMessage = null,
 }) {
   const hasRouterContext = useInRouterContext();
+  const [avatarFailed, setAvatarFailed] = useState(false);
+
+  useEffect(() => {
+    setAvatarFailed(false);
+  }, [userAvatar]);
 
   return (
     <header className="launch-hero-header">
@@ -74,7 +81,16 @@ export default function CrownHeroHeader({
         </div>
 
         <div className="launch-hero-user" aria-label={`Signed in as ${userInitials}`}>
-          <span className="launch-hero-user-avatar">{userInitials}</span>
+          {userAvatar && !avatarFailed ? (
+            <img
+              src={userAvatar}
+              alt=""
+              className="launch-hero-avatar-img"
+              onError={() => setAvatarFailed(true)}
+            />
+          ) : (
+            <span className="launch-hero-user-avatar">{userInitials}</span>
+          )}
           <span className="launch-hero-user-label">Your workspace</span>
         </div>
       </div>
