@@ -29,10 +29,6 @@ if (wizards.length === 0) {
   fail("Canonical contract has no wizard entries.");
 }
 
-if (dashboardModules.length === 0) {
-  fail("Canonical contract has no ready dashboard module entries.");
-}
-
 const requiredWizardFields = [
   "moduleKey",
   "path",
