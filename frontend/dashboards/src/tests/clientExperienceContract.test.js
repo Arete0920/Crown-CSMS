@@ -1,8 +1,8 @@
 import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-const readProjectFile = (path) => readFileSync(resolve(path), 'utf8');
+const projectRoot = new URL('../../', import.meta.url);
+const readProjectFile = (path) => readFileSync(new URL(path, projectRoot), 'utf8');
 
 const CANONICAL_LOGOS = [
   'crown-logo-primary-stacked-full-color.svg',
@@ -31,10 +31,19 @@ describe('shared client experience contract', () => {
     expect(productLogo).not.toContain('FALLBACK_GLYPHS');
     expect(productLogo).toContain('displayLabel');
     expect(hero).toContain('Microsoft 365 Education');
-    expect(hero).toContain('Teams');
-    expect(hero).toContain('Outlook');
-    expect(hero).toContain('Word');
-    expect(hero).toContain('Excel');
+    expect(hero).toContain('Microsoft Teams');
+    expect(hero).toContain('Microsoft Outlook');
+    expect(hero).toContain('Microsoft Word');
+    expect(hero).toContain('Microsoft Excel');
+  });
+
+  it('preserves profile-avatar rendering with initials fallback', () => {
+    const hero = readProjectFile('src/components/crown-dashboard/CrownHeroHeader.jsx');
+
+    expect(hero).toContain('userAvatar = null');
+    expect(hero).toContain('launch-hero-avatar-img');
+    expect(hero).toContain('launch-hero-user-avatar');
+    expect(hero).toContain('setAvatarFailed(true)');
   });
 
   it('maps all UI placements back to the canonical CROWN logo system', () => {
