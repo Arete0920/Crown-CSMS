@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { MemoryRouter } from "react-router";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../components/brand/CrownLogo", () => ({
@@ -62,9 +63,13 @@ describe("Sandbox persona launch", () => {
 
   it("sends structured sandbox feedback telemetry from the command center", async () => {
     const { default: SandboxCommandCenter } = await import("../sandbox/SandboxCommandCenter.jsx");
-    render(<SandboxCommandCenter />);
+    render(
+      <MemoryRouter>
+        <SandboxCommandCenter />
+      </MemoryRouter>,
+    );
 
-    fireEvent.click(screen.getByRole("button", { name: "Send feedback" }));
+    fireEvent.click(screen.getByRole("button", { name: /^Send feedback/ }));
 
     await waitFor(() => {
       expect(globalThis.fetch).toHaveBeenCalledWith(
