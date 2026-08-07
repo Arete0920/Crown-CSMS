@@ -24,6 +24,15 @@ const CANONICAL_LOGOS = [
 ];
 
 describe('shared client experience contract', () => {
+  it('keeps the public sandbox evaluator outside the authenticated application shell', () => {
+    const sandboxLanding = readProjectFile('src/pages/SandboxLandingPage.jsx');
+
+    expect(sandboxLanding).not.toContain('CrownLayout');
+    expect(sandboxLanding).not.toContain('authenticatedFetch');
+    expect(sandboxLanding).toContain('sandbox-crown-layout');
+    expect(sandboxLanding).toContain('Guided Proof Sandbox');
+  });
+
   it('uses the shared CROWN icon component instead of letter navigation glyphs', () => {
     const sidebar = readProjectFile('src/components/launch/CrownSidebar.jsx');
 
