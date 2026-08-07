@@ -78,7 +78,9 @@ describe('shared client experience contract', () => {
     ));
 
     expect(new Set(logoContents).size).toBe(CANONICAL_LOGOS.length);
-    expect(logoContents.join('\n')).toContain('CHRISTIAN SCHOOL MANAGEMENT SOLUTION');
+    logoContents.forEach((logoContent) => {
+      expect(logoContent).toMatch(/christian school management solution/i);
+    });
   });
 
   it('presents a labeled Microsoft 365 Education launcher', () => {
