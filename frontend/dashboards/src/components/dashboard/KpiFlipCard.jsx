@@ -72,7 +72,7 @@ export default function KpiFlipCard({
             WebkitBackfaceVisibility: 'hidden',
             position: 'absolute',
             inset: 0,
-            background: 'var(--crown-brand)',
+            background: 'var(--crown-primary)',
             borderRadius: 10,
             padding: '14px 16px',
             display: 'flex',
