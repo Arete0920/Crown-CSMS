@@ -16,12 +16,15 @@ It does not replace Git history, pull requests, issues, reviews, signed records,
 | Person | Current role status | Historical contribution status | Attribution rule |
 |---|---|---|---|
 | TC Megahan | Creator of CROWN; Founder/Product Owner; principal product designer; architecture and workflow authority; repository owner; requirements, technical-direction, acceptance, and release authority | Creator, design, architecture, workflow, product ownership, repository authority, and implementation responsibility established by Founder/Product Owner attestation and retained project record | Do not imply TC personally authored every line; use repository evidence when making precise file-, module-, review-, testing-, or documentation-level claims |
-
-Active documentation does not enumerate early, interim, or later collaborators. A named contribution record may be added only when identification is necessary, authorized, and supported by durable evidence.
+| Anthony Rizzo | Founding/early collaborator | Early involvement established by Founder/Product Owner record; specific work not assigned by this ledger without durable evidence | Specific implementation, design, review, testing, documentation, or other credit requires a separate evidence entry |
+| Ayush Agarwal | Founding/early collaborator | Early involvement established by Founder/Product Owner record; specific work not assigned by this ledger without durable evidence | Specific implementation, design, review, testing, documentation, or other credit requires a separate evidence entry |
+| Jed Hansen | Founding/early collaborator | Early involvement established by Founder/Product Owner record; specific work not assigned by this ledger without durable evidence | Specific implementation, design, review, testing, documentation, or other credit requires a separate evidence entry |
+| Johnny Megahan | New/advisory collaborator; prospective reviewer | No historical contribution or completed review disposition recorded | Add contribution or review credit only from the date and durable evidence of that work |
+| Evan Lesage | New/advisory collaborator; prospective reviewer | No historical contribution or completed review disposition recorded | Add contribution or review credit only from the date and durable evidence of that work |
 
 ## Founder/Product Owner attestation
 
-TC Megahan states that he created CROWN, designed the platform architecture, created the operating and application workflow, directed the implementation, and performed implementation work. Numerous interim coding assistants, collaborators, and development tools supported portions of implementation and related engineering work. They are not individually named as product owners, architects, founders, acceptance authorities, or release authorities.
+TC Megahan states that he created CROWN, designed the platform architecture, created the operating and application workflow, directed the implementation, and performed implementation work. Numerous interim coding assistants, collaborators, and development tools supported portions of implementation and related engineering work. They are not individually treated as product owners, architects, founders, acceptance authorities, or release authorities unless separate evidence and authorization establishes such a role.
 
 This attestation establishes creator, architecture, workflow, and product-accountability authority. It does not replace repository evidence for precise claims about who authored, reviewed, tested, or documented a particular file or change.
 
@@ -75,9 +78,9 @@ A commit created through an IDE assistant, connector, coding assistant, chat too
 
 Client-, buyer-, diligence-, and future-owner-facing materials must use this ledger and its underlying evidence. They must not:
 
-- enumerate collaborators unless identification is necessary, authorized, and evidence-supported;
 - assign specific historical work without evidence;
 - imply that development assistants owned requirements, architecture, approval, or release decisions;
 - convert `NOT VERIFIED` claims into definitive statements;
 - describe repository submission metadata as complete proof of authorship;
-- imply that TC Megahan personally authored every line of code.
+- imply that TC Megahan personally authored every line of code;
+- convert founding/early involvement or new/advisory collaboration into unsupported specific contribution claims.
