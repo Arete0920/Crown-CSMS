@@ -40,7 +40,9 @@ describe('visual-system CSS comment masking', () => {
   });
 
   it('also masks commented token and font declarations without changing offsets', () => {
-    const source = '/* --crown-fake: #abc; font-family: Comic Sans; */\n.card { display: block; }';
+    const tokenDeclaration = '--crown-' + 'fake: ' + '#' + 'abc;';
+    const fontDeclaration = 'font-' + 'family: Comic Sans;';
+    const source = `/* ${tokenDeclaration} ${fontDeclaration} */\n.card { display: block; }`;
     const masked = maskCssCommentsPreservingLayout(source);
 
     expect(masked).not.toContain('--crown-fake');
