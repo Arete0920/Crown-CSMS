@@ -14,6 +14,9 @@ permissions:
 #     and deploy label at build time, then shipped inside dist/ to Azure SWA
 #   - staticwebapp.config.json is copied from public/ to dist/ so Azure serves
 #     React SPA deep links such as /login and /sandbox through index.html
+#   - the certified backend identity is resolved from the version-controlled
+#     docs/CURRENT_RELEASE_STATUS.md authority and verified against the live API
+#     before frontend deployment
 #   - the deployed Azure runtime passes the production Playwright certification
 #     crawler before the workflow can finish successfully
 #
@@ -24,10 +27,15 @@ permissions:
 #                    CROWN SWA default host is:
 #                    https://yellow-forest-0eecc8b0f.7.azurestaticapps.net
 #
-# Repository variables required:
-#   CROWN_EXPECTED_API_SHA  full 40-character SHA of the approved backend
-#                           deployment currently serving CROWN_LIVE_API_BASE_URL.
-#                           The workflow fails before deployment when absent.
+# Backend identity authority:
+#   docs/CURRENT_RELEASE_STATUS.md must contain a full 40-character
+#   "Certified release source" SHA. That version-controlled authority is used
+#   for both pre-deploy live-backend validation and exact-SHA runtime certification.
+#
+# Tenant identity:
+#   CROWN_LIVE_SCHOOL_ID or CROWN_DEMO_SCHOOL_ID must identify an active school
+#   accepted by TenantHeaderRequiredMiddleware. There is intentionally no
+#   hard-coded tenant fallback in this production deployment gate.
 #
 # 2026-06-23 endpoint correction:
 #   https://crown-sandbox.azurestaticapps.net is not a Static Web App in the
@@ -54,8 +62,50 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  resolve-certified-backend:
+    name: "Resolve certified backend identity"
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      expected_api_sha: ${{ steps.release-authority.outputs.expected_api_sha }}
+
+    steps:
+      - name: Checkout deploy ref
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+
+      - name: Resolve certified backend SHA from canonical release status
+        id: release-authority
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os
+          import re
+          from pathlib import Path
+
+          status_path = Path("docs/CURRENT_RELEASE_STATUS.md")
+          text = status_path.read_text(encoding="utf-8")
+          match = re.search(
+              r"\*\*Certified release source:\*\* `([0-9a-fA-F]{40})`",
+              text,
+          )
+          if not match:
+              raise SystemExit(
+                  "ERROR: docs/CURRENT_RELEASE_STATUS.md does not contain a full "
+                  "40-character Certified release source SHA."
+              )
+          sha = match.group(1).lower()
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:
+              output.write(f"expected_api_sha={sha}\n")
+          print(f"Certified backend authority resolved: {sha[:7]}")
+          PY
+
   build-and-deploy:
     name: "Build + deploy dashboard  ${{ github.ref_name }}"
+    needs: resolve-certified-backend
     runs-on: ubuntu-latest
     timeout-minutes: 45
 
@@ -99,15 +149,69 @@ jobs:
       - name: Validate exact backend identity before deploy
         shell: bash
         env:
-          EXPECTED_API_SHA: ${{ vars.CROWN_EXPECTED_API_SHA || '' }}
+          EXPECTED_API_SHA: ${{ needs.resolve-certified-backend.outputs.expected_api_sha }}
+          API_URL: ${{ vars.CROWN_LIVE_API_BASE_URL || 'https://crown-api-prod.azurewebsites.net' }}
+          TENANT_HEADER_SCHOOL_ID: ${{ vars.CROWN_LIVE_SCHOOL_ID || vars.CROWN_DEMO_SCHOOL_ID }}
         run: |
           set -euo pipefail
           if [[ ! "$EXPECTED_API_SHA" =~ ^[0-9a-fA-F]{40}$ ]]; then
-            echo "ERROR: repository variable CROWN_EXPECTED_API_SHA must contain the full 40-character SHA of the approved deployed backend."
+            echo "ERROR: canonical release status must resolve a full 40-character approved backend SHA."
             echo "Refusing to deploy a new frontend without an independently controlled backend identity for exact-SHA certification."
             exit 1
           fi
-          echo "Approved backend identity contract validated: ${EXPECTED_API_SHA:0:7}"
+          if [[ -z "${TENANT_HEADER_SCHOOL_ID:-}" ]]; then
+            echo "ERROR: CROWN_LIVE_SCHOOL_ID or CROWN_DEMO_SCHOOL_ID must be configured for the tenant-aware backend identity check."
+            echo "Refusing to deploy because /api/v1/version/ is tenant-header protected and no verified tenant identity was supplied."
+            exit 1
+          fi
+          python3 - <<'PY'
+          import json
+          import os
+          import urllib.error
+          import urllib.request
+
+          api_url = os.environ["API_URL"].rstrip("/")
+          expected = os.environ["EXPECTED_API_SHA"].strip().lower()
+          school_id = os.environ["TENANT_HEADER_SCHOOL_ID"].strip()
+          headers = {
+              "Accept": "application/json",
+              "X-School-Id": school_id,
+          }
+
+          version_url = f"{api_url}/api/v1/version/"
+          request = urllib.request.Request(version_url, headers=headers)
+          try:
+              with urllib.request.urlopen(request, timeout=20) as response:
+                  status = response.status
+                  body = response.read().decode("utf-8", "replace")
+          except urllib.error.HTTPError as exc:
+              body = exc.read().decode("utf-8", "replace")
+              if exc.code in (400, 404):
+                  raise SystemExit(
+                      "ERROR: tenant-aware backend identity check rejected the configured school ID "
+                      f"with HTTP {exc.code}; verify CROWN_LIVE_SCHOOL_ID/CROWN_DEMO_SCHOOL_ID. "
+                      f"Response: {body[:300]}"
+                  ) from exc
+              raise SystemExit(
+                  f"ERROR: deployed backend identity check returned HTTP {exc.code}: {body[:300]}"
+              ) from exc
+          except OSError as exc:
+              raise SystemExit(f"ERROR: deployed backend identity check failed: {exc}") from exc
+
+          if status != 200:
+              raise SystemExit(f"ERROR: deployed backend identity check returned HTTP {status}")
+          payload = json.loads(body)
+          actual = str(payload.get("build_sha") or "").strip().lower()
+          if len(actual) != 40:
+              raise SystemExit(
+                  f"ERROR: deployed backend did not report a full build SHA; actual={actual!r}"
+              )
+          if actual != expected:
+              raise SystemExit(
+                  f"ERROR: deployed backend SHA mismatch before frontend deploy: expected={expected} actual={actual}"
+              )
+          print(f"Deployed backend identity verified before frontend deploy: {actual[:7]}")
+          PY
 
       - name: Set up Node
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
@@ -209,20 +313,19 @@ jobs:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_SWA_TOKEN }}
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           action: "upload"
-          # Pointing directly at the pre-built dist/ directory prevents the SWA
-          # action from detecting package.json in the parent and triggering a
-          # second Oryx build pass that would overwrite our baked build.json.
           app_location: "frontend/dashboards/dist"
           output_location: ""
           skip_app_build: true
 
   certify-live-azure:
     name: "Certify live Azure runtime"
-    needs: build-and-deploy
+    needs:
+      - resolve-certified-backend
+      - build-and-deploy
     uses: ./.github/workflows/production-certification-evidence.yml
     with:
       live_frontend_url: ${{ vars.CROWN_LIVE_FRONTEND_URL || 'https://yellow-forest-0eecc8b0f.7.azurestaticapps.net' }}
       live_api_base_url: ${{ vars.CROWN_LIVE_API_BASE_URL || 'https://crown-api-prod.azurewebsites.net' }}
       expected_frontend_sha: ${{ github.sha }}
-      expected_api_sha: ${{ vars.CROWN_EXPECTED_API_SHA }}
+      expected_api_sha: ${{ needs.resolve-certified-backend.outputs.expected_api_sha }}
     secrets: inherit
