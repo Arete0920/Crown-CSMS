@@ -1,0 +1,124 @@
+.crown-operational-canonical {
+  overflow-x: hidden;
+}
+
+.crown-operational-canonical > div:first-child {
+  max-width: 1320px !important;
+  padding: 12px 16px 24px !important;
+}
+
+.crown-operational-canonical .crown-utility-row {
+  margin-bottom: 16px !important;
+}
+
+.crown-operational-canonical .crown-pagehead {
+  gap: 20px;
+  padding: 22px 24px;
+  margin-bottom: 22px !important;
+  border: 1px solid var(--crown-border);
+  border-radius: 16px;
+  background: var(--crown-surface);
+  box-shadow: var(--crown-shadow-card);
+}
+
+.crown-operational-canonical .crown-title,
+.crown-operational-canonical .crown-subtitle {
+  color: var(--crown-ink);
+}
+
+.crown-operational-canonical .crown-title {
+  margin: 0;
+  line-height: 1.15;
+}
+
+.crown-operational-canonical .crown-subtitle {
+  margin-top: 6px;
+  color: var(--crown-muted);
+}
+
+.crown-operational-canonical .crown-grid {
+  gap: 18px;
+  align-items: stretch;
+}
+
+.crown-operational-canonical .crown-grid > [class^="crown-col-"],
+.crown-operational-canonical .crown-grid > [class*=" crown-col-"] {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.crown-operational-canonical .crown-grid > [class^="crown-col-"] > *,
+.crown-operational-canonical .crown-grid > [class*=" crown-col-"] > * {
+  width: 100%;
+}
+
+.crown-operational-canonical .crown-card {
+  height: 100%;
+  min-width: 0;
+  border-radius: 14px;
+  border-color: var(--crown-border);
+  box-shadow: var(--crown-shadow-soft);
+}
+
+.crown-operational-canonical .crown-card table {
+  width: 100%;
+  max-width: 100%;
+}
+
+.crown-operational-canonical .crown-card img,
+.crown-operational-canonical .crown-card svg,
+.crown-operational-canonical .crown-card canvas {
+  max-width: 100%;
+}
+
+.crown-operational-canonical section + section,
+.crown-operational-canonical .dashboard-section + .dashboard-section {
+  margin-top: 22px;
+}
+
+@media (max-width: 1100px) {
+  .crown-operational-canonical > div:first-child {
+    max-width: 100% !important;
+  }
+
+  .crown-operational-canonical .crown-pagehead {
+    padding: 20px;
+  }
+
+  .crown-operational-canonical .crown-grid {
+    gap: 16px;
+  }
+}
+
+@media (max-width: 760px) {
+  .crown-operational-canonical > div:first-child {
+    padding: 8px 8px 18px !important;
+  }
+
+  .crown-operational-canonical .crown-utility-row,
+  .crown-operational-canonical .crown-pagehead {
+    align-items: flex-start !important;
+    flex-direction: column;
+  }
+
+  .crown-operational-canonical .crown-pagehead {
+    gap: 12px;
+    padding: 16px;
+    border-radius: 12px;
+  }
+
+  .crown-operational-canonical .crown-grid {
+    gap: 14px;
+  }
+
+  .crown-operational-canonical .crown-grid > [class^="crown-col-"],
+  .crown-operational-canonical .crown-grid > [class*=" crown-col-"] {
+    grid-column: 1 / -1 !important;
+  }
+
+  .crown-operational-canonical .crown-card {
+    border-radius: 12px;
+    overflow-x: auto;
+  }
+}

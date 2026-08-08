@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { authenticatedFetch } from "../../utils/authClient.js";
+import "../../styles/operational-dashboard-canonical.css";
 
 /**
  * CrownLayout app shell with permission-derived sidebar + main content area.
@@ -63,6 +64,14 @@ async function fetchNav() {
 }
 
 const EMPTY_ROLE_SCOPED_NAV = Object.freeze({ groups: [] });
+const CANONICAL_OPERATIONAL_DASHBOARD_PATHS = new Set([
+  "/academic-support",
+  "/communications-director",
+  "/library",
+  "/pd",
+  "/security",
+  "/student-services",
+]);
 
 function normalizeRoleScopedNav(navData) {
   const incoming = Array.isArray(navData?.groups) ? navData.groups : [];
@@ -119,6 +128,9 @@ export default function CrownLayout({ title, subtitle, right, children, mainClas
   const navGroups = activeNav?.groups || [];
   const hasNavItems = navGroups.some((group) => (group.items || []).length > 0);
   const profile = getProfile();
+  const operationalLayoutClass = CANONICAL_OPERATIONAL_DASHBOARD_PATHS.has(pathname)
+    ? "crown-operational-canonical"
+    : "";
 
   return (
     <div className="crown-app">
@@ -222,7 +234,7 @@ export default function CrownLayout({ title, subtitle, right, children, mainClas
         </nav>
       </aside>
 
-      <main className={`crown-main ${mainClassName}`.trim()}>
+      <main className={`crown-main ${operationalLayoutClass} ${mainClassName}`.trim()}>
         <div style={{ maxWidth: 1200, margin: "0 auto", padding: "4px 0 8px" }}>
           <div className="crown-utility-row" style={{ marginBottom: 10, alignItems: "center" }}>
             <div className="crown-breadcrumbs" aria-label="Breadcrumb" style={{ fontSize: 12, opacity: 0.9 }}>
