@@ -49,4 +49,22 @@ describe('visual-system CSS comment masking', () => {
     expect(masked).not.toContain('Comic Sans');
     expect(masked.length).toBe(source.length);
   });
+
+  it('preserves comment markers and visual literals inside quoted CSS strings', () => {
+    const quotedColor = '#' + '123abc';
+    const source = `.badge::before { content: "/* ${quotedColor} */"; }`;
+    const masked = maskCssCommentsPreservingLayout(source);
+    const matches = [...masked.matchAll(COLOR)];
+
+    expect(masked).toBe(source);
+    expect(matches).toHaveLength(1);
+    expect(matches[0][0]).toBe(quotedColor);
+  });
+
+  it('preserves escaped quotes while deciding whether comment markers are real comments', () => {
+    const marker = '/' + '* issue #1913 *' + '/';
+    const source = `.badge::before { content: "quoted \\"${marker}\\" text"; }`;
+
+    expect(maskCssCommentsPreservingLayout(source)).toBe(source);
+  });
 });
