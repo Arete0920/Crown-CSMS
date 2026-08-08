@@ -11,7 +11,7 @@ function createRequestIdentity() {
 }
 
 /**
- * Fetch admissions applications list (staff-only)
+ * Fetch admissions applications list.
  * @returns {Promise<Array>} - array of application objects
  */
 export const getAdmissionsApplications = async () => {
@@ -19,16 +19,12 @@ export const getAdmissionsApplications = async () => {
 };
 
 /**
- * Enroll an accepted applicant. Moves status ACCEPTED â†’ ENROLLED.
+ * Enroll an accepted applicant. Moves status ACCEPTED → ENROLLED.
  * @param {number} applicationId - AdmissionsApplication PK
  * @returns {Promise<{ok, student_id, name, message}>}
  */
 export const enrollApplicant = async (applicationId) => {
-  const path = buildApiPath('admissions.applications.enroll', {
-    applicationId,
-  });
-
-  return apiPost(path, { application_id: applicationId });
+  return apiPost(buildApiPath('admissions.enroll'), { application_id: applicationId });
 };
 
 function buildQuery(params = {}) {
@@ -79,4 +75,3 @@ export function submitAdmissionsIntake(payload = {}) {
     },
   });
 }
-

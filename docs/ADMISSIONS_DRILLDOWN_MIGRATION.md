@@ -1,81 +1,61 @@
-# Admissions API Migration Guide: `rows` → `results`
+# Admissions Drilldown Response Compatibility
 
-## Summary
+**Current authority date:** 2026-08-08  
+**Canonical endpoint:** `/api/v1/admissions/drilldown/`  
+**Compatibility alias:** `/api/admissions/drilldown/`
 
-The Admissions Drilldown endpoint (`/api/v1/admissions/drilldown/`) is deprecating the `rows` response key in favor of `results`. Both keys currently return identical data, but `rows` will be removed on **2026-06-01**.
+## Current contract
 
-## Timeline
+`results` is the canonical collection key for new clients.
 
-- **Now**: Both `rows` and `results` keys present in response
-- **2026-06-01**: `rows` key removed, only `results` remains
+`rows` remains a supported compatibility alias and currently contains the same page payload as `results`. The previously documented June 1, 2026 removal date was not executed and is superseded by this document.
 
-## Migration Steps
+Do not remove `rows` as a handoff/hygiene change. Removal requires a separately versioned client-retirement change with repository search, frontend migration, contract tests, and exact-head CI proof showing no supported consumer still depends on it.
 
-### 1. Update Client Code
+## Historical response-header note
 
-**Before:**
+The current runtime may still emit the historical `X-Deprecated-Field` header containing the old June 1, 2026 sunset text. That date is no longer authoritative. Clients must treat the header as a deprecation indicator only, not as an active removal schedule. The response-body compatibility contract in this document governs until the runtime header is changed in a separately verified implementation edit.
+
+## Client guidance
+
+Preferred:
+
 ```javascript
-fetch('/api/v1/admissions/drilldown/?bucket=status&stage=all')
-  .then(res => res.json())
-  .then(data => {
-    data.rows.forEach(applicant => {
+fetch('/api/v1/admissions/drilldown/?stage=inquiry')
+  .then((res) => res.json())
+  .then((data) => {
+    data.results.forEach((applicant) => {
       // process applicant
     });
   });
 ```
 
-**After:**
+Compatibility:
+
 ```javascript
-fetch('/api/v1/admissions/drilldown/?bucket=status&stage=all')
-  .then(res => res.json())
-  .then(data => {
-    data.results.forEach(applicant => {
-      // process applicant
-    });
-  });
+const applicants = data.results ?? data.rows ?? [];
 ```
 
-### 2. Check for Deprecation Header
+## Response shape
 
-The API now returns a response header:
-```
-X-Deprecated-Field: rows; use results instead; sunset 2026-06-01
-```
-
-Clients should log this header and plan migration accordingly.
-
-### 3. Verify Compatibility
-
-Both keys return **identical data structures**:
 ```json
 {
-  "total": 94,
-  "limit": 50,
-  "offset": 0,
   "academic_year": "2026-2027",
-  "rows": [/* ... */],     // DEPRECATED
-  "results": [/* ... */]   // USE THIS
+  "stage": null,
+  "source": null,
+  "total": 94,
+  "limit": 25,
+  "offset": 0,
+  "results": [],
+  "rows": []
 }
 ```
 
-### 4. PowerShell Example
+`results` and `rows` must remain identical while the compatibility alias is supported.
 
-**Before:**
-```powershell
-$drill.rows | Select-Object -First 10
-```
+## Governance
 
-**After:**
-```powershell
-$drill.results | Select-Object -First 10
-```
-
-## Rationale
-
-- **Consistency**: `results` aligns with REST API conventions
-- **Clarity**: `results` is more explicit than `rows`
-- **Contract Hardening**: Clean separation of legacy vs. current API
-
-## Contact
-
-Questions? See [INTEGRATION_GUIDE.md](INTEGRATION_GUIDE.md) or file an issue.
+- `results`: canonical.
+- `rows`: compatibility alias.
+- No fixed removal date is currently authorized.
+- A future removal must update runtime behavior, frontend consumers, API-contract documentation, and tests in the same reviewed change.

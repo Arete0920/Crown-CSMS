@@ -22,7 +22,7 @@ const content = fs.readFileSync(filePath, 'utf8');
 
 const requiredKeys = [
   'admissions.applications.list',
-  'admissions.applications.enroll',
+  'admissions.enroll',
   'finance.invoices.list',
   'communications.threads.list',
   'communications.threads.detail',

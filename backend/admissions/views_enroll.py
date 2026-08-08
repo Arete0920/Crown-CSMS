@@ -1,74 +1,50 @@
-"""
-Admissions enrollment action.
+"""Admissions enrollment action.
 
 POST /api/admissions/enroll/
 Body: {"application_id": <int>}
 
-Staff-only. Moves an AdmissionsApplication from ACCEPTED -> ENROLLED
-and activates the linked sis_student record (if present).
-
-Returns:
-  - 200 OK (already enrolled):
-      {
-          "ok": true,
-          "already_enrolled": true,
-          "student_id": <str | null>,
-          "name": <str | null>,
-          "message": "Already enrolled."
-      }
-  - 200 OK (enrolled successfully):
-      {
-          "ok": true,
-          "already_enrolled": false,
-          "student_id": <str | null>,
-          "name": <str | null>,
-          "message": "Enrolled successfully."
-      }
-  - 400/401/403/404 error responses:
-      {
-          "ok": false,
-          "detail": <str>
-      }
-  - 409 Conflict (invalid stage transition):
-      {
-          "ok": false,
-          "detail": <str>,
-          "current_status": <str>
-      }
+Requires tenant-scoped ``admissions.edit`` authority (staff/superuser remains
+an explicit administrative override). Uses the canonical guarded enrollment
+service so status, audit, and linked SIS activation stay consistent.
 """
 
 from django.db import transaction
+from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from rest_framework import status
 
 from admissions.models import AdmissionsApplication
-from admissions.services import InvalidStageTransition, move_stage
+from admissions.services import InvalidStageTransition, finalize_enrollment
+from core.models import School
+from core.permissions import user_has_permission
 from households.scoping import get_request_school_id
 
 
-def _require_staff(request):
+def _require_enrollment_access(request, school):
     user = getattr(request, "user", None)
     if not getattr(user, "is_authenticated", False):
         return Response(
             {"ok": False, "detail": "Authentication credentials were not provided."},
             status=status.HTTP_401_UNAUTHORIZED,
         )
-    if not (getattr(user, "is_staff", False) or getattr(user, "is_superuser", False)):
-        return Response(
-            {"ok": False, "detail": "Staff access required."},
-            status=status.HTTP_403_FORBIDDEN,
-        )
-    return None
+    if getattr(user, "is_staff", False) or getattr(user, "is_superuser", False):
+        return None
+    if user_has_permission(user, "admissions.edit", school=school):
+        return None
+    return Response(
+        {"ok": False, "detail": "Permission denied."},
+        status=status.HTTP_403_FORBIDDEN,
+    )
 
 
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def enroll_applicant(request):
-    school_id = get_request_school_id(request, required=True)  # 400 if missing, 404 if wrong tenant
+    school_id = get_request_school_id(request, required=True)
+    school = School.objects.get(pk=school_id)
 
-    denied = _require_staff(request)
+    denied = _require_enrollment_access(request, school)
     if denied is not None:
         return denied
 
@@ -79,32 +55,25 @@ def enroll_applicant(request):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    try:
-        app = AdmissionsApplication.objects.select_related("sis_student").get(
-            id=application_id, school_id=school_id
-        )
-    except AdmissionsApplication.DoesNotExist:
-        return Response(
-            {"ok": False, "detail": "Application not found."},
-            status=status.HTTP_404_NOT_FOUND,
-        )
-
-    if app.status == AdmissionsApplication.STATUS_ENROLLED:
-        student_id = str(app.sis_student.id) if app.sis_student else None
-        student_name = str(app.sis_student) if app.sis_student else None
-        return Response(
-            {
-                "ok": True,
-                "already_enrolled": True,
-                "student_id": student_id,
-                "name": student_name,
-                "message": "Already enrolled.",
-            }
-        )
-
     with transaction.atomic():
         try:
-            move_stage(app, AdmissionsApplication.STATUS_ENROLLED, actor_user=request.user)
+            app = (
+                AdmissionsApplication.objects.select_for_update()
+                .select_related("sis_student")
+                .get(id=application_id, school=school)
+            )
+        except AdmissionsApplication.DoesNotExist:
+            return Response(
+                {"ok": False, "detail": "Application not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        try:
+            app, converted = finalize_enrollment(
+                app,
+                actor_user=request.user,
+                details={"source": "admissions_enroll_api"},
+            )
         except InvalidStageTransition:
             return Response(
                 {
@@ -115,22 +84,16 @@ def enroll_applicant(request):
                 status=status.HTTP_409_CONFLICT,
             )
 
-        student_id = None
-        student_name = None
-
-        if app.sis_student:
-            app.sis_student.active = True
-            app.sis_student.save(update_fields=["active"])
-            student_id = str(app.sis_student.id)
-            student_name = str(app.sis_student)
+        student_id = str(app.sis_student.id) if app.sis_student else None
+        student_name = str(app.sis_student) if app.sis_student else None
 
     return Response(
         {
             "ok": True,
-            "already_enrolled": False,
+            "already_enrolled": not converted,
             "student_id": student_id,
             "name": student_name,
-            "message": "Enrolled successfully.",
+            "message": "Enrolled successfully." if converted else "Already enrolled.",
         },
         status=status.HTTP_200_OK,
     )
