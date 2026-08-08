@@ -44,21 +44,27 @@ jobs:
           fetch-depth: 0
       - name: Validate production tag
         shell: bash
+        env:
+          DEPLOY_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.deploy_tag || github.ref_name }}
         run: |
           set -euo pipefail
-          deploy_tag="${{ github.event_name == 'workflow_dispatch' && inputs.deploy_tag || github.ref_name }}"
-          if [[ "$deploy_tag" != prod-deploy-* ]]; then
-            echo "ERROR: production deploy tag must match prod-deploy-*"
+          if [[ ! "$DEPLOY_TAG" =~ ^prod-deploy-[A-Za-z0-9._-]+$ ]]; then
+            echo "ERROR: production deploy tag must match the strict prod-deploy-* allowlist"
             exit 1
           fi
       - name: Resolve immutable release SHA
         id: resolve
         shell: bash
+        env:
+          DEPLOY_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.deploy_tag || github.ref_name }}
         run: |
           set -euo pipefail
-          deploy_tag="${{ github.event_name == 'workflow_dispatch' && inputs.deploy_tag || github.ref_name }}"
+          if [[ ! "$DEPLOY_TAG" =~ ^prod-deploy-[A-Za-z0-9._-]+$ ]]; then
+            echo "ERROR: production deploy tag must match the strict prod-deploy-* allowlist"
+            exit 1
+          fi
           deploy_sha="$(git rev-parse HEAD)"
-          tag_sha="$(git rev-parse "refs/tags/${deploy_tag}^{commit}")"
+          tag_sha="$(git rev-parse "refs/tags/${DEPLOY_TAG}^{commit}")"
           if [[ ! "$deploy_sha" =~ ^[0-9a-f]{40}$ ]]; then
             echo "ERROR: resolved release ref is not a full commit SHA: $deploy_sha"
             exit 1
@@ -69,7 +75,7 @@ jobs:
           fi
           echo "deploy_sha=$deploy_sha" >> "$GITHUB_OUTPUT"
           echo "deploy_sha_short=${deploy_sha:0:7}" >> "$GITHUB_OUTPUT"
-          echo "deploy_tag=$deploy_tag" >> "$GITHUB_OUTPUT"
+          echo "deploy_tag=$DEPLOY_TAG" >> "$GITHUB_OUTPUT"
 
   production-migration:
     needs: resolve-release
