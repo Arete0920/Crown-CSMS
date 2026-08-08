@@ -15,9 +15,9 @@ function readRepoFile(relativePath) {
 describe('release authority consistency contract', () => {
   it('keeps the canonical technical certification and release authorization aligned', () => {
     const source = readRepoFile('docs/CURRENT_RELEASE_STATUS.md');
-    expect(source.includes('Repository release technical gates: **PASS**')).toBe(true);
-    expect(source.includes('Production deployment and runtime technical gates: **PASS**')).toBe(true);
-    expect(source.includes('Founder/Product Owner release authorization: **RECORDED / ACCEPTED**')).toBe(true);
+    expect(source.includes('Certified repository release technical gates: **PASS**')).toBe(true);
+    expect(source.includes('Certified production deployment and runtime technical gates: **PASS**')).toBe(true);
+    expect(source.includes('Founder/Product Owner release authorization for the certified release: **RECORDED / ACCEPTED**')).toBe(true);
     expect(source.includes('Production: **NOT APPROVED / NO-GO / HOLD**')).toBe(false);
     expect(source.includes('**PRODUCTION DECISION: NOT APPROVED / NO-GO / HOLD**')).toBe(false);
     expect(source.includes('Final production authorization: **PENDING')).toBe(false);
