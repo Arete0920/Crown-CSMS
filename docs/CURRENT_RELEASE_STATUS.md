@@ -13,9 +13,11 @@
 
 The certified production release remains commit `17573fb649f74a3ba0f1b3fbc9e004108b3cf228` under immutable tag `prod-deploy-20260804-17573fb`.
 
-Development `main` has advanced beyond that certified production source and includes post-certification source changes, including later UI/dashboard-integrity work and repository process hardening. The development baseline reconciled here is `39ab8249adf1715eb653709c0bf410535b1cad51`; later `main` commits may advance beyond that baseline. Those later commits do **not** replace, extend, or inherit certified production status merely because they are on `main`. They require their own exact-source release selection, deployment identity, and applicable certification before the production tag or certified runtime identity can move.
+Development `main` has advanced beyond that certified production source and includes post-certification source changes, including later UI/dashboard-integrity work and repository process hardening. This document deliberately uses `39ab8249adf1715eb653709c0bf410535b1cad51` as its development reconciliation baseline; that SHA is not asserted as a permanently current branch pointer. Later `main` commits may advance beyond it. Those later commits do **not** replace, extend, or inherit certified production status merely because they are on `main`. They require their own exact-source release selection, deployment identity, and applicable certification before the production tag or certified runtime identity can move.
 
 Certified-production facts and development-head facts must therefore be reported separately. For the current development head after this reconciliation, consult the repository rather than treating this document's reconciliation baseline as a permanently current branch pointer.
+
+The body of controlling issue `#1619` contains historical metadata that records repository visibility as `PUBLIC` and a prior development-main SHA. A later locked 2026-08-08 authority-correction comment on that issue supersedes those two stale metadata fields: live repository metadata was verified as `PRIVATE`, and the earlier development-main SHA is retained only as a historical baseline. The certified production source, immutable tag, deployment run, and completed release decision remain unchanged.
 
 ## Canonical decision
 
@@ -29,7 +31,7 @@ CROWN completed repository and production technical certification for the bounde
 - Buyer operational turnover: **PENDING IDENTIFIED BUYER AND PARTY ACCEPTANCE**
 - Post-certification development commits on `main`: **NOT PART OF THE CERTIFIED PRODUCTION IDENTITY UNLESS SEPARATELY RELEASED AND CERTIFIED**
 
-This document records the evidence-backed posture and deliberately distinguishes certified production from later development activity. GitHub issue `#1619` remains the controlling record for the certified release and owner-handoff boundary.
+This document records the evidence-backed posture and deliberately distinguishes certified production from later development activity. GitHub issue `#1619` remains the controlling record for the certified release and owner-handoff boundary, subject to its later explicit correction comments where the issue body contains superseded metadata.
 
 ## Certified release identity
 
@@ -85,7 +87,7 @@ Roles not configured as supported dashboard personas are not represented as cert
 
 ## Post-certification development state
 
-At the start of this reconciliation, development `main` had reached `39ab8249adf1715eb653709c0bf410535b1cad51` and contained later source changes after the certified release, including visual-layout, display-integrity, sandbox-layout, cross-layer dashboard-integrity, legacy operational-dashboard work, and PR/visual-system preflight hardening.
+For this authority reconciliation, `39ab8249adf1715eb653709c0bf410535b1cad51` is the selected development baseline used to distinguish later source state from the certified production identity. It is not presented as a permanently current `main` pointer or as a replacement for historical branch-verification metadata in #1619. The baseline contains later source changes after the certified release, including visual-layout, display-integrity, sandbox-layout, cross-layer dashboard-integrity, legacy operational-dashboard work, and PR/visual-system preflight hardening.
 
 Later development changes may have their own exact-head CI and review evidence, but they are not represented by this document as deployed production changes. The immutable certified tag remains the only certified production identity until a later source is explicitly selected, tagged, deployed, identity-reconciled, and certified.
 
