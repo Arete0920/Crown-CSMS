@@ -8,11 +8,11 @@ export const API_CONTRACTS = {
     permission: APP_PERMISSIONS.ADMISSIONS_VIEW,
     responseType: 'list',
   },
-  'admissions.applications.enroll': {
+  'admissions.enroll': {
     method: 'POST',
-    path: '/admissions/applications/:applicationId/enroll/',
+    path: '/admissions/enroll/',
     owner: 'AdmissionsPipelineList',
-    permission: APP_PERMISSIONS.ENROLLMENT_EDIT,
+    permission: APP_PERMISSIONS.ADMISSIONS_EDIT,
     responseType: 'object',
   },
   'finance.invoices.list': {

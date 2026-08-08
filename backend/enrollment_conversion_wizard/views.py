@@ -8,6 +8,7 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from admissions.models import AdmissionsApplication
+from admissions.services import finalize_enrollment
 from households.scoping import get_request_school_id
 
 from .models import EnrollmentConversionWizardSession
@@ -18,19 +19,15 @@ from drf_spectacular.types import OpenApiTypes
 _AUTH = [JWTAuthentication, SessionAuthentication]
 _PERM = [IsAuthenticated]
 
-VALID_FROM_STATUSES = {
-    AdmissionsApplication.STATUS_ACCEPTED,
-    AdmissionsApplication.STATUS_WAITLISTED,
-}
+# Direct enrollment conversion is valid only after an admissions decision has
+# reached ACCEPTED. WAITLISTED must first follow the canonical WAITLISTED ->
+# ACCEPTED transition.
+VALID_FROM_STATUSES = {AdmissionsApplication.STATUS_ACCEPTED}
 
 
 def _get_session(session_id, school_id):
     return get_object_or_404(EnrollmentConversionWizardSession, id=session_id, school__id=school_id)
 
-
-# ---------------------------------------------------------------------------
-# 1. Create
-# ---------------------------------------------------------------------------
 
 @extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
@@ -51,10 +48,6 @@ def create_session(request):
     )
     return Response({"session_id": str(session.id), "status": session.status}, status=status.HTTP_201_CREATED)
 
-
-# ---------------------------------------------------------------------------
-# 2. Configure
-# ---------------------------------------------------------------------------
 
 @extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
@@ -90,10 +83,6 @@ def configure_session(request, session_id):
         "from_status": from_status,
     })
 
-
-# ---------------------------------------------------------------------------
-# 3. Load applicants
-# ---------------------------------------------------------------------------
 
 @extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
@@ -133,10 +122,6 @@ def load_applicants(request, session_id):
     })
 
 
-# ---------------------------------------------------------------------------
-# 4. Commit — bulk update status → ENROLLED
-# ---------------------------------------------------------------------------
-
 @extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 @authentication_classes(_AUTH)
@@ -161,22 +146,58 @@ def commit_session(request, session_id):
         return Response({"error": "confirm is required"}, status=status.HTTP_400_BAD_REQUEST)
 
     with transaction.atomic():
-        updated = AdmissionsApplication.objects.filter(
-            id__in=session.application_ids,
-            school__id=school_id,
-        ).update(status=AdmissionsApplication.STATUS_ENROLLED)
+        applications = list(
+            AdmissionsApplication.objects.select_for_update()
+            .select_related("sis_student")
+            .filter(id__in=session.application_ids, school__id=school_id)
+            .order_by("id")
+        )
 
-        result = {"converted": updated}
+        expected_count = len(session.application_ids)
+        if len(applications) != expected_count:
+            return Response(
+                {"error": "One or more selected applications are no longer available in this tenant."},
+                status=status.HTTP_409_CONFLICT,
+            )
+
+        invalid = [
+            app
+            for app in applications
+            if app.status not in {
+                AdmissionsApplication.STATUS_ACCEPTED,
+                AdmissionsApplication.STATUS_ENROLLED,
+            }
+        ]
+        if invalid:
+            return Response(
+                {
+                    "error": "Enrollment conversion requires ACCEPTED applications.",
+                    "invalid_applications": [
+                        {"application_id": app.id, "status": app.status} for app in invalid
+                    ],
+                },
+                status=status.HTTP_409_CONFLICT,
+            )
+
+        converted = 0
+        for app in applications:
+            _app, changed = finalize_enrollment(
+                app,
+                actor_user=request.user,
+                details={
+                    "source": "enrollment_conversion_wizard",
+                    "session_id": str(session.id),
+                },
+            )
+            converted += int(changed)
+
+        result = {"converted": converted, "selected": expected_count}
         session.commit_result = result
         session.status = EnrollmentConversionWizardSession.STATUS_COMMITTED
         session.save()
 
     return Response({"status": session.status, **result})
 
-
-# ---------------------------------------------------------------------------
-# 5. Verify
-# ---------------------------------------------------------------------------
 
 @extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["GET"])
@@ -200,10 +221,25 @@ def verify_session(request, session_id):
         )
 
     enrolled_count = AdmissionsApplication.objects.filter(
+        id__in=session.application_ids,
         school__id=school_id,
         academic_year__name=session.academic_year_label,
         status=AdmissionsApplication.STATUS_ENROLLED,
     ).count()
+
+    selected_count = len(session.application_ids)
+    all_enrolled = enrolled_count == selected_count
+    if not all_enrolled:
+        return Response(
+            {
+                "status": session.status,
+                "enrolled_count": enrolled_count,
+                "selected_count": selected_count,
+                "all_enrolled": False,
+                "error": "Enrollment verification failed for one or more selected applications.",
+            },
+            status=status.HTTP_409_CONFLICT,
+        )
 
     session.status = EnrollmentConversionWizardSession.STATUS_VERIFIED
     session.save()
@@ -211,6 +247,8 @@ def verify_session(request, session_id):
     return Response({
         "status": session.status,
         "enrolled_count": enrolled_count,
+        "selected_count": selected_count,
+        "all_enrolled": True,
         "academic_year_label": session.academic_year_label,
         "commit_result": session.commit_result,
     })

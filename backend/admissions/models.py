@@ -197,7 +197,10 @@ class AdmissionsAuditEvent(TimeStampedModel):
 
     school = models.ForeignKey(School, on_delete=models.PROTECT, related_name='admissions_audit_events')
     entity_type = models.CharField(max_length=24, choices=ENTITY_CHOICES)
-    entity_id = models.UUIDField()
+    # Admissions entities currently use integer primary keys, while other CROWN
+    # domains use UUID identifiers. Store the audited identifier losslessly as
+    # text so the audit trail can represent either identity type.
+    entity_id = models.CharField(max_length=64)
 
     action = models.CharField(max_length=64)
     actor_user = models.ForeignKey(UserAccount, on_delete=models.PROTECT, null=True, blank=True, related_name='admissions_audit_events')
@@ -227,7 +230,7 @@ class AdmissionsAuditEvent(TimeStampedModel):
         return AdmissionsAuditEvent.objects.create(
             school=school,
             entity_type=entity_type,
-            entity_id=entity_id,
+            entity_id=str(entity_id),
             action=action,
             actor_user=actor_user,
             timestamp=timezone.now(),

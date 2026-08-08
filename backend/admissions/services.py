@@ -1,20 +1,19 @@
-"""
-Admissions stage transition service.
+"""Admissions lifecycle services.
 
-Provides guarded move_stage() that enforces allowed transitions.
-Direct calls to AdmissionsApplication.set_status() bypass this guard;
-use move_stage() for all external/API-triggered status changes.
+External/API-triggered stage changes must use :func:`move_stage` so the
+transition graph and audit trail remain authoritative. Enrollment conversion
+uses :func:`finalize_enrollment`, which applies the guarded ACCEPTED -> ENROLLED
+transition and activates the linked SIS student in one transaction.
 
-Note: billing hooks (create_obligation) are intentionally omitted here.
-When ledger integration is needed, wire via ledger.services after move_stage().
+Financial obligations and enrollment-contract readiness belong to the newer
+``applications`` domain. They are intentionally not inferred here until a
+verified relational authority links those records to ``AdmissionsApplication``.
 """
+
+from django.db import transaction
 
 from .models import AdmissionsApplication
 
-
-# -----------------------------------------------------------------------
-# Allowed transition graph (status → set of valid next statuses)
-# -----------------------------------------------------------------------
 
 ALLOWED_TRANSITIONS: dict[str, set[str]] = {
     AdmissionsApplication.STATUS_DRAFT: {
@@ -46,13 +45,12 @@ ALLOWED_TRANSITIONS: dict[str, set[str]] = {
         AdmissionsApplication.STATUS_DENIED,
         AdmissionsApplication.STATUS_WITHDRAWN,
     },
-    # Terminal statuses — no outbound transitions
-    # DENIED, ENROLLED, WITHDRAWN: intentionally absent
+    # DENIED, ENROLLED, and WITHDRAWN are terminal.
 }
 
 
 class InvalidStageTransition(Exception):
-    """Raised when a status transition is not in ALLOWED_TRANSITIONS."""
+    """Raised when a requested application transition is not permitted."""
 
 
 def move_stage(
@@ -61,18 +59,71 @@ def move_stage(
     actor_user=None,
     details: dict | None = None,
 ) -> AdmissionsApplication:
-    """
-    Validate and execute a status transition for an AdmissionsApplication.
-
-    Raises InvalidStageTransition if the transition is not permitted.
-    Calls record.set_status() which handles save + audit event creation.
-    """
+    """Validate and execute one audited admissions application transition."""
     allowed = ALLOWED_TRANSITIONS.get(record.status, set())
     if new_status not in allowed:
         raise InvalidStageTransition(
-            f"Invalid transition: {record.status!r} → {new_status!r}. "
+            f"Invalid transition: {record.status!r} -> {new_status!r}. "
             f"Allowed: {sorted(allowed) or 'none (terminal status)'}"
         )
 
     record.set_status(new_status, actor_user=actor_user, details=details or {})
     return record
+
+
+def _finalize_enrollment_locked(
+    record: AdmissionsApplication,
+    *,
+    actor_user=None,
+    details: dict | None = None,
+) -> tuple[AdmissionsApplication, bool]:
+    record = AdmissionsApplication.objects.select_for_update().get(pk=record.pk)
+
+    if record.status == AdmissionsApplication.STATUS_ENROLLED:
+        return record, False
+
+    move_stage(
+        record,
+        AdmissionsApplication.STATUS_ENROLLED,
+        actor_user=actor_user,
+        details=details or {"source": "enrollment_conversion"},
+    )
+
+    if record.sis_student_id:
+        sis_student = record.sis_student
+        if not sis_student.active:
+            sis_student.active = True
+            sis_student.save(update_fields=["active"])
+
+    return record, True
+
+
+def finalize_enrollment(
+    record: AdmissionsApplication,
+    *,
+    actor_user=None,
+    details: dict | None = None,
+) -> tuple[AdmissionsApplication, bool]:
+    """Finalize one legacy admissions application into the enrolled state.
+
+    Returns ``(record, converted)``. The authoritative row is reloaded under a
+    database lock before the status check so repeated or concurrent calls are
+    idempotent. If the caller already owns a transaction, that transaction is
+    reused without creating a per-record savepoint. Standalone callers receive
+    an atomic transaction owned by this service.
+    """
+    using = record._state.db or "default"
+    connection = transaction.get_connection(using=using)
+    if connection.in_atomic_block:
+        return _finalize_enrollment_locked(
+            record,
+            actor_user=actor_user,
+            details=details,
+        )
+
+    with transaction.atomic(using=using):
+        return _finalize_enrollment_locked(
+            record,
+            actor_user=actor_user,
+            details=details,
+        )
