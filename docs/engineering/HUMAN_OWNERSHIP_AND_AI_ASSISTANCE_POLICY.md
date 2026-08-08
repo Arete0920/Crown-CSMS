@@ -6,27 +6,33 @@
 
 ## Purpose
 
-This policy separates human product ownership, creator and architecture authority, evidence-backed contributor credit, automated assistance, technical verification, acceptance, and release authority in the CROWN repository.
+This policy separates human product ownership, creator and architecture authority, collaborator involvement, automated assistance, technical verification, acceptance, and release authority in the CROWN repository.
 
-An AI-pattern finding is a maintainability, verification, or provenance concern. It is not proof that an AI system authored a file, and it is not proof that a human contributor did not contribute.
+An AI-pattern finding is a maintainability, verification, or provenance concern. It is not proof that an AI system authored a file, and it is not proof that a human contributor did or did not contribute.
 
 ## Human ownership and authority
 
 ### TC Megahan
 
-TC Megahan is the creator of CROWN, Founder/Product Owner, principal product designer, architecture authority, workflow designer, repository owner, requirements authority, technical-direction authority, acceptance authority, and release authority.
+TC Megahan is the creator of CROWN, Founder/Product Owner, principal developer, principal product designer, architecture authority, workflow designer, repository owner, requirements authority, technical-direction authority, acceptance authority, and release authority.
 
-TC designed the platform architecture and created the operating and application workflow that directed implementation. TC also performed implementation work and remains accountable for the resulting product. These authority and creation statements do not assert that TC personally authored every line of code. Specific line-level implementation, review, testing, or documentation claims should be supported by repository history or another retained record where such precision is required.
+TC conceived and designed the platform architecture and operating/application workflows, directed implementation, performed product-development work, and remains accountable for the resulting product. TC is the sole code owner and sole repository maintainer for the development program. These authority and creation statements do not assert unsupported line-by-line typing provenance; where file-, module-, commit-, review-, testing-, or documentation-level attribution is material, the Contribution Evidence Ledger and durable repository evidence control.
 
-### Collaborators
+### Founding and early collaborators
 
-Early, interim, and later collaborators supported portions of CROWN at different stages. Active repository documentation does not enumerate those individuals unless a present operational, legal, security, access-control, or evidence requirement makes identification necessary.
+Anthony Rizzo, Ayush Agarwal, and Jed Hansen were founding/early collaborators in the CROWN program. Their early involvement may be stated as such. Specific implementation, design, documentation, review, testing, or other work must be attributed to an individual only when repository history, project records, correspondence, working documents, or other durable evidence supports that claim.
 
-Specific credit for modules, files, architecture, implementation, testing, review, documentation, or operations must be supported by commits, pull requests, issue records, review records, project documents, signed records, or other durable evidence. Unsupported specific claims remain `NOT VERIFIED`.
+General early involvement must not be expanded into unsupported specific authorship, code ownership, architecture authority, acceptance authority, release authority, or intellectual-property ownership.
+
+### New collaborators and prospective reviewers
+
+Johnny Megahan and Evan Lesage are new collaborators designated for advisory repository review. No historical implementation, authorship, prior project accomplishment, completed review disposition, code ownership, architecture authority, acceptance authority, release authority, or intellectual-property ownership is assigned to either person unless later durable evidence supports that claim.
+
+Repository access or review activity, when it occurs, does not by itself confer authorship, contribution status, product ownership, code ownership, or intellectual-property rights. Current access and completed-review status must be reported from repository evidence, not assumption.
 
 ## Development assistance
 
-CROWN used numerous development tools and interim coding assistants at different stages. Those tools and assistants may have supported bounded implementation, debugging, testing, analysis, documentation, code review, and repository operations. Active and external-facing materials should describe that assistance accurately and in vendor-neutral terms rather than attempting to name every interim tool or assistant.
+CROWN used numerous commercial development tools and interim coding assistants at different stages. Those tools and assistants may have supported bounded implementation, debugging, testing, analysis, documentation, code review, and repository operations. Active and external-facing materials should describe that assistance accurately and in vendor-neutral terms rather than attempting to name every interim tool or assistant.
 
 Development assistants are not:
 
@@ -35,7 +41,7 @@ Development assistants are not:
 - architecture owners;
 - founders or co-founders;
 - human authors or contributors;
-- independent reviewers;
+- independent human reviewers;
 - security approvers;
 - acceptance authorities;
 - release authorities.
@@ -48,11 +54,13 @@ Every non-trivial pull request must identify:
 
 ```text
 Human owner:
-Evidence-backed contributors:
+Evidence-backed human contributors:
 Development assistance:
 Human verification:
 Unverified attribution:
 ```
+
+`Evidence-backed human contributors` must name only people whose contribution to that specific change is supported by durable evidence. Founding/early involvement alone is not sufficient to assign specific PR or file authorship. New or advisory collaboration is not code contribution unless evidence proves otherwise.
 
 `Development assistance` should state `none`, `limited`, or `material` and briefly identify the assistance performed. Vendor or product names are not required unless needed for security, licensing, audit, or historical evidence.
 
@@ -64,7 +72,7 @@ The repository must not:
 
 1. rewrite commit history to manufacture individual authorship;
 2. infer authorship from coding style, comments, file naming, or apparent AI patterns;
-3. identify a collaborator as a founder or co-founder without explicit Founder/Product Owner authorization and durable evidence;
+3. identify a collaborator as a founder, co-founder, developer, code contributor, or code owner without Founder/Product Owner authorization and durable evidence appropriate to that claim;
 4. add contributor names solely to improve diligence presentation;
 5. describe an automated review as independent human review;
 6. conceal material use of development assistance;
@@ -84,7 +92,7 @@ Human verification must be proportional to risk and may include:
 - runtime or operational evidence where applicable;
 - documented disposition of review findings.
 
-A green automated check is evidence, but it is not product ownership, human authorship, independent approval, or release authorization.
+A green automated check is evidence, but it is not product ownership, human authorship, independent human approval, or release authorization.
 
 ## Solo-maintainer control
 
@@ -106,11 +114,12 @@ It must never override a failed technical, security, tenant, recovery, complianc
 
 Client-, buyer-, diligence-, and future-owner-facing materials must distinguish:
 
-- TC Megahan's creator, design, architecture, workflow, product ownership, acceptance, and release authority;
-- evidence-backed human contributions where identification is necessary and authorized;
+- TC Megahan's creator, principal-developer, design, architecture, workflow, product ownership, acceptance, and release authority;
+- Anthony Rizzo, Ayush Agarwal, and Jed Hansen as founding/early collaborators, with specific work credited only where evidence supports it;
+- Johnny Megahan and Evan Lesage as new/advisory collaborators with no historical contribution or prior-work credit unless later evidence supports it;
 - development assistance;
 - automated verification;
 - human acceptance and release authority;
 - unresolved or `NOT VERIFIED` attribution.
 
-The Contribution Evidence Ledger is the controlling record for specific contributor claims.
+Specific named contribution claims must follow `docs/engineering/CONTRIBUTION_EVIDENCE_LEDGER.md` and its underlying durable evidence.

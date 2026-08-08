@@ -2,11 +2,11 @@
 
 **Status:** Canonical  
 **Owner:** CROWN Engineering  
-**Effective date:** 2026-07-29
+**Effective date:** 2026-08-08
 
 ## Authority rule
 
-A document is authoritative only when listed here as `CANONICAL`, or when a later approved decision explicitly supersedes it. Unlisted documents do not override canonical authority.
+A document is authoritative only when listed here as `CANONICAL` or another canonical classification defined below, or when a later approved decision explicitly supersedes it. Unlisted documents do not override canonical authority.
 
 ## Canonical documents
 
@@ -17,6 +17,8 @@ A document is authoritative only when listed here as `CANONICAL`, or when a late
 | Documentation navigation | `docs/README.md` | CANONICAL |
 | Diligence and evidence navigation | `docs/canonical/DILIGENCE_EVIDENCE_INDEX.md` | CANONICAL DILIGENCE AUTHORITY |
 | Developer setup | `docs/engineering/DEV_SETUP.md` | CANONICAL |
+| Human ownership, collaborator role, and AI-assistance governance | `docs/engineering/HUMAN_OWNERSHIP_AND_AI_ASSISTANCE_POLICY.md` | CANONICAL ENGINEERING GOVERNANCE |
+| Specific contributor-attribution evidence | `docs/engineering/CONTRIBUTION_EVIDENCE_LEDGER.md` | CANONICAL CONTRIBUTOR-ATTRIBUTION CONTROL |
 | Architecture gateway | `docs/architecture/README.md` | CANONICAL |
 | Architecture map | `docs/architecture/ARCHITECTURE_MAP.md` | CANONICAL ARCHITECTURE AUTHORITY |
 | Architecture decisions | `docs/architecture/DECISION_INDEX.md` | CANONICAL DECISION AUTHORITY |
@@ -37,7 +39,7 @@ Accepted ADRs are authoritative only when listed in `docs/architecture/DECISION_
 
 | Subject | Document | Status |
 |---|---|---|
-| Development provenance | `docs/provenance/CROWN_DEVELOPMENT_PROVENANCE.md` | CONTROLLED SUPPORTING; lineage only |
+| Development provenance | `docs/provenance/CROWN_DEVELOPMENT_PROVENANCE.md` | CONTROLLED SUPPORTING; lineage only; must remain consistent with canonical human-ownership governance and the contributor evidence ledger |
 | Identity compatibility inventory | `docs/architecture/CANONICAL_IDENTITY_CONSUMER_INVENTORY.md` | CONTROLLED ARCHITECTURE SUPPORTING RECORD |
 | Tenant enforcement implementation status | `docs/architecture/TENANT_ENFORCEMENT_IMPLEMENTATION_STATUS.md` | CONTROLLED ARCHITECTURE SUPPORTING RECORD; source status only, not runtime certification |
 | Privacy and compliance evidence status | `docs/compliance/PRIVACY_COMPLIANCE_EVIDENCE_STATUS.md` | CONTROLLED COMPLIANCE SUPPORTING RECORD; evidence status only, not legal certification |
@@ -63,11 +65,13 @@ Normal onboarding must not direct readers to editor-specific, assistant-specific
 ## Classification labels
 
 - `CANONICAL` — current authority.
+- `CANONICAL ENGINEERING GOVERNANCE` — current human ownership, collaborator-role, development-assistance, verification, and attribution-integrity authority.
+- `CANONICAL CONTRIBUTOR-ATTRIBUTION CONTROL` — current authority for specific named contributor claims and their evidence status.
 - `CANONICAL ARCHITECTURE AUTHORITY` — current system boundary and principle authority.
 - `CANONICAL DECISION AUTHORITY` — accepted ADR status and supersession authority.
 - `CANONICAL DILIGENCE AUTHORITY` — current diligence navigation, evidence-status, and claim-boundary authority.
 - `CANONICAL SUPPORTING OVERVIEW` — source-grounded implementation overview consistent with accepted decisions.
-- `CONTROLLED SUPPORTING` — useful information that does not override release, security, architecture, operational, or diligence authority.
+- `CONTROLLED SUPPORTING` — useful information that does not override release, security, architecture, operational, diligence, engineering-governance, or contributor-attribution authority.
 - `CONTROLLED ARCHITECTURE SUPPORTING RECORD` — source-grounded inventory or implementation status that does not create architecture authority or certify runtime behavior.
 - `CONTROLLED COMPLIANCE SUPPORTING RECORD` — evidence-status reconciliation that does not provide legal advice, legal certification, contractual approval, runtime certification, or production authorization.
 - `HISTORICAL` — repository history only; not active navigation.
