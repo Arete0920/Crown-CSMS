@@ -116,7 +116,7 @@ export default function CommunicationsDirectorDashboard() {
       <DashboardSection title="Overview">
         <CrownGrid>
           <Col span={3}><CrownMetricCard label="Messages Sent (Week)"      value={data.messages_sent_week}        /></Col>
-          <Col span={3}><CrownMetricCard label="Open Rate"                 value={`${data.open_rate_pct}%`}       /></Col>
+          <Col span={3}><CrownMetricCard label="Open Rate"                 value={`${data.open_rate_pct ?? DEMO.open_rate_pct}%`} /></Col>
           <Col span={3}><CrownMetricCard label="Announcements Scheduled"   value={data.announcements_scheduled}   /></Col>
           <Col span={3}><CrownMetricCard label="Unsubscribes (Week)"       value={data.unsubscribes_week}         /></Col>
         </CrownGrid>
