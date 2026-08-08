@@ -2,16 +2,16 @@
 
 **Status:** Controlled architecture supporting record  
 **Owner:** Founder/Product Owner and CROWN Engineering  
-**Effective date:** 2026-07-29  
+**Effective date:** 2026-08-08  
 **Related authority:** `decisions/ADR-0001-tenant-resolution-and-enforcement.md`  
-**Related issues:** #1626, #1753, #1619  
-**Observed source identity:** `f4828184c89a92c39950341d1efcfb6807c7b835`
+**Background execution authority:** `decisions/ADR-0003-tenant-aware-background-jobs.md`  
+**Related issues:** #1626, #1753, #1619, #1925
 
 ## Purpose
 
-This record reconciles the accepted tenant-resolution decision with the implementation visible in the repository. It records source-grounded completion and remaining evidence without claiming deployed-runtime, universal endpoint, database, task, or production certification.
+This record reconciles accepted tenant architecture with current repository implementation. It is not a substitute for the certified-release evidence in `docs/CURRENT_RELEASE_STATUS.md` and #1619, and it does not imply that later development `main` commits are production-certified.
 
-## Verified source implementation
+## Verified request-time implementation
 
 ### Canonical tenant context
 
@@ -22,97 +22,104 @@ This record reconciles the accepted tenant-resolution decision with the implemen
 - authenticated-principal and unambiguous role-based school fallback;
 - explicit tenant-override authorization;
 - canonical request binding through `request.crown_tenant`;
-- compatibility aliases for `request.school_id`, `request.school`, `request.tenant_school`, and `request.tenant_school_id`.
+- compatibility projections for existing request consumers.
 
 ### Protected-route enforcement
 
 `backend/core/tenant_header_middleware.py`:
 
 - enforces tenant context after authentication for protected API routes;
-- rejects malformed tenant identifiers;
-- rejects missing tenant context where required;
-- rejects unauthorized cross-school selection before business logic;
-- rejects inactive or unknown schools;
+- rejects malformed and missing tenant identifiers where required;
+- rejects inactive, unknown, and unauthorized cross-school selection;
 - permits cross-school selection only through explicit override authority;
-- requires successful audit persistence before an authorized override proceeds;
-- binds and clears request-thread tenant context in a `finally` path.
+- requires audit persistence for authorized override;
+- binds and clears request-thread tenant context through controlled request lifecycle.
 
 ### Compatibility adapters
 
-The active middleware stack still includes three tenant-related layers:
+The active middleware stack still contains:
 
 1. `core.middleware.TenantIsolationMiddleware`;
 2. `core.tenant_header_middleware.TenantHeaderRequiredMiddleware`;
 3. `crown_api.tenant_middleware.TenantContextMiddleware`.
 
-Current source shows the first and third layers acting as compatibility adapters around the enforcing middleware. Their continued registration is migration debt, not proof of three independent tenant authorities.
+ADR-0001 is the authority. The extra registered layers remain compatibility/migration debt and must not be interpreted as three independent tenant authorities.
 
-### Query and audit consumers
+No middleware layer is to be removed solely on naming overlap. Retirement requires complete consumer/equivalence proof and a bounded rollback path.
+
+## Role and client-input boundary
+
+Client-provided role claims are not tenant or authorization authority.
+
+The 2026-08-08 architecture hardening removes `X-Demo-Role` from Heritage sample-dashboard authorization logic. Sample access now requires:
+
+- authenticated Heritage user;
+- Heritage request school;
+- Heritage user school binding;
+- persisted server-side `UserRole` matching a supported sandbox persona role.
+
+A forged, absent, or unknown client demo-role header cannot change the authorization result. The generic CORS header allowance may remain temporarily as inert compatibility configuration, but it carries no backend authorization semantics.
+
+## Background tenant implementation
+
+ADR-0003 extends tenant architecture beyond HTTP requests.
+
+Verified aligned source paths include:
+
+- communications outbox: explicit school context around delivery plus bounded retry/dead-letter handling;
+- billing grace enforcement: active-school orchestration, `tenant_context(school)`, and explicit `school_id` service filtering;
+- support SLA escalation: active-school orchestration, tenant context, explicit service filtering, and selected-tenant manual trigger;
+- customer-health refresh: one active school at a time under tenant context;
+- predictive analytics: one explicit tenant ID per queued run and tenant context during model execution;
+- retention purge: preview-only by default with separate confirmation and global-authorization safeguards;
+- payment-dependent dunning/payout beat tasks: fail closed/no mutation while external payment processing is deferred.
+
+`backend/tests/test_background_job_architecture_contract.py` protects these architectural invariants.
+
+## Query, permission, and audit consumers
 
 Current source:
 
-- prefers `request.crown_tenant` in `TenantQuerySetMixin` and `AuditLogMixin`;
-- retains legacy fallback aliases for compatibility;
-- persists structured tenant decisions through `crown_api.audit.audit_tenant_decision()`;
-- records actor type, principal school, selected school, resolution source, header presence, override request and authorization, route, method, correlation ID, outcome, and reason.
+- prefers canonical tenant context in shared queryset/audit mixins where migrated;
+- retains documented compatibility aliases where needed;
+- records structured tenant decisions through the audit path;
+- protects bulk tenant mutation with fail-closed tenant-context guardrails;
+- applies explicit school predicates in newly hardened scheduled services whose models do not rely on the tenant-scoped model manager.
 
-### Focused tests
+## Certified-release boundary
 
-`backend/tests/test_tenant_decision_audit_and_dashboard_context.py` includes focused source-level regression coverage for:
+The bounded supported-role/RBAC/tenant certification for production source `17573fb649f74a3ba0f1b3fbc9e004108b3cf228` is recorded as PASS/COMPLETE in `docs/CURRENT_RELEASE_STATUS.md` and #1619.
 
-- denied cross-school override with structured audit evidence;
-- denial remaining fail closed when audit persistence fails;
-- authorized support override with persisted evidence;
-- authorized override failing closed when required audit evidence cannot persist;
-- dashboard header requirements;
-- ordinary staff denial for cross-school access;
-- support-role authorization through canonical context.
+This supporting record does not re-certify later development changes. Architecture hardening after that source requires its own exact-head CI and, if selected for production, the applicable exact-source deployment/certification process.
 
-These tests are present in source. This record does not assert that they passed on the current SHA because the GitHub connector did not execute them.
+## Remaining controlled convergence
 
-## ADR implementation reconciliation
+The following remain architecture debt rather than known duplicate authorities:
 
-The following ADR-0001 implementation elements are visibly present in source:
+1. enumerate and classify remaining legacy tenant request-attribute consumers;
+2. retire redundant middleware only after full equivalence proof;
+3. continue representative object-level authorization and tenant regression coverage as modules evolve;
+4. inventory every future Celery task, scheduled command, import/export, report, and integration against ADR-0003;
+5. prohibit new unscoped tenant-owned background mutation;
+6. preserve explicit, auditable support/platform override boundaries;
+7. keep current frontend tenant propagation aligned with ADR-0002 while treating backend authorization as authoritative.
 
-- canonical immutable tenant-context type;
-- canonical resolver and request binding;
-- header-versus-principal conflict detection;
-- explicit override authorization;
-- fail-closed protected-route enforcement;
-- compatibility aliases;
-- structured decision auditing;
-- request-thread cleanup;
-- focused cross-school and audit regression tests.
+## Middleware retirement acceptance criteria
 
-## Remaining convergence work
+Retirement requires:
 
-The following remain open and must not be represented as complete:
+- complete consumer and exemption inventory;
+- exact-head session/JWT/Entra/DRF/public/protected/override/cleanup tests;
+- proof that no active consumer depends on removed request attributes or middleware ordering;
+- tenant negative and privilege-escalation regression proof;
+- rollback or forward-fix design;
+- governed review and merge evidence.
 
-1. enumerate every tenant-context consumer, exemption, permission, queryset, service, task, script, integration, test, and frontend sender;
-2. migrate all remaining consumers away from direct legacy attributes where appropriate;
-3. prove background-task tenant binding and cleanup;
-4. prove no exemption-list broadening and classify each exempt route;
-5. establish representative object-level authorization coverage across modules;
-6. verify complete role matrix for administrator, teacher, parent, student, board, support, service, and superuser actors;
-7. execute cross-tenant negative tests and privilege-escalation tests on one current immutable SHA;
-8. verify audit completeness for actor, tenant, action, object, timestamp, and outcome across representative mutations;
-9. execute authenticated browser, API, job, and deployed-runtime proof;
-10. retire or reduce compatibility middleware only after consumer inventory and equivalence proof.
+## Current disposition
 
-## Middleware retirement boundary
-
-No middleware layer should be removed solely because the canonical context now exists. Retirement requires:
-
-- a complete consumer inventory;
-- exact-head tests covering session, JWT, DRF fixtures, public routes, protected routes, overrides, exceptions, and cleanup;
-- proof that no active consumer depends on removed request attributes or ordering;
-- a bounded rollback path;
-- explicit Product Owner disposition.
-
-## Lane 2 completion boundary
-
-This reconciliation completes the repository-documentation correction for tenant-enforcement implementation status.
-
-It does not complete Lane 2. Full Lane 2 PASS still requires current executable and deployed evidence for the persona matrix, cross-tenant denial, object authorization, privilege-escalation denial, asynchronous tenant binding, and audit completeness on one immutable release identity.
-
-Production remains **NOT APPROVED / NO-GO / HOLD**.
+- ADR-0001 request-time tenant authority: **IMPLEMENTED / ACCEPTED**.
+- Certified bounded production tenant/RBAC proof: **PASS / COMPLETE for certified release identity**.
+- ADR-0003 background tenant contract: **ACCEPTED; key scheduled mutation paths hardened on final architecture branch**.
+- Client-supplied demo-role authorization authority: **REMOVED from sample-dashboard decision**.
+- Middleware compatibility retirement: **OPEN / NON-DESTRUCTIVE CONVERGENCE**.
+- Later development branch production certification: **NOT AUTOMATIC; exact-source evidence required before deployment**.

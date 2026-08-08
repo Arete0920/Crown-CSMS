@@ -1,98 +1,181 @@
 # CROWN Architecture Review — 2026-08-08
 
-**Status:** Current-main architecture inspection record  
-**Reviewed source:** `5c52cc7cc8c1c2e4842fc88aea71eea7e20605d8`  
-**Authority boundary:** This record reports architecture findings. It does not change the certified production identity or authorize deployment.
+**Status:** Active final handoff architecture review  
+**Review authority:** GitHub issue #1925  
+**Initial reviewed development source:** `5c52cc7cc8c1c2e4842fc88aea71eea7e20605d8`  
+**Current synchronized architecture branch:** `agent/final-architecture-hardening-20260808`  
+**Certified production source remains:** `17573fb649f74a3ba0f1b3fbc9e004108b3cf228`  
+**Immutable production tag remains:** `prod-deploy-20260804-17573fb`
+
+## Authority boundary
+
+This record reports the current architecture inspection and hardening work. It does not move the certified production identity and does not authorize deployment of later development commits.
+
+A governance deviation occurred when the initial version of this review file was accidentally written directly to `main` in commit `b23a176aa0347fd6cf45f415e3a60542a0c9c401`. The commit is retained transparently in history. All corrective architecture implementation after that point is branch/PR governed; no destructive history rewrite is authorized for that process error.
 
 ## Review objective
 
-Inspect the live repository architecture before owner handoff and distinguish:
+Inspect the live repository before owner handoff across:
 
-- verified architectural strengths;
-- bounded defects that can be safely corrected before handoff;
-- compatibility/convergence debt that must not be collapsed without migration and rollback evidence;
-- stale architecture documentation that no longer describes current source accurately.
+- system and domain boundaries;
+- authentication, authorization, tenant isolation, and audit;
+- frontend request transport and provenance;
+- persistence and identity authority;
+- scheduled/background execution;
+- payments and external integrations;
+- deployment/release/recovery boundaries;
+- compatibility and migration debt;
+- architecture documentation and decision authority.
 
-## Verified strengths
+## Verified architectural strengths
 
-1. Canonical multi-tenant security contract exists through ADR-0001 and `request.crown_tenant`.
-2. Protected tenant selection fails closed and supports explicit, audited override authority.
-3. Canonical operational family/guardian/student write authority is defined through ADR-001.
-4. A canonical frontend transport exists in `frontend/dashboards/src/utils/authClient.js` and owns API-base resolution, authentication, tenant propagation, timeout/cancellation, credentials, correlation, and structured failures.
-5. Shared frontend wrappers (`api/client.js`, `api/request.js`, `api/apiClient.js`, `services/api.js`) converge on that canonical transport.
-6. Existing transport contract tests prohibit reintroduction of known duplicate clients.
-7. The active Celery communications outbox binds each delivery to an explicit school tenant context, restores context after execution, and applies bounded retry/dead-letter behavior.
-8. Exact release identity, immutable tagging, tenant/RBAC certification, payment fail-closed behavior, and release authority are separately governed by the current release records.
-9. Current dashboard architecture uses explicit registry/API-contract semantics rather than inferred route contracts, and role-scoped navigation fails closed rather than exposing broad fallback navigation.
+1. CROWN is one shared multi-tenant product rather than tenant-specific forks.
+2. ADR-0001 defines canonical request tenant authority through `request.crown_tenant`, explicit override authorization, and fail-closed protected-route behavior.
+3. ADR-001 defines canonical operational writes for `core.Family`, `core.Guardian`, and `core.Student` while preserving compatibility domains until reconciliation proof exists.
+4. `frontend/dashboards/src/utils/authClient.js` is a mature canonical protected frontend transport that owns API-base resolution, token and school propagation, credentials, timeout/cancellation, correlation, structured failures, and trusted-origin handling.
+5. Shared frontend API wrappers already converge on that transport.
+6. The active communications outbox binds delivery to explicit school tenant context and includes bounded retry/dead-letter handling.
+7. Tenant bulk-write/delete protections, cross-school denial controls, explicit support override authority, and tenant decision audit mechanisms are present in source.
+8. Dashboard registry/API-contract semantics are explicit; broad navigation fallback fails closed.
+9. Certified release identity, deployment, tenant/RBAC proof, and payment containment are separately governed and do not silently follow development `main`.
+10. Compatibility domains are retained rather than destructively collapsed without migration evidence.
 
-## Verified bounded defects for immediate correction
+## Immediate architecture findings and disposition
 
-### A-01 — stale client-supplied demo-role compatibility authority
+### A-01 — client-supplied demo-role compatibility authority
 
-`backend/crown_api/dashboards/views.py` still reads `X-Demo-Role` when deciding whether a Heritage sandbox user may receive sample dashboard payloads. `backend/crown_api/settings.py` still allows `x-demo-role` through CORS.
+**Original finding:** Heritage sample-dashboard authorization consumed `X-Demo-Role`, creating duplicate client-controlled role input despite authenticated server-side `UserRole` records.
 
-The current frontend dashboard client explicitly does not forward `X-Demo-Role`; authenticated sandbox sessions already create deterministic server-side `UserRole` records. Keeping the header as an authorization selector creates unnecessary duplicate authority.
+**Hardening implemented on architecture branch:**
 
-**Required correction:** derive the permitted Heritage sandbox persona from authenticated server-side school/role state only; remove `x-demo-role` from active CORS allowance; add negative proof that a forged header cannot grant sample access.
+- sample access now derives from authenticated Heritage school membership and server-side supported `UserRole` only;
+- forged, absent, or unknown `X-Demo-Role` values cannot change authorization;
+- cross-school sample access remains denied;
+- negative regression tests prove the header carries no authorization authority.
 
-### A-02 — canonical frontend transport not universal
+`x-demo-role` remains in the generic CORS allow-header list as an inert compatibility allowance. Because the backend no longer consumes it for authorization and the current frontend does not send it, removal is cleanup rather than a security prerequisite. It should be removed in a future bounded settings cleanup rather than by risky broad replacement of the production settings file immediately before handoff.
 
-The repository contains a canonical authenticated transport, but multiple frontend modules still call `globalThis.fetch` directly. Some are valid bootstrap/public/test exceptions; others are protected operational API consumers and duplicate authentication, tenant, timeout, error, or provenance behavior.
+**Disposition:** security authority defect corrected; inert configuration cleanup remains non-blocking.
 
-**Required correction:** inventory and classify direct-fetch sites; migrate protected operational calls to the canonical transport; retain only explicit bootstrap/public/external/test exceptions; add an enforcement contract so new protected direct-fetch sites fail CI.
+### A-02 — canonical protected frontend transport not universal
 
-### A-03 — mixed live/demo Board Executive loader
+**Original finding:** protected operational modules still duplicated authentication, tenant, API-base, timeout/error, or provenance behavior with direct `globalThis.fetch`.
 
-`frontend/dashboards/src/hooks/useBoardExecutiveData.js` manually constructs Authorization and tenant headers, calls four API endpoints directly, overlays successful responses onto demo defaults, and marks the aggregate live when any endpoint succeeds.
+**Hardening implemented:**
 
-**Risk:** mixed provenance and transport-policy bypass.
+- ADR-0002 accepted: `authClient.js` is the protected first-party transport authority;
+- Board Executive data migrated to canonical transport;
+- Learning Continuity API migrated to canonical transport;
+- shared CROWN Finance/Admissions KPI metrics migrated to canonical transport;
+- contract tests prohibit reintroduction of duplicate behavior on those paths;
+- explicit direct-fetch exceptions are defined for authentication/bootstrap, public sandbox/public-entry, external-origin, development-only, and test/certification traffic.
 
-**Required correction:** use the canonical transport and fail closed on incomplete live provenance for production-facing use, or explicitly classify the hook as demo-only and remove it from certified/live routes.
+**Remaining convergence:** direct-fetch sites still require classification against ADR-0002. Public/bootstrap/external/test paths may remain; protected school-operational paths must migrate before they are materially changed or promoted as canonical clients.
 
-## Verified architecture documentation drift
+**Disposition:** canonical authority established and key protected bypasses corrected; lower-risk consumer convergence remains controlled architecture debt, not duplicate authority.
 
-- `SYSTEM_OVERVIEW.md` still says the frontend lacks a consolidated request transport, although the canonical transport and contract tests now exist.
-- `SYSTEM_OVERVIEW.md`, `TENANT_ENFORCEMENT_IMPLEMENTATION_STATUS.md`, and `CANONICAL_IDENTITY_CONSUMER_INVENTORY.md` contain stale pre-certification release language or stale observed SHAs.
-- These records must be reconciled to the certified-release/current-development identity boundary without claiming unverified convergence.
+### A-03 — mixed live/demo Board Executive provenance
 
-## Compatibility/convergence debt — do not destructively collapse before handoff
+**Original finding:** the Board Executive hook used four direct API calls, overlaid successful responses onto demo defaults, and marked the aggregate LIVE if any endpoint succeeded.
 
-The following remain real architecture debt but require dependency/data/migration proof before removal:
+**Hardening implemented:**
+
+- all four protected calls use canonical `authenticatedJson`;
+- live classification requires all four required sources to succeed;
+- any incomplete live set returns explicit DEMO fallback with `live=false`;
+- regression tests prohibit `Promise.allSettled`, manual auth/tenant headers, and partial-live classification.
+
+**Disposition:** corrected.
+
+### A-04 — architecture documentation drift
+
+**Original finding:** architecture documents still claimed no consolidated frontend client existed and retained pre-certification NO-GO/source identity language.
+
+**Hardening implemented:**
+
+- `ARCHITECTURE_MAP.md` reconciled to ADR-0002/ADR-0003 and certified-release/current-development identity separation;
+- `SYSTEM_OVERVIEW.md` reconciled to actual transport and background-task implementation;
+- `DECISION_INDEX.md` registers ADR-0002 and ADR-0003;
+- this review record is reconciled to the live hardening program;
+- tenant and identity supporting status records are being refreshed without claiming compatibility convergence that has not occurred.
+
+**Disposition:** current authority corrected; historical evidence remains date-bounded provenance.
+
+### A-05 — payment-dependent scheduled mutation while payments are disabled
+
+**Finding:** Celery beat still scheduled dunning retry and payout-audit jobs even though the canonical payment hold prohibits provider-dependent mutation.
+
+**Hardening implemented:**
+
+- both scheduled ledger tasks now return the canonical `payment_integration_on_hold` disposition;
+- both report `mutated=false` and do not call payment retry or payout-reconciliation services;
+- regression tests prove the fail-closed scheduled behavior.
+
+**Disposition:** corrected.
+
+### A-06 — unscoped tenant mutation in scheduled jobs
+
+**Finding:** billing grace enforcement and support SLA escalation executed broad cross-school mutation queries; analytics scheduled paths did not consistently establish canonical tenant context.
+
+**Hardening implemented:**
+
+- ADR-0003 accepted for tenant-aware background jobs;
+- billing grace enforcement iterates active schools and executes one school under `tenant_context` with explicit `school_id` filtering;
+- manual grace-period command follows the same contract;
+- support SLA escalation iterates schools under tenant context and service filtering is tenant-explicit;
+- manual support escalation is selected-tenant scoped;
+- customer-health refresh executes per school under tenant context;
+- predictive analytics queues one tenant ID per school and establishes tenant context during execution;
+- background architecture contract tests enforce these invariants;
+- retention purge remains preview-only by default with its separate execution/confirmation/global-authorization controls.
+
+**Disposition:** corrected for the scheduled paths identified in the live beat schedule; future tasks must comply with ADR-0003.
+
+## Accepted architecture decisions after review
+
+- ADR-0001 — canonical request tenant resolution and enforcement.
+- ADR-0002 — canonical protected frontend API transport and explicit exception policy.
+- ADR-0003 — tenant-aware background jobs, retries/idempotency boundary, and payment-hold scheduled behavior.
+- ADR-001 — canonical operational family/guardian/student write authority.
+
+## Compatibility/convergence debt — intentionally not destructively collapsed
+
+The following remain legitimate architecture convergence work and are not safe two-day rename/delete targets:
 
 1. three registered tenant middleware layers;
 2. `core` versus `households`/`crown_api` identity compatibility domains;
 3. `curriculum` versus `curricula` responsibility overlap;
-4. finance/accounting/aid/billing/ledger/journal responsibility boundaries;
+4. finance/accounting/aid/billing/ledger/journal/finance-setup responsibility boundaries;
 5. `integrations` versus `integrations_real` authority;
 6. `academics` versus `academics_ro` boundary;
 7. aggregate/projection domains (`student_records`, `student360`, `parent360`, `executive360`);
-8. multiple legitimate authentication mechanisms requiring one normalized principal contract.
+8. multiple legitimate authentication mechanisms requiring normalized principal semantics.
 
-These are not safe two-day rename/delete targets. Any consolidation requires complete consumer inventory, data reconciliation where applicable, exact-head regression evidence, and rollback/forward-fix design.
+Any consolidation requires complete consumer/dependency inventory, tenant/data reconciliation where applicable, expand-contract or equivalent migration design, exact-head regression evidence, and rollback/forward-fix proof.
 
-## Required architecture decisions
+## Decisions still required before future material boundary changes
 
-The Decision Index currently has accepted authority for tenant resolution and canonical operational identity writes. Before material changes to the following boundaries, an ADR is required:
+The Decision Index intentionally leaves these unaccepted until current behavior and migration consequences are sufficiently defined:
 
-1. frontend transport and explicit exception policy;
-2. domain ownership and allowed cross-domain dependencies;
-3. asynchronous tenant/idempotency/retry/observability contract;
-4. external integration adapter authority;
-5. deployment/release/recovery topology;
-6. reporting/analytics read models;
-7. file/document storage and lifecycle authority;
-8. payment adapter and activation contract.
+1. domain ownership and allowed cross-domain dependency policy;
+2. external integration adapter authority;
+3. deployment/release/recovery topology;
+4. reporting and analytics read-model boundaries;
+5. file/document storage and lifecycle authority;
+6. future payment-provider adapter and activation contract.
 
-Only decisions that describe current verified behavior should be accepted before handoff. Unimplemented future designs must remain proposed.
+The absence of speculative ADRs is deliberate. Unimplemented future architecture must not be presented as verified current behavior.
 
-## Handoff target
+## Handoff architecture standard
 
-Before owner turnover, CROWN should have:
+Before this hardening lane is closed:
 
-- zero known high/critical architectural defect;
-- one authoritative architecture gateway/map/decision index;
-- no client-controlled duplicate security authority;
-- one enforced protected frontend transport contract with explicit exceptions;
-- current architecture status records;
-- compatibility debt clearly isolated and non-destructive;
-- successor-facing architecture decisions and migration boundaries that prevent accidental consolidation.
+- exact branch must be synchronized to current `main`;
+- focused architecture tests and the full applicable CI suite must be terminal green;
+- zero unresolved actionable review threads;
+- no known critical/high architecture defect in the reviewed scope;
+- current architecture map, system overview, decision index, and supporting status records must agree;
+- certified production identity must remain distinct from the later development branch;
+- any residual compatibility debt must be clearly documented and non-destructive.
+
+No claim of architectural completion is valid until those exact-head checks settle successfully.

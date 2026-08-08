@@ -1,14 +1,16 @@
 # Production Recovery Decision Tree
 
 **Authority:** Founder/Product Owner and production release governance  
-**Status:** Release-blocking operational control  
-**Related issue:** #1270
+**Status:** Canonical recovery procedure; full measured operational drill remains disclosed maturity work  
+**Last reconciled:** 2026-08-08  
+**Historical issue:** #1270 — closed  
+**Current release authority:** `docs/CURRENT_RELEASE_STATUS.md` and GitHub issue #1619
 
 ## Purpose
 
-This document defines the required response when a production deployment fails or the live runtime cannot be verified. It reflects the immutable rollback implementation merged in PR #1378 and the non-destructive recovery-control drill merged in PR #1401.
+This document defines the required response when a production deployment fails or the live runtime cannot be verified. It reflects the immutable rollback implementation and non-destructive recovery controls already present in the repository.
 
-It does not claim that a controlled Azure rollback or database restore has been proven. Those evidence requirements remain open.
+It does **not** claim that the separately disclosed full application rollback and isolated operational-backup restore campaign has been executed with accepted measured RTO/RPO. That exercise remains visible in current diligence/handoff material as deferred operational maturity unless separately completed and accepted.
 
 ## Governing principles
 
@@ -18,7 +20,8 @@ It does not claim that a controlled Azure rollback or database restore has been 
 4. A recovery passes only when image identity, `BUILD_SHA`, live `build_sha`, HTTP health, database health, and required integrity checks agree.
 5. Incomplete or contradictory verification means `MANUAL CONTROL REQUIRED`.
 6. Application rollback and database restore are separate decisions.
-7. Planning targets are not approved service commitments until measured and accepted by release authority.
+7. Planning targets are not approved service commitments until measured and accepted by the accountable authority.
+8. Development `main` does not displace the certified production identity merely because later commits exist.
 
 ## Decision tree
 
@@ -33,17 +36,18 @@ Capture:
 - current configured image;
 - current application setting `BUILD_SHA`;
 - `/api/health/` response;
-- `/api/integrity/` response, including tenant-aware evidence where configured.
+- version/release identity response;
+- required tenant-aware integrity response.
 
 ### 2. Recheck the live runtime before rollback
 
 Skip rollback when all required checks pass:
 
 - `/api/health/` returns HTTP 200;
-- `db=ok`;
+- database status is healthy;
 - live `build_sha` is present;
-- configured image SHA, `BUILD_SHA`, and live `build_sha` identify the same release;
-- required integrity probes pass.
+- configured image SHA, `BUILD_SHA`, immutable release authority, and live identity reconcile as required for that deployment;
+- required tenant-aware integrity probes pass.
 
 When these conditions pass, classify the event as a deployment-control failure. Record the failed workflow and leave the healthy runtime unchanged.
 
@@ -61,11 +65,11 @@ The `latest` tag must never be selected.
 
 ### 4. Perform application-image rollback
 
-Restore only:
+Restore only an explicitly verified immutable image such as:
 
 `crownregistry.azurecr.io/crown2026:<40-character-sha>`
 
-Align the production `BUILD_SHA` setting to the same full SHA and restart through the approved rollback workflow.
+Align the production `BUILD_SHA` setting to the same full SHA and restart through the approved rollback mechanism.
 
 ### 5. Verify application rollback
 
@@ -74,7 +78,7 @@ Rollback passes only when all required evidence succeeds:
 - Azure reports the expected immutable image SHA;
 - application setting `BUILD_SHA` equals the expected SHA;
 - `/api/health/` returns HTTP 200;
-- `db=ok`;
+- database status is healthy;
 - live `build_sha` exactly identifies the expected release;
 - tenant-aware integrity verification passes where configured.
 
@@ -99,9 +103,9 @@ Before restore, preserve current evidence, identify the approved backup, documen
 A restore may proceed only through an approved, evidenced procedure with:
 
 - verified backup identity and timestamp;
-- documented RPO impact;
-- documented RTO tracking;
-- explicit production authorization;
+- documented expected RPO impact;
+- RTO tracking;
+- explicit authorization for the target environment;
 - isolated validation where supported;
 - post-restore schema, tenant-isolation, record-count, release-compatibility, and health verification.
 
@@ -119,12 +123,11 @@ Stop automation and open or update a production incident when:
 - configured image SHA, `BUILD_SHA`, and live `build_sha` disagree;
 - tenant-integrity verification fails;
 - database restore may be required;
-- recovery exceeds the pilot planning target;
 - evidence is incomplete or contradictory.
 
 ## Evidence requirements
 
-Each drill or real recovery must retain:
+Each drill or real recovery should retain:
 
 - UTC start and end timestamps;
 - triggering workflow and run ID;
@@ -140,18 +143,20 @@ Each drill or real recovery must retain:
 - actual and target RTO/RPO notes;
 - final classification: `RECOVERED`, `NOT RECOVERED`, or `MANUAL CONTROL REQUIRED`.
 
-## Pilot planning targets
+Do not retain secret values or customer personal data in the evidence packet.
 
-These are provisional drill targets, not approved or achieved commitments:
+## Planning targets
+
+These remain planning targets until a measured exercise is explicitly accepted:
 
 - application rollback RTO: 30 minutes;
 - isolated database restore validation RTO: 4 hours;
-- pilot database RPO: 24 hours maximum data-loss exposure, pending backup-cadence verification.
+- pilot database RPO: 24 hours maximum data-loss exposure, pending current backup-cadence verification.
 
-Measured drill evidence and release-authority acceptance are required before these values can be represented as approved controls.
+They must not be represented as measured or contractually guaranteed values without current evidence.
 
 ## Current release consequence
 
-The current controls are stronger and now include immutable rollback logic plus a non-destructive decision drill. However, production recovery remains unproven until controlled Azure rollback evidence and current database-restore evidence are recorded.
+The repository contains immutable rollback logic, recovery decision controls, isolated-restore tooling/runbooks, and recovery-evidence validation. The bounded certified production release itself is **PASS / COMPLETE** under the exact identity recorded in `docs/CURRENT_RELEASE_STATUS.md` and #1619.
 
-Issue #1270 remains open. Production remains not approved.
+The broader measured rollback/isolated-restore campaign remains an explicitly disclosed operational-maturity item. Its non-execution does not rewrite the certified release decision, and it must not be represented as completed until a separate measured exercise is performed and accepted.
