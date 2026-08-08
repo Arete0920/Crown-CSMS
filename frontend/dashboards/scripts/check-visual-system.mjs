@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
+import { maskCssCommentsPreservingLayout } from './visual-system-text.mjs';
 
 const ROOT = path.resolve(process.cwd(), 'src');
 const REPORT_PATH = path.resolve(process.cwd(), 'visual-system-report.json');
@@ -69,8 +70,9 @@ for (const file of walk(ROOT)) {
   const relative = path.normalize(path.relative(ROOT, file));
   const extension = path.extname(file);
   const text = fs.readFileSync(file, 'utf8');
+  const scanText = extension === '.css' ? maskCssCommentsPreservingLayout(text) : text;
 
-  for (const match of text.matchAll(TOKEN)) {
+  for (const match of scanText.matchAll(TOKEN)) {
     if (relative !== TOKEN_FILE) {
       findings.push({
         severity: 'error',
@@ -82,7 +84,7 @@ for (const file of walk(ROOT)) {
     }
   }
 
-  for (const match of text.matchAll(FONT)) {
+  for (const match of scanText.matchAll(FONT)) {
     if (!allowedFont(relative, match[1])) {
       findings.push({
         severity: 'error',
@@ -94,7 +96,7 @@ for (const file of walk(ROOT)) {
     }
   }
 
-  const contexts = visualContexts(text, extension);
+  const contexts = visualContexts(scanText, extension);
   const ranges = contexts.map((item) => [item.offset, item.offset + item.text.length]);
 
   for (const context of contexts) {
@@ -144,7 +146,7 @@ fs.writeFileSync(
       schemaVersion: 2,
       generatedAt: new Date().toISOString(),
       policy:
-        'CSS and JSX style contexts must consume central tokens. Runtime MUI, chart, SVG, and data-series colors are classified exceptions.',
+        'CSS and JSX style contexts must consume central tokens. CSS comments are excluded from token/color/font findings. Runtime MUI, chart, SVG, and data-series colors are classified exceptions.',
       counts,
       exceptionCounts,
       findings,
