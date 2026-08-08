@@ -37,7 +37,7 @@ describe("legacy operational dashboard canonical layout contract", () => {
     expect(configuredPaths).toEqual(TARGET_PATHS);
   });
 
-  it("keeps the repair presentation-only and backed by responsive geometry rules", () => {
+  it("keeps the repair bounded and backed by responsive geometry rules", () => {
     const layout = load("../components/crown/CrownLayout.jsx");
     const css = load("../styles/operational-dashboard-canonical.css");
 
@@ -58,5 +58,19 @@ describe("legacy operational dashboard canonical layout contract", () => {
 
     expect(layout).not.toContain("/api/v1/academic-support/metrics/");
     expect(layout).not.toContain("submitSandboxFeedback");
+  });
+
+  it("keeps flip-card fronts on the defined canonical primary token", () => {
+    const flipCard = load("../components/dashboard/KpiFlipCard.jsx");
+
+    expect(flipCard).toContain("background: 'var(--crown-primary)'");
+    expect(flipCard).not.toContain("background: 'var(--crown-brand)'");
+  });
+
+  it("does not render an undefined communications open-rate metric", () => {
+    const communications = load("../pages/CommunicationsDirectorDashboard.jsx");
+
+    expect(communications).toContain("data.open_rate_pct ?? DEMO.open_rate_pct");
+    expect(communications).not.toContain("value={`${data.open_rate_pct}%`}");
   });
 });
