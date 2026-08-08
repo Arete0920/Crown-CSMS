@@ -88,20 +88,6 @@ export function classifyProvenance(body: unknown): {
     }
   }
 
-  // `meta.source` is commonly a descriptive source/service identifier (for
-  // example `dashboard_service` or `core_identity`), not a data-state value.
-  // Preserve legacy fail-closed support for payloads that use `meta.source`
-  // as their *only* provenance signal, but never let a descriptive source name
-  // override an explicit served_from/provenance state.
-  if (!hasProvenance && meta) {
-    hasProvenance = classifyProvenanceValue(
-      nonLiveValues,
-      emptyRow,
-      meta.source,
-      "meta.source",
-    );
-  }
-
   return { hasProvenance, nonLiveValues };
 }
 
