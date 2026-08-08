@@ -5,7 +5,15 @@ from django.urls import reverse
 from django.utils import timezone
 from rest_framework.test import APIClient
 
-from sandbox_demo.catalog import SANDBOX_SCHOOLS, SANDBOX_TRACKS, catalog_payload, get_school
+from core.models import CrownPermission, RolePermission, School, UserAccount
+from core.permissions import user_has_permission
+from sandbox_demo.catalog import (
+    SANDBOX_PERSONAS,
+    SANDBOX_SCHOOLS,
+    SANDBOX_TRACKS,
+    catalog_payload,
+    get_school,
+)
 from sandbox_demo.models import SandboxInvite
 
 
@@ -100,6 +108,34 @@ class SandboxInviteWorkflowTests(TestCase):
         self.assertEqual(response.status_code, 201)
         self.assertEqual(response.json()["school_id"], "19801b59-8c05-4c84-9312-5d792e4e839d")
         self.assertEqual(response.json()["role"], "school_admin")
+
+    @override_settings(CROWN_SANDBOX_ALLOW_OPEN_SESSION=True)
+    def test_school_admin_session_self_heals_canonical_admissions_permission(self):
+        RolePermission.objects.filter(
+            role_code="HEAD_OF_SCHOOL",
+            permission__code="admissions.view",
+        ).delete()
+        CrownPermission.objects.filter(code="admissions.view").delete()
+
+        response = self.client.post(
+            reverse("sandbox-session"),
+            {"role": "school_admin", "school": "heritage", "track": "school"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 201)
+        permission = CrownPermission.objects.get(code="admissions.view")
+        self.assertTrue(
+            RolePermission.objects.filter(
+                role_code="HEAD_OF_SCHOOL",
+                permission=permission,
+            ).exists()
+        )
+
+        persona = SANDBOX_PERSONAS["school_admin"]
+        user = UserAccount.objects.get(username=persona.email)
+        school = School.objects.get(pk=response.json()["school_id"])
+        self.assertTrue(user_has_permission(user, "admissions.view", school=school))
 
     @override_settings(CROWN_OPS_SECRET="test-ops-secret")
     def test_revoked_invite_blocks_session(self):

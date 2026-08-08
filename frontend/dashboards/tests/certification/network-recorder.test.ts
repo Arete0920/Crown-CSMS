@@ -170,6 +170,33 @@ describe("evaluateProvenanceRequirement", () => {
     },
   );
 
+  it.each(["dashboard_service", "core_identity", "applications"])(
+    "service source label %s does not override explicit live provenance",
+    (source) => {
+      const result = evaluateProvenanceRequirement({
+        url: "/api/v1/dashboards/school-administrator/summary",
+        status: 200,
+        body: { meta: { served_from: "live", source } },
+        provenanceRequiredApiFragments: designatedDataApi,
+      });
+      expect(result.enforced).toBe(true);
+      expect(result.missing).toBe(false);
+      expect(result.nonLiveValues).toEqual([]);
+    },
+  );
+
+  it("a service source label without a provenance state remains missing", () => {
+    const result = evaluateProvenanceRequirement({
+      url: "/api/v1/dashboards/school-administrator/summary",
+      status: 200,
+      body: { meta: { source: "dashboard_service" } },
+      provenanceRequiredApiFragments: designatedDataApi,
+    });
+    expect(result.enforced).toBe(true);
+    expect(result.missing).toBe(true);
+    expect(result.nonLiveValues).toEqual([]);
+  });
+
   it("error responses do not create missing-provenance noise", () => {
     const result = evaluateProvenanceRequirement({
       url: "/api/v1/dashboards/school-administrator/summary",

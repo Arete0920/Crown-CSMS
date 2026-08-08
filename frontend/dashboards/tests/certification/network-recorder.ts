@@ -12,7 +12,7 @@ export type ProvenanceObservation = {
   method?: string;
   status?: number;
   value: string;
-  source: "meta.served_from" | "meta.provenance" | "meta.source" | "root.provenance";
+  source: "meta.served_from" | "meta.provenance" | "root.provenance";
 };
 
 export type MissingProvenanceObservation = {
@@ -77,7 +77,6 @@ export function classifyProvenance(body: unknown): {
     values.push(
       { value: meta.served_from, source: "meta.served_from" },
       { value: meta.provenance, source: "meta.provenance" },
-      { value: meta.source, source: "meta.source" },
     );
   }
   values.push({ value: root.provenance, source: "root.provenance" });
