@@ -36,6 +36,26 @@ describe("canonical frontend API client contracts", () => {
     expect(source).not.toContain("../api/dashboardClient");
   });
 
+  it("keeps Board Executive protected data on canonical transport with all-or-nothing live provenance", () => {
+    const source = load("../hooks/useBoardExecutiveData.js");
+
+    expect(source).toContain('import { authenticatedJson } from "../utils/authClient.js";');
+    expect(source).toContain("await Promise.all([");
+    expect(source).toContain("authenticatedJson(URLS.kpis)");
+    expect(source).toContain("authenticatedJson(URLS.trends)");
+    expect(source).toContain("authenticatedJson(URLS.risk)");
+    expect(source).toContain("authenticatedJson(URLS.drivers)");
+    expect(source).not.toContain("globalThis.fetch");
+    expect(source).not.toContain('h["Authorization"]');
+    expect(source).not.toContain('h["X-School-Id"]');
+    expect(source).not.toContain("Promise.allSettled");
+    expect(source).not.toContain("anyLive");
+    expect(source).toContain("setData({ kpis, trends, risk, topDrivers });");
+    expect(source).toContain("setLive(true);");
+    expect(source).toContain("setData(DEMO);");
+    expect(source).toContain("setLive(false);");
+  });
+
   it("keeps the compatibility API wrapper on the canonical transport", () => {
     const source = load("../lib/api.js");
     expect(source).toContain("authenticatedFetch, getAccessToken, getSelectedSchoolId");

@@ -25,17 +25,18 @@ def _grace_days() -> int:
     return int(getattr(settings, "CROWN_GRACE_PERIOD_DAYS", _DEFAULT_GRACE_DAYS))
 
 
-def enforce_grace_period() -> dict:
+def enforce_grace_period(*, school_id) -> dict:
     """
-    Find all HouseholdDelinquency records that have exceeded the grace period
-    and mark them suspended.
+    Find HouseholdDelinquency records for exactly one school that have exceeded
+    the grace period and mark them suspended.
 
-    Returns: {suspended_count, already_suspended, skipped}
+    Returns: {school_id, suspended_count, grace_days}
     """
     grace_days = _grace_days()
     cutoff = timezone.now().date() - timedelta(days=grace_days)
 
     to_suspend = HouseholdDelinquency.objects.filter(
+        school_id=school_id,
         delinquent_since__lte=cutoff,
         suspended=False,
         delinquent_since__isnull=False,
@@ -57,5 +58,9 @@ def enforce_grace_period() -> dict:
                 record.delinquent_since,
             )
 
-    logger.info("grace_period: suspended=%d", suspended_count)
-    return {"suspended_count": suspended_count, "grace_days": grace_days}
+    logger.info("grace_period: school=%s suspended=%d", school_id, suspended_count)
+    return {
+        "school_id": str(school_id),
+        "suspended_count": suspended_count,
+        "grace_days": grace_days,
+    }

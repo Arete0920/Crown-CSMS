@@ -92,27 +92,26 @@ def _dev_open_api_enabled() -> bool:
 def _sample_dashboard_payloads_allowed(request=None) -> bool:
     """
     Allow sample dashboard payloads when explicitly enabled, in clearly
-    non-production runtimes, or for an authenticated Heritage sandbox session
-    whose requested persona matches an assigned user role.
+    non-production runtimes, or for an authenticated Heritage sandbox user
+    whose server-side school and assigned UserRole match a supported persona.
 
-    Production tenants outside the bounded Heritage sandbox exception remain
-    live/snapshot-only.
+    Client-supplied role headers never participate in this authorization
+    decision. Production tenants outside the bounded Heritage sandbox exception
+    remain live/snapshot-only.
     """
     if _env_flag('CROWN_ALLOW_SAMPLE_DASHBOARD_PAYLOADS', default=False):
         return True
 
     user = getattr(request, 'user', None) if request is not None else None
-    demo_role = str(request.headers.get('X-Demo-Role', '') or '').strip() if request is not None else ''
     request_school_id = str(request.headers.get('X-School-ID', '') or '').strip() if request is not None else ''
     user_school_id = str(getattr(user, 'school_id', '') or '').strip() if user is not None else ''
-    persona = SANDBOX_PERSONAS.get(demo_role)
+    sandbox_role_codes = {persona.role_code for persona in SANDBOX_PERSONAS.values()}
     role_matches = bool(
-        persona
-        and user
+        user
         and getattr(user, 'is_authenticated', False)
         and user.roles.filter(
             school_id=DEMO_SCHOOL_ID,
-            role_code=persona.role_code,
+            role_code__in=sandbox_role_codes,
         ).exists()
     )
     if (

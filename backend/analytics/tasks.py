@@ -1,6 +1,4 @@
-"""
-analytics/tasks.py — Celery tasks for the analytics app.
-"""
+"""analytics/tasks.py — Celery tasks for the analytics app."""
 from __future__ import annotations
 
 from datetime import date
@@ -13,16 +11,17 @@ from crown_api.celery_app import app
 
 @app.task(name="analytics.tasks.refresh_all_health_scores", bind=True, max_retries=2, default_retry_delay=120)
 def refresh_all_health_scores(self):
-    """Recompute and persist CustomerHealth for every active school."""
+    """Recompute and persist CustomerHealth one active school tenant at a time."""
     try:
-        from core.models import School
         from analytics.services_health import upsert_customer_health
+        from core.models import School
+        from core.tenant_models import tenant_context
 
-        school_ids = School.objects.values_list("id", flat=True)
         results = {}
-        for school_id in school_ids:
-            record = upsert_customer_health(school_id)
-            results[str(school_id)] = record.overall_score
+        for school in School.objects.filter(is_active=True).iterator():
+            with tenant_context(school):
+                record = upsert_customer_health(school.id)
+            results[str(school.id)] = record.overall_score
         return results
     except Exception as exc:  # pragma: no cover
         raise self.retry(exc=exc)
@@ -80,20 +79,22 @@ def run_all_predictive_models(self, tenant_id):
     try:
         from analytics.predictors import run_enrollment_forecast, run_retention_risk
         from core.models import School
+        from core.tenant_models import tenant_context
 
         school = School.objects.get(id=tenant_id)
-        snapshot_date = timezone.now().date()
+        with tenant_context(school):
+            snapshot_date = timezone.now().date()
 
-        historical_enrollment = _build_historical_enrollment_data(school)
-        enrollment_result = run_enrollment_forecast(school, historical_enrollment)
+            historical_enrollment = _build_historical_enrollment_data(school)
+            enrollment_result = run_enrollment_forecast(school, historical_enrollment)
 
-        retention_features = _build_retention_feature_data(school)
-        try:
-            import pandas as _pd
-            retention_features = _pd.DataFrame(retention_features)
-        except (ImportError, ModuleNotFoundError):  # pragma: no cover - pandas optional
-            pass
-        retention_result = run_retention_risk(school, retention_features)
+            retention_features = _build_retention_feature_data(school)
+            try:
+                import pandas as _pd
+                retention_features = _pd.DataFrame(retention_features)
+            except (ImportError, ModuleNotFoundError):  # pragma: no cover - pandas optional
+                pass
+            retention_result = run_retention_risk(school, retention_features)
 
         return {
             "school": school.name,
@@ -108,7 +109,7 @@ def run_all_predictive_models(self, tenant_id):
 
 @app.task(name="analytics.tasks.run_predictive_analytics_nightly")
 def run_predictive_analytics_nightly():
-    """Queue predictive analytics runs for every active school each night."""
+    """Queue one tenant-explicit predictive analytics run per active school."""
     from core.models import School
 
     queued_for = []

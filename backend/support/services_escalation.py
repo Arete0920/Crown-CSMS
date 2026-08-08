@@ -1,8 +1,8 @@
 """
 support/services_escalation.py
 
-SLA escalation engine — finds overdue tickets and escalates them.
-Called via management command or Celery beat task.
+SLA escalation engine — finds overdue tickets for one school tenant and
+escalates them. Called via management command or Celery beat task.
 """
 import logging
 from datetime import timedelta
@@ -15,7 +15,7 @@ logger = logging.getLogger("crown.support")
 
 
 def _notify_engineering(ticket: SupportTicket) -> None:
-    """Fire-and-forget notification stub. Wire to email/Slack/PagerDuty as needed."""
+    """Fire-and-forget notification stub. Wire to email/Teams/PagerDuty as needed."""
     logger.warning(
         "SLA_BREACH ticket_id=%s priority=%s school_id=%s created_at=%s",
         ticket.id,
@@ -25,10 +25,10 @@ def _notify_engineering(ticket: SupportTicket) -> None:
     )
 
 
-def escalate_overdue_tickets() -> dict:
+def escalate_overdue_tickets(*, school_id) -> dict:
     """
-    Find open tickets that have breached their SLA window and mark them escalated.
-    Returns {"escalated": [ticket_ids]}.
+    Find open tickets for exactly one school that have breached their SLA
+    window and mark them escalated.
     """
     now = timezone.now()
     escalated_ids: list[int] = []
@@ -36,6 +36,7 @@ def escalate_overdue_tickets() -> dict:
     for priority, hours in SLA_HOURS.items():
         deadline_cutoff = now - timedelta(hours=hours)
         overdue = SupportTicket.objects.filter(
+            school_id=school_id,
             priority=priority,
             status=SupportTicket.STATUS_OPEN,
             created_at__lte=deadline_cutoff,
@@ -47,4 +48,4 @@ def escalate_overdue_tickets() -> dict:
             _notify_engineering(ticket)
             escalated_ids.append(ticket.id)
 
-    return {"escalated": escalated_ids}
+    return {"school_id": str(school_id), "escalated": escalated_ids}

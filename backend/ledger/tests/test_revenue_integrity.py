@@ -90,7 +90,7 @@ class DunningRecordTests(TestCase):
 
 
 class DunningCycleTests(TestCase):
-    """Integration tests for the dunning retry engine."""
+    """Integration tests for the dunning retry engine service."""
 
     def setUp(self):
         self.school_id = _school_id()
@@ -104,7 +104,7 @@ class DunningCycleTests(TestCase):
             payment=payment,
             status=DunningRecord.STATUS_PENDING,
             attempt_count=0,
-            next_retry_at=timezone.now() - timedelta(minutes=1),  # overdue
+            next_retry_at=timezone.now() - timedelta(minutes=1),
         )
         result = process_failed_payments()
         self.assertGreaterEqual(result["retried"], 1)
@@ -119,7 +119,7 @@ class DunningCycleTests(TestCase):
             school_id=self.school_id,
             payment=payment,
             status=DunningRecord.STATUS_RETRYING,
-            attempt_count=len(DunningRecord.RETRY_SCHEDULE_DAYS),  # exhausted
+            attempt_count=len(DunningRecord.RETRY_SCHEDULE_DAYS),
             next_retry_at=timezone.now() - timedelta(minutes=1),
         )
         result = process_failed_payments()
@@ -135,7 +135,7 @@ class DunningCycleTests(TestCase):
             payment=payment,
             status=DunningRecord.STATUS_PENDING,
             attempt_count=0,
-            next_retry_at=timezone.now() + timedelta(days=5),  # not due yet
+            next_retry_at=timezone.now() + timedelta(days=5),
         )
         result = process_failed_payments()
         self.assertEqual(result["retried"], 0)
@@ -208,7 +208,7 @@ class ChargebackModelTests(TestCase):
 
 
 class GracePeriodTests(TestCase):
-    """Tests for auto-suspension grace period enforcement."""
+    """Tests for tenant-explicit auto-suspension grace period enforcement."""
 
     def setUp(self):
         self.school_id = _school_id()
@@ -222,7 +222,7 @@ class GracePeriodTests(TestCase):
             delinquent_since=past_date,
             suspended=False,
         )
-        result = enforce_grace_period()
+        result = enforce_grace_period(school_id=self.school_id)
         self.assertGreaterEqual(result["suspended_count"], 1)
 
         record.refresh_from_db()
@@ -237,7 +237,7 @@ class GracePeriodTests(TestCase):
             delinquent_since=recent_date,
             suspended=False,
         )
-        result = enforce_grace_period()
+        result = enforce_grace_period(school_id=self.school_id)
         self.assertEqual(result["suspended_count"], 0)
 
         record.refresh_from_db()
@@ -249,7 +249,7 @@ class GracePeriodTests(TestCase):
             school_id=self.school_id,
             household=self.hh,
             delinquent_since=past_date,
-            suspended=True,  # already suspended
+            suspended=True,
         )
-        result = enforce_grace_period()
+        result = enforce_grace_period(school_id=self.school_id)
         self.assertEqual(result["suspended_count"], 0)

@@ -1,3 +1,4 @@
+import { authenticatedJson } from "../../utils/authClient.js";
 import {
   CROWN_AUTHORITY_RULES,
   getLearningContinuityTruth,
@@ -21,19 +22,12 @@ function normalizePagePayload(pageKey, payload) {
 
 export async function loadLearningContinuityPage(pageKey) {
   try {
-    const response = await globalThis.fetch(`${API_BASE}/${pageKey}/`, {
+    const payload = await authenticatedJson(`${API_BASE}/${pageKey}/`, {
       method: "GET",
       headers: {
         Accept: "application/json",
       },
-      credentials: "include",
     });
-
-    if (!response.ok) {
-      throw new Error(`Learning continuity API unavailable: ${response.status}`);
-    }
-
-    const payload = await response.json();
     const { authorityRules, ...pagePayload } = payload;
 
     return {
