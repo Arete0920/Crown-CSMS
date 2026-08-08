@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { authenticatedFetch } from "../../utils/authClient.js";
 
 /**
- * CrownLayout  app shell with permission-derived sidebar + main content area.
+ * CrownLayout app shell with permission-derived sidebar + main content area.
  *
  * Props:
  *   title     page heading (h2)
@@ -62,54 +62,13 @@ async function fetchNav() {
   return res.json();
 }
 
-const FALLBACK_NAV = {
-  groups: [
-    {
-      title: "Navigation",
-      items: [
-        { label: "Administration", href: "/admin" },
-        { label: "School Board", href: "/board" },
-        { label: "Finance", href: "/finance" },
-        { label: "Financial Aid", href: "/financial-aid" },
-        { label: "Admissions", href: "/admissions" },
-        { label: "Academics", href: "/academics" },
-        { label: "Billing", href: "/billing" },
-        { label: "System Integrity", href: "/integrity" },
-        { label: "IT", href: "/it" },
-        { label: "Office / HR", href: "/office" },
-        { label: "Teacher", href: "/teacher" },
-        { label: "Parent", href: "/parent" },
-        { label: "Student", href: "/student" },
-        { label: "Spiritual Life", href: "/spiritual-life" },
-        { label: "Marketing", href: "/marketing" },
-      ],
-    },
-  ],
-};
+const EMPTY_ROLE_SCOPED_NAV = Object.freeze({ groups: [] });
 
-const CONTRACT_NAV_ITEMS = [
-  { label: "Administration", href: "/admin" },
-  { label: "School Board", href: "/board" },
-  { label: "Finance", href: "/finance" },
-  { label: "Financial Aid", href: "/financial-aid" },
-  { label: "Admissions", href: "/admissions" },
-  { label: "Academics", href: "/academics" },
-  { label: "Billing", href: "/billing" },
-  { label: "System Integrity", href: "/integrity" },
-  { label: "IT", href: "/it" },
-  { label: "Office / HR", href: "/office" },
-  { label: "Teacher", href: "/teacher" },
-  { label: "Parent", href: "/parent" },
-  { label: "Student", href: "/student" },
-  { label: "Spiritual Life", href: "/spiritual-life" },
-  { label: "Marketing", href: "/marketing" },
-];
-
-function mergeNavGroupsWithContract(navData) {
+function normalizeRoleScopedNav(navData) {
   const incoming = Array.isArray(navData?.groups) ? navData.groups : [];
   const seen = new Set();
 
-  const mergedGroups = incoming.map((group) => {
+  const groups = incoming.map((group) => {
     const items = Array.isArray(group?.items)
       ? group.items.filter((item) => {
           const href = String(item?.href || "").trim();
@@ -120,21 +79,11 @@ function mergeNavGroupsWithContract(navData) {
       : [];
 
     return { ...group, items };
-  });
-
-  const contractItems = CONTRACT_NAV_ITEMS.filter((item) => {
-    if (seen.has(item.href)) return false;
-    seen.add(item.href);
-    return true;
-  });
-
-  if (contractItems.length) {
-    mergedGroups.push({ title: "Navigation", items: contractItems });
-  }
+  }).filter((group) => group.items.length > 0);
 
   return {
     ...navData,
-    groups: mergedGroups,
+    groups,
   };
 }
 
@@ -142,27 +91,34 @@ const BUILD_SHA = (import.meta?.env?.VITE_BUILD_SHA || "dev").slice(0, 7);
 const DEPLOY_TAG = import.meta?.env?.VITE_DEPLOY_TAG || "";
 
 export default function CrownLayout({ title, subtitle, right, children, mainClassName = "" }) {
-  const [nav, setNav]           = useState(null);
+  const [nav, setNav] = useState(null);
   const [navError, setNavError] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     let mounted = true;
     fetchNav()
-      .then((data) => { if (mounted) setNav(data); })
-      .catch(()     => { if (mounted) setNavError(true); });
+      .then((data) => {
+        if (mounted) {
+          setNav(normalizeRoleScopedNav(data));
+          setNavError(false);
+        }
+      })
+      .catch(() => {
+        if (mounted) {
+          setNav(null);
+          setNavError(true);
+        }
+      });
     return () => { mounted = false; };
   }, []);
 
-  const activeNav = nav
-    ? mergeNavGroupsWithContract(nav)
-    : (navError ? FALLBACK_NAV : null);
-  const pathname  = typeof window !== "undefined" ? globalThis.location.pathname : "";
+  const activeNav = nav || (navError ? EMPTY_ROLE_SCOPED_NAV : null);
+  const pathname = typeof window !== "undefined" ? globalThis.location.pathname : "";
   const breadcrumbs = useMemo(() => buildBreadcrumb(pathname), [pathname]);
   const navGroups = activeNav?.groups || [];
   const hasNavItems = navGroups.some((group) => (group.items || []).length > 0);
   const profile = getProfile();
-
 
   return (
     <div className="crown-app">
@@ -204,7 +160,7 @@ export default function CrownLayout({ title, subtitle, right, children, mainClas
         </div>
 
         <div className="crown-badge">
-          {navError ? "Offline / Fallback" : "Live / Role Scoped"}
+          {navError ? "Navigation Unavailable" : "Live / Role Scoped"}
         </div>
 
         <nav style={{ marginTop: 24, display: "flex", flexDirection: "column", gap: 0 }}>
@@ -221,7 +177,9 @@ export default function CrownLayout({ title, subtitle, right, children, mainClas
 
           {activeNav && !hasNavItems ? (
             <div style={{ fontSize: 12, opacity: 0.7, padding: "8px 10px" }}>
-              No navigation items are available for this role.
+              {navError
+                ? "Role-scoped navigation is temporarily unavailable."
+                : "No navigation items are available for this role."}
             </div>
           ) : null}
 
@@ -303,8 +261,8 @@ export default function CrownLayout({ title, subtitle, right, children, mainClas
           {(title || subtitle || right) && (
             <div className="crown-pagehead" style={{ marginBottom: 14, alignItems: "flex-start" }}>
               <div style={{ paddingTop: 2 }}>
-              {title    && <h2 className="crown-title">{title}</h2>}
-              {subtitle && <p  className="crown-subtitle">{subtitle}</p>}
+              {title && <h2 className="crown-title">{title}</h2>}
+              {subtitle && <p className="crown-subtitle">{subtitle}</p>}
             </div>
               {right && <div style={{ paddingTop: 2 }}>{right}</div>}
             </div>
@@ -312,7 +270,7 @@ export default function CrownLayout({ title, subtitle, right, children, mainClas
 
           {navError ? (
             <div className="crown-global-notice" role="status" style={{ marginBottom: 12 }}>
-              Navigation service unavailable. Showing fallback menu.
+              Navigation service unavailable. Role-scoped navigation is hidden until the service recovers.
             </div>
           ) : null}
 

@@ -32,7 +32,11 @@ const requiredDashboardLabels = [
   'Student Care',
   'Activities & Athletics',
   'Communications',
+  'School Administrator',
+  'School Board',
+  'Master Control',
   'Admissions',
+  'Advancement',
   'HR',
   'Facilities',
   'Health Office',
@@ -40,13 +44,16 @@ const requiredDashboardLabels = [
   'Food Service',
   'IT Support',
   'Fine Arts',
+  'Athletics Director',
   'Library / Media',
   'Extended Care',
+  'Summer Camp',
   'Safety / Security',
   'Curriculum / PD Hub',
   'Chaplain / Spiritual Life',
   'Advancement Operations',
   'Volunteer Management',
+  'Portrait / Service Hours',
   'Alumni Relations',
   'Network Benchmarking',
   'Implementation Success',
@@ -58,8 +65,24 @@ const requiredDashboardLabels = [
   'Dashboard Certification Center',
 ];
 
+const registryMarker = 'export const DASHBOARD_REGISTRY = [';
+const registryBody = registrySource.includes(registryMarker)
+  ? registrySource.split(registryMarker, 2)[1].split('\n];', 1)[0]
+  : '';
+
+if (!registryBody) {
+  fail('Unable to locate canonical DASHBOARD_REGISTRY body.');
+}
+
+const dashboardCount = (registryBody.match(/^\s{2}createDashboard\(\{/gm) || []).length;
+if (dashboardCount !== requiredDashboardLabels.length) {
+  fail(`Dashboard registry count ${dashboardCount} does not match canonical inventory ${requiredDashboardLabels.length}.`);
+} else {
+  pass(`Dashboard registry count matches canonical inventory: ${dashboardCount}`);
+}
+
 for (const label of requiredDashboardLabels) {
-  if (!registrySource.includes(`label: '${label}'`) && !registrySource.includes(`label: "${label}"`)) {
+  if (!registryBody.includes(`label: '${label}'`) && !registryBody.includes(`label: "${label}"`)) {
     fail(`Dashboard registry missing label: ${label}`);
   } else {
     pass(`Dashboard registered: ${label}`);
