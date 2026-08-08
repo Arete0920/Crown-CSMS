@@ -48,6 +48,10 @@ on:
         description: "Optional deploy label for build.json"
         required: false
         default: "manual-swa-redeploy"
+      backend_deploy_tag:
+        description: "Existing immutable prod-deploy-* backend tag to certify"
+        required: true
+        type: string
   push:
     branches:
       - main
@@ -74,30 +78,54 @@ jobs:
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           ref: ${{ github.sha }}
-          fetch-depth: 1
+          fetch-depth: 0
 
       - name: Resolve certified backend SHA from canonical release status
         id: release-authority
         shell: bash
+        env:
+          MANUAL_BACKEND_DEPLOY_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.backend_deploy_tag || '' }}
         run: |
           set -euo pipefail
           python3 - <<'PY'
           import os
           import re
+          import subprocess
           from pathlib import Path
 
-          status_path = Path("docs/CURRENT_RELEASE_STATUS.md")
-          text = status_path.read_text(encoding="utf-8")
-          match = re.search(
-              r"\*\*Certified release source:\*\* `([0-9a-fA-F]{40})`",
-              text,
-          )
-          if not match:
-              raise SystemExit(
-                  "ERROR: docs/CURRENT_RELEASE_STATUS.md does not contain a full "
-                  "40-character Certified release source SHA."
+          manual_tag = os.environ.get("MANUAL_BACKEND_DEPLOY_TAG", "").strip()
+          if manual_tag:
+              if not re.fullmatch(r"prod-deploy-[A-Za-z0-9._-]+", manual_tag):
+                  raise SystemExit(
+                      "ERROR: backend_deploy_tag must match prod-deploy-*."
+                  )
+              try:
+                  sha = subprocess.check_output(
+                      ["git", "rev-parse", f"refs/tags/{manual_tag}^{{commit}}"],
+                      text=True,
+                  ).strip().lower()
+              except subprocess.CalledProcessError as exc:
+                  raise SystemExit(
+                      f"ERROR: backend deployment tag is not resolvable: {manual_tag}"
+                  ) from exc
+              if not re.fullmatch(r"[0-9a-f]{40}", sha):
+                  raise SystemExit(
+                      "ERROR: backend deployment tag did not resolve to a full commit SHA."
+                  )
+              print(f"Manual backend authority resolved: {manual_tag} -> {sha[:7]}")
+          else:
+              status_path = Path("docs/CURRENT_RELEASE_STATUS.md")
+              text = status_path.read_text(encoding="utf-8")
+              match = re.search(
+                  r"\*\*Certified release source:\*\* `([0-9a-fA-F]{40})`",
+                  text,
               )
-          sha = match.group(1).lower()
+              if not match:
+                  raise SystemExit(
+                      "ERROR: docs/CURRENT_RELEASE_STATUS.md does not contain a full "
+                      "40-character Certified release source SHA."
+                  )
+              sha = match.group(1).lower()
           with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:
               output.write(f"expected_api_sha={sha}\n")
           print(f"Certified backend authority resolved: {sha[:7]}")
