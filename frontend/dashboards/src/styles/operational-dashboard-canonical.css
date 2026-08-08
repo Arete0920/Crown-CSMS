@@ -2,7 +2,7 @@
   overflow-x: hidden;
 }
 
-.crown-operational-canonical > div:first-child {
+.crown-operational-canonical > :first-child {
   max-width: 1320px !important;
   padding: 12px 16px 24px !important;
 }
@@ -78,7 +78,7 @@
 }
 
 @media (max-width: 1100px) {
-  .crown-operational-canonical > div:first-child {
+  .crown-operational-canonical > :first-child {
     max-width: 100% !important;
   }
 
@@ -92,7 +92,7 @@
 }
 
 @media (max-width: 760px) {
-  .crown-operational-canonical > div:first-child {
+  .crown-operational-canonical > :first-child {
     padding: 8px 8px 18px !important;
   }
 
