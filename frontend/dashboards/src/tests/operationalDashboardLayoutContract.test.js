@@ -47,6 +47,8 @@ describe("legacy operational dashboard canonical layout contract", () => {
     expect(css).toContain("overflow-x: hidden");
     expect(css).toContain("padding: 12px 16px 24px !important");
     expect(css).toContain("flex-direction: column");
+    expect(css).toContain("color: var(--crown-text)");
+    expect(css).not.toContain("color: var(--crown-ink)");
     expect(css).toContain("@media (max-width: 760px)");
     expect(css).toContain("padding: 8px 8px 18px !important");
     expect(css).toContain("grid-column: 1 / -1 !important");
