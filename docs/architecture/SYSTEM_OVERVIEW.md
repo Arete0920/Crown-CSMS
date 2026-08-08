@@ -2,18 +2,18 @@
 
 **Status:** CANONICAL SUPPORTING OVERVIEW  
 **Owner:** CROWN Engineering  
-**Effective date:** 2026-07-28
+**Effective date:** 2026-08-08
 
 ## Interpretation
 
-This document summarizes repository-visible implementation and architectural convergence status. It does not certify production readiness and does not override `docs/CURRENT_RELEASE_STATUS.md`.
+This document summarizes repository-visible implementation and architectural convergence status. It does not redefine the certified production identity and does not override `docs/CURRENT_RELEASE_STATUS.md` or GitHub issue #1619.
 
 Evidence labels:
 
-- **Verified in source** — directly represented by current repository code or configuration.
+- **Verified in source** — directly represented by repository code or configuration.
 - **Accepted decision** — approved architecture authority listed in `DECISION_INDEX.md`.
 - **Implementation convergence open** — accepted direction exists, but migration or retirement work remains.
-- **Unverified externally** — depends on GitHub, Azure, provider, identity, contract, or live runtime state outside the repository.
+- **Externally evidenced separately** — operational proof is governed by release/handoff evidence rather than inferred from source.
 
 ## Core stack
 
@@ -23,20 +23,21 @@ Evidence labels:
 | Frontend | React, Vite, and MUI | Verified in source |
 | Primary persistence | PostgreSQL through `DATABASE_URL` | Verified in source |
 | Development/test persistence | SQLite-supported paths | Verified in source |
-| Background work | Celery and Redis configuration | Verified in source; deployed operation unverified externally |
-| Monitoring | Optional Sentry integration | Verified in source; provider state unverified externally |
-| Hosting target | Azure App Service | Verified in workflow source; live state unverified externally |
-| Container registry target | Azure Container Registry | Verified in workflow source; live RBAC unverified externally |
-| Secret authority | Approved external secret manager such as Azure Key Vault | Target and operational requirement; live retrieval and rotation unverified externally |
+| Background work | Celery and Redis configuration | Verified in source; active task paths are subject to ADR-0003 |
+| Monitoring | Optional Sentry integration | Verified in source; live provider state governed separately |
+| Hosting target | Azure App Service | Verified in workflow source; certified release deployment evidence governed by #1619 |
+| Container registry target | Azure Container Registry | Verified in workflow source; live operational ownership governed separately |
+| Secret authority | External environment/secret-store controls | Source references verified; live inventory/rotation governed separately |
 
 ## Runtime request path
 
 ```text
 Browser or authorized client
   -> React frontend
+  -> ADR-0002 canonical protected transport
   -> HTTPS versioned API request
   -> principal authentication
-  -> canonical tenant resolution and authorization
+  -> ADR-0001 canonical tenant resolution and authorization
   -> RBAC and domain permission enforcement
   -> domain service and transaction
   -> school-scoped persistence
@@ -44,29 +45,41 @@ Browser or authorized client
   -> normalized API response
 ```
 
-The browser is untrusted. Client-provided tenant, role, object, financial, workflow, and state claims require backend validation.
+The browser is untrusted. Client-provided tenant, role, object, financial, workflow, and state claims require backend validation. Client-supplied role headers are not authorization authority.
 
 ## Multi-tenant architecture
 
-### Accepted decision
+### Accepted request-time decision
 
-`decisions/ADR-0001-tenant-resolution-and-enforcement.md` defines the canonical tenant contract:
+`decisions/ADR-0001-tenant-resolution-and-enforcement.md` defines the canonical request tenant contract:
 
 - one immutable tenant context at `request.crown_tenant`;
 - `request.school_id` and `request.school` as compatibility projections;
 - authentication before tenant authorization;
-- explicit authorization for any cross-school override;
+- explicit authorization for cross-school override;
 - fail-closed behavior for missing, invalid, inactive, unknown, or unauthorized school context;
-- explicit tenant binding and cleanup for asynchronous work;
 - no new tenant request attributes.
+
+### Accepted background-execution decision
+
+`decisions/ADR-0003-tenant-aware-background-jobs.md` defines tenant ownership outside HTTP requests:
+
+- tenant-owned mutation executes under one explicit school/tenant identity;
+- platform orchestrators may enumerate active schools but execute each tenant operation separately;
+- `tenant_context(school)` is established and restored for tenant-owned scheduled work;
+- payment-dependent scheduled jobs do not mutate while external payment processing is deferred;
+- retries are bounded and must respect idempotency and failure-containment rules.
 
 ### Verified source behavior
 
 - tenant-header resolution and validation exist for protected API paths;
 - school context can be attached to requests;
-- permission utilities can scope authorization to the resolved school;
-- tested dashboard endpoints cover missing, invalid, unknown, matching, and conflicting tenant cases;
-- request cleanup clears compatibility context after processing.
+- permission utilities scope authorization to the resolved school;
+- dashboard tests cover missing, invalid, unknown, matching, and conflicting tenant cases;
+- request cleanup clears compatibility context after processing;
+- communications outbox tenant binding is explicit;
+- final architecture hardening makes billing grace, support escalation, customer-health refresh, and predictive analytics tenant-explicit;
+- provider-dependent dunning and payout scheduled tasks return the canonical payment hold without mutation.
 
 ### Implementation convergence open
 
@@ -76,7 +89,7 @@ Current settings still register multiple tenant-related middleware layers:
 2. `core.tenant_header_middleware.TenantHeaderRequiredMiddleware`;
 3. `crown_api.tenant_middleware.TenantContextMiddleware`.
 
-The accepted contract is authoritative, but permissions, querysets, tasks, scripts, exemption lists, and compatibility attributes have not been proven fully migrated. Redundant middleware must not be removed until consumer inventory and behavioral-equivalence evidence exist.
+The accepted contract is authoritative. Redundant middleware must not be removed until complete consumer inventory and behavioral-equivalence evidence exist.
 
 ## Identity and household architecture
 
@@ -112,59 +125,70 @@ Compatibility convergence remains open. Retirement requires a complete consumer 
 | Student operations | attendance, discipline, health, transportation, service-hours and related apps | School-scoped operational workflows and records |
 | Communications and support | `comms`, `support` | Messaging, delivery boundaries, tickets, escalation |
 | Governance and analytics | `board_oversight`, `executive360`, `analytics` | Board, executive, health, metric, export, and reporting surfaces |
-| Frontend platform | `frontend/dashboards` | Shared shell, routes, persona surfaces, components, state, transport, accessibility |
+| Frontend platform | `frontend/dashboards` | Shared shell, routes, persona surfaces, components, state, ADR-0002 transport, accessibility |
 | Operations | workflows, deployment configuration, `docs/operations` | Build, test, deploy, monitor, recover, rotate, and maintain |
 
 App registration demonstrates structure, not independent proof of completeness, tenant safety, or production enablement.
 
 ## Frontend transport architecture
 
-More than one frontend request implementation currently resolves API location, authentication, tenant state, cookies, timeout behavior, and errors. No accepted frontend transport ADR is listed in `DECISION_INDEX.md`.
+### Accepted decision
 
-Required target characteristics include:
+`decisions/ADR-0002-canonical-frontend-api-transport.md` establishes `frontend/dashboards/src/utils/authClient.js` as the protected first-party API transport authority.
 
-- one canonical request entry point;
-- normalized API base URL handling;
-- one authentication and cookie policy;
-- canonical tenant-header propagation;
-- consistent timeout, cancellation, retry, and idempotency behavior;
-- normalized error and permission handling;
-- explicit public-route exceptions;
-- testable request metadata and observability.
+It owns:
 
-Until an ADR is accepted and implemented, the repository must not claim universal use of one client.
+- API-base resolution;
+- trusted first-party URL determination;
+- access-token propagation;
+- selected-school `X-School-Id` propagation;
+- credentials;
+- timeout and cancellation;
+- correlation behavior;
+- structured HTTP failure handling;
+- protection against leaking CROWN auth/tenant context to untrusted external origins.
+
+Shared wrappers already converge on this transport. Final architecture hardening migrates verified protected consumers including Board Executive data, Learning Continuity, and shared CROWN dashboard metrics.
+
+Direct browser fetch remains permitted only for explicit authentication/bootstrap, public sandbox/public-entry, external-origin, development-only, and test/certification cases whose semantics are outside the authenticated school-operational transport contract.
+
+### Provenance rule
+
+A dashboard aggregate may be labeled live only when all data required by that live contract is live. Partial live results must not be merged with demo/fixture data and presented as one live aggregate. Board Executive now follows this all-or-nothing rule.
 
 ## API architecture
 
 - `/api/v1/` is the principal versioned API namespace visible in source.
 - API version and deprecation middleware are represented in source.
 - Public endpoint and CSRF exceptions require explicit policy and review.
-- External support windows and partner commitments require separate release and contract authority.
 - Serializers and views are transport adapters; durable business rules should reside in domain services and transactional boundaries where implemented.
+- Tenant identity and role authorization are backend responsibilities regardless of frontend route or header behavior.
 
 ## Asynchronous architecture
 
-Celery and Redis configuration exist, but a complete task ownership and tenant-propagation inventory is not established by this overview.
+ADR-0003 is the accepted background-execution contract.
 
-Every active task path must eventually demonstrate:
+Verified aligned paths include:
 
-- explicit serialized tenant identity;
-- principal or service identity where required;
-- idempotency or duplicate-delivery handling;
-- bounded retries and poison-message behavior;
-- context establishment and cleanup;
-- audit and observability fields;
-- no cross-tenant data access after retry or exception.
+- communications outbox tenant binding with bounded retry/dead-letter behavior;
+- billing grace-period enforcement by active school under tenant context;
+- support SLA escalation by active school under tenant context;
+- customer-health refresh by active school under tenant context;
+- predictive analytics queue fan-out by school plus tenant-context execution;
+- retention purge preview by default with separate execution/confirmation safeguards;
+- payment dunning and daily payout scheduled jobs fail closed/no mutation while payment integration is on hold.
+
+Remaining background tasks and management commands must be inventoried against the same contract before material changes. Unscoped tenant mutation is prohibited.
 
 ## External integrations
 
 ### Microsoft
 
-Microsoft Entra authentication and Microsoft Graph paths are represented in source. Tenant registration, consent, credentials, mailbox licensing, ownership, and live delivery are unverified externally.
+Microsoft Entra authentication and Microsoft Graph paths are represented in source. Tenant registration, consent, credentials, mailbox licensing, ownership, and live delivery are operational facts governed outside source documentation.
 
 ### Payments
 
-Approved provider direction is CompuWerx and Metro Merchant Services. Stripe is not an approved CROWN production provider. Source stubs or historical references do not establish activation, compliance, settlement, refund, or webhook readiness. Payment processing remains disabled and fail closed under current release authority.
+No external payment processor is approved or active for the certified release. Payment processing is disabled and fail closed and provider selection/implementation is deferred to the new owner. Provider-specific activation requires a separate accepted architecture decision and provider-specific certification.
 
 ### Cloud, email, storage, and monitoring
 
@@ -181,30 +205,28 @@ These systems are adapters outside the application source-of-truth boundary. Eac
 - workflow, image, and runtime SHA comparison paths exist;
 - allowlisted application-setting behavior and migration execution controls are represented.
 
-### Unverified externally
+### Certified-release evidence boundary
 
-- current branch protection and required-check configuration;
-- current Azure resources, RBAC, networking, slots, and settings;
-- successful migration execution for a selected release;
-- secret retrieval, rotation, revocation, and failed-rotation recovery;
-- frontend/backend exact-commit alignment;
-- provider activation and external observability state.
+The exact certified production release, deployment run, health, identity, bounded RBAC/tenant proof, and payment containment are governed by `docs/CURRENT_RELEASE_STATUS.md` and #1619. Later development `main` commits do not inherit that certification automatically.
 
-### Recovery limitation
+### Deferred operational maturity
 
-A rollback-named workflow step is not equivalent to a proven application rollback, deployment-slot reversal, configuration restoration, or database restore. Production authorization requires explicit rollback and isolated database-restore drills with measured recovery objectives.
+Measured rollback/isolated-restore exercises, exhaustive credential rotation/break-glass, expanded alert/tabletop exercises, and transaction-specific ownership transfer remain separately disclosed maturity or successor work unless later executed and accepted.
+
+A rollback-named workflow step is not equivalent to a measured application rollback and isolated database restore.
 
 ## Architectural priorities for a successor
 
-1. Implement and verify the accepted canonical tenant contract.
-2. Accept and implement a canonical frontend request ADR.
-3. Complete identity compatibility convergence planning and rehearsal.
-4. Establish a complete domain ownership and dependency map.
-5. Define asynchronous task, retry, idempotency, and tenant-binding authority.
-6. Consolidate deployment and verification topology around exact-commit identity.
-7. Prove rollback, restore, secret rotation, and monitoring behavior.
-8. Keep external payment processing disabled until separately authorized and certified.
+1. Preserve ADR-0001 tenant authority and retire compatibility middleware only after equivalence proof.
+2. Preserve ADR-0002 as the one protected frontend transport authority; keep public/bootstrap exceptions explicit.
+3. Preserve ADR-0003 tenant-explicit background execution and payment hold.
+4. Complete identity compatibility convergence planning and rehearsal before retirement of legacy identity domains.
+5. Maintain a current domain ownership and dependency map before consolidating overlapping apps.
+6. Create the remaining ADRs in `DECISION_INDEX.md` before material changes to integration, deployment/recovery, reporting, storage, or payment-provider boundaries.
+7. Keep exact certified-production identity separate from development `main` until a later release is independently selected, deployed, and certified.
 
 ## Release posture
 
-**FROZEN / PRODUCTION NOT APPROVED / BUYER OPERATIONAL TURNOVER NOT APPROVED.**
+The certified production release remains the immutable identity recorded in `docs/CURRENT_RELEASE_STATUS.md` and #1619 and is **PASS / COMPLETE for its bounded supported scope**.
+
+Development `main` has advanced beyond that certified source. The final architecture-hardening branch is development work and is **not automatically production-certified** until it passes its own review and, if selected for production, the applicable exact-source release/deployment/certification process.

@@ -2,7 +2,7 @@
 
 **Status:** CANONICAL  
 **Owner:** CROWN Engineering  
-**Effective date:** 2026-08-04
+**Effective date:** 2026-08-08
 
 ## Purpose
 
@@ -14,7 +14,7 @@ This document defines the owner-facing architectural shape of CROWN. It describe
 2. **School context is a security boundary.** Protected work executes only after authentication, tenant resolution, tenant authorization, and domain authorization.
 3. **Fail closed.** Missing, invalid, inactive, unknown, or unauthorized tenant and role context must be rejected before business logic performs protected reads or writes.
 4. **Domain ownership is explicit.** Each durable record has one authoritative write domain. Compatibility models and bridges may remain, but they are not interchangeable with canonical records.
-5. **Shared contracts precede convenience.** Frontend requests, API behavior, tenant propagation, identity, audit events, and integrations must follow shared contracts rather than page-specific or module-specific conventions.
+5. **Shared contracts precede convenience.** Frontend requests, API behavior, tenant propagation, identity, audit events, background jobs, and integrations must follow shared contracts rather than page-specific or module-specific conventions.
 6. **External systems remain outside the source-of-truth boundary.** Microsoft, payment providers, Azure, email, storage, and monitoring are integrations. Repository configuration does not prove their live state.
 7. **Deployment identity is immutable.** A releasable build must be traceable to one exact source commit across build, image, deployment, and runtime identity.
 8. **Recovery is architectural, not incidental.** Application rollback, database restore, secret rotation, and failed-rotation recovery require explicit procedures and proof.
@@ -27,7 +27,7 @@ Browser / authorized client
         v
 React + Vite frontend
         |
-        | HTTPS / versioned API contract
+        | canonical protected transport / versioned API contract
         v
 Django + Django REST Framework
         |
@@ -39,6 +39,12 @@ Django + Django REST Framework
         |
         v
 PostgreSQL-oriented persistence
+
+Scheduled / asynchronous work
+        |
+        +--> platform orchestrator may enumerate active schools
+        +--> each tenant-owned operation enters explicit tenant_context(school)
+        +--> bounded retries / idempotency / audit semantics
 
 Optional runtime dependencies:
 - Redis and Celery for asynchronous work
@@ -52,7 +58,11 @@ Optional runtime dependencies:
 
 ### Client boundary
 
-The browser is untrusted. Client-provided school identifiers, role claims, object identifiers, totals, and workflow state must be revalidated by the backend.
+The browser is untrusted. Client-provided school identifiers, role claims, object identifiers, totals, and workflow state must be revalidated by the backend. Client-supplied role headers are never authorization authority.
+
+### Frontend transport boundary
+
+`frontend/dashboards/src/utils/authClient.js` is the accepted protected first-party transport authority defined by ADR-0002. It owns trusted API resolution, access-token propagation, selected-school context, credentials, timeout/cancellation, correlation, and structured failure behavior. Public/bootstrap/external/dev/test traffic may use explicit direct-fetch exceptions when authenticated school-operational semantics do not apply.
 
 ### Authentication boundary
 
@@ -60,7 +70,9 @@ Session, JWT, Entra, and service identities identify the actor. Authentication a
 
 ### Tenant boundary
 
-`request.crown_tenant` is the accepted canonical tenant context defined by `decisions/ADR-0001-tenant-resolution-and-enforcement.md`. `request.school_id` and `request.school` are compatibility projections. New tenant attributes are prohibited.
+`request.crown_tenant` is the accepted canonical request tenant context defined by ADR-0001. `request.school_id` and `request.school` are compatibility projections. New tenant attributes are prohibited.
+
+Outside HTTP requests, tenant-owned background work follows ADR-0003: one tenant identifier and explicit `tenant_context(school)` per mutating tenant operation. Platform orchestrators may enumerate schools but may not perform one ambiguous unscoped cross-tenant mutation.
 
 ### Authorization boundary
 
@@ -74,6 +86,8 @@ PostgreSQL is the production-oriented primary data store. SQLite remains a devel
 
 External credentials and provider state are never architectural proof. Microsoft, payment, cloud, email, storage, and monitoring integrations require separate configuration, ownership, security, and runtime verification.
 
+External payment processing is currently deferred, disabled, and fail closed. Provider-dependent scheduled retry and payout operations must not mutate state while this hold is active.
+
 ## Domain ownership
 
 | Domain | Primary repository areas | Architectural responsibility |
@@ -85,38 +99,42 @@ External credentials and provider state are never architectural proof. Microsoft
 | Student services | attendance, discipline, health, transportation, service-hours and related apps | School-scoped operational records and workflows |
 | Communications and support | `backend/comms/`, `backend/support/` | Outbound communication, delivery boundaries, tickets, escalation |
 | Governance and analytics | `backend/board_oversight/`, `backend/executive360/`, `backend/analytics/` | Board, executive, health, metric, and reporting surfaces |
-| Frontend platform | `frontend/dashboards/` | Shared shell, routing, role surfaces, request contracts, components, state and accessibility |
+| Frontend platform | `frontend/dashboards/` | Shared shell, routing, role surfaces, canonical protected request transport, components, state and accessibility |
 | Operations | `.github/workflows/`, `docs/operations/`, deployment configuration | Build, test, deploy, health, monitoring, rollback, restore, maintenance |
 
 App presence establishes structure, not completion of every optional capability.
 
 ## Accepted architecture decisions
 
-- `decisions/ADR-0001-tenant-resolution-and-enforcement.md` — accepted canonical tenant contract; bounded tenant and RBAC release certification passed, while compatibility convergence remains incomplete.
-- `ADR-001-CANONICAL-HOUSEHOLD-GUARDIAN-STUDENT.md` — accepted canonical operational write identity for `core.Family`, `core.Guardian`, and `core.Student`; compatibility convergence remains incomplete.
+- ADR-0001 — canonical request-time tenant resolution and enforcement.
+- ADR-0002 — canonical protected frontend API transport and explicit exception policy.
+- ADR-0003 — tenant-aware background jobs, per-school scheduled mutation, retry/idempotency boundary, and payment-hold behavior.
+- ADR-001 — canonical operational write identity for `core.Family`, `core.Guardian`, and `core.Student`.
 
 The authoritative decision list is `DECISION_INDEX.md`.
 
 ## Certification reference
 
-The bounded release certification record is maintained in `docs/CURRENT_RELEASE_STATUS.md` and GitHub issue #1619. Those sources govern exact release identity, deployment, health, tenant and RBAC evidence, and payment containment. This architecture map intentionally avoids duplicating that evidence to reduce authority drift.
+The bounded certified production release is maintained in `docs/CURRENT_RELEASE_STATUS.md` and GitHub issue #1619. Those sources govern exact release identity, deployment, health, tenant and RBAC evidence, and payment containment.
+
+Development `main` may advance beyond the certified production source. Later source changes do not inherit production certification and require their own release selection, exact-source deployment, identity reconciliation, and applicable certification before the production identity moves.
 
 ## Open architectural convergence
 
-1. Complete migration to the canonical tenant context and retire redundant middleware only after equivalence and consumer proof.
-2. Establish one canonical frontend request contract for API base URL, authentication, tenant headers, cookies, timeout, retries, error normalization, and cancellation.
+1. Retire redundant tenant middleware only after complete consumer/equivalence proof.
+2. Continue migration of any remaining protected direct-fetch consumers to ADR-0002; retain only explicit public/bootstrap/external/dev/test exceptions.
 3. Complete tenant-by-tenant reconciliation of identity compatibility domains through an expand-contract migration with rollback proof.
 4. Maintain a current domain ownership and dependency graph for models, services, tasks, imports, exports, reports, APIs, and frontend consumers.
 5. Consolidate overlapping CI, deployment, certification, and runtime-verification paths only after required-check and operational dependencies are mapped.
-6. Prove asynchronous tenant binding, idempotency, retry behavior, and cleanup for every active task path.
+6. Complete inventory of every background task and management command against ADR-0003; unscoped tenant mutation is prohibited.
 7. Verify external integration ownership and configuration without committing credentials.
-8. Execute the deferred full rollback, isolated restore, credential-rotation, and expanded monitoring exercises when required by operations, diligence, contract, or a future owner.
-9. Create the missing ADRs listed in `DECISION_INDEX.md` before making material changes to those architectural boundaries.
+8. Execute deferred full rollback, isolated restore, credential-rotation, and expanded monitoring exercises when required by operations, diligence, contract, or a future owner.
+9. Create the remaining ADRs listed in `DECISION_INDEX.md` before material changes to those boundaries.
 
 ## Change rules
 
-- Architectural changes require an ADR when they alter trust boundaries, canonical data ownership, tenant resolution, public API contracts, deployment topology, or external integration authority.
+- Architectural changes require an ADR when they alter trust boundaries, canonical data ownership, tenant resolution, protected frontend transport, background tenant execution, public API contracts, deployment topology, or external integration authority.
 - Compatibility layers are removed only after consumer inventory, migration rehearsal, rollback design, and representative verification.
-- Runtime changes and documentation-only authority changes should remain in separate pull requests.
+- Runtime changes and documentation-only authority changes should normally remain separately reviewable; this final hardening lane may carry its directly corresponding ADR/status updates so implementation and authority cannot drift.
 - No architecture document may describe an unimplemented target as verified source behavior.
 - Post-release hardening must not silently redefine the immutable certified production identity.
