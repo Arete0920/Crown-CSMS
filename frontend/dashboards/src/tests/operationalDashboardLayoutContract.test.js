@@ -20,20 +20,21 @@ const TARGET_PATHS = [
 ];
 
 describe("legacy operational dashboard canonical layout contract", () => {
-  it("limits the canonical operational layout bridge to the six verified legacy routes", () => {
+  it("limits the canonical operational layout bridge to exactly the six verified legacy routes", () => {
     const source = load("../components/crown/CrownLayout.jsx");
+    const pathSetDeclaration = source.match(
+      /const\s+CANONICAL_OPERATIONAL_DASHBOARD_PATHS\s*=\s*new\s+Set\s*\(\s*\[([\s\S]*?)\]\s*\)\s*;?/
+    );
 
     expect(source).toContain('import "../../styles/operational-dashboard-canonical.css";');
-    expect(source).toContain("CANONICAL_OPERATIONAL_DASHBOARD_PATHS");
+    expect(pathSetDeclaration).not.toBeNull();
     expect(source).toContain('"crown-operational-canonical"');
 
-    for (const pathname of TARGET_PATHS) {
-      expect(source).toContain(`"${pathname}"`);
-    }
+    const configuredPaths = [
+      ...(pathSetDeclaration?.[1] || "").matchAll(/["'](\/[^"']+)["']/g),
+    ].map((match) => match[1]);
 
-    expect(source).not.toContain('"/school-admin-dashboard"');
-    expect(source).not.toContain('"/teacher-dashboard"');
-    expect(source).not.toContain('"/parent-dashboard"');
+    expect(configuredPaths).toEqual(TARGET_PATHS);
   });
 
   it("keeps the repair presentation-only and backed by responsive geometry rules", () => {
@@ -41,6 +42,7 @@ describe("legacy operational dashboard canonical layout contract", () => {
     const css = load("../styles/operational-dashboard-canonical.css");
 
     expect(layout).toContain("CANONICAL_OPERATIONAL_DASHBOARD_PATHS.has(pathname)");
+    expect(css).toContain(".crown-operational-canonical > :first-child");
     expect(css).toContain(".crown-operational-canonical .crown-pagehead");
     expect(css).toContain(".crown-operational-canonical .crown-grid");
     expect(css).toContain(".crown-operational-canonical .crown-card");
@@ -49,6 +51,7 @@ describe("legacy operational dashboard canonical layout contract", () => {
     expect(css).toContain("flex-direction: column");
     expect(css).toContain("color: var(--crown-text)");
     expect(css).not.toContain("color: var(--crown-ink)");
+    expect(css).not.toContain("> div:first-child");
     expect(css).toContain("@media (max-width: 760px)");
     expect(css).toContain("padding: 8px 8px 18px !important");
     expect(css).toContain("grid-column: 1 / -1 !important");
