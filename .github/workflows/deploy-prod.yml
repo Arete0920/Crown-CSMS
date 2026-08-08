@@ -1,6 +1,13 @@
 name: Production Deploy
+run-name: Production Deploy (${{ inputs.deploy_tag || github.ref_name }})
 
 on:
+  workflow_dispatch:
+    inputs:
+      deploy_tag:
+        description: "Existing immutable prod-deploy-* tag to deploy"
+        required: true
+        type: string
   push:
     tags:
       - "prod-deploy-*"
@@ -28,32 +35,47 @@ jobs:
     outputs:
       deploy_sha: ${{ steps.resolve.outputs.deploy_sha }}
       deploy_sha_short: ${{ steps.resolve.outputs.deploy_sha_short }}
+      deploy_tag: ${{ steps.resolve.outputs.deploy_tag }}
     steps:
       - name: Checkout release tag
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
-          ref: ${{ github.ref_name }}
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.deploy_tag || github.ref_name }}
           fetch-depth: 0
       - name: Validate production tag
         shell: bash
+        env:
+          DEPLOY_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.deploy_tag || github.ref_name }}
         run: |
           set -euo pipefail
-          if [[ "${{ github.ref_name }}" != prod-deploy-* ]]; then
-            echo "ERROR: production deploy tag must match prod-deploy-*"
+          if [[ ! "$DEPLOY_TAG" =~ ^prod-deploy-[A-Za-z0-9._-]+$ ]]; then
+            echo "ERROR: production deploy tag must match the strict prod-deploy-* allowlist"
             exit 1
           fi
       - name: Resolve immutable release SHA
         id: resolve
         shell: bash
+        env:
+          DEPLOY_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.deploy_tag || github.ref_name }}
         run: |
           set -euo pipefail
+          if [[ ! "$DEPLOY_TAG" =~ ^prod-deploy-[A-Za-z0-9._-]+$ ]]; then
+            echo "ERROR: production deploy tag must match the strict prod-deploy-* allowlist"
+            exit 1
+          fi
           deploy_sha="$(git rev-parse HEAD)"
+          tag_sha="$(git rev-parse "refs/tags/${DEPLOY_TAG}^{commit}")"
           if [[ ! "$deploy_sha" =~ ^[0-9a-f]{40}$ ]]; then
             echo "ERROR: resolved release ref is not a full commit SHA: $deploy_sha"
             exit 1
           fi
+          if [[ "$tag_sha" != "$deploy_sha" ]]; then
+            echo "ERROR: checked-out SHA does not equal immutable tag SHA. tag=$tag_sha checkout=$deploy_sha"
+            exit 1
+          fi
           echo "deploy_sha=$deploy_sha" >> "$GITHUB_OUTPUT"
           echo "deploy_sha_short=${deploy_sha:0:7}" >> "$GITHUB_OUTPUT"
+          echo "deploy_tag=$DEPLOY_TAG" >> "$GITHUB_OUTPUT"
 
   production-migration:
     needs: resolve-release
@@ -82,8 +104,8 @@ jobs:
       - name: "Guard: tag name must match prod-deploy-*"
         shell: bash
         run: |
-          echo "DEPLOY_TAG=${{ github.ref_name }}"
-          if [[ "${{ github.ref_name }}" != prod-deploy-* ]]; then
+          echo "DEPLOY_TAG=${{ needs.resolve-release.outputs.deploy_tag }}"
+          if [[ "${{ needs.resolve-release.outputs.deploy_tag }}" != prod-deploy-* ]]; then
             echo "ERROR: refusing prod deploy; tag must start with prod-deploy-"
             exit 1
           fi
@@ -91,7 +113,7 @@ jobs:
       - name: "Guard: tag required and resolvable"
         shell: pwsh
         run: |
-          ./tools/require_tag_input.ps1 -Tag "${{ github.ref_name }}"
+          ./tools/require_tag_input.ps1 -Tag "${{ needs.resolve-release.outputs.deploy_tag }}"
 
       - name: "Guard: deployment freeze window"
         shell: bash
@@ -183,7 +205,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          TAG="${{ github.ref_name }}"
+          TAG="${{ needs.resolve-release.outputs.deploy_tag }}"
           SHA="${{ steps.vars.outputs.deploy_sha }}"
           if [[ -z "$SHA" || ${#SHA} -lt 40 ]]; then
             echo "ERROR: DEPLOY_SHA is not a full commit SHA (got: '$SHA')"
@@ -284,7 +306,7 @@ jobs:
             exit 0
           fi
 
-          status=$(curl -sS -o /tmp/code_scanning_default_setup.json -w "%{http_code}" \
+          status=$(curl --connect-timeout 15 --max-time 60 -sS -o /tmp/code_scanning_default_setup.json -w "%{http_code}" \
             -H "Authorization: Bearer $GITHUB_TOKEN" \
             -H "Accept: application/vnd.github+json" \
             "https://api.github.com/repos/${{ github.repository }}/code-scanning/default-setup" || echo "000")
@@ -300,7 +322,6 @@ jobs:
       - name: Upload Trivy scan results (SARIF)
         uses: github/codeql-action/upload-sarif@0daab03d71ff584ef619d027a3fd9146679c5d84 # v3
         if: ${{ always() && steps.sarif_gate.outputs.can_upload == 'true' }}
-        continue-on-error: true
         with:
           sarif_file: 'trivy-results.sarif'
 
@@ -376,7 +397,7 @@ jobs:
           }
           $settings = @{
             "BUILD_SHA"       = "${{ steps.vars.outputs.deploy_sha }}"
-            "PROD_DEPLOY_TAG" = "${{ github.ref_name }}"
+            "PROD_DEPLOY_TAG" = "${{ needs.resolve-release.outputs.deploy_tag }}"
             "APP_VERSION"     = $appVersion
             "DEPLOY_RUN_ID"   = "${{ github.run_id }}"
             "DEPLOY_WORKFLOW" = "${{ github.workflow }}"
