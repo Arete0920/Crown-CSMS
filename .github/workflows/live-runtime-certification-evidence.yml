@@ -75,6 +75,8 @@ jobs:
             echo "The deployment workflow remains the authoritative failure signal."
             echo "This report does not authorize production or payment processing."
           } >> "$GITHUB_STEP_SUMMARY"
+          echo "ERROR: upstream Deploy Dashboard workflow concluded ${JOB_STATUS#deploy-}; propagating failure."
+          exit 1
 
   live-runtime-certification-evidence:
     name: Live Runtime Certification Evidence
