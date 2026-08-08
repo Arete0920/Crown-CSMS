@@ -1,0 +1,27 @@
+name: PR Preflight
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, ready_for_review, edited]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: pr-preflight-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  duplicate-work-item:
+    name: One authoritative PR per tracked issue
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+      - name: Reject duplicate tracked-issue PRs
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python scripts/ci/check_pr_preflight.py
