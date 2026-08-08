@@ -8,8 +8,9 @@ from rest_framework import permissions
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .catalog import SANDBOX_PERSONAS, catalog_payload, get_school
+from .catalog import SANDBOX_PERSONAS, catalog_payload, get_persona, get_school
 from .models import SandboxEvent, SandboxFeedback, SandboxInvite
+from .permissions import ensure_sandbox_role_permissions
 from .services import create_sandbox_session, note_has_prohibited_data
 
 
@@ -268,6 +269,7 @@ class SandboxSessionView(APIView):
 
     def post(self, request):
         role = request.data.get("role") or "school_admin"
+        persona = get_persona(role)
         requested_school_key = request.data.get("school") or "heritage-core"
         school = get_school(requested_school_key)
         school_key = school.key
@@ -283,6 +285,7 @@ class SandboxSessionView(APIView):
         if invite_error:
             return invite_error
 
+        ensure_sandbox_role_permissions(persona.role_code)
         session = create_sandbox_session(
             persona_key=role,
             school_key_or_id=school_key,

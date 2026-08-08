@@ -2,9 +2,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
     fetchAdmissionsSummary,
     fetchAdmissionsDrilldown,
-    fetchAdmissionsPriorityQueue,
-    fetchAdmissionsMetrics,
-    fetchAdmissionsTimeline,
 } from "../api/admissions";
 
 function toArray(payload) {
@@ -63,28 +60,21 @@ export default function useAdmissionsDashboardData(year) {
         setError("");
 
         try {
-            const params = year ? { year } : {};
-            const [summaryRes, metricsRes, queueRes, timelineRes] = await Promise.allSettled([
-                fetchAdmissionsSummary(params),
-                fetchAdmissionsMetrics(params),
-                fetchAdmissionsPriorityQueue(params),
-                fetchAdmissionsTimeline(params),
-            ]);
-
-            const summaryOk = summaryRes.status === "fulfilled";
-            setSummary(summaryOk ? (summaryRes.value || {}) : {});
-            setMetrics(metricsRes.status === "fulfilled" ? (metricsRes.value || {}) : {});
-            setPriorityQueue(queueRes.status === "fulfilled" ? toArray(queueRes.value) : []);
-            setTimeline(timelineRes.status === "fulfilled" ? toArray(timelineRes.value) : []);
-
-            if (!summaryOk) {
-                setError("Unable to load admissions summary data.");
-            } else {
-                const degraded = [metricsRes, queueRes, timelineRes].some((result) => result.status !== "fulfilled");
-                if (degraded) {
-                    setError("Admissions dashboard loaded in degraded mode (some optional feeds unavailable).");
-                }
-            }
+            const params = year ? { academic_year: year } : {};
+            const summaryRes = await fetchAdmissionsSummary(params);
+            setSummary(summaryRes || {});
+            // The canonical v1 admissions summary owns dashboard truth. Keep the
+            // legacy state fields empty for hook compatibility without issuing
+            // duplicate /api/admissions/* requests against a separate model.
+            setMetrics({});
+            setPriorityQueue([]);
+            setTimeline([]);
+        } catch {
+            setSummary({});
+            setMetrics({});
+            setPriorityQueue([]);
+            setTimeline([]);
+            setError("Unable to load admissions summary data.");
         } finally {
             setLoading(false);
         }
@@ -106,7 +96,7 @@ export default function useAdmissionsDashboardData(year) {
 
             try {
                 const params = {
-                    ...(year ? { year } : {}),
+                    ...(year ? { academic_year: year } : {}),
                     status: statusKey,
                 };
                 const res = await fetchAdmissionsDrilldown(params);
