@@ -6,7 +6,7 @@ Stage 5 support + SLA API endpoints:
   POST /api/v1/support/tickets/               — create ticket
   GET  /api/v1/support/tickets/               — list open tickets for school
   POST /api/v1/support/tickets/<id>/resolve/  — mark resolved
-  GET  /api/v1/support/escalation/run/        — trigger escalation check (platform ops)
+  POST /api/v1/support/escalation/run/        — trigger tenant-scoped escalation check
 """
 from django.utils import timezone
 from rest_framework.decorators import api_view, permission_classes
@@ -71,7 +71,6 @@ def tickets(request):
             status=status.HTTP_201_CREATED,
         )
 
-    # GET — list open tickets for this school
     qs = SupportTicket.objects.filter(school_id=school_id, status__in=["open", "escalated"])
     out = [
         {
@@ -108,9 +107,10 @@ def resolve_ticket(request, ticket_id):
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def run_escalation(request):
-    """Platform-ops endpoint: trigger SLA breach check immediately."""
+    """Platform-ops endpoint: trigger SLA breach check for the selected tenant."""
     if not _is_platform_operator(request.user):
         return Response({"detail": "Forbidden."}, status=status.HTTP_403_FORBIDDEN)
 
-    result = escalate_overdue_tickets()
+    school_id = get_request_school_id(request)
+    result = escalate_overdue_tickets(school_id=school_id)
     return Response(result)

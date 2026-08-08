@@ -71,22 +71,37 @@ export function classifyProvenance(body: unknown): {
     ? (metaCandidate as Record<string, unknown>)
     : null;
   const emptyRow: NetworkObservation = { url: "" };
-  const values: Array<{ value: unknown; source: ProvenanceObservation["source"] }> = [];
+  const explicitValues: Array<{ value: unknown; source: ProvenanceObservation["source"] }> = [];
 
   if (meta) {
-    values.push(
+    explicitValues.push(
       { value: meta.served_from, source: "meta.served_from" },
       { value: meta.provenance, source: "meta.provenance" },
     );
   }
-  values.push({ value: root.provenance, source: "root.provenance" });
+  explicitValues.push({ value: root.provenance, source: "root.provenance" });
 
   let hasProvenance = false;
-  for (const entry of values) {
+  for (const entry of explicitValues) {
     if (classifyProvenanceValue(nonLiveValues, emptyRow, entry.value, entry.source)) {
       hasProvenance = true;
     }
   }
+
+  // `meta.source` is commonly a descriptive source/service identifier (for
+  // example `dashboard_service` or `core_identity`), not a data-state value.
+  // Preserve legacy fail-closed support for payloads that use `meta.source`
+  // as their *only* provenance signal, but never let a descriptive source name
+  // override an explicit served_from/provenance state.
+  if (!hasProvenance && meta) {
+    hasProvenance = classifyProvenanceValue(
+      nonLiveValues,
+      emptyRow,
+      meta.source,
+      "meta.source",
+    );
+  }
+
   return { hasProvenance, nonLiveValues };
 }
 
