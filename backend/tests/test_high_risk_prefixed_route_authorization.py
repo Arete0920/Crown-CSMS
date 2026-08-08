@@ -140,15 +140,18 @@ class HighRiskPrefixedRouteAuthorizationTest(SimpleTestCase):
             user=self.staff_user,
         )
 
-        with patch(
-            "support.api_support.escalate_overdue_tickets",
-            return_value={"escalated": [3]},
-        ) as escalate:
+        with (
+            patch("support.api_support.get_request_school_id", return_value=self.school_id),
+            patch(
+                "support.api_support.escalate_overdue_tickets",
+                return_value={"escalated": [3]},
+            ) as escalate,
+        ):
             response = run_escalation(request)
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data, {"escalated": [3]})
-        escalate.assert_called_once_with()
+        escalate.assert_called_once_with(school_id=self.school_id)
 
     def test_school_export_denies_before_export_service_without_admin_authority(self):
         request = self.authenticated(self.factory.post("/analytics/export/", {}))
