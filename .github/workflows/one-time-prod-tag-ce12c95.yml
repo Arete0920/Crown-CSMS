@@ -119,6 +119,15 @@ jobs:
           def post_issue_comment(body):
               request("POST", f"issues/{issue_number}/comments", {"body": body})
 
+          def download_run_logs(run_id):
+              archive = request("GET", f"actions/runs/{run_id}/logs", raw=True)
+              with zipfile.ZipFile(io.BytesIO(archive)) as bundle:
+                  return "\n".join(
+                      bundle.read(name).decode("utf-8", "replace")
+                      for name in bundle.namelist()
+                      if not name.endswith("/")
+                  )
+
           try:
               prod_candidates = [
                   run for run in list_runs("deploy-prod.yml")
@@ -154,6 +163,12 @@ jobs:
               if prod_run.get("conclusion") != "success":
                   raise RuntimeError(
                       f"Production Deploy failed: conclusion={prod_run.get('conclusion')} url={prod_run.get('html_url')}"
+                  )
+
+              prod_logs = download_run_logs(prod_run["id"])
+              if deploy_tag not in prod_logs or target_sha not in prod_logs:
+                  raise RuntimeError(
+                      "Production Deploy logs do not correlate the run to the exact immutable tag and target SHA"
                   )
 
               prod_jobs = request("GET", f"actions/runs/{prod_run['id']}/jobs?per_page=100").get("jobs", [])
@@ -212,6 +227,15 @@ jobs:
                       f"url={dashboard_run.get('html_url')}"
                   )
 
+              dashboard_logs = download_run_logs(dashboard_run["id"])
+              dashboard_marker = (
+                  f"Manual backend authority resolved: {deploy_tag} -> {target_sha[:7]}"
+              )
+              if dashboard_marker not in dashboard_logs:
+                  raise RuntimeError(
+                      "Dashboard logs do not correlate the run to the exact immutable backend tag"
+                  )
+
               artifacts = request(
                   "GET", f"actions/runs/{dashboard_run['id']}/artifacts?per_page=100"
               ).get("artifacts", [])
@@ -252,7 +276,7 @@ jobs:
               - Live certification: **{passed}/{total} PASS**, **{failed} FAIL**
               - Connector-readable observer: {observer_run_url}
 
-              The immutable tag was verified and was not created, moved, deleted, or recreated.
+              The observer performed no tag mutation and verified the tag's current exact resolution.
               """
               post_issue_comment("\n".join(line.strip() for line in proof.strip().splitlines()))
               print("Production closure proof published to issue #1940")
