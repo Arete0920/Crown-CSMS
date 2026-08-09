@@ -4,6 +4,7 @@ import {
   userHasAnyPermission,
   userHasPermission,
 } from '../auth/permissions';
+import { getCurrentUserRoles } from '../auth/roleAdapter';
 
 function readCurrentUser() {
   try {
@@ -18,8 +19,22 @@ function readCurrentUser() {
   }
 }
 
+export function mergePermissionIdentity(storedUser, seededRoles = []) {
+  if (!Array.isArray(seededRoles) || seededRoles.length === 0) {
+    return storedUser;
+  }
+
+  return {
+    ...(storedUser || {}),
+    roles: seededRoles,
+  };
+}
+
 export function usePermissions() {
-  const user = useMemo(() => readCurrentUser(), []);
+  const user = useMemo(
+    () => mergePermissionIdentity(readCurrentUser(), getCurrentUserRoles()),
+    [],
+  );
 
   return {
     user,

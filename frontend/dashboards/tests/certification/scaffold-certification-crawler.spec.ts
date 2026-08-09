@@ -5,6 +5,7 @@ import { certificationTenants } from "./tenants";
 import { runAccessibilityCertification } from "./accessibility";
 import { collectPageBlockers } from "./assertions";
 import { attachNetworkRecorder } from "./network-recorder";
+import { WIZARD_MANIFEST } from "../../src/routes/wizard-manifest.js";
 import {
   appendCertificationResult,
   loadCertificationResults,
@@ -110,7 +111,24 @@ async function installCertificationApiStubs(page: Page, role: string, schoolId: 
         status: 200,
         contentType: "application/json",
         body: JSON.stringify({
-          wizards: [],
+          wizards: WIZARD_MANIFEST.map(({ slug, title }) => ({
+            key: slug.replace(/-/g, "_"),
+            slug,
+            title,
+            enabled: true,
+          })),
+          meta: { served_from: "scaffold" },
+        }),
+      });
+    }
+
+    if (path === "/api/dashboards/summary/") {
+      return route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          widgets: [],
+          generated_at: "2026-08-09T00:00:00Z",
           meta: { served_from: "scaffold" },
         }),
       });

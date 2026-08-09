@@ -209,12 +209,23 @@ function annotateCollectionDataSources(items, templateKey, collectionName) {
   });
 }
 
+export const DASHBOARD_DATA_KEY_ALIASES = Object.freeze({
+  finance: 'billing',
+  board: 'school-board',
+  it: 'it-support',
+  'spiritual-life': 'chaplain-spiritual-life',
+  health: 'health-office',
+  food: 'food-service',
+  athletics: 'athletics-director',
+});
+
 function lookupDashboardDataKey(key) {
   const normalized = String(key || '')
     .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
     .toLowerCase();
+  const canonicalKey = DASHBOARD_DATA_KEY_ALIASES[normalized] || normalized;
 
-  return DASHBOARD_DATA_REGISTRY[normalized] ? normalized : null;
+  return DASHBOARD_DATA_REGISTRY[canonicalKey] ? canonicalKey : null;
 }
 
 function withTemplateDataSources(template, templateKey) {
