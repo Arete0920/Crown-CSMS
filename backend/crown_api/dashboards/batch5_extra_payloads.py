@@ -9,6 +9,7 @@ from .payload_contract import alert, build_dashboard_payload, metric, queue_item
 def billing_live_payload(school_id):
     """Build the billing dashboard from tenant-scoped production billing/ledger rows."""
     from billing.models import Invoice
+    from billing.reconciliation import compute_invoice_balance_due
     from ledger.models import Payment
 
     today = timezone.localdate()
@@ -16,10 +17,21 @@ def billing_live_payload(school_id):
     payments = Payment.objects.filter(school_id=school_id, is_void=False)
 
     billed_total = invoices.aggregate(total=Sum('total_amount'))['total'] or Decimal('0.00')
-    paid_total = payments.aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
-    outstanding_total = billed_total - paid_total
-    invoice_count = invoices.count()
-    overdue_count = invoices.filter(due_on__lt=today).count()
+    invoice_balances = [
+        (invoice, compute_invoice_balance_due(invoice))
+        for invoice in invoices
+    ]
+    outstanding_total = sum(
+        (balance for _, balance in invoice_balances),
+        Decimal('0.00'),
+    )
+    paid_total = billed_total - outstanding_total
+    invoice_count = len(invoice_balances)
+    overdue_count = sum(
+        1
+        for invoice, balance in invoice_balances
+        if invoice.due_on is not None and invoice.due_on < today and balance > Decimal('0.00')
+    )
     payments_today = (
         payments.filter(created_at__date=today).aggregate(total=Sum('amount'))['total']
         or Decimal('0.00')
@@ -29,7 +41,7 @@ def billing_live_payload(school_id):
     if overdue_count:
         alerts.append(
             alert(
-                f'{overdue_count} invoice(s) are past their due date',
+                f'{overdue_count} invoice(s) have a past-due balance',
                 'High',
                 'Finance team follow-up is required.',
             )
@@ -37,7 +49,7 @@ def billing_live_payload(school_id):
     else:
         alerts.append(
             alert(
-                'No past-due invoices are currently recorded',
+                'No past-due invoice balances are currently recorded',
                 'Low',
                 'Continue routine receivables review.',
             )
@@ -61,7 +73,7 @@ def billing_live_payload(school_id):
         meta={
             'school_id': str(school_id),
             'served_from': 'live_db',
-            'source': 'billing_invoice_and_ledger_payment',
+            'source': 'billing_invoice_ledger_allocations_and_payments',
             'billed_total': str(billed_total),
             'paid_total': str(paid_total),
             'outstanding_total': str(outstanding_total),
