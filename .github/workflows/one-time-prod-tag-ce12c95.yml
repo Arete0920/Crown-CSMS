@@ -123,12 +123,14 @@ jobs:
               prod_candidates = [
                   run for run in list_runs("deploy-prod.yml")
                   if run.get("created_at", "") >= cutoff
-                  and run.get("display_title") == f"Production Deploy ({deploy_tag})"
               ]
               if prod_candidates:
                   prod_run = sorted(prod_candidates, key=lambda run: run["created_at"])[-1]
                   print(f"Reusing existing Production Deploy run {prod_run['id']}")
               else:
+                  prod_dispatch_at = (
+                      dt.datetime.now(dt.timezone.utc) - dt.timedelta(seconds=5)
+                  ).replace(microsecond=0).isoformat().replace("+00:00", "Z")
                   request(
                       "POST",
                       "actions/workflows/deploy-prod.yml/dispatches",
@@ -137,8 +139,8 @@ jobs:
                   prod_run = wait_for_matching_run(
                       "deploy-prod.yml",
                       lambda run: (
-                          run.get("created_at", "") >= cutoff
-                          and run.get("display_title") == f"Production Deploy ({deploy_tag})"
+                          run.get("created_at", "") >= prod_dispatch_at
+                          and run.get("head_sha") == observer_sha
                       ),
                   )
 
@@ -158,27 +160,37 @@ jobs:
               if not identity_steps or any(step.get("conclusion") != "success" for step in identity_steps):
                   raise RuntimeError("Production Deploy lacks successful exact workflow/Azure/live SHA identity proof")
 
-              dashboard_dispatch_at = (
-                  dt.datetime.now(dt.timezone.utc) - dt.timedelta(seconds=5)
-              ).replace(microsecond=0).isoformat().replace("+00:00", "Z")
-              request(
-                  "POST",
-                  "actions/workflows/deploy-dashboard.yml/dispatches",
-                  {
-                      "ref": "main",
-                      "inputs": {
-                          "deploy_label": f"{deploy_tag}-dashboard",
-                          "backend_deploy_tag": deploy_tag,
+              dashboard_candidates = [
+                  run for run in list_runs("deploy-dashboard.yml")
+                  if run.get("created_at", "") >= cutoff
+              ]
+              if dashboard_candidates:
+                  dashboard_run = sorted(
+                      dashboard_candidates, key=lambda run: run["created_at"]
+                  )[-1]
+                  print(f"Reusing existing dashboard run {dashboard_run['id']}")
+              else:
+                  dashboard_dispatch_at = (
+                      dt.datetime.now(dt.timezone.utc) - dt.timedelta(seconds=5)
+                  ).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+                  request(
+                      "POST",
+                      "actions/workflows/deploy-dashboard.yml/dispatches",
+                      {
+                          "ref": "main",
+                          "inputs": {
+                              "deploy_label": f"{deploy_tag}-dashboard",
+                              "backend_deploy_tag": deploy_tag,
+                          },
                       },
-                  },
-              )
-              dashboard_run = wait_for_matching_run(
-                  "deploy-dashboard.yml",
-                  lambda run: (
-                      run.get("created_at", "") >= dashboard_dispatch_at
-                      and run.get("head_sha") == observer_sha
-                  ),
-              )
+                  )
+                  dashboard_run = wait_for_matching_run(
+                      "deploy-dashboard.yml",
+                      lambda run: (
+                          run.get("created_at", "") >= dashboard_dispatch_at
+                          and run.get("head_sha") == observer_sha
+                      ),
+                  )
               dashboard_run = wait_for_completion(dashboard_run["id"])
               if dashboard_run.get("conclusion") != "success":
                   raise RuntimeError(
