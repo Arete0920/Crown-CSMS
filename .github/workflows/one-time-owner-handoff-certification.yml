@@ -1,0 +1,294 @@
+name: One-Time Owner Handoff Certification
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/one-time-owner-handoff-certification.yml"
+
+permissions:
+  actions: write
+  contents: write
+  issues: write
+
+concurrency:
+  group: one-time-owner-handoff-certification
+  cancel-in-progress: false
+
+jobs:
+  certify-corrected-owner-handoff:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      BACKEND_DEPLOY_TAG: prod-deploy-20260808-ce12c95
+      BACKEND_SHA: ce12c9536ec85346b2446018fa8bfe27edb3ffa0
+      REQUIRED_REMEDIATION_SHA: 502ff20e10277816c60067fcd399d3b8232803ba
+      CONTROLLING_ISSUE: "1619"
+    steps:
+      - name: Checkout observer identity
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify remediation ancestry and immutable backend tag
+        shell: bash
+        run: |
+          set -euo pipefail
+          git merge-base --is-ancestor "$REQUIRED_REMEDIATION_SHA" "$GITHUB_SHA"
+          git fetch origin "refs/tags/$BACKEND_DEPLOY_TAG:refs/tags/$BACKEND_DEPLOY_TAG"
+          actual_backend_sha="$(git rev-parse "refs/tags/$BACKEND_DEPLOY_TAG^{commit}")"
+          if [[ "$actual_backend_sha" != "$BACKEND_SHA" ]]; then
+            echo "ERROR: immutable backend tag mismatch. expected=$BACKEND_SHA actual=$actual_backend_sha" >&2
+            exit 1
+          fi
+          echo "Verified remediation ancestry: $REQUIRED_REMEDIATION_SHA -> $GITHUB_SHA"
+          echo "Verified immutable backend tag: $BACKEND_DEPLOY_TAG -> $BACKEND_SHA"
+
+      - name: Dispatch dashboard once and publish exact live proof
+        shell: python
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          OBSERVER_SHA: ${{ github.sha }}
+          OBSERVER_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          RUN_ATTEMPT: ${{ github.run_attempt }}
+        run: |
+          import io
+          import json
+          import os
+          import time
+          import urllib.error
+          import urllib.parse
+          import urllib.request
+          import zipfile
+
+          token = os.environ["GH_TOKEN"]
+          repository = os.environ["REPOSITORY"]
+          observer_sha = os.environ["OBSERVER_SHA"]
+          observer_run_url = os.environ["OBSERVER_RUN_URL"]
+          run_attempt = int(os.environ["RUN_ATTEMPT"])
+          temp_branch = f"owner-handoff-cert-{observer_sha[:12]}"
+          temp_branch_removed = False
+          backend_tag = os.environ["BACKEND_DEPLOY_TAG"]
+          backend_sha = os.environ["BACKEND_SHA"]
+          remediation_sha = os.environ["REQUIRED_REMEDIATION_SHA"]
+          issue_number = os.environ["CONTROLLING_ISSUE"]
+          workflow = "deploy-dashboard.yml"
+          api_root = f"https://api.github.com/repos/{repository}"
+
+          def request(method, path_or_url, payload=None, raw=False):
+              url = path_or_url if path_or_url.startswith("https://") else f"{api_root}/{path_or_url.lstrip('/')}"
+              data = None if payload is None else json.dumps(payload).encode("utf-8")
+              headers = {
+                  "Accept": "application/vnd.github+json",
+                  "Authorization": f"Bearer {token}",
+                  "X-GitHub-Api-Version": "2022-11-28",
+              }
+              if data is not None:
+                  headers["Content-Type"] = "application/json"
+              req = urllib.request.Request(url, data=data, headers=headers, method=method)
+              with urllib.request.urlopen(req, timeout=60) as response:
+                  body = response.read()
+              if raw:
+                  return body
+              return json.loads(body.decode("utf-8")) if body else {}
+
+          def list_dispatch_runs():
+              query = urllib.parse.urlencode({"event": "workflow_dispatch", "per_page": 100})
+              return request("GET", f"actions/workflows/{workflow}/runs?{query}").get("workflow_runs", [])
+
+          def matching_dashboard_runs():
+              return [run for run in list_dispatch_runs() if run.get("head_sha") == observer_sha]
+
+          def wait_for_matching_run(timeout_seconds=300):
+              deadline = time.time() + timeout_seconds
+              while time.time() < deadline:
+                  matches = matching_dashboard_runs()
+                  if len(matches) == 1:
+                      return matches[0]
+                  if len(matches) > 1:
+                      raise RuntimeError("Multiple dashboard runs resolve to the exact observer SHA")
+                  time.sleep(10)
+              raise RuntimeError("Timed out locating the dashboard run for the exact observer SHA")
+
+          def create_temp_branch():
+              try:
+                  request(
+                      "POST",
+                      "git/refs",
+                      {"ref": f"refs/heads/{temp_branch}", "sha": observer_sha},
+                  )
+              except urllib.error.HTTPError as exc:
+                  if exc.code != 422:
+                      raise
+                  existing = request("GET", f"git/ref/heads/{temp_branch}")
+                  if existing.get("object", {}).get("sha") != observer_sha:
+                      raise RuntimeError("Existing temporary dispatch branch has the wrong SHA") from exc
+
+          def delete_temp_branch():
+              try:
+                  request("DELETE", f"git/refs/heads/{temp_branch}")
+              except urllib.error.HTTPError as exc:
+                  if exc.code != 404:
+                      raise
+
+          def wait_for_completion(run_id, timeout_seconds=5400):
+              deadline = time.time() + timeout_seconds
+              while time.time() < deadline:
+                  run = request("GET", f"actions/runs/{run_id}")
+                  if run.get("status") == "completed":
+                      return run
+                  time.sleep(30)
+              raise RuntimeError(f"Timed out waiting for dashboard run {run_id}")
+
+          def post_issue_comment(body):
+              request("POST", f"issues/{issue_number}/comments", {"body": body})
+
+          def download_run_logs(run_id):
+              archive = request("GET", f"actions/runs/{run_id}/logs", raw=True)
+              with zipfile.ZipFile(io.BytesIO(archive)) as bundle:
+                  return "\n".join(
+                      bundle.read(name).decode("utf-8", "replace")
+                      for name in bundle.namelist()
+                      if not name.endswith("/")
+                  )
+
+          try:
+              matches = matching_dashboard_runs()
+              if len(matches) > 1:
+                  raise RuntimeError("Multiple dashboard runs resolve to the exact observer SHA")
+              if matches:
+                  dashboard_run = matches[0]
+                  print(f"Reusing exact-SHA dashboard run {dashboard_run['id']}")
+              else:
+                  if run_attempt != 1:
+                      raise RuntimeError("Rerun attempt cannot dispatch a second dashboard run")
+                  create_temp_branch()
+                  request(
+                      "POST",
+                      f"actions/workflows/{workflow}/dispatches",
+                      {
+                          "ref": temp_branch,
+                          "inputs": {
+                              "deploy_label": f"owner-handoff-{remediation_sha[:7]}",
+                              "backend_deploy_tag": backend_tag,
+                          },
+                      },
+                  )
+                  dashboard_run = wait_for_matching_run()
+
+              if dashboard_run.get("head_sha") != observer_sha:
+                  raise RuntimeError(
+                      f"Dashboard run source mismatch: expected={observer_sha} actual={dashboard_run.get('head_sha')}"
+                  )
+
+              dashboard_run = wait_for_completion(dashboard_run["id"])
+              if dashboard_run.get("conclusion") != "success":
+                  raise RuntimeError(
+                      f"Dashboard deployment/certification failed: conclusion={dashboard_run.get('conclusion')} "
+                      f"url={dashboard_run.get('html_url')}"
+                  )
+
+              logs = download_run_logs(dashboard_run["id"])
+              backend_marker = f"Manual backend authority resolved: {backend_tag} -> {backend_sha[:7]}"
+              if backend_marker not in logs:
+                  raise RuntimeError("Dashboard logs do not prove the exact immutable backend authority")
+              if observer_sha not in logs:
+                  raise RuntimeError("Dashboard logs do not prove the exact deployed frontend source")
+
+              jobs = request("GET", f"actions/runs/{dashboard_run['id']}/jobs?per_page=100").get("jobs", [])
+              required_steps = {
+                  "Validate exact backend identity before deploy",
+                  "Wait for exact frontend and backend deployment",
+                  "Validate passwordless Heritage demo session",
+                  "Run production certification crawler against deployed runtime",
+              }
+              observed_steps = {
+                  step.get("name"): step.get("conclusion")
+                  for job in jobs
+                  for step in job.get("steps", [])
+                  if step.get("name") in required_steps
+              }
+              missing_or_failed = sorted(
+                  name for name in required_steps if observed_steps.get(name) != "success"
+              )
+              if missing_or_failed:
+                  raise RuntimeError(
+                      "Required deployment/certification steps are not successful: "
+                      + ", ".join(missing_or_failed)
+                  )
+
+              artifacts = request(
+                  "GET", f"actions/runs/{dashboard_run['id']}/artifacts?per_page=100"
+              ).get("artifacts", [])
+              cert_artifacts = [
+                  artifact for artifact in artifacts
+                  if artifact.get("name", "").startswith("production-certification-evidence-")
+                  and not artifact.get("expired", False)
+              ]
+              if not cert_artifacts:
+                  raise RuntimeError("Dashboard run produced no production certification evidence artifact")
+              cert_artifact = sorted(cert_artifacts, key=lambda artifact: artifact["created_at"])[-1]
+              archive = request("GET", cert_artifact["archive_download_url"], raw=True)
+              with zipfile.ZipFile(io.BytesIO(archive)) as bundle:
+                  matrix_names = [
+                      name for name in bundle.namelist()
+                      if name.endswith("certification-matrix.json")
+                  ]
+                  if not matrix_names:
+                      raise RuntimeError("Certification artifact lacks certification-matrix.json")
+                  matrix = json.loads(bundle.read(matrix_names[0]).decode("utf-8"))
+
+              total = len(matrix)
+              passed = sum(1 for row in matrix if row.get("status") == "PASS")
+              failed = sum(1 for row in matrix if row.get("status") == "FAIL")
+              rows_with_errors = [
+                  row.get("id") or row.get("route") or "unknown"
+                  for row in matrix
+                  if row.get("errors")
+              ]
+              if (total, passed, failed) != (18, 18, 0) or rows_with_errors:
+                  raise RuntimeError(
+                      f"Live certification mismatch: total={total} passed={passed} "
+                      f"failed={failed} rows_with_errors={rows_with_errors}"
+                  )
+
+              delete_temp_branch()
+              temp_branch_removed = True
+
+              proof = f"""## Owner-handoff remediation deployment proof — PASS
+              
+              - Remediation merge: {remediation_sha}
+              - Exact deployed frontend source: {observer_sha}
+              - Immutable backend tag: {backend_tag}
+              - Exact backend SHA: {backend_sha}
+              - Dashboard deployment and embedded production certification: [run {dashboard_run['id']}]({dashboard_run['html_url']}) — success
+              - Certification artifact: {cert_artifact['name']}
+              - Required deployment/identity/session/crawler steps: all successful
+              - Strengthened live certification: {passed}/{total} PASS, {failed} FAIL, zero rows with recorded errors
+              - Temporary exact-SHA dispatch branch: removed
+              - Connector-readable observer: {observer_run_url}
+              
+              The observer performed no backend deployment and no tag creation, movement, deletion, or recreation. Issue #1619 remains open for independent evidence verification, observer cleanup, final URL review, identity reconciliation, and explicit reclosure."""
+              post_issue_comment("\n".join(line.strip() for line in proof.strip().splitlines()))
+              print("Owner-handoff remediation deployment proof published to issue #1619")
+          except Exception as exc:
+              failure = f"""## Owner-handoff remediation deployment proof — FAIL
+              
+              - Remediation merge: {remediation_sha}
+              - Observer source: {observer_sha}
+              - Immutable backend tag: {backend_tag}
+              - Expected backend SHA: {backend_sha}
+              - Observer: {observer_run_url}
+              - Failure: {str(exc)}
+              
+              Issue #1619 remains open. No handoff-ready or closure claim is made."""
+              post_issue_comment("\n".join(line.strip() for line in failure.strip().splitlines()))
+              raise
+          finally:
+              if not temp_branch_removed:
+                  try:
+                      delete_temp_branch()
+                  except Exception as cleanup_exc:
+                      print(f"WARNING: temporary branch cleanup failed: {cleanup_exc}")
