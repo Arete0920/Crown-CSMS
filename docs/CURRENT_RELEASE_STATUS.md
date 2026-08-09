@@ -14,7 +14,7 @@
 - Production Deploy run: `31287503791`
 - Dashboard deployment/certification run: `31289219093`
 - Dashboard deployment source: `a3f89db677857a220b322b3f1bf094b3fdef3fa2`
-- Current development `main`: `ef9e1fa4f06d6600d60313059f35c0bb564f5a5b`
+- Pre-reconciliation development baseline (PR #1949): `ef9e1fa4f06d6600d60313059f35c0bb564f5a5b`
 
 Production Deploy completed migration authority, exact checkout verification, tests, container build and scan, Azure deployment, deployed build-SHA verification, tenant-aware integrity, health, and end-to-end release identity successfully.
 

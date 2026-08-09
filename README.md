@@ -10,7 +10,7 @@ Christian School Management Solution
 - Dashboard deployment and live certification: [run 31289219093](https://github.com/tcmegahan/Crown2026/actions/runs/31289219093)
 - Dashboard deployment source: `a3f89db677857a220b322b3f1bf094b3fdef3fa2`
 - Live certification: `18/18 PASS`, `0 FAIL`
-- Current development `main` after observer cleanup: `ef9e1fa4f06d6600d60313059f35c0bb564f5a5b`
+- Post-certification observer-cleanup baseline (PR #1949): `ef9e1fa4f06d6600d60313059f35c0bb564f5a5b`
 - Payment processing: disabled, fail closed, and deferred to a future owner
 
 The certified backend, deployed dashboard source, and current development head are separate identities. Later commits do not inherit production certification automatically.
