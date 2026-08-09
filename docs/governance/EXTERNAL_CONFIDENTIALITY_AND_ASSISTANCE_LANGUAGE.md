@@ -17,9 +17,9 @@ Named prospect records, when retained for internal planning, must be treated as 
 
 Approved external wording:
 
-> AI-assisted tools were used at times to improve efficiency and to support implementation, verification, testing, analysis, documentation, and repository operations. Human product ownership, technical direction, evidence review, acceptance, and release authority remained controlling.
+> Commercial development tools and automated services supported bounded implementation, verification, testing, analysis, documentation, and repository operations. Human product ownership, technical direction, evidence review, acceptance, and release authority remained controlling.
 
-External and active canonical materials must use vendor-neutral language. Specific AI product or provider names must not be used unless legally, technically, or historically necessary and explicitly approved for that context.
+External and active canonical materials must use vendor-neutral language and need not characterize development tooling unless disclosure is legally, contractually, technically, or historically necessary. Product or provider names require explicit approval for that context.
 
 Historical commits, archived artifacts, old scripts, issue records, and retained evidence may contain tool-specific names. Those records must not be rewritten or deleted merely to create a cleaner history. They are historical lineage, not current product, authorship, ownership, approval, or release authority.
 

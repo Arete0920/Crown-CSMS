@@ -1,58 +1,27 @@
 # CROWN Owner Handoff
 
 **Status:** Canonical transfer guide  
-**Last reconciled:** 2026-08-07  
-**Certified release:** `17573fb649f74a3ba0f1b3fbc9e004108b3cf228`  
-**Immutable tag:** `prod-deploy-20260804-17573fb`  
+**Last reconciled:** 2026-08-09  
+**Certified backend:** `ce12c9536ec85346b2446018fa8bfe27edb3ffa0`  
+**Immutable tag:** `prod-deploy-20260808-ce12c95`  
 **Controlling authority:** GitHub issue #1619
 
-## Current operating posture
+## Current posture
 
-CROWN completed bounded repository and production certification for the exact release identity above. The repository and product are ready for buyer diligence and transaction-specific transfer.
+CROWN has a bounded certified production release. Actual ownership turnover remains pending an identified buyer, buyer acceptance, successor-controlled accounts, approved access transfer, credential rotation, and seller-access removal. Payment processing remains disabled and fail closed.
 
-Actual buyer turnover remains pending an identified buyer, buyer acceptance, successor account creation, approved access transfer, credential rotation, and seller-access removal. External payment processing remains disabled, fails closed, and is deferred to the new owner.
+## Transfer sequence
 
-This guide does not expand the certified scope, certify unsupported personas, activate payments, provide legal certification, or claim that buyer-specific transfer actions have occurred.
+1. Verify issue #1619 and `docs/CURRENT_RELEASE_STATUS.md`.
+2. Resolve the immutable tag to the certified backend SHA.
+3. Review production run `31287503791`, dashboard run `31289219093`, and the retained certification artifact.
+4. Review architecture, security, operations, privacy, limitations, provenance, and dependency records.
+5. Identify the successor and record acceptance of the certified scope and disclosed boundaries.
+6. Create successor-controlled accounts before removing seller access.
+7. Transfer repository, cloud, domain, certificate, monitoring, backup, vendor, contract, and billing authority.
+8. Rotate credentials, keys, tokens, webhooks, certificates, and recovery codes.
+9. Verify clean-clone setup, tests, build, deployment authority, monitoring, and any transaction-required recovery exercises.
+10. Update `CODEOWNERS`, repository rules, environment approvers, contacts, and notifications.
+11. Record final acceptance, exceptions, residual risks, and seller-access removal.
 
-## Repository start path
-
-1. `README.md`
-2. `docs/CURRENT_RELEASE_STATUS.md`
-3. GitHub issue #1619
-4. `docs/canonical/CANONICAL_DOCUMENT_INDEX.md`
-5. `docs/canonical/DILIGENCE_EVIDENCE_INDEX.md`
-6. `docs/canonical/REPOSITORY_MANIFEST.md`
-7. `docs/architecture/ARCHITECTURE_MAP.md`
-8. `docs/engineering/DEV_SETUP.md`
-9. `docs/operations/README.md`
-10. `SECURITY.md`
-
-## What transfers with the repository
-
-- application source, migrations, tests, and dependency locks;
-- CI, deployment, architecture, engineering, security, and operations material;
-- canonical diligence navigation and release authority;
-- repository history, issues, pull requests, tags, and release lineage.
-
-## External ownership transferred separately
-
-The authorized transaction must inventory and transfer GitHub administration, Azure resources and billing, domains and DNS, certificates, email and Microsoft 365, Entra registrations, monitoring, backups, incident contacts, integration accounts, contracts, licenses, trademarks, and other intellectual-property records. Secret values must never be committed.
-
-## Required transaction controls
-
-1. Identify and authorize the successor.
-2. Record buyer acceptance of the certified scope and disclosed residual risks.
-3. Add successor-controlled accounts before removing seller access.
-4. Transfer external-service ownership and billing.
-5. Rotate credentials, keys, certificates, tokens, webhooks, and recovery codes.
-6. Update `CODEOWNERS`, repository rules, environment approvers, contacts, and notifications.
-7. Verify a clean clone, setup, test, build, and approved deployment path.
-8. Verify the exact transferred SHA and deployed identity.
-9. Execute any transaction-required rollback, restore, rotation, monitoring, privacy, legal, or insurance work.
-10. Record final acceptance and seller-access removal.
-
-## Certified and unresolved boundaries
-
-Seller-complete technical certification is recorded in #1619. The following remain buyer-specific actions or disclosed operational maturity work unless separately executed: measured rollback/restore, exhaustive credential rotation and break-glass, expanded alert and incident exercises, jurisdiction and contract reconciliation, lifecycle data exercises, payment-provider activation, and final access transfer.
-
-Repository transfer alone does not establish legal compliance, payment readiness, customer suitability, or completion of transaction-specific turnover.
+Repository history includes diagnostic, superseded, and temporary release-control pull requests. They remain immutable engineering provenance but do not define the current operating model. Current work follows `docs/governance/CHANGE_MANAGEMENT.md`: one coherent, independently reversible outcome per pull request.

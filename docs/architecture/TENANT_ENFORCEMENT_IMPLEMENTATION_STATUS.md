@@ -88,9 +88,9 @@ Current source:
 
 ## Certified-release boundary
 
-The bounded supported-role/RBAC/tenant certification for production source `17573fb649f74a3ba0f1b3fbc9e004108b3cf228` is recorded as PASS/COMPLETE in `docs/CURRENT_RELEASE_STATUS.md` and #1619.
+The bounded supported-role/RBAC/tenant certification for production source `ce12c9536ec85346b2446018fa8bfe27edb3ffa0` is recorded as PASS/COMPLETE in `docs/CURRENT_RELEASE_STATUS.md` and #1619.
 
-This supporting record does not re-certify later development changes. Architecture hardening after that source requires its own exact-head CI and, if selected for production, the applicable exact-source deployment/certification process.
+This supporting record does not re-certify later development changes. Any later development change requires its own exact-head CI and, if selected for production, the applicable exact-source deployment and certification process.
 
 ## Remaining controlled convergence
 
@@ -119,7 +119,7 @@ Retirement requires:
 
 - ADR-0001 request-time tenant authority: **IMPLEMENTED / ACCEPTED**.
 - Certified bounded production tenant/RBAC proof: **PASS / COMPLETE for certified release identity**.
-- ADR-0003 background tenant contract: **ACCEPTED; key scheduled mutation paths hardened on final architecture branch**.
+- ADR-0003 background tenant contract: **ACCEPTED; key scheduled mutation paths implemented in current source, with production claims bounded by the exact certified release evidence**.
 - Client-supplied demo-role authorization authority: **REMOVED from sample-dashboard decision**.
 - Middleware compatibility retirement: **OPEN / NON-DESTRUCTIVE CONVERGENCE**.
 - Later development branch production certification: **NOT AUTOMATIC; exact-source evidence required before deployment**.
