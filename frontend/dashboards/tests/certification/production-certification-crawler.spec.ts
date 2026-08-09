@@ -194,10 +194,9 @@ async function bootstrapSandboxSession(
   const schoolId = typeof session.school_id === "string" && session.school_id ? session.school_id : tenant.schoolId;
   await seedClientAuthStorage(page, roleValue, schoolId, session.access);
 
-  const route = typeof session.route === "string" && session.route
-    ? session.route
-    : "/school-admin-dashboard";
-  await page.goto(absoluteLiveUrl(route), { waitUntil: "networkidle" });
+  // Authentication bootstrap establishes browser identity only. The certification
+  // case owns the single authoritative navigation to surface.route so requests
+  // cancelled by an intermediate bootstrap route cannot contaminate evidence.
   return true;
 }
 
