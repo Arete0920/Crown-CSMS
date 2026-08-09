@@ -1,4 +1,4 @@
-name: One-Time Production Tag ce12c95
+name: One-Time Production Dispatch ce12c95
 
 on:
   push:
@@ -8,14 +8,15 @@ on:
       - ".github/workflows/one-time-prod-tag-ce12c95.yml"
 
 permissions:
-  contents: write
+  actions: write
+  contents: read
 
 concurrency:
-  group: one-time-prod-tag-ce12c95
+  group: one-time-prod-dispatch-ce12c95
   cancel-in-progress: false
 
 jobs:
-  create-production-tag:
+  dispatch-production-deploy:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -24,31 +25,40 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Create immutable production deployment tag
+      - name: Verify immutable production deployment tag
         shell: bash
         env:
           TARGET_SHA: ce12c9536ec85346b2446018fa8bfe27edb3ffa0
           DEPLOY_TAG: prod-deploy-20260808-ce12c95
         run: |
           set -euo pipefail
-          git fetch origin --tags --force
-
-          resolved="$(git rev-parse "${TARGET_SHA}^{commit}")"
-          if [[ "$resolved" != "$TARGET_SHA" ]]; then
-            echo "ERROR: target did not resolve to the required immutable SHA. expected=$TARGET_SHA actual=$resolved" >&2
+          if ! git fetch origin "refs/tags/$DEPLOY_TAG:refs/tags/$DEPLOY_TAG"; then
+            echo "ERROR: unable to fetch required immutable production tag: $DEPLOY_TAG" >&2
             exit 1
           fi
 
-          if git show-ref --verify --quiet "refs/tags/$DEPLOY_TAG"; then
-            existing="$(git rev-parse "refs/tags/$DEPLOY_TAG^{}")"
-            if [[ "$existing" == "$TARGET_SHA" ]]; then
-              echo "Tag already exists at the correct immutable SHA: $DEPLOY_TAG -> $TARGET_SHA"
-              exit 0
-            fi
-            echo "ERROR: refusing to overwrite existing tag $DEPLOY_TAG at $existing" >&2
+          if ! git show-ref --verify --quiet "refs/tags/$DEPLOY_TAG"; then
+            echo "ERROR: required immutable production tag does not exist: $DEPLOY_TAG" >&2
             exit 1
           fi
 
-          git tag "$DEPLOY_TAG" "$TARGET_SHA"
-          git push origin "refs/tags/$DEPLOY_TAG"
-          echo "Created immutable production tag: $DEPLOY_TAG -> $TARGET_SHA"
+          existing="$(git rev-parse "refs/tags/$DEPLOY_TAG^{commit}")"
+          if [[ "$existing" != "$TARGET_SHA" ]]; then
+            echo "ERROR: immutable production tag target mismatch. expected=$TARGET_SHA actual=$existing" >&2
+            exit 1
+          fi
+
+          echo "Verified immutable production tag: $DEPLOY_TAG -> $TARGET_SHA"
+
+      - name: Dispatch guarded Production Deploy
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DEPLOY_TAG: prod-deploy-20260808-ce12c95
+        run: |
+          set -euo pipefail
+          payload="$(jq -nc --arg ref "main" --arg deploy_tag "$DEPLOY_TAG"             '{ref: $ref, inputs: {deploy_tag: $deploy_tag}}')"
+
+          curl --fail-with-body --silent --show-error             --connect-timeout 15             --max-time 60             --request POST             --header "Accept: application/vnd.github+json"             --header "Content-Type: application/json"             --header "Authorization: Bearer $GH_TOKEN"             --header "X-GitHub-Api-Version: 2022-11-28"             "https://api.github.com/repos/${{ github.repository }}/actions/workflows/deploy-prod.yml/dispatches"             --data "$payload"
+
+          echo "Dispatched deploy-prod.yml for immutable tag: $DEPLOY_TAG"
