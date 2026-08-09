@@ -73,8 +73,8 @@ Unavailable for this solo-developer operating model.
 Control path used:
 Solo-developer approved workaround using GitHub connector evidence, GitHub required checks, CI/release gates, PR diff review, and explicit PASS / NO-GO evidence packet.
 
-ChatGPT role:
-Support, architecture, engineering review, and evidence audit only. Not independent human approval authority.
+Development-support role:
+Support, architecture, engineering review, and evidence audit only. Automated assistance is not approval authority.
 ```
 
 ## 6. Required Enforcement
@@ -89,12 +89,6 @@ Until it is required by ruleset, any PR failing this gate remains draft, blocked
 
 Dashboard certification PRs must not commit generated certification truth dumps as durable source truth.
 
-Dashboard certification work should keep these lanes separate:
-
-1. implementation PR,
-2. evidence-generation script PR,
-3. compact evidence-summary PR,
-4. denominator/state reconciliation PR,
-5. certification promotion PR.
+Dashboard certification work should remain in one coherent, independently reversible pull request containing the implementation, evidence-generation scripts, compact evidence summary, denominator/state reconciliation, and certification promotion required for the same outcome. A separate pull request requires an independent risk, authority, or rollback boundary under `docs/governance/CHANGE_MANAGEMENT.md`.
 
 A dashboard is not certified until route, permission, tenant, runtime/browser, evidence packet, state/matrix, and solo-developer workaround record all agree.

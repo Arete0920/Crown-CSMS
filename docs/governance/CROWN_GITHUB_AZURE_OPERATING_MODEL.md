@@ -9,8 +9,8 @@ Primary rule: GitHub is the deployment truth source. Azure deploys only from ver
 The approved Crown engineering and deployment chain is:
 
 ```text
-ChatGPT
-  -> architecture, engineering guidance, audit, release-gate review
+Human-directed engineering support
+  -> architecture, implementation guidance, audit, and release-gate review
 GitHub connector
   -> repo truth, branch truth, PR truth, workflow truth, artifact truth
 GitHub Actions
@@ -161,7 +161,7 @@ A release or deployment is NO-GO when any of these are true:
 
 The product owner cannot serve as independent reviewer for work they own or directed. Review and approval must be routed through an appropriate independent reviewer, required GitHub ruleset, or release authority.
 
-ChatGPT may inspect, audit, draft, patch, and recommend. ChatGPT must not be treated as the independent human approval authority.
+Development-support tools and automated services may inspect, audit, draft, patch, and recommend. They must not be treated as independent human approval authorities.
 
 ## 9. Crown Evidence Language
 

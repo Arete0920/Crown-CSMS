@@ -57,4 +57,4 @@ A focused ADR is required when changing:
 - deployment identity, rollback, restore, or secret authority;
 - payment-provider activation and settlement boundaries.
 
-Runtime implementation and documentation-only authority changes should normally use separate pull requests.
+Keep runtime implementation, tests, documentation, workflow corrections, and review fixes for the same coherent outcome in one pull request. Use a separate pull request only for an independent risk, authority, or rollback boundary under `docs/governance/CHANGE_MANAGEMENT.md`.

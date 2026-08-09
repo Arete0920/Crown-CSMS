@@ -178,8 +178,15 @@ def main() -> int:
     if "INDEPENDENT_REVIEW_REQUIRED" in body and "SOLO_DEVELOPER_APPROVED_WORKAROUND" not in body:
         failures.append("PR body waits for independent review without solo-developer workaround control path")
 
-    if "SOLO_DEVELOPER_APPROVED_WORKAROUND" in body and "ChatGPT" in body and "approval authority" not in body:
-        failures.append("solo-developer workaround language must state ChatGPT is not approval authority")
+    approval_disclaimer = re.search(
+        r"\bnot\b[^\n.]{0,120}\bapproval authorit(?:y|ies)\b",
+        body,
+        flags=re.IGNORECASE,
+    )
+    if "SOLO_DEVELOPER_APPROVED_WORKAROUND" in body and not approval_disclaimer:
+        failures.append(
+            "solo-developer workaround language must state that automated assistance is not approval authority"
+        )
 
     print("# CROWN PR Hygiene Gate")
     print(f"base_ref={base_ref}")
