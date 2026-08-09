@@ -2,7 +2,7 @@
 
 **Status:** Preparation control; buyer turnover is not yet authorized  
 **Last reconciled:** 2026-08-09  
-**Repository baseline:** `ef9e1fa4f06d6600d60313059f35c0bb564f5a5b`  
+**Pre-reconciliation register baseline (PR #1949):** `ef9e1fa4f06d6600d60313059f35c0bb564f5a5b`  
 **Certified backend:** `ce12c9536ec85346b2446018fa8bfe27edb3ffa0`  
 **Controlling authority:** GitHub issue #1619
 
