@@ -1,4 +1,4 @@
-name: One-Time Production Dispatch ce12c95
+name: One-Time Production Closure ce12c95
 
 on:
   push:
@@ -10,15 +10,21 @@ on:
 permissions:
   actions: write
   contents: read
+  issues: write
 
 concurrency:
-  group: one-time-prod-dispatch-ce12c95
+  group: one-time-prod-closure-ce12c95
   cancel-in-progress: false
 
 jobs:
-  dispatch-production-deploy:
+  close-production-release:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 120
+    env:
+      DEPLOY_TAG: prod-deploy-20260808-ce12c95
+      TARGET_SHA: ce12c9536ec85346b2446018fa8bfe27edb3ffa0
+      CLOSURE_ISSUE: "1940"
+      RUN_CUTOFF: "2026-08-09T00:00:00Z"
     steps:
       - name: Checkout repository history
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
@@ -27,38 +33,251 @@ jobs:
 
       - name: Verify immutable production deployment tag
         shell: bash
-        env:
-          TARGET_SHA: ce12c9536ec85346b2446018fa8bfe27edb3ffa0
-          DEPLOY_TAG: prod-deploy-20260808-ce12c95
         run: |
           set -euo pipefail
           if ! git fetch origin "refs/tags/$DEPLOY_TAG:refs/tags/$DEPLOY_TAG"; then
             echo "ERROR: unable to fetch required immutable production tag: $DEPLOY_TAG" >&2
             exit 1
           fi
-
-          if ! git show-ref --verify --quiet "refs/tags/$DEPLOY_TAG"; then
-            echo "ERROR: required immutable production tag does not exist: $DEPLOY_TAG" >&2
+          if ! existing="$(git rev-parse "refs/tags/$DEPLOY_TAG^{commit}")"; then
+            echo "ERROR: required immutable production tag is not resolvable: $DEPLOY_TAG" >&2
             exit 1
           fi
-
-          existing="$(git rev-parse "refs/tags/$DEPLOY_TAG^{commit}")"
           if [[ "$existing" != "$TARGET_SHA" ]]; then
-            echo "ERROR: immutable production tag target mismatch. expected=$TARGET_SHA actual=$existing" >&2
+            echo "ERROR: immutable tag mismatch. expected=$TARGET_SHA actual=$existing" >&2
             exit 1
           fi
-
           echo "Verified immutable production tag: $DEPLOY_TAG -> $TARGET_SHA"
 
-      - name: Dispatch guarded Production Deploy
-        shell: bash
+      - name: Complete and publish production closure proof
+        shell: python
         env:
           GH_TOKEN: ${{ github.token }}
-          DEPLOY_TAG: prod-deploy-20260808-ce12c95
+          REPOSITORY: ${{ github.repository }}
+          OBSERVER_SHA: ${{ github.sha }}
+          OBSERVER_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
-          set -euo pipefail
-          payload="$(jq -nc --arg ref "main" --arg deploy_tag "$DEPLOY_TAG"             '{ref: $ref, inputs: {deploy_tag: $deploy_tag}}')"
+          import io
+          import json
+          import os
+          import time
+          import urllib.error
+          import urllib.parse
+          import urllib.request
+          import zipfile
 
-          curl --fail-with-body --silent --show-error             --connect-timeout 15             --max-time 60             --request POST             --header "Accept: application/vnd.github+json"             --header "Content-Type: application/json"             --header "Authorization: Bearer $GH_TOKEN"             --header "X-GitHub-Api-Version: 2022-11-28"             "https://api.github.com/repos/${{ github.repository }}/actions/workflows/deploy-prod.yml/dispatches"             --data "$payload"
+          token = os.environ["GH_TOKEN"]
+          repository = os.environ["REPOSITORY"]
+          observer_sha = os.environ["OBSERVER_SHA"]
+          observer_run_url = os.environ["OBSERVER_RUN_URL"]
+          deploy_tag = os.environ["DEPLOY_TAG"]
+          target_sha = os.environ["TARGET_SHA"]
+          issue_number = os.environ["CLOSURE_ISSUE"]
+          cutoff = os.environ["RUN_CUTOFF"]
+          api_root = f"https://api.github.com/repos/{repository}"
 
-          echo "Dispatched deploy-prod.yml for immutable tag: $DEPLOY_TAG"
+          def request(method, path_or_url, payload=None, raw=False):
+              url = path_or_url if path_or_url.startswith("https://") else f"{api_root}/{path_or_url.lstrip('/')}"
+              data = None if payload is None else json.dumps(payload).encode("utf-8")
+              headers = {
+                  "Accept": "application/vnd.github+json",
+                  "Authorization": f"Bearer {token}",
+                  "X-GitHub-Api-Version": "2022-11-28",
+              }
+              if data is not None:
+                  headers["Content-Type"] = "application/json"
+              req = urllib.request.Request(url, data=data, headers=headers, method=method)
+              with urllib.request.urlopen(req, timeout=60) as response:
+                  body = response.read()
+              if raw:
+                  return body
+              return json.loads(body.decode("utf-8")) if body else {}
+
+          def list_runs(workflow):
+              query = urllib.parse.urlencode({"event": "workflow_dispatch", "per_page": 100})
+              return request("GET", f"actions/workflows/{workflow}/runs?{query}").get("workflow_runs", [])
+
+          def wait_for_matching_run(workflow, predicate, timeout_seconds=300):
+              deadline = time.time() + timeout_seconds
+              while time.time() < deadline:
+                  matches = [run for run in list_runs(workflow) if predicate(run)]
+                  if matches:
+                      return sorted(matches, key=lambda run: run["created_at"])[-1]
+                  time.sleep(10)
+              raise RuntimeError(f"Timed out locating workflow_dispatch run for {workflow}")
+
+          def wait_for_completion(run_id, timeout_seconds=5400):
+              deadline = time.time() + timeout_seconds
+              while time.time() < deadline:
+                  run = request("GET", f"actions/runs/{run_id}")
+                  if run.get("status") == "completed":
+                      return run
+                  time.sleep(30)
+              raise RuntimeError(f"Timed out waiting for workflow run {run_id}")
+
+          def post_issue_comment(body):
+              request("POST", f"issues/{issue_number}/comments", {"body": body})
+
+          def download_run_logs(run_id):
+              archive = request("GET", f"actions/runs/{run_id}/logs", raw=True)
+              with zipfile.ZipFile(io.BytesIO(archive)) as bundle:
+                  return "\n".join(
+                      bundle.read(name).decode("utf-8", "replace")
+                      for name in bundle.namelist()
+                      if not name.endswith("/")
+                  )
+
+          try:
+              prod_candidates = [
+                  run for run in list_runs("deploy-prod.yml")
+                  if run.get("created_at", "") >= cutoff
+              ]
+              if len(prod_candidates) > 1:
+                  urls = ", ".join(run.get("html_url", str(run["id"])) for run in prod_candidates)
+                  raise RuntimeError(
+                      f"Ambiguous Production Deploy runs after incident cutoff: {urls}"
+                  )
+              if prod_candidates:
+                  prod_run = prod_candidates[0]
+                  print(f"Reusing unique Production Deploy run {prod_run['id']}")
+              else:
+                  known_prod_ids = {run["id"] for run in list_runs("deploy-prod.yml")}
+                  request(
+                      "POST",
+                      "actions/workflows/deploy-prod.yml/dispatches",
+                      {"ref": "main", "inputs": {"deploy_tag": deploy_tag}},
+                  )
+                  prod_run = wait_for_matching_run(
+                      "deploy-prod.yml",
+                      lambda run: run.get("id") not in known_prod_ids,
+                  )
+
+              prod_run = wait_for_completion(prod_run["id"])
+              if prod_run.get("conclusion") != "success":
+                  raise RuntimeError(
+                      f"Production Deploy failed: conclusion={prod_run.get('conclusion')} url={prod_run.get('html_url')}"
+                  )
+
+              prod_logs = download_run_logs(prod_run["id"])
+              if deploy_tag not in prod_logs or target_sha not in prod_logs:
+                  raise RuntimeError(
+                      "Production Deploy logs do not correlate the run to the exact immutable tag and target SHA"
+                  )
+
+              prod_jobs = request("GET", f"actions/runs/{prod_run['id']}/jobs?per_page=100").get("jobs", [])
+              identity_steps = [
+                  step
+                  for job in prod_jobs
+                  for step in job.get("steps", [])
+                  if step.get("name") == "Verify release identity end-to-end"
+              ]
+              if not identity_steps or any(step.get("conclusion") != "success" for step in identity_steps):
+                  raise RuntimeError("Production Deploy lacks successful exact workflow/Azure/live SHA identity proof")
+
+              dashboard_candidates = [
+                  run for run in list_runs("deploy-dashboard.yml")
+                  if run.get("created_at", "") >= cutoff
+              ]
+              if len(dashboard_candidates) > 1:
+                  urls = ", ".join(
+                      run.get("html_url", str(run["id"])) for run in dashboard_candidates
+                  )
+                  raise RuntimeError(
+                      f"Ambiguous dashboard runs after incident cutoff: {urls}"
+                  )
+              if dashboard_candidates:
+                  dashboard_run = dashboard_candidates[0]
+                  print(f"Reusing unique dashboard run {dashboard_run['id']}")
+              else:
+                  known_dashboard_ids = {
+                      run["id"] for run in list_runs("deploy-dashboard.yml")
+                  }
+                  request(
+                      "POST",
+                      "actions/workflows/deploy-dashboard.yml/dispatches",
+                      {
+                          "ref": "main",
+                          "inputs": {
+                              "deploy_label": f"{deploy_tag}-dashboard",
+                              "backend_deploy_tag": deploy_tag,
+                          },
+                      },
+                  )
+                  dashboard_run = wait_for_matching_run(
+                      "deploy-dashboard.yml",
+                      lambda run: run.get("id") not in known_dashboard_ids,
+                  )
+              dashboard_run = wait_for_completion(dashboard_run["id"])
+              if dashboard_run.get("conclusion") != "success":
+                  raise RuntimeError(
+                      f"Dashboard deployment/certification failed: conclusion={dashboard_run.get('conclusion')} "
+                      f"url={dashboard_run.get('html_url')}"
+                  )
+
+              dashboard_logs = download_run_logs(dashboard_run["id"])
+              dashboard_marker = (
+                  f"Manual backend authority resolved: {deploy_tag} -> {target_sha[:7]}"
+              )
+              if dashboard_marker not in dashboard_logs:
+                  raise RuntimeError(
+                      "Dashboard logs do not correlate the run to the exact immutable backend tag"
+                  )
+
+              artifacts = request(
+                  "GET", f"actions/runs/{dashboard_run['id']}/artifacts?per_page=100"
+              ).get("artifacts", [])
+              cert_artifacts = [
+                  artifact for artifact in artifacts
+                  if artifact.get("name", "").startswith("production-certification-evidence-")
+                  and not artifact.get("expired", False)
+              ]
+              if not cert_artifacts:
+                  raise RuntimeError("Dashboard run produced no production certification evidence artifact")
+              cert_artifact = sorted(cert_artifacts, key=lambda artifact: artifact["created_at"])[-1]
+              archive = request("GET", cert_artifact["archive_download_url"], raw=True)
+              with zipfile.ZipFile(io.BytesIO(archive)) as bundle:
+                  matrix_names = [
+                      name for name in bundle.namelist()
+                      if name.endswith("certification-matrix.json")
+                  ]
+                  if not matrix_names:
+                      raise RuntimeError("Certification artifact lacks certification-matrix.json")
+                  matrix = json.loads(bundle.read(matrix_names[0]).decode("utf-8"))
+
+              total = len(matrix)
+              passed = sum(1 for row in matrix if row.get("status") == "PASS")
+              failed = sum(1 for row in matrix if row.get("status") == "FAIL")
+              if (total, passed, failed) != (18, 18, 0):
+                  raise RuntimeError(
+                      f"Live certification mismatch: total={total} passed={passed} failed={failed}"
+                  )
+
+              proof = f"""## Production closure proof — PASS
+
+              - Immutable tag: `{deploy_tag}`
+              - Exact backend SHA: `{target_sha}`
+              - Production Deploy: [run {prod_run['id']}]({prod_run['html_url']}) — `success`
+              - Workflow/Azure/live backend SHA identity step: `success`
+              - Dashboard deployment and embedded production certification: [run {dashboard_run['id']}]({dashboard_run['html_url']}) — `success`
+              - Certification artifact: `{cert_artifact['name']}`
+              - Live certification: **{passed}/{total} PASS**, **{failed} FAIL**
+              - Connector-readable observer: {observer_run_url}
+
+              The observer performed no tag mutation and verified the tag's current exact resolution.
+              """
+              post_issue_comment("\n".join(line.strip() for line in proof.strip().splitlines()))
+              print("Production closure proof published to issue #1940")
+          except Exception as exc:
+              failure = f"""## Production closure proof — FAIL
+
+              - Immutable tag: `{deploy_tag}`
+              - Expected backend SHA: `{target_sha}`
+              - Observer: {observer_run_url}
+              - Failure: `{str(exc)}`
+
+              Issue #1940 remains open. No successful closure is claimed.
+              """
+              try:
+                  post_issue_comment("\n".join(line.strip() for line in failure.strip().splitlines()))
+              finally:
+                  raise
