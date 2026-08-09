@@ -9,18 +9,43 @@ from .payload_contract import alert, build_dashboard_payload, metric, queue_item
 def billing_live_payload(school_id):
     """Build the billing dashboard from tenant-scoped production billing/ledger rows."""
     from billing.models import Invoice
-    from billing.reconciliation import compute_invoice_balance_due
-    from ledger.models import Payment
+    from ledger.models import Allocation, Payment
 
     today = timezone.localdate()
-    invoices = Invoice.objects.filter(school_id=school_id)
+    invoices = list(Invoice.objects.filter(school_id=school_id))
     payments = Payment.objects.filter(school_id=school_id, is_void=False)
 
-    billed_total = invoices.aggregate(total=Sum('total_amount'))['total'] or Decimal('0.00')
-    invoice_balances = [
-        (invoice, compute_invoice_balance_due(invoice))
+    billed_total = sum(
+        (invoice.total_amount or Decimal('0.00') for invoice in invoices),
+        Decimal('0.00'),
+    )
+
+    charge_ids = [
+        invoice.ledger_charge_id
         for invoice in invoices
+        if invoice.ledger_charge_id is not None
     ]
+    allocation_rows = (
+        Allocation.objects.filter(school_id=school_id, charge_id__in=charge_ids)
+        .values('charge_id')
+        .annotate(total=Sum('amount'))
+    )
+    allocated_by_charge = {
+        row['charge_id']: row['total'] or Decimal('0.00')
+        for row in allocation_rows
+    }
+
+    invoice_balances = []
+    for invoice in invoices:
+        allocated_total = allocated_by_charge.get(
+            invoice.ledger_charge_id,
+            Decimal('0.00'),
+        )
+        balance = (invoice.total_amount or Decimal('0.00')) - allocated_total
+        invoice_balances.append(
+            (invoice, balance if balance > Decimal('0.00') else Decimal('0.00'))
+        )
+
     outstanding_total = sum(
         (balance for _, balance in invoice_balances),
         Decimal('0.00'),
