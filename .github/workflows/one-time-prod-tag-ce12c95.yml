@@ -32,7 +32,10 @@ jobs:
           DEPLOY_TAG: prod-deploy-20260808-ce12c95
         run: |
           set -euo pipefail
-          git fetch origin "refs/tags/$DEPLOY_TAG:refs/tags/$DEPLOY_TAG"
+          if ! git fetch origin "refs/tags/$DEPLOY_TAG:refs/tags/$DEPLOY_TAG"; then
+            echo "ERROR: unable to fetch required immutable production tag: $DEPLOY_TAG" >&2
+            exit 1
+          fi
 
           if ! git show-ref --verify --quiet "refs/tags/$DEPLOY_TAG"; then
             echo "ERROR: required immutable production tag does not exist: $DEPLOY_TAG" >&2
