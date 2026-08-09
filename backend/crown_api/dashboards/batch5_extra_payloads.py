@@ -21,9 +21,9 @@ def billing_live_payload(school_id):
     )
 
     charge_ids = [
-        invoice.ledger_charge_id
+        ledger_charge_id
         for invoice in invoices
-        if invoice.ledger_charge_id is not None
+        if (ledger_charge_id := getattr(invoice, 'ledger_charge_id', None)) is not None
     ]
     allocation_rows = (
         Allocation.objects.filter(school_id=school_id, charge_id__in=charge_ids)
@@ -37,8 +37,9 @@ def billing_live_payload(school_id):
 
     invoice_balances = []
     for invoice in invoices:
+        ledger_charge_id = getattr(invoice, 'ledger_charge_id', None)
         allocated_total = allocated_by_charge.get(
-            invoice.ledger_charge_id,
+            ledger_charge_id,
             Decimal('0.00'),
         )
         balance = (invoice.total_amount or Decimal('0.00')) - allocated_total
