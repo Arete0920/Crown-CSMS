@@ -155,16 +155,13 @@ export const certificationMatrix: CertificationSurface[] = [
     persona: "sandbox-board",
     slug: "school-board",
   }),
-  {
+  dashboardSurface({
     id: "finance-route",
     label: "Finance route",
     route: "/finance",
-    kind: "route",
-    personas: ["sandbox-admin"],
-    tenants: ["heritage"],
-    expectedApiFragments: AUTH_API,
-    requireLiveProvenance: false,
-  },
+    persona: "sandbox-admin",
+    slug: "billing",
+  }),
   dashboardSurface({
     id: "admissions-dashboard",
     label: "Admissions dashboard",
@@ -182,5 +179,6 @@ export const certificationMatrix: CertificationSurface[] = [
     expectedApiFragments: [...AUTH_API, "/api/v1/wizards/"],
     requireLiveProvenance: true,
     provenanceRequiredApiFragments: ["/api/v1/wizards/"],
+    expectedText: ["Wizard Hub"],
   },
 ];

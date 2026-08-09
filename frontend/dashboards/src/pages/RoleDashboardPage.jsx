@@ -86,6 +86,7 @@ export default function RoleDashboardPage() {
         if (!mounted) return;
         console.error('[Dashboard] Dashboard summary fetch failed:', { error: err?.message || err });
         setError(err?.message || 'Failed to load dashboard');
+        setLoading(false);
       });
 
     return () => {
@@ -102,9 +103,13 @@ export default function RoleDashboardPage() {
   }, []);
 
   const roleLabel = role.charAt(0).toUpperCase() + role.slice(1);
-  const subtitle = generatedAt
-    ? `Updated ${new Date(generatedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`
-    : "Loading...";
+  const subtitle = loading
+    ? "Loading..."
+    : error
+      ? "Dashboard data unavailable"
+      : generatedAt
+        ? `Updated ${new Date(generatedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`
+        : "No dashboard data available";
 
   return (
     <CrownLayout

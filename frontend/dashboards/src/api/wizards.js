@@ -1,13 +1,13 @@
 /**
  * Wizard discovery API — Crown2026
- * Thin wrapper around the canonical apiFetch.
+ * Thin wrapper around the canonical authenticated JSON transport.
  */
-import { apiFetch } from "../lib/api";
+import { authenticatedJson } from "../utils/authClient";
 
 /**
  * Fetches the ordered list of registered wizards from the backend.
  * Returns { wizards: [{ key, slug, title, enabled }] }
  */
 export async function fetchWizards() {
-  return apiFetch("/api/v1/wizards/");
+  return authenticatedJson("/api/v1/wizards/");
 }
