@@ -1,6 +1,6 @@
 # CROWN Release Tag Policy
 
-**Last reconciled:** 2026-08-07
+**Last reconciled:** 2026-08-09
 
 ## Immutability
 
@@ -10,9 +10,9 @@ Every published release tag is immutable. Do not move, delete/recreate, or force
 
 | Tag | Commit | Status |
 |---|---|---|
-| `prod-deploy-20260804-17573fb` | `17573fb649f74a3ba0f1b3fbc9e004108b3cf228` | Certified production source |
+| `prod-deploy-20260808-ce12c95` | `ce12c9536ec85346b2446018fa8bfe27edb3ffa0` | Certified production source |
 
-Production deployment run: `30944978175`  
+Production deployment run: `31287503791`  
 Controlling authority: GitHub issue #1619
 
 ## Naming

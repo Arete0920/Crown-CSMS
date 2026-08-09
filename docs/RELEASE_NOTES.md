@@ -1,33 +1,23 @@
 # CROWN Release Notes
 
-## Certified bounded production release — 2026-08-04
+## Certified bounded production release — 2026-08-08
 
-- **Source:** `17573fb649f74a3ba0f1b3fbc9e004108b3cf228`
-- **Immutable tag:** `prod-deploy-20260804-17573fb`
-- **Production deployment run:** `30944978175`
+- **Source:** `ce12c9536ec85346b2446018fa8bfe27edb3ffa0`
+- **Immutable tag:** `prod-deploy-20260808-ce12c95`
+- **Production deployment run:** `31287503791`
+- **Dashboard deployment/certification run:** `31289219093`
+- **Dashboard deployment source:** `a3f89db677857a220b322b3f1bf094b3fdef3fa2`
 - **Authority:** GitHub issue #1619
 - **Status:** Certified and deployed
 
 ### Verified release scope
 
-- terminal exact-SHA repository, security, dependency, schema, frontend, backend, and release gates;
-- production migration and deployment through the approved exact-identity path;
-- deployed build identity and health verification;
-- bounded runtime, tenant, RBAC, route, role, and production-bundle certification;
-- backend bounded regression: 4,419 passed, 8 skipped, zero failures;
-- frontend tests and production build;
+- exact-source migration authority, tests, container build and scan, Azure deployment, deployed build-SHA verification, tenant-aware integrity, health, and end-to-end release identity;
+- retained live dashboard certification: `18/18 PASS`, `0 FAIL`, zero failed network observations, zero console errors, zero missing or non-live provenance observations, and zero critical/serious accessibility violations;
+- certified Heritage surfaces for sandbox admin, teacher, parent, student, and board personas only;
 - external payment processing disabled and fail closed.
 
-### Certified active dashboard roles
-
-- `compliance-director`
-- `crown-master`
-- `deputy-head`
-- `headteacher`
-- `school-admin`
-- `teacher`
-
-Parent, student, board, and auditor dashboards are not claimed as certified active personas.
+Auditor is not represented in the retained live matrix. No universal all-tenant or unsupported-persona certification is claimed.
 
 ### Deferred and transaction-specific boundaries
 
@@ -37,7 +27,7 @@ Residual operational maturity work is disclosed in `docs/KNOWN_LIMITATIONS.md` a
 
 ## Post-release change control
 
-Later commits on `main` do not redefine the certified production identity unless separately authorized, deployed, and certified. Each post-release repair must identify its own exact head, tests, review status, and runtime-proof requirements.
+Later commits on `main` do not redefine the certified backend or dashboard identity unless separately authorized, deployed, and certified. Each post-release repair must identify its exact head, tests, review status, and runtime-proof requirements.
 
 ## Historical releases
 
