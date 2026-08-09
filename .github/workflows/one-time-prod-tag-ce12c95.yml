@@ -128,6 +128,7 @@ jobs:
                   prod_run = sorted(prod_candidates, key=lambda run: run["created_at"])[-1]
                   print(f"Reusing existing Production Deploy run {prod_run['id']}")
               else:
+                  known_prod_ids = {run["id"] for run in list_runs("deploy-prod.yml")}
                   prod_dispatch_at = (
                       dt.datetime.now(dt.timezone.utc) - dt.timedelta(seconds=5)
                   ).replace(microsecond=0).isoformat().replace("+00:00", "Z")
@@ -140,7 +141,7 @@ jobs:
                       "deploy-prod.yml",
                       lambda run: (
                           run.get("created_at", "") >= prod_dispatch_at
-                          and run.get("head_sha") == observer_sha
+                          and run.get("id") not in known_prod_ids
                       ),
                   )
 
@@ -170,6 +171,9 @@ jobs:
                   )[-1]
                   print(f"Reusing existing dashboard run {dashboard_run['id']}")
               else:
+                  known_dashboard_ids = {
+                      run["id"] for run in list_runs("deploy-dashboard.yml")
+                  }
                   dashboard_dispatch_at = (
                       dt.datetime.now(dt.timezone.utc) - dt.timedelta(seconds=5)
                   ).replace(microsecond=0).isoformat().replace("+00:00", "Z")
@@ -188,7 +192,7 @@ jobs:
                       "deploy-dashboard.yml",
                       lambda run: (
                           run.get("created_at", "") >= dashboard_dispatch_at
-                          and run.get("head_sha") == observer_sha
+                          and run.get("id") not in known_dashboard_ids
                       ),
                   )
               dashboard_run = wait_for_completion(dashboard_run["id"])
