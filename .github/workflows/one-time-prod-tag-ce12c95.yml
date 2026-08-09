@@ -57,7 +57,6 @@ jobs:
           OBSERVER_SHA: ${{ github.sha }}
           OBSERVER_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
-          import datetime as dt
           import io
           import json
           import os
@@ -143,9 +142,6 @@ jobs:
                   print(f"Reusing unique Production Deploy run {prod_run['id']}")
               else:
                   known_prod_ids = {run["id"] for run in list_runs("deploy-prod.yml")}
-                  prod_dispatch_at = (
-                      dt.datetime.now(dt.timezone.utc) - dt.timedelta(seconds=5)
-                  ).replace(microsecond=0).isoformat().replace("+00:00", "Z")
                   request(
                       "POST",
                       "actions/workflows/deploy-prod.yml/dispatches",
@@ -153,10 +149,7 @@ jobs:
                   )
                   prod_run = wait_for_matching_run(
                       "deploy-prod.yml",
-                      lambda run: (
-                          run.get("created_at", "") >= prod_dispatch_at
-                          and run.get("id") not in known_prod_ids
-                      ),
+                      lambda run: run.get("id") not in known_prod_ids,
                   )
 
               prod_run = wait_for_completion(prod_run["id"])
@@ -199,9 +192,6 @@ jobs:
                   known_dashboard_ids = {
                       run["id"] for run in list_runs("deploy-dashboard.yml")
                   }
-                  dashboard_dispatch_at = (
-                      dt.datetime.now(dt.timezone.utc) - dt.timedelta(seconds=5)
-                  ).replace(microsecond=0).isoformat().replace("+00:00", "Z")
                   request(
                       "POST",
                       "actions/workflows/deploy-dashboard.yml/dispatches",
@@ -215,10 +205,7 @@ jobs:
                   )
                   dashboard_run = wait_for_matching_run(
                       "deploy-dashboard.yml",
-                      lambda run: (
-                          run.get("created_at", "") >= dashboard_dispatch_at
-                          and run.get("id") not in known_dashboard_ids
-                      ),
+                      lambda run: run.get("id") not in known_dashboard_ids,
                   )
               dashboard_run = wait_for_completion(dashboard_run["id"])
               if dashboard_run.get("conclusion") != "success":
