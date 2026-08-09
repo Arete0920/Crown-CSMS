@@ -124,9 +124,14 @@ jobs:
                   run for run in list_runs("deploy-prod.yml")
                   if run.get("created_at", "") >= cutoff
               ]
+              if len(prod_candidates) > 1:
+                  urls = ", ".join(run.get("html_url", str(run["id"])) for run in prod_candidates)
+                  raise RuntimeError(
+                      f"Ambiguous Production Deploy runs after incident cutoff: {urls}"
+                  )
               if prod_candidates:
-                  prod_run = sorted(prod_candidates, key=lambda run: run["created_at"])[-1]
-                  print(f"Reusing existing Production Deploy run {prod_run['id']}")
+                  prod_run = prod_candidates[0]
+                  print(f"Reusing unique Production Deploy run {prod_run['id']}")
               else:
                   known_prod_ids = {run["id"] for run in list_runs("deploy-prod.yml")}
                   prod_dispatch_at = (
@@ -165,11 +170,16 @@ jobs:
                   run for run in list_runs("deploy-dashboard.yml")
                   if run.get("created_at", "") >= cutoff
               ]
+              if len(dashboard_candidates) > 1:
+                  urls = ", ".join(
+                      run.get("html_url", str(run["id"])) for run in dashboard_candidates
+                  )
+                  raise RuntimeError(
+                      f"Ambiguous dashboard runs after incident cutoff: {urls}"
+                  )
               if dashboard_candidates:
-                  dashboard_run = sorted(
-                      dashboard_candidates, key=lambda run: run["created_at"]
-                  )[-1]
-                  print(f"Reusing existing dashboard run {dashboard_run['id']}")
+                  dashboard_run = dashboard_candidates[0]
+                  print(f"Reusing unique dashboard run {dashboard_run['id']}")
               else:
                   known_dashboard_ids = {
                       run["id"] for run in list_runs("deploy-dashboard.yml")
