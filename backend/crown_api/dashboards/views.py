@@ -44,6 +44,7 @@ DASHBOARD_PAYLOAD_BUILDERS = {
 # live/live_db only when that query succeeds. Production may execute them, but
 # it must still reject any sample fallback they return.
 LIVE_RUNTIME_DASHBOARDS = frozenset({
+    'billing',
     'school-board',
 })
 
