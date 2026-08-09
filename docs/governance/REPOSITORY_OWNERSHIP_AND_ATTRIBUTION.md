@@ -8,7 +8,7 @@
 
 ## Attribution Standard
 
-CROWN was created and designed by John T. C. Megahan. Repository changes may be implemented with software-development tools, automation, contractors, collaborators, or assistants operating under the repository owner's direction.
+CROWN was created and designed by John T. C. Megahan. Repository changes may be implemented with software-development tools, automation, contractors, collaborators, or development-support services operating under the repository owner's direction.
 
 The repository owner retains responsibility for:
 
@@ -29,12 +29,15 @@ Early, interim, and later collaborators supported portions of CROWN at different
 
 Specific designs, code, documentation, reviews, or other accomplishments will be attributed only when repository history, project records, correspondence, working documents, or other reliable evidence supports that attribution. Involvement alone is not used to invent specific authorship claims.
 
-The following are prospective collaborators and designated future human reviewers:
+The evidence-backed collaborator record is:
 
-- **Johnny Megahan** — prospective collaborator; review onboarding pending; no disposition recorded
-- **Evan Lesage** — prospective collaborator; review onboarding pending; no disposition recorded
+- **Anthony Rizzo** — founding/early collaborator; specific work requires durable evidence
+- **Ayush Agarwal** — founding/early collaborator; specific work requires durable evidence
+- **Jed Hansen** — founding/early collaborator; specific work requires durable evidence
+- **Johnny Megahan** — new/advisory collaborator; no historical contribution or completed review credit without later evidence
+- **Evan Lesage** — new/advisory collaborator; no historical contribution or completed review credit without later evidence
 
-Johnny Megahan and Evan Lesage must not be assigned historical authorship, implementation credit, prior project accomplishments, or completed review status without supporting evidence. Any future contribution or review disposition will be recorded from the date and evidence of that work.
+General involvement does not establish specific authorship. Any future contribution or review disposition will be recorded from the date and evidence of that work.
 
 ## Commit Identity
 
@@ -61,4 +64,4 @@ Johnny Megahan and Evan Lesage are designated for future human review of reposit
 
 ## Release Authority
 
-No automated process, agent, assistant, workflow, or external contributor may independently authorize production release. Production authorization requires an explicit decision by John T. C. Megahan after applicable evidence gates have passed.
+No automated process, development-support service, workflow, or external contributor may independently authorize production release. Production authorization requires an explicit decision by John T. C. Megahan after applicable evidence gates have passed.

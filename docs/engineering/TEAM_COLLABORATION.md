@@ -65,7 +65,6 @@ Preferred branch names:
 - `docs/<description>`
 - `security/<description>`
 - `chore/<description>`
-- `agent/<description>` for connector- or automation-originated lanes
 
 Do not push directly to `main`.
 
@@ -85,7 +84,7 @@ Each pull request must identify:
 - rollback plan;
 - Product Owner and review requirements.
 
-Runtime, deployment, workflow, security, schema, and governance changes should remain in separate pull requests unless an explicit dependency makes separation impossible.
+Keep runtime, deployment, workflow, security, schema, governance, tests, and documentation for the same coherent outcome in one pull request. Separate them only when they have an independent risk, authority, or rollback boundary under `docs/governance/CHANGE_MANAGEMENT.md`.
 
 ## Review
 
@@ -162,13 +161,7 @@ The team collaboration hub issue should be updated with:
 
 ## Work-in-progress limits
 
-The normal repository limit is three active implementation pull requests:
-
-1. one governance or documentation lane;
-2. one CI or tooling lane;
-3. one architecture or runtime lane.
-
-Additional simultaneous work requires a written dependency and conflict assessment.
+Maintain one active implementation pull request per workstream and prefer one active implementation pull request across the repository when work is sequential. Additional simultaneous work requires an independent risk or rollback boundary plus a written dependency and conflict assessment.
 
 ## Evidence policy
 
@@ -190,7 +183,7 @@ Screenshots and narrative summaries do not replace raw logs, test results, netwo
 
 Implementation approval, merge approval, sandbox authorization, pilot authorization, and production authorization are separate decisions.
 
-No collaborator, automated workflow, assistant, or tool independently grants production authorization. Production authorization requires an explicit Product Owner decision after applicable evidence gates pass.
+No collaborator, automated workflow, development-support service, or tool independently grants production authorization. Production authorization requires an explicit Product Owner decision after applicable evidence gates pass.
 
 ## Onboarding checklist
 

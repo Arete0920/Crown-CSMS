@@ -21,8 +21,8 @@ This rule applies to:
 
 When an independent human reviewer is not immediately available, Crown uses the approved solo-developer workaround:
 
-1. ChatGPT acts as support, architect, engineering reviewer, and evidence auditor.
-2. ChatGPT does not act as the independent human approval authority.
+1. Human-directed development-support tools may assist with architecture, engineering review, and evidence audit.
+2. Development-support tools and automated services do not act as independent human approval authorities.
 3. GitHub connector is used as the primary source of repository truth.
 4. GitHub Actions, required checks, branch rules, PR evidence, and deployment evidence provide the control path.
 5. The work remains draft, NO-GO, or blocked until the required evidence packet is complete.
@@ -59,8 +59,8 @@ The product owner is the solo developer and cannot self-review or self-approve t
 Control path used:
 [Independent reviewer / GitHub required checks / CI release gate / Solo-developer approved workaround]
 
-ChatGPT role:
-Support, architecture, engineering review, and evidence audit only. Not independent human approval authority.
+Development-support role:
+Support, architecture, engineering review, and evidence audit only. Automated assistance is not approval authority.
 ```
 
 ## 5. Deployment Rule
