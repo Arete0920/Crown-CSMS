@@ -32,6 +32,7 @@ def test_active_builder_map_includes_batch5_summer_camp():
     assert "admissions" in ACTIVE_DASHBOARD_PAYLOAD_BUILDERS
 
 
+@pytest.mark.django_db
 @pytest.mark.parametrize(
     "dashboard_key,builder", sorted(ACTIVE_DASHBOARD_PAYLOAD_BUILDERS.items())
 )
