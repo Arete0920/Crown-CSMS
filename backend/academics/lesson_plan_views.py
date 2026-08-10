@@ -17,8 +17,8 @@ Lesson Resource endpoints:
 Permissions:
     - GET (plans without teacher_notes): any authenticated user in school
     - GET (with teacher_notes_private): staff / teachers of section
-    - POST/PATCH/PUT: staff or teacher of section (ADMIN/DIRECTOR role)
-    - DELETE resources: staff only
+    - POST/PATCH/PUT plans: staff or teacher of section (ADMIN/DIRECTOR role)
+    - POST/PATCH/DELETE resources: ADMIN/DIRECTOR or teacher assigned to a section for the lesson course
 """
 from __future__ import annotations
 
@@ -76,6 +76,37 @@ def _can_write(user, school_id, section: Section | None = None) -> bool:
         ).exists()
 
     return False
+
+
+def _can_write_lesson_resource(user, school_id, lesson: Lesson) -> bool:
+    """Allow resource writes for admins/directors or a teacher assigned to the lesson course."""
+    if _can_write(user, school_id):
+        return True
+    if not getattr(user, "is_authenticated", False):
+        return False
+
+    course_id = getattr(getattr(lesson, "unit", None), "course_id", None)
+    if not course_id:
+        return False
+
+    primary_section = Section.objects.filter(
+        school_id=school_id,
+        course_id=course_id,
+        teacher_id=user.id,
+    ).first()
+    if primary_section is not None and _can_write(user, school_id, primary_section):
+        return True
+
+    staff = getattr(user, "staff", None)
+    if staff is None:
+        return False
+
+    assignment = TeacherAssignment.objects.filter(
+        school_id=school_id,
+        section__course_id=course_id,
+        staff=staff,
+    ).select_related("section").first()
+    return bool(assignment and _can_write(user, school_id, assignment.section))
 
 
 def _can_read_private(user, school_id) -> bool:
@@ -251,8 +282,11 @@ def lesson_resource_list_create(request, lesson_id):
         resources = LessonResource.objects.filter(lesson=lesson, school_id=school_id).order_by("id")
         return Response(LessonResourceSerializer(resources, many=True).data)
 
-    if not _can_write(request.user, school_id):
-        return Response({"detail": "Write access requires ADMIN or DIRECTOR role."}, status=status.HTTP_403_FORBIDDEN)
+    if not _can_write_lesson_resource(request.user, school_id, lesson):
+        return Response(
+            {"detail": "Write access requires ADMIN, DIRECTOR, or an assigned TEACHER for the lesson course."},
+            status=status.HTTP_403_FORBIDDEN,
+        )
 
     title = request.data.get("title", "").strip()
     if not title:
@@ -275,7 +309,7 @@ def lesson_resource_detail(request, resource_id):
     """
     GET    - retrieve a single resource
     PATCH  - update title/kind/url/file_ref
-    DELETE - remove resource (staff only)
+    DELETE - remove resource
     """
     school_id = get_request_school_id(request)
     resource = get_object_or_404(LessonResource, id=resource_id, school_id=school_id)
@@ -283,8 +317,11 @@ def lesson_resource_detail(request, resource_id):
     if request.method == "GET":
         return Response(LessonResourceSerializer(resource).data)
 
-    if not _can_write(request.user, school_id):
-        return Response({"detail": "Write access requires ADMIN or DIRECTOR role."}, status=status.HTTP_403_FORBIDDEN)
+    if not _can_write_lesson_resource(request.user, school_id, resource.lesson):
+        return Response(
+            {"detail": "Write access requires ADMIN, DIRECTOR, or an assigned TEACHER for the lesson course."},
+            status=status.HTTP_403_FORBIDDEN,
+        )
 
     if request.method == "DELETE":
         resource.delete()
@@ -295,4 +332,3 @@ def lesson_resource_detail(request, resource_id):
             setattr(resource, field, request.data[field])
     resource.save()
     return Response(LessonResourceSerializer(resource).data)
-
