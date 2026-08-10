@@ -6,19 +6,24 @@ from typing import Any
 from households.models import Guardian, Household
 
 
+HERITAGE_SANDBOX_SCHOOL_ID = "19801b59-8c05-4c84-9312-5d792e4e839d"
+HERITAGE_SANDBOX_PARENT_EMAIL = "parent.reed@heritage.example.org"
+
+
 class Parent360IdentityError(Exception):
     """Raised when a caller cannot be resolved to one active tenant-safe household."""
 
 
 def _sandbox_parent_household(user: Any, school_id: Any) -> Household | None:
-    """Resolve the deterministic Heritage sandbox parent without weakening production auth.
+    """Resolve the fixed Heritage sandbox parent without weakening production auth.
 
     The public admissions flow creates a new canonical ``households.Household`` for
     each submission. The flagship sandbox parent account is intentionally created
     before that application exists, so it cannot carry a Guardian.account link to
     the newly created household at seed time. In the explicitly enabled open-session
     sandbox only, bind the known Heritage parent persona to the newest Reed Family
-    application household. Production and every other account remain fail closed.
+    application household in the fixed Heritage tenant. Production, other tenants,
+    and every other account remain fail closed.
     """
     sandbox_open = str(os.getenv("CROWN_SANDBOX_ALLOW_OPEN_SESSION", "0")).strip().lower() in {
         "1",
@@ -26,11 +31,11 @@ def _sandbox_parent_household(user: Any, school_id: Any) -> Household | None:
         "yes",
         "on",
     }
-    if not sandbox_open:
+    if not sandbox_open or str(school_id) != HERITAGE_SANDBOX_SCHOOL_ID:
         return None
 
     email = str(getattr(user, "email", "") or "").strip().lower()
-    if email != "parent.reed@heritage.example.org":
+    if email != HERITAGE_SANDBOX_PARENT_EMAIL:
         return None
 
     try:
@@ -52,7 +57,7 @@ def _sandbox_parent_household(user: Any, school_id: Any) -> Household | None:
         return None
 
     household = application.household
-    if not household.is_active or str(household.school_id) != str(school_id):
+    if not household.is_active or str(household.school_id) != HERITAGE_SANDBOX_SCHOOL_ID:
         return None
     return household
 
@@ -62,9 +67,8 @@ def resolve_household_for_account(user: Any) -> Household:
 
     Production authorization requires the canonical ``Guardian.account`` link.
     A narrowly scoped exception exists only when the explicit open-session sandbox
-    is enabled for the fixed Heritage parent persona; that exception resolves only
-    the tenant-matched Reed Family application household created by the real demo
-    admissions transaction.
+    is enabled for the fixed Heritage parent persona in the fixed Heritage tenant;
+    that exception resolves only the matching active Reed Family application household.
     """
     if user is None or not getattr(user, "is_authenticated", False):
         raise Parent360IdentityError("authenticated_account_required")
