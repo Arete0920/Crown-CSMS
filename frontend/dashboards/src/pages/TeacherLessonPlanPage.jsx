@@ -29,6 +29,14 @@ function normalizeSections(payload) {
   return payload?.results || payload?.items || payload || [];
 }
 
+function sectionIdentifier(section) {
+  return section?.section_id || section?.id || "";
+}
+
+function sectionLabel(section) {
+  return section?.name || section?.course_name || section?.title || section?.course_code || sectionIdentifier(section);
+}
+
 function firstPlan(payload) {
   if (Array.isArray(payload)) return payload[0] || null;
   return payload?.results?.[0] || payload?.items?.[0] || null;
@@ -71,9 +79,9 @@ export default function TeacherLessonPlanPage() {
       try {
         const payload = await requestJson("/api/v1/academics/sections/?limit=100");
         if (!active) return;
-        const available = normalizeSections(payload);
+        const available = normalizeSections(payload).filter((section) => sectionIdentifier(section));
         setSections(available);
-        if (available.length > 0) setSectionId(String(available[0].id));
+        if (available.length > 0) setSectionId(String(sectionIdentifier(available[0])));
       } catch (err) {
         if (active) setError(err.message || "Unable to load assigned sections.");
       } finally {
@@ -195,11 +203,14 @@ export default function TeacherLessonPlanPage() {
                   disabled={loading || saving}
                 >
                   <option value="">-- select --</option>
-                  {sections.map((section) => (
-                    <option key={section.id} value={section.id}>
-                      {section.name || section.course_name || section.title || section.id}
-                    </option>
-                  ))}
+                  {sections.map((section) => {
+                    const id = String(sectionIdentifier(section));
+                    return (
+                      <option key={id} value={id}>
+                        {sectionLabel(section)}
+                      </option>
+                    );
+                  })}
                 </select>
               </label>
               <label>
