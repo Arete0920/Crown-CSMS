@@ -107,6 +107,12 @@ jobs:
           set -o pipefail
           python -m pytest tests/test_director_actions.py -v --tb=short 2>&1 | tee ../proof_pytest.txt
 
+      - name: Run admissions PostgreSQL enrollment lock proof
+        run: |
+          cd backend
+          set -o pipefail
+          python -m pytest tests/test_admissions_postgres_row_lock.py -v --tb=short 2>&1 | tee ../proof_admissions_postgres.txt
+
       - name: Run RBAC, audit, and idempotency proof
         run: |
           cd backend
@@ -130,6 +136,7 @@ jobs:
           path: |
             proof_health.json
             proof_pytest.txt
+            proof_admissions_postgres.txt
             proof_magus3.txt
             proof_manifest.txt
           retention-days: 90
