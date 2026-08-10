@@ -11,6 +11,19 @@ on:
       - "requirements.txt"
       - "backend/requirements.txt"
       - "scripts/release/run_backend_coverage.ps1"
+      - "scripts/release/evaluate_backend_coverage.py"
+      - "scripts/release/backend_coverage_boundary.json"
+      - ".github/workflows/exact-main-backend-coverage.yml"
+  pull_request:
+    paths:
+      - "backend/**"
+      - ".coveragerc"
+      - "pytest.ini"
+      - "requirements.txt"
+      - "backend/requirements.txt"
+      - "scripts/release/run_backend_coverage.ps1"
+      - "scripts/release/evaluate_backend_coverage.py"
+      - "scripts/release/backend_coverage_boundary.json"
       - ".github/workflows/exact-main-backend-coverage.yml"
   workflow_dispatch:
 
@@ -18,7 +31,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: exact-main-backend-coverage-${{ github.ref }}
+  group: exact-main-backend-coverage-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
@@ -27,7 +40,8 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     env:
-      BUILD_SHA: ${{ github.sha }}
+      EXPECTED_SOURCE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      BUILD_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
       DJANGO_SECRET_KEY: ci-exact-main-coverage-key-32-bytes-minimum
       PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/backend
 
@@ -36,13 +50,16 @@ jobs:
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
         with:
           fetch-depth: 0
+          ref: ${{ env.EXPECTED_SOURCE_SHA }}
 
-      - name: Verify exact main identity and clean worktree
+      - name: Verify exact source identity and clean worktree
         shell: bash
         run: |
           set -euo pipefail
-          test "${GITHUB_REF}" = "refs/heads/main"
-          test "$(git rev-parse HEAD)" = "${GITHUB_SHA}"
+          test "$(git rev-parse HEAD)" = "${EXPECTED_SOURCE_SHA}"
+          if [ "${GITHUB_EVENT_NAME}" = "push" ]; then
+            test "${GITHUB_REF}" = "refs/heads/main"
+          fi
           test -z "$(git status --porcelain=v1 --untracked-files=all)"
 
       - name: Set up Python 3.12
@@ -79,12 +96,12 @@ jobs:
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: exact-main-backend-coverage-${{ github.sha }}
+          name: exact-backend-coverage-${{ env.EXPECTED_SOURCE_SHA }}
           path: audit-artifacts/backend-coverage/
           if-no-files-found: error
           retention-days: 7
 
-      - name: Enforce unchanged coverage gate
+      - name: Enforce governed 75% backend application coverage gate
         if: always()
         shell: bash
         env:
