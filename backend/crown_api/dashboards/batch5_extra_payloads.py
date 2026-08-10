@@ -9,7 +9,7 @@ from .payload_contract import alert, build_dashboard_payload, metric, queue_item
 def billing_live_payload(school_id):
     """Build the billing dashboard from tenant-scoped production billing/ledger rows."""
     from billing.models import Invoice
-    from ledger.models import Allocation, Payment
+    from ledger.models import Allocation, Charge, Payment
 
     today = timezone.localdate()
     invoices = list(Invoice.objects.filter(school_id=school_id))
@@ -25,33 +25,51 @@ def billing_live_payload(school_id):
         for invoice in invoices
         if (ledger_charge_id := getattr(invoice, 'ledger_charge_id', None)) is not None
     ]
-    allocation_rows = (
-        Allocation.objects.filter(school_id=school_id, charge_id__in=charge_ids)
-        .values('charge_id')
-        .annotate(total=Sum('amount'))
-    )
-    allocated_by_charge = {
-        row['charge_id']: row['total'] or Decimal('0.00')
-        for row in allocation_rows
-    }
+    allocated_by_charge = {}
+    voided_charge_ids = set()
+    if charge_ids:
+        allocation_rows = (
+            Allocation.objects.filter(school_id=school_id, charge_id__in=charge_ids)
+            .values('charge_id')
+            .annotate(total=Sum('amount'))
+        )
+        allocated_by_charge = {
+            row['charge_id']: row['total'] or Decimal('0.00')
+            for row in allocation_rows
+        }
+        voided_charge_ids = set(
+            Charge.objects.filter(
+                school_id=school_id,
+                id__in=charge_ids,
+                is_void=True,
+            ).values_list('id', flat=True)
+        )
 
     invoice_balances = []
+    reversed_total = Decimal('0.00')
     for invoice in invoices:
         ledger_charge_id = getattr(invoice, 'ledger_charge_id', None)
-        allocated_total = allocated_by_charge.get(
-            ledger_charge_id,
-            Decimal('0.00'),
-        )
-        balance = (invoice.total_amount or Decimal('0.00')) - allocated_total
-        invoice_balances.append(
-            (invoice, balance if balance > Decimal('0.00') else Decimal('0.00'))
-        )
+        invoice_total = invoice.total_amount or Decimal('0.00')
+        if ledger_charge_id in voided_charge_ids:
+            reversed_total += invoice_total
+            balance = Decimal('0.00')
+        else:
+            allocated_total = allocated_by_charge.get(
+                ledger_charge_id,
+                Decimal('0.00'),
+            )
+            balance = invoice_total - allocated_total
+            if balance < Decimal('0.00'):
+                balance = Decimal('0.00')
+        invoice_balances.append((invoice, balance))
 
     outstanding_total = sum(
         (balance for _, balance in invoice_balances),
         Decimal('0.00'),
     )
-    paid_total = billed_total - outstanding_total
+    paid_total = billed_total - outstanding_total - reversed_total
+    if paid_total < Decimal('0.00'):
+        paid_total = Decimal('0.00')
     invoice_count = len(invoice_balances)
     overdue_count = sum(
         1
@@ -102,6 +120,7 @@ def billing_live_payload(school_id):
             'source': 'billing_invoice_ledger_allocations_and_payments',
             'billed_total': str(billed_total),
             'paid_total': str(paid_total),
+            'reversed_total': str(reversed_total),
             'outstanding_total': str(outstanding_total),
         },
     )

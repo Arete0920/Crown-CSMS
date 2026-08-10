@@ -57,10 +57,14 @@ def enroll_applicant(request):
 
     with transaction.atomic():
         try:
-            app = (
-                AdmissionsApplication.objects.select_for_update()
-                .select_related("sis_student")
-                .get(id=application_id, school=school)
+            # Lock only the application row. ``sis_student`` is nullable, so
+            # joining it into a SELECT ... FOR UPDATE query produces a nullable
+            # outer join that PostgreSQL correctly rejects. The related student
+            # remains available through Django's normal lazy relation lookup
+            # inside this same transaction.
+            app = AdmissionsApplication.objects.select_for_update().get(
+                id=application_id,
+                school=school,
             )
         except AdmissionsApplication.DoesNotExist:
             return Response(
