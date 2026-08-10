@@ -4,6 +4,7 @@ import pytest
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 
+from applications.models import Application
 from core.models import School
 from households.models import Guardian, Household
 from parent360.identity import Parent360IdentityError, resolve_household_for_account
@@ -21,10 +22,10 @@ def _make_user(school: School, *, email: str = "parent@example.com"):
     )
 
 
-def _make_household(school: School, *, active: bool = True) -> Household:
+def _make_household(school: School, *, active: bool = True, name: str | None = None) -> Household:
     return Household.objects.create(
         school_id=school.id,
-        name=f"{school.name} Household",
+        name=name or f"{school.name} Household",
         is_active=active,
     )
 
@@ -61,6 +62,49 @@ def test_resolver_does_not_fall_back_to_matching_email():
     user = _make_user(school, email="shared@example.com")
     household = _make_household(school)
     _make_guardian(school, household, email="shared@example.com")
+
+    with pytest.raises(Parent360IdentityError, match="guardian_account_link_required"):
+        resolve_household_for_account(user)
+
+
+def test_sandbox_heritage_parent_resolves_latest_reed_application_household(monkeypatch):
+    monkeypatch.setenv("CROWN_SANDBOX_ALLOW_OPEN_SESSION", "1")
+    school = School.objects.create(name="Heritage Christian Academy")
+    user = _make_user(school, email="parent.reed@heritage.example.org")
+    older = _make_household(school, name="Reed Family")
+    latest = _make_household(school, name="Reed Family")
+    Application.objects.create(school_id=school.id, household=older, status="SUBMITTED")
+    newest_application = Application.objects.create(
+        school_id=school.id,
+        household=latest,
+        status="SUBMITTED",
+    )
+
+    assert resolve_household_for_account(user) == newest_application.household
+
+
+def test_heritage_parent_without_open_sandbox_remains_fail_closed(monkeypatch):
+    monkeypatch.delenv("CROWN_SANDBOX_ALLOW_OPEN_SESSION", raising=False)
+    school = School.objects.create(name="Heritage Christian Academy")
+    user = _make_user(school, email="parent.reed@heritage.example.org")
+    household = _make_household(school, name="Reed Family")
+    Application.objects.create(school_id=school.id, household=household, status="SUBMITTED")
+
+    with pytest.raises(Parent360IdentityError, match="guardian_account_link_required"):
+        resolve_household_for_account(user)
+
+
+def test_sandbox_fallback_does_not_cross_tenants(monkeypatch):
+    monkeypatch.setenv("CROWN_SANDBOX_ALLOW_OPEN_SESSION", "1")
+    school = School.objects.create(name="Heritage Christian Academy")
+    other_school = School.objects.create(name="Other School")
+    user = _make_user(school, email="parent.reed@heritage.example.org")
+    foreign_household = _make_household(other_school, name="Reed Family")
+    Application.objects.create(
+        school_id=other_school.id,
+        household=foreign_household,
+        status="SUBMITTED",
+    )
 
     with pytest.raises(Parent360IdentityError, match="guardian_account_link_required"):
         resolve_household_for_account(user)
