@@ -25,8 +25,12 @@ async function requestJson(path, options = {}) {
   return payload;
 }
 
-function normalizeSections(payload) {
+function normalizeCollection(payload) {
   return payload?.results || payload?.items || payload || [];
+}
+
+function normalizeSections(payload) {
+  return normalizeCollection(payload);
 }
 
 function sectionIdentifier(section) {
@@ -70,6 +74,21 @@ export default function TeacherLessonPlanPage() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [units, setUnits] = useState([]);
+  const [unitId, setUnitId] = useState("");
+  const [lessons, setLessons] = useState([]);
+  const [lessonId, setLessonId] = useState("");
+  const [resources, setResources] = useState([]);
+  const [resourceTitle, setResourceTitle] = useState("");
+  const [resourceUrl, setResourceUrl] = useState("");
+  const [resourceSaving, setResourceSaving] = useState(false);
+  const [resourceMessage, setResourceMessage] = useState("");
+  const [resourceError, setResourceError] = useState("");
+
+  const selectedSection = useMemo(
+    () => sections.find((section) => String(sectionIdentifier(section)) === String(sectionId)) || null,
+    [sections, sectionId]
+  );
 
   useEffect(() => {
     let active = true;
@@ -119,6 +138,77 @@ export default function TeacherLessonPlanPage() {
     };
   }, [sectionId, planDate]);
 
+  useEffect(() => {
+    const courseId = selectedSection?.course_id;
+    if (!courseId) {
+      setUnits([]);
+      setUnitId("");
+      return;
+    }
+    let active = true;
+    (async () => {
+      setResourceError("");
+      try {
+        const available = normalizeCollection(
+          await requestJson(`/api/v1/academics/units/?course_id=${encodeURIComponent(courseId)}`)
+        );
+        if (!active) return;
+        setUnits(available);
+        setUnitId(available.length ? String(available[0].unit_id || available[0].id || "") : "");
+      } catch (err) {
+        if (active) setResourceError(err.message || "Unable to load curriculum units.");
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [selectedSection]);
+
+  useEffect(() => {
+    if (!unitId) {
+      setLessons([]);
+      setLessonId("");
+      return;
+    }
+    let active = true;
+    (async () => {
+      setResourceError("");
+      try {
+        const available = normalizeCollection(
+          await requestJson(`/api/v1/academics/lessons/?unit_id=${encodeURIComponent(unitId)}`)
+        );
+        if (!active) return;
+        setLessons(available);
+        setLessonId(available.length ? String(available[0].lesson_id || available[0].id || "") : "");
+      } catch (err) {
+        if (active) setResourceError(err.message || "Unable to load curriculum lessons.");
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [unitId]);
+
+  useEffect(() => {
+    if (!lessonId) {
+      setResources([]);
+      return;
+    }
+    let active = true;
+    (async () => {
+      setResourceError("");
+      try {
+        const payload = await requestJson(`/api/v1/academics/lessons/${encodeURIComponent(lessonId)}/resources/`);
+        if (active) setResources(normalizeCollection(payload));
+      } catch (err) {
+        if (active) setResourceError(err.message || "Unable to load lesson resources.");
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [lessonId]);
+
   function updateField(field, value) {
     setPlan((current) => ({ ...current, [field]: value }));
   }
@@ -163,6 +253,47 @@ export default function TeacherLessonPlanPage() {
       setMessage("");
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function addResource(event) {
+    event.preventDefault();
+    if (!lessonId || !resourceTitle.trim()) return;
+    setResourceSaving(true);
+    setResourceError("");
+    setResourceMessage("Saving curriculum resource to CROWN...");
+    try {
+      const created = await requestJson(`/api/v1/academics/lessons/${encodeURIComponent(lessonId)}/resources/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: resourceTitle.trim(),
+          kind: "link",
+          url: resourceUrl.trim(),
+        }),
+      });
+      const reloaded = normalizeCollection(
+        await requestJson(`/api/v1/academics/lessons/${encodeURIComponent(lessonId)}/resources/`)
+      );
+      const createdId = String(created?.resource_id || created?.id || "");
+      const persisted = reloaded.find(
+        (resource) =>
+          String(resource?.resource_id || resource?.id || "") === createdId &&
+          String(resource?.title || "") === resourceTitle.trim() &&
+          String(resource?.url || "") === resourceUrl.trim()
+      );
+      if (!persisted) {
+        throw new Error("The resource save completed, but the persisted resource did not match after reload.");
+      }
+      setResources(reloaded);
+      setResourceTitle("");
+      setResourceUrl("");
+      setResourceMessage("Curriculum resource saved, reopened, and persistence verified in CROWN.");
+    } catch (err) {
+      setResourceError(err.message || "Curriculum resource save failed.");
+      setResourceMessage("");
+    } finally {
+      setResourceSaving(false);
     }
   }
 
@@ -255,6 +386,62 @@ export default function TeacherLessonPlanPage() {
             </div>
           </form>
         )}
+
+        <section className="crown-card" style={{ marginTop: 24, padding: 18 }} aria-label="Curriculum resource integration">
+          <h2 style={{ marginTop: 0 }}>Curriculum and lesson resources</h2>
+          <p className="crown-muted">
+            Link an instructional resource to an authorized lesson. Publisher references are metadata only; CROWN does not embed or imply licensed publisher content.
+          </p>
+          {resourceError && <ErrorBanner title="Curriculum resource error" message={resourceError} />}
+          {resourceMessage && <div role="status" aria-live="polite" className="sandbox-message is-info">{resourceMessage}</div>}
+          <div className="crown-filter-row" style={{ display: "flex", gap: 16, flexWrap: "wrap", marginBottom: 16 }}>
+            <label>
+              <strong>Curriculum unit</strong><br />
+              <select aria-label="Curriculum unit" value={unitId} onChange={(event) => setUnitId(event.target.value)}>
+                <option value="">-- select --</option>
+                {units.map((unit) => {
+                  const id = String(unit.unit_id || unit.id || "");
+                  return <option key={id} value={id}>{unit.title || unit.name || id}</option>;
+                })}
+              </select>
+            </label>
+            <label>
+              <strong>Lesson</strong><br />
+              <select aria-label="Curriculum lesson" value={lessonId} onChange={(event) => setLessonId(event.target.value)}>
+                <option value="">-- select --</option>
+                {lessons.map((lesson) => {
+                  const id = String(lesson.lesson_id || lesson.id || "");
+                  return <option key={id} value={id}>{lesson.title || lesson.name || id}</option>;
+                })}
+              </select>
+            </label>
+          </div>
+          <form onSubmit={addResource} aria-label="Add curriculum resource">
+            <div style={{ display: "grid", gap: 12 }}>
+              <label>
+                <strong>Resource title</strong><br />
+                <input aria-label="Curriculum resource title" value={resourceTitle} onChange={(event) => setResourceTitle(event.target.value)} />
+              </label>
+              <label>
+                <strong>Resource link</strong><br />
+                <input aria-label="Curriculum resource link" type="url" value={resourceUrl} onChange={(event) => setResourceUrl(event.target.value)} />
+              </label>
+            </div>
+            <div style={{ marginTop: 14 }}>
+              <button className="crown-btn crown-btn-primary" type="submit" disabled={!lessonId || !resourceTitle.trim() || resourceSaving}>
+                {resourceSaving ? "Saving and verifying..." : "Add curriculum resource"}
+              </button>
+            </div>
+          </form>
+          <ul aria-label="Saved curriculum resources">
+            {resources.map((resource) => (
+              <li key={String(resource.resource_id || resource.id)}>
+                <strong>{resource.title}</strong>
+                {resource.url ? <> - <a href={resource.url} target="_blank" rel="noreferrer">Open resource</a></> : null}
+              </li>
+            ))}
+          </ul>
+        </section>
       </main>
     </CrownLayout>
   );
