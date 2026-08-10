@@ -1,29 +1,95 @@
-"""Utilities for canonical curriculum publisher normalization and filtering."""
+"""Canonical curriculum publisher registry and normalization utilities.
+
+Publisher recognition is metadata only. It does not imply licensed content,
+SSO, roster sync, grade sync, or a vendor API integration.
+"""
 
 from __future__ import annotations
 
-from typing import Dict, List
+import re
+from dataclasses import dataclass
+from typing import Dict, List, Mapping
+
+
+@dataclass(frozen=True)
+class CurriculumPublisherProfile:
+    canonical_name: str
+    aliases: tuple[str, ...]
+    integration_status: str
+    content_policy: str
+    notes: str = ""
+
+
+PUBLISHER_PROFILES: Mapping[str, CurriculumPublisherProfile] = {
+    "BJU Press": CurriculumPublisherProfile(
+        canonical_name="BJU Press",
+        aliases=("bju", "bju press", "bob jones university press"),
+        integration_status="metadata_only",
+        content_policy="licensed_content_requires_vendor_authorization",
+        notes="Official-reference metadata is supported; no bulk copyrighted-content ingestion is implied.",
+    ),
+    "Abeka": CurriculumPublisherProfile(
+        canonical_name="Abeka",
+        aliases=("abeka", "a beka", "abeka academy"),
+        integration_status="metadata_only",
+        content_policy="licensed_content_requires_vendor_authorization",
+    ),
+    "Purposeful Design": CurriculumPublisherProfile(
+        canonical_name="Purposeful Design",
+        aliases=("purposeful design", "purposefuldesign"),
+        integration_status="metadata_only",
+        content_policy="licensed_content_requires_vendor_authorization",
+    ),
+    "Standard Publishing": CurriculumPublisherProfile(
+        canonical_name="Standard Publishing",
+        aliases=("standard publishing", "standard press"),
+        integration_status="legacy_metadata_only",
+        content_policy="ownership_and_license_must_be_verified_per_resource",
+        notes=(
+            "Legacy Christian curriculum references may use 'Standard Press'. "
+            "Verify current rights ownership per resource."
+        ),
+    ),
+    "Positive Action for Christ": CurriculumPublisherProfile(
+        canonical_name="Positive Action for Christ",
+        aliases=("positive action for christ", "positive action"),
+        integration_status="metadata_only",
+        content_policy="licensed_content_requires_vendor_authorization",
+    ),
+    "Summit Ministries": CurriculumPublisherProfile(
+        canonical_name="Summit Ministries",
+        aliases=("summit ministries", "summit worldview"),
+        integration_status="metadata_only",
+        content_policy="licensed_content_requires_vendor_authorization",
+    ),
+}
 
 SUPPORTED_CURRICULUM_PUBLISHERS: Dict[str, List[str]] = {
-    "BJU Press": ["bju", "bju press", "bob jones university press"],
-    "Abeka": ["abeka", "a beka", "abeka academy"],
-    "Purposeful Design": ["purposeful design", "purposefuldesign"],
-    "Positive Action for Christ": ["positive action for christ", "positive action", "pac"],
-    "Summit Ministries": ["summit ministries", "summit", "summit worldview"],
+    canonical: list(profile.aliases) for canonical, profile in PUBLISHER_PROFILES.items()
 }
 
 
+def _contains_alias(value: str, alias: str) -> bool:
+    """Match aliases as complete normalized phrases, not arbitrary substrings."""
+    pattern = rf"(?<![a-z0-9]){re.escape(alias)}(?![a-z0-9])"
+    return re.search(pattern, value) is not None
+
+
 def normalize_curriculum_publisher(name: str) -> str:
-    value = (name or "").strip().lower()
+    value = " ".join((name or "").strip().lower().split())
     if not value:
         return ""
 
     for canonical, aliases in SUPPORTED_CURRICULUM_PUBLISHERS.items():
-        if value == canonical.lower() or value in aliases:
-            return canonical
-        if any(alias in value for alias in aliases):
+        candidates = (canonical.lower(), *aliases)
+        if any(value == candidate or _contains_alias(value, candidate) for candidate in candidates):
             return canonical
     return ""
+
+
+def get_curriculum_publisher_profile(name: str) -> CurriculumPublisherProfile | None:
+    canonical = normalize_curriculum_publisher(name)
+    return PUBLISHER_PROFILES.get(canonical) if canonical else None
 
 
 def is_supported_curriculum_publisher(name: str) -> bool:
