@@ -3,6 +3,7 @@ from decimal import Decimal
 
 import pytest
 
+from core.models import School
 from households.models import Household
 from ledger.models import Charge, LedgerAccount, Payment
 from ledger.services import account_balance, allocate_payment_fifo, build_account_statement
@@ -11,13 +12,17 @@ from ledger.services import account_balance, allocate_payment_fifo, build_accoun
 pytestmark = pytest.mark.django_db
 
 
+def _school_id(label):
+    return School.objects.create(name=f"{label}-{uuid.uuid4()}").id
+
+
 def _account(school_id):
     household = Household.objects.create(school_id=school_id, name=f"HH-{uuid.uuid4()}")
     return LedgerAccount.objects.create(school_id=school_id, household=household)
 
 
 def test_fifo_rejects_void_payment():
-    school_id = uuid.uuid4()
+    school_id = _school_id("Option A FIFO")
     account = _account(school_id)
     Charge.objects.create(
         school_id=school_id,
@@ -37,9 +42,9 @@ def test_fifo_rejects_void_payment():
 
 
 def test_balance_and_statement_ignore_void_payment_allocations():
-    school_id = uuid.uuid4()
+    school_id = _school_id("Option A void payment")
     account = _account(school_id)
-    charge = Charge.objects.create(
+    Charge.objects.create(
         school_id=school_id,
         account=account,
         description="Tuition",
@@ -65,9 +70,9 @@ def test_balance_and_statement_ignore_void_payment_allocations():
 
 
 def test_void_charge_has_zero_remaining_balance_and_is_excluded_from_statement():
-    school_id = uuid.uuid4()
+    school_id = _school_id("Option A void charge")
     account = _account(school_id)
-    charge = Charge.objects.create(
+    Charge.objects.create(
         school_id=school_id,
         account=account,
         description="Fee",
