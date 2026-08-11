@@ -1,31 +1,117 @@
 """
-Aid Ledger Bridge
-=================
-Transactional award approval: budget enforcement → ledger posting → audit log.
+Aid financial bridge.
 
-Architecture note:
-  Ledger entry creation is handled by AidAward.mark_accepted_and_post(), which
-  already writes a LedgerEntry credit and emits AWARD_ACCEPTED + LEDGER_POSTED
-  audit events.  This bridge layer adds budget-bucket enforcement
-  (via AidBudgetTracker.select_for_update) and an explicit approval audit event
-  *before* delegating to the model method.
+Option A migration rule:
+- preserve the proven Aid decision/budget engine;
+- preserve the legacy core.LedgerEntry posting while active readers still use it;
+- additionally project approved awards into canonical Student Accounts as a
+  non-cash Credit when the existing HouseholdFamilyLink resolves uniquely;
+- never synthesize a Payment for financial aid.
 
-All operations are wrapped in a single transaction.atomic() block.
-Idempotent: an already-approved award is returned without error or side effect.
+The entire approval path remains atomic and idempotent.
 """
 
 from __future__ import annotations
 
+from decimal import Decimal
+
 from django.db import transaction
 
 from aid.models import AidAuditEvent, AidAward, AidBudgetTracker
+from core.models import HouseholdFamilyLink
+from ledger.models import Credit, LedgerAccount
+from ledger.services import post_account_credit
 
 
 class AidBudgetError(Exception):
+    """Raised when an award would exceed the remaining bucket budget."""
+
+
+def _award_credit_reference(award: AidAward) -> str:
+    return f"aid_award:{award.id}"
+
+
+def _log_credit_deferred_once(*, award: AidAward, actor_user, reason: str) -> None:
+    exists = AidAuditEvent.objects.filter(
+        school=award.school,
+        entity_type=AidAuditEvent.ENTITY_AWARD,
+        entity_id=award.id,
+        action="STUDENT_ACCOUNT_CREDIT_DEFERRED",
+    ).exists()
+    if exists:
+        return
+    AidAuditEvent.log(
+        school=award.school,
+        entity_type=AidAuditEvent.ENTITY_AWARD,
+        entity_id=award.id,
+        action="STUDENT_ACCOUNT_CREDIT_DEFERRED",
+        actor_user=actor_user,
+        details={"reason": reason},
+    )
+
+
+def _ensure_student_account_credit(*, award: AidAward, actor_user):
     """
-    Raised when an award would exceed the remaining bucket budget.
-    Maps to HTTP 409 at the API layer.
+    Idempotently dual-write an accepted Aid award into Student Accounts.
+
+    Household identity is resolved only through the existing canonical
+    HouseholdFamilyLink. Missing/ambiguous mappings are recorded as migration
+    exceptions and do not break the still-active legacy posting path.
     """
+    reference = _award_credit_reference(award)
+    existing = Credit.objects.filter(
+        school_id=award.school_id,
+        source=Credit.SOURCE_FINANCIAL_AID,
+        reference=reference,
+    ).first()
+    if existing is not None:
+        return existing
+
+    household_ids = list(
+        HouseholdFamilyLink.objects.filter(
+            school=award.school,
+            family=award.student.family,
+        )
+        .values_list("household_id", flat=True)
+        .distinct()
+    )
+    if len(household_ids) != 1:
+        reason = "household_family_link_missing" if not household_ids else "household_family_link_ambiguous"
+        _log_credit_deferred_once(award=award, actor_user=actor_user, reason=reason)
+        return None
+
+    account, _ = LedgerAccount.objects.get_or_create(
+        school_id=award.school_id,
+        household_id=household_ids[0],
+    )
+    credit = post_account_credit(
+        school_id=award.school_id,
+        account=account,
+        amount=(Decimal(int(award.awarded_cents)) / Decimal("100")).quantize(Decimal("0.01")),
+        source=Credit.SOURCE_FINANCIAL_AID,
+        reference=reference,
+        description=f"Financial Aid Award ({award.award_type})",
+    )
+
+    if not AidAuditEvent.objects.filter(
+        school=award.school,
+        entity_type=AidAuditEvent.ENTITY_AWARD,
+        entity_id=award.id,
+        action="STUDENT_ACCOUNT_CREDIT_POSTED",
+    ).exists():
+        AidAuditEvent.log(
+            school=award.school,
+            entity_type=AidAuditEvent.ENTITY_AWARD,
+            entity_id=award.id,
+            action="STUDENT_ACCOUNT_CREDIT_POSTED",
+            actor_user=actor_user,
+            details={
+                "credit_id": str(credit.id),
+                "amount": str(credit.amount),
+                "reference": credit.reference,
+            },
+        )
+    return credit
 
 
 @transaction.atomic
@@ -36,36 +122,18 @@ def approve_award(
     reason: str = "",
 ) -> AidAward:
     """
-    Approve an AidAward atomically.
-
-    Operations (all-or-nothing):
-      1. Lock the award and its budget row for update.
-      2. Enforce bucket budget — raise AidBudgetError if overrun.
-      3. Decrement bucket awarded_cents.
-      4. Call award.mark_accepted_and_post() — posts ledger entry, emits
-         AWARD_ACCEPTED + LEDGER_POSTED audit events.
-      5. Write an explicit AWARD_APPROVED audit event with actor + reason.
-
-    Args:
-        award:       AidAward instance (any decision_status).
-        actor_user:  UserAccount instance or None.
-        reason:      Human-readable reason for the approval (stored in audit log).
-
-    Returns:
-        The (mutated) AidAward after approval.
-
-    Raises:
-        AidBudgetError: bucket budget would be exceeded.
-        AidBudgetTracker.DoesNotExist: no budget row for this school/year/bucket.
+    Approve an AidAward atomically while dual-writing the Option A Student
+    Accounts credit projection.
     """
-    # Lock the award row to prevent concurrent mutations
-    award = AidAward.objects.select_for_update().get(pk=award.pk)
+    award = AidAward.objects.select_for_update().select_related("student__family", "school").get(pk=award.pk)
 
-    # Idempotent: already approved — return as-is
+    # Retry-safe migration behavior: an already-approved award does not consume
+    # budget again, but can repair a previously missing Student Accounts credit
+    # after its household-family mapping becomes available.
     if award.decision_status == AidAward.DECISION_ACCEPTED:
+        _ensure_student_account_credit(award=award, actor_user=actor_user)
         return award
 
-    # Lock the budget row for this bucket
     budget = AidBudgetTracker.objects.select_for_update().get(
         school=award.school,
         academic_year=award.academic_year,
@@ -82,14 +150,17 @@ def approve_award(
             f"Requested: {award.awarded_cents}. Remaining: {remaining}."
         )
 
-    # Decrement budget *before* posting so concurrent approvals can't both succeed
     budget.awarded_cents += award.awarded_cents
     budget.save(update_fields=["awarded_cents"])
 
-    # Ledger posting + AWARD_ACCEPTED + LEDGER_POSTED audit events (existing method)
+    # Compatibility posting remains until all readers are migrated and
+    # comparison proof is complete.
     award.mark_accepted_and_post(actor_user=actor_user)
 
-    # Explicit approval audit event (captures actor + reason at this level)
+    # Option A canonical Student Accounts projection. This is a Credit, never a
+    # Payment, so approved aid cannot be mistaken for external cash movement.
+    _ensure_student_account_credit(award=award, actor_user=actor_user)
+
     AidAuditEvent.log(
         school=award.school,
         entity_type=AidAuditEvent.ENTITY_AWARD,
