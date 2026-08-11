@@ -83,6 +83,8 @@ def post_charge_to_journal(sender, instance: Charge, created, **kwargs):
 def post_payment_to_journal(sender, instance: Payment, created, **kwargs):
     if not created:
         return
+    if instance.is_void:
+        return
     if _already_posted("payment", instance.id):
         return
 
