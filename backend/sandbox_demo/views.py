@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import asdict
 from datetime import timedelta
 
 from django.conf import settings
@@ -10,6 +11,11 @@ from rest_framework.views import APIView
 
 from .catalog import SANDBOX_PERSONAS, catalog_payload, get_persona, get_school
 from .models import SandboxEvent, SandboxFeedback, SandboxInvite
+from .parent_enrollment import (
+    SandboxParentEnrollmentError,
+    complete_parent_enrollment_demo,
+    get_parent_enrollment_state,
+)
 from .permissions import ensure_sandbox_role_permissions
 from .services import create_sandbox_session, note_has_prohibited_data
 
@@ -305,6 +311,50 @@ class SandboxSessionView(APIView):
         )
 
         return Response(session, status=201)
+
+
+class SandboxParentEnrollmentView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    @staticmethod
+    def _error_response(exc: SandboxParentEnrollmentError):
+        code = str(exc)
+        if code in {"sandbox_open_session_required", "heritage_parent_required", "heritage_school_required"}:
+            status_code = 403
+        elif code in {"accepted_application_not_found", "applicant_not_found"}:
+            status_code = 404
+        elif code == "enrollment_terms_required":
+            status_code = 400
+        else:
+            status_code = 409
+        return Response({"detail": code, "code": code}, status=status_code)
+
+    def get(self, request):
+        try:
+            state = get_parent_enrollment_state(
+                request.user,
+                request.query_params.get("application_id") or None,
+            )
+        except SandboxParentEnrollmentError as exc:
+            return self._error_response(exc)
+        return Response(asdict(state), status=200)
+
+    def post(self, request):
+        application_id = str(request.data.get("application_id") or "").strip()
+        if not application_id:
+            return Response(
+                {"detail": "application_id is required", "code": "application_id_required"},
+                status=400,
+            )
+        try:
+            state = complete_parent_enrollment_demo(
+                request.user,
+                application_id,
+                bool(request.data.get("accepted_terms")),
+            )
+        except SandboxParentEnrollmentError as exc:
+            return self._error_response(exc)
+        return Response(asdict(state), status=200)
 
 
 class SandboxEventView(APIView):
