@@ -4,6 +4,7 @@ from sandbox_demo.academic_seed import (
     reset_heritage_teacher_academics,
     seed_heritage_teacher_academics,
 )
+from sandbox_demo.admin_operations import seed_heritage_admin_context
 from sandbox_demo.admissions_conversion_seed import (
     reset_heritage_admissions_conversion_scenario,
     seed_heritage_admissions_conversion_scenario,
@@ -33,6 +34,7 @@ class Command(BaseCommand):
         metrics.update(seed_heritage_finance_context())
         metrics.update(seed_heritage_admissions_scenario())
         metrics.update(seed_heritage_admissions_conversion_scenario())
+        metrics.update(seed_heritage_admin_context())
         for key, value in metrics.items():
             self.stdout.write(f"{key}: {value}")
         self.stdout.write(self.style.SUCCESS("Heritage flagship sandbox seed complete."))
