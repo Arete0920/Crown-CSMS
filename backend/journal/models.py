@@ -1,4 +1,4 @@
-from django.db import models, transaction
+from django.db import models
 from django.core.exceptions import ValidationError
 from django.conf import settings
 from decimal import Decimal
@@ -67,6 +67,13 @@ class JournalEntry(models.Model):
 
     reference_type = models.CharField(max_length=64, blank=True, null=True)
     reference_id = models.UUIDField(blank=True, null=True)
+
+    # Option A accounting contract metadata. These fields preserve the
+    # operational journal engine while adopting the stronger cross-domain
+    # traceability contract previously modeled in apps.accounting.
+    correlation_id = models.UUIDField(blank=True, null=True, db_index=True)
+    source_system = models.CharField(max_length=100, default="journal")
+    currency = models.CharField(max_length=8, default="USD")
 
     reversal_of = models.OneToOneField(
         "self",
