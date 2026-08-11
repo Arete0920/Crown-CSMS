@@ -1,35 +1,26 @@
-"""
-section_staffing_wizard/views.py
-
-Steps:
-  POST   /sessions/                              → create_session
-  POST   /sessions/<uuid>/configure/             → configure_session  (academic_year_id + term)
-  POST   /sessions/<uuid>/load_sections/         → load_sections      (sections_pool)
-  POST   /sessions/<uuid>/stage_assignments/     → stage_assignments  (assignments)
-  POST   /sessions/<uuid>/commit/                → commit_session
-  GET    /sessions/<uuid>/verify/                → verify_session
-"""
+"""Section staffing wizard backed by canonical academics Section/TeacherAssignment records."""
 import uuid as _uuid
 
 from django.db import transaction
 from django.shortcuts import get_object_or_404
+from rest_framework import status
+from rest_framework.authentication import SessionAuthentication
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.authentication import SessionAuthentication
-from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.response import Response
-from rest_framework import status
+from rest_framework_simplejwt.authentication import JWTAuthentication
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema
 
 from households.scoping import get_request_school_id
-
 from .models import SectionStaffingWizardSession
-from drf_spectacular.utils import extend_schema
-from drf_spectacular.types import OpenApiTypes
 
 _AUTH = [JWTAuthentication, SessionAuthentication]
 _PERM = [IsAuthenticated]
 
-VALID_ROLES = {"primary", "aide", "co-teacher"}
+# TeacherAssignment currently represents section/staff membership without a role column.
+# Fail closed instead of silently discarding aide/co-teacher semantics.
+VALID_ROLES = {"primary"}
 
 
 def _get_session(session_id, school_id):
@@ -43,10 +34,6 @@ def _parse_uuid(value, field_name):
         return None, f"{field_name} must be a valid UUID"
 
 
-# ---------------------------------------------------------------------------
-# Step 1: Create session
-# ---------------------------------------------------------------------------
-
 @extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 @authentication_classes(_AUTH)
@@ -55,16 +42,9 @@ def create_session(request):
     school_id = get_request_school_id(request)
     from core.models import School
     school = get_object_or_404(School, id=school_id)
-    session = SectionStaffingWizardSession.objects.create(
-        school=school,
-        created_by=request.user,
-    )
+    session = SectionStaffingWizardSession.objects.create(school=school, created_by=request.user)
     return Response({"session_id": str(session.id)}, status=status.HTTP_201_CREATED)
 
-
-# ---------------------------------------------------------------------------
-# Step 2: Configure (academic year + term)
-# ---------------------------------------------------------------------------
 
 @extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
@@ -73,23 +53,22 @@ def create_session(request):
 def configure_session(request, session_id):
     school_id = get_request_school_id(request)
     session = _get_session(session_id, school_id)
-
-    if session.status == SectionStaffingWizardSession.STATUS_COMMITTED:
-        return Response({"error": "Session already committed"}, status=status.HTTP_400_BAD_REQUEST)
+    if session.status in (
+        SectionStaffingWizardSession.STATUS_COMMITTED,
+        SectionStaffingWizardSession.STATUS_VERIFIED,
+    ):
+        return Response({"error": "Committed or verified sessions are immutable"}, status=status.HTTP_400_BAD_REQUEST)
 
     ay_raw = request.data.get("academic_year_id")
     term = str(request.data.get("term", "")).strip()
-
     if ay_raw:
         ay_uuid, err = _parse_uuid(ay_raw, "academic_year_id")
         if err:
             return Response({"error": err}, status=status.HTTP_400_BAD_REQUEST)
         session.academic_year_id = ay_uuid
-
     session.term = term
     session.status = SectionStaffingWizardSession.STATUS_CONFIGURED
     session.save()
-
     return Response({
         "session_id": str(session.id),
         "status": session.status,
@@ -98,10 +77,6 @@ def configure_session(request, session_id):
     })
 
 
-# ---------------------------------------------------------------------------
-# Step 3: Load sections pool
-# ---------------------------------------------------------------------------
-
 @extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 @authentication_classes(_AUTH)
@@ -109,17 +84,12 @@ def configure_session(request, session_id):
 def load_sections(request, session_id):
     school_id = get_request_school_id(request)
     session = _get_session(session_id, school_id)
-
     if session.status != SectionStaffingWizardSession.STATUS_CONFIGURED:
-        return Response(
-            {"error": f"Session must be in 'configured' state (current: {session.status})"},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
+        return Response({"error": f"Session must be in 'configured' state (current: {session.status})"}, status=status.HTTP_400_BAD_REQUEST)
 
     sections_pool = request.data.get("sections_pool")
-    if not isinstance(sections_pool, list) or len(sections_pool) == 0:
+    if not isinstance(sections_pool, list) or not sections_pool:
         return Response({"error": "sections_pool must be a non-empty list"}, status=status.HTTP_400_BAD_REQUEST)
-
     for i, sec in enumerate(sections_pool):
         if not sec.get("section_id"):
             return Response({"error": f"sections_pool[{i}].section_id is required"}, status=status.HTTP_400_BAD_REQUEST)
@@ -127,17 +97,8 @@ def load_sections(request, session_id):
     session.sections_pool = sections_pool
     session.status = SectionStaffingWizardSession.STATUS_SECTIONS_LOADED
     session.save()
+    return Response({"session_id": str(session.id), "status": session.status, "section_count": len(sections_pool)})
 
-    return Response({
-        "session_id": str(session.id),
-        "status": session.status,
-        "section_count": len(sections_pool),
-    })
-
-
-# ---------------------------------------------------------------------------
-# Step 4: Stage assignments
-# ---------------------------------------------------------------------------
 
 @extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
@@ -146,47 +107,33 @@ def load_sections(request, session_id):
 def stage_assignments(request, session_id):
     school_id = get_request_school_id(request)
     session = _get_session(session_id, school_id)
-
     if session.status != SectionStaffingWizardSession.STATUS_SECTIONS_LOADED:
-        return Response(
-            {"error": f"Session must be in 'sections_loaded' state (current: {session.status})"},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
+        return Response({"error": f"Session must be in 'sections_loaded' state (current: {session.status})"}, status=status.HTTP_400_BAD_REQUEST)
 
     assignments = request.data.get("assignments")
-    if not isinstance(assignments, list) or len(assignments) == 0:
+    if not isinstance(assignments, list) or not assignments:
         return Response({"error": "assignments must be a non-empty list"}, status=status.HTTP_400_BAD_REQUEST)
 
     pool_ids = {str(s["section_id"]) for s in session.sections_pool}
     errors = []
-    for i, a in enumerate(assignments):
-        if not a.get("section_id"):
+    for i, assignment in enumerate(assignments):
+        if not assignment.get("section_id"):
             errors.append(f"assignments[{i}].section_id is required")
-        elif str(a["section_id"]) not in pool_ids:
+        elif str(assignment["section_id"]) not in pool_ids:
             errors.append(f"assignments[{i}].section_id not in loaded sections pool")
-        if not a.get("teacher_id"):
+        if not assignment.get("teacher_id"):
             errors.append(f"assignments[{i}].teacher_id is required")
-        role = a.get("role", "primary")
+        role = assignment.get("role", "primary")
         if role not in VALID_ROLES:
-            errors.append(f"assignments[{i}].role must be one of {sorted(VALID_ROLES)}")
-
+            errors.append("assignments[%d].role must be 'primary' until canonical staffing roles are modeled" % i)
     if errors:
         return Response({"error": errors[0]}, status=status.HTTP_400_BAD_REQUEST)
 
     session.assignments = assignments
     session.status = SectionStaffingWizardSession.STATUS_ASSIGNMENTS_STAGED
     session.save()
+    return Response({"session_id": str(session.id), "status": session.status, "assignment_count": len(assignments)})
 
-    return Response({
-        "session_id": str(session.id),
-        "status": session.status,
-        "assignment_count": len(assignments),
-    })
-
-
-# ---------------------------------------------------------------------------
-# Step 5: Commit
-# ---------------------------------------------------------------------------
 
 @extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
@@ -195,47 +142,45 @@ def stage_assignments(request, session_id):
 def commit_session(request, session_id):
     school_id = get_request_school_id(request)
     session = _get_session(session_id, school_id)
-
     if session.status == SectionStaffingWizardSession.STATUS_COMMITTED:
         return Response({"session_id": str(session.id), "status": session.status, **(session.commit_result or {})})
-
     if session.status != SectionStaffingWizardSession.STATUS_ASSIGNMENTS_STAGED:
-        return Response(
-            {"error": f"Session must be in 'assignments_staged' state (current: {session.status})"},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
-
+        return Response({"error": f"Session must be in 'assignments_staged' state (current: {session.status})"}, status=status.HTTP_400_BAD_REQUEST)
     if not request.data.get("confirm"):
         return Response({"error": "confirm is required"}, status=status.HTTP_400_BAD_REQUEST)
 
-    from academics.models import SectionTeacher
+    from academics.models import Section, TeacherAssignment
+    from core.models import Staff
 
-    assigned = 0
-    errors = []
+    # Validate the complete batch before writing anything. This prevents a partially
+    # committed staffing session and enforces tenant ownership at the canonical records.
+    resolved = []
+    for i, assignment in enumerate(session.assignments):
+        section = Section.objects.filter(id=assignment["section_id"], school_id=school_id).first()
+        if section is None:
+            return Response({"error": f"assignments[{i}].section_id is not a canonical section for this school"}, status=status.HTTP_400_BAD_REQUEST)
+        staff = Staff.objects.filter(id=assignment["teacher_id"], school_id=school_id, status="ACTIVE").first()
+        if staff is None:
+            return Response({"error": f"assignments[{i}].teacher_id is not active staff for this school"}, status=status.HTTP_400_BAD_REQUEST)
+        resolved.append((section, staff))
 
     with transaction.atomic():
-        for a in session.assignments:
-            try:
-                SectionTeacher.objects.update_or_create(
-                    section_id=a["section_id"],
-                    teacher_id=a["teacher_id"],
-                    defaults={"role": a.get("role", "primary"), "school_id": school_id},
-                )
+        assigned = 0
+        for section, staff in resolved:
+            _, created = TeacherAssignment.objects.get_or_create(
+                school_id=school_id,
+                section=section,
+                staff=staff,
+            )
+            if created:
                 assigned += 1
-            except Exception as exc:  # noqa: BLE001
-                errors.append(str(exc))
-
-        result = {"assigned": assigned, "errors": errors}
+        result = {"assigned": assigned, "requested": len(resolved), "errors": []}
         session.commit_result = result
         session.status = SectionStaffingWizardSession.STATUS_COMMITTED
         session.save()
 
     return Response({"session_id": str(session.id), "status": session.status, **result})
 
-
-# ---------------------------------------------------------------------------
-# Step 6: Verify
-# ---------------------------------------------------------------------------
 
 @extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["GET"])
@@ -244,22 +189,9 @@ def commit_session(request, session_id):
 def verify_session(request, session_id):
     school_id = get_request_school_id(request)
     session = _get_session(session_id, school_id)
-
-    if session.status not in (
-        SectionStaffingWizardSession.STATUS_COMMITTED,
-        SectionStaffingWizardSession.STATUS_VERIFIED,
-    ):
-        return Response(
-            {"error": f"Session must be committed before verify (current: {session.status})"},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
-
+    if session.status not in (SectionStaffingWizardSession.STATUS_COMMITTED, SectionStaffingWizardSession.STATUS_VERIFIED):
+        return Response({"error": f"Session must be committed before verify (current: {session.status})"}, status=status.HTTP_400_BAD_REQUEST)
     if session.status == SectionStaffingWizardSession.STATUS_COMMITTED:
         session.status = SectionStaffingWizardSession.STATUS_VERIFIED
         session.save()
-
-    return Response({
-        "session_id": str(session.id),
-        "status": session.status,
-        **(session.commit_result or {}),
-    })
+    return Response({"session_id": str(session.id), "status": session.status, **(session.commit_result or {})})
