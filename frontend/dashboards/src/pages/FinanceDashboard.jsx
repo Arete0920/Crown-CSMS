@@ -1,5 +1,6 @@
 import useFinanceDashboardData from "../hooks/useFinanceDashboardData";
 import CrownLayout from "../components/crown/CrownLayout.jsx";
+import SandboxFinanceTransactionPanel from "../components/finance/SandboxFinanceTransactionPanel.jsx";
 
 function metricValue(source, key, fallback = "—") {
   const value = source?.[key];
@@ -99,6 +100,8 @@ export default function FinanceDashboard() {
             Refresh
           </button>
         </header>
+
+        <SandboxFinanceTransactionPanel />
 
         {error ? (
           <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
