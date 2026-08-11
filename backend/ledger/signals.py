@@ -115,7 +115,7 @@ def _charge_capture_void_flip(sender, instance: Charge, **kwargs):
     Store a flag on the instance when is_void flips False -> True.
     This avoids guessing in post_save and avoids re-querying after save.
     """
-    instance._void_flip_to_true = False  # default
+    instance._void_flip_to_true = False
 
     if not instance.pk:
         return
@@ -135,7 +135,6 @@ def _charge_create_void_reversal(sender, instance: Charge, created: bool, **kwar
     if not getattr(instance, "_void_flip_to_true", False):
         return
 
-    # Find the original JE for this charge (tenant-safe by school_id)
     original = (
         JournalEntry.objects
         .select_related("school", "created_by")
@@ -148,12 +147,12 @@ def _charge_create_void_reversal(sender, instance: Charge, created: bool, **kwar
         .first()
     )
     if not original:
-        return  # no posted entry; nothing to reverse
+        return
 
-    # Idempotent reversal; also preserves immutability (no edits)
     create_reversal_entry(
         original_entry=original,
         reason=f"Charge voided ({instance.id})",
+        reference_type="charge_void_reversal",
     )
 
 
@@ -163,7 +162,7 @@ def _payment_capture_void_flip(sender, instance: Payment, **kwargs):
     Store a flag on the instance when is_void flips False -> True.
     This avoids guessing in post_save and avoids re-querying after save.
     """
-    instance._void_flip_to_true = False  # default
+    instance._void_flip_to_true = False
 
     if not instance.pk:
         return
@@ -183,7 +182,6 @@ def _payment_create_void_reversal(sender, instance: Payment, created: bool, **kw
     if not getattr(instance, "_void_flip_to_true", False):
         return
 
-    # Find the original JE for this payment (tenant-safe by school_id)
     original = (
         JournalEntry.objects
         .select_related("school", "created_by")
@@ -196,10 +194,10 @@ def _payment_create_void_reversal(sender, instance: Payment, created: bool, **kw
         .first()
     )
     if not original:
-        return  # no posted entry; nothing to reverse
+        return
 
-    # Idempotent reversal; also preserves immutability (no edits)
     create_reversal_entry(
         original_entry=original,
         reason=f"Payment voided ({instance.id})",
+        reference_type="payment_void_reversal",
     )
