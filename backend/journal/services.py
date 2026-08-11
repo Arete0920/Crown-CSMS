@@ -108,13 +108,19 @@ def _find_reversal(original_entry: JournalEntry) -> JournalEntry | None:
     return JournalEntry.objects.filter(reversal_of=original_entry).first()
 
 
-def create_reversal_entry(*, original_entry: JournalEntry, reason: str) -> JournalEntry:
+def create_reversal_entry(
+    *,
+    original_entry: JournalEntry,
+    reason: str,
+    reference_type: str | None = None,
+) -> JournalEntry:
     """
-    Create an immutable reversing JournalEntry for original_entry.
+    Create one immutable reversing JournalEntry for ``original_entry``.
 
-    Idempotency is enforced by querying the actual ``reversal_of`` relation and
-    by the database OneToOne constraint. The previous reverse ``reversal_entry_id``
-    lookup was not a reliable accessor for this relationship.
+    The database OneToOne relation is the idempotency authority. Callers may
+    provide a domain-specific reversal ``reference_type`` (for example,
+    ``charge_void_reversal``); otherwise the canonical default is derived from
+    the original entry type (for example, ``payment_reversal``).
     """
     existing = _find_reversal(original_entry)
     if existing is not None:
@@ -133,7 +139,9 @@ def create_reversal_entry(*, original_entry: JournalEntry, reason: str) -> Journ
             return existing
 
         base_reference_type = (original_entry.reference_type or "journal").strip() or "journal"
-        reversal_reference_type = f"{base_reference_type}_reversal"[:64]
+        reversal_reference_type = (reference_type or f"{base_reference_type}_reversal").strip()
+        if not reversal_reference_type or len(reversal_reference_type) > 64:
+            raise ValidationError("reversal reference_type must be between 1 and 64 characters.")
 
         rev = JournalEntry.objects.create(
             school=original_entry.school,
