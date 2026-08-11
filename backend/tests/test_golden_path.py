@@ -9,7 +9,12 @@ from rest_framework.test import APIClient
 
 from academics.models import Course, Enrollment, Section
 from admissions.models import AdmissionsApplication
-from applications.models import Applicant, Application
+from applications.models import Applicant, Application, ApplicationEvent, ApplicationStatus
+from applications.views_admissions import (
+    CONTRACT_COUNTERSIGNED,
+    DEPOSIT_PAID,
+    ENROLLMENT_STATE_EVENT_TYPE,
+)
 from core.models import AcademicYear, CrownPermission, Family, GradeLevel, RolePermission, School, UserRole, Student as CoreStudent
 from crown_api.models_households import Household as CrownHousehold, Person, Student as CrownStudent
 from households.models import Household, Student
@@ -51,6 +56,36 @@ def _school_year(school: School) -> AcademicYear:
         end_date=date(2027, 5, 31),
         is_current=True,
     )
+
+
+def _link_ready_canonical_application(legacy):
+    household = Household.objects.create(
+        school_id=legacy.school_id,
+        name=f"Golden Canonical Household {uuid.uuid4().hex[:6]}",
+    )
+    canonical = Application.objects.create(
+        school_id=legacy.school_id,
+        household=household,
+        status=ApplicationStatus.DECIDED,
+    )
+    ApplicationEvent.objects.create(
+        school_id=legacy.school_id,
+        application=canonical,
+        event_type="decision_made",
+        payload={"decision": "accepted"},
+    )
+    ApplicationEvent.objects.create(
+        school_id=legacy.school_id,
+        application=canonical,
+        event_type=ENROLLMENT_STATE_EVENT_TYPE,
+        payload={
+            "contract_status": CONTRACT_COUNTERSIGNED,
+            "deposit_status": DEPOSIT_PAID,
+        },
+    )
+    legacy.notes_internal = f"canonical_application_id={canonical.id}"
+    legacy.save(update_fields=["notes_internal", "updated_at"])
+    return canonical
 
 
 def test_admissions_summary_returns_expected_pipeline_shape():
@@ -104,6 +139,7 @@ def test_enrollment_transition_marks_application_enrolled_and_activates_student(
         sis_student=sis_student,
         status=AdmissionsApplication.STATUS_ACCEPTED,
     )
+    _link_ready_canonical_application(app)
 
     user = _staff_user(school, username=f"enroll-{uuid.uuid4()}")
     client = APIClient()
