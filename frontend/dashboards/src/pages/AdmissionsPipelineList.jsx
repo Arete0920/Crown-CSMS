@@ -2,7 +2,7 @@ import { useCallback, useMemo, useState } from 'react';
 import CrownLayout from '../components/crown/CrownLayout.jsx';
 import CrownDataTable from '../components/data/CrownDataTable.jsx';
 import Drawer from '../components/Drawer';
-import { getAdmissionsApplications, enrollApplicant } from '../api/admissions';
+import { decideApplicant, getAdmissionsApplications, enrollApplicant, updateApplicantReview } from '../api/admissions';
 import { csvEscape, downloadTextFile } from '../lib/export/csv';
 import { useAsyncPageData } from '../hooks/useAsyncPageData';
 import { usePersistentTableState } from '../hooks/usePersistentTableState';
@@ -12,7 +12,7 @@ const SM = { fontSize: '0.75rem', padding: '3px 10px', cursor: 'pointer', border
 const SM_ON = { ...SM, background: 'var(--crown-compat-color-cb69c739b8)', color: 'var(--crown-compat-color-e08de71387)' };
 const BTN = { fontSize: '0.875rem', padding: '5px 15px', cursor: 'pointer', borderRadius: '4px', border: '1px solid var(--crown-compat-color-cb69c739b8)', background: 'transparent', color: 'var(--crown-compat-color-cb69c739b8)' };
 const BTN_FILLED = { ...BTN, background: 'var(--crown-compat-color-cb69c739b8)', color: 'var(--crown-compat-color-e08de71387)' };
-const ROW = { display: 'flex', gap: '8px', alignItems: 'center' };
+const ROW = { display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' };
 const LABEL = { margin: 0, fontSize: '0.875rem' };
 
 const STATUS_LABELS = {
@@ -30,6 +30,7 @@ const STATUS_LABELS = {
 function mapAdmissionsApp(app) {
   return {
     id: app.id,
+    academic_year_id: app.academic_year_id || '',
     applicant_name: app.applicant_name || '',
     student_first_name: app.student_first_name || '',
     student_last_name: app.student_last_name || '',
@@ -92,8 +93,12 @@ function HouseholdReviewDrawer({
   enrollResult,
   enrollError,
   enrolling,
+  directorResult,
+  directorBusy,
   householdApplications,
   contactRail,
+  onReviewUpdate,
+  onDecision,
   onEnroll,
 }) {
   if (!selected) return null;
@@ -112,8 +117,14 @@ function HouseholdReviewDrawer({
 
   return (
     <Drawer open={Boolean(selected)} onClose={closeDrawer} width={640}>
-      <div style={{ padding: '24px' }}>
+      <div style={{ padding: '24px' }} data-testid="admissions-household-review">
         <h6 style={{ margin: 0, marginBottom: '1rem', fontWeight: 700, fontSize: '1.25rem' }}>Household Admissions Review</h6>
+
+        {directorResult ? (
+          <div role="status" style={{ padding: '8px 16px', borderRadius: '4px', background: 'var(--crown-subtle)', border: '1px solid var(--crown-border)', marginBottom: '8px' }}>
+            {directorResult}
+          </div>
+        ) : null}
 
         {enrollResult ? (
           <div role="alert" style={{ padding: '8px 16px', borderRadius: '4px', background: enrollResult.ok ? 'var(--crown-compat-color-df49e3f406)' : 'var(--crown-compat-color-14a5dafae2)', color: enrollResult.ok ? 'var(--crown-compat-color-e81fcc6b0b)' : 'var(--crown-compat-color-bf645a12ce)', border: `1px solid ${enrollResult.ok ? 'var(--crown-compat-color-09dff71fa9)' : 'var(--crown-compat-color-b5cf969cd7)'}`, marginBottom: '8px' }}>
@@ -157,10 +168,10 @@ function HouseholdReviewDrawer({
         <div style={{ display: 'grid', gap: 10, marginBottom: 16 }}>
           {householdApplications.map((appRow) => {
             const expanded = Boolean(expandedChildren[appRow.id]);
-            const studentName = `${appRow.student_first_name || ''} ${appRow.student_last_name || ''}`.trim() || 'Student record pending';
+            const studentName = `${appRow.student_first_name || ''} ${appRow.student_last_name || ''}`.trim() || appRow.applicant_name || 'Student record pending';
 
             return (
-              <div key={appRow.id} style={{ border: '1px solid var(--crown-border)', borderRadius: 8 }}>
+              <div key={appRow.id} data-application-id={appRow.id} style={{ border: '1px solid var(--crown-border)', borderRadius: 8 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: 10, gap: 10 }}>
                   <div>
                     <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{studentName}</div>
@@ -178,13 +189,25 @@ function HouseholdReviewDrawer({
                     <p style={LABEL}><strong>Submitted:</strong> {appRow.created_at ? new Date(appRow.created_at).toLocaleString() : '—'}</p>
                     <p style={LABEL}><strong>Updated:</strong> {appRow.updated_at ? new Date(appRow.updated_at).toLocaleString() : '—'}</p>
                     <div style={ROW}>
+                      {appRow.status === 'UNDER_REVIEW' ? (
+                        <button type="button" style={BTN_FILLED} disabled={directorBusy} onClick={() => onReviewUpdate(appRow.id)}>
+                          Verify Contact + Checklist
+                        </button>
+                      ) : null}
+                      {appRow.status !== 'ENROLLED' ? (
+                        <>
+                          <button type="button" style={BTN} disabled={directorBusy} onClick={() => onDecision(appRow.id, 'ACCEPTED')}>Accept</button>
+                          <button type="button" style={BTN} disabled={directorBusy} onClick={() => onDecision(appRow.id, 'WAITLISTED')}>Waitlist</button>
+                          <button type="button" style={BTN} disabled={directorBusy} onClick={() => onDecision(appRow.id, 'DENIED')}>Deny</button>
+                        </>
+                      ) : null}
                       <button
                         type="button"
                         style={BTN_FILLED}
                         onClick={() => onEnroll(appRow.id)}
-                        disabled={enrolling || appRow.status === 'ENROLLED'}
+                        disabled={enrolling || directorBusy || appRow.status !== 'ACCEPTED'}
                       >
-                        {enrolling ? 'Enrolling...' : 'Enroll Child'}
+                        {enrolling ? 'Enrolling...' : appRow.status === 'ENROLLED' ? 'Enrolled' : 'Enroll Child'}
                       </button>
                     </div>
                   </div>
@@ -206,6 +229,8 @@ export function AdmissionsPipelineList() {
   const [selected, setSelected] = useState(null);
   const [expandedChildren, setExpandedChildren] = useState({});
   const [enrollResult, setEnrollResult] = useState(null);
+  const [directorResult, setDirectorResult] = useState('');
+  const [directorBusy, setDirectorBusy] = useState(false);
 
   const {
     search,
@@ -274,7 +299,7 @@ export function AdmissionsPipelineList() {
       key: 'actions',
       label: 'Actions',
       render: (row) => (
-        <button type="button" style={SM} onClick={() => setSelected(row)}>Open</button>
+        <button type="button" style={SM} onClick={() => { setSelected(row); setDirectorResult(''); }}>Open</button>
       ),
     },
   ];
@@ -283,6 +308,7 @@ export function AdmissionsPipelineList() {
     <div style={ROW}>
       <button type="button" style={filters.status === '' ? SM_ON : SM} onClick={() => setFilter('status', '')}>All</button>
       <button type="button" style={filters.status === 'SUBMITTED' ? SM_ON : SM} onClick={() => setFilter('status', 'SUBMITTED')}>Submitted</button>
+      <button type="button" style={filters.status === 'UNDER_REVIEW' ? SM_ON : SM} onClick={() => setFilter('status', 'UNDER_REVIEW')}>Under review</button>
       <button type="button" style={filters.status === 'ACCEPTED' ? SM_ON : SM} onClick={() => setFilter('status', 'ACCEPTED')}>Accepted</button>
     </div>
   );
@@ -315,6 +341,41 @@ export function AdmissionsPipelineList() {
   const householdApplications = useMemo(() => getHouseholdApplications(selected, rows), [rows, selected]);
   const contactRail = useMemo(() => getContactRail(selected, householdApplications), [householdApplications, selected]);
 
+  async function refreshSelected(applicationId) {
+    const source = (await getAdmissionsApplications() || []).map(mapAdmissionsApp);
+    const match = source.find((row) => String(row.id) === String(applicationId));
+    await reload();
+    if (match) setSelected(match);
+  }
+
+  async function handleReviewUpdate(applicationId) {
+    setDirectorBusy(true);
+    setDirectorResult('');
+    try {
+      const result = await updateApplicantReview(applicationId);
+      setDirectorResult(`Contact verified: ${result.guardian?.name || 'Guardian'} · Checklist ${result.checklist?.essay_received && result.checklist?.transcript_received ? 'verified' : 'updated'}.`);
+      await refreshSelected(applicationId);
+    } catch (err) {
+      setDirectorResult(err?.response?.data?.detail || err?.message || 'Review update could not be recorded.');
+    } finally {
+      setDirectorBusy(false);
+    }
+  }
+
+  async function handleDecision(applicationId, decision) {
+    setDirectorBusy(true);
+    setDirectorResult('');
+    try {
+      const result = await decideApplicant(applicationId, decision);
+      setDirectorResult(result.message || `Decision recorded: ${decision}.`);
+      await refreshSelected(applicationId);
+    } catch (err) {
+      setDirectorResult(err?.response?.data?.detail || err?.message || 'Decision could not be recorded.');
+    } finally {
+      setDirectorBusy(false);
+    }
+  }
+
   async function handleEnrollSelected(applicationId) {
     if (!applicationId) return;
     setEnrollResult(null);
@@ -322,14 +383,14 @@ export function AdmissionsPipelineList() {
     try {
       const result = await runEnroll(applicationId);
       setEnrollResult({ ok: true, message: result.message || 'Applicant enrolled.' });
-      await reload();
+      await refreshSelected(applicationId);
     } catch {
       setEnrollResult({ ok: false, message: 'Unable to enroll applicant.' });
     }
   }
 
   return (
-    <CrownLayout title="Admissions Pipeline" subtitle="Applicant tracking and enrollment">
+    <CrownLayout title="Admissions Pipeline" subtitle="Applicant review, decision, and enrollment">
       <CrownDataTable
         title="Applications"
         subtitle="Pipeline view with standardized sorting and pagination"
@@ -359,8 +420,12 @@ export function AdmissionsPipelineList() {
         enrollResult={enrollResult}
         enrollError={enrollError}
         enrolling={enrolling}
+        directorResult={directorResult}
+        directorBusy={directorBusy}
         householdApplications={householdApplications}
         contactRail={contactRail}
+        onReviewUpdate={handleReviewUpdate}
+        onDecision={handleDecision}
         onEnroll={handleEnrollSelected}
       />
     </CrownLayout>

@@ -5,6 +5,7 @@ from admissions.models import AdmissionsApplication
 
 
 class AdmissionsApplicationLinkReadSerializer(serializers.ModelSerializer):
+    academic_year_id = serializers.UUIDField(source="academic_year.id", read_only=True)
     household_id = serializers.UUIDField(source="household.id", read_only=True, allow_null=True)
     household_name = serializers.CharField(
         source="household.household_name", read_only=True, allow_null=True
@@ -89,6 +90,7 @@ class AdmissionsApplicationLinkReadSerializer(serializers.ModelSerializer):
         model = AdmissionsApplication
         fields = (
             "id",
+            "academic_year_id",
             "applicant_name",
             "status",
             "household_id",
