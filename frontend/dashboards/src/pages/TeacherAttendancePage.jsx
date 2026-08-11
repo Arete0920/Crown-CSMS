@@ -4,10 +4,8 @@ import CrownLayout from "../components/crown/CrownLayout.jsx";
 import ErrorBanner from "../components/ui/ErrorBanner";
 import EmptyState from "../components/ui/EmptyState";
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "";
-
 async function fetchJson(path, opts = {}) {
-  const resp = await authenticatedFetch(`${API_BASE}${path}`, opts);
+  const resp = await authenticatedFetch(path, opts);
   return resp.json();
 }
 
