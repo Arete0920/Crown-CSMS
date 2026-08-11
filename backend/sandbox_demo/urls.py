@@ -2,6 +2,7 @@ from django.urls import path
 
 from .admin_views import sandbox_admin_resolve, sandbox_admin_state
 from .finance_views import sandbox_finance_apply_payment, sandbox_finance_state
+from .parent_daily_views import sandbox_parent_daily
 from .student_views import sandbox_student_self_service
 from .views import (
     SandboxCatalogView,
@@ -10,12 +11,15 @@ from .views import (
     SandboxInviteCreateView,
     SandboxInviteResolveView,
     SandboxInviteRevokeView,
+    SandboxParentEnrollmentView,
     SandboxSessionView,
 )
 
 urlpatterns = [
     path("catalog/", SandboxCatalogView.as_view(), name="sandbox-catalog"),
     path("session/", SandboxSessionView.as_view(), name="sandbox-session"),
+    path("parent/enrollment/", SandboxParentEnrollmentView.as_view(), name="sandbox-parent-enrollment"),
+    path("parent/daily/", sandbox_parent_daily, name="sandbox-parent-daily"),
     path("events/", SandboxEventView.as_view(), name="sandbox-events"),
     path("feedback/", SandboxFeedbackView.as_view(), name="sandbox-feedback"),
     path("admin/state/", sandbox_admin_state, name="sandbox-admin-state"),
