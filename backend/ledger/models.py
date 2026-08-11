@@ -127,9 +127,18 @@ class Credit(ImmutableMoneyMixin, TimeStampedModel):
             ),
         ]
         indexes = [
-            models.Index(fields=["school_id", "account"]),
-            models.Index(fields=["school_id", "source"]),
-            models.Index(fields=["school_id", "created_at"]),
+            models.Index(
+                fields=["school_id", "account"],
+                name="ledger_cred_school__c5bc72_idx",
+            ),
+            models.Index(
+                fields=["school_id", "source"],
+                name="ledger_cred_school__8a7f93_idx",
+            ),
+            models.Index(
+                fields=["school_id", "created_at"],
+                name="ledger_cred_school__4fbdcc_idx",
+            ),
         ]
 
     def clean(self):
