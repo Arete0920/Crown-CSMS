@@ -4,6 +4,7 @@ from decimal import Decimal
 import pytest
 from django.core.exceptions import ValidationError
 
+from core.models import School
 from households.models import Household
 from ledger.models import Charge, Credit, LedgerAccount
 from ledger.services import account_balance, build_account_statement, post_account_credit, void_account_credit
@@ -12,13 +13,17 @@ from ledger.services import account_balance, build_account_statement, post_accou
 pytestmark = pytest.mark.django_db
 
 
+def _school_id(label):
+    return School.objects.create(name=f"{label}-{uuid.uuid4()}").id
+
+
 def _account(school_id):
     household = Household.objects.create(school_id=school_id, name=f"HH-{uuid.uuid4()}")
     return LedgerAccount.objects.create(school_id=school_id, household=household)
 
 
 def test_credit_reduces_receivable_without_creating_payment():
-    school_id = uuid.uuid4()
+    school_id = _school_id("Option A credit")
     account = _account(school_id)
     Charge.objects.create(
         school_id=school_id,
@@ -45,7 +50,7 @@ def test_credit_reduces_receivable_without_creating_payment():
 
 
 def test_credit_reference_is_idempotent_and_fails_on_changed_financial_facts():
-    school_id = uuid.uuid4()
+    school_id = _school_id("Option A credit idempotency")
     account = _account(school_id)
     reference = f"aid_award:{uuid.uuid4()}"
 
@@ -78,8 +83,8 @@ def test_credit_reference_is_idempotent_and_fails_on_changed_financial_facts():
 
 
 def test_credit_cannot_cross_tenants_or_be_deleted_and_void_is_idempotent():
-    school_id = uuid.uuid4()
-    other_school_id = uuid.uuid4()
+    school_id = _school_id("Option A credit tenant")
+    other_school_id = _school_id("Option A credit other tenant")
     account = _account(school_id)
 
     with pytest.raises(ValidationError, match="school mismatch"):
