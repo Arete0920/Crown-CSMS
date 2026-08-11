@@ -54,21 +54,22 @@ def test_student_overview_returns_200_for_core_student():
     assert response.json()["student"]["id"] == str(student.id)
 
 
-def test_student_self_overview_resolves_households_student_profile():
+def test_student_self_overview_requires_linked_households_student_profile():
     school = School.objects.create(name="Student360 Self School")
     household = Household.objects.create(school_id=school.id, name="Stone Household")
-    HouseholdStudent.objects.create(
-        school_id=school.id,
-        household=household,
-        first_name="Harper",
-        last_name="Stone",
-        grade_level="9",
-    )
     user = _mk_user(
         school=school,
         email="harper.stone@test.local",
         first_name="Harper",
         last_name="Stone",
+    )
+    HouseholdStudent.objects.create(
+        school_id=school.id,
+        household=household,
+        account=user,
+        first_name="Harper",
+        last_name="Stone",
+        grade_level="9",
     )
 
     client = APIClient()
