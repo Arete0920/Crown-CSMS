@@ -7,7 +7,14 @@ from rest_framework.test import APIClient
 
 from admissions.models import AdmissionsApplication, AdmissionsAuditEvent
 from admissions.services import InvalidStageTransition, finalize_enrollment
+from applications.models import Application, ApplicationEvent, ApplicationStatus
+from applications.views_admissions import (
+    CONTRACT_COUNTERSIGNED,
+    DEPOSIT_PAID,
+    ENROLLMENT_STATE_EVENT_TYPE,
+)
 from core.models import AcademicYear, CrownPermission, Family, RolePermission, School, UserRole
+from households.models import Household
 
 
 User = get_user_model()
@@ -43,6 +50,36 @@ def _application(school, academic_year, status=AdmissionsApplication.STATUS_ACCE
         family=family,
         status=status,
     )
+
+
+def _link_ready_canonical_application(legacy):
+    household = Household.objects.create(
+        school_id=legacy.school_id,
+        name=f"Canonical Family {uuid.uuid4().hex[:6]}",
+    )
+    canonical = Application.objects.create(
+        school_id=legacy.school_id,
+        household=household,
+        status=ApplicationStatus.DECIDED,
+    )
+    ApplicationEvent.objects.create(
+        school_id=legacy.school_id,
+        application=canonical,
+        event_type="decision_made",
+        payload={"decision": "accepted"},
+    )
+    ApplicationEvent.objects.create(
+        school_id=legacy.school_id,
+        application=canonical,
+        event_type=ENROLLMENT_STATE_EVENT_TYPE,
+        payload={
+            "contract_status": CONTRACT_COUNTERSIGNED,
+            "deposit_status": DEPOSIT_PAID,
+        },
+    )
+    legacy.notes_internal = f"canonical_application_id={canonical.id}"
+    legacy.save(update_fields=["notes_internal", "updated_at"])
+    return canonical
 
 
 def _user_with_permissions(school, *permission_codes):
@@ -154,6 +191,7 @@ class AdmissionsEnrollmentApiTests(TestCase):
     def test_non_staff_registrar_with_admissions_edit_can_enroll(self):
         user = _user_with_permissions(self.school, "admissions.edit")
         app = _application(self.school, self.year)
+        _link_ready_canonical_application(app)
         self.assertFalse(user.is_staff)
         self.client.force_authenticate(user=user)
 
