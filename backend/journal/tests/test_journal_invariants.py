@@ -1,11 +1,13 @@
+import uuid
 from decimal import Decimal
-from django.test import TestCase
-from django.core.exceptions import ValidationError
+
 from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError
+from django.test import TestCase
 
 from core.models import School
 from journal.models import GLAccount, JournalEntry
-from journal.services import post_journal_entry
+from journal.services import create_reversal_entry, post_journal_entry
 
 
 User = get_user_model()
@@ -35,14 +37,17 @@ class JournalInvariantTests(TestCase):
             account_type="REVENUE",
         )
 
+    def _balanced_lines(self, amount=Decimal("100.00")):
+        return [
+            {"account": self.cash, "debit": amount},
+            {"account": self.revenue, "credit": amount},
+        ]
+
     def test_balanced_entry_succeeds(self):
         entry = post_journal_entry(
             school=self.school,
             created_by=self.user,
-            lines=[
-                {"account": self.cash, "debit": Decimal("100.00")},
-                {"account": self.revenue, "credit": Decimal("100.00")},
-            ],
+            lines=self._balanced_lines(),
             memo="Tuition payment",
         )
 
@@ -105,10 +110,7 @@ class JournalInvariantTests(TestCase):
         entry = post_journal_entry(
             school=self.school,
             created_by=self.user,
-            lines=[
-                {"account": self.cash, "debit": Decimal("100.00")},
-                {"account": self.revenue, "credit": Decimal("100.00")},
-            ],
+            lines=self._balanced_lines(),
         )
 
         entry.memo = "Changed"
@@ -119,10 +121,7 @@ class JournalInvariantTests(TestCase):
         entry = post_journal_entry(
             school=self.school,
             created_by=self.user,
-            lines=[
-                {"account": self.cash, "debit": Decimal("100.00")},
-                {"account": self.revenue, "credit": Decimal("100.00")},
-            ],
+            lines=self._balanced_lines(),
         )
 
         with self.assertRaises(ValidationError):
@@ -142,3 +141,61 @@ class JournalInvariantTests(TestCase):
             pass
 
         self.assertEqual(JournalEntry.objects.count(), 0)
+
+    def test_accounting_traceability_metadata_is_persisted(self):
+        correlation_id = uuid.uuid4()
+        entry = post_journal_entry(
+            school=self.school,
+            created_by=self.user,
+            lines=self._balanced_lines(),
+            reference_type="charge",
+            reference_id=uuid.uuid4(),
+            correlation_id=correlation_id,
+            source_system="student_accounts",
+            currency="usd",
+        )
+
+        self.assertEqual(entry.correlation_id, correlation_id)
+        self.assertEqual(entry.source_system, "student_accounts")
+        self.assertEqual(entry.currency, "USD")
+
+    def test_empty_currency_fails_closed(self):
+        with self.assertRaises(ValidationError):
+            post_journal_entry(
+                school=self.school,
+                created_by=self.user,
+                lines=self._balanced_lines(),
+                currency="",
+            )
+
+    def test_reversal_is_idempotent_and_preserves_traceability(self):
+        reference_id = uuid.uuid4()
+        correlation_id = uuid.uuid4()
+        original = post_journal_entry(
+            school=self.school,
+            created_by=self.user,
+            lines=self._balanced_lines(),
+            reference_type="payment",
+            reference_id=reference_id,
+            correlation_id=correlation_id,
+            source_system="payments",
+            currency="USD",
+        )
+
+        first = create_reversal_entry(original_entry=original, reason="payment voided")
+        second = create_reversal_entry(original_entry=original, reason="retry")
+
+        self.assertEqual(first.pk, second.pk)
+        self.assertEqual(JournalEntry.objects.filter(reversal_of=original).count(), 1)
+        self.assertEqual(first.reference_type, "payment_reversal")
+        self.assertEqual(first.reference_id, reference_id)
+        self.assertEqual(first.correlation_id, correlation_id)
+        self.assertEqual(first.source_system, "payments")
+        self.assertEqual(first.currency, "USD")
+
+        original_lines = list(original.lines.order_by("account_id"))
+        reversal_lines = list(first.lines.order_by("account_id"))
+        self.assertEqual(len(original_lines), len(reversal_lines))
+        for original_line, reversal_line in zip(original_lines, reversal_lines, strict=True):
+            self.assertEqual(reversal_line.debit, original_line.credit)
+            self.assertEqual(reversal_line.credit, original_line.debit)
