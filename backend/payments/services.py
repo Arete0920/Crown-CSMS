@@ -4,7 +4,7 @@ import uuid
 from django.db import transaction
 from django.utils import timezone
 
-from finance.models import FinancePayment, PaymentStatus, Processor
+from finance.models import FinancePayment, PaymentStatus
 from finance.services import initiate_refund, settle_payment_and_allocate
 from payments.exceptions import record_payment_exception
 from payments.models import (
@@ -15,6 +15,14 @@ from payments.models import (
     ProviderDispute,
     SavedPaymentMethod,
 )
+
+
+class UnmatchedPaymentError(ValueError):
+    """Gateway event resolved an intent but no authoritative payment record."""
+
+
+class SettlementAllocationRequired(ValueError):
+    """Settlement cannot be applied to receivables without explicit allocation facts."""
 
 
 STATUS_MAP = {
@@ -97,7 +105,7 @@ def process_gateway_event(event: GatewayEvent) -> None:
         _apply_settlement(intent, payload)
 
     if status == GatewayIntentStatus.REFUNDED:
-        _apply_refund(intent, payload)
+        _apply_refund(intent, payload, provider=event.provider)
 
     _mark_processed(event)
 
@@ -125,41 +133,68 @@ def _to_uuid_or_none(value):
         return None
 
 
-def _apply_settlement(intent: PaymentIntentRecord, payload: dict) -> None:
+def _find_finance_payment(intent: PaymentIntentRecord) -> FinancePayment | None:
+    """
+    Resolve the compatibility FinancePayment using explicit identifier ownership.
+
+    The provider payment id is never overloaded with provider intent id or
+    client reference id. During migration, callers can supply finance_payment_id
+    in intent metadata as the strongest compatibility link.
+    """
     finance_payment_id = (intent.metadata or {}).get("finance_payment_id")
-
-    payment = None
     if finance_payment_id:
-        payment = FinancePayment.objects.filter(pk=finance_payment_id, school_id=intent.school_id).first()
-
-    if payment is None:
         payment = FinancePayment.objects.filter(
+            pk=finance_payment_id,
             school_id=intent.school_id,
-            processor_payment_id__in=[
-                intent.provider_payment_id,
-                intent.provider_intent_id,
-                intent.client_reference_id,
-            ],
+        ).first()
+        if payment is not None:
+            return payment
+
+    if intent.provider_payment_id:
+        return FinancePayment.objects.filter(
+            school_id=intent.school_id,
+            processor_payment_id=intent.provider_payment_id,
         ).first()
 
+    return None
+
+
+def _settlement_allocations(intent: PaymentIntentRecord, payload: dict) -> list[dict]:
+    """Read explicit allocation facts supplied by the canonical caller/adapter."""
+    metadata = intent.metadata or {}
+    allocations = metadata.get("allocations")
+    if allocations is None:
+        allocations = payload.get("allocations")
+    if not isinstance(allocations, list) or not allocations:
+        raise SettlementAllocationRequired(
+            "Settled gateway payment is missing explicit obligation allocations."
+        )
+    return allocations
+
+
+def _apply_settlement(intent: PaymentIntentRecord, payload: dict) -> None:
+    payment = _find_finance_payment(intent)
     if payment is None:
+        raise UnmatchedPaymentError(
+            "Settled gateway intent has no matching FinancePayment compatibility record."
+        )
+
+    if payment.status == PaymentStatus.SETTLED:
         return
 
-    if payment.status != PaymentStatus.SETTLED:
-        settle_payment_and_allocate(payment=payment, allocations_payload=[])
+    allocations_payload = _settlement_allocations(intent, payload)
+    settle_payment_and_allocate(
+        payment=payment,
+        allocations_payload=allocations_payload,
+    )
 
 
-def _apply_refund(intent: PaymentIntentRecord, payload: dict) -> None:
-    payment = FinancePayment.objects.filter(
-        school_id=intent.school_id,
-        processor_payment_id__in=[
-            intent.provider_payment_id,
-            intent.provider_intent_id,
-            intent.client_reference_id,
-        ],
-    ).first()
+def _apply_refund(intent: PaymentIntentRecord, payload: dict, *, provider: str) -> None:
+    payment = _find_finance_payment(intent)
     if payment is None:
-        return
+        raise UnmatchedPaymentError(
+            "Refunded gateway intent has no matching FinancePayment compatibility record."
+        )
 
     amount = _amount(payload.get("refund_amount") or payload.get("amount") or intent.amount)
     refund_cents = int((amount * Decimal("100")).quantize(Decimal("1")))
@@ -171,7 +206,7 @@ def _apply_refund(intent: PaymentIntentRecord, payload: dict) -> None:
     initiate_refund(
         payment=payment,
         amount_cents=max(refund_cents, 1),
-        processor=Processor.COMPUWERX,
+        processor=provider,
         created_by=None,
         idempotency_key=idem,
     )
