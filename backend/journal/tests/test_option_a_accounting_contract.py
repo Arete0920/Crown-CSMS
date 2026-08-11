@@ -1,14 +1,11 @@
 import uuid
 from decimal import Decimal
-
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.test import TestCase
-
 from core.models import School
 from journal.models import GLAccount, JournalEntry
 from journal.services import create_reversal_entry, post_journal_entry
-
 
 class OptionAAccountingContractTests(TestCase):
     def setUp(self):
@@ -19,13 +16,11 @@ class OptionAAccountingContractTests(TestCase):
 
     def _post(self, **kwargs):
         return post_journal_entry(
-            school=self.school,
-            created_by=self.user,
+            school=self.school, created_by=self.user,
             lines=[
                 {"account": self.cash, "debit": Decimal("10.00")},
                 {"account": self.revenue, "credit": Decimal("10.00")},
-            ],
-            **kwargs,
+            ], **kwargs,
         )
 
     def test_traceability_metadata_persists_and_normalizes_currency(self):
@@ -39,12 +34,7 @@ class OptionAAccountingContractTests(TestCase):
 
     def test_reversal_is_idempotent_and_preserves_traceability(self):
         reference_id, correlation_id = uuid.uuid4(), uuid.uuid4()
-        original = self._post(
-            reference_type="payment",
-            reference_id=reference_id,
-            correlation_id=correlation_id,
-            source_system="payments",
-        )
+        original = self._post(reference_type="payment", reference_id=reference_id, correlation_id=correlation_id, source_system="payments")
         first = create_reversal_entry(original_entry=original, reason="void")
         second = create_reversal_entry(original_entry=original, reason="retry")
         self.assertEqual(first.pk, second.pk)
