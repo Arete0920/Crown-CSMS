@@ -1,4 +1,5 @@
 import CrownDashboardTemplate from '../components/crown-dashboard/CrownDashboardTemplate.jsx';
+import SandboxFinanceTransactionPanel from '../components/finance/SandboxFinanceTransactionPanel.jsx';
 import { getDashboardTemplate } from '../config/dashboardTemplates/index.js';
 
 export default function CrownLaunchModulePage({ moduleKey = 'admissions', activePath = '/admissions' }) {
@@ -7,5 +8,10 @@ export default function CrownLaunchModulePage({ moduleKey = 'admissions', active
     activePath,
   };
 
-  return <CrownDashboardTemplate config={config} roleKey="schoolAdministrator" />;
+  return (
+    <>
+      {moduleKey === 'finance' ? <SandboxFinanceTransactionPanel /> : null}
+      <CrownDashboardTemplate config={config} roleKey="schoolAdministrator" />
+    </>
+  );
 }

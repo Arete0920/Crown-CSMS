@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import CrownDashboardTemplate from '../components/crown-dashboard/CrownDashboardTemplate.jsx';
+import SandboxAdminTransactionPanel from '../components/admin/SandboxAdminTransactionPanel.jsx';
 import { getDashboardTemplate } from '../config/dashboardTemplates/index.js';
 import { loadSchoolAdministratorLiveSnapshot } from '../features/dashboards/dashboardApi';
 
@@ -245,5 +246,10 @@ export default function SchoolAdministratorDashboard() {
     [baseConfig, snapshot],
   );
 
-  return <CrownDashboardTemplate config={config} roleKey="schoolAdministrator" />;
+  return (
+    <>
+      <SandboxAdminTransactionPanel />
+      <CrownDashboardTemplate config={config} roleKey="schoolAdministrator" />
+    </>
+  );
 }
