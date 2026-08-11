@@ -4,6 +4,10 @@ from sandbox_demo.academic_seed import (
     reset_heritage_teacher_academics,
     seed_heritage_teacher_academics,
 )
+from sandbox_demo.admissions_seed import (
+    reset_heritage_admissions_scenario,
+    seed_heritage_admissions_scenario,
+)
 from sandbox_demo.finance import seed_heritage_finance_context
 from sandbox_demo.services import seed_heritage_flagship
 
@@ -17,10 +21,12 @@ class Command(BaseCommand):
     def handle(self, *args, **opts):
         reset = bool(opts.get("reset"))
         if reset:
+            reset_heritage_admissions_scenario()
             reset_heritage_teacher_academics()
         metrics = seed_heritage_flagship(reset=reset)
         metrics.update(seed_heritage_teacher_academics())
         metrics.update(seed_heritage_finance_context())
+        metrics.update(seed_heritage_admissions_scenario())
         for key, value in metrics.items():
             self.stdout.write(f"{key}: {value}")
         self.stdout.write(self.style.SUCCESS("Heritage flagship sandbox seed complete."))

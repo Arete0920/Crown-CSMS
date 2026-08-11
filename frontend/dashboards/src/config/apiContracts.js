@@ -3,14 +3,14 @@ import { APP_PERMISSIONS } from '../auth/permissions';
 export const API_CONTRACTS = {
   'admissions.applications.list': {
     method: 'GET',
-    path: '/admissions/applications/',
+    path: '/api/admissions/applications/',
     owner: 'AdmissionsPipelineList',
     permission: APP_PERMISSIONS.ADMISSIONS_VIEW,
     responseType: 'list',
   },
   'admissions.enroll': {
     method: 'POST',
-    path: '/admissions/enroll/',
+    path: '/api/admissions/enroll/',
     owner: 'AdmissionsPipelineList',
     permission: APP_PERMISSIONS.ADMISSIONS_EDIT,
     responseType: 'object',

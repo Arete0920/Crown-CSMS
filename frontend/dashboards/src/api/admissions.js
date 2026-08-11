@@ -18,6 +18,17 @@ export const getAdmissionsApplications = async () => {
   return apiGetList(buildApiPath('admissions.applications.list'));
 };
 
+export const updateApplicantReview = async (applicationId) => {
+  return apiPost('/api/admissions/review-update/', { application_id: applicationId });
+};
+
+export const decideApplicant = async (applicationId, decision) => {
+  return apiPost('/api/admissions/decision/', {
+    application_id: applicationId,
+    decision,
+  });
+};
+
 /**
  * Enroll an accepted applicant. Moves status ACCEPTED → ENROLLED.
  * @param {number} applicationId - AdmissionsApplication PK
