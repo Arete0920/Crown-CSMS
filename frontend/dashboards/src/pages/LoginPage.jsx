@@ -25,6 +25,8 @@ function inviteIdFromUrl() {
 
 const SANDBOX_ROLES = [
   { value: "school_admin", label: "School Admin", route: "/school-admin-dashboard" },
+  { value: "admissions_director", label: "Admissions Director", route: "/admissions-dashboard" },
+  { value: "finance_director", label: "Finance Director", route: "/finance" },
   { value: "teacher", label: "Teacher", route: "/teacher" },
   { value: "parent", label: "Parent", route: "/parent" },
   ...(ENABLE_SANDBOX_STUDENT ? [{ value: "student", label: "Student/Learner", route: "/student" }] : []),
