@@ -36,11 +36,11 @@ class Command(BaseCommand):
             reset_heritage_teacher_academics()
         metrics = seed_heritage_flagship(reset=reset)
         metrics.update(seed_heritage_teacher_academics())
+        metrics.update(seed_parent_enrollment_scenario())
         metrics.update(seed_heritage_finance_context())
         metrics.update(seed_heritage_admissions_scenario())
         metrics.update(seed_heritage_admissions_conversion_scenario())
         metrics.update(seed_heritage_admin_context())
-        metrics.update(seed_parent_enrollment_scenario())
         for key, value in metrics.items():
             self.stdout.write(f"{key}: {value}")
         self.stdout.write(self.style.SUCCESS("Heritage flagship sandbox seed complete."))

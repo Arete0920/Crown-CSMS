@@ -57,9 +57,9 @@ test("sandbox teacher records attendance and creates persistent classwork", asyn
   const created = await assignmentResponse.json();
   expect(created.name).toBe(assignmentName);
   await expect(panel.getByRole("status")).toContainText(assignmentName);
-  await expect(panel.getByText(assignmentName)).toBeVisible();
+  await expect(panel.getByText(assignmentName, { exact: true })).toBeVisible();
 
   await page.reload({ waitUntil: "networkidle" });
   const reloadedPanel = page.getByTestId("teacher-classwork-panel");
-  await expect(reloadedPanel.getByText(assignmentName)).toBeVisible({ timeout: 30000 });
+  await expect(reloadedPanel.getByText(assignmentName, { exact: true })).toBeVisible({ timeout: 30000 });
 });
