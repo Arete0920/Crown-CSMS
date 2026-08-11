@@ -83,21 +83,28 @@ def post_account_credit(
     normalized_amount = Decimal(str(amount)).quantize(Decimal("0.01"))
     normalized_source = (source or "").strip().upper()
     normalized_reference = (reference or "").strip()
+    normalized_description = description or ""
     if normalized_amount <= Decimal("0.00"):
         raise ValidationError("credit amount must be > 0")
     if not normalized_source:
         raise ValidationError("credit source is required")
+    if len(normalized_source) > 32:
+        raise ValidationError("credit source exceeds 32 characters")
     if not normalized_reference:
         raise ValidationError("credit reference is required")
+    if len(normalized_reference) > 128:
+        raise ValidationError("credit reference exceeds 128 characters")
+    if len(normalized_description) > 200:
+        raise ValidationError("credit description exceeds 200 characters")
 
     credit, created = Credit.objects.get_or_create(
         school_id=school_id,
-        source=normalized_source[:32],
-        reference=normalized_reference[:128],
+        source=normalized_source,
+        reference=normalized_reference,
         defaults={
             "account": account,
             "amount": normalized_amount,
-            "description": (description or "")[:200],
+            "description": normalized_description,
         },
     )
     if not created:
