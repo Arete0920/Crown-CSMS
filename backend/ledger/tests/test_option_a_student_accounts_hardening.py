@@ -5,6 +5,7 @@ import pytest
 
 from core.models import School
 from households.models import Household
+from journal.models import JournalEntry
 from ledger.models import Charge, LedgerAccount, Payment
 from ledger.services import account_balance, allocate_payment_fifo, build_account_statement
 
@@ -37,6 +38,7 @@ def test_fifo_rejects_void_payment():
         is_void=True,
     )
 
+    assert not JournalEntry.objects.filter(reference_type="payment", reference_id=payment.id).exists()
     with pytest.raises(ValueError, match="void payment"):
         allocate_payment_fifo(school_id=school_id, payment=payment)
 
