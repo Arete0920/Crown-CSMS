@@ -78,11 +78,14 @@ export default function TeacherAttendancePage() {
         <label htmlFor="teacher-attendance-section">Section: </label>
         <select id="teacher-attendance-section" value={sectionId} onChange={(e) => setSectionId(e.target.value)}>
           <option value="">-- select --</option>
-          {sections.map((s) => (
-            <option key={s.id} value={s.id}>
-              {s.name || s.course_name || s.title || s.id}
-            </option>
-          ))}
+          {sections.map((s) => {
+            const sid = s.section_id || s.id;
+            return (
+              <option key={sid} value={sid}>
+                {s.course_name || s.name || s.title || s.course_code || sid}
+              </option>
+            );
+          })}
         </select>
         <span style={{ marginLeft: 12 }}>Date: {today}</span>
         <button
