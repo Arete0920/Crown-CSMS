@@ -4,6 +4,7 @@ import { Box, Typography, Grid, Alert, CircularProgress } from "@mui/material";
 import { getSelectedSchoolId } from "../utils/authClient";
 import { listClassrooms, getClassroom } from "../api/classrooms";
 import { KpiStrip } from "../components/dashboard/KpiFlipCard.jsx";
+import TeacherClassworkPanel from "../components/teacher/TeacherClassworkPanel.jsx";
 
 import ClassroomCard from "../components/classroom/ClassroomCard";
 import ClassroomDetailDrawer from "../components/classroom/ClassroomDetailDrawer";
@@ -24,8 +25,17 @@ const CLASSROOMS_KPI = [
     dataSource: "Classrooms Module", dataHref: "/classrooms" },
 ];
 
+function currentSandboxRole() {
+  try {
+    return localStorage.getItem("crown.demo.role") || sessionStorage.getItem("crown.demo.role") || "";
+  } catch {
+    return "";
+  }
+}
+
 export default function ClassroomsDashboard() {
   const schoolId = useMemo(() => getSelectedSchoolId(), []);
+  const teacherSandbox = useMemo(() => currentSandboxRole() === "teacher", []);
   const [loading, setLoading] = useState(true);
   const [classrooms, setClassrooms] = useState([]);
   const [error, setError] = useState("");
@@ -82,9 +92,11 @@ export default function ClassroomsDashboard() {
           Classrooms
         </Typography>
         <Typography variant="body1" sx={{ opacity: 0.8 }}>
-          Homerooms, rosters, seating charts, assignments, and announcements (read-only demo).
+          Homerooms, rosters, seating charts, assignments, and announcements.
         </Typography>
       </Box>
+
+      {teacherSandbox ? <TeacherClassworkPanel /> : null}
 
       <KpiStrip cards={CLASSROOMS_KPI} />
 
@@ -119,4 +131,3 @@ export default function ClassroomsDashboard() {
     </Box>
   );
 }
-

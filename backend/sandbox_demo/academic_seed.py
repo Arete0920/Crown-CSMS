@@ -1,8 +1,14 @@
 from __future__ import annotations
 
+import uuid
+from datetime import date
+
 from academics.models import (
+    Assignment,
+    AssignmentCategory,
     Course,
     CurriculumSource,
+    Enrollment as AcademicEnrollment,
     Lesson,
     LessonPlan,
     LessonResource,
@@ -10,7 +16,8 @@ from academics.models import (
     TeacherAssignment,
     Unit,
 )
-from core.models import School, UserAccount
+from core.models import Family, GradeLevel, School, Student as CoreStudent, UserAccount
+from households.models import Household, Student as HouseholdStudent
 
 
 HERITAGE_SCHOOL_ID = "19801b59-8c05-4c84-9312-5d792e4e839d"
@@ -20,6 +27,12 @@ DEMO_TERM_CODE = "2026-FALL"
 DEMO_CURRICULUM_SOURCE = "BJU Press"
 DEMO_UNIT_TITLE = "Language and Literature Foundations"
 DEMO_LESSON_TITLE = "Narrative Voice and Biblical Worldview"
+DEMO_CLASSROOM_HOUSEHOLD = "Teacher Classroom Demo Family"
+DEMO_CATEGORY_NAME = "Classwork"
+DEMO_STUDENTS = (
+    ("Caleb", "Demo", "HCA-TCHR-001"),
+    ("Naomi", "Demo", "HCA-TCHR-002"),
+)
 
 
 def reset_heritage_teacher_academics() -> None:
@@ -29,12 +42,82 @@ def reset_heritage_teacher_academics() -> None:
         course__code=DEMO_COURSE_CODE,
         term=DEMO_TERM_CODE,
     )
+    Assignment.objects.filter(section__in=sections, school_id=HERITAGE_SCHOOL_ID).delete()
+    AssignmentCategory.objects.filter(section__in=sections, school_id=HERITAGE_SCHOOL_ID).delete()
+    AcademicEnrollment.objects.filter(section__in=sections, school_id=HERITAGE_SCHOOL_ID).delete()
     LessonPlan.objects.filter(section__in=sections, school_id=HERITAGE_SCHOOL_ID).delete()
     TeacherAssignment.objects.filter(section__in=sections, school_id=HERITAGE_SCHOOL_ID).delete()
     LessonResource.objects.filter(
         school_id=HERITAGE_SCHOOL_ID,
         lesson__unit__course__code=DEMO_COURSE_CODE,
     ).delete()
+    household_ids = list(
+        Household.objects.filter(
+            school_id=HERITAGE_SCHOOL_ID,
+            name=DEMO_CLASSROOM_HOUSEHOLD,
+        ).values_list("id", flat=True)
+    )
+    if household_ids:
+        HouseholdStudent.objects.filter(
+            school_id=HERITAGE_SCHOOL_ID,
+            household_id__in=household_ids,
+        ).delete()
+        Household.objects.filter(id__in=household_ids).delete()
+
+
+def _ensure_teacher_roster(school: School, section: Section) -> list[str]:
+    household, _ = Household.objects.update_or_create(
+        school_id=school.id,
+        name=DEMO_CLASSROOM_HOUSEHOLD,
+        defaults={
+            "address1": "500 Classroom Lane",
+            "city": "Fairview",
+            "state": "PA",
+            "postal_code": "19000",
+            "is_active": True,
+        },
+    )
+    core_family, _ = Family.objects.update_or_create(
+        school=school,
+        family_name=DEMO_CLASSROOM_HOUSEHOLD,
+        defaults={"status": "ACTIVE"},
+    )
+    grade = GradeLevel.objects.filter(school=school, code="5").first()
+    student_ids = []
+    for index, (first_name, last_name, student_number) in enumerate(DEMO_STUDENTS, start=1):
+        stable_id = uuid.uuid5(uuid.UUID(HERITAGE_SCHOOL_ID), student_number)
+        household_student, _ = HouseholdStudent.objects.update_or_create(
+            id=stable_id,
+            defaults={
+                "school_id": school.id,
+                "household": household,
+                "first_name": first_name,
+                "last_name": last_name,
+                "grade_level": "5",
+                "is_active": True,
+            },
+        )
+        CoreStudent.objects.update_or_create(
+            id=stable_id,
+            defaults={
+                "school": school,
+                "family": core_family,
+                "student_number": student_number,
+                "first_name": first_name,
+                "last_name": last_name,
+                "dob": date(2015, 1, index),
+                "status": "ACTIVE",
+                "current_grade_level": grade,
+            },
+        )
+        AcademicEnrollment.objects.update_or_create(
+            school_id=school.id,
+            section=section,
+            student=household_student,
+            defaults={},
+        )
+        student_ids.append(str(stable_id))
+    return student_ids
 
 
 def seed_heritage_teacher_academics() -> dict:
@@ -70,6 +153,17 @@ def seed_heritage_teacher_academics() -> dict:
         staff_id=teacher.staff_id,
         defaults={},
     )
+    category, _ = AssignmentCategory.objects.update_or_create(
+        school_id=school.id,
+        section=section,
+        name=DEMO_CATEGORY_NAME,
+        defaults={
+            "weight_percent": 0,
+            "sort_order": 1,
+            "is_active": True,
+        },
+    )
+    student_ids = _ensure_teacher_roster(school, section)
 
     curriculum_source, _ = CurriculumSource.objects.update_or_create(
         school_id=school.id,
@@ -104,6 +198,8 @@ def seed_heritage_teacher_academics() -> dict:
         "teacher_section_id": str(section.id),
         "teacher_section_code": DEMO_COURSE_CODE,
         "teacher_username": teacher.username,
+        "teacher_assignment_category_id": str(category.id),
+        "teacher_roster_student_ids": student_ids,
         "teacher_curriculum_source_id": str(curriculum_source.id),
         "teacher_unit_id": str(unit.id),
         "teacher_lesson_id": str(lesson.id),

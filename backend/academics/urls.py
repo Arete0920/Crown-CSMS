@@ -2,11 +2,13 @@ from django.urls import include, path
 from rest_framework.routers import SimpleRouter
 
 from .assignments_views import (
-    assignment_list_create,
-    assignment_update_delete,
     category_batch_weights,
     category_list_create,
     category_update_delete,
+)
+from .assignment_teacher_views import (
+    assignment_list_create,
+    assignment_update_delete,
 )
 from .lesson_plan_views import (
     lesson_plan_list_create,
