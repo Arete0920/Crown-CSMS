@@ -4,10 +4,7 @@ on:
   pull_request:
     branches: [ main ]
     paths:
-      - "backend/sandbox_demo/finance.py"
-      - "backend/sandbox_demo/finance_views.py"
-      - "backend/sandbox_demo/test_finance_transaction.py"
-      - "backend/sandbox_demo/urls.py"
+      - "backend/sandbox_demo/**"
       - "frontend/dashboards/src/components/finance/SandboxFinanceTransactionPanel.jsx"
       - "frontend/dashboards/src/pages/FinanceDashboard.jsx"
       - "frontend/dashboards/tests/e2e/sandbox-finance-director.spec.ts"
