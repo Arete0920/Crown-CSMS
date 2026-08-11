@@ -105,7 +105,7 @@ def test_assigned_teacher_can_create_and_reopen_lesson_resource():
     reopened = client.get(f"/api/academics/lessons/{lesson.id}/resources/")
     assert reopened.status_code == 200
     assert any(str(row["resource_id"]) == str(resource_id) for row in reopened.data)
-    assert LessonResource.objects.filter(id=resource_id, school=school, lesson=lesson).exists()
+    assert LessonResource.objects.filter(id=resource_id, school_id=school.id, lesson=lesson).exists()
 
 
 def test_unassigned_teacher_cannot_create_resource_for_other_course():
