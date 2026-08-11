@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
+import { Navigate } from 'react-router';
 import CrownLayout from '../components/crown/CrownLayout.jsx';
 import CrownDataTable from '../components/data/CrownDataTable.jsx';
 import Drawer from '../components/Drawer';
@@ -7,6 +8,8 @@ import { csvEscape, downloadTextFile } from '../lib/export/csv';
 import { useAsyncPageData } from '../hooks/useAsyncPageData';
 import { usePersistentTableState } from '../hooks/usePersistentTableState';
 import { useApiAction } from '../hooks/useApiAction';
+import { getCurrentUserRoles } from '../auth/roleAdapter';
+import { hasAnyRole } from '../auth/roleAccess';
 
 const SM = { fontSize: '0.75rem', padding: '3px 10px', cursor: 'pointer', borderRadius: '4px', border: '1px solid var(--crown-compat-color-cb69c739b8)', background: 'transparent', color: 'var(--crown-compat-color-cb69c739b8)' };
 const SM_ON = { ...SM, background: 'var(--crown-compat-color-cb69c739b8)', color: 'var(--crown-compat-color-e08de71387)' };
@@ -14,6 +17,16 @@ const BTN = { fontSize: '0.875rem', padding: '5px 15px', cursor: 'pointer', bord
 const BTN_FILLED = { ...BTN, background: 'var(--crown-compat-color-cb69c739b8)', color: 'var(--crown-compat-color-e08de71387)' };
 const ROW = { display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' };
 const LABEL = { margin: 0, fontSize: '0.875rem' };
+const ADMISSIONS_PIPELINE_ALLOWED_ROLES = [
+  'super_admin',
+  'school_admin',
+  'head_of_school',
+  'admissions_manager',
+  'admissions_director',
+  'admin',
+  'director',
+  'principal',
+];
 
 const STATUS_LABELS = {
   DRAFT: 'Draft',
@@ -225,7 +238,7 @@ function HouseholdReviewDrawer({
   );
 }
 
-export function AdmissionsPipelineList() {
+function AdmissionsPipelineContent() {
   const [selected, setSelected] = useState(null);
   const [expandedChildren, setExpandedChildren] = useState({});
   const [enrollResult, setEnrollResult] = useState(null);
@@ -430,6 +443,14 @@ export function AdmissionsPipelineList() {
       />
     </CrownLayout>
   );
+}
+
+export function AdmissionsPipelineList() {
+  const userRoles = getCurrentUserRoles();
+  if (!hasAnyRole(userRoles, ADMISSIONS_PIPELINE_ALLOWED_ROLES)) {
+    return <Navigate to="/not-authorized" replace />;
+  }
+  return <AdmissionsPipelineContent />;
 }
 
 export default AdmissionsPipelineList;

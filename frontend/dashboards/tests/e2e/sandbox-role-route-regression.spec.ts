@@ -28,6 +28,20 @@ const creds = {
     expected: /teacher|dashboard|home/i,
     forbidden: [/\/admin\b/, /\/director\/aid\b/, /\/finance\b/, /school-admin-dashboard/],
   },
+  student: {
+    roleValue: "student",
+    email: process.env.CERT_STUDENT_EMAIL || "student.avery.reed11@heritage.example.org",
+    password: process.env.CERT_STUDENT_PASSWORD || "CrownDemo!2026",
+    expected: /student|dashboard|home/i,
+    forbidden: [
+      /\/admin\b/,
+      /\/director\/aid\b/,
+      /\/finance\b/,
+      /school-admin-dashboard/,
+      /\/admissions(?:-dashboard|\/pipeline)?\b/,
+      /\/teacher\b/,
+    ],
+  },
 };
 
 async function login(page, email, password, roleValue) {
@@ -93,6 +107,9 @@ for (const [roleName, role] of Object.entries(creds)) {
       "/director/aid/",
       "/finance",
       "/school-admin-dashboard",
+      "/admissions-dashboard",
+      "/admissions/pipeline",
+      "/teacher",
       "/sandbox",
     ];
 

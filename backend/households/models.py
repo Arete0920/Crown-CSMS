@@ -104,6 +104,14 @@ class Student(TimeStampedModel):
         on_delete=models.PROTECT,
         related_name="students",
     )
+    account = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="households_student",
+        null=True,
+        blank=True,
+        help_text="Canonical authenticated account for Student self-service. Email is not authorization.",
+    )
     first_name = models.CharField(max_length=80)
     last_name = models.CharField(max_length=80)
     grade_level = models.CharField(max_length=16, blank=True, default="")
@@ -120,6 +128,7 @@ class Student(TimeStampedModel):
     def clean(self):
         super().clean()
         _require_same_school(self, "household")
+        _require_same_school(self, "account")
 
     def __str__(self) -> str:
         return f"{self.last_name}, {self.first_name}"
