@@ -80,10 +80,21 @@ def _ensure_student_account_credit(*, award: AidAward, actor_user):
         _log_credit_deferred_once(award=award, actor_user=actor_user, reason=reason)
         return None
 
-    account, _ = LedgerAccount.objects.get_or_create(
-        school_id=award.school_id,
-        household_id=household_ids[0],
-    )
+    household_id = household_ids[0]
+    account = LedgerAccount.objects.filter(household_id=household_id).first()
+    if account is not None and account.school_id != award.school_id:
+        _log_credit_deferred_once(
+            award=award,
+            actor_user=actor_user,
+            reason="ledger_account_school_mismatch",
+        )
+        return None
+    if account is None:
+        account = LedgerAccount.objects.create(
+            school_id=award.school_id,
+            household_id=household_id,
+        )
+
     credit = post_account_credit(
         school_id=award.school_id,
         account=account,
