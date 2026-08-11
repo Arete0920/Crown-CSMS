@@ -1,24 +1,17 @@
 import uuid
 from decimal import Decimal
+
 from django.core.exceptions import ValidationError
 from django.db import models
 from households.models import Household
 
 
 class ImmutableMoneyMixin:
-    """
-    Phase 2 Priority 5: prevent silent edits to money-critical fields after creation.
+    """Prevent silent edits to money-critical fields after creation."""
 
-    On UPDATE (pk exists and not adding), forbids changes to fields in
-    IMMUTABLE_FIELDS that actually exist on the model. Non-existent fields
-    are silently skipped — no crashes on schema differences.
-    """
-
-    # Subclasses declare their own IMMUTABLE_FIELDS — base is empty.
     IMMUTABLE_FIELDS = ()
 
     def _immutable_check(self):
-        # Only enforce on updates, not inserts.
         if not getattr(self, "pk", None):
             return
         if getattr(self, "_state", None) is not None and self._state.adding:
@@ -28,11 +21,9 @@ class ImmutableMoneyMixin:
         try:
             original = cls.objects.get(pk=self.pk)
         except Exception:
-            # Cannot load original — do not block (avoids false negatives).
             return
 
         for field in self.IMMUTABLE_FIELDS:
-            # is_void is explicitly excluded — it is the legitimate correction path.
             if field == "is_void":
                 continue
             if hasattr(self, field) and hasattr(original, field):
@@ -45,127 +36,208 @@ class ImmutableMoneyMixin:
 
 
 class TimeStampedModel(models.Model):
-	created_at = models.DateTimeField(auto_now_add=True)
-	updated_at = models.DateTimeField(auto_now=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
-	class Meta:
-		abstract = True
+    class Meta:
+        abstract = True
 
 
 class LedgerAccount(TimeStampedModel):
-	"""
-	One ledger account per household (spine rule: keep it simple).
-	"""
-	id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    """One Student Accounts ledger account per household."""
 
-	school_id = models.UUIDField(db_index=True)
-	household = models.OneToOneField(Household, on_delete=models.PROTECT, related_name="ledger_account")
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    school_id = models.UUIDField(db_index=True)
+    household = models.OneToOneField(
+        Household,
+        on_delete=models.PROTECT,
+        related_name="ledger_account",
+    )
 
-	class Meta:
-		db_table = "ledger_account"
-		indexes = [
-			models.Index(fields=["school_id"]),
-		]
+    class Meta:
+        db_table = "ledger_account"
+        indexes = [models.Index(fields=["school_id"])]
 
-	def __str__(self) -> str:
-		return f"LedgerAccount({self.household_id})"
+    def __str__(self) -> str:
+        return f"LedgerAccount({self.household_id})"
 
 
 class Charge(ImmutableMoneyMixin, TimeStampedModel):
-	IMMUTABLE_FIELDS = ("school_id", "account_id", "amount")
+    IMMUTABLE_FIELDS = ("school_id", "account_id", "amount")
 
-	id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    school_id = models.UUIDField(db_index=True)
+    account = models.ForeignKey(
+        LedgerAccount,
+        on_delete=models.PROTECT,
+        related_name="charges",
+    )
+    description = models.CharField(max_length=200)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    is_void = models.BooleanField(default=False)
 
-	school_id = models.UUIDField(db_index=True)
-	account = models.ForeignKey(LedgerAccount, on_delete=models.PROTECT, related_name="charges")
+    class Meta:
+        db_table = "charge"
+        indexes = [
+            models.Index(fields=["school_id", "account"]),
+            models.Index(fields=["school_id", "created_at"]),
+        ]
 
-	description = models.CharField(max_length=200)
-	amount = models.DecimalField(max_digits=10, decimal_places=2)
+    def __str__(self) -> str:
+        return f"Charge({self.amount})"
 
-	is_void = models.BooleanField(default=False)
 
-	class Meta:
-		db_table = "charge"
-		indexes = [
-			models.Index(fields=["school_id", "account"]),
-			models.Index(fields=["school_id", "created_at"]),
-		]
+class Credit(ImmutableMoneyMixin, TimeStampedModel):
+    """
+    Non-cash Student Accounts credit.
 
-	def __str__(self) -> str:
-		return f"Charge({self.amount})"
+    Credits reduce household receivables but are intentionally distinct from
+    Payment so financial aid, adjustments, and other non-cash reductions never
+    masquerade as external money movement.
+    """
+
+    IMMUTABLE_FIELDS = ("school_id", "account_id", "source", "reference", "amount")
+
+    SOURCE_FINANCIAL_AID = "FINANCIAL_AID"
+    SOURCE_ADJUSTMENT = "ADJUSTMENT"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    school_id = models.UUIDField(db_index=True)
+    account = models.ForeignKey(
+        LedgerAccount,
+        on_delete=models.PROTECT,
+        related_name="credits",
+    )
+    source = models.CharField(max_length=32, db_index=True)
+    reference = models.CharField(max_length=128, db_index=True)
+    description = models.CharField(max_length=200, blank=True, default="")
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    is_void = models.BooleanField(default=False, db_index=True)
+
+    class Meta:
+        db_table = "student_account_credit"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["school_id", "source", "reference"],
+                name="uniq_student_account_credit_source_reference",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(amount__gt=0),
+                name="student_account_credit_amount_positive",
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["school_id", "account"]),
+            models.Index(fields=["school_id", "source"]),
+            models.Index(fields=["school_id", "created_at"]),
+        ]
+
+    def clean(self):
+        if self.account_id and self.account.school_id != self.school_id:
+            raise ValidationError({"account": "Credit account must belong to the same school."})
+        if self.amount is None or self.amount <= Decimal("0.00"):
+            raise ValidationError({"amount": "Credit amount must be greater than zero."})
+        if not (self.reference or "").strip():
+            raise ValidationError({"reference": "Credit reference is required."})
+
+    def save(self, *args, **kwargs):
+        self.clean()
+        return super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        raise ValidationError("Credits cannot be deleted. Void the credit instead.")
+
+    def __str__(self) -> str:
+        return f"Credit({self.source}, {self.amount})"
 
 
 class Payment(ImmutableMoneyMixin, TimeStampedModel):
-	IMMUTABLE_FIELDS = ("school_id", "account_id", "amount", "source", "reference")
+    IMMUTABLE_FIELDS = ("school_id", "account_id", "amount", "source", "reference")
 
-	id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    school_id = models.UUIDField(db_index=True)
+    account = models.ForeignKey(
+        LedgerAccount,
+        on_delete=models.PROTECT,
+        related_name="payments",
+    )
+    source = models.CharField(max_length=32, default="EXTERNAL", db_index=True)
+    reference = models.CharField(max_length=64, blank=True, default="", db_index=True)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    is_void = models.BooleanField(default=False, db_index=True)
 
-	school_id = models.UUIDField(db_index=True)
-	account = models.ForeignKey(LedgerAccount, on_delete=models.PROTECT, related_name="payments")
+    class Meta:
+        db_table = "payment"
+        indexes = [
+            models.Index(fields=["school_id", "account"]),
+            models.Index(fields=["school_id", "created_at"]),
+        ]
 
-	source = models.CharField(max_length=32, default="EXTERNAL", db_index=True)
-	reference = models.CharField(max_length=64, blank=True, default="", db_index=True)
-	amount = models.DecimalField(max_digits=10, decimal_places=2)
-	is_void = models.BooleanField(default=False, db_index=True)
-
-	class Meta:
-		db_table = "payment"
-		indexes = [
-			models.Index(fields=["school_id", "account"]),
-			models.Index(fields=["school_id", "created_at"]),
-		]
-
-	def __str__(self) -> str:
-		return f"Payment({self.amount})"
+    def __str__(self) -> str:
+        return f"Payment({self.amount})"
 
 
 class Allocation(TimeStampedModel):
-	"""
-	Minimal join: how much of a payment is applied to a charge.
-	"""
-	id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    """How much of a cash payment is applied to a charge."""
 
-	school_id = models.UUIDField(db_index=True)
-	payment = models.ForeignKey(Payment, on_delete=models.CASCADE, related_name="allocations")
-	charge = models.ForeignKey(Charge, on_delete=models.PROTECT, related_name="allocations")
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    school_id = models.UUIDField(db_index=True)
+    payment = models.ForeignKey(
+        Payment,
+        on_delete=models.CASCADE,
+        related_name="allocations",
+    )
+    charge = models.ForeignKey(
+        Charge,
+        on_delete=models.PROTECT,
+        related_name="allocations",
+    )
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
 
-	amount = models.DecimalField(max_digits=10, decimal_places=2)
+    class Meta:
+        db_table = "allocation"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["payment", "charge"],
+                name="uniq_payment_charge_allocation",
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["school_id", "payment"]),
+            models.Index(fields=["school_id", "charge"]),
+        ]
 
-	class Meta:
-		db_table = "allocation"
-		constraints = [
-			models.UniqueConstraint(fields=["payment", "charge"], name="uniq_payment_charge_allocation"),
-		]
-		indexes = [
-			models.Index(fields=["school_id", "payment"]),
-			models.Index(fields=["school_id", "charge"]),
-		]
-
-	def __str__(self) -> str:
-		return f"Allocation({self.amount})"
+    def __str__(self) -> str:
+        return f"Allocation({self.amount})"
 
 
 class PaymentAllocation(Allocation):
-	class Meta:
-		proxy = True
+    class Meta:
+        proxy = True
 
 
 def compute_account_balance(account: LedgerAccount) -> Decimal:
-	"""
-	Spine helper: balance = total charges - total allocations applied.
-	Ignores voided charges.
-	"""
-	charges_total = (
-		account.charges.filter(is_void=False).aggregate(models.Sum("amount")).get("amount__sum")
-		or Decimal("0.00")
-	)
-	alloc_total = (
-		Allocation.objects.filter(school_id=account.school_id, charge__account=account)
-		.aggregate(models.Sum("amount"))
-		.get("amount__sum")
-		or Decimal("0.00")
-	)
-	return charges_total - alloc_total
+    """Canonical Student Accounts balance: charges - cash allocations - credits."""
+    charges_total = (
+        account.charges.filter(is_void=False).aggregate(models.Sum("amount")).get("amount__sum")
+        or Decimal("0.00")
+    )
+    alloc_total = (
+        Allocation.objects.filter(
+            school_id=account.school_id,
+            charge__account=account,
+            charge__is_void=False,
+            payment__is_void=False,
+        )
+        .aggregate(models.Sum("amount"))
+        .get("amount__sum")
+        or Decimal("0.00")
+    )
+    credit_total = (
+        account.credits.filter(is_void=False).aggregate(models.Sum("amount")).get("amount__sum")
+        or Decimal("0.00")
+    )
+    return charges_total - alloc_total - credit_total
 
-# Stage 2 — Revenue Integrity models registered under the ledger app
+
 from .models_dunning import DunningRecord, Chargeback, DailyPayoutAudit  # noqa: E402,F401

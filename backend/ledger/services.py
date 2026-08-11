@@ -4,10 +4,11 @@ from dataclasses import dataclass
 from decimal import Decimal
 from uuid import UUID
 
+from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.db.models import Sum
 
-from .models import Charge, LedgerAccount, Payment, PaymentAllocation
+from .models import Charge, Credit, LedgerAccount, Payment, PaymentAllocation
 
 
 @dataclass(frozen=True)
@@ -53,7 +54,67 @@ def account_balance(account: LedgerAccount) -> Decimal:
         ).aggregate(total=Sum("amount"))["total"]
         or Decimal("0.00")
     )
-    return Decimal(str(charges_total)) - Decimal(str(alloc_total))
+    credit_total = (
+        Credit.objects.filter(
+            school_id=account.school_id,
+            account=account,
+            is_void=False,
+        ).aggregate(total=Sum("amount"))["total"]
+        or Decimal("0.00")
+    )
+    return Decimal(str(charges_total)) - Decimal(str(alloc_total)) - Decimal(str(credit_total))
+
+
+@transaction.atomic
+def post_account_credit(
+    *,
+    school_id,
+    account: LedgerAccount,
+    amount: Decimal,
+    source: str,
+    reference: str,
+    description: str = "",
+) -> Credit:
+    """Create or return one immutable idempotent non-cash account credit."""
+    account = LedgerAccount.objects.select_for_update().get(pk=account.pk)
+    if account.school_id != school_id:
+        raise ValidationError("credit account school mismatch")
+
+    normalized_amount = Decimal(str(amount)).quantize(Decimal("0.01"))
+    normalized_source = (source or "").strip().upper()
+    normalized_reference = (reference or "").strip()
+    if normalized_amount <= Decimal("0.00"):
+        raise ValidationError("credit amount must be > 0")
+    if not normalized_source:
+        raise ValidationError("credit source is required")
+    if not normalized_reference:
+        raise ValidationError("credit reference is required")
+
+    credit, created = Credit.objects.get_or_create(
+        school_id=school_id,
+        source=normalized_source[:32],
+        reference=normalized_reference[:128],
+        defaults={
+            "account": account,
+            "amount": normalized_amount,
+            "description": (description or "")[:200],
+        },
+    )
+    if not created:
+        if credit.account_id != account.id or credit.amount != normalized_amount:
+            raise ValidationError("credit idempotency key already exists with different financial facts")
+    return credit
+
+
+@transaction.atomic
+def void_account_credit(*, credit: Credit) -> Credit:
+    """Idempotently void a credit without deleting financial history."""
+    credit = Credit.objects.select_for_update().get(pk=credit.pk)
+    if credit.is_void:
+        return credit
+    credit.is_void = True
+    credit.save(update_fields=["is_void", "updated_at"])
+    return credit
 
 
 @transaction.atomic
@@ -119,7 +180,7 @@ def _d(value) -> Decimal:
 
 
 def build_account_statement(*, school_id, account) -> dict:
-    """Read-only statement based on active charges and active payment allocations."""
+    """Read-only statement from active charges, cash allocations, and non-cash credits."""
     charges = Charge.objects.filter(
         school_id=school_id, account=account, is_void=False
     ).order_by("created_at", "id")
@@ -133,6 +194,11 @@ def build_account_statement(*, school_id, account) -> dict:
         .select_related("payment", "charge")
         .order_by("created_at", "id")
     )
+    credits = Credit.objects.filter(
+        school_id=school_id,
+        account=account,
+        is_void=False,
+    ).order_by("created_at", "id")
 
     entries = []
     for charge in charges:
@@ -141,6 +207,7 @@ def build_account_statement(*, school_id, account) -> dict:
             "id": str(charge.id),
             "charge_id": str(charge.id),
             "payment_id": None,
+            "credit_id": None,
             "source": None,
             "description": charge.description,
             "amount": str(_d(charge.amount)),
@@ -156,12 +223,29 @@ def build_account_statement(*, school_id, account) -> dict:
             "id": str(allocation.id),
             "charge_id": str(allocation.charge_id),
             "payment_id": str(allocation.payment_id),
+            "credit_id": None,
             "source": payment.source,
             "reference": payment.reference,
             "description": payment.reference or payment.source,
             "amount": str(_d(allocation.amount)),
             "direction": "CREDIT",
             "created_at": allocation.created_at.isoformat() if allocation.created_at else None,
+            "running_balance": None,
+        })
+
+    for credit in credits:
+        entries.append({
+            "type": "CREDIT",
+            "id": str(credit.id),
+            "charge_id": None,
+            "payment_id": None,
+            "credit_id": str(credit.id),
+            "source": credit.source,
+            "reference": credit.reference,
+            "description": credit.description or credit.reference,
+            "amount": str(_d(credit.amount)),
+            "direction": "CREDIT",
+            "created_at": credit.created_at.isoformat() if credit.created_at else None,
             "running_balance": None,
         })
 
@@ -181,7 +265,7 @@ def build_account_statement(*, school_id, account) -> dict:
 
 
 def billing_run_summary(*, school_id, billing_run) -> dict:
-    """Compatibility summary; aid-as-payment remains until the Aid credit cutover."""
+    """Compatibility summary; legacy aid-as-payment remains until reader cutover."""
     from billing.models import Invoice
 
     invoices = Invoice.objects.filter(school_id=school_id, billing_run=billing_run)
