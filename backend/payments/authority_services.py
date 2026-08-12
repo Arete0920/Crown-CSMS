@@ -68,14 +68,11 @@ def _normalized_currency(value: str) -> str:
 
 
 def _normalize_allocations(payment: Payment, allocations_payload: list[dict]) -> list[dict]:
-    """Return validated allocation facts whose total exactly equals the Payment."""
+    """Return explicit, validated allocation facts while preserving partial allocation."""
     if not isinstance(allocations_payload, list) or not allocations_payload:
         raise PaymentAuthorityError("Canonical settlement requires explicit allocations.")
 
     normalized: list[dict] = []
-    obligation_ids: set[int] = set()
-    total_cents = 0
-
     for item in allocations_payload:
         if not isinstance(item, dict):
             raise PaymentAuthorityError("Canonical settlement allocations must be objects.")
@@ -94,20 +91,8 @@ def _normalize_allocations(payment: Payment, allocations_payload: list[dict]) ->
             raise PaymentAuthorityError("Canonical settlement obligation_id must be positive.")
         if amount_cents <= 0:
             raise PaymentAuthorityError("Canonical settlement allocation amount must be positive.")
-        if obligation_id in obligation_ids:
-            raise PaymentAuthorityError(
-                "Canonical settlement cannot contain duplicate obligation allocations."
-            )
-        obligation_ids.add(obligation_id)
-        total_cents += amount_cents
         normalized.append(
             {"obligation_id": obligation_id, "amount_cents": amount_cents}
-        )
-
-    if total_cents != int(payment.amount_cents):
-        raise PaymentAuthorityError(
-            f"Canonical settlement allocations must equal Payment amount; "
-            f"allocated={total_cents}, payment={payment.amount_cents}."
         )
     return normalized
 
