@@ -73,6 +73,7 @@ def _normalize_allocations(payment: Payment, allocations_payload: list[dict]) ->
         raise PaymentAuthorityError("Canonical settlement requires explicit allocations.")
 
     normalized: list[dict] = []
+    seen_obligation_ids: set[int] = set()
     for item in allocations_payload:
         if not isinstance(item, dict):
             raise PaymentAuthorityError("Canonical settlement allocations must be objects.")
@@ -89,6 +90,11 @@ def _normalize_allocations(payment: Payment, allocations_payload: list[dict]) ->
             ) from exc
         if obligation_id <= 0:
             raise PaymentAuthorityError("Canonical settlement obligation_id must be positive.")
+        if obligation_id in seen_obligation_ids:
+            raise PaymentAuthorityError(
+                "Canonical settlement cannot allocate the same obligation more than once."
+            )
+        seen_obligation_ids.add(obligation_id)
         if amount_cents <= 0:
             raise PaymentAuthorityError("Canonical settlement allocation amount must be positive.")
         normalized.append(
