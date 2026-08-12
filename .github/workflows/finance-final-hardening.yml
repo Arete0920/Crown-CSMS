@@ -162,6 +162,8 @@ jobs:
           journal/tests/test_accounting_period_controls.py
           payments/tests/test_option_a_finance_runtime_chain.py
           payments/tests/test_option_a_compatibility_audit.py
+          payments/tests/test_finance_concurrency.py
+          payments/tests/test_finance_extended_concurrency.py
 
       - name: Build Heritage target demo dataset
         run: |
