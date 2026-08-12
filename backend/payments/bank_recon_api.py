@@ -1,4 +1,5 @@
 import csv
+import hashlib
 import io
 import logging
 from datetime import datetime
@@ -111,15 +112,59 @@ def upload_bank_statement_csv(request):
     if not upload:
         return Response({"detail": "Missing CSV file."}, status=status.HTTP_400_BAD_REQUEST)
 
-    import_row = BankStatementImport.objects.create(
+    raw_bytes = upload.read()
+    source_sha256 = hashlib.sha256(raw_bytes).hexdigest()
+    import_row, created = BankStatementImport.objects.get_or_create(
         school_id=school_id,
-        uploaded_by=request.user,
-        source_name=upload.name,
-        status=BankStatementImportStatus.UPLOADED,
+        source_sha256=source_sha256,
+        defaults={
+            "uploaded_by": request.user,
+            "source_name": upload.name,
+            "status": BankStatementImportStatus.UPLOADED,
+        },
     )
 
+    if not created and import_row.status == BankStatementImportStatus.PROCESSED:
+        return Response(
+            {
+                "ok": False,
+                "detail": "This bank statement file has already been processed for the school.",
+                "duplicate_import_id": import_row.id,
+                "source_sha256": source_sha256,
+            },
+            status=status.HTTP_409_CONFLICT,
+        )
+
+    if not created and import_row.entries.exists():
+        return Response(
+            {
+                "ok": False,
+                "detail": "Existing incomplete import contains persisted rows and requires review before retry.",
+                "import_id": import_row.id,
+                "source_sha256": source_sha256,
+            },
+            status=status.HTTP_409_CONFLICT,
+        )
+
+    if not created:
+        import_row.uploaded_by = request.user
+        import_row.source_name = upload.name
+        import_row.status = BankStatementImportStatus.UPLOADED
+        import_row.row_count = 0
+        import_row.error_message = ""
+        import_row.processed_at = None
+        import_row.save(
+            update_fields=[
+                "uploaded_by",
+                "source_name",
+                "status",
+                "row_count",
+                "error_message",
+                "processed_at",
+            ]
+        )
+
     try:
-        raw_bytes = upload.read()
         _process_bank_statement_bytes(import_row=import_row, raw_bytes=raw_bytes)
     except Exception as exc:
         import_row.refresh_from_db()
@@ -142,6 +187,7 @@ def upload_bank_statement_csv(request):
             "ok": True,
             "import_id": import_row.id,
             "row_count": import_row.row_count,
+            "source_sha256": import_row.source_sha256,
         }
     )
 
@@ -158,6 +204,7 @@ def bank_statement_imports_list(request):
         {
             "id": row.id,
             "source_name": row.source_name,
+            "source_sha256": row.source_sha256,
             "status": row.status,
             "row_count": row.row_count,
             "created_at": row.created_at,
