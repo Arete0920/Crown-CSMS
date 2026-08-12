@@ -1,3 +1,5 @@
+from django.db import IntegrityError, transaction
+from django.db.models.deletion import ProtectedError
 from django.test import TestCase
 
 from core.models import School
@@ -52,3 +54,36 @@ class BankStatementImportIntegrityTests(TestCase):
             _process_bank_statement_bytes(import_row=self.import_row, raw_bytes=raw)
 
         self.assertFalse(BankStatementEntry.objects.filter(statement_import=self.import_row).exists())
+
+    def test_statement_hash_is_unique_per_school_but_not_cross_tenant(self):
+        source_hash = "a" * 64
+        BankStatementImport.objects.create(
+            school_id=self.school.id,
+            source_name="first.csv",
+            source_sha256=source_hash,
+        )
+
+        with self.assertRaises(IntegrityError), transaction.atomic():
+            BankStatementImport.objects.create(
+                school_id=self.school.id,
+                source_name="duplicate.csv",
+                source_sha256=source_hash,
+            )
+
+        other_school = School.objects.create(name="Other Statement School")
+        other = BankStatementImport.objects.create(
+            school_id=other_school.id,
+            source_name="same-bytes-other-tenant.csv",
+            source_sha256=source_hash,
+        )
+        self.assertIsNotNone(other.pk)
+
+    def test_import_cannot_be_deleted_after_entries_exist(self):
+        raw = (
+            b"posted_date,description,reference,amount,currency\n"
+            b"2026-03-10,Deposit,bank-1,100.00,USD\n"
+        )
+        _process_bank_statement_bytes(import_row=self.import_row, raw_bytes=raw)
+
+        with self.assertRaises(ProtectedError):
+            self.import_row.delete()
