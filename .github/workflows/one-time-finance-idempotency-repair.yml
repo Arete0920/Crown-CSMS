@@ -1,0 +1,112 @@
+name: One-time Finance Idempotency Repair
+
+on:
+  push:
+    branches:
+      - release/security-runtime-governance-repair-finance-hardening-followup-fresh
+    paths:
+      - .github/workflows/one-time-finance-idempotency-repair.yml
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repair branch
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+        with:
+          ref: release/security-runtime-governance-repair-finance-hardening-followup-fresh
+          fetch-depth: 0
+      - name: Patch absent-row idempotency race
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('backend/payments/authority_services.py')
+          text = path.read_text()
+          old_import = 'from django.db import transaction\n'
+          new_import = 'from django.db import IntegrityError, transaction\n'
+          if old_import not in text:
+              raise SystemExit('expected django.db import not found')
+          text = text.replace(old_import, new_import, 1)
+
+          old = '''    payment = Payment(
+              school_id=school_id,
+              household_id=household_id,
+              finance_payment_id=finance_payment_id,
+              amount_cents=amount_cents,
+              currency=currency,
+              status=CanonicalPaymentStatus.PENDING,
+              provider=provider,
+              provider_intent_id=provider_intent_id,
+              provider_payment_id=provider_payment_id,
+              idempotency_key=idempotency_key,
+              metadata=metadata or {},
+              created_by=created_by,
+          )
+          payment.full_clean()
+          payment.save()
+          return payment
+          '''
+          new = '''    try:
+              # A row lock cannot serialize an idempotency key that does not exist yet.
+              # Use a savepoint so a concurrent winner can commit the unique key and
+              # this transaction can recover to that canonical fact without leaving
+              # the outer transaction in a broken state.
+              with transaction.atomic():
+                  payment = Payment(
+                      school_id=school_id,
+                      household_id=household_id,
+                      finance_payment_id=finance_payment_id,
+                      amount_cents=amount_cents,
+                      currency=currency,
+                      status=CanonicalPaymentStatus.PENDING,
+                      provider=provider,
+                      provider_intent_id=provider_intent_id,
+                      provider_payment_id=provider_payment_id,
+                      idempotency_key=idempotency_key,
+                      metadata=metadata or {},
+                      created_by=created_by,
+                  )
+                  # Field/model validation remains active. Database uniqueness is the
+                  # concurrency authority because pre-insert uniqueness validation is
+                  # inherently racy when two transactions observe an absent key.
+                  payment.full_clean(validate_unique=False, validate_constraints=False)
+                  payment.save()
+              return payment
+          except IntegrityError:
+              existing = Payment.objects.select_for_update().filter(
+                  school_id=school_id,
+                  idempotency_key=idempotency_key,
+              ).first()
+              if existing is None:
+                  raise
+              _assert_same_payment_facts(
+                  existing,
+                  amount_cents=amount_cents,
+                  currency=currency,
+                  household_id=household_id,
+                  finance_payment_id=finance_payment_id,
+                  provider=provider,
+                  provider_intent_id=provider_intent_id,
+                  provider_payment_id=provider_payment_id,
+              )
+              return existing
+          '''
+          if old not in text:
+              raise SystemExit('expected create_payment insert block not found')
+          path.write_text(text.replace(old, new, 1))
+          PY
+          git diff --check
+          python -m compileall -q backend/payments/authority_services.py
+      - name: Commit repair and remove one-time workflow
+        run: |
+          git config user.name "crown-governance-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git rm .github/workflows/one-time-finance-idempotency-repair.yml
+          git add backend/payments/authority_services.py
+          git diff --cached --check
+          git commit -m "Fix concurrent canonical payment idempotency"
+          git push origin HEAD:release/security-runtime-governance-repair-finance-hardening-followup-fresh
