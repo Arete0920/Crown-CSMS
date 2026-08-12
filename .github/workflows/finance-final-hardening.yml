@@ -162,6 +162,10 @@ jobs:
           journal/tests/test_accounting_period_controls.py
           payments/tests/test_option_a_finance_runtime_chain.py
           payments/tests/test_option_a_compatibility_audit.py
+
+      - name: Run PostgreSQL concurrency proofs in isolated test database
+        run: >-
+          python -m pytest -q
           payments/tests/test_finance_concurrency.py
           payments/tests/test_finance_extended_concurrency.py
 
