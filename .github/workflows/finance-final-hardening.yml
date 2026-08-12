@@ -73,8 +73,14 @@ jobs:
             frontend/dashboards/tests/e2e/sandbox-finance-director.spec.ts
             frontend/dashboards/tests/certification/scaffold-certification-crawler.spec.ts
           )
-          if git grep -n -E 'Crown Demo Christian Academy|Certification Demo School' -- "${active_paths[@]}"; then
-            echo 'ERROR: competing demo-school identity remains in active Finance/sandbox surfaces. Heritage Christian Academy is the only allowed demo school.'
+          legacy_demo='Crown Demo Christian'" Academy"
+          certification_demo='Certification Demo'" School"
+          if git grep -n -F "$legacy_demo" -- "${active_paths[@]}"; then
+            echo 'ERROR: competing legacy demo-school identity remains in active Finance/sandbox surfaces.'
+            exit 1
+          fi
+          if git grep -n -F "$certification_demo" -- "${active_paths[@]}"; then
+            echo 'ERROR: competing certification demo-school identity remains in active Finance/sandbox surfaces.'
             exit 1
           fi
           if git grep -n -E '\b(TODO|FIXME|HACK|XXX)\b' -- "${active_paths[@]}"; then
