@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from django.db.models import Sum
 from django.utils import timezone
 
@@ -210,23 +210,50 @@ def create_payment(
         )
         return existing
 
-    payment = Payment(
-        school_id=school_id,
-        household_id=household_id,
-        finance_payment_id=finance_payment_id,
-        amount_cents=amount_cents,
-        currency=currency,
-        status=CanonicalPaymentStatus.PENDING,
-        provider=provider,
-        provider_intent_id=provider_intent_id,
-        provider_payment_id=provider_payment_id,
-        idempotency_key=idempotency_key,
-        metadata=metadata or {},
-        created_by=created_by,
-    )
-    payment.full_clean()
-    payment.save()
-    return payment
+    try:
+        # A row lock cannot serialize an idempotency key that does not exist yet.
+        # Use a savepoint so a concurrent winner can commit the unique key and
+        # this transaction can recover to that canonical fact without leaving
+        # the outer transaction in a broken state.
+        with transaction.atomic():
+            payment = Payment(
+                school_id=school_id,
+                household_id=household_id,
+                finance_payment_id=finance_payment_id,
+                amount_cents=amount_cents,
+                currency=currency,
+                status=CanonicalPaymentStatus.PENDING,
+                provider=provider,
+                provider_intent_id=provider_intent_id,
+                provider_payment_id=provider_payment_id,
+                idempotency_key=idempotency_key,
+                metadata=metadata or {},
+                created_by=created_by,
+            )
+            # Field/model validation remains active. Database uniqueness is the
+            # concurrency authority because pre-insert uniqueness validation is
+            # inherently racy when two transactions observe an absent key.
+            payment.full_clean(validate_unique=False, validate_constraints=False)
+            payment.save()
+        return payment
+    except IntegrityError:
+        existing = Payment.objects.select_for_update().filter(
+            school_id=school_id,
+            idempotency_key=idempotency_key,
+        ).first()
+        if existing is None:
+            raise
+        _assert_same_payment_facts(
+            existing,
+            amount_cents=amount_cents,
+            currency=currency,
+            household_id=household_id,
+            finance_payment_id=finance_payment_id,
+            provider=provider,
+            provider_intent_id=provider_intent_id,
+            provider_payment_id=provider_payment_id,
+        )
+        return existing
 
 
 @transaction.atomic
