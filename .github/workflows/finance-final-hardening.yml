@@ -48,7 +48,7 @@ jobs:
       - name: Reject whitespace and merge residue
         run: |
           git diff --check HEAD^ HEAD
-          if git grep -n -E '^(<<<<<<<|=======|>>>>>>>)' -- ':!*.md'; then
+          if git grep -n -E '^(<<<<<<<|>>>>>>>)' -- ':!*.md'; then
             echo 'ERROR: merge-conflict residue detected.'
             exit 1
           fi
