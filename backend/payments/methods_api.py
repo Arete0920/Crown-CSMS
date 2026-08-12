@@ -14,7 +14,7 @@ from payments.models import SavedPaymentMethod
 def list_saved_payment_methods(request, household_id):
     school_id = get_request_school_id(request, required=True)
 
-    if not user_can_access_household_finance(request.user, household_id):
+    if not user_can_access_household_finance(request.user, household_id, school_id):
         return Response({"detail": "Forbidden"}, status=status.HTTP_403_FORBIDDEN)
 
     rows = [
@@ -42,9 +42,9 @@ def list_saved_payment_methods(request, household_id):
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def create_payment_method_setup(request, household_id):
-    get_request_school_id(request, required=True)
+    school_id = get_request_school_id(request, required=True)
 
-    if not user_can_access_household_finance(request.user, household_id):
+    if not user_can_access_household_finance(request.user, household_id, school_id):
         return Response({"detail": "Forbidden"}, status=status.HTTP_403_FORBIDDEN)
 
     return payment_hold_response()
@@ -55,7 +55,7 @@ def create_payment_method_setup(request, household_id):
 def set_default_payment_method(request, household_id, method_id: int):
     school_id = get_request_school_id(request, required=True)
 
-    if not user_can_access_household_finance(request.user, household_id):
+    if not user_can_access_household_finance(request.user, household_id, school_id):
         return Response({"detail": "Forbidden"}, status=status.HTTP_403_FORBIDDEN)
 
     method = SavedPaymentMethod.objects.filter(
@@ -84,9 +84,9 @@ def set_default_payment_method(request, household_id, method_id: int):
 @api_view(["DELETE"])
 @permission_classes([IsAuthenticated])
 def detach_payment_method(request, household_id, method_id: int):
-    get_request_school_id(request, required=True)
+    school_id = get_request_school_id(request, required=True)
 
-    if not user_can_access_household_finance(request.user, household_id):
+    if not user_can_access_household_finance(request.user, household_id, school_id):
         return Response({"detail": "Forbidden"}, status=status.HTTP_403_FORBIDDEN)
 
     return payment_hold_response()
