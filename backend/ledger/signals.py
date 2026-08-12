@@ -47,34 +47,51 @@ def _already_posted(reference_type, reference_id):
     ).exists()
 
 
+def _is_finance_refund_charge(instance: Charge) -> bool:
+    return (instance.description or "").startswith("finance_refund:")
+
+
 @receiver(post_save, sender=Charge)
 def post_charge_to_journal(sender, instance: Charge, created, **kwargs):
     if not created:
         return
     if instance.is_void:
         return
-    if _already_posted("charge", instance.id):
+
+    is_finance_refund = _is_finance_refund_charge(instance)
+    reference_type = "finance_refund" if is_finance_refund else "charge"
+    if _already_posted(reference_type, instance.id):
         return
 
     school = School.objects.filter(pk=instance.school_id).first()
     if not school:
         raise ValidationError("Charge.school_id does not map to a School.")
 
-    _, ar, revenue = _ensure_canonical_gl_accounts(school)
+    cash, ar, revenue = _ensure_canonical_gl_accounts(school)
 
     amount = instance.amount
     if amount is None or amount <= 0:
         raise ValidationError("Charge amount must be > 0 to post to journal.")
 
+    if is_finance_refund:
+        lines = [
+            {"account": ar, "debit": amount},
+            {"account": cash, "credit": amount},
+        ]
+        memo = f"Refund: {instance.description}"
+    else:
+        lines = [
+            {"account": ar, "debit": amount},
+            {"account": revenue, "credit": amount},
+        ]
+        memo = f"Charge: {instance.description}"
+
     post_journal_entry(
         school=school,
         created_by=_get_system_user(),
-        lines=[
-            {"account": ar, "debit": amount},
-            {"account": revenue, "credit": amount},
-        ],
-        memo=f"Charge: {instance.description}",
-        reference_type="charge",
+        lines=lines,
+        memo=memo,
+        reference_type=reference_type,
         reference_id=instance.id,
     )
 
