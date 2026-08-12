@@ -19,7 +19,7 @@ class PaymentAuthorityError(ValueError):
 
 
 class IdempotencyConflict(PaymentAuthorityError):
-    """An idempotency key was reused for different immutable facts."""
+    """An idempotency key or financial replay conflicts with canonical facts."""
 
 
 class InvalidPaymentState(PaymentAuthorityError):
@@ -67,6 +67,72 @@ def _normalized_currency(value: str) -> str:
     return (value or "USD").strip().upper()
 
 
+def _normalize_allocations(payment: Payment, allocations_payload: list[dict]) -> list[dict]:
+    """Return validated allocation facts whose total exactly equals the Payment."""
+    if not isinstance(allocations_payload, list) or not allocations_payload:
+        raise PaymentAuthorityError("Canonical settlement requires explicit allocations.")
+
+    normalized: list[dict] = []
+    obligation_ids: set[int] = set()
+    total_cents = 0
+
+    for item in allocations_payload:
+        if not isinstance(item, dict):
+            raise PaymentAuthorityError("Canonical settlement allocations must be objects.")
+        if "obligation_id" not in item or "amount_cents" not in item:
+            raise PaymentAuthorityError(
+                "Canonical settlement allocation requires obligation_id and amount_cents."
+            )
+        try:
+            obligation_id = int(item["obligation_id"])
+            amount_cents = int(item["amount_cents"])
+        except (TypeError, ValueError) as exc:
+            raise PaymentAuthorityError(
+                "Canonical settlement allocation identifiers and amounts must be integers."
+            ) from exc
+        if obligation_id <= 0:
+            raise PaymentAuthorityError("Canonical settlement obligation_id must be positive.")
+        if amount_cents <= 0:
+            raise PaymentAuthorityError("Canonical settlement allocation amount must be positive.")
+        if obligation_id in obligation_ids:
+            raise PaymentAuthorityError(
+                "Canonical settlement cannot contain duplicate obligation allocations."
+            )
+        obligation_ids.add(obligation_id)
+        total_cents += amount_cents
+        normalized.append(
+            {"obligation_id": obligation_id, "amount_cents": amount_cents}
+        )
+
+    if total_cents != int(payment.amount_cents):
+        raise PaymentAuthorityError(
+            f"Canonical settlement allocations must equal Payment amount; "
+            f"allocated={total_cents}, payment={payment.amount_cents}."
+        )
+    return normalized
+
+
+def _assert_provider_facts(
+    *,
+    provider_owner: str,
+    provider: str,
+    stored_intent_id: str = "",
+    incoming_intent_id: str = "",
+    stored_payment_id: str = "",
+    incoming_payment_id: str = "",
+    stored_refund_id: str = "",
+    incoming_refund_id: str = "",
+) -> None:
+    if provider and provider_owner not in ("", provider):
+        raise IdempotencyConflict("Provider ownership conflicts with canonical facts.")
+    if incoming_intent_id and stored_intent_id not in ("", incoming_intent_id):
+        raise IdempotencyConflict("provider_intent_id conflicts with canonical facts.")
+    if incoming_payment_id and stored_payment_id not in ("", incoming_payment_id):
+        raise IdempotencyConflict("provider_payment_id conflicts with canonical facts.")
+    if incoming_refund_id and stored_refund_id not in ("", incoming_refund_id):
+        raise IdempotencyConflict("provider_refund_id conflicts with canonical facts.")
+
+
 def _assert_same_payment_facts(
     payment: Payment,
     *,
@@ -90,15 +156,14 @@ def _assert_same_payment_facts(
                 f"Canonical Payment idempotency key conflicts on {field_name}."
             )
 
-    for field_name, value in (
-        ("provider", provider),
-        ("provider_intent_id", provider_intent_id),
-        ("provider_payment_id", provider_payment_id),
-    ):
-        if value and getattr(payment, field_name) not in ("", value):
-            raise IdempotencyConflict(
-                f"Canonical Payment idempotency key conflicts on {field_name}."
-            )
+    _assert_provider_facts(
+        provider_owner=payment.provider,
+        provider=provider,
+        stored_intent_id=payment.provider_intent_id,
+        incoming_intent_id=provider_intent_id,
+        stored_payment_id=payment.provider_payment_id,
+        incoming_payment_id=provider_payment_id,
+    )
 
 
 @transaction.atomic
@@ -128,6 +193,8 @@ def create_payment(
         raise PaymentAuthorityError("Canonical Payment amount must be positive.")
     if not idempotency_key:
         raise PaymentAuthorityError("Canonical Payment idempotency_key is required.")
+    if (provider_intent_id or provider_payment_id) and not provider:
+        raise PaymentAuthorityError("Provider is required when provider identifiers are supplied.")
 
     existing = Payment.objects.select_for_update().filter(
         school_id=school_id,
@@ -181,12 +248,14 @@ def bind_payment_provider(
     if not provider:
         raise PaymentAuthorityError("Provider is required when binding provider identifiers.")
 
-    if payment.provider not in ("", provider):
-        raise PaymentAuthorityError("Canonical Payment is already owned by another provider.")
-    if provider_intent_id and payment.provider_intent_id not in ("", provider_intent_id):
-        raise PaymentAuthorityError("Canonical Payment provider_intent_id is already bound.")
-    if provider_payment_id and payment.provider_payment_id not in ("", provider_payment_id):
-        raise PaymentAuthorityError("Canonical Payment provider_payment_id is already bound.")
+    _assert_provider_facts(
+        provider_owner=payment.provider,
+        provider=provider,
+        stored_intent_id=payment.provider_intent_id,
+        incoming_intent_id=provider_intent_id,
+        stored_payment_id=payment.provider_payment_id,
+        incoming_payment_id=provider_payment_id,
+    )
 
     payment.provider = provider
     if provider_intent_id:
@@ -261,6 +330,38 @@ def _legacy_payment_for(payment: Payment) -> FinancePayment:
     return legacy_payment
 
 
+def _assert_settlement_replay(
+    *,
+    payment: Payment,
+    allocations_payload: list[dict],
+    provider: str,
+    provider_intent_id: str,
+    provider_payment_id: str,
+) -> None:
+    normalized = _normalize_allocations(payment, allocations_payload)
+    _assert_provider_facts(
+        provider_owner=payment.provider,
+        provider=provider,
+        stored_intent_id=payment.provider_intent_id,
+        incoming_intent_id=provider_intent_id,
+        stored_payment_id=payment.provider_payment_id,
+        incoming_payment_id=provider_payment_id,
+    )
+
+    legacy_payment = _legacy_payment_for(payment)
+    existing_allocations = sorted(
+        (int(allocation.obligation_id), int(allocation.amount_cents))
+        for allocation in legacy_payment.allocations.all()
+    )
+    requested_allocations = sorted(
+        (item["obligation_id"], item["amount_cents"]) for item in normalized
+    )
+    if existing_allocations != requested_allocations:
+        raise IdempotencyConflict(
+            "Canonical settlement replay conflicts with existing allocation facts."
+        )
+
+
 @transaction.atomic
 def settle_payment(
     *,
@@ -276,7 +377,18 @@ def settle_payment(
     No Accounting/Student Accounts effect occurs in PENDING/AUTHORIZED/SETTLING.
     """
     payment = Payment.objects.select_for_update().get(pk=payment.pk)
+    provider = (provider or "").strip()
+    provider_intent_id = (provider_intent_id or "").strip()
+    provider_payment_id = (provider_payment_id or "").strip()
+
     if payment.status == CanonicalPaymentStatus.SETTLED:
+        _assert_settlement_replay(
+            payment=payment,
+            allocations_payload=allocations_payload,
+            provider=provider,
+            provider_intent_id=provider_intent_id,
+            provider_payment_id=provider_payment_id,
+        )
         return payment
     if payment.status in {
         CanonicalPaymentStatus.FAILED,
@@ -287,21 +399,24 @@ def settle_payment(
         raise InvalidPaymentState(
             f"Canonical Payment in {payment.status} cannot settle."
         )
-    if not isinstance(allocations_payload, list) or not allocations_payload:
-        raise PaymentAuthorityError("Canonical settlement requires explicit allocations.")
 
+    normalized_allocations = _normalize_allocations(payment, allocations_payload)
     legacy_payment = _legacy_payment_for(payment)
-    if provider:
+
+    effective_provider = provider or payment.provider
+    if (provider_intent_id or provider_payment_id) and not effective_provider:
+        raise PaymentAuthorityError("Provider is required when provider identifiers are supplied.")
+    if effective_provider and (provider or provider_intent_id or provider_payment_id):
         payment = bind_payment_provider(
             payment=payment,
-            provider=provider,
+            provider=effective_provider,
             provider_intent_id=provider_intent_id,
             provider_payment_id=provider_payment_id,
         )
 
     settle_payment_and_allocate(
         payment=legacy_payment,
-        allocations_payload=allocations_payload,
+        allocations_payload=normalized_allocations,
     )
     payment = Payment.objects.select_for_update().get(pk=payment.pk)
     payment.status = CanonicalPaymentStatus.SETTLED
@@ -321,8 +436,10 @@ def _assert_same_refund_facts(
         raise IdempotencyConflict("Canonical Refund idempotency key belongs to another Payment.")
     if int(refund.amount_cents) != int(amount_cents):
         raise IdempotencyConflict("Canonical Refund idempotency key conflicts on amount_cents.")
-    if provider and refund.provider not in ("", provider):
-        raise IdempotencyConflict("Canonical Refund idempotency key conflicts on provider.")
+    _assert_provider_facts(
+        provider_owner=refund.provider,
+        provider=provider,
+    )
 
 
 @transaction.atomic
@@ -346,13 +463,6 @@ def request_refund(
     idempotency_key = (idempotency_key or "").strip()
     provider = (provider or payment.provider or "").strip()
 
-    if payment.status not in {
-        CanonicalPaymentStatus.SETTLED,
-        CanonicalPaymentStatus.PARTIALLY_REFUNDED,
-    }:
-        raise InvalidPaymentState(
-            f"Canonical Payment in {payment.status} cannot be refunded."
-        )
     if amount_cents <= 0:
         raise PaymentAuthorityError("Canonical Refund amount must be positive.")
     if not idempotency_key:
@@ -372,6 +482,14 @@ def request_refund(
             provider=provider,
         )
         return existing
+
+    if payment.status not in {
+        CanonicalPaymentStatus.SETTLED,
+        CanonicalPaymentStatus.PARTIALLY_REFUNDED,
+    }:
+        raise InvalidPaymentState(
+            f"Canonical Payment in {payment.status} cannot be refunded."
+        )
 
     reserved_cents = (
         payment.refunds.filter(status__in=_ACTIVE_REFUND_STATUSES)
@@ -409,21 +527,30 @@ def mark_refund_pending(
     provider_refund_id: str = "",
 ) -> Refund:
     refund = Refund.objects.select_for_update().get(pk=refund.pk)
+    provider = (provider or "").strip()
+    provider_refund_id = (provider_refund_id or "").strip()
+
     if refund.status == CanonicalRefundStatus.PENDING:
+        _assert_provider_facts(
+            provider_owner=refund.provider,
+            provider=provider,
+            stored_refund_id=refund.provider_refund_id,
+            incoming_refund_id=provider_refund_id,
+        )
         return refund
     if refund.status != CanonicalRefundStatus.REQUESTED:
         raise InvalidPaymentState(
             f"Canonical Refund in {refund.status} cannot become pending."
         )
-
-    provider = (provider or "").strip()
-    provider_refund_id = (provider_refund_id or "").strip()
     if not provider:
         raise PaymentAuthorityError("Provider is required for a pending provider refund.")
-    if refund.provider not in ("", provider):
-        raise PaymentAuthorityError("Canonical Refund is already owned by another provider.")
-    if refund.provider_refund_id not in ("", provider_refund_id):
-        raise PaymentAuthorityError("Canonical Refund provider_refund_id is already bound.")
+
+    _assert_provider_facts(
+        provider_owner=refund.provider,
+        provider=provider,
+        stored_refund_id=refund.provider_refund_id,
+        incoming_refund_id=provider_refund_id,
+    )
 
     refund.provider = provider
     if provider_refund_id:
@@ -453,7 +580,16 @@ def settle_refund(
     """
     refund = Refund.objects.select_for_update().select_related("payment").get(pk=refund.pk)
     payment = Payment.objects.select_for_update().get(pk=refund.payment_id)
+    provider = (provider or refund.provider or payment.provider or "").strip()
+    provider_refund_id = (provider_refund_id or refund.provider_refund_id or "").strip()
+
     if refund.status == CanonicalRefundStatus.SETTLED:
+        _assert_provider_facts(
+            provider_owner=refund.provider,
+            provider=provider,
+            stored_refund_id=refund.provider_refund_id,
+            incoming_refund_id=provider_refund_id,
+        )
         return refund
     if refund.status not in {
         CanonicalRefundStatus.REQUESTED,
@@ -463,12 +599,12 @@ def settle_refund(
             f"Canonical Refund in {refund.status} cannot settle."
         )
 
-    provider = (provider or refund.provider or payment.provider or "").strip()
-    provider_refund_id = (provider_refund_id or refund.provider_refund_id or "").strip()
-    if refund.provider and provider and refund.provider != provider:
-        raise PaymentAuthorityError("Canonical Refund provider ownership conflict.")
-    if refund.provider_refund_id and provider_refund_id and refund.provider_refund_id != provider_refund_id:
-        raise PaymentAuthorityError("Canonical Refund provider_refund_id ownership conflict.")
+    _assert_provider_facts(
+        provider_owner=refund.provider,
+        provider=provider,
+        stored_refund_id=refund.provider_refund_id,
+        incoming_refund_id=provider_refund_id,
+    )
 
     legacy_payment = _legacy_payment_for(payment)
     legacy_idempotency_key = f"canonical_refund:{refund.pk}"
