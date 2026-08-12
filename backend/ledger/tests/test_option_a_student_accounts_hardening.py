@@ -86,3 +86,31 @@ def test_void_charge_has_zero_remaining_balance_and_is_excluded_from_statement()
     statement = build_account_statement(school_id=school_id, account=account)
     assert statement["balance"] == "0.00"
     assert statement["entries"] == []
+
+
+def test_finance_refund_charge_reopens_ar_without_recognizing_revenue():
+    school_id = _school_id("Option A refund reversal")
+    account = _account(school_id)
+    charge = Charge.objects.create(
+        school_id=school_id,
+        account=account,
+        description="finance_refund:123",
+        amount=Decimal("25.00"),
+    )
+
+    assert not JournalEntry.objects.filter(
+        reference_type="charge",
+        reference_id=charge.id,
+    ).exists()
+
+    entry = JournalEntry.objects.get(
+        reference_type="finance_refund",
+        reference_id=charge.id,
+    )
+    lines = {line.account.code: line for line in entry.lines.select_related("account").all()}
+
+    assert set(lines) == {"1000", "1100"}
+    assert lines["1100"].debit == Decimal("25.00")
+    assert lines["1100"].credit == Decimal("0.00")
+    assert lines["1000"].debit == Decimal("0.00")
+    assert lines["1000"].credit == Decimal("25.00")
