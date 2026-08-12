@@ -30,6 +30,7 @@ class Command(BaseCommand):
             f"checked_journal_entries={result.checked_journal_entries} "
             f"checked_finance_allocations={result.checked_finance_allocations} "
             f"checked_ledger_allocations={result.checked_ledger_allocations} "
+            f"checked_trace_links={result.checked_trace_links} "
             f"findings={len(result.findings)}"
         )
         for finding in result.findings:
