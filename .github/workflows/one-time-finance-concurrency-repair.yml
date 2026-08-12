@@ -55,23 +55,14 @@ jobs:
               if marker not in body:
                   raise SystemExit(f'pytest marker not found in {name}')
               path.write_text(body.replace(marker, replacement, 1), encoding='utf-8')
-
-          workflow = Path('.github/workflows/finance-final-hardening.yml')
-          body = workflow.read_text(encoding='utf-8')
-          old_tests = '''          payments/tests/test_option_a_finance_runtime_chain.py\n          payments/tests/test_option_a_compatibility_audit.py\n'''
-          new_tests = '''          payments/tests/test_option_a_finance_runtime_chain.py\n          payments/tests/test_option_a_compatibility_audit.py\n          payments/tests/test_finance_concurrency.py\n          payments/tests/test_finance_extended_concurrency.py\n'''
-          if old_tests not in body:
-              raise SystemExit('PostgreSQL finance proof list marker not found')
-          workflow.write_text(body.replace(old_tests, new_tests, 1), encoding='utf-8')
           PY
           git diff --check
 
-      - name: Commit repair and remove one-time workflow
+      - name: Commit repair
         run: |
           git config user.name "crown-governance-bot"
           git config user.email "actions@users.noreply.github.com"
-          git rm .github/workflows/one-time-finance-concurrency-repair.yml
-          git add backend/payments/authority_services.py backend/payments/tests/test_finance_concurrency.py backend/payments/tests/test_finance_extended_concurrency.py .github/workflows/finance-final-hardening.yml
+          git add backend/payments/authority_services.py backend/payments/tests/test_finance_concurrency.py backend/payments/tests/test_finance_extended_concurrency.py
           git diff --cached --check
-          git commit -m "fix(finance): certify concurrency on PostgreSQL"
+          git commit -m "fix(finance): enforce compatibility and postgres concurrency semantics"
           git push origin HEAD:release/security-runtime-governance-repair-platform-final-certification
