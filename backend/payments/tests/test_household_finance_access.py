@@ -7,6 +7,7 @@ from django.test import Client
 
 from core.models import School
 from households.models import Household
+from payments.models import StatementExportRequest
 
 
 pytestmark = pytest.mark.django_db
@@ -71,3 +72,40 @@ def test_household_summary_blocks_non_finance_non_household_user():
     )
 
     assert resp.status_code == 403
+
+
+def test_finance_role_cannot_cross_school_household_boundary():
+    school_a = School.objects.create(name="Finance Boundary School A")
+    school_b = School.objects.create(name="Finance Boundary School B")
+    foreign_household = Household.objects.create(school_id=school_b.id, name="Foreign Family")
+    user = _mk_user_with_school(
+        school_a,
+        is_staff=True,
+        role_groups=("finance_admin",),
+    )
+
+    client = Client()
+    client.force_login(user)
+    headers = {"HTTP_X_SCHOOL_ID": str(school_a.id)}
+
+    endpoints = [
+        f"/api/v1/payments/accounts/{foreign_household.id}/summary/",
+        f"/api/v1/payments/accounts/{foreign_household.id}/history/",
+        f"/api/v1/payments/accounts/{foreign_household.id}/statement.csv",
+        f"/api/v1/payments/accounts/{foreign_household.id}/methods/",
+    ]
+    for endpoint in endpoints:
+        response = client.get(endpoint, **headers)
+        assert response.status_code == 403, endpoint
+
+    setup_response = client.post(
+        f"/api/v1/payments/accounts/{foreign_household.id}/methods/setup/",
+        data={},
+        content_type="application/json",
+        **headers,
+    )
+    assert setup_response.status_code == 403
+    assert not StatementExportRequest.objects.filter(
+        school_id=school_a.id,
+        household_id=foreign_household.id,
+    ).exists()
