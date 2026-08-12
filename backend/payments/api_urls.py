@@ -13,6 +13,7 @@ from .bank_recon_api import (
 from .disputes_api import dispute_action_create, dispute_detail
 from .exceptions_api import (
     payment_exception_ignore,
+    payment_exception_resolve,
     payment_exception_retry,
     payment_exceptions_list,
 )
@@ -110,6 +111,11 @@ urlpatterns = [
         "exceptions/<int:exception_id>/ignore/",
         payment_exception_ignore,
         name="payments-exception-ignore",
+    ),
+    path(
+        "exceptions/<int:exception_id>/resolve/",
+        payment_exception_resolve,
+        name="payments-exception-resolve",
     ),
     path(
         "bank/imports/", bank_statement_imports_list, name="payments-bank-imports-list"
