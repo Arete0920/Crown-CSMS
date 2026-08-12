@@ -94,6 +94,12 @@ def _normalize_allocations(payment: Payment, allocations_payload: list[dict]) ->
         normalized.append(
             {"obligation_id": obligation_id, "amount_cents": amount_cents}
         )
+
+    allocated_cents = sum(item["amount_cents"] for item in normalized)
+    if allocated_cents > int(payment.amount_cents):
+        raise PaymentAuthorityError(
+            "Canonical settlement allocations cannot exceed the Payment amount."
+        )
     return normalized
 
 
@@ -315,6 +321,25 @@ def _legacy_payment_for(payment: Payment) -> FinancePayment:
     return legacy_payment
 
 
+def _assert_legacy_allocation_facts(
+    *,
+    legacy_payment: FinancePayment,
+    normalized_allocations: list[dict],
+) -> None:
+    existing_allocations = sorted(
+        (int(allocation.obligation_id), int(allocation.amount_cents))
+        for allocation in legacy_payment.allocations.all()
+    )
+    requested_allocations = sorted(
+        (item["obligation_id"], item["amount_cents"])
+        for item in normalized_allocations
+    )
+    if existing_allocations != requested_allocations:
+        raise IdempotencyConflict(
+            "Canonical settlement conflicts with existing legacy allocation facts."
+        )
+
+
 def _assert_settlement_replay(
     *,
     payment: Payment,
@@ -334,17 +359,10 @@ def _assert_settlement_replay(
     )
 
     legacy_payment = _legacy_payment_for(payment)
-    existing_allocations = sorted(
-        (int(allocation.obligation_id), int(allocation.amount_cents))
-        for allocation in legacy_payment.allocations.all()
+    _assert_legacy_allocation_facts(
+        legacy_payment=legacy_payment,
+        normalized_allocations=normalized,
     )
-    requested_allocations = sorted(
-        (item["obligation_id"], item["amount_cents"]) for item in normalized
-    )
-    if existing_allocations != requested_allocations:
-        raise IdempotencyConflict(
-            "Canonical settlement replay conflicts with existing allocation facts."
-        )
 
 
 @transaction.atomic
@@ -399,10 +417,17 @@ def settle_payment(
             provider_payment_id=provider_payment_id,
         )
 
-    settle_payment_and_allocate(
-        payment=legacy_payment,
-        allocations_payload=normalized_allocations,
-    )
+    if legacy_payment.status == LegacyPaymentStatus.SETTLED:
+        _assert_legacy_allocation_facts(
+            legacy_payment=legacy_payment,
+            normalized_allocations=normalized_allocations,
+        )
+    else:
+        settle_payment_and_allocate(
+            payment=legacy_payment,
+            allocations_payload=normalized_allocations,
+        )
+
     payment = Payment.objects.select_for_update().get(pk=payment.pk)
     payment.status = CanonicalPaymentStatus.SETTLED
     payment.settled_at = timezone.now()
