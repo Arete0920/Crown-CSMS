@@ -1,9 +1,10 @@
 from concurrent.futures import ThreadPoolExecutor
 from datetime import date, timedelta
+from decimal import Decimal
 from threading import Barrier
 
 import pytest
-from django.db import close_old_connections
+from django.db import IntegrityError, close_old_connections
 
 from core.models import School, UserAccount
 from finance.models import (
@@ -23,7 +24,19 @@ from payments.authority_services import (
     request_refund,
     settle_payment,
 )
-from payments.models import CanonicalPaymentStatus, CanonicalRefundStatus, Payment, Refund
+from payments.models import (
+    BankStatementEntry,
+    BankStatementImport,
+    CanonicalPaymentStatus,
+    CanonicalRefundStatus,
+    GatewayEvent,
+    GatewayProvider,
+    Payment,
+    PayoutBankMatch,
+    ProviderPayoutBatch,
+    Refund,
+)
+from payments.reconciliation_ops import manual_match_payout_to_bank_entry
 
 
 pytestmark = pytest.mark.django_db(transaction=True)
@@ -85,7 +98,7 @@ def _run_parallel(callables):
         barrier.wait(timeout=10)
         try:
             return ("ok", fn())
-        except Exception as exc:  # returned for assertion in the parent thread
+        except Exception as exc:
             return ("error", exc)
         finally:
             close_old_connections()
@@ -95,7 +108,7 @@ def _run_parallel(callables):
 
 
 def test_simultaneous_settlement_is_single_posting_and_replay_safe():
-    school, _payer, obligation, legacy, payment = _build_payment()
+    _school, _payer, obligation, legacy, payment = _build_payment()
     allocation = [{"obligation_id": obligation.id, "amount_cents": 10_000}]
 
     def settle():
@@ -178,3 +191,77 @@ def test_duplicate_refund_idempotency_key_is_single_record_under_parallel_load()
         school_id=school.id,
         idempotency_key="same-refund-key",
     ).count() == 1
+
+
+def test_duplicate_gateway_delivery_cannot_create_duplicate_event_fact():
+    school = School.objects.create(name="Gateway Deduplication School")
+
+    def receive():
+        return GatewayEvent.objects.create(
+            school_id=school.id,
+            provider=GatewayProvider.COMPUWERX,
+            event_id="evt-concurrent-1",
+            event_type="payment.settled",
+            raw_body="{}",
+            payload={},
+        ).id
+
+    results = _run_parallel([receive, receive])
+    successes = [value for state, value in results if state == "ok"]
+    failures = [value for state, value in results if state == "error"]
+    assert len(successes) == 1
+    assert len(failures) == 1
+    assert isinstance(failures[0], IntegrityError)
+    assert GatewayEvent.objects.filter(
+        provider=GatewayProvider.COMPUWERX,
+        event_id="evt-concurrent-1",
+    ).count() == 1
+
+
+def test_reconciliation_workers_cannot_claim_same_payout_and_bank_entry_twice():
+    school = School.objects.create(name="Reconciliation Concurrency School")
+    payout = ProviderPayoutBatch.objects.create(
+        school_id=school.id,
+        provider=GatewayProvider.COMPUWERX,
+        payout_id="payout-concurrent-1",
+        status="settled",
+        gross_amount=Decimal("100.00"),
+        fee_amount=Decimal("2.00"),
+        net_amount=Decimal("98.00"),
+        currency="USD",
+    )
+    statement_import = BankStatementImport.objects.create(
+        school_id=school.id,
+        source_name="concurrent.csv",
+        source_sha256="a" * 64,
+        status="processed",
+        row_count=1,
+    )
+    bank_entry = BankStatementEntry.objects.create(
+        school_id=school.id,
+        statement_import=statement_import,
+        posted_date=date.today(),
+        description="Provider payout",
+        reference="payout-concurrent-1",
+        amount=Decimal("98.00"),
+        currency="USD",
+    )
+
+    def match():
+        return manual_match_payout_to_bank_entry(
+            school_id=school.id,
+            payout_batch_id=payout.id,
+            bank_entry_id=bank_entry.id,
+            actor=None,
+        ).id
+
+    results = _run_parallel([match, match])
+    successes = [value for state, value in results if state == "ok"]
+    failures = [value for state, value in results if state == "error"]
+    assert len(successes) == 1
+    assert len(failures) == 1
+    assert PayoutBankMatch.objects.filter(payout_batch=payout, bank_entry=bank_entry).count() == 1
+    payout.refresh_from_db()
+    bank_entry.refresh_from_db()
+    assert payout.status == "reconciled"
+    assert bank_entry.is_matched is True
