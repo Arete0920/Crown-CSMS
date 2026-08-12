@@ -1,11 +1,19 @@
 from datetime import date
 from decimal import Decimal
 
+from django.db import IntegrityError, transaction
+from django.db.models.deletion import ProtectedError
 from django.test import TestCase
 from django.utils import timezone
 
 from core.models import School, UserAccount
-from payments.models import BankStatementEntry, BankStatementImport, ProviderPayoutBatch
+from payments.models import (
+    BankStatementEntry,
+    BankStatementImport,
+    PayoutBankMatch,
+    PayoutBankMatchStatus,
+    ProviderPayoutBatch,
+)
 from payments.reconciliation_ops import (
     AUTO_MATCH_RULE,
     auto_match_payout_batches_for_school,
@@ -186,3 +194,59 @@ class BankReconciliationTests(TestCase):
                 bank_entry=bank_entry,
                 user=self.user,
             )
+
+        same_currency_bank = self.bank_entry(currency="USD", reference="missing-date-bank")
+        payout.settled_at = None
+        payout.save(update_fields=["settled_at"])
+        with self.assertRaisesRegex(ValueError, "settlement date evidence"):
+            create_manual_payout_match(
+                school_id=self.school.id,
+                payout_batch=payout,
+                bank_entry=same_currency_bank,
+                user=self.user,
+            )
+
+    def test_database_constraints_block_active_payout_and_bank_reuse(self):
+        first_bank = self.bank_entry(reference="db-bank-1")
+        second_bank = self.bank_entry(reference="db-bank-2")
+        first_payout = self.payout(payout_id="db-po-1")
+        second_payout = self.payout(payout_id="db-po-2")
+
+        first = PayoutBankMatch.objects.create(
+            school_id=self.school.id,
+            payout_batch=first_payout,
+            bank_entry=first_bank,
+            status=PayoutBankMatchStatus.AUTO_MATCHED,
+        )
+        self.assertIsNotNone(first.pk)
+
+        with self.assertRaises(IntegrityError), transaction.atomic():
+            PayoutBankMatch.objects.create(
+                school_id=self.school.id,
+                payout_batch=first_payout,
+                bank_entry=second_bank,
+                status=PayoutBankMatchStatus.MANUAL_MATCHED,
+            )
+
+        with self.assertRaises(IntegrityError), transaction.atomic():
+            PayoutBankMatch.objects.create(
+                school_id=self.school.id,
+                payout_batch=second_payout,
+                bank_entry=first_bank,
+                status=PayoutBankMatchStatus.MANUAL_MATCHED,
+            )
+
+    def test_reconciliation_relationships_protect_evidence_from_cascade_delete(self):
+        bank_entry = self.bank_entry(reference="protected-bank")
+        payout = self.payout(payout_id="protected-payout")
+        create_manual_payout_match(
+            school_id=self.school.id,
+            payout_batch=payout,
+            bank_entry=bank_entry,
+            user=self.user,
+        )
+
+        with self.assertRaises(ProtectedError):
+            payout.delete()
+        with self.assertRaises(ProtectedError):
+            bank_entry.delete()
