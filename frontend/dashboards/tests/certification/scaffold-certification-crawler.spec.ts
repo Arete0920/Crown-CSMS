@@ -66,10 +66,10 @@ async function createSandboxSession(_page: Page, role: string, schoolId: string)
     access: `cert-${role}-access-token`,
     refresh: "",
     school_id: schoolId,
-    school_name: "Certification Demo School",
+    school_name: "Heritage Christian Academy",
     role,
     currentUser: {
-      email: `cert-${role}@example.local`,
+      email: `cert-${role}@heritage.example.org`,
       username: `cert-${role}`,
       role,
       roles: [role],
@@ -128,7 +128,7 @@ async function installCertificationApiStubs(page: Page, role: string, schoolId: 
         contentType: "application/json",
         body: JSON.stringify({
           widgets: [],
-          generated_at: "2026-08-09T00:00:00Z",
+          generated_at: "2026-08-12T00:00:00Z",
           meta: { served_from: "scaffold" },
         }),
       });
@@ -139,7 +139,7 @@ async function installCertificationApiStubs(page: Page, role: string, schoolId: 
         status: 200,
         contentType: "application/json",
         body: JSON.stringify({
-          email: `cert-${role}@example.local`,
+          email: `cert-${role}@heritage.example.org`,
           username: `cert-${role}`,
           role,
           roles: [role],
@@ -154,7 +154,17 @@ async function installCertificationApiStubs(page: Page, role: string, schoolId: 
       contentType: "application/json",
       body: JSON.stringify({
         ok: true,
-        meta: { served_from: "scaffold" },
+        child: { name: "Avery Reed", grade: "11" },
+        student: { name: "Avery Reed", grade: "11" },
+        attendance: [],
+        progress: [],
+        learning_tasks: [],
+        communications: [],
+        schedule: [],
+        billing: { balance_cents: 0, external_payment_provider_enabled: false },
+        staff_controls: { grade_write: false, attendance_write: false, admissions_decision: false, finance_admin: false, tenant_admin: false },
+        privileged_actions: { grading: false, admissions: false, finance_admin: false, tenant_admin: false },
+        meta: { served_from: "scaffold", school_name: "Heritage Christian Academy" },
       }),
     });
   });

@@ -14,6 +14,42 @@ def _finance_only(user):
     return has_finance_runtime_role(user)
 
 
+def _resolution_reason(request):
+    reason = str(request.data.get("reason") or request.data.get("note") or "").strip()
+    if len(reason) < 3:
+        return None
+    return reason
+
+
+def _resolve_exception(*, item, user, action, reason, status_value):
+    now = timezone.now()
+    payload = dict(item.payload or {})
+    history = list(payload.get("operator_resolution_history") or [])
+    history.append(
+        {
+            "action": action,
+            "reason": reason,
+            "resolved_by_id": user.pk,
+            "resolved_at": now.isoformat(),
+        }
+    )
+    payload["operator_resolution_history"] = history
+    item.payload = payload
+    item.status = status_value
+    item.resolved_at = now
+    item.resolved_by = user
+    item.save(
+        update_fields=[
+            "payload",
+            "status",
+            "resolved_at",
+            "resolved_by",
+            "updated_at",
+        ]
+    )
+    return item
+
+
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def payment_exceptions_list(request):
@@ -22,20 +58,25 @@ def payment_exceptions_list(request):
     if not _finance_only(request.user):
         return Response({"detail": "Forbidden"}, status=status.HTTP_403_FORBIDDEN)
 
-    rows = [
-        {
-            "id": row.id,
-            "category": row.category,
-            "severity": row.severity,
-            "status": row.status,
-            "message": "Internal processing error. See server logs with exception ID." if row.message else "",
-            "retry_count": row.retry_count,
-            "gateway_event_id": row.gateway_event_id,
-            "household_id": row.household_id,
-            "created_at": row.created_at,
-        }
-        for row in PaymentSupportException.objects.filter(school_id=school_id).order_by("-id")
-    ]
+    rows = []
+    for row in PaymentSupportException.objects.filter(school_id=school_id).order_by("-id"):
+        resolution_history = (row.payload or {}).get("operator_resolution_history") or []
+        rows.append(
+            {
+                "id": row.id,
+                "category": row.category,
+                "severity": row.severity,
+                "status": row.status,
+                "message": "Internal processing error. See server logs with exception ID." if row.message else "",
+                "retry_count": row.retry_count,
+                "gateway_event_id": row.gateway_event_id,
+                "household_id": row.household_id,
+                "created_at": row.created_at,
+                "resolved_at": row.resolved_at,
+                "resolved_by_id": row.resolved_by_id,
+                "last_operator_resolution": resolution_history[-1] if resolution_history else None,
+            }
+        )
     return Response({"results": rows})
 
 
@@ -61,13 +102,52 @@ def payment_exception_ignore(request, exception_id: int):
     if not _finance_only(request.user):
         return Response({"detail": "Forbidden"}, status=status.HTTP_403_FORBIDDEN)
 
+    reason = _resolution_reason(request)
+    if reason is None:
+        return Response(
+            {"detail": "A documented reason is required to ignore a payment exception."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
     item = PaymentSupportException.objects.filter(school_id=school_id, id=exception_id).first()
     if not item:
         return Response({"detail": "Exception not found."}, status=status.HTTP_404_NOT_FOUND)
 
-    item.status = PaymentExceptionStatus.IGNORED
-    item.resolved_at = timezone.now()
-    item.resolved_by = request.user
-    item.save(update_fields=["status", "resolved_at", "resolved_by", "updated_at"])
+    _resolve_exception(
+        item=item,
+        user=request.user,
+        action="ignore",
+        reason=reason,
+        status_value=PaymentExceptionStatus.IGNORED,
+    )
+    return Response({"ok": True, "status": item.status})
 
-    return Response({"ok": True})
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def payment_exception_resolve(request, exception_id: int):
+    """Document a manual operational resolution without retrying a provider event."""
+    school_id = get_request_school_id(request, required=True)
+
+    if not _finance_only(request.user):
+        return Response({"detail": "Forbidden"}, status=status.HTTP_403_FORBIDDEN)
+
+    reason = _resolution_reason(request)
+    if reason is None:
+        return Response(
+            {"detail": "A documented resolution is required."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    item = PaymentSupportException.objects.filter(school_id=school_id, id=exception_id).first()
+    if not item:
+        return Response({"detail": "Exception not found."}, status=status.HTTP_404_NOT_FOUND)
+
+    _resolve_exception(
+        item=item,
+        user=request.user,
+        action="resolve",
+        reason=reason,
+        status_value=PaymentExceptionStatus.RESOLVED,
+    )
+    return Response({"ok": True, "status": item.status})
