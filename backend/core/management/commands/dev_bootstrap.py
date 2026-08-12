@@ -11,7 +11,7 @@ from core.models import School
 
 DEFAULT_ADMIN_USERNAME = "admin"
 ADMIN_PASSWORD_FROM_ENV = os.getenv("CROWN_DEFAULT_ADMIN_PASSWORD")
-PRIMARY_SCHOOL_NAME = "Crown Demo Christian Academy"
+PRIMARY_SCHOOL_NAME = "Heritage Christian Academy"
 SECONDARY_SCHOOL_NAME = "Smoke Secondary School"
 
 

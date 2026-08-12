@@ -26,7 +26,7 @@ from core.models import School
 from gradebook.models import GradeEntry
 from households.models import Household, Student
 
-DEMO_SCHOOL_NAME = "Crown Demo Christian Academy"
+DEMO_SCHOOL_NAME = "Heritage Christian Academy"
 DEMO_HOUSEHOLD_NAME = "Demo Household (proof)"
 DEMO_STUDENT_FIRST = "Alex"
 DEMO_STUDENT_LAST = "Demo"
