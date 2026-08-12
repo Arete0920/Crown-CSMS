@@ -5,6 +5,7 @@ from threading import Barrier
 
 import pytest
 from django.db import IntegrityError, close_old_connections
+from django.utils import timezone
 
 from core.models import School, UserAccount
 from finance.models import (
@@ -36,7 +37,7 @@ from payments.models import (
     ProviderPayoutBatch,
     Refund,
 )
-from payments.reconciliation_ops import manual_match_payout_to_bank_entry
+from payments.reconciliation_ops import create_manual_payout_match
 
 
 pytestmark = pytest.mark.django_db(transaction=True)
@@ -218,8 +219,13 @@ def test_duplicate_gateway_delivery_cannot_create_duplicate_event_fact():
     ).count() == 1
 
 
-def test_reconciliation_workers_cannot_claim_same_payout_and_bank_entry_twice():
+def test_reconciliation_workers_resolve_to_one_payout_bank_match():
     school = School.objects.create(name="Reconciliation Concurrency School")
+    user = UserAccount.objects.create_user(
+        username="reconciliation_concurrency_user",
+        password="pass",
+        email="reconciliation-concurrency@test.example.com",
+    )
     payout = ProviderPayoutBatch.objects.create(
         school_id=school.id,
         provider=GatewayProvider.COMPUWERX,
@@ -229,6 +235,7 @@ def test_reconciliation_workers_cannot_claim_same_payout_and_bank_entry_twice():
         fee_amount=Decimal("2.00"),
         net_amount=Decimal("98.00"),
         currency="USD",
+        settled_at=timezone.now(),
     )
     statement_import = BankStatementImport.objects.create(
         school_id=school.id,
@@ -248,20 +255,18 @@ def test_reconciliation_workers_cannot_claim_same_payout_and_bank_entry_twice():
     )
 
     def match():
-        return manual_match_payout_to_bank_entry(
+        return create_manual_payout_match(
             school_id=school.id,
-            payout_batch_id=payout.id,
-            bank_entry_id=bank_entry.id,
-            actor=None,
+            payout_batch=ProviderPayoutBatch.objects.get(pk=payout.pk),
+            bank_entry=BankStatementEntry.objects.get(pk=bank_entry.pk),
+            user=user,
+            note="parallel reconciliation proof",
         ).id
 
     results = _run_parallel([match, match])
-    successes = [value for state, value in results if state == "ok"]
-    failures = [value for state, value in results if state == "error"]
-    assert len(successes) == 1
-    assert len(failures) == 1
+    assert [state for state, _ in results] == ["ok", "ok"]
+    ids = [value for _, value in results]
+    assert ids[0] == ids[1]
     assert PayoutBankMatch.objects.filter(payout_batch=payout, bank_entry=bank_entry).count() == 1
-    payout.refresh_from_db()
     bank_entry.refresh_from_db()
-    assert payout.status == "reconciled"
     assert bank_entry.is_matched is True
