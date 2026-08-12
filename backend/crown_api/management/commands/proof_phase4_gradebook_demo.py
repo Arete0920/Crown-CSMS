@@ -26,7 +26,7 @@ from django.core.management.base import BaseCommand, CommandError
 from core.models import School
 from households.models import Student
 
-DEMO_SCHOOL_NAME = "Crown Demo Christian Academy"
+DEMO_SCHOOL_NAME = "Heritage Christian Academy"
 DEMO_STUDENT_FIRST = "Alex"
 DEMO_STUDENT_LAST = "Demo"
 

@@ -8,7 +8,7 @@ Seeds exactly:
 
 Uses get_or_create everywhere — safe to run multiple times.
 Resolves the demo school UUID the same way proof_phase3_runtime does:
-  School.objects.get(name="Crown Demo Christian Academy")
+  School.objects.get(name="Heritage Christian Academy")
 """
 from decimal import Decimal
 
@@ -16,7 +16,7 @@ from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 
 
-DEMO_SCHOOL_NAME = "Crown Demo Christian Academy"
+DEMO_SCHOOL_NAME = "Heritage Christian Academy"
 DEMO_HOUSEHOLD_NAME = "Demo Household (proof)"
 DEMO_CHARGE_DESC = "Demo Charge (proof)"
 

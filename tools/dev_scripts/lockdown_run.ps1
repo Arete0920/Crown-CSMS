@@ -80,7 +80,7 @@ import json
 from core.models import School, AcademicYear
 from admissions.models import AdmissionsApplication
 
-s = School.objects.filter(name='Crown Demo Christian Academy').order_by('-created_at', 'id').first()
+s = School.objects.filter(name='Heritage Christian Academy').order_by('-created_at', 'id').first()
 if not s:
     print(json.dumps({'school_id': None, 'year_id': None, 'year_label': None}))
 else:
