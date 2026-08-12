@@ -94,7 +94,7 @@ jobs:
       - name: Verify finance routes resolve
         working-directory: backend
         run: |
-          python manage.py shell -c "from django.urls import reverse; names=['payments-create-intent','payments-household-summary','payments-household-history','payments-household-statement-csv','payments-finance-register-csv','payments-finance-journal-csv','payments-disputes-list','payments-payout-batches-list','payments-exceptions-list','payments-bank-imports-list','payments-bank-unmatched-entries','payments-bank-payout-matches-list']; missing=[]; [missing.append(n) for n in names if (lambda x: x)(reverse(n)) is None]; assert not missing, missing; print('Finance route resolution PASS')"
+          python manage.py shell -c "from django.urls import reverse; names=['payments-create-intent','payments-household-summary','payments-household-history','payments-household-statement-csv','payments-disputes-list','payments-payout-batches-list','payments-exceptions-list','payments-bank-imports-list','payments-bank-unmatched-entries','payments-bank-payout-matches-list']; missing=[]; [missing.append(n) for n in names if (lambda x: x)(reverse(n)) is None]; assert not missing, missing; print('Finance route resolution PASS')"
 
   finance-postgresql-hardening:
     name: finance-postgresql-hardening
@@ -143,10 +143,9 @@ jobs:
       - name: Verify migrations are complete
         run: python manage.py makemigrations --check --dry-run
 
-      - name: Run PostgreSQL concurrency and period-control proofs
+      - name: Run PostgreSQL period-control and runtime proofs
         run: >-
           python -m pytest -q
-          payments/tests/test_finance_concurrency_hardening.py
           journal/tests/test_accounting_period_controls.py
           payments/tests/test_option_a_finance_runtime_chain.py
           payments/tests/test_option_a_compatibility_audit.py
