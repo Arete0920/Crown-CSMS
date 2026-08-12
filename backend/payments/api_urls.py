@@ -13,16 +13,10 @@ from .bank_recon_api import (
 from .disputes_api import dispute_action_create, dispute_detail
 from .exceptions_api import (
     payment_exception_ignore,
-    payment_exception_resolve,
     payment_exception_retry,
     payment_exceptions_list,
 )
-from .export_api import (
-    finance_journal_export_csv,
-    finance_transaction_register_csv,
-    household_statement_csv,
-    payment_receipt_html,
-)
+from .export_api import household_statement_csv, payment_receipt_html
 from .methods_api import (
     create_payment_method_setup,
     detach_payment_method,
@@ -52,16 +46,6 @@ urlpatterns = [
         "accounts/<uuid:household_id>/statement.csv",
         household_statement_csv,
         name="payments-household-statement-csv",
-    ),
-    path(
-        "exports/finance-register.csv",
-        finance_transaction_register_csv,
-        name="payments-finance-register-csv",
-    ),
-    path(
-        "exports/journal.csv",
-        finance_journal_export_csv,
-        name="payments-finance-journal-csv",
     ),
     path(
         "receipts/<uuid:payment_id>/",
@@ -111,11 +95,6 @@ urlpatterns = [
         "exceptions/<int:exception_id>/ignore/",
         payment_exception_ignore,
         name="payments-exception-ignore",
-    ),
-    path(
-        "exceptions/<int:exception_id>/resolve/",
-        payment_exception_resolve,
-        name="payments-exception-resolve",
     ),
     path(
         "bank/imports/", bank_statement_imports_list, name="payments-bank-imports-list"
