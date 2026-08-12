@@ -1,17 +1,10 @@
 # CROWN Current Release Status
 
-**Last reconciled:** 2026-08-09  
-**Repository:** `tcmegahan/Crown2026`  
-**Controlling authority:** GitHub issue `#1619`  
-**Certified release source:** `ce12c9536ec85346b2446018fa8bfe27edb3ffa0`  
-**Immutable production tag:** `prod-deploy-20260808-ce12c95`  
-**Production deployment run:** `31287503791`
+**Successor state (verified 2026-08-11):** `tcmegahan/Crown-CSMS` uses migration baseline `ac574ab2a55ecbfefb40cbd67bad08d99c085575`; no successor production tag or release exists; prior production authority remains historical in preserved `tcmegahan/Crown2026`.
 
-## Current owner-handoff decision
+## Current successor release decision
 
-Issue `#1619` is the sole controlling release-readiness and owner-handoff record. Do not infer a current GO decision from this historical snapshot. Fresh authenticated verification on 2026-08-09 found material failures inside the previously certified route scope and reopened `#1619`.
-
-Current handoff decision: **NO-GO / REMEDIATION AND FRESH EXACT-IDENTITY CERTIFICATION REQUIRED**.
+`Crown-CSMS` is the active successor development repository, not a certified production identity; historical `Crown2026` certification does not transfer automatically, and any successor release requires fresh exact-identity certification.
 
 ## Prior certified production identity
 

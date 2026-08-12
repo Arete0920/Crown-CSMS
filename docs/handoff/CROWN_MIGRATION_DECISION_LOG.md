@@ -1,0 +1,2 @@
+# CROWN Migration Decision Log
+2026-08-11 — Decision: preserve all pre-migration tags/releases in `Crown2026` and start `Crown-CSMS` with no inherited tags/releases. Rationale/evidence: Migration Canon §§4, 10, 15, 18; both `main` refs equal `ac574ab2a55ecbfefb40cbd67bad08d99c085575`; live successor tags/releases are empty. Scope/state: successor registry is successor-only and immutable-tag CI remains fail-closed for every tag later registered here.
