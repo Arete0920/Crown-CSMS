@@ -8,7 +8,6 @@ from django.core.management import BaseCommand, call_command
 
 
 HERITAGE_NAME = "Heritage Christian Academy"
-LEGACY_DEMO_NAME = "Crown Demo Christian Academy"
 
 
 class Command(BaseCommand):
@@ -48,27 +47,19 @@ class Command(BaseCommand):
         # 1) Core school + baseline objects.
         call_command("seed_demo_school")
 
-        # Normalize the historical demo-school seed to the canonical single-school
-        # sandbox identity before any dependent data is attached.
         from core.models import AcademicYear, School
 
-        school = School.objects.filter(name=HERITAGE_NAME).order_by("-created_at", "id").first()
-        if school is None:
-            school = School.objects.filter(name=LEGACY_DEMO_NAME).order_by("-created_at", "id").first()
-            if school is not None:
-                school.name = HERITAGE_NAME
-                school.save(update_fields=["name"])
+        schools = School.objects.filter(name=HERITAGE_NAME).order_by("-created_at", "id")
+        school = schools.first()
         if school is None:
             raise RuntimeError(
-                "No Heritage/legacy demo school found after seed_demo_school; "
+                "Heritage Christian Academy was not created by seed_demo_school; "
                 "cannot establish the canonical single-school sandbox identity."
             )
-
-        # Fail closed if both historical and canonical identities coexist.
-        conflicting = School.objects.filter(name__in=[HERITAGE_NAME, LEGACY_DEMO_NAME]).exclude(pk=school.pk)
-        if conflicting.exists():
+        if schools.exclude(pk=school.pk).exists():
             raise RuntimeError(
-                "Multiple Heritage/legacy demo school identities exist; sandbox normalization is unsafe."
+                "Multiple Heritage Christian Academy demo-school records exist; "
+                "single-school sandbox identity is unsafe."
             )
 
         year = AcademicYear.objects.filter(school=school, is_current=True).first()
