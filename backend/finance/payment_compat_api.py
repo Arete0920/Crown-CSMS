@@ -7,6 +7,7 @@ finance.FinanceRefund are compatibility projections only.
 from __future__ import annotations
 
 import logging
+import uuid
 
 from django.db import transaction
 from rest_framework.decorators import api_view, permission_classes
@@ -273,7 +274,7 @@ def refund_create(request, payment_id: int):
             idempotency_key=(
                 f"finance_api_refund:{requested_key}"
                 if requested_key
-                else f"finance_api_refund:{legacy_payment.pk}:{amount_cents}"
+                else f"finance_api_refund:{uuid.uuid4()}"
             ),
             created_by=request.user,
         )
