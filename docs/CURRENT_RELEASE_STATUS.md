@@ -2,7 +2,7 @@
 
 **Successor state (verified 2026-08-11):** `tcmegahan/Crown-CSMS` uses migration baseline `ac574ab2a55ecbfefb40cbd67bad08d99c085575`; no successor production tag or release exists; prior production authority remains historical in preserved `tcmegahan/Crown2026`.
 
-## Current successor release decision
+## Current owner-handoff decision
 
 `Crown-CSMS` is the active successor development repository, not a certified production identity; historical `Crown2026` certification does not transfer automatically, and any successor release requires fresh exact-identity certification.
 

@@ -6,9 +6,16 @@
 
 Every published release tag is immutable. Do not move, delete/recreate, or force-update a release tag. A follow-on release receives a new tag at a new exact commit.
 
-## Current successor production tag
+## Historical predecessor production tag
 
-None. `Crown-CSMS` has not published a successor production tag; prior production tags remain historical authority in preserved `Crown2026`.
+| Tag | Commit | Status |
+|---|---|---|
+| `prod-deploy-20260808-ce12c95` | `ce12c9536ec85346b2446018fa8bfe27edb3ffa0` | Certified production source |
+
+Production deployment run: `31287503791`  
+Controlling authority: GitHub issue #1619
+
+This certified identity belongs to preserved `Crown2026` and is not a `Crown-CSMS` successor release.
 
 ## Naming
 
@@ -31,7 +38,12 @@ A historical `crown-*` milestone does not become the current production identity
 
 ## Historical tags
 
-Pre-migration tags remain in preserved `Crown2026`; `docs/RELEASE_TAGS.json` registers only immutable release tags published by `Crown-CSMS`.
+| Tag | Commit | Classification |
+|---|---|---|
+| `crown-0.3.0-spine-complete` | `340c7e3fbb882eb4886fbfbbe8e648f3866e5178` | Historical foundation |
+| `crown-0.3.1-prod-pipeline-fix` | `a1c4c42a381e03587c784bd995ec8fd6c33aeee9` | Historical pipeline milestone |
+
+The canonical immutable mapping for historical tags is `docs/RELEASE_TAGS.json`; this table must match it exactly.
 
 ## Enforcement
 
