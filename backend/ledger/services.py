@@ -4,10 +4,11 @@ from dataclasses import dataclass
 from decimal import Decimal
 from uuid import UUID
 
+from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.db.models import Sum
 
-from .models import LedgerAccount, Charge, Payment, PaymentAllocation
+from .models import Charge, Credit, LedgerAccount, Payment, PaymentAllocation
 
 
 @dataclass(frozen=True)
@@ -19,188 +20,248 @@ class AllocationResult:
 
 
 def _sum_allocated_for_charge(charge: Charge) -> Decimal:
-    s = charge.allocations.aggregate(total=Sum("amount"))["total"]
-    return s if s is not None else Decimal("0.00")
+    value = charge.allocations.filter(payment__is_void=False).aggregate(total=Sum("amount"))["total"]
+    return value if value is not None else Decimal("0.00")
 
 
 def _sum_allocated_for_payment(payment: Payment) -> Decimal:
-    s = payment.allocations.aggregate(total=Sum("amount"))["total"]
-    return s if s is not None else Decimal("0.00")
+    value = payment.allocations.filter(charge__is_void=False).aggregate(total=Sum("amount"))["total"]
+    return value if value is not None else Decimal("0.00")
 
 
 def charge_remaining_balance(charge: Charge) -> Decimal:
+    if charge.is_void:
+        return Decimal("0.00")
     allocated = _sum_allocated_for_charge(charge)
-    amt = getattr(charge, "amount", None)
-    if amt is None:
+    amount = getattr(charge, "amount", None)
+    if amount is None:
         raise ValueError("Charge.amount field not found")
-    remaining = Decimal(str(amt)) - Decimal(str(allocated))
-    if remaining < Decimal("0.00"):
-        remaining = Decimal("0.00")
-    return remaining
+    remaining = Decimal(str(amount)) - Decimal(str(allocated))
+    return max(remaining, Decimal("0.00"))
 
 
 def account_balance(account: LedgerAccount) -> Decimal:
-    # balance = sum(charges) - sum(payments allocations)
-    charges_total = account.charges.aggregate(total=Sum("amount"))["total"] or Decimal("0.00")
-    alloc_total = PaymentAllocation.objects.filter(school_id=account.school_id, charge__account=account).aggregate(
-        total=Sum("amount")
-    )["total"] or Decimal("0.00")
-    bal = Decimal(str(charges_total)) - Decimal(str(alloc_total))
-    return bal
+    charges_total = (
+        account.charges.filter(is_void=False).aggregate(total=Sum("amount"))["total"]
+        or Decimal("0.00")
+    )
+    alloc_total = (
+        PaymentAllocation.objects.filter(
+            school_id=account.school_id,
+            charge__account=account,
+            charge__is_void=False,
+            payment__is_void=False,
+        ).aggregate(total=Sum("amount"))["total"]
+        or Decimal("0.00")
+    )
+    credit_total = (
+        Credit.objects.filter(
+            school_id=account.school_id,
+            account=account,
+            is_void=False,
+        ).aggregate(total=Sum("amount"))["total"]
+        or Decimal("0.00")
+    )
+    return Decimal(str(charges_total)) - Decimal(str(alloc_total)) - Decimal(str(credit_total))
+
+
+@transaction.atomic
+def post_account_credit(
+    *,
+    school_id,
+    account: LedgerAccount,
+    amount: Decimal,
+    source: str,
+    reference: str,
+    description: str = "",
+) -> Credit:
+    """Create or return one immutable idempotent non-cash account credit."""
+    account = LedgerAccount.objects.select_for_update().get(pk=account.pk)
+    if account.school_id != school_id:
+        raise ValidationError("credit account school mismatch")
+
+    normalized_amount = Decimal(str(amount)).quantize(Decimal("0.01"))
+    normalized_source = (source or "").strip().upper()
+    normalized_reference = (reference or "").strip()
+    normalized_description = description or ""
+    if normalized_amount <= Decimal("0.00"):
+        raise ValidationError("credit amount must be > 0")
+    if not normalized_source:
+        raise ValidationError("credit source is required")
+    if len(normalized_source) > 32:
+        raise ValidationError("credit source exceeds 32 characters")
+    if not normalized_reference:
+        raise ValidationError("credit reference is required")
+    if len(normalized_reference) > 128:
+        raise ValidationError("credit reference exceeds 128 characters")
+    if len(normalized_description) > 200:
+        raise ValidationError("credit description exceeds 200 characters")
+
+    credit, created = Credit.objects.get_or_create(
+        school_id=school_id,
+        source=normalized_source,
+        reference=normalized_reference,
+        defaults={
+            "account": account,
+            "amount": normalized_amount,
+            "description": normalized_description,
+        },
+    )
+    if not created:
+        if credit.account_id != account.id or credit.amount != normalized_amount:
+            raise ValidationError("credit idempotency key already exists with different financial facts")
+    return credit
+
+
+@transaction.atomic
+def void_account_credit(*, credit: Credit) -> Credit:
+    """Idempotently void a credit without deleting financial history."""
+    credit = Credit.objects.select_for_update().get(pk=credit.pk)
+    if credit.is_void:
+        return credit
+    credit.is_void = True
+    credit.save(update_fields=["is_void", "updated_at"])
+    return credit
 
 
 @transaction.atomic
 def allocate_payment_fifo(*, school_id, payment: Payment) -> AllocationResult:
-    """
-    FIFO allocation across oldest charges with remaining balance.
-    - Does NOT modify Charge rows (purely allocation rows).
-    - Idempotent-ish: will not duplicate allocation rows per (payment, charge).
-    """
+    """Allocate an active payment FIFO with row locks for concurrency safety."""
+    payment = (
+        Payment.objects.select_for_update()
+        .select_related("account")
+        .get(pk=payment.pk)
+    )
     if payment.school_id != school_id:
         raise ValueError("school_id mismatch")
+    if payment.is_void:
+        raise ValueError("cannot allocate a void payment")
+    if payment.account.school_id != school_id:
+        raise ValueError("payment account school mismatch")
 
-    pay_amount = getattr(payment, "amount", None)
-    if pay_amount is None:
-        raise ValueError("Payment.amount field not found")
-
-    pay_amount = Decimal(str(pay_amount))
+    pay_amount = Decimal(str(payment.amount))
     already_alloc = _sum_allocated_for_payment(payment)
-    remaining_to_allocate = pay_amount - Decimal(str(already_alloc))
+    remaining_to_allocate = pay_amount - already_alloc
     if remaining_to_allocate <= Decimal("0.00"):
-        return AllocationResult(
-            payment_id=payment.id,
-            allocated_total=Decimal(str(already_alloc)),
-            remaining_unallocated=Decimal("0.00"),
-            allocations_created=0,
-        )
+        return AllocationResult(payment.id, already_alloc, Decimal("0.00"), 0)
 
-    # charges FIFO (oldest first). If your Charge has a different timestamp field,
-    # keep ordering by created_at if present.
-    qs = Charge.objects.filter(school_id=school_id, account=payment.account, is_void=False).order_by("created_at", "id")
+    charges = (
+        Charge.objects.select_for_update()
+        .filter(school_id=school_id, account=payment.account, is_void=False)
+        .order_by("created_at", "id")
+    )
 
     allocations_created = 0
-
-    for ch in qs:
-        ch_rem = charge_remaining_balance(ch)
-        if ch_rem <= Decimal("0.00"):
-            continue
+    for charge in charges:
         if remaining_to_allocate <= Decimal("0.00"):
             break
+        charge_remaining = charge_remaining_balance(charge)
+        if charge_remaining <= Decimal("0.00"):
+            continue
 
-        alloc_amt = ch_rem if ch_rem <= remaining_to_allocate else remaining_to_allocate
-
-        alloc, created = PaymentAllocation.objects.get_or_create(
+        allocation_amount = min(charge_remaining, remaining_to_allocate)
+        allocation, created = PaymentAllocation.objects.get_or_create(
             school_id=school_id,
             payment=payment,
-            charge=ch,
-            defaults={"amount": alloc_amt},
+            charge=charge,
+            defaults={"amount": allocation_amount},
         )
         if not created:
-            # If row already exists, top it up (still keeps uniq constraint)
-            current = Decimal(str(alloc.amount))
-            new_amt = current + alloc_amt
-            alloc.amount = new_amt
-            alloc.save(update_fields=["amount"])
+            current = Decimal(str(allocation.amount))
+            allocation.amount = current + allocation_amount
+            allocation.save(update_fields=["amount"])
         allocations_created += 1
-
-        remaining_to_allocate -= alloc_amt
+        remaining_to_allocate -= allocation_amount
 
     final_alloc = _sum_allocated_for_payment(payment)
-
     return AllocationResult(
         payment_id=payment.id,
-        allocated_total=Decimal(str(final_alloc)),
-        remaining_unallocated=(
-            pay_amount - Decimal(str(final_alloc)) if pay_amount > Decimal(str(final_alloc)) else Decimal("0.00")
-        ),
+        allocated_total=final_alloc,
+        remaining_unallocated=max(pay_amount - final_alloc, Decimal("0.00")),
         allocations_created=allocations_created,
     )
 
 
-from decimal import Decimal
-from django.db.models import Sum
-
-from .models import Charge, Payment
-from .models import Allocation as PaymentAllocation
-
-
-def _d(x) -> Decimal:
-    return Decimal(str(x))
+def _d(value) -> Decimal:
+    return Decimal(str(value))
 
 
 def build_account_statement(*, school_id, account) -> dict:
-    """
-    Read-only statement.
-    - Entries: CHARGE, PAYMENT_ALLOCATION (with payment source)
-    - Sorted by timestamp (created_at) then id
-    - Running balance = charges - allocations applied to charges
-    """
-    charges = (
-        Charge.objects.filter(school_id=school_id, account=account)
-        .order_by("created_at", "id")
-    )
-
-    allocs = (
-        PaymentAllocation.objects.filter(school_id=school_id, charge__account=account)
+    """Read-only statement from active charges, cash allocations, and non-cash credits."""
+    charges = Charge.objects.filter(
+        school_id=school_id, account=account, is_void=False
+    ).order_by("created_at", "id")
+    allocations = (
+        PaymentAllocation.objects.filter(
+            school_id=school_id,
+            charge__account=account,
+            charge__is_void=False,
+            payment__is_void=False,
+        )
         .select_related("payment", "charge")
         .order_by("created_at", "id")
     )
+    credits = Credit.objects.filter(
+        school_id=school_id,
+        account=account,
+        is_void=False,
+    ).order_by("created_at", "id")
 
     entries = []
+    for charge in charges:
+        entries.append({
+            "type": "CHARGE",
+            "id": str(charge.id),
+            "charge_id": str(charge.id),
+            "payment_id": None,
+            "credit_id": None,
+            "source": None,
+            "description": charge.description,
+            "amount": str(_d(charge.amount)),
+            "direction": "DEBIT",
+            "created_at": charge.created_at.isoformat() if charge.created_at else None,
+            "running_balance": None,
+        })
+
+    for allocation in allocations:
+        payment = allocation.payment
+        entries.append({
+            "type": "PAYMENT_ALLOCATION",
+            "id": str(allocation.id),
+            "charge_id": str(allocation.charge_id),
+            "payment_id": str(allocation.payment_id),
+            "credit_id": None,
+            "source": payment.source,
+            "reference": payment.reference,
+            "description": payment.reference or payment.source,
+            "amount": str(_d(allocation.amount)),
+            "direction": "CREDIT",
+            "created_at": allocation.created_at.isoformat() if allocation.created_at else None,
+            "running_balance": None,
+        })
+
+    for credit in credits:
+        entries.append({
+            "type": "CREDIT",
+            "id": str(credit.id),
+            "charge_id": None,
+            "payment_id": None,
+            "credit_id": str(credit.id),
+            "source": credit.source,
+            "reference": credit.reference,
+            "description": credit.description or credit.reference,
+            "amount": str(_d(credit.amount)),
+            "direction": "CREDIT",
+            "created_at": credit.created_at.isoformat() if credit.created_at else None,
+            "running_balance": None,
+        })
+
+    entries.sort(key=lambda entry: (entry["created_at"] or "", entry["id"]))
     running = Decimal("0.00")
-
-    for ch in charges:
-        amt = _d(ch.amount)
-        running += amt
-        entries.append(
-            {
-                "type": "CHARGE",
-                "id": str(ch.id),
-                "charge_id": str(ch.id),
-                "payment_id": None,
-                "source": None,
-                "description": getattr(ch, "description", ""),
-                "amount": str(amt),
-                "direction": "DEBIT",
-                "created_at": ch.created_at.isoformat() if getattr(ch, "created_at", None) else None,
-                "running_balance": str(running),
-            }
-        )
-
-    for al in allocs:
-        amt = _d(al.amount)
-        running -= amt
-        p = al.payment
-        entries.append(
-            {
-                "type": "PAYMENT_ALLOCATION",
-                "id": str(al.id),
-                "charge_id": str(al.charge_id),
-                "payment_id": str(al.payment_id),
-                "source": getattr(p, "source", "EXTERNAL"),
-                "reference": getattr(p, "reference", ""),
-                "description": getattr(p, "reference", "") or getattr(p, "source", "EXTERNAL"),
-                "amount": str(amt),
-                "direction": "CREDIT",
-                "created_at": al.created_at.isoformat() if getattr(al, "created_at", None) else None,
-                "running_balance": None,  # computed after sorting
-            }
-        )
-
-    # Re-sort merged events by created_at then id, then recompute running
-    def _sort_key(e):
-        return (e["created_at"] or "", e["id"])
-
-    entries = sorted(entries, key=_sort_key)
-
-    running = Decimal("0.00")
-    for e in entries:
-        amt = _d(e["amount"])
-        if e["direction"] == "DEBIT":
-            running += amt
-        else:
-            running -= amt
-        e["running_balance"] = str(running)
+    for entry in entries:
+        amount = _d(entry["amount"])
+        running += amount if entry["direction"] == "DEBIT" else -amount
+        entry["running_balance"] = str(running)
 
     return {
         "account_id": str(account.id),
@@ -211,36 +272,26 @@ def build_account_statement(*, school_id, account) -> dict:
 
 
 def billing_run_summary(*, school_id, billing_run) -> dict:
-    """
-    Read-only billing run summary (gross vs aid vs net due).
-    - gross_total: sum(invoice.total_amount)
-    - aid_applied_total: allocations where payment.source == FINANCIAL_AID against invoice charge
-    - net_due_total: gross_total - aid_applied_total (clamped >= 0)
-    """
-    from django.db.models import Sum
+    """Compatibility summary; legacy aid-as-payment remains until reader cutover."""
     from billing.models import Invoice
 
     invoices = Invoice.objects.filter(school_id=school_id, billing_run=billing_run)
-
     gross = invoices.aggregate(total=Sum("total_amount"))["total"] or Decimal("0.00")
-
-    # collect charge ids from invoices
-    charge_ids = [inv.ledger_charge_id for inv in invoices if inv.ledger_charge_id]
+    charge_ids = [invoice.ledger_charge_id for invoice in invoices if invoice.ledger_charge_id]
     aid_total = Decimal("0.00")
     if charge_ids:
         aid_total = (
             PaymentAllocation.objects.filter(
                 school_id=school_id,
                 charge_id__in=charge_ids,
+                charge__is_void=False,
+                payment__is_void=False,
                 payment__source="FINANCIAL_AID",
             ).aggregate(total=Sum("amount"))["total"]
             or Decimal("0.00")
         )
 
-    net = _d(gross) - _d(aid_total)
-    if net < Decimal("0.00"):
-        net = Decimal("0.00")
-
+    net = max(_d(gross) - _d(aid_total), Decimal("0.00"))
     return {
         "billing_run_id": str(billing_run.id),
         "term": getattr(billing_run, "term", ""),

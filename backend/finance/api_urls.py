@@ -1,9 +1,11 @@
 """
-finance/api_urls.py — Finance & Tuition module URL patterns.
+finance/api_urls.py - Finance & Tuition module URL patterns.
 Mounted at: /api/finance/ (see crown_api/urls.py)
 """
 from django.urls import path
+
 from finance import api_views as views
+from finance import payment_compat_api as payment_views
 
 urlpatterns = [
     # Admin: obligations
@@ -11,15 +13,27 @@ urlpatterns = [
 
     # Admin: invoices
     path("invoices/", views.invoice_list, name="finance-invoice-list"),
-    path("invoices/create-from-obligations/", views.invoice_create_from_obligations, name="finance-invoice-create"),
+    path(
+        "invoices/create-from-obligations/",
+        views.invoice_create_from_obligations,
+        name="finance-invoice-create",
+    ),
 
     # Parent: balance
     path("parent/balance/", views.parent_balance, name="finance-parent-balance"),
 
-    # Payments
-    path("payments/intent/", views.payment_intent_create, name="finance-payment-intent"),
-    path("payments/<int:payment_id>/settle/", views.payment_settle, name="finance-payment-settle"),
-    path("payments/<int:payment_id>/refund/", views.refund_create, name="finance-refund-create"),
+    # Payments - compatibility URLs backed by canonical payments authority.
+    path("payments/intent/", payment_views.payment_intent_create, name="finance-payment-intent"),
+    path(
+        "payments/<int:payment_id>/settle/",
+        payment_views.payment_settle,
+        name="finance-payment-settle",
+    ),
+    path(
+        "payments/<int:payment_id>/refund/",
+        payment_views.refund_create,
+        name="finance-refund-create",
+    ),
 
     # Donations
     path("donations/", views.donation_list, name="finance-donation-list"),

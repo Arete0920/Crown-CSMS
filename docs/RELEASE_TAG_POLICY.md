@@ -1,12 +1,12 @@
 # CROWN Release Tag Policy
 
-**Last reconciled:** 2026-08-09
+**Last reconciled:** 2026-08-11
 
 ## Immutability
 
 Every published release tag is immutable. Do not move, delete/recreate, or force-update a release tag. A follow-on release receives a new tag at a new exact commit.
 
-## Current certified production tag
+## Historical predecessor production tag — Crown2026 only
 
 | Tag | Commit | Status |
 |---|---|---|

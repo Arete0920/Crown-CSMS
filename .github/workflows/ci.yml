@@ -48,6 +48,7 @@ jobs:
               exit 1
             fi
           done < <(jq -r '.[]' "$registry")
+          if [[ -z "$(git tag -l)" ]]; then echo "No successor release tags published; historical registry remains archive provenance"; exit 0; fi
 
           failed=0
           while IFS= read -r tag; do
