@@ -438,3 +438,221 @@ class PayoutBankMatch(models.Model):
                 name="uq_payout_bank_match_pair",
             )
         ]
+
+
+# ---------------------------------------------------------------------------
+# Option A canonical Payments authority
+# ---------------------------------------------------------------------------
+
+from django.core.exceptions import ValidationError
+
+
+class CanonicalPaymentStatus(models.TextChoices):
+    PENDING = "pending", "Pending"
+    AUTHORIZED = "authorized", "Authorized"
+    SETTLING = "settling", "Settling"
+    SETTLED = "settled", "Settled"
+    FAILED = "failed", "Failed"
+    VOID = "void", "Void"
+    PARTIALLY_REFUNDED = "partially_refunded", "Partially Refunded"
+    REFUNDED = "refunded", "Refunded"
+
+
+class CanonicalRefundStatus(models.TextChoices):
+    REQUESTED = "requested", "Requested"
+    PENDING = "pending", "Pending"
+    SETTLED = "settled", "Settled"
+    FAILED = "failed", "Failed"
+    CANCELED = "canceled", "Canceled"
+
+
+class ImmutableFinancialFactQuerySet(models.QuerySet):
+    def delete(self):
+        raise ValidationError("Canonical payment facts cannot be hard-deleted.")
+
+
+class ImmutableFinancialFactManager(models.Manager.from_queryset(ImmutableFinancialFactQuerySet)):
+    pass
+
+
+class ImmutableFinancialFact(models.Model):
+    objects = ImmutableFinancialFactManager()
+    immutable_fields = ()
+    write_once_fields = ()
+
+    class Meta:
+        abstract = True
+
+    def _assert_immutable(self):
+        if not self.pk:
+            return
+        original = type(self).objects.get(pk=self.pk)
+        for field_name in self.immutable_fields:
+            if getattr(original, field_name) != getattr(self, field_name):
+                raise ValidationError(f"Canonical payment fact {field_name} is immutable.")
+        for field_name in self.write_once_fields:
+            old_value = getattr(original, field_name)
+            new_value = getattr(self, field_name)
+            if old_value not in (None, "") and new_value != old_value:
+                raise ValidationError(f"Canonical payment fact {field_name} is write-once.")
+
+    def save(self, *args, **kwargs):
+        self._assert_immutable()
+        super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        raise ValidationError("Canonical payment facts cannot be hard-deleted.")
+
+
+class Payment(ImmutableFinancialFact):
+    school_id = models.UUIDField(db_index=True)
+    household_id = models.UUIDField(null=True, blank=True, db_index=True)
+    finance_payment_id = models.BigIntegerField(null=True, blank=True, db_index=True)
+
+    amount_cents = models.PositiveBigIntegerField()
+    currency = models.CharField(max_length=8, default="USD")
+    status = models.CharField(
+        max_length=32,
+        choices=CanonicalPaymentStatus.choices,
+        default=CanonicalPaymentStatus.PENDING,
+        db_index=True,
+    )
+
+    provider = models.CharField(max_length=64, blank=True, default="", db_index=True)
+    provider_intent_id = models.CharField(max_length=128, blank=True, default="", db_index=True)
+    provider_payment_id = models.CharField(max_length=128, blank=True, default="", db_index=True)
+    idempotency_key = models.CharField(max_length=128, db_index=True)
+
+    metadata = models.JSONField(default=dict, blank=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="canonical_payments_created",
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    authorized_at = models.DateTimeField(null=True, blank=True)
+    settled_at = models.DateTimeField(null=True, blank=True)
+    voided_at = models.DateTimeField(null=True, blank=True)
+
+    immutable_fields = (
+        "school_id",
+        "household_id",
+        "finance_payment_id",
+        "amount_cents",
+        "currency",
+        "idempotency_key",
+        "created_by_id",
+    )
+    write_once_fields = ("provider", "provider_intent_id", "provider_payment_id")
+
+    class Meta:
+        ordering = ["-id"]
+        indexes = [
+            models.Index(fields=["school_id", "status"]),
+            models.Index(fields=["school_id", "household_id"]),
+        ]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(amount_cents__gt=0),
+                name="payments_payment_amount_positive",
+            ),
+            models.UniqueConstraint(
+                fields=["school_id", "idempotency_key"],
+                name="uq_payments_payment_school_idempotency",
+            ),
+            models.UniqueConstraint(
+                fields=["provider", "provider_intent_id"],
+                condition=~models.Q(provider="") & ~models.Q(provider_intent_id=""),
+                name="uq_payments_payment_provider_intent",
+            ),
+            models.UniqueConstraint(
+                fields=["provider", "provider_payment_id"],
+                condition=~models.Q(provider="") & ~models.Q(provider_payment_id=""),
+                name="uq_payments_payment_provider_payment",
+            ),
+        ]
+
+    def clean(self):
+        if self.amount_cents <= 0:
+            raise ValidationError("Canonical payment amount must be positive.")
+        if not self.idempotency_key:
+            raise ValidationError("Canonical payment idempotency_key is required.")
+
+
+class Refund(ImmutableFinancialFact):
+    school_id = models.UUIDField(db_index=True)
+    payment = models.ForeignKey(Payment, on_delete=models.PROTECT, related_name="refunds")
+    finance_refund_id = models.BigIntegerField(null=True, blank=True, db_index=True)
+
+    amount_cents = models.PositiveBigIntegerField()
+    currency = models.CharField(max_length=8, default="USD")
+    status = models.CharField(
+        max_length=32,
+        choices=CanonicalRefundStatus.choices,
+        default=CanonicalRefundStatus.REQUESTED,
+        db_index=True,
+    )
+
+    provider = models.CharField(max_length=64, blank=True, default="", db_index=True)
+    provider_refund_id = models.CharField(max_length=128, blank=True, default="", db_index=True)
+    idempotency_key = models.CharField(max_length=128, db_index=True)
+
+    metadata = models.JSONField(default=dict, blank=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="canonical_refunds_created",
+    )
+
+    requested_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    settled_at = models.DateTimeField(null=True, blank=True)
+
+    immutable_fields = (
+        "school_id",
+        "payment_id",
+        "amount_cents",
+        "currency",
+        "idempotency_key",
+        "created_by_id",
+    )
+    write_once_fields = ("finance_refund_id", "provider", "provider_refund_id")
+
+    class Meta:
+        ordering = ["-id"]
+        indexes = [
+            models.Index(fields=["school_id", "status"]),
+            models.Index(fields=["payment", "status"]),
+        ]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(amount_cents__gt=0),
+                name="payments_refund_amount_positive",
+            ),
+            models.UniqueConstraint(
+                fields=["school_id", "idempotency_key"],
+                name="uq_payments_refund_school_idempotency",
+            ),
+            models.UniqueConstraint(
+                fields=["provider", "provider_refund_id"],
+                condition=~models.Q(provider="") & ~models.Q(provider_refund_id=""),
+                name="uq_payments_refund_provider_refund",
+            ),
+        ]
+
+    def clean(self):
+        if self.amount_cents <= 0:
+            raise ValidationError("Canonical refund amount must be positive.")
+        if not self.idempotency_key:
+            raise ValidationError("Canonical refund idempotency_key is required.")
+        if self.payment_id:
+            if self.school_id != self.payment.school_id:
+                raise ValidationError("Canonical refund school must match payment school.")
+            if self.currency != self.payment.currency:
+                raise ValidationError("Canonical refund currency must match payment currency.")
