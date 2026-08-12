@@ -26,6 +26,10 @@ on:
       - "frontend/dashboards/**"
       - ".github/workflows/finance-final-hardening.yml"
 
+concurrency:
+  group: finance-final-hardening-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
 permissions:
   contents: read
 
