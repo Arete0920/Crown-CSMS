@@ -63,8 +63,13 @@ jobs:
         id: health
         run: |
           set -euo pipefail
+          REQUIRED="${PRODUCTION_MONITOR_REQUIRED:-false}"
           if [ -z "${PRODUCTION_URL:-}" ]; then
-            echo "status=misconfigured" >> "$GITHUB_OUTPUT"
+            if [ "$REQUIRED" = "true" ]; then
+              echo "status=misconfigured" >> "$GITHUB_OUTPUT"
+            else
+              echo "status=inactive" >> "$GITHUB_OUTPUT"
+            fi
             echo "http_code=000" >> "$GITHUB_OUTPUT"
             exit 0
           fi
@@ -82,9 +87,12 @@ jobs:
           echo "http_code=$RESPONSE" >> "$GITHUB_OUTPUT"
         env:
           PRODUCTION_URL: ${{ secrets.PRODUCTION_URL }}
+          PRODUCTION_MONITOR_REQUIRED: ${{ vars.PRODUCTION_MONITOR_REQUIRED }}
 
       - name: Report unhealthy status
-        if: always() && steps.health.outputs.status != 'healthy'
+        if: >-
+          always() &&
+          (steps.health.outputs.status == 'unhealthy' || steps.health.outputs.status == 'misconfigured')
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         with:
           script: |
@@ -105,20 +113,30 @@ jobs:
         if: steps.health.outputs.status == 'healthy'
         run: echo "Production health OK - HTTP ${{ steps.health.outputs.http_code }}"
 
-      - name: Close recovered alert
-        if: steps.health.outputs.status == 'healthy'
+      - name: Log intentionally inactive monitor
+        if: steps.health.outputs.status == 'inactive'
+        run: echo "Production health monitor inactive - no certified production target is configured."
+
+      - name: Close recovered or intentionally inactive alert
+        if: steps.health.outputs.status == 'healthy' || steps.health.outputs.status == 'inactive'
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         with:
           script: |
+            const status = '${{ steps.health.outputs.status }}';
             const titlePrefix = '[ALERT] Production health check failed';
             const { data: openIssues } = await github.rest.issues.listForRepo({owner: context.repo.owner, repo: context.repo.repo, state: 'open', labels: 'production-alert', per_page: 100});
+            const reason = status === 'healthy'
+              ? 'Production health recovered. Closing alert automatically.'
+              : 'No certified production target is configured; monitoring is intentionally inactive. Closing stale alert.';
             for (const issue of openIssues.filter((candidate) => candidate.title.startsWith(titlePrefix))) {
-              await github.rest.issues.createComment({owner: context.repo.owner, repo: context.repo.repo, issue_number: issue.number, body: 'Production health recovered. Closing alert automatically.'});
+              await github.rest.issues.createComment({owner: context.repo.owner, repo: context.repo.repo, issue_number: issue.number, body: reason});
               await github.rest.issues.update({owner: context.repo.owner, repo: context.repo.repo, issue_number: issue.number, state: 'closed'});
             }
 
-      - name: Fail closed when health proof is not healthy
-        if: always() && steps.health.outputs.status != 'healthy'
+      - name: Fail closed when required health proof is not healthy
+        if: >-
+          always() &&
+          (steps.health.outputs.status == 'unhealthy' || steps.health.outputs.status == 'misconfigured')
         run: |
           echo "Production health proof failed: status=${{ steps.health.outputs.status }} http=${{ steps.health.outputs.http_code }}"
           exit 1
