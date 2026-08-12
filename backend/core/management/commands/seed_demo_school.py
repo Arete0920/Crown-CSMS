@@ -52,7 +52,7 @@ class Command(BaseCommand):
         parser.add_argument("--students", type=int, default=300)
         parser.add_argument("--tuition", type=int, default=12000)
         parser.add_argument("--aid_pct", type=int, default=35)
-        parser.add_argument("--school_name", type=str, default="Crown Demo Christian Academy")
+        parser.add_argument("--school_name", type=str, default="Heritage Christian Academy")
         parser.add_argument("--year_name", type=str, default="2026–2027")
         parser.add_argument("--wipe", action="store_true", help="DANGER: wipe demo data for this school name before seeding")
 

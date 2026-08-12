@@ -29,7 +29,7 @@ class Command(BaseCommand):
         call_command("seed_demo_school")
 
         school = (
-            School.objects.filter(name="Crown Demo Christian Academy")
+            School.objects.filter(name="Heritage Christian Academy")
             .order_by("-created_at", "id")
             .first()
         )
