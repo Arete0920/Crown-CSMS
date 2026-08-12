@@ -44,8 +44,8 @@ class Command(BaseCommand):
 
         self.stdout.write("=== Heritage Realism Pack Seed (canonical) ===")
 
-        # 1) Core school + baseline objects.
-        call_command("seed_demo_school")
+        # 1) Core school + baseline objects. Heritage is the only demo school.
+        call_command("seed_demo_school", school_name=HERITAGE_NAME)
 
         from core.models import AcademicYear, School
 
