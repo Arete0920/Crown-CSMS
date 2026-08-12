@@ -1,8 +1,23 @@
-from django.db import transaction
-from django.core.exceptions import ValidationError
-from django.utils import timezone
 from decimal import Decimal
+
+from django.core.exceptions import ValidationError
+from django.db import transaction
+
 from .models import JournalEntry, JournalLine
+
+
+def _normalize_currency(currency: str) -> str:
+    value = (currency or "").strip().upper()
+    if not value or len(value) > 8:
+        raise ValidationError("currency must be a non-empty code of at most 8 characters.")
+    return value
+
+
+def _normalize_source_system(source_system: str) -> str:
+    value = (source_system or "").strip()
+    if not value or len(value) > 100:
+        raise ValidationError("source_system must be a non-empty value of at most 100 characters.")
+    return value
 
 
 def post_journal_entry(
@@ -13,16 +28,27 @@ def post_journal_entry(
     memo="",
     reference_type=None,
     reference_id=None,
+    correlation_id=None,
+    source_system="journal",
+    currency="USD",
 ):
     """
+    Post one balanced immutable journal entry.
+
     lines = [
         {"account": GLAccount, "debit": Decimal, "credit": Decimal},
         ...
     ]
-    """
 
+    correlation_id, source_system, and currency provide the canonical
+    cross-domain accounting traceability contract while remaining optional for
+    compatibility callers.
+    """
     if not lines or len(lines) < 2:
         raise ValidationError("Journal entry must contain at least two lines.")
+
+    source_system = _normalize_source_system(source_system)
+    currency = _normalize_currency(currency)
 
     total_debit = Decimal("0.00")
     total_credit = Decimal("0.00")
@@ -51,14 +77,16 @@ def post_journal_entry(
         raise ValidationError("Journal entry must balance.")
 
     with transaction.atomic():
-
         entry = JournalEntry.objects.create(
             school=school,
             created_by=created_by,
             memo=memo,
             reference_type=reference_type,
             reference_id=reference_id,
-            locked=False,  # temporarily unlocked during creation
+            correlation_id=correlation_id,
+            source_system=source_system,
+            currency=currency,
+            locked=False,
         )
 
         for line in lines:
@@ -69,24 +97,36 @@ def post_journal_entry(
                 credit=line.get("credit", Decimal("0.00")),
             )
 
-        # Lock entry after all lines created
         entry.locked = True
         entry.save()
 
     return entry
 
 
-def create_reversal_entry(*, original_entry: JournalEntry, reason: str) -> JournalEntry:
+def _find_reversal(original_entry: JournalEntry) -> JournalEntry | None:
+    """Return the existing reversal without relying on a reverse ``*_id`` accessor."""
+    return JournalEntry.objects.filter(reversal_of=original_entry).first()
+
+
+def create_reversal_entry(
+    *,
+    original_entry: JournalEntry,
+    reason: str,
+    reference_type: str | None = None,
+) -> JournalEntry:
     """
-    Create an immutable reversing JournalEntry for original_entry.
-    Idempotent via DB: JournalEntry.reversal_of is OneToOne.
+    Create one immutable reversing JournalEntry for ``original_entry``.
+
+    The database OneToOne relation is the idempotency authority. Callers may
+    provide a domain-specific reversal ``reference_type`` (for example,
+    ``charge_void_reversal``); otherwise the canonical default is derived from
+    the original entry type (for example, ``payment_reversal``).
     """
-    # Fast-path
-    if getattr(original_entry, "reversal_entry_id", None):
-        return original_entry.reversal_entry
+    existing = _find_reversal(original_entry)
+    if existing is not None:
+        return existing
 
     with transaction.atomic():
-        # Lock original to prevent races
         original_entry = (
             JournalEntry.objects
             .select_for_update()
@@ -94,45 +134,36 @@ def create_reversal_entry(*, original_entry: JournalEntry, reason: str) -> Journ
             .get(pk=original_entry.pk)
         )
 
-        if getattr(original_entry, "reversal_entry_id", None):
-            return original_entry.reversal_entry
+        existing = _find_reversal(original_entry)
+        if existing is not None:
+            return existing
 
-        # Build kwargs for reversal header (include optional fields if they exist)
-        create_kwargs = {
-            "school": original_entry.school,
-            "created_by": original_entry.created_by,
-            "reference_type": "charge_void_reversal",
-            "reference_id": original_entry.reference_id,  # charge id already stored there
-            "locked": True,
-            "reversal_of": original_entry,
-            "memo": f"REVERSAL: {reason}",
-        }
-        
-        # Add optional fields if they exist in the model
-        optional_fields = {
-            "description": f"REVERSAL: {reason}",
-            "entry_date": getattr(original_entry, "entry_date", None) or timezone.now().date(),
-            "posted_at": getattr(original_entry, "posted_at", None),
-        }
-        for attr, value in optional_fields.items():
-            if hasattr(JournalEntry, attr):
-                create_kwargs[attr] = value
-        
-        # Create reversal header (all fields set during create, no update needed)
-        rev = JournalEntry.objects.create(**create_kwargs)
+        base_reference_type = (original_entry.reference_type or "journal").strip() or "journal"
+        reversal_reference_type = (reference_type or f"{base_reference_type}_reversal").strip()
+        if not reversal_reference_type or len(reversal_reference_type) > 64:
+            raise ValidationError("reversal reference_type must be between 1 and 64 characters.")
 
-        # Reverse every line (swap DR/CR, keep account)
-        new_lines = []
-        for line in original_entry.lines.all():
-            new_lines.append(JournalLine(
+        rev = JournalEntry.objects.create(
+            school=original_entry.school,
+            created_by=original_entry.created_by,
+            reference_type=reversal_reference_type,
+            reference_id=original_entry.reference_id,
+            correlation_id=original_entry.correlation_id,
+            source_system=original_entry.source_system,
+            currency=original_entry.currency,
+            locked=True,
+            reversal_of=original_entry,
+            memo=f"REVERSAL: {reason}",
+        )
+
+        new_lines = [
+            JournalLine(
                 entry=rev,
                 account=line.account,
                 debit=line.credit,
                 credit=line.debit,
-            ))
-            # Carry memo if present
-            if hasattr(line, "memo") and hasattr(new_lines[-1], "memo"):
-                new_lines[-1].memo = line.memo
-
+            )
+            for line in original_entry.lines.all()
+        ]
         JournalLine.objects.bulk_create(new_lines)
         return rev
