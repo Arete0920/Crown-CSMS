@@ -30,73 +30,21 @@ jobs:
           text = path.read_text(encoding='utf-8')
 
           nav_marker = '  if (pathname === "/api/v1/nav/") return { groups: [] };\n'
-          fixture_block = '''  if (pathname === "/api/v1/sandbox/parent/daily/") {
-            return {
-              child: { name: "Avery Reed", grade: "8" },
-              attendance: [],
-              progress: [],
-              communications: [],
-              billing: { balance_cents: 0, external_payment_provider_enabled: false },
-              staff_controls: {
-                grade_write: false,
-                attendance_write: false,
-                admissions_decision: false,
-                finance_admin: false,
-                tenant_admin: false,
-              },
-            };
-          }
-          if (pathname === "/api/v1/sandbox/student/self-service/") {
-            return {
-              student: { name: "Avery Reed", grade: "8" },
-              schedule: [],
-              learning_tasks: [],
-              attendance: [],
-              communications: [],
-              privileged_actions: {
-                grading: false,
-                admissions: false,
-                finance_admin: false,
-                tenant_admin: false,
-              },
-            };
-          }
-'''
+          fixture_block = '  if (pathname === "/api/v1/sandbox/parent/daily/") {\n    return {\n      child: { name: "Avery Reed", grade: "8" },\n      attendance: [],\n      progress: [],\n      communications: [],\n      billing: { balance_cents: 0, external_payment_provider_enabled: false },\n      staff_controls: {\n        grade_write: false,\n        attendance_write: false,\n        admissions_decision: false,\n        finance_admin: false,\n        tenant_admin: false,\n      },\n    };\n  }\n  if (pathname === "/api/v1/sandbox/student/self-service/") {\n    return {\n      student: { name: "Avery Reed", grade: "8" },\n      schedule: [],\n      learning_tasks: [],\n      attendance: [],\n      communications: [],\n      privileged_actions: {\n        grading: false,\n        admissions: false,\n        finance_admin: false,\n        tenant_admin: false,\n      },\n    };\n  }\n'
           if fixture_block not in text:
               if nav_marker not in text:
                   raise SystemExit('nav fixture marker not found')
               text = text.replace(nav_marker, nav_marker + fixture_block, 1)
 
-          old_console = '''      routePage.on("console", (message) => {
-                if (message.type() === "error" && !/favicon|ResizeObserver loop/i.test(message.text())) {
-                  consoleErrors.push(message.text());
-                }
-              });'''
-          new_console = '''      routePage.on("console", (message) => {
-                const text = message.text();
-                if (message.type() === "error"
-                  && !/favicon|ResizeObserver loop|Failed to load resource: the server responded with a status of 404 \(\)/i.test(text)) {
-                  consoleErrors.push(text);
-                }
-              });'''
+          old_console = '      routePage.on("console", (message) => {\n        if (message.type() === "error" && !/favicon|ResizeObserver loop/i.test(message.text())) {\n          consoleErrors.push(message.text());\n        }\n      });'
+          new_console = '      routePage.on("console", (message) => {\n        const text = message.text();\n        if (message.type() === "error"\n          && !/favicon|ResizeObserver loop|Failed to load resource: the server responded with a status of 404 \\(\\)/i.test(text)) {\n          consoleErrors.push(text);\n        }\n      });'
           if old_console in text:
               text = text.replace(old_console, new_console, 1)
           elif new_console not in text:
               raise SystemExit('console accounting marker not found')
 
-          old_response = '''      routePage.on("response", (currentResponse) => {
-                const url = new globalThis.URL(currentResponse.url());
-                if (url.origin === appOrigin && currentResponse.status() >= 400 && !/favicon\\.ico$/i.test(url.pathname)) {
-                  badResponses.push(`${currentResponse.status()} ${currentResponse.request().method()} ${url.pathname}`);
-                }
-              });'''
-          new_response = '''      routePage.on("response", (currentResponse) => {
-                const url = new globalThis.URL(currentResponse.url());
-                if (currentResponse.status() >= 400 && !/favicon\\.ico$/i.test(url.pathname)) {
-                  const target = url.origin === appOrigin ? url.pathname : url.toString();
-                  badResponses.push(`${currentResponse.status()} ${currentResponse.request().method()} ${target}`);
-                }
-              });'''
+          old_response = '      routePage.on("response", (currentResponse) => {\n        const url = new globalThis.URL(currentResponse.url());\n        if (url.origin === appOrigin && currentResponse.status() >= 400 && !/favicon\\.ico$/i.test(url.pathname)) {\n          badResponses.push(`${currentResponse.status()} ${currentResponse.request().method()} ${url.pathname}`);\n        }\n      });'
+          new_response = '      routePage.on("response", (currentResponse) => {\n        const url = new globalThis.URL(currentResponse.url());\n        if (currentResponse.status() >= 400 && !/favicon\\.ico$/i.test(url.pathname)) {\n          const target = url.origin === appOrigin ? url.pathname : url.toString();\n          badResponses.push(`${currentResponse.status()} ${currentResponse.request().method()} ${target}`);\n        }\n      });'
           if old_response in text:
               text = text.replace(old_response, new_response, 1)
           elif new_response not in text:
