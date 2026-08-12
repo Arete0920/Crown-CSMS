@@ -55,10 +55,12 @@ def main() -> int:
         print(f"ERROR: cannot read docs/CURRENT_RELEASE_STATUS.md: {exc}", file=sys.stderr)
         return 1
     authority: dict[str, str] = {}
+    migration_mode = "no successor production tag or release exists" in status_text.lower()
     for key, pattern in STATUS_PATTERNS.items():
         match = re.search(pattern, status_text)
         if not match:
-            fail(f"CURRENT_RELEASE_STATUS.md does not declare a parseable {key}", failures)
+            if not migration_mode:
+                fail(f"CURRENT_RELEASE_STATUS.md does not declare a parseable {key}", failures)
         else:
             authority[key] = match.group(1)
 
@@ -148,6 +150,9 @@ def main() -> int:
             print(f" - {item}", file=sys.stderr)
         return 1
 
+    if migration_mode:
+        print("Repository freshness verification passed: successor migration mode; no current certified release")
+        return 0
     print(
         "Repository freshness verification passed: "
         f"certified_sha={authority['sha']} tag={authority['tag']} run={authority['run']}"
