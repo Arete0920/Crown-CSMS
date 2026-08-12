@@ -1,0 +1,2 @@
+CROWN dashboard redeploy trigger for post-finance main certification.
+Created to force the existing Deploy Dashboard (SWA) push-path workflow after finance PR #3 merged while live SWA remained source-stale.
