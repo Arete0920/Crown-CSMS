@@ -1,0 +1,5 @@
+Path,Type,Current,Canon,Disposition,Destination,DuplicateOf,TerminologyReview,Verified,Notes
+backend/**|frontend/**,Application source,Yes,No,KEEP,Same paths,,No,Yes,Source and successor migration baseline are the same exact commit; Option A deltas remain PR-controlled.
+.github/**|scripts/**|tools/**,Engineering controls,Yes,No,UPDATE,Same paths,,Yes,Yes,Retain current controls; reconcile source-repository assumptions such as inherited release-tag registry behavior.
+docs/**,Documentation,Yes,Yes,UPDATE,Same paths,,Yes,Yes,Retain current Canon/operating docs; historical provenance remains in preserved Crown2026 instead of being duplicated into the successor active surface.
+all remaining tracked paths,Repository baseline,Yes,As applicable,KEEP,Same paths,,No,Yes,Exact shared migration baseline ac574ab2a55ecbfefb40cbd67bad08d99c085575 proves baseline tree equivalence; no additional migration transformation is intended.

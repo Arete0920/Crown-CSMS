@@ -36,10 +36,7 @@ jobs:
           git fetch --no-recurse-submodules origin "+refs/tags/*:refs/tags/*"
 
           echo "Validating release tag registry format..."
-          if ! jq -e 'type == "object" and length > 0' "$registry" >/dev/null; then
-            echo "CRITICAL: release tag registry must be a non-empty JSON object"
-            exit 1
-          fi
+          jq -e 'type == "object"' "$registry" >/dev/null || { echo "CRITICAL: release tag registry must be a JSON object"; exit 1; }
 
           while IFS= read -r sha; do
             if [[ ! "$sha" =~ ^[0-9a-f]{40}$ ]]; then
