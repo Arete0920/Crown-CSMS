@@ -16,7 +16,12 @@ from .exceptions_api import (
     payment_exception_retry,
     payment_exceptions_list,
 )
-from .export_api import household_statement_csv, payment_receipt_html
+from .export_api import (
+    finance_journal_export_csv,
+    finance_transaction_register_csv,
+    household_statement_csv,
+    payment_receipt_html,
+)
 from .methods_api import (
     create_payment_method_setup,
     detach_payment_method,
@@ -46,6 +51,16 @@ urlpatterns = [
         "accounts/<uuid:household_id>/statement.csv",
         household_statement_csv,
         name="payments-household-statement-csv",
+    ),
+    path(
+        "exports/finance-register.csv",
+        finance_transaction_register_csv,
+        name="payments-finance-register-csv",
+    ),
+    path(
+        "exports/journal.csv",
+        finance_journal_export_csv,
+        name="payments-finance-journal-csv",
     ),
     path(
         "receipts/<uuid:payment_id>/",
