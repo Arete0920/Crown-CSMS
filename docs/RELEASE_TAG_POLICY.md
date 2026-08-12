@@ -6,7 +6,7 @@
 
 Every published release tag is immutable. Do not move, delete/recreate, or force-update a release tag. A follow-on release receives a new tag at a new exact commit.
 
-## Historical predecessor production tag
+## Historical predecessor production tag — Crown2026 only
 
 | Tag | Commit | Status |
 |---|---|---|
@@ -14,8 +14,6 @@ Every published release tag is immutable. Do not move, delete/recreate, or force
 
 Production deployment run: `31287503791`  
 Controlling authority: GitHub issue #1619
-
-This certified identity belongs to preserved `Crown2026` and is not a `Crown-CSMS` successor release.
 
 ## Naming
 
