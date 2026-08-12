@@ -5,6 +5,7 @@ from unittest.mock import MagicMock, patch
 from django.core.exceptions import ValidationError
 from django.test import TestCase
 
+from finance.models import PaymentStatus as LegacyPaymentStatus
 from payments.authority_services import (
     CanonicalOverRefundError,
     IdempotencyConflict,
@@ -47,6 +48,19 @@ class CanonicalPaymentsAuthorityTest(TestCase):
         payment.save(update_fields=["status", "updated_at"])
         return payment
 
+    def legacy_payment(self, payment, *, status=LegacyPaymentStatus.PENDING, allocations=None):
+        allocation_manager = MagicMock()
+        allocation_manager.all.return_value = allocations or []
+        return SimpleNamespace(
+            pk=payment.finance_payment_id,
+            school_id=self.school_id,
+            amount_cents=payment.amount_cents,
+            currency="USD",
+            processor="manual",
+            status=status,
+            allocations=allocation_manager,
+        )
+
     def test_payment_creation_is_idempotent_and_conflicting_reuse_fails_closed(self):
         first = self.payment(amount_cents=12500, key="idem-1")
         replay = self.payment(amount_cents=12500, key="idem-1")
@@ -55,6 +69,11 @@ class CanonicalPaymentsAuthorityTest(TestCase):
 
         with self.assertRaises(IdempotencyConflict):
             self.payment(amount_cents=12501, key="idem-1")
+
+    def test_legacy_payment_compatibility_link_is_one_to_one(self):
+        self.payment(key="compatibility-1", finance_payment_id=501)
+        with self.assertRaises(ValidationError):
+            self.payment(key="compatibility-2", finance_payment_id=501)
 
     def test_payment_facts_and_provider_ids_are_immutable_and_hard_delete_is_blocked(self):
         payment = self.payment(key="immutable-1")
@@ -76,6 +95,8 @@ class CanonicalPaymentsAuthorityTest(TestCase):
 
         payment.refresh_from_db()
         with self.assertRaises(ValidationError):
+            Payment.objects.filter(pk=payment.pk).update(amount_cents=9999)
+        with self.assertRaises(ValidationError):
             payment.delete()
         with self.assertRaises(ValidationError):
             Payment.objects.filter(pk=payment.pk).delete()
@@ -93,13 +114,7 @@ class CanonicalPaymentsAuthorityTest(TestCase):
 
     def test_canonical_settlement_calls_legacy_bridge_only_at_settlement(self):
         payment = self.payment(key="settlement-1")
-        legacy_payment = SimpleNamespace(
-            pk=91,
-            school_id=self.school_id,
-            amount_cents=payment.amount_cents,
-            currency="USD",
-            processor="manual",
-        )
+        legacy_payment = self.legacy_payment(payment)
         locked = MagicMock()
         locked.filter.return_value.first.return_value = legacy_payment
 
@@ -127,13 +142,7 @@ class CanonicalPaymentsAuthorityTest(TestCase):
 
     def test_partial_allocation_remains_allowed_through_canonical_settlement(self):
         payment = self.payment(amount_cents=10000, key="partial-settlement-1")
-        legacy_payment = SimpleNamespace(
-            pk=91,
-            school_id=self.school_id,
-            amount_cents=payment.amount_cents,
-            currency="USD",
-            processor="manual",
-        )
+        legacy_payment = self.legacy_payment(payment)
         locked = MagicMock()
         locked.filter.return_value.first.return_value = legacy_payment
 
@@ -155,18 +164,63 @@ class CanonicalPaymentsAuthorityTest(TestCase):
             allocations_payload=[{"obligation_id": 7, "amount_cents": 6000}],
         )
 
+    def test_over_allocation_fails_before_legacy_bridge(self):
+        payment = self.payment(amount_cents=10000, key="over-allocation-1")
+        legacy_payment = self.legacy_payment(payment)
+        locked = MagicMock()
+        locked.filter.return_value.first.return_value = legacy_payment
+
+        with (
+            patch(
+                "payments.authority_services.FinancePayment.objects.select_for_update",
+                return_value=locked,
+            ),
+            patch("payments.authority_services.settle_payment_and_allocate") as settle_mock,
+        ):
+            with self.assertRaises(PaymentAuthorityError, msg="over-allocation must fail closed"):
+                settle_payment(
+                    payment=payment,
+                    allocations_payload=[
+                        {"obligation_id": 7, "amount_cents": 6000},
+                        {"obligation_id": 8, "amount_cents": 5000},
+                    ],
+                )
+        settle_mock.assert_not_called()
+
+    def test_already_settled_legacy_payment_requires_matching_allocation_facts(self):
+        payment = self.payment(amount_cents=10000, key="legacy-adoption-1")
+        existing_allocation = SimpleNamespace(obligation_id=7, amount_cents=6000)
+        legacy_payment = self.legacy_payment(
+            payment,
+            status=LegacyPaymentStatus.SETTLED,
+            allocations=[existing_allocation],
+        )
+        locked = MagicMock()
+        locked.filter.return_value.first.return_value = legacy_payment
+
+        with (
+            patch(
+                "payments.authority_services.FinancePayment.objects.select_for_update",
+                return_value=locked,
+            ),
+            patch("payments.authority_services.settle_payment_and_allocate") as settle_mock,
+        ):
+            with self.assertRaises(IdempotencyConflict):
+                settle_payment(
+                    payment=payment,
+                    allocations_payload=[{"obligation_id": 7, "amount_cents": 5000}],
+                )
+        settle_mock.assert_not_called()
+        payment.refresh_from_db()
+        self.assertEqual(payment.status, CanonicalPaymentStatus.PENDING)
+
     def test_settlement_replay_rejects_different_allocation_facts(self):
         payment = self.settled_payment(amount_cents=10000, key="settlement-replay-1")
         existing_allocation = SimpleNamespace(obligation_id=7, amount_cents=6000)
-        allocation_manager = MagicMock()
-        allocation_manager.all.return_value = [existing_allocation]
-        legacy_payment = SimpleNamespace(
-            pk=91,
-            school_id=self.school_id,
-            amount_cents=payment.amount_cents,
-            currency="USD",
-            processor="manual",
-            allocations=allocation_manager,
+        legacy_payment = self.legacy_payment(
+            payment,
+            status=LegacyPaymentStatus.SETTLED,
+            allocations=[existing_allocation],
         )
         locked = MagicMock()
         locked.filter.return_value.first.return_value = legacy_payment
@@ -365,14 +419,29 @@ class CanonicalPaymentsAuthorityTest(TestCase):
                 provider_payment_id="provider-payment-2",
             )
 
-    def test_refund_hard_delete_is_blocked(self):
+    def test_refund_hard_delete_bulk_update_and_compatibility_reuse_are_blocked(self):
         payment = self.settled_payment(key="refund-delete-payment")
-        refund = request_refund(
+        first = request_refund(
             payment=payment,
             amount_cents=1000,
             idempotency_key="refund-delete-1",
         )
+        first.finance_refund_id = 701
+        first.full_clean()
+        first.save(update_fields=["finance_refund_id", "updated_at"])
+
+        second = request_refund(
+            payment=payment,
+            amount_cents=1000,
+            idempotency_key="refund-delete-2",
+        )
+        second.finance_refund_id = 701
         with self.assertRaises(ValidationError):
-            refund.delete()
+            second.full_clean()
+
         with self.assertRaises(ValidationError):
-            Refund.objects.filter(pk=refund.pk).delete()
+            Refund.objects.filter(pk=first.pk).update(amount_cents=999)
+        with self.assertRaises(ValidationError):
+            first.delete()
+        with self.assertRaises(ValidationError):
+            Refund.objects.filter(pk=first.pk).delete()
