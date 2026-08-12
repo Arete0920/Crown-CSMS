@@ -3,7 +3,7 @@ from datetime import date, timedelta
 from threading import Barrier
 
 import pytest
-from django.db import close_old_connections
+from django.db import close_old_connections, connection
 
 from aid.models import AidAward, AidBudgetTracker
 from aid.services.ledger_bridge import approve_award
@@ -28,7 +28,13 @@ from payments.authority_services import (
 from payments.models import CanonicalPaymentStatus, CanonicalRefundStatus, Payment, Refund
 
 
-pytestmark = pytest.mark.django_db(transaction=True)
+pytestmark = [
+    pytest.mark.django_db(transaction=True),
+    pytest.mark.skipif(
+        connection.vendor != "postgresql",
+        reason="Finance concurrency guarantees require PostgreSQL row-lock semantics.",
+    ),
+]
 
 
 def _run_parallel(callables):
