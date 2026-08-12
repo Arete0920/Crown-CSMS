@@ -10,6 +10,7 @@ on:
       - "backend/journal/**"
       - "backend/crown_api/dashboards/finance.py"
       - "backend/core/management/commands/seed_heritage_realism_pack.py"
+      - "backend/sandbox_demo/**"
       - "frontend/dashboards/**"
       - ".github/workflows/finance-final-hardening.yml"
   push:
@@ -21,6 +22,7 @@ on:
       - "backend/journal/**"
       - "backend/crown_api/dashboards/finance.py"
       - "backend/core/management/commands/seed_heritage_realism_pack.py"
+      - "backend/sandbox_demo/**"
       - "frontend/dashboards/**"
       - ".github/workflows/finance-final-hardening.yml"
 
@@ -28,6 +30,72 @@ permissions:
   contents: read
 
 jobs:
+  finance-wiring-hygiene:
+    name: finance-wiring-hygiene
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      DJANGO_SETTINGS_MODULE: crown_api.settings
+      SECRET_KEY: finance-hygiene-ci-not-secret
+      DEBUG: "0"
+      ALLOWED_HOSTS: localhost,127.0.0.1
+    steps:
+      - name: Checkout exact head
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+
+      - name: Reject whitespace and merge residue
+        run: |
+          git diff --check HEAD^ HEAD
+          if git grep -n -E '^(<<<<<<<|=======|>>>>>>>)' -- ':!*.md'; then
+            echo 'ERROR: merge-conflict residue detected.'
+            exit 1
+          fi
+
+      - name: Reject stale active Finance/demo identity and hygiene markers
+        shell: bash
+        run: |
+          set -euo pipefail
+          active_paths=(
+            backend/payments
+            backend/finance
+            backend/ledger
+            backend/journal
+            backend/crown_api/dashboards/finance.py
+            backend/core/management/commands/seed_heritage_realism_pack.py
+            backend/sandbox_demo
+            frontend/dashboards/src
+            frontend/dashboards/tests/e2e/sandbox-finance-director.spec.ts
+          )
+          if git grep -n -F 'Crown Demo Christian Academy' -- "${active_paths[@]}"; then
+            echo 'ERROR: stale demo-school identity remains in active Finance/sandbox surfaces.'
+            exit 1
+          fi
+          if git grep -n -E '\b(TODO|FIXME|HACK|XXX)\b' -- "${active_paths[@]}"; then
+            echo 'ERROR: unresolved hygiene marker remains in active Finance/sandbox surfaces.'
+            exit 1
+          fi
+
+      - name: Use Python 3.11
+        uses: actions/setup-python@7f4fc3e22c37d6ff65e88745f38bd3157c663f7c
+        with:
+          python-version: "3.11"
+          cache: "pip"
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install backend dependencies
+        run: python -m pip install -r backend/requirements.txt
+
+      - name: Verify Django wiring and importability
+        working-directory: backend
+        run: |
+          python manage.py check
+          python -m compileall -q payments finance ledger journal crown_api/dashboards sandbox_demo
+
+      - name: Verify finance routes resolve
+        working-directory: backend
+        run: |
+          python manage.py shell -c "from django.urls import reverse; names=['payments-create-intent','payments-household-summary','payments-household-history','payments-household-statement-csv','payments-finance-register-csv','payments-finance-journal-csv','payments-disputes-list','payments-payout-batches-list','payments-exceptions-list','payments-bank-imports-list','payments-bank-unmatched-entries','payments-bank-payout-matches-list']; missing=[]; [missing.append(n) for n in names if (lambda x: x)(reverse(n)) is None]; assert not missing, missing; print('Finance route resolution PASS')"
+
   finance-postgresql-hardening:
     name: finance-postgresql-hardening
     runs-on: ubuntu-latest
