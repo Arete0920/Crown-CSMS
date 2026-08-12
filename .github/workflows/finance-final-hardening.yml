@@ -42,6 +42,8 @@ jobs:
     steps:
       - name: Checkout exact head
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+        with:
+          fetch-depth: 2
 
       - name: Reject whitespace and merge residue
         run: |
@@ -51,10 +53,14 @@ jobs:
             exit 1
           fi
 
-      - name: Reject stale active Finance/demo identity and hygiene markers
+      - name: Reject stale Finance/demo identity and hygiene markers
         shell: bash
         run: |
           set -euo pipefail
+          if git grep -n -E 'Crown Demo Christian Academy|Certification Demo School' -- .; then
+            echo 'ERROR: competing demo-school identity remains. Heritage Christian Academy is the only allowed demo school.'
+            exit 1
+          fi
           active_paths=(
             backend/payments
             backend/finance
@@ -65,11 +71,8 @@ jobs:
             backend/sandbox_demo
             frontend/dashboards/src
             frontend/dashboards/tests/e2e/sandbox-finance-director.spec.ts
+            frontend/dashboards/tests/certification/scaffold-certification-crawler.spec.ts
           )
-          if git grep -n -F 'Crown Demo Christian Academy' -- "${active_paths[@]}"; then
-            echo 'ERROR: stale demo-school identity remains in active Finance/sandbox surfaces.'
-            exit 1
-          fi
           if git grep -n -E '\b(TODO|FIXME|HACK|XXX)\b' -- "${active_paths[@]}"; then
             echo 'ERROR: unresolved hygiene marker remains in active Finance/sandbox surfaces.'
             exit 1
