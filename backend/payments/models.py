@@ -467,6 +467,9 @@ class CanonicalRefundStatus(models.TextChoices):
 
 
 class ImmutableFinancialFactQuerySet(models.QuerySet):
+    def update(self, **kwargs):
+        raise ValidationError("Canonical payment facts cannot be bulk-updated.")
+
     def delete(self):
         raise ValidationError("Canonical payment facts cannot be hard-deleted.")
 
@@ -565,6 +568,11 @@ class Payment(ImmutableFinancialFact):
                 name="uq_payments_payment_school_idempotency",
             ),
             models.UniqueConstraint(
+                fields=["finance_payment_id"],
+                condition=models.Q(finance_payment_id__isnull=False),
+                name="uq_payments_payment_finance_payment",
+            ),
+            models.UniqueConstraint(
                 fields=["provider", "provider_intent_id"],
                 condition=~models.Q(provider="") & ~models.Q(provider_intent_id=""),
                 name="uq_payments_payment_provider_intent",
@@ -638,6 +646,11 @@ class Refund(ImmutableFinancialFact):
             models.UniqueConstraint(
                 fields=["school_id", "idempotency_key"],
                 name="uq_payments_refund_school_idempotency",
+            ),
+            models.UniqueConstraint(
+                fields=["finance_refund_id"],
+                condition=models.Q(finance_refund_id__isnull=False),
+                name="uq_payments_refund_finance_refund",
             ),
             models.UniqueConstraint(
                 fields=["provider", "provider_refund_id"],
