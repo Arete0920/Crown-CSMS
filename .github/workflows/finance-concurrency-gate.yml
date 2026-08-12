@@ -5,11 +5,13 @@ on:
     branches: [main]
     paths:
       - "backend/payments/**"
+      - "backend/aid/**"
       - ".github/workflows/finance-concurrency-gate.yml"
   push:
     branches: [main]
     paths:
       - "backend/payments/**"
+      - "backend/aid/**"
       - ".github/workflows/finance-concurrency-gate.yml"
 
 concurrency:
@@ -61,10 +63,11 @@ jobs:
         run: |
           python manage.py makemigrations --check --dry-run
           python manage.py check
-          python -m compileall -q payments
+          python -m compileall -q payments aid
       - name: Prove concurrency, tenant boundaries, and reconciled exports
         run: >-
           python -m pytest -q
           payments/tests/test_finance_concurrency.py
+          payments/tests/test_finance_extended_concurrency.py
           payments/tests/test_household_finance_access.py
           payments/tests/test_finance_handoff_export.py
