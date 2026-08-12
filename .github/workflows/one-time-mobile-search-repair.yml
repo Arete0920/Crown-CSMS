@@ -28,24 +28,8 @@ jobs:
 
           path = Path('frontend/dashboards/src/styles/launch-shell.css')
           text = path.read_text(encoding='utf-8-sig')
-          marker = '''  .launch-topbar,
-          .launch-page-header {
-            flex-direction: column;
-            align-items: stretch;
-          }
-          '''
-          replacement = '''  .launch-topbar,
-          .launch-page-header {
-            flex-direction: column;
-            align-items: stretch;
-          }
-
-          .launch-search {
-            flex: 0 0 auto;
-            width: 100%;
-            min-width: 0;
-          }
-          '''
+          marker = "  .launch-topbar,\n  .launch-page-header {\n    flex-direction: column;\n    align-items: stretch;\n  }\n"
+          replacement = "  .launch-topbar,\n  .launch-page-header {\n    flex-direction: column;\n    align-items: stretch;\n  }\n\n  .launch-search {\n    flex: 0 0 auto;\n    width: 100%;\n    min-width: 0;\n  }\n"
           if marker not in text:
               raise SystemExit('responsive topbar marker not found')
           updated = text.replace(marker, replacement, 1)
