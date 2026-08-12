@@ -101,7 +101,7 @@ jobs:
       - name: Verify finance routes resolve
         working-directory: backend
         run: |
-          python manage.py shell -c "from django.urls import reverse; names=['payments-create-intent','payments-household-summary','payments-household-history','payments-household-statement-csv','payments-disputes-list','payments-payout-batches-list','payments-exceptions-list','payments-bank-imports-list','payments-bank-unmatched-entries','payments-bank-payout-matches-list']; missing=[]; [missing.append(n) for n in names if (lambda x: x)(reverse(n)) is None]; assert not missing, missing; print('Finance route resolution PASS')"
+          python manage.py shell -c "from django.urls import reverse; from uuid import UUID; static=['payments-create-intent','payments-disputes-list','payments-payout-batches-list','payments-exceptions-list','payments-bank-imports-list','payments-bank-unmatched-entries','payments-bank-payout-matches-list']; household=['payments-household-summary','payments-household-history','payments-household-statement-csv']; [reverse(n) for n in static]; [reverse(n, kwargs={'household_id': UUID(int=1)}) for n in household]; print('Finance route resolution PASS')"
 
   finance-postgresql-hardening:
     name: finance-postgresql-hardening
