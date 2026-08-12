@@ -21,6 +21,7 @@ from payments.access import user_can_access_household_finance
 from payments.account_api import household_finance_summary
 from payments.models import (
     BankStatementEntry,
+    CanonicalPaymentStatus,
     CanonicalRefundStatus,
     Payment as CanonicalPayment,
     ProviderPayoutBatch,
@@ -114,9 +115,15 @@ def finance_handoff_csv(request):
     refunds = list(Refund.objects.filter(school_id=school_id).order_by("id"))
     settled_refund_total = ZERO
     payment_total = ZERO
+    cash_payment_statuses = {
+        CanonicalPaymentStatus.SETTLED,
+        CanonicalPaymentStatus.PARTIALLY_REFUNDED,
+        CanonicalPaymentStatus.REFUNDED,
+    }
     for payment in payments:
         amount = _money_from_cents(payment.amount_cents)
-        payment_total += amount
+        if payment.status in cash_payment_statuses:
+            payment_total += amount
         writer.writerow(
             [
                 "payment_register",
