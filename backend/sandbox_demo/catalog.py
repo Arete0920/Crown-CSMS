@@ -3,9 +3,7 @@ from __future__ import annotations
 import os
 from dataclasses import asdict, dataclass
 
-DEMO_SCHOOL_ID = os.getenv(
-    "CROWN_DEMO_SCHOOL_ID", "19801b59-8c05-4c84-9312-5d792e4e839d"
-)
+DEMO_SCHOOL_ID = os.getenv("CROWN_DEMO_SCHOOL_ID") or "19801b59-8c05-4c84-9312-5d792e4e839d"
 
 
 @dataclass(frozen=True)
