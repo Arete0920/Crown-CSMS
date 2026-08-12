@@ -34,7 +34,7 @@ def _cents_to_money(value):
 def household_finance_summary(request, household_id):
     school_id = get_request_school_id(request, required=True)
 
-    if not user_can_access_household_finance(request.user, household_id):
+    if not user_can_access_household_finance(request.user, household_id, school_id):
         return Response(
             {"detail": "You do not have permission to view this household account."},
             status=status.HTTP_403_FORBIDDEN,
@@ -54,12 +54,10 @@ def household_finance_summary(request, household_id):
     for inv in invoices:
         total_amount = _money(getattr(inv, "total_amount", ZERO))
         balance_due = compute_invoice_balance_due(inv)
-
         total_invoiced += total_amount
         invoice_outstanding += balance_due
         if balance_due > ZERO:
             open_invoice_count += 1
-
         invoice_rows.append(
             {
                 "id": str(inv.id),
@@ -136,10 +134,10 @@ def household_finance_summary(request, household_id):
     net_cash_total = gross_cash_total - refund_total
     unapplied_cash_total = gross_cash_total - allocated_cash_total
 
-    intents = (
-        PaymentIntentRecord.objects.filter(school_id=school_id, household_id=household_id)
-        .order_by("-id")[:25]
-    )
+    intents = PaymentIntentRecord.objects.filter(
+        school_id=school_id,
+        household_id=household_id,
+    ).order_by("-id")[:25]
 
     intent_rows = [
         {
@@ -169,7 +167,6 @@ def household_finance_summary(request, household_id):
                 "net_cash_total": str(net_cash_total),
                 "unapplied_cash_total": str(unapplied_cash_total),
                 "recent_payments_total": str(recent_payments_total),
-                # Backward compatibility: total_outstanding now reflects Student Accounts truth.
                 "total_outstanding": str(student_account_balance),
             },
             "invoices": invoice_rows,
@@ -184,7 +181,7 @@ def household_finance_summary(request, household_id):
 def household_payment_history(request, household_id):
     school_id = get_request_school_id(request, required=True)
 
-    if not user_can_access_household_finance(request.user, household_id):
+    if not user_can_access_household_finance(request.user, household_id, school_id):
         return Response(
             {"detail": "You do not have permission to view this household payment history."},
             status=status.HTTP_403_FORBIDDEN,
