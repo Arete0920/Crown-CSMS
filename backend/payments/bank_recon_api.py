@@ -4,6 +4,7 @@ import logging
 from datetime import datetime
 from decimal import Decimal
 
+from django.db import transaction
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.decorators import api_view, parser_classes, permission_classes
@@ -50,6 +51,53 @@ def _parse_amount(value: str):
     return Decimal(str(value))
 
 
+def _row_has_data(raw: dict) -> bool:
+    return any(str(value or "").strip() for value in raw.values())
+
+
+@transaction.atomic
+def _process_bank_statement_bytes(*, import_row: BankStatementImport, raw_bytes: bytes) -> int:
+    """Persist one statement atomically; malformed rows fail the whole import."""
+    decoded = raw_bytes.decode("utf-8")
+    reader = csv.DictReader(io.StringIO(decoded))
+    if not reader.fieldnames:
+        raise ValueError("Statement CSV is missing a header row.")
+
+    rows = 0
+    for raw in reader:
+        if not _row_has_data(raw):
+            continue
+
+        posted_date = _parse_date(raw.get("posted_date") or raw.get("date"))
+        if posted_date is None:
+            raise ValueError(f"Invalid or missing posted_date at CSV row {reader.line_num}.")
+
+        currency = (raw.get("currency") or "USD").strip().upper() or "USD"
+        BankStatementEntry.objects.create(
+            school_id=import_row.school_id,
+            statement_import=import_row,
+            posted_date=posted_date,
+            description=(raw.get("description") or "")[:255],
+            reference=(raw.get("reference") or raw.get("txn_id") or raw.get("id") or "")[:128],
+            amount=_parse_amount(raw.get("amount") or raw.get("net_amount") or "0"),
+            currency=currency[:8],
+            payload=raw,
+        )
+        rows += 1
+
+    if rows == 0:
+        raise ValueError("Statement CSV contained no valid data rows.")
+
+    import_row.status = BankStatementImportStatus.PROCESSED
+    import_row.row_count = rows
+    import_row.error_message = ""
+    import_row.processed_at = timezone.now()
+    import_row.save(
+        update_fields=["status", "row_count", "error_message", "processed_at"]
+    )
+    return rows
+
+
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 @parser_classes([MultiPartParser, FormParser])
@@ -71,38 +119,24 @@ def upload_bank_statement_csv(request):
     )
 
     try:
-        decoded = upload.read().decode("utf-8")
-        reader = csv.DictReader(io.StringIO(decoded))
-
-        rows = 0
-        for raw in reader:
-            posted_date = _parse_date(raw.get("posted_date") or raw.get("date"))
-            if posted_date is None:
-                continue
-
-            BankStatementEntry.objects.create(
-                school_id=school_id,
-                statement_import=import_row,
-                posted_date=posted_date,
-                description=(raw.get("description") or "")[:255],
-                reference=(raw.get("reference") or raw.get("txn_id") or raw.get("id") or "")[:128],
-                amount=_parse_amount(raw.get("amount") or raw.get("net_amount") or "0"),
-                currency=(raw.get("currency") or "USD")[:8],
-                payload=raw,
-            )
-            rows += 1
-
-        import_row.status = BankStatementImportStatus.PROCESSED
-        import_row.row_count = rows
-        import_row.processed_at = timezone.now()
-        import_row.save(update_fields=["status", "row_count", "processed_at"])
+        raw_bytes = upload.read()
+        _process_bank_statement_bytes(import_row=import_row, raw_bytes=raw_bytes)
     except Exception as exc:
+        import_row.refresh_from_db()
         import_row.status = BankStatementImportStatus.FAILED
         import_row.error_message = str(exc)
-        import_row.save(update_fields=["status", "error_message"])
-        logger.exception("upload_bank_statement_csv: failed to process uploaded statement", extra={"import_id": import_row.id})
-        return Response({"ok": False, "error": "Unable to process the uploaded statement file."}, status=status.HTTP_400_BAD_REQUEST)
+        import_row.processed_at = None
+        import_row.save(update_fields=["status", "error_message", "processed_at"])
+        logger.exception(
+            "upload_bank_statement_csv: failed to process uploaded statement",
+            extra={"import_id": import_row.id},
+        )
+        return Response(
+            {"ok": False, "error": "Unable to process the uploaded statement file."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
 
+    import_row.refresh_from_db()
     return Response(
         {
             "ok": True,
@@ -190,13 +224,16 @@ def manual_match_payout(request):
     if not payout_batch or not bank_entry:
         return Response({"detail": "Payout batch or bank entry not found."}, status=status.HTTP_404_NOT_FOUND)
 
-    match = create_manual_payout_match(
-        school_id=school_id,
-        payout_batch=payout_batch,
-        bank_entry=bank_entry,
-        user=request.user,
-        note=note,
-    )
+    try:
+        match = create_manual_payout_match(
+            school_id=school_id,
+            payout_batch=payout_batch,
+            bank_entry=bank_entry,
+            user=request.user,
+            note=note,
+        )
+    except ValueError as exc:
+        return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
 
     return Response(
         {
@@ -223,6 +260,7 @@ def payout_bank_matches_list(request):
             "amount_delta": str(row.amount_delta),
             "date_delta_days": row.date_delta_days,
             "note": row.note,
+            "matched_by_id": row.matched_by_id,
             "created_at": row.created_at,
         }
         for row in PayoutBankMatch.objects.filter(school_id=school_id).order_by("-id")
