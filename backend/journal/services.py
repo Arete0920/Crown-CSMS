@@ -1,9 +1,11 @@
+from datetime import date
 from decimal import Decimal
 
 from django.core.exceptions import ValidationError
 from django.db import transaction
+from django.utils import timezone
 
-from .models import JournalEntry, JournalLine
+from .models import AccountingPeriod, JournalEntry, JournalLine
 
 
 def _normalize_currency(currency: str) -> str:
@@ -20,6 +22,43 @@ def _normalize_source_system(source_system: str) -> str:
     return value
 
 
+def _effective_posting_date(value: date | None) -> date:
+    return value or timezone.localdate()
+
+
+def assert_posting_period_open(*, school, posting_date: date) -> AccountingPeriod | None:
+    """
+    Fail closed when an explicitly configured period covering posting_date is closed.
+
+    Existing schools without configured periods remain backward-compatible until
+    Finance administrators establish their period calendar.
+    """
+    period = AccountingPeriod.objects.filter(
+        school=school,
+        start_date__lte=posting_date,
+        end_date__gte=posting_date,
+    ).first()
+    if period is not None and period.status == AccountingPeriod.Status.CLOSED:
+        raise ValidationError(
+            f"Accounting period {period.start_date} through {period.end_date} is closed."
+        )
+    return period
+
+
+def close_accounting_period(*, period: AccountingPeriod, user, note="") -> AccountingPeriod:
+    """Close a posting period under row lock so concurrent posting cannot race closure."""
+    with transaction.atomic():
+        period = AccountingPeriod.objects.select_for_update().get(pk=period.pk)
+        return period.close(user=user, note=note)
+
+
+def reopen_accounting_period(*, period: AccountingPeriod, user, reason: str) -> AccountingPeriod:
+    """Reopen a period with an explicit reason and durable actor/timestamp evidence."""
+    with transaction.atomic():
+        period = AccountingPeriod.objects.select_for_update().get(pk=period.pk)
+        return period.reopen(user=user, reason=reason)
+
+
 def post_journal_entry(
     *,
     school,
@@ -31,6 +70,7 @@ def post_journal_entry(
     correlation_id=None,
     source_system="journal",
     currency="USD",
+    posting_date=None,
 ):
     """
     Post one balanced immutable journal entry.
@@ -40,15 +80,17 @@ def post_journal_entry(
         ...
     ]
 
-    correlation_id, source_system, and currency provide the canonical
-    cross-domain accounting traceability contract while remaining optional for
-    compatibility callers.
+    correlation_id, source_system, currency, and posting_date provide the
+    canonical cross-domain accounting traceability contract while remaining
+    compatible with callers that omit the newer metadata.
     """
     if not lines or len(lines) < 2:
         raise ValidationError("Journal entry must contain at least two lines.")
 
     source_system = _normalize_source_system(source_system)
     currency = _normalize_currency(currency)
+    posting_date = _effective_posting_date(posting_date)
+    assert_posting_period_open(school=school, posting_date=posting_date)
 
     total_debit = Decimal("0.00")
     total_credit = Decimal("0.00")
@@ -77,9 +119,22 @@ def post_journal_entry(
         raise ValidationError("Journal entry must balance.")
 
     with transaction.atomic():
+        # Recheck under a transaction so period closure and posting have a
+        # deterministic ordering when they contend.
+        period = AccountingPeriod.objects.select_for_update().filter(
+            school=school,
+            start_date__lte=posting_date,
+            end_date__gte=posting_date,
+        ).first()
+        if period is not None and period.status == AccountingPeriod.Status.CLOSED:
+            raise ValidationError(
+                f"Accounting period {period.start_date} through {period.end_date} is closed."
+            )
+
         entry = JournalEntry.objects.create(
             school=school,
             created_by=created_by,
+            posting_date=posting_date,
             memo=memo,
             reference_type=reference_type,
             reference_id=reference_id,
@@ -113,18 +168,20 @@ def create_reversal_entry(
     original_entry: JournalEntry,
     reason: str,
     reference_type: str | None = None,
+    posting_date=None,
 ) -> JournalEntry:
     """
     Create one immutable reversing JournalEntry for ``original_entry``.
 
-    The database OneToOne relation is the idempotency authority. Callers may
-    provide a domain-specific reversal ``reference_type`` (for example,
-    ``charge_void_reversal``); otherwise the canonical default is derived from
-    the original entry type (for example, ``payment_reversal``).
+    Reversals post on the requested/current posting date, not automatically into
+    the original period. This allows prior periods to remain closed while still
+    supporting controlled corrections in the current open period.
     """
     existing = _find_reversal(original_entry)
     if existing is not None:
         return existing
+
+    posting_date = _effective_posting_date(posting_date)
 
     with transaction.atomic():
         original_entry = (
@@ -138,6 +195,11 @@ def create_reversal_entry(
         if existing is not None:
             return existing
 
+        assert_posting_period_open(
+            school=original_entry.school,
+            posting_date=posting_date,
+        )
+
         base_reference_type = (original_entry.reference_type or "journal").strip() or "journal"
         reversal_reference_type = (reference_type or f"{base_reference_type}_reversal").strip()
         if not reversal_reference_type or len(reversal_reference_type) > 64:
@@ -146,6 +208,7 @@ def create_reversal_entry(
         rev = JournalEntry.objects.create(
             school=original_entry.school,
             created_by=original_entry.created_by,
+            posting_date=posting_date,
             reference_type=reversal_reference_type,
             reference_id=original_entry.reference_id,
             correlation_id=original_entry.correlation_id,
