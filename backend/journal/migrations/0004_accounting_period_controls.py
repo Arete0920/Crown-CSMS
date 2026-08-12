@@ -87,7 +87,7 @@ class Migration(migrations.Migration):
         migrations.AddConstraint(
             model_name="accountingperiod",
             constraint=models.CheckConstraint(
-                condition=models.Q(("end_date__gte", models.F("start_date"))),
+                condition=models.Q(end_date__gte=models.F("start_date")),
                 name="journal_accounting_period_valid_range",
             ),
         ),
