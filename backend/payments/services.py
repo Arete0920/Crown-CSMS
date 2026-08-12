@@ -4,13 +4,19 @@ import uuid
 from django.db import transaction
 from django.utils import timezone
 
-from finance.models import FinancePayment, PaymentStatus
-from finance.services import initiate_refund, settle_payment_and_allocate
+from finance.models import FinancePayment
+from payments.authority_services import (
+    create_payment,
+    request_refund,
+    settle_payment,
+    settle_refund,
+)
 from payments.exceptions import record_payment_exception
 from payments.models import (
     GatewayEvent,
     GatewayEventStatus,
     GatewayIntentStatus,
+    Payment,
     PaymentIntentRecord,
     ProviderDispute,
     SavedPaymentMethod,
@@ -105,7 +111,7 @@ def process_gateway_event(event: GatewayEvent) -> None:
         _apply_settlement(intent, payload)
 
     if status == GatewayIntentStatus.REFUNDED:
-        _apply_refund(intent, payload, provider=event.provider)
+        _apply_refund(event, intent, payload, provider=event.provider)
 
     _mark_processed(event)
 
@@ -159,6 +165,49 @@ def _find_finance_payment(intent: PaymentIntentRecord) -> FinancePayment | None:
     return None
 
 
+def _canonical_payment_for_legacy(
+    intent: PaymentIntentRecord,
+    legacy_payment: FinancePayment,
+    *,
+    create_if_missing: bool,
+) -> Payment | None:
+    canonical = Payment.objects.select_for_update().filter(
+        school_id=intent.school_id,
+        finance_payment_id=legacy_payment.pk,
+    ).first()
+
+    if canonical is not None:
+        if int(canonical.amount_cents) != int(legacy_payment.amount_cents):
+            raise UnmatchedPaymentError(
+                "Canonical Payment amount conflicts with FinancePayment compatibility record."
+            )
+        if (canonical.currency or "USD").upper() != (legacy_payment.currency or "USD").upper():
+            raise UnmatchedPaymentError(
+                "Canonical Payment currency conflicts with FinancePayment compatibility record."
+            )
+        if intent.household_id and canonical.household_id != intent.household_id:
+            raise UnmatchedPaymentError(
+                "Canonical Payment household conflicts with PaymentIntentRecord."
+            )
+        return canonical
+
+    if not create_if_missing:
+        return None
+
+    return create_payment(
+        school_id=intent.school_id,
+        household_id=intent.household_id,
+        finance_payment_id=legacy_payment.pk,
+        amount_cents=legacy_payment.amount_cents,
+        currency=legacy_payment.currency,
+        provider=intent.provider,
+        provider_intent_id=intent.provider_intent_id,
+        provider_payment_id=intent.provider_payment_id,
+        idempotency_key=f"gateway_intent:{intent.pk}",
+        metadata={"payment_intent_record_id": intent.pk},
+    )
+
+
 def _settlement_allocations(intent: PaymentIntentRecord, payload: dict) -> list[dict]:
     """Read explicit allocation facts supplied by the canonical caller/adapter."""
     metadata = intent.metadata or {}
@@ -173,42 +222,69 @@ def _settlement_allocations(intent: PaymentIntentRecord, payload: dict) -> list[
 
 
 def _apply_settlement(intent: PaymentIntentRecord, payload: dict) -> None:
-    payment = _find_finance_payment(intent)
-    if payment is None:
+    legacy_payment = _find_finance_payment(intent)
+    if legacy_payment is None:
         raise UnmatchedPaymentError(
             "Settled gateway intent has no matching FinancePayment compatibility record."
         )
 
-    if payment.status == PaymentStatus.SETTLED:
-        return
-
     allocations_payload = _settlement_allocations(intent, payload)
-    settle_payment_and_allocate(
-        payment=payment,
+    canonical_payment = _canonical_payment_for_legacy(
+        intent,
+        legacy_payment,
+        create_if_missing=True,
+    )
+    if canonical_payment is None:  # pragma: no cover - create_if_missing guarantees a Payment
+        raise UnmatchedPaymentError("Canonical Payment could not be resolved for settlement.")
+
+    settle_payment(
+        payment=canonical_payment,
         allocations_payload=allocations_payload,
+        provider=intent.provider,
+        provider_intent_id=intent.provider_intent_id,
+        provider_payment_id=intent.provider_payment_id,
     )
 
 
-def _apply_refund(intent: PaymentIntentRecord, payload: dict, *, provider: str) -> None:
-    payment = _find_finance_payment(intent)
-    if payment is None:
+def _apply_refund(
+    event: GatewayEvent,
+    intent: PaymentIntentRecord,
+    payload: dict,
+    *,
+    provider: str,
+) -> None:
+    legacy_payment = _find_finance_payment(intent)
+    if legacy_payment is None:
         raise UnmatchedPaymentError(
             "Refunded gateway intent has no matching FinancePayment compatibility record."
         )
 
+    canonical_payment = _canonical_payment_for_legacy(
+        intent,
+        legacy_payment,
+        create_if_missing=False,
+    )
+    if canonical_payment is None:
+        raise UnmatchedPaymentError(
+            "Refunded gateway intent has no canonical Payment; settlement reconciliation is required first."
+        )
+
     amount = _amount(payload.get("refund_amount") or payload.get("amount") or intent.amount)
     refund_cents = int((amount * Decimal("100")).quantize(Decimal("1")))
+    data = payload.get("data") or {}
+    provider_refund_id = str(payload.get("refund_id") or data.get("refund_id") or "").strip()
 
-    idem = f"gw_refund:{intent.provider}:{intent.provider_payment_id or intent.provider_intent_id}"
-    if payment.refunds.filter(idempotency_key=idem).exists():
-        return
-
-    initiate_refund(
-        payment=payment,
-        amount_cents=max(refund_cents, 1),
-        processor=provider,
-        created_by=None,
-        idempotency_key=idem,
+    refund = request_refund(
+        payment=canonical_payment,
+        amount_cents=refund_cents,
+        provider=provider,
+        idempotency_key=f"gateway_refund_event:{event.provider}:{event.event_id}",
+        metadata={"gateway_event_id": event.pk},
+    )
+    settle_refund(
+        refund=refund,
+        provider=provider,
+        provider_refund_id=provider_refund_id,
     )
 
 
@@ -234,7 +310,6 @@ def _handle_saved_payment_method(event: GatewayEvent, payload: dict) -> None:
             "exp_month": payload.get("exp_month"),
             "exp_year": payload.get("exp_year"),
             "is_default": bool(payload.get("is_default", False)),
-            "is_active": True,
             "payload": payload,
         },
     )
