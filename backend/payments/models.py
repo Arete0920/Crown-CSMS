@@ -165,7 +165,7 @@ class ProviderPayoutBatch(models.Model):
 class ProviderPayoutEntry(models.Model):
     batch = models.ForeignKey(
         ProviderPayoutBatch,
-        on_delete=models.CASCADE,
+        on_delete=models.PROTECT,
         related_name="entries",
     )
 
@@ -351,6 +351,7 @@ class BankStatementImport(models.Model):
     )
 
     source_name = models.CharField(max_length=255, blank=True, default="")
+    source_sha256 = models.CharField(max_length=64, blank=True, default="", db_index=True)
     status = models.CharField(
         max_length=32,
         choices=BankStatementImportStatus.choices,
@@ -364,13 +365,20 @@ class BankStatementImport(models.Model):
 
     class Meta:
         ordering = ["-id"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["school_id", "source_sha256"],
+                condition=~models.Q(source_sha256=""),
+                name="uq_bank_statement_import_school_hash",
+            )
+        ]
 
 
 class BankStatementEntry(models.Model):
     school_id = models.UUIDField(db_index=True)
     statement_import = models.ForeignKey(
         BankStatementImport,
-        on_delete=models.CASCADE,
+        on_delete=models.PROTECT,
         related_name="entries",
     )
 
@@ -400,12 +408,12 @@ class PayoutBankMatch(models.Model):
     school_id = models.UUIDField(db_index=True)
     payout_batch = models.ForeignKey(
         ProviderPayoutBatch,
-        on_delete=models.CASCADE,
+        on_delete=models.PROTECT,
         related_name="bank_matches",
     )
     bank_entry = models.ForeignKey(
         BankStatementEntry,
-        on_delete=models.CASCADE,
+        on_delete=models.PROTECT,
         related_name="payout_matches",
     )
 
@@ -436,7 +444,27 @@ class PayoutBankMatch(models.Model):
             models.UniqueConstraint(
                 fields=["payout_batch", "bank_entry"],
                 name="uq_payout_bank_match_pair",
-            )
+            ),
+            models.UniqueConstraint(
+                fields=["payout_batch"],
+                condition=models.Q(
+                    status__in=[
+                        PayoutBankMatchStatus.AUTO_MATCHED,
+                        PayoutBankMatchStatus.MANUAL_MATCHED,
+                    ]
+                ),
+                name="uq_active_payout_bank_match_payout",
+            ),
+            models.UniqueConstraint(
+                fields=["bank_entry"],
+                condition=models.Q(
+                    status__in=[
+                        PayoutBankMatchStatus.AUTO_MATCHED,
+                        PayoutBankMatchStatus.MANUAL_MATCHED,
+                    ]
+                ),
+                name="uq_active_payout_bank_match_bank",
+            ),
         ]
 
 
