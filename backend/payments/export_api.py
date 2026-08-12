@@ -21,7 +21,7 @@ from payments.models import StatementExportRequest, StatementExportStatus
 def household_statement_csv(request, household_id):
     school_id = get_request_school_id(request, required=True)
 
-    if not user_can_access_household_finance(request.user, household_id):
+    if not user_can_access_household_finance(request.user, household_id, school_id):
         return Response({"detail": "Forbidden"}, status=status.HTTP_403_FORBIDDEN)
 
     export_request = StatementExportRequest.objects.create(
@@ -73,7 +73,7 @@ def payment_receipt_html(request, payment_id):
         return Response({"detail": "Payment not found."}, status=status.HTTP_404_NOT_FOUND)
 
     household_id = getattr(getattr(payment, "account", None), "household_id", None)
-    if household_id and not user_can_access_household_finance(request.user, household_id):
+    if household_id and not user_can_access_household_finance(request.user, household_id, school_id):
         return Response({"detail": "Forbidden"}, status=status.HTTP_403_FORBIDDEN)
 
     receipt_id = escape(str(payment.id))
