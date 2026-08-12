@@ -16,7 +16,7 @@ class Command(BaseCommand):
         parser.add_argument(
             "--school-id",
             type=str,
-            help="UUID of the school (defaults to Crown Demo Christian Academy if not provided)",
+            help="UUID of the school (defaults to Heritage Christian Academy if not provided)",
         )
 
     def handle(self, *args, **opts):
@@ -28,7 +28,7 @@ class Command(BaseCommand):
             if not school:
                 raise RuntimeError(f"School {school_id} not found")
         else:
-            school = School.objects.filter(name="Crown Demo Christian Academy").order_by("-created_at", "id").first()
+            school = School.objects.filter(name="Heritage Christian Academy").order_by("-created_at", "id").first()
             if not school:
                 raise RuntimeError("No demo school found")
         

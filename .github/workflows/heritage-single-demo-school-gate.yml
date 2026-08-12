@@ -1,0 +1,65 @@
+name: Heritage Single Demo School Gate
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+concurrency:
+  group: heritage-single-demo-school-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  heritage-single-demo-school:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact source
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+
+      - name: Reject competing demo-school identities repository-wide
+        shell: bash
+        run: |
+          set -euo pipefail
+          legacy_demo='Crown Demo Christian'" Academy"
+          certification_demo='Certification Demo'" School"
+          if git grep -n -F "$legacy_demo" -- .; then
+            echo 'ERROR: legacy demo-school identity exists; Heritage Christian Academy is the sole demo school.'
+            exit 1
+          fi
+          if git grep -n -F "$certification_demo" -- .; then
+            echo 'ERROR: certification demo-school identity exists; Heritage Christian Academy is the sole demo school.'
+            exit 1
+          fi
+
+      - name: Verify canonical Heritage demo entrypoints
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+
+          canonical = "Heritage Christian Academy"
+          required = [
+              Path("backend/sandbox_demo/catalog.py"),
+              Path("backend/core/management/commands/seed_demo_school.py"),
+              Path("backend/core/management/commands/seed_heritage_realism_pack.py"),
+              Path("frontend/dashboards/src/sandbox/sandboxExperience.js"),
+              Path("frontend/dashboards/src/pages/SandboxLandingPage.jsx"),
+          ]
+          missing = []
+          for path in required:
+              if not path.exists():
+                  missing.append(f"missing file: {path}")
+                  continue
+              text = path.read_text(encoding="utf-8")
+              if canonical not in text:
+                  missing.append(f"canonical Heritage identity missing from {path}")
+          if missing:
+              raise SystemExit("\n".join(missing))
+          print("Heritage single-demo-school entrypoint contract PASS")
+          PY

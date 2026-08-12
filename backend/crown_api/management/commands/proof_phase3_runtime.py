@@ -114,7 +114,7 @@ class Command(BaseCommand):
         # settings. seed_demo_school uses get_or_create with an auto-generated
         # UUID, so settings.CROWN_DEMO_SCHOOL_ID may not match what is in the DB.
         from core.models import School  # late import — app registry is ready here
-        DEMO_SCHOOL_NAME = "Crown Demo Christian Academy"
+        DEMO_SCHOOL_NAME = "Heritage Christian Academy"
         try:
             demo_school = School.objects.get(name=DEMO_SCHOOL_NAME)
             school_id = str(demo_school.id)
