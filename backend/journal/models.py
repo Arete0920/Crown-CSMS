@@ -23,16 +23,11 @@ class GLAccount(models.Model):
         on_delete=models.CASCADE,
         related_name="gl_accounts",
     )
-
     code = models.CharField(max_length=32)
     name = models.CharField(max_length=128)
     account_type = models.CharField(max_length=16, choices=ACCOUNT_TYPES)
     parent = models.ForeignKey(
-        "self",
-        null=True,
-        blank=True,
-        on_delete=models.PROTECT,
-        related_name="children",
+        "self", null=True, blank=True, on_delete=models.PROTECT, related_name="children"
     )
     active = models.BooleanField(default=True)
 
@@ -46,22 +41,14 @@ class GLAccount(models.Model):
 
 
 class AccountingPeriod(models.Model):
-    """
-    Tenant-scoped posting period control.
-
-    Periods may be left undefined for backward-compatible operation. Once a
-    period exists for a posting date, CLOSED is authoritative and journal
-    posting for that date fails closed until the period is explicitly reopened.
-    """
+    """Tenant-scoped posting-period control for Finance/Journal."""
 
     class Status(models.TextChoices):
         OPEN = "OPEN", "Open"
         CLOSED = "CLOSED", "Closed"
 
     school = models.ForeignKey(
-        "core.School",
-        on_delete=models.PROTECT,
-        related_name="accounting_periods",
+        "core.School", on_delete=models.PROTECT, related_name="accounting_periods"
     )
     start_date = models.DateField()
     end_date = models.DateField()
@@ -100,8 +87,14 @@ class AccountingPeriod(models.Model):
             ),
         ]
         indexes = [
-            models.Index(fields=["school", "start_date", "end_date"]),
-            models.Index(fields=["school", "status"]),
+            models.Index(
+                fields=["school", "start_date", "end_date"],
+                name="journal_acc_school__98cc1d_idx",
+            ),
+            models.Index(
+                fields=["school", "status"],
+                name="journal_acc_school__805c67_idx",
+            ),
         ]
 
     def clean(self):
@@ -119,6 +112,10 @@ class AccountingPeriod(models.Model):
             if overlap.exists():
                 raise ValidationError("Accounting periods for a school cannot overlap.")
 
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        return super().save(*args, **kwargs)
+
     def contains(self, posting_date):
         return self.start_date <= posting_date <= self.end_date
 
@@ -130,7 +127,6 @@ class AccountingPeriod(models.Model):
         self.closed_by = user
         if note:
             self.note = note
-        self.full_clean()
         self.save(update_fields=["status", "closed_at", "closed_by", "note", "updated_at"])
         return self
 
@@ -144,7 +140,6 @@ class AccountingPeriod(models.Model):
         self.reopened_at = timezone.now()
         self.reopened_by = user
         self.note = f"{self.note}\nREOPEN: {reason}".strip()
-        self.full_clean()
         self.save(update_fields=["status", "reopened_at", "reopened_by", "note", "updated_at"])
         return self
 
@@ -153,16 +148,11 @@ class AccountingPeriod(models.Model):
 
 
 class JournalEntry(models.Model):
-    """
-    Immutable journal entry - header for double-entry transactions.
-    Once locked (default), cannot be modified or deleted.
-    """
-    school = models.ForeignKey(
-        "core.School",
-        on_delete=models.PROTECT,
-        related_name="journal_entries",
-    )
+    """Immutable journal-entry header for double-entry transactions."""
 
+    school = models.ForeignKey(
+        "core.School", on_delete=models.PROTECT, related_name="journal_entries"
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     posting_date = models.DateField(null=True, blank=True, db_index=True)
     created_by = models.ForeignKey(
@@ -170,20 +160,13 @@ class JournalEntry(models.Model):
         on_delete=models.PROTECT,
         related_name="journal_entries",
     )
-
     memo = models.TextField(blank=True)
     locked = models.BooleanField(default=True)
-
     reference_type = models.CharField(max_length=64, blank=True, null=True)
     reference_id = models.UUIDField(blank=True, null=True)
-
-    # Option A accounting contract metadata. These fields preserve the
-    # operational journal engine while adopting the stronger cross-domain
-    # traceability contract previously modeled in apps.accounting.
     correlation_id = models.UUIDField(blank=True, null=True, db_index=True)
     source_system = models.CharField(max_length=100, default="journal")
     currency = models.CharField(max_length=8, default="USD")
-
     reversal_of = models.OneToOneField(
         "self",
         null=True,
@@ -218,50 +201,32 @@ class JournalEntry(models.Model):
 
 
 class JournalLine(models.Model):
-    """
-    Individual debit/credit line in a journal entry.
-    Enforces debit XOR credit (not both, not neither).
-    Cannot be modified after entry is locked.
-    """
+    """Individual immutable debit/credit line in a journal entry."""
+
     entry = models.ForeignKey(
-        JournalEntry,
-        on_delete=models.PROTECT,
-        related_name="lines",
+        JournalEntry, on_delete=models.PROTECT, related_name="lines"
     )
-
     account = models.ForeignKey(
-        GLAccount,
-        on_delete=models.PROTECT,
-        related_name="journal_lines",
+        GLAccount, on_delete=models.PROTECT, related_name="journal_lines"
     )
-
     debit = models.DecimalField(
-        max_digits=14,
-        decimal_places=2,
-        default=Decimal("0.00"),
+        max_digits=14, decimal_places=2, default=Decimal("0.00")
     )
     credit = models.DecimalField(
-        max_digits=14,
-        decimal_places=2,
-        default=Decimal("0.00"),
+        max_digits=14, decimal_places=2, default=Decimal("0.00")
     )
 
     class Meta:
         db_table = "journal_line"
-        indexes = [
-            models.Index(fields=["entry", "account"]),
-        ]
+        indexes = [models.Index(fields=["entry", "account"])]
 
     def clean(self):
         if self.debit < 0 or self.credit < 0:
             raise ValidationError("Debit and credit must be non-negative.")
-
         if self.debit > 0 and self.credit > 0:
             raise ValidationError("Line cannot have both debit and credit.")
-
         if self.debit == 0 and self.credit == 0:
             raise ValidationError("Line must have either debit or credit.")
-
         if self.account.school_id != self.entry.school_id:
             raise ValidationError("Account school must match entry school.")
 
