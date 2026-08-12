@@ -1,5 +1,4 @@
 import csv
-from decimal import Decimal
 from html import escape
 from io import StringIO
 
@@ -10,23 +9,11 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from crown_api.billing_api.permissions import has_finance_runtime_role
 from households.scoping import get_request_school_id
-from journal.models import JournalEntry
-from ledger.models import Credit, LedgerAccount, Payment as LedgerPayment
+from ledger.models import Payment
 from payments.access import user_can_access_household_finance
 from payments.account_api import household_finance_summary
-from payments.models import (
-    Payment as CanonicalPayment,
-    Refund,
-    StatementExportRequest,
-    StatementExportStatus,
-)
-
-
-def _cents_to_text(value):
-    amount = (Decimal(int(value or 0)) / Decimal("100")).quantize(Decimal("0.01"))
-    return f"{amount:.2f}"
+from payments.models import StatementExportRequest, StatementExportStatus
 
 
 @api_view(["GET"])
@@ -63,18 +50,8 @@ def household_statement_csv(request, household_id):
     for row in data.get("invoices") or []:
         writer.writerow(["invoice", row.get("invoice_number") or row.get("id"), row.get("balance_due")])
 
-    # Statement exports include the complete payment history, not merely the
-    # 25-row UI preview returned by household_finance_summary.
-    ledger_account = LedgerAccount.objects.filter(
-        school_id=school_id,
-        household_id=household_id,
-    ).first()
-    if ledger_account is not None:
-        for payment in LedgerPayment.objects.filter(
-            school_id=school_id,
-            account=ledger_account,
-        ).order_by("created_at", "id"):
-            writer.writerow(["payment", str(payment.id), str(payment.amount)])
+    for row in data.get("payments") or []:
+        writer.writerow(["payment", row.get("id"), row.get("amount")])
 
     export_request.status = StatementExportStatus.GENERATED
     export_request.file_name = f"household_{household_id}_statement_{timezone.now().date()}.csv"
@@ -86,150 +63,12 @@ def household_statement_csv(request, household_id):
     return response
 
 
-def _require_finance_export_access(request):
-    if not has_finance_runtime_role(request.user):
-        return Response({"detail": "Forbidden"}, status=status.HTTP_403_FORBIDDEN)
-    return None
-
-
-@api_view(["GET"])
-@permission_classes([IsAuthenticated])
-def finance_transaction_register_csv(request):
-    """School-scoped canonical transaction/credit register for finance handoff."""
-    school_id = get_request_school_id(request, required=True)
-    denied = _require_finance_export_access(request)
-    if denied is not None:
-        return denied
-
-    buffer = StringIO()
-    writer = csv.writer(buffer)
-    writer.writerow(
-        [
-            "record_type",
-            "id",
-            "household_id",
-            "status_or_source",
-            "amount",
-            "currency",
-            "reference",
-            "created_at",
-        ]
-    )
-
-    for payment in CanonicalPayment.objects.filter(school_id=school_id).order_by("created_at", "id"):
-        writer.writerow(
-            [
-                "payment",
-                str(payment.id),
-                str(payment.household_id or ""),
-                payment.status,
-                _cents_to_text(payment.amount_cents),
-                payment.currency,
-                payment.provider_payment_id or payment.provider_intent_id or payment.idempotency_key,
-                payment.created_at.isoformat(),
-            ]
-        )
-
-    for refund in Refund.objects.filter(school_id=school_id).select_related("payment").order_by("created_at", "id"):
-        writer.writerow(
-            [
-                "refund",
-                str(refund.id),
-                str(refund.payment.household_id or ""),
-                refund.status,
-                _cents_to_text(refund.amount_cents),
-                refund.currency,
-                refund.provider_refund_id or refund.idempotency_key,
-                refund.created_at.isoformat(),
-            ]
-        )
-
-    for credit in Credit.objects.filter(school_id=school_id).select_related("account").order_by("created_at", "id"):
-        writer.writerow(
-            [
-                "credit",
-                str(credit.id),
-                str(credit.account.household_id),
-                credit.source,
-                f"{credit.amount:.2f}",
-                "USD",
-                credit.reference,
-                credit.created_at.isoformat(),
-            ]
-        )
-
-    response = HttpResponse(buffer.getvalue(), content_type="text/csv")
-    response["Content-Disposition"] = (
-        f'attachment; filename="finance_transaction_register_{school_id}_{timezone.now().date()}.csv"'
-    )
-    return response
-
-
-@api_view(["GET"])
-@permission_classes([IsAuthenticated])
-def finance_journal_export_csv(request):
-    """School-scoped immutable GL/journal handoff export."""
-    school_id = get_request_school_id(request, required=True)
-    denied = _require_finance_export_access(request)
-    if denied is not None:
-        return denied
-
-    buffer = StringIO()
-    writer = csv.writer(buffer)
-    writer.writerow(
-        [
-            "entry_id",
-            "posting_date",
-            "created_at",
-            "reference_type",
-            "reference_id",
-            "source_system",
-            "currency",
-            "account_code",
-            "account_name",
-            "debit",
-            "credit",
-            "memo",
-        ]
-    )
-
-    entries = (
-        JournalEntry.objects.filter(school_id=school_id)
-        .prefetch_related("lines__account")
-        .order_by("created_at", "id")
-    )
-    for entry in entries:
-        for line in entry.lines.all():
-            writer.writerow(
-                [
-                    str(entry.id),
-                    entry.posting_date.isoformat() if entry.posting_date else "",
-                    entry.created_at.isoformat(),
-                    entry.reference_type or "",
-                    str(entry.reference_id or ""),
-                    entry.source_system,
-                    entry.currency,
-                    line.account.code,
-                    line.account.name,
-                    f"{line.debit:.2f}",
-                    f"{line.credit:.2f}",
-                    entry.memo,
-                ]
-            )
-
-    response = HttpResponse(buffer.getvalue(), content_type="text/csv")
-    response["Content-Disposition"] = (
-        f'attachment; filename="finance_journal_{school_id}_{timezone.now().date()}.csv"'
-    )
-    return response
-
-
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def payment_receipt_html(request, payment_id):
     school_id = get_request_school_id(request, required=True)
 
-    payment = LedgerPayment.objects.select_related("account").filter(school_id=school_id, id=payment_id).first()
+    payment = Payment.objects.select_related("account").filter(school_id=school_id, id=payment_id).first()
     if not payment:
         return Response({"detail": "Payment not found."}, status=status.HTTP_404_NOT_FOUND)
 
