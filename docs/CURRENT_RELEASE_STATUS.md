@@ -4,6 +4,8 @@
 
 ## Current owner-handoff decision
 
+Current handoff decision: **NO-GO / REMEDIATION AND FRESH EXACT-IDENTITY CERTIFICATION REQUIRED**
+
 `Crown-CSMS` is the active successor development repository, not a certified production identity; historical `Crown2026` certification does not transfer automatically, and any successor release requires fresh exact-identity certification.
 
 ## Prior certified production identity
