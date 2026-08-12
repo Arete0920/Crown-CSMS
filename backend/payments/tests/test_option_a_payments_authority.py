@@ -12,6 +12,7 @@ from payments.authority_services import (
     bind_payment_provider,
     create_payment,
     fail_refund,
+    mark_refund_pending,
     request_refund,
     settle_payment,
     settle_refund,
@@ -123,6 +124,62 @@ class CanonicalPaymentsAuthorityTest(TestCase):
             payment=legacy_payment,
             allocations_payload=[{"obligation_id": 7, "amount_cents": 10000}],
         )
+
+    def test_partial_allocation_remains_allowed_through_canonical_settlement(self):
+        payment = self.payment(amount_cents=10000, key="partial-settlement-1")
+        legacy_payment = SimpleNamespace(
+            pk=91,
+            school_id=self.school_id,
+            amount_cents=payment.amount_cents,
+            currency="USD",
+            processor="manual",
+        )
+        locked = MagicMock()
+        locked.filter.return_value.first.return_value = legacy_payment
+
+        with (
+            patch(
+                "payments.authority_services.FinancePayment.objects.select_for_update",
+                return_value=locked,
+            ),
+            patch("payments.authority_services.settle_payment_and_allocate") as settle_mock,
+        ):
+            result = settle_payment(
+                payment=payment,
+                allocations_payload=[{"obligation_id": 7, "amount_cents": 6000}],
+            )
+
+        self.assertEqual(result.status, CanonicalPaymentStatus.SETTLED)
+        settle_mock.assert_called_once_with(
+            payment=legacy_payment,
+            allocations_payload=[{"obligation_id": 7, "amount_cents": 6000}],
+        )
+
+    def test_settlement_replay_rejects_different_allocation_facts(self):
+        payment = self.settled_payment(amount_cents=10000, key="settlement-replay-1")
+        existing_allocation = SimpleNamespace(obligation_id=7, amount_cents=6000)
+        allocation_manager = MagicMock()
+        allocation_manager.all.return_value = [existing_allocation]
+        legacy_payment = SimpleNamespace(
+            pk=91,
+            school_id=self.school_id,
+            amount_cents=payment.amount_cents,
+            currency="USD",
+            processor="manual",
+            allocations=allocation_manager,
+        )
+        locked = MagicMock()
+        locked.filter.return_value.first.return_value = legacy_payment
+
+        with patch(
+            "payments.authority_services.FinancePayment.objects.select_for_update",
+            return_value=locked,
+        ):
+            with self.assertRaises(IdempotencyConflict):
+                settle_payment(
+                    payment=payment,
+                    allocations_payload=[{"obligation_id": 7, "amount_cents": 5000}],
+                )
 
     def test_refund_request_reserves_capacity_without_posting_legacy_refund(self):
         payment = self.settled_payment(key="refund-request-payment")
@@ -252,6 +309,48 @@ class CanonicalPaymentsAuthorityTest(TestCase):
 
         payment.refresh_from_db()
         self.assertEqual(payment.status, CanonicalPaymentStatus.REFUNDED)
+
+    def test_full_refund_request_replay_is_idempotent_after_payment_refunded(self):
+        payment = self.settled_payment(amount_cents=10000, key="full-refund-replay-payment")
+        refund = request_refund(
+            payment=payment,
+            amount_cents=10000,
+            idempotency_key="full-refund-replay-1",
+            provider="metro",
+        )
+        refund.status = CanonicalRefundStatus.SETTLED
+        refund.save(update_fields=["status", "updated_at"])
+        payment.status = CanonicalPaymentStatus.REFUNDED
+        payment.save(update_fields=["status", "updated_at"])
+
+        replay = request_refund(
+            payment=payment,
+            amount_cents=10000,
+            idempotency_key="full-refund-replay-1",
+            provider="metro",
+        )
+        self.assertEqual(replay.pk, refund.pk)
+
+    def test_pending_refund_replay_rejects_provider_refund_id_reassignment(self):
+        payment = self.settled_payment(key="pending-refund-provider-payment")
+        refund = request_refund(
+            payment=payment,
+            amount_cents=1000,
+            idempotency_key="pending-refund-provider-1",
+            provider="metro",
+        )
+        refund = mark_refund_pending(
+            refund=refund,
+            provider="metro",
+            provider_refund_id="refund-provider-1",
+        )
+
+        with self.assertRaises(IdempotencyConflict):
+            mark_refund_pending(
+                refund=refund,
+                provider="metro",
+                provider_refund_id="refund-provider-2",
+            )
 
     def test_provider_binding_rejects_reassignment(self):
         payment = bind_payment_provider(
