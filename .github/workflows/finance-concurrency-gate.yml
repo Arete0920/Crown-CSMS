@@ -57,7 +57,14 @@ jobs:
           cache-dependency-path: backend/requirements.txt
       - name: Install dependencies
         run: python -m pip install -r requirements.txt
-      - name: Verify migrations
-        run: python manage.py makemigrations --check --dry-run
-      - name: Prove concurrent settlement and refund invariants
-        run: python -m pytest -q payments/tests/test_finance_concurrency.py payments/tests/test_household_finance_access.py
+      - name: Verify migrations and imports
+        run: |
+          python manage.py makemigrations --check --dry-run
+          python manage.py check
+          python -m compileall -q payments
+      - name: Prove concurrency, tenant boundaries, and reconciled exports
+        run: >-
+          python -m pytest -q
+          payments/tests/test_finance_concurrency.py
+          payments/tests/test_household_finance_access.py
+          payments/tests/test_finance_handoff_export.py
