@@ -13,6 +13,7 @@ from admissions.models import AdmissionsApplication
 from billing.models import Invoice, BillingRun
 from academics.models import Section, Course
 from households.models import Household, Student
+from ledger.models import Charge, LedgerAccount
 
 User = get_user_model()
 
@@ -77,6 +78,16 @@ class DashboardTenantIsolationTests(TestCase):
             household=self.household_a,
             first_name="Alice",
             last_name="Anderson"
+        )
+        self.ledger_account_a = LedgerAccount.objects.create(
+            school_id=self.school_a.id,
+            household=self.household_a,
+        )
+        Charge.objects.create(
+            school_id=self.school_a.id,
+            account=self.ledger_account_a,
+            description="Tenant finance proof",
+            amount=Decimal("1000.00"),
         )
         
         self.billing_run_a = BillingRun.objects.create(
@@ -156,11 +167,8 @@ class DashboardTenantIsolationTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data["school_id"], str(self.school_a.id))
         
-        # Should see school A's SUBMITTED status
         statuses = {item["status"] for item in response.data["by_stage"]}
         self.assertIn("SUBMITTED", statuses)
-        
-        # Should NOT see school B's UNDER_REVIEW status
         self.assertNotIn("UNDER_REVIEW", statuses)
     
     def test_admissions_funnel_wrong_tenant_returns_empty(self):
@@ -181,7 +189,7 @@ class DashboardTenantIsolationTests(TestCase):
         self.assertEqual(response.status_code, 400)
     
     def test_finance_summary_correct_tenant_returns_200(self):
-        """Correct tenant → 200 with financial data"""
+        """Correct tenant → 200 with ledger-authoritative financial data."""
         self.client.force_authenticate(user=self.user_a)
         response = self.client.get(
             "/api/v1/dashboards/finance/summary/",
@@ -189,9 +197,10 @@ class DashboardTenantIsolationTests(TestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data["school_id"], str(self.school_a.id))
-        # Decimal may be formatted as "1000" or "1000.00"
         self.assertIn(response.data["billed_total"], ["1000", "1000.00"])
         self.assertIn(response.data["paid_total"], ["0", "0.00"])
+        self.assertIn(response.data["outstanding_total"], ["1000", "1000.00"])
+        self.assertIn(response.data["unapplied_cash_total"], ["0", "0.00"])
     
     def test_finance_summary_wrong_tenant_no_leak(self):
         """Non-staff cannot override tenant via header → 404."""
