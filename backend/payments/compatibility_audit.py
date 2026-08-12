@@ -4,12 +4,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from finance.models import FinancePayment
-from payments.models import (
-    CanonicalPaymentStatus,
-    CanonicalRefundStatus,
-    Payment,
-    Refund,
-)
+from payments.models import CanonicalPaymentStatus, CanonicalRefundStatus, Payment
 
 
 @dataclass
