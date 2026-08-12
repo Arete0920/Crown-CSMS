@@ -1,0 +1,82 @@
+name: Finance Final Hardening
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "backend/payments/**"
+      - "backend/finance/**"
+      - "backend/ledger/**"
+      - "backend/journal/**"
+      - "backend/core/management/commands/seed_heritage_realism_pack.py"
+      - ".github/workflows/finance-final-hardening.yml"
+  push:
+    branches: [main]
+    paths:
+      - "backend/payments/**"
+      - "backend/finance/**"
+      - "backend/ledger/**"
+      - "backend/journal/**"
+      - "backend/core/management/commands/seed_heritage_realism_pack.py"
+      - ".github/workflows/finance-final-hardening.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  finance-postgresql-hardening:
+    name: finance-postgresql-hardening
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: crown_finance_hardening
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d crown_finance_hardening"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DJANGO_SETTINGS_MODULE: crown_api.settings
+      SECRET_KEY: finance-hardening-ci-not-secret
+      DEBUG: "0"
+      ALLOWED_HOSTS: localhost,127.0.0.1
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/crown_finance_hardening
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - name: Checkout exact head
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+
+      - name: Use Python 3.11
+        uses: actions/setup-python@7f4fc3e22c37d6ff65e88745f38bd3157c663f7c
+        with:
+          python-version: "3.11"
+          cache: "pip"
+          cache-dependency-path: |
+            backend/requirements.txt
+            backend/requirements-dev.txt
+
+      - name: Install backend dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
+
+      - name: Verify migrations are complete
+        run: python manage.py makemigrations --check --dry-run
+
+      - name: Run PostgreSQL concurrency and period-control proofs
+        run: >-
+          python -m pytest -q
+          payments/tests/test_finance_concurrency_hardening.py
+          journal/tests/test_accounting_period_controls.py
+          payments/tests/test_option_a_finance_runtime_chain.py
+          payments/tests/test_option_a_compatibility_audit.py
