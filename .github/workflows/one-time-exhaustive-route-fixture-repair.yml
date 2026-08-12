@@ -1,0 +1,117 @@
+name: One-time Exhaustive Route Fixture Repair
+
+on:
+  push:
+    branches:
+      - release/security-runtime-governance-repair-platform-final-certification
+    paths:
+      - .github/workflows/one-time-exhaustive-route-fixture-repair.yml
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout certification branch
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          ref: release/security-runtime-governance-repair-platform-final-certification
+          fetch-depth: 0
+
+      - name: Repair exhaustive-route fixtures and error accounting
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('frontend/dashboards/tests/certification/exhaustive-route-certification.spec.js')
+          text = path.read_text(encoding='utf-8')
+
+          nav_marker = '  if (pathname === "/api/v1/nav/") return { groups: [] };\n'
+          fixture_block = '''  if (pathname === "/api/v1/sandbox/parent/daily/") {
+            return {
+              child: { name: "Avery Reed", grade: "8" },
+              attendance: [],
+              progress: [],
+              communications: [],
+              billing: { balance_cents: 0, external_payment_provider_enabled: false },
+              staff_controls: {
+                grade_write: false,
+                attendance_write: false,
+                admissions_decision: false,
+                finance_admin: false,
+                tenant_admin: false,
+              },
+            };
+          }
+          if (pathname === "/api/v1/sandbox/student/self-service/") {
+            return {
+              student: { name: "Avery Reed", grade: "8" },
+              schedule: [],
+              learning_tasks: [],
+              attendance: [],
+              communications: [],
+              privileged_actions: {
+                grading: false,
+                admissions: false,
+                finance_admin: false,
+                tenant_admin: false,
+              },
+            };
+          }
+'''
+          if fixture_block not in text:
+              if nav_marker not in text:
+                  raise SystemExit('nav fixture marker not found')
+              text = text.replace(nav_marker, nav_marker + fixture_block, 1)
+
+          old_console = '''      routePage.on("console", (message) => {
+                if (message.type() === "error" && !/favicon|ResizeObserver loop/i.test(message.text())) {
+                  consoleErrors.push(message.text());
+                }
+              });'''
+          new_console = '''      routePage.on("console", (message) => {
+                const text = message.text();
+                if (message.type() === "error"
+                  && !/favicon|ResizeObserver loop|Failed to load resource: the server responded with a status of 404 \(\)/i.test(text)) {
+                  consoleErrors.push(text);
+                }
+              });'''
+          if old_console in text:
+              text = text.replace(old_console, new_console, 1)
+          elif new_console not in text:
+              raise SystemExit('console accounting marker not found')
+
+          old_response = '''      routePage.on("response", (currentResponse) => {
+                const url = new globalThis.URL(currentResponse.url());
+                if (url.origin === appOrigin && currentResponse.status() >= 400 && !/favicon\\.ico$/i.test(url.pathname)) {
+                  badResponses.push(`${currentResponse.status()} ${currentResponse.request().method()} ${url.pathname}`);
+                }
+              });'''
+          new_response = '''      routePage.on("response", (currentResponse) => {
+                const url = new globalThis.URL(currentResponse.url());
+                if (currentResponse.status() >= 400 && !/favicon\\.ico$/i.test(url.pathname)) {
+                  const target = url.origin === appOrigin ? url.pathname : url.toString();
+                  badResponses.push(`${currentResponse.status()} ${currentResponse.request().method()} ${target}`);
+                }
+              });'''
+          if old_response in text:
+              text = text.replace(old_response, new_response, 1)
+          elif new_response not in text:
+              raise SystemExit('response accounting marker not found')
+
+          path.write_text(text, encoding='utf-8')
+          PY
+          git diff --check
+
+      - name: Commit repair and remove one-time workflow
+        run: |
+          git config user.name "crown-governance-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git rm .github/workflows/one-time-exhaustive-route-fixture-repair.yml
+          git add frontend/dashboards/tests/certification/exhaustive-route-certification.spec.js
+          git diff --cached --check
+          git commit -m "test(routes): honor sandbox endpoint contracts"
+          git push origin HEAD:release/security-runtime-governance-repair-platform-final-certification
