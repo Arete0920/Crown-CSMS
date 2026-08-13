@@ -82,8 +82,14 @@ class SectionPlacement(models.Model):
             ),
         ]
         indexes = [
-            models.Index(fields=["school", "academic_year", "is_active"]),
-            models.Index(fields=["school", "day_template", "period_block"]),
+            models.Index(
+                fields=["school", "academic_year", "is_active"],
+                name="section_pla_school__b514dc_idx",
+            ),
+            models.Index(
+                fields=["school", "day_template", "period_block"],
+                name="section_pla_school__50cf2e_idx",
+            ),
         ]
 
 
