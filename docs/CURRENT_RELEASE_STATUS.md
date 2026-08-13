@@ -2,8 +2,8 @@
 
 **Status:** Canonical release and freeze authority  
 **Last verified:** 2026-08-13  
-**Crown-CSMS program-start `main`:** `e4605c7d2de7e5586b7217fc24be37069a53d5d8`  
-**Migration baseline:** `ac574ab2a55ecbfefb40cbd67bad08d99c085575`  
+**Crown-CSMS program-start `main`:** `e4605c7d2de7e5586b7217fc24be37069a53d5d8`
+**Migration baseline:** `ac574ab2a55ecbfefb40cbd67bad08d99c085575`
 **PR #9 exact head:** `6ddd7a8b1972dd522ec82afe09bbad09cb6f728b`
 
 ## Current decision
