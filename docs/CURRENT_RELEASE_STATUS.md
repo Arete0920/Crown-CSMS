@@ -10,7 +10,7 @@
 
 Current handoff decision: **NO-GO / REMEDIATION AND FRESH EXACT-IDENTITY CERTIFICATION REQUIRED**
 
-**Successor release state:** no successor production tag or release is established by the repository evidence currently cited here.
+**Successor release state:** no successor production tag or release exists.
 
 PR #9’s exact head recorded 53 successful repository workflows. That supports a repository-verification claim for that exact head. It does not, by itself, establish a Crown-CSMS production deployment, reconcile live runtime identity, prove buyer-facing operation, or complete owner turnover.
 
