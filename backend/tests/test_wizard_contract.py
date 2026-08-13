@@ -92,9 +92,26 @@ def _grant_enrollment_conversion_access(user, school, role_code="REGISTRAR"):
     RolePermission.objects.get_or_create(role_code=role_code, permission=perm)
 
 
+def _grant_section_scheduler_access(user, school, role_code="HEAD_OF_SCHOOL"):
+    UserRole.objects.create(user=user, school=school, role_code=role_code)
+    for code in (
+        "scheduling.view",
+        "scheduling.configure",
+        "scheduling.edit",
+        "scheduling.publish",
+    ):
+        perm, _ = CrownPermission.objects.get_or_create(
+            code=code,
+            defaults={"description": f"Scheduling permission: {code}"},
+        )
+        RolePermission.objects.get_or_create(role_code=role_code, permission=perm)
+
+
 def _grant_wizard_access_if_required(description, user, school):
     if description == "enrollment_conversion":
         _grant_enrollment_conversion_access(user, school)
+    elif description == "section_scheduler":
+        _grant_section_scheduler_access(user, school)
 
 
 def _headers(school_id):
