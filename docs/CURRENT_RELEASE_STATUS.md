@@ -9,6 +9,8 @@
 
 **OWNER HANDOFF NO-GO — remediation, deployed exact-identity proof, and human acceptance remain required.**
 
+**Successor release state:** no successor production tag or release exists.
+
 PR #9’s exact head recorded 53 successful repository workflows. That supports a repository-verification claim for that exact head. It does not, by itself, establish a Crown-CSMS production deployment, reconcile live runtime identity, prove buyer-facing operation, or complete owner turnover.
 
 ## Refreshed predecessor authority
