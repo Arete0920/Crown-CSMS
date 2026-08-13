@@ -1,5 +1,5 @@
 """
-Microsoft 365 OAuth2 views for Crown2026.
+Microsoft 365 OAuth2 views for CROWN.
 
 Flow:
   1. /auth/microsoft/login/      → redirect to Microsoft Entra ID
@@ -155,7 +155,7 @@ def microsoft_callback(request):
         user = User.objects.get(email__iexact=email)
     except User.DoesNotExist:
         logger.warning("SSO login blocked — email not provisioned: %s", email)
-        return JsonResponse({"error": "User not provisioned in Crown2026"}, status=403)
+        return JsonResponse({"error": "User not provisioned in CROWN"}, status=403)
     except Exception:
         logger.exception("DB error looking up user by email")
         return JsonResponse({"error": "Internal error"}, status=500)

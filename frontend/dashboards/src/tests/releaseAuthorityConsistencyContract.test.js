@@ -13,24 +13,28 @@ function readRepoFile(relativePath) {
 }
 
 describe('release authority consistency contract', () => {
-  it('keeps historical certification distinct from the current owner-handoff decision', () => {
+  it('keeps historical predecessor certification distinct from the current successor handoff decision', () => {
     const source = readRepoFile('docs/CURRENT_RELEASE_STATUS.md');
     expect(source.includes('Current handoff decision: **NO-GO / REMEDIATION AND FRESH EXACT-IDENTITY CERTIFICATION REQUIRED**')).toBe(true);
     expect(source.includes('Prior bounded production deployment: **HISTORICAL PASS**')).toBe(true);
     expect(source.includes('Prior Heritage surface matrix: **18/18 HISTORICAL RESULT; NOT CURRENT HANDOFF PROOF**')).toBe(true);
-    expect(source.includes('Current buyer diligence package: **NOT READY — SEE #1619**')).toBe(true);
+    expect(source.includes('Crown-CSMS issue #14 is the active execution-control record')).toBe(true);
+    expect(source.includes('Current buyer diligence package: **NOT READY — SEE Crown-CSMS issue #14**')).toBe(true);
+    expect(source.includes('Issue #1619 controls claims about the preserved Crown2026 release')).toBe(false);
     expect(source.includes('READY AFTER CANONICAL RECORD RECONCILIATION')).toBe(false);
   });
 
   it('keeps actual buyer turnover pending and payment processing disabled', () => {
     const source = readRepoFile('docs/CURRENT_RELEASE_STATUS.md');
     expect(source.includes('Buyer operational turnover: **PENDING IDENTIFIED BUYER AND PARTY ACCEPTANCE**')).toBe(true);
-    expect(source.includes('**PAYMENT PROCESSING:** DISABLED / FAIL CLOSED / DEFERRED TO NEW OWNER')).toBe(true);
+    expect(source.includes('**PAYMENT PROCESSING:** DISABLED / FAIL CLOSED / NOT AUTHORIZED FOR ACTIVATION')).toBe(true);
   });
 
-  it('keeps the canonical index pointed at the current release authority', () => {
+  it('keeps the canonical index pointed at the current release authority document', () => {
     const source = readRepoFile('docs/canonical/CANONICAL_DOCUMENT_INDEX.md');
-    expect(source.includes('`docs/CURRENT_RELEASE_STATUS.md` | CANONICAL RELEASE/FREEZE AUTHORITY')).toBe(true);
+    expect(source.includes('`docs/CURRENT_RELEASE_STATUS.md`')).toBe(true);
+    expect(source.includes('Release, freeze, payment, and turnover posture')).toBe(true);
+    expect(source.includes('Current release status')).toBe(true);
   });
 
   it('does not restore the obsolete P0 execution board as active authority', () => {

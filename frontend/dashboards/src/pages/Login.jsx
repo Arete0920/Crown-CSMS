@@ -22,10 +22,10 @@ export default function Login() {
         }}
       >
         <Typography variant="h1" sx={{ color: "var(--crown-surface)", mb: 1 }}>
-          Crown2026
+          CROWN
         </Typography>
         <Typography variant="body1" sx={{ color: "var(--crown-compat-color-b287e65b63)" }}>
-          School information system
+          Christian School Management Solution
         </Typography>
       </Box>
 

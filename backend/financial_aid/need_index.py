@@ -59,7 +59,7 @@ def _resolve_tuition_estimate(application: FinancialAidApplication) -> Decimal:
 
 
 def calculate_need_index_breakdown(application: FinancialAidApplication) -> dict[str, float]:
-    """Return the weighted Crown2026 need-index breakdown on a 0..100 scale."""
+    """Return the weighted CROWN need-index breakdown on a 0..100 scale."""
     household_income = _to_decimal(getattr(application, "household_income", None), default=Decimal("0"))
     tuition_estimate = _resolve_tuition_estimate(application)
 
@@ -125,5 +125,5 @@ def calculate_need_index_breakdown(application: FinancialAidApplication) -> dict
 
 
 def calculate_need_index(application: FinancialAidApplication) -> float:
-    """Return the official Crown2026 weighted need index on a 0..100 scale."""
+    """Return the official CROWN weighted need index on a 0..100 scale."""
     return calculate_need_index_breakdown(application)["need_index"]

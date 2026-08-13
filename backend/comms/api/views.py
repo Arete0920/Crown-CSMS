@@ -164,8 +164,8 @@ class SendTestEmail(APIView):
 
         data      = request.data or {}
         to        = (data.get("to") or "").strip()
-        subject   = (data.get("subject") or "Crown2026 Test Email").strip()
-        body      = (data.get("body") or "<p>Crown2026 outbox smoke test — if you see this, Graph delivery works.</p>").strip()
+        subject   = (data.get("subject") or "CROWN Test Email").strip()
+        body      = (data.get("body") or "<p>CROWN outbox smoke test — if you see this, Graph delivery works.</p>").strip()
         school_id = (data.get("school_id") or "smoke-test").strip()
 
         if not to:
