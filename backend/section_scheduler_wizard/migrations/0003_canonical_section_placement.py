@@ -22,9 +22,6 @@ def seed_scheduling_permissions(apps, schema_editor):
         )
         permissions[code] = permission
 
-    # These role codes exist in core.UserRole today. The product matrix also
-    # names academic_admin/school_admin; those mappings remain a separate RBAC
-    # convergence item and are not invented here.
     for role_code in ("HEAD_OF_SCHOOL", "REGISTRAR"):
         for permission in permissions.values():
             RolePermission.objects.get_or_create(
@@ -94,13 +91,21 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "section",
-                    models.OneToOneField(
+                    models.ForeignKey(
                         on_delete=django.db.models.deletion.CASCADE,
-                        related_name="schedule_placement",
+                        related_name="schedule_placements",
                         to="academics.section",
                     ),
                 ),
             ],
+        ),
+        migrations.AddConstraint(
+            model_name="sectionplacement",
+            constraint=models.UniqueConstraint(
+                condition=models.Q(is_active=True),
+                fields=("section", "day_template", "period_block"),
+                name="uniq_active_section_meeting",
+            ),
         ),
         migrations.AddConstraint(
             model_name="sectionplacement",
