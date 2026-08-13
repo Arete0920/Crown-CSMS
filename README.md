@@ -6,7 +6,7 @@ Christian School Management Solution
 
 Crown-CSMS is the active engineering and owner-turnover repository.
 
-- Current verified `main` baseline: `0b4435bee02d91ff5dda057f4e7d54ef7fecceda`
+- Current verified `main` baseline: `52ef87dbe6b4cb4c6ff147af11e386a519250a7e`
 - PR #9 exact head: `6ddd7a8b1972dd522ec82afe09bbad09cb6f728b`
 - Repository verification on that head: 53 successful workflows
 - Crown-CSMS deployed production identity: **NOT ESTABLISHED by the evidence cited here**
