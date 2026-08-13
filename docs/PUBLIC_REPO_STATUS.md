@@ -1,26 +1,23 @@
-# CROWN Repository Status
+# Crown-CSMS Repository Status
 
 **Status:** Active authority pointer  
-**Updated:** 2026-08-05
-
-This file is retained because `.github/workflows/public-repo-quality-gate.yml` requires a non-empty repository status document at this path.
+**Last verified:** 2026-08-13
 
 Current authority is limited to:
 
-1. `docs/canonical/CANONICAL_DOCUMENT_INDEX.md` — documentation authority hierarchy;
-2. `docs/CURRENT_RELEASE_STATUS.md` — current release, payment, turnover, and residual-risk posture;
-3. `docs/ownership/OWNER_HANDOFF.md` — controlled ownership-transfer requirements;
-4. `docs/architecture/` — current architectural records;
-5. GitHub issue `#1619` — sole controlling release-readiness and owner-handoff record.
+1. `docs/canonical/CANONICAL_DOCUMENT_INDEX.md`;
+2. `docs/CURRENT_RELEASE_STATUS.md`;
+3. `docs/ownership/OWNER_HANDOFF.md`;
+4. current architecture, engineering, operations, security, and governance records explicitly listed by the canonical index;
+5. exact Crown-CSMS repository and runtime evidence.
 
 Current evidence-backed posture:
 
-- repository technical certification: **PASS / COMPLETE**;
-- production deployment and runtime technical certification: **PASS / COMPLETE**;
-- bounded role, RBAC, and tenant certification: **PASS / COMPLETE**;
-- Founder/Product Owner release authorization: **RECORDED / ACCEPTED**;
-- handoff package: **READY FOR BUYER DILIGENCE AND TRANSACTION-SPECIFIC TRANSFER**;
-- actual buyer operational turnover: **PENDING IDENTIFIED BUYER AND PARTY ACCEPTANCE**;
-- external payment processing: **DISABLED / FAIL CLOSED / DEFERRED TO NEW OWNER**.
+- active owner-turnover repository: **Crown-CSMS**;
+- Crown2026: **historical predecessor provenance**;
+- Crown-CSMS production certification: **NOT ESTABLISHED**;
+- buyer diligence package: **NOT READY**;
+- actual operational turnover: **PENDING IDENTIFIED BUYER AND ACCEPTANCE**;
+- external payment processing: **DISABLED / FAIL CLOSED**.
 
-This document is an authority pointer only. It does not establish a new release identity, buyer acceptance, payment-provider activation, or completion of disclosed residual operational work.
+This pointer does not establish a release identity, buyer acceptance, legal or financial conclusions, payment-provider activation, independent human review, or completion of residual operational work.
