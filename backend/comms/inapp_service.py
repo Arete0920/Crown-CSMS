@@ -1,5 +1,5 @@
 """
-In-app messaging for Crown2026.
+In-app messaging for CROWN.
 
 Creates a MessageLog record visible to the recipient inside the platform.
 No external delivery — always succeeds unless the DB write fails.
