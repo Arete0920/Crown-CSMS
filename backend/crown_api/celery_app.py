@@ -12,5 +12,9 @@ from celery import Celery
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "crown_api.settings")
 
 app = Celery("crown_api")
+
+# Read config from Django settings, using CELERY_ prefix namespace.
 app.config_from_object("django.conf:settings", namespace="CELERY")
+
+# Auto-discover tasks in each INSTALLED_APP's tasks.py module.
 app.autodiscover_tasks()
