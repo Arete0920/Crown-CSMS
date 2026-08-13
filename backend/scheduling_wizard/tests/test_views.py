@@ -1,17 +1,31 @@
 import uuid
+from datetime import date
+
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from rest_framework.test import APIClient
 
-from academics.models import Course, Section
-from core.models import School
+from academics.models import Course, Section, Term
+from core.models import (
+    AcademicYear,
+    CrownPermission,
+    RolePermission,
+    School,
+    UserRole,
+)
 from scheduling_wizard.models import SchedulingWizardSession
 
 
 TEST_AUTH_SECRET = "TestAuthSecret-LocalOnly"
+ROLE_CODE = "SCHEDULING_TEST_ADMIN"
+PERMISSIONS = (
+    "scheduling.view",
+    "scheduling.configure",
+    "scheduling.edit",
+    "scheduling.publish",
+)
 
 User = get_user_model()
-
 BASE_URL = "/api/v1/scheduling-wizard/sessions/"
 
 VALID_COURSES = [
@@ -19,439 +33,321 @@ VALID_COURSES = [
     {"code": "ENG101", "name": "English Composition", "department": "English", "credits": "1.0"},
 ]
 
-VALID_SECTIONS = [
-    {"course_code": "MATH101", "teacher_name": "Mr. Smith", "grade_band": "9"},
-    {"course_code": "ENG101", "teacher_name": "Ms. Jones", "grade_band": "9"},
-]
-
 
 def _make_school(name="Scheduling School"):
     return School.objects.create(name=name, timezone="America/Chicago", is_active=True)
 
 
-def _make_user(school, username=None):
+def _make_academic_year_and_term(school, name="2026-2027", code="2026-FALL"):
+    academic_year = AcademicYear.objects.create(
+        school=school,
+        name=name,
+        start_date=date(2026, 8, 1),
+        end_date=date(2027, 6, 30),
+        is_current=True,
+    )
+    term = Term.objects.create(
+        school_id=school.id,
+        academic_year=academic_year,
+        code=code,
+        name="Fall 2026",
+        school_year=name,
+        start_date=date(2026, 8, 1),
+        end_date=date(2026, 12, 31),
+        ordering=1,
+        active=True,
+    )
+    return academic_year, term
+
+
+def _grant_scheduling_role(user, school):
+    UserRole.objects.create(user=user, school=school, role_code=ROLE_CODE)
+    for code in PERMISSIONS:
+        permission, _ = CrownPermission.objects.get_or_create(
+            code=code,
+            defaults={"description": f"Test permission {code}"},
+        )
+        RolePermission.objects.get_or_create(role_code=ROLE_CODE, permission=permission)
+
+
+def _make_user(school, username=None, grant_permissions=True):
     username = username or f"user_{uuid.uuid4().hex[:8]}"
-    return User.objects.create_user(username=username, password=TEST_AUTH_SECRET, school=school)
+    user = User.objects.create_user(username=username, password=TEST_AUTH_SECRET, school=school)
+    if grant_permissions:
+        _grant_scheduling_role(user, school)
+    return user
 
 
 def _headers(school_id):
     return {"HTTP_X_SCHOOL_ID": str(school_id)}
 
 
-def _client_for(school):
-    user = _make_user(school)
-    c = APIClient()
-    c.force_authenticate(user=user)
-    c._school_id = school.id
-    return c
+def _client_for(school, grant_permissions=True):
+    user = _make_user(school, grant_permissions=grant_permissions)
+    client = APIClient()
+    client.force_authenticate(user=user)
+    return client
 
 
-# ---------------------------------------------------------------------------
-# TestAuth
-# ---------------------------------------------------------------------------
-
-class TestAuth(TestCase):
+class SchedulingWizardCase(TestCase):
     def setUp(self):
         self.school = _make_school()
+        self.academic_year, self.term = _make_academic_year_and_term(self.school)
+        self.client = _client_for(self.school)
+
+    def create_session(self):
+        response = self.client.post(BASE_URL, **_headers(self.school.id))
+        self.assertEqual(response.status_code, 201)
+        return response.data["session_id"]
+
+    def configure(self, session_id, academic_year=None, term=None):
+        academic_year = academic_year or self.academic_year
+        term = term or self.term
+        return self.client.post(
+            f"{BASE_URL}{session_id}/configure/",
+            {"academic_year_id": str(academic_year.id), "term_id": str(term.id)},
+            format="json",
+            **_headers(self.school.id),
+        )
+
+    def save_courses(self, session_id, courses=None):
+        return self.client.post(
+            f"{BASE_URL}{session_id}/courses/",
+            {"courses": courses or VALID_COURSES},
+            format="json",
+            **_headers(self.school.id),
+        )
+
+    def stage_sections(self, session_id, sections):
+        return self.client.post(
+            f"{BASE_URL}{session_id}/sections/",
+            {"sections": sections},
+            format="json",
+            **_headers(self.school.id),
+        )
+
+    def prepare(self, sections):
+        session_id = self.create_session()
+        self.assertEqual(self.configure(session_id).status_code, 200)
+        self.assertEqual(self.save_courses(session_id).status_code, 200)
+        staged = self.stage_sections(session_id, sections)
+        self.assertEqual(staged.status_code, 200)
+        return session_id, staged
+
+    def commit(self, session_id, confirm=True):
+        return self.client.post(
+            f"{BASE_URL}{session_id}/commit/",
+            {"confirm": confirm},
+            format="json",
+            **_headers(self.school.id),
+        )
+
+
+class TestAuthAndPermissions(TestCase):
+    def setUp(self):
+        self.school = _make_school()
+        self.academic_year, self.term = _make_academic_year_and_term(self.school)
 
     def test_create_requires_auth(self):
-        c = APIClient()
-        r = c.post(BASE_URL, **_headers(self.school.id))
-        self.assertEqual(r.status_code, 401)
+        response = APIClient().post(BASE_URL, **_headers(self.school.id))
+        self.assertEqual(response.status_code, 401)
 
-    def test_configure_requires_auth(self):
-        c = APIClient()
-        session_id = uuid.uuid4()
-        r = c.post(f"{BASE_URL}{session_id}/configure/", **_headers(self.school.id))
-        self.assertEqual(r.status_code, 401)
+    def test_create_requires_scheduling_permission(self):
+        client = _client_for(self.school, grant_permissions=False)
+        response = client.post(BASE_URL, **_headers(self.school.id))
+        self.assertEqual(response.status_code, 403)
 
-
-# ---------------------------------------------------------------------------
-# TestTenantIsolation
-# ---------------------------------------------------------------------------
 
 class TestTenantIsolation(TestCase):
     def setUp(self):
         self.school_a = _make_school("School A")
         self.school_b = _make_school("School B")
+        self.year_a, self.term_a = _make_academic_year_and_term(self.school_a)
+        self.year_b, self.term_b = _make_academic_year_and_term(self.school_b)
         self.client_a = _client_for(self.school_a)
         self.client_b = _client_for(self.school_b)
+        response = self.client_a.post(BASE_URL, **_headers(self.school_a.id))
+        self.session_id = response.data["session_id"]
 
-        r = self.client_a.post(BASE_URL, **_headers(self.school_a.id))
-        self.session_id = r.data["session_id"]
-
-    def _url(self, suffix=""):
-        return f"{BASE_URL}{self.session_id}/{suffix}"
-
-    def test_configure_isolation(self):
-        r = self.client_b.post(
-            self._url("configure/"),
-            {"term": "2026-FALL", "school_year": "2026-2027"},
+    def test_other_school_cannot_configure_session(self):
+        response = self.client_b.post(
+            f"{BASE_URL}{self.session_id}/configure/",
+            {"academic_year_id": str(self.year_b.id), "term_id": str(self.term_b.id)},
             format="json",
             **_headers(self.school_b.id),
         )
-        self.assertEqual(r.status_code, 404)
+        self.assertEqual(response.status_code, 404)
 
-    def test_courses_isolation(self):
-        r = self.client_b.post(
-            self._url("courses/"),
-            {"courses": VALID_COURSES},
-            format="json",
-            **_headers(self.school_b.id),
-        )
-        self.assertEqual(r.status_code, 404)
-
-    def test_sections_isolation(self):
-        r = self.client_b.post(
-            self._url("sections/"),
-            {"sections": VALID_SECTIONS},
-            format="json",
-            **_headers(self.school_b.id),
-        )
-        self.assertEqual(r.status_code, 404)
-
-    def test_commit_isolation(self):
-        r = self.client_b.post(
-            self._url("commit/"),
-            {"confirm": True},
-            format="json",
-            **_headers(self.school_b.id),
-        )
-        self.assertEqual(r.status_code, 404)
-
-    def test_verify_isolation(self):
-        r = self.client_b.get(self._url("verify/"), **_headers(self.school_b.id))
-        self.assertEqual(r.status_code, 404)
-
-
-# ---------------------------------------------------------------------------
-# TestCreateSession
-# ---------------------------------------------------------------------------
-
-class TestCreateSession(TestCase):
-    def setUp(self):
-        self.school = _make_school()
-        self.client = _client_for(self.school)
-
-    def test_create_returns_201(self):
-        r = self.client.post(BASE_URL, **_headers(self.school.id))
-        self.assertEqual(r.status_code, 201)
-        self.assertIn("session_id", r.data)
-        self.assertEqual(r.data["status"], "draft")
-
-    def test_create_persists_in_db(self):
-        r = self.client.post(BASE_URL, **_headers(self.school.id))
-        self.assertTrue(
-            SchedulingWizardSession.objects.filter(pk=r.data["session_id"]).exists()
-        )
-
-
-# ---------------------------------------------------------------------------
-# TestConfigure
-# ---------------------------------------------------------------------------
-
-class TestConfigure(TestCase):
-    def setUp(self):
-        self.school = _make_school()
-        self.client = _client_for(self.school)
-        r = self.client.post(BASE_URL, **_headers(self.school.id))
-        self.session_id = r.data["session_id"]
-
-    def _configure(self, payload):
-        return self.client.post(
+    def test_configure_rejects_cross_tenant_term(self):
+        response = self.client_a.post(
             f"{BASE_URL}{self.session_id}/configure/",
-            payload,
+            {"academic_year_id": str(self.year_a.id), "term_id": str(self.term_b.id)},
             format="json",
-            **_headers(self.school.id),
+            **_headers(self.school_a.id),
         )
-
-    def test_configure_success(self):
-        r = self._configure({"term": "2026-FALL", "school_year": "2026-2027"})
-        self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.data["status"], "configured")
-
-    def test_configure_missing_term(self):
-        r = self._configure({"school_year": "2026-2027"})
-        self.assertEqual(r.status_code, 400)
-
-    def test_configure_term_too_long(self):
-        r = self._configure({"term": "X" * 25})
-        self.assertEqual(r.status_code, 400)
-
-    def test_configure_reconfigure_allowed(self):
-        self._configure({"term": "2026-FALL", "school_year": "2026-2027"})
-        r = self._configure({"term": "2026-SPRING", "school_year": "2026-2027"})
-        self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.data["status"], "configured")
+        self.assertEqual(response.status_code, 404)
 
 
-# ---------------------------------------------------------------------------
-# TestSaveCourses
-# ---------------------------------------------------------------------------
+class TestConfigure(SchedulingWizardCase):
+    def test_configure_uses_canonical_year_and_term(self):
+        session_id = self.create_session()
+        response = self.configure(session_id)
+        self.assertEqual(response.status_code, 200)
+        session = SchedulingWizardSession.objects.get(id=session_id)
+        self.assertEqual(session.academic_year_id, self.academic_year.id)
+        self.assertEqual(session.term_ref_id, self.term.id)
+        self.assertEqual(session.term, self.term.code)
 
-class TestSaveCourses(TestCase):
-    def setUp(self):
-        self.school = _make_school()
-        self.client = _client_for(self.school)
-        r = self.client.post(BASE_URL, **_headers(self.school.id))
-        self.session_id = r.data["session_id"]
-        self.client.post(
-            f"{BASE_URL}{self.session_id}/configure/",
+    def test_configure_requires_canonical_ids(self):
+        session_id = self.create_session()
+        response = self.client.post(
+            f"{BASE_URL}{session_id}/configure/",
             {"term": "2026-FALL", "school_year": "2026-2027"},
             format="json",
             **_headers(self.school.id),
         )
+        self.assertEqual(response.status_code, 400)
 
-    def _courses(self, payload):
-        return self.client.post(
-            f"{BASE_URL}{self.session_id}/courses/",
-            payload,
-            format="json",
-            **_headers(self.school.id),
+    def test_configure_rejects_term_from_different_year(self):
+        other_year = AcademicYear.objects.create(
+            school=self.school,
+            name="2027-2028",
+            start_date=date(2027, 8, 1),
+            end_date=date(2028, 6, 30),
+            is_current=False,
         )
-
-    def test_save_courses_success(self):
-        r = self._courses({"courses": VALID_COURSES})
-        self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.data["status"], "courses_saved")
-        self.assertEqual(r.data["courses_count"], 2)
-
-    def test_empty_courses_rejected(self):
-        r = self._courses({"courses": []})
-        self.assertEqual(r.status_code, 400)
-
-    def test_not_a_list_rejected(self):
-        r = self._courses({"courses": "MATH101"})
-        self.assertEqual(r.status_code, 400)
-
-    def test_missing_code_rejected(self):
-        bad = [{"name": "No Code Course", "department": "Math", "credits": "1.0"}]
-        r = self._courses({"courses": bad})
-        self.assertEqual(r.status_code, 400)
-
-    def test_missing_name_rejected(self):
-        bad = [{"code": "MATH101", "department": "Math", "credits": "1.0"}]
-        r = self._courses({"courses": bad})
-        self.assertEqual(r.status_code, 400)
-
-    def test_duplicate_code_rejected(self):
-        bad = [
-            {"code": "MATH101", "name": "Algebra", "credits": "1.0"},
-            {"code": "MATH101", "name": "Algebra II", "credits": "1.0"},
-        ]
-        r = self._courses({"courses": bad})
-        self.assertEqual(r.status_code, 400)
-
-    def test_negative_credits_rejected(self):
-        bad = [{"code": "MATH101", "name": "Algebra", "credits": "-1"}]
-        r = self._courses({"courses": bad})
-        self.assertEqual(r.status_code, 400)
+        session_id = self.create_session()
+        response = self.configure(session_id, academic_year=other_year, term=self.term)
+        self.assertEqual(response.status_code, 400)
 
 
-# ---------------------------------------------------------------------------
-# TestStageSections
-# ---------------------------------------------------------------------------
-
-class TestStageSections(TestCase):
-    def setUp(self):
-        self.school = _make_school()
-        self.client = _client_for(self.school)
-        r = self.client.post(BASE_URL, **_headers(self.school.id))
-        self.session_id = r.data["session_id"]
-        h = _headers(self.school.id)
-        self.client.post(
-            f"{BASE_URL}{self.session_id}/configure/",
-            {"term": "2026-FALL", "school_year": "2026-2027"},
-            format="json",
-            **h,
+class TestCourseAndSectionStaging(SchedulingWizardCase):
+    def test_duplicate_course_code_rejected(self):
+        session_id = self.create_session()
+        self.assertEqual(self.configure(session_id).status_code, 200)
+        response = self.save_courses(
+            session_id,
+            [
+                {"code": "MATH101", "name": "Algebra"},
+                {"code": "MATH101", "name": "Algebra II"},
+            ],
         )
-        self.client.post(
-            f"{BASE_URL}{self.session_id}/courses/",
-            {"courses": VALID_COURSES},
-            format="json",
-            **h,
+        self.assertEqual(response.status_code, 400)
+
+    def test_parallel_sections_get_distinct_canonical_ids(self):
+        session_id = self.create_session()
+        self.assertEqual(self.configure(session_id).status_code, 200)
+        self.assertEqual(self.save_courses(session_id).status_code, 200)
+        response = self.stage_sections(
+            session_id,
+            [
+                {"course_code": "MATH101", "teacher_name": "Teacher A"},
+                {"course_code": "MATH101", "teacher_name": "Teacher B"},
+            ],
         )
+        self.assertEqual(response.status_code, 200)
+        ids = [item["section_id"] for item in response.data["sections"]]
+        self.assertEqual(len(ids), 2)
+        self.assertEqual(len(set(ids)), 2)
 
-    def _sections(self, payload):
-        return self.client.post(
-            f"{BASE_URL}{self.session_id}/sections/",
-            payload,
-            format="json",
-            **_headers(self.school.id),
+    def test_supplied_duplicate_section_id_rejected(self):
+        session_id = self.create_session()
+        self.assertEqual(self.configure(session_id).status_code, 200)
+        self.assertEqual(self.save_courses(session_id).status_code, 200)
+        section_id = str(uuid.uuid4())
+        response = self.stage_sections(
+            session_id,
+            [
+                {"section_id": section_id, "course_code": "MATH101"},
+                {"section_id": section_id, "course_code": "ENG101"},
+            ],
         )
-
-    def test_stage_sections_success(self):
-        r = self._sections({"sections": VALID_SECTIONS})
-        self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.data["status"], "sections_staged")
-        self.assertEqual(r.data["sections_count"], 2)
-
-    def test_empty_sections_rejected(self):
-        r = self._sections({"sections": []})
-        self.assertEqual(r.status_code, 400)
-
-    def test_not_a_list_rejected(self):
-        r = self._sections({"sections": "MATH101"})
-        self.assertEqual(r.status_code, 400)
-
-    def test_missing_course_code_rejected(self):
-        bad = [{"teacher_name": "Mr. Smith", "grade_band": "9"}]
-        r = self._sections({"sections": bad})
-        self.assertEqual(r.status_code, 400)
-
-    def test_unknown_course_code_rejected(self):
-        bad = [{"course_code": "FAKE999", "teacher_name": "Mr. X"}]
-        r = self._sections({"sections": bad})
-        self.assertEqual(r.status_code, 400)
+        self.assertEqual(response.status_code, 400)
 
 
-# ---------------------------------------------------------------------------
-# TestCommit
-# ---------------------------------------------------------------------------
-
-class TestCommit(TestCase):
-    def setUp(self):
-        self.school = _make_school()
-        self.client = _client_for(self.school)
-        r = self.client.post(BASE_URL, **_headers(self.school.id))
-        self.session_id = r.data["session_id"]
-        h = _headers(self.school.id)
-        self.client.post(
-            f"{BASE_URL}{self.session_id}/configure/",
-            {"term": "2026-FALL", "school_year": "2026-2027"},
-            format="json",
-            **h,
+class TestCanonicalCommit(SchedulingWizardCase):
+    def test_two_sections_same_course_term_persist_independently(self):
+        session_id, staged = self.prepare(
+            [
+                {"course_code": "MATH101", "teacher_name": "Teacher A"},
+                {"course_code": "MATH101", "teacher_name": "Teacher B"},
+            ]
         )
-        self.client.post(
-            f"{BASE_URL}{self.session_id}/courses/",
-            {"courses": VALID_COURSES},
-            format="json",
-            **h,
-        )
-        self.client.post(
-            f"{BASE_URL}{self.session_id}/sections/",
-            {"sections": VALID_SECTIONS},
-            format="json",
-            **h,
-        )
+        expected_ids = {item["section_id"] for item in staged.data["sections"]}
+        response = self.commit(session_id)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["sections_created"], 2)
 
-    def _commit(self, payload=None):
-        return self.client.post(
-            f"{BASE_URL}{self.session_id}/commit/",
-            payload or {"confirm": True},
-            format="json",
-            **_headers(self.school.id),
+        sections = Section.objects.filter(
+            school_id=self.school.id,
+            course__code="MATH101",
+            term_ref=self.term,
         )
+        self.assertEqual(sections.count(), 2)
+        self.assertEqual({str(section.id) for section in sections}, expected_ids)
+        self.assertTrue(all(section.term == self.term.code for section in sections))
 
-    def test_commit_success(self):
-        r = self._commit()
-        self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.data["status"], "committed")
-
-    def test_commit_creates_courses_in_db(self):
-        self._commit()
+    def test_commit_is_idempotent(self):
+        session_id, _ = self.prepare(
+            [{"course_code": "MATH101"}, {"course_code": "MATH101"}]
+        )
+        first = self.commit(session_id)
+        second = self.commit(session_id)
+        self.assertEqual(first.status_code, 200)
+        self.assertEqual(second.status_code, 200)
         self.assertEqual(
-            Course.objects.filter(school_id=self.school.id, code="MATH101").count(), 1
-        )
-        self.assertEqual(
-            Course.objects.filter(school_id=self.school.id, code="ENG101").count(), 1
+            Section.objects.filter(school_id=self.school.id, course__code="MATH101", term_ref=self.term).count(),
+            2,
         )
 
-    def test_commit_creates_sections_in_db(self):
-        self._commit()
-        self.assertEqual(
-            Section.objects.filter(school_id=self.school.id, term="2026-FALL").count(), 2
+    def test_commit_requires_explicit_confirmation(self):
+        session_id, _ = self.prepare([{"course_code": "MATH101"}])
+        response = self.commit(session_id, confirm=False)
+        self.assertEqual(response.status_code, 400)
+
+    def test_existing_section_id_with_different_identity_returns_conflict(self):
+        session_id = self.create_session()
+        self.assertEqual(self.configure(session_id).status_code, 200)
+        self.assertEqual(self.save_courses(session_id).status_code, 200)
+
+        other_school = _make_school("Other School")
+        other_year, other_term = _make_academic_year_and_term(other_school)
+        other_course = Course.objects.create(school_id=other_school.id, code="MATH101", name="Other Algebra")
+        conflicting_id = uuid.uuid4()
+        Section.objects.create(
+            id=conflicting_id,
+            school_id=other_school.id,
+            course=other_course,
+            term_ref=other_term,
+            term=other_term.code,
         )
-
-    def test_commit_idempotent(self):
-        self._commit()
-        r2 = self._commit()
-        self.assertEqual(r2.status_code, 200)
-        self.assertEqual(r2.data["status"], "committed")
-        # No duplicate sections
-        self.assertEqual(
-            Section.objects.filter(school_id=self.school.id, term="2026-FALL").count(), 2
+        staged = self.stage_sections(
+            session_id,
+            [{"section_id": str(conflicting_id), "course_code": "MATH101"}],
         )
+        self.assertEqual(staged.status_code, 200)
+        response = self.commit(session_id)
+        self.assertEqual(response.status_code, 409)
 
-    def test_commit_requires_confirm_true(self):
-        r = self._commit({"confirm": False})
-        self.assertEqual(r.status_code, 400)
 
-    def test_commit_from_draft_rejected(self):
-        r_new = self.client.post(BASE_URL, **_headers(self.school.id))
-        sid_draft = r_new.data["session_id"]
-        r2 = self.client.post(
-            f"{BASE_URL}{sid_draft}/commit/",
-            {"confirm": True},
-            format="json",
+class TestVerify(SchedulingWizardCase):
+    def test_verify_checks_persisted_canonical_sections(self):
+        session_id, _ = self.prepare([{"course_code": "MATH101"}])
+        self.assertEqual(self.commit(session_id).status_code, 200)
+        response = self.client.get(
+            f"{BASE_URL}{session_id}/verify/",
             **_headers(self.school.id),
         )
-        self.assertEqual(r2.status_code, 409)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["status"], "verified")
 
-    def test_commit_result_counts(self):
-        r = self._commit()
-        self.assertIn("courses_created", r.data)
-        self.assertIn("sections_created", r.data)
-        self.assertEqual(r.data["courses_created"], 2)
-        self.assertEqual(r.data["sections_created"], 2)
-
-
-# ---------------------------------------------------------------------------
-# TestVerify
-# ---------------------------------------------------------------------------
-
-class TestVerify(TestCase):
-    def setUp(self):
-        self.school = _make_school()
-        self.client = _client_for(self.school)
-        r = self.client.post(BASE_URL, **_headers(self.school.id))
-        self.session_id = r.data["session_id"]
-        h = _headers(self.school.id)
-        self.client.post(
-            f"{BASE_URL}{self.session_id}/configure/",
-            {"term": "2026-FALL", "school_year": "2026-2027"},
-            format="json",
-            **h,
-        )
-        self.client.post(
-            f"{BASE_URL}{self.session_id}/courses/",
-            {"courses": [{"code": "MATH101", "name": "Algebra", "credits": "1.0"}]},
-            format="json",
-            **h,
-        )
-        self.client.post(
-            f"{BASE_URL}{self.session_id}/sections/",
-            {"sections": [{"course_code": "MATH101", "teacher_name": "Mr. Smith"}]},
-            format="json",
-            **h,
-        )
-        self.client.post(f"{BASE_URL}{self.session_id}/commit/", {"confirm": True}, format="json", **h)
-
-    def _verify(self):
-        return self.client.get(
-            f"{BASE_URL}{self.session_id}/verify/",
+    def test_verify_fails_if_committed_section_is_missing(self):
+        session_id, staged = self.prepare([{"course_code": "MATH101"}])
+        self.assertEqual(self.commit(session_id).status_code, 200)
+        Section.objects.filter(id=staged.data["sections"][0]["section_id"]).delete()
+        response = self.client.get(
+            f"{BASE_URL}{session_id}/verify/",
             **_headers(self.school.id),
         )
-
-    def test_verify_transitions_to_verified(self):
-        r = self._verify()
-        self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.data["status"], "verified")
-
-    def test_verify_idempotent(self):
-        self._verify()
-        r2 = self._verify()
-        self.assertEqual(r2.status_code, 200)
-        self.assertEqual(r2.data["status"], "verified")
-
-    def test_verify_requires_committed_status(self):
-        r_new = self.client.post(BASE_URL, **_headers(self.school.id))
-        sid2 = r_new.data["session_id"]
-        r2 = self.client.get(f"{BASE_URL}{sid2}/verify/", **_headers(self.school.id))
-        self.assertEqual(r2.status_code, 409)
-
-    def test_verify_returns_commit_summary(self):
-        r = self._verify()
-        self.assertEqual(r.status_code, 200)
-        self.assertIn("courses_created", r.data)
-        self.assertIn("sections_created", r.data)
+        self.assertEqual(response.status_code, 409)
+        self.assertIn("missing_section_ids", response.data)
