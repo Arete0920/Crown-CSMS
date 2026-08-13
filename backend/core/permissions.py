@@ -102,9 +102,14 @@ class CrownModulePermission:
                     return False
                 school = getattr(request, "school", None)
                 if school is None:
-                    # DRF can evaluate permissions before middleware materializes
-                    # request.school. Resolve through the canonical tenant contract
-                    # so missing/malformed/cross-tenant headers keep 400/404 semantics.
+                    # Preserve the fail-closed contract when no tenant context was
+                    # supplied at all. If a tenant header is present, resolve it
+                    # through the canonical tenant contract so malformed/cross-tenant
+                    # values keep the normal 400/404 semantics.
+                    school_header = request.headers.get("X-School-Id")
+                    if not school_header:
+                        return False
+
                     from households.scoping import get_request_school_id
                     from .models import School
 
