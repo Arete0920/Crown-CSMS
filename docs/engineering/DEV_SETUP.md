@@ -6,8 +6,8 @@
 ## Repository
 
 ```bash
-git clone https://github.com/tcmegahan/Crown2026.git
-cd Crown2026
+git clone https://github.com/tcmegahan/Crown-CSMS.git
+cd Crown-CSMS
 ```
 
 Work from one isolated branch for one coherent outcome. Do not commit directly to `main`.
@@ -56,7 +56,7 @@ Use placeholders or approved development values only. Never commit secrets, prod
 5. Run focused validation, then applicable broad checks.
 6. Inspect the final diff.
 7. Resolve actionable findings.
-8. Merge only after the exact head satisfies policy.
+8. Merge only after the exact head satisfies policy and authorized review.
 9. Deploy only through approved workflows.
 10. Capture exact deployed identity and runtime evidence when applicable.
 
