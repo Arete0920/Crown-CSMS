@@ -1,57 +1,56 @@
 # CROWN Current Release Status
 
-**Successor state (verified 2026-08-11):** `tcmegahan/Crown-CSMS` uses migration baseline `ac574ab2a55ecbfefb40cbd67bad08d99c085575`; no successor production tag or release exists; prior production authority remains historical in preserved `tcmegahan/Crown2026`.
+**Status:** Canonical release and freeze authority  
+**Last verified:** 2026-08-13  
+**Crown-CSMS `main` verified:** `0b4435bee02d91ff5dda057f4e7d54ef7fecceda`  
+**PR #9 exact head:** `6ddd7a8b1972dd522ec82afe09bbad09cb6f728b`
 
-## Current owner-handoff decision
+## Current decision
 
-Current handoff decision: **NO-GO / REMEDIATION AND FRESH EXACT-IDENTITY CERTIFICATION REQUIRED**
+**OWNER HANDOFF NO-GO — remediation, deployed exact-identity proof, and human acceptance remain required.**
 
-`Crown-CSMS` is the active successor development repository, not a certified production identity; historical `Crown2026` certification does not transfer automatically, and any successor release requires fresh exact-identity certification.
+PR #9’s exact head recorded 53 successful repository workflows. That supports a repository-verification claim for that exact head. It does not, by itself, establish a Crown-CSMS production deployment, reconcile live runtime identity, prove buyer-facing operation, or complete owner turnover.
 
-## Prior certified production identity
+## Refreshed predecessor authority
 
-- Backend source: `ce12c9536ec85346b2446018fa8bfe27edb3ffa0`
-- Immutable tag: `prod-deploy-20260808-ce12c95`
-- Production Deploy run: `31287503791`
-- Dashboard deployment/certification run: `31289219093`
-- Dashboard deployment source: `a3f89db677857a220b322b3f1bf094b3fdef3fa2`
-- Pre-reconciliation development baseline (PR #1949): `ef9e1fa4f06d6600d60313059f35c0bb564f5a5b`
+Crown2026 issue #1619 was re-read before this status was reconciled. Its current disposition is reopened/remediation required. It records:
 
-Production Deploy completed migration authority, exact checkout verification, tests, container build and scan, Azure deployment, deployed build-SHA verification, tenant-aware integrity, health, and end-to-end release identity successfully.
+- the prior Crown2026 production result as historical;
+- authenticated owner-visible failures within previously claimed certified scope;
+- the prior 18/18 matrix as insufficient current handoff proof because its assertions missed visible failures;
+- buyer diligence as not ready;
+- payment processing as disabled and fail closed;
+- actual turnover as pending an identified buyer and acceptance.
 
-The dashboard run recorded `18/18 PASS`. Fresh verification proved that its assertions did not reject persistent loading, visible summary-service failures, unexpected authorization denial, or an empty required wizard registry. The result remains historical evidence but is not sufficient current owner-handoff certification.
+Issue #1619 controls claims about the preserved Crown2026 release. It is historical predecessor evidence for Crown-CSMS, not Crown-CSMS release authority.
 
-## Previously certified live surfaces
+## Buyer-safe claim
 
-The retained Heritage matrix covered only these exact persona/route combinations:
+> Crown-CSMS is the active successor engineering and owner-turnover repository. Its PR #9 exact head passed 53 repository workflows. A deployed Crown-CSMS production identity, buyer diligence readiness, and operational turnover are not established by that evidence and remain subject to fresh exact-identity verification and authorized human acceptance.
 
-- `sandbox-admin`: `/`, `/sandbox`, `/sandbox/command-center`, `/admin`, `/school-admin-dashboard`, `/dash/admin`, `/finance`, `/admissions-dashboard`, `/wizards`
-- `sandbox-teacher`: `/sandbox`, `/teacher`, `/dash/teacher`
-- `sandbox-parent`: `/sandbox`, `/parent`, `/dash/parent`
-- `sandbox-student`: `/student`
-- `sandbox-board`: `/board`, `/school-board-dashboard`
+## Prohibited claims
 
-Auditor was not represented. No universal all-tenant or unsupported-persona certification is claimed.
+Do not claim Crown-CSMS is production deployed, buyer ready, transfer complete, universally tenant/persona certified, payment ready, legally certified, regulator approved, or independently human reviewed unless current exact evidence and the appropriate qualified human authority establish the claim.
 
-## Development and identity boundary
+## Payment and qualified-review boundary
 
-Development `main`, the deployed backend, and the deployed dashboard are separate identities. A later commit does not inherit production certification. A current GO requires the exact corrected source, governed deployment, reconciled runtime identities, and fresh certification recorded in `#1619`.
+External payment processing remains disabled and fail closed. Provider selection, contracting, credentials, transaction certification, settlement, refunds, disputes, legal, tax, accounting, transaction, valuation, and payment-provider conclusions require qualified review and explicit authorization.
 
-## Payment boundary
+## Required completion gates
 
-External payment processing remains disabled and fail closed. Provider selection, contracting, credentials, transaction certification, settlement, refunds, disputes, and activation are future-owner actions. This remediation does not authorize payment activation.
-
-## Disclosed remaining boundaries
-
-Unless later evidence proves completion, the following remain disclosed: measured rollback and operational-backup restore; exhaustive credential rotation and break-glass exercises; expanded alert and incident exercises; vendor, contractual, regional, and legal reconciliation; full privacy-lifecycle exercises; buyer-controlled account transfer and seller-access removal; and the deferred historical rewrite of the retired key.
+1. Reproduce and remediate or explicitly disposition the owner-visible failures recorded in #1619 against Crown-CSMS.
+2. Verify false-positive-resistant authenticated persona and route assertions.
+3. Establish and reconcile one exact Crown-CSMS source, deployment, and runtime identity.
+4. Complete applicable security, tenant, permission, accessibility, rollback, restore, monitoring, and operational evidence.
+5. Reconcile every canonical buyer-facing record to the unchanged identity.
+6. Obtain authorized human release and turnover decisions.
+7. Complete buyer-specific account transfer, credential rotation, access revocation, and qualified transaction review.
 
 ## Disposition
 
-Buyer operational turnover: **PENDING IDENTIFIED BUYER AND PARTY ACCEPTANCE**  
-**PAYMENT PROCESSING:** DISABLED / FAIL CLOSED / DEFERRED TO NEW OWNER
-
-- Prior bounded production deployment: **HISTORICAL PASS**
-- Prior Heritage surface matrix: **18/18 HISTORICAL RESULT; NOT CURRENT HANDOFF PROOF**
-- Current buyer diligence package: **NOT READY — SEE #1619**
-- Payment processing: **DISABLED / FAIL CLOSED / FUTURE-OWNER ACTION**
-- Actual buyer turnover: **PENDING IDENTIFIED BUYER AND PARTY ACCEPTANCE**
+- Crown-CSMS exact-head repository workflows: **53/53 SUCCESS for PR #9 head**
+- Crown-CSMS deployed production identity: **NOT VERIFIED**
+- Crown-CSMS buyer diligence readiness: **NO-GO**
+- Crown-CSMS operational turnover: **PENDING**
+- Crown2026 release evidence: **HISTORICAL PREDECESSOR EVIDENCE**
+- Payment processing: **DISABLED / FAIL CLOSED**
