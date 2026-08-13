@@ -18,7 +18,6 @@ from crown_api.scoping_students import get_core_student_or_404_for_request
 from crown_api.serializers_scheduling import StudentScheduleEnrollmentSerializer, TermListSerializer
 from households.models import Guardian as CanonicalGuardian
 from households.models import Student as CanonicalStudent
-from section_scheduler_wizard.models import SectionPlacement
 
 
 def _require_auth_or_401(request):
@@ -60,7 +59,33 @@ def _canonical_term_payload(term):
 
 
 def _canonical_section_payload(section):
-    placement = getattr(section, "schedule_placement", None)
+    placements = list(
+        section.schedule_placements.filter(is_active=True)
+        .select_related("room", "day_template", "period_block")
+        .order_by(
+            "day_template__ordering",
+            "day_template__template_code",
+            "period_block__ordering",
+            "period_block__start_time",
+            "id",
+        )
+    )
+    first_placement = placements[0] if placements else None
+    meetings = [
+        {
+            "placement_id": str(placement.id),
+            "day_template_id": str(placement.day_template_id),
+            "template_code": placement.day_template.template_code,
+            "period_block_id": str(placement.period_block_id),
+            "block_code": placement.period_block.code,
+            "block_name": placement.period_block.label,
+            "start_time": str(placement.period_block.start_time),
+            "end_time": str(placement.period_block.end_time),
+            "room_id": str(placement.room_id) if placement.room_id else None,
+            "room_code": placement.room.code if placement.room_id else "",
+        }
+        for placement in placements
+    ]
     teacher_assignment = (
         TeacherAssignment.objects.filter(section=section)
         .select_related("staff")
@@ -77,8 +102,6 @@ def _canonical_section_payload(section):
             "name": section.term_ref.name,
         },
         "course": {"code": section.course.code, "name": section.course.name},
-        # Canonical Section currently uses UUID as machine identity. A separate
-        # human-readable section_code is a follow-up enhancement, not truth.
         "section_code": str(section.id),
         "name": section.course.name,
         "teacher": (
@@ -91,9 +114,10 @@ def _canonical_section_payload(section):
             if staff
             else None
         ),
-        "room": placement.room.code if placement and placement.room_id else "",
-        "meeting_days": placement.day_template.template_code if placement else "",
-        "meeting_time": placement.period_block.label if placement else "",
+        "room": first_placement.room.code if first_placement and first_placement.room_id else "",
+        "meeting_days": first_placement.day_template.template_code if first_placement else "",
+        "meeting_time": first_placement.period_block.label if first_placement else "",
+        "meetings": meetings,
     }
 
 
@@ -103,7 +127,7 @@ def _canonical_sections_for_term(request, term, access, school_id):
             school_id=school_id,
             term_ref=term,
         )
-        .select_related("term_ref", "course", "schedule_placement__room", "schedule_placement__day_template", "schedule_placement__period_block")
+        .select_related("term_ref", "course")
         .order_by("course__code", "id")
     )
 
@@ -142,9 +166,6 @@ def _canonical_student_schedule_payload(student):
             "section",
             "section__term_ref",
             "section__course",
-            "section__schedule_placement__room",
-            "section__schedule_placement__day_template",
-            "section__schedule_placement__period_block",
         )
         .order_by("section__term_ref__code", "section__course__code", "section__id")
     )
@@ -165,8 +186,6 @@ def terms_list(request):
     if not access.is_staff:
         canonical_qs = canonical_qs.filter(active=True)
 
-    # Canonical-first cutover. Legacy rows are read only when no canonical term
-    # exists for this tenant, preserving existing clients without mixed truth.
     if canonical_qs.exists():
         return Response([_canonical_term_payload(term) for term in canonical_qs])
 
@@ -263,8 +282,6 @@ def student_schedule(request, student_id):
             return Response({"detail": "Not found."}, status=404)
         return Response(_canonical_student_schedule_payload(canonical_student))
 
-    # Explicit compatibility fallback: only an exact legacy core.Student UUID
-    # can enter the legacy reader. No name/email/position-based crosswalk exists.
     if not access.is_staff:
         get_core_student_or_404_for_request(request=request, student_id=student_id)
     student = get_object_or_404(CoreStudent, id=student_id)
