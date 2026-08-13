@@ -1,5 +1,5 @@
 """
-Celery application entry point for Crown2026.
+Celery application entry point for CROWN.
 
 Workers are started separately from Django:
     celery -A crown_api worker -l info
