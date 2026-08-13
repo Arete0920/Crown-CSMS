@@ -1,5 +1,5 @@
 /**
- * Wizard discovery API — Crown2026
+ * Wizard discovery API — CROWN
  * Thin wrapper around the canonical authenticated JSON transport.
  */
 import { authenticatedJson } from "../utils/authClient";
