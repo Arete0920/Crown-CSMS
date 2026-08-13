@@ -66,6 +66,10 @@ def _teacher_ids(section_id, school_id):
     )
 
 
+def _placement_key(section_id, day_template_id, period_block_id):
+    return (UUID(str(section_id)), UUID(str(day_template_id)), UUID(str(period_block_id)))
+
+
 @extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 @authentication_classes(_AUTH)
@@ -163,7 +167,7 @@ def set_sections(request, session_id):
     if not schedule:
         return Response({"error": "No active BellSchedule for this AcademicYear"}, status=400)
     normalized = []
-    seen_sections = set()
+    seen_meetings = set()
     for i, row in enumerate(rows):
         if not isinstance(row, dict):
             return Response({"error": f"sections[{i}] must be an object"}, status=400)
@@ -174,9 +178,10 @@ def set_sections(request, session_id):
             room_id = _uuid(row.get("room_id"), f"sections[{i}].room_id") if row.get("room_id") else None
         except ValueError as exc:
             return Response({"error": str(exc)}, status=400)
-        if section_id in seen_sections:
-            return Response({"error": f"sections[{i}].section_id is duplicated"}, status=400)
-        seen_sections.add(section_id)
+        meeting_key = (section_id, template_id, block_id)
+        if meeting_key in seen_meetings:
+            return Response({"error": f"sections[{i}] duplicates the same section/template/block meeting"}, status=400)
+        seen_meetings.add(meeting_key)
         section = _canonical_section_for_session(section_id, school_id, sess)
         if not section:
             return Response({"error": f"sections[{i}].section_id is not a canonical section for this school/year/term"}, status=400)
@@ -214,12 +219,32 @@ def commit(request, session_id):
     try:
         with transaction.atomic():
             AcademicYear.objects.select_for_update().get(id=ay.id, school_id=school_id)
-            staged_section_ids = {UUID(row["section_id"]) for row in (sess.sections or [])}
-            existing = list(SectionPlacement.objects.filter(school_id=school_id, academic_year=ay, is_active=True).exclude(section_id__in=staged_section_ids))
-            existing_room_slots = {(p.room_id, p.day_template_id, p.period_block_id) for p in existing if p.room_id}
+            staged_keys = {
+                _placement_key(row["section_id"], row["day_template_id"], row["period_block_id"])
+                for row in (sess.sections or [])
+            }
+            all_existing = list(
+                SectionPlacement.objects.select_for_update().filter(
+                    school_id=school_id,
+                    academic_year=ay,
+                    is_active=True,
+                )
+            )
+            existing = [
+                placement
+                for placement in all_existing
+                if (placement.section_id, placement.day_template_id, placement.period_block_id) not in staged_keys
+            ]
+            existing_room_slots = {
+                (p.room_id, p.day_template_id, p.period_block_id)
+                for p in existing
+                if p.room_id
+            }
             existing_teacher_slots = defaultdict(set)
             for placement in existing:
-                existing_teacher_slots[(placement.day_template_id, placement.period_block_id)].update(_teacher_ids(placement.section_id, school_id))
+                existing_teacher_slots[(placement.day_template_id, placement.period_block_id)].update(
+                    _teacher_ids(placement.section_id, school_id)
+                )
             batch_room_slots = set()
             batch_teacher_slots = defaultdict(set)
             resolved = []
@@ -227,7 +252,12 @@ def commit(request, session_id):
                 section = _canonical_section_for_session(UUID(row["section_id"]), school_id, sess)
                 if not section:
                     return Response({"error": f"sections[{i}] canonical section no longer valid"}, status=400)
-                template = DayTemplate.objects.filter(id=row["day_template_id"], schedule__school__id=school_id, schedule__academic_year=ay, schedule__is_active=True).first()
+                template = DayTemplate.objects.filter(
+                    id=row["day_template_id"],
+                    schedule__school__id=school_id,
+                    schedule__academic_year=ay,
+                    schedule__is_active=True,
+                ).first()
                 block = PeriodBlock.objects.filter(id=row["period_block_id"], template=template).first() if template else None
                 if not template or not block:
                     return Response({"error": f"sections[{i}] bell-schedule placement no longer valid"}, status=400)
@@ -247,11 +277,39 @@ def commit(request, session_id):
                     return Response({"error": f"Teacher collision at {template.template_code}:{block.code}"}, status=400)
                 batch_teacher_slots[slot].update(teachers)
                 resolved.append((section, room, template, block))
+
             for section, room, template, block in resolved:
-                _, was_created = SectionPlacement.objects.update_or_create(section=section, defaults={"school_id": school_id, "academic_year": ay, "room": room, "day_template": template, "period_block": block, "is_active": True})
-                created += int(was_created)
-                updated += int(not was_created)
-            sess.commit_result = {"created": created, "updated": updated, "total": len(resolved), "replace_semantics": False}
+                placement = SectionPlacement.objects.filter(
+                    section=section,
+                    day_template=template,
+                    period_block=block,
+                    is_active=True,
+                ).first()
+                if placement is None:
+                    SectionPlacement.objects.create(
+                        section=section,
+                        school_id=school_id,
+                        academic_year=ay,
+                        room=room,
+                        day_template=template,
+                        period_block=block,
+                        is_active=True,
+                    )
+                    created += 1
+                else:
+                    placement.school_id = school_id
+                    placement.academic_year = ay
+                    placement.room = room
+                    placement.is_active = True
+                    placement.save(update_fields=["school", "academic_year", "room", "is_active", "updated_at"])
+                    updated += 1
+
+            sess.commit_result = {
+                "created": created,
+                "updated": updated,
+                "total": len(resolved),
+                "replace_semantics": False,
+            }
             sess.status = "committed"
             sess.save(update_fields=["commit_result", "status"])
     except IntegrityError:
@@ -268,15 +326,40 @@ def verify(request, session_id):
     sess = _get_session(session_id, school_id)
     if sess.status not in ("committed", "verified"):
         return Response({"error": "Verify requires committed state"}, status=400)
-    staged_ids = [row["section_id"] for row in (sess.sections or [])]
+    expected_keys = {
+        _placement_key(row["section_id"], row["day_template_id"], row["period_block_id"])
+        for row in (sess.sections or [])
+    }
+    section_ids = {key[0] for key in expected_keys}
     placements = list(
-        SectionPlacement.objects.filter(school_id=school_id, academic_year_id=sess.academic_year_id, section_id__in=staged_ids, is_active=True)
+        SectionPlacement.objects.filter(
+            school_id=school_id,
+            academic_year_id=sess.academic_year_id,
+            section_id__in=section_ids,
+            is_active=True,
+        )
         .select_related("section__course", "room", "day_template", "period_block")
-        .order_by("section__course__code", "section_id")
+        .order_by("section__course__code", "section_id", "day_template__ordering", "period_block__ordering")
     )
-    rows = [{"section_id": str(p.section_id), "course_code": p.section.course.code, "room_code": p.room.code if p.room else None, "template_code": p.day_template.template_code, "block_code": p.period_block.code} for p in placements]
-    if len(rows) != len(staged_ids):
-        return Response({"error": "Placement verification mismatch", "expected": len(staged_ids), "actual": len(rows)}, status=409)
+    actual_by_key = {
+        (p.section_id, p.day_template_id, p.period_block_id): p
+        for p in placements
+    }
+    missing = sorted(
+        ["|".join(str(value) for value in key) for key in expected_keys - set(actual_by_key)],
+    )
+    if missing:
+        return Response({"error": "Placement verification mismatch", "missing_meetings": missing}, status=409)
+    rows = [
+        {
+            "section_id": str(actual_by_key[key].section_id),
+            "course_code": actual_by_key[key].section.course.code,
+            "room_code": actual_by_key[key].room.code if actual_by_key[key].room else None,
+            "template_code": actual_by_key[key].day_template.template_code,
+            "block_code": actual_by_key[key].period_block.code,
+        }
+        for key in sorted(expected_keys, key=lambda item: tuple(str(value) for value in item))
+    ]
     sess.status = "verified"
     sess.save(update_fields=["status"])
     return Response({"status": sess.status, "sections": rows, "count": len(rows)})
