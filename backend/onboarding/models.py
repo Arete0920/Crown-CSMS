@@ -79,3 +79,15 @@ class ImportSession(models.Model):
 
     def __str__(self):
         return f"ImportSession({self.id}, school={self.school_id}, mode={self.mode}, status={self.status})"
+
+# Register models kept in the split module with Django's app registry.
+# Django imports only this canonical models module during app initialization.
+from .models_tasks import (  # noqa: E402,F401
+    HelpArticle,
+    OnboardingTask,
+    SolomonAudience,
+    SolomonCategory,
+    SolomonPlaybook,
+    SolomonRouteContext,
+    SolomonTopic,
+)
