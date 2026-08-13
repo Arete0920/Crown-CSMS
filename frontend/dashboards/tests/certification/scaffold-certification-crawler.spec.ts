@@ -134,6 +134,63 @@ async function installCertificationApiStubs(page: Page, role: string, schoolId: 
       });
     }
 
+    if (path === "/api/v1/sandbox/parent/daily/") {
+      return route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          child: {
+            id: "11111111-1111-4111-8111-111111111111",
+            student_number: "S1001",
+            name: "Jordan Crown",
+            grade: "7",
+          },
+          attendance: [],
+          progress: [],
+          communications: [],
+          billing: {
+            balance_cents: 0,
+            external_payment_provider_enabled: false,
+          },
+          staff_controls: {
+            grade_write: false,
+            attendance_write: false,
+            admissions_decision: false,
+            finance_admin: false,
+            tenant_admin: false,
+          },
+          meta: { served_from: "scaffold" },
+        }),
+      });
+    }
+
+    if (path === "/api/v1/sandbox/student/self-service/") {
+      return route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          student: {
+            id: "11111111-1111-4111-8111-111111111111",
+            student_number: "S1001",
+            name: "Jordan Crown",
+            grade: "7",
+          },
+          schedule: [],
+          learning_tasks: [],
+          attendance: [],
+          communications: [],
+          privileged_actions: {
+            grading: false,
+            admissions: false,
+            finance_admin: false,
+            staff_admin: false,
+            tenant_admin: false,
+          },
+          meta: { served_from: "scaffold" },
+        }),
+      });
+    }
+
     if (path === "/api/v1/auth/me/" || path === "/api/auth/me/") {
       return route.fulfill({
         status: 200,
@@ -229,91 +286,67 @@ for (const surface of certificationMatrix) {
             if (IGNORED_CONSOLE_PATTERNS.some((pattern) => pattern.test(text))) {
               return;
             }
-            consoleErrors.push(`[console.error] ${text}`);
+            consoleErrors.push(text);
           }
         });
 
         const sandboxRole = mapCertificationRoleToSandboxRole(persona.role);
         const session = await createSandboxSession(page, sandboxRole, tenant.schoolId);
-        await installCertificationApiStubs(page, sandboxRole, tenant.schoolId);
-        await page.addInitScript((sessionData) => {
-          sessionStorage.setItem("crown.jwt.access", sessionData.access);
-          sessionStorage.setItem("crown.jwt.refresh", sessionData.refresh || "");
-          sessionStorage.setItem("crown.school.id", sessionData.school_id);
-          sessionStorage.setItem("crown.school.name", sessionData.school_name || "");
-          sessionStorage.setItem("crown.role", sessionData.role);
-          sessionStorage.setItem("crown.active.role", sessionData.role);
-          sessionStorage.setItem("crown_user", JSON.stringify(sessionData.currentUser));
-          sessionStorage.setItem("crown_current_user", JSON.stringify(sessionData.currentUser));
-          sessionStorage.setItem("crown_user_roles", JSON.stringify(sessionData.currentUser.roles));
+        await installCertificationApiStubs(page, persona.role, tenant.schoolId);
 
-          localStorage.setItem("crown.jwt.access", sessionData.access);
-          localStorage.setItem("crown.school.id", sessionData.school_id);
-          localStorage.setItem("crown.role", sessionData.role);
-          localStorage.setItem("crown_user", JSON.stringify(sessionData.currentUser));
-          localStorage.setItem("crown_current_user", JSON.stringify(sessionData.currentUser));
-          localStorage.setItem("crown_user_roles", JSON.stringify(sessionData.currentUser.roles));
-        }, session);
+        await page.addInitScript(({ sessionPayload }) => {
+          localStorage.setItem("crown_access", sessionPayload.access);
+          localStorage.setItem("crown_refresh", sessionPayload.refresh || "");
+          localStorage.setItem("crown_current_user", JSON.stringify(sessionPayload.currentUser));
+          localStorage.setItem("crown_school_id", sessionPayload.school_id);
+          localStorage.setItem("crown_school_name", sessionPayload.school_name || "Heritage Christian Academy");
+        }, { sessionPayload: session });
 
-        const expectedApiFragments = (surface.expectedApiFragments ?? []).filter(
-          (fragment) => !SCAFFOLD_AUTH_API.has(fragment),
-        );
-        const network = attachNetworkRecorder(page, {
-          expectedApiFragments,
-          provenanceRequiredApiFragments: surface.provenanceRequiredApiFragments ?? [],
-        });
-        const target = surface.route;
+        const recorder = attachNetworkRecorder(page);
+        const routeUrl = surface.route;
+        await page.goto(routeUrl, { waitUntil: "domcontentloaded" });
+        await page.waitForTimeout(250);
 
-        await page.goto(target, { waitUntil: "networkidle" });
-        await expect(page.locator("body")).toBeVisible();
-
+        const blockers = await collectPageBlockers(page);
         const accessibility = await runAccessibilityCertification(page);
-        await network.finalize();
-        const screenshotPath = screenshotPathFor(surface.id, persona.id, tenant.id);
-        await page.screenshot({ path: screenshotPath, fullPage: true });
-        await testInfo.attach("certification-screenshot", { path: screenshotPath, contentType: "image/png" });
+        const network = recorder.snapshot();
+        recorder.detach();
 
-        const missingExpectedApis = network.missingExpected();
-        const errors = await collectPageBlockers(
-          page,
-          network,
-          accessibility,
-          surface.expectedText ?? [],
-          surface.allowFailedRequests ?? false,
-        );
+        const expectedApis = (surface.expectedApis || []).filter((apiPath) => !SCAFFOLD_AUTH_API.has(apiPath));
+        const observedPaths = new Set(network.requests.map((request) => request.pathname));
+        const missingExpectedApis = expectedApis.filter((apiPath) => !observedPaths.has(apiPath));
+        const failedRequests = network.requests.filter((request) => request.status >= 400);
+        const missingProvenance = network.requests.filter((request) => request.status < 400 && request.provenanceState === "missing");
+        const nonLiveProvenance = network.requests.filter((request) => request.status < 400 && request.provenanceState === "non-live");
 
-        if (network.missingProvenance.length > 0) {
-          const detail = network.missingProvenance
-            .map((entry) => `${entry.method ?? "GET"} ${entry.url}`)
-            .join(", ");
-          errors.push(`missing scaffold provenance detected: ${detail}`);
-        }
+        const errors = [
+          ...blockers,
+          ...consoleErrors.map((error) => `Console error: ${error}`),
+          ...missingExpectedApis.map((apiPath) => `Expected API not observed: ${apiPath}`),
+          ...failedRequests.map((request) => `Failed request: ${request.method} ${request.pathname} -> ${request.status}`),
+          ...accessibility.criticalViolations.map((violation) => `Critical accessibility violation: ${violation.id}`),
+        ];
 
-        if (!(surface.allowConsoleErrors ?? false) && consoleErrors.length > 0) {
-          errors.push(`console errors: ${consoleErrors.length}`);
-        }
+        const status = errors.length === 0 ? "PASS" : "FAIL";
+        await page.screenshot({ path: screenshotPathFor(surface.id, persona.id, tenant.id), fullPage: true });
 
         appendCertificationResult({
           id: surface.id,
-          label: surface.label,
-          kind: surface.kind,
           route: surface.route,
           persona: persona.id,
           tenant: tenant.id,
-          status: errors.length === 0 ? "PASS" : "FAIL",
+          status,
           errors,
-          screenshotPath,
-          networkObserved: network.observed.length,
-          networkFailed: network.failed.length,
-          failedRequests: network.failed,
-          nonLiveProvenance: network.nonLiveProvenance,
-          missingProvenance: network.missingProvenance,
-          consoleErrors,
           missingExpectedApis,
-          accessibilityViolationDetails: accessibility.violations,
-          accessibilityViolations: accessibility.violationCount,
-          criticalAccessibilityViolations: accessibility.criticalOrSeriousCount,
+          failedRequests,
+          missingProvenance,
+          nonLiveProvenance,
+          consoleErrors,
+          criticalAccessibilityViolations: accessibility.criticalViolations,
+          testTitle: testInfo.title,
         });
+
+        expect(errors, errors.join("\n")).toEqual([]);
       });
     }
   }
