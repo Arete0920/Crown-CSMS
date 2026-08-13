@@ -2,37 +2,42 @@
 
 Christian School Management Solution
 
-## Current certified release
+## Current posture
 
-- Backend source: `ce12c9536ec85346b2446018fa8bfe27edb3ffa0`
-- Immutable production tag: `prod-deploy-20260808-ce12c95`
-- Production deployment: [run 31287503791](https://github.com/tcmegahan/Crown2026/actions/runs/31287503791)
-- Dashboard deployment and live certification: [run 31289219093](https://github.com/tcmegahan/Crown2026/actions/runs/31289219093)
-- Dashboard deployment source: `a3f89db677857a220b322b3f1bf094b3fdef3fa2`
-- Live certification: `18/18 PASS`, `0 FAIL`
-- Post-certification observer-cleanup baseline (PR #1949): `ef9e1fa4f06d6600d60313059f35c0bb564f5a5b`
-- Payment processing: disabled, fail closed, and deferred to a future owner
+Crown-CSMS is the active engineering and owner-turnover repository.
 
-The certified backend, deployed dashboard source, and current development head are separate identities. Later commits do not inherit production certification automatically.
+- Current verified `main` baseline: `0b4435bee02d91ff5dda057f4e7d54ef7fecceda`
+- PR #9 exact head: `6ddd7a8b1972dd522ec82afe09bbad09cb6f728b`
+- Repository verification on that head: 53 successful workflows
+- Crown-CSMS deployed production identity: **NOT ESTABLISHED by the evidence cited here**
+- Buyer operational turnover: **NOT COMPLETE**
+- Payment processing: **DISABLED / FAIL CLOSED**
+
+Repository workflow success is valid repository evidence, but it is not proof of deployment, buyer acceptance, or completed turnover. Crown2026 release records and issue #1619 are historical predecessor evidence and do not automatically certify Crown-CSMS.
 
 ## Start here
 
 1. [Current Release Status](docs/CURRENT_RELEASE_STATUS.md)
-2. [Final release and owner-handoff record](https://github.com/tcmegahan/Crown2026/issues/1619)
-3. [Canonical Document Index](docs/canonical/CANONICAL_DOCUMENT_INDEX.md)
+2. [Canonical Document Index](docs/canonical/CANONICAL_DOCUMENT_INDEX.md)
+3. [Diligence and Evidence Index](docs/canonical/DILIGENCE_EVIDENCE_INDEX.md)
 4. [Architecture Map](docs/architecture/ARCHITECTURE_MAP.md)
 5. [Developer Setup](docs/engineering/DEV_SETUP.md)
 6. [Operations](docs/operations/README.md)
 7. [Owner Handoff](docs/ownership/OWNER_HANDOFF.md)
-8. [Security Policy](SECURITY.md)
+8. [Known Limitations](docs/KNOWN_LIMITATIONS.md)
+9. [Security Policy](SECURITY.md)
+
+## Authority and claim boundary
+
+Current claims must be supported by Crown-CSMS exact-identity evidence and its canonical records. Historical commits, tags, workflow runs, pull requests, and issues remain provenance, not current operating authority.
+
+Automated assistance and automated review are not independent human review, approval, certification, or release authority. Do not imply otherwise.
 
 ## Repository standards
 
-This repository contains active application source, tests, migrations, build and deployment controls, and current architecture, engineering, security, operations, and transfer documentation. Historical pull requests and commits remain engineering provenance but are not current operating instructions.
+Use one pull request per coherent, independently reversible outcome. Record the exact base and head, scope, validation, limitations, human decision owner, and rollback action.
 
-Use one pull request per coherent, independently reversible outcome. Keep corrections discovered during validation in that pull request unless they cross a genuinely independent risk or rollback boundary.
-
-Never commit secrets, production data, private certificates, confidential communications, or payment credentials. Sandbox data must be synthetic and clearly labeled.
+Never commit secrets, production data, private certificates, confidential communications, payment credentials, copied conversations, or generated proof dumps. Sandbox data must be synthetic and clearly labeled.
 
 ## Ownership
 
