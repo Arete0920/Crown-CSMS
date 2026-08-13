@@ -291,5 +291,8 @@ class TestSeedPermissionsCommand:
     def test_seed_dry_run_creates_nothing(self):
         from django.core.management import call_command
         from io import StringIO
+        permissions_before = CrownPermission.objects.count()
+        mappings_before = RolePermission.objects.count()
         call_command("seed_permissions", dry_run=True, stdout=StringIO())
-        assert CrownPermission.objects.count() == 0
+        assert CrownPermission.objects.count() == permissions_before
+        assert RolePermission.objects.count() == mappings_before

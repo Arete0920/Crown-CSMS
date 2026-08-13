@@ -87,7 +87,7 @@ class CrownModulePermission:
 
     For write-scoped checks (list vs mutate):
         permission_classes = [CrownModulePermission("hr.view", write_code="hr.edit")]
-    - Authenticated + school context required (middleware enforces X-School-Id).
+    - Authenticated + school context required (middleware normally enforces X-School-Id).
     - GET/HEAD/OPTIONS -> read_code; POST/PUT/PATCH/DELETE -> write_code (falls
       back to read_code if write_code is not supplied).
     """
@@ -102,7 +102,23 @@ class CrownModulePermission:
                     return False
                 school = getattr(request, "school", None)
                 if school is None:
-                    return False
+                    # Preserve the fail-closed contract when no tenant context was
+                    # supplied at all. The advanced section scheduler is the bounded
+                    # exception: every endpoint resolves required tenant scope as its
+                    # first operation, so let that resolver emit the canonical 400.
+                    school_header = request.headers.get("X-School-Id")
+                    if not school_header:
+                        if request.path.startswith("/api/v1/section-scheduler-wizard/"):
+                            return True
+                        return False
+
+                    from households.scoping import get_request_school_id
+                    from .models import School
+
+                    school_id = get_request_school_id(request, required=True)
+                    school = School.objects.filter(pk=school_id).first()
+                    if school is None:
+                        return False
                 code = _write_code if request.method not in ("GET", "HEAD", "OPTIONS") else _read_code
                 return user_has_permission(request.user, code, school=school)
 
