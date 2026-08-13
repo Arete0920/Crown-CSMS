@@ -1,31 +1,27 @@
 # CROWN Diligence and Evidence Index
 
 **Status:** Canonical diligence navigation authority  
-**Last reconciled:** 2026-08-09  
-**Certified backend:** `ce12c9536ec85346b2446018fa8bfe27edb3ffa0`  
-**Immutable tag:** `prod-deploy-20260808-ce12c95`  
-**Controlling authority:** GitHub issue #1619
+**Last verified:** 2026-08-13  
+**Authority:** `docs/CURRENT_RELEASE_STATUS.md`
 
-## Current evidence
-
-| Area | Evidence-backed disposition |
+| Area | Current disposition |
 |---|---|
-| Production deployment | PASS — run `31287503791` |
-| Exact backend identity | PASS — workflow, Azure deployment, and live build SHA reconciled |
-| Dashboard deployment | PASS — run `31289219093`, source `a3f89db677857a220b322b3f1bf094b3fdef3fa2` |
-| Live Heritage certification | PASS — 18/18 surfaces, 0 failures |
-| Exact-head cleanup verification | PASS — PR #1949 head, 28/28 workflows successful |
-| Payment containment | PASS — disabled and fail closed |
+| Active owner-turnover repository | Crown-CSMS |
+| PR #9 repository verification | 53 successful workflows on exact head `6ddd7a8b1972dd522ec82afe09bbad09cb6f728b` |
+| Crown-CSMS deployed production identity | Not verified |
+| Crown-CSMS buyer diligence readiness | NO-GO |
+| Crown2026 release evidence | Historical predecessor evidence |
+| Crown2026 issue #1619 | Refreshed; reopened/remediation required |
 | Actual buyer turnover | Pending identified buyer and acceptance |
+| Payment processing | Disabled and fail closed |
 
 ## Canonical navigation
 
 | Area | Authority |
 |---|---|
-| Final release and handoff | GitHub issue #1619 |
-| Release identity and scope | `docs/CURRENT_RELEASE_STATUS.md` |
-| Repository orientation | `README.md` |
+| Release, freeze, and handoff posture | `docs/CURRENT_RELEASE_STATUS.md` |
 | Document authority | `docs/canonical/CANONICAL_DOCUMENT_INDEX.md` |
+| Repository orientation | `README.md` |
 | Architecture | `docs/architecture/ARCHITECTURE_MAP.md` |
 | Engineering setup | `docs/engineering/DEV_SETUP.md` |
 | Operations | `docs/operations/README.md` |
@@ -33,6 +29,8 @@
 | Known limitations | `docs/KNOWN_LIMITATIONS.md` |
 | Security reporting | `SECURITY.md` |
 
-## Claim boundary
+## Buyer-safe statement
 
-Do not claim universal tenant or persona certification, legal certification, payment readiness, completed buyer turnover, completed operational drills, or production certification for current `main`. Historical pull requests and branches are provenance, not current authority.
+Crown-CSMS is the active successor engineering and owner-turnover repository. Its PR #9 exact head passed 53 repository workflows. Deployed production identity, buyer diligence readiness, and operational turnover remain unverified or pending and require exact-identity evidence and authorized human acceptance.
+
+Do not infer legal, tax, accounting, valuation, transaction, payment-provider, universal persona/tenant, or independent human-review conclusions from repository evidence.
