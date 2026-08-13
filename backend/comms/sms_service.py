@@ -1,5 +1,5 @@
 """
-Twilio SMS service for Crown2026.
+Twilio SMS service for CROWN.
 
 Recipient UserAccount must have a `phone_number` field.
 SMS is opt-in only — check NotificationPreference before calling.
