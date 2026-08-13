@@ -53,8 +53,6 @@ on:
         required: true
         type: string
   push:
-    branches:
-      - main
     tags:
       - "prod-deploy-*"
     paths:
