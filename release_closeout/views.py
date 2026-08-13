@@ -82,7 +82,7 @@ def board_pdf(request):
         title="Board Report",
         filename="board_report.pdf",
         lines=[
-            "Crown2026 board-ready export surface",
+            "CROWN board-ready export surface",
             f"Backend Python files: {metrics['backend_python_files']}",
             f"Frontend TS/TSX files: {metrics['frontend_tsx_files']}",
             f"Workflow files: {metrics['workflow_files']}",
