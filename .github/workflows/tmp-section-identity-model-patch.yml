@@ -1,3 +1,4 @@
+# temporary branch-only patch runner; remove after generated model commit
 name: Temporary Section Identity Model Patch
 
 on:
