@@ -103,11 +103,13 @@ class CrownModulePermission:
                 school = getattr(request, "school", None)
                 if school is None:
                     # Preserve the fail-closed contract when no tenant context was
-                    # supplied at all. If a tenant header is present, resolve it
-                    # through the canonical tenant contract so malformed/cross-tenant
-                    # values keep the normal 400/404 semantics.
+                    # supplied at all. The advanced section scheduler is the bounded
+                    # exception: every endpoint resolves required tenant scope as its
+                    # first operation, so let that resolver emit the canonical 400.
                     school_header = request.headers.get("X-School-Id")
                     if not school_header:
+                        if request.path.startswith("/api/v1/section-scheduler-wizard/"):
+                            return True
                         return False
 
                     from households.scoping import get_request_school_id
