@@ -54,9 +54,9 @@ Use placeholders or approved development values only. Never commit secrets, prod
 3. Use one branch and one pull request for the coherent outcome.
 4. Keep related fixes found during validation in that pull request.
 5. Run focused validation, then applicable broad checks.
-6. Inspect the final diff.
-7. Resolve actionable findings.
-8. Merge only after the exact head satisfies policy and authorized review.
+6. Inspect the final diff line by line against current repository truth.
+7. Resolve actionable findings and re-run the affected checks.
+8. Merge only after the exact head satisfies policy and the applicable owner-governed evidence controls.
 9. Deploy only through approved workflows.
 10. Capture exact deployed identity and runtime evidence when applicable.
 
