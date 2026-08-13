@@ -1,0 +1,92 @@
+name: Temporary Section Identity Model Patch
+
+on:
+  push:
+    branches:
+      - agent/scheduling-section-identity-repair
+    paths:
+      - .github/workflows/tmp-section-identity-model-patch.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch-model:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout stacked branch
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+        with:
+          ref: agent/scheduling-section-identity-repair
+          fetch-depth: 0
+
+      - name: Patch canonical Section identity
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('backend/academics/models.py')
+          text = path.read_text(encoding='utf-8')
+
+          field_needle = '''class Section(TimeStampedModel):
+              id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
+              school_id = models.UUIDField(db_index=True)
+
+              course = models.ForeignKey(Course, on_delete=models.PROTECT, related_name="sections")
+          '''
+          field_replacement = '''class Section(TimeStampedModel):
+              id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
+              school_id = models.UUIDField(db_index=True)
+              section_code = models.CharField(max_length=32, blank=True, default="", db_index=True)
+
+              course = models.ForeignKey(Course, on_delete=models.PROTECT, related_name="sections")
+          '''
+          if text.count(field_needle) != 1:
+              raise SystemExit('Section field anchor did not match exactly once')
+          text = text.replace(field_needle, field_replacement, 1)
+
+          meta_needle = '''    class Meta:
+              db_table = "section"
+              indexes = [
+                  models.Index(fields=["school_id", "term"]),
+                  models.Index(fields=["school_id", "course"]),
+              ]
+
+              def __str__(self) -> str:
+          '''
+          meta_replacement = '''    class Meta:
+              db_table = "section"
+              indexes = [
+                  models.Index(fields=["school_id", "term"]),
+                  models.Index(fields=["school_id", "course"]),
+              ]
+              constraints = [
+                  models.UniqueConstraint(
+                      fields=["school_id", "term_ref", "section_code"],
+                      condition=models.Q(section_code__gt="", term_ref__isnull=False),
+                      name="uniq_section_term_code",
+                  ),
+              ]
+
+              def __str__(self) -> str:
+          '''
+          if text.count(meta_needle) != 1:
+              raise SystemExit('Section Meta anchor did not match exactly once')
+          text = text.replace(meta_needle, meta_replacement, 1)
+          path.write_text(text, encoding='utf-8')
+          PY
+
+      - name: Commit model patch only
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --check
+          test "$(git diff --name-only)" = "backend/academics/models.py"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add backend/academics/models.py
+          git commit -m "feat(academics): add canonical section code identity"
+          git push origin HEAD:agent/scheduling-section-identity-repair
