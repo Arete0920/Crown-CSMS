@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
 from django.db.models import Sum
 from django.utils import timezone
@@ -236,12 +237,18 @@ def create_payment(
             payment.full_clean(validate_unique=False, validate_constraints=False)
             payment.save()
         return payment
-    except IntegrityError:
+    except IntegrityError as exc:
         existing = Payment.objects.select_for_update().filter(
             school_id=school_id,
             idempotency_key=idempotency_key,
         ).first()
         if existing is None:
+            if finance_payment_id is not None and Payment.objects.filter(
+                finance_payment_id=finance_payment_id
+            ).exists():
+                raise ValidationError({
+                    "finance_payment_id": "FinancePayment compatibility link is already owned by another canonical Payment."
+                }) from exc
             raise
         _assert_same_payment_facts(
             existing,

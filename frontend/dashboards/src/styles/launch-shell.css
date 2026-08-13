@@ -1,4 +1,4 @@
-﻿/* Crown Launch Shell — PRIMARY LAYOUT AUTHORITY
+/* Crown Launch Shell — PRIMARY LAYOUT AUTHORITY
 
    SCOPE: All dashboard layout, grid, sidebar, topbar, widget, and section classes
    for the launch shell system. This is the single source of truth for dashboard
@@ -1785,6 +1785,12 @@
   .launch-page-header {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .launch-search {
+    flex: 0 0 auto;
+    width: 100%;
+    min-width: 0;
   }
 
   .launch-topbar-actions {

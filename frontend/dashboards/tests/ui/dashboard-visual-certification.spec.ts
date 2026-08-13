@@ -130,6 +130,41 @@ async function assertFlipCardGeometry(page, viewport: (typeof VIEWPORTS)[number]
   });
 }
 
+async function assertResponsiveTopbarGeometry(
+  page,
+  viewport: (typeof VIEWPORTS)[number],
+  routePath: string
+) {
+  if (viewport.width > 1120) return;
+
+  const search = page.locator(".launch-search:visible").first();
+  if ((await search.count()) === 0) return;
+
+  const searchBox = await search.boundingBox();
+  expect(searchBox, `${routePath} mobile/tablet search has no measurable box`).not.toBeNull();
+  if (!searchBox) return;
+
+  expect(
+    searchBox.height,
+    `${routePath} search is pathologically tall at ${viewport.name}`
+  ).toBeLessThanOrEqual(80);
+  expect(
+    searchBox.width,
+    `${routePath} search exceeds viewport width at ${viewport.name}`
+  ).toBeLessThanOrEqual(viewport.width + 2);
+
+  const topbar = page.locator(".launch-topbar:visible").first();
+  if ((await topbar.count()) === 0) return;
+  const topbarBox = await topbar.boundingBox();
+  expect(topbarBox, `${routePath} topbar has no measurable box at ${viewport.name}`).not.toBeNull();
+  if (!topbarBox) return;
+
+  expect(
+    topbarBox.height,
+    `${routePath} topbar consumes an unreasonable portion of the viewport at ${viewport.name}`
+  ).toBeLessThanOrEqual(300);
+}
+
 async function appendManifestEntry(entry: {
   viewport: string;
   route: string;
@@ -213,6 +248,7 @@ test.describe("Dashboard visual evidence", () => {
         ).toBeLessThanOrEqual(geometry.viewportWidth + 2);
 
         await assertFlipCardGeometry(page, viewport, dashboard.path);
+        await assertResponsiveTopbarGeometry(page, viewport, dashboard.path);
 
         const relativeScreenshot = screenshotRelativePath(viewport.name, dashboard.path);
         const screenshotPath = path.join(EVIDENCE_DIR, relativeScreenshot);

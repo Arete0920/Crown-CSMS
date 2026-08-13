@@ -176,6 +176,37 @@ function fixture(pathname, method) {
     };
   }
   if (pathname === "/api/v1/nav/") return { groups: [] };
+  if (pathname === "/api/v1/sandbox/parent/daily/") {
+    return {
+      child: { name: "Avery Reed", grade: "8" },
+      attendance: [],
+      progress: [],
+      communications: [],
+      billing: { balance_cents: 0, external_payment_provider_enabled: false },
+      staff_controls: {
+        grade_write: false,
+        attendance_write: false,
+        admissions_decision: false,
+        finance_admin: false,
+        tenant_admin: false,
+      },
+    };
+  }
+  if (pathname === "/api/v1/sandbox/student/self-service/") {
+    return {
+      student: { name: "Avery Reed", grade: "8" },
+      schedule: [],
+      learning_tasks: [],
+      attendance: [],
+      communications: [],
+      privileged_actions: {
+        grading: false,
+        admissions: false,
+        finance_admin: false,
+        tenant_admin: false,
+      },
+    };
+  }
   return {
     ...universalCollection(),
     id: PARAMETER_FIXTURES.id,
@@ -316,8 +347,10 @@ test("all registered URLs render without HTTP or browser errors", async ({ conte
       await installStubs(routePage);
 
       routePage.on("console", (message) => {
-        if (message.type() === "error" && !/favicon|ResizeObserver loop/i.test(message.text())) {
-          consoleErrors.push(message.text());
+        const text = message.text();
+        if (message.type() === "error"
+          && !/favicon|ResizeObserver loop|Failed to load resource: the server responded with a status of 404 \(\)/i.test(text)) {
+          consoleErrors.push(text);
         }
       });
       routePage.on("pageerror", (error) => pageErrors.push(error.message));
@@ -329,8 +362,9 @@ test("all registered URLs render without HTTP or browser errors", async ({ conte
       });
       routePage.on("response", (currentResponse) => {
         const url = new globalThis.URL(currentResponse.url());
-        if (url.origin === appOrigin && currentResponse.status() >= 400 && !/favicon\.ico$/i.test(url.pathname)) {
-          badResponses.push(`${currentResponse.status()} ${currentResponse.request().method()} ${url.pathname}`);
+        if (currentResponse.status() >= 400 && !/favicon\.ico$/i.test(url.pathname)) {
+          const target = url.origin === appOrigin ? url.pathname : url.toString();
+          badResponses.push(`${currentResponse.status()} ${currentResponse.request().method()} ${target}`);
         }
       });
 

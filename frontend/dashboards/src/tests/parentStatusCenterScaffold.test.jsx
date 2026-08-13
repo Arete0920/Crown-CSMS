@@ -7,6 +7,19 @@ import { loadParentJourneyOverview } from "../features/parentJourney/parentJourn
 
 vi.mock("../features/parentJourney/parentJourneyState.js", () => ({
   loadParentJourneyOverview: vi.fn(),
+  loadSandboxParentEnrollment: vi.fn().mockResolvedValue({
+    application_id: "app-1",
+    lifecycle_stage: "accepted",
+    contract_status: "pending",
+    deposit_status: "pending",
+    applicant_to_student_status: "pending",
+    classroom_readiness_status: "in_progress",
+    parent_portal_activation_status: "in_progress",
+    child_id: null,
+    child_name: "Jordan Reed",
+    demo_payment_processed: false,
+  }),
+  completeSandboxParentEnrollment: vi.fn(),
 }));
 
 describe("parent status center scaffold", () => {
