@@ -1,5 +1,5 @@
 """
-Notification dispatcher for CROWN.
+Notification dispatcher for Crown2026.
 
 Checks per-user NotificationPreference and routes to each enabled channel.
 Always delivers in-app. Other channels are opt-in.
