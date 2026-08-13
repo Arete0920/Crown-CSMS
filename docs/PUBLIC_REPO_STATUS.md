@@ -3,21 +3,14 @@
 **Status:** Active authority pointer  
 **Last verified:** 2026-08-13
 
-Current authority is limited to:
+Current authority is limited to the canonical document index, current release status, owner-handoff guide, and exact Crown-CSMS evidence.
 
-1. `docs/canonical/CANONICAL_DOCUMENT_INDEX.md`;
-2. `docs/CURRENT_RELEASE_STATUS.md`;
-3. `docs/ownership/OWNER_HANDOFF.md`;
-4. current architecture, engineering, operations, security, and governance records explicitly listed by the canonical index;
-5. exact Crown-CSMS repository and runtime evidence.
+- Active owner-turnover repository: **Crown-CSMS**
+- PR #9 repository verification: **53 successful workflows on exact head `6ddd7a8b1972dd522ec82afe09bbad09cb6f728b`**
+- Crown-CSMS deployed production identity: **NOT VERIFIED**
+- Buyer diligence readiness: **NO-GO**
+- Actual turnover: **PENDING IDENTIFIED BUYER AND ACCEPTANCE**
+- Payment processing: **DISABLED / FAIL CLOSED**
+- Crown2026: **HISTORICAL PREDECESSOR PROVENANCE**
 
-Current evidence-backed posture:
-
-- active owner-turnover repository: **Crown-CSMS**;
-- Crown2026: **historical predecessor provenance**;
-- Crown-CSMS production certification: **NOT ESTABLISHED**;
-- buyer diligence package: **NOT READY**;
-- actual operational turnover: **PENDING IDENTIFIED BUYER AND ACCEPTANCE**;
-- external payment processing: **DISABLED / FAIL CLOSED**.
-
-This pointer does not establish a release identity, buyer acceptance, legal or financial conclusions, payment-provider activation, independent human review, or completion of residual operational work.
+This pointer does not establish deployment, buyer acceptance, legal or financial conclusions, payment-provider activation, independent human review, or completion of residual operational work.
