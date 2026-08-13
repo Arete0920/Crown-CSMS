@@ -38,7 +38,12 @@ class Section(models.Model):
 
 
 class SectionPlacement(models.Model):
-    """Scheduling-owned placement for one canonical academics.Section."""
+    """Scheduling-owned recurring meeting for a canonical academics.Section.
+
+    A section may have multiple recurring meetings (for example MON/P1 and
+    WED/P1, or A-day/P2 and B-day/P3). Each active template/block pair is a
+    distinct placement; room and teacher collisions remain fail-closed.
+    """
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     school = models.ForeignKey(School, on_delete=models.CASCADE, related_name="section_placements")
@@ -47,10 +52,10 @@ class SectionPlacement(models.Model):
         on_delete=models.PROTECT,
         related_name="section_placements",
     )
-    section = models.OneToOneField(
+    section = models.ForeignKey(
         "academics.Section",
         on_delete=models.CASCADE,
-        related_name="schedule_placement",
+        related_name="schedule_placements",
     )
     room = models.ForeignKey(
         Room,
@@ -75,6 +80,11 @@ class SectionPlacement(models.Model):
 
     class Meta:
         constraints = [
+            models.UniqueConstraint(
+                fields=["section", "day_template", "period_block"],
+                condition=models.Q(is_active=True),
+                name="uniq_active_section_meeting",
+            ),
             models.UniqueConstraint(
                 fields=["school", "academic_year", "room", "day_template", "period_block"],
                 condition=models.Q(room__isnull=False, is_active=True),
