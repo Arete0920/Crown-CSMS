@@ -110,7 +110,7 @@ def _grant_section_scheduler_access(user, school, role_code="HEAD_OF_SCHOOL"):
 def _grant_wizard_access_if_required(description, user, school):
     if description == "enrollment_conversion":
         _grant_enrollment_conversion_access(user, school)
-    elif description == "section_scheduler":
+    elif description in ("scheduling", "section_scheduler"):
         _grant_section_scheduler_access(user, school)
 
 
@@ -158,9 +158,10 @@ class TestWizardRequiresSchoolHeader(TestCase):
 
     def setUp(self):
         self.school = _make_school("Header Test School")
-        self.client = _make_authed_client(self.school)
+        self.client, self.user = _make_authed_client_with_user(self.school)
 
     def _assert_400(self, description, url):
+        _grant_wizard_access_if_required(description, self.user, self.school)
         r = self.client.post(url)  # no school header
         self.assertIn(
             r.status_code, (400, 422),
