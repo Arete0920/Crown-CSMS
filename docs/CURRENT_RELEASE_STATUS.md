@@ -2,7 +2,7 @@
 
 **Status:** Canonical release and freeze authority  
 **Last verified:** 2026-08-13  
-**Crown-CSMS `main` verified:** `0b4435bee02d91ff5dda057f4e7d54ef7fecceda`  
+**Crown-CSMS `main` verified:** `52ef87dbe6b4cb4c6ff147af11e386a519250a7e`  
 **PR #9 exact head:** `6ddd7a8b1972dd522ec82afe09bbad09cb6f728b`
 
 ## Current decision
