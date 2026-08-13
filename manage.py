@@ -3,7 +3,7 @@
 
 This eliminates working-directory assumptions:
 - From repo root:  python manage.py migrate
-- From anywhere:   python C:/path/to/Crown2026/manage.py migrate
+- From anywhere:   python C:/path/to/Crown-CSMS/manage.py migrate
 
 The real Django entrypoint in this repo lives at backend/manage.py.
 """
