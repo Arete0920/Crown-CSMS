@@ -1,22 +1,66 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import CrownWizardStepHeader from "../../components/crown/CrownWizardStepHeader.jsx";
 import {
-  createSchedulingWizardSession,
   configureSchedulingSession,
+  createSchedulingWizardSession,
+  getSchedulingScopeOptions,
 } from "../../api/scheduling_wizard.js";
 import "../../styles/crown-wizard.css";
 
 export default function Step1Term({ context, setContext, goNext, stepIndex, totalSteps, steps }) {
-  const [term, setTerm] = useState(context.term || "");
-  const [schoolYear, setSchoolYear] = useState(context.schoolYear || "");
+  const [academicYearId, setAcademicYearId] = useState(context.academicYearId || "");
+  const [termId, setTermId] = useState(context.termId || "");
+  const [scope, setScope] = useState({ academic_years: [], terms: [] });
   const [loading, setLoading] = useState(false);
+  const [loadingScope, setLoadingScope] = useState(true);
   const [error, setError] = useState(null);
 
+  useEffect(() => {
+    let active = true;
+    async function loadScope() {
+      setLoadingScope(true);
+      setError(null);
+      try {
+        const data = await getSchedulingScopeOptions();
+        if (!active) return;
+        setScope(data);
+        const preferredYear = academicYearId
+          || data.academic_years?.find((year) => year.is_current)?.academic_year_id
+          || data.academic_years?.[0]?.academic_year_id
+          || "";
+        setAcademicYearId(preferredYear);
+        if (!termId && preferredYear) {
+          const preferredTerm = data.terms?.find(
+            (term) => term.academic_year_id === preferredYear && term.active,
+          ) || data.terms?.find((term) => term.academic_year_id === preferredYear);
+          setTermId(preferredTerm?.term_id || "");
+        }
+      } catch (e) {
+        if (active) setError(e.body?.error || e.message || "Unable to load canonical scheduling scope.");
+      } finally {
+        if (active) setLoadingScope(false);
+      }
+    }
+    loadScope();
+    return () => { active = false; };
+  }, []);
+
+  const availableTerms = useMemo(
+    () => scope.terms.filter((term) => term.academic_year_id === academicYearId),
+    [scope.terms, academicYearId],
+  );
+
+  function handleYearChange(value) {
+    setAcademicYearId(value);
+    const nextTerm = scope.terms.find(
+      (term) => term.academic_year_id === value && term.active,
+    ) || scope.terms.find((term) => term.academic_year_id === value);
+    setTermId(nextTerm?.term_id || "");
+  }
+
   async function handleContinue() {
-    if (!term.trim()) { setError("Term is required (e.g. 2026-FALL)."); return; }
-    if (term.trim().length > 24) { setError("Term must be 24 characters or fewer."); return; }
-    if (!schoolYear.trim()) { setError("School year is required (e.g. 2026-2027)."); return; }
-    if (schoolYear.trim().length > 16) { setError("School year must be 16 characters or fewer."); return; }
+    if (!academicYearId) { setError("Select an academic year."); return; }
+    if (!termId) { setError("Select a canonical term."); return; }
 
     setLoading(true);
     setError(null);
@@ -26,11 +70,15 @@ export default function Step1Term({ context, setContext, goNext, stepIndex, tota
         const created = await createSchedulingWizardSession();
         sessionId = created.session_id;
       }
-      const data = await configureSchedulingSession(sessionId, term.trim(), schoolYear.trim());
+      const data = await configureSchedulingSession(sessionId, academicYearId, termId);
+      const selectedYear = scope.academic_years.find((year) => year.academic_year_id === academicYearId);
+      const selectedTerm = scope.terms.find((term) => term.term_id === termId);
       setContext({
         sessionId,
-        term: term.trim(),
-        schoolYear: schoolYear.trim(),
+        academicYearId,
+        termId,
+        schoolYear: selectedYear?.name || "",
+        term: selectedTerm?.code || "",
         configure: data,
         courses: null,
         sections: null,
@@ -48,8 +96,8 @@ export default function Step1Term({ context, setContext, goNext, stepIndex, tota
   return (
     <div>
       <CrownWizardStepHeader
-        title="Term Setup"
-        subtitle="Set the term label and school year for this scheduling run."
+        title="Scheduling Scope"
+        subtitle="Select the canonical academic year and term for this scheduling run."
         stepIndex={stepIndex}
         totalSteps={totalSteps}
         steps={steps}
@@ -58,34 +106,45 @@ export default function Step1Term({ context, setContext, goNext, stepIndex, tota
       <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 16 }}>
         <div>
           <div style={{ display: "block", fontSize: 12, color: "var(--crown-muted)", marginBottom: 4 }}>
-            Term Label *
+            Academic Year *
           </div>
-          <input
+          <select
             className="crown-input"
-            type="text"
-            placeholder="e.g. 2026-FALL"
-            value={term}
-            onChange={(e) => setTerm(e.target.value)}
-            maxLength={24}
+            value={academicYearId}
+            onChange={(e) => handleYearChange(e.target.value)}
+            disabled={loadingScope}
             style={{ width: "100%", boxSizing: "border-box" }}
-          />
-          <span style={{ fontSize: 11, color: "var(--crown-muted)" }}>Max 24 characters. Used as the term key on course sections.</span>
+          >
+            <option value="">Select academic year</option>
+            {scope.academic_years.map((year) => (
+              <option key={year.academic_year_id} value={year.academic_year_id}>
+                {year.name}{year.is_current ? " — Current" : ""}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div>
           <div style={{ display: "block", fontSize: 12, color: "var(--crown-muted)", marginBottom: 4 }}>
-            School Year *
+            Term *
           </div>
-          <input
+          <select
             className="crown-input"
-            type="text"
-            placeholder="e.g. 2026-2027"
-            value={schoolYear}
-            onChange={(e) => setSchoolYear(e.target.value)}
-            maxLength={16}
+            value={termId}
+            onChange={(e) => setTermId(e.target.value)}
+            disabled={loadingScope || !academicYearId}
             style={{ width: "100%", boxSizing: "border-box" }}
-          />
-          <span style={{ fontSize: 11, color: "var(--crown-muted)" }}>Max 16 characters. e.g. 2026-2027.</span>
+          >
+            <option value="">Select term</option>
+            {availableTerms.map((term) => (
+              <option key={term.term_id} value={term.term_id}>
+                {term.code} — {term.name}{term.active ? "" : " — Inactive"}
+              </option>
+            ))}
+          </select>
+          <span style={{ fontSize: 11, color: "var(--crown-muted)" }}>
+            Terms are loaded from the canonical academic calendar; free-text scheduling scope is disabled.
+          </span>
         </div>
 
         {error && <div className="crown-alert">{error}</div>}
@@ -93,7 +152,7 @@ export default function Step1Term({ context, setContext, goNext, stepIndex, tota
         <button
           className="crown-btn crown-btn-primary"
           onClick={handleContinue}
-          disabled={loading}
+          disabled={loading || loadingScope || !academicYearId || !termId}
           style={{ alignSelf: "flex-start" }}
         >
           {loading ? "Saving…" : "Continue →"}
