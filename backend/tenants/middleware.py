@@ -1,7 +1,7 @@
 """
 Tenant-aware middleware for the tenants app.
 
-NOTE: Crown2026 already ships two tenant middleware layers:
+NOTE: CROWN already ships two tenant middleware layers:
   - core.tenant_header_middleware.TenantHeaderRequiredMiddleware (enforces X-School-Id header)
   - crown_api.tenant_middleware.TenantContextMiddleware (resolves + attaches school to request)
 
@@ -16,7 +16,7 @@ The classes below are additive layers:
 
 Both are optional. TenantMiddleware is useful for views that need rich TenantProfile access
 without a per-view ORM call.  RequireTenantMiddleware is a no-op when
-TenantHeaderRequiredMiddleware is active (which it is by default in Crown2026 settings).
+TenantHeaderRequiredMiddleware is active (which it is by default in CROWN settings).
 """
 from __future__ import annotations
 

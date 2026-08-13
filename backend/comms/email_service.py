@@ -1,5 +1,5 @@
 """
-Microsoft Graph email service for Crown2026.
+Microsoft Graph email service for CROWN.
 
 Sends email on behalf of the sender via the Graph /sendMail endpoint using
 client-credentials (app token), not delegated auth.
