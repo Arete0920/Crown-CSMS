@@ -37,6 +37,7 @@ const FAILURE_TAIL_LINES = positiveIntegerEnv("CROWN_VERIFY_FAILURE_TAIL_LINES",
 const commands = [
   { label: "lint", cmd: "npm run lint" },
   { label: "build", cmd: "npm run build" },
+  { label: "check:visual-system", cmd: "npm run check:visual-system" },
   { label: "test:contracts", cmd: "npm run test:contracts" },
   { label: "check:shell-certification", cmd: "npm run check:shell-certification" },
   { label: "check:shell-backend-contract-parity", cmd: "npm run check:shell-backend-contract-parity" },
@@ -48,6 +49,7 @@ const commands = [
   { label: "ui:proof:matrix-pack-3", cmd: "npm run ui:proof:matrix-pack-3" },
   { label: "test:release:routes", cmd: "npm run test:release:routes" },
   { label: "test:release:a11y", cmd: "npm run test:release:a11y" },
+  { label: "certify:scaffold-crawler", cmd: "npm run certify:scaffold-crawler" },
 ];
 
 function consoleLog(message) {

@@ -1,6 +1,9 @@
 name: Crown Full Surface Verification
 
 on:
+  push:
+    branches:
+      - main
   pull_request:
     paths:
       - "frontend/**"
@@ -10,6 +13,10 @@ on:
   schedule:
     # Daily at 05:00 UTC
     - cron: "0 5 * * *"
+
+concurrency:
+  group: full-surface-verification-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -25,17 +32,17 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
       - name: Setup Node.js 24
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: "24"
           cache: "npm"
           cache-dependency-path: frontend/dashboards/package-lock.json
 
       - name: Setup Python 3.11
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@7f4fc3e22c37d6ff65e88745f38bd3157c663f7c # v4
         with:
           python-version: "3.11"
 
@@ -93,7 +100,7 @@ jobs:
 
       - name: Upload verification artifacts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: crown-verification-${{ github.run_number }}-${{ github.sha }}
           path: frontend/dashboards/artifacts/verification/

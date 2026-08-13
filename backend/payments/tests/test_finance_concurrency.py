@@ -4,7 +4,7 @@ from decimal import Decimal
 from threading import Barrier
 
 import pytest
-from django.db import IntegrityError, close_old_connections
+from django.db import IntegrityError, close_old_connections, connection
 from django.utils import timezone
 
 from core.models import School, UserAccount
@@ -40,7 +40,13 @@ from payments.models import (
 from payments.reconciliation_ops import create_manual_payout_match
 
 
-pytestmark = pytest.mark.django_db(transaction=True)
+pytestmark = [
+    pytest.mark.django_db(transaction=True),
+    pytest.mark.skipif(
+        connection.vendor != "postgresql",
+        reason="Finance concurrency guarantees require PostgreSQL row-lock semantics.",
+    ),
+]
 
 
 def _build_payment(*, amount_cents=10_000):
@@ -102,7 +108,7 @@ def _run_parallel(callables):
         except Exception as exc:
             return ("error", exc)
         finally:
-            close_old_connections()
+            connection.close()
 
     with ThreadPoolExecutor(max_workers=len(callables)) as pool:
         return [future.result(timeout=30) for future in [pool.submit(wrapped, fn) for fn in callables]]

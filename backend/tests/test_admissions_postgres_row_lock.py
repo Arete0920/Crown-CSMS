@@ -7,7 +7,10 @@ from django.test import TestCase
 from rest_framework.test import APIClient
 
 from admissions.models import AdmissionsApplication, AdmissionsAuditEvent
+from applications.models import Application, ApplicationEvent, ApplicationStatus
+from applications.views_admissions import CONTRACT_COUNTERSIGNED, DEPOSIT_PAID, ENROLLMENT_STATE_EVENT_TYPE
 from core.models import AcademicYear, CrownPermission, Family, RolePermission, School, UserRole
+from households.models import Household
 
 
 User = get_user_model()
@@ -41,6 +44,29 @@ class AdmissionsPostgresRowLockTests(TestCase):
             status=AdmissionsApplication.STATUS_ACCEPTED,
             sis_student=None,
         )
+        household = Household.objects.create(
+            school_id=self.school.id,
+            name=f"Canonical Family {uuid.uuid4().hex[:6]}",
+        )
+        canonical = Application.objects.create(
+            school_id=self.school.id,
+            household=household,
+            status=ApplicationStatus.DECIDED,
+        )
+        ApplicationEvent.objects.create(
+            school_id=self.school.id,
+            application=canonical,
+            event_type="decision_made",
+            payload={"decision": "accepted"},
+        )
+        ApplicationEvent.objects.create(
+            school_id=self.school.id,
+            application=canonical,
+            event_type=ENROLLMENT_STATE_EVENT_TYPE,
+            payload={"contract_status": CONTRACT_COUNTERSIGNED, "deposit_status": DEPOSIT_PAID},
+        )
+        self.application.notes_internal = f"canonical_application_id={canonical.id}"
+        self.application.save(update_fields=["notes_internal", "updated_at"])
 
         self.user = User.objects.create_user(
             username=f"registrar-{uuid.uuid4().hex[:8]}@example.test",
