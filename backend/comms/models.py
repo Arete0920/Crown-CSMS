@@ -1,5 +1,5 @@
 """
-Crown2026 Communications models.
+CROWN Communications models.
 
 OutboxMessage is defined here (canonical) so Django's ORM, migrations,
 and admin all resolve it through the standard app label `comms`.
@@ -82,7 +82,7 @@ class NotificationPreference(models.Model):
 # ---------------------------------------------------------------------------
 
 class MessageLog(models.Model):
-    """Delivery record for every message sent through Crown2026."""
+    """Delivery record for every message sent through CROWN."""
 
     CHANNEL_CHOICES = (
         ("email", "Email"),
