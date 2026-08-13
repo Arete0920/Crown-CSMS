@@ -28,55 +28,32 @@ jobs:
 
           path = Path('backend/academics/models.py')
           text = path.read_text(encoding='utf-8')
+          start = text.index('class Section(TimeStampedModel):')
+          end = text.index('\n\nclass Enrollment', start)
+          section = text[start:end]
 
-          field_needle = '''class Section(TimeStampedModel):
-              id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+          if 'section_code = models.CharField(' not in section:
+              anchor = '    school_id = models.UUIDField(db_index=True)\n'
+              if section.count(anchor) != 1:
+                  raise SystemExit('Section school_id anchor did not match exactly once')
+              section = section.replace(anchor, anchor + '    section_code = models.CharField(max_length=32, blank=True, default="", db_index=True)\n', 1)
 
-              school_id = models.UUIDField(db_index=True)
+          if 'name="uniq_section_term_code"' not in section:
+              marker = '\n    def __str__(self) -> str:\n'
+              if section.count(marker) != 1:
+                  raise SystemExit('Section __str__ marker did not match exactly once')
+              constraint = '''
+        constraints = [
+            models.UniqueConstraint(
+                fields=["school_id", "term_ref", "section_code"],
+                condition=models.Q(section_code__gt="", term_ref__isnull=False),
+                name="uniq_section_term_code",
+            ),
+        ]
+'''
+              section = section.replace(marker, constraint + marker, 1)
 
-              course = models.ForeignKey(Course, on_delete=models.PROTECT, related_name="sections")
-          '''
-          field_replacement = '''class Section(TimeStampedModel):
-              id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-
-              school_id = models.UUIDField(db_index=True)
-              section_code = models.CharField(max_length=32, blank=True, default="", db_index=True)
-
-              course = models.ForeignKey(Course, on_delete=models.PROTECT, related_name="sections")
-          '''
-          if text.count(field_needle) != 1:
-              raise SystemExit('Section field anchor did not match exactly once')
-          text = text.replace(field_needle, field_replacement, 1)
-
-          meta_needle = '''    class Meta:
-              db_table = "section"
-              indexes = [
-                  models.Index(fields=["school_id", "term"]),
-                  models.Index(fields=["school_id", "course"]),
-              ]
-
-              def __str__(self) -> str:
-          '''
-          meta_replacement = '''    class Meta:
-              db_table = "section"
-              indexes = [
-                  models.Index(fields=["school_id", "term"]),
-                  models.Index(fields=["school_id", "course"]),
-              ]
-              constraints = [
-                  models.UniqueConstraint(
-                      fields=["school_id", "term_ref", "section_code"],
-                      condition=models.Q(section_code__gt="", term_ref__isnull=False),
-                      name="uniq_section_term_code",
-                  ),
-              ]
-
-              def __str__(self) -> str:
-          '''
-          if text.count(meta_needle) != 1:
-              raise SystemExit('Section Meta anchor did not match exactly once')
-          text = text.replace(meta_needle, meta_replacement, 1)
-          path.write_text(text, encoding='utf-8')
+          path.write_text(text[:start] + section + text[end:], encoding='utf-8')
           PY
 
       - name: Commit model patch only
