@@ -48,7 +48,7 @@ def _run_parallel(callables):
         except Exception as exc:
             return ("error", exc)
         finally:
-            close_old_connections()
+            connection.close()
 
     with ThreadPoolExecutor(max_workers=len(callables)) as pool:
         futures = [pool.submit(wrapped, fn) for fn in callables]
