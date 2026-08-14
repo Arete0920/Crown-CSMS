@@ -153,7 +153,7 @@ def test_role_in_another_school_does_not_authorize_roster_mutation():
 
     response = _client(user).post(BASE_URL, **_headers(school_b))
 
-    assert response.status_code == 403
+    assert response.status_code == 404
     assert SectionAssignWizardSession.objects.count() == 0
 
 
