@@ -15,6 +15,7 @@ class CourseMiniSerializer(serializers.ModelSerializer):
 
 class AttendanceRecordReadSerializer(serializers.ModelSerializer):
     attendance_id = serializers.UUIDField(source="id", read_only=True)
+    section_id = serializers.UUIDField(read_only=True)
     course = CourseMiniSerializer(read_only=True)
 
     class Meta:
@@ -25,6 +26,7 @@ class AttendanceRecordReadSerializer(serializers.ModelSerializer):
             "status",
             "minutes_late",
             "notes_public",
+            "section_id",
             "course",
         )
 
