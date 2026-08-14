@@ -84,7 +84,7 @@ def _make_authed_client_with_user(school):
 
 
 def _grant_enrollment_conversion_access(user, school, role_code="REGISTRAR"):
-    UserRole.objects.create(user=user, school=school, role_code=role_code)
+    UserRole.objects.get_or_create(user=user, school=school, role_code=role_code)
     perm, _ = CrownPermission.objects.get_or_create(
         code="admissions.edit",
         defaults={"description": "Edit admissions records"},
@@ -93,7 +93,7 @@ def _grant_enrollment_conversion_access(user, school, role_code="REGISTRAR"):
 
 
 def _grant_section_scheduler_access(user, school, role_code="HEAD_OF_SCHOOL"):
-    UserRole.objects.create(user=user, school=school, role_code=role_code)
+    UserRole.objects.get_or_create(user=user, school=school, role_code=role_code)
     for code in (
         "scheduling.view",
         "scheduling.configure",
@@ -153,16 +153,17 @@ class TestWizardRequiresAuth(TestCase):
 class TestWizardRequiresSchoolHeader(TestCase):
     """
     Every wizard session endpoint must reject requests missing X-School-Id.
-    Auth is present; only the tenant header is missing.
+    Auth is present; only the tenant header is missing. Each subtest uses a fresh
+    principal so role grants from one wizard cannot supply implicit tenant context
+    to a later wizard.
     """
 
     def setUp(self):
         self.school = _make_school("Header Test School")
-        self.client, self.user = _make_authed_client_with_user(self.school)
 
     def _assert_400(self, description, url):
-        _grant_wizard_access_if_required(description, self.user, self.school)
-        r = self.client.post(url)  # no school header
+        client, _ = _make_authed_client_with_user(self.school)
+        r = client.post(url)  # no school header
         self.assertIn(
             r.status_code, (400, 422),
             f"{description} ({url}): expected 400 for missing X-School-Id, got {r.status_code}."
