@@ -14,12 +14,14 @@ from applications.views_admissions import (
     admissions_submit,
     admissions_public_config,
     admissions_enrollment_state,
-    admissions_enrollment_state_update,
     admissions_contract_detail,
     admissions_contract_update,
     admissions_contract_amend,
-    admissions_lifecycle_chain_update,
     admissions_application_event_replay,
+)
+from applications.views_admissions_identity import (
+    admissions_enrollment_state_update,
+    admissions_lifecycle_chain_update,
 )
 from crown_api.admissions_runtime import admissions_summary
 from crown_api.system_views import SeedStatusView, demo_reset_view, diagnose_db_tables_view, fix_schema_drift_view
