@@ -4,13 +4,13 @@ import logging
 from django.db import transaction, IntegrityError
 from django.shortcuts import get_object_or_404
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
-from rest_framework.permissions import IsAuthenticated
 from rest_framework.authentication import SessionAuthentication
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.response import Response
 from rest_framework import status
 
 from academics.models import Enrollment, Section
+from core.permissions import CrownModulePermission
 from households.models import Student
 from households.scoping import get_request_school_id
 
@@ -19,7 +19,8 @@ from drf_spectacular.utils import extend_schema
 from drf_spectacular.types import OpenApiTypes
 
 _AUTH = [JWTAuthentication, SessionAuthentication]
-_PERM = [IsAuthenticated]
+_ROSTER_MUTATION_PERM = [CrownModulePermission("academics.view", write_code="rosters.edit")]
+_ROSTER_READ_PERM = [CrownModulePermission("academics.view")]
 
 VALID_ACTIONS = {"add", "remove"}
 logger = logging.getLogger(__name__)
@@ -39,7 +40,7 @@ def _parse_uuid(value, field_name):
 @extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 @authentication_classes(_AUTH)
-@permission_classes(_PERM)
+@permission_classes(_ROSTER_MUTATION_PERM)
 def create_session(request):
     school_id = get_request_school_id(request)
     from core.models import School
@@ -54,7 +55,7 @@ def create_session(request):
 @extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 @authentication_classes(_AUTH)
-@permission_classes(_PERM)
+@permission_classes(_ROSTER_MUTATION_PERM)
 def configure_session(request, session_id):
     school_id = get_request_school_id(request)
     session = _get_session(session_id, school_id)
@@ -93,7 +94,7 @@ def configure_session(request, session_id):
 @extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 @authentication_classes(_AUTH)
-@permission_classes(_PERM)
+@permission_classes(_ROSTER_MUTATION_PERM)
 def load_students(request, session_id):
     school_id = get_request_school_id(request)
     session = _get_session(session_id, school_id)
@@ -136,7 +137,7 @@ def load_students(request, session_id):
 @extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 @authentication_classes(_AUTH)
-@permission_classes(_PERM)
+@permission_classes(_ROSTER_MUTATION_PERM)
 def stage_roster(request, session_id):
     school_id = get_request_school_id(request)
     session = _get_session(session_id, school_id)
@@ -186,7 +187,7 @@ def stage_roster(request, session_id):
 @extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 @authentication_classes(_AUTH)
-@permission_classes(_PERM)
+@permission_classes(_ROSTER_MUTATION_PERM)
 def commit_session(request, session_id):
     school_id = get_request_school_id(request)
     session = _get_session(session_id, school_id)
@@ -247,7 +248,7 @@ def commit_session(request, session_id):
 @extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["GET"])
 @authentication_classes(_AUTH)
-@permission_classes(_PERM)
+@permission_classes(_ROSTER_READ_PERM)
 def verify_session(request, session_id):
     school_id = get_request_school_id(request)
     session = _get_session(session_id, school_id)
