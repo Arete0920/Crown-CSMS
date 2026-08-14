@@ -87,7 +87,6 @@ def applications(request: HttpRequest):
     if not household_id:
         return _json_error("household_id is required", status=400)
 
-    # no-leak: ensure the household belongs to this school
     try:
         household_uuid = UUID(str(household_id))
         Household.objects.get(pk=household_uuid, school_id=sid)
@@ -122,7 +121,6 @@ def application_detail(request: HttpRequest, application_id: str):
     try:
         app = Application.objects.get(pk=UUID(application_id), school_id=sid)
     except Application.DoesNotExist:
-        # no-leak: behave as not found
         return _json_error("Not found", status=404)
 
     data = _app_to_dict(app)
@@ -150,7 +148,7 @@ def application_submit(request: HttpRequest, application_id: str):
 
     try:
         result = submit_application(app)
-    except ValueError as e:
+    except ValueError:
         logger.exception("Application submit failed")
         return _json_error("Request failed.", status=400)
 
@@ -177,7 +175,6 @@ def applicants(request: HttpRequest):
     if not first_name or not last_name:
         return _json_error("first_name and last_name are required", status=400)
 
-    # ensure the application is in-scope (no-leak)
     try:
         app = Application.objects.get(pk=UUID(str(application_id)), school_id=sid)
     except Application.DoesNotExist:
@@ -204,8 +201,12 @@ def application_decision(request: HttpRequest, application_id: str):
     Body:
     {
       "decision": "ACCEPT" | "DENY",
-      "enrollment_fee": "100.00"   # optional, ACCEPT only
+      "enrollment_fee": "100.00",  # optional, ACCEPT only
+      "student_numbers": {"<applicant_uuid>": "<canonical_student_number>"}
     }
+
+    ACCEPT requires an explicit student number for each applicant that does not
+    already have a verified StudentIdentityLink. Identity is never inferred.
     """
     sid = get_request_school_id(request)
     if not sid:
@@ -217,6 +218,9 @@ def application_decision(request: HttpRequest, application_id: str):
 
     decision = payload.get("decision")
     fee = payload.get("enrollment_fee")
+    student_numbers = payload.get("student_numbers", {})
+    if not isinstance(student_numbers, dict):
+        return _json_error("student_numbers must be an object keyed by applicant id", status=400)
 
     try:
         app = Application.objects.get(pk=UUID(application_id), school_id=sid)
@@ -235,8 +239,9 @@ def application_decision(request: HttpRequest, application_id: str):
             application=app,
             decision=decision,
             enrollment_fee_amount=fee_amt,
+            student_numbers=student_numbers,
         )
-    except ValueError as e:
+    except ValueError:
         logger.exception("Application decision failed")
         return _json_error("Request failed.", status=400)
 
