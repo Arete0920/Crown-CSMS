@@ -9,7 +9,8 @@ academic_year_wizard/views.py
   POST /api/v1/academic-year-wizard/sessions/<id>/commit/             → commit_session
   GET  /api/v1/academic-year-wizard/sessions/<id>/verify/             → verify_session
 
-Auth: JWT or Session. All endpoints tenant-scoped via X-School-Id.
+Auth: JWT or Session. All endpoints require authenticated HEAD_OF_SCHOOL authority
+(or superuser) and are tenant-scoped via X-School-Id.
 
 Commit semantics:
   - AcademicYear: get_or_create by (school, name). Set is_current=True; deactivate all others.
@@ -34,11 +35,12 @@ from core.models import AcademicYear, School
 from households.scoping import get_request_school_id
 
 from .models import AcademicYearWizardSession
+from .permissions import CanManageAcademicYear
 from drf_spectacular.utils import extend_schema
 from drf_spectacular.types import OpenApiTypes
 
 _AUTH = [JWTAuthentication, SessionAuthentication]
-_PERM = [IsAuthenticated]
+_PERM = [IsAuthenticated, CanManageAcademicYear]
 logger = logging.getLogger(__name__)
 
 _CODE_RE = re.compile(r'^[A-Za-z0-9_-]{1,24}$')
@@ -60,7 +62,7 @@ def _parse_date(value, field_name):
         return None, f"{field_name} must be a valid date (YYYY-MM-DD)"
 
 
-def _validate_term(term, idx):
+def _validate_term(term, idx, year_start=None, year_end=None):
     errors = []
     code = (term.get("code") or "").strip()
     name = (term.get("name") or "").strip()
@@ -73,12 +75,31 @@ def _validate_term(term, idx):
     if not name:
         errors.append(f"terms[{idx}].name is required")
 
+    parsed_dates = {}
     for date_field in ("start_date", "end_date"):
         raw = (term.get(date_field) or "").strip()
         if raw:
-            _, err = _parse_date(raw, f"terms[{idx}].{date_field}")
+            parsed, err = _parse_date(raw, f"terms[{idx}].{date_field}")
             if err:
                 errors.append(err)
+            else:
+                parsed_dates[date_field] = parsed
+
+    term_start = parsed_dates.get("start_date")
+    term_end = parsed_dates.get("end_date")
+    if term_start and term_end and term_end < term_start:
+        errors.append(f"terms[{idx}].end_date must be on or after start_date")
+
+    if year_start:
+        if term_start and term_start < year_start:
+            errors.append(f"terms[{idx}].start_date must be within the configured academic year")
+        if term_end and term_end < year_start:
+            errors.append(f"terms[{idx}].end_date must be within the configured academic year")
+    if year_end:
+        if term_start and term_start > year_end:
+            errors.append(f"terms[{idx}].start_date must be within the configured academic year")
+        if term_end and term_end > year_end:
+            errors.append(f"terms[{idx}].end_date must be within the configured academic year")
 
     ordering = term.get("ordering", 0)
     try:
@@ -88,6 +109,24 @@ def _validate_term(term, idx):
         errors.append(f"terms[{idx}].ordering must be an integer")
 
     return errors
+
+
+def _validate_terms_for_session(session, terms):
+    if not isinstance(terms, list) or not terms:
+        return ["terms must be a non-empty list"]
+
+    year_start, start_err = _parse_date(session.start_date, "start_date")
+    year_end, end_err = _parse_date(session.end_date, "end_date")
+    if start_err or end_err:
+        return [error for error in (start_err, end_err) if error]
+
+    all_errors = []
+    for idx, term in enumerate(terms):
+        if not isinstance(term, dict):
+            all_errors.append(f"terms[{idx}] must be an object")
+            continue
+        all_errors.extend(_validate_term(term, idx, year_start=year_start, year_end=year_end))
+    return all_errors
 
 
 # ---------------------------------------------------------------------------
@@ -186,10 +225,8 @@ def set_terms(request, session_id):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    # Validate all terms; collect all errors before returning
-    all_errors = []
-    for idx, term in enumerate(terms):
-        all_errors.extend(_validate_term(term, idx))
+    # Validate all terms against both their own dates and the configured year.
+    all_errors = _validate_terms_for_session(session, terms)
 
     if all_errors:
         return Response({"errors": all_errors}, status=status.HTTP_400_BAD_REQUEST)
@@ -230,6 +267,12 @@ def commit_session(request, session_id):
             {"error": f"session must be in terms_set state before commit (current: {session.status})"},
             status=status.HTTP_400_BAD_REQUEST,
         )
+
+    # Revalidate persisted configuration at the commit boundary so stale or
+    # manually altered sessions cannot bypass academic-year date authority.
+    commit_errors = _validate_terms_for_session(session, session.terms_config)
+    if commit_errors:
+        return Response({"errors": commit_errors}, status=status.HTTP_400_BAD_REQUEST)
 
     with transaction.atomic():
         # Serialize concurrent year-flip operations for this school.
