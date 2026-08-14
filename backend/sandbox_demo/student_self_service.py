@@ -49,13 +49,13 @@ def _require_student(user) -> UserAccount:
 
 
 def _canonical_schedule_fixture(user: UserAccount) -> AcademicStudent:
-    """Create an explicit sandbox-only compatibility identity and canonical schedule.
+    """Create the sandbox compatibility identity and canonical schedule once.
 
     The authenticated sandbox account deterministically derives the synthetic
     compatibility student's UUID. The compatibility row intentionally leaves
     its optional account FK unset so no cross-domain account ownership is
-    asserted. This is not a production identity migration and never guesses a
-    core.Student mapping by name/email/position.
+    asserted. Replays are read-idempotent: relationship authority is verified,
+    and stable fixture rows are not rewritten on every GET.
     """
     school_id = user.school_id
     academic_year = (
@@ -72,7 +72,7 @@ def _canonical_schedule_fixture(user: UserAccount) -> AcademicStudent:
             is_current=True,
         )
 
-    household, _ = AcademicHousehold.objects.update_or_create(
+    household, _ = AcademicHousehold.objects.get_or_create(
         school_id=school_id,
         name="Reed Family Student Sandbox",
         defaults={
@@ -87,7 +87,7 @@ def _canonical_schedule_fixture(user: UserAccount) -> AcademicStudent:
         SANDBOX_SECTION_NAMESPACE,
         f"student:{user.id}",
     )
-    academic_student, _ = AcademicStudent.objects.update_or_create(
+    academic_student, academic_student_created = AcademicStudent.objects.get_or_create(
         id=academic_student_id,
         defaults={
             "school_id": school_id,
@@ -99,7 +99,14 @@ def _canonical_schedule_fixture(user: UserAccount) -> AcademicStudent:
             "is_active": True,
         },
     )
-    course, _ = AcademicCourse.objects.update_or_create(
+    if not academic_student_created and (
+        academic_student.school_id != school_id
+        or academic_student.household_id != household.id
+        or academic_student.account_id is not None
+    ):
+        raise SandboxStudentError("canonical_student_authority_mismatch")
+
+    course, _ = AcademicCourse.objects.get_or_create(
         school_id=school_id,
         code=COURSE_CODE,
         defaults={"name": "Grade 7 English Language Arts"},
@@ -118,22 +125,24 @@ def _canonical_schedule_fixture(user: UserAccount) -> AcademicStudent:
         },
     )
     if not term_created:
-        term.name = "Fall 2026"
-        term.school_year = academic_year.name
-        term.start_date = date(2026, 8, 15)
-        term.end_date = date(2026, 12, 18)
-        term.ordering = 1
-        term.active = True
-        term.save(
-            update_fields=[
-                "name",
-                "school_year",
-                "start_date",
-                "end_date",
-                "ordering",
-                "active",
-            ]
-        )
+        if term.school_id != school_id:
+            raise SandboxStudentError("canonical_term_authority_mismatch")
+        term_values = {
+            "name": "Fall 2026",
+            "school_year": academic_year.name,
+            "start_date": date(2026, 8, 15),
+            "end_date": date(2026, 12, 18),
+            "ordering": 1,
+            "active": True,
+        }
+        changed_fields = []
+        for field_name, expected in term_values.items():
+            if getattr(term, field_name) != expected:
+                setattr(term, field_name, expected)
+                changed_fields.append(field_name)
+        if changed_fields:
+            term.save(update_fields=changed_fields)
+
     section_id = uuid.uuid5(
         SANDBOX_SECTION_NAMESPACE,
         f"{school_id}:{academic_year.id}:{COURSE_CODE}:01",
@@ -158,10 +167,18 @@ def _canonical_schedule_fixture(user: UserAccount) -> AcademicStudent:
             or section.teacher_id is not None
         ):
             raise SandboxStudentError("canonical_section_authority_mismatch")
-        section.term = term.code
-        section.teacher_name = "Eleanor Lower"
-        section.grade_band = "7"
-        section.save(update_fields=["term", "teacher_name", "grade_band"])
+        section_values = {
+            "term": term.code,
+            "teacher_name": "Eleanor Lower",
+            "grade_band": "7",
+        }
+        changed_fields = []
+        for field_name, expected in section_values.items():
+            if getattr(section, field_name) != expected:
+                setattr(section, field_name, expected)
+                changed_fields.append(field_name)
+        if changed_fields:
+            section.save(update_fields=changed_fields)
 
     enrollment, enrollment_created = AcademicEnrollment.objects.get_or_create(
         section=section,
@@ -171,23 +188,23 @@ def _canonical_schedule_fixture(user: UserAccount) -> AcademicStudent:
     if not enrollment_created and enrollment.school_id != school_id:
         raise SandboxStudentError("canonical_enrollment_authority_mismatch")
 
-    room, _ = Room.objects.update_or_create(
+    room, _ = Room.objects.get_or_create(
         school_id=school_id,
         code="207",
         defaults={"name": "Room 207", "capacity": 30, "is_active": True},
     )
-    bell, _ = BellSchedule.objects.update_or_create(
+    bell, _ = BellSchedule.objects.get_or_create(
         school_id=school_id,
         academic_year=academic_year,
         name="Student Sandbox Bell",
         defaults={"schedule_mode": "DAY_TEMPLATES", "is_active": False},
     )
-    day_template, _ = DayTemplate.objects.update_or_create(
+    day_template, _ = DayTemplate.objects.get_or_create(
         schedule=bell,
         template_code="MTWTF",
         defaults={"ordering": 1},
     )
-    block, _ = PeriodBlock.objects.update_or_create(
+    block, _ = PeriodBlock.objects.get_or_create(
         template=day_template,
         code="ELA7",
         defaults={
@@ -241,7 +258,7 @@ def _ensure_student_records(user: UserAccount) -> tuple[Student, AcademicStudent
         code="7",
         defaults={"label": "Grade 7", "sort_order": 8},
     )
-    student, _ = Student.objects.update_or_create(
+    student, _ = Student.objects.get_or_create(
         school_id=SCHOOL_ID,
         student_number=STUDENT_NUMBER,
         defaults={
@@ -256,20 +273,76 @@ def _ensure_student_records(user: UserAccount) -> tuple[Student, AcademicStudent
     academic_student = _canonical_schedule_fixture(user)
 
     # Non-Scheduling compatibility fixtures remain untouched by this cutover.
-    course, _ = LegacyCourse.objects.update_or_create(
+    course, _ = LegacyCourse.objects.get_or_create(
         course_code=COURSE_CODE,
         defaults={"name": "Grade 7 English Language Arts", "term": "Fall 2026", "active": True},
     )
-    teacher, _ = Person.objects.update_or_create(
+    teacher, _ = Person.objects.get_or_create(
         email="teacher.lower@heritage.example.org",
         defaults={"first_name": "Eleanor", "last_name": "Lower", "phone": "555-0110"},
     )
-    AttendanceRecord.objects.update_or_create(student=student, course=course, date=date(2026, 8, 10), defaults={"status": AttendanceRecord.STATUS_PRESENT, "notes_public": "Heritage sandbox attendance."})
-    GradeRecord.objects.update_or_create(student=student, course=course, period="Q1", assignment_name="Summer Reading Reflection", defaults={"category": "Writing", "score": 92, "score_max": 100, "letter_grade": "A-", "posted_at": timezone.now(), "notes_public": "Strong textual evidence and clear reflection."})
-    GradeRecord.objects.update_or_create(student=student, course=course, period="Q1", assignment_name="Vocabulary Check 1", defaults={"category": "Assessment", "score": 18, "score_max": 20, "letter_grade": "A-", "posted_at": timezone.now(), "notes_public": "Review two missed terms before Friday."})
-    comms_household, _ = CommsHousehold.objects.update_or_create(household_name="Reed Family Student Sandbox", defaults={"primary_address_line1": "100 Demo Lane", "primary_city": "Fairview", "primary_state": "PA", "primary_postal_code": "19000"})
-    thread, _ = MessageThread.objects.update_or_create(household=comms_household, student=student, subject="Grade 7 Welcome and First Week", defaults={"thread_type": "ANNOUNCEMENT", "created_by": teacher, "last_message_at": timezone.now()})
-    Message.objects.update_or_create(thread=thread, sender_person=teacher, body="Welcome to Grade 7. Bring your summer reading notes and Chromebook on the first day.", defaults={"sent_at": timezone.now()})
+    AttendanceRecord.objects.get_or_create(
+        student=student,
+        course=course,
+        date=date(2026, 8, 10),
+        defaults={
+            "status": AttendanceRecord.STATUS_PRESENT,
+            "notes_public": "Heritage sandbox attendance.",
+        },
+    )
+    GradeRecord.objects.get_or_create(
+        student=student,
+        course=course,
+        period="Q1",
+        assignment_name="Summer Reading Reflection",
+        defaults={
+            "category": "Writing",
+            "score": 92,
+            "score_max": 100,
+            "letter_grade": "A-",
+            "posted_at": timezone.now(),
+            "notes_public": "Strong textual evidence and clear reflection.",
+        },
+    )
+    GradeRecord.objects.get_or_create(
+        student=student,
+        course=course,
+        period="Q1",
+        assignment_name="Vocabulary Check 1",
+        defaults={
+            "category": "Assessment",
+            "score": 18,
+            "score_max": 20,
+            "letter_grade": "A-",
+            "posted_at": timezone.now(),
+            "notes_public": "Review two missed terms before Friday.",
+        },
+    )
+    comms_household, _ = CommsHousehold.objects.get_or_create(
+        household_name="Reed Family Student Sandbox",
+        defaults={
+            "primary_address_line1": "100 Demo Lane",
+            "primary_city": "Fairview",
+            "primary_state": "PA",
+            "primary_postal_code": "19000",
+        },
+    )
+    thread, _ = MessageThread.objects.get_or_create(
+        household=comms_household,
+        student=student,
+        subject="Grade 7 Welcome and First Week",
+        defaults={
+            "thread_type": "ANNOUNCEMENT",
+            "created_by": teacher,
+            "last_message_at": timezone.now(),
+        },
+    )
+    Message.objects.get_or_create(
+        thread=thread,
+        sender_person=teacher,
+        body="Welcome to Grade 7. Bring your summer reading notes and Chromebook on the first day.",
+        defaults={"sent_at": timezone.now()},
+    )
     return student, academic_student
 
 
