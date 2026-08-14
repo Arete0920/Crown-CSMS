@@ -46,6 +46,10 @@ try {
     python scripts/seed_scheduling.py
     if ($LASTEXITCODE -ne 0) { throw "Canonical Scheduling seed failed." }
 
+    Write-Host "Replaying canonical Scheduling seed to prove idempotency..." -ForegroundColor Cyan
+    python scripts/seed_scheduling.py
+    if ($LASTEXITCODE -ne 0) { throw "Canonical Scheduling seed replay failed." }
+
     $scriptCode = @'
 from academics.models import Section, Term
 from core.models import Student, Family
