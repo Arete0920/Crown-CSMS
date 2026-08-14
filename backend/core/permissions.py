@@ -102,14 +102,18 @@ class CrownModulePermission:
                     return False
                 school = getattr(request, "school", None)
                 if school is None:
-                    # Preserve the fail-closed contract when no tenant context was
-                    # supplied at all. The advanced section scheduler is the bounded
-                    # exception: every endpoint resolves required tenant scope as its
-                    # first operation, so let that resolver emit the canonical 400.
                     school_header = request.headers.get("X-School-Id")
                     if not school_header:
-                        if request.path.startswith("/api/v1/section-scheduler-wizard/"):
-                            return True
+                        # Scheduling wizards require an explicit tenant header. Raise
+                        # the canonical 400 here so RBAC cannot mask missing tenant
+                        # context as a generic 403 or fall back to a principal role.
+                        if request.path.startswith((
+                            "/api/v1/scheduling-wizard/",
+                            "/api/v1/section-scheduler-wizard/",
+                        )):
+                            from households.scoping import MissingSchoolContext
+
+                            raise MissingSchoolContext()
                         return False
 
                     from households.scoping import get_request_school_id
