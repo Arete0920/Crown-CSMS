@@ -262,7 +262,7 @@ def _upsert_verified_legacy_admissions(
     }, None
 
 
-def _authorize_identity_write(request, application_id):
+def _authorize_admissions_write(request, application_id):
     school, tenant_error = legacy_views._resolve_school(request)
     if tenant_error is not None:
         return None, None, tenant_error
@@ -275,22 +275,28 @@ def _authorize_identity_write(request, application_id):
             {"detail": legacy_views.PERMISSION_DENIED_DETAIL},
             status=403,
         )
-    context, identity_error = _verified_admissions_context(
-        school=school,
-        application_id=application_id,
+    app = (
+        Application.objects.select_for_update()
+        .select_related("household")
+        .filter(school_id=school.pk, id=application_id)
+        .first()
     )
-    return school, context, identity_error
+    if app is None:
+        return school, None, Response(
+            {"detail": legacy_views.APPLICATION_NOT_FOUND_DETAIL},
+            status=404,
+        )
+    return school, app, None
 
 
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def admissions_enrollment_state_update(request, application_id):
     with transaction.atomic():
-        school, context, error = _authorize_identity_write(request, application_id)
+        school, app, error = _authorize_admissions_write(request, application_id)
         if error is not None:
             return error
-        assert school is not None and context is not None
-        app = context.application
+        assert school is not None and app is not None
 
         current = legacy_views._latest_enrollment_state_for_application(app)
         requested_contract = (
@@ -315,6 +321,14 @@ def admissions_enrollment_state_update(request, application_id):
         )
         if validation_error is not None:
             return validation_error
+
+        context, identity_error = _verified_admissions_context(
+            school=school,
+            application_id=app.id,
+        )
+        if identity_error is not None:
+            return identity_error
+        assert context is not None
 
         contract_record, billing_handoff = legacy_views._commit_enrollment_state_update(
             school=school,
@@ -361,11 +375,10 @@ def admissions_enrollment_state_update(request, application_id):
 @permission_classes([IsAuthenticated])
 def admissions_lifecycle_chain_update(request, application_id):
     with transaction.atomic():
-        school, context, error = _authorize_identity_write(request, application_id)
+        school, app, error = _authorize_admissions_write(request, application_id)
         if error is not None:
             return error
-        assert school is not None and context is not None
-        app = context.application
+        assert school is not None and app is not None
 
         if not legacy_views._application_is_post_acceptance(app):
             return Response(
@@ -378,6 +391,37 @@ def admissions_lifecycle_chain_update(request, application_id):
 
         payload = request.data if isinstance(request.data, dict) else {}
         note = str(payload.get("note") or "").strip()[:500]
+        (
+            requested_enrollment,
+            requested_classroom_ready,
+            requested_portal_activation,
+        ) = legacy_views._lifecycle_chain_request_flags(payload)
+        if any(
+            [
+                requested_enrollment,
+                requested_classroom_ready,
+                requested_portal_activation,
+            ]
+        ):
+            state = legacy_views._latest_enrollment_state_for_application(app)
+            validation_error = legacy_views._validate_lifecycle_chain_request(
+                app=app,
+                state=state,
+                requested_enrollment=requested_enrollment,
+                requested_classroom_ready=requested_classroom_ready,
+                requested_portal_activation=requested_portal_activation,
+            )
+            if validation_error is not None:
+                return validation_error
+
+        context, identity_error = _verified_admissions_context(
+            school=school,
+            application_id=app.id,
+        )
+        if identity_error is not None:
+            return identity_error
+        assert context is not None
+
         created_events, update_error = legacy_views._apply_lifecycle_chain_updates(
             app=app,
             actor_user=request.user,
