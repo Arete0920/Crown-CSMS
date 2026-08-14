@@ -138,7 +138,7 @@ def _canonical_schedule_fixture(user: UserAccount) -> AcademicStudent:
         SANDBOX_SECTION_NAMESPACE,
         f"{school_id}:{academic_year.id}:{COURSE_CODE}:01",
     )
-    section, _ = AcademicSection.objects.update_or_create(
+    section, section_created = AcademicSection.objects.get_or_create(
         id=section_id,
         defaults={
             "school_id": school_id,
@@ -150,11 +150,26 @@ def _canonical_schedule_fixture(user: UserAccount) -> AcademicStudent:
             "grade_band": "7",
         },
     )
-    AcademicEnrollment.objects.update_or_create(
+    if not section_created:
+        if (
+            section.school_id != school_id
+            or section.course_id != course.id
+            or section.term_ref_id != term.id
+            or section.teacher_id is not None
+        ):
+            raise SandboxStudentError("canonical_section_authority_mismatch")
+        section.term = term.code
+        section.teacher_name = "Eleanor Lower"
+        section.grade_band = "7"
+        section.save(update_fields=["term", "teacher_name", "grade_band"])
+
+    enrollment, enrollment_created = AcademicEnrollment.objects.get_or_create(
         section=section,
         student=academic_student,
         defaults={"school_id": school_id},
     )
+    if not enrollment_created and enrollment.school_id != school_id:
+        raise SandboxStudentError("canonical_enrollment_authority_mismatch")
 
     room, _ = Room.objects.update_or_create(
         school_id=school_id,
@@ -185,7 +200,7 @@ def _canonical_schedule_fixture(user: UserAccount) -> AcademicStudent:
             "is_break": False,
         },
     )
-    SectionPlacement.objects.update_or_create(
+    placement, placement_created = SectionPlacement.objects.get_or_create(
         section=section,
         day_template=day_template,
         period_block=block,
@@ -196,6 +211,16 @@ def _canonical_schedule_fixture(user: UserAccount) -> AcademicStudent:
             "is_active": True,
         },
     )
+    if not placement_created:
+        if (
+            placement.school_id != school_id
+            or placement.academic_year_id != academic_year.id
+            or placement.room_id != room.id
+        ):
+            raise SandboxStudentError("canonical_placement_authority_mismatch")
+        if not placement.is_active:
+            placement.is_active = True
+            placement.save(update_fields=["is_active"])
     return academic_student
 
 
