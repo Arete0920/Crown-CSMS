@@ -8,8 +8,18 @@ from rest_framework.test import APIClient
 from admissions.models import AdmissionsApplication
 from applications.models import Application, Applicant, ApplicationEvent
 from applications.views_admissions import ENROLLMENT_STATE_EVENT_TYPE
-from core.models import AcademicYear, CrownPermission, RolePermission, School, UserRole
-from households.models import Household
+from core.models import (
+    AcademicYear,
+    CrownPermission,
+    Family,
+    HouseholdFamilyLink,
+    RolePermission,
+    School,
+    Student as CoreStudent,
+    StudentIdentityLink,
+    UserRole,
+)
+from households.models import Household, Student as CompatibilityStudent
 
 
 pytestmark = pytest.mark.django_db
@@ -35,6 +45,47 @@ def _academic_year(school):
     )
 
 
+def _attach_verified_identity(*, school, household, applicant):
+    family = Family.objects.create(
+        school=school,
+        family_name="Gate Family",
+    )
+    HouseholdFamilyLink.objects.create(
+        school=school,
+        household_id=household.id,
+        family=family,
+        source=HouseholdFamilyLink.SOURCE_ADMISSIONS,
+    )
+    applicant.dob = date(2015, 3, 10)
+    compatibility_student = CompatibilityStudent.objects.create(
+        school_id=school.id,
+        household=household,
+        first_name=applicant.first_name,
+        last_name=applicant.last_name,
+        grade_level=applicant.grade_applying_for,
+        is_active=True,
+    )
+    applicant.student = compatibility_student
+    applicant.save(update_fields=["dob", "student", "updated_at"])
+    core_student = CoreStudent.objects.create(
+        school=school,
+        family=family,
+        student_number="S-GATE-001",
+        first_name=applicant.first_name,
+        last_name=applicant.last_name,
+        dob=applicant.dob,
+        status="ACTIVE",
+    )
+    StudentIdentityLink.objects.create(
+        school=school,
+        core_student=core_student,
+        compatibility_student=compatibility_student,
+        source=StudentIdentityLink.SOURCE_ADMISSIONS,
+        verification_status=StudentIdentityLink.STATUS_VERIFIED,
+        evidence_reference="certification:admissions-enrollment-gate",
+    )
+
+
 def test_canonical_enrollment_confirmation_fails_closed_then_bridges_after_readiness():
     school = School.objects.create(name=f"Enrollment Gate {uuid.uuid4().hex[:8]}")
     _academic_year(school)
@@ -44,7 +95,7 @@ def test_canonical_enrollment_confirmation_fails_closed_then_bridges_after_readi
         household=household,
         status="DECIDED",
     )
-    Applicant.objects.create(
+    applicant = Applicant.objects.create(
         school_id=school.id,
         application=application,
         first_name="Grace",
@@ -92,6 +143,11 @@ def test_canonical_enrollment_confirmation_fails_closed_then_bridges_after_readi
             "deposit_status": "paid",
             "note": "certification fixture",
         },
+    )
+    _attach_verified_identity(
+        school=school,
+        household=household,
+        applicant=applicant,
     )
 
     confirmed = client.post(
