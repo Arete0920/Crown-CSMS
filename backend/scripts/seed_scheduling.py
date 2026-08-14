@@ -5,6 +5,7 @@ Safe-by-default:
 - Writes only canonical academics.Term/Course/Section records.
 - Never writes crown_api legacy scheduling masters.
 - Does not invent a core.Student <-> households.Student crosswalk for rosters.
+- Replays without mutating canonical relationship authority.
 
 Usage (PowerShell):
   cd backend
@@ -54,7 +55,7 @@ def run() -> None:
 
     for year in years:
         school_id = year.school_id
-        term, _ = Term.objects.update_or_create(
+        term, term_created = Term.objects.get_or_create(
             academic_year=year,
             code="2026-SPR",
             defaults={
@@ -67,24 +68,48 @@ def run() -> None:
                 "ordering": 1,
             },
         )
+        if not term_created:
+            if str(term.school_id) != str(school_id):
+                raise SystemExit(
+                    f"Canonical term authority mismatch for academic_year={year.id} code={term.code}."
+                )
+            term_updates = {
+                "name": "Spring 2026",
+                "school_year": year.name,
+                "active": True,
+                "start_date": date(2026, 1, 10),
+                "end_date": date(2026, 5, 20),
+                "ordering": 1,
+            }
+            changed_fields = []
+            for field, value in term_updates.items():
+                if getattr(term, field) != value:
+                    setattr(term, field, value)
+                    changed_fields.append(field)
+            if changed_fields:
+                term.save(update_fields=[*changed_fields, "updated_at"])
 
         courses = {}
         for code, name in (
             ("MATH-101", "Mathematics"),
             ("ELA-101", "English Language Arts"),
         ):
-            course, _ = Course.objects.update_or_create(
+            course, course_created = Course.objects.get_or_create(
                 school_id=school_id,
                 code=code,
                 defaults={"name": name},
             )
+            if not course_created and course.name != name:
+                course.name = name
+                course.save(update_fields=["name", "updated_at"])
             courses[code] = course
 
         for code, labels in (("MATH-101", ("A", "B")), ("ELA-101", ("A", "B"))):
             course = courses[code]
             for label in labels:
-                Section.objects.update_or_create(
-                    id=_section_id(school_id, year.id, code, label),
+                section_id = _section_id(school_id, year.id, code, label)
+                section, section_created = Section.objects.get_or_create(
+                    id=section_id,
                     defaults={
                         "school_id": school_id,
                         "course": course,
@@ -94,6 +119,18 @@ def run() -> None:
                         "teacher_name": "",
                     },
                 )
+                if not section_created:
+                    if (
+                        str(section.school_id) != str(school_id)
+                        or section.course_id != course.id
+                        or section.term_ref_id != term.id
+                    ):
+                        raise SystemExit(
+                            f"Canonical section authority mismatch for section={section_id}."
+                        )
+                    if section.term != term.code:
+                        section.term = term.code
+                        section.save(update_fields=["term", "updated_at"])
 
         logger.info(
             "Seeded canonical Scheduling masters for school=%s year=%s term=%s",
