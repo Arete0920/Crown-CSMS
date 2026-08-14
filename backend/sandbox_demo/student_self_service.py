@@ -100,7 +100,7 @@ def _canonical_schedule_fixture(user: UserAccount) -> AcademicStudent:
         },
     )
     if not academic_student_created and (
-        academic_student.school_id != school_id
+        str(academic_student.school_id) != str(school_id)
         or academic_student.household_id != household.id
         or academic_student.account_id is not None
     ):
@@ -125,7 +125,7 @@ def _canonical_schedule_fixture(user: UserAccount) -> AcademicStudent:
         },
     )
     if not term_created:
-        if term.school_id != school_id:
+        if str(term.school_id) != str(school_id):
             raise SandboxStudentError("canonical_term_authority_mismatch")
         term_values = {
             "name": "Fall 2026",
@@ -161,7 +161,7 @@ def _canonical_schedule_fixture(user: UserAccount) -> AcademicStudent:
     )
     if not section_created:
         if (
-            section.school_id != school_id
+            str(section.school_id) != str(school_id)
             or section.course_id != course.id
             or section.term_ref_id != term.id
             or section.teacher_id is not None
@@ -185,7 +185,7 @@ def _canonical_schedule_fixture(user: UserAccount) -> AcademicStudent:
         student=academic_student,
         defaults={"school_id": school_id},
     )
-    if not enrollment_created and enrollment.school_id != school_id:
+    if not enrollment_created and str(enrollment.school_id) != str(school_id):
         raise SandboxStudentError("canonical_enrollment_authority_mismatch")
 
     room, _ = Room.objects.get_or_create(
@@ -230,7 +230,7 @@ def _canonical_schedule_fixture(user: UserAccount) -> AcademicStudent:
     )
     if not placement_created:
         if (
-            placement.school_id != school_id
+            str(placement.school_id) != str(school_id)
             or placement.academic_year_id != academic_year.id
             or placement.room_id != room.id
         ):
