@@ -264,9 +264,13 @@ def commit_session(request, session_id):
 @authentication_classes(_AUTH)
 @permission_classes(_PERM)
 def verify_session(request, session_id):
-    school = _authorized_school(request, "academics.view")
-    school_id = school.id
+    school_id = get_request_school_id(request)
+    from core.models import School
+
+    school = get_object_or_404(School, id=school_id)
     session = _get_session(session_id, school_id)
+    if not user_has_permission(request.user, "academics.view", school=school):
+        raise PermissionDenied("You do not have permission to perform this action.")
 
     if session.status not in (
         SectionAssignWizardSession.STATUS_COMMITTED,
