@@ -1,6 +1,7 @@
 import uuid
 from django.db import models
 from django.contrib.auth.models import AbstractUser
+from django.core.exceptions import ValidationError
 
 
 class BaseModel(models.Model):
@@ -444,3 +445,72 @@ class HouseholdFamilyLink(BaseModel):
 
     def __str__(self):
         return f"HouseholdFamilyLink({self.household_id} ↔ {self.family_id})"
+
+
+class StudentIdentityLink(BaseModel):
+    """Explicit, tenant-safe crosswalk from canonical core.Student to households.Student."""
+
+    SOURCE_ADMISSIONS = 'admissions'
+    SOURCE_IMPORT = 'import'
+    SOURCE_MANUAL = 'manual'
+    SOURCE_RECONCILIATION = 'reconciliation'
+    SOURCE_CHOICES = [
+        (SOURCE_ADMISSIONS, 'Verified admissions conversion'),
+        (SOURCE_IMPORT, 'Verified SIS import'),
+        (SOURCE_MANUAL, 'Manual verified mapping'),
+        (SOURCE_RECONCILIATION, 'Deterministic reconciliation'),
+    ]
+
+    STATUS_VERIFIED = 'verified'
+    STATUS_PENDING = 'pending'
+    STATUS_CHOICES = [
+        (STATUS_VERIFIED, 'Verified'),
+        (STATUS_PENDING, 'Pending evidence'),
+    ]
+
+    school = models.ForeignKey(
+        School,
+        on_delete=models.PROTECT,
+        related_name='student_identity_links',
+    )
+    core_student = models.OneToOneField(
+        Student,
+        on_delete=models.PROTECT,
+        related_name='identity_link',
+    )
+    compatibility_student = models.OneToOneField(
+        'households.Student',
+        on_delete=models.PROTECT,
+        related_name='core_identity_link',
+    )
+    source = models.CharField(max_length=32, choices=SOURCE_CHOICES)
+    verification_status = models.CharField(
+        max_length=16,
+        choices=STATUS_CHOICES,
+        default=STATUS_VERIFIED,
+    )
+    evidence_reference = models.CharField(max_length=255, blank=True, default='')
+
+    class Meta:
+        ordering = ['school_id', 'core_student_id']
+        indexes = [models.Index(fields=['school', 'verification_status'])]
+
+    def clean(self):
+        super().clean()
+        errors = {}
+        if self.core_student_id and self.core_student.school_id != self.school_id:
+            errors['core_student'] = 'Canonical student must belong to the same school.'
+        if self.compatibility_student_id and self.compatibility_student.school_id != self.school_id:
+            errors['compatibility_student'] = 'Compatibility student must belong to the same school.'
+        if self.verification_status == self.STATUS_VERIFIED and not self.evidence_reference.strip():
+            errors['evidence_reference'] = 'Verified mappings require an evidence reference.'
+        if errors:
+            raise ValidationError(errors)
+
+    def save(self, *args, **kwargs):
+        if not kwargs.get('raw', False):
+            self.full_clean()
+        return super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"StudentIdentityLink({self.core_student_id} ↔ {self.compatibility_student_id})"
