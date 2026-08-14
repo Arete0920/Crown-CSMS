@@ -4,13 +4,15 @@ import logging
 from django.db import transaction, IntegrityError
 from django.shortcuts import get_object_or_404
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
-from rest_framework.permissions import IsAuthenticated
 from rest_framework.authentication import SessionAuthentication
+from rest_framework.exceptions import PermissionDenied
+from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.response import Response
 from rest_framework import status
 
 from academics.models import Enrollment, Section
+from core.permissions import user_has_permission
 from households.models import Student
 from households.scoping import get_request_school_id
 
@@ -36,14 +38,23 @@ def _parse_uuid(value, field_name):
         return None, f"{field_name} must be a valid UUID"
 
 
+def _authorized_school(request, permission_code):
+    """Resolve canonical tenant context before evaluating tenant-scoped RBAC."""
+    school_id = get_request_school_id(request)
+    from core.models import School
+
+    school = get_object_or_404(School, id=school_id)
+    if not user_has_permission(request.user, permission_code, school=school):
+        raise PermissionDenied("You do not have permission to perform this action.")
+    return school
+
+
 @extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 @authentication_classes(_AUTH)
 @permission_classes(_PERM)
 def create_session(request):
-    school_id = get_request_school_id(request)
-    from core.models import School
-    school = get_object_or_404(School, id=school_id)
+    school = _authorized_school(request, "rosters.edit")
     session = SectionAssignWizardSession.objects.create(
         school=school,
         created_by=request.user,
@@ -56,7 +67,8 @@ def create_session(request):
 @authentication_classes(_AUTH)
 @permission_classes(_PERM)
 def configure_session(request, session_id):
-    school_id = get_request_school_id(request)
+    school = _authorized_school(request, "rosters.edit")
+    school_id = school.id
     session = _get_session(session_id, school_id)
 
     if session.status == SectionAssignWizardSession.STATUS_COMMITTED:
@@ -95,7 +107,8 @@ def configure_session(request, session_id):
 @authentication_classes(_AUTH)
 @permission_classes(_PERM)
 def load_students(request, session_id):
-    school_id = get_request_school_id(request)
+    school = _authorized_school(request, "rosters.edit")
+    school_id = school.id
     session = _get_session(session_id, school_id)
 
     if session.status != SectionAssignWizardSession.STATUS_CONFIGURED:
@@ -138,7 +151,8 @@ def load_students(request, session_id):
 @authentication_classes(_AUTH)
 @permission_classes(_PERM)
 def stage_roster(request, session_id):
-    school_id = get_request_school_id(request)
+    school = _authorized_school(request, "rosters.edit")
+    school_id = school.id
     session = _get_session(session_id, school_id)
 
     if session.status != SectionAssignWizardSession.STATUS_STUDENTS_LOADED:
@@ -188,7 +202,8 @@ def stage_roster(request, session_id):
 @authentication_classes(_AUTH)
 @permission_classes(_PERM)
 def commit_session(request, session_id):
-    school_id = get_request_school_id(request)
+    school = _authorized_school(request, "rosters.edit")
+    school_id = school.id
     session = _get_session(session_id, school_id)
 
     if session.status == SectionAssignWizardSession.STATUS_COMMITTED:
@@ -250,7 +265,12 @@ def commit_session(request, session_id):
 @permission_classes(_PERM)
 def verify_session(request, session_id):
     school_id = get_request_school_id(request)
+    from core.models import School
+
+    school = get_object_or_404(School, id=school_id)
     session = _get_session(session_id, school_id)
+    if not user_has_permission(request.user, "academics.view", school=school):
+        raise PermissionDenied("You do not have permission to perform this action.")
 
     if session.status not in (
         SectionAssignWizardSession.STATUS_COMMITTED,
