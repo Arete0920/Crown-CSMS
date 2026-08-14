@@ -1,3 +1,4 @@
+import uuid
 from decimal import Decimal, InvalidOperation
 
 from django.db import transaction
@@ -5,11 +6,12 @@ from django.shortcuts import get_object_or_404
 from rest_framework import status
 from rest_framework.authentication import SessionAuthentication
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
-from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
-from academics.models import Course, Section
+from academics.models import Course, Section, Term
+from core.models import AcademicYear
+from core.permissions import CrownModulePermission
 from households.scoping import get_request_school_id
 
 from .models import SchedulingWizardSession
@@ -17,12 +19,15 @@ from drf_spectacular.utils import extend_schema
 from drf_spectacular.types import OpenApiTypes
 
 _AUTH = [JWTAuthentication, SessionAuthentication]
-_PERM = [IsAuthenticated]
+_VIEW_PERM = [CrownModulePermission("scheduling.view")]
+_CONFIGURE_PERM = [CrownModulePermission("scheduling.view", "scheduling.configure")]
+_EDIT_PERM = [CrownModulePermission("scheduling.view", "scheduling.edit")]
+_PUBLISH_PERM = [CrownModulePermission("scheduling.view", "scheduling.publish")]
 
 
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
+class SectionIdentityConflict(Exception):
+    pass
+
 
 def _get_session(session_id, school_id):
     return get_object_or_404(
@@ -40,14 +45,17 @@ def _parse_decimal(value, field_name, min_val=None, default="0"):
     return d, None
 
 
-# ---------------------------------------------------------------------------
-# 1. Create session
-# ---------------------------------------------------------------------------
+def _parse_uuid(value, field_name):
+    try:
+        return uuid.UUID(str(value)), None
+    except (TypeError, ValueError, AttributeError):
+        return None, f"{field_name} must be a valid UUID"
+
 
 @extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 @authentication_classes(_AUTH)
-@permission_classes(_PERM)
+@permission_classes(_CONFIGURE_PERM)
 def create_session(request):
     school_id = get_request_school_id(request)
     from core.models import School
@@ -62,43 +70,55 @@ def create_session(request):
     )
 
 
-# ---------------------------------------------------------------------------
-# 2. Configure (term + school_year)
-# ---------------------------------------------------------------------------
-
 @extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 @authentication_classes(_AUTH)
-@permission_classes(_PERM)
+@permission_classes(_CONFIGURE_PERM)
 def configure_session(request, session_id):
     school_id = get_request_school_id(request)
     session = _get_session(session_id, school_id)
 
-    term = (request.data.get("term") or "").strip()
-    if not term:
-        return Response({"error": "term is required"}, status=status.HTTP_400_BAD_REQUEST)
-    if len(term) > 24:
-        return Response({"error": "term must be <= 24 characters"}, status=status.HTTP_400_BAD_REQUEST)
+    academic_year_id = request.data.get("academic_year_id")
+    term_id = request.data.get("term_id")
+    if not academic_year_id:
+        return Response({"error": "academic_year_id is required"}, status=status.HTTP_400_BAD_REQUEST)
+    if not term_id:
+        return Response({"error": "term_id is required"}, status=status.HTTP_400_BAD_REQUEST)
 
-    school_year = (request.data.get("school_year") or "").strip()
-    if len(school_year) > 16:
-        return Response({"error": "school_year must be <= 16 characters"}, status=status.HTTP_400_BAD_REQUEST)
+    academic_year = get_object_or_404(AcademicYear, id=academic_year_id, school_id=school_id)
+    term_ref = get_object_or_404(Term, id=term_id, school_id=school_id)
+    if term_ref.academic_year_id != academic_year.id:
+        return Response(
+            {"error": "term_id does not belong to academic_year_id"},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
 
-    session.term = term
-    session.school_year = school_year
+    session.academic_year = academic_year
+    session.term_ref = term_ref
+    session.term = term_ref.code
+    session.school_year = academic_year.name[:16]
     session.status = SchedulingWizardSession.STATUS_CONFIGURED
-    session.save()
-    return Response({"session_id": str(session.id), "status": session.status})
+    session.save(update_fields=[
+        "academic_year",
+        "term_ref",
+        "term",
+        "school_year",
+        "status",
+        "updated_at",
+    ])
+    return Response({
+        "session_id": str(session.id),
+        "status": session.status,
+        "academic_year_id": str(academic_year.id),
+        "term_id": str(term_ref.id),
+        "term_code": term_ref.code,
+    })
 
-
-# ---------------------------------------------------------------------------
-# 3. Save courses
-# ---------------------------------------------------------------------------
 
 @extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 @authentication_classes(_AUTH)
-@permission_classes(_PERM)
+@permission_classes(_CONFIGURE_PERM)
 def save_courses(request, session_id):
     school_id = get_request_school_id(request)
     session = _get_session(session_id, school_id)
@@ -111,6 +131,8 @@ def save_courses(request, session_id):
             {"error": f"Cannot save courses from status '{session.status}'"},
             status=status.HTTP_409_CONFLICT,
         )
+    if not session.academic_year_id or not session.term_ref_id:
+        return Response({"error": "Session is missing canonical academic year/term identity"}, status=status.HTTP_409_CONFLICT)
 
     courses_raw = request.data.get("courses")
     if not isinstance(courses_raw, list):
@@ -132,7 +154,6 @@ def save_courses(request, session_id):
         if not code:
             errors.append(f"{prefix}: code is required")
             continue
-
         if code in seen_codes:
             errors.append(f"{prefix}: duplicate course code '{code}'")
             continue
@@ -144,8 +165,7 @@ def save_courses(request, session_id):
             continue
 
         department = (c.get("department") or "").strip()
-        credits_val = c.get("credits", 0)
-        credits, err = _parse_decimal(credits_val, f"{prefix}.credits", min_val=0)
+        credits, err = _parse_decimal(c.get("credits", 0), f"{prefix}.credits", min_val=0)
         if err:
             errors.append(err)
             continue
@@ -162,7 +182,7 @@ def save_courses(request, session_id):
 
     session.courses_config = normalised
     session.status = SchedulingWizardSession.STATUS_COURSES_SAVED
-    session.save()
+    session.save(update_fields=["courses_config", "status", "updated_at"])
     return Response({
         "session_id": str(session.id),
         "status": session.status,
@@ -170,14 +190,10 @@ def save_courses(request, session_id):
     })
 
 
-# ---------------------------------------------------------------------------
-# 4. Stage sections
-# ---------------------------------------------------------------------------
-
 @extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 @authentication_classes(_AUTH)
-@permission_classes(_PERM)
+@permission_classes(_EDIT_PERM)
 def stage_sections(request, session_id):
     school_id = get_request_school_id(request)
     session = _get_session(session_id, school_id)
@@ -190,6 +206,8 @@ def stage_sections(request, session_id):
             {"error": f"Cannot stage sections from status '{session.status}'"},
             status=status.HTTP_409_CONFLICT,
         )
+    if not session.academic_year_id or not session.term_ref_id:
+        return Response({"error": "Session is missing canonical academic year/term identity"}, status=status.HTTP_409_CONFLICT)
 
     sections_raw = request.data.get("sections")
     if not isinstance(sections_raw, list):
@@ -200,6 +218,7 @@ def stage_sections(request, session_id):
     valid_course_codes = {c["code"] for c in session.courses_config}
     errors = []
     normalised = []
+    seen_section_ids = set()
 
     for i, s in enumerate(sections_raw):
         prefix = f"sections[{i}]"
@@ -211,7 +230,6 @@ def stage_sections(request, session_id):
         if not course_code:
             errors.append(f"{prefix}: course_code is required")
             continue
-
         if course_code not in valid_course_codes:
             errors.append(
                 f"{prefix}: course_code '{course_code}' not in courses_config "
@@ -219,13 +237,26 @@ def stage_sections(request, session_id):
             )
             continue
 
-        teacher_name = (s.get("teacher_name") or "").strip()
-        grade_band = (s.get("grade_band") or "").strip()
+        supplied_id = s.get("section_id")
+        if supplied_id:
+            section_id, err = _parse_uuid(supplied_id, f"{prefix}.section_id")
+            if err:
+                errors.append(err)
+                continue
+        else:
+            section_id = uuid.uuid5(session.id, f"{i}:{course_code}")
+
+        section_id_str = str(section_id)
+        if section_id_str in seen_section_ids:
+            errors.append(f"{prefix}: duplicate section_id '{section_id_str}'")
+            continue
+        seen_section_ids.add(section_id_str)
 
         normalised.append({
+            "section_id": section_id_str,
             "course_code": course_code,
-            "teacher_name": teacher_name,
-            "grade_band": grade_band,
+            "teacher_name": (s.get("teacher_name") or "").strip(),
+            "grade_band": (s.get("grade_band") or "").strip(),
         })
 
     if errors:
@@ -233,109 +264,122 @@ def stage_sections(request, session_id):
 
     session.sections_config = normalised
     session.status = SchedulingWizardSession.STATUS_SECTIONS_STAGED
-    session.save()
+    session.save(update_fields=["sections_config", "status", "updated_at"])
     return Response({
         "session_id": str(session.id),
         "status": session.status,
         "sections_count": len(normalised),
+        "sections": normalised,
     })
 
-
-# ---------------------------------------------------------------------------
-# 5. Commit
-# ---------------------------------------------------------------------------
 
 @extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 @authentication_classes(_AUTH)
-@permission_classes(_PERM)
+@permission_classes(_PUBLISH_PERM)
 def commit_session(request, session_id):
     school_id = get_request_school_id(request)
     session = _get_session(session_id, school_id)
 
-    # Idempotency guard
     if session.status == SchedulingWizardSession.STATUS_COMMITTED:
-        return Response({"session_id": str(session.id), "status": session.status, **session.commit_result})
-
+        return Response({"session_id": str(session.id), "status": session.status, **(session.commit_result or {})})
     if session.status != SchedulingWizardSession.STATUS_SECTIONS_STAGED:
         return Response(
             {"error": f"Cannot commit from status '{session.status}'"},
             status=status.HTTP_409_CONFLICT,
         )
-
     if not request.data.get("confirm"):
         return Response({"error": "confirm must be true"}, status=status.HTTP_400_BAD_REQUEST)
-
-    courses_config = session.courses_config
-    sections_config = session.sections_config
+    if not session.academic_year_id or not session.term_ref_id:
+        return Response({"error": "Session is missing canonical academic year/term identity"}, status=status.HTTP_409_CONFLICT)
 
     courses_created = 0
     sections_created = 0
     courses_skipped = 0
     sections_skipped = 0
 
-    with transaction.atomic():
-        # Map course code → Course object
-        course_map = {}
-        for c in courses_config:
-            obj, created = Course.objects.get_or_create(
-                school_id=school_id,
-                code=c["code"],
-                defaults={
-                    "name": c["name"],
-                    "department": c.get("department", ""),
-                    "credits": Decimal(c.get("credits", "0")),
-                },
-            )
-            course_map[c["code"]] = obj
-            if created:
-                courses_created += 1
-            else:
-                courses_skipped += 1
+    try:
+        with transaction.atomic():
+            locked_session = SchedulingWizardSession.objects.select_for_update().select_related(
+                "academic_year", "term_ref"
+            ).get(id=session.id, school_id=school_id)
+            if locked_session.term_ref.academic_year_id != locked_session.academic_year_id:
+                raise SectionIdentityConflict("Session academic year/term identity is inconsistent")
 
-        for s in sections_config:
-            course_obj = course_map.get(s["course_code"])
-            if not course_obj:
-                continue
-            _, created = Section.objects.get_or_create(
-                school_id=school_id,
-                course=course_obj,
-                term=session.term,
-                defaults={
-                    "teacher_name": s.get("teacher_name", ""),
-                    "grade_band": s.get("grade_band", ""),
-                },
-            )
-            if created:
+            course_map = {}
+            for c in locked_session.courses_config:
+                matches = list(Course.objects.select_for_update().filter(school_id=school_id, code=c["code"])[:2])
+                if len(matches) > 1:
+                    raise SectionIdentityConflict(f"Course code '{c['code']}' is ambiguous for this school")
+                if matches:
+                    obj = matches[0]
+                    courses_skipped += 1
+                else:
+                    obj = Course.objects.create(
+                        school_id=school_id,
+                        code=c["code"],
+                        name=c["name"],
+                        department=c.get("department", ""),
+                        credits=Decimal(c.get("credits", "0")),
+                    )
+                    courses_created += 1
+                course_map[c["code"]] = obj
+
+            for s in locked_session.sections_config:
+                course_obj = course_map.get(s["course_code"])
+                if not course_obj:
+                    raise SectionIdentityConflict(f"Course '{s['course_code']}' is missing from commit map")
+                section_id = uuid.UUID(s["section_id"])
+                existing = Section.objects.select_for_update().filter(id=section_id).first()
+                if existing:
+                    if (
+                        existing.school_id != school_id
+                        or existing.course_id != course_obj.id
+                        or existing.term_ref_id != locked_session.term_ref_id
+                    ):
+                        raise SectionIdentityConflict(
+                            f"section_id '{section_id}' already belongs to a different school/course/term"
+                        )
+                    sections_skipped += 1
+                    continue
+
+                Section.objects.create(
+                    id=section_id,
+                    school_id=school_id,
+                    course=course_obj,
+                    term_ref=locked_session.term_ref,
+                    term=locked_session.term_ref.code,
+                    teacher_name=s.get("teacher_name", ""),
+                    grade_band=s.get("grade_band", ""),
+                )
                 sections_created += 1
-            else:
-                sections_skipped += 1
 
-    commit_result = {
-        "courses_created": courses_created,
-        "courses_skipped": courses_skipped,
-        "sections_created": sections_created,
-        "sections_skipped": sections_skipped,
-    }
-    session.commit_result = commit_result
-    session.status = SchedulingWizardSession.STATUS_COMMITTED
-    session.save()
+            commit_result = {
+                "courses_created": courses_created,
+                "courses_skipped": courses_skipped,
+                "sections_created": sections_created,
+                "sections_skipped": sections_skipped,
+                "section_ids": [s["section_id"] for s in locked_session.sections_config],
+                "academic_year_id": str(locked_session.academic_year_id),
+                "term_id": str(locked_session.term_ref_id),
+            }
+            locked_session.commit_result = commit_result
+            locked_session.status = SchedulingWizardSession.STATUS_COMMITTED
+            locked_session.save(update_fields=["commit_result", "status", "updated_at"])
+    except SectionIdentityConflict as exc:
+        return Response({"error": str(exc)}, status=status.HTTP_409_CONFLICT)
 
     return Response({
         "session_id": str(session.id),
-        "status": session.status,
+        "status": SchedulingWizardSession.STATUS_COMMITTED,
         **commit_result,
     })
 
 
-# ---------------------------------------------------------------------------
-# 6. Verify
-# ---------------------------------------------------------------------------
-
 @extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["GET"])
 @authentication_classes(_AUTH)
-@permission_classes(_PERM)
+@permission_classes(_VIEW_PERM)
 def verify_session(request, session_id):
     school_id = get_request_school_id(request)
     session = _get_session(session_id, school_id)
@@ -344,20 +388,35 @@ def verify_session(request, session_id):
         return Response({
             "session_id": str(session.id),
             "status": session.status,
-            **session.commit_result,
+            **(session.commit_result or {}),
         })
-
     if session.status != SchedulingWizardSession.STATUS_COMMITTED:
         return Response(
             {"error": f"Cannot verify from status '{session.status}'"},
             status=status.HTTP_409_CONFLICT,
         )
 
+    expected_ids = [s["section_id"] for s in session.sections_config]
+    actual_ids = {
+        str(value)
+        for value in Section.objects.filter(
+            id__in=expected_ids,
+            school_id=school_id,
+            term_ref_id=session.term_ref_id,
+        ).values_list("id", flat=True)
+    }
+    missing = sorted(set(expected_ids) - actual_ids)
+    if missing:
+        return Response(
+            {"error": "Committed sections failed canonical verification", "missing_section_ids": missing},
+            status=status.HTTP_409_CONFLICT,
+        )
+
     session.status = SchedulingWizardSession.STATUS_VERIFIED
-    session.save()
+    session.save(update_fields=["status", "updated_at"])
 
     return Response({
         "session_id": str(session.id),
         "status": session.status,
-        **session.commit_result,
+        **(session.commit_result or {}),
     })

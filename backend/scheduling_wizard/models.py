@@ -33,6 +33,21 @@ class SchedulingWizardSession(models.Model):
         on_delete=models.SET_NULL,
         related_name="+",
     )
+    academic_year = models.ForeignKey(
+        "core.AcademicYear",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="scheduling_wizard_sessions",
+    )
+    term_ref = models.ForeignKey(
+        "academics.Term",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="scheduling_wizard_sessions",
+    )
+    # Legacy display/compatibility fields retained during cutover.
     term = models.CharField(max_length=24, blank=True, default="")
     school_year = models.CharField(max_length=16, blank=True, default="")
     courses_config = models.JSONField(default=list)
@@ -51,4 +66,5 @@ class SchedulingWizardSession(models.Model):
         ordering = ["-created_at"]
 
     def __str__(self):
-        return f"SchedulingWizard {self.id} [{self.term}] ({self.status})"
+        term_label = self.term_ref.code if self.term_ref_id else self.term
+        return f"SchedulingWizard {self.id} [{term_label}] ({self.status})"
