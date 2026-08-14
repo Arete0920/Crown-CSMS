@@ -55,14 +55,15 @@ def _canonical_schedule_fixture(user: UserAccount) -> AcademicStudent:
     synthetic fixture. This is not a production identity migration and never
     guesses a core.Student mapping by name/email/position.
     """
+    school_id = user.school_id
     academic_year = (
-        AcademicYear.objects.filter(school_id=SCHOOL_ID, is_current=True)
+        AcademicYear.objects.filter(school_id=school_id, is_current=True)
         .order_by("start_date", "id")
         .first()
     )
     if academic_year is None:
         academic_year = AcademicYear.objects.create(
-            school_id=SCHOOL_ID,
+            school_id=school_id,
             name="2026-2027",
             start_date=date(2026, 8, 1),
             end_date=date(2027, 6, 30),
@@ -70,7 +71,7 @@ def _canonical_schedule_fixture(user: UserAccount) -> AcademicStudent:
         )
 
     household, _ = AcademicHousehold.objects.update_or_create(
-        school_id=SCHOOL_ID,
+        school_id=school_id,
         name="Reed Family Student Sandbox",
         defaults={
             "address1": "100 Demo Lane",
@@ -83,7 +84,7 @@ def _canonical_schedule_fixture(user: UserAccount) -> AcademicStudent:
     academic_student, _ = AcademicStudent.objects.update_or_create(
         account=user,
         defaults={
-            "school_id": SCHOOL_ID,
+            "school_id": school_id,
             "household": household,
             "first_name": "Avery",
             "last_name": "Reed",
@@ -92,7 +93,7 @@ def _canonical_schedule_fixture(user: UserAccount) -> AcademicStudent:
         },
     )
     course, _ = AcademicCourse.objects.update_or_create(
-        school_id=SCHOOL_ID,
+        school_id=school_id,
         code=COURSE_CODE,
         defaults={"name": "Grade 7 English Language Arts"},
     )
@@ -100,7 +101,7 @@ def _canonical_schedule_fixture(user: UserAccount) -> AcademicStudent:
         academic_year=academic_year,
         code=TERM_CODE,
         defaults={
-            "school_id": SCHOOL_ID,
+            "school_id": school_id,
             "name": "Fall 2026",
             "school_year": academic_year.name,
             "start_date": date(2026, 8, 15),
@@ -111,12 +112,12 @@ def _canonical_schedule_fixture(user: UserAccount) -> AcademicStudent:
     )
     section_id = uuid.uuid5(
         SANDBOX_SECTION_NAMESPACE,
-        f"{SCHOOL_ID}:{academic_year.id}:{COURSE_CODE}:01",
+        f"{school_id}:{academic_year.id}:{COURSE_CODE}:01",
     )
     section, _ = AcademicSection.objects.update_or_create(
         id=section_id,
         defaults={
-            "school_id": SCHOOL_ID,
+            "school_id": school_id,
             "course": course,
             "term_ref": term,
             "term": term.code,
@@ -128,16 +129,16 @@ def _canonical_schedule_fixture(user: UserAccount) -> AcademicStudent:
     AcademicEnrollment.objects.update_or_create(
         section=section,
         student=academic_student,
-        defaults={"school_id": SCHOOL_ID},
+        defaults={"school_id": school_id},
     )
 
     room, _ = Room.objects.update_or_create(
-        school_id=SCHOOL_ID,
+        school_id=school_id,
         code="207",
         defaults={"name": "Room 207", "capacity": 30, "is_active": True},
     )
     bell, _ = BellSchedule.objects.update_or_create(
-        school_id=SCHOOL_ID,
+        school_id=school_id,
         academic_year=academic_year,
         name="Student Sandbox Bell",
         defaults={"schedule_mode": "DAY_TEMPLATES", "is_active": False},
@@ -165,7 +166,7 @@ def _canonical_schedule_fixture(user: UserAccount) -> AcademicStudent:
         day_template=day_template,
         period_block=block,
         defaults={
-            "school_id": SCHOOL_ID,
+            "school_id": school_id,
             "academic_year": academic_year,
             "room": room,
             "is_active": True,
