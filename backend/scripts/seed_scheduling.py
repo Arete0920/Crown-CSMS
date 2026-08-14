@@ -6,6 +6,7 @@ Safe-by-default:
 - Never writes crown_api legacy scheduling masters.
 - Does not invent a core.Student <-> households.Student crosswalk for rosters.
 - Replays without mutating canonical relationship authority.
+- Reuses the current academic year's canonical active term when one exists.
 
 Usage (PowerShell):
   cd backend
@@ -34,6 +35,67 @@ def _section_id(school_id, academic_year_id, course_code: str, section_label: st
     )
 
 
+def _term_for_year(Term, year):
+    """Return a canonical active term inside ``year``, creating one only if absent."""
+    school_id = year.school_id
+    term = (
+        Term.objects.filter(
+            school_id=school_id,
+            academic_year=year,
+            active=True,
+        )
+        .order_by("ordering", "start_date", "code", "id")
+        .first()
+    )
+    if term is not None:
+        if term.start_date < year.start_date or term.end_date > year.end_date:
+            raise SystemExit(
+                f"Canonical term {term.code} falls outside academic_year={year.id}."
+            )
+        return term
+
+    start_year = year.start_date.year
+    term_code = f"{start_year}-FALL"
+    term_name = f"Fall {start_year}"
+    term_end = min(year.end_date, date(start_year, 12, 31))
+    term, created = Term.objects.get_or_create(
+        academic_year=year,
+        code=term_code,
+        defaults={
+            "school_id": school_id,
+            "name": term_name,
+            "school_year": year.name,
+            "active": True,
+            "start_date": year.start_date,
+            "end_date": term_end,
+            "ordering": 1,
+        },
+    )
+    if not created:
+        if str(term.school_id) != str(school_id):
+            raise SystemExit(
+                f"Canonical term authority mismatch for academic_year={year.id} code={term.code}."
+            )
+        if term.start_date < year.start_date or term.end_date > year.end_date:
+            raise SystemExit(
+                f"Canonical term {term.code} falls outside academic_year={year.id}."
+            )
+        term_updates = {
+            "name": term_name,
+            "school_year": year.name,
+            "active": True,
+            "ordering": 1,
+        }
+        changed_fields = []
+        for field, value in term_updates.items():
+            if getattr(term, field) != value:
+                setattr(term, field, value)
+                changed_fields.append(field)
+        if changed_fields:
+            term.save(update_fields=[*changed_fields, "updated_at"])
+    return term
+
+
 def run() -> None:
     _refuse_if_azure()
     os.environ.setdefault("DJANGO_SETTINGS_MODULE", "crown_api.settings")
@@ -55,39 +117,7 @@ def run() -> None:
 
     for year in years:
         school_id = year.school_id
-        term, term_created = Term.objects.get_or_create(
-            academic_year=year,
-            code="2026-SPR",
-            defaults={
-                "school_id": school_id,
-                "name": "Spring 2026",
-                "school_year": year.name,
-                "active": True,
-                "start_date": date(2026, 1, 10),
-                "end_date": date(2026, 5, 20),
-                "ordering": 1,
-            },
-        )
-        if not term_created:
-            if str(term.school_id) != str(school_id):
-                raise SystemExit(
-                    f"Canonical term authority mismatch for academic_year={year.id} code={term.code}."
-                )
-            term_updates = {
-                "name": "Spring 2026",
-                "school_year": year.name,
-                "active": True,
-                "start_date": date(2026, 1, 10),
-                "end_date": date(2026, 5, 20),
-                "ordering": 1,
-            }
-            changed_fields = []
-            for field, value in term_updates.items():
-                if getattr(term, field) != value:
-                    setattr(term, field, value)
-                    changed_fields.append(field)
-            if changed_fields:
-                term.save(update_fields=[*changed_fields, "updated_at"])
+        term = _term_for_year(Term, year)
 
         courses = {}
         for code, name in (
