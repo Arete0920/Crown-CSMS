@@ -4,7 +4,7 @@ from django.test import TestCase
 from rest_framework.test import APIClient
 
 from academics.models import Course, Enrollment, Section
-from core.models import CrownPermission, RolePermission, School, UserRole
+from core.models import School
 from households.models import Household, Student
 from section_assign_wizard.models import SectionAssignWizardSession
 
@@ -50,19 +50,8 @@ def _headers(school_id):
     return {"HTTP_X_SCHOOL_ID": str(school_id)}
 
 
-def _grant_wizard_access(user, school):
-    UserRole.objects.get_or_create(user=user, school=school, role_code="REGISTRAR")
-    for code in ("rosters.edit", "academics.view"):
-        permission, _ = CrownPermission.objects.get_or_create(
-            code=code,
-            defaults={"description": f"test permission {code}"},
-        )
-        RolePermission.objects.get_or_create(role_code="REGISTRAR", permission=permission)
-
-
 def _client_for(school):
     user = _make_user(school)
-    _grant_wizard_access(user, school)
     c = APIClient()
     c.force_authenticate(user=user)
     return c
