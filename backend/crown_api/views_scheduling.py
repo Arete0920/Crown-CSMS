@@ -3,7 +3,6 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from academics.models import Enrollment as AcademicEnrollment
 from academics.models import Section as AcademicSection
 from academics.models import TeacherAssignment
 from academics.models import Term as AcademicTerm
@@ -16,8 +15,7 @@ from crown_api.models_scheduling_core import (
 )
 from crown_api.scoping_students import get_core_student_or_404_for_request
 from crown_api.serializers_scheduling import StudentScheduleEnrollmentSerializer, TermListSerializer
-from households.models import Guardian as CanonicalGuardian
-from households.models import Student as CanonicalStudent
+from households.models import Guardian as HouseholdGuardian
 
 
 def _require_auth_or_401(request):
@@ -35,11 +33,17 @@ def _request_school_id(request):
     return getattr(getattr(request, "user", None), "school_id", None)
 
 
-def _canonical_household_ids(request, school_id):
+def _compat_household_ids(request, school_id):
+    """Return household IDs for the supported compatibility/read domain.
+
+    ADR-001 keeps core.Student as the canonical operational student identity.
+    households.* remains a supported compatibility/read domain until the
+    separately governed tenant-by-tenant identity convergence is complete.
+    """
     if not school_id:
         return set()
     return set(
-        CanonicalGuardian.objects.filter(
+        HouseholdGuardian.objects.filter(
             school_id=school_id,
             account=request.user,
             household__is_active=True,
@@ -134,42 +138,17 @@ def _canonical_sections_for_term(request, term, access, school_id):
     if access.is_staff:
         return qs
 
-    household_ids = _canonical_household_ids(request, school_id)
+    household_ids = _compat_household_ids(request, school_id)
     if not household_ids:
         return qs.none()
 
+    # academics.Enrollment still references households.Student. This is a
+    # bounded read-compatibility filter only; it does not redefine student
+    # identity authority and performs no identifier remapping.
     return qs.filter(
         enrollments__student__household_id__in=household_ids,
         enrollments__student__is_active=True,
     ).distinct()
-
-
-def _canonical_student_allowed(request, student, access):
-    if access.is_staff:
-        return True
-    if student.account_id == request.user.id:
-        return True
-    return CanonicalGuardian.objects.filter(
-        school_id=student.school_id,
-        account=request.user,
-        household_id=student.household_id,
-    ).exists()
-
-
-def _canonical_student_schedule_payload(student):
-    enrollments = (
-        AcademicEnrollment.objects.filter(
-            student=student,
-            school_id=student.school_id,
-        )
-        .select_related(
-            "section",
-            "section__term_ref",
-            "section__course",
-        )
-        .order_by("section__term_ref__code", "section__course__code", "section__id")
-    )
-    return [_canonical_section_payload(enrollment.section) for enrollment in enrollments]
 
 
 @api_view(["GET"])
@@ -265,23 +244,17 @@ def term_sections(request, term_id):
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def student_schedule(request, student_id):
+    """Return the schedule for the canonical core.Student identity.
+
+    The legacy scheduling tables remain an explicitly supported read adapter
+    under ADR-001. We deliberately do not treat households.Student UUIDs as
+    canonical and do not name/email/position-match identities across domains.
+    """
     unauth = _require_auth_or_401(request)
     if unauth is not None:
         return unauth
 
     access = resolve_household_access(request)
-    school_id = _request_school_id(request)
-
-    canonical_student = CanonicalStudent.objects.filter(
-        id=student_id,
-        school_id=school_id,
-        is_active=True,
-    ).first()
-    if canonical_student is not None:
-        if not _canonical_student_allowed(request, canonical_student, access):
-            return Response({"detail": "Not found."}, status=404)
-        return Response(_canonical_student_schedule_payload(canonical_student))
-
     if not access.is_staff:
         get_core_student_or_404_for_request(request=request, student_id=student_id)
     student = get_object_or_404(CoreStudent, id=student_id)
