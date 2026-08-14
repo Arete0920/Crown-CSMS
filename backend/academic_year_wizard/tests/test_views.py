@@ -42,7 +42,11 @@ def _make_school(suffix=""):
 
 
 def _make_user():
-    return User.objects.create_user(username=f"u{uuid.uuid4().hex[:8]}", password=TEST_AUTH_SECRET)
+    user = User.objects.create_user(username=f"u{uuid.uuid4().hex[:8]}", password=TEST_AUTH_SECRET)
+    user.is_staff = True
+    user.is_superuser = True
+    user.save(update_fields=["is_staff", "is_superuser"])
+    return user
 
 
 def _headers(school_id):
@@ -404,8 +408,8 @@ class AcademicYearSingleCurrentTest(TestCase):
 
         # Commit year B (different name → new AcademicYear)
         terms_b = [
-            {"code": "FALL-2028", "name": "Fall 2028", "school_year": "2027-28",
-             "start_date": "2028-08-25", "end_date": "2028-12-20", "ordering": 0},
+            {"code": "FALL-2027", "name": "Fall 2027", "school_year": "2027-28",
+             "start_date": "2027-08-25", "end_date": "2027-12-20", "ordering": 0},
         ]
         _advance_to_committed(
             client, school.id,
@@ -425,17 +429,31 @@ class AcademicYearSingleCurrentTest(TestCase):
         school_a = _make_school("alpha")
         school_b = _make_school("beta")
         client   = _authed_client()
+        terms_2026 = [
+            {"code": "FALL-2026", "name": "Fall 2026", "school_year": "2026-27",
+             "start_date": "2026-08-25", "end_date": "2026-12-20", "ordering": 0},
+        ]
 
         # Commit a year for school_a
-        _advance_to_committed(client, school_a.id, year_name="2026-2027")
+        _advance_to_committed(
+            client,
+            school_a.id,
+            terms=terms_2026,
+            year_name="2026-2027",
+            start_date="2026-08-01",
+            end_date="2027-05-31",
+        )
         ay_a = AcademicYear.objects.get(school=school_a, name="2026-2027")
 
         # Commit a different year for school_b
-        terms_b = [
-            {"code": "FALL-2027", "name": "Fall 2027", "school_year": "2026-27",
-             "start_date": "2027-08-25", "end_date": "2027-12-20", "ordering": 0},
-        ]
-        _advance_to_committed(client, school_b.id, terms=terms_b, year_name="2026-2027")
+        _advance_to_committed(
+            client,
+            school_b.id,
+            terms=terms_2026,
+            year_name="2026-2027",
+            start_date="2026-08-01",
+            end_date="2027-05-31",
+        )
 
         # school_a's year remains current
         ay_a.refresh_from_db()
