@@ -5,7 +5,7 @@ from django.contrib.auth import get_user_model
 from rest_framework.test import APIClient
 
 from academics.models import Course, Enrollment, Section
-from core.models import School
+from core.models import CrownPermission, RolePermission, School, UserRole
 from households.models import Household, Student
 
 pytestmark = pytest.mark.django_db
@@ -39,12 +39,23 @@ def _section(school):
     )
 
 
+def _grant_wizard_access(user, school):
+    UserRole.objects.get_or_create(user=user, school=school, role_code="REGISTRAR")
+    for code in ("rosters.edit", "academics.view"):
+        permission, _ = CrownPermission.objects.get_or_create(
+            code=code,
+            defaults={"description": f"test permission {code}"},
+        )
+        RolePermission.objects.get_or_create(role_code="REGISTRAR", permission=permission)
+
+
 def _client(school):
     user = get_user_model().objects.create_user(
         username=f"user-{uuid.uuid4()}",
         password="test-pass",
         school=school,
     )
+    _grant_wizard_access(user, school)
     client = APIClient()
     client.force_authenticate(user=user)
     return client
