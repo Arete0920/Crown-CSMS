@@ -104,7 +104,7 @@ def _canonical_schedule_fixture(user: UserAccount) -> AcademicStudent:
         code=COURSE_CODE,
         defaults={"name": "Grade 7 English Language Arts"},
     )
-    term, _ = AcademicTerm.objects.update_or_create(
+    term, term_created = AcademicTerm.objects.get_or_create(
         academic_year=academic_year,
         code=TERM_CODE,
         defaults={
@@ -117,6 +117,23 @@ def _canonical_schedule_fixture(user: UserAccount) -> AcademicStudent:
             "active": True,
         },
     )
+    if not term_created:
+        term.name = "Fall 2026"
+        term.school_year = academic_year.name
+        term.start_date = date(2026, 8, 15)
+        term.end_date = date(2026, 12, 18)
+        term.ordering = 1
+        term.active = True
+        term.save(
+            update_fields=[
+                "name",
+                "school_year",
+                "start_date",
+                "end_date",
+                "ordering",
+                "active",
+            ]
+        )
     section_id = uuid.uuid5(
         SANDBOX_SECTION_NAMESPACE,
         f"{school_id}:{academic_year.id}:{COURSE_CODE}:01",
