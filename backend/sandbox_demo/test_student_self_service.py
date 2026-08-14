@@ -21,6 +21,12 @@ def test_student_self_service_returns_real_schedule_progress_attendance_and_comm
     state = student_self_service_state(student_user)
     assert state["student"]["name"] == "Avery Reed"
     assert state["schedule"]
+    schedule_row = state["schedule"][0]
+    assert schedule_row["course"] == "Grade 7 English Language Arts"
+    assert schedule_row["room"] == "207"
+    assert schedule_row["days"] == "MTWTF"
+    assert schedule_row["time"] == "09:15-10:05"
+    assert schedule_row["teacher"] == "Eleanor Lower"
     assert state["learning_tasks"]
     assert state["attendance"]
     assert state["communications"]
