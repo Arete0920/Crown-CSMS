@@ -128,7 +128,7 @@ class CanonicalSchedulingAdapterTests(TestCase):
         self.assertEqual(body[0]["course"]["code"], self.course.code)
         self.assertEqual(body[0]["section_code"], str(self.section.id))
 
-    def test_parent_term_sections_are_canonical_household_scoped(self):
+    def test_parent_term_sections_use_supported_household_read_scope(self):
         self.client.force_authenticate(user=self.parent_user)
         response = self.client.get(
             f"/api/terms/{self.term.id}/sections/",
@@ -140,22 +140,10 @@ class CanonicalSchedulingAdapterTests(TestCase):
             {str(self.section.id)},
         )
 
-    def test_canonical_student_schedule_uses_academics_enrollment(self):
-        self.client.force_authenticate(user=self.parent_user)
+    def test_households_student_uuid_is_not_silently_promoted_to_core_identity(self):
+        self.client.force_authenticate(user=self.staff_user)
         response = self.client.get(
             f"/api/students/{self.student_a.id}/schedule/",
-            HTTP_X_SCHOOL_ID=str(self.school.id),
-        )
-        self.assertEqual(response.status_code, 200)
-        body = response.json()
-        self.assertEqual(len(body), 1)
-        self.assertEqual(body[0]["section_id"], str(self.section.id))
-        self.assertEqual(body[0]["course"]["code"], self.course.code)
-
-    def test_parent_cannot_read_other_canonical_student_schedule(self):
-        self.client.force_authenticate(user=self.parent_user)
-        response = self.client.get(
-            f"/api/students/{self.student_b.id}/schedule/",
             HTTP_X_SCHOOL_ID=str(self.school.id),
         )
         self.assertEqual(response.status_code, 404)
