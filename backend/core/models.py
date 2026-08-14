@@ -1,6 +1,7 @@
 import uuid
 from django.db import models
 from django.contrib.auth.models import AbstractUser
+from django.core.exceptions import ValidationError
 
 
 class BaseModel(models.Model):
@@ -299,24 +300,15 @@ class LedgerEntry(BaseModel):
     family = models.ForeignKey(Family, on_delete=models.CASCADE, related_name='ledger_entries')
     student = models.ForeignKey(Student, on_delete=models.SET_NULL, blank=True, null=True)
     academic_year = models.ForeignKey(AcademicYear, on_delete=models.CASCADE)
-    # Now points to ChartAccount instead of hardcoded string choices
     account = models.ForeignKey('finance.ChartAccount', on_delete=models.PROTECT, related_name='ledger_entries')
     batch = models.ForeignKey('finance.JournalBatch', on_delete=models.SET_NULL, null=True, blank=True, related_name='ledger_entries')
     entry_date = models.DateField()
-    amount_cents = models.IntegerField()  # can be +/- depending on debit/credit
+    amount_cents = models.IntegerField()
     memo = models.TextField(blank=True, default='')
     source = models.CharField(max_length=50, choices=SOURCE_CHOICES)
     created_by_user = models.ForeignKey(UserAccount, on_delete=models.SET_NULL, blank=True, null=True)
-
-    # Reversal mechanism for immutable audit trail
     is_reversal = models.BooleanField(default=False)
-    reversal_of = models.ForeignKey(
-        'self',
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name='reversals'
-    )
+    reversal_of = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='reversals')
 
     class Meta:
         ordering = ['-entry_date', '-created_at']
@@ -330,10 +322,6 @@ class LedgerEntry(BaseModel):
 
     @staticmethod
     def create_reversal(original_entry, created_by=None, memo_suffix=" (REVERSAL)"):
-        """
-        Convenience method to reverse an existing entry.
-        Creates a new LedgerEntry with negated amount, linking back to the original.
-        """
         from django.utils import timezone
         return LedgerEntry.objects.create(
             school=original_entry.school,
@@ -352,21 +340,7 @@ class LedgerEntry(BaseModel):
         )
 
 
-# ──────────────────────────────────────────────────────────────────────────────
-# LAYER 1 — CROWN PERMISSION ENGINE
-#
-# CrownPermission  — authoritative list of capability codes
-# RolePermission   — maps role_code strings (from UserRole) to permissions
-#
-# Named "Crown" prefix to avoid collision with Django's built-in Permission
-# model from django.contrib.auth.
-# ──────────────────────────────────────────────────────────────────────────────
-
 class CrownPermission(BaseModel):
-    """
-    A discrete, named capability within the Crown platform.
-    Codes follow the pattern  <module>.<action>  e.g. "finance.view".
-    """
     code = models.CharField(max_length=100, unique=True)
     description = models.TextField(blank=True, default="")
 
@@ -378,17 +352,8 @@ class CrownPermission(BaseModel):
 
 
 class RolePermission(BaseModel):
-    """
-    Grants a capability to everyone who holds a given role_code.
-    role_code values must match UserRole.ROLE_CODE_CHOICES; no FK enforced so
-    that new roles can be seeded before the choices list is updated.
-    """
     role_code = models.CharField(max_length=50, db_index=True)
-    permission = models.ForeignKey(
-        CrownPermission,
-        on_delete=models.CASCADE,
-        related_name="role_permissions",
-    )
+    permission = models.ForeignKey(CrownPermission, on_delete=models.CASCADE, related_name="role_permissions")
 
     class Meta:
         unique_together = ("role_code", "permission")
@@ -398,23 +363,11 @@ class RolePermission(BaseModel):
         return f"{self.role_code} → {self.permission.code}"
 
 
-# Ensure SeedRun is registered under the core app
 from .models_seed import SeedRun  # noqa: E402,F401
-
-# Data retention policies — registered under core app
 from .models_retention import DataRetentionPolicy, RetentionPurgeAudit  # noqa: E402,F401
 
 
 class HouseholdFamilyLink(BaseModel):
-    """
-    First-class bridge between a household (by UUID) and a core.Family.
-
-    Replaces the temporary AdmissionsApplication bridge used in parent scoping
-    (see crown_api/scoping_students.py). Supports multiple source types so the
-    link can be created from admissions, enrollment, SIS import, or manually.
-
-    unique_together = ('household_id', 'family') ensures one link per pair.
-    """
     SOURCE_ADMISSIONS = 'admissions'
     SOURCE_ENROLLMENT = 'enrollment'
     SOURCE_IMPORT = 'import'
@@ -426,17 +379,9 @@ class HouseholdFamilyLink(BaseModel):
         (SOURCE_MANUAL, 'Manual linking'),
     ]
 
-    school = models.ForeignKey(
-        School,
-        on_delete=models.CASCADE,
-        related_name='household_family_links',
-    )
+    school = models.ForeignKey(School, on_delete=models.CASCADE, related_name='household_family_links')
     household_id = models.UUIDField(db_index=True)
-    family = models.ForeignKey(
-        Family,
-        on_delete=models.CASCADE,
-        related_name='household_family_links',
-    )
+    family = models.ForeignKey(Family, on_delete=models.CASCADE, related_name='household_family_links')
     source = models.CharField(max_length=20, choices=SOURCE_CHOICES)
 
     class Meta:
@@ -444,3 +389,56 @@ class HouseholdFamilyLink(BaseModel):
 
     def __str__(self):
         return f"HouseholdFamilyLink({self.household_id} ↔ {self.family_id})"
+
+
+class StudentIdentityLink(BaseModel):
+    """Explicit, tenant-safe crosswalk from canonical core.Student to households.Student."""
+
+    SOURCE_ADMISSIONS = 'admissions'
+    SOURCE_IMPORT = 'import'
+    SOURCE_MANUAL = 'manual'
+    SOURCE_RECONCILIATION = 'reconciliation'
+    SOURCE_CHOICES = [
+        (SOURCE_ADMISSIONS, 'Verified admissions conversion'),
+        (SOURCE_IMPORT, 'Verified SIS import'),
+        (SOURCE_MANUAL, 'Manual verified mapping'),
+        (SOURCE_RECONCILIATION, 'Deterministic reconciliation'),
+    ]
+
+    STATUS_VERIFIED = 'verified'
+    STATUS_PENDING = 'pending'
+    STATUS_CHOICES = [
+        (STATUS_VERIFIED, 'Verified'),
+        (STATUS_PENDING, 'Pending evidence'),
+    ]
+
+    school = models.ForeignKey(School, on_delete=models.PROTECT, related_name='student_identity_links')
+    core_student = models.OneToOneField(Student, on_delete=models.PROTECT, related_name='identity_link')
+    compatibility_student = models.OneToOneField('households.Student', on_delete=models.PROTECT, related_name='core_identity_link')
+    source = models.CharField(max_length=32, choices=SOURCE_CHOICES)
+    verification_status = models.CharField(max_length=16, choices=STATUS_CHOICES, default=STATUS_VERIFIED)
+    evidence_reference = models.CharField(max_length=255, blank=True, default='')
+
+    class Meta:
+        ordering = ['school_id', 'core_student_id']
+        indexes = [models.Index(fields=['school', 'verification_status'])]
+
+    def clean(self):
+        super().clean()
+        errors = {}
+        if self.core_student_id and self.core_student.school_id != self.school_id:
+            errors['core_student'] = 'Canonical student must belong to the same school.'
+        if self.compatibility_student_id and self.compatibility_student.school_id != self.school_id:
+            errors['compatibility_student'] = 'Compatibility student must belong to the same school.'
+        if self.verification_status == self.STATUS_VERIFIED and not self.evidence_reference.strip():
+            errors['evidence_reference'] = 'Verified mappings require an evidence reference.'
+        if errors:
+            raise ValidationError(errors)
+
+    def save(self, *args, **kwargs):
+        if not kwargs.get('raw', False):
+            self.full_clean()
+        return super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"StudentIdentityLink({self.core_student_id} ↔ {self.compatibility_student_id})"
