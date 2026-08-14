@@ -15,7 +15,7 @@ from core.models import CrownPermission, RolePermission
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Authoritative permission code registry   (<module>.<action>)
-# Must stay in sync with core/nav_registry.py permission values.
+# Navigation permissions must match core/nav_registry.py; action-only codes do not need nav entries.
 # ──────────────────────────────────────────────────────────────────────────────
 PERMISSIONS = [
     # ── core system ──────────────────────────────────────────────────────────
@@ -100,107 +100,71 @@ PERMISSIONS = [
 # Both are stored in RolePermission.role_code (CharField, no FK constraint).
 # ──────────────────────────────────────────────────────────────────────────────
 ROLE_PERMISSIONS: dict = {
-    # Existing Crown uppercase role codes
     "HEAD_OF_SCHOOL": [
-        "admin.view", "board.view",
-        "finance.view", "billing.view",
-        "admissions.view", "financial_aid.view",
-        "academics.view", "teacher.view",
+        "admin.view", "board.view", "finance.view", "billing.view",
+        "admissions.view", "financial_aid.view", "academics.view", "teacher.view",
         "registrar.view", "academic_support.view", "library.view", "rosters.edit",
         "scheduling.view", "scheduling.configure", "scheduling.edit", "scheduling.publish",
-        "extended_care.view", "pd.view", "communications.view",
-        "health.view", "counseling.view", "food.view",
+        "extended_care.view", "pd.view", "communications.view", "health.view", "counseling.view", "food.view",
         "athletics.view", "fine_arts.view", "spiritual_life.view", "student_services.view",
         "office.view", "it.view", "facilities.view", "transportation.view",
         "security.view", "integrity.view", "metrics.view", "director.actions",
-        "marketing.view", "advancement.view", "advancement.edit",
-        "pd.view", "pd.edit",
-        "hr.view", "hr.edit", "safety.view", "safety.edit",
-        "classroom.view",
+        "marketing.view", "advancement.view", "advancement.edit", "pd.view", "pd.edit",
+        "hr.view", "hr.edit", "safety.view", "safety.edit", "classroom.view",
     ],
-    "FINANCE_DIRECTOR": [
-        "finance.view", "finance.edit", "finance.period_lock",
-        "billing.view", "financial_aid.view",
-        "integrity.view", "metrics.view", "director.actions",
-    ],
-    "AID_DIRECTOR": [
-        "financial_aid.view", "financial_aid.edit", "financial_aid.view_rationale",
-        "admissions.view", "metrics.view",
-    ],
-    "REGISTRAR": [
-        "admissions.view", "admissions.edit",
-        "academics.view", "registrar.view", "classroom.view", "metrics.view", "rosters.edit",
-        "scheduling.view", "scheduling.configure", "scheduling.edit", "scheduling.publish",
-    ],
-    "TEACHER": [
-        "teacher.view", "academics.view", "academics.edit", "classroom.view",
-    ],
-    "SUPPORT": [
-        "health.view", "metrics.view",
-        "academic_support.view", "student_services.view",
-    ],
+    "FINANCE_DIRECTOR": ["finance.view", "finance.edit", "finance.period_lock", "billing.view", "financial_aid.view", "integrity.view", "metrics.view", "director.actions"],
+    "AID_DIRECTOR": ["financial_aid.view", "financial_aid.edit", "financial_aid.view_rationale", "admissions.view", "metrics.view"],
+    "REGISTRAR": ["admissions.view", "admissions.edit", "academics.view", "registrar.view", "classroom.view", "metrics.view", "rosters.edit", "scheduling.view", "scheduling.configure", "scheduling.edit", "scheduling.publish"],
+    "TEACHER": ["teacher.view", "academics.view", "academics.edit", "classroom.view"],
+    "SUPPORT": ["health.view", "metrics.view", "academic_support.view", "student_services.view"],
     "PARENT": ["parent.view"],
     "STUDENT": ["student.view"],
-
-    # Expanded lowercase role codes (forward-looking)
     "head_of_school": [
-        "admin.view", "board.view",
-        "finance.view", "billing.view",
-        "admissions.view", "financial_aid.view",
-        "academics.view", "teacher.view",
+        "admin.view", "board.view", "finance.view", "billing.view",
+        "admissions.view", "financial_aid.view", "academics.view", "teacher.view",
         "registrar.view", "academic_support.view", "library.view", "rosters.edit",
         "scheduling.view", "scheduling.configure", "scheduling.edit", "scheduling.publish",
-        "extended_care.view", "pd.view", "communications.view",
-        "health.view", "counseling.view", "food.view",
+        "extended_care.view", "pd.view", "communications.view", "health.view", "counseling.view", "food.view",
         "athletics.view", "fine_arts.view", "spiritual_life.view", "student_services.view",
         "office.view", "it.view", "facilities.view", "transportation.view",
         "security.view", "integrity.view", "metrics.view", "director.actions",
-        "marketing.view", "advancement.view", "advancement.edit",
-        "pd.view", "pd.edit",
-        "hr.view", "hr.edit", "safety.view", "safety.edit",
-        "classroom.view",
+        "marketing.view", "advancement.view", "advancement.edit", "pd.view", "pd.edit",
+        "hr.view", "hr.edit", "safety.view", "safety.edit", "classroom.view",
     ],
-    "finance":         ["finance.view", "finance.edit", "billing.view", "integrity.view"],
-    "aid_director":    ["financial_aid.view", "financial_aid.edit", "financial_aid.view_rationale", "admissions.view"],
-    "registrar":       ["admissions.view", "academics.view", "registrar.view", "classroom.view", "rosters.edit", "scheduling.view", "scheduling.configure", "scheduling.edit", "scheduling.publish"],
-    "teacher":         ["teacher.view", "academics.view", "academics.edit", "classroom.view"],
-    "nurse":           ["health.view"],
-    "health":          ["health.view"],
-    "counselor":       ["counseling.view"],
-    "food_service":    ["food.view"],
+    "finance": ["finance.view", "finance.edit", "billing.view", "integrity.view"],
+    "aid_director": ["financial_aid.view", "financial_aid.edit", "financial_aid.view_rationale", "admissions.view"],
+    "registrar": ["admissions.view", "academics.view", "registrar.view", "classroom.view", "rosters.edit", "scheduling.view", "scheduling.configure", "scheduling.edit", "scheduling.publish"],
+    "teacher": ["teacher.view", "academics.view", "academics.edit", "classroom.view"],
+    "nurse": ["health.view"],
+    "health": ["health.view"],
+    "counselor": ["counseling.view"],
+    "food_service": ["food.view"],
     "athletic_director": ["athletics.view"],
-    "transportation":  ["transportation.view"],
-    "facilities":      ["facilities.view"],
-    "hr":              ["hr.view", "hr.edit"],
-    "safety":          ["safety.view", "safety.edit"],
-    "security":        ["security.view"],
-    "it":              ["it.view", "integrity.view"],
-    "marketing":       ["marketing.view"],
-    "advancement":     ["advancement.view", "advancement.edit"],
-    "pd":              ["pd.view", "pd.edit"],
-    "chaplain":        ["spiritual_life.view"],
-    "spiritual_life":  ["spiritual_life.view"],
-    "office_manager":  ["office.view"],
-    "parent":          ["parent.view"],
-    "student":         ["student.view"],
-    "board":           ["board.view"],
-
-    # Frontend role aliases (dashboard/route guard vocabulary)
-    "school_admin":    [
-        "admin.view", "board.view",
-        "finance.view", "billing.view",
-        "admissions.view", "financial_aid.view",
-        "academics.view", "teacher.view",
+    "transportation": ["transportation.view"],
+    "facilities": ["facilities.view"],
+    "hr": ["hr.view", "hr.edit"],
+    "safety": ["safety.view", "safety.edit"],
+    "security": ["security.view"],
+    "it": ["it.view", "integrity.view"],
+    "marketing": ["marketing.view"],
+    "advancement": ["advancement.view", "advancement.edit"],
+    "pd": ["pd.view", "pd.edit"],
+    "chaplain": ["spiritual_life.view"],
+    "spiritual_life": ["spiritual_life.view"],
+    "office_manager": ["office.view"],
+    "parent": ["parent.view"],
+    "student": ["student.view"],
+    "board": ["board.view"],
+    "school_admin": [
+        "admin.view", "board.view", "finance.view", "billing.view",
+        "admissions.view", "financial_aid.view", "academics.view", "teacher.view",
         "registrar.view", "academic_support.view", "library.view", "rosters.edit",
         "scheduling.view", "scheduling.configure", "scheduling.edit", "scheduling.publish",
-        "extended_care.view", "pd.view", "communications.view",
-        "health.view", "counseling.view", "food.view",
+        "extended_care.view", "pd.view", "communications.view", "health.view", "counseling.view", "food.view",
         "athletics.view", "fine_arts.view", "spiritual_life.view", "student_services.view",
         "office.view", "it.view", "facilities.view", "transportation.view",
         "security.view", "integrity.view", "metrics.view", "director.actions",
-        "marketing.view", "advancement.view", "advancement.edit",
-        "pd.edit", "hr.view", "hr.edit", "safety.view", "safety.edit",
-        "classroom.view",
+        "marketing.view", "advancement.view", "advancement.edit", "pd.edit", "hr.view", "hr.edit", "safety.view", "safety.edit", "classroom.view",
     ],
     "finance_admin": ["finance.view", "finance.edit", "billing.view", "integrity.view"],
     "admissions_manager": ["admissions.view", "admissions.edit", "academics.view", "registrar.view"],
@@ -221,30 +185,19 @@ class Command(BaseCommand):
     help = "Seeds CrownPermission codes and RolePermission defaults (idempotent)."
 
     def add_arguments(self, parser):
-        parser.add_argument(
-            "--dry-run",
-            action="store_true",
-            help="Print actions without writing to the database.",
-        )
+        parser.add_argument("--dry-run", action="store_true", help="Print actions without writing to the database.")
 
     def handle(self, *args, **options):
         dry_run = bool(options.get("dry_run"))
         new_perms = 0
         new_maps = 0
-
-        # 1. Upsert permission codes
         for code, description in PERMISSIONS:
             if dry_run:
                 self.stdout.write(f"[dry-run] ensure permission: {code}")
                 continue
-            _, created = CrownPermission.objects.get_or_create(
-                code=code,
-                defaults={"description": description},
-            )
+            _, created = CrownPermission.objects.get_or_create(code=code, defaults={"description": description})
             if created:
                 new_perms += 1
-
-        # 2. Upsert role -> permission mappings
         for role_code, perm_codes in ROLE_PERMISSIONS.items():
             for perm_code in perm_codes:
                 if dry_run:
@@ -253,22 +206,12 @@ class Command(BaseCommand):
                 try:
                     perm = CrownPermission.objects.get(code=perm_code)
                 except CrownPermission.DoesNotExist:
-                    self.stdout.write(
-                        self.style.WARNING(f"SKIP: {role_code} -> {perm_code} (not found)")
-                    )
+                    self.stdout.write(self.style.WARNING(f"SKIP: {role_code} -> {perm_code} (not found)"))
                     continue
-                _, created = RolePermission.objects.get_or_create(
-                    role_code=role_code,
-                    permission=perm,
-                )
+                _, created = RolePermission.objects.get_or_create(role_code=role_code, permission=perm)
                 if created:
                     new_maps += 1
-
         if dry_run:
             self.stdout.write(self.style.WARNING("Dry-run complete. No changes written."))
         else:
-            self.stdout.write(
-                self.style.SUCCESS(
-                    f"Seed complete. New permissions: {new_perms}. New role mappings: {new_maps}."
-                )
-            )
+            self.stdout.write(self.style.SUCCESS(f"Seed complete. New permissions: {new_perms}. New role mappings: {new_maps}."))
