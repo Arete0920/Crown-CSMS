@@ -1,22 +1,24 @@
-"""Deterministic local seed for Scheduling module (terms + sections + schedules).
+"""Deterministic local seed for canonical Scheduling master data.
 
 Safe-by-default:
-- Refuses to run on Azure (WEBSITE_HOSTNAME/WEBSITE_INSTANCE_ID present)
-- Uses get_or_create so it can be re-run without duplicating
+- Refuses to run on Azure/production.
+- Writes only canonical academics.Term/Course/Section records.
+- Never writes crown_api legacy scheduling masters.
+- Does not invent a core.Student <-> households.Student crosswalk for rosters.
 
 Usage (PowerShell):
   cd backend
-    .\\venv\\Scripts\\python.exe ..\\backend\\scripts\\seed_scheduling.py
-
-Note: This seed expects students from scripts/seed_households.py.
+  .\\venv\\Scripts\\python.exe ..\\backend\\scripts\\seed_scheduling.py
 """
 
-import os
 import logging
+import os
+import uuid
 from datetime import date
 
 
 logger = logging.getLogger(__name__)
+SEED_NAMESPACE = uuid.UUID("4c0e4577-36a8-4cc6-a3cc-cf24d128672c")
 
 
 def _refuse_if_azure() -> None:
@@ -24,71 +26,83 @@ def _refuse_if_azure() -> None:
         raise SystemExit("Refusing to run seed_scheduling on Azure/production.")
 
 
+def _section_id(school_id, academic_year_id, course_code: str, section_label: str) -> uuid.UUID:
+    return uuid.uuid5(
+        SEED_NAMESPACE,
+        f"{school_id}:{academic_year_id}:{course_code}:{section_label}",
+    )
+
+
 def run() -> None:
     _refuse_if_azure()
-
     os.environ.setdefault("DJANGO_SETTINGS_MODULE", "crown_api.settings")
 
     import django
 
     django.setup()
 
-    from core.models import Student
-    from crown_api.models import Course, Person, Section, SectionEnrollment, Term
+    from academics.models import Course, Section, Term
+    from core.models import AcademicYear
 
-    term, _ = Term.objects.get_or_create(
-        code="2026-SPR",
-        defaults={"name": "Spring 2026", "active": True, "start_date": date(2026, 1, 10), "end_date": date(2026, 5, 20)},
+    years = list(
+        AcademicYear.objects.filter(is_current=True)
+        .select_related("school")
+        .order_by("school_id", "start_date")
     )
+    if not years:
+        raise SystemExit("No current AcademicYear found. Seed school/year data first.")
 
-    # Courses (reuse if they already exist)
-    math, _ = Course.objects.get_or_create(course_code="MATH-101", defaults={"name": "Mathematics", "term": "2026", "active": True})
-    ela, _ = Course.objects.get_or_create(course_code="ELA-101", defaults={"name": "English Language Arts", "term": "2026", "active": True})
+    for year in years:
+        school_id = year.school_id
+        term, _ = Term.objects.update_or_create(
+            academic_year=year,
+            code="2026-SPR",
+            defaults={
+                "school_id": school_id,
+                "name": "Spring 2026",
+                "school_year": year.name,
+                "active": True,
+                "start_date": date(2026, 1, 10),
+                "end_date": date(2026, 5, 20),
+                "ordering": 1,
+            },
+        )
 
-    teacher, _ = Person.objects.get_or_create(
-        email="teacher.one@example.com",
-        defaults={"first_name": "Teacher", "last_name": "One", "phone": None},
-    )
+        courses = {}
+        for code, name in (
+            ("MATH-101", "Mathematics"),
+            ("ELA-101", "English Language Arts"),
+        ):
+            course, _ = Course.objects.update_or_create(
+                school_id=school_id,
+                code=code,
+                defaults={"name": name},
+            )
+            courses[code] = course
 
-    # Two sections per course
-    m1, _ = Section.objects.get_or_create(
-        term=term,
-        course=math,
-        section_code="A",
-        defaults={"teacher": teacher, "room": "101", "meeting_days": "MWF", "meeting_time": "09:00", "name_override": ""},
-    )
-    m2, _ = Section.objects.get_or_create(
-        term=term,
-        course=math,
-        section_code="B",
-        defaults={"teacher": None, "room": "102", "meeting_days": "TR", "meeting_time": "10:00", "name_override": ""},
-    )
-    e1, _ = Section.objects.get_or_create(
-        term=term,
-        course=ela,
-        section_code="A",
-        defaults={"teacher": teacher, "room": "201", "meeting_days": "MWF", "meeting_time": "11:00", "name_override": ""},
-    )
-    e2, _ = Section.objects.get_or_create(
-        term=term,
-        course=ela,
-        section_code="B",
-        defaults={"teacher": None, "room": "202", "meeting_days": "TR", "meeting_time": "13:00", "name_override": ""},
-    )
+        for code, labels in (("MATH-101", ("A", "B")), ("ELA-101", ("A", "B"))):
+            course = courses[code]
+            for label in labels:
+                Section.objects.update_or_create(
+                    id=_section_id(school_id, year.id, code, label),
+                    defaults={
+                        "school_id": school_id,
+                        "course": course,
+                        "term_ref": term,
+                        "term": term.code,
+                        "teacher": None,
+                        "teacher_name": "",
+                    },
+                )
 
-    students = list(Student.objects.order_by("last_name", "first_name"))
-    if not students:
-        raise SystemExit("No students found. Run seed_demo_school or seed_heritage_realism_pack first.")
+        logger.info(
+            "Seeded canonical Scheduling masters for school=%s year=%s term=%s",
+            school_id,
+            year.id,
+            term.code,
+        )
 
-    # Enroll first two students into two sections each.
-    for student in students[:2]:
-        SectionEnrollment.objects.get_or_create(section=m1, student=student, defaults={"active": True})
-        SectionEnrollment.objects.get_or_create(section=e1, student=student, defaults={"active": True})
-
-    logger.info("Seeded scheduling:")
-    logger.info("- Terms: %s", Term.objects.count())
-    logger.info("- Sections: %s", Section.objects.count())
-    logger.info("- Section enrollments: %s", SectionEnrollment.objects.count())
+    logger.info("Roster seeding intentionally omitted: ADR-001 forbids guessed cross-domain student identity remapping.")
 
 
 if __name__ == "__main__":
