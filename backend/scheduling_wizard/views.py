@@ -52,6 +52,20 @@ def _parse_uuid(value, field_name):
         return None, f"{field_name} must be a valid UUID"
 
 
+def _term_within_academic_year(term_ref, academic_year):
+    if term_ref.start_date and term_ref.start_date < academic_year.start_date:
+        return False
+    if term_ref.start_date and term_ref.start_date > academic_year.end_date:
+        return False
+    if term_ref.end_date and term_ref.end_date < academic_year.start_date:
+        return False
+    if term_ref.end_date and term_ref.end_date > academic_year.end_date:
+        return False
+    if term_ref.start_date and term_ref.end_date and term_ref.end_date < term_ref.start_date:
+        return False
+    return True
+
+
 @extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 @authentication_classes(_AUTH)
@@ -90,6 +104,11 @@ def configure_session(request, session_id):
     if term_ref.academic_year_id != academic_year.id:
         return Response(
             {"error": "term_id does not belong to academic_year_id"},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    if not _term_within_academic_year(term_ref, academic_year):
+        return Response(
+            {"error": "term_id dates are outside the academic_year_id boundary"},
             status=status.HTTP_400_BAD_REQUEST,
         )
 
@@ -305,6 +324,8 @@ def commit_session(request, session_id):
             ).get(id=session.id, school_id=school_id)
             if locked_session.term_ref.academic_year_id != locked_session.academic_year_id:
                 raise SectionIdentityConflict("Session academic year/term identity is inconsistent")
+            if not _term_within_academic_year(locked_session.term_ref, locked_session.academic_year):
+                raise SectionIdentityConflict("Session term dates are outside the academic year boundary")
 
             course_map = {}
             for c in locked_session.courses_config:
