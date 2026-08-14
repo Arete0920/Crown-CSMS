@@ -52,7 +52,7 @@ try {
 
     $scriptCode = @'
 from academics.models import Section, Term
-from core.models import Student, Family
+from core.models import AcademicYear, Student, Family
 from billing.models import Invoice
 from curriculum.models import CurriculumCourse
 from crown_api.models_academics_core import AttendanceRecord
@@ -78,7 +78,25 @@ assert attendance_count == 1500, f"Expected 1500 attendance records, got {attend
 assert section_count >= 4, f"Expected at least 4 canonical sections, got {section_count}"
 assert term_count >= 1, "Expected at least one canonical term"
 assert curriculum_count == 4, f"Expected 4 curriculum courses, got {curriculum_count}"
-print("All sanity checks passed")
+
+current_years = AcademicYear.objects.filter(is_current=True).order_by("school_id", "start_date")
+assert current_years.exists(), "Expected at least one current academic year"
+for year in current_years:
+    year_terms = Term.objects.filter(school_id=year.school_id, academic_year=year)
+    assert year_terms.exists(), f"Expected canonical term for current academic year {year.id}"
+    for term in year_terms:
+        assert term.start_date >= year.start_date, (
+            f"Term {term.code} starts before academic year {year.id}: "
+            f"{term.start_date} < {year.start_date}"
+        )
+        assert term.end_date <= year.end_date, (
+            f"Term {term.code} ends after academic year {year.id}: "
+            f"{term.end_date} > {year.end_date}"
+        )
+
+invalid_sections = Section.objects.filter(term_ref__isnull=True).count()
+assert invalid_sections == 0, f"Expected every canonical section to reference a canonical term; found {invalid_sections}"
+print("All sanity and Scheduling authority checks passed")
 '@
 
     python manage.py shell -c $scriptCode
