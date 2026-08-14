@@ -51,9 +51,11 @@ def _require_student(user) -> UserAccount:
 def _canonical_schedule_fixture(user: UserAccount) -> AcademicStudent:
     """Create an explicit sandbox-only compatibility identity and canonical schedule.
 
-    The authenticated sandbox account is the deterministic linkage for this
-    synthetic fixture. This is not a production identity migration and never
-    guesses a core.Student mapping by name/email/position.
+    The authenticated sandbox account deterministically derives the synthetic
+    compatibility student's UUID. The compatibility row intentionally leaves
+    its optional account FK unset so no cross-domain account ownership is
+    asserted. This is not a production identity migration and never guesses a
+    core.Student mapping by name/email/position.
     """
     school_id = user.school_id
     academic_year = (
@@ -81,11 +83,16 @@ def _canonical_schedule_fixture(user: UserAccount) -> AcademicStudent:
             "is_active": True,
         },
     )
+    academic_student_id = uuid.uuid5(
+        SANDBOX_SECTION_NAMESPACE,
+        f"student:{user.id}",
+    )
     academic_student, _ = AcademicStudent.objects.update_or_create(
-        account=user,
+        id=academic_student_id,
         defaults={
             "school_id": school_id,
             "household": household,
+            "account": None,
             "first_name": "Avery",
             "last_name": "Reed",
             "grade_level": "7",
