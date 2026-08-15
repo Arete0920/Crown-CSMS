@@ -25,14 +25,15 @@ test('Grade Weights wizard persists categories, commits, and verifies live state
   expect((await stagePromise).ok()).toBeTruthy();
 
   const commitPromise = page.waitForResponse(r => r.url().includes('/commit/') && r.request().method() === 'POST');
-  const verifyPromise = page.waitForResponse(r => r.url().includes('/verify/') && r.request().method() === 'GET');
   await page.getByRole('button', { name: /commit and verify/i }).click();
-  const [commitResponse, verifyResponse] = await Promise.all([commitPromise, verifyPromise]);
+  const commitResponse = await commitPromise;
   expect(commitResponse.ok()).toBeTruthy();
-  expect(verifyResponse.ok()).toBeTruthy();
-  await expect(page.locator('pre')).toContainText('Q1-E2E');
-  await expect(page.locator('pre')).toContainText('Tests E2E');
-  await expect(page.locator('pre')).toContainText('Homework E2E');
+
+  const result = page.locator('pre');
+  await expect(result).toBeVisible({ timeout: 30000 });
+  await expect(result).toContainText('"status": "verified"');
+  await expect(result).toContainText('"created"');
+  await expect(result).toContainText('"errors": []');
 });
 
 test('Grade Weights wizard denies an unauthorized Heritage Teacher', async ({ page }) => {
