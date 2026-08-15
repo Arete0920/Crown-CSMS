@@ -47,6 +47,14 @@ export async function authenticatedApiJson(
   }, { requestPath: path, requestInit: init });
 }
 
+export function resultList(data: any): any[] {
+  if (Array.isArray(data)) return data;
+  for (const key of ['results', 'items', 'sections', 'students', 'staff', 'rooms']) {
+    if (Array.isArray(data?.[key])) return data[key];
+  }
+  return [];
+}
+
 export async function createAcademicYearFixture(page: Page, suffix: string) {
   const created = await authenticatedApiJson(page, '/api/v1/academic-year-wizard/sessions/', { method: 'POST' });
   const sessionId = created.session_id;
@@ -78,4 +86,36 @@ export async function createAcademicYearFixture(page: Page, suffix: string) {
   const academicYearId = committed?.result?.academic_year_id || committed?.academic_year_id || verified?.academic_year_id || verified?.result?.academic_year_id;
   if (!academicYearId) throw new Error(`Academic year fixture did not return an id: ${JSON.stringify({ committed, verified })}`);
   return String(academicYearId);
+}
+
+export async function createSchedulingFixture(page: Page, suffix: string) {
+  const academicYearId = await createAcademicYearFixture(page, suffix);
+  const scope = await authenticatedApiJson(page, '/api/v1/scheduling-wizard/sessions/scope-options/');
+  const terms = Array.isArray(scope?.terms) ? scope.terms : [];
+  const term = terms.find((item: any) => String(item.academic_year_id) === academicYearId) || terms.at(-1);
+  if (!term?.term_id) throw new Error(`Scheduling fixture could not resolve term: ${JSON.stringify(scope)}`);
+
+  const created = await authenticatedApiJson(page, '/api/v1/scheduling-wizard/sessions/', { method: 'POST' });
+  const sessionId = created.session_id;
+  await authenticatedApiJson(page, `/api/v1/scheduling-wizard/sessions/${sessionId}/configure/`, {
+    method: 'POST',
+    body: { academic_year_id: academicYearId, term_id: String(term.term_id) },
+  });
+  const code = `E2E${suffix}`.replace(/[^A-Z0-9]/gi, '').slice(0, 20).toUpperCase();
+  await authenticatedApiJson(page, `/api/v1/scheduling-wizard/sessions/${sessionId}/courses/`, {
+    method: 'POST',
+    body: { courses: [{ code, name: `E2E ${suffix} Course`, department: 'CERT', credits: 1 }] },
+  });
+  const staged = await authenticatedApiJson(page, `/api/v1/scheduling-wizard/sessions/${sessionId}/sections/`, {
+    method: 'POST',
+    body: { sections: [{ course_code: code, teacher_name: 'E2E Teacher', grade_band: '7' }] },
+  });
+  const committed = await authenticatedApiJson(page, `/api/v1/scheduling-wizard/sessions/${sessionId}/commit/`, {
+    method: 'POST',
+    body: { confirm: true },
+  });
+  const verified = await authenticatedApiJson(page, `/api/v1/scheduling-wizard/sessions/${sessionId}/verify/`);
+  const sectionId = committed?.section_ids?.[0] || staged?.sections?.[0]?.section_id || verified?.section_ids?.[0];
+  if (!sectionId) throw new Error(`Scheduling fixture did not return section id: ${JSON.stringify({ staged, committed, verified })}`);
+  return { academicYearId, termId: String(term.term_id), termCode: String(term.code || term.term_code || ''), sectionId: String(sectionId), sessionId };
 }
