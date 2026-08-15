@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 import { authenticatedApiJson, frontendUrl, launchHeritageRole } from './helpers/wizardCertification';
 
 test('Scheduling wizard commits canonical course and section data and verifies persisted state', async ({ page }) => {
-  await launchHeritageRole(page, 'school_admin');
+  await launchHeritageRole(page, 'admin');
   await page.goto(`${frontendUrl}/scheduling-setup`, { waitUntil: 'networkidle' });
   await expect(page.getByText('Scheduling Setup')).toBeVisible();
   await expect(page.getByText(/Scheduling Scope/i)).toBeVisible();
