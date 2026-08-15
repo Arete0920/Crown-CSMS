@@ -15,34 +15,32 @@ test('Guardian Household persists canonical family and guardian data and verifie
   const created = await authenticatedApiJson(page, '/api/v1/guardian-household-wizard/sessions/', { method: 'POST' });
   const sessionId = created.session_id;
   await authenticatedApiJson(page, `/api/v1/guardian-household-wizard/sessions/${sessionId}/configure/`, {
-    method: 'POST',
-    body: {
-      household_data: {
-        name: `Certification Family ${Date.now()}`,
-        address: { street: '10 Certification Way', city: 'Fairview', state: 'PA', zip: '19000' },
-      },
-    },
+    method: 'POST', body: { household_data: {
+      name: `Certification Family ${Date.now()}`,
+      address: { street: '10 Certification Way', city: 'Fairview', state: 'PA', zip: '19000' },
+    } },
   });
   await authenticatedApiJson(page, `/api/v1/guardian-household-wizard/sessions/${sessionId}/add_guardians/`, {
-    method: 'POST',
-    body: { guardian_data: [{ name: 'Casey Certification', email, phone: '555-0199', custody_type: 'primary' }] },
+    method: 'POST', body: { guardian_data: [{ name: 'Casey Certification', email, phone: '555-0199', custody_type: 'primary' }] },
   });
   await authenticatedApiJson(page, `/api/v1/guardian-household-wizard/sessions/${sessionId}/link_students/`, {
-    method: 'POST',
-    body: { link_data: [{ student_id: studentId, relationship: 'parent' }] },
+    method: 'POST', body: { link_data: [{ student_id: studentId, relationship: 'parent' }] },
   });
   const committed = await authenticatedApiJson(page, `/api/v1/guardian-household-wizard/sessions/${sessionId}/commit/`, {
     method: 'POST', body: { confirm: true },
   });
   expect(committed.status).toBe('committed');
-  expect(committed.household_id).toBeTruthy();
-  expect(committed.guardians_created).toBe(1);
+  expect(committed.family_id).toBeTruthy();
+  expect(committed.canonical_model).toBe('core');
+  expect(committed.guardians_created_or_updated).toBe(1);
   expect(committed.students_linked).toBe(1);
+  expect(committed.student_ids).toContain(studentId);
 
   const verified = await authenticatedApiJson(page, `/api/v1/guardian-household-wizard/sessions/${sessionId}/verify/`);
   expect(verified.status).toBe('verified');
-  expect(verified.household_id).toBe(committed.household_id);
-  expect(verified.guardians_created).toBe(1);
+  expect(verified.family_id).toBe(committed.family_id);
+  expect(verified.canonical_model).toBe('core');
+  expect(verified.guardians_created_or_updated).toBe(1);
   expect(verified.students_linked).toBe(1);
 });
 
