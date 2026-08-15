@@ -34,9 +34,14 @@ jobs:
         shell: bash
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
-            python scripts/execution/217_classify_wizard_e2e_evidence.py --baseline-ref "${{ github.event.pull_request.base.sha }}"
+            python scripts/execution/217_classify_wizard_e2e_evidence.py \
+              --baseline-ref "${{ github.event.pull_request.base.sha }}" \
+              --fail-on-placeholder \
+              --fail-on-unverified
           else
-            python scripts/execution/217_classify_wizard_e2e_evidence.py
+            python scripts/execution/217_classify_wizard_e2e_evidence.py \
+              --fail-on-placeholder \
+              --fail-on-unverified
           fi
 
       - name: Emit evidence summary
