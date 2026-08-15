@@ -57,47 +57,57 @@ Write-Host "SchoolId:  $SchoolId"
 Write-Host "Date:      $today"
 Write-Host ""
 
-# --- Step 1: resolve section ---
 if (-not $SectionId) {
   $sec = Req "GET" "/api/v1/academics/sections/"
   $list = if ($sec.results) { $sec.results } else { $sec }
   if (-not $list -or $list.Count -lt 1) { Die "No sections from /api/v1/academics/sections/" }
-  # sections endpoint returns section_id (not id)
   $SectionId = if ($list[0].section_id) { $list[0].section_id } else { $list[0].id }
 }
 Ok "Using SectionId: $SectionId"
 
-# --- Step 2: student ID must be a core.models.Student.id (what AttendanceRecord.student FK targets)
-# The academics roster returns households.Student IDs which don't match — use $StudentId directly.
+# AttendanceRecord persists canonical core.Student IDs. The section writer accepts
+# either identity family only through one VERIFIED StudentIdentityLink; this proof
+# deliberately uses the canonical core ID so the read-back endpoint is unambiguous.
 if (-not $StudentId) {
-  Die "Set CROWN_DEMO_STUDENT_ID to a core.models.Student.id (run: python manage.py shell -c `"from core.models import Student; print(Student.objects.first().id)`")"
+  Die "Set CROWN_DEMO_STUDENT_ID to a canonical core.models.Student.id"
 }
 Ok "Using StudentId: $StudentId"
 
-# --- Step 3: submit attendance for today ---
+$expectedStatus = "PRESENT"
 $body = @{
   date  = $today
   items = @(
-    @{ student_id = $StudentId; status = "present" }
+    @{ student_id = $StudentId; status = $expectedStatus }
   )
 }
 $sub = Req "POST" "/api/v1/academics/sections/$SectionId/attendance/" $body
 if ($sub.ok -ne $true) { Die "submit did not return ok=true. Response: $($sub | ConvertTo-Json -Depth 5)" }
-Ok "submit accepted: created=$($sub.created) updated=$($sub.updated) date=$($sub.date)"
+if ([string]$sub.section_id -ne [string]$SectionId) {
+  Die "submit section_id mismatch. expected=$SectionId actual=$($sub.section_id)"
+}
+Ok "submit accepted with canonical section identity: section_id=$($sub.section_id) created=$($sub.created) updated=$($sub.updated)"
 
-# --- Step 4: parent/student read — confirm record exists ---
 $att = Req "GET" "/api/v1/academics/students/$StudentId/attendance/"
 $rows = if ($att.results) { $att.results } else { $att }
 if (-not $rows -or $rows.Count -lt 1) { Die "student attendance list returned empty" }
 
-$found = $false
-foreach ($r in $rows) {
-  $d = if ($r.date) { $r.date } elseif ($r.day) { $r.day } else { $r.attendance_date }
-  $s = if ($r.status) { $r.status } elseif ($r.code) { $r.code } else { $r.state }
-  if ($d -eq $today -and $s) { $found = $true; break }
+$matches = @($rows | Where-Object {
+  ([string]$_.date -eq [string]$today) -and
+  ([string]$_.section_id -eq [string]$SectionId) -and
+  ([string]$_.status -eq $expectedStatus)
+})
+if ($matches.Count -ne 1) {
+  Die "expected exactly one canonical attendance row for date=$today section=$SectionId status=$expectedStatus; found=$($matches.Count)"
 }
-if (-not $found) { Die "today's record NOT in student attendance list after submit" }
 
-Ok "PARENT READ CONFIRMED — today's record present in student attendance list"
+$duplicateScopeRows = @($rows | Where-Object {
+  ([string]$_.date -eq [string]$today) -and
+  ([string]$_.section_id -eq [string]$SectionId)
+})
+if ($duplicateScopeRows.Count -ne 1) {
+  Die "duplicate section-aware attendance rows detected for date=$today section=$SectionId; found=$($duplicateScopeRows.Count)"
+}
+
+Ok "READ-BACK CONFIRMED — one canonical row with matching section_id and status=$expectedStatus"
 Write-Host ""
 Write-Host "=== RESULT: LANE3 OK ===" -ForegroundColor Green
