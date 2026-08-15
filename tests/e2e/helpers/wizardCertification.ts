@@ -79,3 +79,46 @@ export async function createAcademicYearFixture(page: Page, suffix: string) {
   if (!academicYearId) throw new Error(`Academic year fixture did not return an id: ${JSON.stringify({ committed, verified })}`);
   return String(academicYearId);
 }
+
+export async function createCanonicalSectionFixture(page: Page, label: string) {
+  const scope = await authenticatedApiJson(page, '/api/v1/scheduling-wizard/sessions/scope-options/');
+  const year = scope.academic_years?.find((item: any) => item.is_current) || scope.academic_years?.[0];
+  const term = scope.terms?.find((item: any) => item.academic_year_id === year?.academic_year_id && item.active)
+    || scope.terms?.find((item: any) => item.academic_year_id === year?.academic_year_id);
+  if (!year?.academic_year_id || !term?.term_id) throw new Error(`No canonical scheduling scope: ${JSON.stringify(scope)}`);
+
+  const created = await authenticatedApiJson(page, '/api/v1/scheduling-wizard/sessions/', { method: 'POST', body: {} });
+  const sessionId = created.session_id;
+  await authenticatedApiJson(page, `/api/v1/scheduling-wizard/sessions/${sessionId}/configure/`, {
+    method: 'POST', body: { academic_year_id: year.academic_year_id, term_id: term.term_id },
+  });
+  const suffix = `${label}${Date.now().toString().slice(-5)}`.replace(/[^A-Za-z0-9]/g, '').slice(-10).toUpperCase();
+  const courseCode = `E${suffix}`.slice(0, 12);
+  await authenticatedApiJson(page, `/api/v1/scheduling-wizard/sessions/${sessionId}/courses/`, {
+    method: 'POST', body: { courses: [{ code: courseCode, name: `E2E ${label}`, department: 'Testing', credits: '1.0' }] },
+  });
+  const staged = await authenticatedApiJson(page, `/api/v1/scheduling-wizard/sessions/${sessionId}/sections/`, {
+    method: 'POST', body: { sections: [{ course_code: courseCode, teacher_name: 'E2E Teacher' }] },
+  });
+  const sectionId = staged.sections?.[0]?.section_id;
+  if (!sectionId) throw new Error(`Scheduling fixture did not stage a section: ${JSON.stringify(staged)}`);
+  await authenticatedApiJson(page, `/api/v1/scheduling-wizard/sessions/${sessionId}/commit/`, { method: 'POST', body: { confirm: true } });
+  await authenticatedApiJson(page, `/api/v1/scheduling-wizard/sessions/${sessionId}/verify/`);
+  return { sectionId: String(sectionId), academicYearId: String(year.academic_year_id), termId: String(term.term_id), termCode: String(term.code || '') };
+}
+
+export async function createStaffFixture(page: Page, label: string) {
+  const created = await authenticatedApiJson(page, '/api/v1/staff-onboarding-wizard/sessions/', { method: 'POST', body: {} });
+  const sessionId = created.session_id;
+  const suffix = Date.now().toString().slice(-8);
+  const email = `e2e-${label.toLowerCase().replace(/[^a-z0-9]/g, '')}-${suffix}@school.test`;
+  await authenticatedApiJson(page, `/api/v1/staff-onboarding-wizard/sessions/${sessionId}/configure/`, {
+    method: 'POST', body: { first_name: 'E2E', last_name: label, email, role_type: 'TEACHER' },
+  });
+  await authenticatedApiJson(page, `/api/v1/staff-onboarding-wizard/sessions/${sessionId}/preview/`);
+  const committed = await authenticatedApiJson(page, `/api/v1/staff-onboarding-wizard/sessions/${sessionId}/commit/`, { method: 'POST', body: { confirm: true } });
+  const verified = await authenticatedApiJson(page, `/api/v1/staff-onboarding-wizard/sessions/${sessionId}/verify/`);
+  const staffId = committed?.result?.staff_id;
+  if (!staffId || !verified?.staff_exists) throw new Error(`Staff fixture failed: ${JSON.stringify({ committed, verified })}`);
+  return { staffId: String(staffId), email };
+}
