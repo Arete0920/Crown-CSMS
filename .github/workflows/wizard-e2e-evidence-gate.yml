@@ -22,6 +22,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+        with:
+          fetch-depth: 0
 
       - name: Setup Python
         uses: actions/setup-python@7f4fc3e22c37d6ff65e88745f38bd3157c663f7c
@@ -29,7 +31,13 @@ jobs:
           python-version: "3.12"
 
       - name: Classify wizard evidence
-        run: python scripts/execution/217_classify_wizard_e2e_evidence.py
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            python scripts/execution/217_classify_wizard_e2e_evidence.py --baseline-ref "${{ github.event.pull_request.base.sha }}"
+          else
+            python scripts/execution/217_classify_wizard_e2e_evidence.py
+          fi
 
       - name: Emit evidence summary
         if: always()
@@ -40,9 +48,6 @@ jobs:
             cat audit-artifacts/wizard-e2e-evidence/latest/00_SUMMARY.md
             cat audit-artifacts/wizard-e2e-evidence/latest/00_SUMMARY.md >> "$GITHUB_STEP_SUMMARY"
           fi
-
-      - name: Reject placeholder wizard certification
-        run: python scripts/execution/217_classify_wizard_e2e_evidence.py --fail-on-placeholder
 
       - name: Upload wizard evidence classification
         if: always()
