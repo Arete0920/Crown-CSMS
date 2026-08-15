@@ -55,7 +55,7 @@ test('Billing Setup wizard validates, persists a plan, commits, and verifies aga
 
   await expect(page.getByRole('heading', { name: /schedule preview/i })).toBeVisible();
   await expect(page.getByText('Annual Tuition E2E')).toBeVisible();
-  await expect(page.getByText('$6,000.00')).toHaveCount(2);
+  await expect(page.getByText('$6000.00')).toHaveCount(2);
   await page.getByRole('button', { name: /looks good.*commit/i }).click();
 
   await expect(page.getByRole('heading', { name: /commit billing setup/i })).toBeVisible();
