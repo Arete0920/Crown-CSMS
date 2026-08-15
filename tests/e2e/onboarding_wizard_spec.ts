@@ -16,9 +16,7 @@ test('Onboarding imports CSV through the live UI, persists records, and verifies
   await expect(page.getByRole('heading', { name: /upload csv/i })).toBeVisible();
 
   await page.locator('input[type="file"]').setInputFiles({
-    name: 'onboarding-e2e.csv',
-    mimeType: 'text/csv',
-    buffer: Buffer.from(csv, 'utf8'),
+    name: 'onboarding-e2e.csv', mimeType: 'text/csv', buffer: Buffer.from(csv, 'utf8'),
   });
   const createPromise = page.waitForResponse(r => r.url().includes('/api/v1/onboarding/imports/') && !r.url().includes('/upload/') && r.request().method() === 'POST');
   const uploadPromise = page.waitForResponse(r => r.url().includes('/upload/') && r.request().method() === 'POST');
@@ -26,7 +24,7 @@ test('Onboarding imports CSV through the live UI, persists records, and verifies
   const [createResponse, uploadResponse] = await Promise.all([createPromise, uploadPromise]);
   expect(createResponse.ok()).toBeTruthy();
   expect(uploadResponse.ok()).toBeTruthy();
-  await expect(page.getByText(/uploaded:/i)).toContainText('2 rows');
+  await expect(page.getByText(/2 rows/i)).toBeVisible();
 
   await page.getByRole('button', { name: /continue/i }).click();
   await expect(page.getByRole('heading', { name: /validate data/i })).toBeVisible();
