@@ -55,3 +55,10 @@ test('Section Staffing writes and verifies a canonical TeacherAssignment', async
   await page.goto(`${frontendUrl}/section-staffing-setup`, { waitUntil: 'networkidle' });
   await expect(page.getByText(/section staffing/i).first()).toBeVisible();
 });
+
+test('Section Staffing denies an unauthorized Heritage Teacher', async ({ page }) => {
+  await launchHeritageRole(page, 'teacher');
+  await page.goto(`${frontendUrl}/section-staffing-setup`, { waitUntil: 'networkidle' });
+  await expect(page).not.toHaveURL(/\/section-staffing-setup(?:$|\?)/i);
+  await expect(page.getByText(/section staffing/i)).toHaveCount(0);
+});
