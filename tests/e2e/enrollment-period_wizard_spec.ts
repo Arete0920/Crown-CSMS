@@ -7,9 +7,7 @@ test('Enrollment Period wizard persists capacity targets and verifies committed 
   await page.goto(`${frontendUrl}/enrollment-period-setup`, { waitUntil: 'networkidle' });
   await expect(page.getByRole('heading', { name: /configure enrollment window/i })).toBeVisible();
 
-  const inputs = page.locator('input');
   await page.getByPlaceholder(/uuid from wizard/i).fill(academicYearId);
-  await inputs.filter({ has: page.locator('[type="date"]') });
   await page.locator('input[type="date"]').nth(0).fill('2032-09-01');
   await page.locator('input[type="date"]').nth(1).fill('2033-02-15');
   await page.locator('input[type="date"]').nth(2).fill('2033-01-15');
