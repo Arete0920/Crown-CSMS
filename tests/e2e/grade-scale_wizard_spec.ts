@@ -52,7 +52,7 @@ test('Grade Scale wizard persists complete bands and verifies committed scale', 
   expect(verifyResponse.ok()).toBeTruthy();
 
   await expect(page.getByRole('heading', { name: /grade scale committed/i })).toBeVisible();
-  await expect(page.getByText('E2E Letter Scale')).toBeVisible();
+  await expect(page.getByRole('cell', { name: 'E2E Letter Scale' })).toBeVisible();
   await expect(page.getByText(/scale id/i)).not.toContainText('—');
 });
 
