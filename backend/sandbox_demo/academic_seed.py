@@ -16,7 +16,14 @@ from academics.models import (
     TeacherAssignment,
     Unit,
 )
-from core.models import Family, GradeLevel, School, Student as CoreStudent, UserAccount
+from core.models import (
+    Family,
+    GradeLevel,
+    School,
+    Student as CoreStudent,
+    StudentIdentityLink,
+    UserAccount,
+)
 from households.models import Household, Student as HouseholdStudent
 
 
@@ -35,6 +42,11 @@ DEMO_STUDENTS = (
 )
 
 
+def _demo_student_ids() -> list[uuid.UUID]:
+    school_namespace = uuid.UUID(HERITAGE_SCHOOL_ID)
+    return [uuid.uuid5(school_namespace, student_number) for _, _, student_number in DEMO_STUDENTS]
+
+
 def reset_heritage_teacher_academics() -> None:
     """Clear mutable teacher-demo records before the flagship user/staff reset runs."""
     sections = Section.objects.filter(
@@ -51,6 +63,13 @@ def reset_heritage_teacher_academics() -> None:
         school_id=HERITAGE_SCHOOL_ID,
         lesson__unit__course__code=DEMO_COURSE_CODE,
     ).delete()
+
+    demo_student_ids = _demo_student_ids()
+    StudentIdentityLink.objects.filter(
+        school_id=HERITAGE_SCHOOL_ID,
+        core_student_id__in=demo_student_ids,
+    ).delete()
+
     household_ids = list(
         Household.objects.filter(
             school_id=HERITAGE_SCHOOL_ID,
@@ -97,7 +116,7 @@ def _ensure_teacher_roster(school: School, section: Section) -> list[str]:
                 "is_active": True,
             },
         )
-        CoreStudent.objects.update_or_create(
+        core_student, _ = CoreStudent.objects.update_or_create(
             id=stable_id,
             defaults={
                 "school": school,
@@ -108,6 +127,16 @@ def _ensure_teacher_roster(school: School, section: Section) -> list[str]:
                 "dob": date(2015, 1, index),
                 "status": "ACTIVE",
                 "current_grade_level": grade,
+            },
+        )
+        StudentIdentityLink.objects.update_or_create(
+            core_student=core_student,
+            defaults={
+                "school": school,
+                "compatibility_student": household_student,
+                "source": StudentIdentityLink.SOURCE_RECONCILIATION,
+                "verification_status": StudentIdentityLink.STATUS_VERIFIED,
+                "evidence_reference": f"sandbox:heritage:teacher-roster:{student_number}",
             },
         )
         AcademicEnrollment.objects.update_or_create(

@@ -75,6 +75,13 @@ class AttendanceRecord(BaseModel):
         blank=True,
         related_name="attendance_records",
     )
+    section = models.ForeignKey(
+        "academics.Section",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="attendance_records",
+    )
     date = models.DateField(db_index=True)
     status = models.CharField(max_length=16, choices=STATUS_CHOICES, default=STATUS_PRESENT)
     minutes_late = models.PositiveSmallIntegerField(null=True, blank=True)
@@ -85,13 +92,20 @@ class AttendanceRecord(BaseModel):
             models.UniqueConstraint(
                 fields=["student", "course", "date"],
                 name="uniq_attendance_student_course_date",
-            )
+            ),
+            models.UniqueConstraint(
+                fields=["student", "section", "date"],
+                condition=models.Q(section__isnull=False),
+                name="uniq_attendance_student_section_date",
+            ),
         ]
         ordering = ["-date", "course__course_code"]
 
     def __str__(self) -> str:
-        course_part = self.course.course_code if self.course_id else "(no course)"
-        return f"{self.student} {self.date} {course_part} {self.status}".strip()
+        scope_part = str(self.section_id) if self.section_id else (
+            self.course.course_code if self.course_id else "(no course/section)"
+        )
+        return f"{self.student} {self.date} {scope_part} {self.status}".strip()
 
 
 class GradeRecord(BaseModel):
