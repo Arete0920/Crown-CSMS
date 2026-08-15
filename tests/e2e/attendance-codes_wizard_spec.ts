@@ -49,10 +49,10 @@ test('Attendance Codes wizard performs authenticated configure, stage, commit, a
   expect(verifyResponse.ok(), `verify returned ${verifyResponse.status()}`).toBeTruthy();
 
   const verified = await verifyResponse.json();
-  expect(verified).toBeTruthy();
+  expect(verified.status).toBe('verified');
+  expect(verified.active_code_count).toBe(2);
   await expect(page.getByRole('heading', { name: /attendance configuration verified/i })).toBeVisible();
-  await expect(page.getByTestId('attendance-verification-result')).toContainText('A');
-  await expect(page.getByTestId('attendance-verification-result')).toContainText('E');
+  await expect(page.getByTestId('attendance-verification-result')).toContainText('"active_code_count": 2');
 });
 
 test('Attendance Codes wizard denies an unauthorized Heritage Teacher', async ({ page }) => {
