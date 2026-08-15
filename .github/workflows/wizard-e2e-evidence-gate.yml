@@ -1,0 +1,49 @@
+name: Wizard E2E Evidence Gate
+
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  classify-wizard-e2e:
+    name: Classify wizard E2E evidence
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Classify wizard evidence
+        run: python scripts/execution/217_classify_wizard_e2e_evidence.py
+
+      - name: Emit evidence summary
+        if: always()
+        shell: bash
+        run: |
+          set +e
+          if [ -f audit-artifacts/wizard-e2e-evidence/latest/00_SUMMARY.md ]; then
+            cat audit-artifacts/wizard-e2e-evidence/latest/00_SUMMARY.md
+            cat audit-artifacts/wizard-e2e-evidence/latest/00_SUMMARY.md >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Reject placeholder wizard certification
+        run: python scripts/execution/217_classify_wizard_e2e_evidence.py --fail-on-placeholder
+
+      - name: Upload wizard evidence classification
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: wizard-e2e-evidence-classification
+          if-no-files-found: error
+          path: audit-artifacts/wizard-e2e-evidence/latest
