@@ -72,16 +72,16 @@ const RAW_WIZARD_ROUTE_DEFINITIONS = [
   { path: '/room-setup', component: RoomSetupWizard, name: 'Rooms Setup', apiPrefix: '/api/v1/room-setup-wizard/sessions/', roles: ['admin', 'director'] },
   { path: '/promotion-setup', component: PromotionWizard, name: 'Promotion Map Setup', apiPrefix: '/api/v1/promotion-wizard/sessions/', roles: ['admin', 'academics', 'director'] },
   { path: '/student-import-setup', component: StudentImportWizard, name: 'Student Import', apiPrefix: '/api/v1/student-import-wizard/sessions/', roles: ['super_admin', 'school_admin', 'registrar', 'admin'], releaseState: 'ready', evidence: readyWizardEvidence() },
-  { path: '/guardian-household-setup', component: SetupWizardA, name: 'Guardian & Household Setup', apiPrefix: '/api/v1/guardian-household-wizard/sessions/', roles: ['super_admin', 'school_admin', 'registrar', 'admin'], releaseState: 'ready' },
+  { path: '/guardian-household-setup', component: SetupWizardA, name: 'Guardian & Household Setup', apiPrefix: '/api/v1/guardian-household-wizard/sessions/', roles: ['super_admin', 'school_admin', 'registrar', 'admin'], releaseState: 'certification' },
   { path: '/section-staffing-setup', component: SetupWizardC, name: 'Section Staffing', apiPrefix: '/api/v1/section-staffing-wizard/sessions/', roles: ['super_admin', 'school_admin', 'academics', 'admin'], releaseState: 'ready', evidence: readyWizardEvidence() },
   { path: '/attendance-codes-setup', component: AttendanceSetupWizard, name: 'Attendance Codes Setup', apiPrefix: '/api/v1/attendance-codes-wizard/sessions/', roles: ['super_admin', 'school_admin', 'registrar', 'academics', 'admin'], releaseState: 'ready', evidence: readyWizardEvidence() },
   { path: '/grade-weights-setup', component: CategoriesWizard, name: 'Grade Weights & Categories', apiPrefix: '/api/v1/grade-weights-wizard/sessions/', roles: ['super_admin', 'school_admin', 'academics', 'admin'], releaseState: 'ready', evidence: readyWizardEvidence() },
 ];
 
 function normalizeWizardRoute(route) {
-  const releaseState = route.releaseState || 'ready';
-  const isReadyLike = ['ready', 'live', 'production'].includes(releaseState);
-  const readiness = route.readiness || (isReadyLike ? readyReadiness() : placeholderReadiness());
+  const releaseState = route.releaseState || 'certification';
+  const isFunctionallyReady = ['ready', 'live', 'production', 'certification'].includes(releaseState);
+  const readiness = route.readiness || (isFunctionallyReady ? readyReadiness() : placeholderReadiness());
   return { ...route, moduleKey: route.moduleKey || route.path.replace(/^\//, '') || route.name, moduleType: route.moduleType || 'wizard', owner: route.owner || 'wizardRoutes', releaseState, readiness };
 }
 
