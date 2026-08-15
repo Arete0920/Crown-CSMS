@@ -5,7 +5,6 @@ import CrownLogo from "../components/brand/CrownLogo";
 const API_BASE = (import.meta.env.VITE_API_BASE_URL || "").replace(/\/+$/, "");
 const DEMO_SCHOOL = import.meta.env.VITE_DEMO_SCHOOL_ID || "19801b59-8c05-4c84-9312-5d792e4e839d";
 const IS_SANDBOX = Boolean(import.meta.env.VITE_DEMO_MODE === "sandbox" || import.meta.env.VITE_SANDBOX_MODE === "1");
-const IS_WIZARD_CERTIFICATION = import.meta.env.VITE_WIZARD_CERTIFICATION === "1";
 const ENABLE_SANDBOX_STUDENT = import.meta.env.VITE_SANDBOX_ENABLE_STUDENT !== "0";
 const SUPPORT_EMAIL = import.meta.env.VITE_SUPPORT_EMAIL || "support@crown2026.local";
 const HERITAGE_SCHOOL_KEY = "heritage-core";
@@ -26,7 +25,6 @@ function inviteIdFromUrl() {
 
 const SANDBOX_ROLES = [
   { value: "school_admin", label: "School Admin", route: "/school-admin-dashboard" },
-  ...(IS_WIZARD_CERTIFICATION ? [{ value: "admin", label: "School Admin", route: "/school-admin-dashboard" }] : []),
   { value: "admissions_director", label: "Admissions Director", route: "/admissions-dashboard" },
   { value: "finance_director", label: "Finance Director", route: "/finance" },
   { value: "teacher", label: "Teacher", route: "/teacher" },
@@ -209,10 +207,7 @@ export default function LoginPage() {
     setError("");
     setIsBusy(true);
 
-    const selectedRoleEntry = roles.find((entry) => entry.value === selectedRole) || roles[0];
-    const role = IS_SANDBOX && selectedRoleEntry?.value === "admin"
-      ? (SANDBOX_ROLES.find((entry) => entry.value === "school_admin") || selectedRoleEntry)
-      : selectedRoleEntry;
+    const role = roles.find((entry) => entry.value === selectedRole) || roles[0];
 
     try {
       if (IS_SANDBOX) {
@@ -391,308 +386,204 @@ export default function LoginPage() {
           background: var(--crown-compat-color-166130d001);
           border: 1px solid var(--crown-compat-color-9d2fa2fa45);
           color: var(--lp-navy-700);
-          padding: 5px 11px;
           font-size: 12px;
           font-weight: 700;
           letter-spacing: 0.2px;
+          padding: 4px 10px;
           margin-bottom: 12px;
         }
 
-        .login-title {
-          margin: 0;
+        .login-card h1 {
+          margin: 0 0 6px;
           font-family: var(--crown-font);
-          font-size: 31px;
-          color: var(--crown-compat-color-8e47de7f3c);
-          line-height: 1.15;
+          color: var(--lp-navy-900);
+          font-size: 24px;
         }
 
-        .login-subtitle {
-          margin: 8px 0 12px;
-          color: var(--crown-compat-color-7691aaa644);
-          font-size: 15px;
-          line-height: 1.45;
-        }
-
-        .warning-banner {
-          border: 1px solid var(--lp-gold-500);
-          background: var(--lp-gold-100);
-          color: var(--crown-compat-color-1588a009e3);
-          padding: 10px 12px;
-          border-radius: 10px;
+        .login-card p {
+          margin: 0 0 18px;
+          color: var(--lp-slate-500);
           font-size: 13px;
-          font-weight: 700;
-          line-height: 1.45;
-          margin-bottom: 14px;
         }
 
-        .field-grid {
-          display: grid;
-          grid-template-columns: 1fr;
+        .form-group { margin-bottom: 14px; }
+        .form-group label {
+          display: block;
+          font-size: 12px;
+          font-weight: 700;
+          color: var(--lp-navy-900);
+          margin-bottom: 6px;
+        }
+
+        .form-group input,
+        .form-group select {
+          width: 100%;
+          padding: 10px 12px;
+          border: 1px solid var(--lp-slate-200);
+          border-radius: 8px;
+          background: var(--lp-white);
+          color: var(--lp-navy-900);
+          font-size: 14px;
+          outline: none;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+          border-color: var(--lp-gold-500);
+          box-shadow: 0 0 0 3px var(--lp-gold-100);
+        }
+
+        .error {
+          margin: 0 0 14px;
+          padding: 9px 10px;
+          border-radius: 8px;
+          background: var(--lp-danger-100);
+          color: var(--lp-danger-600);
+          font-size: 12px;
+        }
+
+        .login-actions {
+          margin-top: 8px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
           gap: 12px;
         }
 
-        .field-label {
-          display: block;
-          margin-bottom: 5px;
-          font-size: 13px;
-          color: var(--crown-compat-color-0f64de779d);
-          font-weight: 700;
-        }
-
-        .field-input,
-        .field-select {
-          width: 100%;
-          border: 1px solid var(--crown-compat-color-17a67ab8c6) !important;
-          border-radius: 9px;
-          padding: 10px 11px;
-          font-size: 14px;
-          color: var(--crown-compat-color-58a558915f) !important;
-          caret-color: var(--crown-compat-color-58a558915f) !important;
-          -webkit-text-fill-color: var(--crown-compat-color-58a558915f) !important;
-          background: var(--lp-white) !important;
-          background-color: var(--lp-white) !important;
-        }
-
-        .field-input::placeholder {
-          color: var(--crown-compat-color-7beae9beff) !important;
-          -webkit-text-fill-color: var(--crown-compat-color-7beae9beff) !important;
-          opacity: 1;
-        }
-
-        .field-input:focus,
-        .field-select:focus,
-        .btn-signin:focus,
-        .btn-microsoft:focus {
-          outline: 2px solid var(--crown-compat-color-8f251077d9);
-          outline-offset: 2px;
-          border-color: var(--crown-compat-color-2fcc0c461d);
-        }
-
-        .btn-signin {
-          margin-top: 4px;
-          width: 100%;
+        .login-btn {
           border: 0;
-          border-radius: 10px;
-          background: linear-gradient(120deg, var(--lp-navy-900) 0%, var(--lp-navy-700) 100%);
-          color: var(--crown-compat-color-f2074b6cef) !important;
-          -webkit-text-fill-color: var(--crown-compat-color-f2074b6cef) !important;
-          padding: 12px 14px;
-          font-size: 15px;
-          font-weight: 700;
-          cursor: pointer;
-        }
-
-        .btn-signin:not([disabled]):hover {
-          filter: brightness(1.03);
-        }
-
-        .btn-signin[disabled] {
-          opacity: 0.65;
-          cursor: wait;
-        }
-
-        .btn-microsoft {
-          margin-top: 10px;
-          width: 100%;
-          border: 1px solid var(--crown-compat-color-80e0759046);
-          border-radius: 10px;
-          background: var(--crown-compat-color-f2074b6cef);
-          color: var(--crown-compat-color-21b23e7ef3);
-          padding: 10px 12px;
-          font-size: 14px;
-          font-weight: 700;
-          cursor: pointer;
-        }
-
-        .error-banner {
-          border: 1px solid var(--crown-compat-color-05f1c462d9);
-          background: var(--lp-danger-100);
-          color: var(--lp-danger-600);
-          border-radius: 9px;
-          padding: 9px 11px;
+          border-radius: 8px;
+          background: var(--lp-navy-900);
+          color: var(--lp-white);
+          padding: 10px 16px;
           font-size: 13px;
           font-weight: 700;
+          cursor: pointer;
         }
 
-        .support-note {
-          margin: 10px 0 2px;
+        .login-btn:hover { background: var(--lp-navy-700); }
+        .login-btn:disabled { opacity: 0.65; cursor: wait; }
+
+        .login-support {
           color: var(--lp-slate-500);
-          font-size: 12px;
-          line-height: 1.5;
+          font-size: 11px;
         }
 
-        .product-footer {
-          margin: 13px 0 0;
-          color: var(--crown-compat-color-fff712ee45);
-          font-size: 12px;
-          text-align: center;
+        .login-support a {
+          color: var(--lp-navy-700);
+          text-decoration: none;
           font-weight: 600;
         }
 
-        @media (max-width: 980px) {
-          .login-root {
-            grid-template-columns: 1fr;
-          }
-
-          .login-brand {
-            padding: 28px 22px;
-          }
-
-          .login-panel {
-            align-items: flex-start;
-            padding-top: 16px;
-          }
+        .login-meta {
+          margin-top: 18px;
+          padding-top: 12px;
+          border-top: 1px solid var(--lp-slate-200);
+          display: flex;
+          justify-content: space-between;
+          gap: 12px;
+          color: var(--lp-slate-500);
+          font-size: 11px;
         }
 
-        @media (max-width: 520px) {
-          .login-card {
-            padding: 18px;
-          }
-
-          .login-title {
-            font-size: 27px;
-          }
-
-          .brand-heading {
-            font-size: 27px;
-          }
+        @media (max-width: 820px) {
+          .login-root { grid-template-columns: 1fr; }
+          .login-brand { min-height: 300px; padding: 28px 22px; }
+          .brand-heading { font-size: 27px; }
+          .login-panel { padding: 24px 14px; }
         }
       `}</style>
 
       <main className="login-root">
-        <section className="login-brand" aria-label="Crown guidance">
+        <section className="login-brand" aria-label="CROWN introduction">
           <div className="brand-top">
             <div className="brand-mark">
-              <CrownLogo placement="loginBrand" />
-              <span className="crown-brand-sr-only">
-                <span>CROWN</span>
-                <span>Christian School Management Solution</span>
-              </span>
+              <CrownLogo variant="loginBrand" alt="CROWN Christian School Management Solution" />
             </div>
-
-            <h1 className="brand-heading">{IS_SANDBOX ? "CROWN Heritage Preview" : "CROWN Access"}</h1>
+            <h2 className="brand-heading">{IS_SANDBOX ? "Explore a complete Christian-school workflow." : "Welcome back to CROWN."}</h2>
             <p className="brand-trust">
               {IS_SANDBOX
-                ? "A controlled no-login preview of Heritage Christian Academy demo workflows."
-                : "A calm and secure sign-in experience for school teams and families."}
+                ? "This preview uses synthetic Heritage Christian Academy data and cannot reach live school records."
+                : "Manage academics, operations, finance, enrollment, and community workflows from one system."}
             </p>
             <p className="brand-guidance">
               {IS_SANDBOX
-                ? "Choose a role and continue into demo-only CROWN workflows. No password is required for this preview."
-                : "Choose your school, choose your role, and continue with the correct context before entering any records."}
+                ? "Choose a role, enter the guided workspace, and use the contextual walkthroughs to evaluate real operational flows."
+                : "Use your school credentials to continue."}
             </p>
             <ul className="brand-bullets">
-              <li>{IS_SANDBOX ? "Heritage Christian Academy is the only approved sandbox school." : "Clear school and role context on every login."}</li>
-              <li>Sandbox-safe workflows for tester and operator training.</li>
-              <li>Permission-scoped access for each stakeholder role.</li>
+              <li>Role-aware dashboards and permissions</li>
+              <li>Admissions, enrollment, academics, and operations</li>
+              <li>Finance and family-facing workflows</li>
+              <li>Christian-school mission and community context</li>
             </ul>
           </div>
-
-          <p className="brand-footer">CROWN - Christian School Management Solution</p>
+          <div className="brand-footer">
+            CROWN — Christian School Management Solution
+          </div>
         </section>
 
-        <section className="login-panel" aria-label={IS_SANDBOX ? "Heritage sandbox preview panel" : "Login form panel"}>
+        <section className="login-panel">
           <form className="login-card" onSubmit={handleSignIn}>
-            {IS_SANDBOX && <div className="sandbox-badge">Heritage Sandbox Preview</div>}
+            {IS_SANDBOX ? <div className="sandbox-badge">HERITAGE SANDBOX</div> : null}
+            <h1>{IS_SANDBOX ? "Choose a preview role" : "Sign in"}</h1>
+            <p>{IS_SANDBOX ? "No password is required for approved Heritage preview sessions." : "Enter your school credentials."}</p>
 
-            <h2 className="login-title">{IS_SANDBOX ? "Continue to Preview" : "Sign In"}</h2>
-            <p className="login-subtitle">
-              {IS_SANDBOX
-                ? "Heritage Christian Academy is the approved demo school. Select a role to enter the no-login sandbox preview."
-                : "Use your authorized role and account to access CROWN."}
-            </p>
-
-            {IS_SANDBOX && (
-              <div className="warning-banner">Use demo data only. Do not enter real school records.</div>
-            )}
-
-            {error && <div className="error-banner" role="alert">{error}</div>}
-
-            <div className="field-grid">
-              <div>
-                <label className="field-label" htmlFor="login-school">School</label>
-                <select
-                  id="login-school"
-                  className="field-select"
-                  value={selectedSchoolId}
-                  onChange={(event) => setSelectedSchoolId(event.target.value)}
-                  disabled={IS_SANDBOX}
-                >
-                  {schools.map((school) => (
-                    <option key={school.id} value={school.id}>{school.name}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="field-label" htmlFor="login-role">Role</label>
-                <select
-                  id="login-role"
-                  className="field-select"
-                  value={selectedRole}
-                  onChange={(event) => setSelectedRole(event.target.value)}
-                >
-                  {roles.map((role) => (
-                    <option key={role.value} value={role.value}>{role.label}</option>
-                  ))}
-                </select>
-              </div>
-
-              {!IS_SANDBOX && (
-                <>
-                  <div>
-                    <label className="field-label" htmlFor="login-email">Email</label>
-                    <input
-                      id="login-email"
-                      className="field-input"
-                      type="email"
-                      value={email}
-                      onChange={(event) => setEmail(event.target.value)}
-                      autoComplete="username"
-                      placeholder="name@school.org"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="field-label" htmlFor="login-password">Password</label>
-                    <input
-                      id="login-password"
-                      className="field-input"
-                      type="password"
-                      value={password}
-                      onChange={(event) => setPassword(event.target.value)}
-                      autoComplete="current-password"
-                      placeholder="enter your password"
-                      required
-                    />
-                  </div>
-                </>
-              )}
-
-              <button type="submit" className="btn-signin" disabled={isBusy}>
-                {isBusy ? (IS_SANDBOX ? "Opening preview..." : "Signing in...") : (IS_SANDBOX ? "Continue to Heritage Preview" : "Sign In")}
-              </button>
-
-              {!IS_SANDBOX && (
-                <button
-                  type="button"
-                  className="btn-microsoft"
-                  onClick={() => {
-                    globalThis.location.href = API_BASE + "/auth/microsoft/login/";
-                  }}
-                >
-                  Continue with Microsoft 365
-                </button>
-              )}
+            <div className="form-group">
+              <label htmlFor="login-school">School</label>
+              <select
+                id="login-school"
+                value={selectedSchoolId}
+                onChange={(event) => setSelectedSchoolId(event.target.value)}
+                disabled={IS_SANDBOX}
+              >
+                {schools.map((school) => (
+                  <option key={school.id} value={school.id}>{school.name}</option>
+                ))}
+              </select>
             </div>
 
-            <p className="support-note">
-              {IS_SANDBOX
-                ? "This preview contains demo data only and does not expose real school records."
-                : <>Need help? Contact your school administrator or {SUPPORT_EMAIL}.</>}
-            </p>
-            <p className="product-footer">CROWN - Christian School Management Solution</p>
+            <div className="form-group">
+              <label htmlFor="login-role">Role</label>
+              <select
+                id="login-role"
+                value={selectedRole}
+                onChange={(event) => setSelectedRole(event.target.value)}
+              >
+                {roles.map((role) => (
+                  <option key={role.value} value={role.value}>{role.label}</option>
+                ))}
+              </select>
+            </div>
+
+            {!IS_SANDBOX ? (
+              <>
+                <div className="form-group">
+                  <label htmlFor="login-email">Email or username</label>
+                  <input id="login-email" value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="username" />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="login-password">Password</label>
+                  <input id="login-password" type="password" value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="current-password" />
+                </div>
+              </>
+            ) : null}
+
+            {error ? <div className="error" role="alert">{error}</div> : null}
+
+            <div className="login-actions">
+              <button className="login-btn" type="submit" disabled={isBusy}>
+                {isBusy ? "Opening…" : IS_SANDBOX ? "Continue to Heritage preview" : "Sign in"}
+              </button>
+              <div className="login-support">
+                Need help? <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>
+              </div>
+            </div>
+
+            <div className="login-meta">
+              <span>{IS_SANDBOX ? "Synthetic data only" : "Secure school access"}</span>
+              <span>© CROWN</span>
+            </div>
           </form>
         </section>
       </main>
