@@ -4,10 +4,14 @@ from dataclasses import asdict
 from datetime import timedelta
 
 from django.conf import settings
+from django.contrib.auth import login as django_login
+from django.middleware.csrf import get_token
 from django.utils import timezone
 from rest_framework import permissions
 from rest_framework.response import Response
 from rest_framework.views import APIView
+
+from core.models import UserAccount
 
 from .catalog import SANDBOX_PERSONAS, catalog_payload, get_persona, get_school
 from .models import SandboxEvent, SandboxFeedback, SandboxInvite
@@ -298,6 +302,28 @@ class SandboxSessionView(APIView):
             guidance=guidance,
             tour=tour,
         )
+
+        sandbox_user = UserAccount.objects.filter(
+            school_id=session["school_id"],
+            username=persona.email,
+            is_active=True,
+        ).first()
+        if sandbox_user is None:
+            return Response(
+                {
+                    "detail": "Sandbox persona account was not created.",
+                    "code": "sandbox_persona_account_missing",
+                },
+                status=500,
+            )
+
+        django_request = request._request
+        django_login(
+            django_request,
+            sandbox_user,
+            backend="django.contrib.auth.backends.ModelBackend",
+        )
+        get_token(django_request)
 
         SandboxEvent.objects.create(
             invite=invite,
