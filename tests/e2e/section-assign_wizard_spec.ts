@@ -7,10 +7,14 @@ test('Section Assign persists a real Heritage roster mutation and verifies it', 
   await expect(page).toHaveURL(/\/section-assign-setup/);
 
   const fixture = await createSchedulingFixture(page, `ROSTER${Date.now().toString().slice(-6)}`);
-  const studentsPayload = await authenticatedApiJson(page, '/api/v1/students/?limit=200');
+  const studentsPayload = await authenticatedApiJson(page, '/api/v1/students/');
   const students = resultList(studentsPayload);
-  if (!students.length) throw new Error(`Heritage seed has no roster-eligible students: ${JSON.stringify(studentsPayload)}`);
-  const studentId = String(students[0].id);
+  const linkedStudent = students.find((row: any) => row.student_number === 'HCA-TCHR-001')
+    || students.find((row: any) => row.student_number === 'HCA-TCHR-002');
+  if (!linkedStudent) {
+    throw new Error(`Heritage seed is missing the canonical/household linked teacher-roster student: ${JSON.stringify(studentsPayload)}`);
+  }
+  const studentId = String(linkedStudent.id);
 
   const created = await authenticatedApiJson(page, '/api/v1/section-assign-wizard/sessions/', { method: 'POST' });
   const sessionId = created.session_id;
