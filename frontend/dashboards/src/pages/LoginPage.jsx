@@ -5,6 +5,7 @@ import CrownLogo from "../components/brand/CrownLogo";
 const API_BASE = (import.meta.env.VITE_API_BASE_URL || "").replace(/\/+$/, "");
 const DEMO_SCHOOL = import.meta.env.VITE_DEMO_SCHOOL_ID || "19801b59-8c05-4c84-9312-5d792e4e839d";
 const IS_SANDBOX = Boolean(import.meta.env.VITE_DEMO_MODE === "sandbox" || import.meta.env.VITE_SANDBOX_MODE === "1");
+const IS_WIZARD_CERTIFICATION = import.meta.env.VITE_WIZARD_CERTIFICATION === "1";
 const ENABLE_SANDBOX_STUDENT = import.meta.env.VITE_SANDBOX_ENABLE_STUDENT !== "0";
 const SUPPORT_EMAIL = import.meta.env.VITE_SUPPORT_EMAIL || "support@crown2026.local";
 const HERITAGE_SCHOOL_KEY = "heritage-core";
@@ -25,6 +26,7 @@ function inviteIdFromUrl() {
 
 const SANDBOX_ROLES = [
   { value: "school_admin", label: "School Admin", route: "/school-admin-dashboard" },
+  ...(IS_WIZARD_CERTIFICATION ? [{ value: "admin", label: "School Admin", route: "/school-admin-dashboard" }] : []),
   { value: "admissions_director", label: "Admissions Director", route: "/admissions-dashboard" },
   { value: "finance_director", label: "Finance Director", route: "/finance" },
   { value: "teacher", label: "Teacher", route: "/teacher" },
@@ -207,7 +209,10 @@ export default function LoginPage() {
     setError("");
     setIsBusy(true);
 
-    const role = roles.find((entry) => entry.value === selectedRole) || roles[0];
+    const selectedRoleEntry = roles.find((entry) => entry.value === selectedRole) || roles[0];
+    const role = IS_SANDBOX && selectedRoleEntry?.value === "admin"
+      ? (SANDBOX_ROLES.find((entry) => entry.value === "school_admin") || selectedRoleEntry)
+      : selectedRoleEntry;
 
     try {
       if (IS_SANDBOX) {
