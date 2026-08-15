@@ -40,7 +40,7 @@ test('Communications wizard drafts, stages, queues, and verifies a live campaign
 
   await expect(page.getByRole('heading', { name: 'Preview' })).toBeVisible();
   await expect(page.getByText('E2E Heritage Notice')).toBeVisible();
-  await page.getByRole('button', { name: /proceed to commit|continue/i }).click();
+  await page.getByRole('button', { name: /looks good.*commit/i }).click();
 
   await expect(page.getByRole('heading', { name: 'Commit' })).toBeVisible();
   await page.getByText(/i confirm this campaign/i).click();

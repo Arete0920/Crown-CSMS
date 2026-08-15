@@ -13,7 +13,7 @@
  */
 import { useState } from "react";
 import CrownLayout from "../components/crown/CrownLayout.jsx";
-import { apiFetch } from "../lib/api.js";
+import { apiFetch, apiJson } from "../lib/api.js";
 
 const BASE = "/api/v1/academic-year-wizard/sessions/";
 
@@ -83,7 +83,7 @@ export default function AcademicYearWizard() {
     setBusy(true);
     try {
       // 1. Create session
-      const created = await apiFetch(BASE, { method: "POST" });
+      const created = await apiJson(BASE, { method: "POST" });
       const sid = created.session_id;
       setSessionId(sid);
 
@@ -113,10 +113,10 @@ export default function AcademicYearWizard() {
       });
 
       // 4. Commit
-      const committed = await apiFetch(`${BASE}${sessionId}/commit/`, { method: "POST" });
+      const committed = await apiJson(`${BASE}${sessionId}/commit/`, { method: "POST" });
 
       // 5. Verify
-      const verified = await apiFetch(`${BASE}${sessionId}/verify/`);
+      const verified = await apiJson(`${BASE}${sessionId}/verify/`);
 
       setResult({ ...committed.result, ...verified });
       setPhase("done");

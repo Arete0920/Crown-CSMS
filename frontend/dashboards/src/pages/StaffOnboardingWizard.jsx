@@ -14,7 +14,7 @@
  */
 import { useState } from "react";
 import CrownLayout from "../components/crown/CrownLayout.jsx";
-import { apiFetch } from "../lib/api.js";
+import { apiFetch, apiJson } from "../lib/api.js";
 
 const BASE = "/api/v1/staff-onboarding-wizard/sessions/";
 
@@ -62,7 +62,7 @@ export default function StaffOnboardingWizard() {
     setErr(null);
     try {
       // 1. Create session
-      const created = await apiFetch(BASE, { method: "POST" });
+      const created = await apiJson(BASE, { method: "POST" });
       const sid = created.session_id;
       setSessionId(sid);
 
@@ -73,7 +73,7 @@ export default function StaffOnboardingWizard() {
       });
 
       // 3. Preview
-      const prev = await apiFetch(`${BASE}${sid}/preview/`);
+      const prev = await apiJson(`${BASE}${sid}/preview/`);
       setPreview(prev);
       setPhase("preview");
     } catch (ex) {
@@ -87,7 +87,7 @@ export default function StaffOnboardingWizard() {
     setBusy(true);
     setErr(null);
     try {
-      const res = await apiFetch(`${BASE}${sessionId}/commit/`, { method: "POST" });
+      const res = await apiJson(`${BASE}${sessionId}/commit/`, { method: "POST" });
       // Verify
       await apiFetch(`${BASE}${sessionId}/verify/`);
       setResult(res.result);
