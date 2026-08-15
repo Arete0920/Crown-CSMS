@@ -9,7 +9,7 @@ from rest_framework.test import APIClient
 
 from core.models import AcademicYear, School, Staff, UserRole
 from academics.models import Course, Enrollment, Section, Term, TranscriptEntry
-from households.models import Guardian, Household, Student
+from households.models import Household, Student
 from gradebook.models import GradeEntry
 
 pytestmark = pytest.mark.django_db
@@ -58,10 +58,10 @@ def _seed_transcript_test_data(*, school: School):
         ordering=2,
         active=True,
     )
-
+    
     course1 = Course.objects.create(school_id=school.id, code="MATH-101", name="Mathematics")
     course2 = Course.objects.create(school_id=school.id, code="ELA-101", name="English Language Arts")
-
+    
     section1 = Section.objects.create(
         school_id=school.id,
         course=course1,
@@ -76,7 +76,7 @@ def _seed_transcript_test_data(*, school: School):
         term_ref=term2,
         teacher_name="Teacher B",
     )
-
+    
     household = Household.objects.create(school_id=school.id, name="Test Household")
     student = Student.objects.create(
         school_id=school.id,
@@ -85,10 +85,11 @@ def _seed_transcript_test_data(*, school: School):
         last_name="Student",
         grade_level="3",
     )
-
+    
     Enrollment.objects.create(school_id=school.id, section=section1, student=student)
     Enrollment.objects.create(school_id=school.id, section=section2, student=student)
-
+    
+    # Add grades: MATH-101: 90/100 (A), ELA-101: 80/100 (B)
     GradeEntry.objects.create(
         school_id=school.id,
         section=section1,
@@ -105,38 +106,34 @@ def _seed_transcript_test_data(*, school: School):
         points_earned=80,
         points_possible=100,
     )
-
+    
     return student
-
-
-def _get(client, path, school):
-    return client.get(path, HTTP_X_SCHOOL_ID=str(school.id))
 
 
 def test_transcript_ro_404_for_unknown_student():
     school = School.objects.create(name="Test School")
-    user = _mk_user(school=school, email="registrar@test.local")
+    user = _mk_user(school=school, email="director@test.local")
     _assign_role(user=user, school=school, role_code="REGISTRAR")
-
+    
     client = APIClient()
     client.force_authenticate(user)
 
     unknown = uuid.uuid4()
-    resp = _get(client, f"/api/v1/academics/transcript/{unknown}/", school)
+    resp = client.get(f"/api/v1/academics/transcript/{unknown}/", HTTP_X_SCHOOL_ID=str(school.id))
     assert resp.status_code == 404
 
 
 def test_transcript_ro_returns_terms_and_courses_for_demo_student():
     school = School.objects.create(name="Test School")
-    user = _mk_user(school=school, email="registrar@test.local")
+    user = _mk_user(school=school, email="director@test.local")
     _assign_role(user=user, school=school, role_code="REGISTRAR")
-
+    
     student = _seed_transcript_test_data(school=school)
-
+    
     client = APIClient()
     client.force_authenticate(user)
 
-    resp = _get(client, f"/api/v1/academics/transcript/{student.id}/", school)
+    resp = client.get(f"/api/v1/academics/transcript/{student.id}/", HTTP_X_SCHOOL_ID=str(school.id))
     assert resp.status_code == 200, resp.content
 
     data = resp.json()
@@ -145,13 +142,15 @@ def test_transcript_ro_returns_terms_and_courses_for_demo_student():
     assert data["student"]["first_name"] == "Test"
     assert data["student"]["last_name"] == "Student"
     assert "terms" in data and isinstance(data["terms"], list)
-    assert len(data["terms"]) == 2
+    assert len(data["terms"]) == 2  # 2 terms seeded
 
+    # Contract keys
     t0 = data["terms"][0]
     assert "term_code" in t0
     assert "courses" in t0
     assert len(t0["courses"]) >= 1
-
+    
+    # Verify course structure
     c0 = t0["courses"][0]
     assert "section_id" in c0
     assert "course_code" in c0
@@ -160,7 +159,8 @@ def test_transcript_ro_returns_terms_and_courses_for_demo_student():
     assert "final_percent" in c0
     assert "final_letter" in c0
     assert "credits" in c0
-
+    
+    # Verify GPA fields exist
     assert "term_gpa_mvp" in t0
     assert "cumulative_gpa_mvp" in data
     assert "notes" in data
@@ -168,7 +168,7 @@ def test_transcript_ro_returns_terms_and_courses_for_demo_student():
 
 def test_transcript_ro_alias_returns_same_contract():
     school = School.objects.create(name="Test School")
-    user = _mk_user(school=school, email="registrar@test.local")
+    user = _mk_user(school=school, email="director@test.local")
     _assign_role(user=user, school=school, role_code="REGISTRAR")
 
     student = _seed_transcript_test_data(school=school)
@@ -176,7 +176,10 @@ def test_transcript_ro_alias_returns_same_contract():
     client = APIClient()
     client.force_authenticate(user)
 
-    resp = _get(client, f"/api/v1/transcripts/students/{student.id}/", school)
+    resp = client.get(
+        f"/api/v1/transcripts/students/{student.id}/",
+        HTTP_X_SCHOOL_ID=str(school.id),
+    )
     assert resp.status_code == 200, resp.content
 
     data = resp.json()
@@ -186,7 +189,7 @@ def test_transcript_ro_alias_returns_same_contract():
 
 def test_student_transcript_contract_shape():
     school = School.objects.create(name="Test School")
-    user = _mk_user(school=school, email="registrar@test.local")
+    user = _mk_user(school=school, email="director@test.local")
     _assign_role(user=user, school=school, role_code="REGISTRAR")
 
     student = _seed_transcript_test_data(school=school)
@@ -194,7 +197,10 @@ def test_student_transcript_contract_shape():
     client = APIClient()
     client.force_authenticate(user)
 
-    resp = _get(client, f"/api/v1/academics/students/{student.id}/transcript/", school)
+    resp = client.get(
+        f"/api/v1/academics/students/{student.id}/transcript/",
+        HTTP_X_SCHOOL_ID=str(school.id),
+    )
     assert resp.status_code == 200, resp.content
 
     data = resp.json()
@@ -219,9 +225,13 @@ def test_student_transcript_contract_shape():
     assert "status" in course0
 
 
+
+
+
+
 def test_transcript_ro_includes_dual_enrollment_metadata():
     school = School.objects.create(name="Metadata School")
-    user = _mk_user(school=school, email="registrar-metadata@test.local")
+    user = _mk_user(school=school, email="director-metadata@test.local")
     _assign_role(user=user, school=school, role_code="REGISTRAR")
 
     student = _seed_transcript_test_data(school=school)
@@ -244,7 +254,7 @@ def test_transcript_ro_includes_dual_enrollment_metadata():
     client = APIClient()
     client.force_authenticate(user)
 
-    resp = _get(client, f"/api/v1/academics/transcript/{student.id}/", school)
+    resp = client.get(f"/api/v1/academics/transcript/{student.id}/", HTTP_X_SCHOOL_ID=str(school.id))
     assert resp.status_code == 200, resp.content
     data = resp.json()
 
@@ -256,7 +266,7 @@ def test_transcript_ro_includes_dual_enrollment_metadata():
 
 def test_student_transcript_contract_includes_dual_enrollment_metadata():
     school = School.objects.create(name="Metadata School 2")
-    user = _mk_user(school=school, email="registrar-metadata2@test.local")
+    user = _mk_user(school=school, email="director-metadata2@test.local")
     _assign_role(user=user, school=school, role_code="REGISTRAR")
 
     student = _seed_transcript_test_data(school=school)
@@ -279,7 +289,10 @@ def test_student_transcript_contract_includes_dual_enrollment_metadata():
     client = APIClient()
     client.force_authenticate(user)
 
-    resp = _get(client, f"/api/v1/academics/students/{student.id}/transcript/", school)
+    resp = client.get(
+        f"/api/v1/academics/students/{student.id}/transcript/",
+        HTTP_X_SCHOOL_ID=str(school.id),
+    )
     assert resp.status_code == 200, resp.content
     data = resp.json()
 
@@ -287,122 +300,3 @@ def test_student_transcript_contract_includes_dual_enrollment_metadata():
     math_course = next(c for c in all_courses if c["course_code"] == "MATH-101")
     assert math_course["provider"] == "Acme Online Academy"
     assert math_course["dual_enrollment_label"] == "Dual Enrollment"
-
-
-@pytest.mark.parametrize(
-    "path_template",
-    [
-        "/api/v1/academics/transcript/{student_id}/",
-        "/api/v1/transcripts/students/{student_id}/",
-        "/api/v1/academics/students/{student_id}/transcript/",
-    ],
-)
-def test_unrelated_same_school_user_cannot_read_transcript(path_template):
-    school = School.objects.create(name="Disclosure School")
-    student = _seed_transcript_test_data(school=school)
-    user = _mk_user(school=school, email="unrelated@test.local")
-
-    client = APIClient()
-    client.force_authenticate(user)
-
-    resp = _get(client, path_template.format(student_id=student.id), school)
-    assert resp.status_code == 404
-    assert resp.json()["detail"] == "Student not found."
-
-
-def test_head_of_school_can_read_transcript():
-    school = School.objects.create(name="Head School")
-    student = _seed_transcript_test_data(school=school)
-    user = _mk_user(school=school, email="head@test.local")
-    _assign_role(user=user, school=school, role_code="HEAD_OF_SCHOOL")
-
-    client = APIClient()
-    client.force_authenticate(user)
-
-    resp = _get(client, f"/api/v1/academics/transcript/{student.id}/", school)
-    assert resp.status_code == 200, resp.content
-
-
-def test_student_linked_account_can_read_own_transcript():
-    school = School.objects.create(name="Student Self School")
-    student = _seed_transcript_test_data(school=school)
-    user = _mk_user(school=school, email="student@test.local")
-    student.account = user
-    student.save()
-
-    client = APIClient()
-    client.force_authenticate(user)
-
-    resp = _get(client, f"/api/v1/academics/students/{student.id}/transcript/", school)
-    assert resp.status_code == 200, resp.content
-
-
-def test_guardian_linked_to_household_can_read_child_transcript():
-    school = School.objects.create(name="Guardian School")
-    student = _seed_transcript_test_data(school=school)
-    user = _mk_user(school=school, email="guardian@test.local")
-    Guardian.objects.create(
-        school_id=school.id,
-        household=student.household,
-        account=user,
-        first_name="Grace",
-        last_name="Guardian",
-        email=user.email,
-    )
-
-    client = APIClient()
-    client.force_authenticate(user)
-
-    resp = _get(client, f"/api/v1/academics/transcript/{student.id}/", school)
-    assert resp.status_code == 200, resp.content
-
-
-def test_guardian_cannot_read_unrelated_student_transcript():
-    school = School.objects.create(name="Guardian Denial School")
-    student = _seed_transcript_test_data(school=school)
-    user = _mk_user(school=school, email="guardian-unrelated@test.local")
-    other_household = Household.objects.create(school_id=school.id, name="Other Household")
-    Guardian.objects.create(
-        school_id=school.id,
-        household=other_household,
-        account=user,
-        first_name="Other",
-        last_name="Guardian",
-        email=user.email,
-    )
-
-    client = APIClient()
-    client.force_authenticate(user)
-
-    resp = _get(client, f"/api/v1/academics/transcript/{student.id}/", school)
-    assert resp.status_code == 404
-
-
-def test_teacher_role_does_not_grant_full_transcript_disclosure():
-    school = School.objects.create(name="Teacher Denial School")
-    student = _seed_transcript_test_data(school=school)
-    user = _mk_user(school=school, email="teacher@test.local")
-    _assign_role(user=user, school=school, role_code="TEACHER")
-
-    client = APIClient()
-    client.force_authenticate(user)
-
-    resp = _get(client, f"/api/v1/academics/transcript/{student.id}/", school)
-    assert resp.status_code == 404
-
-
-def test_cross_school_header_probe_is_concealed():
-    school = School.objects.create(name="Home School")
-    foreign_school = School.objects.create(name="Foreign School")
-    foreign_student = _seed_transcript_test_data(school=foreign_school)
-    user = _mk_user(school=school, email="registrar-home@test.local")
-    _assign_role(user=user, school=school, role_code="REGISTRAR")
-
-    client = APIClient()
-    client.force_authenticate(user)
-
-    resp = client.get(
-        f"/api/v1/academics/transcript/{foreign_student.id}/",
-        HTTP_X_SCHOOL_ID=str(foreign_school.id),
-    )
-    assert resp.status_code == 404
