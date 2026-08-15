@@ -39,6 +39,8 @@ def _can_disclose_transcript(request, student: Student, school_id) -> bool:
     user = getattr(request, "user", None)
     if user is None or not getattr(user, "is_authenticated", False):
         return False
+    if not getattr(user, "is_active", False):
+        return False
 
     if getattr(user, "is_superuser", False):
         return True
