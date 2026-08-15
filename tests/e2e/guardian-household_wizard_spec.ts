@@ -35,12 +35,15 @@ test('Guardian Household persists canonical family and guardian data and verifie
     method: 'POST', body: { confirm: true },
   });
   expect(committed.status).toBe('committed');
-  expect(committed.canonical_model).toBe('core');
-  expect(committed.student_ids).toContain(studentId);
+  expect(committed.household_id).toBeTruthy();
+  expect(committed.guardians_created).toBe(1);
+  expect(committed.students_linked).toBe(1);
 
   const verified = await authenticatedApiJson(page, `/api/v1/guardian-household-wizard/sessions/${sessionId}/verify/`);
   expect(verified.status).toBe('verified');
-  expect(verified.family_id).toBeTruthy();
+  expect(verified.household_id).toBe(committed.household_id);
+  expect(verified.guardians_created).toBe(1);
+  expect(verified.students_linked).toBe(1);
 });
 
 test('Guardian Household denies an unauthorized Heritage Teacher', async ({ page }) => {
