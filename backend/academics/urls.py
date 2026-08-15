@@ -16,7 +16,10 @@ from .lesson_plan_views import (
     lesson_resource_list_create,
     lesson_resource_detail,
 )
-from .transcript_views import StudentTranscriptContractView, TranscriptROView
+from .transcript_access_views import (
+    AuthorizedStudentTranscriptContractView,
+    AuthorizedTranscriptROView,
+)
 from crown_api.views_academics import section_attendance_submit
 from .school_profile_views import SchoolProfileView
 from .views import (
@@ -79,12 +82,12 @@ urlpatterns = [
     ),
     path(
         "academics/transcript/<uuid:student_id>/",
-        TranscriptROView.as_view(),
+        AuthorizedTranscriptROView.as_view(),
         name="transcript-ro",
     ),
     path(
         "transcripts/students/<uuid:student_id>/",
-        TranscriptROView.as_view(),
+        AuthorizedTranscriptROView.as_view(),
         name="transcript-ro-alias",
     ),
     path(
@@ -109,7 +112,7 @@ urlpatterns = [
     ),
     path(
         "academics/students/<uuid:student_id>/transcript/",
-        StudentTranscriptContractView.as_view(),
+        AuthorizedStudentTranscriptContractView.as_view(),
         name="academics-student-transcript",
     ),
     # Assignment Category endpoints

@@ -113,7 +113,7 @@ def _seed_transcript_test_data(*, school: School):
 def test_transcript_ro_404_for_unknown_student():
     school = School.objects.create(name="Test School")
     user = _mk_user(school=school, email="director@test.local")
-    _assign_role(user=user, school=school, role_code="DIRECTOR")
+    _assign_role(user=user, school=school, role_code="REGISTRAR")
     
     client = APIClient()
     client.force_authenticate(user)
@@ -126,7 +126,7 @@ def test_transcript_ro_404_for_unknown_student():
 def test_transcript_ro_returns_terms_and_courses_for_demo_student():
     school = School.objects.create(name="Test School")
     user = _mk_user(school=school, email="director@test.local")
-    _assign_role(user=user, school=school, role_code="DIRECTOR")
+    _assign_role(user=user, school=school, role_code="REGISTRAR")
     
     student = _seed_transcript_test_data(school=school)
     
@@ -169,7 +169,7 @@ def test_transcript_ro_returns_terms_and_courses_for_demo_student():
 def test_transcript_ro_alias_returns_same_contract():
     school = School.objects.create(name="Test School")
     user = _mk_user(school=school, email="director@test.local")
-    _assign_role(user=user, school=school, role_code="DIRECTOR")
+    _assign_role(user=user, school=school, role_code="REGISTRAR")
 
     student = _seed_transcript_test_data(school=school)
 
@@ -190,7 +190,7 @@ def test_transcript_ro_alias_returns_same_contract():
 def test_student_transcript_contract_shape():
     school = School.objects.create(name="Test School")
     user = _mk_user(school=school, email="director@test.local")
-    _assign_role(user=user, school=school, role_code="DIRECTOR")
+    _assign_role(user=user, school=school, role_code="REGISTRAR")
 
     student = _seed_transcript_test_data(school=school)
 
@@ -232,7 +232,7 @@ def test_student_transcript_contract_shape():
 def test_transcript_ro_includes_dual_enrollment_metadata():
     school = School.objects.create(name="Metadata School")
     user = _mk_user(school=school, email="director-metadata@test.local")
-    _assign_role(user=user, school=school, role_code="DIRECTOR")
+    _assign_role(user=user, school=school, role_code="REGISTRAR")
 
     student = _seed_transcript_test_data(school=school)
     section = Section.objects.filter(school_id=school.id, course__code="MATH-101").first()
@@ -267,7 +267,7 @@ def test_transcript_ro_includes_dual_enrollment_metadata():
 def test_student_transcript_contract_includes_dual_enrollment_metadata():
     school = School.objects.create(name="Metadata School 2")
     user = _mk_user(school=school, email="director-metadata2@test.local")
-    _assign_role(user=user, school=school, role_code="DIRECTOR")
+    _assign_role(user=user, school=school, role_code="REGISTRAR")
 
     student = _seed_transcript_test_data(school=school)
     section = Section.objects.filter(school_id=school.id, course__code="MATH-101").first()
