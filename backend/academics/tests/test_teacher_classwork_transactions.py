@@ -15,7 +15,14 @@ from academics.models import (
     Section,
     TeacherAssignment,
 )
-from core.models import Family, School, Staff, Student as CoreStudent, UserRole
+from core.models import (
+    Family,
+    School,
+    Staff,
+    Student as CoreStudent,
+    StudentIdentityLink,
+    UserRole,
+)
 from crown_api.models import AttendanceRecord
 from households.models import Household, Student as HouseholdStudent
 
@@ -101,7 +108,15 @@ def test_teacher_roster_id_bridge_persists_attendance_record():
     household = Household.objects.create(school_id=school.id, name="Roster Family")
     hh_student = HouseholdStudent.objects.create(id=stable_id, school_id=school.id, household=household, first_name="Caleb", last_name="Demo", grade_level="5", is_active=True)
     family = Family.objects.create(school=school, family_name="Roster Family")
-    CoreStudent.objects.create(id=stable_id, school=school, family=family, student_number="TCHR-001", first_name="Caleb", last_name="Demo", dob=date(2015, 1, 1), status="ACTIVE")
+    core_student = CoreStudent.objects.create(id=stable_id, school=school, family=family, student_number="TCHR-001", first_name="Caleb", last_name="Demo", dob=date(2015, 1, 1), status="ACTIVE")
+    StudentIdentityLink.objects.create(
+        school=school,
+        core_student=core_student,
+        compatibility_student=hh_student,
+        source=StudentIdentityLink.SOURCE_MANUAL,
+        verification_status=StudentIdentityLink.STATUS_VERIFIED,
+        evidence_reference="test:teacher-roster-attendance-bridge",
+    )
     Enrollment.objects.create(school_id=school.id, section=section, student=hh_student)
     client = client_for(teacher, school)
     roster = client.get(f"/api/v1/academics/sections/{section.id}/roster/")

@@ -4,8 +4,9 @@ from django.contrib.auth import get_user_model
 from django.test import TestCase
 from rest_framework.test import APIClient
 
-from academics.models import Course, Section, TeacherAssignment
-from core.models import Family, School, Staff, Student, UserRole
+from academics.models import Course, Enrollment, Section, TeacherAssignment
+from core.models import Family, School, Staff, Student, StudentIdentityLink, UserRole
+from households.models import Household, Student as CompatibilityStudent
 
 User = get_user_model()
 
@@ -44,15 +45,15 @@ class AttendanceAssignmentGuardTests(TestCase):
             staff=self.staff_unassigned,
         )
         self.admin_user = User.objects.create_user(
-            username="attendance_admin",
-            email="attendance.admin@test.com",
+            username="attendance_registrar",
+            email="attendance.registrar@test.com",
             password="password",
             school=self.school,
         )
 
         UserRole.objects.create(user=self.assigned_teacher, school=self.school, role_code="TEACHER")
         UserRole.objects.create(user=self.unassigned_teacher, school=self.school, role_code="TEACHER")
-        UserRole.objects.create(user=self.admin_user, school=self.school, role_code="ADMIN")
+        UserRole.objects.create(user=self.admin_user, school=self.school, role_code="REGISTRAR")
 
         self.course = Course.objects.create(
             school_id=self.school.id,
@@ -80,6 +81,30 @@ class AttendanceAssignmentGuardTests(TestCase):
             first_name="Alice",
             last_name="Attendance",
             dob=datetime.date(2011, 1, 1),
+        )
+        household = Household.objects.create(
+            school_id=self.school.id,
+            name="Attendance Household",
+        )
+        self.compatibility_student = CompatibilityStudent.objects.create(
+            school_id=self.school.id,
+            household=household,
+            first_name="Alice",
+            last_name="Attendance",
+            is_active=True,
+        )
+        StudentIdentityLink.objects.create(
+            school=self.school,
+            core_student=self.student,
+            compatibility_student=self.compatibility_student,
+            source=StudentIdentityLink.SOURCE_MANUAL,
+            verification_status=StudentIdentityLink.STATUS_VERIFIED,
+            evidence_reference="test:attendance-assignment-guard",
+        )
+        Enrollment.objects.create(
+            school_id=self.school.id,
+            section=self.section,
+            student=self.compatibility_student,
         )
 
         self.url = f"/api/v1/academics/sections/{self.section.id}/attendance/"

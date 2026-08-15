@@ -15,7 +15,7 @@ from applications.views_admissions import (
     DEPOSIT_PAID,
     ENROLLMENT_STATE_EVENT_TYPE,
 )
-from core.models import AcademicYear, CrownPermission, Family, GradeLevel, RolePermission, School, UserRole, Student as CoreStudent
+from core.models import AcademicYear, CrownPermission, Family, GradeLevel, RolePermission, School, StudentIdentityLink, UserRole, Student as CoreStudent
 from crown_api.models_households import Household as CrownHousehold, Person, Student as CrownStudent
 from households.models import Household, Student
 
@@ -200,6 +200,32 @@ def test_attendance_submit_accepts_school_scoped_write():
     )
     course = Course.objects.create(school_id=school.id, code="SCI4", name="Science 4")
     section = Section.objects.create(school_id=school.id, course=course, term="2026-FALL", teacher_name="Teacher", grade_band="4")
+
+    compatibility_household = Household.objects.create(
+        school_id=school.id,
+        name="Attendance Compatibility Household",
+    )
+    compatibility_student = Student.objects.create(
+        school_id=school.id,
+        household=compatibility_household,
+        first_name="Alex",
+        last_name="Smith",
+        grade_level="4",
+        is_active=True,
+    )
+    StudentIdentityLink.objects.create(
+        school=school,
+        core_student=student,
+        compatibility_student=compatibility_student,
+        source=StudentIdentityLink.SOURCE_MANUAL,
+        verification_status=StudentIdentityLink.STATUS_VERIFIED,
+        evidence_reference="test:golden-path:attendance",
+    )
+    Enrollment.objects.create(
+        school_id=school.id,
+        section=section,
+        student=compatibility_student,
+    )
 
     token = uuid.uuid4()
     user = User.objects.create_user(
