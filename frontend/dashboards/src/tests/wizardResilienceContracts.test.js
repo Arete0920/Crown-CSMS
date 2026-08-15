@@ -21,12 +21,16 @@ function loadWizardSource(fileName) {
 }
 
 function importedCanonicalClient(source) {
-  const importsAuthenticatedFetch = /import\s*\{[^}]*\bauthenticatedFetch\b[^}]*\}\s*from\s*["']\.\.\/utils\/authClient["']/.test(source);
+  const importsAuthenticatedFetch = /import\s*\{[^}]*\bauthenticatedFetch\b[^}]*\}\s*from\s*["']\.\.\/utils\/authClient(?:\.js)?["']/.test(source);
+  const importsAuthenticatedJson = /import\s*\{[^}]*\bauthenticatedJson\b[^}]*\}\s*from\s*["']\.\.\/utils\/authClient(?:\.js)?["']/.test(source);
   const importsApiFetch = /import\s*\{[^}]*\bapiFetch\b[^}]*\}/.test(source);
+  const importsApiJson = /import\s*\{[^}]*\bapiJson\b[^}]*\}/.test(source);
   const importsCrownClient = /import\s+\{?[^;]*\bcrownApiClient\b[^;]*from/.test(source);
   return (
     (importsAuthenticatedFetch && /authenticatedFetch\(/.test(source))
+    || (importsAuthenticatedJson && /authenticatedJson\(/.test(source))
     || (importsApiFetch && /apiFetch\(/.test(source))
+    || (importsApiJson && /apiJson\(/.test(source))
     || (importsCrownClient && /crownApiClient\.request\(/.test(source))
   );
 }
