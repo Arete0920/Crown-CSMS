@@ -130,3 +130,22 @@ export async function createSchedulingSectionFixture(page: Page, suffix: string)
     commit: committed,
   };
 }
+
+export async function createCanonicalStaffFixture(page: Page, suffix: string) {
+  const unique = `${suffix}-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
+  const email = `e2e.teacher.${unique}@example.test`;
+  const created = await authenticatedApiJson(page, '/api/v1/staff-onboarding-wizard/sessions/', { method: 'POST' });
+  const sessionId = created.session_id;
+  await authenticatedApiJson(page, `/api/v1/staff-onboarding-wizard/sessions/${sessionId}/configure/`, {
+    method: 'POST',
+    body: { first_name: 'E2E', last_name: `Teacher ${suffix}`, email, role_type: 'TEACHER' },
+  });
+  await authenticatedApiJson(page, `/api/v1/staff-onboarding-wizard/sessions/${sessionId}/preview/`);
+  const committed = await authenticatedApiJson(page, `/api/v1/staff-onboarding-wizard/sessions/${sessionId}/commit/`, { method: 'POST' });
+  const verified = await authenticatedApiJson(page, `/api/v1/staff-onboarding-wizard/sessions/${sessionId}/verify/`);
+  const staffId = committed?.result?.staff_id;
+  if (!staffId || verified?.staff_exists !== true) {
+    throw new Error(`Canonical staff fixture failed: ${JSON.stringify({ committed, verified })}`);
+  }
+  return { staffId: String(staffId), email };
+}
