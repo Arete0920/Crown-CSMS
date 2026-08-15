@@ -2,14 +2,16 @@ import { Navigate } from "react-router";
 import {
   getReleaseState,
   getSafeFallbackPath,
-  isCertificationState,
   isProductionReady,
 } from "../../config/releaseState";
 
-const CERTIFICATION_ACCESS_ENABLED = import.meta.env.VITE_WIZARD_CERTIFICATION === "1";
+const WIZARD_CERTIFICATION_ACCESS_ENABLED = import.meta.env.VITE_WIZARD_CERTIFICATION === "1";
 
 export default function ReleaseStateRoute({ route, children, fallbackPath }) {
-  if (isProductionReady(route) || (CERTIFICATION_ACCESS_ENABLED && isCertificationState(route))) {
+  const certificationAccess =
+    WIZARD_CERTIFICATION_ACCESS_ENABLED && route?.moduleType === "wizard";
+
+  if (isProductionReady(route) || certificationAccess) {
     return children;
   }
 
