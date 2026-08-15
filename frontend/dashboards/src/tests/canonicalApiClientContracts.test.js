@@ -58,8 +58,9 @@ describe("canonical frontend API client contracts", () => {
 
   it("keeps the compatibility API wrapper on the canonical transport", () => {
     const source = load("../lib/api.js");
-    expect(source).toContain("authenticatedFetch, getAccessToken, getSelectedSchoolId");
-    expect(source).toContain("return authenticatedFetch(path, opts)");
+    expect(source).toMatch(/import\s*\{[^}]*authenticatedFetch[^}]*authenticatedJson[^}]*getAccessToken[^}]*getSelectedSchoolId[^}]*\}\s*from\s*["']\.\.\/utils\/authClient["']/s);
+    expect(source).toContain("return authenticatedFetch(path, withJsonContentType(opts))");
+    expect(source).toContain("return authenticatedJson(path, withJsonContentType(opts))");
     expect(source).toContain("return getAccessToken()");
     expect(source).toContain("return getSelectedSchoolId()");
     expect(source).not.toContain("globalThis.fetch");
