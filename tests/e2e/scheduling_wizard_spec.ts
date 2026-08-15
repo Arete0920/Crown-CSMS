@@ -13,7 +13,7 @@ test('Scheduling creates canonical course/section persistence and verifies the l
 
   const sections = await authenticatedApiJson(page, '/api/v1/academics/sections/?limit=200');
   const rows = Array.isArray(sections?.results) ? sections.results : [];
-  expect(rows.some((row: any) => String(row.id) === fixture.sectionId)).toBeTruthy();
+  expect(rows.some((row: any) => String(row.section_id) === fixture.sectionId)).toBeTruthy();
 });
 
 test('Scheduling denies an unauthorized Heritage Teacher', async ({ page }) => {
