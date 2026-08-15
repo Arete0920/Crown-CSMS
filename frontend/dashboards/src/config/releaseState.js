@@ -2,6 +2,7 @@ export const RELEASE_STATES = {
   READY: "ready",
   LIVE: "live",
   PRODUCTION: "production",
+  CERTIFICATION: "certification",
   DRAFT: "draft",
   PLACEHOLDER: "placeholder",
   COMING_SOON: "coming_soon",
@@ -16,6 +17,7 @@ export const READY_RELEASE_STATES = new Set([
 ]);
 
 export const NON_READY_RELEASE_STATES = new Set([
+  RELEASE_STATES.CERTIFICATION,
   RELEASE_STATES.DRAFT,
   RELEASE_STATES.PLACEHOLDER,
   RELEASE_STATES.COMING_SOON,
@@ -50,6 +52,10 @@ export function getReleaseState(routeLike = {}) {
 
 export function isProductionReady(routeLike = {}) {
   return READY_RELEASE_STATES.has(getReleaseState(routeLike));
+}
+
+export function isCertificationState(routeLike = {}) {
+  return getReleaseState(routeLike) === RELEASE_STATES.CERTIFICATION;
 }
 
 export function isExplicitlyNonReady(routeLike = {}) {
