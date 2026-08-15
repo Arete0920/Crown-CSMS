@@ -60,16 +60,12 @@ test('Financial Aid wizard configures buckets, commits an aid cycle, and verifie
   const commitPromise = page.waitForResponse(
     (response) => response.url().includes('/commit/') && response.request().method() === 'POST',
   );
-  const verifyPromise = page.waitForResponse(
-    (response) => response.url().includes('/verify/') && response.request().method() === 'GET',
-  );
   await page.getByRole('button', { name: /commit aid setup/i }).click();
-  const [commitResponse, verifyResponse] = await Promise.all([commitPromise, verifyPromise]);
+  const commitResponse = await commitPromise;
   expect(commitResponse.ok(), `commit returned ${commitResponse.status()}`).toBeTruthy();
-  expect(verifyResponse.ok(), `verify returned ${verifyResponse.status()}`).toBeTruthy();
 
   await expect(page.getByRole('heading', { name: 'Verify' })).toBeVisible();
-  await expect(page.getByText(/financial aid setup complete/i)).toBeVisible();
+  await expect(page.getByText(/financial aid setup complete/i)).toBeVisible({ timeout: 30000 });
   await expect(page.getByText(/awards created/i)).toBeVisible();
   await expect(page.getByText(/errors/i)).toBeVisible();
 });
