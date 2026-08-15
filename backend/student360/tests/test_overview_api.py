@@ -1,11 +1,13 @@
-from datetime import date
+from datetime import date, timedelta
 import uuid
 
 import pytest
 from django.contrib.auth import get_user_model
+from django.utils import timezone
 from rest_framework.test import APIClient
 
 from core.models import Family, School, Student as CoreStudent, StudentIdentityLink
+from crown_api.models import AttendanceRecord
 from households.models import Household, Student as HouseholdStudent
 
 
@@ -85,6 +87,39 @@ def test_student_overview_returns_200_for_core_student():
     assert response.json()["student"]["id"] == str(student.id)
 
 
+def test_student_overview_reads_canonical_attendance_statuses():
+    school = School.objects.create(name="Student360 Attendance School")
+    family = Family.objects.create(school=school, family_name="Attendance Family")
+    student = CoreStudent.objects.create(
+        school=school,
+        family=family,
+        student_number="S-360-ATT",
+        first_name="Casey",
+        last_name="Attendance",
+        dob=date(2012, 1, 1),
+        status="ACTIVE",
+    )
+    today = timezone.now().date()
+    AttendanceRecord.objects.create(student=student, date=today, status=AttendanceRecord.STATUS_PRESENT)
+    AttendanceRecord.objects.create(student=student, date=today - timedelta(days=1), status=AttendanceRecord.STATUS_ABSENT)
+    user = _mk_user(school=school, email="attendance@test.local")
+
+    client = APIClient()
+    client.force_authenticate(user=user)
+    response = client.get(
+        f"/api/v1/360/students/{student.id}/overview/",
+        HTTP_X_SCHOOL_ID=str(school.id),
+    )
+
+    assert response.status_code == 200, response.content
+    attendance = response.json()["attendance"]
+    assert attendance["available"] is True
+    assert attendance["last30_total"] == 2
+    assert attendance["last30_present"] == 1
+    assert attendance["last30_pct"] == 50.0
+    assert response.json()["dashboard_v2"]["attendance"] == attendance
+
+
 def test_student_self_overview_requires_linked_households_student_profile():
     school = School.objects.create(name="Student360 Self School")
     household = Household.objects.create(school_id=school.id, name="Stone Household")
@@ -114,6 +149,7 @@ def test_student_self_overview_requires_linked_households_student_profile():
     assert response.status_code == 200, response.content
     assert response.json()["student"]["id"] == str(student.id)
     assert response.json()["student"]["name"] == "Harper Stone"
+    assert response.json()["attendance"] == {"available": False}
 
 
 def test_student_self_overview_uses_verified_identity_link_for_canonical_output():
@@ -182,6 +218,7 @@ def test_student_self_overview_pending_identity_link_stays_on_compatibility_iden
     assert response.status_code == 200, response.content
     assert response.json()["student"]["id"] == str(compatibility_student.id)
     assert response.json()["student"]["id"] != str(core_student.id)
+    assert response.json()["attendance"] == {"available": False}
 
 
 def test_student_self_overview_does_not_promote_same_name_without_verified_link():
