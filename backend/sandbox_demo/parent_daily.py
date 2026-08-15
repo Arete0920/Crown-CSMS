@@ -12,6 +12,7 @@ from crown_api.models_comms_core import Message, MessageThread
 from crown_api.models_households import Household as CommsHousehold, Person
 from finance.models import FinanceAllocation, FinanceObligation, MoneyStatus
 
+from .attendance_fixture import ensure_section_attendance_identity
 from .catalog import SANDBOX_PERSONAS, SANDBOX_SCHOOLS
 
 
@@ -72,11 +73,27 @@ def _ensure_daily_records(parent: UserAccount) -> Student:
         course_code=COURSE_CODE,
         defaults={"name": "Grade 7 English Language Arts", "term": "Fall 2026", "active": True},
     )
+    _, section = ensure_section_attendance_identity(
+        core_student=student,
+        course_code=COURSE_CODE,
+        course_name="Grade 7 English Language Arts",
+        grade_band="7",
+        evidence_reference=f"sandbox:heritage:parent-daily:{STUDENT_NUMBER}",
+    )
+    AttendanceRecord.objects.filter(
+        student=student,
+        date=date(2026, 8, 10),
+        section__isnull=True,
+    ).delete()
     AttendanceRecord.objects.update_or_create(
         student=student,
-        course=course,
+        section=section,
         date=date(2026, 8, 10),
-        defaults={"status": AttendanceRecord.STATUS_PRESENT, "notes_public": "Heritage family-view attendance."},
+        defaults={
+            "course": None,
+            "status": AttendanceRecord.STATUS_PRESENT,
+            "notes_public": "Heritage family-view section-aware attendance.",
+        },
     )
     GradeRecord.objects.update_or_create(
         student=student,
@@ -146,7 +163,11 @@ def _family_balance(parent: UserAccount) -> int:
 def parent_daily_state(user) -> dict:
     parent = _require_parent(user)
     student = _ensure_daily_records(parent)
-    attendance = AttendanceRecord.objects.filter(student=student).select_related("course").order_by("-date")
+    attendance = (
+        AttendanceRecord.objects.filter(student=student, section__isnull=False)
+        .select_related("section__course")
+        .order_by("-date", "section_id")
+    )
     grades = GradeRecord.objects.filter(student=student).select_related("course").order_by("-posted_at")
     threads = MessageThread.objects.filter(student=student).prefetch_related("messages").order_by("-last_message_at")
     return {
@@ -157,7 +178,7 @@ def parent_daily_state(user) -> dict:
             "grade": student.current_grade_level.code if student.current_grade_level else "",
         },
         "attendance": [
-            {"date": row.date.isoformat(), "course": row.course.name if row.course else "School Day", "status": row.status}
+            {"date": row.date.isoformat(), "section_id": str(row.section_id), "course": row.section.course.name, "status": row.status}
             for row in attendance
         ],
         "progress": [
