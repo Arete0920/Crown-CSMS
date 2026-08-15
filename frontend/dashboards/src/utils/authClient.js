@@ -86,6 +86,20 @@ function tokenFromStoredAuth(raw) {
   }
 }
 
+function getCookie(name) {
+  if (typeof document === "undefined") return "";
+  const prefix = `${name}=`;
+  for (const part of document.cookie.split(";")) {
+    const value = part.trim();
+    if (value.startsWith(prefix)) return decodeURIComponent(value.slice(prefix.length));
+  }
+  return "";
+}
+
+function methodNeedsCsrf(method) {
+  return !["GET", "HEAD", "OPTIONS", "TRACE"].includes(String(method || "GET").toUpperCase());
+}
+
 export function resolveApiUrl(input) {
   if (typeof input !== "string" || isAbsoluteHttpUrl(input)) return input;
   const apiBase = getApiBaseUrl();
@@ -185,6 +199,10 @@ export async function authenticatedFetch(input, init = {}) {
     if (token && !headers.has("Authorization")) headers.set("Authorization", `Bearer ${token}`);
     const schoolId = getSelectedSchoolId();
     if (schoolId && !headers.has("X-School-Id")) headers.set("X-School-Id", schoolId);
+    if (methodNeedsCsrf(requestInit.method)) {
+      const csrfToken = getCookie("csrftoken");
+      if (csrfToken && !headers.has("X-CSRFToken")) headers.set("X-CSRFToken", csrfToken);
+    }
     const sameOriginCorrelation = !getApiBaseUrl()
       || (typeof resolvedInput === "string" && isSameBrowserOrigin(resolvedInput));
     if (!sameOriginCorrelation) {
