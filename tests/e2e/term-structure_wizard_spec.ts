@@ -1,7 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 
 const frontendUrl = process.env.CERT_FRONTEND_URL || 'http://127.0.0.1:4173';
-const demoSchoolId = process.env.CROWN_DEMO_SCHOOL_ID || '19801b59-8c05-4c84-9312-5d792e4e839d';
 
 async function launchHeritageRole(page: Page, role: string) {
   await page.goto(`${frontendUrl}/login`, { waitUntil: 'networkidle' });
@@ -11,9 +10,7 @@ async function launchHeritageRole(page: Page, role: string) {
 }
 
 async function currentAcademicYear(page: Page) {
-  const response = await page.context().request.get(`${frontendUrl}/api/v1/academics/years/`, {
-    headers: { 'X-School-Id': demoSchoolId },
-  });
+  const response = await page.context().request.get(`${frontendUrl}/api/v1/academics/years/`);
   expect(response.ok(), `academic years returned ${response.status()}`).toBeTruthy();
   const body = await response.json();
   const rows = body.results || body;
