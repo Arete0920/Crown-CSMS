@@ -62,20 +62,26 @@ def main() -> int:
     args = parser.parse_args()
 
     status = load_status()
-    all_proof_backed = bool(status.get("all_specs_proof_backed"))
+    all_proof_backed = bool(status.get("all_canonical_wizards_proof_backed", False))
     placeholder_count = int(status.get("placeholder_count", 0))
+    missing_count = int(status.get("missing_count", 0))
     proof_backed_count = int(status.get("proof_backed_count", 0))
-    spec_count = int(status.get("spec_count", 0))
+    canonical_count = int(status.get("canonical_registered_count", 0))
+    duplicate_alias_count = int(status.get("duplicate_alias_count", 0))
+    nonregistered_scope_count = int(status.get("nonregistered_scope_count", 0))
 
     structural_warnings = legacy_structural_score_is_not_functional_proof()
     stale_claims = stale_completion_claims()
 
     report = {
-        "schema_version": 1,
-        "spec_count": spec_count,
+        "schema_version": 2,
+        "canonical_registered_count": canonical_count,
         "placeholder_count": placeholder_count,
+        "missing_count": missing_count,
         "proof_backed_count": proof_backed_count,
-        "all_specs_proof_backed": all_proof_backed,
+        "all_canonical_wizards_proof_backed": all_proof_backed,
+        "excluded_duplicate_alias_count": duplicate_alias_count,
+        "excluded_nonregistered_scope_count": nonregistered_scope_count,
         "legacy_structural_score_warnings": structural_warnings,
         "stale_completion_claims": stale_claims,
         "functional_completion_status": "PASS" if all_proof_backed else "NOT_VERIFIED",
@@ -88,10 +94,15 @@ def main() -> int:
         "# Wizard Completion Claims Guard",
         "",
         f"- Functional completion: **{report['functional_completion_status']}**",
-        f"- Proof-backed specs: **{proof_backed_count}/{spec_count}**",
-        f"- Placeholders: **{placeholder_count}**",
+        f"- Canonical registered wizards: **{canonical_count}**",
+        f"- Proof-backed canonical wizards: **{proof_backed_count}/{canonical_count}**",
+        f"- Canonical placeholders: **{placeholder_count}**",
+        f"- Missing canonical specs: **{missing_count}**",
+        f"- Excluded duplicate aliases: **{duplicate_alias_count}**",
+        f"- Excluded nonregistered conceptual specs: **{nonregistered_scope_count}**",
         "",
         "Structural inventory, file presence, registry coverage, scaffold/browser-shell proof, and legacy HasTests scoring are not substitutes for live functional evidence.",
+        "The broader 50-row conceptual inventory is not the canonical registered-wizard completion denominator.",
     ]
     if structural_warnings:
         lines.extend(["", "## Legacy structural-score warnings", *[f"- {item}" for item in structural_warnings]])
@@ -102,7 +113,7 @@ def main() -> int:
     print(json.dumps(report, indent=2))
 
     if args.fail_on_stale_claims and not all_proof_backed and (structural_warnings or stale_claims):
-        print("ERROR: legacy structural scoring or completion claims conflict with current live functional evidence")
+        print("ERROR: legacy structural scoring or completion claims conflict with current canonical live functional evidence")
         return 4
     return 0
 
