@@ -80,6 +80,16 @@ export async function createAcademicYearFixture(page: Page, suffix: string) {
   return String(academicYearId);
 }
 
+export async function getCanonicalStudentFixture(page: Page) {
+  const payload = await authenticatedApiJson(page, '/api/v1/students/?limit=100&offset=0');
+  const students = Array.isArray(payload) ? payload : payload.students || payload.results || payload.data || [];
+  const student = students.find((item: { id?: string; student_id?: string; is_active?: boolean }) => item?.is_active !== false && (item?.id || item?.student_id))
+    || students.find((item: { id?: string; student_id?: string }) => item?.id || item?.student_id);
+  const studentId = student?.id || student?.student_id;
+  if (!studentId) throw new Error(`Canonical student fixture unavailable: ${JSON.stringify(payload)}`);
+  return { ...student, studentId: String(studentId) };
+}
+
 export async function createSchedulingSectionFixture(page: Page, suffix: string) {
   const scope = await authenticatedApiJson(page, '/api/v1/scheduling-wizard/sessions/scope-options/');
   const academicYear = scope.academic_years?.find((year: { is_current?: boolean }) => year.is_current) || scope.academic_years?.[0];
