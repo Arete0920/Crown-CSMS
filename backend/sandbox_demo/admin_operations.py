@@ -13,6 +13,7 @@ from crown_api.models_comms_core import Message, MessageThread
 from crown_api.models_households import Household as CommsHousehold, Person
 from finance.models import FinanceObligation, MoneyStatus
 
+from .attendance_fixture import ensure_section_attendance_identity
 from .catalog import SANDBOX_PERSONAS, SANDBOX_SCHOOLS
 
 ADMIN_EMAIL = SANDBOX_PERSONAS["school_admin"].email
@@ -69,15 +70,35 @@ def _student() -> Student:
 
 def seed_heritage_admin_context() -> dict[str, str]:
     student = _student()
-    attendance, _ = AttendanceRecord.objects.update_or_create(student=student, course=None, date=DEMO_DATE, defaults={"status": AttendanceRecord.STATUS_ABSENT, "notes_public": "Sandbox attendance exception awaiting administrator review."})
+    grade_band = student.current_grade_level.code if student.current_grade_level else ""
+    _, section = ensure_section_attendance_identity(
+        core_student=student,
+        course_code="HCA-ADMIN-ATTENDANCE",
+        course_name="Administrator Attendance Review",
+        grade_band=grade_band,
+        evidence_reference=f"sandbox:heritage:admin-operations:{STUDENT_NUMBER}",
+    )
+    AttendanceRecord.objects.filter(student=student, date=DEMO_DATE, section__isnull=True).delete()
+    attendance, _ = AttendanceRecord.objects.update_or_create(
+        student=student,
+        section=section,
+        date=DEMO_DATE,
+        defaults={
+            "course": None,
+            "status": AttendanceRecord.STATUS_ABSENT,
+            "notes_public": "Sandbox section-aware attendance exception awaiting administrator review.",
+        },
+    )
     grade, _ = GradeRecord.objects.update_or_create(student=student, course=None, period="Q1", assignment_name="Administrator progress checkpoint", defaults={"category": "Progress", "score": 88, "score_max": 100, "letter_grade": "B+", "posted_at": timezone.now(), "notes_public": "On track; continue monitoring first-quarter progress."})
     return {"admin_attendance_id": str(attendance.id), "admin_grade_id": str(grade.id)}
 
 def _attendance(student: Student) -> AttendanceRecord:
     try:
-        return AttendanceRecord.objects.get(student=student, course=None, date=DEMO_DATE)
+        return AttendanceRecord.objects.select_related("section").get(student=student, section__isnull=False, date=DEMO_DATE)
     except AttendanceRecord.DoesNotExist as exc:
         raise SandboxAdminError("admin_attendance_not_seeded") from exc
+    except AttendanceRecord.MultipleObjectsReturned as exc:
+        raise SandboxAdminError("admin_attendance_duplicate_scope") from exc
 
 def _academic_context(student: Student) -> GradeRecord:
     try:
