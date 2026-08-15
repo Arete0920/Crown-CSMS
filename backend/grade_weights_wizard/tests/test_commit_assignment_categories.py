@@ -1,8 +1,10 @@
-from academics.models import AssignmentCategory, Course, Section
+import pytest
 
+from academics.models import AssignmentCategory, Course, Section
 from .test_views import BASE_URL, _client, _h, _school
 
 
+@pytest.mark.django_db
 def test_commit_persists_section_assignment_categories():
     school = _school()
     client = _client(school)
@@ -12,7 +14,6 @@ def test_commit_persists_section_assignment_categories():
 
     created = client.post(BASE_URL, **headers)
     session_id = created.data["session_id"]
-
     configured = client.post(
         f"{BASE_URL}{session_id}/configure/",
         {"section_id": str(section.id), "marking_period": "Q1-E2E"},
@@ -33,12 +34,7 @@ def test_commit_persists_section_assignment_categories():
     )
     assert staged.status_code == 200
 
-    committed = client.post(
-        f"{BASE_URL}{session_id}/commit/",
-        {"confirm": True},
-        format="json",
-        **headers,
-    )
+    committed = client.post(f"{BASE_URL}{session_id}/commit/", {"confirm": True}, format="json", **headers)
     assert committed.status_code == 200
     assert committed.data["section_id"] == str(section.id)
     assert committed.data["active_count"] == 2
