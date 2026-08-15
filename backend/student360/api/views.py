@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import timedelta
 
+from django.core.exceptions import ImproperlyConfigured
 from django.http import JsonResponse
 from django.utils import timezone
 from drf_spectacular.openapi import AutoSchema as SpectacularAutoSchema
@@ -13,6 +14,18 @@ from rest_framework.views import APIView
 from core.models import School, Student as CoreStudent
 from crown_api.models import AttendanceRecord
 from households.models import Student as HouseholdStudent
+
+
+def _scope_qs_to_school(qs, model, school):
+    """Fail closed unless the model exposes an explicit tenant relationship."""
+    if hasattr(model, "school_id"):
+        return qs.filter(school_id=str(school.id))
+    if hasattr(model, "school"):
+        return qs.filter(school=school)
+    raise ImproperlyConfigured(
+        f"{getattr(model, '__name__', str(model))} must have school_id or school "
+        f"for tenant scoping in student360"
+    )
 
 
 def _get_school(request):
