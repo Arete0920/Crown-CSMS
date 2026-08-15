@@ -5,8 +5,13 @@ import {
   isProductionReady,
 } from "../../config/releaseState";
 
+const WIZARD_CERTIFICATION_ACCESS_ENABLED = import.meta.env.VITE_WIZARD_CERTIFICATION === "1";
+
 export default function ReleaseStateRoute({ route, children, fallbackPath }) {
-  if (isProductionReady(route)) {
+  const certificationAccess =
+    WIZARD_CERTIFICATION_ACCESS_ENABLED && route?.moduleType === "wizard";
+
+  if (isProductionReady(route) || certificationAccess) {
     return children;
   }
 

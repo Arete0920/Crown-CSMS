@@ -6,7 +6,7 @@
     "release_matrix": "docs/release/WIZARD_CERTIFICATION_MATRIX_20260530.md"
   },
   "canonical_required": {
-    "onboarding": null,
+    "onboarding": "tests/e2e/onboarding_wizard_spec.ts",
     "reenrollment": "tests/e2e/reenrollment-contract_wizard_spec.ts",
     "billing-wizard": "tests/e2e/billing-setup_wizard_spec.ts",
     "aid-wizard": "tests/e2e/financial-aid_wizard_spec.ts",
