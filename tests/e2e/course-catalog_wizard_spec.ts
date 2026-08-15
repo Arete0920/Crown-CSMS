@@ -14,7 +14,7 @@ async function launchHeritageRole(page: Page, role: string) {
 test('Course Catalog wizard persists a live catalog commit', async ({ page }) => {
   await launchHeritageRole(page, 'admin');
   await page.goto(`${frontendUrl}/course-catalog-setup`, { waitUntil: 'networkidle' });
-  await expect(page.getByRole('heading', { name: /course catalog/i })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Course Catalog Setup', exact: true })).toBeVisible();
   await page.locator('input[placeholder="Code (e.g. ENG1)"]').fill('E2E-ENG7');
   await page.locator('input[placeholder="Name"]').fill('E2E Grade 7 English');
   await page.locator('input[placeholder="Credits"]').fill('1');
@@ -35,5 +35,5 @@ test('Course Catalog wizard denies an unauthorized Heritage Teacher', async ({ p
   await launchHeritageRole(page, 'teacher');
   await page.goto(`${frontendUrl}/course-catalog-setup`, { waitUntil: 'networkidle' });
   await expect(page).not.toHaveURL(/\/course-catalog-setup(?:$|\?)/i);
-  await expect(page.getByRole('heading', { name: /course catalog/i })).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: 'Course Catalog Setup', exact: true })).toHaveCount(0);
 });
