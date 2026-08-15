@@ -57,8 +57,8 @@ test('Fee Schedule wizard creates, commits, and verifies a persisted schedule', 
   await expect(page.getByRole('heading', { name: /fee schedule created/i })).toBeVisible();
   await expect(page.getByText('Heritage 2026 Fee Schedule E2E')).toBeVisible();
   await expect(page.getByText('2026-2027-E2E')).toBeVisible();
-  await expect(page.getByText(/total lines:/i)).toContainText('1');
-  await expect(page.getByText(/schedule id:/i)).not.toContainText('undefined');
+  await expect(page.getByRole('listitem').filter({ hasText: /total lines:/i })).toContainText('1');
+  await expect(page.getByRole('listitem').filter({ hasText: /schedule id:/i })).not.toContainText('undefined');
 });
 
 test('Fee Schedule wizard denies an unauthorized Heritage Teacher', async ({ page }) => {
