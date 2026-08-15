@@ -10,7 +10,7 @@ async function launchHeritageRole(page: Page, role: string) {
 }
 
 async function currentAcademicYearId(page: Page): Promise<string> {
-  const response = await page.request.get(`${frontendUrl}/api/v1/academics/years/`);
+  const response = await page.context().request.get(`${frontendUrl}/api/v1/academics/years/`);
   expect(response.ok(), `academic years returned ${response.status()}`).toBeTruthy();
   const body = await response.json();
   const rows = body.results || body;
