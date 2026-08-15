@@ -41,9 +41,13 @@ test('Student Import wizard configures, previews, commits, and verifies a live i
   await page.getByRole('button', { name: /run preview/i }).click();
   const previewResponse = await previewPromise;
   expect(previewResponse.ok(), `preview returned ${previewResponse.status()}`).toBeTruthy();
+  const preview = await previewResponse.json();
+  expect(preview.status).toBe('previewed');
+  expect(preview.valid).toBe(1);
+  expect(preview.errors).toEqual([]);
 
   await expect(page.getByRole('heading', { name: /step 3.*commit/i })).toBeVisible();
-  await expect(page.locator('pre')).toContainText(externalId);
+  await expect(page.locator('pre')).toContainText('"valid": 1');
   const commitPromise = page.waitForResponse(
     r => r.url().includes('/commit/') && r.request().method() === 'POST',
   );
