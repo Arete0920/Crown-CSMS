@@ -4,7 +4,7 @@ import { frontendUrl, launchHeritageRole } from './helpers/wizardCertification';
 test('Grade Weights wizard persists categories, commits, and verifies live state', async ({ page }) => {
   await launchHeritageRole(page, 'school_admin');
   await page.goto(`${frontendUrl}/grade-weights-setup`, { waitUntil: 'networkidle' });
-  await expect(page.getByRole('heading', { name: 'Setup' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Setup', exact: true })).toBeVisible();
 
   await page.getByPlaceholder('Marking period').fill('Q1-E2E');
   const createPromise = page.waitForResponse(r => r.url().includes('/api/v1/grade-weights-wizard/sessions/') && r.request().method() === 'POST');
@@ -39,5 +39,5 @@ test('Grade Weights wizard denies an unauthorized Heritage Teacher', async ({ pa
   await launchHeritageRole(page, 'teacher');
   await page.goto(`${frontendUrl}/grade-weights-setup`, { waitUntil: 'networkidle' });
   await expect(page).not.toHaveURL(/\/grade-weights-setup(?:$|\?)/i);
-  await expect(page.getByRole('heading', { name: 'Setup' })).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: 'Setup', exact: true })).toHaveCount(0);
 });
