@@ -6,7 +6,8 @@ export async function launchHeritageRole(page: Page, role: string) {
   await page.goto(`${frontendUrl}/login`, { waitUntil: 'networkidle' });
   const roleSelect = page.locator('#login-role').first();
   await expect(roleSelect).toBeVisible();
-  await roleSelect.selectOption(role);
+  const sandboxRole = role === 'admin' || role === 'head_of_school' ? 'school_admin' : role;
+  await roleSelect.selectOption(sandboxRole);
   await page.getByRole('button', { name: /continue to heritage preview/i }).first().click();
   await expect(page).not.toHaveURL(/\/login(?:\?.*)?$/i, { timeout: 30000 });
 }
