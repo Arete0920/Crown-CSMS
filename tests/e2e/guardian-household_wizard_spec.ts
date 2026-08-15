@@ -1,5 +1,10 @@
 import { expect, test } from '@playwright/test';
-import { authenticatedApiJson, getCanonicalStudentFixture, launchHeritageRole } from './helpers/wizardCertification';
+import {
+  authenticatedApiJson,
+  frontendUrl,
+  getCanonicalStudentFixture,
+  launchHeritageRole,
+} from './helpers/wizardCertification';
 
 test('Guardian & Household creates, links, commits, and verifies canonical household records', async ({ page }) => {
   await launchHeritageRole(page, 'school_admin');
@@ -58,4 +63,11 @@ test('Guardian & Household creates, links, commits, and verifies canonical house
   expect(verified.household_id).toBe(committed.household_id);
   expect(verified.guardians_created).toBe(1);
   expect(verified.students_linked).toBe(1);
+});
+
+test('Guardian & Household denies an unauthorized Heritage Teacher route', async ({ page }) => {
+  await launchHeritageRole(page, 'teacher');
+  await page.goto(`${frontendUrl}/guardian-household-setup`, { waitUntil: 'networkidle' });
+  await expect(page).not.toHaveURL(/\/guardian-household-setup(?:$|\?)/i);
+  await expect(page.getByText(/guardian & household setup/i)).toHaveCount(0);
 });
