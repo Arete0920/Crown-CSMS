@@ -13,7 +13,7 @@ async function launchHeritageRole(page: Page, role: string) {
 
 test('Rooms Setup wizard persists a live room inventory commit', async ({ page }) => {
   await launchHeritageRole(page, 'admin');
-  await page.goto(`${frontendUrl}/rooms-setup`, { waitUntil: 'networkidle' });
+  await page.goto(`${frontendUrl}/room-setup`, { waitUntil: 'networkidle' });
   await expect(page.getByRole('heading', { name: /room inventory/i })).toBeVisible();
   await page.locator('input[placeholder="Code (e.g. 101)"]').fill('E2E-901');
   await page.locator('input[placeholder="Name"]').fill('E2E Science Lab');
@@ -33,7 +33,7 @@ test('Rooms Setup wizard persists a live room inventory commit', async ({ page }
 
 test('Rooms Setup wizard denies an unauthorized Heritage Teacher', async ({ page }) => {
   await launchHeritageRole(page, 'teacher');
-  await page.goto(`${frontendUrl}/rooms-setup`, { waitUntil: 'networkidle' });
-  await expect(page).not.toHaveURL(/\/rooms-setup(?:$|\?)/i);
+  await page.goto(`${frontendUrl}/room-setup`, { waitUntil: 'networkidle' });
+  await expect(page).not.toHaveURL(/\/room-setup(?:$|\?)/i);
   await expect(page.getByRole('heading', { name: /room inventory/i })).toHaveCount(0);
 });
