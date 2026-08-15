@@ -13,7 +13,7 @@
  */
 import { useState } from "react";
 import CrownLayout from "../components/crown/CrownLayout.jsx";
-import { apiFetch } from "../lib/api.js";
+import { apiFetch, apiJson } from "../lib/api.js";
 
 const BASE = "/api/v1/fee-schedule-wizard/sessions/";
 
@@ -107,12 +107,10 @@ export default function FeeScheduleWizard() {
     setErr(null);
     setBusy(true);
     try {
-      // 1. Create session
-      const created = await apiFetch(BASE, { method: "POST" });
+      const created = await apiJson(BASE, { method: "POST" });
       const sid = created.session_id;
       setSessionId(sid);
 
-      // 2. Configure
       await apiFetch(`${BASE}${sid}/configure/`, {
         method: "POST",
         body: JSON.stringify(config),
@@ -131,17 +129,13 @@ export default function FeeScheduleWizard() {
     setErr(null);
     setBusy(true);
     try {
-      // 3. Set lines
       await apiFetch(`${BASE}${sessionId}/lines/`, {
         method: "POST",
         body: JSON.stringify({ lines }),
       });
 
-      // 4. Commit
-      const committed = await apiFetch(`${BASE}${sessionId}/commit/`, { method: "POST" });
-
-      // 5. Verify
-      const verified = await apiFetch(`${BASE}${sessionId}/verify/`);
+      const committed = await apiJson(`${BASE}${sessionId}/commit/`, { method: "POST" });
+      const verified = await apiJson(`${BASE}${sessionId}/verify/`);
 
       setResult({ ...committed, ...verified });
       setPhase("done");
@@ -259,7 +253,6 @@ export default function FeeScheduleWizard() {
     );
   }
 
-  // phase === "configure"
   return (
     <CrownLayout title="Fee Schedule Setup" subtitle="Wizard #14 — Fee Schedule Setup">
       <Step title="Step 1 of 2 — Schedule Details">
