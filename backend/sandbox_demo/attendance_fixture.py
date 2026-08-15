@@ -29,6 +29,9 @@ def ensure_section_attendance_identity(
     here is the authority connecting canonical AttendanceRecord.student to the
     compatibility student used by academics.Enrollment.
     """
+    # Callers may have just created the canonical student with a string UUID in
+    # school_id. Reload the FK so StudentIdentityLink.clean() compares typed IDs.
+    core_student.refresh_from_db(fields=["school"])
     school = core_student.school
     school_id = school.id
     household_id = uuid.uuid5(
