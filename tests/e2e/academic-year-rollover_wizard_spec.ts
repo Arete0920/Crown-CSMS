@@ -54,7 +54,7 @@ test('Academic Year Rollover creates terms, commits, and verifies persisted curr
   expect(verifyResponse.ok(), `verify returned ${verifyResponse.status()}`).toBeTruthy();
 
   await expect(page.getByRole('heading', { name: /academic year created/i })).toBeVisible();
-  await expect(page.getByText('2031-2032-E2E')).toBeVisible();
+  await expect(page.getByText(/year name:/i)).toContainText('2031-2032-E2E');
   await expect(page.getByText(/is current:/i)).toContainText('Yes');
   await expect(page.getByText(/total terms:/i)).toContainText('1');
   await expect(page.getByText(/year id:/i)).not.toContainText('undefined');
