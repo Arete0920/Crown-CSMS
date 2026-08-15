@@ -1,11 +1,21 @@
 import { expect, test } from '@playwright/test';
-import { frontendUrl, launchHeritageRole } from './helpers/wizardCertification';
+import { createSchedulingFixture, frontendUrl, launchHeritageRole } from './helpers/wizardCertification';
 
 test('Grade Weights wizard persists categories, commits, and verifies live state', async ({ page }) => {
   await launchHeritageRole(page, 'school_admin');
+  const fixture = await createSchedulingFixture(page, `GW${Date.now().toString().slice(-6)}`);
+  const sectionsPromise = page.waitForResponse(
+    r => r.url().includes('/api/v1/academics/sections/') && r.request().method() === 'GET',
+  );
   await page.goto(`${frontendUrl}/grade-weights-setup`, { waitUntil: 'networkidle' });
   await expect(page.getByRole('heading', { name: 'Setup', exact: true })).toBeVisible();
+  const sectionsResponse = await sectionsPromise;
+  expect(sectionsResponse.ok(), `sections returned ${sectionsResponse.status()}`).toBeTruthy();
+  const sectionsBody = await sectionsResponse.json();
+  const sections = Array.isArray(sectionsBody) ? sectionsBody : (sectionsBody.results || []);
+  expect(sections.some((section: any) => section.section_id === fixture.sectionId)).toBeTruthy();
 
+  await page.getByLabel('Section').selectOption(fixture.sectionId);
   await page.getByPlaceholder('Marking period').fill('Q1-E2E');
   const createPromise = page.waitForResponse(r => r.url().includes('/api/v1/grade-weights-wizard/sessions/') && r.request().method() === 'POST');
   const configurePromise = page.waitForResponse(r => r.url().includes('/configure/') && r.request().method() === 'POST');
@@ -13,6 +23,7 @@ test('Grade Weights wizard persists categories, commits, and verifies live state
   const [createResponse, configureResponse] = await Promise.all([createPromise, configurePromise]);
   expect(createResponse.ok()).toBeTruthy();
   expect(configureResponse.ok()).toBeTruthy();
+  expect((await configureResponse.json()).section_id).toBe(fixture.sectionId);
 
   await expect(page.getByRole('heading', { name: 'Rows' })).toBeVisible();
   const rows = [
@@ -25,14 +36,17 @@ test('Grade Weights wizard persists categories, commits, and verifies live state
   expect((await stagePromise).ok()).toBeTruthy();
 
   const commitPromise = page.waitForResponse(r => r.url().includes('/commit/') && r.request().method() === 'POST');
-  const verifyPromise = page.waitForResponse(r => r.url().includes('/verify/') && r.request().method() === 'GET');
   await page.getByRole('button', { name: /commit and verify/i }).click();
-  const [commitResponse, verifyResponse] = await Promise.all([commitPromise, verifyPromise]);
-  expect(commitResponse.ok()).toBeTruthy();
-  expect(verifyResponse.ok()).toBeTruthy();
-  await expect(page.locator('pre')).toContainText('Q1-E2E');
-  await expect(page.locator('pre')).toContainText('Tests E2E');
-  await expect(page.locator('pre')).toContainText('Homework E2E');
+  const commitResponse = await commitPromise;
+  expect(commitResponse.ok(), `commit returned ${commitResponse.status()}`).toBeTruthy();
+
+  const result = page.locator('pre');
+  await expect(result).toBeVisible({ timeout: 30000 });
+  await expect(result).toContainText('"status": "verified"');
+  await expect(result).toContainText(`"section_id": "${fixture.sectionId}"`);
+  await expect(result).toContainText('"active_count": 2');
+  await expect(result).toContainText('"total_weight_pct": 100');
+  await expect(result).toContainText('"errors": []');
 });
 
 test('Grade Weights wizard denies an unauthorized Heritage Teacher', async ({ page }) => {

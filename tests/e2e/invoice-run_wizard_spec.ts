@@ -17,7 +17,7 @@ test('Invoice Run wizard loads obligations, commits invoices, and verifies live 
   expect(configureResponse.ok()).toBeTruthy();
 
   await expect(page.getByRole('heading', { name: /load obligations/i })).toBeVisible();
-  const loadPromise = page.waitForResponse(r => r.url().includes('/load_obligations/') && r.request().method() === 'POST');
+  const loadPromise = page.waitForResponse(r => r.url().includes('/load/') && r.request().method() === 'POST');
   await page.getByRole('button', { name: /load open obligations/i }).click();
   expect((await loadPromise).ok()).toBeTruthy();
   await expect(page.getByText(/open obligation\(s\)/i)).toBeVisible();
@@ -29,14 +29,12 @@ test('Invoice Run wizard loads obligations, commits invoices, and verifies live 
 
   await expect(page.getByRole('heading', { name: 'Commit' })).toBeVisible();
   const commitPromise = page.waitForResponse(r => r.url().includes('/commit/') && r.request().method() === 'POST');
-  const verifyPromise = page.waitForResponse(r => r.url().includes('/verify/') && r.request().method() === 'GET');
   await page.getByRole('button', { name: /generate invoices/i }).click();
-  const [commitResponse, verifyResponse] = await Promise.all([commitPromise, verifyPromise]);
+  const commitResponse = await commitPromise;
   expect(commitResponse.ok()).toBeTruthy();
-  expect(verifyResponse.ok()).toBeTruthy();
 
   await expect(page.getByRole('heading', { name: 'Verify' })).toBeVisible();
-  await expect(page.locator('.crown-success-box')).toContainText('2032-09-01');
+  await expect(page.locator('.crown-success-box')).toContainText('2032-09-01', { timeout: 30000 });
   await expect(page.locator('.crown-success-box')).toContainText('2032-09-30');
   await expect(page.locator('.crown-success-box')).toContainText(/status:/i);
 });
