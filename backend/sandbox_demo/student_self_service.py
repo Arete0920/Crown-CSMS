@@ -260,6 +260,9 @@ def _ensure_student_records(user: UserAccount) -> tuple[Student, AcademicStudent
             "current_grade_level": grade,
         },
     )
+    # Normalize UUID-backed FK values after a create that used a string school_id.
+    # StudentIdentityLink.clean() compares the typed FK identities directly.
+    student.refresh_from_db(fields=["school"])
     academic_student = _canonical_schedule_fixture(user)
 
     StudentIdentityLink.objects.update_or_create(
