@@ -15,6 +15,9 @@ export default function Step1Term({ context, setContext, goNext, stepIndex, tota
   const [loadingScope, setLoadingScope] = useState(true);
   const [error, setError] = useState(null);
 
+  const academicYears = Array.isArray(scope?.academic_years) ? scope.academic_years : [];
+  const terms = Array.isArray(scope?.terms) ? scope.terms : [];
+
   useEffect(() => {
     let active = true;
     async function loadScope() {
@@ -23,16 +26,21 @@ export default function Step1Term({ context, setContext, goNext, stepIndex, tota
       try {
         const data = await getSchedulingScopeOptions();
         if (!active) return;
-        setScope(data);
+        const normalizedScope = {
+          ...data,
+          academic_years: Array.isArray(data?.academic_years) ? data.academic_years : [],
+          terms: Array.isArray(data?.terms) ? data.terms : [],
+        };
+        setScope(normalizedScope);
         const preferredYear = academicYearId
-          || data.academic_years?.find((year) => year.is_current)?.academic_year_id
-          || data.academic_years?.[0]?.academic_year_id
+          || normalizedScope.academic_years.find((year) => year.is_current)?.academic_year_id
+          || normalizedScope.academic_years[0]?.academic_year_id
           || "";
         setAcademicYearId(preferredYear);
         if (!termId && preferredYear) {
-          const preferredTerm = data.terms?.find(
+          const preferredTerm = normalizedScope.terms.find(
             (term) => term.academic_year_id === preferredYear && term.active,
-          ) || data.terms?.find((term) => term.academic_year_id === preferredYear);
+          ) || normalizedScope.terms.find((term) => term.academic_year_id === preferredYear);
           setTermId(preferredTerm?.term_id || "");
         }
       } catch (e) {
@@ -46,15 +54,15 @@ export default function Step1Term({ context, setContext, goNext, stepIndex, tota
   }, []);
 
   const availableTerms = useMemo(
-    () => scope.terms.filter((term) => term.academic_year_id === academicYearId),
-    [scope.terms, academicYearId],
+    () => terms.filter((term) => term.academic_year_id === academicYearId),
+    [terms, academicYearId],
   );
 
   function handleYearChange(value) {
     setAcademicYearId(value);
-    const nextTerm = scope.terms.find(
+    const nextTerm = terms.find(
       (term) => term.academic_year_id === value && term.active,
-    ) || scope.terms.find((term) => term.academic_year_id === value);
+    ) || terms.find((term) => term.academic_year_id === value);
     setTermId(nextTerm?.term_id || "");
   }
 
@@ -71,8 +79,8 @@ export default function Step1Term({ context, setContext, goNext, stepIndex, tota
         sessionId = created.session_id;
       }
       const data = await configureSchedulingSession(sessionId, academicYearId, termId);
-      const selectedYear = scope.academic_years.find((year) => year.academic_year_id === academicYearId);
-      const selectedTerm = scope.terms.find((term) => term.term_id === termId);
+      const selectedYear = academicYears.find((year) => year.academic_year_id === academicYearId);
+      const selectedTerm = terms.find((term) => term.term_id === termId);
       setContext({
         sessionId,
         academicYearId,
@@ -116,7 +124,7 @@ export default function Step1Term({ context, setContext, goNext, stepIndex, tota
             style={{ width: "100%", boxSizing: "border-box" }}
           >
             <option value="">Select academic year</option>
-            {scope.academic_years.map((year) => (
+            {academicYears.map((year) => (
               <option key={year.academic_year_id} value={year.academic_year_id}>
                 {year.name}{year.is_current ? " — Current" : ""}
               </option>
