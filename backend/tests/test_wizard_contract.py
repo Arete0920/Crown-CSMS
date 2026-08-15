@@ -21,42 +21,35 @@ from django.contrib.auth import get_user_model
 
 User = get_user_model()
 
-
-# ---------------------------------------------------------------------------
-# Wizard registry — url prefix + description
-# ---------------------------------------------------------------------------
 WIZARD_ENDPOINTS = [
-    # (description, base_url)
-    # Wizard #1 — Admissions Intake uses /imports/ not /sessions/ (CSV-based intake flow)
-    ("admissions_intake",            "/api/v1/onboarding/imports/"),
-    ("reenrollment",    "/api/v1/reenrollment/sessions/"),
-    ("billing",         "/api/v1/billing-wizard/sessions/"),
-    ("financial_aid",   "/api/v1/aid-wizard/sessions/"),
-    ("scheduling",      "/api/v1/scheduling-wizard/sessions/"),
-    ("comms",           "/api/v1/comms-wizard/sessions/"),
-    ("section_assign",            "/api/v1/section-assign-wizard/sessions/"),
-    ("bell_schedule",             "/api/v1/bell-schedule-wizard/sessions/"),
-    ("gradebook_setup",           "/api/v1/gradebook-setup-wizard/sessions/"),
-    ("attendance_rules",          "/api/v1/attendance-rules-wizard/sessions/"),
-    ("enrollment_conversion",     "/api/v1/enrollment-conversion-wizard/sessions/"),
-    ("invoice_run",               "/api/v1/invoice-run-wizard/sessions/"),
-    ("staff_onboarding",          "/api/v1/staff-onboarding-wizard/sessions/"),
-    ("fee_schedule",               "/api/v1/fee-schedule-wizard/sessions/"),
-    ("academic_year",              "/api/v1/academic-year-wizard/sessions/"),
-    ("enrollment_period",           "/api/v1/enrollment-period-wizard/sessions/"),
-    ("grade_scale",                  "/api/v1/grade-scale-wizard/sessions/"),
-    ("term_structure",               "/api/v1/term-structure-wizard/sessions/"),
-    # Add new wizards here ↓
-    ("section_scheduler",            "/api/v1/section-scheduler-wizard/sessions/"),
-    ("staff_setup",                  "/api/v1/staff-setup-wizard/sessions/"),
-    ("course_catalog",               "/api/v1/course-catalog-wizard/sessions/"),
-    ("room_setup",                   "/api/v1/room-setup-wizard/sessions/"),
-    ("promotion",                    "/api/v1/promotion-wizard/sessions/"),
-    ("student_import",               "/api/v1/student-import-wizard/sessions/"),
-    ("guardian_household",           "/api/v1/guardian-household-wizard/sessions/"),
-    ("section_staffing",             "/api/v1/section-staffing-wizard/sessions/"),
-    ("attendance_codes",             "/api/v1/attendance-codes-wizard/sessions/"),
-    ("grade_weights",                "/api/v1/grade-weights-wizard/sessions/"),
+    ("admissions_intake", "/api/v1/onboarding/imports/"),
+    ("reenrollment", "/api/v1/reenrollment/sessions/"),
+    ("billing", "/api/v1/billing-wizard/sessions/"),
+    ("financial_aid", "/api/v1/aid-wizard/sessions/"),
+    ("scheduling", "/api/v1/scheduling-wizard/sessions/"),
+    ("comms", "/api/v1/comms-wizard/sessions/"),
+    ("section_assign", "/api/v1/section-assign-wizard/sessions/"),
+    ("bell_schedule", "/api/v1/bell-schedule-wizard/sessions/"),
+    ("gradebook_setup", "/api/v1/gradebook-setup-wizard/sessions/"),
+    ("attendance_rules", "/api/v1/attendance-rules-wizard/sessions/"),
+    ("enrollment_conversion", "/api/v1/enrollment-conversion-wizard/sessions/"),
+    ("invoice_run", "/api/v1/invoice-run-wizard/sessions/"),
+    ("staff_onboarding", "/api/v1/staff-onboarding-wizard/sessions/"),
+    ("fee_schedule", "/api/v1/fee-schedule-wizard/sessions/"),
+    ("academic_year", "/api/v1/academic-year-wizard/sessions/"),
+    ("enrollment_period", "/api/v1/enrollment-period-wizard/sessions/"),
+    ("grade_scale", "/api/v1/grade-scale-wizard/sessions/"),
+    ("term_structure", "/api/v1/term-structure-wizard/sessions/"),
+    ("section_scheduler", "/api/v1/section-scheduler-wizard/sessions/"),
+    ("staff_setup", "/api/v1/staff-setup-wizard/sessions/"),
+    ("course_catalog", "/api/v1/course-catalog-wizard/sessions/"),
+    ("room_setup", "/api/v1/room-setup-wizard/sessions/"),
+    ("promotion", "/api/v1/promotion-wizard/sessions/"),
+    ("student_import", "/api/v1/student-import-wizard/sessions/"),
+    ("guardian_household", "/api/v1/guardian-household-wizard/sessions/"),
+    ("section_staffing", "/api/v1/section-staffing-wizard/sessions/"),
+    ("attendance_codes", "/api/v1/attendance-codes-wizard/sessions/"),
+    ("grade_weights", "/api/v1/grade-weights-wizard/sessions/"),
 ]
 
 
@@ -66,55 +59,41 @@ def _make_school(name=None):
 
 
 def _make_authed_client(school):
-    user = User.objects.create_user(
-        username=f"contract_{uuid.uuid4().hex[:8]}", password="pw"
-    )
+    user = User.objects.create_user(username=f"contract_{uuid.uuid4().hex[:8]}", password="pw")
     c = APIClient()
     c.force_authenticate(user=user)
     return c
 
 
 def _make_authed_client_with_user(school):
-    user = User.objects.create_user(
-        username=f"contract_{uuid.uuid4().hex[:8]}", password="pw"
-    )
+    user = User.objects.create_user(username=f"contract_{uuid.uuid4().hex[:8]}", password="pw")
     c = APIClient()
     c.force_authenticate(user=user)
     return c, user
 
 
-def _grant_enrollment_conversion_access(user, school, role_code="REGISTRAR"):
+def _grant_permission(user, school, role_code, code, description):
     UserRole.objects.get_or_create(user=user, school=school, role_code=role_code)
-    perm, _ = CrownPermission.objects.get_or_create(
-        code="admissions.edit",
-        defaults={"description": "Edit admissions records"},
-    )
+    perm, _ = CrownPermission.objects.get_or_create(code=code, defaults={"description": description})
     RolePermission.objects.get_or_create(role_code=role_code, permission=perm)
 
 
+def _grant_enrollment_conversion_access(user, school, role_code="REGISTRAR"):
+    _grant_permission(user, school, role_code, "admissions.edit", "Edit admissions records")
+
+
 def _grant_section_assign_access(user, school, role_code="REGISTRAR"):
-    UserRole.objects.get_or_create(user=user, school=school, role_code=role_code)
     for code in ("rosters.edit", "academics.view"):
-        perm, _ = CrownPermission.objects.get_or_create(
-            code=code,
-            defaults={"description": f"Section assign permission: {code}"},
-        )
-        RolePermission.objects.get_or_create(role_code=role_code, permission=perm)
+        _grant_permission(user, school, role_code, code, f"Section assign permission: {code}")
 
 
 def _grant_section_scheduler_access(user, school, role_code="HEAD_OF_SCHOOL"):
-    UserRole.objects.get_or_create(user=user, school=school, role_code=role_code)
-    for code in (
-        "scheduling.view",
-        "scheduling.configure",
-        "scheduling.edit",
-        "scheduling.publish",
-    ):
-        perm, _ = CrownPermission.objects.get_or_create(
-            code=code,
-            defaults={"description": f"Scheduling permission: {code}"},
-        )
-        RolePermission.objects.get_or_create(role_code=role_code, permission=perm)
+    for code in ("scheduling.view", "scheduling.configure", "scheduling.edit", "scheduling.publish"):
+        _grant_permission(user, school, role_code, code, f"Scheduling permission: {code}")
+
+
+def _grant_attendance_configuration_access(user, school, role_code="REGISTRAR"):
+    _grant_permission(user, school, role_code, "attendance.configure", "Configure attendance")
 
 
 def _grant_wizard_access_if_required(description, user, school):
@@ -124,33 +103,22 @@ def _grant_wizard_access_if_required(description, user, school):
         _grant_section_assign_access(user, school)
     elif description in ("scheduling", "section_scheduler"):
         _grant_section_scheduler_access(user, school)
+    elif description in ("attendance_rules", "attendance_codes"):
+        _grant_attendance_configuration_access(user, school)
 
 
 def _headers(school_id):
     return {"HTTP_X_SCHOOL_ID": str(school_id)}
 
 
-# ---------------------------------------------------------------------------
-# Contract: unauthenticated access → 401
-# ---------------------------------------------------------------------------
-
 class TestWizardRequiresAuth(TestCase):
-    """
-    Every wizard session endpoint must reject unauthenticated POST.
-    The response must be 401, NOT 404 (which would indicate missing URL wiring).
-    """
-
     def setUp(self):
         self.school = _make_school("Auth Test School")
 
     def _assert_401(self, description, url):
-        c = APIClient()  # no credentials
+        c = APIClient()
         r = c.post(url, **_headers(self.school.id))
-        self.assertEqual(
-            r.status_code, 401,
-            f"{description} ({url}): expected 401 for unauthed POST, got {r.status_code}. "
-            f"If 404, the URL is not wired in crown_api/urls.py."
-        )
+        self.assertEqual(r.status_code, 401, f"{description} ({url}): expected 401 for unauthed POST, got {r.status_code}. If 404, the URL is not wired in crown_api/urls.py.")
 
     def test_all_wizards_require_auth(self):
         for description, url in WIZARD_ENDPOINTS:
@@ -158,28 +126,14 @@ class TestWizardRequiresAuth(TestCase):
                 self._assert_401(description, url)
 
 
-# ---------------------------------------------------------------------------
-# Contract: missing X-School-Id → 400
-# ---------------------------------------------------------------------------
-
 class TestWizardRequiresSchoolHeader(TestCase):
-    """
-    Every wizard session endpoint must reject requests missing X-School-Id.
-    Auth is present; only the tenant header is missing. Each subtest uses a fresh
-    principal so role grants from one wizard cannot supply implicit tenant context
-    to a later wizard.
-    """
-
     def setUp(self):
         self.school = _make_school("Header Test School")
 
     def _assert_400(self, description, url):
         client, _ = _make_authed_client_with_user(self.school)
-        r = client.post(url)  # no school header
-        self.assertIn(
-            r.status_code, (400, 422),
-            f"{description} ({url}): expected 400 for missing X-School-Id, got {r.status_code}."
-        )
+        r = client.post(url)
+        self.assertIn(r.status_code, (400, 422), f"{description} ({url}): expected 400 for missing X-School-Id, got {r.status_code}.")
 
     def test_all_wizards_require_school_header(self):
         for description, url in WIZARD_ENDPOINTS:
@@ -187,16 +141,7 @@ class TestWizardRequiresSchoolHeader(TestCase):
                 self._assert_400(description, url)
 
 
-# ---------------------------------------------------------------------------
-# Contract: correct auth + school → 201
-# ---------------------------------------------------------------------------
-
 class TestWizardCreateSession(TestCase):
-    """
-    POST to a wizard base URL with valid auth + correct X-School-Id must
-    return 201 and a session_id.
-    """
-
     def setUp(self):
         self.school = _make_school("Create Session School")
         self.client, self.user = _make_authed_client_with_user(self.school)
@@ -204,16 +149,9 @@ class TestWizardCreateSession(TestCase):
     def _assert_201(self, description, url):
         _grant_wizard_access_if_required(description, self.user, self.school)
         r = self.client.post(url, **_headers(self.school.id))
-        self.assertEqual(
-            r.status_code, 201,
-            f"{description} ({url}): expected 201, got {r.status_code}. Body: {r.data}"
-        )
-        # admissions_intake uses import_id; all other wizards use session_id
+        self.assertEqual(r.status_code, 201, f"{description} ({url}): expected 201, got {r.status_code}. Body: {r.data}")
         id_key = "import_id" if description == "admissions_intake" else "session_id"
-        self.assertIn(
-            id_key, r.data,
-            f"{description} ({url}): response missing '{id_key}' key."
-        )
+        self.assertIn(id_key, r.data, f"{description} ({url}): response missing '{id_key}' key.")
 
     def test_all_wizards_create_session(self):
         for description, url in WIZARD_ENDPOINTS:
@@ -221,16 +159,7 @@ class TestWizardCreateSession(TestCase):
                 self._assert_201(description, url)
 
 
-# ---------------------------------------------------------------------------
-# Contract: cross-tenant access → 404
-# ---------------------------------------------------------------------------
-
 class TestWizardTenantIsolation(TestCase):
-    """
-    A session created by School A must be invisible to School B.
-    GET/POST on the session URL with School B's header must return 404.
-    """
-
     def setUp(self):
         self.school_a = _make_school("Tenant A")
         self.school_b = _make_school("Tenant B")
@@ -240,27 +169,16 @@ class TestWizardTenantIsolation(TestCase):
     def _assert_tenant_isolation(self, description, url):
         _grant_wizard_access_if_required(description, self.user_a, self.school_a)
         _grant_wizard_access_if_required(description, self.user_b, self.school_b)
-
-        # Create session under school_a
         r = self.client_a.post(url, **_headers(self.school_a.id))
         self.assertEqual(r.status_code, 201, f"{description}: session creation failed {r.status_code}")
-
-        # admissions_intake returns import_id and uses /upload/ as its next step;
-        # all other wizards return session_id and use /configure/.
         if description == "admissions_intake":
             session_id = r.data["import_id"]
             detail_url = f"{url}{session_id}/upload/"
         else:
             session_id = r.data["session_id"]
             detail_url = f"{url}{session_id}/configure/"
-
-        # School B tries to access school A's session
         r2 = self.client_b.post(detail_url, {}, format="json", **_headers(self.school_b.id))
-        self.assertEqual(
-            r2.status_code, 404,
-            f"{description} ({detail_url}): expected 404 for cross-tenant access, "
-            f"got {r2.status_code}. Tenant isolation is BROKEN."
-        )
+        self.assertEqual(r2.status_code, 404, f"{description} ({detail_url}): expected 404 for cross-tenant access, got {r2.status_code}. Tenant isolation is BROKEN.")
 
     def test_all_wizards_isolate_tenants(self):
         for description, url in WIZARD_ENDPOINTS:
