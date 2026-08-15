@@ -1,6 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
 
 const BASE_URL = process.env.CERT_FRONTEND_URL || "http://127.0.0.1:4173";
+const SCHOOL_ID = process.env.CROWN_DEMO_SCHOOL_ID || "19801b59-8c05-4c84-9312-5d792e4e839d";
 
 export default defineConfig({
   testDir: "../../tests/e2e",
@@ -16,6 +17,9 @@ export default defineConfig({
   ],
   use: {
     baseURL: BASE_URL,
+    extraHTTPHeaders: {
+      "X-School-Id": SCHOOL_ID,
+    },
     screenshot: "only-on-failure",
     trace: "retain-on-failure",
     video: "retain-on-failure",
