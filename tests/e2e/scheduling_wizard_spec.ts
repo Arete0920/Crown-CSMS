@@ -7,7 +7,7 @@ test('Scheduling Setup creates and verifies a real course and section in canonic
   const courseCode = `E2E${runId}`;
   const courseName = `E2E Scheduling ${runId}`;
 
-  const scopePromise = page.waitForResponse(r => r.url().includes('/api/v1/scheduling-wizard/scope-options/') && r.request().method() === 'GET');
+  const scopePromise = page.waitForResponse(r => r.url().includes('/api/v1/scheduling-wizard/sessions/scope-options/') && r.request().method() === 'GET');
   await page.goto(`${frontendUrl}/scheduling-setup`, { waitUntil: 'networkidle' });
   const scopeResponse = await scopePromise;
   expect(scopeResponse.ok()).toBeTruthy();
