@@ -8,8 +8,6 @@
  *   1. Configure — schedule name, term, effective date
  *   2. Lines     — add fee/tuition line items (code, label, amount, kind, frequency)
  *   3. Done      — commit and verify
- *
- * MVP implementation: collect form fields, POST to backend wizard sessions.
  */
 import { useState } from "react";
 import CrownLayout from "../components/crown/CrownLayout.jsx";
@@ -107,15 +105,17 @@ export default function FeeScheduleWizard() {
     setErr(null);
     setBusy(true);
     try {
-      // 1. Create session
       const created = await apiJson(BASE, { method: "POST" });
       const sid = created.session_id;
       setSessionId(sid);
 
-      // 2. Configure
       await apiFetch(`${BASE}${sid}/configure/`, {
         method: "POST",
-        body: JSON.stringify(config),
+        body: JSON.stringify({
+          name: config.schedule_name,
+          term: config.term,
+          effective_date: config.effective_date,
+        }),
       });
 
       setPhase("lines");
@@ -131,19 +131,15 @@ export default function FeeScheduleWizard() {
     setErr(null);
     setBusy(true);
     try {
-      // 3. Set lines
       await apiFetch(`${BASE}${sessionId}/lines/`, {
         method: "POST",
         body: JSON.stringify({ lines }),
       });
 
-      // 4. Commit
       const committed = await apiJson(`${BASE}${sessionId}/commit/`, { method: "POST" });
-
-      // 5. Verify
       const verified = await apiJson(`${BASE}${sessionId}/verify/`);
 
-      setResult({ ...committed, ...verified });
+      setResult({ ...(committed.result || committed), ...verified });
       setPhase("done");
     } catch (ex) {
       setErr(ex.message || "Lines/commit step failed.");
@@ -259,7 +255,6 @@ export default function FeeScheduleWizard() {
     );
   }
 
-  // phase === "configure"
   return (
     <CrownLayout title="Fee Schedule Setup" subtitle="Wizard #14 — Fee Schedule Setup">
       <Step title="Step 1 of 2 — Schedule Details">
