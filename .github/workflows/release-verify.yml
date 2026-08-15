@@ -70,12 +70,9 @@ jobs:
         shell: bash
         run: |
           if [ -f backend/manage.py ]; then
-            (
-              cd backend
-              python manage.py check
-              python manage.py showmigrations
-              python manage.py check --deploy
-            )
+            python backend/manage.py check
+            python backend/manage.py showmigrations
+            python backend/manage.py check --deploy
           elif [ -f manage.py ]; then
             python manage.py check
             python manage.py showmigrations
@@ -125,10 +122,7 @@ jobs:
         run: |
           mkdir -p docs/openapi
           if [ -f backend/manage.py ]; then
-            (
-              cd backend
-              python manage.py spectacular --file ../docs/openapi/crown-openapi.yaml
-            )
+            python backend/manage.py spectacular --file docs/openapi/crown-openapi.yaml
           elif [ -f manage.py ]; then
             python manage.py spectacular --file docs/openapi/crown-openapi.yaml
           else
