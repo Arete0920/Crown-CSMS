@@ -3,10 +3,11 @@ import { expect, type Page } from '@playwright/test';
 export const frontendUrl = process.env.CERT_FRONTEND_URL || 'http://127.0.0.1:4173';
 
 export async function launchHeritageRole(page: Page, role: string) {
+  const selectableRole = role === 'admin' || role === 'head_of_school' ? 'school_admin' : role;
   await page.goto(`${frontendUrl}/login`, { waitUntil: 'networkidle' });
   const roleSelect = page.locator('#login-role').first();
   await expect(roleSelect).toBeVisible();
-  await roleSelect.selectOption(role);
+  await roleSelect.selectOption(selectableRole);
   await page.getByRole('button', { name: /continue to heritage preview/i }).first().click();
   await expect(page).not.toHaveURL(/\/login(?:\?.*)?$/i, { timeout: 30000 });
 }
