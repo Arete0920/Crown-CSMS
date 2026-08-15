@@ -68,7 +68,7 @@ class TestAttendanceCodesWizardAuthorization(TestCase):
         school_b = _school()
         client = _client(school_a)
         response = client.post(BASE_URL, **_h(school_b.id))
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.status_code, 404)
 
 
 class TestAttendanceCodesWizardValidation(TestCase):
