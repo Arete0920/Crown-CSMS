@@ -1,4 +1,5 @@
-import { authenticatedFetch, authenticatedJson, getAccessToken, getSelectedSchoolId } from "../utils/authClient";
+import { authenticatedFetch, getAccessToken, getSelectedSchoolId } from "../utils/authClient";
+import { authenticatedJson } from "../utils/authClient";
 
 // Compatibility exports retained for GradebookRO; authClient owns storage access.
 export function getToken() {
