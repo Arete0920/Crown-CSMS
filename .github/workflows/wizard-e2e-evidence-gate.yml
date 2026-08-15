@@ -69,7 +69,7 @@ jobs:
       CROWN_SANDBOX_ALLOW_OPEN_SESSION: "1"
       CROWN_DEMO_SCHOOL_ID: "19801b59-8c05-4c84-9312-5d792e4e839d"
       VITE_SANDBOX_MODE: "1"
-      VITE_DEMO_MODE: "sandbox"
+      VITE_DEMO_MODE: sandbox
       VITE_API_BASE: "http://127.0.0.1:8000"
       CERT_FRONTEND_URL: "http://127.0.0.1:4173"
     steps:
@@ -125,8 +125,11 @@ jobs:
           values = list(scope['canonical_required'].values())
           if len(values) != 28 or any(not value for value in values):
               raise SystemExit(f'Canonical scope must contain 28 executable spec paths; got {values!r}')
-          for value in values:
-              print('../../' + value)
+          names = [Path(value).name for value in values]
+          if len(set(names)) != 28:
+              raise SystemExit(f'Canonical spec basenames must be unique; got {names!r}')
+          for name in names:
+              print(name)
           PY
           )
           npx playwright test --config=playwright.wizard-e2e.config.ts --workers=1 --reporter=line "${specs[@]}"
