@@ -6,7 +6,10 @@ import {
 } from "../../config/releaseState";
 
 export default function ReleaseStateRoute({ route, children, fallbackPath }) {
-  if (isProductionReady(route)) {
+  const isSandboxWizard =
+    import.meta.env.VITE_SANDBOX_MODE === "1" && route?.moduleType === "wizard";
+
+  if (isProductionReady(route) || isSandboxWizard) {
     return children;
   }
 
