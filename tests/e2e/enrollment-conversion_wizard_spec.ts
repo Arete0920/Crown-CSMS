@@ -26,7 +26,7 @@ test('Enrollment Conversion validates, loads, commits, and verifies against the 
   await page.getByRole('button', { name: 'Next' }).click();
 
   await expect(page.getByRole('heading', { name: /preview/i })).toBeVisible();
-  await page.getByRole('button', { name: /next/i }).click();
+  await page.getByRole('button', { name: /confirm.*commit/i }).click();
   await expect(page.getByRole('heading', { name: /commit/i })).toBeVisible();
 
   const commitPromise = page.waitForResponse(r => r.url().includes('/commit/') && r.request().method() === 'POST');
