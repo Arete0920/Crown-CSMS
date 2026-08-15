@@ -73,6 +73,7 @@ def attendance_context():
     User = get_user_model()
     registrar = User.objects.create_user(
         username="attendance_registrar",
+        email="attendance_registrar@test.invalid",
         password="TestPass!1",
         school=school,
         is_staff=True,
@@ -179,6 +180,7 @@ def test_teacher_requires_explicit_section_assignment(attendance_context):
     User = get_user_model()
     teacher = User.objects.create_user(
         username="attendance_teacher",
+        email="attendance_teacher@test.invalid",
         password="TestPass!1",
         school=ctx["school"],
         is_staff=True,
