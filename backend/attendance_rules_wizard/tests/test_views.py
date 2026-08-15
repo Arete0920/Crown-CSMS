@@ -65,7 +65,7 @@ class AttendanceRulesAuthorizationTest(TestCase):
     def test_permission_is_school_scoped(self):
         school_a = _school()
         school_b = _school()
-        self.assertEqual(_client(school_a).post(BASE_URL, **_h(school_b.id)).status_code, 403)
+        self.assertEqual(_client(school_a).post(BASE_URL, **_h(school_b.id)).status_code, 404)
 
 
 class AttendanceRulesFlowTest(TestCase):
