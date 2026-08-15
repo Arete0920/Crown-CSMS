@@ -11,7 +11,7 @@ from academics.models import Enrollment as AcademicEnrollment
 from academics.models import Section as AcademicSection
 from academics.models import Term as AcademicTerm
 from bell_schedule_wizard.models import BellSchedule, DayTemplate, PeriodBlock
-from core.models import AcademicYear, Family, GradeLevel, Student, UserAccount
+from core.models import AcademicYear, Family, GradeLevel, Student, StudentIdentityLink, UserAccount
 from crown_api.models import AttendanceRecord, GradeRecord
 from crown_api.models_academics_core import Course as LegacyCourse
 from crown_api.models_comms_core import Message, MessageThread
@@ -49,14 +49,7 @@ def _require_student(user) -> UserAccount:
 
 
 def _canonical_schedule_fixture(user: UserAccount) -> AcademicStudent:
-    """Create the sandbox compatibility identity and canonical schedule once.
-
-    The authenticated sandbox account deterministically derives the synthetic
-    compatibility student's UUID. The compatibility row intentionally leaves
-    its optional account FK unset so no cross-domain account ownership is
-    asserted. Replays are read-idempotent: relationship authority is verified,
-    and stable fixture rows are not rewritten on every GET.
-    """
+    """Create the sandbox compatibility identity and canonical schedule once."""
     school_id = user.school_id
     academic_year = (
         AcademicYear.objects.filter(school_id=school_id, is_current=True)
@@ -83,10 +76,7 @@ def _canonical_schedule_fixture(user: UserAccount) -> AcademicStudent:
             "is_active": True,
         },
     )
-    academic_student_id = uuid.uuid5(
-        SANDBOX_SECTION_NAMESPACE,
-        f"student:{user.id}",
-    )
+    academic_student_id = uuid.uuid5(SANDBOX_SECTION_NAMESPACE, f"student:{user.id}")
     academic_student, academic_student_created = AcademicStudent.objects.get_or_create(
         id=academic_student_id,
         defaults={
@@ -272,7 +262,22 @@ def _ensure_student_records(user: UserAccount) -> tuple[Student, AcademicStudent
     )
     academic_student = _canonical_schedule_fixture(user)
 
-    # Non-Scheduling compatibility fixtures remain untouched by this cutover.
+    StudentIdentityLink.objects.update_or_create(
+        core_student=student,
+        defaults={
+            "school_id": SCHOOL_ID,
+            "compatibility_student": academic_student,
+            "source": StudentIdentityLink.SOURCE_RECONCILIATION,
+            "verification_status": StudentIdentityLink.STATUS_VERIFIED,
+            "evidence_reference": f"sandbox:heritage:student-self-service:{STUDENT_NUMBER}",
+        },
+    )
+    enrollment = AcademicEnrollment.objects.select_related("section").get(
+        school_id=SCHOOL_ID,
+        student=academic_student,
+    )
+
+    # Grade compatibility fixtures remain course-scoped; Attendance is canonical section-scoped.
     course, _ = LegacyCourse.objects.get_or_create(
         course_code=COURSE_CODE,
         defaults={"name": "Grade 7 English Language Arts", "term": "Fall 2026", "active": True},
@@ -281,13 +286,19 @@ def _ensure_student_records(user: UserAccount) -> tuple[Student, AcademicStudent
         email="teacher.lower@heritage.example.org",
         defaults={"first_name": "Eleanor", "last_name": "Lower", "phone": "555-0110"},
     )
-    AttendanceRecord.objects.get_or_create(
+    AttendanceRecord.objects.filter(
         student=student,
-        course=course,
+        date=date(2026, 8, 10),
+        section__isnull=True,
+    ).delete()
+    AttendanceRecord.objects.update_or_create(
+        student=student,
+        section=enrollment.section,
         date=date(2026, 8, 10),
         defaults={
+            "course": None,
             "status": AttendanceRecord.STATUS_PRESENT,
-            "notes_public": "Heritage sandbox attendance.",
+            "notes_public": "Heritage sandbox section-aware attendance.",
         },
     )
     GradeRecord.objects.get_or_create(
@@ -373,14 +384,18 @@ def student_self_service_state(user) -> dict:
         .order_by("section__course__code", "section__id")
     )
     grades = GradeRecord.objects.filter(student=student).select_related("course").order_by("-posted_at")
-    attendance = AttendanceRecord.objects.filter(student=student).select_related("course").order_by("-date")
+    attendance = (
+        AttendanceRecord.objects.filter(student=student, section__isnull=False)
+        .select_related("section__course")
+        .order_by("-date", "section_id")
+    )
     threads = MessageThread.objects.filter(student=student).prefetch_related("messages").order_by("-last_message_at")
 
     return {
         "student": {"id": str(student.id), "student_number": student.student_number, "name": f"{student.first_name} {student.last_name}", "grade": student.current_grade_level.code if student.current_grade_level else ""},
         "schedule": [_schedule_row(row) for row in sections],
         "learning_tasks": [{"assignment": row.assignment_name, "course": row.course.name if row.course else "", "category": row.category, "score": str(row.score) if row.score is not None else None, "score_max": str(row.score_max) if row.score_max is not None else None, "letter_grade": row.letter_grade, "feedback": row.notes_public} for row in grades],
-        "attendance": [{"date": row.date.isoformat(), "course": row.course.name if row.course else "School Day", "status": row.status} for row in attendance],
+        "attendance": [{"date": row.date.isoformat(), "section_id": str(row.section_id), "course": row.section.course.name, "status": row.status} for row in attendance],
         "communications": [{"subject": thread.subject, "messages": [message.body for message in thread.messages.all()]} for thread in threads],
         "privileged_actions": {"grading": False, "admissions": False, "finance_admin": False, "staff_admin": False, "tenant_admin": False},
     }
