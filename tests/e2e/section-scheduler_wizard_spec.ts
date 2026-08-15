@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 import { authenticatedApiJson, frontendUrl, launchHeritageRole } from './helpers/wizardCertification';
 
 test('Section Scheduler publishes and verifies a canonical placement', async ({ page }) => {
-  await launchHeritageRole(page, 'school_admin');
+  await launchHeritageRole(page, 'admin');
   await page.goto(`${frontendUrl}/section-scheduler-setup`, { waitUntil: 'networkidle' });
   await expect(page.getByRole('heading', { name: /Scheduling Scope/i })).toBeVisible();
 
