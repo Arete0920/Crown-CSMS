@@ -31,9 +31,17 @@ export async function authenticatedApiJson(
       localStorage.getItem('schoolId') ||
       localStorage.getItem('crown.school.id') ||
       '';
+    const csrfToken = document.cookie
+      .split(';')
+      .map((part) => part.trim())
+      .find((part) => part.startsWith('csrftoken='))
+      ?.slice('csrftoken='.length) || '';
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
     if (token) headers.Authorization = `Bearer ${token}`;
     if (schoolId) headers['X-School-Id'] = schoolId;
+    if (csrfToken && !['GET', 'HEAD', 'OPTIONS', 'TRACE'].includes((requestInit.method || 'GET').toUpperCase())) {
+      headers['X-CSRFToken'] = decodeURIComponent(csrfToken);
+    }
     const response = await fetch(requestPath, {
       method: requestInit.method || 'GET',
       headers,
