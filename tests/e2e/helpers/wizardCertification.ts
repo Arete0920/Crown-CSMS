@@ -79,3 +79,44 @@ export async function createAcademicYearFixture(page: Page, suffix: string) {
   if (!academicYearId) throw new Error(`Academic year fixture did not return an id: ${JSON.stringify({ committed, verified })}`);
   return String(academicYearId);
 }
+
+export async function createSchedulingSectionFixture(page: Page, suffix: string) {
+  const scope = await authenticatedApiJson(page, '/api/v1/scheduling-wizard/sessions/scope-options/');
+  const academicYear = scope.academic_years?.find((year: { is_current?: boolean }) => year.is_current) || scope.academic_years?.[0];
+  const term = scope.terms?.find((item: { academic_year_id: string; active?: boolean }) => item.academic_year_id === academicYear?.academic_year_id && item.active)
+    || scope.terms?.find((item: { academic_year_id: string }) => item.academic_year_id === academicYear?.academic_year_id);
+  if (!academicYear?.academic_year_id || !term?.term_id) {
+    throw new Error(`Scheduling scope missing academic year/term: ${JSON.stringify(scope)}`);
+  }
+
+  const created = await authenticatedApiJson(page, '/api/v1/scheduling-wizard/sessions/', { method: 'POST' });
+  const sessionId = created.session_id;
+  await authenticatedApiJson(page, `/api/v1/scheduling-wizard/sessions/${sessionId}/configure/`, {
+    method: 'POST',
+    body: { academic_year_id: academicYear.academic_year_id, term_id: term.term_id },
+  });
+  const courseCode = `FX${suffix}${Date.now().toString().slice(-6)}`.toUpperCase();
+  await authenticatedApiJson(page, `/api/v1/scheduling-wizard/sessions/${sessionId}/courses/`, {
+    method: 'POST',
+    body: { courses: [{ code: courseCode, name: `Fixture ${suffix}`, department: 'E2E', credits: '1.0' }] },
+  });
+  const staged = await authenticatedApiJson(page, `/api/v1/scheduling-wizard/sessions/${sessionId}/sections/`, {
+    method: 'POST',
+    body: { sections: [{ course_code: courseCode, teacher_name: 'Fixture Teacher', grade_band: '7' }] },
+  });
+  const sectionId = staged.sections?.[0]?.section_id;
+  if (!sectionId) throw new Error(`Scheduling fixture did not stage a section: ${JSON.stringify(staged)}`);
+  const committed = await authenticatedApiJson(page, `/api/v1/scheduling-wizard/sessions/${sessionId}/commit/`, {
+    method: 'POST',
+    body: { confirm: true },
+  });
+  await authenticatedApiJson(page, `/api/v1/scheduling-wizard/sessions/${sessionId}/verify/`);
+  return {
+    sectionId: String(sectionId),
+    academicYearId: String(academicYear.academic_year_id),
+    termId: String(term.term_id),
+    termCode: String(term.code),
+    courseCode,
+    commit: committed,
+  };
+}
