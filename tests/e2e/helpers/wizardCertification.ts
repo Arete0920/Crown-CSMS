@@ -53,7 +53,7 @@ export async function createAcademicYearFixture(page: Page, suffix: string) {
   await authenticatedApiJson(page, `/api/v1/academic-year-wizard/sessions/${sessionId}/configure/`, {
     method: 'POST',
     body: {
-      name: `2032-2033-${suffix}`,
+      year_name: `2032-2033-${suffix}`,
       start_date: '2032-08-15',
       end_date: '2033-06-15',
     },
@@ -68,6 +68,7 @@ export async function createAcademicYearFixture(page: Page, suffix: string) {
           school_year: `2032-33-${suffix}`,
           start_date: '2032-08-15',
           end_date: '2033-06-15',
+          ordering: 0,
         },
       ],
     },
