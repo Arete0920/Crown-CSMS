@@ -34,6 +34,7 @@ class AttendanceTenantInvariantTests(TestCase):
             username="inv_teacher_a",
             email="inv_teacher_a@test.com",
             password="password",
+            school=self.school_a,
         )
         UserRole.objects.create(
             school=self.school_a,
