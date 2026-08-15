@@ -1,0 +1,58 @@
+name: Wizard E2E Evidence Gate
+
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+concurrency:
+  group: wizard-e2e-evidence-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  classify-wizard-e2e:
+    name: Classify wizard E2E evidence
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@7f4fc3e22c37d6ff65e88745f38bd3157c663f7c
+        with:
+          python-version: "3.12"
+
+      - name: Classify wizard evidence
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            python scripts/execution/217_classify_wizard_e2e_evidence.py --baseline-ref "${{ github.event.pull_request.base.sha }}"
+          else
+            python scripts/execution/217_classify_wizard_e2e_evidence.py
+          fi
+
+      - name: Emit evidence summary
+        if: always()
+        shell: bash
+        run: |
+          set +e
+          if [ -f audit-artifacts/wizard-e2e-evidence/latest/00_SUMMARY.md ]; then
+            cat audit-artifacts/wizard-e2e-evidence/latest/00_SUMMARY.md
+            cat audit-artifacts/wizard-e2e-evidence/latest/00_SUMMARY.md >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload wizard evidence classification
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: wizard-e2e-evidence-classification
+          if-no-files-found: error
+          path: audit-artifacts/wizard-e2e-evidence/latest
