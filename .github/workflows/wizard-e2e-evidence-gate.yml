@@ -164,8 +164,12 @@ jobs:
           )
           args=()
           for spec in "${specs[@]}"; do
-            args+=("../../${spec}")
+            args+=("${spec#tests/e2e/}")
           done
+          if [ "${#args[@]}" -ne 28 ]; then
+            echo "expected 28 canonical Playwright selectors, got ${#args[@]}"
+            exit 1
+          fi
           npx playwright test -c playwright.wizards.config.ts "${args[@]}" --workers=1 --reporter=line
 
       - name: Upload canonical wizard runtime evidence
