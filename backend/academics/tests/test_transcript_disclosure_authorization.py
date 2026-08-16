@@ -1,23 +1,44 @@
+import uuid
+
 import pytest
+from django.contrib.auth import get_user_model
 from rest_framework.test import APIClient
 
-from core.models import School
-from households.models import Guardian, Household
-
-from academics.tests.test_transcript_ro_api import (
-    _assign_role,
-    _mk_user,
-    _seed_transcript_test_data,
-)
+from core.models import School, UserRole
+from households.models import Guardian, Household, Student
 
 pytestmark = pytest.mark.django_db
-
 
 TRANSCRIPT_PATHS = (
     "/api/v1/academics/transcript/{student_id}/",
     "/api/v1/transcripts/students/{student_id}/",
     "/api/v1/academics/students/{student_id}/transcript/",
 )
+
+
+def _mk_user(*, school, email):
+    User = get_user_model()
+    return User.objects.create_user(
+        username=f"transcript-disclosure-{uuid.uuid4()}",
+        email=email,
+        password="test-pass",
+        school=school,
+    )
+
+
+def _assign_role(*, user, school, role_code):
+    UserRole.objects.create(school=school, user=user, role_code=role_code)
+
+
+def _seed_transcript_test_data(*, school):
+    household = Household.objects.create(school_id=school.id, name="Transcript Household")
+    return Student.objects.create(
+        school_id=school.id,
+        household=household,
+        first_name="Test",
+        last_name="Student",
+        grade_level="3",
+    )
 
 
 def _get(client, path, school):
@@ -29,10 +50,8 @@ def test_unrelated_same_school_user_cannot_read_transcript(path_template):
     school = School.objects.create(name="Disclosure School")
     student = _seed_transcript_test_data(school=school)
     user = _mk_user(school=school, email="unrelated@test.local")
-
     client = APIClient()
     client.force_authenticate(user)
-
     resp = _get(client, path_template.format(student_id=student.id), school)
     assert resp.status_code == 404
     assert resp.json()["detail"] == "Student not found."
@@ -43,10 +62,8 @@ def test_head_of_school_can_read_transcript():
     student = _seed_transcript_test_data(school=school)
     user = _mk_user(school=school, email="head@test.local")
     _assign_role(user=user, school=school, role_code="HEAD_OF_SCHOOL")
-
     client = APIClient()
     client.force_authenticate(user)
-
     resp = _get(client, f"/api/v1/academics/transcript/{student.id}/", school)
     assert resp.status_code == 200, resp.content
 
@@ -57,10 +74,8 @@ def test_student_linked_account_can_read_own_transcript():
     user = _mk_user(school=school, email="student@test.local")
     student.account = user
     student.save()
-
     client = APIClient()
     client.force_authenticate(user)
-
     resp = _get(client, f"/api/v1/academics/students/{student.id}/transcript/", school)
     assert resp.status_code == 200, resp.content
 
@@ -77,10 +92,8 @@ def test_guardian_linked_to_household_can_read_child_transcript():
         last_name="Guardian",
         email=user.email,
     )
-
     client = APIClient()
     client.force_authenticate(user)
-
     resp = _get(client, f"/api/v1/academics/transcript/{student.id}/", school)
     assert resp.status_code == 200, resp.content
 
@@ -98,10 +111,8 @@ def test_guardian_cannot_read_unrelated_student_transcript():
         last_name="Guardian",
         email=user.email,
     )
-
     client = APIClient()
     client.force_authenticate(user)
-
     resp = _get(client, f"/api/v1/academics/transcript/{student.id}/", school)
     assert resp.status_code == 404
 
@@ -111,10 +122,8 @@ def test_teacher_role_does_not_grant_full_transcript_disclosure():
     student = _seed_transcript_test_data(school=school)
     user = _mk_user(school=school, email="teacher@test.local")
     _assign_role(user=user, school=school, role_code="TEACHER")
-
     client = APIClient()
     client.force_authenticate(user)
-
     resp = _get(client, f"/api/v1/academics/transcript/{student.id}/", school)
     assert resp.status_code == 404
 
@@ -125,10 +134,8 @@ def test_cross_school_header_probe_is_concealed():
     foreign_student = _seed_transcript_test_data(school=foreign_school)
     user = _mk_user(school=school, email="registrar-home@test.local")
     _assign_role(user=user, school=school, role_code="REGISTRAR")
-
     client = APIClient()
     client.force_authenticate(user)
-
     resp = client.get(
         f"/api/v1/academics/transcript/{foreign_student.id}/",
         HTTP_X_SCHOOL_ID=str(foreign_school.id),
