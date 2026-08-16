@@ -4,16 +4,15 @@ from rest_framework.routers import SimpleRouter
 from .views import (
     GradebookSectionViewSet,
     assignments_list,
-    grade_entry_bulk_upsert,
     section_assignments,
     section_drilldown,
     section_grades,
     section_roster,
     section_summary,
     students_list,
-    update_grade_entry,
 )
 from .views_parent import student_grades_summary
+from .write_views import grade_entry_bulk_upsert, update_grade_entry
 
 
 router = SimpleRouter()
