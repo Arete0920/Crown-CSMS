@@ -9,26 +9,15 @@ pytestmark = pytest.mark.django_db
 def _snapshot(*, letter, gpa_points):
     school, year, student = _base_school()
     term, course, _ = _section(
-        school=school,
-        year=year,
-        student=student,
-        code=f"EDGE-{letter}-{gpa_points}",
-        term_code="FALL",
-        term_name="Fall",
-        ordering=1,
+        school=school, year=year, student=student, code=f"EDGE-{letter}-{gpa_points}",
+        term_code="FALL", term_name="Fall", ordering=1,
     )
     TranscriptEntry.objects.create(
-        school_id=school.id,
-        student=student,
-        course=course,
-        term=term,
-        credit_value="1.00",
-        final_letter_grade=letter,
-        gpa_points=gpa_points,
+        school_id=school.id, student=student, course=course, term=term,
+        credit_value="1.00", final_letter_grade=letter, gpa_points=gpa_points,
     )
     response = _registrar_client(school).get(
-        f"/api/v1/academics/transcript/{student.id}/",
-        HTTP_X_SCHOOL_ID=str(school.id),
+        f"/api/v1/academics/transcript/{student.id}/", HTTP_X_SCHOOL_ID=str(school.id)
     )
     assert response.status_code == 200, response.content
     return response.json()
