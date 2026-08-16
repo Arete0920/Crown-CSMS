@@ -6,7 +6,7 @@ from core.models import UserRole
 from households.models import Guardian, Student
 from households.scoping import get_request_school_id
 
-from .transcript_views import StudentTranscriptContractView, TranscriptROView
+from .transcript_official_views import StudentTranscriptContractView, TranscriptROView
 
 
 TRANSCRIPT_PRIVILEGED_ROLES = frozenset({"HEAD_OF_SCHOOL", "REGISTRAR"})
