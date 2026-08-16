@@ -1,6 +1,7 @@
 # backend/athletics/api/views.py
 from __future__ import annotations
 
+from django.http import Http404
 from rest_framework import mixins, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -28,6 +29,7 @@ from athletics.api.serializers import (
     TeamRosterSerializer,
     TeamSerializer,
 )
+from core.models import Student
 
 # Crown canonical tenant helper
 from households.scoping import get_request_school_id
@@ -164,9 +166,19 @@ class AthleteClearanceViewSet(
     def get_object(self):
         school_id = self.get_school_id()
         student_id = self.kwargs["pk"]
+        student = Student.objects.filter(pk=student_id, school_id=school_id).first()
+        if student is None:
+            raise Http404
+
+        # AthleteClearance.student is one-to-one. A clearance carrying a different
+        # school for this student is malformed cross-tenant data and must never be
+        # returned or silently reassigned through this request.
+        if AthleteClearance.objects.filter(student=student).exclude(school_id=school_id).exists():
+            raise Http404
+
         obj, _ = AthleteClearance.objects.get_or_create(
-            student_id=student_id,
-            defaults={"school_id": school_id},
+            school_id=school_id,
+            student=student,
         )
         return obj
 
