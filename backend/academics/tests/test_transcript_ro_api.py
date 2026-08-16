@@ -1,13 +1,13 @@
 """
-API tests for Transcript Read-Only endpoint.
+API tests for Transcript read-only and student-centric contracts.
 """
 import uuid
+
 import pytest
 from django.contrib.auth import get_user_model
-from django.core.management import call_command
 from rest_framework.test import APIClient
 
-from core.models import AcademicYear, School, Staff, UserRole
+from core.models import AcademicYear, School, UserRole
 from academics.models import Course, Enrollment, Section, Term, TranscriptEntry
 from households.models import Household, Student
 from gradebook.models import GradeEntry
@@ -16,7 +16,6 @@ pytestmark = pytest.mark.django_db
 
 
 def _mk_user(*, school: School, email: str):
-    """Create a test user for the school."""
     User = get_user_model()
     return User.objects.create_user(
         username=f"user-{uuid.uuid4()}",
@@ -27,12 +26,10 @@ def _mk_user(*, school: School, email: str):
 
 
 def _assign_role(*, user, school: School, role_code: str):
-    """Assign a role to the user."""
     UserRole.objects.create(school=school, user=user, role_code=role_code)
 
 
 def _seed_transcript_test_data(*, school: School):
-    """Create minimal transcript test data: 1 student, 2 terms, 2 sections, grades."""
     year = AcademicYear.objects.create(
         school=school,
         name="2026-2027",
@@ -58,10 +55,20 @@ def _seed_transcript_test_data(*, school: School):
         ordering=2,
         active=True,
     )
-    
-    course1 = Course.objects.create(school_id=school.id, code="MATH-101", name="Mathematics")
-    course2 = Course.objects.create(school_id=school.id, code="ELA-101", name="English Language Arts")
-    
+
+    course1 = Course.objects.create(
+        school_id=school.id,
+        code="MATH-101",
+        name="Mathematics",
+        credits="0.50",
+    )
+    course2 = Course.objects.create(
+        school_id=school.id,
+        code="ELA-101",
+        name="English Language Arts",
+        credits="1.00",
+    )
+
     section1 = Section.objects.create(
         school_id=school.id,
         course=course1,
@@ -76,7 +83,7 @@ def _seed_transcript_test_data(*, school: School):
         term_ref=term2,
         teacher_name="Teacher B",
     )
-    
+
     household = Household.objects.create(school_id=school.id, name="Test Household")
     student = Student.objects.create(
         school_id=school.id,
@@ -85,11 +92,10 @@ def _seed_transcript_test_data(*, school: School):
         last_name="Student",
         grade_level="3",
     )
-    
+
     Enrollment.objects.create(school_id=school.id, section=section1, student=student)
     Enrollment.objects.create(school_id=school.id, section=section2, student=student)
-    
-    # Add grades: MATH-101: 90/100 (A), ELA-101: 80/100 (B)
+
     GradeEntry.objects.create(
         school_id=school.id,
         section=section1,
@@ -106,7 +112,7 @@ def _seed_transcript_test_data(*, school: School):
         points_earned=80,
         points_possible=100,
     )
-    
+
     return student
 
 
@@ -114,129 +120,128 @@ def test_transcript_ro_404_for_unknown_student():
     school = School.objects.create(name="Test School")
     user = _mk_user(school=school, email="director@test.local")
     _assign_role(user=user, school=school, role_code="REGISTRAR")
-    
+
     client = APIClient()
     client.force_authenticate(user)
-
-    unknown = uuid.uuid4()
-    resp = client.get(f"/api/v1/academics/transcript/{unknown}/", HTTP_X_SCHOOL_ID=str(school.id))
-    assert resp.status_code == 404
+    response = client.get(
+        f"/api/v1/academics/transcript/{uuid.uuid4()}/",
+        HTTP_X_SCHOOL_ID=str(school.id),
+    )
+    assert response.status_code == 404
 
 
 def test_transcript_ro_returns_terms_and_courses_for_demo_student():
     school = School.objects.create(name="Test School")
     user = _mk_user(school=school, email="director@test.local")
     _assign_role(user=user, school=school, role_code="REGISTRAR")
-    
     student = _seed_transcript_test_data(school=school)
-    
+
     client = APIClient()
     client.force_authenticate(user)
+    response = client.get(
+        f"/api/v1/academics/transcript/{student.id}/",
+        HTTP_X_SCHOOL_ID=str(school.id),
+    )
+    assert response.status_code == 200, response.content
 
-    resp = client.get(f"/api/v1/academics/transcript/{student.id}/", HTTP_X_SCHOOL_ID=str(school.id))
-    assert resp.status_code == 200, resp.content
-
-    data = resp.json()
-    assert "student" in data
+    data = response.json()
     assert data["student"]["student_id"] == str(student.id)
     assert data["student"]["first_name"] == "Test"
     assert data["student"]["last_name"] == "Student"
-    assert "terms" in data and isinstance(data["terms"], list)
-    assert len(data["terms"]) == 2  # 2 terms seeded
+    assert isinstance(data["terms"], list)
+    assert len(data["terms"]) == 2
 
-    # Contract keys
-    t0 = data["terms"][0]
-    assert "term_code" in t0
-    assert "courses" in t0
-    assert len(t0["courses"]) >= 1
-    
-    # Verify course structure
-    c0 = t0["courses"][0]
-    assert "section_id" in c0
-    assert "course_code" in c0
-    assert "course_name" in c0
-    assert "teacher_name" in c0
-    assert "final_percent" in c0
-    assert "final_letter" in c0
-    assert "credits" in c0
-    
-    # Verify GPA fields exist
-    assert "term_gpa_mvp" in t0
-    assert "cumulative_gpa_mvp" in data
-    assert "notes" in data
+    term = data["terms"][0]
+    assert "term_name" in term
+    assert "term_gpa" in term
+    assert "term_gpa_mvp" not in term
+    assert term["courses"]
+
+    course = term["courses"][0]
+    for key in (
+        "section_id",
+        "course_code",
+        "course_name",
+        "teacher_name",
+        "final_percent",
+        "final_letter",
+        "credits",
+        "attempted_credits",
+        "earned_credits",
+        "gpa_points",
+        "status",
+        "grade_source",
+        "credit_source",
+    ):
+        assert key in course
+
+    assert "cumulative_gpa" in data
+    assert "cumulative_gpa_mvp" not in data
+    assert data["calculation_policy"]["in_progress_in_official_gpa"] is False
 
 
 def test_transcript_ro_alias_returns_same_contract():
-    school = School.objects.create(name="Test School")
-    user = _mk_user(school=school, email="director@test.local")
+    school = School.objects.create(name="Alias School")
+    user = _mk_user(school=school, email="alias-registrar@test.local")
     _assign_role(user=user, school=school, role_code="REGISTRAR")
-
     student = _seed_transcript_test_data(school=school)
 
     client = APIClient()
     client.force_authenticate(user)
-
-    resp = client.get(
+    response = client.get(
         f"/api/v1/transcripts/students/{student.id}/",
         HTTP_X_SCHOOL_ID=str(school.id),
     )
-    assert resp.status_code == 200, resp.content
-
-    data = resp.json()
-    assert data["student"]["student_id"] == str(student.id)
-    assert "terms" in data and isinstance(data["terms"], list)
+    assert response.status_code == 200, response.content
+    assert response.json()["student"]["student_id"] == str(student.id)
 
 
 def test_student_transcript_contract_shape():
-    school = School.objects.create(name="Test School")
-    user = _mk_user(school=school, email="director@test.local")
+    school = School.objects.create(name="Contract School")
+    user = _mk_user(school=school, email="contract@test.local")
     _assign_role(user=user, school=school, role_code="REGISTRAR")
-
     student = _seed_transcript_test_data(school=school)
 
     client = APIClient()
     client.force_authenticate(user)
-
-    resp = client.get(
+    response = client.get(
         f"/api/v1/academics/students/{student.id}/transcript/",
         HTTP_X_SCHOOL_ID=str(school.id),
     )
-    assert resp.status_code == 200, resp.content
+    assert response.status_code == 200, response.content
 
-    data = resp.json()
+    data = response.json()
     assert data["student_id"] == str(student.id)
-    assert "student_name" in data
-    assert "school_years" in data and isinstance(data["school_years"], list)
-    assert data["school_years"], data
-    year0 = data["school_years"][0]
-    assert "school_year" in year0
-    assert "terms" in year0 and isinstance(year0["terms"], list)
-    term0 = year0["terms"][0]
-    assert "term_id" in term0
-    assert "term_name" in term0
-    assert "courses" in term0 and isinstance(term0["courses"], list)
-    course0 = term0["courses"][0]
-    assert "section_id" in course0
-    assert "course_code" in course0
-    assert "course_name" in course0
-    assert "credits" in course0
-    assert "teacher" in course0
-    assert "final_grade" in course0
-    assert "status" in course0
+    assert data["student_name"] == "Test Student"
+    assert data["school_years"]
+    assert "cumulative_gpa" in data
+    assert "attempted_credits" in data
+    assert "earned_credits" in data
 
-
-
-
+    year = data["school_years"][0]
+    term = year["terms"][0]
+    course = term["courses"][0]
+    assert "term_gpa" in term
+    for key in (
+        "section_id",
+        "course_code",
+        "course_name",
+        "credits",
+        "teacher",
+        "final_grade",
+        "final_percent",
+        "gpa_points",
+        "status",
+    ):
+        assert key in course
 
 
 def test_transcript_ro_includes_dual_enrollment_metadata():
     school = School.objects.create(name="Metadata School")
     user = _mk_user(school=school, email="director-metadata@test.local")
     _assign_role(user=user, school=school, role_code="REGISTRAR")
-
     student = _seed_transcript_test_data(school=school)
-    section = Section.objects.filter(school_id=school.id, course__code="MATH-101").first()
-    assert section is not None
+    section = Section.objects.get(school_id=school.id, course__code="MATH-101")
 
     TranscriptEntry.objects.create(
         school_id=school.id,
@@ -253,25 +258,23 @@ def test_transcript_ro_includes_dual_enrollment_metadata():
 
     client = APIClient()
     client.force_authenticate(user)
-
-    resp = client.get(f"/api/v1/academics/transcript/{student.id}/", HTTP_X_SCHOOL_ID=str(school.id))
-    assert resp.status_code == 200, resp.content
-    data = resp.json()
-
-    all_courses = [c for term in data["terms"] for c in term["courses"]]
-    math_course = next(c for c in all_courses if c["course_code"] == "MATH-101")
-    assert math_course["provider"] == "Acme Online Academy"
-    assert math_course["dual_enrollment_label"] == "Dual Enrollment"
+    response = client.get(
+        f"/api/v1/academics/transcript/{student.id}/",
+        HTTP_X_SCHOOL_ID=str(school.id),
+    )
+    assert response.status_code == 200, response.content
+    courses = [row for term in response.json()["terms"] for row in term["courses"]]
+    math = next(row for row in courses if row["course_code"] == "MATH-101")
+    assert math["provider"] == "Acme Online Academy"
+    assert math["dual_enrollment_label"] == "Dual Enrollment"
 
 
 def test_student_transcript_contract_includes_dual_enrollment_metadata():
     school = School.objects.create(name="Metadata School 2")
     user = _mk_user(school=school, email="director-metadata2@test.local")
     _assign_role(user=user, school=school, role_code="REGISTRAR")
-
     student = _seed_transcript_test_data(school=school)
-    section = Section.objects.filter(school_id=school.id, course__code="MATH-101").first()
-    assert section is not None
+    section = Section.objects.get(school_id=school.id, course__code="MATH-101")
 
     TranscriptEntry.objects.create(
         school_id=school.id,
@@ -288,15 +291,17 @@ def test_student_transcript_contract_includes_dual_enrollment_metadata():
 
     client = APIClient()
     client.force_authenticate(user)
-
-    resp = client.get(
+    response = client.get(
         f"/api/v1/academics/students/{student.id}/transcript/",
         HTTP_X_SCHOOL_ID=str(school.id),
     )
-    assert resp.status_code == 200, resp.content
-    data = resp.json()
-
-    all_courses = [c for year in data["school_years"] for term in year["terms"] for c in term["courses"]]
-    math_course = next(c for c in all_courses if c["course_code"] == "MATH-101")
-    assert math_course["provider"] == "Acme Online Academy"
-    assert math_course["dual_enrollment_label"] == "Dual Enrollment"
+    assert response.status_code == 200, response.content
+    courses = [
+        row
+        for year in response.json()["school_years"]
+        for term in year["terms"]
+        for row in term["courses"]
+    ]
+    math = next(row for row in courses if row["course_code"] == "MATH-101")
+    assert math["provider"] == "Acme Online Academy"
+    assert math["dual_enrollment_label"] == "Dual Enrollment"
