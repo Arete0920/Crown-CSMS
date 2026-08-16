@@ -1,3 +1,4 @@
+from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.db import transaction
 from django.http import Http404
 from django.shortcuts import get_object_or_404
@@ -46,9 +47,10 @@ def _require_grade_write_authority(request, school_id, section) -> None:
     if "TEACHER" not in roles:
         raise PermissionDenied("Grade write permission denied.")
 
-    staff = getattr(request.user, "staff", None)
-    if staff is None:
-        raise Http404()
+    try:
+        staff = request.user.staff
+    except (AttributeError, ObjectDoesNotExist):
+        raise Http404() from None
 
     if not TeacherAssignment.objects.filter(
         school_id=school_id,
@@ -129,6 +131,11 @@ def grade_entry_bulk_upsert(request, section_id, assignment_id):
                 {"detail": f"grades[{index}].student_id is required."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+        if "points_earned" not in row:
+            return Response(
+                {"detail": f"grades[{index}].points_earned is required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         student_key = str(student_id)
         if student_key in seen_student_ids:
@@ -140,7 +147,7 @@ def grade_entry_bulk_upsert(request, section_id, assignment_id):
 
         try:
             student = Student.objects.get(pk=student_id, school_id=school_id)
-        except (Student.DoesNotExist, ValueError, TypeError):
+        except (Student.DoesNotExist, ValidationError, ValueError, TypeError):
             return Response(
                 {"detail": f"grades[{index}].student_id is invalid for this section."},
                 status=status.HTTP_400_BAD_REQUEST,
@@ -153,11 +160,14 @@ def grade_entry_bulk_upsert(request, section_id, assignment_id):
             )
 
         value_serializer = GradeEntryUpdateSerializer(
-            data={"points_earned": row.get("points_earned")}
+            data={"points_earned": row["points_earned"]}
         )
         if not value_serializer.is_valid():
             return Response(
-                {"detail": f"grades[{index}].points_earned is invalid.", "errors": value_serializer.errors},
+                {
+                    "detail": f"grades[{index}].points_earned is invalid.",
+                    "errors": value_serializer.errors,
+                },
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
