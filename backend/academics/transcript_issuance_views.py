@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import base64
+import binascii
 import hashlib
 import io
 import json
@@ -282,7 +283,7 @@ class TranscriptIssuancePdfView(APIView):
 
         try:
             artifact = base64.b64decode(metadata.get("artifact_b64") or "", validate=True)
-        except (ValueError, TypeError):
+        except (binascii.Error, ValueError, TypeError):
             return JsonResponse({"detail": "Transcript artifact integrity verification failed."}, status=409)
         if not artifact or _sha256(artifact) != metadata.get("artifact_sha256"):
             return JsonResponse({"detail": "Transcript artifact integrity verification failed."}, status=409)
