@@ -9,7 +9,17 @@ from rest_framework.views import APIView
 from households.models import Student
 from households.scoping import get_request_school_id
 
-from .transcript_service import build_student_contract, build_transcript_snapshot
+from .transcript_service import (
+    build_student_contract,
+    build_transcript_snapshot,
+    compute_section_percent,
+)
+
+
+def _compute_section_final_percent(school_id, section_id, student_id):
+    """Compatibility wrapper for callers of the pre-refactor grading helper."""
+    value = compute_section_percent(school_id, section_id, student_id)
+    return float(value) if value is not None else None
 
 
 def _load_student(school_id, student_id: UUID):
