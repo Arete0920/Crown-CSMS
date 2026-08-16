@@ -1,21 +1,8 @@
 name: P0 Phase1 Integrity Gate
 
 on:
-  pull_request:
+  push:
     branches: [main]
-    paths:
-      - ".github/workflows/p0-phase1-integrity-gate.yml"
-      - "backend/**"
-      - "tools/verify_backend_gate.py"
-      - "tools/verify_pytest_gate.py"
-      - "frontend/dashboards/playwright.p0.config.ts"
-      - "tests/e2e/audit_logging.spec.ts"
-      - "tests/e2e/notifications_framework.spec.ts"
-      - "tests/e2e/document_file_framework.spec.ts"
-      - "tests/e2e/shared_frontend_shell.spec.ts"
-      - "tests/e2e/christian_pd_hub.spec.ts"
-      - "tests/e2e/crm_marketing.spec.ts"
-      - "tests/e2e/survey_sentiment.spec.ts"
   workflow_dispatch: {}
 
 permissions:
@@ -23,7 +10,7 @@ permissions:
 
 concurrency:
   group: p0-phase1-integrity-gate-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 jobs:
   backend-gates:
     runs-on: ubuntu-latest
