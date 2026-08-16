@@ -20,13 +20,14 @@ class TranscriptRouteProbeView(APIView):
                     "/api/v1/academics/transcript/{student_id}/",
                     "/api/v1/transcripts/students/{student_id}/",
                     "/api/v1/academics/students/{student_id}/transcript/",
+                    "/api/v1/academics/students/{student_id}/transcript/issuances/",
                 ],
             }
         )
 
 
 class TranscriptGenerateProbeView(APIView):
-    """Explicit non-404 transcript generation surface for gated checks."""
+    """Release-certification compatibility probe; this endpoint never issues a transcript."""
 
     permission_classes = [IsAuthenticated]
 
@@ -36,8 +37,12 @@ class TranscriptGenerateProbeView(APIView):
             return Response({"detail": "student_id is required"}, status=400)
         return Response(
             {
-                "detail": "Use canonical transcript endpoints for retrieval.",
+                "detail": "Release probe only; no transcript was issued.",
+                "probe_only": True,
                 "student_id": student_id,
+                "canonical_issuance": (
+                    f"/api/v1/academics/students/{student_id}/transcript/issuances/"
+                ),
             },
             status=202,
         )
