@@ -393,8 +393,8 @@ class TestCommit(TestCase):
         r = self._commit({"confirm": False})
         self.assertEqual(r.status_code, 400)
 
-    def test_commit_with_empty_awards_rejected(self):
-        # New session with empty awards_config
+    def test_commit_with_empty_awards_allowed(self):
+        # New session with an explicitly staged zero-award cycle.
         r = self.client.post(BASE_URL, **_headers(self.school.id))
         sid2 = r.data["session_id"]
         h = _headers(self.school.id)
@@ -402,7 +402,11 @@ class TestCommit(TestCase):
         self.client.post(f"{BASE_URL}{sid2}/buckets/", {"buckets": ["need"]}, format="json", **h)
         self.client.post(f"{BASE_URL}{sid2}/awards/", {"awards": []}, format="json", **h)
         r2 = self.client.post(f"{BASE_URL}{sid2}/commit/", {"confirm": True}, format="json", **h)
-        self.assertEqual(r2.status_code, 400)
+        self.assertEqual(r2.status_code, 200)
+        self.assertEqual(r2.data["status"], "committed")
+        self.assertEqual(r2.data["awards_created"], 0)
+        self.assertEqual(r2.data["awards_skipped"], 0)
+        self.assertEqual(r2.data["errors"], [])
 
     def test_commit_from_draft_rejected(self):
         r_new = self.client.post(BASE_URL, **_headers(self.school.id))
