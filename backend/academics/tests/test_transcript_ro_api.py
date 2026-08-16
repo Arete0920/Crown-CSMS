@@ -1,38 +1,42 @@
-"""
-API tests for Transcript Read-Only endpoint.
-"""
 import uuid
+
 import pytest
 from django.contrib.auth import get_user_model
-from django.core.management import call_command
 from rest_framework.test import APIClient
 
-from core.models import AcademicYear, School, Staff, UserRole
-from academics.models import Course, Enrollment, Section, Term, TranscriptEntry
-from households.models import Household, Student
+from academics.models import (
+    Assignment,
+    AssignmentCategory,
+    Course,
+    Enrollment,
+    Section,
+    Term,
+    TranscriptEntry,
+)
+from core.models import AcademicYear, School, UserRole
 from gradebook.models import GradeEntry
+from households.models import Household, Student
+
 
 pytestmark = pytest.mark.django_db
 
 
-def _mk_user(*, school: School, email: str):
-    """Create a test user for the school."""
+def _registrar_client(school):
     User = get_user_model()
-    return User.objects.create_user(
-        username=f"user-{uuid.uuid4()}",
-        email=email,
+    user = User.objects.create_user(
+        username=f"registrar-{uuid.uuid4()}",
+        email=f"registrar-{uuid.uuid4()}@test.local",
         password="test-pass",
         school=school,
     )
+    UserRole.objects.create(school=school, user=user, role_code="REGISTRAR")
+    client = APIClient()
+    client.force_authenticate(user)
+    return client
 
 
-def _assign_role(*, user, school: School, role_code: str):
-    """Assign a role to the user."""
-    UserRole.objects.create(school=school, user=user, role_code=role_code)
-
-
-def _seed_transcript_test_data(*, school: School):
-    """Create minimal transcript test data: 1 student, 2 terms, 2 sections, grades."""
+def _base_school():
+    school = School.objects.create(name="Transcript Test School")
     year = AcademicYear.objects.create(
         school=school,
         name="2026-2027",
@@ -40,263 +44,353 @@ def _seed_transcript_test_data(*, school: School):
         end_date="2027-06-10",
         is_current=True,
     )
-    term1 = Term.objects.create(
-        school_id=school.id,
-        academic_year=year,
-        code="2026-FALL",
-        name="Fall 2026",
-        school_year="2026-2027",
-        ordering=1,
-        active=True,
-    )
-    term2 = Term.objects.create(
-        school_id=school.id,
-        academic_year=year,
-        code="2027-SPRING",
-        name="Spring 2027",
-        school_year="2026-2027",
-        ordering=2,
-        active=True,
-    )
-    
-    course1 = Course.objects.create(school_id=school.id, code="MATH-101", name="Mathematics")
-    course2 = Course.objects.create(school_id=school.id, code="ELA-101", name="English Language Arts")
-    
-    section1 = Section.objects.create(
-        school_id=school.id,
-        course=course1,
-        term=term1.code,
-        term_ref=term1,
-        teacher_name="Teacher A",
-    )
-    section2 = Section.objects.create(
-        school_id=school.id,
-        course=course2,
-        term=term2.code,
-        term_ref=term2,
-        teacher_name="Teacher B",
-    )
-    
-    household = Household.objects.create(school_id=school.id, name="Test Household")
+    household = Household.objects.create(school_id=school.id, name="Transcript Household")
     student = Student.objects.create(
         school_id=school.id,
         household=household,
         first_name="Test",
         last_name="Student",
-        grade_level="3",
+        grade_level="9",
     )
-    
-    Enrollment.objects.create(school_id=school.id, section=section1, student=student)
-    Enrollment.objects.create(school_id=school.id, section=section2, student=student)
-    
-    # Add grades: MATH-101: 90/100 (A), ELA-101: 80/100 (B)
-    GradeEntry.objects.create(
+    return school, year, student
+
+
+def _section(*, school, year, student, code, term_code, term_name, ordering, credits="1.00"):
+    term = Term.objects.create(
         school_id=school.id,
-        section=section1,
-        student=student,
-        assignment_name="Test 1",
-        points_earned=90,
-        points_possible=100,
+        academic_year=year,
+        code=term_code,
+        name=term_name,
+        school_year=year.name,
+        ordering=ordering,
+        active=True,
     )
-    GradeEntry.objects.create(
+    course = Course.objects.create(
         school_id=school.id,
-        section=section2,
-        student=student,
-        assignment_name="Quiz 1",
-        points_earned=80,
-        points_possible=100,
+        code=code,
+        name=f"Course {code}",
+        credits=credits,
     )
-    
-    return student
+    section = Section.objects.create(
+        school_id=school.id,
+        course=course,
+        term=term.code,
+        term_ref=term,
+        teacher_name="Teacher",
+    )
+    Enrollment.objects.create(school_id=school.id, section=section, student=student)
+    return term, course, section
 
 
-def test_transcript_ro_404_for_unknown_student():
-    school = School.objects.create(name="Test School")
-    user = _mk_user(school=school, email="director@test.local")
-    _assign_role(user=user, school=school, role_code="REGISTRAR")
-    
-    client = APIClient()
-    client.force_authenticate(user)
-
-    unknown = uuid.uuid4()
-    resp = client.get(f"/api/v1/academics/transcript/{unknown}/", HTTP_X_SCHOOL_ID=str(school.id))
-    assert resp.status_code == 404
-
-
-def test_transcript_ro_returns_terms_and_courses_for_demo_student():
-    school = School.objects.create(name="Test School")
-    user = _mk_user(school=school, email="director@test.local")
-    _assign_role(user=user, school=school, role_code="REGISTRAR")
-    
-    student = _seed_transcript_test_data(school=school)
-    
-    client = APIClient()
-    client.force_authenticate(user)
-
-    resp = client.get(f"/api/v1/academics/transcript/{student.id}/", HTTP_X_SCHOOL_ID=str(school.id))
-    assert resp.status_code == 200, resp.content
-
-    data = resp.json()
-    assert "student" in data
-    assert data["student"]["student_id"] == str(student.id)
-    assert data["student"]["first_name"] == "Test"
-    assert data["student"]["last_name"] == "Student"
-    assert "terms" in data and isinstance(data["terms"], list)
-    assert len(data["terms"]) == 2  # 2 terms seeded
-
-    # Contract keys
-    t0 = data["terms"][0]
-    assert "term_code" in t0
-    assert "courses" in t0
-    assert len(t0["courses"]) >= 1
-    
-    # Verify course structure
-    c0 = t0["courses"][0]
-    assert "section_id" in c0
-    assert "course_code" in c0
-    assert "course_name" in c0
-    assert "teacher_name" in c0
-    assert "final_percent" in c0
-    assert "final_letter" in c0
-    assert "credits" in c0
-    
-    # Verify GPA fields exist
-    assert "term_gpa_mvp" in t0
-    assert "cumulative_gpa_mvp" in data
-    assert "notes" in data
-
-
-def test_transcript_ro_alias_returns_same_contract():
-    school = School.objects.create(name="Test School")
-    user = _mk_user(school=school, email="director@test.local")
-    _assign_role(user=user, school=school, role_code="REGISTRAR")
-
-    student = _seed_transcript_test_data(school=school)
-
-    client = APIClient()
-    client.force_authenticate(user)
-
-    resp = client.get(
-        f"/api/v1/transcripts/students/{student.id}/",
+def _ro(client, school, student):
+    return client.get(
+        f"/api/v1/academics/transcript/{student.id}/",
         HTTP_X_SCHOOL_ID=str(school.id),
     )
-    assert resp.status_code == 200, resp.content
-
-    data = resp.json()
-    assert data["student"]["student_id"] == str(student.id)
-    assert "terms" in data and isinstance(data["terms"], list)
 
 
-def test_student_transcript_contract_shape():
-    school = School.objects.create(name="Test School")
-    user = _mk_user(school=school, email="director@test.local")
-    _assign_role(user=user, school=school, role_code="REGISTRAR")
-
-    student = _seed_transcript_test_data(school=school)
-
-    client = APIClient()
-    client.force_authenticate(user)
-
-    resp = client.get(
+def _contract(client, school, student):
+    return client.get(
         f"/api/v1/academics/students/{student.id}/transcript/",
         HTTP_X_SCHOOL_ID=str(school.id),
     )
-    assert resp.status_code == 200, resp.content
-
-    data = resp.json()
-    assert data["student_id"] == str(student.id)
-    assert "student_name" in data
-    assert "school_years" in data and isinstance(data["school_years"], list)
-    assert data["school_years"], data
-    year0 = data["school_years"][0]
-    assert "school_year" in year0
-    assert "terms" in year0 and isinstance(year0["terms"], list)
-    term0 = year0["terms"][0]
-    assert "term_id" in term0
-    assert "term_name" in term0
-    assert "courses" in term0 and isinstance(term0["courses"], list)
-    course0 = term0["courses"][0]
-    assert "section_id" in course0
-    assert "course_code" in course0
-    assert "course_name" in course0
-    assert "credits" in course0
-    assert "teacher" in course0
-    assert "final_grade" in course0
-    assert "status" in course0
 
 
+def test_unknown_student_is_concealed():
+    school, _year, _student = _base_school()
+    client = _registrar_client(school)
+    response = client.get(
+        f"/api/v1/academics/transcript/{uuid.uuid4()}/",
+        HTTP_X_SCHOOL_ID=str(school.id),
+    )
+    assert response.status_code == 404
 
 
-
-
-def test_transcript_ro_includes_dual_enrollment_metadata():
-    school = School.objects.create(name="Metadata School")
-    user = _mk_user(school=school, email="director-metadata@test.local")
-    _assign_role(user=user, school=school, role_code="REGISTRAR")
-
-    student = _seed_transcript_test_data(school=school)
-    section = Section.objects.filter(school_id=school.id, course__code="MATH-101").first()
-    assert section is not None
-
+def test_finalized_transcript_entry_is_authoritative_for_grade_credit_and_gpa():
+    school, year, student = _base_school()
+    term, course, section = _section(
+        school=school,
+        year=year,
+        student=student,
+        code="MATH-101",
+        term_code="FALL",
+        term_name="Fall",
+        ordering=1,
+        credits="0.50",
+    )
+    GradeEntry.objects.create(
+        school_id=school.id,
+        section=section,
+        student=student,
+        assignment_name="Current Work",
+        points_earned=50,
+        points_possible=100,
+    )
     TranscriptEntry.objects.create(
         school_id=school.id,
         student=student,
-        course=section.course,
-        term=section.term_ref,
+        course=course,
+        term=term,
         credit_value="1.00",
         final_letter_grade="A",
-        final_percentage="90.00",
+        final_percentage="95.00",
         gpa_points="4.00",
         provider="Acme Online Academy",
         dual_enrollment_label="Dual Enrollment",
     )
 
-    client = APIClient()
-    client.force_authenticate(user)
+    response = _ro(_registrar_client(school), school, student)
+    assert response.status_code == 200, response.content
+    data = response.json()
+    row = data["terms"][0]["courses"][0]
 
-    resp = client.get(f"/api/v1/academics/transcript/{student.id}/", HTTP_X_SCHOOL_ID=str(school.id))
-    assert resp.status_code == 200, resp.content
-    data = resp.json()
+    assert row["final_percent"] == 95.0
+    assert row["final_letter"] == "A"
+    assert row["credits"] == "1.00"
+    assert row["earned_credits"] == "1.00"
+    assert row["gpa_points"] == "4.00"
+    assert row["gpa_included"] is True
+    assert row["record_status"] == "final"
+    assert row["provider"] == "Acme Online Academy"
+    assert row["dual_enrollment_label"] == "Dual Enrollment"
+    assert data["cumulative_gpa"] == "4.00"
 
-    all_courses = [c for term in data["terms"] for c in term["courses"]]
-    math_course = next(c for c in all_courses if c["course_code"] == "MATH-101")
-    assert math_course["provider"] == "Acme Online Academy"
-    assert math_course["dual_enrollment_label"] == "Dual Enrollment"
 
-
-def test_student_transcript_contract_includes_dual_enrollment_metadata():
-    school = School.objects.create(name="Metadata School 2")
-    user = _mk_user(school=school, email="director-metadata2@test.local")
-    _assign_role(user=user, school=school, role_code="REGISTRAR")
-
-    student = _seed_transcript_test_data(school=school)
-    section = Section.objects.filter(school_id=school.id, course__code="MATH-101").first()
-    assert section is not None
-
+def test_cumulative_and_term_gpa_are_credit_weighted_across_finalized_rows():
+    school, year, student = _base_school()
+    term1, course1, _section1 = _section(
+        school=school,
+        year=year,
+        student=student,
+        code="MATH-101",
+        term_code="FALL",
+        term_name="Fall",
+        ordering=1,
+        credits="0.50",
+    )
+    term2, course2, _section2 = _section(
+        school=school,
+        year=year,
+        student=student,
+        code="ELA-101",
+        term_code="SPRING",
+        term_name="Spring",
+        ordering=2,
+        credits="1.00",
+    )
     TranscriptEntry.objects.create(
         school_id=school.id,
         student=student,
-        course=section.course,
-        term=section.term_ref,
-        credit_value="1.00",
+        course=course1,
+        term=term1,
+        credit_value="0.50",
         final_letter_grade="A",
-        final_percentage="90.00",
+        final_percentage="94.00",
         gpa_points="4.00",
-        provider="Acme Online Academy",
+    )
+    TranscriptEntry.objects.create(
+        school_id=school.id,
+        student=student,
+        course=course2,
+        term=term2,
+        credit_value="1.00",
+        final_letter_grade="B",
+        final_percentage="84.00",
+        gpa_points="3.00",
+    )
+
+    data = _ro(_registrar_client(school), school, student).json()
+    assert data["cumulative_gpa"] == "3.33"
+    assert data["attempted_credits"] == "1.50"
+    assert data["earned_credits"] == "1.50"
+    assert [term["term_gpa"] for term in data["terms"]] == ["4.00", "3.00"]
+
+
+def test_failed_final_course_counts_attempted_credit_but_not_earned_credit():
+    school, year, student = _base_school()
+    term, course, _section_obj = _section(
+        school=school,
+        year=year,
+        student=student,
+        code="SCI-101",
+        term_code="FALL",
+        term_name="Fall",
+        ordering=1,
+        credits="1.00",
+    )
+    TranscriptEntry.objects.create(
+        school_id=school.id,
+        student=student,
+        course=course,
+        term=term,
+        credit_value="1.00",
+        final_letter_grade="F",
+        final_percentage="55.00",
+        gpa_points="0.00",
+    )
+
+    data = _ro(_registrar_client(school), school, student).json()
+    assert data["attempted_credits"] == "1.00"
+    assert data["earned_credits"] == "0.00"
+    assert data["cumulative_gpa"] == "0.00"
+
+
+def test_in_progress_grade_uses_gradebook_and_course_credit_but_not_official_gpa_totals():
+    school, year, student = _base_school()
+    _term, _course, section = _section(
+        school=school,
+        year=year,
+        student=student,
+        code="HIST-101",
+        term_code="FALL",
+        term_name="Fall",
+        ordering=1,
+        credits="0.50",
+    )
+    GradeEntry.objects.create(
+        school_id=school.id,
+        section=section,
+        student=student,
+        assignment_name="Exam",
+        points_earned=85,
+        points_possible=100,
+    )
+
+    data = _ro(_registrar_client(school), school, student).json()
+    row = data["terms"][0]["courses"][0]
+    assert row["record_status"] == "in_progress"
+    assert row["final_percent"] == 85.0
+    assert row["final_letter"] == "B"
+    assert row["credits"] == "0.50"
+    assert row["attempted_credits"] == "0.00"
+    assert row["earned_credits"] == "0.00"
+    assert row["gpa_included"] is False
+    assert data["cumulative_gpa"] is None
+
+
+def test_weighted_gradebook_fallback_is_used_for_in_progress_row():
+    school, year, student = _base_school()
+    _term, _course, section = _section(
+        school=school,
+        year=year,
+        student=student,
+        code="SCI-201",
+        term_code="FALL",
+        term_name="Fall",
+        ordering=1,
+    )
+    quizzes = AssignmentCategory.objects.create(
+        school_id=school.id,
+        section=section,
+        name="Quizzes",
+        weight_percent="40.00",
+        sort_order=1,
+        is_active=True,
+    )
+    exams = AssignmentCategory.objects.create(
+        school_id=school.id,
+        section=section,
+        name="Exams",
+        weight_percent="60.00",
+        sort_order=2,
+        is_active=True,
+    )
+    quiz = Assignment.objects.create(
+        school_id=school.id,
+        section=section,
+        category=quizzes,
+        name="Quiz",
+        points_possible="100.00",
+        is_published=True,
+    )
+    exam = Assignment.objects.create(
+        school_id=school.id,
+        section=section,
+        category=exams,
+        name="Exam",
+        points_possible="100.00",
+        is_published=True,
+    )
+    GradeEntry.objects.create(
+        school_id=school.id,
+        section=section,
+        student=student,
+        assignment=quiz,
+        assignment_name=quiz.name,
+        points_earned=100,
+        points_possible=100,
+    )
+    GradeEntry.objects.create(
+        school_id=school.id,
+        section=section,
+        student=student,
+        assignment=exam,
+        assignment_name=exam.name,
+        points_earned=50,
+        points_possible=100,
+    )
+
+    row = _ro(_registrar_client(school), school, student).json()["terms"][0]["courses"][0]
+    assert row["final_percent"] == 70.0
+    assert row["final_letter"] == "C"
+    assert row["record_status"] == "in_progress"
+
+
+def test_no_grade_row_remains_in_progress_without_invented_grade():
+    school, year, student = _base_school()
+    _section(
+        school=school,
+        year=year,
+        student=student,
+        code="ART-101",
+        term_code="FALL",
+        term_name="Fall",
+        ordering=1,
+        credits="0.25",
+    )
+    row = _ro(_registrar_client(school), school, student).json()["terms"][0]["courses"][0]
+    assert row["record_status"] == "in_progress"
+    assert row["final_percent"] is None
+    assert row["final_letter"] is None
+    assert row["credits"] == "0.25"
+
+
+def test_both_transcript_contracts_share_authoritative_grade_and_credit_values():
+    school, year, student = _base_school()
+    term, course, _section_obj = _section(
+        school=school,
+        year=year,
+        student=student,
+        code="MATH-301",
+        term_code="FALL",
+        term_name="Fall",
+        ordering=1,
+        credits="0.50",
+    )
+    TranscriptEntry.objects.create(
+        school_id=school.id,
+        student=student,
+        course=course,
+        term=term,
+        credit_value="0.75",
+        final_letter_grade="A",
+        final_percentage="97.00",
+        gpa_points="4.00",
+        provider="Partner College",
         dual_enrollment_label="Dual Enrollment",
     )
+    client = _registrar_client(school)
 
-    client = APIClient()
-    client.force_authenticate(user)
+    ro = _ro(client, school, student).json()
+    contract = _contract(client, school, student).json()
+    ro_row = ro["terms"][0]["courses"][0]
+    contract_row = contract["school_years"][0]["terms"][0]["courses"][0]
 
-    resp = client.get(
-        f"/api/v1/academics/students/{student.id}/transcript/",
-        HTTP_X_SCHOOL_ID=str(school.id),
-    )
-    assert resp.status_code == 200, resp.content
-    data = resp.json()
-
-    all_courses = [c for year in data["school_years"] for term in year["terms"] for c in term["courses"]]
-    math_course = next(c for c in all_courses if c["course_code"] == "MATH-101")
-    assert math_course["provider"] == "Acme Online Academy"
-    assert math_course["dual_enrollment_label"] == "Dual Enrollment"
+    assert "term_gpa_mvp" not in ro["terms"][0]
+    assert "cumulative_gpa_mvp" not in ro
+    assert ro["cumulative_gpa"] == contract["cumulative_gpa"] == "4.00"
+    assert ro_row["credits"] == contract_row["credits"] == "0.75"
+    assert ro_row["final_letter"] == contract_row["final_grade"] == "A"
+    assert ro_row["final_percent"] == contract_row["final_percent"] == 97.0
+    assert ro_row["provider"] == contract_row["provider"] == "Partner College"
+    assert ro_row["dual_enrollment_label"] == contract_row["dual_enrollment_label"] == "Dual Enrollment"

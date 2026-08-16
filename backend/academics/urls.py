@@ -20,6 +20,11 @@ from .transcript_access_views import (
     AuthorizedStudentTranscriptContractView,
     AuthorizedTranscriptROView,
 )
+from .transcript_issuance_views import (
+    TranscriptIssuanceCollectionView,
+    TranscriptIssuanceDetailView,
+    TranscriptIssuancePdfView,
+)
 from crown_api.views_academics import section_attendance_submit
 from .school_profile_views import SchoolProfileView
 from .views import (
@@ -49,7 +54,6 @@ router.register(r"academics/courses", CourseViewSet, basename="academics-courses
 router.register(r"academics/sections", SectionViewSet, basename="academics-sections")
 router.register(r"grade-levels", GradeLevelViewSet, basename="grade-levels")
 
-# Curriculum endpoints
 router.register(
     r"academics/curriculum-sources",
     CurriculumSourceViewSet,
@@ -57,15 +61,9 @@ router.register(
 )
 router.register(r"academics/units", UnitViewSet, basename="units")
 router.register(r"academics/lessons", LessonViewSet, basename="lessons")
-router.register(
-    r"academics/objectives", PublisherObjectiveViewSet, basename="objectives"
-)
-
-# Submission & Grade endpoints
+router.register(r"academics/objectives", PublisherObjectiveViewSet, basename="objectives")
 router.register(r"academics/submissions", SubmissionViewSet, basename="submissions")
 router.register(r"academics/grades", GradeViewSet, basename="grades")
-
-# Mastery & Transcript endpoints
 router.register(r"academics/mastery", MasteryRecordViewSet, basename="mastery")
 router.register(
     r"academics/transcript-entries",
@@ -75,11 +73,7 @@ router.register(
 
 urlpatterns = [
     path("", include(router.urls)),
-    path(
-        "school/",
-        SchoolProfileView.as_view(),
-        name="school-profile",
-    ),
+    path("school/", SchoolProfileView.as_view(), name="school-profile"),
     path(
         "academics/transcript/<uuid:student_id>/",
         AuthorizedTranscriptROView.as_view(),
@@ -89,6 +83,26 @@ urlpatterns = [
         "transcripts/students/<uuid:student_id>/",
         AuthorizedTranscriptROView.as_view(),
         name="transcript-ro-alias",
+    ),
+    path(
+        "academics/students/<uuid:student_id>/transcript/",
+        AuthorizedStudentTranscriptContractView.as_view(),
+        name="academics-student-transcript",
+    ),
+    path(
+        "academics/students/<uuid:student_id>/transcript/issuances/",
+        TranscriptIssuanceCollectionView.as_view(),
+        name="academics-transcript-issuance-create",
+    ),
+    path(
+        "academics/transcript-issuances/<uuid:issuance_id>/",
+        TranscriptIssuanceDetailView.as_view(),
+        name="academics-transcript-issuance-detail",
+    ),
+    path(
+        "academics/transcript-issuances/<uuid:issuance_id>/pdf/",
+        TranscriptIssuancePdfView.as_view(),
+        name="academics-transcript-issuance-pdf",
     ),
     path(
         "academics/students/<uuid:student_id>/sections/",
@@ -111,12 +125,6 @@ urlpatterns = [
         name="academics-section-attendance-submit",
     ),
     path(
-        "academics/students/<uuid:student_id>/transcript/",
-        AuthorizedStudentTranscriptContractView.as_view(),
-        name="academics-student-transcript",
-    ),
-    # Assignment Category endpoints
-    path(
         "academics/sections/<uuid:section_id>/categories/",
         category_list_create,
         name="section-categories",
@@ -131,7 +139,6 @@ urlpatterns = [
         category_update_delete,
         name="category-detail",
     ),
-    # Assignment endpoints
     path(
         "academics/sections/<uuid:section_id>/assignments/",
         assignment_list_create,
@@ -142,7 +149,6 @@ urlpatterns = [
         assignment_update_delete,
         name="assignment-detail",
     ),
-    # Lesson Plan endpoints (daily plan per section/date)
     path(
         "academics/sections/<uuid:section_id>/lesson-plans/",
         lesson_plan_list_create,
@@ -153,7 +159,6 @@ urlpatterns = [
         lesson_plan_detail,
         name="lesson-plan-detail",
     ),
-    # Lesson Resource endpoints
     path(
         "academics/lessons/<uuid:lesson_id>/resources/",
         lesson_resource_list_create,
