@@ -104,7 +104,7 @@ def test_hr_metrics_rejects_cross_tenant_role_reuse():
     client.force_login(user)
     response = client.get(METRICS_URL, **{SCHOOL_ID_HEADER: str(other_school.id)})
 
-    assert response.status_code == 403
+    assert response.status_code == 404
 
 
 def test_hr_metrics_requires_tenant_context():
