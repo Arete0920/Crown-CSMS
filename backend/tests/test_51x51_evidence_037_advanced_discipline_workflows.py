@@ -215,7 +215,7 @@ class TestModule037TenantIsolation(TestCase):
         self.assertIn(str(inc.id), ids_a, "Expected school A incident in school A listing.")
 
         r_b = client.get(DISCIPLINE_INCIDENTS_URL, **_hdr(self.school_b.id))
-        self.assertEqual(r_b.status_code, 403)
+        self.assertEqual(r_b.status_code, 404)
 
     def test_non_staff_cross_tenant_header_denied(self):
         """Non-staff user with school B identity cannot access school A tenant header."""
@@ -396,13 +396,13 @@ class TestModule037APIIncidentCRUD(TestCase):
         r = client.get(f"{DISCIPLINE_INCIDENTS_URL}{inc.pk}/", **_hdr(self.school.id))
         self.assertEqual(r.status_code, 200)
 
-    def test_incident_detail_wrong_school_returns_403(self):
+    def test_incident_detail_wrong_school_returns_404(self):
         other_school = _school("other")
         inc = _incident(self.school, self.student, actor=self.staff)
         client = APIClient()
         client.force_authenticate(self.staff)
         r = client.get(f"{DISCIPLINE_INCIDENTS_URL}{inc.pk}/", **_hdr(other_school.id))
-        self.assertEqual(r.status_code, 403, f"Expected 403 without Student Care authority in other tenant, got {r.status_code}.")
+        self.assertEqual(r.status_code, 404, f"Expected nondisclosing 404 for unauthorized tenant pivot, got {r.status_code}.")
 
     def test_action_post_appends_to_audit_trail(self):
         inc = _incident(self.school, self.student, actor=self.staff)
