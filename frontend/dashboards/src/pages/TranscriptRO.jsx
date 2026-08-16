@@ -1,8 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { fetchStudents, fetchTranscript } from "../api/academics";
 import { downloadOfficialTranscriptPdf, issueOfficialTranscript } from "../api/transcript";
+import { getCurrentUserRoles } from "../auth/roleAdapter";
 import CrownLayout from "../components/crown/CrownLayout.jsx";
 import ErrorBanner from "../components/ui/ErrorBanner.jsx";
+
+const TRANSCRIPT_ISSUER_ROLES = new Set(["head_of_school", "registrar", "school_admin", "super_admin"]);
 
 export function TranscriptRO() {
   const [students, setStudents] = useState([]);
@@ -13,6 +16,10 @@ export function TranscriptRO() {
   const [issuing, setIssuing] = useState(false);
   const [issuance, setIssuance] = useState(null);
   const [error, setError] = useState(null);
+  const canIssueOfficial = useMemo(
+    () => getCurrentUserRoles().some((role) => TRANSCRIPT_ISSUER_ROLES.has(role)),
+    [],
+  );
 
   useEffect(() => {
     fetchStudents({ limit: 200 })
@@ -49,7 +56,7 @@ export function TranscriptRO() {
   };
 
   const handleIssueOfficial = async () => {
-    if (!selectedStudentId) return;
+    if (!selectedStudentId || !canIssueOfficial) return;
     setIssuing(true);
     setError(null);
     try {
@@ -93,13 +100,15 @@ export function TranscriptRO() {
             ))}
           </select>
           <button className="crown-btn" onClick={() => window.print()} disabled={!transcript}>Print Working Copy</button>
-          <button
-            className="crown-btn crown-btn-primary"
-            onClick={handleIssueOfficial}
-            disabled={!transcript || issuing}
-          >
-            {issuing ? "Issuing..." : "Issue Official PDF"}
-          </button>
+          {canIssueOfficial ? (
+            <button
+              className="crown-btn crown-btn-primary"
+              onClick={handleIssueOfficial}
+              disabled={!transcript || issuing}
+            >
+              {issuing ? "Issuing..." : "Issue Official PDF"}
+            </button>
+          ) : null}
         </div>
         {issuance ? (
           <div role="status" style={{ fontSize: 13, color: "var(--crown-muted)", marginBottom: 12 }}>
