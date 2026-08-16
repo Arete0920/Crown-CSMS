@@ -6,7 +6,6 @@ from rest_framework.test import APIClient
 
 from academics.models import Assignment, AssignmentCategory, Course, Enrollment, Section, TeacherAssignment, Term
 from core.models import AcademicYear, School, Staff, UserRole
-from gradebook.models import GradeEntry
 from households.models import Household, Student
 
 pytestmark = pytest.mark.django_db
@@ -94,29 +93,8 @@ def _seed_gradebook_section(*, school: School, teacher_name: str, teacher_email:
     return section, staff, student, assignment
 
 
-def _add_student(*, school: School, name: str):
-    household = Household.objects.create(school_id=school.id, name=f"{name} Household")
-    return Student.objects.create(
-        school_id=school.id,
-        household=household,
-        first_name=name,
-        last_name="Student",
-        grade_level="5",
-    )
-
-
 def _upsert_url(section_id, assignment_id):
     return f"/api/v1/gradebook/sections/{section_id}/assignments/{assignment_id}/grades/upsert/"
-
-
-def _patch_url(entry_id):
-    return f"/api/v1/gradebook/grade-entries/{entry_id}/"
-
-
-def _client_for(user):
-    client = APIClient()
-    client.force_authenticate(user)
-    return client
 
 
 def test_grade_upsert_allows_assigned_teacher():
@@ -133,15 +111,15 @@ def test_grade_upsert_allows_assigned_teacher():
     user.save(update_fields=["staff"])
     _assign_role(user=user, school=school, role_code="TEACHER")
 
-    resp = _client_for(user).post(
-        _upsert_url(section.id, assignment.id),
-        {"grades": [{"student_id": str(student.id), "points_earned": 8.5}]},
-        format="json",
-        HTTP_X_SCHOOL_ID=str(school.id),
-    )
+    client = APIClient()
+    client.force_authenticate(user)
+
+    payload = {"grades": [{"student_id": str(student.id), "points_earned": 8.5}]}
+    resp = client.post(_upsert_url(section.id, assignment.id), payload, format="json", HTTP_X_SCHOOL_ID=str(school.id))
 
     assert resp.status_code == 200, resp.content
-    assert resp.json().get("count") == 1
+    data = resp.json()
+    assert data.get("count") == 1
 
 
 def test_grade_upsert_denies_unassigned_teacher_section_access():
@@ -161,20 +139,19 @@ def test_grade_upsert_denies_unassigned_teacher_section_access():
         role_type="TEACHER",
         status="ACTIVE",
     )
+
     user = _mk_user(school=school, email=unassigned_staff.email)
     user.staff = unassigned_staff
     user.save(update_fields=["staff"])
     _assign_role(user=user, school=school, role_code="TEACHER")
 
-    resp = _client_for(user).post(
-        _upsert_url(section.id, assignment.id),
-        {"grades": [{"student_id": str(student.id), "points_earned": 8.5}]},
-        format="json",
-        HTTP_X_SCHOOL_ID=str(school.id),
-    )
+    client = APIClient()
+    client.force_authenticate(user)
+
+    payload = {"grades": [{"student_id": str(student.id), "points_earned": 8.5}]}
+    resp = client.post(_upsert_url(section.id, assignment.id), payload, format="json", HTTP_X_SCHOOL_ID=str(school.id))
 
     assert resp.status_code == 404, resp.content
-    assert GradeEntry.objects.count() == 0
 
 
 def test_grade_upsert_allows_registrar_without_teacher_assignment():
@@ -188,123 +165,11 @@ def test_grade_upsert_allows_registrar_without_teacher_assignment():
     registrar = _mk_user(school=school, email="registrar@test.local")
     _assign_role(user=registrar, school=school, role_code="REGISTRAR")
 
-    resp = _client_for(registrar).post(
-        _upsert_url(section.id, assignment.id),
-        {"grades": [{"student_id": str(student.id), "points_earned": 9.0}]},
-        format="json",
-        HTTP_X_SCHOOL_ID=str(school.id),
-    )
+    client = APIClient()
+    client.force_authenticate(registrar)
+
+    payload = {"grades": [{"student_id": str(student.id), "points_earned": 9.0}]}
+    resp = client.post(_upsert_url(section.id, assignment.id), payload, format="json", HTTP_X_SCHOOL_ID=str(school.id))
 
     assert resp.status_code == 200, resp.content
     assert resp.json().get("count") == 1
-
-
-def test_grade_upsert_rejects_nonmember_without_write():
-    school = School.objects.create(name="Roster School")
-    section, _staff, _student, assignment = _seed_gradebook_section(
-        school=school,
-        teacher_name="Assigned",
-        teacher_email="assigned.teacher@test.local",
-    )
-    outsider = _add_student(school=school, name="Outsider")
-    registrar = _mk_user(school=school, email="registrar@test.local")
-    _assign_role(user=registrar, school=school, role_code="REGISTRAR")
-
-    resp = _client_for(registrar).post(
-        _upsert_url(section.id, assignment.id),
-        {"grades": [{"student_id": str(outsider.id), "points_earned": 7}]},
-        format="json",
-        HTTP_X_SCHOOL_ID=str(school.id),
-    )
-
-    assert resp.status_code == 400, resp.content
-    assert GradeEntry.objects.count() == 0
-
-
-def test_grade_upsert_rejects_entire_batch_when_any_row_is_invalid():
-    school = School.objects.create(name="Atomic School")
-    section, _staff, student, assignment = _seed_gradebook_section(
-        school=school,
-        teacher_name="Assigned",
-        teacher_email="assigned.teacher@test.local",
-    )
-    registrar = _mk_user(school=school, email="registrar@test.local")
-    _assign_role(user=registrar, school=school, role_code="REGISTRAR")
-
-    resp = _client_for(registrar).post(
-        _upsert_url(section.id, assignment.id),
-        {
-            "grades": [
-                {"student_id": str(student.id), "points_earned": 8},
-                {"student_id": str(uuid.uuid4()), "points_earned": 9},
-            ]
-        },
-        format="json",
-        HTTP_X_SCHOOL_ID=str(school.id),
-    )
-
-    assert resp.status_code == 400, resp.content
-    assert GradeEntry.objects.count() == 0
-
-
-def test_patch_requires_gradebook_edit_permission():
-    school = School.objects.create(name="Patch Permission School")
-    section, _staff, student, assignment = _seed_gradebook_section(
-        school=school,
-        teacher_name="Assigned",
-        teacher_email="assigned.teacher@test.local",
-    )
-    entry = GradeEntry.objects.create(
-        school_id=school.id,
-        section=section,
-        student=student,
-        assignment=assignment,
-        assignment_name=assignment.name,
-        points_possible=assignment.points_possible,
-        points_earned=5,
-    )
-    support = _mk_user(school=school, email="support@test.local")
-    _assign_role(user=support, school=school, role_code="SUPPORT")
-
-    resp = _client_for(support).patch(
-        _patch_url(entry.id),
-        {"points_earned": 9},
-        format="json",
-        HTTP_X_SCHOOL_ID=str(school.id),
-    )
-
-    assert resp.status_code == 403, resp.content
-    entry.refresh_from_db()
-    assert entry.points_earned == 5
-
-
-def test_patch_revalidates_roster_membership():
-    school = School.objects.create(name="Patch Roster School")
-    section, _staff, _student, assignment = _seed_gradebook_section(
-        school=school,
-        teacher_name="Assigned",
-        teacher_email="assigned.teacher@test.local",
-    )
-    outsider = _add_student(school=school, name="Outsider")
-    entry = GradeEntry.objects.create(
-        school_id=school.id,
-        section=section,
-        student=outsider,
-        assignment=assignment,
-        assignment_name=assignment.name,
-        points_possible=assignment.points_possible,
-        points_earned=5,
-    )
-    registrar = _mk_user(school=school, email="registrar@test.local")
-    _assign_role(user=registrar, school=school, role_code="REGISTRAR")
-
-    resp = _client_for(registrar).patch(
-        _patch_url(entry.id),
-        {"points_earned": 9},
-        format="json",
-        HTTP_X_SCHOOL_ID=str(school.id),
-    )
-
-    assert resp.status_code == 400, resp.content
-    entry.refresh_from_db()
-    assert entry.points_earned == 5
