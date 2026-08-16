@@ -68,14 +68,15 @@ def compute_section_percent(school_id, section_id, student_id) -> Decimal | None
     if total_weight != Decimal("100"):
         return _simple_section_percent(school_id, section_id, student_id)
 
-    assignments = {
-        row.id: row
-        for row in Assignment.objects.filter(
+    assignment_rows = list(
+        Assignment.objects.filter(
             school_id=school_id,
             section_id=section_id,
             is_published=True,
         )
-    }
+    )
+    assignments_by_id = {row.id: row for row in assignment_rows}
+    assignments_by_name = {row.name: row for row in assignment_rows}
     buckets: dict[UUID, dict[str, Decimal]] = {
         row.id: {
             "earned": ZERO,
@@ -89,7 +90,9 @@ def compute_section_percent(school_id, section_id, student_id) -> Decimal | None
         section_id=section_id,
         student_id=student_id,
     ):
-        assignment = assignments.get(entry.assignment_id)
+        assignment = assignments_by_id.get(entry.assignment_id)
+        if assignment is None:
+            assignment = assignments_by_name.get(entry.assignment_name)
         if assignment is None:
             continue
         bucket = buckets.get(assignment.category_id)
@@ -156,6 +159,8 @@ def _term_identity(section):
 def _course_row(*, school_id, student_id, section, transcript_entry):
     finalized = _is_finalized(transcript_entry)
     calculated_percent = compute_section_percent(school_id, section.id, student_id)
+    provider = (getattr(transcript_entry, "provider", "") or "").strip()
+    dual_label = (getattr(transcript_entry, "dual_enrollment_label", "") or "").strip()
 
     if finalized:
         final_percent = (
@@ -165,21 +170,13 @@ def _course_row(*, school_id, student_id, section, transcript_entry):
         )
         final_letter = (transcript_entry.final_letter_grade or "").strip().upper() or letter_from_percent(final_percent)
         credits = Decimal(str(transcript_entry.credit_value or 0))
-        gpa_points = (
-            Decimal(str(transcript_entry.gpa_points))
-            if final_letter in LETTER_POINTS
-            else None
-        )
-        provider = (transcript_entry.provider or "").strip()
-        dual_label = (transcript_entry.dual_enrollment_label or "").strip()
+        gpa_points = Decimal(str(transcript_entry.gpa_points)) if final_letter in LETTER_POINTS else None
         status = "final"
     else:
         final_percent = calculated_percent
         final_letter = letter_from_percent(calculated_percent)
         credits = Decimal(str(getattr(section.course, "credits", 0) or 0))
         gpa_points = LETTER_POINTS.get(final_letter) if final_letter else None
-        provider = ""
-        dual_label = ""
         status = "in_progress"
 
     gpa_included = bool(finalized and final_letter in LETTER_POINTS and credits > 0)
