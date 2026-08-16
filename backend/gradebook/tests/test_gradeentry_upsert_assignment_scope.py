@@ -4,7 +4,7 @@ import pytest
 from django.contrib.auth import get_user_model
 from rest_framework.test import APIClient
 
-from academics.models import Assignment, AssignmentCategory, Course, Section, TeacherAssignment, Term
+from academics.models import Assignment, AssignmentCategory, Course, Enrollment, Section, TeacherAssignment, Term
 from core.models import AcademicYear, School, Staff, UserRole
 from households.models import Household, Student
 
@@ -70,6 +70,7 @@ def _seed_gradebook_section(*, school: School, teacher_name: str, teacher_email:
         last_name="One",
         grade_level="5",
     )
+    Enrollment.objects.create(school_id=school.id, section=section, student=student)
 
     category = AssignmentCategory.objects.create(
         school_id=school.id,
@@ -150,11 +151,10 @@ def test_grade_upsert_denies_unassigned_teacher_section_access():
     payload = {"grades": [{"student_id": str(student.id), "points_earned": 8.5}]}
     resp = client.post(_upsert_url(section.id, assignment.id), payload, format="json", HTTP_X_SCHOOL_ID=str(school.id))
 
-    # _get_section_or_404 hides unauthorized section visibility behind 404.
     assert resp.status_code == 404, resp.content
 
 
-def test_grade_upsert_allows_admin_without_teacher_assignment():
+def test_grade_upsert_allows_registrar_without_teacher_assignment():
     school = School.objects.create(name="Scope School")
     section, _assigned_staff, student, assignment = _seed_gradebook_section(
         school=school,
@@ -162,11 +162,11 @@ def test_grade_upsert_allows_admin_without_teacher_assignment():
         teacher_email="assigned.teacher@test.local",
     )
 
-    admin_user = _mk_user(school=school, email="admin@test.local")
-    _assign_role(user=admin_user, school=school, role_code="ADMIN")
+    registrar = _mk_user(school=school, email="registrar@test.local")
+    _assign_role(user=registrar, school=school, role_code="REGISTRAR")
 
     client = APIClient()
-    client.force_authenticate(admin_user)
+    client.force_authenticate(registrar)
 
     payload = {"grades": [{"student_id": str(student.id), "points_earned": 9.0}]}
     resp = client.post(_upsert_url(section.id, assignment.id), payload, format="json", HTTP_X_SCHOOL_ID=str(school.id))
