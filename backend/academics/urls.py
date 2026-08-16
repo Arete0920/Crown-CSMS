@@ -20,6 +20,10 @@ from .transcript_access_views import (
     AuthorizedStudentTranscriptContractView,
     AuthorizedTranscriptROView,
 )
+from .transcript_official_views import (
+    OfficialTranscriptDownloadView,
+    OfficialTranscriptIssueView,
+)
 from crown_api.views_academics import section_attendance_submit
 from .school_profile_views import SchoolProfileView
 from .views import (
@@ -89,6 +93,16 @@ urlpatterns = [
         "transcripts/students/<uuid:student_id>/",
         AuthorizedTranscriptROView.as_view(),
         name="transcript-ro-alias",
+    ),
+    path(
+        "academics/students/<uuid:student_id>/transcript/issue/",
+        OfficialTranscriptIssueView.as_view(),
+        name="academics-transcript-issue",
+    ),
+    path(
+        "academics/transcript-issuances/<uuid:issuance_id>/pdf/",
+        OfficialTranscriptDownloadView.as_view(),
+        name="academics-transcript-issuance-pdf",
     ),
     path(
         "academics/students/<uuid:student_id>/sections/",
