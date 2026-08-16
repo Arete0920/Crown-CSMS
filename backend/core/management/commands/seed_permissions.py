@@ -25,6 +25,7 @@ PERMISSIONS = [
     ("admissions.edit", "Advance, waitlist, or deny applicants"),
     ("academics.view", "View course enrollment, grades, attendance"),
     ("academics.edit", "Enter grades and attendance records"),
+    ("gradebook.edit", "Create or modify grades within authorized sections"),
     ("attendance.configure", "Configure canonical tenant attendance policies and codes"),
     ("admin.view", "View administration dashboard"),
     ("board.view", "View board / governance dashboard"),
@@ -75,7 +76,7 @@ PERMISSIONS = [
 ROLE_PERMISSIONS: dict = {
     "HEAD_OF_SCHOOL": [
         "admin.view", "board.view", "finance.view", "billing.view", "admissions.view", "financial_aid.view",
-        "academics.view", "teacher.view", "registrar.view", "academic_support.view", "library.view", "rosters.edit",
+        "academics.view", "gradebook.edit", "teacher.view", "registrar.view", "academic_support.view", "library.view", "rosters.edit",
         "attendance.configure", "scheduling.view", "scheduling.configure", "scheduling.edit", "scheduling.publish",
         "extended_care.view", "pd.view", "communications.view", "health.view", "counseling.view", "food.view",
         "athletics.view", "fine_arts.view", "spiritual_life.view", "student_services.view", "office.view", "it.view",
@@ -85,8 +86,8 @@ ROLE_PERMISSIONS: dict = {
     ],
     "FINANCE_DIRECTOR": ["finance.view", "finance.edit", "finance.period_lock", "billing.view", "financial_aid.view", "integrity.view", "metrics.view", "director.actions"],
     "AID_DIRECTOR": ["financial_aid.view", "financial_aid.edit", "financial_aid.view_rationale", "admissions.view", "metrics.view"],
-    "REGISTRAR": ["admissions.view", "admissions.edit", "academics.view", "registrar.view", "classroom.view", "metrics.view", "rosters.edit", "attendance.configure", "scheduling.view", "scheduling.configure", "scheduling.edit", "scheduling.publish"],
-    "TEACHER": ["teacher.view", "academics.view", "academics.edit", "classroom.view"],
+    "REGISTRAR": ["admissions.view", "admissions.edit", "academics.view", "gradebook.edit", "registrar.view", "classroom.view", "metrics.view", "rosters.edit", "attendance.configure", "scheduling.view", "scheduling.configure", "scheduling.edit", "scheduling.publish"],
+    "TEACHER": ["teacher.view", "academics.view", "academics.edit", "gradebook.edit", "classroom.view"],
     "SUPPORT": ["health.view", "metrics.view", "academic_support.view", "student_services.view"],
     "PARENT": ["parent.view"],
     "STUDENT": ["student.view"],
