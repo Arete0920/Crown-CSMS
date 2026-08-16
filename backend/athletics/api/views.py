@@ -16,7 +16,7 @@ from athletics.models import (
     TeamCoach,
     TeamRoster,
 )
-from athletics.api.permissions import IsAthleticDirector, IsCoachOrAD
+from athletics.api.permissions import IsAthleticDirector, IsCoachOrAD, has_athletics_view
 from athletics.api.serializers import (
     AthleteClearanceSerializer,
     AthleteEligibilitySerializer,
@@ -126,12 +126,11 @@ class EventViewSet(viewsets.ModelViewSet, SchoolScopedQuerysetMixin):
         school_id = self.get_school_id()
         qs = Event.objects.select_related("team", "facility").filter(school_id=school_id)
 
-        user = self.request.user
-        # ADs and staff see all events; coaches see only their teams' events.
-        is_ad = getattr(user, "is_staff", False) or getattr(user, "is_superuser", False)
-        if not is_ad:
+        # Persistent CROWN Athletics authority sees all tenant events. Coaches
+        # without that grant are restricted to their verified active assignments.
+        if not has_athletics_view(self.request):
             coached_team_ids = TeamCoach.objects.filter(
-                school_id=school_id, user=user, is_active=True
+                school_id=school_id, user=self.request.user, is_active=True
             ).values_list("team_id", flat=True)
             qs = qs.filter(team_id__in=coached_team_ids)
 

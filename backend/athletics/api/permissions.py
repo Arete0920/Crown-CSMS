@@ -3,46 +3,64 @@ from __future__ import annotations
 
 from rest_framework.permissions import BasePermission
 
+from core.permissions import user_has_permission
 
-def _is_staff_or_superuser(request) -> bool:
-    """True if the authenticated user has Django staff or superuser flag."""
+
+def _request_school(request):
+    """Resolve the already-authorized tenant for an Athletics permission check."""
+    context = getattr(request, "crown_tenant", None)
+    school = getattr(context, "school", None)
+    if school is None:
+        school = getattr(request, "school", None) or getattr(request, "tenant_school", None)
+    if school is not None:
+        return school
+
+    from core.models import School
+    from households.scoping import get_request_school_id
+
+    school_id = get_request_school_id(request, required=True)
+    return School.objects.filter(pk=school_id).first()
+
+
+def has_athletics_view(request) -> bool:
+    """Return whether the principal has persistent tenant-scoped Athletics authority."""
     user = getattr(request, "user", None)
-    return bool(
-        user
-        and getattr(user, "is_authenticated", False)
-        and (getattr(user, "is_staff", False) or getattr(user, "is_superuser", False))
-    )
+    if not (user and getattr(user, "is_authenticated", False)):
+        return False
+
+    school = _request_school(request)
+    if school is None:
+        return False
+    return user_has_permission(user, "athletics.view", school=school)
 
 
-def _role(request) -> str:
-    return (request.headers.get("X-Role") or "").lower()
+def _is_active_coach(request) -> bool:
+    user = getattr(request, "user", None)
+    if not (user and getattr(user, "is_authenticated", False)):
+        return False
+
+    school = _request_school(request)
+    if school is None:
+        return False
+
+    from athletics.models import TeamCoach
+
+    return TeamCoach.objects.filter(
+        school=school,
+        user=user,
+        is_active=True,
+    ).exists()
 
 
 class IsAthleticDirector(BasePermission):
-    """
-    Grants access to authenticated staff/superusers or users presenting
-    X-Role: athletic_director.
-    """
+    """Require persistent tenant-scoped CROWN Athletics authority."""
 
     def has_permission(self, request, view) -> bool:
-        user = getattr(request, "user", None)
-        if not (user and getattr(user, "is_authenticated", False)):
-            return False
-        if _is_staff_or_superuser(request):
-            return True
-        return _role(request) == "athletic_director"
+        return has_athletics_view(request)
 
 
 class IsCoachOrAD(BasePermission):
-    """
-    Grants access to authenticated staff/superusers or users presenting
-    X-Role: coach or X-Role: athletic_director.
-    """
+    """Allow persistent Athletics authority or a verified active coach assignment."""
 
     def has_permission(self, request, view) -> bool:
-        user = getattr(request, "user", None)
-        if not (user and getattr(user, "is_authenticated", False)):
-            return False
-        if _is_staff_or_superuser(request):
-            return True
-        return _role(request) in ("athletic_director", "coach")
+        return has_athletics_view(request) or _is_active_coach(request)
