@@ -22,6 +22,8 @@ LETTER_POINTS = {
     "F": Decimal("0.00"),
 }
 PASSING_LETTERS = frozenset({"A", "B", "C", "D"})
+PASS_NO_GPA = frozenset({"P"})
+EXCLUDED_FINAL_MARKS = frozenset({"I", "W"})
 
 
 def letter_from_percent(value: Decimal | None) -> str | None:
@@ -156,6 +158,16 @@ def _term_identity(section):
     return term_id, term_code, term_name, school_year, ordering
 
 
+def _final_gpa_points(transcript_entry: TranscriptEntry, final_letter: str | None) -> Decimal | None:
+    standard = LETTER_POINTS.get(final_letter)
+    if standard is None:
+        return None
+    stored = Decimal(str(transcript_entry.gpa_points or 0))
+    if stored != ZERO or final_letter == "F":
+        return stored
+    return standard
+
+
 def _course_row(*, school_id, student_id, section, transcript_entry):
     finalized = _is_finalized(transcript_entry)
     calculated_percent = compute_section_percent(school_id, section.id, student_id)
@@ -170,7 +182,7 @@ def _course_row(*, school_id, student_id, section, transcript_entry):
         )
         final_letter = (transcript_entry.final_letter_grade or "").strip().upper() or letter_from_percent(final_percent)
         credits = Decimal(str(transcript_entry.credit_value or 0))
-        gpa_points = Decimal(str(transcript_entry.gpa_points)) if final_letter in LETTER_POINTS else None
+        gpa_points = _final_gpa_points(transcript_entry, final_letter)
         status = "final"
     else:
         final_percent = calculated_percent
@@ -180,8 +192,16 @@ def _course_row(*, school_id, student_id, section, transcript_entry):
         status = "in_progress"
 
     gpa_included = bool(finalized and final_letter in LETTER_POINTS and credits > 0)
-    earned_credits = credits if finalized and final_letter in PASSING_LETTERS else ZERO
-    attempted_credits = credits if finalized else ZERO
+    if finalized and final_letter in PASSING_LETTERS.union(PASS_NO_GPA):
+        earned_credits = credits
+    else:
+        earned_credits = ZERO
+    if finalized and final_letter not in EXCLUDED_FINAL_MARKS and (
+        final_letter in LETTER_POINTS or final_letter in PASS_NO_GPA
+    ):
+        attempted_credits = credits
+    else:
+        attempted_credits = ZERO
 
     term_id, term_code, term_name, school_year, ordering = _term_identity(section)
     return {
@@ -301,9 +321,11 @@ def build_transcript_snapshot(*, school_id, student) -> dict[str, Any]:
             sum((Decimal(row["earned_credits"]) for row in rows), ZERO)
         ),
         "notes": [
-            "GPA and earned-credit totals include finalized transcript entries only.",
-            "In-progress course grades are calculated from the current gradebook and are excluded from official GPA totals until finalized.",
-            "Dual-enrollment/provider labels do not change GPA points unless finalized transcript data explicitly records different GPA points.",
+            "GPA totals include finalized A-F transcript entries only and are credit-weighted.",
+            "A-D and P earn credit; F earns no credit but remains in attempted GPA credits; I and W are excluded from attempted, earned, and GPA totals.",
+            "In-progress course grades are calculated from the current gradebook and are excluded from official GPA and credit totals until finalized.",
+            "A nonzero finalized gpa_points value is an explicit override of the standard A=4, B=3, C=2, D=1, F=0 scale.",
+            "Dual-enrollment/provider labels do not change GPA points unless finalized transcript data explicitly records an override.",
         ],
     }
 
