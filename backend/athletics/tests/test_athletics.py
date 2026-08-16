@@ -14,7 +14,7 @@ from django.contrib.auth import get_user_model
 from django.urls import reverse
 from rest_framework.test import APIClient
 
-from core.models import Family, School, Student
+from core.models import CrownPermission, Family, RolePermission, School, Student, UserRole
 from athletics.models import (
     AthleteClearance,
     AthleteEligibility,
@@ -40,12 +40,28 @@ def _mk_school(name="Crown Academy"):
     return School.objects.create(name=name)
 
 
+def _grant_athletics_view(user, school):
+    role_code = f"ath_dir_{uuid.uuid4().hex[:8]}"
+    UserRole.objects.create(user=user, school=school, role_code=role_code)
+    permission, _ = CrownPermission.objects.get_or_create(code="athletics.view")
+    RolePermission.objects.get_or_create(role_code=role_code, permission=permission)
+
+
+def _bind_tenant_without_athletics_grant(user, school):
+    UserRole.objects.create(
+        user=user,
+        school=school,
+        role_code=f"ath_user_{uuid.uuid4().hex[:8]}",
+    )
+
+
 def _mk_staff(school):
     u = User.objects.create_user(
         username=f"staff_{uuid.uuid4().hex[:8]}",
         password=TEST_AUTH_SECRET,
-        is_staff=True,
+        is_staff=False,
     )
+    _grant_athletics_view(u, school)
     return u
 
 
@@ -74,15 +90,16 @@ def _ad_client(school):
     user = _mk_staff(school)
     c = APIClient()
     c.force_authenticate(user=user)
-    c.credentials(HTTP_X_SCHOOL_ID=str(school.id), HTTP_X_ROLE="athletic_director")
+    c.credentials(HTTP_X_SCHOOL_ID=str(school.id))
     return c, user
 
 
 def _coach_client(school):
     user = _mk_user("coach")
+    _bind_tenant_without_athletics_grant(user, school)
     c = APIClient()
     c.force_authenticate(user=user)
-    c.credentials(HTTP_X_SCHOOL_ID=str(school.id), HTTP_X_ROLE="coach")
+    c.credentials(HTTP_X_SCHOOL_ID=str(school.id))
     return c, user
 
 
@@ -178,10 +195,10 @@ class TestPermissions:
         r = c.get("/api/athletics/events/")
         assert r.status_code in (401, 403)
 
-    def test_coach_can_read_events(self):
+    def test_unassigned_coach_cannot_read_events(self):
         c, _ = _coach_client(self.school)
         r = c.get("/api/athletics/events/")
-        assert r.status_code == 200
+        assert r.status_code == 403
 
     def test_coach_blocked_from_sports_create(self):
         c, _ = _coach_client(self.school)
@@ -549,7 +566,7 @@ class TestTenantIsolation:
     def test_invalid_school_id_returns_not_found(self):
         c = APIClient()
         c.force_authenticate(user=_mk_staff(self.school_a))
-        c.credentials(HTTP_X_SCHOOL_ID=str(uuid.uuid4()), HTTP_X_ROLE="athletic_director")
+        c.credentials(HTTP_X_SCHOOL_ID=str(uuid.uuid4()))
         r = c.get("/api/athletics/sports/")
         assert r.status_code in (400, 404)
 
@@ -586,6 +603,5 @@ class TestCoachScoping:
         r = client_ad.get("/api/athletics/events/")
         assert r.status_code == 200
         assert len(r.data) == 2
-
 
 
