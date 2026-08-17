@@ -3,6 +3,19 @@ import { authenticatedJson } from "../../utils/authClient";
 
 const sandboxEnabled = String(import.meta.env.VITE_SANDBOX_MODE || "") === "1";
 
+function hasStudentSelfServicePayload(payload) {
+  return Boolean(
+    payload
+    && payload.student
+    && typeof payload.student.name === "string"
+    && Array.isArray(payload.schedule)
+    && Array.isArray(payload.learning_tasks)
+    && Array.isArray(payload.attendance)
+    && Array.isArray(payload.communications)
+    && payload.privileged_actions
+  );
+}
+
 export default function SandboxStudentSelfService() {
   const [data, setData] = useState(null);
   const [error, setError] = useState("");
@@ -11,7 +24,15 @@ export default function SandboxStudentSelfService() {
     if (!sandboxEnabled) return;
     let active = true;
     authenticatedJson("/api/v1/sandbox/student/self-service/")
-      .then((payload) => { if (active) setData(payload); })
+      .then((payload) => {
+        if (!active) return;
+        if (!hasStudentSelfServicePayload(payload)) {
+          setError("Unable to load student self-service data.");
+          setData(null);
+          return;
+        }
+        setData(payload);
+      })
       .catch((err) => { if (active) setError(err?.response?.data?.detail || err?.message || "Unable to load student self-service data."); });
     return () => { active = false; };
   }, []);
