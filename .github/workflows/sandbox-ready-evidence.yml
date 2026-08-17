@@ -247,11 +247,21 @@ jobs:
 
       - name: Run full completion truth gate (advisory)
         if: steps.changes.outputs.docs_only != 'true'
-        continue-on-error: true
         timeout-minutes: 10
         shell: pwsh
         run: |
-          ./scripts/execution/106_crown_full_completion_truth_gate.ps1 -Deep *>&1 | Tee-Object -FilePath "$env:RUNNER_TEMP/full-completion-truth.log"
+          $ErrorActionPreference = "Continue"
+          if (Get-Variable -Name PSNativeCommandUseErrorActionPreference -ErrorAction SilentlyContinue) {
+            $PSNativeCommandUseErrorActionPreference = $false
+          }
+          & pwsh -NoProfile -File ./scripts/execution/106_crown_full_completion_truth_gate.ps1 -Deep *>&1 | Tee-Object -FilePath "$env:RUNNER_TEMP/full-completion-truth.log"
+          $truthGateExit = $LASTEXITCODE
+          if ($null -eq $truthGateExit) { $truthGateExit = 0 }
+          Write-Host "FULL_COMPLETION_TRUTH_EXIT_CODE=$truthGateExit"
+          if ($truthGateExit -ne 0) {
+            Write-Warning "Full completion truth diagnostic reported review-required state; downstream hard proof gates will continue."
+          }
+          exit 0
 
       - name: Upload full completion truth diagnostic log
         if: always() && steps.changes.outputs.docs_only != 'true'
