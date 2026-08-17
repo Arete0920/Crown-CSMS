@@ -1,6 +1,8 @@
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
+from core.permissions import require_permission
+
 from .api import (
     DonorViewSet,
     CampaignViewSet,
@@ -76,22 +78,30 @@ router.register(r"seat-holds", SeatHoldViewSet, basename="advancement-seat-holds
 router.register(r"deliverables", SponsorshipDeliverableViewSet, basename="advancement-deliverables")
 router.register(r"impressions", SponsorImpressionViewSet, basename="advancement-impressions")
 
+# Functional endpoints predate the ViewSet permission boundary. Keep their
+# implementation intact while enforcing the same persistent tenant-scoped
+# authority at the URL boundary. This avoids broadening self-service checkout
+# routes into staff-only behavior.
+_advancement_summary_authorized = require_permission("advancement.view")(advancement_summary)
+_advancement_pledge_cancel_authorized = require_permission("advancement.edit")(pledge_cancel)
+_advancement_qr_checkin_authorized = require_permission("advancement.edit")(qr_checkin)
+
 urlpatterns = [
-    path("summary/", advancement_summary, name="advancement-summary"),
+    path("summary/", _advancement_summary_authorized, name="advancement-summary"),
     path("metrics/", advancement_metrics, name="advancement-metrics"),
     path("purchase/ticket/", authenticated_post_payment_on_hold, name="advancement-purchase-ticket"),
     path("purchase/store/", authenticated_post_payment_on_hold, name="advancement-purchase-store"),
     path("gift/checkout/", authenticated_post_payment_on_hold, name="advancement-gift-checkout"),
-    path("gift/<uuid:gift_id>/mark-paid/", authenticated_post_payment_on_hold, name="advancement-gift-mark-paid"),
+    path("gift/<uuid:gift_id>/mark-paid/", advancement_edit_post_payment_on_hold, name="advancement-gift-mark-paid"),
     path("pledges/create/", pledge_create, name="advancement-pledge-create"),
-    path("pledges/<uuid:pledge_id>/cancel/", pledge_cancel, name="advancement-pledge-cancel"),
+    path("pledges/<uuid:pledge_id>/cancel/", _advancement_pledge_cancel_authorized, name="advancement-pledge-cancel"),
     path("sponsorship/checkout/", authenticated_post_payment_on_hold, name="advancement-sponsorship-checkout"),
     path(
         "sponsorship/<uuid:agreement_id>/mark-paid/",
-        authenticated_post_payment_on_hold,
+        advancement_edit_post_payment_on_hold,
         name="advancement-sponsorship-mark-paid",
     ),
-    path("qr-checkin/", qr_checkin, name="advancement-qr-checkin"),
+    path("qr-checkin/", _advancement_qr_checkin_authorized, name="advancement-qr-checkin"),
     path("moves/transition/", moves_transition, name="advancement-moves-transition"),
     path("seating/set-layout/", seating_set_layout, name="advancement-seating-set-layout"),
     path("seating/hold/", seating_hold, name="advancement-seating-hold"),
