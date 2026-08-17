@@ -1,7 +1,6 @@
 from rest_framework import viewsets
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.exceptions import PermissionDenied
-from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from django.db.models import Count
 
@@ -49,7 +48,7 @@ class IncidentViewSet(viewsets.ModelViewSet):
 
 @extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["GET"])
-@permission_classes([IsAuthenticated])
+@permission_classes([CrownModulePermission("safety.view")])
 def safety_metrics(request):
     school = _require_school(request)
     qs = IncidentReport.objects.filter(school_id=school.id)
