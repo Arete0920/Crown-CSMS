@@ -1,4 +1,4 @@
-"""Regression tests for the Founder/Product Owner external-payment hold."""
+"""Regression tests for Advancement payment holds and privileged route authority."""
 
 import uuid
 from types import SimpleNamespace
@@ -35,9 +35,7 @@ class ExternalPaymentHoldRouteTest(SimpleTestCase):
             ("advancement-purchase-ticket", {}),
             ("advancement-purchase-store", {}),
             ("advancement-gift-checkout", {}),
-            ("advancement-gift-mark-paid", {"gift_id": self.sample_id}),
             ("advancement-sponsorship-checkout", {}),
-            ("advancement-sponsorship-mark-paid", {"agreement_id": self.sample_id}),
         ]
 
         for route_name, kwargs in held_routes:
@@ -46,11 +44,19 @@ class ExternalPaymentHoldRouteTest(SimpleTestCase):
                 self.assertIs(match.func, authenticated_post_payment_on_hold)
                 self.assert_methods(match.func, allowed={"post"})
 
-    def test_advancement_permission_routes_keep_original_methods(self):
-        edit_match = resolve(reverse("advancement-seating-purchase-held"))
-        self.assertIs(edit_match.func, advancement_edit_post_payment_on_hold)
-        self.assert_methods(edit_match.func, allowed={"post"})
+    def test_privileged_payment_marking_routes_require_advancement_edit(self):
+        edit_routes = [
+            ("advancement-gift-mark-paid", {"gift_id": self.sample_id}),
+            ("advancement-sponsorship-mark-paid", {"agreement_id": self.sample_id}),
+            ("advancement-seating-purchase-held", {}),
+        ]
+        for route_name, kwargs in edit_routes:
+            with self.subTest(route_name=route_name):
+                match = resolve(reverse(route_name, kwargs=kwargs))
+                self.assertIs(match.func, advancement_edit_post_payment_on_hold)
+                self.assert_methods(match.func, allowed={"post"})
 
+    def test_advancement_view_permission_routes_keep_original_methods(self):
         post_routes = [
             ("advancement-seating-checkout", {}),
             ("advancement-best-available-checkout", {}),
@@ -67,6 +73,25 @@ class ExternalPaymentHoldRouteTest(SimpleTestCase):
         self.assertIs(status_match.func, advancement_view_get_payment_on_hold)
         self.assert_methods(status_match.func, allowed={"get"})
 
+    def test_privileged_nonpayment_routes_fail_closed_without_persistent_permission(self):
+        routes = [
+            ("get", "advancement-summary", {}),
+            ("post", "advancement-pledge-cancel", {"pledge_id": self.sample_id}),
+            ("post", "advancement-qr-checkin", {}),
+        ]
+        user = SimpleNamespace(is_authenticated=True)
+        school = SimpleNamespace(id=self.sample_id)
+
+        with patch("core.permissions.user_has_permission", return_value=False):
+            for method, route_name, kwargs in routes:
+                with self.subTest(route_name=route_name):
+                    route = reverse(route_name, kwargs=kwargs)
+                    request = getattr(self.factory, method)(route, data={})
+                    request.user = user
+                    request.school = school
+                    response = resolve(route).func(request, **kwargs)
+                    self.assertEqual(response.status_code, 403)
+
     def test_provider_webhook_is_not_exposed(self):
         route = reverse("advancement-stripe-webhook")
         match = resolve(route)
@@ -79,7 +104,6 @@ class ExternalPaymentHoldRouteTest(SimpleTestCase):
     def test_provider_neutral_reservation_and_read_routes_remain_available(self):
         allowed_routes = [
             ("advancement-pledge-create", {}),
-            ("advancement-pledge-cancel", {"pledge_id": self.sample_id}),
             ("advancement-seating-availability", {}),
             ("advancement-seating-hold-strict", {}),
             ("advancement-section-prices", {"event_id": self.sample_id}),
