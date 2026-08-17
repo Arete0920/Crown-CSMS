@@ -1,27 +1,34 @@
 # CROWN Known Limitations and Release Disposition
 
-**Last reconciled:** 2026-08-09  
-**Certified backend:** `ce12c9536ec85346b2446018fa8bfe27edb3ffa0`  
-**Immutable tag:** `prod-deploy-20260808-ce12c95`  
-**Controlling authority:** GitHub issue #1619
+**Last reconciled:** 2026-08-17  
+**Controlling authority:** `docs/CURRENT_RELEASE_STATUS.md` and Crown-CSMS issue #14
 
-## Certified-scope limits
+## Evidence boundary
 
-- Certification is bounded to the exact backend, dashboard source, deployment runs, Heritage tenant, personas, routes, and retained evidence in `docs/CURRENT_RELEASE_STATUS.md`.
-- Auditor is not represented in the current 18-row matrix.
-- Current development `main` is not automatically the deployed identity.
-- Source presence does not establish completion of every optional integration or future capability.
-- External payment processing is not selected, contracted, enabled, or certified.
+- The exact GitHub `main` commit being handed off is the current source identity; predecessor tags and historical certification SHAs are not current authority.
+- Repository/source certification does not by itself establish a production deployment or runtime identity.
+- External payment processing is not selected, contracted, enabled, or certified and remains fail closed.
+- Legal, regulatory, tax, accounting, insurance, privacy, accessibility, and contractual conclusions require appropriate qualified review.
 
-## Disclosed successor and maturity work
+## Accepted residual and successor-controlled work
 
-- measured rollback and isolated operational-backup restore;
-- exhaustive credential rotation, revocation, failed-rotation recovery, and break-glass;
-- expanded monitoring escalation and incident tabletop;
-- vendor, DPA, region, subprocessor, jurisdiction, and contractual reconciliation;
-- correction, export, deletion, legal-hold, and restored-backup lifecycle exercises;
-- deferred historical rewrite of the retired key;
-- payment-provider implementation and activation;
-- buyer-controlled account creation, transfer, and seller-access removal.
+The following are not to be silently represented as completed merely because the repository is transferred:
+
+- production deployment/runtime identity where no exact source-to-runtime proof has been established;
+- successor-controlled account creation, access transfer, credential/recovery-factor rotation, and seller-access revocation;
+- clean-clone deployment, monitoring, rollback, restore, and incident exercises where operational infrastructure is part of the transfer;
+- payment-provider selection, implementation, certification, settlement/refund/dispute operations, and activation;
+- vendor, DPA, region, subprocessor, jurisdiction, and contractual reconciliation requiring qualified owner/legal review;
+- any product capability explicitly tracked as a post-handoff enhancement or bounded integration rather than a release-blocking defect.
+
+## Product-scope disclosure
+
+Little Lambs currently requires explicit product-authority reconciliation beyond treating the surface as an Aftercare alias. Do not represent a distinct daycare product authority as complete unless issue #81 or successor evidence establishes it.
+
+Communications integrations that depend on external Microsoft 365/Teams, SMS-provider, tenant credentials, consent policy, or provider configuration must be verified in the successor's actual environment before representing those external delivery paths as operational.
+
+## Security and tenant boundary
+
+Known release-blocking authorization, tenant-isolation, and sensitive-data defects discovered during final repository reconciliation must be closed by merged current-main repairs and exact-main evidence before a production-ready repository claim. Open issues retained after handoff must clearly identify whether they are accepted residual architecture/integration work, process improvement, or an actual unresolved production blocker.
 
 CROWN is not represented as FERPA certified, COPPA certified, regulator approved, universally compliant, or legally approved for every intended market.
