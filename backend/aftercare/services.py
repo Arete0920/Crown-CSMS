@@ -28,7 +28,12 @@ def cents_to_amount(cents: int) -> float:
     return float(cents) / 100.0
 
 
-def combine_local(d: date, t: time) -> datetime:
+def combine_local(d: date, t: time | str) -> datetime:
+    if isinstance(t, str):
+        try:
+            t = time.fromisoformat(t)
+        except ValueError as exc:
+            raise ValueError(f"Invalid configured extended-care time: {t!r}") from exc
     return timezone.make_aware(datetime.combine(d, t))
 
 
