@@ -4,7 +4,7 @@ from __future__ import annotations
 from django.http import Http404
 from rest_framework import mixins, viewsets
 from rest_framework.decorators import action
-from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.response import Response
 
 from athletics.models import (
@@ -207,12 +207,32 @@ class EventViewSet(viewsets.ModelViewSet, SchoolScopedQuerysetMixin):
         _require_same_school(serializer.validated_data.get("team"), school_id, "team")
         _require_same_school(serializer.validated_data.get("facility"), school_id, "facility")
 
+    def _require_team_mutation_authority(self, serializer):
+        if has_athletics_view(self.request):
+            return
+
+        team = serializer.validated_data.get("team")
+        if team is None and serializer.instance is not None:
+            team = serializer.instance.team
+        if team is None:
+            raise PermissionDenied("A team assignment is required for coach event changes.")
+
+        if not TeamCoach.objects.filter(
+            school_id=self.get_school_id(),
+            team=team,
+            user=self.request.user,
+            is_active=True,
+        ).exists():
+            raise PermissionDenied("Coaches may change events only for teams they are actively assigned to.")
+
     def perform_create(self, serializer):
         self._validate_relations(serializer)
+        self._require_team_mutation_authority(serializer)
         serializer.save(school_id=self.get_school_id())
 
     def perform_update(self, serializer):
         self._validate_relations(serializer)
+        self._require_team_mutation_authority(serializer)
         serializer.save()
 
     @action(detail=False, methods=["get"])
