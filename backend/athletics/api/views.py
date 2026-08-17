@@ -31,8 +31,6 @@ from athletics.api.serializers import (
     TeamSerializer,
 )
 from core.models import Student
-
-# Crown canonical tenant helper
 from households.scoping import get_request_school_id
 
 
@@ -61,6 +59,26 @@ def _user_belongs_to_school(user, school_id) -> bool:
         .distinct()[:2]
     )
     return len(school_ids) == 1 and school_ids[0] == school_id
+
+
+def _coached_team_ids(request, school_id):
+    return TeamCoach.objects.filter(
+        school_id=school_id,
+        user=request.user,
+        is_active=True,
+    ).values_list("team_id", flat=True)
+
+
+def _require_coach_student_authority(request, school_id, student):
+    if has_athletics_view(request):
+        return
+    if student is None or not TeamRoster.objects.filter(
+        school_id=school_id,
+        student=student,
+        team_id__in=_coached_team_ids(request, school_id),
+        left_at__isnull=True,
+    ).exists():
+        raise PermissionDenied("Coaches may access athletes only on teams they are actively assigned to.")
 
 
 class SchoolScopedQuerysetMixin:
@@ -140,13 +158,18 @@ class TeamRosterViewSet(viewsets.ModelViewSet, SchoolScopedQuerysetMixin):
 
     def _validate_relations(self, serializer):
         school_id = self.get_school_id()
-        _require_same_school(serializer.validated_data.get("team"), school_id, "team")
-        _require_same_school(serializer.validated_data.get("student"), school_id, "student")
+        team = serializer.validated_data.get("team")
+        student = serializer.validated_data.get("student")
+        if getattr(serializer, "instance", None) is not None:
+            if team is None:
+                team = serializer.instance.team
+            if student is None:
+                student = serializer.instance.student
+        _require_same_school(team, school_id, "team")
+        _require_same_school(student, school_id, "student")
 
     def perform_create(self, serializer):
         self._validate_relations(serializer)
-        # NOTE: Phase 2 — add ledger charge hook here when finance.services
-        # exposes a stable post_charge(school_id, student_id, amount_cents, ...) API.
         serializer.save(school_id=self.get_school_id())
 
     def perform_update(self, serializer):
@@ -166,8 +189,14 @@ class TeamCoachViewSet(viewsets.ModelViewSet, SchoolScopedQuerysetMixin):
 
     def _validate_relations(self, serializer):
         school_id = self.get_school_id()
-        _require_same_school(serializer.validated_data.get("team"), school_id, "team")
+        team = serializer.validated_data.get("team")
         user = serializer.validated_data.get("user")
+        if getattr(serializer, "instance", None) is not None:
+            if team is None:
+                team = serializer.instance.team
+            if user is None:
+                user = serializer.instance.user
+        _require_same_school(team, school_id, "team")
         if user is not None and not _user_belongs_to_school(user, school_id):
             raise ValidationError({"user": "Coach user must belong unambiguously to the requested school."})
 
@@ -187,58 +216,44 @@ class EventViewSet(viewsets.ModelViewSet, SchoolScopedQuerysetMixin):
     def get_queryset(self):
         school_id = self.get_school_id()
         qs = Event.objects.select_related("team", "facility").filter(school_id=school_id)
-
-        # Persistent CROWN Athletics authority sees all tenant events. Coaches
-        # without that grant are restricted to their verified active assignments.
         if not has_athletics_view(self.request):
-            coached_team_ids = TeamCoach.objects.filter(
-                school_id=school_id, user=self.request.user, is_active=True
-            ).values_list("team_id", flat=True)
-            qs = qs.filter(team_id__in=coached_team_ids)
-
+            qs = qs.filter(team_id__in=_coached_team_ids(self.request, school_id))
         team_id = self.request.query_params.get("team_id")
         if team_id:
             qs = qs.filter(team_id=team_id)
-
         return qs.order_by("starts_at")
 
     def _validate_relations(self, serializer):
         school_id = self.get_school_id()
-        _require_same_school(serializer.validated_data.get("team"), school_id, "team")
-        _require_same_school(serializer.validated_data.get("facility"), school_id, "facility")
-
-    def _require_team_mutation_authority(self, serializer):
-        if has_athletics_view(self.request):
-            return
-
         team = serializer.validated_data.get("team")
-        if team is None and serializer.instance is not None:
-            team = serializer.instance.team
-        if team is None:
-            raise PermissionDenied("A team assignment is required for coach event changes.")
-
-        if not TeamCoach.objects.filter(
-            school_id=self.get_school_id(),
-            team=team,
-            user=self.request.user,
-            is_active=True,
-        ).exists():
-            raise PermissionDenied("Coaches may change events only for teams they are actively assigned to.")
+        facility = serializer.validated_data.get("facility")
+        if getattr(serializer, "instance", None) is not None:
+            if team is None:
+                team = serializer.instance.team
+            if "facility" not in serializer.validated_data:
+                facility = serializer.instance.facility
+        _require_same_school(team, school_id, "team")
+        _require_same_school(facility, school_id, "facility")
+        if not has_athletics_view(self.request):
+            if team is None or not TeamCoach.objects.filter(
+                school_id=school_id,
+                team=team,
+                user=self.request.user,
+                is_active=True,
+            ).exists():
+                raise PermissionDenied("Coaches may change events only for teams they are actively assigned to.")
 
     def perform_create(self, serializer):
         self._validate_relations(serializer)
-        self._require_team_mutation_authority(serializer)
         serializer.save(school_id=self.get_school_id())
 
     def perform_update(self, serializer):
         self._validate_relations(serializer)
-        self._require_team_mutation_authority(serializer)
         serializer.save()
 
     @action(detail=False, methods=["get"])
     def calendar(self, request):
-        qs = self.get_queryset()
-        return Response(self.get_serializer(qs, many=True).data)
+        return Response(self.get_serializer(self.get_queryset(), many=True).data)
 
 
 class AthleteClearanceViewSet(
@@ -251,7 +266,14 @@ class AthleteClearanceViewSet(
     permission_classes = [IsCoachOrAD]
 
     def get_queryset(self):
-        return self.filter_school(AthleteClearance.objects.select_related("student"))
+        qs = self.filter_school(AthleteClearance.objects.select_related("student"))
+        if not has_athletics_view(self.request):
+            qs = qs.filter(
+                student__team_memberships__school_id=self.get_school_id(),
+                student__team_memberships__team_id__in=_coached_team_ids(self.request, self.get_school_id()),
+                student__team_memberships__left_at__isnull=True,
+            ).distinct()
+        return qs
 
     def get_object(self):
         school_id = self.get_school_id()
@@ -259,22 +281,26 @@ class AthleteClearanceViewSet(
         student = Student.objects.filter(pk=student_id, school_id=school_id).first()
         if student is None:
             raise Http404
-
-        if AthleteClearance.objects.filter(student=student).exclude(school_id=school_id).exists():
-            raise Http404
-
-        obj, _ = AthleteClearance.objects.get_or_create(
+        if not has_athletics_view(self.request) and not TeamRoster.objects.filter(
             school_id=school_id,
             student=student,
-        )
+            team_id__in=_coached_team_ids(self.request, school_id),
+            left_at__isnull=True,
+        ).exists():
+            raise Http404
+        if AthleteClearance.objects.filter(student=student).exclude(school_id=school_id).exists():
+            raise Http404
+        obj, _ = AthleteClearance.objects.get_or_create(school_id=school_id, student=student)
         return obj
 
     def perform_update(self, serializer):
         school_id = self.get_school_id()
-        student = serializer.validated_data.get("student")
+        current = self.get_object()
+        student = serializer.validated_data.get("student") or current.student
         _require_same_school(student, school_id, "student")
-        if student is not None and student.pk != self.get_object().student_id:
+        if student.pk != current.student_id:
             raise ValidationError({"student": "Clearance student cannot be reassigned."})
+        _require_coach_student_authority(self.request, school_id, student)
         serializer.save()
 
 
@@ -287,9 +313,10 @@ class AthleteEligibilityViewSet(
     permission_classes = [IsCoachOrAD]
 
     def get_queryset(self):
-        qs = self.filter_school(
-            AthleteEligibility.objects.select_related("team", "student")
-        )
+        school_id = self.get_school_id()
+        qs = self.filter_school(AthleteEligibility.objects.select_related("team", "student"))
+        if not has_athletics_view(self.request):
+            qs = qs.filter(team_id__in=_coached_team_ids(self.request, school_id))
         team_id = self.request.query_params.get("team_id")
         if team_id:
             qs = qs.filter(team_id=team_id)

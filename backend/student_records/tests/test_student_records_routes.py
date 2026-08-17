@@ -5,7 +5,15 @@ import pytest
 from django.urls import resolve, reverse
 from rest_framework.test import APIClient
 
-from core.models import Family, School, Student, UserAccount
+from core.models import (
+    CrownPermission,
+    Family,
+    RolePermission,
+    School,
+    Student,
+    UserAccount,
+    UserRole,
+)
 
 
 pytestmark = pytest.mark.django_db
@@ -31,7 +39,19 @@ def _student(school: School, family: Family, number: str, first: str, last: str)
     )
 
 
+def _grant_registrar_view(user: UserAccount, school: School) -> None:
+    role_code = "student_records_test_registrar"
+    permission, _ = CrownPermission.objects.get_or_create(
+        code="registrar.view",
+        defaults={"description": "View registrar dashboard"},
+    )
+    RolePermission.objects.get_or_create(role_code=role_code, permission=permission)
+    UserRole.objects.get_or_create(user=user, school=school, role_code=role_code)
+
+
 def _auth_client(user: UserAccount) -> APIClient:
+    if user.school_id:
+        _grant_registrar_view(user, user.school)
     client = APIClient()
     client.force_authenticate(user=user)
     return client
@@ -48,13 +68,25 @@ def test_url_resolution_contracts():
 
 def test_requires_authentication_for_list():
     school = _school("records-auth")
-    user = UserAccount.objects.create_user(username=f"user-{uuid.uuid4()}", password="Passw0rd!")
     url = reverse("student-records-list")
 
     client = APIClient()
     response = client.get(url, HTTP_X_SCHOOL_ID=str(school.id))
 
     assert response.status_code in (401, 403)
+
+
+def test_authenticated_user_without_registrar_permission_is_denied():
+    school = _school("records-no-permission")
+    user = UserAccount.objects.create_user(
+        username=f"user-{uuid.uuid4()}", password="Passw0rd!", school=school
+    )
+    client = APIClient()
+    client.force_authenticate(user=user)
+
+    response = client.get(reverse("student-records-list"), HTTP_X_SCHOOL_ID=str(school.id))
+
+    assert response.status_code == 403
 
 
 def test_missing_school_header_returns_400():
