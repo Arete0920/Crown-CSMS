@@ -7,7 +7,7 @@
 
 ## Current decision
 
-Repository engineering and security hardening are materially advanced and PRs #97 and #98 are merged to current `main`. The repository must **not** be represented as fully operationally transferred or production-recovery-certified until the remaining current-runtime, rollback/restore, account-transfer, and successor-acceptance evidence is completed or explicitly accepted as residual risk by the authorized parties.
+Repository engineering and security hardening are materially advanced and PRs #97 and #98 are merged to current `main`. **No successor production tag or release exists in the current Crown-CSMS turnover sequence.** The repository must not be represented as fully operationally transferred or production-recovery-certified until the remaining current-runtime, rollback/restore, account-transfer, and successor-acceptance evidence is completed or explicitly accepted as residual risk by the authorized parties.
 
 ## Current repository state
 
