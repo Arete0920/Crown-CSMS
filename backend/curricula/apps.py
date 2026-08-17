@@ -2,5 +2,8 @@ from django.apps import AppConfig
 
 
 class CurriculaConfig(AppConfig):
-    default_auto_field = 'django.db.models.BigAutoField'
-    name = 'curricula'
+    default_auto_field = "django.db.models.BigAutoField"
+    name = "curricula"
+
+    def ready(self) -> None:
+        from . import governance  # noqa: F401
