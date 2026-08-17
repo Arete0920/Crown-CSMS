@@ -7,6 +7,19 @@ function dollars(cents) {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(Number(cents || 0) / 100);
 }
 
+function hasParentDailyPayload(payload) {
+  return Boolean(
+    payload
+    && payload.child
+    && typeof payload.child.name === "string"
+    && Array.isArray(payload.attendance)
+    && Array.isArray(payload.progress)
+    && Array.isArray(payload.communications)
+    && payload.billing
+    && payload.staff_controls
+  );
+}
+
 export default function ParentSandboxDailyPanel() {
   const [data, setData] = useState(null);
   const [error, setError] = useState("");
@@ -15,7 +28,15 @@ export default function ParentSandboxDailyPanel() {
     if (!sandboxEnabled) return;
     let active = true;
     authenticatedJson("/api/v1/sandbox/parent/daily/")
-      .then((payload) => { if (active) setData(payload); })
+      .then((payload) => {
+        if (!active) return;
+        if (!hasParentDailyPayload(payload)) {
+          setError("Unable to load family daily-work data.");
+          setData(null);
+          return;
+        }
+        setData(payload);
+      })
       .catch((err) => { if (active) setError(err?.response?.data?.detail || err?.message || "Unable to load family daily-work data."); });
     return () => { active = false; };
   }, []);
