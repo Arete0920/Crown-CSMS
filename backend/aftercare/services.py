@@ -1,30 +1,24 @@
-"""
-Aftercare services — deterministic, explainable, no magic.
-
-Integration points marked with CANON_* tokens:
-  CANON_LEDGER_CHARGE_HOOK  — wire to your ledger create_charge call
-  CANON_DISCIPLINE_HOOK     — wire to your discipline record creation
-"""
+"""Extended-care domain services using canonical UUID ownership."""
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime, date, time
+from datetime import date, datetime, time
+
 from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
 
+from households.models import Student
+
 from .models import (
-    AftercareProgramConfig,
-    AftercareEnrollment,
     AftercareAttendance,
+    AftercareEnrollment,
     AftercareIncident,
     AftercareMonthlyChargeRun,
+    AftercarePickupContact,
+    AftercareProgramConfig,
 )
 
-
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
 
 def to_cents(amount) -> int:
     return int(round(float(amount) * 100))
@@ -34,7 +28,12 @@ def cents_to_amount(cents: int) -> float:
     return float(cents) / 100.0
 
 
-def combine_local(d: date, t: time) -> datetime:
+def combine_local(d: date, t: time | str) -> datetime:
+    if isinstance(t, str):
+        try:
+            t = time.fromisoformat(t)
+        except ValueError as exc:
+            raise ValueError(f"Invalid configured extended-care time: {t!r}") from exc
     return timezone.make_aware(datetime.combine(d, t))
 
 
@@ -45,43 +44,47 @@ class LateFeeResult:
 
 
 def compute_late_fee(config: AftercareProgramConfig, attendance_date: date, checkout_dt: datetime) -> LateFeeResult:
-    """
-    Deterministic late-fee calculation.
-
-    Rules:
-    - Any checkout after config.end_time is late.
-    - First config.late_fee_grace_minutes of lateness are free.
-    - Each commenced 10-minute block beyond grace costs config.late_fee_per_10_min.
-    - Total fee is capped at config.late_fee_cap.
-    """
     cutoff_dt = combine_local(attendance_date, config.end_time)
     delta_sec = (checkout_dt - cutoff_dt).total_seconds()
     late_minutes = max(0, int(delta_sec // 60))
-
     grace = int(config.late_fee_grace_minutes)
     if late_minutes <= grace:
         return LateFeeResult(late_minutes=late_minutes, late_fee_cents=0)
-
     billable = late_minutes - grace
-    blocks = (billable + 9) // 10  # ceiling divide — 1 min = 1 block
-    fee = float(config.late_fee_per_10_min) * blocks
-    fee = min(fee, float(config.late_fee_cap))
+    blocks = (billable + 9) // 10
+    fee = min(float(config.late_fee_per_10_min) * blocks, float(config.late_fee_cap))
     return LateFeeResult(late_minutes=late_minutes, late_fee_cents=to_cents(fee))
 
 
-# ---------------------------------------------------------------------------
-# Integration stubs — replace with canonical implementations
-# ---------------------------------------------------------------------------
+def _canonical_student(*, school_id, student_id) -> Student:
+    student = Student.objects.filter(pk=student_id, school_id=school_id, is_active=True).first()
+    if student is None:
+        raise ValueError("Student is not active in this school.")
+    return student
 
-def create_ledger_charge_aftercare(school_id: int, student_id: int, amount_cents: int, description: str) -> int:
-    """
-    Real Aftercare -> Finance hook.
 
-    Creates a FinanceObligation and returns its ID.
-    Fails closed if canonical school/student/payer mapping is missing.
-    """
+def _active_enrollment(*, school_id, student: Student, on_date: date) -> AftercareEnrollment:
+    enrollment = (
+        AftercareEnrollment.objects.filter(
+            school_fk_id=school_id,
+            student_fk=student,
+            is_active=True,
+            start_date__lte=on_date,
+        )
+        .filter(Q(end_date__isnull=True) | Q(end_date__gte=on_date))
+        .order_by("-created_at")
+        .first()
+    )
+    if enrollment is None:
+        raise ValueError("Student is not actively enrolled in extended care.")
+    dow = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"][on_date.weekday()]
+    if dow not in (enrollment.days_of_week or []):
+        raise ValueError("Student is not scheduled for extended care on this date.")
+    return enrollment
+
+
+def create_ledger_charge_aftercare(school_id, student_id, amount_cents: int, description: str) -> int:
     from .integrations import create_aftercare_finance_obligation
-
     return create_aftercare_finance_obligation(
         school_id=school_id,
         student_id=student_id,
@@ -90,15 +93,8 @@ def create_ledger_charge_aftercare(school_id: int, student_id: int, amount_cents
     )
 
 
-def create_discipline_record_for_incident(school_id: int, student_id: int, description: str, severity: str):
-    """
-    Real Aftercare -> Discipline hook.
-
-    Creates a DisciplineIncident and returns its UUID.
-    Fails closed if canonical school/student mapping is missing.
-    """
+def create_discipline_record_for_incident(school_id, student_id, description: str, severity: str):
     from .integrations import create_aftercare_discipline_incident
-
     return create_aftercare_discipline_incident(
         school_id=school_id,
         student_id=student_id,
@@ -107,146 +103,155 @@ def create_discipline_record_for_incident(school_id: int, student_id: int, descr
     )
 
 
-# ---------------------------------------------------------------------------
-# Core actions
-# ---------------------------------------------------------------------------
-
 @transaction.atomic
-def ensure_config(school_id: int) -> AftercareProgramConfig:
-    cfg, _ = AftercareProgramConfig.objects.get_or_create(school_id=school_id)
+def ensure_config(school_id) -> AftercareProgramConfig:
+    cfg, _ = AftercareProgramConfig.objects.get_or_create(school_fk_id=school_id)
     return cfg
 
 
 @transaction.atomic
-def checkin_student(
-    school_id: int,
-    student_id: int,
-    when: datetime | None = None,
-    note: str = "",
-) -> AftercareAttendance:
+def checkin_student(school_id, student_id, when: datetime | None = None, note: str = "") -> AftercareAttendance:
     when = when or timezone.now()
-    d = when.date()
-
-    a, created = AftercareAttendance.objects.get_or_create(
-        school_id=school_id,
-        student_id=student_id,
-        date=d,
-        defaults=dict(checkin_time=when, notes=note),
+    student = _canonical_student(school_id=school_id, student_id=student_id)
+    _active_enrollment(school_id=school_id, student=student, on_date=when.date())
+    attendance, created = AftercareAttendance.objects.get_or_create(
+        school_fk_id=school_id,
+        student_fk=student,
+        date=when.date(),
+        defaults={"checkin_time": when, "notes": note},
     )
     if not created and note:
-        # append note without overwriting existing
-        a.notes = (a.notes + " | " + note).strip(" |")
-        a.save(update_fields=["notes"])
-    return a
+        attendance.notes = (attendance.notes + " | " + note).strip(" |")
+        attendance.save(update_fields=["notes"])
+    return attendance
 
 
 @transaction.atomic
 def checkout_student(
-    school_id: int,
-    student_id: int,
+    school_id,
+    student_id,
     pickup_contact_id: int | None,
     pickup_name_freeform: str,
     pickup_verified: bool,
     when: datetime | None = None,
 ) -> AftercareAttendance:
     when = when or timezone.now()
-    d = when.date()
+    student = _canonical_student(school_id=school_id, student_id=student_id)
     cfg = ensure_config(school_id)
-
-    a = AftercareAttendance.objects.select_for_update().get(
-        school_id=school_id, student_id=student_id, date=d
+    attendance = AftercareAttendance.objects.select_for_update().get(
+        school_fk_id=school_id,
+        student_fk=student,
+        date=when.date(),
     )
-    a.checkout_time = when
-    a.pickup_contact_id = pickup_contact_id
-    a.pickup_name_freeform = pickup_name_freeform or ""
-    a.pickup_verified = bool(pickup_verified)
 
-    fee = compute_late_fee(cfg, d, when)
-    a.late_minutes = fee.late_minutes
-    a.late_fee_cents = fee.late_fee_cents
+    pickup_contact = None
+    if pickup_contact_id is not None:
+        pickup_contact = AftercarePickupContact.objects.filter(
+            pk=pickup_contact_id,
+            school_fk_id=school_id,
+            student_fk=student,
+            is_active=True,
+        ).first()
+        if pickup_contact is None:
+            raise ValueError("Pickup contact is not authorized for this student and school.")
 
-    if a.late_fee_cents > 0 and not a.late_fee_charge_id:
+    attendance.checkout_time = when
+    attendance.pickup_contact_fk = pickup_contact
+    attendance.pickup_name_freeform = pickup_name_freeform or ""
+    attendance.pickup_verified = bool(pickup_verified)
+    fee = compute_late_fee(cfg, when.date(), when)
+    attendance.late_minutes = fee.late_minutes
+    attendance.late_fee_cents = fee.late_fee_cents
+
+    if attendance.late_fee_cents > 0 and not attendance.late_fee_charge_id:
         charge_id = create_ledger_charge_aftercare(
             school_id=school_id,
-            student_id=student_id,
-            amount_cents=a.late_fee_cents,
-            description=f"Aftercare Late Pickup Fee ({a.late_minutes} min)",
+            student_id=student.id,
+            amount_cents=attendance.late_fee_cents,
+            description=f"Aftercare Late Pickup Fee ({attendance.late_minutes} min)",
         )
-        a.late_fee_charge_id = charge_id
+        attendance.late_fee_charge_id = str(charge_id)
 
-    a.save()
-    return a
+    attendance.save()
+    return attendance
 
 
 @transaction.atomic
 def record_incident(
-    school_id: int,
-    student_id: int,
+    school_id,
+    student_id,
     severity: str,
     description: str,
     attendance_id: int | None = None,
     parent_notified: bool = False,
 ) -> AftercareIncident:
-    inc = AftercareIncident.objects.create(
-        school_id=school_id,
-        student_id=student_id,
+    student = _canonical_student(school_id=school_id, student_id=student_id)
+    attendance = None
+    if attendance_id is not None:
+        attendance = AftercareAttendance.objects.filter(
+            pk=attendance_id,
+            school_fk_id=school_id,
+            student_fk=student,
+        ).first()
+        if attendance is None:
+            raise ValueError("Attendance record does not belong to this student and school.")
+
+    incident = AftercareIncident.objects.create(
+        school_fk_id=school_id,
+        student_fk=student,
         severity=severity,
         description=description,
-        attendance_id=attendance_id,
+        attendance_fk=attendance,
         parent_notified=parent_notified,
     )
-
-    # Auto-create discipline record for MODERATE/MAJOR incidents
     if severity in ("MODERATE", "MAJOR"):
-        inc.discipline_record_id = create_discipline_record_for_incident(
+        incident.discipline_record_id = create_discipline_record_for_incident(
             school_id=school_id,
-            student_id=student_id,
+            student_id=student.id,
             description=f"Aftercare incident ({severity}): {description}",
             severity=severity,
         )
-        inc.save(update_fields=["discipline_record_id"])
-
-    return inc
+        incident.save(update_fields=["discipline_record_id"])
+    return incident
 
 
 @transaction.atomic
-def run_monthly_flat_billing(school_id: int, year: int, month: int) -> dict:
-    """
-    Charges families/students enrolled under FLAT_MONTHLY.
-    Idempotent: AftercareMonthlyChargeRun prevents double-runs.
-    """
-    if AftercareMonthlyChargeRun.objects.filter(school_id=school_id, year=year, month=month).exists():
+def run_monthly_flat_billing(school_id, year: int, month: int) -> dict:
+    if AftercareMonthlyChargeRun.objects.filter(school_fk_id=school_id, year=year, month=month).exists():
         return {"status": "already_ran"}
 
     month_start = date(year, month, 1)
     next_month = 1 if month == 12 else month + 1
     next_year = year + 1 if month == 12 else year
     month_end = date(next_year, next_month, 1)
-
-    enrollments = AftercareEnrollment.objects.filter(
-        school_id=school_id,
-        is_active=True,
-        billing_model="FLAT_MONTHLY",
-        start_date__lt=month_end,
-    ).filter(
-        Q(end_date__isnull=True) | Q(end_date__gte=month_start)
+    enrollments = (
+        AftercareEnrollment.objects.filter(
+            school_fk_id=school_id,
+            is_active=True,
+            billing_model="FLAT_MONTHLY",
+            start_date__lt=month_end,
+            student_fk__isnull=False,
+        )
+        .filter(Q(end_date__isnull=True) | Q(end_date__gte=month_start))
+        .select_related("student_fk")
     )
 
     charged = 0
-    for e in enrollments:
-        if not e.monthly_rate:
+    for enrollment in enrollments:
+        if not enrollment.monthly_rate:
             continue
         create_ledger_charge_aftercare(
             school_id=school_id,
-            student_id=e.student_id,
-            amount_cents=to_cents(e.monthly_rate),
+            student_id=enrollment.student_fk_id,
+            amount_cents=to_cents(enrollment.monthly_rate),
             description=f"Aftercare Monthly ({year}-{month:02d})",
         )
         charged += 1
 
     AftercareMonthlyChargeRun.objects.create(
-        school_id=school_id, year=year, month=month, notes=f"charged={charged}"
+        school_fk_id=school_id,
+        year=year,
+        month=month,
+        notes=f"charged={charged}",
     )
     return {"status": "ok", "charged": charged}
-
-
