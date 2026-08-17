@@ -122,7 +122,12 @@ def _regular_user(tag="user"):
 def _grant_student_care(user, school, *, restricted=True):
     role_code = f"m037_student_care_{uuid.uuid4().hex[:8]}"
     UserRole.objects.create(user=user, school=school, role_code=role_code)
-    codes = ["student-care.view"]
+    codes = [
+        "student-care.view",
+        "student-care.create",
+        "student-care.edit",
+        "student-care.close",
+    ]
     if restricted:
         codes.append("student-care.view_restricted")
     for code in codes:
