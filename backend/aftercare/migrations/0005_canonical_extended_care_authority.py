@@ -4,7 +4,7 @@ import django.db.models.deletion
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("aftercare", "0002_add_uuid_fks"),
+        ("aftercare", "0004_alter_aftercareincident_discipline_record_id"),
         ("core", "0015_curriculum_governance_permissions"),
         ("households", "0010_student_account"),
     ]
