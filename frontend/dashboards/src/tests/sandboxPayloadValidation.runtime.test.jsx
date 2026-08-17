@@ -28,8 +28,9 @@ describe('sandbox payload validation', () => {
 
     render(<SandboxStudentSelfService />);
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('Unable to load student self-service data.');
-    expect(screen.queryByTestId('student-self-service-name')).not.toBeInTheDocument();
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toContain('Unable to load student self-service data.');
+    expect(screen.queryByTestId('student-self-service-name')).toBeNull();
   });
 
   it('fails closed instead of rendering a malformed parent daily-work payload', async () => {
@@ -37,7 +38,8 @@ describe('sandbox payload validation', () => {
 
     render(<ParentSandboxDailyPanel />);
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('Unable to load family daily-work data.');
-    expect(screen.queryByTestId('parent-daily-child')).not.toBeInTheDocument();
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toContain('Unable to load family daily-work data.');
+    expect(screen.queryByTestId('parent-daily-child')).toBeNull();
   });
 });
