@@ -14,17 +14,6 @@ on:
       - "scripts/release/evaluate_backend_coverage.py"
       - "scripts/release/backend_coverage_boundary.json"
       - ".github/workflows/exact-main-backend-coverage.yml"
-  pull_request:
-    paths:
-      - "backend/**"
-      - ".coveragerc"
-      - "pytest.ini"
-      - "requirements.txt"
-      - "backend/requirements.txt"
-      - "scripts/release/run_backend_coverage.ps1"
-      - "scripts/release/evaluate_backend_coverage.py"
-      - "scripts/release/backend_coverage_boundary.json"
-      - ".github/workflows/exact-main-backend-coverage.yml"
   workflow_dispatch:
 
 permissions:
@@ -32,7 +21,7 @@ permissions:
 
 concurrency:
   group: exact-main-backend-coverage-${{ github.event_name }}-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   exact-main-coverage:
@@ -40,8 +29,8 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     env:
-      EXPECTED_SOURCE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
-      BUILD_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      EXPECTED_SOURCE_SHA: ${{ github.sha }}
+      BUILD_SHA: ${{ github.sha }}
       DJANGO_SECRET_KEY: ci-exact-main-coverage-key-32-bytes-minimum
       PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/backend
 
