@@ -3,11 +3,11 @@ permissions:
   contents: read
 
 on:
-  pull_request:
   push:
     branches:
       - main
       - spine/**
+  workflow_dispatch:
 
 concurrency:
   group: tests-${{ github.workflow }}-${{ github.ref }}
@@ -18,8 +18,6 @@ jobs:
     name: pytest-internal
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    outputs:
-      pytest_outcome: ${{ steps.pytest.outcome }}
     defaults:
       run:
         working-directory: backend
@@ -78,8 +76,6 @@ jobs:
             financial_aid/tests/test_financial_aid_authz.py
 
       - name: Run tests
-        id: pytest
-        continue-on-error: true
         shell: bash
         working-directory: .
         env:
@@ -99,28 +95,3 @@ jobs:
           path: backend/pytest.log
           if-no-files-found: error
           retention-days: 7
-
-  pytest:
-    name: pytest
-    needs: pytest-internal
-    if: always()
-    runs-on: ubuntu-latest
-    steps:
-      - name: Download complete pytest log
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
-        with:
-          name: tests-pytest-log
-
-      - name: Report decisive pytest diagnostics
-        env:
-          PYTEST_OUTCOME: ${{ needs.pytest-internal.outputs.pytest_outcome }}
-        shell: bash
-        run: |
-          echo "=== pytest decisive diagnostics ==="
-          grep -E '^FAILED |^ERROR |^E   |^=+ .* (failed|error).*+=' pytest.log | tail -n 240 || true
-          echo "=== final pytest log tail ==="
-          tail -n 240 pytest.log
-          echo "=== pytest outcome: ${PYTEST_OUTCOME} ==="
-          if [ "${PYTEST_OUTCOME}" != "success" ]; then
-            exit 1
-          fi
