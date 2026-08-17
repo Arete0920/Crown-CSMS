@@ -1,98 +1,131 @@
-"""
-Aftercare service unit tests — ensure_config, checkin_student,
-checkout_student, record_incident.
-
-Tests for compute_late_fee live in test_aftercare_late_fee.py.
-Tenant scoping tests live in test_aftercare_tenant_scoping.py.
-"""
-import pytest
+"""Canonical extended-care service tests."""
 from datetime import date, datetime
 
+import pytest
 from django.utils import timezone
 
-from aftercare.services import (
-    ensure_config,
-    checkin_student,
-    checkout_student,
-    record_incident,
-)
+from aftercare.integrations import AftercareIntegrationError
+from aftercare.models import AftercareEnrollment, AftercareIncident
+from aftercare.services import checkin_student, checkout_student, ensure_config, record_incident
+from core.models import School
+from households.models import Household, Student
 
 pytestmark = pytest.mark.django_db
 
 
-# ---------------------------------------------------------------------------
-# ensure_config — idempotency
-# ---------------------------------------------------------------------------
+def _student(school: School, suffix: str) -> Student:
+    household = Household.objects.create(school_id=school.id, name=f"Household {suffix}")
+    return Student.objects.create(
+        school_id=school.id,
+        household=household,
+        first_name="Student",
+        last_name=suffix,
+        grade_level="4",
+    )
+
+
+def _enroll(school: School, student: Student, *, days=None):
+    return AftercareEnrollment.objects.create(
+        school_fk=school,
+        student_fk=student,
+        start_date=date(2025, 1, 1),
+        billing_model="FLAT_MONTHLY",
+        days_of_week=days or ["MON", "TUE", "WED", "THU", "FRI"],
+    )
+
 
 def test_ensure_config_creates_once():
-    """Calling ensure_config twice for the same school returns the same pk."""
-    cfg1 = ensure_config(school_id=9001)
-    cfg2 = ensure_config(school_id=9001)
+    school = School.objects.create(name="Config School")
+    cfg1 = ensure_config(school_id=school.id)
+    cfg2 = ensure_config(school_id=school.id)
     assert cfg1.pk == cfg2.pk
+    assert cfg1.school_fk_id == school.id
 
 
 def test_ensure_config_separate_schools():
-    """Two different schools get separate AftercareProgramConfig rows."""
-    c1 = ensure_config(school_id=9001)
-    c2 = ensure_config(school_id=9002)
-    assert c1.pk != c2.pk
+    school1 = School.objects.create(name="Config School 1")
+    school2 = School.objects.create(name="Config School 2")
+    assert ensure_config(school1.id).pk != ensure_config(school2.id).pk
 
 
-# ---------------------------------------------------------------------------
-# checkin_student / checkout_student — state machine
-# ---------------------------------------------------------------------------
-
-def test_checkin_creates_attendance():
+def test_checkin_requires_active_canonical_enrollment():
+    school = School.objects.create(name="Checkin School")
+    student = _student(school, "NoEnrollment")
     when = timezone.make_aware(datetime(2025, 9, 3, 15, 5))
-    ensure_config(school_id=42)
-    att = checkin_student(school_id=42, student_id=1001, when=when)
-    assert att.pk is not None
-    assert att.checkin_time == when
-    assert att.checkout_time is None
+    with pytest.raises(ValueError, match="actively enrolled"):
+        checkin_student(school.id, student.id, when=when)
 
 
-def test_checkin_idempotent():
-    """Checking in the same student twice returns the same attendance row."""
+def test_checkin_creates_and_is_idempotent():
+    school = School.objects.create(name="Checkin School")
+    student = _student(school, "Enrolled")
+    _enroll(school, student, days=["WED"])
     when = timezone.make_aware(datetime(2025, 9, 3, 15, 5))
-    ensure_config(school_id=42)
-    att1 = checkin_student(school_id=42, student_id=1002, when=when)
-    att2 = checkin_student(school_id=42, student_id=1002, when=when)
-    assert att1.pk == att2.pk
+    first = checkin_student(school.id, student.id, when=when)
+    second = checkin_student(school.id, student.id, when=when)
+    assert first.pk == second.pk
+    assert first.school_fk_id == school.id
+    assert first.student_fk_id == student.id
 
 
-def test_checkout_sets_time_and_late_minutes():
-    """checkout_student sets checkout_time and records positive late_minutes."""
-    cin = timezone.make_aware(datetime(2025, 9, 3, 15, 0))
-    cout = timezone.make_aware(datetime(2025, 9, 3, 18, 30))
-    ensure_config(school_id=42)
-    checkin_student(school_id=42, student_id=1003, when=cin)
-    att = checkout_student(
-        school_id=42, student_id=1003,
-        pickup_contact_id=None, pickup_name_freeform="Parent", pickup_verified=True,
-        when=cout,
+def test_checkout_rejects_cross_student_pickup_contact():
+    from aftercare.models import AftercarePickupContact
+
+    school = School.objects.create(name="Pickup School")
+    student = _student(school, "A")
+    other = _student(school, "B")
+    _enroll(school, student, days=["WED"])
+    _enroll(school, other, days=["WED"])
+    contact = AftercarePickupContact.objects.create(
+        school_fk=school,
+        student_fk=other,
+        name="Other Guardian",
     )
-    assert att.checkout_time is not None
-    assert att.late_minutes > 0
+    when = timezone.make_aware(datetime(2025, 9, 3, 15, 5))
+    checkin_student(school.id, student.id, when=when)
+    with pytest.raises(ValueError, match="not authorized"):
+        checkout_student(
+            school.id,
+            student.id,
+            pickup_contact_id=contact.id,
+            pickup_name_freeform="",
+            pickup_verified=True,
+            when=timezone.make_aware(datetime(2025, 9, 3, 17, 30)),
+        )
 
 
-# ---------------------------------------------------------------------------
-# record_incident — severity routing
-# ---------------------------------------------------------------------------
-
-def test_minor_incident_created():
-    inc = record_incident(
-        school_id=55, student_id=2001,
-        severity="MINOR", description="Scuffle",
+def test_checkout_sets_time_without_synthetic_finance_write():
+    school = School.objects.create(name="Checkout School")
+    student = _student(school, "Checkout")
+    _enroll(school, student, days=["WED"])
+    checkin_student(
+        school.id,
+        student.id,
+        when=timezone.make_aware(datetime(2025, 9, 3, 15, 0)),
     )
-    assert inc.severity == "MINOR"
-    assert inc.parent_notified is False
-
-
-def test_major_incident_has_discipline_hook():
-    """Major incident gets a discipline_record_id set (stub returns 0 in no-op hook)."""
-    inc = record_incident(
-        school_id=55, student_id=2001,
-        severity="MAJOR", description="Serious incident",
+    attendance = checkout_student(
+        school.id,
+        student.id,
+        pickup_contact_id=None,
+        pickup_name_freeform="Parent",
+        pickup_verified=True,
+        when=timezone.make_aware(datetime(2025, 9, 3, 17, 30)),
     )
-    assert inc.severity == "MAJOR"
-    assert inc.discipline_record_id is not None
+    assert attendance.checkout_time is not None
+    assert attendance.late_fee_charge_id is None
+
+
+def test_minor_incident_uses_canonical_student():
+    school = School.objects.create(name="Incident School")
+    student = _student(school, "Minor")
+    incident = record_incident(school.id, student.id, "MINOR", "Scuffle")
+    assert incident.school_fk_id == school.id
+    assert incident.student_fk_id == student.id
+
+
+def test_major_incident_fails_closed_without_verified_discipline_bridge():
+    school = School.objects.create(name="Incident School")
+    student = _student(school, "Major")
+    with pytest.raises(AftercareIntegrationError, match="no verified canonical mapping"):
+        record_incident(school.id, student.id, "MAJOR", "Serious incident")
+    assert AftercareIncident.objects.filter(school_fk=school, student_fk=student).count() == 0
