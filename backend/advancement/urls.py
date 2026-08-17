@@ -12,10 +12,7 @@ from .api import (
     PledgeViewSet,
     SponsorshipAgreementViewSet,
     advancement_metrics,
-    advancement_summary,
     pledge_create,
-    pledge_cancel,
-    qr_checkin,
     RelationshipViewSet,
     ProspectViewSet,
     MoveViewSet,
@@ -42,6 +39,7 @@ from .api import (
     apple_wallet_pass,
     google_wallet_link,
 )
+from .secure_views import advancement_summary, pledge_cancel, qr_checkin
 from .payment_hold_views import (
     advancement_edit_post_payment_on_hold,
     advancement_view_get_payment_on_hold,
@@ -86,11 +84,7 @@ urlpatterns = [
     path("pledges/create/", pledge_create, name="advancement-pledge-create"),
     path("pledges/<uuid:pledge_id>/cancel/", pledge_cancel, name="advancement-pledge-cancel"),
     path("sponsorship/checkout/", authenticated_post_payment_on_hold, name="advancement-sponsorship-checkout"),
-    path(
-        "sponsorship/<uuid:agreement_id>/mark-paid/",
-        authenticated_post_payment_on_hold,
-        name="advancement-sponsorship-mark-paid",
-    ),
+    path("sponsorship/<uuid:agreement_id>/mark-paid/", authenticated_post_payment_on_hold, name="advancement-sponsorship-mark-paid"),
     path("qr-checkin/", qr_checkin, name="advancement-qr-checkin"),
     path("moves/transition/", moves_transition, name="advancement-moves-transition"),
     path("seating/set-layout/", seating_set_layout, name="advancement-seating-set-layout"),
@@ -103,22 +97,10 @@ urlpatterns = [
     path("seating/checkout/", advancement_view_post_payment_on_hold, name="advancement-seating-checkout"),
     path("orders/<uuid:order_id>/status/", advancement_view_get_payment_on_hold, name="advancement-order-status"),
     path("payments/stripe/webhook/", provider_webhook_not_configured, name="advancement-stripe-webhook"),
-    path(
-        "seating/best-available/checkout/",
-        advancement_view_post_payment_on_hold,
-        name="advancement-best-available-checkout",
-    ),
+    path("seating/best-available/checkout/", advancement_view_post_payment_on_hold, name="advancement-best-available-checkout"),
     path("events/<uuid:event_id>/section-prices/", event_section_prices, name="advancement-section-prices"),
     path("events/<uuid:event_id>/sponsors/", event_sponsors, name="advancement-event-sponsors"),
-    path(
-        "wallet/apple/tickets/<uuid:ticket_id>.pkpass",
-        apple_wallet_pass,
-        name="advancement-apple-wallet-pass",
-    ),
-    path(
-        "wallet/google/tickets/<uuid:ticket_id>/link/",
-        google_wallet_link,
-        name="advancement-google-wallet-link",
-    ),
+    path("wallet/apple/tickets/<uuid:ticket_id>.pkpass", apple_wallet_pass, name="advancement-apple-wallet-pass"),
+    path("wallet/google/tickets/<uuid:ticket_id>/link/", google_wallet_link, name="advancement-google-wallet-link"),
     path("", include(router.urls)),
 ]

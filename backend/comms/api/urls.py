@@ -1,11 +1,12 @@
 from django.urls import path
-from comms.api.views import ThreadsList, ThreadDetail, ThreadPostMessage, ComposeThread, SendTestEmail
+
+from crown_api.views_comms import threads_list, thread_detail
+from comms.api.retired_views import retired_write
 
 urlpatterns = [
-    path("threads/", ThreadsList.as_view(), name="comms_threads_list"),
-    path("threads/<uuid:thread_id>/", ThreadDetail.as_view(), name="comms_thread_detail"),
-    path("threads/<uuid:thread_id>/messages/", ThreadPostMessage.as_view(), name="comms_thread_post_message"),
-    path("compose/", ComposeThread.as_view(), name="comms_compose"),
-    # Outbox smoke-test (infra verification):
-    path("send-test-email/", SendTestEmail.as_view(), name="comms_send_test_email"),
+    path("threads/", threads_list, name="comms_threads_list"),
+    path("threads/<uuid:thread_id>/", thread_detail, name="comms_thread_detail"),
+    path("threads/<uuid:thread_id>/messages/", retired_write, name="comms_thread_post_message"),
+    path("compose/", retired_write, name="comms_compose"),
+    path("send-test-email/", retired_write, name="comms_send_test_email"),
 ]

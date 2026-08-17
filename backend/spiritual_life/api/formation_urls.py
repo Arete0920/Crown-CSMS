@@ -1,6 +1,6 @@
 from django.urls import path
 
-from spiritual_life.api.formation_views import (
+from spiritual_life.api.secure_formation_views import (
     BiblicalIntegrationRecordListCreate,
     BiblicalWorldviewPriorityDetail,
     BiblicalWorldviewPriorityListCreate,
