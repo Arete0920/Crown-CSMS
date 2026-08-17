@@ -1,11 +1,14 @@
 from django.urls import path
-from comms.api.views import ThreadsList, ThreadDetail, ThreadPostMessage, ComposeThread, SendTestEmail
 
+from crown_api.views_comms import thread_detail, threads_list
+
+
+# Compatibility alias only. The former comms.api mutation endpoints were wired to
+# an incompatible MessageThread/Message contract and included an authenticated-only
+# arbitrary-recipient email smoke endpoint. Production traffic now uses the
+# canonical tenant/household-scoped read authority; unsupported duplicate writes
+# fail closed instead of pretending to succeed.
 urlpatterns = [
-    path("threads/", ThreadsList.as_view(), name="comms_threads_list"),
-    path("threads/<uuid:thread_id>/", ThreadDetail.as_view(), name="comms_thread_detail"),
-    path("threads/<uuid:thread_id>/messages/", ThreadPostMessage.as_view(), name="comms_thread_post_message"),
-    path("compose/", ComposeThread.as_view(), name="comms_compose"),
-    # Outbox smoke-test (infra verification):
-    path("send-test-email/", SendTestEmail.as_view(), name="comms_send_test_email"),
+    path("threads/", threads_list, name="comms_threads_list"),
+    path("threads/<uuid:thread_id>/", thread_detail, name="comms_thread_detail"),
 ]
