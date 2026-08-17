@@ -6,7 +6,7 @@
 ## Repository
 
 ```bash
-git clone https://github.com/tcmegahan/Crown-CSMS.git
+git clone https://github.com/Arete-Advisory-Group/Crown-CSMS.git
 cd Crown-CSMS
 ```
 
@@ -52,7 +52,7 @@ Use placeholders or approved development values only. Never commit secrets, prod
 1. Read current GitHub state and controlling authority.
 2. Record base SHA, objective, allowed files, validation, and rollback.
 3. Use one branch and one pull request for the coherent outcome.
-4. Keep related fixes found during validation in that pull request.
+4. Keep related fixes found during validation in that pull request only when they are inseparable from the same invariant and remain within repository hygiene limits.
 5. Run focused validation, then applicable broad checks.
 6. Inspect the final diff line by line against current repository truth.
 7. Resolve actionable findings and re-run the affected checks.
