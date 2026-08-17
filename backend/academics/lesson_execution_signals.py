@@ -1,15 +1,97 @@
-"""Integrity guards for instructional execution evidence."""
+"""Integrity guards and synchronization for instructional execution evidence."""
 
-from django.db.models.signals import pre_delete, pre_save
+from uuid import UUID
+
+from django.db.models.signals import post_save, pre_delete, pre_save
 from django.dispatch import receiver
 from rest_framework.exceptions import ValidationError
 
 from .lesson_execution_models import LessonPlanLesson
-from .models import Lesson, LessonPlan
+from .models import Lesson, LessonPlan, Section
 
 
 def _normalized(value):
     return str(value) if value is not None else None
+
+
+def _ordered_plan_lessons(instance: LessonPlan, using=None):
+    raw_ids = instance.lesson_ids or []
+    if not isinstance(raw_ids, list):
+        raise ValidationError({"lesson_ids": "lesson_ids must be a list of lesson UUID strings."})
+
+    normalized_ids = []
+    for raw_id in raw_ids:
+        try:
+            normalized_ids.append(UUID(str(raw_id)))
+        except (TypeError, ValueError, AttributeError) as exc:
+            raise ValidationError({"lesson_ids": "Each lesson_id must be a valid UUID."}) from exc
+
+    if not normalized_ids:
+        return []
+
+    section_manager = Section._base_manager.using(using) if using else Section._base_manager
+    lesson_manager = Lesson._base_manager.using(using) if using else Lesson._base_manager
+    try:
+        section = section_manager.get(pk=instance.section_id)
+    except Section.DoesNotExist as exc:
+        raise ValidationError({"section": "Lesson plan section does not exist."}) from exc
+
+    lessons = lesson_manager.filter(
+        id__in=normalized_ids,
+        school_id=instance.school_id,
+        unit__course_id=section.course_id,
+    )
+    by_id = {lesson.id: lesson for lesson in lessons}
+    missing = [str(lesson_id) for lesson_id in normalized_ids if lesson_id not in by_id]
+    if missing:
+        raise ValidationError(
+            {
+                "lesson_ids": "All lesson_ids must belong to lessons in this section course and school.",
+                "invalid_lesson_ids": missing,
+            }
+        )
+
+    ordered = []
+    seen = set()
+    for lesson_id in normalized_ids:
+        if lesson_id not in seen:
+            ordered.append(by_id[lesson_id])
+            seen.add(lesson_id)
+    return ordered
+
+
+@receiver(pre_save, sender=LessonPlan, dispatch_uid="academics.lesson_plan.execution_links.validate")
+def validate_lesson_plan_execution_links(sender, instance: LessonPlan, raw=False, using=None, **kwargs) -> None:
+    if raw:
+        return
+    if not instance.section_id:
+        raise ValidationError({"section": "Lesson plan requires a section."})
+    _ordered_plan_lessons(instance, using=using)
+
+
+@receiver(post_save, sender=LessonPlan, dispatch_uid="academics.lesson_plan.execution_links.sync")
+def synchronize_lesson_plan_execution_links(sender, instance: LessonPlan, raw=False, using=None, **kwargs) -> None:
+    if raw:
+        return
+    lessons = _ordered_plan_lessons(instance, using=using)
+    manager = LessonPlanLesson.objects.using(using) if using else LessonPlanLesson.objects
+    requested_ids = [lesson.id for lesson in lessons]
+
+    manager.filter(
+        lesson_plan_id=instance.id,
+        school_id=instance.school_id,
+    ).exclude(lesson_id__in=requested_ids).delete()
+
+    for sequence, lesson in enumerate(lessons, start=1):
+        link, _ = manager.get_or_create(
+            school_id=instance.school_id,
+            lesson_plan_id=instance.id,
+            lesson_id=lesson.id,
+            defaults={"sequence_order": sequence},
+        )
+        if link.sequence_order != sequence:
+            link.sequence_order = sequence
+            link.save(update_fields=["sequence_order", "updated_at"])
 
 
 def _validate_evidence_history(instance: LessonPlanLesson, manager) -> None:
