@@ -1,10 +1,9 @@
 # Buyer Operational Transfer Register
 
-**Status:** Preparation control; buyer turnover is not yet authorized  
-**Last reconciled:** 2026-08-09  
-**Pre-reconciliation register baseline (PR #1949):** `ef9e1fa4f06d6600d60313059f35c0bb564f5a5b`  
-**Certified backend:** `ce12c9536ec85346b2446018fa8bfe27edb3ffa0`  
-**Controlling authority:** GitHub issue #1619
+**Status:** Active owner-turnover preparation control  
+**Last reconciled:** 2026-08-17  
+**Handoff-refresh base `main`:** `f9bf6b4143e707f93ec8d6ce319327ddc7d3e2a0`  
+**Controlling authority:** `docs/CURRENT_RELEASE_STATUS.md` and Crown-CSMS issue #14
 
 ## Required asset record
 
@@ -22,8 +21,20 @@ For every transferred repository, cloud resource, domain, certificate, tenant, d
 - seller-access removal date;
 - exception, residual risk, and acceptance authority.
 
+## Required technical acceptance evidence
+
+Before final operational acceptance, the transfer record should identify the exact current repository/release SHA and, where applicable:
+
+1. deployed runtime identity and health evidence;
+2. monitoring ownership and notification routing;
+3. immutable application rollback evidence or explicit accepted disposition;
+4. operational backup/restore evidence or explicit accepted disposition;
+5. successor-controlled credentials, recovery factors, and administrative ownership;
+6. clean-clone/setup/deploy/recovery instructions exercised to the level required by the transfer agreement;
+7. current open issues classified as release blocker, accepted residual risk, roadmap, architecture follow-up, external dependency, or nonblocking technical debt.
+
 ## Blocking conditions
 
-Turnover is prohibited while any material asset has unknown ownership, seller-only access, unverified billing or renewal authority, missing required agreement, runtime identity mismatch, unresolved critical security/privacy contradiction, incomplete operating instructions, or unaccepted residual risk.
+Turnover is prohibited while any material asset has unknown ownership, seller-only access that has no approved transition path, unverified billing or renewal authority, missing required agreement, unexplained runtime identity mismatch, unresolved release-blocking security/privacy contradiction, incomplete operating instructions for a required capability, or unaccepted material residual risk.
 
-Production authorization and buyer turnover are separate decisions. Repository transfer alone does not establish operational acceptance.
+Repository transfer, repository certification, production authorization, legal/compliance review, and operational acceptance are separate decisions. Historical predecessor release evidence must not be substituted for current Crown-CSMS transfer evidence.
