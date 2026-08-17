@@ -1,4 +1,4 @@
-﻿"""
+"""
 Phase 7.2 â€” Cross-Module Tenant Isolation Tests
 ================================================
 
@@ -225,7 +225,23 @@ class Phase72DisciplineTenantTests(_TenantBase):
         self.assertEqual(resp.status_code, 400)
 
     def test_correct_school_returns_200(self):
-        """Correct school header -> HTTP 200."""
+        """Correct school header plus persistent Student Care authority -> HTTP 200."""
+        from core.models import CrownPermission, RolePermission, UserRole
+
+        role_code = "phase72_student_care_view"
+        UserRole.objects.get_or_create(
+            user=self.user_a,
+            school=self.school_a,
+            role_code=role_code,
+        )
+        permission, _ = CrownPermission.objects.get_or_create(
+            code="student-care.view",
+        )
+        RolePermission.objects.get_or_create(
+            role_code=role_code,
+            permission=permission,
+        )
+
         self.client.force_authenticate(user=self.user_a)
         resp = self.client.get(self.URL, HTTP_X_SCHOOL_ID=str(self.school_a.id))
         self.assertEqual(resp.status_code, 200)
