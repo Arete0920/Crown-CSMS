@@ -4,7 +4,8 @@ from django.db.models.signals import pre_delete, pre_save
 from django.dispatch import receiver
 from rest_framework.exceptions import ValidationError
 
-from .models import Lesson, LessonPlan, LessonPlanLesson
+from .lesson_execution_models import LessonPlanLesson
+from .models import Lesson, LessonPlan
 
 
 def _normalized(value):
