@@ -1,68 +1,64 @@
 # CROWN Current Release Status
 
-**Status:** Canonical release and freeze authority  
-**Last verified:** 2026-08-13  
-**Crown-CSMS program-start `main`:** `e4605c7d2de7e5586b7217fc24be37069a53d5d8`
+**Status:** Canonical repository/release authority  
+**Last verified:** 2026-08-17  
+**Handoff-refresh branch base `main`:** `f9bf6b4143e707f93ec8d6ce319327ddc7d3e2a0`  
 **Migration baseline:** `ac574ab2a55ecbfefb40cbd67bad08d99c085575`
-**PR #9 exact head:** `6ddd7a8b1972dd522ec82afe09bbad09cb6f728b`
 
 ## Current decision
 
-Current handoff decision: **NO-GO / REMEDIATION AND FRESH EXACT-IDENTITY CERTIFICATION REQUIRED**
+Repository engineering and security hardening are materially advanced and PRs #97 and #98 are merged to current `main`. The repository must **not** be represented as fully operationally transferred or production-recovery-certified until the remaining current-runtime, rollback/restore, account-transfer, and successor-acceptance evidence is completed or explicitly accepted as residual risk by the authorized parties.
 
-**Successor release state:** no successor production tag or release exists.
+## Current repository state
 
-PR #9’s exact head recorded 53 successful repository workflows. That supports a repository-verification claim for that exact head. It does not, by itself, establish a Crown-CSMS production deployment, reconcile live runtime identity, prove buyer-facing operation, or complete owner turnover.
+- Crown-CSMS active successor repository: **VERIFIED**
+- Current handoff-refresh base `main`: `f9bf6b4143e707f93ec8d6ce319327ddc7d3e2a0`
+- PR #97 security hardening: **MERGED**
+- PR #98 Communications/Student Care hardening: **MERGED**
+- Open mutation PRs at handoff-refresh branch creation: **0**
+- Transportation P0 #78: **CLOSED / COMPLETED**
+- Spiritual Life P0 #82: **CLOSED / COMPLETED**
+- Athletics P0 #65: **CLOSED / COMPLETED**
+- Student Care P0 #64: **CLOSED / COMPLETED**
+- Student Records #66: **FOLLOW-UP / REPORT-CARD AUTHORITY AND BEHAVIORAL PROOF**
+- HR #67: **FOLLOW-UP / STAFF-EMPLOYEE ARCHITECTURE RECONCILIATION**
+- Communications #63: **ROADMAP / MICROSOFT 365, RECIPIENT, DELIVERY AUTHORITY**
+- CI cost #74: **POST-HANDOFF OPTIMIZATION**
+- Little Lambs #81: **PRODUCT-ARCHITECTURE FOLLOW-UP**
+
+## Operational evidence boundary
+
+Repository certification and production-operation proof are separate claims.
+
+Current repository runbooks establish:
+
+- executable immutable application rollback mechanics;
+- executable isolated PostgreSQL restore mechanics;
+- historical/mechanics evidence for restore behavior.
+
+The current turnover sequence still requires or must explicitly disposition:
+
+1. exact deployed runtime identity for the selected release;
+2. authorized immutable rollback execution evidence against that identity;
+3. operational backup/restore evidence tied to the selected release, including measured RTO/RPO where required;
+4. monitoring and recovery evidence appropriate to owner handoff;
+5. successor-controlled accounts, credential/recovery-factor rotation, and seller-access removal;
+6. successor acceptance of scope, limitations, and residual risks.
 
 ## Historical predecessor evidence
 
-Crown2026 issue #1619 is closed and locked. It is retained only as historical predecessor release and owner-handoff evidence; it is not current Crown-CSMS execution authority.
+Crown2026 is historical predecessor/provenance evidence only. It is not current Crown-CSMS execution, release, deployment, or turnover authority.
 
-Prior bounded production deployment: **HISTORICAL PASS**
+## Payment boundary
 
-Prior Heritage surface matrix: **18/18 HISTORICAL RESULT; NOT CURRENT HANDOFF PROOF**
+**PAYMENT PROCESSING: DISABLED / FAIL CLOSED / NOT AUTHORIZED FOR ACTIVATION**
 
-The historical record documented owner-visible failures that invalidated the prior handoff-readiness claim despite earlier successful bounded deployment and live-surface evidence. Those predecessor findings remain relevant provenance, but they do not control the successor repository.
+Provider selection, contracting, credentials, transaction certification, settlement, refunds, disputes, legal, tax, accounting, and payment-provider conclusions require separate authorization and qualified review.
 
-## Current successor authority
+## Claim boundary
 
-Crown-CSMS issue #14 is the active execution-control record for remaining Option A reconciliation, authority refresh, exact successor release/runtime proof, buyer diligence readiness, and owner turnover.
+Do not claim that Crown-CSMS is production deployed, operationally transferred, universally persona-certified, payment ready, legally certified, regulator approved, or independently human reviewed unless current exact evidence and the appropriate authority establish that claim.
 
-Current buyer diligence package: **NOT READY — SEE Crown-CSMS issue #14**
+## Controlling completion record
 
-Buyer operational turnover: **PENDING IDENTIFIED BUYER AND PARTY ACCEPTANCE**
-
-## Buyer-safe claim
-
-> Crown-CSMS is the active successor engineering and owner-turnover repository. Repository verification exists for prior exact heads, but a deployed Crown-CSMS production identity, buyer diligence readiness, and operational turnover are not established by that evidence and remain subject to fresh exact-identity verification and authorized owner-governed acceptance.
-
-## Prohibited claims
-
-Do not claim Crown-CSMS is production deployed, buyer ready, transfer complete, universally tenant/persona certified, payment ready, legally certified, regulator approved, or independently human reviewed unless current exact evidence and the appropriate authority establish the claim.
-
-## Payment and qualified-review boundary
-
-**PAYMENT PROCESSING:** DISABLED / FAIL CLOSED / NOT AUTHORIZED FOR ACTIVATION
-
-Provider selection, contracting, credentials, transaction certification, settlement, refunds, disputes, legal, tax, accounting, transaction, valuation, and payment-provider conclusions require separate qualified review and explicit authorization.
-
-## Required completion gates
-
-1. Complete the remaining branch and lineage reconciliation controlled by Crown-CSMS issue #14.
-2. Reconcile remaining Option A domains without rebuilding already-proven functionality.
-3. Remove or correct stale predecessor-era active authority while preserving legitimate provenance.
-4. Refresh canonical file identities only against the final unchanged successor source identity.
-5. Select one exact Crown-CSMS release SHA and run required repository, security, tenant, permission, accessibility, functional, deployment, and runtime-identity gates.
-6. Re-run authenticated persona and route certification with false-positive-resistant assertions.
-7. Complete buyer-specific account transfer, credential rotation, access revocation, operational evidence, and successor acceptance.
-
-## Disposition
-
-- Crown-CSMS repository cutover: **COMPLETE**
-- Crown2026 preservation baseline: **COMPLETE / HISTORICAL**
-- Crown-CSMS whole-repository Option A reconciliation: **IN PROGRESS / NOT YET PROVEN COMPLETE**
-- Crown-CSMS deployed production identity: **NOT VERIFIED**
-- Crown-CSMS buyer diligence readiness: **NO-GO**
-- Crown-CSMS operational turnover: **PENDING**
-- Crown2026 release evidence: **HISTORICAL PREDECESSOR EVIDENCE**
-- Payment processing: **DISABLED / FAIL CLOSED**
+Crown-CSMS issue #14 remains the controlling turnover record until its remaining lineage/hygiene, canonical-authority, runtime/recovery, and successor-acceptance obligations are completed or explicitly dispositioned by the authorized parties.
