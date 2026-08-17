@@ -4,7 +4,7 @@ Covers the required proof scope for Module 037:
   - Discipline appeal lifecycle behavior (status transitions via DisciplineAction trail).
   - Retention/archive/data policy behavior (closed incidents remain retrievable).
   - Auth boundary: unauthenticated request denied (401).
-  - Permission boundary: cross-tenant non-privileged access denied (404).
+  - Permission boundary: persistent Student Care authority is required for reads.
   - Tenant scoping/isolation: school A incidents invisible to school B users.
   - Audit trail / immutability: DisciplineAction records are append-only
     (created_at is auto_now_add; action log grows monotonically).
@@ -22,7 +22,7 @@ from django.test import TestCase
 from django.utils import timezone
 from rest_framework.test import APIClient
 
-from core.models import Family, School, Student
+from core.models import CrownPermission, Family, RolePermission, School, Student, UserRole
 from discipline.models import DisciplineAction, DisciplineIncident
 
 User = get_user_model()
@@ -119,6 +119,17 @@ def _regular_user(tag="user"):
     )
 
 
+def _grant_student_care(user, school, *, restricted=True):
+    role_code = f"m037_student_care_{uuid.uuid4().hex[:8]}"
+    UserRole.objects.create(user=user, school=school, role_code=role_code)
+    codes = ["student-care.view"]
+    if restricted:
+        codes.append("student-care.view_restricted")
+    for code in codes:
+        permission, _ = CrownPermission.objects.get_or_create(code=code)
+        RolePermission.objects.get_or_create(role_code=role_code, permission=permission)
+
+
 def _hdr(school_id):
     return {"HTTP_X_SCHOOL_ID": str(school_id)}
 
@@ -188,11 +199,12 @@ class TestModule037TenantIsolation(TestCase):
         self.school_a = _school("A")
         self.school_b = _school("B")
         self.staff_a = _staff_user("sa")
+        _grant_student_care(self.staff_a, self.school_a)
         self.regular_b = _regular_user("rb")
         self.student_a = _student(self.school_a)
 
     def test_incidents_scoped_to_requesting_school(self):
-        """Staff user sees school A incident under school A and not school B."""
+        """Authorized school A staff sees school A data but cannot pivot into school B."""
         inc = _incident(self.school_a, self.student_a, actor=self.staff_a)
         client = APIClient()
         client.force_authenticate(self.staff_a)
@@ -203,11 +215,7 @@ class TestModule037TenantIsolation(TestCase):
         self.assertIn(str(inc.id), ids_a, "Expected school A incident in school A listing.")
 
         r_b = client.get(DISCIPLINE_INCIDENTS_URL, **_hdr(self.school_b.id))
-        self.assertEqual(r_b.status_code, 200)
-        ids_b = {str(row["id"]) for row in r_b.data}
-
-        self.assertNotIn(str(inc.id), ids_b, "Cross-tenant leak: school A incident visible under school B.")
-        self.assertTrue(ids_a.isdisjoint(ids_b), "Cross-tenant leak: school A incident visible under school B.")
+        self.assertEqual(r_b.status_code, 404)
 
     def test_non_staff_cross_tenant_header_denied(self):
         """Non-staff user with school B identity cannot access school A tenant header."""
@@ -359,6 +367,7 @@ class TestModule037APIIncidentCRUD(TestCase):
         self.school = _school("api")
         self.student = _student(self.school)
         self.staff = _staff_user("api")
+        _grant_student_care(self.staff, self.school)
 
     def test_authenticated_list_returns_200(self):
         client = APIClient()
@@ -393,7 +402,7 @@ class TestModule037APIIncidentCRUD(TestCase):
         client = APIClient()
         client.force_authenticate(self.staff)
         r = client.get(f"{DISCIPLINE_INCIDENTS_URL}{inc.pk}/", **_hdr(other_school.id))
-        self.assertEqual(r.status_code, 404, f"Expected 404 for cross-tenant detail access, got {r.status_code}.")
+        self.assertEqual(r.status_code, 404, f"Expected nondisclosing 404 for unauthorized tenant pivot, got {r.status_code}.")
 
     def test_action_post_appends_to_audit_trail(self):
         inc = _incident(self.school, self.student, actor=self.staff)

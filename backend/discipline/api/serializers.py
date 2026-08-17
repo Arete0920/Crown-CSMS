@@ -31,6 +31,12 @@ class DisciplineIncidentListSerializer(serializers.ModelSerializer):
         name = (first + " " + last).strip()
         return name or str(obj.student_id)
 
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        if not self.context.get("include_restricted", False):
+            data.pop("parent_notified", None)
+        return data
+
 class DisciplineIncidentDetailSerializer(serializers.ModelSerializer):
     student_name = serializers.SerializerMethodField()
     actions = DisciplineActionSerializer(many=True, read_only=True)
@@ -52,6 +58,14 @@ class DisciplineIncidentDetailSerializer(serializers.ModelSerializer):
         last = getattr(obj.student, "last_name", "")
         name = (first + " " + last).strip()
         return name or str(obj.student_id)
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        if self.context.get("include_restricted", False):
+            return data
+        for field in ("details", "parent_notified", "parent_notified_at", "reported_by", "assigned_to", "actions"):
+            data.pop(field, None)
+        return data
 
 class DisciplineActionCreateSerializer(serializers.Serializer):
     action_type = serializers.ChoiceField(choices=["note","assigned","parent_notified","status_changed","closed"])

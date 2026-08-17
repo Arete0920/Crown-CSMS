@@ -7,6 +7,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from core.models import School
+from core.permissions import user_has_permission
 from discipline.models import DisciplineIncident, DisciplineAction
 from discipline.api.serializers import (
     DisciplineIncidentListSerializer,
@@ -14,6 +15,9 @@ from discipline.api.serializers import (
     DisciplineActionCreateSerializer,
 )
 from households.scoping import get_request_school_id
+
+STUDENT_CARE_VIEW = "student-care.view"
+STUDENT_CARE_VIEW_RESTRICTED = "student-care.view_restricted"
 
 
 def _get_school(request) -> School:
@@ -31,11 +35,19 @@ def _get_school(request) -> School:
     sid = get_request_school_id(request, required=True)
     return School.objects.get(pk=sid)
 
+def _has_permission(request, school, code):
+    return user_has_permission(request.user, code, school=school)
+
+def _permission_denied():
+    return Response({"detail": "Permission denied."}, status=403)
+
 class DisciplineIncidentsListCreate(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
         school = _get_school(request)
+        if not _has_permission(request, school, STUDENT_CARE_VIEW):
+            return _permission_denied()
 
         qs = DisciplineIncident.objects.filter(school=school)
 
@@ -51,7 +63,10 @@ class DisciplineIncidentsListCreate(APIView):
         if category:
             qs = qs.filter(category=category)
 
-        data = DisciplineIncidentListSerializer(qs[:500], many=True).data
+        include_restricted = _has_permission(request, school, STUDENT_CARE_VIEW_RESTRICTED)
+        data = DisciplineIncidentListSerializer(
+            qs[:500], many=True, context={"include_restricted": include_restricted}
+        ).data
         return Response(data)
 
     def post(self, request):
@@ -89,20 +104,28 @@ class DisciplineIncidentsListCreate(APIView):
             action_type="created",
             note="Incident created"
         )
-        return Response(DisciplineIncidentDetailSerializer(incident).data, status=201)
+        include_restricted = _has_permission(request, school, STUDENT_CARE_VIEW_RESTRICTED)
+        return Response(DisciplineIncidentDetailSerializer(
+            incident, context={"include_restricted": include_restricted}
+        ).data, status=201)
 
 class DisciplineIncidentDetail(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request, incident_id):
         school = _get_school(request)
+        if not _has_permission(request, school, STUDENT_CARE_VIEW):
+            return _permission_denied()
 
         try:
             inc = DisciplineIncident.objects.get(pk=incident_id, school=school)
         except DisciplineIncident.DoesNotExist:
             return Response({"detail": "Not found"}, status=404)
 
-        return Response(DisciplineIncidentDetailSerializer(inc).data)
+        include_restricted = _has_permission(request, school, STUDENT_CARE_VIEW_RESTRICTED)
+        return Response(DisciplineIncidentDetailSerializer(
+            inc, context={"include_restricted": include_restricted}
+        ).data)
 
 class DisciplineIncidentActions(APIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -153,13 +176,18 @@ class DisciplineIncidentActions(APIView):
             note=note
         )
 
-        return Response(DisciplineIncidentDetailSerializer(inc).data, status=200)
+        include_restricted = _has_permission(request, school, STUDENT_CARE_VIEW_RESTRICTED)
+        return Response(DisciplineIncidentDetailSerializer(
+            inc, context={"include_restricted": include_restricted}
+        ).data, status=200)
 
 class DisciplineMetrics(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
         school = _get_school(request)
+        if not _has_permission(request, school, STUDENT_CARE_VIEW):
+            return _permission_denied()
 
         qs = DisciplineIncident.objects.filter(school=school)
         by_status = list(qs.values("status").annotate(count=Count("id")).order_by("status"))
