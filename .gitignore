@@ -114,6 +114,8 @@ django_out.txt
 # Generated local artifacts and scratch
 _tmp/
 _tmp_*/
+_tmp_*
+_patch_*
 _tmp_pr*.json
 _local_proofs/
 _local_artifacts/
