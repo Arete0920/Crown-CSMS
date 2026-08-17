@@ -34,7 +34,7 @@ That historical evidence remains useful provenance. It does not establish curren
 
 Later `main` commits never inherit a prior deployment or certification automatically. A production release requires one exact selected source identity and corresponding build, deployment, runtime-health, monitoring, rollback/recovery, and authorization evidence appropriate to the release.
 
-## Historical milestones
+## Historical releases
 
 ### `crown-0.3.1-prod-pipeline-fix` — 2026-01-27
 Historical pipeline milestone at `a1c4c42a381e03587c784bd995ec8fd6c33aeee9`.
