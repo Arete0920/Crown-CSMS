@@ -16,6 +16,10 @@ from .lesson_plan_views import (
     lesson_resource_list_create,
     lesson_resource_detail,
 )
+from .lesson_execution_views import (
+    lesson_plan_execution_list,
+    lesson_plan_execution_detail,
+)
 from .transcript_access_views import (
     AuthorizedStudentTranscriptContractView,
     AuthorizedTranscriptROView,
@@ -158,6 +162,16 @@ urlpatterns = [
         "academics/lesson-plans/<uuid:plan_id>/",
         lesson_plan_detail,
         name="lesson-plan-detail",
+    ),
+    path(
+        "academics/lesson-plans/<uuid:plan_id>/execution/",
+        lesson_plan_execution_list,
+        name="lesson-plan-execution-list",
+    ),
+    path(
+        "academics/lesson-plan-execution/<uuid:link_id>/",
+        lesson_plan_execution_detail,
+        name="lesson-plan-execution-detail",
     ),
     path(
         "academics/lessons/<uuid:lesson_id>/resources/",
