@@ -6,17 +6,12 @@ Christian School Management Solution
 
 Crown-CSMS is the active engineering and owner-turnover repository.
 
-- Program-start `main`: `e4605c7d2de7e5586b7217fc24be37069a53d5d8`
-- Migration baseline: `ac574ab2a55ecbfefb40cbd67bad08d99c085575`
-- PR #9 exact head: `6ddd7a8b1972dd522ec82afe09bbad09cb6f728b`
-- Repository verification on that PR #9 head: 53 successful workflows
-- Active successor execution control: Crown-CSMS issue #14
-- Crown-CSMS deployed production identity: **NOT VERIFIED**
-- Crown-CSMS buyer diligence readiness: **NO-GO**
-- Buyer operational turnover: **PENDING**
-- Payment processing: **DISABLED / FAIL CLOSED**
+- Current repository identity: the exact commit at GitHub `main`; never substitute a historical PR, migration baseline, or predecessor SHA for current `main`.
+- Current release and turnover authority: `docs/CURRENT_RELEASE_STATUS.md` and Crown-CSMS issue #14.
+- Production deployment/runtime identity: must be established by exact-source deployment and runtime evidence; repository success alone is not deployment proof.
+- Payment processing: **DISABLED / FAIL CLOSED** pending provider selection, contracting, credentials, and separate authorization.
 
-Repository workflow success is valid repository evidence, but it is not proof of deployment, buyer acceptance, or completed turnover. Crown2026 release records and issue #1619 are historical predecessor evidence. Issue #1619 is closed and locked and does not control Crown-CSMS execution.
+Historical Crown2026 commits, tags, issues, and workflow runs remain provenance and rollback/reference evidence only. They do not control the active Crown-CSMS repository.
 
 ## Start here
 
@@ -30,11 +25,15 @@ Repository workflow success is valid repository evidence, but it is not proof of
 8. [Known Limitations](docs/KNOWN_LIMITATIONS.md)
 9. [Security Policy](SECURITY.md)
 
+## Exact-identity rule
+
+For handoff, release, audit, or production claims, first resolve the exact GitHub `main` SHA and then verify evidence generated for that same SHA. Any commit invalidates prior head-specific certification. Documentation deliberately does not embed a self-referential “final SHA”; the immutable Git commit being handed off is the source identity.
+
 ## Authority and claim boundary
 
 Current claims must be supported by Crown-CSMS exact-identity evidence and current canonical records. Historical commits, tags, workflow runs, pull requests, and issues remain provenance, not current operating authority.
 
-Automated assistance and automated review are technical evidence, not independent human review, approval, certification, acceptance, or release authority.
+Automated assistance and automated review are technical evidence, not independent human review, approval, certification, acceptance, or release authority. Solo-developer compensating controls are documented and must not be represented as independent review.
 
 ## Repository standards
 
