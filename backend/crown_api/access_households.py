@@ -23,7 +23,6 @@ def resolve_person_for_user(user) -> Person | None:
     if not user or not getattr(user, "is_authenticated", False):
         return None
 
-    # Prefer explicit identity linkage over email heuristics.
     try:
         link = user.person_link
     except UserPersonLink.DoesNotExist:
@@ -39,6 +38,7 @@ def resolve_person_for_user(user) -> Person | None:
 
 
 def resolve_household_access(request) -> HouseholdAccess:
+    """Resolve generic household/person scope; domain-specific permissions stay in callers."""
     user = getattr(request, "user", None)
     staff = is_staff_user(user)
 

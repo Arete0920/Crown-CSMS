@@ -259,7 +259,10 @@ class DisciplineMetrics(APIView):
 
     def get(self, request):
         school = _get_school(request)
-        if not _has_permission(request, school, STUDENT_CARE_VIEW):
+        if not (
+            _has_permission(request, school, STUDENT_CARE_VIEW)
+            and _has_permission(request, school, STUDENT_CARE_VIEW_RESTRICTED)
+        ):
             return _permission_denied()
 
         qs = DisciplineIncident.objects.filter(school=school)
