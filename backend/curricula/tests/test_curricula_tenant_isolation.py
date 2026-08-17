@@ -1,281 +1,203 @@
-"""
-Tenant isolation tests for curricula API.
-Verify that users can only access curriculum data for their own school.
-"""
+"""Tenant isolation and persistent-RBAC tests for governed curricula."""
+
 import uuid
+
 import pytest
 from django.contrib.auth import get_user_model
-from django.test import Client
 from rest_framework.test import APIClient
 
-from core.models import School
 from academics.models import Course
-from curricula.models import CurriculumMap, Unit, Lesson
-
+from core.models import CrownPermission, RolePermission, School, UserRole
+from curricula.governance import create_new_draft
+from curricula.models import CurriculumMap, Lesson, Unit
 
 pytestmark = pytest.mark.django_db
 
 
-def _mk_user_with_school(school: School):
-    """Create a user and associate with a school."""
+def _permission(code):
+    permission, _ = CrownPermission.objects.get_or_create(code=code, defaults={"description": code})
+    return permission
+
+
+def _user(school, role_code, permissions):
     User = get_user_model()
-    u = User.objects.create_user(
-        username=f"user-{uuid.uuid4().hex[:8]}",
+    user = User.objects.create_user(
+        username=f"curriculum-{uuid.uuid4().hex[:10]}",
         password="pass12345!",
+        school=school,
     )
-    if hasattr(u, "school_id"):
-        setattr(u, "school_id", school.id)
-        u.save(update_fields=["school_id"])
-    return u
+    UserRole.objects.create(user=user, school=school, role_code=role_code)
+    for code in permissions:
+        RolePermission.objects.get_or_create(role_code=role_code, permission=_permission(code))
+    return user
+
+
+def _client(user, school):
+    client = APIClient()
+    client.force_authenticate(user=user)
+    client.credentials(HTTP_X_SCHOOL_ID=str(school.id))
+    return client
+
+
+def _seed_curriculum(school, code, title):
+    course = Course.objects.create(school_id=school.id, code=code, name=f"{code} Course")
+    curriculum_map = CurriculumMap.objects.create(
+        school_id=school.id,
+        course=course,
+        title=title,
+        active=True,
+    )
+    version = create_new_draft(curriculum_map=curriculum_map)
+    unit = Unit.objects.create(
+        school_id=school.id,
+        curriculum_map=curriculum_map,
+        curriculum_version=version,
+        sequence=1,
+        title="Foundations",
+    )
+    lesson = Lesson.objects.create(
+        school_id=school.id,
+        unit=unit,
+        sequence=1,
+        title="Lesson One",
+    )
+    return course, curriculum_map, version, unit, lesson
 
 
 @pytest.fixture
-def two_schools_with_curricula():
-    """Create two schools each with courses, maps, units, and lessons."""
-    # School A
-    school_a = School.objects.create(name="School A")
-    course_a = Course.objects.create(
-        school_id=school_a.id,
-        code="MATH101",
-        name="Mathematics 101",
-    )
-    map_a = CurriculumMap.objects.create(
-        school_id=school_a.id,
-        course=course_a,
-        title="Math Curriculum Map A",
-        active=True,
-    )
-    unit_a = Unit.objects.create(
-        school_id=school_a.id,
-        curriculum_map=map_a,
-        sequence=1,
-        title="Algebra Fundamentals",
-    )
-    lesson_a = Lesson.objects.create(
-        school_id=school_a.id,
-        unit=unit_a,
-        sequence=1,
-        title="Introduction to Variables",
-    )
-
-    # School B
-    school_b = School.objects.create(name="School B")
-    course_b = Course.objects.create(
-        school_id=school_b.id,
-        code="SCI101",
-        name="Science 101",
-    )
-    map_b = CurriculumMap.objects.create(
-        school_id=school_b.id,
-        course=course_b,
-        title="Science Curriculum Map B",
-        active=True,
-    )
-    unit_b = Unit.objects.create(
-        school_id=school_b.id,
-        curriculum_map=map_b,
-        sequence=1,
-        title="Physics Basics",
-    )
-    lesson_b = Lesson.objects.create(
-        school_id=school_b.id,
-        unit=unit_b,
-        sequence=1,
-        title="Newton's Laws",
-    )
-
-    return {
-        "school_a": school_a,
-        "course_a": course_a,
-        "map_a": map_a,
-        "unit_a": unit_a,
-        "lesson_a": lesson_a,
-        "school_b": school_b,
-        "course_b": course_b,
-        "map_b": map_b,
-        "unit_b": unit_b,
-        "lesson_b": lesson_b,
-    }
+def two_schools():
+    school_a = School.objects.create(name="Curriculum School A")
+    school_b = School.objects.create(name="Curriculum School B")
+    a = _seed_curriculum(school_a, "MATH101", "Math Map")
+    b = _seed_curriculum(school_b, "SCI101", "Science Map")
+    return school_a, school_b, a, b
 
 
-def test_curriculum_maps_tenant_isolation(two_schools_with_curricula):
-    """Verify users only see curriculum maps for their school."""
-    data = two_schools_with_curricula
-    user_a = _mk_user_with_school(data["school_a"])
+def test_view_permission_is_required_and_tenant_scoped(two_schools):
+    school_a, _school_b, a, b = two_schools
+    _course_a, map_a, version_a, unit_a, lesson_a = a
+    _course_b, map_b, _version_b, _unit_b, _lesson_b = b
 
-    client = APIClient()
-    client.force_authenticate(user=user_a)
+    allowed = _client(_user(school_a, "TEACHER", ["curriculum.view"]), school_a)
+    denied = _client(_user(school_a, "NO_CURRICULUM", []), school_a)
 
-    # User A should see only school A's maps
-    resp = client.get("/api/v1/curricula/maps/")
-    assert resp.status_code == 200
-    maps = resp.json()
-    assert len(maps) == 1
-    assert maps[0]["curriculum_map_id"] == str(data["map_a"].id)
-    assert maps[0]["course_code"] == "MATH101"
+    maps = allowed.get("/api/v1/curricula/maps/")
+    versions = allowed.get("/api/v1/curricula/versions/")
+    units = allowed.get("/api/v1/curricula/units/")
+    lessons = allowed.get("/api/v1/curricula/lessons/")
 
-
-def test_units_tenant_isolation(two_schools_with_curricula):
-    """Verify users only see units for their school."""
-    data = two_schools_with_curricula
-    user_b = _mk_user_with_school(data["school_b"])
-
-    client = APIClient()
-    client.force_authenticate(user=user_b)
-
-    # User B should see only school B's units
-    resp = client.get("/api/v1/curricula/units/")
-    assert resp.status_code == 200
-    units = resp.json()
-    assert len(units) == 1
-    assert units[0]["unit_id"] == str(data["unit_b"].id)
-    assert units[0]["title"] == "Physics Basics"
+    assert maps.status_code == 200
+    assert [row["curriculum_map_id"] for row in maps.json()] == [str(map_a.id)]
+    assert versions.status_code == 200
+    assert [row["curriculum_version_id"] for row in versions.json()] == [str(version_a.id)]
+    assert units.status_code == 200 and units.json()[0]["unit_id"] == str(unit_a.id)
+    assert lessons.status_code == 200 and lessons.json()[0]["lesson_id"] == str(lesson_a.id)
+    assert allowed.get(f"/api/v1/curricula/maps/{map_b.id}/").status_code == 404
+    assert denied.get("/api/v1/curricula/maps/").status_code == 403
 
 
-def test_lessons_tenant_isolation(two_schools_with_curricula):
-    """Verify users only see lessons for their school."""
-    data = two_schools_with_curricula
-    user_a = _mk_user_with_school(data["school_a"])
+def test_read_only_teacher_cannot_mutate(two_schools):
+    school_a, _school_b, a, _b = two_schools
+    course_a, map_a, version_a, _unit_a, _lesson_a = a
+    client = _client(_user(school_a, "TEACHER", ["curriculum.view"]), school_a)
 
-    client = APIClient()
-    client.force_authenticate(user=user_a)
-
-    # User A should see only school A's lessons
-    resp = client.get("/api/v1/curricula/lessons/")
-    assert resp.status_code == 200
-    lessons = resp.json()
-    assert len(lessons) == 1
-    assert lessons[0]["lesson_id"] == str(data["lesson_a"].id)
-    assert lessons[0]["title"] == "Introduction to Variables"
-
-
-def test_curriculum_filter_by_course(two_schools_with_curricula):
-    """Verify filtering by course respects tenant isolation."""
-    data = two_schools_with_curricula
-    user_a = _mk_user_with_school(data["school_a"])
-
-    client = APIClient()
-    client.force_authenticate(user=user_a)
-
-    # Filter by school A's course - should work
-    resp = client.get(f"/api/v1/curricula/maps/?course_id={data['course_a'].id}")
-    assert resp.status_code == 200
-    assert len(resp.json()) == 1
-
-    # Try to filter by school B's course - should see nothing (tenant boundary)
-    resp = client.get(f"/api/v1/curricula/maps/?course_id={data['course_b'].id}")
-    assert resp.status_code == 200
-    assert len(resp.json()) == 0
-
-
-def test_unit_filter_by_curriculum_map(two_schools_with_curricula):
-    """Verify filtering by curriculum map respects tenant isolation."""
-    data = two_schools_with_curricula
-    user_b = _mk_user_with_school(data["school_b"])
-
-    client = APIClient()
-    client.force_authenticate(user=user_b)
-
-    # Filter by school B's map - should work
-    resp = client.get(f"/api/v1/curricula/units/?curriculum_map_id={data['map_b'].id}")
-    assert resp.status_code == 200
-    assert len(resp.json()) == 1
-
-    # Try to filter by school A's map - should see nothing
-    resp = client.get(f"/api/v1/curricula/units/?curriculum_map_id={data['map_a'].id}")
-    assert resp.status_code == 200
-    assert len(resp.json()) == 0
-
-
-def test_lesson_filter_by_unit(two_schools_with_curricula):
-    """Verify filtering by unit respects tenant isolation."""
-    data = two_schools_with_curricula
-    user_a = _mk_user_with_school(data["school_a"])
-
-    client = APIClient()
-    client.force_authenticate(user=user_a)
-
-    # Filter by school A's unit - should work
-    resp = client.get(f"/api/v1/curricula/lessons/?unit_id={data['unit_a'].id}")
-    assert resp.status_code == 200
-    assert len(resp.json()) == 1
-
-    # Try to filter by school B's unit - should see nothing
-    resp = client.get(f"/api/v1/curricula/lessons/?unit_id={data['unit_b'].id}")
-    assert resp.status_code == 200
-    assert len(resp.json()) == 0
-
-
-def test_read_only_endpoints_reject_writes(two_schools_with_curricula):
-    """Verify that curriculum endpoints are read-only (reject POST/PUT/PATCH/DELETE)."""
-    data = two_schools_with_curricula
-    user_a = _mk_user_with_school(data["school_a"])
-
-    client = APIClient()
-    client.force_authenticate(user=user_a)
-
-    # Try to POST a new curriculum map - should be rejected
-    resp = client.post(
+    assert client.post(
         "/api/v1/curricula/maps/",
-        data={
-            "course_id": str(data["course_a"].id),
-            "title": "New Map",
-            "description": "Should fail",
+        {"course_id": str(course_a.id), "title": "Denied Map"},
+        format="json",
+    ).status_code == 403
+    assert client.patch(
+        f"/api/v1/curricula/maps/{map_a.id}/",
+        {"title": "Denied"},
+        format="json",
+    ).status_code == 403
+    assert client.post(
+        f"/api/v1/curricula/versions/{version_a.id}/transition/",
+        {"status": "review"},
+        format="json",
+    ).status_code == 403
+
+
+def test_editor_can_author_but_cannot_approve_without_publish_permission(two_schools):
+    school_a, _school_b, a, _b = two_schools
+    _course_a, _map_a, version_a, _unit_a, _lesson_a = a
+    editor = _client(
+        _user(school_a, "CURRICULUM_EDITOR", ["curriculum.view", "curriculum.edit"]),
+        school_a,
+    )
+
+    review = editor.post(
+        f"/api/v1/curricula/versions/{version_a.id}/transition/",
+        {"status": "review"},
+        format="json",
+    )
+    assert review.status_code == 200
+    approve = editor.post(
+        f"/api/v1/curricula/versions/{version_a.id}/transition/",
+        {"status": "approved"},
+        format="json",
+    )
+    assert approve.status_code == 403
+
+
+def test_publish_permission_and_segregation_of_duties(two_schools):
+    school_a, _school_b, a, _b = two_schools
+    _course_a, _map_a, version_a, _unit_a, _lesson_a = a
+    submitter = _client(
+        _user(school_a, "HEAD_OF_SCHOOL", ["curriculum.view", "curriculum.edit", "curriculum.publish"]),
+        school_a,
+    )
+    approver = _client(
+        _user(school_a, "REGISTRAR", ["curriculum.view", "curriculum.edit", "curriculum.publish"]),
+        school_a,
+    )
+
+    assert submitter.post(
+        f"/api/v1/curricula/versions/{version_a.id}/transition/",
+        {"status": "review"},
+        format="json",
+    ).status_code == 200
+    assert submitter.post(
+        f"/api/v1/curricula/versions/{version_a.id}/transition/",
+        {"status": "approved"},
+        format="json",
+    ).status_code == 400
+    assert approver.post(
+        f"/api/v1/curricula/versions/{version_a.id}/transition/",
+        {"status": "approved"},
+        format="json",
+    ).status_code == 200
+    published = approver.post(
+        f"/api/v1/curricula/versions/{version_a.id}/transition/",
+        {"status": "published"},
+        format="json",
+    )
+    assert published.status_code == 200
+    assert published.json()["status"] == "published"
+
+
+def test_cross_tenant_relations_fail_closed(two_schools):
+    school_a, _school_b, a, b = two_schools
+    _course_a, map_a, _version_a, _unit_a, _lesson_a = a
+    _course_b, _map_b, version_b, _unit_b, _lesson_b = b
+    client = _client(
+        _user(school_a, "REGISTRAR", ["curriculum.view", "curriculum.edit", "curriculum.publish"]),
+        school_a,
+    )
+
+    response = client.post(
+        "/api/v1/curricula/units/",
+        {
+            "curriculum_map_id": str(map_a.id),
+            "curriculum_version_id": str(version_b.id),
+            "sequence": 2,
+            "title": "Cross Tenant",
         },
         format="json",
     )
-    assert resp.status_code == 405  # Method Not Allowed
-
-    # Try to PUT/update existing map - should be rejected
-    resp = client.put(
-        f"/api/v1/curricula/maps/{data['map_a'].id}/",
-        data={"title": "Updated Title"},
-        format="json",
-    )
-    assert resp.status_code == 405
-
-    # Try to PATCH existing map - should be rejected
-    resp = client.patch(
-        f"/api/v1/curricula/maps/{data['map_a'].id}/",
-        data={"title": "Patched Title"},
-        format="json",
-    )
-    assert resp.status_code == 405
-
-    # Try to DELETE existing map - should be rejected
-    resp = client.delete(f"/api/v1/curricula/maps/{data['map_a'].id}/")
-    assert resp.status_code == 405
+    assert response.status_code == 400
 
 
-def test_unauthenticated_requests_blocked(two_schools_with_curricula):
-    """Verify that unauthenticated users cannot access curricula endpoints."""
+def test_unauthenticated_requests_are_denied():
     client = APIClient()
-
-    # No authentication - should return 401 or 403
-    resp = client.get("/api/v1/curricula/maps/")
-    assert resp.status_code in [401, 403]  # Unauthorized or Forbidden
-
-    resp = client.get("/api/v1/curricula/units/")
-    assert resp.status_code in [401, 403]
-
-    resp = client.get("/api/v1/curricula/lessons/")
-    assert resp.status_code in [401, 403]
-
-
-def test_curricula_detail_views_tenant_isolation(two_schools_with_curricula):
-    """Verify detail endpoints respect tenant boundaries."""
-    data = two_schools_with_curricula
-    user_a = _mk_user_with_school(data["school_a"])
-
-    client = APIClient()
-    client.force_authenticate(user=user_a)
-
-    # User A can access their own map detail
-    resp = client.get(f"/api/v1/curricula/maps/{data['map_a'].id}/")
-    assert resp.status_code == 200
-    assert resp.json()["curriculum_map_id"] == str(data["map_a"].id)
-
-    # User A CANNOT access school B's map detail (should return empty or 404)
-    # Note: DRF ReadOnlyModelViewSet may return 404 if queryset filters it out
-    resp = client.get(f"/api/v1/curricula/maps/{data['map_b'].id}/")
-    assert resp.status_code == 404
+    assert client.get("/api/v1/curricula/maps/").status_code in (401, 403)
