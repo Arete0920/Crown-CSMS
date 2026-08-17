@@ -26,5 +26,5 @@ def unseed_extended_care_edit(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-    dependencies = [("core", "0015_seed_curriculum_permissions")]
+    dependencies = [("core", "0015_curriculum_governance_permissions")]
     operations = [migrations.RunPython(seed_extended_care_edit, unseed_extended_care_edit)]
