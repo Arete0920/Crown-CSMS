@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from core.permissions import user_has_permission
 from crown_api.models import HouseholdMember, Person
 from crown_api.models_identity import UserPersonLink
 
@@ -11,12 +12,6 @@ class HouseholdAccess:
     is_staff: bool
     person: Person | None
     household_ids: set
-
-
-def is_staff_user(user) -> bool:
-    if not user or not getattr(user, "is_authenticated", False):
-        return False
-    return bool(getattr(user, "is_staff", False) or getattr(user, "is_superuser", False))
 
 
 def resolve_person_for_user(user) -> Person | None:
@@ -35,12 +30,20 @@ def resolve_person_for_user(user) -> Person | None:
     if not email:
         return None
 
+    # Compatibility fallback only. Authorization remains household/tenant scoped.
     return Person.objects.filter(email__iexact=email).first()
 
 
 def resolve_household_access(request) -> HouseholdAccess:
     user = getattr(request, "user", None)
-    staff = is_staff_user(user)
+    if not user or not getattr(user, "is_authenticated", False):
+        return HouseholdAccess(is_staff=False, person=None, household_ids=set())
+
+    school = getattr(request, "school", None)
+    staff = bool(
+        school is not None
+        and user_has_permission(user, "communications.view", school=school)
+    )
 
     if staff:
         return HouseholdAccess(is_staff=True, person=None, household_ids=set())
