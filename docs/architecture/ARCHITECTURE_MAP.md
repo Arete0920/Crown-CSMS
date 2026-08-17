@@ -2,11 +2,11 @@
 
 **Status:** CANONICAL  
 **Owner:** CROWN Engineering  
-**Effective date:** 2026-08-08
+**Last verified:** 2026-08-17
 
 ## Purpose
 
-This document defines the owner-facing architectural shape of CROWN. It describes durable boundaries and accepted decisions visible in the repository. Release and production status are governed by `docs/CURRENT_RELEASE_STATUS.md` and GitHub issue #1619.
+This document defines the owner-facing architectural shape of CROWN. It describes durable boundaries and accepted decisions visible in the repository. Release, recovery, deployment, and turnover status are governed by `docs/CURRENT_RELEASE_STATUS.md` and Crown-CSMS issue #14. Crown2026 release records remain historical predecessor evidence only.
 
 ## Architectural principles
 
@@ -76,7 +76,7 @@ Outside HTTP requests, tenant-owned background work follows ADR-0003: one tenant
 
 ### Authorization boundary
 
-Permission classes and domain services authorize actions within an already-authorized tenant. Cross-school override is exceptional, permission-controlled, request-scoped, and auditable.
+Permission classes and domain services authorize actions within an already-authorized tenant. Persistent CROWN permission authority, rather than caller-controlled headers or generic Django staff status, governs protected domain access where the domain uses canonical RBAC. Cross-school override is exceptional, permission-controlled, request-scoped, and auditable.
 
 ### Persistence boundary
 
@@ -95,9 +95,12 @@ External payment processing is currently deferred, disabled, and fail closed. Pr
 | Platform identity and tenancy | `backend/core/`, tenant middleware and permissions | Schools, users, roles, canonical family/guardian/student identity, tenant enforcement |
 | Admissions and enrollment | `backend/admissions/`, `backend/applications/`, related frontend routes | Inquiry, application, acceptance, enrollment handoff, identity compatibility bridges |
 | Finance | `backend/ledger/`, `backend/billing/`, `backend/financial_aid/`, `backend/aid/` | Charges, balances, allocations, payment records, plans, aid applications and awards |
-| Academics | `backend/academics/`, `backend/gradebook/`, `backend/curricula/` | Courses, sections, grading, curriculum, academic records |
+| Academics | `backend/academics/`, `backend/gradebook/`, `backend/curricula/`, `backend/student_records/` | Courses, sections, grading, curriculum, student records, official academic outputs and compatibility boundaries |
 | Student services | attendance, discipline, health, transportation, service-hours and related apps | School-scoped operational records and workflows |
-| Communications and support | `backend/comms/`, `backend/support/` | Outbound communication, delivery boundaries, tickets, escalation |
+| Communications and support | `backend/comms/`, `backend/crown_api/views_comms.py`, `backend/support/` | Communication/read-history authority, delivery boundaries, tickets, escalation; external transport remains integration-scoped |
+| HR and staff operations | `backend/hr/`, canonical Core staff identity | HR lifecycle/compliance while Core remains canonical identity authority; duplicate ownership must be explicitly reconciled |
+| Activities and athletics | `backend/athletics/` and related apps | Teams, rosters, eligibility, events, clearance and object-level authority |
+| Spiritual Life | `backend/spiritual_life/` | Formation, prayer, pastoral and mission-distinctive workflows with restricted-data boundaries |
 | Governance and analytics | `backend/board_oversight/`, `backend/executive360/`, `backend/analytics/` | Board, executive, health, metric, and reporting surfaces |
 | Frontend platform | `frontend/dashboards/` | Shared shell, routing, role surfaces, canonical protected request transport, components, state and accessibility |
 | Operations | `.github/workflows/`, `docs/operations/`, deployment configuration | Build, test, deploy, health, monitoring, rollback, restore, maintenance |
@@ -113,28 +116,29 @@ App presence establishes structure, not completion of every optional capability.
 
 The authoritative decision list is `DECISION_INDEX.md`.
 
-## Certification reference
+## Current certification boundary
 
-The bounded certified production release is maintained in `docs/CURRENT_RELEASE_STATUS.md` and GitHub issue #1619. Those sources govern exact release identity, deployment, health, tenant and RBAC evidence, and payment containment.
+Current source/release status is maintained in `docs/CURRENT_RELEASE_STATUS.md` and Crown-CSMS issue #14. Those sources govern exact source identity, repository certification, deployment/runtime evidence, recovery evidence, payment containment, and owner-turnover posture.
 
-Development `main` may advance beyond the certified production source. Later source changes do not inherit production certification and require their own release selection, exact-source deployment, identity reconciliation, and applicable certification before the production identity moves.
+A repository SHA or green workflow matrix does not automatically inherit production certification. Any deployed production identity must be proven from exact source through build, deployment, runtime health, monitoring, and recovery evidence for the selected release.
 
 ## Open architectural convergence
 
 1. Retire redundant tenant middleware only after complete consumer/equivalence proof.
 2. Continue migration of any remaining protected direct-fetch consumers to ADR-0002; retain only explicit public/bootstrap/external/dev/test exceptions.
-3. Complete tenant-by-tenant reconciliation of identity compatibility domains through an expand-contract migration with rollback proof.
+3. Complete tenant-by-tenant reconciliation of identity compatibility domains through an expand-contract migration with rollback proof where such migration is required.
 4. Maintain a current domain ownership and dependency graph for models, services, tasks, imports, exports, reports, APIs, and frontend consumers.
 5. Consolidate overlapping CI, deployment, certification, and runtime-verification paths only after required-check and operational dependencies are mapped.
-6. Complete inventory of every background task and management command against ADR-0003; unscoped tenant mutation is prohibited.
+6. Complete inventory of background tasks and management commands against ADR-0003; unscoped tenant mutation is prohibited.
 7. Verify external integration ownership and configuration without committing credentials.
-8. Execute deferred full rollback, isolated restore, credential-rotation, and expanded monitoring exercises when required by operations, diligence, contract, or a future owner.
-9. Create the remaining ADRs listed in `DECISION_INDEX.md` before material changes to those boundaries.
+8. Execute or explicitly disposition current immutable rollback, operational restore, credential-rotation, and monitoring exercises required for owner handoff.
+9. Create remaining ADRs listed in `DECISION_INDEX.md` before material changes to those boundaries.
+10. Keep Student Records/report-card authority, HR/Core staff ownership, Communications/Microsoft transport, and Little Lambs product authority as explicit follow-up architecture records rather than implying those roadmap boundaries are already converged.
 
 ## Change rules
 
 - Architectural changes require an ADR when they alter trust boundaries, canonical data ownership, tenant resolution, protected frontend transport, background tenant execution, public API contracts, deployment topology, or external integration authority.
 - Compatibility layers are removed only after consumer inventory, migration rehearsal, rollback design, and representative verification.
-- Runtime changes and documentation-only authority changes should normally remain separately reviewable; this final hardening lane may carry its directly corresponding ADR/status updates so implementation and authority cannot drift.
+- Runtime changes and documentation-only authority changes should normally remain separately reviewable.
 - No architecture document may describe an unimplemented target as verified source behavior.
-- Post-release hardening must not silently redefine the immutable certified production identity.
+- Historical predecessor certification must not be represented as current Crown-CSMS production identity.
