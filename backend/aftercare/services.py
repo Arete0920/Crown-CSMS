@@ -1,30 +1,21 @@
-"""
-Aftercare services — deterministic, explainable, no magic.
-
-Integration points marked with CANON_* tokens:
-  CANON_LEDGER_CHARGE_HOOK  — wire to your ledger create_charge call
-  CANON_DISCIPLINE_HOOK     — wire to your discipline record creation
-"""
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime, date, time
+from datetime import date, datetime, time
+
+from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
 
 from .models import (
-    AftercareProgramConfig,
-    AftercareEnrollment,
     AftercareAttendance,
+    AftercareEnrollment,
     AftercareIncident,
     AftercareMonthlyChargeRun,
+    AftercareProgramConfig,
 )
 
-
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
 
 def to_cents(amount) -> int:
     return int(round(float(amount) * 100))
@@ -35,7 +26,8 @@ def cents_to_amount(cents: int) -> float:
 
 
 def combine_local(d: date, t: time) -> datetime:
-    return timezone.make_aware(datetime.combine(d, t))
+    value = datetime.combine(d, t)
+    return timezone.make_aware(value, timezone.get_current_timezone())
 
 
 @dataclass
@@ -45,41 +37,28 @@ class LateFeeResult:
 
 
 def compute_late_fee(config: AftercareProgramConfig, attendance_date: date, checkout_dt: datetime) -> LateFeeResult:
-    """
-    Deterministic late-fee calculation.
-
-    Rules:
-    - Any checkout after config.end_time is late.
-    - First config.late_fee_grace_minutes of lateness are free.
-    - Each commenced 10-minute block beyond grace costs config.late_fee_per_10_min.
-    - Total fee is capped at config.late_fee_cap.
-    """
     cutoff_dt = combine_local(attendance_date, config.end_time)
     delta_sec = (checkout_dt - cutoff_dt).total_seconds()
     late_minutes = max(0, int(delta_sec // 60))
-
     grace = int(config.late_fee_grace_minutes)
     if late_minutes <= grace:
         return LateFeeResult(late_minutes=late_minutes, late_fee_cents=0)
-
     billable = late_minutes - grace
-    blocks = (billable + 9) // 10  # ceiling divide — 1 min = 1 block
-    fee = float(config.late_fee_per_10_min) * blocks
-    fee = min(fee, float(config.late_fee_cap))
+    blocks = (billable + 9) // 10
+    fee = min(float(config.late_fee_per_10_min) * blocks, float(config.late_fee_cap))
     return LateFeeResult(late_minutes=late_minutes, late_fee_cents=to_cents(fee))
 
 
-# ---------------------------------------------------------------------------
-# Integration stubs — replace with canonical implementations
-# ---------------------------------------------------------------------------
+def _student_for_school(school_id, student_id):
+    from households.models import Student
 
-def create_ledger_charge_aftercare(school_id: int, student_id: int, amount_cents: int, description: str) -> int:
-    """
-    Real Aftercare -> Finance hook.
+    try:
+        return Student.objects.get(pk=student_id, school_id=school_id, is_active=True)
+    except Student.DoesNotExist as exc:
+        raise ValidationError("Aftercare student is not active in the requested school.") from exc
 
-    Creates a FinanceObligation and returns its ID.
-    Fails closed if canonical school/student/payer mapping is missing.
-    """
+
+def create_ledger_charge_aftercare(*, school_id, student_id, amount_cents: int, description: str, reference: str) -> int:
     from .integrations import create_aftercare_finance_obligation
 
     return create_aftercare_finance_obligation(
@@ -87,16 +66,11 @@ def create_ledger_charge_aftercare(school_id: int, student_id: int, amount_cents
         student_id=student_id,
         amount_cents=amount_cents,
         description=description,
+        reference=reference,
     )
 
 
-def create_discipline_record_for_incident(school_id: int, student_id: int, description: str, severity: str):
-    """
-    Real Aftercare -> Discipline hook.
-
-    Creates a DisciplineIncident and returns its UUID.
-    Fails closed if canonical school/student mapping is missing.
-    """
+def create_discipline_record_for_incident(*, school_id, student_id, description: str, severity: str):
     from .integrations import create_aftercare_discipline_incident
 
     return create_aftercare_discipline_incident(
@@ -107,146 +81,148 @@ def create_discipline_record_for_incident(school_id: int, student_id: int, descr
     )
 
 
-# ---------------------------------------------------------------------------
-# Core actions
-# ---------------------------------------------------------------------------
-
 @transaction.atomic
-def ensure_config(school_id: int) -> AftercareProgramConfig:
-    cfg, _ = AftercareProgramConfig.objects.get_or_create(school_id=school_id)
+def ensure_config(school_id) -> AftercareProgramConfig:
+    cfg, _ = AftercareProgramConfig.objects.get_or_create(
+        school_fk_id=school_id,
+        defaults={"school_id": None},
+    )
     return cfg
 
 
 @transaction.atomic
-def checkin_student(
-    school_id: int,
-    student_id: int,
-    when: datetime | None = None,
-    note: str = "",
-) -> AftercareAttendance:
+def checkin_student(*, school_id, student_id, when: datetime | None = None, note: str = "") -> AftercareAttendance:
+    student = _student_for_school(school_id, student_id)
     when = when or timezone.now()
-    d = when.date()
-
-    a, created = AftercareAttendance.objects.get_or_create(
-        school_id=school_id,
-        student_id=student_id,
-        date=d,
-        defaults=dict(checkin_time=when, notes=note),
+    attendance, created = AftercareAttendance.objects.get_or_create(
+        school_fk_id=school_id,
+        student_fk=student,
+        date=when.date(),
+        defaults={
+            "school_id": None,
+            "student_id": None,
+            "checkin_time": when,
+            "notes": note,
+        },
     )
     if not created and note:
-        # append note without overwriting existing
-        a.notes = (a.notes + " | " + note).strip(" |")
-        a.save(update_fields=["notes"])
-    return a
+        attendance.notes = (attendance.notes + " | " + note).strip(" |")
+        attendance.save(update_fields=["notes"])
+    return attendance
 
 
 @transaction.atomic
 def checkout_student(
-    school_id: int,
-    student_id: int,
+    *,
+    school_id,
+    student_id,
     pickup_contact_id: int | None,
     pickup_name_freeform: str,
     pickup_verified: bool,
     when: datetime | None = None,
 ) -> AftercareAttendance:
+    _student_for_school(school_id, student_id)
     when = when or timezone.now()
-    d = when.date()
-    cfg = ensure_config(school_id)
-
-    a = AftercareAttendance.objects.select_for_update().get(
-        school_id=school_id, student_id=student_id, date=d
+    attendance = AftercareAttendance.objects.select_for_update().get(
+        school_fk_id=school_id,
+        student_fk_id=student_id,
+        date=when.date(),
     )
-    a.checkout_time = when
-    a.pickup_contact_id = pickup_contact_id
-    a.pickup_name_freeform = pickup_name_freeform or ""
-    a.pickup_verified = bool(pickup_verified)
+    cfg = ensure_config(school_id)
+    attendance.checkout_time = when
+    attendance.pickup_contact_id = pickup_contact_id
+    attendance.pickup_name_freeform = pickup_name_freeform or ""
+    attendance.pickup_verified = bool(pickup_verified)
 
-    fee = compute_late_fee(cfg, d, when)
-    a.late_minutes = fee.late_minutes
-    a.late_fee_cents = fee.late_fee_cents
-
-    if a.late_fee_cents > 0 and not a.late_fee_charge_id:
-        charge_id = create_ledger_charge_aftercare(
+    fee = compute_late_fee(cfg, attendance.date, when)
+    attendance.late_minutes = fee.late_minutes
+    attendance.late_fee_cents = fee.late_fee_cents
+    if attendance.late_fee_cents > 0 and not attendance.late_fee_charge_id:
+        attendance.late_fee_charge_id = create_ledger_charge_aftercare(
             school_id=school_id,
             student_id=student_id,
-            amount_cents=a.late_fee_cents,
-            description=f"Aftercare Late Pickup Fee ({a.late_minutes} min)",
+            amount_cents=attendance.late_fee_cents,
+            description=f"Aftercare Late Pickup Fee ({attendance.late_minutes} min)",
+            reference=f"aftercare-late:{attendance.id}",
         )
-        a.late_fee_charge_id = charge_id
-
-    a.save()
-    return a
+    attendance.save()
+    return attendance
 
 
 @transaction.atomic
 def record_incident(
-    school_id: int,
-    student_id: int,
+    *,
+    school_id,
+    student_id,
     severity: str,
     description: str,
     attendance_id: int | None = None,
     parent_notified: bool = False,
 ) -> AftercareIncident:
-    inc = AftercareIncident.objects.create(
-        school_id=school_id,
-        student_id=student_id,
+    student = _student_for_school(school_id, student_id)
+    if attendance_id is not None and not AftercareAttendance.objects.filter(
+        pk=attendance_id,
+        school_fk_id=school_id,
+        student_fk=student,
+    ).exists():
+        raise ValidationError("Aftercare attendance does not match the student and school.")
+
+    incident = AftercareIncident.objects.create(
+        school_fk_id=school_id,
+        student_fk=student,
+        school_id=None,
+        student_id=None,
         severity=severity,
         description=description,
         attendance_id=attendance_id,
         parent_notified=parent_notified,
     )
-
-    # Auto-create discipline record for MODERATE/MAJOR incidents
     if severity in ("MODERATE", "MAJOR"):
-        inc.discipline_record_id = create_discipline_record_for_incident(
+        incident.discipline_record_id = create_discipline_record_for_incident(
             school_id=school_id,
-            student_id=student_id,
+            student_id=student.id,
             description=f"Aftercare incident ({severity}): {description}",
             severity=severity,
         )
-        inc.save(update_fields=["discipline_record_id"])
-
-    return inc
+        incident.save(update_fields=["discipline_record_id"])
+    return incident
 
 
 @transaction.atomic
-def run_monthly_flat_billing(school_id: int, year: int, month: int) -> dict:
-    """
-    Charges families/students enrolled under FLAT_MONTHLY.
-    Idempotent: AftercareMonthlyChargeRun prevents double-runs.
-    """
-    if AftercareMonthlyChargeRun.objects.filter(school_id=school_id, year=year, month=month).exists():
+def run_monthly_flat_billing(*, school_id, year: int, month: int) -> dict:
+    if AftercareMonthlyChargeRun.objects.filter(school_fk_id=school_id, year=year, month=month).exists():
         return {"status": "already_ran"}
 
     month_start = date(year, month, 1)
     next_month = 1 if month == 12 else month + 1
     next_year = year + 1 if month == 12 else year
     month_end = date(next_year, next_month, 1)
-
     enrollments = AftercareEnrollment.objects.filter(
-        school_id=school_id,
+        school_fk_id=school_id,
+        student_fk__isnull=False,
         is_active=True,
         billing_model="FLAT_MONTHLY",
         start_date__lt=month_end,
-    ).filter(
-        Q(end_date__isnull=True) | Q(end_date__gte=month_start)
-    )
+    ).filter(Q(end_date__isnull=True) | Q(end_date__gte=month_start))
 
     charged = 0
-    for e in enrollments:
-        if not e.monthly_rate:
+    for enrollment in enrollments:
+        if not enrollment.monthly_rate:
             continue
         create_ledger_charge_aftercare(
             school_id=school_id,
-            student_id=e.student_id,
-            amount_cents=to_cents(e.monthly_rate),
+            student_id=enrollment.student_fk_id,
+            amount_cents=to_cents(enrollment.monthly_rate),
             description=f"Aftercare Monthly ({year}-{month:02d})",
+            reference=f"aftercare-month:{year:04d}{month:02d}:{enrollment.id}",
         )
         charged += 1
 
     AftercareMonthlyChargeRun.objects.create(
-        school_id=school_id, year=year, month=month, notes=f"charged={charged}"
+        school_fk_id=school_id,
+        school_id=None,
+        year=year,
+        month=month,
+        notes=f"charged={charged}",
     )
     return {"status": "ok", "charged": charged}
-
-
