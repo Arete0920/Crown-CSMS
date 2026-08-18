@@ -13,21 +13,19 @@ function readRepoFile(relativePath) {
 }
 
 describe('release authority consistency contract', () => {
-  it('keeps historical predecessor certification distinct from the current successor handoff decision', () => {
+  it('keeps completed engineering authority distinct from transaction-time operational turnover', () => {
     const source = readRepoFile('docs/CURRENT_RELEASE_STATUS.md');
-    expect(source.includes('Current handoff decision: **NO-GO / REMEDIATION AND FRESH EXACT-IDENTITY CERTIFICATION REQUIRED**')).toBe(true);
-    expect(source.includes('Prior bounded production deployment: **HISTORICAL PASS**')).toBe(true);
-    expect(source.includes('Prior Heritage surface matrix: **18/18 HISTORICAL RESULT; NOT CURRENT HANDOFF PROOF**')).toBe(true);
-    expect(source.includes('Crown-CSMS issue #14 is the active execution-control record')).toBe(true);
-    expect(source.includes('Current buyer diligence package: **NOT READY — SEE Crown-CSMS issue #14**')).toBe(true);
-    expect(source.includes('Issue #1619 controls claims about the preserved Crown2026 release')).toBe(false);
-    expect(source.includes('READY AFTER CANONICAL RECORD RECONCILIATION')).toBe(false);
+    expect(source.includes('engineering gap-closure program tracked by issue #14 is **COMPLETED**')).toBe(true);
+    expect(source.includes('Issue #14 is a **completed historical engineering-program record**, not active execution authority.')).toBe(true);
+    expect(source.includes('Buyer operational turnover: PENDING IDENTIFIED BUYER AND PARTY ACCEPTANCE')).toBe(true);
+    expect(source.includes('issue #14 remains the controlling turnover record')).toBe(false);
+    expect(source.includes('Current buyer diligence package: **NOT READY')).toBe(false);
   });
 
   it('keeps actual buyer turnover pending and payment processing disabled', () => {
     const source = readRepoFile('docs/CURRENT_RELEASE_STATUS.md');
-    expect(source.includes('Buyer operational turnover: **PENDING IDENTIFIED BUYER AND PARTY ACCEPTANCE**')).toBe(true);
-    expect(source.includes('**PAYMENT PROCESSING:** DISABLED / FAIL CLOSED / NOT AUTHORIZED FOR ACTIVATION')).toBe(true);
+    expect(source.includes('Buyer operational turnover: PENDING IDENTIFIED BUYER AND PARTY ACCEPTANCE')).toBe(true);
+    expect(source.includes('**PAYMENT PROCESSING: DISABLED / FAIL CLOSED / NOT AUTHORIZED FOR ACTIVATION**')).toBe(true);
   });
 
   it('keeps the canonical index pointed at the current release authority document', () => {

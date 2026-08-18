@@ -1,8 +1,8 @@
 # CROWN Canonical Document Index
 
-**Status:** Canonical documentation authority  
-**Last verified:** 2026-08-17  
-**Handoff-refresh branch base `main`:** `f9bf6b4143e707f93ec8d6ce319327ddc7d3e2a0`
+**Status:** Canonical documentation authority
+**Last verified:** 2026-08-18
+**Current certified handoff base `main`:** `f5f97927d39f247c1afe22b9eb56b6d5b661af04`
 
 This index defines the active documentation authority surface for Crown-CSMS. It intentionally does **not** embed per-file blob SHAs as durable authority because those IDs become stale whenever a governed document is updated. Exact source identity belongs in the current release/status record and the Git history for the reviewed change.
 
@@ -12,7 +12,7 @@ This index defines the active documentation authority surface for Crown-CSMS. It
 | `docs/README.md` | Documentation navigation | This index | Documentation-structure change |
 | `docs/canonical/REPOSITORY_MANIFEST.md` | Allowed active repository surface | This index | Repository-structure change |
 | `docs/canonical/DILIGENCE_EVIDENCE_INDEX.md` | Diligence navigation and evidence boundary | Current release status | Each handoff/release decision |
-| `docs/CURRENT_RELEASE_STATUS.md` | Release, payment, recovery, and turnover posture | Exact Crown-CSMS evidence; authorized decision | Every release-relevant change |
+| `docs/CURRENT_RELEASE_STATUS.md` | Current release status; Release, freeze, payment, and turnover posture | Exact Crown-CSMS evidence; authorized decision | Every release-relevant change |
 | `docs/architecture/ARCHITECTURE_MAP.md` | Current architecture | Implemented source; accepted decisions | Architecture/ownership change |
 | `docs/architecture/DECISION_INDEX.md` | Architecture decision navigation | Accepted decision records | Each architecture decision |
 | `docs/engineering/DEV_SETUP.md` | Reproducible engineering setup | Current repository configuration | Setup/dependency change |
@@ -36,7 +36,7 @@ This index defines the active documentation authority surface for Crown-CSMS. It
 - **DUPLICATE:** repeats an authority without a defined supporting role.
 - **UNSUPPORTED:** lacks exact evidence or an authorized decision.
 
-Crown2026 material is historical predecessor/provenance material for Crown-CSMS unless a current canonical record explicitly incorporates a bounded fact from it.
+Predecessor-repository material is historical provenance material for Crown-CSMS unless a current canonical record explicitly incorporates a bounded fact from it.
 
 ## Owner-handoff hygiene rule
 
