@@ -2,24 +2,27 @@
 
 **Status:** Canonical repository/release authority
 **Last verified:** 2026-08-18
-**Current certified handoff base `main`:** `8d3f364180d6a0360228c7d72ace4fa7b54e1dc2`
+**Current certified handoff base `main`:** `4697071dbd2eba14dae49b114e033fcffba6f46f`
 **Migration baseline:** `ac574ab2a55ecbfefb40cbd67bad08d99c085575`
 
 ## Current decision
 
-The predecessor-to-Crown-CSMS migration and successor engineering gap-closure program tracked by issue #14 is **COMPLETED**. Current successor `main` includes the owner-turnover/canonical reconciliation sequence through PR #103, including the final Student Records defense-in-depth authorization repair and the final owner-handoff authority/certification-plumbing reconciliation.
+The predecessor-to-Crown-CSMS migration and successor engineering gap-closure program tracked by issue #14 is **COMPLETED**. Current successor `main` includes the owner-turnover/canonical reconciliation sequence through PR #107, including the final Student Records defense-in-depth authorization repair, owner-handoff authority/certification-plumbing reconciliation, retirement of obsolete May-era release-authority controls, and post-retirement canonical authority cleanup.
 
 Repository engineering completion is distinct from transaction-time operational transfer. **No successor production tag or release is asserted by this record, and buyer operational turnover remains pending an identified buyer and authorized party acceptance.**
 
 ## Current repository state
 
 - Crown-CSMS active successor repository: **VERIFIED**
-- Current certified handoff base `main`: `8d3f364180d6a0360228c7d72ace4fa7b54e1dc2`
+- Current certified handoff base `main`: `4697071dbd2eba14dae49b114e033fcffba6f46f`
 - Migration/successor engineering gap-closure issue #14: **CLOSED / COMPLETED**
 - PR #99 owner-turnover/canonical documentation refresh: **MERGED**
 - PR #100 final architecture/hygiene reconciliation: **MERGED**
 - PR #101 Student Records registrar-authority defense-in-depth: **MERGED / EXACT-HEAD CERTIFIED**
 - PR #103 owner-handoff authority and final certification plumbing: **MERGED / EXACT-HEAD CERTIFIED**
+- PR #105 post-#103 owner-facing authority reconciliation: **MERGED / EXACT-HEAD CERTIFIED**
+- PR #106 obsolete May release-authority control retirement: **MERGED / EXACT-HEAD CERTIFIED**
+- PR #107 post-retirement authority cleanup: **MERGED / EXACT-HEAD CERTIFIED**
 - Student Records #66: **CLOSED / COMPLETED**
 - HR #67: **CLOSED / RELEASE-CRITICAL SECURITY REPAIR COMPLETED**
 - Transportation P0 #78: **CLOSED / COMPLETED**
