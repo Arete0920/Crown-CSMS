@@ -1,24 +1,25 @@
 # CROWN Current Release Status
 
 **Status:** Canonical repository/release authority
-**Last verified:** 2026-08-17/18
-**Current certified handoff base `main`:** `f5f97927d39f247c1afe22b9eb56b6d5b661af04`
+**Last verified:** 2026-08-18
+**Current certified handoff base `main`:** `8d3f364180d6a0360228c7d72ace4fa7b54e1dc2`
 **Migration baseline:** `ac574ab2a55ecbfefb40cbd67bad08d99c085575`
 
 ## Current decision
 
-The predecessor-to-Crown-CSMS migration and successor engineering gap-closure program tracked by issue #14 is **COMPLETED**. Current successor `main` includes the owner-turnover/canonical reconciliation sequence through PR #101, including the final Student Records defense-in-depth authorization repair.
+The predecessor-to-Crown-CSMS migration and successor engineering gap-closure program tracked by issue #14 is **COMPLETED**. Current successor `main` includes the owner-turnover/canonical reconciliation sequence through PR #103, including the final Student Records defense-in-depth authorization repair and the final owner-handoff authority/certification-plumbing reconciliation.
 
 Repository engineering completion is distinct from transaction-time operational transfer. **No successor production tag or release is asserted by this record, and buyer operational turnover remains pending an identified buyer and authorized party acceptance.**
 
 ## Current repository state
 
 - Crown-CSMS active successor repository: **VERIFIED**
-- Current certified handoff base `main`: `f5f97927d39f247c1afe22b9eb56b6d5b661af04`
+- Current certified handoff base `main`: `8d3f364180d6a0360228c7d72ace4fa7b54e1dc2`
 - Migration/successor engineering gap-closure issue #14: **CLOSED / COMPLETED**
 - PR #99 owner-turnover/canonical documentation refresh: **MERGED**
 - PR #100 final architecture/hygiene reconciliation: **MERGED**
 - PR #101 Student Records registrar-authority defense-in-depth: **MERGED / EXACT-HEAD CERTIFIED**
+- PR #103 owner-handoff authority and final certification plumbing: **MERGED / EXACT-HEAD CERTIFIED**
 - Student Records #66: **CLOSED / COMPLETED**
 - HR #67: **CLOSED / RELEASE-CRITICAL SECURITY REPAIR COMPLETED**
 - Transportation P0 #78: **CLOSED / COMPLETED**
