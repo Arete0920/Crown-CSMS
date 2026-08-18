@@ -38,6 +38,15 @@ STATUS_PATTERNS = {
     "run": r"(?m)^\*\*Production deployment run:\*\*\s*`?([0-9]+)`?\s*$",
 }
 
+# Current authority can explicitly state that repository engineering is complete
+# while no successor production release has yet been selected/asserted. In that
+# state, production SHA/tag/run fields are intentionally absent and must not be
+# fabricated merely to satisfy freshness validation.
+MIGRATION_MODE_MARKERS = (
+    "no successor production tag or release exists",
+    "no successor production tag or release is asserted by this record",
+)
+
 
 def fail(message: str, failures: list[str]) -> None:
     failures.append(message)
@@ -55,7 +64,8 @@ def main() -> int:
         print(f"ERROR: cannot read docs/CURRENT_RELEASE_STATUS.md: {exc}", file=sys.stderr)
         return 1
     authority: dict[str, str] = {}
-    migration_mode = "no successor production tag or release exists" in status_text.lower()
+    lowered_status = status_text.lower()
+    migration_mode = any(marker in lowered_status for marker in MIGRATION_MODE_MARKERS)
     for key, pattern in STATUS_PATTERNS.items():
         match = re.search(pattern, status_text)
         if not match:
