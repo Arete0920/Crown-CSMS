@@ -1,100 +1,91 @@
 # Isolated PostgreSQL Restore Drill
 
 **Status:** Runnable repository control; operational-backup evidence remains required.  
-**Effective date:** 2026-07-31  
-**Last reviewed:** 2026-07-31  
-**Repository baseline reviewed:** `d725386a6cfbb48f9967e65e15cd92db27cdfde2`  
-**Controlling issue:** #1627 (Lane 3 under #1619)  
-**Historical context:** #1270  
+**Original mechanics baseline:** `d725386a6cfbb48f9967e65e15cd92db27cdfde2`  
+**Last authority reconciliation:** 2026-08-18  
+**Current authority:** `docs/CURRENT_RELEASE_STATUS.md` plus the authorized owner-handoff/operational-transfer record for the selected exact identity  
+**Historical trackers:** predecessor recovery issue numbers, including former Lane 3/Lane 5 trackers, are provenance only  
 **Production mutation:** Prohibited
 
 ## Freshness boundary
 
-Before this runbook or any linked evidence is used or changed, verify the effective date, repository baseline, controlling issue, workflow definition, PostgreSQL version, artifact retention, backup identity, and whether a later canonical runbook supersedes it. Evidence from an older source SHA or synthetic fixture must remain explicitly historical and must not be treated as current operational-backup proof.
+Before this runbook or linked evidence is used operationally, verify the current repository identity, workflow definition, PostgreSQL version, artifact retention, backup identity, target environment, and whether a later canonical runbook supersedes it. Evidence from an older source SHA, predecessor issue campaign, or synthetic fixture must remain explicitly historical and must not be treated as current operational-backup proof.
 
 ## Purpose
 
-The `Isolated PostgreSQL Restore Drill` workflow executes a real PostgreSQL custom-format dump restore into a uniquely named, non-production database. It validates archive readability, backup age, digest, size, required tables, migration history, elapsed restore time, and cleanup. Evidence is retained as a GitHub Actions artifact.
+The isolated PostgreSQL restore control validates a real PostgreSQL custom-format dump by restoring it into a uniquely named, non-production database. The control is intended to verify archive readability, backup identity and age, digest, required tables, migration history, elapsed restore time, structural integrity, and cleanup without mutating production.
 
 ## Automatic mechanics drill
 
-Pull requests and qualifying pushes run the workflow automatically. It:
+The repository workflow/mechanics may:
 
-1. starts an isolated PostgreSQL 16 service;
-2. applies current CROWN migrations to a source database;
-3. creates a custom-format `pg_dump` archive;
-4. records its timestamp, size, SHA-256 digest, and run identity;
-5. executes `verify_backup_restore` against a new isolated database;
-6. verifies required tables, public-table count, migration count, and cleanup;
-7. uploads the evidence packet.
+1. start an isolated supported PostgreSQL service;
+2. apply the current CROWN migration set to a source database;
+3. create or receive a custom-format `pg_dump` archive;
+4. record timestamp, size, SHA-256 digest, source identity, and run identity;
+5. execute `verify_backup_restore` against a new isolated database;
+6. verify required tables, migration state, structural checks, and cleanup;
+7. retain an evidence packet.
 
-This is a real PostgreSQL dump and restore. It proves current restore mechanics, not the existence or freshness of an operational backup.
+A generated-fixture run proves restore mechanics. It does **not** prove the existence, freshness, ownership, retention, or recoverability of an operational production backup.
 
-## Verified pull-request evidence
+## Historical mechanics evidence
 
-The run associated with PR #1798 produced artifact `8787408835`, digest `sha256:7838940af5bb0d116d55be02759309a09bae7f6e61aa85c4fc4a05cf0b42d5c9`, for pull-request merge ref `39dad0289498c0e62276c74aaf98911bd2735bd8` derived from branch head `969546ac4e474265574d78b0ae55d98902d6b259` and base `cae29286c77847006fe1890b84080581c1705f8f`.
+Prior retained evidence demonstrated a real PostgreSQL 16 isolated restore with archive preflight, required-table verification, Django migration verification, measured elapsed restore time, temporary database creation/drop, and `production_database_mutated=false`.
 
-That generated-fixture run recorded:
-
-- result `PASS`;
-- PostgreSQL 16 isolated service;
-- all current migrations applied and `manage.py check` reporting no issues;
-- custom-format archive size `1,576,066` bytes;
-- archive SHA-256 `0755ae768d26e30fd9799781af0385ed897f458adf220c6c87c48b730aa643ac`;
-- archive preflight passed;
-- `388` public tables;
-- `187` Django migration rows;
-- required tables `core_school`, `core_useraccount`, and `django_migrations` present;
-- isolated restore elapsed time `3.403` seconds;
-- temporary database created and dropped;
-- `production_database_mutated=false`.
-
-This evidence is attributable to the pull-request merge ref, not to a final immutable release candidate or deployed runtime.
+That evidence remains useful provenance for the mechanics but is not current release-linked operational-backup proof. Historical artifact IDs, workflow runs, predecessor repository SHAs, and issue numbers must not be promoted into current transfer or production evidence without explicit current canonical incorporation.
 
 ## Evidence packet
 
-The artifact contains:
+A current evidence packet should include, with secrets excluded:
 
-- `backup-created-at-utc.txt`;
-- `backup-immutable-identifier.txt`;
-- `backup-size-bytes.txt`;
-- `backup.sha256`;
-- `restore-evidence.json`;
-- `retained-recovery-evidence.json`;
-- `SUMMARY.md`.
+- exact Crown-CSMS source/release identity;
+- environment and authorized operator;
+- backup source/system and immutable backup identifier;
+- backup creation time and age at drill start;
+- backup size and SHA-256 digest;
+- restore start/end timestamps and elapsed duration;
+- archive-preflight result;
+- migration and required-table results;
+- tenant-isolation, critical-record, relationship, and financial-integrity results required by the selected scope;
+- application compatibility/connectivity result against the restored copy where applicable;
+- cleanup result;
+- measured RTO/RPO and accepted target/disposition where required;
+- evidence links and authorized acceptance/rejection.
 
-A passing run requires archive preflight, isolated database creation, structural validation, successful database cleanup, and `production_database_mutated=false`.
+## Controlled operational drill
 
-## Remaining Lane 3 operational drill
+For a selected release or transfer identity, the authorized operator should:
 
-Closing #1627 requires a retained operational backup or explicitly approved substitute tied to the selected immutable release SHA. The authorized operator must:
-
-1. record environment, operator, source SHA, deployment identity, backup system, backup creation time, immutable backup identifier, digest, and size;
+1. prove exact source, deployment/runtime identity where applicable, and backup identity before mutation;
 2. verify the approved RPO target before restore begins;
-3. restore only into an isolated approved database and record start/end timestamps;
-4. run schema, migration, required-table, tenant-isolation, row-count, relationship, and financial-integrity checks;
-5. prove application connectivity to the restored copy without permitting production writes;
-6. execute or independently prove application rollback to a known-good exact SHA;
-7. record detection time, decision time, rollback duration, restore duration, total recovery time, and measured data-loss interval;
-8. compare measured RTO/RPO with accepted targets and record accountable acceptance or rejection;
-9. retain commands, logs, monitoring evidence, validation output, deviations, aborts, escalation, and cleanup evidence.
+3. restore only into an isolated approved database;
+4. run schema, migration, required-table, tenant-isolation, row-count, relationship, and material financial-integrity checks appropriate to the system state;
+5. prove application connectivity to the restored copy without permitting production writes where that proof is required;
+6. independently reconcile application rollback/forward-fix compatibility with the restored database;
+7. record detection, decision, rollback, restore, and total-recovery timestamps when measuring RTO;
+8. calculate the measured data-loss interval when evaluating RPO;
+9. retain commands, logs, monitoring evidence, validation output, deviations, aborts, escalation, acceptance, and cleanup evidence.
 
 ## Abort and escalation criteria
 
-Stop the exercise and escalate if any of the following occurs:
+Stop the exercise and escalate when:
 
-- production database or production storage mutation is possible;
-- source SHA, deployment identity, or backup identity cannot be proven;
-- archive digest, size, age, or ownership cannot be verified;
-- restore targets an existing or shared database;
+- production database or production storage mutation is possible without explicit approved authority;
+- source SHA, deployment/runtime identity, or backup identity cannot be proven;
+- archive digest, size, age, ownership, or retention cannot be verified;
+- restore targets an existing/shared database when isolation is required;
 - migration state or required tables do not reconcile;
-- tenant isolation, financial totals, or referential integrity fail;
-- monitoring or audit evidence is unavailable;
+- tenant isolation, material financial totals, or referential integrity fail;
+- application/database compatibility cannot be established;
+- monitoring or audit evidence required by the exercise is unavailable;
 - operator privileges exceed the approved drill scope;
-- accepted RTO/RPO cannot be evaluated from retained timestamps.
+- accepted RTO/RPO cannot be evaluated from retained evidence when those measurements are required.
 
 ## Acceptance boundary
 
-A passing automatic run establishes real PostgreSQL restore mechanics, archive preflight, isolated database creation, structural validation, measured restore duration, cleanup, and no production mutation.
+A passing repository mechanics run establishes only the checks actually recorded, such as archive preflight, isolated database creation, structural validation, elapsed restore duration, cleanup, and no production mutation.
 
-It does **not** prove a current operational backup, Azure/application rollback, accepted RTO/RPO, production cutover, resilience certification, or production authorization. Those claims require the completed Lane 3 operational evidence packet linked to #1627 and #1619 for the same unchanged release SHA.
+It does **not** by itself prove a current operational backup, application rollback completion, accepted RTO/RPO, production cutover, resilience certification, production authorization, legal/compliance approval, or completed owner turnover.
+
+Current operational recovery acceptance must be tied to the exact selected Crown-CSMS identity and the authorized current transfer/release record, not to predecessor issue numbers or historical artifacts.
