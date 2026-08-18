@@ -1,10 +1,10 @@
 # CROWN Canonical Document Index
 
-**Status:** Canonical documentation authority
-**Last verified:** 2026-08-18
-**Current certified handoff base `main`:** `4697071dbd2eba14dae49b114e033fcffba6f46f`
+**Status:** Canonical documentation authority  
+**Last verified:** 2026-08-18  
+**Current repository identity:** resolve exact current `refs/heads/main` from Git/GitHub; do not duplicate a mutable self-invalidating SHA in this index
 
-This index defines the active documentation authority surface for Crown-CSMS. It intentionally does **not** embed per-file blob SHAs as durable authority because those IDs become stale whenever a governed document is updated. Exact source identity belongs in the current release/status record and the Git history for the reviewed change.
+This index defines the active documentation authority surface for Crown-CSMS. It intentionally does **not** embed per-file blob SHAs or a copied current-`main` SHA as durable authority because those IDs become stale whenever a governed document is updated. Exact source identity must be resolved from Git/GitHub and recorded in the immutable evidence packet or transfer/release record for the decision being made.
 
 | Document | Purpose | Authority source | Review trigger |
 |---|---|---|---|
@@ -12,7 +12,7 @@ This index defines the active documentation authority surface for Crown-CSMS. It
 | `docs/README.md` | Documentation navigation | This index | Documentation-structure change |
 | `docs/canonical/REPOSITORY_MANIFEST.md` | Allowed active repository surface | This index | Repository-structure change |
 | `docs/canonical/DILIGENCE_EVIDENCE_INDEX.md` | Diligence navigation and evidence boundary | Current release status | Each handoff/release decision |
-| `docs/CURRENT_RELEASE_STATUS.md` | Current release status; Release, freeze, payment, and turnover posture | Exact Crown-CSMS evidence; authorized decision | Every release-relevant change |
+| `docs/CURRENT_RELEASE_STATUS.md` | Current release status; release, payment, recovery, and turnover posture | Exact Crown-CSMS evidence; authorized decision | Every release-relevant change |
 | `docs/architecture/ARCHITECTURE_MAP.md` | Current architecture | Implemented source; accepted decisions | Architecture/ownership change |
 | `docs/architecture/DECISION_INDEX.md` | Architecture decision navigation | Accepted decision records | Each architecture decision |
 | `docs/engineering/DEV_SETUP.md` | Reproducible engineering setup | Current repository configuration | Setup/dependency change |
@@ -27,6 +27,10 @@ This index defines the active documentation authority surface for Crown-CSMS. It
 | `CONTRIBUTING.md` | Contribution requirements | Change-management policy | Contribution-policy change |
 | `AGENTS.md` | Repository work contract | Repository governance | Workflow/policy change |
 
+## Exact-identity rule
+
+When exact identity matters, resolve the current Git ref directly and retain the exact SHA in immutable evidence. A mutable canonical document must not attempt to prove its own eventual merge SHA. Historical copied SHAs may remain as provenance when clearly labeled historical, but they must not be represented as current `main`.
+
 ## Classification and use
 
 - **CURRENT / CANONICAL:** listed above and governed by its stated authority.
@@ -36,7 +40,7 @@ This index defines the active documentation authority surface for Crown-CSMS. It
 - **DUPLICATE:** repeats an authority without a defined supporting role.
 - **UNSUPPORTED:** lacks exact evidence or an authorized decision.
 
-Predecessor-repository material is historical provenance material for Crown-CSMS unless a current canonical record explicitly incorporates a bounded fact from it.
+Predecessor-repository material, predecessor issue programs, and superseded release campaigns are historical provenance for Crown-CSMS unless a current canonical record explicitly incorporates a bounded fact from them.
 
 ## Owner-handoff hygiene rule
 
