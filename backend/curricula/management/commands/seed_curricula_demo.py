@@ -2,12 +2,11 @@ from __future__ import annotations
 
 import uuid
 from dataclasses import dataclass
-from typing import Iterable
 
 from django.core.management.base import BaseCommand
 from django.db import transaction
 
-from curricula.models import CurriculumMap, Unit, Lesson
+from curricula.models import CurriculumMap, CurriculumMapVersion, Unit, Lesson
 
 
 @dataclass(frozen=True)
@@ -46,7 +45,7 @@ DEMO_MAPS: tuple[SeedMap, ...] = (
                 overview="Big-picture storyline of Scripture: creation, fall, redemption, restoration.",
                 lessons=(
                     SeedLesson(1, "Why worldview matters", "Define worldview; connect beliefs to choices.", "Slides, discussion questions"),
-                    SeedLesson(2, "Creation and dignity", "Imago Dei; purpose and value.", "Genesis 1–2"),
+                    SeedLesson(2, "Creation and dignity", "Imago Dei; purpose and value.", "Genesis 1-2"),
                     SeedLesson(3, "The fall and brokenness", "Sin and its effects; hope begins.", "Genesis 3"),
                 ),
             ),
@@ -138,9 +137,11 @@ class Command(BaseCommand):
         if wipe:
             Lesson.objects.filter(school_id=school_id).delete()
             Unit.objects.filter(school_id=school_id).delete()
+            CurriculumMapVersion.objects.filter(school_id=school_id).delete()
             CurriculumMap.objects.filter(school_id=school_id).delete()
 
         created_maps = 0
+        created_versions = 0
         created_units = 0
         created_lessons = 0
 
@@ -156,10 +157,23 @@ class Command(BaseCommand):
             if cmap_created:
                 created_maps += 1
 
+            version, version_created = CurriculumMapVersion.objects.get_or_create(
+                school_id=school_id,
+                curriculum_map=cmap,
+                version_number=1,
+                defaults={
+                    "status": CurriculumMapVersion.Status.PUBLISHED,
+                    "change_summary": "Initial demo curriculum edition.",
+                },
+            )
+            if version_created:
+                created_versions += 1
+
             for u in m.units:
                 unit, unit_created = Unit.objects.get_or_create(
                     school_id=school_id,
                     curriculum_map=cmap,
+                    curriculum_version=version,
                     sequence=u.seq,
                     defaults={
                         "title": u.title,
@@ -170,7 +184,7 @@ class Command(BaseCommand):
                     created_units += 1
 
                 for l in u.lessons:
-                    lesson, lesson_created = Lesson.objects.get_or_create(
+                    _, lesson_created = Lesson.objects.get_or_create(
                         school_id=school_id,
                         unit=unit,
                         sequence=l.seq,
@@ -186,6 +200,7 @@ class Command(BaseCommand):
         self.stdout.write(
             self.style.SUCCESS(
                 f"Seed complete for school_id={school_id}. "
-                f"created: maps={created_maps}, units={created_units}, lessons={created_lessons}"
+                f"created: maps={created_maps}, versions={created_versions}, "
+                f"units={created_units}, lessons={created_lessons}"
             )
         )
