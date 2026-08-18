@@ -50,6 +50,7 @@
     "certify:scaffold-crawler": "playwright test tests/certification/scaffold-certification-crawler.spec.ts --workers=1 --reporter=line",
     "certify:production-preflight": "playwright test tests/certification/production-runtime-preflight.spec.ts --workers=1 --reporter=line",
     "certify:production-crawler": "npm run certify:production-preflight && playwright test tests/certification/production-certification-crawler.spec.ts --workers=1 --reporter=line",
+    "certify:buyer-sandbox-browser": "node scripts/run-buyer-sandbox-browser-authority.mjs",
     "certify:scaffold": "npm run build && npm run certify:scaffold-crawler",
     "certify:production": "npm run certify:production-crawler"
   },
