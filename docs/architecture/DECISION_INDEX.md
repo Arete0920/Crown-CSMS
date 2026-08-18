@@ -2,11 +2,11 @@
 
 **Status:** CANONICAL  
 **Owner:** CROWN Engineering  
-**Last verified:** 2026-08-17
+**Last verified:** 2026-08-18
 
 ## Purpose
 
-This index is the authoritative list of accepted architecture decisions. Documents not listed here may describe implementation, analysis, inventory, or proposed direction, but they are not accepted architecture authority. Current release/runtime/turnover status is governed separately by `docs/CURRENT_RELEASE_STATUS.md` and Crown-CSMS issue #14.
+This index is the authoritative list of accepted architecture decisions. Documents not listed here may describe implementation, analysis, inventory, or proposed direction, but they are not accepted architecture authority. Current release/runtime/turnover status is governed separately by `docs/CURRENT_RELEASE_STATUS.md` and current authorized owner-handoff/operational-transfer records; issue #14 is completed historical engineering-program evidence.
 
 ## Accepted decisions
 
