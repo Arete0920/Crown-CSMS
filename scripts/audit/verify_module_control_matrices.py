@@ -1,15 +1,14 @@
 #!/usr/bin/env python3
 """Validate the required CROWN full-module control matrices.
 
-This gate prevents the canonical module completion and review controls from
+This gate prevents the canonical module completion and governance controls from
 silently disappearing, omitting rows, using unsupported status vocabulary, or
-claiming Certified while independent review remains unassigned.
+claiming Certified without a recorded approved governance review path.
 """
 
 from __future__ import annotations
 
 import re
-import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -129,29 +128,30 @@ for key, status in completion_rows.items():
     if status not in ALLOWED_STATUSES:
         fail(f"completion row {key} uses unsupported status: {status}")
 
-raci_reviewers: dict[str, str] = {}
+governance_paths: dict[str, str] = {}
 for line in raci.splitlines():
     match = re.match(r"^\|\s*[^|]+\|\s*`([^`]+)`\s*\|\s*([^|]+?)\s*\|", line)
     if not match:
         continue
-    key, reviewer = match.groups()
+    key, governance_path = match.groups()
     if key in CANONICAL_KEYS:
-        if key in raci_reviewers:
+        if key in governance_paths:
             fail(f"duplicate RACI row: {key}")
-        raci_reviewers[key] = reviewer.strip()
+        governance_paths[key] = governance_path.strip()
 
-missing_raci = [key for key in CANONICAL_KEYS if key not in raci_reviewers]
+missing_raci = [key for key in CANONICAL_KEYS if key not in governance_paths]
 if missing_raci:
     fail(f"review RACI missing canonical rows: {missing_raci}")
 
 for key, status in completion_rows.items():
-    if status == "Certified" and raci_reviewers.get(key, "UNASSIGNED").upper() == "UNASSIGNED":
-        fail(f"{key} is Certified while independent reviewer remains UNASSIGNED")
+    path = governance_paths.get(key, "").strip()
+    if status == "Certified" and (not path or path.upper() == "UNASSIGNED"):
+        fail(f"{key} is Certified without a recorded governance review path")
 
 if len(completion_rows) != 53:
     fail(f"completion matrix row count is {len(completion_rows)}; expected 53")
-if len(raci_reviewers) != 53:
-    fail(f"review RACI row count is {len(raci_reviewers)}; expected 53")
+if len(governance_paths) != 53:
+    fail(f"review RACI row count is {len(governance_paths)}; expected 53")
 
 if failures:
     for item in failures:
@@ -159,7 +159,11 @@ if failures:
     raise SystemExit(1)
 
 certified = sum(1 for status in completion_rows.values() if status == "Certified")
-unassigned = sum(1 for reviewer in raci_reviewers.values() if reviewer.upper() == "UNASSIGNED")
+unassigned = sum(
+    1
+    for path in governance_paths.values()
+    if not path.strip() or path.strip().upper() == "UNASSIGNED"
+)
 print("PASS: required module control matrices are present and structurally aligned.")
 print(f"PASS: canonical completion rows={len(completion_rows)} certified={certified}.")
-print(f"PASS: canonical RACI rows={len(raci_reviewers)} unassigned_reviewers={unassigned}.")
+print(f"PASS: canonical RACI rows={len(governance_paths)} unassigned_governance_paths={unassigned}.")
