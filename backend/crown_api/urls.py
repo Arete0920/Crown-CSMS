@@ -17,7 +17,8 @@ from crown_api.health_views import health, health_version, system_health
 from crown_api.views_integrity import integrity
 from crown_api.version_views import version
 from crown_api.views import director_dashboard_page, director_router
-from crown_api.ops_views import ops_summary, ops_alerts
+from crown_api.ops_views import ops_summary as _ops_summary, ops_alerts as _ops_alerts
+from crown_api.ops_route_guard import demo_ops_only
 from crown_api.rbac_views import finance_guardrail_proof
 from crown_api.audit_views import recent_audit_events
 from crown_api.auth_views import login, refresh, me
@@ -26,6 +27,11 @@ from crown_api.system_views import whoami
 
 
 logger = logging.getLogger(__name__)
+
+# Public demo/CI proof endpoints are wrapped at the routing boundary so an
+# unknown or production-like runtime cannot expose their operational metadata.
+ops_summary = demo_ops_only(_ops_summary)
+ops_alerts = demo_ops_only(_ops_alerts)
 
 urlpatterns = [
     path("", RedirectView.as_view(url="director/", permanent=False)),
@@ -50,9 +56,9 @@ urlpatterns = [
     path("api/system/whoami/", whoami, name="system_whoami"),
     # Version endpoint (public, no auth required)
     path("api/v1/version/", version, name="version"),
-    # Ops summary (public read-only, for demo proof)
+    # Ops summary (public only in explicit DEV/demo runtime)
     path("api/ops/summary/", ops_summary, name="ops_summary"),
-    # Ops alerts (public read-only, for demo proof)
+    # Ops alerts (public only in explicit DEV/demo runtime)
     path("api/ops/alerts/", ops_alerts, name="ops_alerts"),
     # RBAC proof endpoint
     path(
