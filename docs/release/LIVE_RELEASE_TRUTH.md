@@ -6,7 +6,7 @@
 >
 > Current controlling sources:
 > - docs/CURRENT_RELEASE_STATUS.md
-> - docs/release/CURRENT_RELEASE_SCORECARD_20260528.md
+> - docs/canonical/CANONICAL_DOCUMENT_INDEX.md
 
 Generated UTC: 2026-04-11T11:48:52.1149037Z
 
