@@ -1,12 +1,13 @@
 # CROWN Disaster Recovery Policy
 
-**Status:** Active planning and control policy; current recovery capability is not yet production-certified.  
-**Controlling issue:** #1270  
-**Accountable authority:** Founder/Product Owner
+**Status:** Active planning and control policy; current transaction-time recovery evidence remains separately required.  
+**Current authority:** `docs/CURRENT_RELEASE_STATUS.md` plus the authorized owner-handoff/operational-transfer record for the selected exact identity.  
+**Accountable authority:** Founder/Product Owner or authorized successor authority at execution time.  
+**Historical note:** predecessor recovery issue numbers are provenance only and are not current Crown-CSMS execution authority.
 
 ## Recovery objectives
 
-These are controlled-pilot planning targets, not achieved service-level commitments:
+These are planning targets, not achieved service-level commitments:
 
 | Objective | Planning target | Evidence required |
 | --- | ---: | --- |
@@ -14,7 +15,7 @@ These are controlled-pilot planning targets, not achieved service-level commitme
 | Isolated database restore validation RTO | 4 hours | Measured restore to a non-production validation database with structural and tenant checks |
 | Database RPO | 1 hour | Current backup timestamp and retention evidence proving a usable recovery point within one hour |
 
-The one-hour RPO matches `CROWN_RPO_HOURS` in application settings. A drill must fail when the selected backup is older than the configured RPO window. Any temporary exception requires explicit Founder/Product Owner acceptance and must not be represented as the normal control.
+The one-hour RPO matches `CROWN_RPO_HOURS` in application settings. A drill must fail when the selected backup is older than the configured RPO window. Any temporary exception requires explicit authorized acceptance and must not be represented as the normal control.
 
 ## Required backup evidence
 
@@ -66,8 +67,10 @@ A successful rollback requires agreement among:
 
 ## Drill cadence and retained evidence
 
-Run at least quarterly and before production authorization after material recovery-path changes. Retain UTC start/end time, operator, approver, source run, selected image or backup, measured RTO/RPO, validation output, cleanup result, and final disposition.
+Run at least quarterly and before production authorization after material recovery-path changes when the applicable operating agreement requires it. Retain UTC start/end time, operator, approver, source run, selected image or backup, measured RTO/RPO, validation output, cleanup result, and final disposition.
 
-## Closure rule
+## Acceptance rule
 
-Policy, code, dry runs, simulations, and historical drills do not close #1270. Closure requires current application rollback evidence or an explicitly approved substitute, current isolated database restore evidence, measured results, and linkage into release authority. Production remains not approved until that evidence is accepted.
+Policy, code, dry runs, simulations, and historical drills do not establish current operational recovery completion. Final operational handoff or a selected production release requires current application rollback evidence or an explicitly accepted substitute, current isolated database restore evidence where required, measured results, exact identity reconciliation, and linkage into the authorized current transfer/release record.
+
+Repository recovery controls do not by themselves establish production deployment, production authorization, or completed owner turnover.

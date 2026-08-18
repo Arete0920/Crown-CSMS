@@ -1,7 +1,8 @@
 # Production Recovery Path
 
-**Status:** Active control; current production recovery is not yet proven.  
-**Controlling issue:** #1270
+**Status:** Active recovery control; transaction-time production recovery evidence remains separately required.  
+**Current authority:** `docs/CURRENT_RELEASE_STATUS.md` plus the authorized owner-handoff/operational-transfer record for the selected release or transfer identity.  
+**Historical note:** predecessor recovery issue numbers are provenance only and are not current Crown-CSMS execution authority.
 
 ## Verified control state
 
@@ -9,7 +10,7 @@ The earlier rollback defect ran recovery after any upstream failure, including f
 
 The dispatchable recovery-control drill tests decision logic without Azure access or production mutation. It is useful control evidence, but it is not an application rollback or database restore.
 
-Historical February 23, 2026 tag-driven rollback evidence proves that an earlier deployment path could restore a prior image. It is not current-release proof and does not satisfy #1270 by itself.
+Historical rollback evidence proves that an earlier deployment path could restore a prior image. It is not current-release proof and does not satisfy current transaction-time recovery evidence by itself.
 
 ## Decision tree
 
@@ -46,17 +47,17 @@ Additional tenant and application checks remain required during the actual contr
 - isolated database restore validation RTO: 4 hours;
 - database RPO: 1 hour, aligned with `CROWN_RPO_HOURS`.
 
-These are planning targets until a current drill records measured results and the Founder/Product Owner accepts them.
+These are planning targets until a current drill records measured results and the authorized parties accept them.
 
-## Closure conditions
+## Current acceptance conditions
 
-Issue #1270 remains open until all are complete:
+Final operational handoff or release must either contain current evidence for the selected exact identity or an explicit authorized residual-risk disposition covering:
 
-- rollback root cause and current implementation are documented;
-- decision-control simulation has retained evidence;
-- current Azure rollback or explicitly approved equivalent evidence exists;
-- current isolated restore evidence exists, including tenant/application validation or an explicitly approved substitute;
-- measured RTO/RPO results are recorded;
-- final evidence is linked into release authority.
+- rollback decision-control and immutable-image behavior;
+- current application rollback or explicitly approved equivalent evidence;
+- current isolated restore evidence, including required tenant/application validation or an explicitly approved substitute;
+- measured RTO/RPO results where required;
+- exact source/deployment/runtime identity reconciliation;
+- retained evidence linked to the current transfer/release record.
 
-Release posture: `CONTROLLED SANDBOX CANDIDATE / PRODUCTION NOT APPROVED`.
+Repository recovery mechanics do not by themselves establish production deployment, production authorization, or completed owner turnover.

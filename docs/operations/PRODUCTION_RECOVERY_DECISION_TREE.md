@@ -2,14 +2,16 @@
 
 **Authority:** Founder/Product Owner and production release governance  
 **Status:** Canonical recovery procedure; current operational execution evidence remains separately required  
-**Last reconciled:** 2026-08-17  
-**Current release authority:** `docs/CURRENT_RELEASE_STATUS.md` and Crown-CSMS issue #14
+**Last reconciled:** 2026-08-18  
+**Current release authority:** `docs/CURRENT_RELEASE_STATUS.md`; transaction-time execution/acceptance follows current owner-handoff and authorized operational records
 
 ## Purpose
 
 This document defines the required response when a production deployment fails or the live runtime cannot be verified. It reflects immutable rollback and non-destructive recovery controls present in the repository.
 
 It does **not** claim that the current Crown-CSMS turnover release has completed an authorized immutable application rollback or operational-backup restore exercise with accepted measured RTO/RPO. Those are separate evidence gates.
+
+Historical issue numbers associated with predecessor recovery campaigns are provenance only unless the current canonical release status explicitly adopts them as active authority.
 
 ## Governing principles
 
