@@ -2,12 +2,12 @@ from __future__ import annotations
 
 import uuid
 from dataclasses import dataclass
-from typing import Iterable
 
 from django.core.management.base import BaseCommand
 from django.db import transaction
 
-from curricula.models import CurriculumMap, Unit, Lesson
+from curricula.governance import create_new_draft
+from curricula.models import CurriculumMap, CurriculumMapVersion, Unit, Lesson
 
 
 @dataclass(frozen=True)
@@ -46,7 +46,7 @@ DEMO_MAPS: tuple[SeedMap, ...] = (
                 overview="Big-picture storyline of Scripture: creation, fall, redemption, restoration.",
                 lessons=(
                     SeedLesson(1, "Why worldview matters", "Define worldview; connect beliefs to choices.", "Slides, discussion questions"),
-                    SeedLesson(2, "Creation and dignity", "Imago Dei; purpose and value.", "Genesis 1–2"),
+                    SeedLesson(2, "Creation and dignity", "Imago Dei; purpose and value.", "Genesis 1-2"),
                     SeedLesson(3, "The fall and brokenness", "Sin and its effects; hope begins.", "Genesis 3"),
                 ),
             ),
@@ -127,7 +127,7 @@ class Command(BaseCommand):
         parser.add_argument(
             "--wipe",
             action="store_true",
-            help="If set, deletes existing curricula rows for this school before seeding.",
+            help="If set, clears editable draft curriculum units/lessons for this school before reseeding; governed version history is preserved.",
         )
 
     @transaction.atomic
@@ -136,11 +136,21 @@ class Command(BaseCommand):
         wipe = bool(opts["wipe"])
 
         if wipe:
-            Lesson.objects.filter(school_id=school_id).delete()
-            Unit.objects.filter(school_id=school_id).delete()
-            CurriculumMap.objects.filter(school_id=school_id).delete()
+            draft_versions = CurriculumMapVersion.objects.filter(
+                school_id=school_id,
+                status=CurriculumMapVersion.Status.DRAFT,
+            )
+            Lesson.objects.filter(
+                school_id=school_id,
+                unit__curriculum_version__in=draft_versions,
+            ).delete()
+            Unit.objects.filter(
+                school_id=school_id,
+                curriculum_version__in=draft_versions,
+            ).delete()
 
         created_maps = 0
+        created_versions = 0
         created_units = 0
         created_lessons = 0
 
@@ -156,10 +166,27 @@ class Command(BaseCommand):
             if cmap_created:
                 created_maps += 1
 
+            version = (
+                CurriculumMapVersion.objects.filter(
+                    school_id=school_id,
+                    curriculum_map=cmap,
+                    status=CurriculumMapVersion.Status.DRAFT,
+                )
+                .order_by("-version_number")
+                .first()
+            )
+            if version is None:
+                version = create_new_draft(
+                    curriculum_map=cmap,
+                    change_summary="Demo curriculum draft.",
+                )
+                created_versions += 1
+
             for u in m.units:
                 unit, unit_created = Unit.objects.get_or_create(
                     school_id=school_id,
                     curriculum_map=cmap,
+                    curriculum_version=version,
                     sequence=u.seq,
                     defaults={
                         "title": u.title,
@@ -170,7 +197,7 @@ class Command(BaseCommand):
                     created_units += 1
 
                 for l in u.lessons:
-                    lesson, lesson_created = Lesson.objects.get_or_create(
+                    _, lesson_created = Lesson.objects.get_or_create(
                         school_id=school_id,
                         unit=unit,
                         sequence=l.seq,
@@ -186,6 +213,7 @@ class Command(BaseCommand):
         self.stdout.write(
             self.style.SUCCESS(
                 f"Seed complete for school_id={school_id}. "
-                f"created: maps={created_maps}, units={created_units}, lessons={created_lessons}"
+                f"created: maps={created_maps}, versions={created_versions}, "
+                f"units={created_units}, lessons={created_lessons}"
             )
         )
