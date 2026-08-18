@@ -1,6 +1,6 @@
 # CROWN Release Tag Policy
 
-**Last reconciled:** 2026-08-17
+**Last reconciled:** 2026-08-18
 
 ## Immutability
 
@@ -8,7 +8,9 @@ Every published release tag is immutable. Do not move, delete/recreate, or force
 
 ## Current Crown-CSMS authority
 
-No historical Crown2026 or predecessor tag is current Crown-CSMS turnover authority. The selected current source/release identity must be recorded in `docs/CURRENT_RELEASE_STATUS.md` and Crown-CSMS issue #14, then independently proven through build, deployment, runtime identity, health, monitoring, and required recovery evidence before it is represented as production deployed.
+No historical Crown2026 or predecessor tag is current Crown-CSMS turnover authority. The selected current source/release identity must be resolved directly from Git/GitHub, governed by `docs/CURRENT_RELEASE_STATUS.md`, and recorded in the immutable authorized release/transfer evidence for the decision being made. Crown-CSMS issue #14 is a completed historical engineering-program record, not current release authority.
+
+Before any identity is represented as production deployed, independently prove the selected exact source through build, deployment, runtime identity, health, monitoring, and required recovery evidence, with the applicable authorized release/transfer decision.
 
 ## Historical predecessor production tag
 
@@ -28,7 +30,7 @@ A historical `crown-*` or `prod-deploy-*` tag does not become current Crown-CSMS
 
 ## Creation and verification
 
-1. Resolve and record the full selected release SHA.
+1. Resolve and record the full selected release SHA directly from Git/GitHub.
 2. Require terminal exact-SHA validation and applicable authorization.
 3. Create the annotated immutable tag once.
 4. Push without force.
@@ -36,7 +38,7 @@ A historical `crown-*` or `prod-deploy-*` tag does not become current Crown-CSMS
 6. Deploy only through the approved protected workflow.
 7. Verify repository SHA, artifact/image identity, runtime build identity, database health, application health, and monitoring.
 8. Execute or explicitly disposition required rollback/restore evidence for the same release identity.
-9. Record the tag, SHA, deployment run, runtime evidence, recovery evidence, and decision in Crown-CSMS issue #14 or its authorized successor control record.
+9. Record the tag, SHA, deployment run, runtime evidence, recovery evidence, and decision in the authorized current release/transfer record.
 
 ## Historical tags
 
@@ -49,4 +51,4 @@ The immutable mapping for historical tags is `docs/RELEASE_TAGS.json`; historica
 
 ## Enforcement
 
-Reject any change that moves or recreates an existing tag, represents a historical milestone as current production, deploys an unapproved identity, or allows documentation to contradict the controlling exact release identity.
+Reject any change that moves or recreates an existing tag, represents a historical milestone as current production, deploys an unapproved identity, or allows documentation to contradict the controlling exact release identity and authorized current release/transfer evidence.
