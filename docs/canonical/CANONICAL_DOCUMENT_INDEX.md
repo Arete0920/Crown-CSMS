@@ -2,7 +2,7 @@
 
 **Status:** Canonical documentation authority
 **Last verified:** 2026-08-18
-**Current certified handoff base `main`:** `8d3f364180d6a0360228c7d72ace4fa7b54e1dc2`
+**Current certified handoff base `main`:** `4697071dbd2eba14dae49b114e033fcffba6f46f`
 
 This index defines the active documentation authority surface for Crown-CSMS. It intentionally does **not** embed per-file blob SHAs as durable authority because those IDs become stale whenever a governed document is updated. Exact source identity belongs in the current release/status record and the Git history for the reviewed change.
 
