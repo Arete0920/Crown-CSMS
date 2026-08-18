@@ -6,17 +6,17 @@ Christian School Management Solution
 
 Crown-CSMS is the active engineering and owner-turnover repository.
 
-- Program-start `main`: `e4605c7d2de7e5586b7217fc24be37069a53d5d8`
+- Current `main` at this handoff-refresh branch base: `f9bf6b4143e707f93ec8d6ce319327ddc7d3e2a0`
 - Migration baseline: `ac574ab2a55ecbfefb40cbd67bad08d99c085575`
-- PR #9 exact head: `6ddd7a8b1972dd522ec82afe09bbad09cb6f728b`
-- Repository verification on that PR #9 head: 53 successful workflows
 - Active successor execution control: Crown-CSMS issue #14
-- Crown-CSMS deployed production identity: **NOT VERIFIED**
-- Crown-CSMS buyer diligence readiness: **NO-GO**
-- Buyer operational turnover: **PENDING**
+- Open mutation PRs at branch creation: **0**
+- Current repository security hardening: PRs #97 and #98 merged to `main`
+- Crown-CSMS deployed production identity: **NOT VERIFIED in the current turnover sequence**
+- Operational immutable rollback drill: **RUNNABLE; CURRENT EXECUTION EVIDENCE OUTSTANDING**
+- Operational backup/restore drill: **MECHANICS PROVEN; CURRENT RELEASE-LINKED OPERATIONAL EVIDENCE OUTSTANDING**
 - Payment processing: **DISABLED / FAIL CLOSED**
 
-Repository workflow success is valid repository evidence, but it is not proof of deployment, buyer acceptance, or completed turnover. Crown2026 release records and issue #1619 are historical predecessor evidence. Issue #1619 is closed and locked and does not control Crown-CSMS execution.
+Repository workflow success is valid repository evidence, but it is not by itself proof of deployment, buyer acceptance, operational recovery, or completed turnover. Crown2026 records are retained only as historical predecessor/provenance evidence.
 
 ## Start here
 
@@ -32,9 +32,9 @@ Repository workflow success is valid repository evidence, but it is not proof of
 
 ## Authority and claim boundary
 
-Current claims must be supported by Crown-CSMS exact-identity evidence and current canonical records. Historical commits, tags, workflow runs, pull requests, and issues remain provenance, not current operating authority.
+Current claims must be supported by Crown-CSMS exact-identity evidence and current canonical records. Historical commits, tags, workflow runs, pull requests, issues, and predecessor documents remain provenance, not current operating authority.
 
-Automated assistance and automated review are technical evidence, not independent human review, approval, certification, acceptance, or release authority.
+Automated assistance and automated review are technical evidence, not independent human review, approval, certification, acceptance, or release authority. Where the project uses its approved solo-developer governance workaround, that workaround must be identified accurately rather than represented as independent review.
 
 ## Repository standards
 
@@ -42,8 +42,8 @@ Use one pull request per coherent, independently reversible outcome. Record the 
 
 Never commit secrets, production data, private certificates, confidential communications, payment credentials, copied conversations, or generated proof dumps. Sandbox data must be synthetic and clearly labeled.
 
-## Ownership
+## Ownership and contribution records
 
-CROWN was created and directed by TC Megahan, Founder/Product Owner, principal developer, product designer, and architecture and workflow authority. Anthony Rizzo, Ayush Agarwal, and Jed Hansen were founding/early collaborators; specific work is credited only where durable evidence supports it. Johnny Megahan and Evan Lesage are new collaborators and are not assigned historical contributions.
+CROWN was created and directed by TC Megahan. Contributor and collaborator attribution must follow durable repository evidence and the current contribution ledger; general early involvement must not be converted into unsupported claims about specific work.
 
 Detailed attribution and development-process records are governed by the [Human Accountability and Development Assistance Policy](docs/engineering/HUMAN_ACCOUNTABILITY_AND_DEVELOPMENT_ASSISTANCE_POLICY.md) and the [Contribution Evidence Ledger](docs/engineering/CONTRIBUTION_EVIDENCE_LEDGER.md).
