@@ -1,58 +1,27 @@
-# CROWN Requirement-to-Evidence Matrix
+# CROWN Requirement-to-Evidence Matrix — Superseded Historical Baseline
 
 **Document ID:** CROWN-GOV-002  
-**Status:** ACTIVE — Initial Controlled Baseline  
-**Parent authority:** `docs/governance/CROWN_BUYER_READY_COMPLETION_CANON.md`  
-**Repository evidence SHA:** `7fb6ca623e541d3f59a482e5bb13769b998403e8`  
-**Verification date:** 2026-07-24  
-**Owner:** John Megahan  
-**Controlling execution issue:** #1587
+**Status:** SUPERSEDED / HISTORICAL — NOT CURRENT COMPLETION AUTHORITY  
+**Original verification date:** 2026-07-24  
+**Original repository evidence SHA:** `7fb6ca623e541d3f59a482e5bb13769b998403e8`
 
-## Status rule
+## Disposition
 
-Only `PASS`, `FAIL`, `PARTIAL`, `UNKNOWN`, `NOT APPLICABLE`, `SUPERSEDED`, or `REMOVED` may be used. Repository implementation, runtime verification, external evidence, and independent review are separate evidence dimensions.
+The former matrix was an initial requirement/evidence baseline tied to a now-superseded buyer-ready canon, predecessor-era issue trackers, and incomplete engineering/certification state. It must not be used to classify current Crown-CSMS implementation, release blockers, dashboard/wizard certification, recovery status, or owner-turnover readiness.
 
-## Matrix
+The former body remains available in Git history for provenance and for tracing how earlier requirements evolved.
 
-| Requirement ID | Requirement | Risk | Acceptance criteria | Current evidence | Status | Verification mechanism | Next evidence required |
-|---|---|---|---|---|---|---|---|
-| BRC-GOV-001 | One governing completion authority | Critical | Buyer-ready canon active; subordinate records cannot override it | `docs/governance/CROWN_BUYER_READY_COMPLETION_CANON.md` at evidence SHA | PASS | Repository inspection | Maintain supersession and amendment controls |
-| BRC-GOV-002 | Requirement traceability | Critical | Every applicable requirement has stable ID, acceptance criteria, evidence, status, owner and date | This matrix established; row population incomplete | PARTIAL | Matrix review | Complete all domain rows and evidence links |
-| BRC-GOV-003 | Controlled subordinate artifact hierarchy | High | Current-state, risk, plan, certification, diligence, registers and indexes exist and identify authority | Canon defines hierarchy; only part exists | PARTIAL | Document inventory | Create remaining controlled artifacts |
-| BRC-PROD-001 | Complete active module inventory | Critical | Every active or authorized module mapped once to implementation and proof | Product canon lists 46 ordered module/control areas; current matrix remains mostly planning-level | PARTIAL | Settings, app, product-matrix inspection | Reconcile installed apps, modules, aliases and intended scope |
-| BRC-PROD-002 | Complete dashboard inventory | High | Every dashboard mapped to source module, persona, data source, freshness, permissions and proof | Dashboard registry and dashboard-fit matrix exist | PARTIAL | Registry and route inspection | Reconcile all registry rows with runtime and source APIs |
-| BRC-PROD-003 | Complete wizard inventory | High | Every registered wizard mapped to module, workflow steps, permissions, tests and runtime proof | `crown_api.wizard_registry.WIZARDS` contains 28 active entries | PARTIAL | Registry inspection | Verify each wizard app, URL, step contract, negative paths and runtime evidence |
-| BRC-PROD-004 | Persona workflow completeness | Critical | School admin, teacher, parent, student, board and specialist workflows pass primary and negative paths | Frontend routes and guards exist; complete deployed proof remains open | PARTIAL | Router, tests and runtime campaign | Exact-SHA authenticated crawler/Playwright campaign |
-| BRC-ARCH-001 | Current system architecture | Critical | Components, boundaries, responsibilities, dependencies and approved patterns match implementation | Product and buyer-ready canons define model; implementation is broad | PARTIAL | Architecture and source inspection | Produce current component/dependency authority and diagrams |
-| BRC-ARCH-002 | Complete route and endpoint inventory | Critical | Frontend routes, backend APIs, aliases, redirects and role landings mapped and reconciled | Backend and frontend route sources exist; multiple aliases and routing layers remain | PARTIAL | URL/router census | Generate exact route inventory and canonical/alias disposition |
-| BRC-ARCH-003 | End-to-end workflow data flows | Critical | Material workflows mapped UI → API → service → database → response → dashboard/evidence | Required chain defined; row-level mappings incomplete | PARTIAL | Code tracing and contract tests | Map each core and commercial workflow |
-| BRC-ARCH-004 | Integration integrity | High | Every external integration has auth, timeout, retry, dedupe, reconciliation and fallback controls | Integration apps and Microsoft identity routes exist | UNKNOWN | Integration source and runtime review | Inventory enabled integrations and operational evidence |
-| BRC-DATA-001 | Canonical school, family, guardian and student truth | Critical | One authoritative model and safe compatibility boundary | Canon declares Core authority; compatibility `households` consumers remain under open reconciliation | FAIL | Model and issue review | Close #1353/#1548/#1549 and prove reconciliation/rollback |
-| BRC-DATA-002 | Tenant-consistent relational integrity | Critical | All tenant-owned relationships enforce consistent school ownership in normal, bulk, task, import and raw paths | Recent academics protections merged; broader graph and consumer proof remain | PARTIAL | Model, writer and DB-control review | Close remaining tenant graph and writer gaps |
-| BRC-DATA-003 | Migration and rollback integrity | Critical | Migrations reproducible, reversible where required, and bound to deployment identity | Controlled migration architecture documented | PARTIAL | Migration checks and deployment evidence | Exact candidate migration and rollback proof |
-| BRC-DATA-004 | Import/export and data portability | High | Imports validate and reconcile; exports are tenant-bound, permissioned, redacted and auditable | Data migration and export surfaces exist | UNKNOWN | Source and runtime review | Inventory formats, limits, audit and rollback evidence |
-| BRC-SEC-001 | Authentication and session security | Critical | Login, refresh, logout, expiry, identity and failure modes verified in production mode | JWT, session and Microsoft identity routes exist | PARTIAL | Backend tests and deployed browser proof | Same-SHA persona auth/session campaign |
-| BRC-SEC-002 | Tenant isolation | Critical | Header/context resolution, cross-school denial, overrides, background tasks and exemptions proven | Three tenant-related middleware layers present; consolidation and residual proof open | PARTIAL | Middleware/tests/runtime evidence | Close #1352 and complete current audit packet |
-| BRC-SEC-003 | Action-level RBAC | Critical | Backend permissions enforce every view/write/approve/export action; direct URLs tested | Permission planning matrix exists; frontend role groups not fully reconciled to backend grants | PARTIAL | Permission census and negative tests | Produce implemented permission-to-role map and tests |
-| BRC-SEC-004 | Sensitive-data controls | Critical | Classification, redaction, small-cell suppression, audit and export rules implemented per domain | Requirements defined across matrices | UNKNOWN | Module/security review | Verify sensitive modules individually |
-| BRC-SEC-005 | Secrets management | Critical | External secret store, least privilege, rotation, revocation, audit and break-glass exercises pass | Repository architecture exists; operational exercises open | FAIL | External platform and drill evidence | Close #1294 and #1296 |
-| BRC-SEC-006 | Student-data privacy and compliance evidence | Critical | Data inventory, notices, DPA, incident exercise, legal review and claim boundaries complete | Framework exists; final operational/legal evidence open | FAIL | Document, runtime and professional review | Close #1425 with qualified review |
-| BRC-NFR-001 | Performance and capacity criteria | High | Measurable response, query, payload, concurrency and growth targets defined and tested | Dashboard performance rules exist; system-wide targets incomplete | UNKNOWN | Load/performance test | Define targets and execute representative tests |
-| BRC-NFR-002 | Accessibility and responsive quality | High | Defined acceptance standard; keyboard, focus, contrast, screen-reader and viewport proof | Crawler requirements include accessibility; current full campaign open | PARTIAL | Automated and manual accessibility review | Complete deployed route sweep and qualified review as needed |
-| BRC-REL-001 | Exact release tuple | Critical | SHA, artifacts, configuration, infrastructure, deployment and runtime evidence reconcile | Current final-stage authority defines tuple; no approved final tuple yet | FAIL | Same-SHA release ceremony | Freeze candidate and execute Stages A-E |
-| BRC-REL-002 | Complete surface-to-proof coverage | Critical | Every active surface mapped to crawler, Playwright, API, backend test, drill, manual review or exclusion | Required by current release status; inventory incomplete | FAIL | Coverage matrix | Complete application-surface census |
-| BRC-REL-003 | Repository checks and CI authority | Critical | Required checks terminal/green and workflow proof hierarchy unambiguous | Duplicate/overlapping workflow rationalization remains open | PARTIAL | Workflow inventory and exact-SHA status | Close #1394 without weakening proof |
-| BRC-INFRA-001 | Reproducible infrastructure and configuration inventory | Critical | Services, databases, storage, networking, domains, certificates, identities and environment differences documented | Repository configuration exists; external state incomplete | UNKNOWN | Repo and cloud inventory | Capture current external platform inventory |
-| BRC-OPS-001 | Rollback and restore | Critical | Controlled app rollback and isolated DB restore pass with reconciliation and measured RTO/RPO | RTO/RPO settings exist; operational drills remain open | FAIL | Operational drill | Close #1270 |
-| BRC-OPS-002 | Monitoring and diagnostics | High | Logs, correlation, health, metrics, alerts, redaction and workflow diagnostics support operations | Correlation, health and performance middleware/surfaces exist | PARTIAL | Source and runtime incident exercise | Verify alert ownership, retention and failure diagnosis |
-| BRC-OPS-003 | Support and service management | High | Intake, severity, escalation, maintenance, change, RCA, knowledge and onboarding/offboarding procedures controlled | Support app exists; complete operating authority not proven | UNKNOWN | Operations-document review | Build operational service-management package |
-| BRC-REPO-001 | Repository hygiene and authority clarity | High | No competing active authorities; stale items archived; branches/PRs/issues controlled | Archive PR #1586 open; canon active | PARTIAL | Repository review | Merge safe archive and continue reference-aware cleanup |
-| BRC-AI-001 | AI provenance and contributor attribution | High | AI assistance disclosed; human ownership and evidence-based contributor credit controlled | Canon establishes ownership and attribution rules | PARTIAL | History and diligence review | Build provenance ledger and buyer-facing disclosure |
-| BRC-COM-001 | Ownership and IP chain of title | Critical | Ownership, contributor, contractor, license and third-party obligations documented and reviewed | Sole-owner statement controlled; detailed diligence package incomplete | UNKNOWN | Repository history and legal review | Build chain-of-title and contributor evidence package |
-| BRC-COM-002 | Commercial and financial claim verification | Critical | Pricing, pipeline, adoption, revenue and costs supported by evidence and clearly separated from projections | No complete controlled commercial evidence package established | UNKNOWN | Financial/commercial diligence | Build verified claims register |
-| BRC-XFER-001 | Transfer inventory and continuity | Critical | Accounts, assets, credentials, vendors, runbooks, architecture and knowledge transfer package complete | Buyer execution is currently excluded; reproducibility remains required | PARTIAL | Transfer-readiness review | Build universal transfer inventory without claiming buyer acceptance |
-| BRC-XFER-002 | Founder-dependency elimination | Critical | Qualified operator can operate and modify CROWN without undocumented founder-only knowledge | Extensive docs exist; full handoff simulation not performed | UNKNOWN | Clean-room/operator exercise | Conduct controlled continuity rehearsal |
+## Current evidence hierarchy
 
-## Initial conclusion
+Use current exact-main evidence and the following authorities instead:
 
-The repository demonstrates substantial implementation breadth and several strong governance and security controls. It does not yet satisfy full production authorization, buyer readiness, or transfer completion. The dominant blockers are exact-SHA deployed proof, canonical-data reconciliation, tenant and permission evidence, recovery, secrets operations, compliance/legal evidence, CI authority, and complete system traceability.
+1. `docs/CURRENT_RELEASE_STATUS.md` — current repository/release, payment, recovery, and turnover posture;
+2. `docs/canonical/CANONICAL_DOCUMENT_INDEX.md` — documentation authority;
+3. `docs/canonical/DILIGENCE_EVIDENCE_INDEX.md` — diligence/evidence navigation and claim boundaries;
+4. current Crown-CSMS GitHub issues, pull requests, workflow evidence, and merged exact-head certification for live technical status;
+5. `docs/KNOWN_LIMITATIONS.md` — current limitations;
+6. `docs/ownership/OWNER_HANDOFF.md` and `docs/ownership/BUYER_OPERATIONAL_TRANSFER_REGISTER.md` — transfer requirements.
+
+Historical matrix rows may be cited only as historical evidence. They do not override later merged remediation, current exact-SHA certification, or transaction-time operational requirements.
+
+Repository evidence alone does not establish deployed production identity, payment activation, legal/regulatory certification, independent human review, or completed ownership transfer.
