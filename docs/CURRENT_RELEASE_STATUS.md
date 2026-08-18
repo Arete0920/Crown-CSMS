@@ -1,8 +1,8 @@
 # CROWN Current Release Status
 
-**Status:** Canonical repository/release authority  
-**Last verified:** 2026-08-17/18  
-**Current certified handoff base `main`:** `f5f97927d39f247c1afe22b9eb56b6d5b661af04`  
+**Status:** Canonical repository/release authority
+**Last verified:** 2026-08-17/18
+**Current certified handoff base `main`:** `f5f97927d39f247c1afe22b9eb56b6d5b661af04`
 **Migration baseline:** `ac574ab2a55ecbfefb40cbd67bad08d99c085575`
 
 ## Current decision
