@@ -1,12 +1,12 @@
 # CROWN Owner Handoff
 
 **Status:** Canonical transfer guide  
-**Last verified:** 2026-08-17  
+**Last verified:** 2026-08-18  
 **Authority:** `docs/CURRENT_RELEASE_STATUS.md`
 
 ## Current posture
 
-Crown-CSMS is the active successor engineering and owner-turnover repository. The current handoff-refresh branch is based on `main` at `f9bf6b4143e707f93ec8d6ce319327ddc7d3e2a0`, after merged security-hardening PRs #97 and #98.
+Crown-CSMS is the active successor engineering and owner-turnover repository. Current repository identity and certification posture are governed by `docs/CURRENT_RELEASE_STATUS.md` and exact current `main`; this guide does not duplicate a mutable handoff SHA.
 
 Repository evidence is not a substitute for deployment/runtime identity, recovery evidence, successor account control, or final acceptance. Crown2026 is historical predecessor/provenance evidence only. Payment processing remains disabled and fail closed.
 
