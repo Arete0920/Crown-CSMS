@@ -6,17 +6,16 @@ Christian School Management Solution
 
 Crown-CSMS is the active engineering and owner-turnover repository.
 
-- Current `main` at this handoff-refresh branch base: `f9bf6b4143e707f93ec8d6ce319327ddc7d3e2a0`
+- Current repository and release identity: governed by [`docs/CURRENT_RELEASE_STATUS.md`](docs/CURRENT_RELEASE_STATUS.md) and exact current `main`
 - Migration baseline: `ac574ab2a55ecbfefb40cbd67bad08d99c085575`
-- Active successor execution control: Crown-CSMS issue #14
-- Open mutation PRs at branch creation: **0**
-- Current repository security hardening: PRs #97 and #98 merged to `main`
+- Successor migration and engineering gap-closure issue #14: **CLOSED / COMPLETED / HISTORICAL PROGRAM RECORD**
 - Crown-CSMS deployed production identity: **NOT VERIFIED in the current turnover sequence**
 - Operational immutable rollback drill: **RUNNABLE; CURRENT EXECUTION EVIDENCE OUTSTANDING**
 - Operational backup/restore drill: **MECHANICS PROVEN; CURRENT RELEASE-LINKED OPERATIONAL EVIDENCE OUTSTANDING**
+- Buyer operational turnover: **PENDING IDENTIFIED BUYER AND AUTHORIZED PARTY ACCEPTANCE**
 - Payment processing: **DISABLED / FAIL CLOSED**
 
-Repository workflow success is valid repository evidence, but it is not by itself proof of deployment, buyer acceptance, operational recovery, or completed turnover. Crown2026 records are retained only as historical predecessor/provenance evidence.
+Repository workflow success is valid repository evidence, but it is not by itself proof of deployment, buyer acceptance, operational recovery, legal/compliance certification, or completed turnover. Crown2026 records and completed predecessor-era issue programs are retained only as historical provenance unless a current canonical record incorporates a bounded fact.
 
 ## Start here
 
