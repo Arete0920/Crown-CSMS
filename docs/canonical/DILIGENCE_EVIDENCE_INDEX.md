@@ -7,20 +7,23 @@
 | Area | Current disposition |
 |---|---|
 | Active owner-turnover repository | Crown-CSMS |
+| Product/repository engineering readiness | **PRODUCTION-READY / CERTIFIED** |
+| Production-ready certification | `docs/release/CROWN_PRODUCTION_READY_ENGINEERING_CERTIFICATION_20260818.md` |
 | Current repository identity | Exact current `main`, governed by `docs/CURRENT_RELEASE_STATUS.md` |
-| Successor engineering gap-closure issue #14 | Closed/completed; historical program record, not current execution authority |
-| Canonical owner-handoff/authority reconciliation | Merged through PR #108; exact current identity remains governed by current release status and Git history |
-| Deployed Crown-CSMS production identity | Not verified in current turnover sequence |
-| Immutable application rollback | Runnable mechanics; current authorized execution evidence outstanding |
-| Operational PostgreSQL restore | Mechanics proven; release-linked operational evidence outstanding |
+| Successor engineering gap-closure program | Closed/completed; historical program record |
+| Repository authority/hygiene/security closure | Completed through PR #116 |
+| Successor production deployment/runtime identity | Transaction-time; not yet asserted |
+| Immutable application rollback | Engineering-ready mechanics; selected-environment execution remains transaction-time |
+| Operational PostgreSQL restore | Mechanics proven; selected-release operational evidence remains transaction-time |
 | Crown2026 release evidence | Historical predecessor/provenance evidence only |
-| Actual owner turnover | Pending successor-controlled accounts, acceptance, and access transition |
-| Payment processing | Disabled and fail closed |
+| Actual owner turnover | Post-contract; pending successor-controlled accounts, acceptance, and access transition |
+| Payment processing | Disabled / fail closed / not authorized for activation |
 
 ## Canonical navigation
 
 | Area | Authority |
 |---|---|
+| Production-ready engineering certification | `docs/release/CROWN_PRODUCTION_READY_ENGINEERING_CERTIFICATION_20260818.md` |
 | Release, payment, recovery, and turnover posture | `docs/CURRENT_RELEASE_STATUS.md` |
 | Document authority | `docs/canonical/CANONICAL_DOCUMENT_INDEX.md` |
 | Repository orientation | `README.md` |
@@ -32,14 +35,12 @@
 | Security reporting | `SECURITY.md` |
 | Recovery mechanics/evidence boundary | `docs/operations/PRODUCTION_IMMUTABLE_ROLLBACK_DRILL.md`; `docs/operations/ISOLATED_POSTGRES_RESTORE_DRILL.md` |
 
-## Current issue classification boundary
-
-Completed engineering-program and closed P0/security issues must not be repeated as current blockers after merged remediation and current authority have been verified. Remaining open issues must be interpreted according to their current titles and scope, including roadmap, architecture follow-up, external dependency, product-scope follow-up, or process optimization where applicable.
-
-Historical predecessor issue numbers embedded in retained runbooks, matrices, or evidence records are provenance unless a current Crown-CSMS canonical record explicitly adopts them as current authority.
-
 ## Diligence-safe statement
 
-Crown-CSMS is the active successor engineering and owner-turnover repository. Repository certification and governance evidence do not by themselves establish deployed runtime identity, operational rollback/restore completion, legal/compliance certification, payment-provider readiness, or completed ownership transfer.
+CROWN is a production-ready software product and the current Crown-CSMS `main` containing the certification record is the production-ready source baseline. This engineering certification does not by itself establish that a successor-controlled production environment is already deployed, that transaction-time rollback/restore and monitoring evidence has been accepted, that payment processing is activated, or that ownership transfer is complete.
 
-Do not infer legal, tax, accounting, valuation, transaction, payment-provider, universal persona/tenant, regulator, or independent human-review conclusions from repository evidence alone.
+The certification is an internal product/repository engineering decision under the documented CROWN governance model. It is not represented as independent third-party certification, legal/regulatory approval, valuation, tax/accounting advice, or buyer acceptance.
+
+## Current issue classification boundary
+
+Completed engineering-program and closed P0/security issues must not be repeated as current blockers after merged remediation and current authority have been verified. Remaining open issues must be interpreted according to their current titles and scope, including roadmap, architecture follow-up, external dependency, product-scope follow-up, transaction-time transfer work, or process optimization where applicable.
