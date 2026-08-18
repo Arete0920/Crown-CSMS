@@ -1,13 +1,13 @@
 # CROWN Release Notes
 
-## Current Crown-CSMS turnover source — 2026-08-17
+## Current Crown-CSMS turnover source — 2026-08-18
 
 - **Repository:** `Arete-Advisory-Group/Crown-CSMS`
-- **Handoff-refresh base `main`:** `f9bf6b4143e707f93ec8d6ce319327ddc7d3e2a0`
-- **Security hardening:** PRs #97 and #98 merged
-- **Current control:** Crown-CSMS issue #14 and `docs/CURRENT_RELEASE_STATUS.md`
+- **Current source authority:** `docs/CURRENT_RELEASE_STATUS.md` and exact current `main`
+- **Owner-handoff authority reconciliation:** PR #103 merged and exact-head certified
+- **Migration/gap-closure issue #14:** completed historical engineering-program record
 
-This source identity is the current repository authority for the turnover sequence. It is **not automatically a deployed production identity**. Deployment/runtime, immutable rollback, operational restore, monitoring, successor account control, and final acceptance remain separate evidence gates.
+Current source identity must be taken from the canonical release-status record and exact current repository history rather than duplicated here as a mutable SHA. This source identity is repository authority for the turnover sequence. It is **not automatically a deployed production identity**. Deployment/runtime, immutable rollback, operational restore, monitoring, successor account control, and final acceptance remain separate evidence gates.
 
 ### Current security/repository progress
 
@@ -46,4 +46,4 @@ The immutable mapping for historical tags is `docs/RELEASE_TAGS.json`.
 
 ## Authority rule
 
-If a historical release note conflicts with `docs/CURRENT_RELEASE_STATUS.md`, Crown-CSMS issue #14, exact current repository identity, or verified runtime evidence, the current Crown-CSMS authority wins.
+If a historical release note conflicts with `docs/CURRENT_RELEASE_STATUS.md`, exact current repository identity, or verified runtime evidence, the current Crown-CSMS authority wins.
