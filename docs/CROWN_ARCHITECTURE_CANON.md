@@ -1,235 +1,151 @@
-# CROWN ARCHITECTURE CANON
+# CROWN Architecture Canon
 
-**Version:** 1.0
-**Status:** Frozen Governance Document
-**Authority:** Platform Doctrine
-
----
+**Version:** 2.0  
+**Status:** Current architecture authority  
+**Authority:** Crown-CSMS platform doctrine  
+**Repository:** `Arete-Advisory-Group/Crown-CSMS`
 
 ## 1. Purpose
 
-This document defines the permanent architectural structure, module boundaries, design discipline, and governance guardrails for the Crown platform ecosystem.
+This document defines the current architectural boundaries, ownership rules, integration constraints, and non-negotiable platform guardrails for Crown-CSMS. It must remain consistent with the Crown Master Binder product taxonomy and current executable repository behavior.
 
-**No module, feature, or UI change may violate this canon.**
+## 2. Layered architecture
 
----
+Crown uses one strict product architecture:
 
-## 2. Ecosystem Structure
+1. **Core** — foundation and canonical truth.
+2. **Modules** — bounded school operations built on Core truth.
+3. **Add-ons** — optional differentiated products that integrate through governed contracts and do not own Core truth.
 
-### 2.1 Crown (Core Platform)
+### 2.1 Core
 
-**Purpose:** Operational backbone for Christian schools.
+Core owns shared platform behavior and canonical records required by the rest of Crown:
 
-**Owns:**
-- Admissions
-- Enrollment
-- Billing
-- Financial Aid
-- Academics
-- Attendance
-- Communications
-- Dashboard framework
-- Permission engine
-- Tenant enforcement
-- Audit logging
+- authentication and session/request identity;
+- persistent RBAC and permission vocabulary;
+- tenant/school isolation;
+- audit logging;
+- shared API and backend contracts;
+- shared frontend shell/design-system standards;
+- canonical student, household/family, guardian and staff identity;
+- canonical school, academic-year, term and enrollment authority;
+- common integration and evidence boundaries.
 
-Crown is infrastructure.
-All modules sit on Crown.
+**Rule:** Core owns truth. No module or add-on may create a competing system of record.
 
----
+### 2.2 Modules
 
-### 2.2 Compass (Institutional Health & Sustainability)
+Modules implement major school operations using Core identities and governed services. Current product taxonomy includes first-wave modules such as Admissions, Re-enrollment, Billing/Tuition/Payments, Communications and Portals, with additional operational modules including Transportation, Food Service, Health/Nurse Office, Athletics/Activities and Board/administrative reporting.
 
-**Purpose:** Institutional analytics and sustainability scoring engine.
+Modules may own domain-specific transactional data, but references to students, families, staff, schools, academic periods and permissions must resolve through canonical Core authority or an explicitly documented compatibility adapter.
 
-**Owns:**
-- Enrollment health metrics
-- Retention analysis
-- Financial sustainability ratios
-- Referral ROI
-- Aid-to-tuition ratio
-- Risk indicators
-- Institutional health scoring
+### 2.3 Add-ons
 
-Compass measures institutional strength.
+Add-ons provide optional differentiated capabilities such as Spiritual Life, Service/Outreach, PD Hub and Compass. An add-on may be independently packaged, but it must integrate through explicit APIs/services/events and scoped permissions. It may not bypass tenant isolation, mutate Core truth through hidden coupling, or create shadow identity records.
 
-**Compass does not:**
-- Manage devotions
-- Manage mentoring content
-- Modify operational data
+## 3. Canonical ownership rules
 
----
+- One canonical owner exists for every production datum.
+- Duplicate representations are permitted only as explicitly documented compatibility/read adapters during a governed convergence period.
+- Compatibility structures are **not** alternate authorities.
+- New production writes must target canonical authority unless a current ADR explicitly authorizes otherwise.
+- Retirement of compatibility data requires COPY/COMPARE/CUTOVER/RETIRE proof where destructive migration could lose or mis-map data.
+- Identity mapping must be deterministic and tenant-safe; name, email, list order or other heuristics may not silently merge records.
 
-### 2.3 Barnabas (Mentoring & Guidance System)
+## 4. Security and tenant model
 
-*Inspired by Barnabas*
+### 4.1 Persistent permission engine
 
-**Purpose:** Human formation and encouragement system.
+- Server-side persistent permissions are authoritative.
+- Caller-controlled role headers, frontend role claims and generic Django staff flags are not substitutes for Crown permissions.
+- Every protected endpoint must enforce the correct domain/action permission and object scope.
+- Navigation may reflect permissions, but UI hiding is never an authorization control.
 
-**Owns:**
-- Daily devotions
-- Student reflection prompts
-- Parent encouragement prompts
-- Spiritual milestone tracking
-- Mentor journaling
-- Formation pathways
+### 4.2 Tenant isolation
 
-**Barnabas does not:**
-- Perform financial analytics
-- Modify tuition data
-- Operate admissions logic
+- School/tenant scope is mandatory at the query and mutation boundary.
+- Cross-school foreign-key and related-object assignments must be rejected or concealed as appropriate.
+- Demo/sandbox behavior may not weaken tenant or authorization controls.
+- Cross-tenant negative tests are required for security-sensitive domain paths.
 
-Barnabas is formation-centered, not KPI-centered.
+### 4.3 Restricted data
 
----
+Sensitive domains such as student records, pastoral/spiritual-life data, student care/discipline, health-related data and financial data require explicit least-privilege access beyond mere authentication.
 
-### 2.4 Solomon (Knowledge & Governance Library)
+## 5. Integration and API rules
 
-**Purpose:** Wisdom and governance repository.
+- Cross-domain access occurs through governed service/API contracts or documented adapters.
+- Modules must not import another domain's persistence model merely to shortcut an established contract when that creates competing ownership.
+- API contracts must preserve tenant scope, authorization and stable identity semantics.
+- External integrations remain fail-closed when credentials, contracts or tenant configuration are absent.
+- Payment-provider implementation remains provider-agnostic until a provider is contractually selected and certified.
 
-**Owns:**
-- Governance templates
-- Policy documents
-- Board training materials
-- Best-practice research
-- Leadership content
+## 6. Frontend architecture
 
-**Solomon does not:**
-- Access live student data
-- Modify operational records
+Crown maintains one shared frontend architecture:
 
----
+- one application shell and role-aware navigation system;
+- one design-token/component system;
+- shared form, table, card, modal, feedback and wizard patterns;
+- no production placeholder/fake data presented as live truth;
+- dashboards consume governed domain APIs rather than becoming independent data authorities;
+- accessibility and responsive behavior are platform concerns, not module-specific exceptions.
 
-### 2.5 Operation Andrew (Admissions Referral Module)
+## 7. Compatibility and convergence
 
-*Inspired by Andrew*
+Some historical representations remain intentionally retained where destructive retirement has not yet been proven safe. Examples include documented Scheduling compatibility paths and student-identity boundaries. Their presence is controlled technical debt, not permission to expand duplicate models.
 
-Lives within **Crown → Admissions**.
+Every retained compatibility surface must have:
 
-**Model:** Hybrid tuition credit + scholarship give-back.
+- an identified canonical target;
+- bounded permitted consumers;
+- no unexplained production writer;
+- tenant-safe mapping rules;
+- a retirement/convergence condition documented in an ADR, architecture record or current domain disposition.
 
-**Owns:**
-- Referral code generation
-- Referral attribution tracking
-- Reward qualification logic
-- Tuition credit issuance
-- Scholarship give-back option
-- Referral dashboard metrics
+## 8. Repository and release architecture
 
-Operation Andrew integrates with Compass for ROI measurement.
-
----
+- `main` is the authoritative integrated source branch.
+- One coherent reversible outcome per pull request is the default review unit.
+- Required exact-head CI, security, schema, route, contract and repository-policy gates must pass before merge.
+- Historical workflow runs, tags, branches, predecessor repositories and proof artifacts are provenance, not current runtime authority.
+- Current repository certification does not by itself prove production deployment, rollback execution, restore execution or successor acceptance.
 
-## 3. Architectural Guardrails
+## 9. Prohibited architecture patterns
 
-### 3.1 One Design System
+The following are prohibited unless a current approved ADR explicitly establishes a bounded migration path:
 
-The platform shall maintain:
-- One CSS variable system
-- One spacing scale
-- One button component system
-- One card component system
-- One table component system
-- One chart library
-- No inline hex colors
-- No duplicated UI patterns
+- shadow student/family/staff/school truth;
+- caller-spoofable authorization;
+- tenant-isolation shortcuts;
+- duplicate production writers for the same canonical business entity;
+- dashboard or wizard stores that become competing systems of record;
+- ad hoc module-specific design systems;
+- production placeholder/demo data masquerading as live data;
+- undocumented compatibility models;
+- stale predecessor documentation presented as current authority.
 
-Sub-modules may adjust accent tones but may not create independent UI systems.
+## 10. Amendment and verification
 
-### 3.2 One Permission Engine
+Architecture changes require:
 
-- Single permission registry
-- All endpoints enforce permission checks
-- Navigation derived from permissions
-- No module bypass
-- All future features integrate into the same enforcement framework
+1. current-main evidence and dependency review;
+2. explicit ownership/boundary decision;
+3. affected ADR/canon/documentation update;
+4. security, tenant and contract regression coverage where applicable;
+5. exact-head CI and review-thread closure;
+6. expected-head protected merge.
 
-### 3.3 One Tenant Model
+Where the project operates under the approved solo-developer governance workaround, automated checks and complete evidence-backed review are compensating controls; they are not represented as independent human approval.
 
-- All modules enforce tenant isolation
-- All data access must respect `request.school`
-- No cross-tenant access allowed
-- No demo shortcuts bypassing tenant enforcement
+## 11. Authority precedence
 
-### 3.4 Layer C Scoping Doctrine
+If an older architecture, roadmap, predecessor or experimental document conflicts with this canon, the following precedence applies:
 
-Row and field scoping must:
-- Be centralized
-- Be role-defined
-- Be test-covered
-- Be contract-frozen before module expansion
-- Not rely on scattered queryset filtering
+1. current executable `main` behavior and enforced security/data-integrity contracts;
+2. current approved ADR/domain disposition;
+3. this Architecture Canon;
+4. current Crown Master Binder taxonomy;
+5. historical planning/provenance material.
 
-### 3.5 Demo Integrity Doctrine
-
-Demo Mode must:
-- Be environment-gated
-- Never default to enabled
-- Never expose plaintext credentials
-- Never bypass permission logic
-- Use seeded canonical demo tenant (Heritage)
-
----
-
-## 4. Module Boundaries Matrix
-
-| System | Data Ownership | Analytics | Formation | Admissions | Governance |
-|--------|---------------|-----------|-----------|------------|------------|
-| Crown | Yes | Limited | No | Yes | Limited |
-| Compass | Read-only | Yes | No | No | No |
-| Barnabas | Limited | No | Yes | No | No |
-| Solomon | No | No | Advisory | No | Yes |
-| Operation Andrew | Admissions-linked | Yes (ROI) | Encouragement tone | Yes | No |
-
----
-
-## 5. Roadmap Order (Frozen)
-
-1. Core Stabilization
-2. Layer C Implementation
-3. Design Canon Lock
-4. Barnabas v1
-5. Operation Andrew
-6. Compass Activation
-7. Solomon Integration
-
-**No parallel module expansion outside this order.**
-
----
-
-## 6. What Is Prohibited
-
-- Independent sub-brand UI systems
-- Permission bypass logic
-- Tenant isolation shortcuts
-- Inline styling that violates canon
-- Demo-only hacks in production code
-- Feature expansion without canon alignment
-
----
-
-## 7. Governance Enforcement
-
-All pull requests must:
-- Pass full backend test suite
-- Respect permission engine
-- Respect tenant isolation
-- Follow visual canon
-- Avoid duplication of components
-- Avoid introduction of ungoverned modules
-
----
-
-## 8. Canon Amendment Process
-
-Any architectural change requires:
-- Explicit review
-- Canon update
-- Documentation revision
-- Test coverage updates
-
-**No silent drift permitted.**
-
----
-
-*End of Canon v1*
+Conflicts must be reconciled rather than silently carried forward.
