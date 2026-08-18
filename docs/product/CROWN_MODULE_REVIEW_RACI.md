@@ -8,7 +8,7 @@
 
 ## Purpose
 
-This document defines the review and certification governance path for CROWN modules and dashboards. It does not itself certify a module, authorize a deployment, activate payment processing, complete buyer acceptance, or substitute for the technical evidence required by the module and dashboard control matrices.
+This document defines the review and certification governance path for CROWN modules and dashboards and retains the canonical 53-row review inventory required by repository integrity controls. It does not itself certify a module, authorize a deployment, activate payment processing, complete buyer acceptance, or substitute for technical evidence.
 
 ## Current governance model
 
@@ -22,10 +22,10 @@ Where no eligible independent human reviewer is available, the approved `SOLO_DE
 4. zero unresolved actionable review threads;
 5. fresh ancestry and mergeability verification;
 6. expected-head-SHA protection for the governed merge;
-7. explicit documentation that automated assistance is not independent human approval authority; and
+7. explicit documentation that **automated assistance is not approval authority**; and
 8. no self-approval or false independent-review claim.
 
-This governance correction is retained in the completed issue #14 program record and supersedes older CROWN control text that made an unavailable independent human reviewer an absolute certification blocker. It does **not** weaken technical, tenant, permission, security, privacy, data-integrity, runtime, evidence, or recovery requirements.
+The completed issue #14 governance record documents this approved path and supersedes older CROWN control text that made an unavailable independent human reviewer an absolute certification blocker. This does **not** weaken technical, tenant, permission, security, privacy, data-integrity, runtime, evidence, or recovery requirements.
 
 ## Roles
 
@@ -60,6 +60,66 @@ Certification still requires, as applicable:
 - the approved governance review path recorded.
 
 Registry presence, page rendering, sample data, fallback data, historical evidence, or a green build by itself is not certification.
+
+## Canonical review inventory
+
+Every row below uses the same review rule: independent human review when an eligible reviewer is available; otherwise the approved `SOLO_DEVELOPER_APPROVED_WORKAROUND`. `Security/Privacy` indicates whether enhanced security/privacy evidence is required for the row. It does not create an unavailable-human-review blocker.
+
+| Phase | Module Key | Review Path | Security/Privacy |
+|---|---|---|---|
+| 0 | `tenant-school-context` | Approved governance path | REQUIRED |
+| 0 | `identity-users-roles` | Approved governance path | REQUIRED |
+| 0 | `rbac-permissions` | Approved governance path | REQUIRED |
+| 0 | `audit-logging` | Approved governance path | REQUIRED |
+| 0 | `entitlements-subscriptions` | Approved governance path | REQUIRED |
+| 0 | `retention-rollover` | Approved governance path | REQUIRED |
+| 0 | `dashboard-certification-contract` | Approved governance path | REQUIRED |
+| 1 | `school-year-grade` | Approved governance path | AS REQUIRED |
+| 1 | `staff-user-role` | Approved governance path | REQUIRED |
+| 1 | `family-guardian-household` | Approved governance path | REQUIRED |
+| 1 | `student-master` | Approved governance path | REQUIRED |
+| 1 | `enrollment-registrar` | Approved governance path | REQUIRED |
+| 1 | `courses-sections-rosters` | Approved governance path | AS REQUIRED |
+| 1 | `attendance` | Approved governance path | REQUIRED |
+| 1 | `gradebook` | Approved governance path | REQUIRED |
+| 1 | `transcripts-reportcards` | Approved governance path | REQUIRED |
+| 1 | `student-care-discipline` | Approved governance path | REQUIRED |
+| 2 | `admissions` | Approved governance path | REQUIRED |
+| 2 | `re-enrollment` | Approved governance path | REQUIRED |
+| 2 | `billing-tuition-ledger` | Approved governance path | REQUIRED |
+| 2 | `financial-aid` | Approved governance path | REQUIRED |
+| 2 | `communications` | Approved governance path | REQUIRED |
+| 2 | `parent-family-portal` | Approved governance path | REQUIRED |
+| 2 | `teacher-portal` | Approved governance path | REQUIRED |
+| 2 | `administrator-portal` | Approved governance path | REQUIRED |
+| 3 | `scheduling` | Approved governance path | AS REQUIRED |
+| 3 | `activities-athletics` | Approved governance path | REQUIRED |
+| 3 | `health-office` | Approved governance path | REQUIRED |
+| 3 | `transportation` | Approved governance path | REQUIRED |
+| 3 | `food-service` | Approved governance path | REQUIRED |
+| 3 | `facilities` | Approved governance path | AS REQUIRED |
+| 3 | `safety-security` | Approved governance path | REQUIRED |
+| 3 | `hr` | Approved governance path | REQUIRED |
+| 3 | `it-support` | Approved governance path | REQUIRED |
+| 4 | `fine-arts` | Approved governance path | AS REQUIRED |
+| 4 | `library-media` | Approved governance path | REQUIRED |
+| 4 | `extended-care` | Approved governance path | REQUIRED |
+| 4 | `summer-camp` | Approved governance path | REQUIRED |
+| 4 | `spiritual-life` | Approved governance path | REQUIRED |
+| 4 | `service-outreach-portrait` | Approved governance path | REQUIRED |
+| 4 | `volunteer-management` | Approved governance path | REQUIRED |
+| 4 | `advancement-operations` | Approved governance path | REQUIRED |
+| 4 | `alumni-relations` | Approved governance path | REQUIRED |
+| 4 | `board-governance` | Approved governance path | REQUIRED |
+| 4 | `curriculum-pd` | Approved governance path | AS REQUIRED |
+| 4 | `network-benchmarking` | Approved governance path | REQUIRED |
+| 5 | `implementation-success` | Approved governance path | AS REQUIRED |
+| 5 | `data-migration` | Approved governance path | REQUIRED |
+| 5 | `integrations-automation` | Approved governance path | REQUIRED |
+| 5 | `compliance-audit` | Approved governance path | REQUIRED |
+| 5 | `revenue-operations` | Approved governance path | REQUIRED |
+| 5 | `release-reliability` | Approved governance path | AS REQUIRED |
+| 5 | `dashboard-certification-center` | Approved governance path | AS REQUIRED |
 
 ## Evidence record
 
