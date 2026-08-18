@@ -4,33 +4,40 @@
 **Current repository identity:** governed by `docs/CURRENT_RELEASE_STATUS.md` and exact current `main`  
 **Controlling authority:** `docs/CURRENT_RELEASE_STATUS.md`
 
-## Current release/turnover boundaries
+## Current release disposition
 
-- Current `main` is the repository source authority; it is not automatically proof of a deployed production identity.
-- The successor migration and engineering gap-closure program tracked by Crown-CSMS issue #14 is closed/completed and is historical program evidence, not current execution authority.
-- Repository certification, deployed runtime identity, recovery evidence, legal/compliance review, payment activation, and owner turnover are separate gates.
-- Source presence does not establish completion of every optional integration, roadmap item, or distinct adjacent product.
-- External payment processing is not selected, contracted, enabled, or certified and remains fail closed.
+CROWN is **PRODUCTION-READY ENGINEERING CERTIFIED**. The current Crown-CSMS `main` containing the certification record is the production-ready source baseline.
+
+This does not mean a successor-controlled production environment is already deployed or operationally accepted. Product/repository readiness and transaction-time production operation remain separate gates.
+
+## Current limitations and boundaries
+
+- Successor production deployment/runtime identity is transaction-time and is not yet asserted.
+- External payment processing is not yet authorized for activation. It remains disabled and fail closed until provider contracting, merchant credentials, and provider-specific certification are complete.
 - Microsoft 365 Education integration remains broader roadmap/customer-tenant configuration scope; provider-side and customer-tenant prerequisites are external to repository proof.
 - Little Lambs remains outside the current CROWN handoff scope rather than a separately certified daycare product authority.
-- HR/Core Staff ownership remains an architecture reconciliation follow-up; current HR permission hardening must not be confused with final data-ownership convergence.
-- Communications persistent read authority and duplicate unsafe mutation-route retirement are merged, while broader Microsoft transport, canonical recipient policy, SMS/outbox, and customer integration work remain roadmap scope.
+- Retained compatibility models and bridges are not authorized for destructive retirement until deterministic parity, migration continuity, and rollback/forward-fix evidence support removal.
+- HR/Core Staff ownership remains an architecture convergence follow-up; this does not negate current HR security and product readiness.
+- Communications customer transport/integration configuration remains environment/customer-specific even though the persistent authorization and unsafe duplicate-route defects have been corrected.
+- Dashboard production-live provenance/promotion remains intentionally conservative even though dashboard implementation and structural engineering satisfy the production-ready engineering threshold.
 
-## Operational evidence still requiring completion or explicit acceptance
+## Transaction-time operational evidence
+
+The following are required or must be explicitly accepted when a specific successor production environment and release are selected:
 
 - exact deployed runtime identity for the selected release;
 - immutable application rollback execution evidence against that identity;
 - operational backup/restore evidence tied to the selected release, including measured RTO/RPO where required;
+- successor-owned production monitoring/escalation evidence;
 - credential rotation, revocation, failed-rotation recovery, and break-glass exercises as required by the transfer plan;
-- monitoring/escalation evidence appropriate to successor operation;
-- successor-controlled account creation, recovery-factor control, and seller-access removal;
+- successor-controlled accounts, recovery factors, billing/vendor ownership, and seller-access removal;
 - successor acceptance of scope, limitations, and residual risks;
-- legal/compliance dispositions that require qualified external review.
+- legal/compliance/transaction dispositions requiring qualified external review.
 
-## Compliance boundary
+## Compliance and certification boundary
 
-CROWN is not represented as FERPA certified, COPPA certified, regulator approved, universally compliant, legally approved for every intended market, or independently human certified merely because repository controls and tests pass.
+The production-ready engineering certification is an internal product/repository readiness decision under CROWN's documented governance model. It is not represented as FERPA certification, COPPA certification, regulator approval, universal legal compliance, independent third-party certification, valuation advice, tax/accounting advice, or buyer acceptance.
 
 ## Historical evidence boundary
 
-Crown2026 release artifacts, old production tags, historical issue records, completed predecessor/successor engineering-program records, and predecessor certification remain provenance only unless a current Crown-CSMS canonical record explicitly incorporates a bounded fact. They must not be presented as current Crown-CSMS release or turnover authority.
+Crown2026 release artifacts, old production tags, historical issue records, obsolete NO-GO scorecards, completed predecessor/successor engineering-program records, and predecessor certification remain provenance only unless a current Crown-CSMS canonical record explicitly incorporates a bounded fact. They must not be presented as current Crown-CSMS release or turnover authority.
