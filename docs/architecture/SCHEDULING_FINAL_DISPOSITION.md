@@ -1,7 +1,8 @@
 # Scheduling Final Disposition
 
-Status: merge-gated completion record
-Active repository: `tcmegahan/Crown-CSMS`
+**Status:** Canonical supporting disposition record  
+**Active repository:** `Arete-Advisory-Group/Crown-CSMS`  
+**Last reconciled:** 2026-08-17
 
 ## Canonical Scheduling authority
 
@@ -33,11 +34,11 @@ The duplicate `crown_api.models_scheduling_core` tables are retained for reversi
 
 Allowed retained consumers:
 
-- `crown_api.views_scheduling`: bounded API compatibility reads while canonical Term/Section reads are preferred.
-- `crown_api.serializers_scheduling`: response-contract compatibility for retained reads.
+- `crown_api.views_scheduling`: bounded API compatibility reads while canonical Term/Section reads are preferred;
+- `crown_api.serializers_scheduling`: response-contract compatibility for retained reads;
 - regression/test fixtures that prove old authorized semantics and prevent accidental deletion before migration proof exists.
 
-Prohibited after final consumer cutover:
+Prohibited:
 
 - operational wizard writes to legacy Term/Section/SectionEnrollment;
 - Django admin write registration for legacy Scheduling masters;
@@ -45,26 +46,12 @@ Prohibited after final consumer cutover:
 - sandbox student schedule creation in legacy Scheduling masters;
 - demo reset/rehearsal proof that treats legacy Section as Scheduling authority.
 
-## Final consumer cutover
+## Consumer-cutover disposition
 
-The final cleanup:
+The completed cutover design removes legacy Scheduling Term/Section/SectionEnrollment from operational write ownership, moves local scheduling seed/demo paths to canonical academics/placement authority, and preserves explicit compatibility identity boundaries rather than fabricating roster mappings between `core.Student` and `households.Student`.
 
-1. removes legacy Scheduling Term/Section/SectionEnrollment from Django admin;
-2. converts `backend/scripts/seed_scheduling.py` to canonical academics Term/Course/Section writes;
-3. converts the student sandbox schedule fixture to canonical academics Enrollment plus canonical room/bell/placement data using an explicit sandbox-account compatibility identity;
-4. converts local demo reset and rehearsal proofs to canonical Scheduling master/placement checks.
+## Historical completion sequence
 
-The local seed intentionally does not fabricate roster mappings across `core.Student` and `households.Student`.
+Earlier Scheduling PR numbers and exact-head checks are retained in Git/PR history as provenance. They are not current release authority and must not be treated as present turnover gates. Current Scheduling authority is determined by the implemented source on current Crown-CSMS `main`, current tests/evidence, `ARCHITECTURE_MAP.md`, and `docs/CURRENT_RELEASE_STATUS.md`.
 
-## Completion gate
-
-Scheduling may be marked **COMPLETED AND VERIFIED** only when:
-
-- PR #22 (API/read adapter correction) is merged on its certified exact head;
-- the final consumer-cutover PR is merged on its certified exact head;
-- required exact-head CI, tenant isolation, full backend tests, governed coverage, sandbox evidence, runtime/full-surface proof, repository policy, and security/release gates are terminal green;
-- zero unresolved actionable review threads remain;
-- `main` is re-fetched and verified after both merges;
-- a final repository consumer scan finds no unexplained production-capable legacy Scheduling writer.
-
-Duplicate compatibility tables remain retained, not authoritative. Their future physical retirement is governed by the separate identity/data convergence program and must not be inferred from Scheduling module completion.
+Duplicate compatibility tables remain retained, not authoritative. Future physical retirement is governed by the separate identity/data convergence program and must not be inferred from Scheduling module completion.

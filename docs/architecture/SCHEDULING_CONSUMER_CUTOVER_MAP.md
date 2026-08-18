@@ -1,12 +1,12 @@
 # Scheduling Consumer Cutover Map
 
-Status: P0 execution control
-Active repository: `tcmegahan/Crown-CSMS`
-Successor workstream: PR #18
+**Status:** Controlled compatibility/convergence map  
+**Active repository:** `Arete-Advisory-Group/Crown-CSMS`  
+**Last reconciled:** 2026-08-17
 
 ## Canonical target
 
-Scheduling master-data ownership must converge on:
+Scheduling master-data ownership converges on:
 
 - `academics.Term` -> `core.AcademicYear`
 - `academics.Course`
@@ -17,93 +17,77 @@ Scheduling master-data ownership must converge on:
 - `room_setup_wizard.Room`
 - `bell_schedule_wizard.BellSchedule` / `DayTemplate` / `PeriodBlock`
 
-Legacy representations remain read-only compatibility sources until COPY -> COMPARE -> CUTOVER -> RETIRE LAST proof is complete.
+Legacy representations remain compatibility sources until COPY -> COMPARE -> CUTOVER -> RETIRE LAST proof is complete. Earlier PR numbers are historical implementation provenance, not current turnover authority.
 
 ## Duplicate scheduling representations
 
-### Advanced scheduler legacy table
+### Advanced scheduler compatibility table
 
-`section_scheduler_wizard.Section` currently duplicates section/course/staff/room/slot identity. PR #18 stops new advanced-scheduler writes to this model and preserves it for reconciliation only.
+`section_scheduler_wizard.Section` duplicates section/course/staff/room/slot identity. New operational writes must use canonical scheduling authority; the compatibility table is retained only where current source still requires bounded read/reconciliation behavior.
 
 ### crown_api scheduling stack
 
-`crown_api.models_scheduling_core` defines its own `Term`, `Section`, and `SectionEnrollment`. Its `Section` also points to `crown_api.models_academics_core.Course`, `crown_api.models_households.Person`, string room/meeting fields, and its enrollment points to `core.Student`.
+`crown_api.models_scheduling_core` defines its own `Term`, `Section`, and `SectionEnrollment`, with identity shapes that differ from the canonical academics stack. These tables must not be dropped by assumption because student and teacher identity mappings require deterministic reconciliation.
 
-This stack must not be dropped directly because its student and teacher identity shapes differ from the canonical academics stack.
+## Compatibility consumers requiring explicit disposition before physical retirement
 
-## Verified active consumers
+| Consumer category | Retirement requirement |
+|---|---|
+| `backend/crown_api/views_scheduling.py` and serializers | Canonical adapter/query parity with unchanged authorization semantics |
+| Scheduling/academics regression fixtures | Preserve behavioral intent against canonical authority or explicit compatibility adapter |
+| Seeds, demo/reset, and sandbox schedule paths | Canonical authority only for operational writes; deterministic proof |
+| Admin registrations | Remove legacy write authority; retain only if a bounded compatibility need is proven |
+| Cross-domain attendance/classwork consumers | Explicit consumer/equivalence proof before model retirement |
 
-| Consumer | Current dependency | Cutover requirement | Retirement gate |
-|---|---|---|---|
-| `backend/crown_api/views_scheduling.py` | crown_api Term/Section/SectionEnrollment | compatibility adapter or canonical query implementation with unchanged authorized response semantics | API parity + tenant/household tests |
-| `backend/crown_api/serializers_scheduling.py` | crown_api scheduling models and Person | canonical serializer/adapter preserving response contract | serializer/API parity |
-| `backend/crown_api/tests/test_scheduling_api.py` | crown_api scheduling fixtures | convert fixtures to canonical/crosswalk source and retain authorization assertions | all tests green on canonical path |
-| `backend/scripts/seed_scheduling.py` | crown_api scheduling models | seed canonical Term/Course/Section/Enrollment/placement data | deterministic seed proof |
-| `backend/sandbox_demo/student_self_service.py` | crown_api SectionEnrollment | read canonical enrollment/schedule adapter | sandbox persona proof |
-| `scripts/ops/PRE_DEMO_RESET_AND_SEED.ps1` | crown_api scheduling reset/seed path | invoke canonical seed/reset path | demo reset proof |
-| `scripts/demo/DEMO_PROOF_REHEARSAL.ps1` | crown_api scheduling path | update proof commands to canonical schedule | rehearsal proof |
-| `backend/crown_api/admin.py` | crown_api scheduling registration | switch/remove only after data parity | admin smoke proof |
-| `backend/crown_api/views_academics.py` | crown_api Section references | inspect and cut to canonical section authority where applicable | academics API parity |
-| golden-path / tenant / academics tests referencing crown_api Section | duplicate fixture dependency | preserve test intent against canonical authority or explicit compatibility adapter | exact-head regression green |
-
-Search verification also identified crown_api scheduling references in attendance/classwork tests. Those are test-consumer dependencies and must be examined before model retirement even if production code is already cut over.
+The current repository must be rescanned before any destructive retirement because a historical consumer list is not sufficient authority for deletion.
 
 ## Required identity crosswalks
 
 ### Course
 
-`crown_api.models_academics_core.Course.course_code` -> `academics.Course.code`, tenant scoped.
-
-Mapping must be unique within school. Ambiguous or missing mappings are reconciliation failures, never guessed.
+`crown_api.models_academics_core.Course.course_code` -> `academics.Course.code`, tenant scoped. Mapping must be unique within school; ambiguous or missing mappings fail closed.
 
 ### Term
 
-`crown_api.models_scheduling_core.Term.code` -> `academics.Term.code` within an explicit `AcademicYear`.
-
-The crown_api Term model lacks tenant/AcademicYear authority, so a deterministic AcademicYear association must be proven before write/cutover.
+`crown_api.models_scheduling_core.Term.code` -> `academics.Term.code` within an explicit `AcademicYear`. A deterministic AcademicYear association must be proven before migration/retirement.
 
 ### Section
 
-`crown_api Section` -> `academics.Section` must use school + AcademicYear/term + course + canonical section identity. Course+term alone is insufficient because multiple sections of one course in one term are valid.
+Legacy/crown_api Section -> `academics.Section` must use school + AcademicYear/term + course + durable section identity. Course+term alone is insufficient because multiple sections of one course in one term are valid.
 
 ### Teacher
 
-`crown_api Person` -> `core.Staff` -> `academics.TeacherAssignment`.
-
-Email may be used only when unique, normalized, same-tenant identity is proven. No automatic cross-tenant or ambiguous matching.
+Legacy/crown_api Person -> `core.Staff` -> `academics.TeacherAssignment`. Email may be used only when unique, normalized, same-tenant identity is proven. Ambiguous or cross-tenant matching is prohibited.
 
 ### Student / roster
 
-`crown_api SectionEnrollment.student` uses `core.Student`, while `academics.Enrollment.student` currently uses `households.Student`.
+`crown_api SectionEnrollment.student` and `academics.Enrollment.student` may traverse different compatibility identity domains. Student schedule cutover/retirement therefore requires an existing accepted bridge or an explicit deterministic crosswalk. Do not delete compatibility enrollment data before this proof exists.
 
-This is a hard compatibility boundary. Student schedule cutover requires the existing household/core student identity bridge or an explicit deterministic crosswalk. Do not delete crown_api SectionEnrollment before this proof exists.
+## Retirement sequence
 
-## Cutover sequence
-
-1. Freeze new writes to duplicate scheduling masters.
-2. Repair canonical section identity/source writer so multiple same-course/same-term sections are representable and AcademicYear-bound.
-3. Dry-run legacy advanced-scheduler reconciliation; require zero ambiguous/unmatched/conflicting rows before apply.
-4. Build crown_api read adapter backed by canonical schedule data while preserving existing response/authorization contracts.
-5. Run old-vs-new API output comparison on representative tenant/persona fixtures.
-6. Cut seeds, demo/reset scripts, sandbox self-service, tests, and admin registrations to canonical authority.
-7. Re-scan repository for crown_api scheduling model consumers.
-8. Require zero production writes/read dependencies except explicitly documented compatibility paths.
-9. Independent review and exact-head CI/browser proof.
-10. Retire duplicate tables/models in a separate reversible change only after 100% parity evidence.
+1. Confirm no new operational writes target duplicate scheduling masters.
+2. Inventory every current production/test/demo/admin consumer against current `main`.
+3. Prove canonical section identity supports multiple same-course/same-term sections and explicit AcademicYear context.
+4. Dry-run reconciliation and require zero ambiguous/unmatched/conflicting rows before any destructive action.
+5. Compare retained compatibility responses against canonical adapters on representative tenant/persona fixtures.
+6. Verify seeds, demo/reset, sandbox, admin, and tests use the intended authority.
+7. Re-scan the repository for compatibility-model consumers.
+8. Require zero unexplained production write/read dependencies outside explicitly documented compatibility paths.
+9. Require governed exact-head validation and the applicable solo-developer governance workaround.
+10. Retire duplicate tables/models only in a separate reversible change after parity and recovery evidence are complete.
 
 ## Non-negotiable regression cases
 
-- two sections of the same course in the same term remain distinct
-- wrong-tenant section, student, room, teacher, and block rejected
-- teacher collision rejected using canonical `TeacherAssignment`
-- room collision rejected using canonical placement data
-- unauthorized scheduling publish rejected
-- parent/student schedule remains household/student scoped
-- roster and staffing preserved during placement changes
-- retry/idempotency does not duplicate sections or placements
-- reconciliation ambiguity produces zero writes in strict/apply mode
-- no implicit deletion of unrelated sections or placements
+- two sections of the same course in the same term remain distinct;
+- wrong-tenant section, student, room, teacher, and block are rejected;
+- teacher and room collision policy is enforced by canonical authority;
+- unauthorized scheduling publication is rejected;
+- parent/student schedule remains household/student scoped;
+- roster and staffing are preserved during placement changes;
+- retry/idempotency does not duplicate sections or placements;
+- reconciliation ambiguity produces zero writes in strict/apply mode;
+- no implicit deletion of unrelated sections or placements.
 
 ## Current retirement decision
 
-`section_scheduler_wizard.Section`, `crown_api.models_scheduling_core.Term`, `Section`, and `SectionEnrollment`: **RETAIN** until the gates above are proven. No destructive retirement is authorized by PR #18.
+Compatibility scheduling tables/models: **RETAIN UNTIL CURRENT CONSUMER/PARITY/RECOVERY PROOF AUTHORIZES RETIREMENT.** This document is a convergence map, not a present P0 release blocker and not authorization for destructive cleanup.
