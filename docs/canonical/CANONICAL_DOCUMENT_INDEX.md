@@ -4,15 +4,16 @@
 **Last verified:** 2026-08-18  
 **Current repository identity:** resolve exact current `refs/heads/main` from Git/GitHub; do not duplicate a mutable self-invalidating SHA in this index
 
-This index defines the active documentation authority surface for Crown-CSMS. It intentionally does **not** embed per-file blob SHAs or a copied current-`main` SHA as durable authority because those IDs become stale whenever a governed document is updated. Exact source identity must be resolved from Git/GitHub and recorded in the immutable evidence packet or transfer/release record for the decision being made.
+This index defines the active documentation authority surface for Crown-CSMS. Exact source identity must be resolved from Git/GitHub and recorded in the immutable evidence packet or transfer/release record for the decision being made.
 
 | Document | Purpose | Authority source | Review trigger |
 |---|---|---|---|
-| `README.md` | Repository orientation and claim boundary | This index; current release status | Each handoff/release-authority change |
+| `README.md` | Repository orientation and production-ready posture | This index; current release status | Each handoff/release-authority change |
 | `docs/README.md` | Documentation navigation | This index | Documentation-structure change |
 | `docs/canonical/REPOSITORY_MANIFEST.md` | Allowed active repository surface | This index | Repository-structure change |
 | `docs/canonical/DILIGENCE_EVIDENCE_INDEX.md` | Diligence navigation and evidence boundary | Current release status | Each handoff/release decision |
-| `docs/CURRENT_RELEASE_STATUS.md` | Current release status; release, payment, recovery, and turnover posture | Exact Crown-CSMS evidence; authorized decision | Every release-relevant change |
+| `docs/CURRENT_RELEASE_STATUS.md` | Current production-ready engineering, release, payment, recovery, and turnover posture | Exact Crown-CSMS evidence; authorized decision | Every release-relevant change |
+| `docs/release/CROWN_PRODUCTION_READY_ENGINEERING_CERTIFICATION_20260818.md` | Formal production-ready product/repository engineering certification and claim boundary | Current exact repository evidence; Founder/Product Owner release decision | Material product/security/release regression or certification change |
 | `docs/architecture/ARCHITECTURE_MAP.md` | Current architecture | Implemented source; accepted decisions | Architecture/ownership change |
 | `docs/architecture/DECISION_INDEX.md` | Architecture decision navigation | Accepted decision records | Each architecture decision |
 | `docs/engineering/DEV_SETUP.md` | Reproducible engineering setup | Current repository configuration | Setup/dependency change |
@@ -40,10 +41,8 @@ When exact identity matters, resolve the current Git ref directly and retain the
 - **DUPLICATE:** repeats an authority without a defined supporting role.
 - **UNSUPPORTED:** lacks exact evidence or an authorized decision.
 
-Predecessor-repository material, predecessor issue programs, and superseded release campaigns are historical provenance for Crown-CSMS unless a current canonical record explicitly incorporates a bounded fact from them.
+Predecessor-repository material, predecessor issue programs, superseded release campaigns, and obsolete NO-GO scorecards are historical provenance for Crown-CSMS unless a current canonical record explicitly incorporates a bounded fact from them.
 
 ## Owner-handoff hygiene rule
 
-Active onboarding, diligence, operations, and owner-facing material must be concise, current, nonduplicative, and explicit about evidence boundaries. Historical release boards, copied conversations, generated proof dumps, obsolete completion claims, retired automation instructions, superseded repository paths, and old SHAs must not be presented as current authority.
-
-If a current fact changes, update the governing canonical record first; supporting documents must reference that authority rather than duplicating mutable status claims wherever practical.
+Active onboarding, diligence, operations, and owner-facing material must align with the current production-ready engineering certification while preserving the separate transaction-time deployment and operational-transfer boundary. Historical release boards, copied conversations, generated proof dumps, obsolete completion claims, retired automation instructions, superseded repository paths, and old SHAs must not be presented as current authority.
