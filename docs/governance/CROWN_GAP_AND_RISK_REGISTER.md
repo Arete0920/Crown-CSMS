@@ -1,42 +1,25 @@
-# CROWN Gap and Risk Register
+# CROWN Gap and Risk Register — Superseded Historical Baseline
 
 **Document ID:** CROWN-GOV-004  
-**Status:** ACTIVE — Initial Controlled Baseline  
-**Parent authority:** `docs/governance/CROWN_BUYER_READY_COMPLETION_CANON.md`  
-**Repository evidence SHA:** `7fb6ca623e541d3f59a482e5bb13769b998403e8`  
-**Assessment date:** 2026-07-24  
-**Owner:** John Megahan  
-**Controlling execution issue:** #1587
+**Status:** SUPERSEDED / HISTORICAL — NOT CURRENT GAP OR RELEASE AUTHORITY  
+**Original assessment date:** 2026-07-24  
+**Original repository evidence SHA:** `7fb6ca623e541d3f59a482e5bb13769b998403e8`
 
-## Severity and status
+## Disposition
 
-Severity uses `Critical`, `High`, `Medium`, or `Low`. Status uses only `PASS`, `FAIL`, `PARTIAL`, `UNKNOWN`, `NOT APPLICABLE`, `SUPERSEDED`, or `REMOVED`.
+The former register was an initial controlled baseline built around predecessor-era issue numbers, incomplete certification state, and an authority hierarchy that has since been superseded. Several former rows are now demonstrably stale, including rows that treated completed wizard certification, repository hygiene, security remediation, or predecessor recovery trackers as still-current gaps.
 
-## Active register
+The former body remains available in Git history for audit and provenance. It must not be used as the current Crown-CSMS blocker register or to override current exact-main evidence.
 
-| Risk ID | Affected requirements | Gap or risk | Severity | Current evidence | Status | Impact | Current control or workaround | Exit criteria |
-|---|---|---|---|---|---|---|---|---|
-| CROWN-RISK-001 | BRC-REL-001, BRC-REL-002 | No approved exact release tuple reconciles repository SHA, built artifacts, configuration, deployment identity and runtime proof | Critical | Current release authority requires one unchanged identity; final tuple not established | FAIL | Blocks production authorization and invalidates mixed-SHA proof | Production remains not approved | Freeze one candidate and complete Stages A-E on that identity |
-| CROWN-RISK-002 | BRC-PROD-001-004, BRC-ARCH-002 | Complete active-surface census is not yet reconciled across backend apps, APIs, frontend routes, dashboards, wizards, jobs and integrations | Critical | Multiple registries and route layers exist; no single current coverage matrix | FAIL | Active functionality can be omitted from testing, support or diligence | Existing planning matrices and forensic scripts | Map every active surface exactly once to proof or explicit exclusion |
-| CROWN-RISK-003 | BRC-DATA-001 | Parallel `core` and compatibility `households` family/guardian/student authorities remain in active consumers | Critical | Open canonical-data reconciliation issues and source references | FAIL | Duplicate truth, inconsistent lifecycle behavior, migration and tenant risk | Compatibility controls and scoped APIs | Reconcile consumers, rehearse migration and rollback, define safe retirement criteria |
-| CROWN-RISK-004 | BRC-DATA-002, BRC-SEC-002 | Tenant enforcement is distributed across multiple middleware and model/write paths | Critical | Three tenant middleware layers plus ongoing relational-integrity work | PARTIAL | Cross-tenant access or inconsistent tenant binding if an uncovered path exists | Header enforcement, context middleware, tests and recent academics protections | Complete middleware convergence, exemption inventory, task binding and writer/DB proof |
-| CROWN-RISK-005 | BRC-SEC-003, BRC-PROD-004 | Frontend role groups are not fully reconciled to backend action permissions and grants | High | Permission planning matrix exists; route guards and backend permissions are not one verified map | PARTIAL | Unauthorized actions, over-broad roles or false denial | Frontend guards, permission components and backend RBAC foundations | Produce role-permission-action map and negative/direct-route/export tests |
-| CROWN-RISK-006 | BRC-OPS-001 | Application rollback and database restore are not proven through controlled drills | Critical | RTO/RPO settings exist; issue #1270 remains open | FAIL | Unproven recovery from failed deployment, corruption or data loss | Immutable-image rollback architecture and documented objectives | Successful rollback and isolated restore with reconciliation and measured accepted RTO/RPO |
-| CROWN-RISK-007 | BRC-SEC-005, BRC-INFRA-001 | External secret-store operation, rotation, revocation and break-glass controls are not proven | Critical | Repository architecture exists; #1294/#1296 exercises open | FAIL | Credential compromise, founder dependency and production-operability risk | Fail-closed secret requirements and no committed production secrets | Complete identity, least-privilege, rotation, failed-rotation, revocation, audit and break-glass evidence |
-| CROWN-RISK-008 | BRC-SEC-006, BRC-COM-001 | Student-data privacy, contractual and jurisdiction-specific legal evidence remains incomplete | Critical | Framework and claim boundaries exist; #1425 open | FAIL | Legal, customer, transaction and reputational exposure | No unsupported certification/compliance claims permitted | Complete inventory, notices, DPA, incident exercise, state/federal analysis and qualified legal review |
-| CROWN-RISK-009 | BRC-REL-003, BRC-REPO-001 | CI workflows overlap and do not yet form one explicit proof hierarchy | High | #1394 open; historical cleanup plans identified duplicate candidates | PARTIAL | Slow/noisy CI, ambiguous release signal and accidental proof weakening | Current required checks and conservative no-delete policy | Inventory every workflow and classify/consolidate with equivalence and rollback proof |
-| CROWN-RISK-010 | BRC-PROD-002, BRC-NFR-001 | Most dashboards lack verified live source, freshness, provenance, reconciliation, redaction and export evidence | High | Dashboard-fit matrix is predominantly Scaffold; two Hybrid and one Live planning states | PARTIAL | Misleading data, sensitive disclosure, unsupported readiness claims | Truth-state labels, registry metadata and certification controls | Verify source module/API/snapshot, permissions, tenant, freshness, runtime and independent review per dashboard |
-| CROWN-RISK-011 | BRC-PROD-003 | Registered wizards are inventoried but not comprehensively proven step-by-step | High | 28 entries centrally registered | PARTIAL | Setup failures, partial writes, invalid configuration or unsupported completion claims | Single-source registry and app-level tests where present | Verify workflow states, validation, permissions, idempotency/rollback and runtime proof for every wizard |
-| CROWN-RISK-012 | BRC-DATA-004, BRC-SEC-004 | Import, export, retention, deletion, anonymization and legal-hold controls are not comprehensively mapped | High | Requirements and some surfaces exist; format-by-format evidence missing | UNKNOWN | Data corruption, disclosure, retention and transfer risk | Permission/export requirements in control matrices | Inventory each path and prove validation, tenant binding, redaction, audit, retention and rollback |
-| CROWN-RISK-013 | BRC-NFR-001, BRC-NFR-002 | System-wide measurable performance, capacity, accessibility and compatibility targets are incomplete | High | General rules exist; complete targets and current evidence do not | UNKNOWN | Buyer uncertainty and production reliability/usability risk | Performance middleware and crawler accessibility requirements | Define targets and execute representative load, browser, viewport and accessibility campaigns |
-| CROWN-RISK-014 | BRC-OPS-002 | Observability components exist but complete alert ownership, retention and failure-diagnosis evidence is incomplete | High | Health, integrity, version, correlation, audit and performance surfaces exist | PARTIAL | Slower incident detection and founder-only diagnosis | Existing diagnostic endpoints and middleware | Verify structured logs, redaction, metrics, alerts, ownership and incident exercise |
-| CROWN-RISK-015 | BRC-COM-001, BRC-REPO-002 | Detailed IP chain of title, contributor evidence, licensing and AI provenance package is incomplete | Critical | Sole ownership and attribution rules established; detailed ledger absent | UNKNOWN | Buyer diligence, ownership representation and licensing risk | Canon prohibits unsupported attribution and independent-human-review claims | Build evidence-backed provenance, contributor, contractor and license registers with qualified review |
-| CROWN-RISK-016 | BRC-COM-002 | Pricing, pipeline, adoption, revenue, costs and projections are not in one verified claims register | Critical | Commercial concepts exist; controlled evidence package not established | UNKNOWN | Misrepresentation and valuation/diligence risk | Claims control prohibits unsupported statements | Create source-linked actual-vs-projection register and obtain accounting/legal review where appropriate |
-| CROWN-RISK-017 | BRC-XFER-001, BRC-XFER-002 | Full account/asset/credential transfer inventory and founder-independence rehearsal are incomplete | Critical | Transfer standards defined; buyer execution excluded and clean-room rehearsal not complete | UNKNOWN | Buyer cannot independently operate or recover platform | Extensive repository documentation and proposed two-year continuity model | Complete universal transfer inventory and conduct operator continuity rehearsal |
-| CROWN-RISK-018 | BRC-REPO-001 | Superseded authority and stale operational documents remain in active paths | Medium | Draft archive PR #1586 safely moves ten explicit historical records | PARTIAL | Conflicting claims and buyer/reviewer confusion | Watermarks and buyer-ready canon supremacy | Merge safe archive, scan references and continue bounded archival PRs |
-| CROWN-RISK-019 | BRC-ARCH-002, BRC-SEC-003 | Legacy route/API aliases and multiple guard patterns are not fully rationalized | High | Backend `/api` compatibility aliases and frontend legacy paths remain | PARTIAL | Inconsistent authorization, navigation and support behavior | Existing redirects and guards | Establish canonical route catalog; test aliases; retire or formally retain each |
-| CROWN-RISK-020 | BRC-ARCH-004, BRC-INFRA-001 | Enabled integrations and external dependencies are not reconciled to runtime configuration and vendor ownership | High | Integration apps and Microsoft identity surfaces exist | UNKNOWN | Failed syncs, secret exposure, unowned subscriptions and transfer blockers | Fail-closed configuration and integration modules | Build enabled/disabled integration inventory with contracts, owners, retry, reconciliation and transfer status |
+## Current authority
 
-## Control rule
+Use:
 
-A risk remains in this register until it is `PASS`, `NOT APPLICABLE`, `SUPERSEDED`, or `REMOVED` through an auditable decision. Documentation edits alone do not close a technical, operational, security, legal, financial or transfer risk.
+1. `docs/CURRENT_RELEASE_STATUS.md` for current release, payment, recovery, and turnover posture;
+2. `docs/canonical/CANONICAL_DOCUMENT_INDEX.md` for documentation authority;
+3. `docs/canonical/DILIGENCE_EVIDENCE_INDEX.md` for current diligence/evidence boundaries;
+4. current Crown-CSMS GitHub issues and pull requests for live technical work;
+5. `docs/KNOWN_LIMITATIONS.md` for current disclosed limitations;
+6. `docs/ownership/BUYER_OPERATIONAL_TRANSFER_REGISTER.md` for transaction-time transfer conditions.
+
+Repository engineering completion does not itself establish deployed runtime identity, operational rollback/restore completion, legal/compliance certification, payment activation, or completed owner turnover. Those remain separate evidence/authority decisions where applicable.
