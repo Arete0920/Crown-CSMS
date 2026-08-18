@@ -2,7 +2,6 @@ name: Lockdown Golden Path Gate
 permissions:
   contents: read
 
-
 on:
   pull_request:
   push:
@@ -20,11 +19,10 @@ jobs:
       runtime_changed: ${{ steps.out.outputs.runtime_changed }}
     steps:
       - name: Checkout PR head
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
         with:
           fetch-depth: 0
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
-
       - name: Detect runtime changes
         id: out
         shell: bash
@@ -32,29 +30,16 @@ jobs:
           EVENT_NAME="${{ github.event_name }}"
           HEAD_SHA="${{ github.event.pull_request.head.sha || github.sha }}"
           BASE_SHA="${{ github.event.pull_request.base.sha || github.event.before }}"
-
-          if [ -z "$BASE_SHA" ] || [ "$BASE_SHA" = "0000000000000000000000000000000000000000" ]; then
-            BASE_SHA="HEAD~1"
-          fi
-
+          if [ -z "$BASE_SHA" ] || [ "$BASE_SHA" = "0000000000000000000000000000000000000000" ]; then BASE_SHA="HEAD~1"; fi
           changed_files="$(git diff --name-only "$BASE_SHA" "$HEAD_SHA" || true)"
           runtime_changed="false"
-
           while IFS= read -r file; do
             [ -z "$file" ] && continue
             case "$file" in
-              backend/*|frontend/*|requirements*.txt|package*.json|tools/dev_scripts/golden_path_gate.ps1|tools/dev_scripts/demo_one_click.ps1|tools/dev_scripts/demo_snapshot.ps1|.github/workflows/lockdown-golden-path-gate.yml)
-                runtime_changed="true"
-                break
-                ;;
+              backend/*|frontend/*|requirements*.txt|package*.json|tools/dev_scripts/golden_path_gate.ps1|tools/dev_scripts/demo_one_click.ps1|tools/dev_scripts/demo_snapshot.ps1|.github/workflows/lockdown-golden-path-gate.yml) runtime_changed="true"; break ;;
             esac
           done <<< "$changed_files"
-
-          # For PR events, run the gate if diff detection cannot resolve cleanly.
-          if [ "$EVENT_NAME" = "pull_request" ] && [ -z "$changed_files" ]; then
-            runtime_changed="true"
-          fi
-
+          if [ "$EVENT_NAME" = "pull_request" ] && [ -z "$changed_files" ]; then runtime_changed="true"; fi
           echo "runtime_changed=$runtime_changed" >> "$GITHUB_OUTPUT"
 
   lockdown-gate:
@@ -62,7 +47,6 @@ jobs:
     if: github.event_name != 'pull_request' || needs.changes.outputs.runtime_changed == 'true'
     runs-on: windows-latest
     timeout-minutes: 20
-
     env:
       ENVIRONMENT: dev
       DJANGO_SECRET_KEY: ci-test-secret-key
@@ -71,267 +55,91 @@ jobs:
       DEV_OPS_SECRET: ${{ secrets.DEV_OPS_SECRET }}
       CROWN_GATE_SCHOOL_ID: ""
       CROWN_GATE_YEAR_ID: ""
-
     steps:
       - name: Checkout
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
-
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
       - name: Preflight artifact alignment
         shell: pwsh
         run: |
-          $required = @(
-            "backend/core/management/commands/seed_lockdown_minimal.py",
-            "backend/admissions/management/commands/seed_admissions_demo.py",
-            "tools/dev_scripts/golden_path_gate.ps1",
-            "tools/dev_scripts/demo_one_click.ps1",
-            "tools/dev_scripts/demo_snapshot.ps1"
-          )
-
-          $missing = @()
-          foreach ($f in $required) {
-            if (-not (Test-Path $f)) {
-              Write-Host "MISSING_REQUIRED_ARTIFACT=$f"
-              $missing += $f
-            }
-          }
-
-          if ($missing.Count -gt 0) {
-            echo "Lockdown gate artifacts must exist in main repo paths before CI can run."
-            echo "Sync from DEMO_TAG to main and rerun."
-            exit 1
-          }
-
+          $required = @("backend/core/management/commands/seed_lockdown_minimal.py","backend/admissions/management/commands/seed_admissions_demo.py","tools/dev_scripts/golden_path_gate.ps1","tools/dev_scripts/demo_one_click.ps1","tools/dev_scripts/demo_snapshot.ps1")
+          $missing = @($required | Where-Object { -not (Test-Path $_) })
+          $missing | ForEach-Object { Write-Host "MISSING_REQUIRED_ARTIFACT=$_" }
+          if ($missing.Count -gt 0) { throw "Lockdown gate artifacts must exist in main repo paths before CI can run." }
       - name: Setup Python
-        uses: actions/setup-python@7f4fc3e22c37d6ff65e88745f38bd3157c663f7c # v4
+        uses: actions/setup-python@7f4fc3e22c37d6ff65e88745f38bd3157c663f7c
         with:
           python-version: "3.12"
-
       - name: Setup Node
-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: "20"
           cache: npm
           cache-dependency-path: frontend/dashboards/package-lock.json
-
       - name: Install backend deps
         run: |
           python -m pip install --upgrade pip
           pip install -r backend/requirements.txt
-
-      - name: Install frontend deps (dashboards)
+      - name: Install frontend deps
         run: |
           Set-Location frontend/dashboards
           npm ci
-
-      - name: Migrate + seed lockdown minimal
-        id: seed
+      - name: Migrate and seed lockdown minimal
         shell: pwsh
         run: |
           Set-Location backend
-          $env:PYTHONUTF8 = '1'
-          $env:PYTHONIOENCODING = 'utf-8'
+          $env:PYTHONUTF8 = '1'; $env:PYTHONIOENCODING = 'utf-8'
           python manage.py migrate --noinput
-
           $out = python manage.py seed_lockdown_minimal --count 10
           $out | ForEach-Object { Write-Host $_ }
-
           $schoolLine = $out | Where-Object { $_ -like 'SCHOOL_ID=*' } | Select-Object -First 1
           $yearLine = $out | Where-Object { $_ -like 'ACADEMIC_YEAR_ID=*' } | Select-Object -First 1
-
-          if (-not $schoolLine) {
-            Write-Host "Missing SCHOOL_ID from seed output"
-            exit 1
-          }
-
-          if (-not $yearLine) {
-            Write-Host "Missing ACADEMIC_YEAR_ID from seed output"
-            exit 1
-          }
-
-          $schoolId = $schoolLine.Substring('SCHOOL_ID='.Length)
-          $yearId = $yearLine.Substring('ACADEMIC_YEAR_ID='.Length)
-
-          Add-Content -Path $env:GITHUB_ENV -Value "CROWN_GATE_SCHOOL_ID=$schoolId"
-          Add-Content -Path $env:GITHUB_ENV -Value "CROWN_GATE_YEAR_ID=$yearId"
-
-      - name: Start backend (8000)
+          if (-not $schoolLine -or -not $yearLine) { throw "Seed output missing school or academic year ID" }
+          Add-Content $env:GITHUB_ENV "CROWN_GATE_SCHOOL_ID=$($schoolLine.Substring('SCHOOL_ID='.Length))"
+          Add-Content $env:GITHUB_ENV "CROWN_GATE_YEAR_ID=$($yearLine.Substring('ACADEMIC_YEAR_ID='.Length))"
+      - name: Run live golden path
         shell: pwsh
         run: |
-          Set-Location backend
-          $env:PYTHONUNBUFFERED = '1'
-          $env:PYTHONIOENCODING = 'utf-8'
-
-          $outLog = Join-Path $env:RUNNER_TEMP 'backend.out.log'
-          $errLog = Join-Path $env:RUNNER_TEMP 'backend.err.log'
-
-          Write-Host "Starting backend: python manage.py runserver 127.0.0.1:8000 --noreload"
-          Write-Host "CWD: $(Get-Location)"
-          Write-Host "Python: $(python --version)"
-
-          # Use cmd /c start for truly non-blocking background execution
-          cmd /c "start /B python manage.py runserver 127.0.0.1:8000 --noreload > `"$outLog`" 2>&1"
-
-          Start-Sleep -Seconds 5
-          Write-Host "Backend start command issued"
-
-      - name: Start frontend (3000)
-        shell: pwsh
-        run: |
-          Set-Location frontend/dashboards
-          $outLog = Join-Path $env:RUNNER_TEMP 'frontend.out.log'
-
-          Write-Host "Starting frontend: npm run dev -- --host 127.0.0.1 --port 3000"
-          Write-Host "CWD: $(Get-Location)"
-
-          # Use cmd /c start for truly non-blocking background execution
-          cmd /c "start /B npm run dev -- --host 127.0.0.1 --port 3000 > `"$outLog`" 2>&1"
-
-          Start-Sleep -Seconds 5
-          Write-Host "Frontend start command issued"
-
-      - name: Wait for backend and frontend
-        shell: pwsh
-        run: |
-          Write-Host "=== Waiting for backend on :8000 ==="
-          $backendOk = $false
-          for ($i=0; $i -lt 60; $i++) {
-            Write-Host "[Backend] Attempt $($i+1)/60..."
-
-            $listener = Get-NetTCPConnection -State Listen -LocalPort 8000 -ErrorAction SilentlyContinue | Select-Object -First 1
-            if ($listener) {
-              Write-Host "[Backend] Port 8000 is listening, testing HTTP..."
-              try {
-                $resp = Invoke-WebRequest -UseBasicParsing -TimeoutSec 3 'http://127.0.0.1:8000' -ErrorAction Stop
-                Write-Host "[Backend] HTTP check passed (status: $($resp.StatusCode))"
-                $backendOk = $true
-                break
-              } catch {
-                Write-Host "[Backend] HTTP check failed: $($_.Exception.Message)"
-              }
-            }
-            Start-Sleep -Seconds 2
-          }
-
-          if (-not $backendOk) {
-            Write-Host "=== BACKEND FAILURE DIAGNOSTICS ==="
-            $outLog = Join-Path $env:RUNNER_TEMP 'backend.out.log'
-            if (Test-Path $outLog) {
-              Write-Host "=== backend.out.log (last 100 lines) ==="
-              Get-Content $outLog -Tail 100 -ErrorAction SilentlyContinue | Write-Host
-            } else {
-              Write-Host "backend.out.log not found"
-            }
-
-            Write-Host "=== Process check ==="
-            Get-Process python -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowTitle -eq "" } | Select-Object Id,ProcessName,StartTime | Format-Table | Write-Host
-
-            Write-Host "=== Port check ==="
-            Get-NetTCPConnection -State Listen -ErrorAction SilentlyContinue | Where-Object { $_.LocalAddress -eq "127.0.0.1" } | Select-Object LocalPort,State | Write-Host
-
-            throw 'Backend did not become healthy on :8000 after 2 minutes'
-          }
-
-          Write-Host "=== Waiting for frontend on :3000 ==="
-          $frontendOk = $false
-          for ($i=0; $i -lt 60; $i++) {
-            Write-Host "[Frontend] Attempt $($i+1)/60..."
-            try {
-              $resp = Invoke-WebRequest -UseBasicParsing -TimeoutSec 3 'http://127.0.0.1:3000/' -ErrorAction Stop
-              Write-Host "[Frontend] HTTP check passed (status: $($resp.StatusCode))"
-              $frontendOk = $true
-              break
-            } catch {
-              Write-Host "[Frontend] Not ready: $($_.Exception.Message)"
-              Start-Sleep -Seconds 2
-            }
-          }
-
-          if (-not $frontendOk) {
-            Write-Host "=== FRONTEND FAILURE DIAGNOSTICS ==="
-            $outLog = Join-Path $env:RUNNER_TEMP 'frontend.out.log'
-            if (Test-Path $outLog) {
-              Write-Host "=== frontend.out.log (last 100 lines) ==="
-              Get-Content $outLog -Tail 100 -ErrorAction SilentlyContinue | Write-Host
-            } else {
-              Write-Host "frontend.out.log not found"
-            }
-
-            Write-Host "=== Process check ==="
-            Get-Process node -ErrorAction SilentlyContinue | Select-Object Id,ProcessName,StartTime | Format-Table | Write-Host
-
-            throw 'Frontend did not become healthy on :3000 after 2 minutes'
-          }
-
-      - name: Acquire gate token
-        shell: pwsh
-        run: |
-          $ErrorActionPreference = 'Stop'
-          # Authenticate as the seeded HEAD_OF_SCHOOL demo user.
-          # seed_demo_school always creates: head@crown-demo.local / demo1234
-          $body = '{"username":"head@crown-demo.local","password":"demo1234"}'
-          $resp = Invoke-RestMethod `
-            -Method Post `
-            -Uri "http://127.0.0.1:8000/api/v1/auth/token/" `
-            -ContentType "application/json" `
-            -Body $body
-          $token = $resp.access
-          if (-not $token) { throw "Failed to acquire gate JWT - check seed or token endpoint" }
-          Add-Content -Path $env:GITHUB_ENV -Value "CROWN_DEMO_TOKEN=$token"
-          Write-Host "Gate token acquired (length=$($token.Length))"
-
-      - name: Run Golden Path gate
-        shell: pwsh
-        run: |
-          $ErrorActionPreference = 'Stop'
-          $gate = Join-Path $env:GITHUB_WORKSPACE 'tools/dev_scripts/golden_path_gate.ps1'
-          if (-not (Test-Path $gate)) { throw "Missing gate script at $gate" }
-
-          Write-Host "CROWN_GATE_SCHOOL_ID=$env:CROWN_GATE_SCHOOL_ID"
-          Write-Host "CROWN_GATE_YEAR_ID=$env:CROWN_GATE_YEAR_ID"
-
-          powershell -ExecutionPolicy Bypass -File $gate -SchoolId $env:CROWN_GATE_SCHOOL_ID -AcademicYearId $env:CROWN_GATE_YEAR_ID
-
-      - name: Dump logs on failure
-        if: failure()
-        shell: pwsh
-        run: |
-          Write-Host "===== backend.out.log ====="
           $backendOut = Join-Path $env:RUNNER_TEMP 'backend.out.log'
-          if (Test-Path $backendOut) { Get-Content $backendOut -Tail 400 }
-
-          Write-Host "===== backend.err.log ====="
           $backendErr = Join-Path $env:RUNNER_TEMP 'backend.err.log'
-          if (Test-Path $backendErr) { Get-Content $backendErr -Tail 400 }
-
-          Write-Host "===== frontend.out.log ====="
           $frontendOut = Join-Path $env:RUNNER_TEMP 'frontend.out.log'
-          if (Test-Path $frontendOut) { Get-Content $frontendOut -Tail 400 }
-
-          Write-Host "===== frontend.err.log ====="
           $frontendErr = Join-Path $env:RUNNER_TEMP 'frontend.err.log'
-          if (Test-Path $frontendErr) { Get-Content $frontendErr -Tail 400 }
-
-      - name: Stop servers
-        if: always()
-        shell: pwsh
-        run: |
-          Write-Host "Stopping backend and frontend processes..."
-
-          # Kill python processes running manage.py
-          Get-Process python -ErrorAction SilentlyContinue | Where-Object {
-            $_.Path -like "*hostedtoolcache*" -or $_.CommandLine -like "*manage.py*"
-          } | ForEach-Object {
-            Write-Host "Stopping Python PID $($_.Id)"
-            Stop-Process -Id $_.Id -Force -ErrorAction SilentlyContinue
+          $python = (Get-Command python).Source
+          $npm = (Get-Command npm.cmd).Source
+          $backend = $null
+          $frontend = $null
+          function Wait-Http([string]$Name,[string]$Uri,[System.Diagnostics.Process]$Process,[string]$OutLog,[string]$ErrLog) {
+            for ($i=1; $i -le 60; $i++) {
+              if ($Process.HasExited) {
+                if (Test-Path $OutLog) { Get-Content $OutLog -Tail 100 }
+                if (Test-Path $ErrLog) { Get-Content $ErrLog -Tail 100 }
+                throw "$Name process exited with code $($Process.ExitCode)"
+              }
+              try {
+                $resp = Invoke-WebRequest -UseBasicParsing -TimeoutSec 3 $Uri -ErrorAction Stop
+                if ($resp.StatusCode -ge 200 -and $resp.StatusCode -lt 500) { return }
+              } catch { Start-Sleep -Seconds 2 }
+            }
+            if (Test-Path $OutLog) { Get-Content $OutLog -Tail 100 }
+            if (Test-Path $ErrLog) { Get-Content $ErrLog -Tail 100 }
+            throw "$Name did not become healthy"
           }
-
-          # Kill node processes (Vite dev server)
-          Get-Process node -ErrorAction SilentlyContinue | Where-Object {
-            $_.Path -like "*hostedtoolcache*"
-          } | ForEach-Object {
-            Write-Host "Stopping Node PID $($_.Id)"
-            Stop-Process -Id $_.Id -Force -ErrorAction SilentlyContinue
+          try {
+            $backend = Start-Process -FilePath $python -ArgumentList @('manage.py','runserver','127.0.0.1:8000','--noreload') -WorkingDirectory (Join-Path $env:GITHUB_WORKSPACE 'backend') -RedirectStandardOutput $backendOut -RedirectStandardError $backendErr -PassThru
+            $frontend = Start-Process -FilePath $npm -ArgumentList @('run','dev','--','--host','127.0.0.1','--port','3000') -WorkingDirectory (Join-Path $env:GITHUB_WORKSPACE 'frontend/dashboards') -RedirectStandardOutput $frontendOut -RedirectStandardError $frontendErr -PassThru
+            Wait-Http 'Backend' 'http://127.0.0.1:8000/' $backend $backendOut $backendErr
+            Wait-Http 'Frontend' 'http://127.0.0.1:3000/' $frontend $frontendOut $frontendErr
+            $body = '{"username":"head@crown-demo.local","password":"demo1234"}'
+            $resp = Invoke-RestMethod -Method Post -Uri 'http://127.0.0.1:8000/api/v1/auth/token/' -ContentType 'application/json' -Body $body
+            if (-not $resp.access) { throw 'Failed to acquire gate JWT' }
+            $env:CROWN_DEMO_TOKEN = $resp.access
+            $gate = Join-Path $env:GITHUB_WORKSPACE 'tools/dev_scripts/golden_path_gate.ps1'
+            powershell -ExecutionPolicy Bypass -File $gate -SchoolId $env:CROWN_GATE_SCHOOL_ID -AcademicYearId $env:CROWN_GATE_YEAR_ID
+            if ($LASTEXITCODE -ne 0) { throw "Golden Path gate failed with exit code $LASTEXITCODE" }
+          } finally {
+            if ($backend -and -not $backend.HasExited) { Stop-Process -Id $backend.Id -Force -ErrorAction SilentlyContinue }
+            if ($frontend -and -not $frontend.HasExited) { Stop-Process -Id $frontend.Id -Force -ErrorAction SilentlyContinue }
+            foreach ($name in 'backend.out.log','backend.err.log','frontend.out.log','frontend.err.log') {
+              $path = Join-Path $env:RUNNER_TEMP $name
+              if (Test-Path $path) { Write-Host "===== $name ====="; Get-Content $path -Tail 100 }
+            }
           }
-
-          Write-Host "Server cleanup complete"
-
