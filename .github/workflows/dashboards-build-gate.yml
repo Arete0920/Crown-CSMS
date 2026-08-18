@@ -17,11 +17,9 @@ concurrency:
 
 jobs:
   build:
-    name: dashboard-build-internal
+    name: dashboards-build-gate
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    outputs:
-      build_outcome: ${{ steps.build.outcome }}
     defaults:
       run:
         working-directory: frontend/dashboards
@@ -55,8 +53,6 @@ jobs:
           printf '{"build_sha":"%s","deploy_tag":"%s"}' "${{ github.sha }}" "${{ github.ref_name }}" > public/build.json
 
       - name: Build
-        id: build
-        continue-on-error: true
         env:
           VITE_API_BASE_URL: http://localhost:8000
           VITE_BUILD_SHA: ${{ github.sha }}
@@ -71,23 +67,3 @@ jobs:
           path: frontend/dashboards/dashboard-build.log
           if-no-files-found: error
           retention-days: 7
-
-  report:
-    name: dashboards-build-gate
-    needs: build
-    if: always()
-    runs-on: ubuntu-latest
-    steps:
-      - name: Download build log
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
-        with:
-          name: dashboard-build-log
-
-      - name: Report result
-        env:
-          BUILD_OUTCOME: ${{ needs.build.outputs.build_outcome }}
-        run: |
-          cat dashboard-build.log
-          if [ "$BUILD_OUTCOME" != "success" ]; then
-            exit 1
-          fi
