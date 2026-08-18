@@ -16,12 +16,10 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  pytest-gate-internal:
-    name: pytest-gate-internal
+  pytest-gate:
+    name: pytest-gate
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    outputs:
-      gate_outcome: ${{ steps.gate.outcome }}
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
@@ -42,8 +40,6 @@ jobs:
           if [ -f backend/requirements-dev.txt ]; then pip install -r backend/requirements-dev.txt; fi
 
       - name: Run Pytest Gate
-        id: gate
-        continue-on-error: true
         env:
           DJANGO_SETTINGS_MODULE: crown_api.settings
           SECRET_KEY: ci-not-secret
@@ -62,25 +58,3 @@ jobs:
           path: pytest-gate.log
           if-no-files-found: error
           retention-days: 14
-
-  pytest-gate:
-    name: pytest-gate
-    needs: pytest-gate-internal
-    if: always()
-    runs-on: ubuntu-latest
-    steps:
-      - name: Download complete pytest gate log
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
-        with:
-          name: pytest-gate-log
-
-      - name: Report decisive pytest diagnostics
-        env:
-          GATE_OUTCOME: ${{ needs.pytest-gate-internal.outputs.gate_outcome }}
-        run: |
-          echo "=== pytest-gate decisive diagnostics ==="
-          tail -n 200 pytest-gate.log
-          echo "=== pytest-gate outcome: ${GATE_OUTCOME} ==="
-          if [ "${GATE_OUTCOME}" != "success" ]; then
-            exit 1
-          fi
