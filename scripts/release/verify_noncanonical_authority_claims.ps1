@@ -6,8 +6,6 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
 $allowList = @(
-    "CURRENT_RELEASE_SCORECARD_20260528.md",
-    "P0_EXECUTION_BOARD_20260528.md",
     "RELEASE_AUTHORITY_PRECEDENCE_TABLE_20260530.md"
 )
 
