@@ -1,9 +1,9 @@
 # Buyer Operational Transfer Register
 
 **Status:** Active owner-turnover preparation control  
-**Last reconciled:** 2026-08-17  
-**Handoff-refresh base `main`:** `f9bf6b4143e707f93ec8d6ce319327ddc7d3e2a0`  
-**Controlling authority:** `docs/CURRENT_RELEASE_STATUS.md` and Crown-CSMS issue #14
+**Last reconciled:** 2026-08-18  
+**Current repository identity:** governed by `docs/CURRENT_RELEASE_STATUS.md` and exact current `main`  
+**Controlling authority:** `docs/CURRENT_RELEASE_STATUS.md`
 
 ## Required asset record
 
