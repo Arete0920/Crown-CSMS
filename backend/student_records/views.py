@@ -1,14 +1,14 @@
 from rest_framework import generics
-from rest_framework.permissions import IsAuthenticated
 
 from core.models import Student
+from student_records.permissions import CanViewStudentRecords
 from tenants.tenant_context import get_request_school_id
 
 from .serializers import StudentRecordSerializer
 
 
 class StudentRecordListView(generics.ListAPIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [CanViewStudentRecords]
     serializer_class = StudentRecordSerializer
 
     def get_queryset(self):
@@ -17,7 +17,7 @@ class StudentRecordListView(generics.ListAPIView):
 
 
 class StudentRecordDetailView(generics.RetrieveAPIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [CanViewStudentRecords]
     serializer_class = StudentRecordSerializer
     lookup_url_kwarg = "student_id"
 
