@@ -19,6 +19,8 @@ Use the following current records instead:
 2. `docs/CROWN_ARCHITECTURE_CANON.md` — current architecture authority.
 3. `docs/Crown_Master_Binder/01_Vision_and_Product/01_Mission_and_Product_Taxonomy.md` — current Core / Modules / Add-ons taxonomy.
 4. `docs/canonical/CANONICAL_DOCUMENT_INDEX.md` — current document authority map.
-5. Crown-CSMS issue #14 — controlling owner-turnover execution record until formally completed.
+5. `docs/ownership/OWNER_HANDOFF.md` and `docs/ownership/BUYER_OPERATIONAL_TRANSFER_REGISTER.md` — current transaction-time transfer requirements.
+
+Crown-CSMS issue #14 is a completed historical engineering-program record, not current execution authority.
 
 Historical claims from the original July assessment must not be promoted into current status without fresh exact-main evidence.
