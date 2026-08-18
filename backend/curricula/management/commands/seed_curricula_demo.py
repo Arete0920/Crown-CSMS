@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from django.core.management.base import BaseCommand
 from django.db import transaction
 
+from curricula.governance import create_new_draft
 from curricula.models import CurriculumMap, CurriculumMapVersion, Unit, Lesson
 
 
@@ -126,7 +127,7 @@ class Command(BaseCommand):
         parser.add_argument(
             "--wipe",
             action="store_true",
-            help="If set, deletes existing curricula rows for this school before seeding.",
+            help="If set, clears editable draft curriculum units/lessons for this school before reseeding; governed version history is preserved.",
         )
 
     @transaction.atomic
@@ -135,10 +136,18 @@ class Command(BaseCommand):
         wipe = bool(opts["wipe"])
 
         if wipe:
-            Lesson.objects.filter(school_id=school_id).delete()
-            Unit.objects.filter(school_id=school_id).delete()
-            CurriculumMapVersion.objects.filter(school_id=school_id).delete()
-            CurriculumMap.objects.filter(school_id=school_id).delete()
+            draft_versions = CurriculumMapVersion.objects.filter(
+                school_id=school_id,
+                status=CurriculumMapVersion.Status.DRAFT,
+            )
+            Lesson.objects.filter(
+                school_id=school_id,
+                unit__curriculum_version__in=draft_versions,
+            ).delete()
+            Unit.objects.filter(
+                school_id=school_id,
+                curriculum_version__in=draft_versions,
+            ).delete()
 
         created_maps = 0
         created_versions = 0
@@ -157,16 +166,20 @@ class Command(BaseCommand):
             if cmap_created:
                 created_maps += 1
 
-            version, version_created = CurriculumMapVersion.objects.get_or_create(
-                school_id=school_id,
-                curriculum_map=cmap,
-                version_number=1,
-                defaults={
-                    "status": CurriculumMapVersion.Status.PUBLISHED,
-                    "change_summary": "Initial demo curriculum edition.",
-                },
+            version = (
+                CurriculumMapVersion.objects.filter(
+                    school_id=school_id,
+                    curriculum_map=cmap,
+                    status=CurriculumMapVersion.Status.DRAFT,
+                )
+                .order_by("-version_number")
+                .first()
             )
-            if version_created:
+            if version is None:
+                version = create_new_draft(
+                    curriculum_map=cmap,
+                    change_summary="Demo curriculum draft.",
+                )
                 created_versions += 1
 
             for u in m.units:
