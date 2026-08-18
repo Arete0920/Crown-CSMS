@@ -22,7 +22,7 @@ The predecessor-to-Crown-CSMS migration and successor engineering gap-closure pr
 
 PR #112 was locally exact-head certified at `915bf224bf714f5b5f4f31eb5745971af813f2e4`, merged as `1122b73d4072d8b98b311ffcca07d019bbcae1e8`, and the temporary PR-only OrganizationAdmin ruleset bypass used for that governed merge was removed immediately afterward. `main-protection` returned to active enforcement with no bypass actors.
 
-Repository engineering completion is distinct from transaction-time operational transfer. **No successor production deployment, production tag, payment activation, buyer acceptance, or operational turnover is asserted by this record.**
+Repository engineering completion is distinct from transaction-time operational transfer. **No successor production tag or release is asserted by this record.** No successor production deployment, payment activation, buyer acceptance, or operational turnover is asserted either.
 
 ## Current repository state
 
