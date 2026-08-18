@@ -3,25 +3,25 @@
 **Status:** ACTIVE CONTROL MATRIX — EVIDENCE BASELINE  
 **Baseline inspected:** `main` at `57c14f789a05f1d61e8b63b95f846f7ba546d55d` on 2026-08-07  
 **Parent canon:** `docs/product/CROWN_MODULES_AND_DASHBOARDS_CANON.md`  
-**Release authority:** `docs/CURRENT_RELEASE_STATUS.md` and GitHub issue `#1619`
+**Release authority:** `docs/CURRENT_RELEASE_STATUS.md` and exact current Git/GitHub repository identity
 
 ## Purpose
 
-This is the required row-level completion control for CROWN modules. It does not replace the bounded production-release certification in issue `#1619`. It governs the separate full-module completion program.
+This is the required row-level completion control for CROWN modules. It governs the separate full-module completion/certification program and does not replace the current repository release authority in `docs/CURRENT_RELEASE_STATUS.md`.
 
-Only the canon statuses are allowed: `Inventory`, `Schema-visible`, `Wired`, `Runtime-visible`, `Evidence-backed`, and `Certified`. Only `Certified` means complete.
+Only the canon statuses are allowed: `Inventory`, `Schema-visible`, `Wired`, `Runtime-visible`, `Evidence-backed`, and `Certified`. Only `Certified` means the matrix row has completed the full certification contract.
 
-No row may be promoted from this baseline because a route renders, a dashboard registry row exists, sample data exists, or a repository-wide test is green. Promotion requires current row-specific evidence for the complete module flow and an independent human review retained under `CROWN_MODULE_REVIEW_RACI.md`.
+No row may be promoted from this baseline because a route renders, a dashboard registry row exists, sample data exists, or a repository-wide test is green. Promotion requires current row-specific evidence for the complete module flow and the approved governance review path retained under `CROWN_MODULE_REVIEW_RACI.md`.
 
 ## Baseline disposition
 
-The current audit proves broad repository inventory and several cross-layer structural contracts, but it does not yet provide a current, independent, row-complete evidence packet for every module. Therefore every row below is conservatively baselined at `Inventory` until its complete evidence packet is assembled and reviewed.
+The current audit proves broad repository inventory and several cross-layer structural contracts, but it does not yet provide a current row-complete evidence packet for every module. Therefore every row below is conservatively baselined at `Inventory` until its complete evidence packet is assembled and the approved governance path is recorded.
 
-The August 4 production release remains separately certified for its bounded supported scope. This matrix does not downgrade that release and does not broaden its claims.
+This matrix does not downgrade a separately certified bounded repository release and does not broaden release claims. Repository release posture remains controlled by `docs/CURRENT_RELEASE_STATUS.md`.
 
 ## Required evidence columns
 
-For each row, promotion requires evidence for: domain ownership; models/schema; service/query layer; API; tenant enforcement; entitlement; action permission; validation/error behavior; audit events; frontend workflow; dashboard source/provenance where applicable; performance limits; backend/frontend/runtime tests; and independent review.
+For each row, promotion requires evidence for: domain ownership; models/schema; service/query layer; API; tenant enforcement; entitlement; action permission; validation/error behavior; audit events; frontend workflow; dashboard source/provenance where applicable; performance limits; backend/frontend/runtime tests; and the approved governance review path.
 
 `NOT VERIFIED` means the full row-specific requirement has not yet been proven in the current full-module audit. It does not mean no implementation exists.
 
@@ -29,13 +29,13 @@ For each row, promotion requires evidence for: domain ownership; models/schema; 
 
 | Order | Module Key | Module / Control Area | Status | Current evidence boundary | Blocking proof |
 |---:|---|---|---|---|---|
-| 0.1 | `tenant-school-context` | Tenant / School Context | Inventory | Bounded release tenant evidence exists | Full module/API tenant matrix, cross-tenant negative proof, current independent review NOT VERIFIED |
+| 0.1 | `tenant-school-context` | Tenant / School Context | Inventory | Bounded release tenant evidence exists | Full module/API tenant matrix, cross-tenant negative proof, current governance-path evidence NOT VERIFIED |
 | 0.2 | `identity-users-roles` | Identity / Users / Roles | Inventory | Authentication and role infrastructure exists | Full identity lifecycle, role assignment, recovery, and module-scope proof NOT VERIFIED |
 | 0.3 | `rbac-permissions` | RBAC / Permissions | Inventory | Central permission engine exists | Action-level matrix coverage and direct-URL/API negative proof for every module NOT VERIFIED |
 | 0.4 | `audit-logging` | Audit Logging | Inventory | Audit facilities exist in repository | Required-event coverage for every sensitive/write action NOT VERIFIED |
 | 0.5 | `entitlements-subscriptions` | Entitlements / Subscriptions | Inventory | Subscription/entitlement surfaces exist | Navigation + API + dashboard entitlement parity for every module NOT VERIFIED |
 | 0.6 | `retention-rollover` | Retention / Rollover | Inventory | Governance requirements documented | Module-specific retention, purge, archive, rollover and recovery proof NOT VERIFIED |
-| 0.7 | `dashboard-certification-contract` | Dashboard Certification Contract | Inventory | 40-key registry/data/backend structural audit exists | Full provenance, freshness, sensitivity, payload, performance and review contract NOT VERIFIED |
+| 0.7 | `dashboard-certification-contract` | Dashboard Certification Contract | Inventory | 40-key registry/data/backend structural audit exists | Full provenance, freshness, sensitivity, payload, performance and governance-path contract NOT VERIFIED |
 
 ## Phase 1 — Core SIS truth
 
@@ -105,17 +105,17 @@ For each row, promotion requires evidence for: domain ownership; models/schema; 
 | 42 | `integrations-automation` | Integrations / Automation | Inventory | Dashboard/integration surfaces exist | Retry/dedupe, secret redaction, ownership and failure-recovery proof NOT VERIFIED |
 | 43 | `compliance-audit` | Compliance Audit | Inventory | Dashboard/evidence surfaces exist | Exception workflow, retention and evidence-chain proof NOT VERIFIED |
 | 44 | `revenue-operations` | Revenue Operations | Inventory | Dashboard surface exists | Customer/school-data separation and source-of-truth proof NOT VERIFIED |
-| 45 | `release-reliability` | Release Reliability | Inventory | Registry marks dashboard ready; exact-head release workflows exist | Current-head service provenance, no sample fallback, performance and independent module review NOT VERIFIED |
-| 46 | `dashboard-certification-center` | Dashboard Certification Center | Inventory | Registry-derived certification surface exists | Strict payload contract, evidence linkage, freshness/performance and independent review NOT VERIFIED |
+| 45 | `release-reliability` | Release Reliability | Inventory | Registry marks dashboard ready; exact-head release workflows exist | Current-head service provenance, no sample fallback, performance and approved governance-path evidence NOT VERIFIED |
+| 46 | `dashboard-certification-center` | Dashboard Certification Center | Inventory | Registry-derived certification surface exists | Strict payload contract, evidence linkage, freshness/performance and approved governance-path evidence NOT VERIFIED |
 
 ## Promotion checklist
 
-A row may move above `Inventory` only when the evidence packet names the exact source SHA and proves the relevant stages. A row may move to `Certified` only when all required evidence is current, zero required evidence items are pending/failed, the independent reviewer is identified and did not author the work, review findings are resolved, and the retained signoff references the exact evidence packet.
+A row may move above `Inventory` only when the evidence packet names the exact source SHA and proves the relevant stages. A row may move to `Certified` only when all required evidence is current, zero required evidence items are pending/failed, the approved governance review path is recorded, actionable findings are resolved, and the retained certification record references the exact evidence packet. The work author may not self-review or self-approve; automated assistance is not approval authority.
 
 ## Current baseline summary
 
 - Control/module rows: **53** (7 control areas + 46 ordered module/platform areas).
 - Rows marked `Certified` by this matrix: **0**.
-- Independent full-module review assignments: **UNVERIFIED until recorded in the RACI**.
-- Existing bounded production release status: **unchanged; governed by issue #1619**.
-- Full-module completion claim: **NOT VERIFIED**.
+- Governance review path: **defined in `CROWN_MODULE_REVIEW_RACI.md`; row-specific certification evidence remains required for promotion**.
+- Existing bounded repository release status: **unchanged; governed by `docs/CURRENT_RELEASE_STATUS.md`**.
+- Full-module certification claim: **NOT VERIFIED**.
