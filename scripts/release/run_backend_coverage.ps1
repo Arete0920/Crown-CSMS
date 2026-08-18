@@ -157,7 +157,7 @@ try {
     $metadata = [ordered]@{
         schema_version = 2
         generated_at_utc = $completedAt
-        repository = "tcmegahan/Crown-CSMS"
+        repository = "Arete-Advisory-Group/Crown-CSMS"
         source_sha = $sourceSha
         worktree_clean_before_run = $true
         runner = "scripts/release/run_backend_coverage.ps1"
