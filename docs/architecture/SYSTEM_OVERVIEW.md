@@ -2,11 +2,11 @@
 
 **Status:** CANONICAL SUPPORTING OVERVIEW  
 **Owner:** CROWN Engineering  
-**Last verified:** 2026-08-17
+**Last verified:** 2026-08-18
 
 ## Interpretation
 
-This document summarizes repository-visible implementation and architectural convergence status. It does not redefine release, deployment, recovery, or owner-turnover authority. Those claims are governed by `docs/CURRENT_RELEASE_STATUS.md`, the canonical document index, and Crown-CSMS issue #14.
+This document summarizes repository-visible implementation and architectural convergence status. It does not redefine release, deployment, recovery, or owner-turnover authority. Those claims are governed by `docs/CURRENT_RELEASE_STATUS.md`, the canonical document index, and the current authorized owner-handoff/operational-transfer records. Crown-CSMS issue #14 is a completed historical engineering-program record.
 
 Evidence labels:
 
