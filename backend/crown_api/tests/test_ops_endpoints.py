@@ -1,27 +1,30 @@
 """
-Smoke tests for Ops endpoints (/api/ops/summary/, /api/ops/alerts/).
+Smoke and runtime-boundary tests for Ops endpoints (/api/ops/summary/, /api/ops/alerts/).
 
 Tests verify:
-1. Endpoints return HTTP 200 (normal mode)
-2. Response JSON has required fields
-3. Strict mode returns 500 when imports fail
+1. Endpoints return HTTP 200 in an explicit DEV runtime.
+2. Response JSON has required fields.
+3. Strict mode returns 500 when imports fail.
+4. Unknown and production-like runtimes fail closed.
+5. The known Azure DEV app remains supported.
 """
 
-from django.test import TestCase, Client
-import json
+import os
+from unittest.mock import patch
+
+from django.test import Client, TestCase, override_settings
 
 
+@override_settings(ENVIRONMENT="dev")
 class OpsEndpointsTestCase(TestCase):
-    """Test Ops Command Center endpoints for failsafe visibility."""
+    """Test Ops Command Center endpoints for bounded DEV/demo visibility."""
 
     def setUp(self):
         """Set up test client."""
         self.client = Client()
 
     def test_ops_summary_returns_200(self):
-        """
-        GET /api/ops/summary/ should return 200 with required fields.
-        """
+        """GET /api/ops/summary/ should return 200 with required fields in DEV."""
         resp = self.client.get("/api/ops/summary/")
         self.assertEqual(resp.status_code, 200)
 
@@ -34,17 +37,13 @@ class OpsEndpointsTestCase(TestCase):
         self.assertIn("counts", data)
 
     def test_ops_summary_counts_structure(self):
-        """
-        GET /api/ops/summary/ counts should have all core metrics.
-        Some may be None if app is not installed, but should be present.
-        """
+        """Ops summary counts should expose the expected DEV/demo metrics shape."""
         resp = self.client.get("/api/ops/summary/")
         self.assertEqual(resp.status_code, 200)
 
         data = resp.json()
         counts = data.get("counts", {})
-        
-        # All these fields should be present
+
         required_metrics = [
             "households",
             "admissions_applications",
@@ -55,13 +54,14 @@ class OpsEndpointsTestCase(TestCase):
         ]
         for metric in required_metrics:
             self.assertIn(metric, counts, f"Missing metric: {metric}")
-            # Value should be int or None (None if app not installed/accessible)
-            self.assertIn(type(counts[metric]), [int, type(None)], f"{metric} should be int or None")
+            self.assertIn(
+                type(counts[metric]),
+                [int, type(None)],
+                f"{metric} should be int or None",
+            )
 
     def test_ops_alerts_returns_200(self):
-        """
-        GET /api/ops/alerts/ should return 200 with alerts array.
-        """
+        """GET /api/ops/alerts/ should return 200 with alerts array in DEV."""
         resp = self.client.get("/api/ops/alerts/")
         self.assertEqual(resp.status_code, 200)
 
@@ -74,28 +74,22 @@ class OpsEndpointsTestCase(TestCase):
         self.assertIn("ts", data)
 
     def test_ops_alerts_has_deps_tracking(self):
-        """
-        GET /api/ops/alerts/ should return deps dict tracking import success.
-        """
+        """Ops alerts should return dependency import status in DEV."""
         resp = self.client.get("/api/ops/alerts/")
         self.assertEqual(resp.status_code, 200)
 
         data = resp.json()
         deps = data.get("deps", {})
-        
-        # deps should track three core imports
+
         self.assertIn("admissions", deps)
         self.assertIn("finance", deps)
         self.assertIn("gradebook", deps)
-        
-        # Each should be bool
+
         for key, val in deps.items():
             self.assertIsInstance(val, bool, f"deps[{key}] should be bool, got {type(val)}")
 
     def test_ops_alerts_errors_is_list(self):
-        """
-        GET /api/ops/alerts/ should return errors as list (even if empty).
-        """
+        """Ops alerts should always return errors as a list."""
         resp = self.client.get("/api/ops/alerts/")
         self.assertEqual(resp.status_code, 200)
 
@@ -104,40 +98,95 @@ class OpsEndpointsTestCase(TestCase):
         self.assertIsInstance(errors, list)
 
     def test_ops_alerts_array_structure(self):
-        """
-        Each alert in GET /api/ops/alerts/ should have required fields.
-        """
+        """Every returned alert should preserve the documented shape."""
         resp = self.client.get("/api/ops/alerts/")
         self.assertEqual(resp.status_code, 200)
 
         data = resp.json()
         alerts = data.get("alerts", [])
-        
+
         for alert in alerts:
             self.assertIn("id", alert)
             self.assertIn("severity", alert)
             self.assertIn("title", alert)
             self.assertIn("detail", alert)
             self.assertIn("ts", alert)
-            
-            # severity should be one of these
             self.assertIn(alert["severity"], ["critical", "warning", "info"])
 
     def test_ops_alerts_strict_mode_param(self):
-        """
-        GET /api/ops/alerts/?strict=1 should be accepted (may return 200 or 500 depending on imports).
-        """
+        """Strict mode remains accepted in DEV."""
         resp = self.client.get("/api/ops/alerts/?strict=1")
-        
-        # Should be either 200 (all imports OK) or 500 (strict mode enforced on failure)
         self.assertIn(resp.status_code, [200, 500])
 
     def test_build_sha_in_responses(self):
-        """
-        Both /api/ops/summary/ and /api/ops/alerts/ should include build_sha field.
-        """
+        """Both DEV ops endpoints should include build_sha."""
         summary_resp = self.client.get("/api/ops/summary/")
         self.assertIn("build_sha", summary_resp.json())
-        
+
         alerts_resp = self.client.get("/api/ops/alerts/")
         self.assertIn("build_sha", alerts_resp.json())
+
+
+class OpsEndpointsRuntimeBoundaryTestCase(TestCase):
+    """Prove public demo/CI ops metadata cannot leak from production-like runtimes."""
+
+    def setUp(self):
+        self.client = Client()
+
+    def test_unknown_unlabelled_runtime_fails_closed(self):
+        with override_settings(ENVIRONMENT="", CROWN_ENV="", DJANGO_ENV=""):
+            with patch.dict(
+                os.environ,
+                {
+                    "ENVIRONMENT": "",
+                    "CROWN_ENV": "",
+                    "DJANGO_ENV": "",
+                    "WEBSITE_HOSTNAME": "",
+                },
+                clear=False,
+            ):
+                self.assertEqual(self.client.get("/api/ops/summary/").status_code, 404)
+                self.assertEqual(self.client.get("/api/ops/alerts/").status_code, 404)
+
+    def test_explicit_production_runtime_fails_closed(self):
+        with override_settings(ENVIRONMENT="production", CROWN_ENV="", DJANGO_ENV=""):
+            with patch.dict(
+                os.environ,
+                {"WEBSITE_HOSTNAME": "crown-api-prod.azurewebsites.net"},
+                clear=False,
+            ):
+                self.assertEqual(self.client.get("/api/ops/summary/").status_code, 404)
+                self.assertEqual(self.client.get("/api/ops/alerts/").status_code, 404)
+
+    def test_unlabelled_non_dev_azure_runtime_fails_closed(self):
+        with override_settings(ENVIRONMENT="", CROWN_ENV="", DJANGO_ENV=""):
+            with patch.dict(
+                os.environ,
+                {
+                    "ENVIRONMENT": "",
+                    "CROWN_ENV": "",
+                    "DJANGO_ENV": "",
+                    "WEBSITE_HOSTNAME": "crown-api-prod.azurewebsites.net",
+                },
+                clear=False,
+            ):
+                self.assertEqual(self.client.get("/api/ops/summary/").status_code, 404)
+                self.assertEqual(self.client.get("/api/ops/alerts/").status_code, 404)
+
+    def test_known_azure_dev_host_remains_allowed_without_env_marker(self):
+        with override_settings(ENVIRONMENT="", CROWN_ENV="", DJANGO_ENV=""):
+            with patch.dict(
+                os.environ,
+                {
+                    "ENVIRONMENT": "",
+                    "CROWN_ENV": "",
+                    "DJANGO_ENV": "",
+                    "WEBSITE_HOSTNAME": "crown-api-dev.azurewebsites.net",
+                },
+                clear=False,
+            ):
+                self.assertEqual(self.client.get("/api/ops/summary/").status_code, 200)
+                self.assertIn(
+                    self.client.get("/api/ops/alerts/?strict=1").status_code,
+                    [200, 500],
+                )
