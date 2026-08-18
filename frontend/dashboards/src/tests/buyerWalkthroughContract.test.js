@@ -1,10 +1,17 @@
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { BUYER_WALKTHROUGH } from '../sandbox/buyerWalkthrough';
 
 const DASHBOARD_ONLY_SUFFIX = /dashboard$/;
+const sourceRoot = fileURLToPath(new URL('../', import.meta.url));
 
 function routeHasWorkflowDepth(route) {
   return !DASHBOARD_ONLY_SUFFIX.test(route.replace(/\/$/, ''));
+}
+
+function readSource(relativePath) {
+  return readFileSync(new URL(`../${relativePath}`, import.meta.url), 'utf8');
 }
 
 describe('buyer walkthrough contract', () => {
@@ -21,6 +28,33 @@ describe('buyer walkthrough contract', () => {
       'styles/client-experience.css',
       'components/crown-dashboard/CrownDashboardTemplate.jsx',
     ]));
+  });
+
+  it('loads the canonical visual system application-wide', () => {
+    const main = readSource('main.jsx');
+    expect(sourceRoot).toContain('src');
+    expect(main).toContain("import './styles/crown-theme.css'");
+    expect(main).toContain("import './styles/crown.css'");
+    expect(main).toContain("import './styles/launch-shell.css'");
+    expect(main).toContain("import './styles/client-experience.css'");
+    expect(main).toContain('<ThemeProvider theme={crownTheme}>');
+  });
+
+  it('preserves the canonical KPI/widget composition for command surfaces', () => {
+    const template = readSource('components/crown-dashboard/CrownDashboardTemplate.jsx');
+    for (const component of [
+      'CrownDashboardMetricGrid',
+      'CrownDashboardMetricCard',
+      'CrownInsightPanel',
+      'CrownQuickActions',
+      'CrownDashboardActivityFeed',
+      'CrownDashboardStatusPanel',
+      'CrownDashboardRightRail',
+      'CrownDashboardDataTruthStatus',
+      'CrownDashboardDecisionPanel',
+    ]) {
+      expect(template).toContain(component);
+    }
   });
 
   it('covers all six buyer personas with workflow depth beyond dashboards', () => {
