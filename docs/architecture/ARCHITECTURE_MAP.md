@@ -2,11 +2,11 @@
 
 **Status:** CANONICAL  
 **Owner:** CROWN Engineering  
-**Last verified:** 2026-08-17
+**Last verified:** 2026-08-18
 
 ## Purpose
 
-This document defines the owner-facing architectural shape of CROWN. It describes durable boundaries and accepted decisions visible in the repository. Release, recovery, deployment, and turnover status are governed by `docs/CURRENT_RELEASE_STATUS.md` and Crown-CSMS issue #14. Crown2026 release records remain historical predecessor evidence only.
+This document defines the owner-facing architectural shape of CROWN. It describes durable boundaries and accepted decisions visible in the repository. Release, recovery, deployment, and turnover status are governed by `docs/CURRENT_RELEASE_STATUS.md` and the current authorized owner-handoff/operational-transfer records. Crown-CSMS issue #14 is a completed historical engineering-program record. Crown2026 release records remain historical predecessor evidence only.
 
 ## Architectural principles
 
@@ -118,7 +118,7 @@ The authoritative decision list is `DECISION_INDEX.md`.
 
 ## Current certification boundary
 
-Current source/release status is maintained in `docs/CURRENT_RELEASE_STATUS.md` and Crown-CSMS issue #14. Those sources govern exact source identity, repository certification, deployment/runtime evidence, recovery evidence, payment containment, and owner-turnover posture.
+Current source/release status is maintained in `docs/CURRENT_RELEASE_STATUS.md`; exact source identity is resolved directly from Git/GitHub and captured in immutable decision evidence. Transaction-time operational transfer is governed by the current owner-handoff/operational-transfer records and authorized parties. Those authorities govern repository certification, deployment/runtime evidence, recovery evidence, payment containment, and owner-turnover posture within their respective boundaries.
 
 A repository SHA or green workflow matrix does not automatically inherit production certification. Any deployed production identity must be proven from exact source through build, deployment, runtime health, monitoring, and recovery evidence for the selected release.
 
