@@ -63,7 +63,14 @@ async function launchPersona(page: Page, label: string) {
 
   const card = page.locator('.sandbox-persona-card').filter({ hasText: label }).first();
   await expect(card, `sandbox persona card missing: ${label}`).toBeVisible();
-  await card.getByRole('button', { name: /Start guided/i }).click();
+  const launchButton = card.getByRole('button', { name: /Start guided/i });
+  await Promise.all([
+    page.waitForURL(
+      (url) => url.pathname !== BUYER_WALKTHROUGH.entryRoute,
+      { timeout: 30000 },
+    ),
+    launchButton.click(),
+  ]);
   await page.waitForLoadState('networkidle');
   await expect(page).not.toHaveURL(/\/login(?:[/?#]|$)/i);
   await expect(page).not.toHaveURL(/\/not-authorized(?:[/?#]|$)/i);
