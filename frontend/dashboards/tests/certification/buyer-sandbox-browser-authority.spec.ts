@@ -59,7 +59,7 @@ async function launchPersona(page: Page, label: string) {
   expect(entry?.status() ?? 200).toBeLessThan(400);
   await expect(page).not.toHaveURL(/\/login(?:[/?#]|$)/i);
   await expect(page.getByText('No buyer password')).toBeVisible();
-  await expect(page.getByText('Heritage Christian Academy')).toBeVisible();
+  await expect(page.getByText('Heritage Christian Academy', { exact: true })).toBeVisible();
 
   const card = page.locator('.sandbox-persona-card').filter({ hasText: label }).first();
   await expect(card, `sandbox persona card missing: ${label}`).toBeVisible();
