@@ -12,6 +12,7 @@ describe("roleAccess", () => {
     expect(normalizeRoles(["head_of_school"])).toContain("school_admin");
     expect(normalizeRoles(["finance"])).toContain("finance_admin");
     expect(normalizeRoles(["admissions"])).toContain("admissions_manager");
+    expect(normalizeRoles(["admissions_director"])).toContain("admissions_manager");
     expect(normalizeRoles(["facilities"])).toContain("facilities_manager");
     expect(normalizeRoles(["it"])).toContain("it_support");
     expect(normalizeRoles(["safety"])).toContain("safety_manager");
@@ -22,6 +23,7 @@ describe("roleAccess", () => {
     expect(getUserRoles({ role: "head_of_school" })).toContain("school_admin");
     expect(getUserRoles({ roles: ["finance"] })).toContain("finance_admin");
     expect(getUserRoles({ user: { role: "admissions" } })).toContain("admissions_manager");
+    expect(getUserRoles({ user: { role: "admissions_director" } })).toContain("admissions_manager");
     expect(getUserRoles({ profile: { roles: [{ code: "it" }] } })).toContain("it_support");
   });
 
@@ -29,6 +31,7 @@ describe("roleAccess", () => {
     expect(hasAnyRole({ role: "head_of_school" }, ["school_admin"])).toBe(true);
     expect(hasAnyRole({ roles: ["finance"] }, ["finance_admin"])).toBe(true);
     expect(hasAnyRole({ roles: ["admissions"] }, ["admissions_manager", "registrar"])).toBe(true);
+    expect(hasAnyRole({ roles: ["admissions_director"] }, ["admissions_manager"])).toBe(true);
     expect(hasAnyRole({ roles: ["teacher"] }, ["finance_admin"])).toBe(false);
   });
 
