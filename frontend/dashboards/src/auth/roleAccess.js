@@ -9,7 +9,7 @@ export const ROLE_EQUIVALENCE_GROUPS = [
     "aid_director",
     "financial_aid",
   ],
-  ["admissions", "admissions_manager"],
+  ["admissions", "admissions_manager", "admissions_director"],
   ["registrar"],
   ["advancement", "advancement_officer"],
   ["facilities", "facilities_manager"],
