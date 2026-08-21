@@ -15,23 +15,23 @@ function readRepoFile(relativePath) {
 describe('release authority consistency contract', () => {
   it('keeps completed engineering authority distinct from transaction-time operational turnover', () => {
     const source = readRepoFile('docs/CURRENT_RELEASE_STATUS.md');
-    expect(source.includes('engineering gap-closure program tracked by issue #14 is **COMPLETED**')).toBe(true);
-    expect(source.includes('Issue #14 is a **completed historical engineering-program record**, not active execution authority.')).toBe(true);
-    expect(source.includes('Buyer operational turnover: PENDING IDENTIFIED BUYER AND PARTY ACCEPTANCE')).toBe(true);
+    expect(source.includes('Successor migration and engineering gap-closure program: **COMPLETED / HISTORICAL PROGRAM RECORD**')).toBe(true);
+    expect(source.includes('Repository engineering completion and production-ready source certification are distinct from transaction-time deployment and successor operational transfer.')).toBe(true);
+    expect(source.includes('Buyer operational turnover: **POST-CONTRACT / PENDING AUTHORIZED PARTY ACCEPTANCE**')).toBe(true);
     expect(source.includes('issue #14 remains the controlling turnover record')).toBe(false);
     expect(source.includes('Current buyer diligence package: **NOT READY')).toBe(false);
   });
 
   it('keeps actual buyer turnover pending and payment processing disabled', () => {
     const source = readRepoFile('docs/CURRENT_RELEASE_STATUS.md');
-    expect(source.includes('Buyer operational turnover: PENDING IDENTIFIED BUYER AND PARTY ACCEPTANCE')).toBe(true);
+    expect(source.includes('Buyer operational turnover: **POST-CONTRACT / PENDING AUTHORIZED PARTY ACCEPTANCE**')).toBe(true);
     expect(source.includes('**PAYMENT PROCESSING: DISABLED / FAIL CLOSED / NOT AUTHORIZED FOR ACTIVATION**')).toBe(true);
   });
 
   it('keeps the canonical index pointed at the current release authority document', () => {
     const source = readRepoFile('docs/canonical/CANONICAL_DOCUMENT_INDEX.md');
     expect(source.includes('`docs/CURRENT_RELEASE_STATUS.md`')).toBe(true);
-    expect(source.includes('Release, freeze, payment, and turnover posture')).toBe(true);
+    expect(source.includes('Current production-ready engineering, release, payment, recovery, and turnover posture')).toBe(true);
     expect(source.includes('Current release status')).toBe(true);
   });
 
