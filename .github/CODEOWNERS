@@ -1,16 +1,16 @@
-# CROWN repository owner: John T. C. Megahan (@tcmegahan)
-# Product ownership, technical direction, acceptance, and release authorization remain with the repository owner.
+# CROWN successor repository owner account: @Arete0920
+# Human product ownership, technical direction, acceptance, and release authorization remain governed by the canonical ownership and release records.
 
-* @tcmegahan
+* @Arete0920
 
-.github/** @tcmegahan
-SECURITY.md @tcmegahan
-README.md @tcmegahan
-.env.example @tcmegahan
-docs/security/** @tcmegahan
-docs/governance/** @tcmegahan
-docs/release/** @tcmegahan
-docs/dashboard/** @tcmegahan
-docs/engineering/** @tcmegahan
-scripts/** @tcmegahan
-contracts/** @tcmegahan
+.github/** @Arete0920
+SECURITY.md @Arete0920
+README.md @Arete0920
+.env.example @Arete0920
+docs/security/** @Arete0920
+docs/governance/** @Arete0920
+docs/release/** @Arete0920
+docs/dashboard/** @Arete0920
+docs/engineering/** @Arete0920
+scripts/** @Arete0920
+contracts/** @Arete0920
