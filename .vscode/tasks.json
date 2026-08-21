@@ -3,8 +3,8 @@
   "tasks": [
     {
       "label": "CROWN: sync main",
-      "type": "shell",
-      "command": "powershell",
+      "type": "process",
+      "command": "powershell.exe",
       "args": [
         "-NoProfile",
         "-ExecutionPolicy",
@@ -15,9 +15,44 @@
       "problemMatcher": []
     },
     {
+      "label": "CROWN: start backend",
+      "type": "process",
+      "command": "powershell.exe",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}\\scripts\\dev-backend.ps1"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "CROWN: start frontend",
+      "type": "process",
+      "command": "powershell.exe",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}\\scripts\\dev-frontend.ps1"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "CROWN: local development",
+      "dependsOn": [
+        "CROWN: start backend",
+        "CROWN: start frontend"
+      ],
+      "dependsOrder": "parallel",
+      "problemMatcher": []
+    },
+    {
       "label": "CROWN: Django check",
-      "type": "shell",
-      "command": "powershell",
+      "type": "process",
+      "command": "powershell.exe",
       "args": [
         "-NoProfile",
         "-ExecutionPolicy",
@@ -29,8 +64,8 @@
     },
     {
       "label": "CROWN: focused pytest prompt",
-      "type": "shell",
-      "command": "powershell",
+      "type": "process",
+      "command": "powershell.exe",
       "args": [
         "-NoProfile",
         "-ExecutionPolicy",
@@ -42,8 +77,8 @@
     },
     {
       "label": "CROWN: claims guard",
-      "type": "shell",
-      "command": "powershell",
+      "type": "process",
+      "command": "powershell.exe",
       "args": [
         "-NoProfile",
         "-ExecutionPolicy",
@@ -55,8 +90,8 @@
     },
     {
       "label": "CROWN: PR same-SHA poll prompt",
-      "type": "shell",
-      "command": "powershell",
+      "type": "process",
+      "command": "powershell.exe",
       "args": [
         "-NoProfile",
         "-ExecutionPolicy",
@@ -67,28 +102,28 @@
       "problemMatcher": []
     },
     {
-      "label": "CROWN: guarded session start prompt",
-      "type": "shell",
-      "command": "powershell",
+      "label": "CROWN: wizard guarded session start prompt",
+      "type": "process",
+      "command": "powershell.exe",
       "args": [
         "-NoProfile",
         "-ExecutionPolicy",
         "Bypass",
         "-Command",
-        "$ErrorActionPreference='Stop'; $w = Read-Host 'Work item'; ./scripts/execution/122_crown_guarded_agent_session.ps1 -Mode Start -WorkItem $w"
+        "$ErrorActionPreference='Stop'; $w = Read-Host 'Wizard work item'; ./scripts/execution/122_crown_guarded_agent_session.ps1 -Mode Start -WorkItem $w"
       ],
       "problemMatcher": []
     },
     {
-      "label": "CROWN: guarded session close prompt",
-      "type": "shell",
-      "command": "powershell",
+      "label": "CROWN: wizard guarded session close prompt",
+      "type": "process",
+      "command": "powershell.exe",
       "args": [
         "-NoProfile",
         "-ExecutionPolicy",
         "Bypass",
         "-Command",
-        "$ErrorActionPreference='Stop'; $w = Read-Host 'Work item'; ./scripts/execution/122_crown_guarded_agent_session.ps1 -Mode Close -WorkItem $w"
+        "$ErrorActionPreference='Stop'; $w = Read-Host 'Wizard work item'; ./scripts/execution/122_crown_guarded_agent_session.ps1 -Mode Close -WorkItem $w"
       ],
       "problemMatcher": []
     }
