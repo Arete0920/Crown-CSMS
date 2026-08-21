@@ -6,7 +6,7 @@
 ## Repository
 
 ```bash
-git clone https://github.com/Arete-Advisory-Group/Crown-CSMS.git
+git clone https://github.com/Arete0920/Crown-CSMS.git
 cd Crown-CSMS
 ```
 
@@ -44,6 +44,8 @@ python backend/manage.py runserver 127.0.0.1:8000 --noreload
 cd frontend/dashboards
 npm run dev -- --host 127.0.0.1 --port 3000
 ```
+
+On Windows with VS Code, `Tasks: Run Task` -> `CROWN: local development` starts the repository's existing `scripts/dev-backend.ps1` and `scripts/dev-frontend.ps1` helpers in parallel. The separate `CROWN: start backend` and `CROWN: start frontend` tasks are available when only one process is needed.
 
 Use placeholders or approved development values only. Never commit secrets, production data, private certificates, tenant credentials, or payment credentials.
 
