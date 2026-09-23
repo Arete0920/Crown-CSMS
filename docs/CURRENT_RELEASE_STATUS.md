@@ -11,6 +11,8 @@ CROWN is certified as production-ready from a product, codebase, architecture, s
 
 The engineering certification does not claim that a successor production environment has already been deployed, operationally accepted, or transferred. Repository engineering completion and production-ready source certification are distinct from transaction-time deployment and successor operational transfer.
 
+No successor production tag or release is asserted by this record.
+
 ## Current repository state
 
 - CROWN product readiness: **PASS / PRODUCTION-READY**
