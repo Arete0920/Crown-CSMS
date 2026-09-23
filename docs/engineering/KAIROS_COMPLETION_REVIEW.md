@@ -18,7 +18,9 @@ Disposition: implementation prepared for review; full application CI and deploye
 
 ## Verification and limits
 
-66 focused backend tests and 7 frontend interaction tests passed in the isolated environment. The final backend rerun after compatibility additions also passed all 66 tests. The isolated Django system check passed.
+66 focused backend tests and 7 frontend interaction tests passed in the isolated environment. All 66 backend tests also passed with the separately proposed Django 5.2.17 / DRF 3.17.2 dependency update. An additional synthetic 360-student acceptance test passed: 12 cohorts, 84 sections, 2,520 enrollments, publication, versioned movement, undo, and teacher schedule reads. This exercises manual publication, not automatic generation. The isolated Django system check passed.
+
+GitHub checks on scheduling commit `43c29a643313127e336366aafaa78f897353578c` passed frontend build/lint and backend compile/system/tenant/URL checks. The full frontend run reported 682 passing tests, three failing release-authority assertions, and one failing buyer-walkthrough suite (file URL handling). The shell scanner also flagged the heading in the new test-only layout mock; that mock now uses an accessible main label. Full exact-head CI acceptance remains pending. Dependency and release-status corrections are reviewed separately in their own PRs.
 
 Backend tests use real repository models, application configs, tenant resolver, permission registry, services, and API views, SQLite, and --nomigrations. The harness installs only relevant application domains. Frontend tests mount the actual changed components in jsdom while mocking layout and API transport. This is not full production middleware, full application build, Postgres concurrency, migration, authenticated browser, or deployed runtime proof. Those remain required before release. New tests are normal repository tests, runnable under the standard complete checkout.
 

@@ -4,7 +4,7 @@ import { cleanup, render, screen, fireEvent, waitFor } from '@testing-library/re
 import SectionSchedulerWizard from './SectionSchedulerWizard.jsx';
 import { apiFetch } from '../lib/api.js';
 vi.mock('../lib/api.js', () => ({ apiFetch: vi.fn() }));
-vi.mock('../components/crown/CrownLayout.jsx', () => ({ default: ({ children, title }) => <main><h1>{title}</h1>{children}</main> }));
+vi.mock('../components/crown/CrownLayout.jsx', () => ({ default: ({ children, title }) => <main aria-label={title}>{children}</main> }));
 afterEach(cleanup);
 const response = (body, ok = true) => ({ ok, json: async () => body });
 beforeEach(() => {
