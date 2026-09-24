@@ -216,6 +216,7 @@ INSTALLED_APPS = [
     'advancement.apps.AdvancementConfig',
     'pdhub.apps.PdhubConfig',
     'safety.apps.SafetyConfig',
+    'accountability.apps.AccountabilityConfig',
     'integrations_real.apps.IntegrationsRealConfig',
     'spiritual_life.apps.SpiritualLifeConfig',
     'portrait.apps.PortraitConfig',
