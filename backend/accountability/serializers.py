@@ -23,7 +23,11 @@ class AccountabilityStateSerializer(serializers.ModelSerializer):
             "version",
             "updated_at",
         ]
-        read_only_fields = fields
+        read_only_fields = [
+            "id", "school_id", "student_id", "normal_state", "emergency_state",
+            "location_code", "responsible_user_id", "expected_destination",
+            "source_domain", "source_record_id", "version", "updated_at",
+        ]
 
 
 class AccountabilityEventSerializer(serializers.ModelSerializer):
@@ -49,7 +53,12 @@ class AccountabilityEventSerializer(serializers.ModelSerializer):
             "state_version",
             "occurred_at",
         ]
-        read_only_fields = fields
+        read_only_fields = [
+            "id", "school_id", "student_id", "event_type", "from_normal_state",
+            "to_normal_state", "from_emergency_state", "to_emergency_state",
+            "location_code", "actor_user_id", "source_domain", "source_record_id",
+            "context", "state_version", "occurred_at",
+        ]
 
 
 class AccountabilityTransitionSerializer(serializers.Serializer):
