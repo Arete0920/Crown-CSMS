@@ -124,7 +124,6 @@ urlpatterns = [
     path("advancement/", include("advancement.urls")),
     path("pd/", include("pdhub.urls")),
     path("safety/", include("safety.urls")),
-    path("accountability/", include("accountability.urls")),
     path("connectors/", include("integrations_real.urls")),
     path("student-records/", include("student_records.urls")),
     # Parent360 explicit v1 route
