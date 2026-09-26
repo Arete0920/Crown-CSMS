@@ -14,17 +14,18 @@ CROWN is maintained under controlled software-engineering and release-management
 
 ## Start here
 
-1. [Current Release Status](docs/CURRENT_RELEASE_STATUS.md)
-2. [Canonical Document Index](docs/canonical/CANONICAL_DOCUMENT_INDEX.md)
-3. [Diligence and Evidence Index](docs/canonical/DILIGENCE_EVIDENCE_INDEX.md)
-4. [Architecture Map](docs/architecture/ARCHITECTURE_MAP.md)
-5. [Developer Setup](docs/engineering/DEV_SETUP.md)
-6. [Engineering Accountability Policy](docs/engineering/ENGINEERING_ACCOUNTABILITY_POLICY.md)
-7. [Code Quality Standard](docs/engineering/CODE_QUALITY_AND_PROVENANCE_STANDARD.md)
-8. [Operations](docs/operations/README.md)
-9. [Owner Handoff](docs/ownership/OWNER_HANDOFF.md)
-10. [Known Limitations](docs/KNOWN_LIMITATIONS.md)
-11. [Security Policy](SECURITY.md)
+1. [Investor Technical Review Guide](docs/INVESTOR_TECHNICAL_REVIEW_GUIDE.md)
+2. [Current Release Status](docs/CURRENT_RELEASE_STATUS.md)
+3. [Canonical Document Index](docs/canonical/CANONICAL_DOCUMENT_INDEX.md)
+4. [Diligence and Evidence Index](docs/canonical/DILIGENCE_EVIDENCE_INDEX.md)
+5. [Architecture Map](docs/architecture/ARCHITECTURE_MAP.md)
+6. [Developer Setup](docs/engineering/DEV_SETUP.md)
+7. [Engineering Accountability Policy](docs/engineering/ENGINEERING_ACCOUNTABILITY_POLICY.md)
+8. [Code Quality Standard](docs/engineering/CODE_QUALITY_AND_PROVENANCE_STANDARD.md)
+9. [Operations](docs/operations/README.md)
+10. [Owner Handoff](docs/ownership/OWNER_HANDOFF.md)
+11. [Known Limitations](docs/KNOWN_LIMITATIONS.md)
+12. [Security Policy](SECURITY.md)
 
 ## Authority and claim boundary
 
