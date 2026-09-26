@@ -26,6 +26,8 @@ A production-ready release requires, as applicable:
 9. no unresolved critical or high-severity findings;
 10. exact release head recorded in immutable release evidence.
 
+**No successor production tag or release is asserted by this record.**
+
 ## Operational boundary
 
 Repository release readiness is separate from environment-specific production operation. Deployment, monitoring ownership, credentials, backups, restore exercises, provider activation, and runtime acceptance must be verified for the selected production environment.
