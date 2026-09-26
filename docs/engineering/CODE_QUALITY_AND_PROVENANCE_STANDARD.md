@@ -1,11 +1,11 @@
-# Code Quality and Provenance Standard
+# Code Quality and Repository Hygiene Standard
 
 **Status:** Canonical engineering standard  
 **Owner:** CROWN Engineering
 
 ## Purpose
 
-This standard governs maintainability, verification, provenance, and repository-hygiene findings without inferring authorship from code style or automation output.
+This standard governs maintainability, verification, traceability, and repository hygiene without inferring authorship from code style.
 
 ## Review classes
 
@@ -19,7 +19,7 @@ This standard governs maintainability, verification, provenance, and repository-
 - duplicated wrappers and speculative abstractions;
 - generated or copied repository debris;
 - unproven attribution claims;
-- unbounded or non-diagnostic automation.
+- unbounded or non-diagnostic CI or scripting.
 
 ## Rules
 
@@ -31,5 +31,7 @@ This standard governs maintainability, verification, provenance, and repository-
 6. Remove stale candidate lists when work is completed.
 7. Mark unsupported conclusions `NOT VERIFIED`.
 8. Do not use quality patterns as proof of authorship.
+9. Keep branch, commit, file, and documentation naming conventional and descriptive.
+10. Production claims require exact-head verification.
 
-There is no standing candidate list in this document. Current findings must be supported by a fresh repository inspection and tracked in the applicable issue or pull request.
+Current findings must be supported by a fresh repository inspection and tracked in the applicable issue or pull request.
