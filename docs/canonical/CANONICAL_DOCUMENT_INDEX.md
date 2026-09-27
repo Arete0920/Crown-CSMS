@@ -27,6 +27,7 @@ This index defines the active documentation authority surface for Crown-CSMS. Ex
 | `docs/engineering/CODE_QUALITY_AND_REPOSITORY_HYGIENE_STANDARD.md` | Code-quality and repository-hygiene controls | Repository governance | Quality policy change |
 | `docs/engineering/REPOSITORY_WORKFLOW.md` | Repository work contract | Repository governance | Workflow/policy change |
 | `docs/engineering/VERSIONING_AND_RELEASE_POLICY.md` | Semantic versioning, immutable source identity, and release-tag discipline | Release governance | Versioning/release-policy change |
+| `docs/engineering/NAMING_AND_IDENTIFIER_STANDARD.md` | Product, code, route, branch, migration, and compatibility naming rules | Repository governance | Naming/identifier-policy change |
 | `docs/engineering/CI_ARCHITECTURE.md` | CI gate families and consolidation rules | Repository governance | CI architecture change |
 | `docs/engineering/VERSIONING_AND_RELEASE_POLICY.md` | Semantic versioning, immutable source identity, and release-tag discipline | Release governance | Versioning/release-policy change |
 | `docs/operations/SCHOOL_IMPLEMENTATION_RUNBOOK.md` | Contract-to-go-live school implementation authority | Operations | Implementation-process change |
