@@ -1,4 +1,4 @@
-# Backend-only requirements for Crown2026 (Django/DRF API)
+# Backend-only requirements for Crown-CSMS (Django/DRF API)
 # Keep in sync with root requirements.txt where applicable.
 Django==5.2.17
 djangorestframework==3.17.2
