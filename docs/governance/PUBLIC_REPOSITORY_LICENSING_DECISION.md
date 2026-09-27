@@ -1,6 +1,6 @@
 # Public Repository Licensing Decision
 
-**Status:** current business/legal boundary  
+**Status:** current business/legal boundary
 **Repository:** `Arete0920/Crown-CSMS`
 
 No open-source license has been selected or granted by this repository.

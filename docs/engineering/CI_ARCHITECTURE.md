@@ -1,6 +1,6 @@
 # CROWN CI Architecture
 
-**Status:** current target architecture  
+**Status:** current target architecture
 **Objective:** preserve rigorous verification while reducing duplicated orchestration and ambiguous merge signals.
 
 ## Design rule

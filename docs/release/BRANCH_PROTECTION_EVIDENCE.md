@@ -1,6 +1,6 @@
 # Branch Protection Evidence
 
-**Status:** historical evidence only; live configuration must be re-verified  
+**Status:** historical evidence only; live configuration must be re-verified
 **Last historical capture:** 2026-04-11
 
 This document preserves predecessor branch-protection evidence. It is **not** current proof of the live `Arete0920/Crown-CSMS` administrative configuration.

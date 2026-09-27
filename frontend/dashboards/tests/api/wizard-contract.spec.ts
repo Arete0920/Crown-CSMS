@@ -18,13 +18,14 @@ import { test, expect } from "@playwright/test";
 import { WIZARD_SLUGS } from "../../src/routes/wizard-manifest.js";
 
 const TEST_USER     = process.env.CROWN_TEST_USER     ?? "teacher";
-const TEST_PASS     = process.env.CROWN_TEST_PASS     ?? "Crown2026!";
+const TEST_PASS     = process.env.CROWN_TEST_PASS    ;
 const TEST_API_BASE = process.env.CROWN_TEST_API_BASE ?? "http://127.0.0.1:8000";
 
 test.describe("Wizard Discovery API alignment", () => {
   let authToken: string;
 
   test.beforeAll(async ({ request }) => {
+  if (!TEST_PASS?.trim()) throw new Error("Configure CROWN_TEST_PASS before running this proof.");
     const loginResp = await request.post(`${TEST_API_BASE}/api/v1/auth/token/`, {
       data: { username: TEST_USER, password: TEST_PASS },
     });

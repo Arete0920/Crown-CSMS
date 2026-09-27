@@ -7,10 +7,10 @@
 > Current controlling release-authority source:
 > - docs/CURRENT_RELEASE_STATUS.md
 
-Status: Active Governance Policy  
-Repository: Arete0920/Crown-CSMS  
-Applies to: main branch  
-Owner: TC / Founder / Product Owner  
+Status: Active Governance Policy
+Repository: Arete0920/Crown-CSMS
+Applies to: main branch
+Owner: TC / Founder / Product Owner
 Version: 2026.09
 
 ## 1. Purpose

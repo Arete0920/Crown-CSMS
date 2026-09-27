@@ -1,6 +1,6 @@
 # CROWN Versioning and Release Policy
 
-**Status:** current engineering policy  
+**Status:** current engineering policy
 **Repository:** `Arete0920/Crown-CSMS`
 
 ## Versioning model

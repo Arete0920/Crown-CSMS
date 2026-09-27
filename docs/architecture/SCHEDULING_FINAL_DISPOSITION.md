@@ -1,7 +1,7 @@
 # Scheduling Final Disposition
 
-**Status:** Canonical supporting disposition record  
-**Active repository:** `Arete-Advisory-Group/Crown-CSMS`  
+**Status:** Canonical supporting disposition record
+**Active repository:** `Arete0920/Crown-CSMS`
 **Last reconciled:** 2026-08-17
 
 ## Canonical Scheduling authority
