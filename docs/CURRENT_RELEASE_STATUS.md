@@ -1,8 +1,8 @@
 # CROWN Current Release Status
 
-**Status:** RELEASE CANDIDATE — EXACT-HEAD VERIFICATION REQUIRED  
-**Last repository security update:** 2026-09-26  
-**Current repository identity:** resolve exact `refs/heads/main` from Git/GitHub at the decision point  
+**Status:** RELEASE CANDIDATE — EXACT-HEAD VERIFICATION REQUIRED
+**Last repository security update:** 2026-09-26
+**Current repository identity:** resolve exact `refs/heads/main` from Git/GitHub at the decision point
 **Release rule:** production-ready status is granted only to an exact repository head whose applicable security, dependency, test, schema, tenant-isolation, build, and release gates are passing.
 
 ## Current decision
