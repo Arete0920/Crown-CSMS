@@ -60,7 +60,13 @@ Read:
 
 Distinguish proven engineering mechanics from environment-specific production exercises.
 
-### 6. Compliance readiness
+### 6. Implementation repeatability
+Read:
+- `docs/operations/SCHOOL_IMPLEMENTATION_RUNBOOK.md`
+
+Evaluate whether contract intake, data mapping, tenant provisioning, migration, training, go-live, hypercare, and operational handoff form one repeatable process rather than founder-specific knowledge.
+
+### 7. Compliance readiness
 Read:
 - `docs/compliance/PRIVACY_COMPLIANCE_EVIDENCE_STATUS.md`
 - the active SOC 2/student-privacy readiness materials when merged.
