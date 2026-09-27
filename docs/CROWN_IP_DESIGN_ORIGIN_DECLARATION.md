@@ -1,8 +1,8 @@
 # CROWN Intellectual Property Design Origin Declaration
 
-**Document Class:** Legal / Intellectual Property  
-**Organization:** Crown Christian School Management Solutions  
-**Prepared by:** Engineering Leadership  
+**Document Class:** Legal / Intellectual Property
+**Organization:** Crown Christian School Management Solutions
+**Prepared by:** Engineering Leadership
 **Repository:** Arete0920/Crown-CSMS
 
 ## I. Original design statement

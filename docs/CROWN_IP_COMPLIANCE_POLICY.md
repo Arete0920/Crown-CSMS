@@ -1,7 +1,7 @@
 # CROWN Developer IP Compliance Policy
 
-**Document Class:** Engineering Policy / Developer Onboarding  
-**Owner:** Engineering Leadership  
+**Document Class:** Engineering Policy / Developer Onboarding
+**Owner:** Engineering Leadership
 **Applies to:** All engineers, contractors, interns, and contributors to the CROWN repository
 
 ## Purpose

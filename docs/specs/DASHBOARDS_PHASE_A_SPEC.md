@@ -2,7 +2,7 @@
 
 **Date**: 2026-02-25
 **Branch**: `feature/phase-10-dashboards-module`
-**PR**: [#442](https://github.com/tcmegahan/Crown2026/pull/442)
+**PR**: Historical predecessor PR #442 (not a pull request in the current repository)
 **Status**: Committed. 25/25 contract tests pass. All 6 roles smoke-verified.
 
 ---

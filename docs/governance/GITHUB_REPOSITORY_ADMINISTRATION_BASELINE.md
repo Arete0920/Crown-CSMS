@@ -1,8 +1,8 @@
 # GitHub Repository Administration Baseline
 
-**Repository:** `Arete0920/Crown-CSMS`  
-**Applies to:** public repository administration settings  
-**Owner:** repository owner  
+**Repository:** `Arete0920/Crown-CSMS`
+**Applies to:** public repository administration settings
+**Owner:** repository owner
 **Review cadence:** quarterly and after material security/release changes
 
 ## Main branch / ruleset

@@ -2,7 +2,7 @@ import { test, expect } from "@playwright/test";
 import type { Page } from "@playwright/test";
 
 const TEST_USER = process.env.CROWN_TEST_USER ?? "teacher";
-const TEST_PASS = process.env.CROWN_TEST_PASS ?? "Crown2026!";
+const TEST_PASS = process.env.CROWN_TEST_PASS;
 const TEST_SCHOOL_ID = process.env.CROWN_TEST_SCHOOL_ID ?? "19801b59-8c05-4c84-9312-5d792e4e839d";
 const TEST_API_BASE = process.env.CROWN_TEST_API_BASE ?? "http://127.0.0.1:8000";
 const TEST_UI_BASE = process.env.CROWN_TEST_UI_BASE ?? "http://localhost:3000";
@@ -21,19 +21,20 @@ async function injectAuth(page: Page, token: string, schoolId: string) {
 }
 
 test("Gradebook Proof: Roster + Grades + Assignments with 200s + auth headers", async ({ page, request }) => {
+  if (!TEST_PASS?.trim()) throw new Error("Configure CROWN_TEST_PASS before running this proof.");
   // Step 1: Get an auth token via direct API call (more reliable than UI automation in CI)
   console.log("[Auth] Acquiring JWT token via API...");
   const loginResp = await request.post(`${TEST_API_BASE}/api/v1/auth/token/`, {
     data: { username: TEST_USER, password: TEST_PASS },
   });
-  
+
   expect(loginResp.status(), "Login API should return 200").toBe(200);
   const authData: any = await loginResp.json();
   const authToken = authData?.access ?? authData?.token;
   expect(authToken, "Token not found in login response").toBeTruthy();
   console.log("[Auth] Token acquired from API");
   console.log("TOKEN_OK=true");
-  
+
   const schoolId = TEST_SCHOOL_ID;
   console.log("SCHOOL_ID_OK=true\n");
 

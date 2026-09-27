@@ -1,7 +1,7 @@
 # CROWN Diligence and Evidence Index
 
-**Status:** Canonical diligence navigation authority  
-**Last verified:** 2026-09-26  
+**Status:** Canonical diligence navigation authority
+**Last verified:** 2026-09-26
 **Authority:** `docs/CURRENT_RELEASE_STATUS.md`
 
 ## Current diligence posture

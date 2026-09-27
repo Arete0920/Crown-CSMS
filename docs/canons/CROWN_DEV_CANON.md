@@ -1,6 +1,6 @@
 # CROWN Local Development Canon
 
-**Status:** current development authority pointer  
+**Status:** current development authority pointer
 **Repository:** `Arete0920/Crown-CSMS`
 
 ## Purpose

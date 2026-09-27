@@ -1,7 +1,7 @@
 # CROWN Known Limitations and Release Disposition
 
-**Last reconciled:** 2026-09-27  
-**Current repository identity:** governed by `docs/CURRENT_RELEASE_STATUS.md` and exact current `main`  
+**Last reconciled:** 2026-09-27
+**Current repository identity:** governed by `docs/CURRENT_RELEASE_STATUS.md` and exact current `main`
 **Controlling authority:** `docs/CURRENT_RELEASE_STATUS.md`
 
 ## Current release disposition

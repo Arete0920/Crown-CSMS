@@ -1,6 +1,6 @@
 # Engineering Accountability Policy
 
-**Status:** Canonical engineering governance  
+**Status:** Canonical engineering governance
 **Owner:** TC Megahan, Founder/Product Owner
 
 ## Authority

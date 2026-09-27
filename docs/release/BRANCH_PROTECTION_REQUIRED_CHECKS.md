@@ -1,7 +1,7 @@
 # Required Controls on `main`
 
-**Status:** current configuration specification  
-**Repository:** `Arete0920/Crown-CSMS`  
+**Status:** current configuration specification
+**Repository:** `Arete0920/Crown-CSMS`
 **Operating model:** solo maintainer with automated compensating controls
 
 ## Pull request policy

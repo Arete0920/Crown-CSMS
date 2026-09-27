@@ -1,6 +1,6 @@
 # CROWN Naming and Identifier Standard
 
-**Status:** current canonical engineering standard  
+**Status:** current canonical engineering standard
 **Repository:** `Arete0920/Crown-CSMS`
 
 ## 1. Product and repository names
