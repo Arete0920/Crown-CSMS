@@ -30,7 +30,7 @@ CROWN is ready for technical and investment diligence review. Current release cl
 6. `SECURITY.md`
 7. `docs/engineering/ENGINEERING_ACCOUNTABILITY_POLICY.md`
 8. `docs/engineering/REPOSITORY_WORKFLOW.md`
-9. `docs/engineering/CODE_QUALITY_AND_PROVENANCE_STANDARD.md`
+9. `docs/engineering/CODE_QUALITY_AND_REPOSITORY_HYGIENE_STANDARD.md`
 10. `docs/compliance/PRIVACY_COMPLIANCE_EVIDENCE_STATUS.md`
 11. `docs/operations/README.md`
 12. `docs/KNOWN_LIMITATIONS.md`
