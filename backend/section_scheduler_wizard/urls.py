@@ -12,4 +12,3 @@ urlpatterns = [
     path("<uuid:session_id>/verify/", views.verify),
     path("<uuid:session_id>/undo/", views.undo_publication),
 ]
-
