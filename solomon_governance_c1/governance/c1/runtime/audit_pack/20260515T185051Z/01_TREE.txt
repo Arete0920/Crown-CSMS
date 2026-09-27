@@ -3118,9 +3118,9 @@ docs/maps/CROWN_MAGUS_SPRINT_MAP.md
 docs/maps/FILE_INDEX.md
 docs/maps/LANE2_BILLING_MAP.txt
 docs/maps/LANE3_ATTENDANCE_MAP.txt
-docs/migrations/BLACKBAUD_MIGRATION.md
-docs/migrations/FACTS_MIGRATION.md
-docs/migrations/GRADELINK_MIGRATION.md
+docs/migrations/LEGACY_SOURCE_SYSTEM_MIGRATION.md
+docs/migrations/LEGACY_SOURCE_SYSTEM_MIGRATION.md
+docs/migrations/LEGACY_SOURCE_SYSTEM_MIGRATION.md
 docs/openapi/README.md
 docs/openapi/crown-openapi.yaml
 docs/operations/CROWN_VSCODE_SAFE_WORK_PROTOCOL.md
