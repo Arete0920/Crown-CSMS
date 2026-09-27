@@ -1,7 +1,7 @@
 # CROWN Canonical Document Index
 
-**Status:** Canonical documentation authority  
-**Last verified:** 2026-09-26  
+**Status:** Canonical documentation authority
+**Last verified:** 2026-09-26
 **Current repository identity:** resolve exact current `refs/heads/main` from Git/GitHub; do not duplicate a mutable self-invalidating SHA in this index
 
 This index defines the active documentation authority surface for Crown-CSMS. Exact source identity must be resolved from Git/GitHub and recorded in the immutable evidence packet or release/transfer record for the decision being made.
