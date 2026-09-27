@@ -3,11 +3,11 @@ param(
   [string]$EvidenceRoot = "audit-artifacts/release-certification",
   [string]$BaseUrl = "http://127.0.0.1:8000",
   [string]$FrontendUrl = "http://127.0.0.1:3000",
-  [string]$RepoSlug = "tcmegahan/Crown2026",
+  [string]$RepoSlug = "Arete0920/Crown-CSMS",
   [string]$SandboxAdminEmail = "admin@heritage.test",
-  [string]$SandboxAdminPassword = "Crown2026!",
+  [string]$SandboxAdminPassword = $env:CERT_SANDBOX_ADMIN_PASSWORD,
   [string]$SandboxSecondAdminEmail = "admin@harvest.test",
-  [string]$SandboxSecondAdminPassword = "Crown2026!",
+  [string]$SandboxSecondAdminPassword = $env:CERT_SANDBOX_SECOND_ADMIN_PASSWORD,
   [string]$SchoolAdminRoute = "/school-admin-dashboard",
   [string]$SwaggerPath = "/api/docs/",
   [string]$HealthPath = "/health/",
@@ -18,6 +18,8 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+if ([string]::IsNullOrWhiteSpace($SandboxAdminPassword) -or [string]::IsNullOrWhiteSpace($SandboxSecondAdminPassword)) { throw "Configure both sandbox admin passwords before certification." }
+
 
 function Write-Section($text) {
   Write-Host ""

@@ -12,11 +12,13 @@
 param(
   [string]$ApiBase = "http://127.0.0.1:8000",
   [string]$Username = "admin",
-  [string]$Password = "Crown2026!",
+  [string]$Password = $env:GP_PASSWORD,
   [switch]$SkipSeed
 )
 
 $ErrorActionPreference = "Stop"
+if ([string]::IsNullOrWhiteSpace($Password)) { throw "Set GP_PASSWORD or pass -Password." }
+
 
 # --- CI env overrides ---
 if (-not $ApiBase -and $env:GP_API_BASE) { $ApiBase = $env:GP_API_BASE }
