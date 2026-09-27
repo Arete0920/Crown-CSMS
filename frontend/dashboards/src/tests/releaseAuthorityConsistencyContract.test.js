@@ -13,29 +13,28 @@ function readRepoFile(relativePath) {
 }
 
 describe('release authority consistency contract', () => {
-  it('keeps completed engineering authority distinct from transaction-time operational turnover', () => {
+  it('keeps the August certification historical and current release status exact-head based', () => {
     const source = readRepoFile('docs/CURRENT_RELEASE_STATUS.md');
-    expect(source.includes('engineering gap-closure program tracked by issue #14 is **COMPLETED**')).toBe(true);
-    expect(source.includes('Issue #14 is a **completed historical engineering-program record**, not active execution authority.')).toBe(true);
-    expect(source.includes('Buyer operational turnover: PENDING IDENTIFIED BUYER AND PARTY ACCEPTANCE')).toBe(true);
-    expect(source.includes('issue #14 remains the controlling turnover record')).toBe(false);
+    expect(source.includes('The August 18, 2026 engineering certification remains historical evidence for that certified baseline.')).toBe(true);
+    expect(source.includes('exact-head verification')).toBe(true);
+    expect(source.includes('No successor production tag or release is asserted by this record.')).toBe(true);
     expect(source.includes('Current buyer diligence package: **NOT READY')).toBe(false);
   });
 
-  it('keeps actual buyer turnover pending and payment processing disabled', () => {
+  it('keeps production operation and payment activation separate from repository readiness', () => {
     const source = readRepoFile('docs/CURRENT_RELEASE_STATUS.md');
-    expect(source.includes('Buyer operational turnover: PENDING IDENTIFIED BUYER AND PARTY ACCEPTANCE')).toBe(true);
+    expect(source.includes('Repository release readiness is separate from environment-specific production operation.')).toBe(true);
     expect(source.includes('**PAYMENT PROCESSING: DISABLED / FAIL CLOSED / NOT AUTHORIZED FOR ACTIVATION**')).toBe(true);
   });
 
-  it('keeps the canonical index pointed at the current release authority document', () => {
+  it('keeps the canonical index pointed at current release and investor-diligence authority', () => {
     const source = readRepoFile('docs/canonical/CANONICAL_DOCUMENT_INDEX.md');
-    expect(source.includes('`docs/CURRENT_RELEASE_STATUS.md`')).toBe(true);
-    expect(source.includes('Release, freeze, payment, and turnover posture')).toBe(true);
-    expect(source.includes('Current release status')).toBe(true);
+    expect(source.includes('docs/CURRENT_RELEASE_STATUS.md')).toBe(true);
+    expect(source.includes('docs/INVESTOR_TECHNICAL_REVIEW_GUIDE.md')).toBe(true);
+    expect(source.includes('Current release, payment, recovery, and turnover posture')).toBe(true);
   });
 
-  it('does not restore the obsolete P0 execution board as active authority', () => {
+  it('does not restore obsolete execution-board authority', () => {
     const source = readRepoFile('docs/canonical/CANONICAL_DOCUMENT_INDEX.md');
     expect(source.includes('P0_EXECUTION_BOARD_20260528.md')).toBe(false);
   });
