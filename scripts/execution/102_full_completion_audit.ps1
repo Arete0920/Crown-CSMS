@@ -146,7 +146,7 @@ if (Get-Command gh -ErrorAction SilentlyContinue) {
         $repoState.open_issues = [int](& gh issue list --state open --limit 200 --json number --jq "length")
     } catch {}
     try {
-        $mainHeadSha = (& gh api "repos/tcmegahan/Crown2026/commits/main" --jq ".sha").Trim()
+        $mainHeadSha = (& gh api "repos/Arete0920/Crown-CSMS/commits/main" --jq ".sha").Trim()
         if (-not [string]::IsNullOrWhiteSpace($mainHeadSha)) {
             $repoState.main_head_sha = $mainHeadSha
         }
