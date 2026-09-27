@@ -3,7 +3,7 @@ param(
   [string]$EvidenceRoot = "audit-artifacts/release-certification",
   [string]$BaseUrl = "http://127.0.0.1:8000",
   [string]$FrontendUrl = "http://127.0.0.1:3000",
-  [string]$RepoSlug = "tcmegahan/Crown2026",
+  [string]$RepoSlug = "Arete0920/Crown-CSMS",
   [string]$SandboxAdminEmail = "admin@heritage.test",
   [string]$SandboxAdminPassword = "Crown2026!",
   [string]$SandboxSecondAdminEmail = "admin@harvest.test",
