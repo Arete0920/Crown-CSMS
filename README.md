@@ -21,7 +21,7 @@ CROWN is maintained under controlled software-engineering and release-management
 5. [Architecture Map](docs/architecture/ARCHITECTURE_MAP.md)
 6. [Developer Setup](docs/engineering/DEV_SETUP.md)
 7. [Engineering Accountability Policy](docs/engineering/ENGINEERING_ACCOUNTABILITY_POLICY.md)
-8. [Code Quality Standard](docs/engineering/CODE_QUALITY_AND_PROVENANCE_STANDARD.md)
+8. [Code Quality Standard](docs/engineering/CODE_QUALITY_AND_REPOSITORY_HYGIENE_STANDARD.md)
 9. [Operations](docs/operations/README.md)
 10. [Owner Handoff](docs/ownership/OWNER_HANDOFF.md)
 11. [Known Limitations](docs/KNOWN_LIMITATIONS.md)
