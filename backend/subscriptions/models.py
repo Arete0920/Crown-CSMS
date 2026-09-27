@@ -137,7 +137,7 @@ class SchoolModule(models.Model):
         ("parent_portal_plus", "Enhanced Parent Portal"),
         ("home_academy", "Home Academy / Homeschool Affiliation"),
         ("hr_staff", "HR & Staff Management"),
-        ("little_lambs", "Little Lambs Daycare"),
+        ("little_lambs", "Diadem Daycare Solutions"),
         ("transportation", "Transportation & Bus Routing"),
         ("health_office", "Health Office & Nurse Records"),
         ("alumni", "Alumni Tracking"),
