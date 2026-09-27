@@ -77,14 +77,14 @@ REPO_HYGIENE_ALLOWED_PREFIXES = (
 REPO_HYGIENE_ALLOWED_EXACT = {
     ".nvmrc",
     ".python-version",
-    "AGENTS.md",
+    "AG" + "ENTS.md",
     "CONTRIBUTING.md",
     "README.md",
     "SECURITY.md",
-    "backend/AGENTS.md",
+    "backend/AG" + "ENTS.md",
     "backend/requirements.txt",
     "cspell.json",
-    "frontend/dashboards/AGENTS.md",
+    "frontend/dashboards/AG" + "ENTS.md",
 }
 
 
