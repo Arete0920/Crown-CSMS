@@ -42,7 +42,7 @@ Important boundary: repository controls do not by themselves prove the state of 
 Read:
 - `docs/engineering/ENGINEERING_ACCOUNTABILITY_POLICY.md`
 - `docs/engineering/REPOSITORY_WORKFLOW.md`
-- `docs/engineering/CODE_QUALITY_AND_PROVENANCE_STANDARD.md`
+- `docs/engineering/CODE_QUALITY_AND_REPOSITORY_HYGIENE_STANDARD.md`
 - `docs/engineering/DEV_SETUP.md`
 
 Evaluate:
