@@ -1,4 +1,4 @@
-# Crown2026 - Seed demo data
+# CROWN - Seed demo data
 Set-Location "$PSScriptRoot\backend"
 
 $env:PYTHONDONTWRITEBYTECODE="1"
