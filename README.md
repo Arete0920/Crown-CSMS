@@ -26,10 +26,19 @@ CROWN is maintained under controlled software-engineering and release-management
 10. [Owner Handoff](docs/ownership/OWNER_HANDOFF.md)
 11. [Known Limitations](docs/KNOWN_LIMITATIONS.md)
 12. [Security Policy](SECURITY.md)
+13. [Repository Administration Baseline](docs/governance/GITHUB_REPOSITORY_ADMINISTRATION_BASELINE.md)
+14. [Versioning and Release Policy](docs/engineering/VERSIONING_AND_RELEASE_POLICY.md)
 
 ## Authority and claim boundary
 
 Current claims must be supported by current repository evidence, exact-head CI results, retained artifacts, and environment-specific runtime evidence where applicable. Historical commits, tags, workflow runs, pull requests, issues, and predecessor documents remain provenance rather than current operating authority.
+
+## Supported development toolchain
+
+- Python 3.12
+- Node.js 20 LTS
+
+See [Developer Setup](docs/engineering/DEV_SETUP.md) for the reproducible local workflow.
 
 ## Repository standards
 
