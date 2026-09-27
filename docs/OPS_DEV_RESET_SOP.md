@@ -15,7 +15,7 @@ Before starting, ensure:
 - Azure CLI authenticated: `az login` (with access to `crown-rg` / `crown-api-dev`)
 - GitHub CLI authenticated: `gh auth status`
 - PowerShell 5.1+ or PowerShell 7+
-- You are in the repository root: `$PWD` = `Crown2026/`
+- You are in the repository root: `$PWD` = `Crown-CSMS/`
 
 ---
 
@@ -26,7 +26,7 @@ This will migrate, reseed, and populate gradebook data in DEV.
 ```powershell
 $school_id = "a5351136-98fe-4d48-add0-fa8f62d9ceff"
 
-gh workflow run -R tcmegahan/Crown2026 ops-reset-dev.yml \
+gh workflow run -R Arete0920/Crown-CSMS ops-reset-dev.yml \
   --ref main \
   -f school_id=$school_id
 ```
@@ -40,7 +40,7 @@ gh workflow run -R tcmegahan/Crown2026 ops-reset-dev.yml \
 
 **Expected result:**
 - Workflow completes in ~5 minutes
-- Check status: `gh run list -R tcmegahan/Crown2026 --workflow ops-reset-dev.yml --limit 1 --json status,conclusion`
+- Check status: `gh run list -R Arete0920/Crown-CSMS --workflow ops-reset-dev.yml --limit 1 --json status,conclusion`
 
 ---
 
@@ -49,7 +49,7 @@ gh workflow run -R tcmegahan/Crown2026 ops-reset-dev.yml \
 This will redeploy the latest main branch to crown-api-dev Azure App Service.
 
 ```powershell
-gh workflow run -R tcmegahan/Crown2026 stabilization-20260116-spine_crown-api-dev.yml --ref main
+gh workflow run -R Arete0920/Crown-CSMS stabilization-20260116-spine_crown-api-dev.yml --ref main
 ```
 
 **What happens:**
@@ -134,8 +134,8 @@ If any step fails, **STOP** and check troubleshooting below.
 
 **Diagnosis:**
 ```powershell
-$runId = (gh run list -R tcmegahan/Crown2026 --workflow ops-reset-dev.yml --limit 1 --json databaseId --jq ".[0].databaseId").Trim()
-gh run view $runId -R tcmegahan/Crown2026 --log | Select-String -Pattern "(error|ERROR|fail|FAIL)" -Context 2,2
+$runId = (gh run list -R Arete0920/Crown-CSMS --workflow ops-reset-dev.yml --limit 1 --json databaseId --jq ".[0].databaseId").Trim()
+gh run view $runId -R Arete0920/Crown-CSMS --log | Select-String -Pattern "(error|ERROR|fail|FAIL)" -Context 2,2
 ```
 
 **Common Causes:**
@@ -181,7 +181,7 @@ az login
 
 **Fix:**
 - Verify school_id: `a5351136-98fe-4d48-add0-fa8f62d9ceff` (hardcoded in proof script)
-- Check ops reset logs: `gh run view <runId> -R tcmegahan/Crown2026 --log`
+- Check ops reset logs: `gh run view <runId> -R Arete0920/Crown-CSMS --log`
 - Re-run ops reset if gradebook seeding lines missing
 
 ---
@@ -208,7 +208,7 @@ To automate this as a scheduled task (e.g., weekly reset):
 $action = New-ScheduledTaskAction `
   -Execute "powershell.exe" `
   -Argument "-NoProfile -ExecutionPolicy Bypass -Command `
-  'cd C:\...\Crown2026; gh workflow run ... ops-reset-dev.yml; Start-Sleep 600; .\proof_dev_gradebook_final.ps1'"
+  'cd C:\...\Crown-CSMS; gh workflow run ... ops-reset-dev.yml; Start-Sleep 600; .\proof_dev_gradebook_final.ps1'"
 
 $trigger = New-ScheduledTaskTrigger -Weekly -DaysOfWeek Monday -At 2am
 
