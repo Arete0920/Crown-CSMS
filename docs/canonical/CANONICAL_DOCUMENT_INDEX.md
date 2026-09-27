@@ -21,7 +21,7 @@ This index defines the active documentation authority surface for Crown-CSMS. Ex
 | `docs/governance/CHANGE_MANAGEMENT.md` | Change, evidence, approval, rollback policy | Repository governance | Governance-policy change |
 | `docs/engineering/ENGINEERING_ACCOUNTABILITY_POLICY.md` | Human authority and engineering accountability | Founder/Product Owner policy | Policy change |
 | `docs/engineering/CONTRIBUTION_EVIDENCE_LEDGER.md` | Evidence-backed attribution | Durable contribution evidence | Attribution change |
-| `docs/engineering/CODE_QUALITY_AND_PROVENANCE_STANDARD.md` | Code-quality and repository-hygiene controls | Repository governance | Quality policy change |
+| `docs/engineering/CODE_QUALITY_AND_REPOSITORY_HYGIENE_STANDARD.md` | Code-quality and repository-hygiene controls | Repository governance | Quality policy change |
 | `docs/engineering/REPOSITORY_WORKFLOW.md` | Repository work contract | Repository governance | Workflow/policy change |
 | `docs/operations/README.md` | Operations navigation | Current operational controls | Operational-control change |
 | `docs/ownership/OWNER_HANDOFF.md` | Controlled ownership transfer | Current release status; successor acceptance | Each handoff-stage change |
