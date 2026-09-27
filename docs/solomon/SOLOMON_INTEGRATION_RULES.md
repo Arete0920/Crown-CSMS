@@ -14,7 +14,7 @@ SOLOMON must integrate through read-only, feature-flagged interfaces first.
 4. No write APIs in the first implementation pass.
 5. No curriculum ingestion in the first implementation pass.
 6. No Microsoft sync in the first implementation pass.
-7. No AI functionality.
+7. No autonomous content-generation or automated decision functionality.
 
 ## Feature Flag
 
