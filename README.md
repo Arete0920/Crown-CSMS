@@ -30,6 +30,7 @@ CROWN is maintained under controlled software-engineering and release-management
 14. [Versioning and Release Policy](docs/engineering/VERSIONING_AND_RELEASE_POLICY.md)
 15. [CI Architecture](docs/engineering/CI_ARCHITECTURE.md)
 16. [Public Repository Licensing Decision](docs/governance/PUBLIC_REPOSITORY_LICENSING_DECISION.md)
+17. [School Implementation Runbook](docs/operations/SCHOOL_IMPLEMENTATION_RUNBOOK.md)
 
 ## Authority and claim boundary
 
