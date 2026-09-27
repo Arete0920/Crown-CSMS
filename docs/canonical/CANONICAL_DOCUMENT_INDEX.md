@@ -29,6 +29,7 @@ This index defines the active documentation authority surface for Crown-CSMS. Ex
 | `docs/engineering/VERSIONING_AND_RELEASE_POLICY.md` | Semantic versioning, immutable source identity, and release-tag discipline | Release governance | Versioning/release-policy change |
 | `docs/engineering/CI_ARCHITECTURE.md` | CI gate families and consolidation rules | Repository governance | CI architecture change |
 | `docs/engineering/VERSIONING_AND_RELEASE_POLICY.md` | Semantic versioning, immutable source identity, and release-tag discipline | Release governance | Versioning/release-policy change |
+| `docs/operations/SCHOOL_IMPLEMENTATION_RUNBOOK.md` | Contract-to-go-live school implementation authority | Operations | Implementation-process change |
 | `docs/operations/README.md` | Operations navigation | Current operational controls | Operational-control change |
 | `docs/ownership/OWNER_HANDOFF.md` | Controlled ownership transfer | Current release status; successor acceptance | Each handoff-stage change |
 | `docs/KNOWN_LIMITATIONS.md` | Disclosed product/operational limits | Verified evidence; accepted risk | Each material limitation change |
