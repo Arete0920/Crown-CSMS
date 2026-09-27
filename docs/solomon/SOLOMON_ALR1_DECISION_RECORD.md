@@ -124,7 +124,7 @@ Approved early integration philosophy:
 - No live production module dependency during Phase 2.
 - No migrations touching existing onboarding tables.
 - No removal of existing onboarding SOLOMON-like models until migration proof exists.
-- No AI functionality.
+- No autonomous content-generation or automated decision functionality.
 
 Feature flag requirement:
 
@@ -141,7 +141,7 @@ Phase 2 may proceed only with:
 - no root URL integration
 - no production behavior change
 - no curriculum/scripture/devotional/publisher models yet
-- no AI
+- no autonomous content-generation or automated decision functionality
 - no Microsoft sync
 - no data migration from onboarding
 - no removal or modification of existing onboarding models
