@@ -15,7 +15,7 @@ CROWN executes.
 SOLOMON informs.
 Microsoft collaborates.
 Governance controls.
-AI assists quietly behind the scenes.
+Decision-support remains subordinate to human governance and review.
 ```
 
 ## Strategic Identity
@@ -33,7 +33,7 @@ SOLOMON is:
 SOLOMON is not:
 - a chatbot,
 - an unmanaged content dump,
-- an AI-branded product,
+- an automation-branded product,
 - a replacement for human governance,
 - a replacement for Microsoft collaboration tools,
 - a substitute for curriculum publisher ownership.
