@@ -28,6 +28,8 @@ CROWN is maintained under controlled software-engineering and release-management
 12. [Security Policy](SECURITY.md)
 13. [Repository Administration Baseline](docs/governance/GITHUB_REPOSITORY_ADMINISTRATION_BASELINE.md)
 14. [Versioning and Release Policy](docs/engineering/VERSIONING_AND_RELEASE_POLICY.md)
+15. [CI Architecture](docs/engineering/CI_ARCHITECTURE.md)
+16. [Public Repository Licensing Decision](docs/governance/PUBLIC_REPOSITORY_LICENSING_DECISION.md)
 
 ## Authority and claim boundary
 
