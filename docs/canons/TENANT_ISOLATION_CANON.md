@@ -318,6 +318,6 @@ Most multi-tenant SaaS products rely on developer discipline ("remember to filte
 
 ---
 
-**Certified By:** AI Coding Agent + Developer Review
+**Verified By:** Engineering review and automated test evidence
 **Certification Date:** February 18, 2026
 **Next Review:** Before each major release or every 90 days
