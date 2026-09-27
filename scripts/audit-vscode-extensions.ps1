@@ -61,8 +61,6 @@ $Keep = @(
 )
 
 $Disable = @(
-    "github.copilot",
-    "github.copilot-chat",
     "vivaxy.vscode-conventional-commits",
     "ms-vscode.powershell-preview",
     "ms-azuretools.vscode-azureappservice",
