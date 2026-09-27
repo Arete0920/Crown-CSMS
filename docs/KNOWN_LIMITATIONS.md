@@ -1,21 +1,21 @@
 # CROWN Known Limitations and Release Disposition
 
-**Last reconciled:** 2026-08-18  
+**Last reconciled:** 2026-09-27  
 **Current repository identity:** governed by `docs/CURRENT_RELEASE_STATUS.md` and exact current `main`  
 **Controlling authority:** `docs/CURRENT_RELEASE_STATUS.md`
 
 ## Current release disposition
 
-CROWN is **PRODUCTION-READY ENGINEERING CERTIFIED**. The current Crown-CSMS `main` containing the certification record is the production-ready source baseline.
+CROWN is currently a **RELEASE CANDIDATE — EXACT-HEAD VERIFICATION REQUIRED**. The August 18, 2026 engineering certification is historical evidence for that certified baseline; it is not current release authority for subsequent repository changes.
 
-This does not mean a successor-controlled production environment is already deployed or operationally accepted. Product/repository readiness and transaction-time production operation remain separate gates.
+Current production-ready source status may be asserted only after the selected exact repository head passes all applicable security, dependency, test, schema, tenant-isolation, build, repository-policy, and release gates. Repository readiness and transaction-time production operation remain separate gates.
 
 ## Current limitations and boundaries
 
 - Successor production deployment/runtime identity is transaction-time and is not yet asserted.
 - External payment processing is not yet authorized for activation. It remains disabled and fail closed until provider contracting, merchant credentials, and provider-specific certification are complete.
 - Microsoft 365 Education integration remains broader roadmap/customer-tenant configuration scope; provider-side and customer-tenant prerequisites are external to repository proof.
-- Little Lambs remains outside the current CROWN handoff scope rather than a separately certified daycare product authority.
+- Diadem Daycare Solutions is a separately governed product/add-on workstream. Its commercial positioning, integration scope, and release evidence must be verified independently rather than inferred from the CROWN core release posture.
 - Retained compatibility models and bridges are not authorized for destructive retirement until deterministic parity, migration continuity, and rollback/forward-fix evidence support removal.
 - HR/Core Staff ownership remains an architecture convergence follow-up; this does not negate current HR security and product readiness.
 - Communications customer transport/integration configuration remains environment/customer-specific even though the persistent authorization and unsafe duplicate-route defects have been corrected.
@@ -36,7 +36,7 @@ The following are required or must be explicitly accepted when a specific succes
 
 ## Compliance and certification boundary
 
-The production-ready engineering certification is an internal product/repository readiness decision under CROWN's documented governance model. It is not represented as FERPA certification, COPPA certification, regulator approval, universal legal compliance, independent third-party certification, valuation advice, tax/accounting advice, or buyer acceptance.
+The August 18, 2026 production-ready engineering certification is an internal historical product/repository readiness decision for that certified baseline under CROWN's documented governance model. It is not represented as FERPA certification, COPPA certification, regulator approval, universal legal compliance, independent third-party certification, valuation advice, tax/accounting advice, or buyer acceptance.
 
 ## Historical evidence boundary
 
