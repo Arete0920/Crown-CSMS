@@ -57,6 +57,10 @@ PROHIBITED_FINGERPRINTS = {
 
 WORD_RE = re.compile(r"[A-Za-z0-9]+")
 MAX_WORDS = 3
+CASE_SENSITIVE_FINGERPRINTS = {
+    "c73e2d5f781dd728da917445472992925aec69318557b5c9734a01fff7a4434d",
+}
+
 
 
 def digest(value: str) -> str:
@@ -77,6 +81,9 @@ def first_party_text_files():
 
 def line_contains_prohibited_name(line: str) -> bool:
     words = WORD_RE.findall(line)
+    for word in words:
+        if hashlib.sha256(word.encode("utf-8")).hexdigest() in CASE_SENSITIVE_FINGERPRINTS:
+            return True
     for width in range(1, MAX_WORDS + 1):
         for start in range(0, len(words) - width + 1):
             candidate = " ".join(words[start:start + width])
