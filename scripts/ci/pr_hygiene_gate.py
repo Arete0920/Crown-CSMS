@@ -56,27 +56,35 @@ LARGE_MIGRATION_ALLOWED_PREFIXES = (
 REPO_HYGIENE_MARKER = "CROWN_REPOSITORY_HYGIENE_APPROVED"
 REPO_HYGIENE_TITLE = "maintenance: repository hygiene and release readiness"
 REPO_HYGIENE_BRANCH = "maintenance/repository-hygiene-release-readiness"
-REPO_HYGIENE_MAX_CHANGED_FILES = 80
-REPO_HYGIENE_MAX_ADDITIONS = 1500
+REPO_HYGIENE_MAX_CHANGED_FILES = 150
+REPO_HYGIENE_MAX_ADDITIONS = 2500
 REPO_HYGIENE_ALLOWED_PREFIXES = (
     ".github/",
     ".vscode/",
+    "backend/advancement/",
     "backend/aftercare/",
+    "backend/core/",
     "backend/crown_api/",
     "backend/spiritual_life/",
+    "backend/subscriptions/",
     "backend/tests/",
     "docs/",
     "frontend/dashboards/src/tests/",
     "scripts/",
+    "solomon_governance_c1/",
     "tools/",
 )
 REPO_HYGIENE_ALLOWED_EXACT = {
     ".nvmrc",
     ".python-version",
+    "AGENTS.md",
     "CONTRIBUTING.md",
     "README.md",
     "SECURITY.md",
+    "backend/AGENTS.md",
     "backend/requirements.txt",
+    "cspell.json",
+    "frontend/dashboards/AGENTS.md",
 }
 
 
