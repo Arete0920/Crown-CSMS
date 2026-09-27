@@ -1,7 +1,7 @@
 # Admissions Wizard Sprint Board (Sprint 1 to Sprint 6)
 
 Date: 2026-05-22
-Source: 25-item improvement backlog benchmarked against Blackbaud, Finalsite, Veracross, OpenApply, Ravenna patterns.
+Source: 25-item improvement backlog derived from general admissions workflow research and school-user needs.
 Planning horizon: 6 sprints (2 weeks each)
 
 Execution process reference:
