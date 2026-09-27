@@ -4,15 +4,14 @@
 >
 > This document is a governance policy artifact and not a controlling repository-level release authority source.
 >
-> Current controlling release-authority sources:
+> Current controlling release-authority source:
 > - docs/CURRENT_RELEASE_STATUS.md
-> - docs/release/CURRENT_RELEASE_SCORECARD_20260528.md
 
 Status: Active Governance Policy  
-Repository: tcmegahan/Crown2026  
+Repository: Arete0920/Crown-CSMS  
 Applies to: main branch  
 Owner: TC / Founder / Product Owner  
-Version: 2026.05
+Version: 2026.09
 
 ## 1. Purpose
 
@@ -135,7 +134,7 @@ Release authority remains separate and must be decided through the current CROWN
 
 Until all release-authority blockers are closed with durable proof, the allowed posture remains:
 
-CONTROLLED SANDBOX ONLY / PILOT-CANDIDATE PREPARATION
+RELEASE CANDIDATE / EXACT-HEAD VERIFICATION REQUIRED
 
 ## 10. Future State
 
