@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-REPO="tcmegahan/Crown2026"
+REPO="Arete0920/Crown-CSMS"
 
 echo "==> Open Pull Requests in ${REPO}"
 echo "------------------------------------------------------------"
