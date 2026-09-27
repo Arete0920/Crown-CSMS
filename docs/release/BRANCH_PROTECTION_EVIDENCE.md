@@ -1,72 +1,36 @@
-<!-- markdownlint-disable MD032 MD060 -->
-
 # Branch Protection Evidence
 
-> Authority Scope Notice (2026-05-29)
->
-> This document is a branch-protection evidence artifact and not a controlling repository-level release authority source.
->
-> Current controlling release-authority sources:
-> - docs/CURRENT_RELEASE_STATUS.md
-> - docs/release/CURRENT_RELEASE_SCORECARD_20260528.md
+**Status:** historical evidence only; live configuration must be re-verified  
+**Last historical capture:** 2026-04-11
 
-Generated: 2026-04-11
+This document preserves predecessor branch-protection evidence. It is **not** current proof of the live `Arete0920/Crown-CSMS` administrative configuration.
 
-This document records the live `main` branch-protection proof currently committed in-repo and the small amount of evidence that still requires manual capture.
+The current repository is public, the operating model is solo-maintainer, and no current repository ruleset was visible through the connected GitHub read surface on September 27, 2026. The connector does not have administration permission to verify or modify classic branch-protection settings.
 
-## Required Checks on `main`
+## Current intended configuration
 
-From the live API export committed at `docs/release/branch-protection-export.json`, required checks currently include:
+See:
 
-- `changes`
-- `demo-proof-static`
-- `lockdown-gate`
-- `meta-check-job-if`
-- `phase1-contract`
-- `phase3-runtime-proof`
-- `proof-ceremony`
-- `rc-promotion-gate`
-- `spine-audit`
-- `test`
-- `verify-immutable-tags`
-- `CodeQL`
-- `contract-gate`
-- `pytest-gate`
-- `secret-scan`
-- `dependency-review`
-- `Backend Python Dependency Audit`
-- `Frontend Node Dependency Audit`
+- `docs/release/BRANCH_PROTECTION_REQUIRED_CHECKS.md`
+- `docs/governance/SOLO_MAINTAINER_BRANCH_PROTECTION_POLICY.md`
+- `docs/CURRENT_RELEASE_STATUS.md`
 
-This list now reflects the live GitHub API state, including the corrected CodeQL context (`CodeQL`) and the newly enforced contract, pytest, secret-scan, and dependency-audit gates.
+## Evidence required for current status
 
-## Evidence Matrix
+A current branch/ruleset evidence capture should verify:
 
-| Control | Evidence Present? | Evidence Path | Notes |
-|---|---|---|---|
-| Branch protection export file exists | Yes | `docs/release/branch-protection-export.json` | Live API export for `main` |
-| Branch protection screenshot exists | No | `docs/release/security-gate-evidence/branch-protection-screenshot.png` | Optional/manual screenshot capture still pending |
-| Required checks list documented | Yes | `docs/release/branch-protection-export.json` | Shows 18 live required checks including `CodeQL`, `contract-gate`, `pytest-gate`, `secret-scan`, `dependency-review`, `Backend Python Dependency Audit`, and `Frontend Node Dependency Audit` |
-| Admin enforcement proven | Yes | `docs/release/branch-protection-export.json` | `enforce_admins.enabled: true` |
-| Force pushes disabled proven | Yes | `docs/release/branch-protection-export.json` | `allow_force_pushes.enabled: false` |
-| Deletions disabled proven | Yes | `docs/release/branch-protection-export.json` | `allow_deletions.enabled: false` |
-| Code owner review expected/proven | Yes | `docs/release/branch-protection-export.json` | `require_code_owner_reviews: true` |
-| Conversation resolution expected/proven | Yes | `docs/release/branch-protection-export.json` | `required_conversation_resolution.enabled: true` |
-| Linear history expected/proven | No | `docs/release/branch-protection-export.json` | `required_linear_history.enabled: false` |
+- pull request required before merge;
+- zero required human approvals while solo-maintained;
+- required automated gate contexts;
+- conversation resolution;
+- no force pushes;
+- no branch deletion;
+- direct-push restriction;
+- administrator/emergency bypass posture;
+- secret scanning and push protection;
+- dependency/security features;
+- private vulnerability reporting.
 
-## Remaining Manual Capture from GitHub Settings
+Until that evidence is captured, do not describe branch protection as independently verified current configuration.
 
-1. Open repository settings for branch protection on `main`.
-2. Capture a UI screenshot covering:
-   - Required status checks
-   - Require pull request before merging
-   - Required approvals and stale review dismissal
-   - Require code owner review
-   - Require conversation resolution
-   - Restrict force pushes and deletions
-   - Enforce for administrators
-3. Commit the screenshot to `docs/release/security-gate-evidence/` if the investor bundle still needs a UI artifact.
-
-## Status
-
-Current status: `PARTIAL`
-Reason: the live API export is now accurate and current; only the optional GitHub UI screenshot is still missing.
+Historical exports and screenshots remain useful provenance but are not current authority.
