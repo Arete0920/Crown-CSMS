@@ -486,4 +486,3 @@ def verify_session(request, session_id):
         "template_count": len(snapshot),
         "snapshot":       snapshot,
     })
-
