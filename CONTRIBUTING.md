@@ -13,7 +13,7 @@ This is a controlled proprietary repository. Every change must be evidence-backe
 7. Do not manufacture or infer contributor attribution.
 8. Treat CI, static analysis, security scans, and test results as engineering evidence; do not represent them as independent human approval.
 
-Follow `docs/governance/CHANGE_MANAGEMENT.md`, `docs/engineering/ENGINEERING_ACCOUNTABILITY_POLICY.md`, `docs/engineering/REPOSITORY_WORKFLOW.md`, and `docs/engineering/CODE_QUALITY_AND_PROVENANCE_STANDARD.md`.
+Follow `docs/governance/CHANGE_MANAGEMENT.md`, `docs/engineering/ENGINEERING_ACCOUNTABILITY_POLICY.md`, `docs/engineering/REPOSITORY_WORKFLOW.md`, and `docs/engineering/CODE_QUALITY_AND_REPOSITORY_HYGIENE_STANDARD.md`.
 
 Each non-trivial PR records its purpose, scope, base and head SHA, human owner, evidence-backed contributors, verification, rollback, and remaining `NOT VERIFIED` items.
 
