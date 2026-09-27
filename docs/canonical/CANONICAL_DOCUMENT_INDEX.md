@@ -1,7 +1,7 @@
 # CROWN Canonical Document Index
 
 **Status:** Canonical documentation authority
-**Last verified:** 2026-09-26
+**Last verified:** 2026-09-27
 **Current repository identity:** resolve exact current `refs/heads/main` from Git/GitHub; do not duplicate a mutable self-invalidating SHA in this index
 
 This index defines the active documentation authority surface for Crown-CSMS. Exact source identity must be resolved from Git/GitHub and recorded in the immutable evidence packet or release/transfer record for the decision being made.
@@ -19,10 +19,12 @@ This index defines the active documentation authority surface for Crown-CSMS. Ex
 | `docs/architecture/DECISION_INDEX.md` | Architecture decision navigation | Accepted decision records | Each architecture decision |
 | `docs/engineering/DEV_SETUP.md` | Reproducible engineering setup | Current repository configuration | Setup/dependency change |
 | `docs/governance/CHANGE_MANAGEMENT.md` | Change, evidence, approval, rollback policy | Repository governance | Governance-policy change |
+| `docs/governance/GITHUB_REPOSITORY_ADMINISTRATION_BASELINE.md` | Intended GitHub administration controls and quarterly review | Repository governance | GitHub administration/security change |
 | `docs/engineering/ENGINEERING_ACCOUNTABILITY_POLICY.md` | Human authority and engineering accountability | Founder/Product Owner policy | Policy change |
 | `docs/engineering/CONTRIBUTION_EVIDENCE_LEDGER.md` | Evidence-backed attribution | Durable contribution evidence | Attribution change |
 | `docs/engineering/CODE_QUALITY_AND_REPOSITORY_HYGIENE_STANDARD.md` | Code-quality and repository-hygiene controls | Repository governance | Quality policy change |
 | `docs/engineering/REPOSITORY_WORKFLOW.md` | Repository work contract | Repository governance | Workflow/policy change |
+| `docs/engineering/VERSIONING_AND_RELEASE_POLICY.md` | Semantic versioning, immutable source identity, and release-tag discipline | Release governance | Versioning/release-policy change |
 | `docs/operations/README.md` | Operations navigation | Current operational controls | Operational-control change |
 | `docs/ownership/OWNER_HANDOFF.md` | Controlled ownership transfer | Current release status; successor acceptance | Each handoff-stage change |
 | `docs/KNOWN_LIMITATIONS.md` | Disclosed product/operational limits | Verified evidence; accepted risk | Each material limitation change |
