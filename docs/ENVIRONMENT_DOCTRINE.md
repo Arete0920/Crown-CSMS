@@ -1,11 +1,11 @@
-# Crown2026 Environment Doctrine (Lock)
+# CROWN Environment Doctrine (Lock)
 
 ## Canonical Python Version
 - Local dev and CI must use Python 3.12.x
 - Python 3.13.x is not supported due to dependency wheel availability (notably psycopg2-binary).
 
 ## Canonical Virtual Environment
-- Use the repo-root venv: C:\...\Crown2026\.venv
+- Use the repo-root venv: C:\...\CROWN\.venv
 - Create it explicitly with Python 3.12:
 
 ```powershell
