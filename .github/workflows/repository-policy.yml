@@ -40,6 +40,9 @@ jobs:
       - name: Enforce competitor-name hygiene
         run: python scripts/ci/competitor_name_hygiene.py
 
+      - name: Enforce repository identity and naming hygiene
+        run: python scripts/ci/repository_identity_hygiene.py
+
       - name: Run pull-request hygiene
         if: github.event_name == 'pull_request'
         env:
