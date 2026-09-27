@@ -271,9 +271,9 @@ Minimum roles:
 
 Import paths:
 
-- Brightwheel export
-- Procare export
-- FACTS/RenWeb household/family export
+- legacy childcare-platform export
+- legacy childcare-management export
+- legacy household/family export
 - CSV/spreadsheet import
 - Manual quick-add
 
