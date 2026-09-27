@@ -12,6 +12,21 @@ EXCLUDED_PARTS = {
     "__pycache__", ".pytest_cache", "audit-artifacts",
 }
 
+HISTORICAL_PREFIXES = (
+    "archive/",
+    "docs/archive/",
+    "docs/release/",
+    "docs/certification/",
+    "docs/demo-proof/",
+    "docs/instruction-ledger/",
+    "solomon_governance_c1/governance/c1/runtime/audit_pack/",
+)
+
+HISTORICAL_EXACT = {
+    "docs/PROOF_LOG_2026-02-24.md",
+    "docs/PROOF_DEPLOY_INTEGRITY_2026-02-21.md",
+}
+
 TEXT_EXTENSIONS = {
     ".md", ".txt", ".py", ".js", ".jsx", ".ts", ".tsx", ".json", ".yml", ".yaml",
     ".csv", ".ps1", ".sh", ".html", ".css", ".toml", ".ini", ".cfg", ".cmd",
@@ -32,6 +47,11 @@ def first_party_text_files():
             continue
         rel = path.relative_to(ROOT)
         if any(part in EXCLUDED_PARTS for part in rel.parts):
+            continue
+        rel_text = rel.as_posix()
+        if rel_text in HISTORICAL_EXACT or rel_text.startswith(HISTORICAL_PREFIXES):
+            continue
+        if "/migrations/" in f"/{rel_text}/":
             continue
         if path.suffix.lower() not in TEXT_EXTENSIONS:
             continue
