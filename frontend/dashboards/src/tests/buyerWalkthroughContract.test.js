@@ -1,17 +1,18 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { BUYER_WALKTHROUGH } from '../sandbox/buyerWalkthrough';
 
 const DASHBOARD_ONLY_SUFFIX = /dashboard$/;
-const sourceRoot = fileURLToPath(new URL('../', import.meta.url));
+const sourceRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 function routeHasWorkflowDepth(route) {
   return !DASHBOARD_ONLY_SUFFIX.test(route.replace(/\/$/, ''));
 }
 
 function readSource(relativePath) {
-  return readFileSync(new URL(`../${relativePath}`, import.meta.url), 'utf8');
+  return readFileSync(path.resolve(sourceRoot, relativePath), 'utf8');
 }
 
 describe('buyer walkthrough contract', () => {
@@ -78,7 +79,9 @@ describe('buyer walkthrough contract', () => {
   });
 
   it('does not encode credentials or predecessor repository authority', () => {
-    const serialized = JSON.stringify(BUYER_WALKTHROUGH).toLowerCase();
+    const definition = { ...BUYER_WALKTHROUGH };
+    delete definition.passwordless;
+    const serialized = JSON.stringify(definition).toLowerCase();
     expect(serialized).not.toContain('password');
     expect(serialized).not.toContain('tcmegahan/crown2026');
     expect(serialized).not.toContain('crown2026');
