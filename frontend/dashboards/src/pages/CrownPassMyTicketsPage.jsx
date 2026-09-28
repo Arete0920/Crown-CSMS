@@ -28,6 +28,8 @@ export default function CrownPassMyTicketsPage() {
   const [tickets, setTickets] = useState([]);
   const [status, setStatus] = useState("loading");
   const [error, setError] = useState("");
+  const [activeTicket, setActiveTicket] = useState(null);
+  const [credential, setCredential] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -60,6 +62,28 @@ export default function CrownPassMyTicketsPage() {
     };
   }, []);
 
+  async function showTicket(ticket) {
+    setActiveTicket(ticket);
+    setCredential(null);
+    setError("");
+    try {
+      const response = await globalThis.fetch(
+        `${apiBase()}/api/v1/crownpass/my-tickets/${ticket.ticket_id}/credential/`,
+        { headers: authHeaders() },
+      );
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload?.detail || `HTTP ${response.status}`);
+      setCredential(payload);
+    } catch (err) {
+      setError(String(err?.message || err));
+    }
+  }
+
+  function closeTicket() {
+    setActiveTicket(null);
+    setCredential(null);
+  }
+
   return (
     <main style={{ maxWidth: 860, margin: "0 auto", padding: "2rem 1rem" }}>
       <header style={{ marginBottom: "1.5rem" }}>
@@ -84,6 +108,39 @@ export default function CrownPassMyTicketsPage() {
         <section aria-label="No CrownPass tickets">
           <h2>No tickets yet</h2>
           <p>Tickets purchased with your Crown account email will appear here.</p>
+        </section>
+      )}
+
+      {activeTicket && (
+        <section
+          role="dialog"
+          aria-modal="true"
+          aria-label="CrownPass admission ticket"
+          style={{
+            marginBottom: 20,
+            border: "2px solid var(--crown-compat-color-e2442d83b3)",
+            borderRadius: 14,
+            padding: 20,
+            textAlign: "center",
+          }}
+        >
+          <h2 style={{ marginTop: 0 }}>{activeTicket.event_name}</h2>
+          {credential?.qr_data_url ? (
+            <>
+              <img
+                src={credential.qr_data_url}
+                alt="CrownPass admission QR code"
+                width="260"
+                height="260"
+                style={{ maxWidth: "100%", height: "auto" }}
+              />
+              <p><strong>Present this code at the gate.</strong></p>
+              <p style={{ fontSize: 12 }}>Ticket {activeTicket.ticket_id}</p>
+            </>
+          ) : (
+            <p>Preparing secure ticket…</p>
+          )}
+          <button type="button" onClick={closeTicket}>Close Ticket</button>
         </section>
       )}
 
@@ -116,7 +173,7 @@ export default function CrownPassMyTicketsPage() {
               </div>
 
               <div style={{ marginTop: 14 }}>
-                <button type="button" disabled title="Secure ticket presentation is being wired next">
+                <button type="button" onClick={() => showTicket(ticket)}>
                   Show Ticket
                 </button>
               </div>
