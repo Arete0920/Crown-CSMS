@@ -95,7 +95,11 @@ export default function SectionSchedulerWizard() {
     setError(null);
     setBusy(true);
     try {
-      const rows = placements.filter((row) => row.section_id && row.dirty).map(({ dirty, ...row }) => row);
+      const rows = placements.filter((row) => row.section_id && row.dirty).map((placement) => {
+        const row = { ...placement };
+        delete row.dirty;
+        return row;
+      });
       if (!rows.length) throw new Error("Make at least one placement change before publishing.");
       await post(`${BASE}${sessionId}/sections/`, { sections: rows });
       const committed = await post(`${BASE}${sessionId}/commit/`, { confirm: true });
