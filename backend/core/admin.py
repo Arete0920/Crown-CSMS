@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 
 @admin.register(School)
-class SchoolAdmin(admin.ModelAdmin):
+class SchoolAdministratorAdmin(admin.ModelAdmin):
     list_display = ("name", "timezone", "is_active")
     search_fields = ("name",)
 

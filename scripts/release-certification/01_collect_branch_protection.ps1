@@ -1,6 +1,6 @@
 param(
   [string]$OutputDir,
-  [string]$RepoSlug = "tcmegahan/Crown2026",
+  [string]$RepoSlug = "Arete0920/Crown-CSMS",
   [switch]$Skip
 )
 

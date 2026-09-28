@@ -215,7 +215,7 @@ class AlumniCohortMember(models.Model):
 
 
 # ---------------------------------------------------------------------------
-# Memberships (Booster Club, Annual Giving, etc.)
+# Memberships (Supporter Club, Annual Giving, etc.)
 # ---------------------------------------------------------------------------
 
 class MembershipTier(models.Model):

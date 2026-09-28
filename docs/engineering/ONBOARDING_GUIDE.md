@@ -16,8 +16,8 @@ If this document contains older setup commands or local paths that conflict with
 
 ```powershell
 # 1. Clone
-git clone https://github.com/tcmegahan/Crown2026.git
-cd Crown2026
+git clone https://github.com/Arete0920/Crown-CSMS.git
+cd Crown-CSMS
 
 # 2. Create virtual environment at repo root
 python -m venv .venv
@@ -53,9 +53,9 @@ npm run dev
 
 | Branch | Purpose | Protection |
 |---|---|---|
-| `main` | Production source of truth | Protected: 1 approval + all CI checks |
+| `main` | Release source of truth | Protected PR workflow + required automated checks; 0 required human approvals while solo-maintained |
 | `feature/<name>` | All new work | Open |
-| `hotfix/<name>` | Critical prod fixes | Requires senior approval |
+| `hotfix/<name>` | Critical production fixes | Requires documented owner/release review |
 | `chore/<name>` | Non-functional changes (deps, docs, refactors) | Open |
 
 **Never push directly to `main`.**

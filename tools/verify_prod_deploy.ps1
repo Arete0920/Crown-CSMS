@@ -83,7 +83,7 @@ $deadline = (Get-Date).AddSeconds(120)
 
 while ((Get-Date) -lt $deadline) {
   try {
-    $runs = gh run list --workflow="deploy-prod.yml" --repo tcmegahan/Crown2026 --limit 5 `
+    $runs = gh run list --workflow="deploy-prod.yml" --repo Arete0920/Crown-CSMS --limit 5 `
       --json databaseId,status,conclusion,headSha,headBranch,event,createdAt 2>$null | ConvertFrom-Json
     $match = $runs | Where-Object { $_.headSha -eq $tagSha -or $_.headBranch -eq $Tag }
     if ($match) {
@@ -98,7 +98,7 @@ while ((Get-Date) -lt $deadline) {
 
 if (-not $runId) {
   # Fallback: just grab the most recent run and warn
-  $runs = gh run list --workflow="deploy-prod.yml" --repo tcmegahan/Crown2026 --limit 1 `
+  $runs = gh run list --workflow="deploy-prod.yml" --repo Arete0920/Crown-CSMS --limit 1 `
     --json databaseId,status,conclusion,headSha | ConvertFrom-Json
   if ($runs -and $runs[0]) {
     $runId = $runs[0].databaseId
@@ -110,11 +110,11 @@ if (-not $runId) {
 
 # ── 5) Watch run to completion ───────────────────────────────────────────────
 Step "Watch deploy workflow run $runId"
-gh run watch $runId --repo tcmegahan/Crown2026 | Out-Host
+gh run watch $runId --repo Arete0920/Crown-CSMS | Out-Host
 
-$final = gh run view $runId --repo tcmegahan/Crown2026 --json status,conclusion,headSha | ConvertFrom-Json
+$final = gh run view $runId --repo Arete0920/Crown-CSMS --json status,conclusion,headSha | ConvertFrom-Json
 if ($final.conclusion -ne "success") {
-  Fail "Deploy workflow failed. conclusion=$($final.conclusion)  See: https://github.com/tcmegahan/Crown2026/actions/runs/$runId"
+  Fail "Deploy workflow failed. conclusion=$($final.conclusion)  See: https://github.com/Arete0920/Crown-CSMS/actions/runs/$runId"
 }
 Write-Host "Workflow complete: conclusion=$($final.conclusion)" -ForegroundColor Green
 

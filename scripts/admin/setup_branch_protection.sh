@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-REPO="tcmegahan/Crown2026"
+REPO="Arete0920/Crown-CSMS"
 BRANCH="main"
 EXPORT_PATH="docs/release/branch-protection-export.json"
 
@@ -25,10 +25,10 @@ gh api --method PUT \
   }' \
   --field enforce_admins=true \
   --field required_pull_request_reviews='{
-    "required_approving_review_count": 1,
+    "required_approving_review_count": 0,
     "dismiss_stale_reviews": true,
-    "require_code_owner_reviews": true,
-    "require_last_push_approval": true
+    "require_code_owner_reviews": false,
+    "require_last_push_approval": false
   }' \
   --field allow_force_pushes=false \
   --field allow_deletions=false \

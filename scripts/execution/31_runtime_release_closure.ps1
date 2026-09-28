@@ -115,7 +115,7 @@ Add-CommandOutput (Join-Path $out "07_integrity_endpoint.txt") {
 
 Write-Section (Join-Path $out "08_required_checks.txt") "Required checks"
 Add-CommandOutput (Join-Path $out "08_required_checks.txt") {
-    gh api repos/tcmegahan/Crown2026/branches/main/protection --jq '.required_status_checks.contexts'
+    gh api repos/Arete0920/Crown-CSMS/branches/main/protection --jq '.required_status_checks.contexts'
 }
 
 Write-Section (Join-Path $out "09_main_runs.txt") "Latest main runs"
