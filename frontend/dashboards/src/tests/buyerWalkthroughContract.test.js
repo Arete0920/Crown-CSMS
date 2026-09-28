@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { BUYER_WALKTHROUGH } from '../sandbox/buyerWalkthrough';
 
@@ -79,9 +79,9 @@ describe('buyer walkthrough contract', () => {
   });
 
   it('does not encode credentials or predecessor repository authority', () => {
-    const definition = { ...BUYER_WALKTHROUGH };
-    delete definition.passwordless;
-    const serialized = JSON.stringify(definition).toLowerCase();
+    const { passwordless, ...publicData } = BUYER_WALKTHROUGH;
+    expect(passwordless).toBe(true);
+    const serialized = JSON.stringify(publicData).toLowerCase();
     expect(serialized).not.toContain('password');
     expect(serialized).not.toContain('tcmegahan/crown2026');
     expect(serialized).not.toContain('crown2026');
