@@ -34,7 +34,7 @@ sentry-sdk>=2.0.0
 celery>=5.4.0
 redis>=5.0.0
 # SMS provider client (used by comms/sms_service.py when SMS is enabled)
-twilio>=9.0.0
+twilio>=9.11.1
 # Board Packet PDF generation (Stage 4)
 reportlab>=4.2.0
 # Analytics runtime dependencies
