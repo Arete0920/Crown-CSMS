@@ -114,3 +114,119 @@ class TestCrownPassFamilyTicketsApi:
         ticket = response.json()["tickets"][0]
         assert "qr_code" not in ticket
         assert "credential" not in ticket
+
+
+    def test_owned_ticket_credential_returns_signed_qr_not_legacy_qr(self):
+        event = _event(self.school, "Homecoming")
+        ticket = _ticket(
+            self.school,
+            event,
+            email="parent@example.com",
+        )
+        legacy_qr = ticket.qr_code
+
+        self.client.force_authenticate(user=self.user)
+        response = self.client.get(
+            f"/api/v1/crownpass/my-tickets/{ticket.id}/credential/",
+            HTTP_X_SCHOOL_ID=str(self.school.id),
+        )
+
+        assert response.status_code == 200
+        payload = response.json()
+        assert payload["ticket_id"] == str(ticket.id)
+        assert payload["credential_type"] == "signed-v1"
+        assert payload["credential"] != legacy_qr
+        assert legacy_qr not in payload["credential"]
+        assert payload["qr_data_url"].startswith("data:image/png;base64,")
+
+    def test_cannot_request_another_users_ticket_credential(self):
+        event = _event(self.school, "Spring Musical")
+        ticket = _ticket(
+            self.school,
+            event,
+            email="another-parent@example.com",
+        )
+
+        self.client.force_authenticate(user=self.user)
+        response = self.client.get(
+            f"/api/v1/crownpass/my-tickets/{ticket.id}/credential/",
+            HTTP_X_SCHOOL_ID=str(self.school.id),
+        )
+
+        assert response.status_code == 404
+
+    def test_cannot_request_cross_tenant_ticket_credential(self):
+        event = _event(self.other_school, "Away Game")
+        ticket = _ticket(
+            self.other_school,
+            event,
+            email="parent@example.com",
+        )
+
+        self.client.force_authenticate(user=self.user)
+        response = self.client.get(
+            f"/api/v1/crownpass/my-tickets/{ticket.id}/credential/",
+            HTTP_X_SCHOOL_ID=str(self.school.id),
+        )
+
+        assert response.status_code == 404
+
+    def test_used_ticket_does_not_receive_new_credential(self):
+        event = _event(self.school, "Tournament Final")
+        ticket = _ticket(
+            self.school,
+            event,
+            email="parent@example.com",
+        )
+        ticket.checked_in = True
+        ticket.save(update_fields=["checked_in"])
+
+        self.client.force_authenticate(user=self.user)
+        response = self.client.get(
+            f"/api/v1/crownpass/my-tickets/{ticket.id}/credential/",
+            HTTP_X_SCHOOL_ID=str(self.school.id),
+        )
+
+        assert response.status_code == 409
+
+
+def test_signed_credential_tenant_binding_and_duplicate_redemption():
+    from django.core import signing
+
+    from crownpass.credentials import (
+        credential_fingerprint,
+        issue_admission_credential,
+        verify_admission_credential,
+    )
+    from crownpass.services import redeem_ticket
+
+    school = _school("Credential School")
+    other_school = _school("Credential Other School")
+    event = _event(school, "Varsity Soccer")
+    ticket = _ticket(school, event, email="parent@example.com")
+
+    credential = issue_admission_credential(ticket=ticket)
+    payload = verify_admission_credential(credential=credential, school_id=school.id)
+    assert payload["ticket_id"] == str(ticket.id)
+
+    with pytest.raises(signing.BadSignature):
+        verify_admission_credential(
+            credential=credential,
+            school_id=other_school.id,
+        )
+
+    first = redeem_ticket(
+        school_id=school.id,
+        ticket_id=ticket.id,
+        scanned_by_id=None,
+        attempted=credential_fingerprint(credential),
+    )
+    second = redeem_ticket(
+        school_id=school.id,
+        ticket_id=ticket.id,
+        scanned_by_id=None,
+        attempted=credential_fingerprint(credential),
+    )
+
+    assert first.result == "accepted"
+    assert second.result == "duplicate"
