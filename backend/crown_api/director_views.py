@@ -1276,6 +1276,13 @@ def force_seed_user(request):
     if not (jwt_ok or key_ok):
         return Response({"detail": "Forbidden."}, status=status.HTTP_403_FORBIDDEN)
 
+    admin_password = os.environ.get("DEV_ADMIN_PASSWORD")
+    if not admin_password or not admin_password.strip():
+        return Response(
+            {"ok": False, "message": "Development seed password is not configured."},
+            status=status.HTTP_503_SERVICE_UNAVAILABLE,
+        )
+
     try:
         from django.core.management import call_command
         from django.core.management.base import CommandError
@@ -1284,7 +1291,6 @@ def force_seed_user(request):
         call_command('migrate', verbosity=1)
 
         # Run dev_bootstrap to create admin user
-        admin_password = os.environ.get("DEV_ADMIN_PASSWORD", "Crown2026!")
         call_command('dev_bootstrap', admin_password=admin_password, verbosity=1)
 
         logger.warning(

@@ -3,7 +3,7 @@ import pytest
 pytestmark = pytest.mark.django_db
 
 
-def _client_with_user(client, django_user_model, email, password="Crown2026!"):
+def _client_with_user(client, django_user_model, email, password="export-test-password-only"):
     user, _ = django_user_model.objects.get_or_create(
         username=email,
         defaults={"email": email},

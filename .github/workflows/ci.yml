@@ -10,7 +10,7 @@ on:
 
 concurrency:
   group: ci-tests-and-checks-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 jobs:
   verify-immutable-tags:
     runs-on: ubuntu-latest
