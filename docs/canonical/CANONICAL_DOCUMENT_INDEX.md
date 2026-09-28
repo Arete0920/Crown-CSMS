@@ -12,7 +12,7 @@ This index defines the active documentation authority surface for Crown-CSMS. Ex
 | `docs/README.md` | Documentation navigation | This index | Documentation-structure change |
 | `docs/canonical/REPOSITORY_MANIFEST.md` | Allowed active repository surface | This index | Repository-structure change |
 | `docs/canonical/DILIGENCE_EVIDENCE_INDEX.md` | Diligence navigation and evidence boundary | Current release status | Each handoff/release decision |
-| `docs/CURRENT_RELEASE_STATUS.md` | Current production-ready engineering, release, payment, recovery, and turnover posture | Exact Crown-CSMS evidence; authorized decision | Every release-relevant change |
+| `docs/CURRENT_RELEASE_STATUS.md` | Current repository release, payment, recovery, and turnover posture | Exact Crown-CSMS evidence; authorized decision | Every release-relevant change |
 | `docs/release/CROWN_PRODUCTION_READY_ENGINEERING_CERTIFICATION_20260818.md` | Formal production-ready product/repository engineering certification and claim boundary | Current exact repository evidence; Founder/Product Owner release decision | Material product/security/release regression or certification change |
 | `docs/architecture/ARCHITECTURE_MAP.md` | Current architecture | Implemented source; accepted decisions | Architecture/ownership change |
 | `docs/architecture/DECISION_INDEX.md` | Architecture decision navigation | Accepted decision records | Each architecture decision |
