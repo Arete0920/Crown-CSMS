@@ -17,6 +17,7 @@ import ClassroomsDashboard from "../pages/ClassroomsDashboard.jsx";
 import ServiceHoursPage from "../pages/ServiceHoursPage.jsx";
 import Student360Page from "../pages/Student360Page.jsx";
 import ParentStudent360Page from "../pages/ParentStudent360Page.jsx";
+import CrownPassMyTicketsPage from "../pages/CrownPassMyTicketsPage.jsx";
 import AcademicsTeacherGrading from "../pages/AcademicsTeacherGrading.jsx";
 import AcademicsStudentWork from "../pages/AcademicsStudentWork.jsx";
 import AcademicsParentSnapshot from "../pages/AcademicsParentSnapshot.jsx";
@@ -231,6 +232,14 @@ export const router = createBrowserRouter([
     element: (
       <RoleRouteGuard allowedRoles={["parent"]}>
         <ParentAttendancePage />
+      </RoleRouteGuard>
+    ),
+  },
+  {
+    path: '/parent/crownpass',
+    element: (
+      <RoleRouteGuard allowedRoles={["parent"]}>
+        <CrownPassMyTicketsPage />
       </RoleRouteGuard>
     ),
   },
