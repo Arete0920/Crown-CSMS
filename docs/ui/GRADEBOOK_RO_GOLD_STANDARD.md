@@ -162,7 +162,7 @@ bgForPct(pct) → color string or undefined
 - Grade cells: `background: bgForPct(pctFromCell(cell))`
 - Total cell: `background: bgForPct(totals?.pct) ?? "#fff"`
 
-**Why optional:** Adds context without being loud. Students can grok performance at a glance.
+**Why optional:** Adds context without being loud. Students can understand performance at a glance.
 
 ---
 

@@ -1,19 +1,20 @@
+import os
 import requests
 import json
 
 # Get JWT token
 response = requests.post(
     "https://crown2026-api-dev.azurewebsites.net/api/auth/token/",
-    json={"username": "admin", "password": "Crown2026!"}
+    json={"username": "admin", "password": os.environ["DEV_ADMIN_PASSWORD"]}
 )
 print(f"Token response status: {response.status_code}")
-print(f"Token response: {response.text}")
+
 
 if response.status_code == 200:
     token_data = response.json()
     access_token = token_data['access']
-    print(f"\nAccess token obtained: {access_token[:50]}...")
-    
+    print("Access token obtained successfully")
+
     # Test households endpoint
     households_response = requests.get(
         "https://crown2026-api-dev.azurewebsites.net/api/households/",

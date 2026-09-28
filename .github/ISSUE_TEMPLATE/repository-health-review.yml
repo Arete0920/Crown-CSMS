@@ -1,0 +1,38 @@
+name: Repository health review
+description: Quarterly repository governance, security, and maintainability review
+title: "Repository health review - "
+labels: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this review quarterly and after major release/governance changes. Record material findings only.
+
+  - type: checkboxes
+    id: review
+    attributes:
+      label: Review
+      options:
+        - label: Open pull requests are current, scoped, and non-duplicative
+        - label: Stale/superseded branches are identified for deletion
+        - label: Required checks remain small, stable, and unambiguous
+        - label: Workflow duplication and obsolete one-time workflows were reviewed
+        - label: Dependabot/dependency/security alerts were reviewed
+        - label: Secret scanning and push protection settings were verified
+        - label: CODEOWNERS and repository permissions were verified
+        - label: Public repository content was checked for sensitive/private material
+        - label: Canonical versus historical documentation boundaries were reviewed
+        - label: Release tags and immutable mappings were verified
+        - label: Runtime/deployment/recovery workflows remain current
+        - label: Legacy compatibility names/routes were reviewed
+        - label: README, SECURITY.md, supported runtimes, metadata, and licensing posture are current
+    validations:
+      required: true
+
+  - type: textarea
+    id: findings
+    attributes:
+      label: Material findings and actions
+      description: Record only findings that require action, risk acceptance, or an authority update.
+    validations:
+      required: false

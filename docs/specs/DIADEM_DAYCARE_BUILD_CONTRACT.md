@@ -1,16 +1,16 @@
-# Little Lambs Full Build Contract
+# Diadem Daycare Solutions Build Contract
 
 Status: implementation contract created from live repo evidence and product requirements.
 
 ## Verified repo baseline
 
-Little Lambs as a separate backend app was previously implemented in PR #628 but was closed unmerged. The current repo also contains a verified Aftercare / Daycare module implementation on branch `feature/aftercare-daycare-completion-20260515_201747`, with backend app `backend/aftercare`, frontend pages, setup wizard, board card, API wiring, and tests passing according to `AFTERCARE_DAYCARE_VERIFICATION_SUMMARY.md`.
+Diadem Daycare Solutions as a separate backend app was previously implemented in PR #628 but was closed unmerged. The current repo also contains a verified Aftercare / Daycare module implementation on branch `feature/aftercare-daycare-completion-20260515_201747`, with backend app `backend/aftercare`, frontend pages, setup wizard, board card, API wiring, and tests passing according to `AFTERCARE_DAYCARE_VERIFICATION_SUMMARY.md`.
 
-This contract treats the existing `aftercare` module as the restoration spine and expands it into the full Little Lambs product surface. Do not create a duplicate `backend/daycare` app. Keep `backend/aftercare` for extended-care primitives and add `backend/little_lambs` only if it is required as a distinct early-childhood domain app with explicit integration boundaries.
+This contract treats the existing `aftercare` module as the implementation spine for Diadem Daycare Solutions. Do not create duplicate `backend/daycare` or product-named backend apps. Keep `backend/aftercare` as the canonical runtime domain. The legacy `little_lambs` identifier may exist only as a bounded compatibility route/key where removal would break existing integrations.
 
 ## Product definition
 
-Little Lambs is the faith-based daycare, preschool, before-care, aftercare, special-day, holiday-camp, summer-camp, and church-event childcare operating module for Crown.
+Diadem Daycare Solutions is the faith-based daycare, preschool, before-care, aftercare, special-day, holiday-camp, summer-camp, and church-event childcare operating module for Crown.
 
 It must support two deployment modes:
 
@@ -29,7 +29,7 @@ It must support two deployment modes:
 - Use Crown tenant scoping through the canonical household/school resolver. No raw tenant header trust.
 - Every query must be school scoped.
 - Every write must be audit logged.
-- Every API endpoint must be entitlement gated by an active/trial Little Lambs or aftercare/daycare module entitlement.
+- Every API endpoint must be entitlement gated by an active/trial Diadem Daycare Solutions or aftercare/daycare module entitlement.
 - Preserve separate early-childhood records from K-12 Student records, but allow optional promotion into Crown K-12.
 - Reuse Crown household, guardian, billing wallet, payment method, communications, documents/forms, RBAC, and audit infrastructure.
 - Keep childcare-specific records separate: child care profile, care enrollments, rooms, ratios, daily reports, meals, incidents, pickup authorization, licensing/compliance records.
@@ -38,7 +38,7 @@ It must support two deployment modes:
 
 ### 1. Setup wizard
 
-Route: `/little-lambs-setup`
+Route: `/diadem-setup`
 
 Wizard states must follow Crown wizard convention:
 
@@ -271,9 +271,9 @@ Minimum roles:
 
 Import paths:
 
-- Brightwheel export
-- Procare export
-- FACTS/RenWeb household/family export
+- legacy childcare-platform export
+- legacy childcare-management export
+- legacy household/family export
 - CSV/spreadsheet import
 - Manual quick-add
 
@@ -309,7 +309,7 @@ pytest backend/aftercare -q
 npm --prefix frontend/dashboards run build
 ```
 
-### PR 2: Add Little Lambs product shell and entitlement
+### PR 2: Add Diadem Daycare Solutions product shell and entitlement
 
 - Add product copy, nav grouping, and module activation naming.
 - Confirm entitlement compatibility with `little_lambs` and existing aftercare/daycare keys.
@@ -356,4 +356,4 @@ npm --prefix frontend/dashboards run build
 
 ## Non-negotiable completion standard
 
-Do not mark Little Lambs complete unless the repo contains working, tested, routed, entitlement-gated backend APIs, frontend dashboards, setup wizards, reporting center, billing/payment reporting, compliance workflows, and Crown integrated preschool mode.
+Do not mark Diadem Daycare Solutions complete unless the repo contains working, tested, routed, entitlement-gated backend APIs, frontend dashboards, setup wizards, reporting center, billing/payment reporting, compliance workflows, and Crown integrated preschool mode.

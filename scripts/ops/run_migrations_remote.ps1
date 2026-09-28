@@ -1,3 +1,4 @@
+if ([string]::IsNullOrWhiteSpace($env:DEV_ADMIN_PASSWORD)) { throw "Set DEV_ADMIN_PASSWORD before running this script." }
 # Run migrations and bootstrap on Azure webapp
 
 Write-Host "Running migrations..."
@@ -20,7 +21,7 @@ Write-Host "Waiting for bootstrap to complete..."
 Start-Sleep -Seconds 60
 
 Write-Host "Testing households API..."
-$jwt = curl.exe -s "https://crown2026-api-dev.azurewebsites.net/api/auth/token/" -X POST -H "Content-Type: application/json" -d '{\"username\":\"admin\",\"password\":\"Crown2026!\"}' | ConvertFrom-Json
+$jwt = Invoke-RestMethod -Uri "https://crown2026-api-dev.azurewebsites.net/api/auth/token/" -Method Post -ContentType "application/json" -Body (@{username="admin"; password=$env:DEV_ADMIN_PASSWORD} | ConvertTo-Json)
 $ACCESS = $jwt.access
 $households = curl.exe -s -H "Authorization: Bearer $ACCESS" "https://crown2026-api-dev.azurewebsites.net/api/households/"
 Write-Host $households

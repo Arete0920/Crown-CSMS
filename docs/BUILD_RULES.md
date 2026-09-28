@@ -9,8 +9,8 @@ This file is a compact pointer to the current engineering control surface. It re
 
 Use these sources in this order:
 
-1. `AGENTS.md` — repository operating instructions;
-2. `docs/canonical/CANONICAL_DOCUMENT_INDEX.md` — current documentation authority;
+1. `docs/canonical/CANONICAL_DOCUMENT_INDEX.md` — current documentation authority;
+2. `docs/engineering/REPOSITORY_WORKFLOW.md` — repository operating contract;
 3. `docs/engineering/DEV_SETUP.md` — local development and environment setup;
 4. `docs/CURRENT_RELEASE_STATUS.md` plus exact current Git/GitHub identity — release, deployment-claim, payment, and handoff posture;
 5. current repository workflows and live GitHub rules — required checks and merge controls;

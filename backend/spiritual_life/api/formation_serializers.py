@@ -170,7 +170,6 @@ class DevotionalContentSerializer(serializers.ModelSerializer):
             "staff_connection",
             "status",
             "is_published",
-            "generated_by_ai",
             "reviewed_by_id",
             "approved_at",
             "portrait_domain_ids",

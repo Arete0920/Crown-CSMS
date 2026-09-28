@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 
 const TEST_USER = process.env.CROWN_TEST_USER ?? "head@crown-demo.local";
-const TEST_PASS = process.env.CROWN_TEST_PASS ?? "Crown2026!";
+const TEST_PASS = process.env.CROWN_TEST_PASS;
 const TEST_SCHOOL_ID = process.env.CROWN_TEST_SCHOOL_ID ?? "19801b59-8c05-4c84-9312-5d792e4e839d";
 const TEST_ROLE = process.env.CROWN_TEST_ROLE ?? "head_of_school";
 const TEST_API_BASE = process.env.CROWN_TEST_API_BASE ?? "http://127.0.0.1:8000";
@@ -11,6 +11,7 @@ const TEST_UI_BASE =
   "http://127.0.0.1:4173";
 
 test("gradebook loads assignments and rows with FK-backed data", async ({ page, request }, testInfo) => {
+  if (!TEST_PASS?.trim()) throw new Error("Configure CROWN_TEST_PASS before running this proof.");
   const loginResp = await request.post(`${TEST_API_BASE}/api/v1/auth/token/`, {
     data: { username: TEST_USER, password: TEST_PASS },
   });

@@ -295,7 +295,7 @@ Accurate technical and operational baseline.
 - FERPA, COPPA, PPRA, CIPA and applicable state-law claim analysis;
 - privacy notices, DPA, terms, retention and incident documentation;
 - qualified legal and security review;
-- IP chain of title, contributor and AI provenance ledger;
+- IP chain of title and evidence-backed contributor ledger;
 - open-source and commercial license inventory;
 - commercial, pricing, pipeline, adoption, revenue, cost and projection claims register;
 - corporate, tax, insurance, contract and vendor package indexes;

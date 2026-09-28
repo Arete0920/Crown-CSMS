@@ -4,17 +4,17 @@ Use this packet for every Crown2026 Azure staging or production deployment.
 
 ## 1. Deployment Identity
 
-Environment: staging / production  
-Repository: tcmegahan/Crown2026  
-Branch:  
-Commit SHA:  
-PR:  
-Deployment workflow:  
-Workflow run ID:  
-Azure target:  
-Deployment date/time:  
-Prepared by:  
-Reviewed by:  
+Environment: staging / production
+Repository: Arete0920/Crown-CSMS
+Branch:
+Commit SHA:
+PR:
+Deployment workflow:
+Workflow run ID:
+Azure target:
+Deployment date/time:
+Prepared by:
+Reviewed by:
 
 ## 2. Source Verification
 
@@ -65,10 +65,10 @@ Complete only for production deployments.
 
 ## 6. Result
 
-Decision: PASS / NO-GO / ROLLBACK REQUIRED  
-Reason:  
-Known risks:  
-Required next action:  
+Decision: PASS / NO-GO / ROLLBACK REQUIRED
+Reason:
+Known risks:
+Required next action:
 
 ## 7. Evidence Links
 

@@ -22,7 +22,7 @@ def _superuser(django_user_model):
     user = django_user_model.objects.create_user(
         username=f"finance-{uuid.uuid4()}@example.test",
         email=f"finance-{uuid.uuid4()}@example.test",
-        password="Crown2026!",
+        password="export-test-password-only",
     )
     user.is_superuser = True
     user.is_staff = True
@@ -75,7 +75,7 @@ def test_invoice_export_denies_authenticated_non_finance_user(django_user_model)
     user = django_user_model.objects.create_user(
         username=f"teacher-{uuid.uuid4()}@example.test",
         email=f"teacher-{uuid.uuid4()}@example.test",
-        password="Crown2026!",
+        password="export-test-password-only",
     )
     request = APIRequestFactory().get("/exports/invoices.csv")
     force_authenticate(request, user=user)

@@ -11,24 +11,24 @@
 ## Running the Workflow
 
 ### Manual Trigger (Web UI)
-1. Go to: https://github.com/tcmegahan/Crown2026/actions/workflows/proof-gradebook.yml
+1. Go to: https://github.com/Arete0920/Crown-CSMS/actions/workflows/proof-gradebook.yml
 2. Click **Run workflow**
 3. Keep `main` selected
 4. Click **Run workflow**
 
 ### Manual Trigger (CLI)
 ```bash
-gh workflow run proof-gradebook.yml -R tcmegahan/Crown2026 --ref main
+gh workflow run proof-gradebook.yml -R Arete0920/Crown-CSMS --ref main
 ```
 
 ### Check Status
 ```bash
-gh run list -R tcmegahan/Crown2026 --workflow proof-gradebook.yml -L 1
+gh run list -R Arete0920/Crown-CSMS --workflow proof-gradebook.yml -L 1
 ```
 
 ### View Logs (if failed)
 ```bash
-gh run view <run-id> -R tcmegahan/Crown2026 --log-failed
+gh run view <run-id> -R Arete0920/Crown-CSMS --log-failed
 ```
 
 ---
@@ -189,7 +189,7 @@ gh run view <run-id> -R tcmegahan/Crown2026 --log-failed
 **Latest Green Run**:
 - Tag: `proof-gradebook-green-20260211-0340`
 - Commit: `e8524285`
-- Run: [#21898088776](https://github.com/tcmegahan/Crown2026/actions/runs/21898088776)
+- Run: [#21898088776](https://github.com/Arete0920/Crown-CSMS/actions/runs/21898088776)
 
 If workflow breaks, compare against this tag to understand what changed.
 

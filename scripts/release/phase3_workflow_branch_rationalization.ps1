@@ -79,7 +79,7 @@ function Get-WorkflowCategory {
 }
 
 function Get-DefaultBranchName {
-    $repoApi = Invoke-GitHubPublicApi -Uri "https://api.github.com/repos/tcmegahan/Crown2026"
+    $repoApi = Invoke-GitHubPublicApi -Uri "https://api.github.com/repos/Arete0920/Crown-CSMS"
     if ($repoApi -and $repoApi.default_branch) {
         return $repoApi.default_branch
     }
@@ -177,7 +177,7 @@ $workflowGroupRows = @($workflowRows |
         }
     })
 
-$openPulls = Invoke-GitHubPublicApi -Uri "https://api.github.com/repos/tcmegahan/Crown2026/pulls?state=open&per_page=100"
+$openPulls = Invoke-GitHubPublicApi -Uri "https://api.github.com/repos/Arete0920/Crown-CSMS/pulls?state=open&per_page=100"
 $openPullHeadRefs = @()
 if ($openPulls) {
     $openPullHeadRefs = @($openPulls | ForEach-Object { $_.head.ref } | Select-Object -Unique)

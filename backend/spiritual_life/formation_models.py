@@ -176,7 +176,6 @@ class DevotionalContent(FormationTimeStampedModel):
     staff_connection = models.TextField(blank=True, default="")
     status = models.CharField(max_length=24, choices=STATUS_CHOICES, default="draft")
     is_published = models.BooleanField(default=False)
-    generated_by_ai = models.BooleanField(default=False)
     reviewed_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         null=True,

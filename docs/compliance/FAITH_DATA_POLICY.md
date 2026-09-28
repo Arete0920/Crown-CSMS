@@ -2,7 +2,7 @@
 
 ## Purpose
 
-CROWN2026 processes faith-related educational data solely for
+CROWN processes faith-related educational data solely for
 school-directed educational, discipleship, pastoral, and mission purposes.
 
 ## Covered Sensitive Faith Data
@@ -17,7 +17,7 @@ school-directed educational, discipleship, pastoral, and mission purposes.
 
 ## Prohibited Uses
 
-CROWN2026 SHALL NOT:
+CROWN SHALL NOT:
 
 - sell faith data
 - profile students commercially

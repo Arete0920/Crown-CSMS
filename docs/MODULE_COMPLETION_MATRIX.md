@@ -1,4 +1,4 @@
-# Module Completion Matrix — Crown2026
+# Module Completion Matrix — CROWN
 
 > Canonical notice (2026-03-15): For current-cycle completion governance, use docs/certification/MODULE_ACCEPTANCE_MATRIX_14.md and docs/certification/COMPLETION_CONTRACT.md.
 > This file is historical baseline evidence and is not the primary definition of done.
@@ -7,7 +7,7 @@
 **HEAD SHA:** d671749e94a605bb116da76b9f687dc33f143841
 **Certification baseline:** `prod-deploy-certify-2026-02-24`
 
-This matrix documents the production-readiness state of all 14 Crown2026 SIS
+This matrix documents the production-readiness state of all 14 CROWN SIS
 modules, capturing API endpoints, automated test coverage, and frontend UI
 presence as of the certification date above.
 
@@ -107,5 +107,5 @@ coherence.
 
 ---
 
-*This document is part of the Crown2026 certification package for
+*This document is part of the CROWN certification package for
 `prod-certified-2026-02-24`.*
