@@ -14,7 +14,7 @@ on:
 
 concurrency:
   group: dependency-scan-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 jobs:
   python-pip-audit:
     name: Python - pip-audit
