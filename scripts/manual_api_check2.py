@@ -1,3 +1,4 @@
+import os
 import requests
 
 # Get households without auth (should fail with 401)
@@ -12,14 +13,14 @@ print(f"Health: {response2.status_code} - {response2.json()}")
 try:
     token_response = requests.post(
         "https://crown2026-api-dev.azurewebsites.net/api/auth/token/",
-        json={"username": "admin", "password": "Crown2026!"},
+        json={"username": "admin", "password": os.environ["DEV_ADMIN_PASSWORD"]},
         timeout=10
     )
     print(f"\nToken endpoint: {token_response.status_code}")
     if token_response.status_code == 200:
         print("✓ Token obtained successfully")
         token = token_response.json()['access']
-        
+
         # Try households with auth
         hh_response = requests.get(
             "https://crown2026-api-dev.azurewebsites.net/api/households/",
