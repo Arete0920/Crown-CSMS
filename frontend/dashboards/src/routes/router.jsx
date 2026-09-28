@@ -18,6 +18,7 @@ import ServiceHoursPage from "../pages/ServiceHoursPage.jsx";
 import Student360Page from "../pages/Student360Page.jsx";
 import ParentStudent360Page from "../pages/ParentStudent360Page.jsx";
 import CrownPassMyTicketsPage from "../pages/CrownPassMyTicketsPage.jsx";
+import CrownPassScannerPage from "../pages/CrownPassScannerPage.jsx";
 import AcademicsTeacherGrading from "../pages/AcademicsTeacherGrading.jsx";
 import AcademicsStudentWork from "../pages/AcademicsStudentWork.jsx";
 import AcademicsParentSnapshot from "../pages/AcademicsParentSnapshot.jsx";
@@ -154,6 +155,16 @@ const MICROSOFT_EDUCATION_ALLOWED_ROLES = [
   "admin",
 ];
 
+const CROWNPASS_SCANNER_ROLES = [
+  "super_admin",
+  "school_admin",
+  "head_of_school",
+  "athletics_director",
+  "activities_director",
+  "advancement",
+  "admin",
+];
+
 const IS_SANDBOX = Boolean(import.meta.env.VITE_DEMO_MODE === "sandbox" || import.meta.env.VITE_SANDBOX_MODE === "1");
 const IS_LAUNCH_PREVIEW = Boolean(import.meta.env.DEV || IS_SANDBOX || import.meta.env.VITE_LAUNCH_UI_TAKEOVER === '1');
 
@@ -241,6 +252,14 @@ export const router = createBrowserRouter([
       <RoleRouteGuard allowedRoles={["parent"]}>
         <CrownPassMyTicketsPage />
       </RoleRouteGuard>
+    ),
+  },
+  {
+    path: '/crownpass/scan',
+    element: (
+      <RoleGuard allowedRoles={CROWNPASS_SCANNER_ROLES}>
+        <CrownPassScannerPage />
+      </RoleGuard>
     ),
   },
   {
