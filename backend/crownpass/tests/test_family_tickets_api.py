@@ -2,10 +2,11 @@ import uuid
 
 import pytest
 from django.contrib.auth import get_user_model
+from django.core.management import call_command
 from rest_framework.test import APIClient
 
 from advancement.models import Event, Ticket
-from core.models import School
+from core.models import School, UserRole
 
 pytestmark = pytest.mark.django_db
 User = get_user_model()
@@ -230,3 +231,63 @@ def test_signed_credential_tenant_binding_and_duplicate_redemption():
 
     assert first.result == "accepted"
     assert second.result == "duplicate"
+
+
+def test_crownpass_scanner_permission_and_redeem_endpoint():
+    from crownpass.credentials import issue_admission_credential
+
+    school = _school("Scanner School")
+    event = _event(school, "Varsity Volleyball")
+    ticket = _ticket(school, event, email="buyer@example.com")
+    credential = issue_admission_credential(ticket=ticket)
+
+    scanner = _user(school, "scanner@example.com")
+    UserRole.objects.create(
+        user=scanner,
+        school=school,
+        role_code="athletics_director",
+    )
+    call_command("seed_permissions")
+
+    client = APIClient()
+    client.force_authenticate(user=scanner)
+    response = client.post(
+        "/api/v1/crownpass/redeem/",
+        {"credential": credential},
+        format="json",
+        HTTP_X_SCHOOL_ID=str(school.id),
+    )
+    assert response.status_code == 200
+    assert response.json()["result"] == "accepted"
+
+    duplicate = client.post(
+        "/api/v1/crownpass/redeem/",
+        {"credential": credential},
+        format="json",
+        HTTP_X_SCHOOL_ID=str(school.id),
+    )
+    assert duplicate.status_code == 200
+    assert duplicate.json()["result"] == "duplicate"
+
+
+def test_parent_without_scan_permission_cannot_redeem():
+    from crownpass.credentials import issue_admission_credential
+
+    school = _school("Scanner Permission School")
+    event = _event(school, "Basketball")
+    ticket = _ticket(school, event, email="buyer@example.com")
+    credential = issue_admission_credential(ticket=ticket)
+
+    parent = _user(school, "parent-no-scan@example.com")
+    UserRole.objects.create(user=parent, school=school, role_code="parent")
+    call_command("seed_permissions")
+
+    client = APIClient()
+    client.force_authenticate(user=parent)
+    response = client.post(
+        "/api/v1/crownpass/redeem/",
+        {"credential": credential},
+        format="json",
+        HTTP_X_SCHOOL_ID=str(school.id),
+    )
+    assert response.status_code == 403
