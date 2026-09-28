@@ -71,9 +71,9 @@ class AccountabilityState(models.Model):
 
     class Meta:
         indexes = [
-            models.Index(fields=["school_id", "normal_state"]),
-            models.Index(fields=["school_id", "emergency_state"]),
-            models.Index(fields=["school_id", "updated_at"]),
+            models.Index(fields=["school_id", "normal_state"], name="accountabil_school__4b0a09_idx"),
+            models.Index(fields=["school_id", "emergency_state"], name="accountabil_school__6316fb_idx"),
+            models.Index(fields=["school_id", "updated_at"], name="accountabil_school__65ec38_idx"),
         ]
 
     def clean(self):
@@ -129,8 +129,8 @@ class AccountabilityEvent(models.Model):
     class Meta:
         ordering = ["occurred_at", "id"]
         indexes = [
-            models.Index(fields=["school_id", "student", "occurred_at"]),
-            models.Index(fields=["school_id", "event_type", "occurred_at"]),
+            models.Index(fields=["school_id", "student", "occurred_at"], name="accountabil_school__55f3fd_idx"),
+            models.Index(fields=["school_id", "event_type", "occurred_at"], name="accountabil_school__b39435_idx"),
         ]
 
     def clean(self):
