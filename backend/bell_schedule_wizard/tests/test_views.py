@@ -12,7 +12,7 @@ from bell_schedule_wizard.models import (
     DayTemplate,
     PeriodBlock,
 )
-from core.models import School
+from core.models import School, UserRole
 
 
 TEST_AUTH_SECRET = "TestAuthSecret-LocalOnly"
@@ -63,8 +63,8 @@ def _make_school(name=None):
     return School.objects.create(name=name, timezone="America/Chicago", is_active=True)
 
 
-def _make_user():
-    return User.objects.create_user(username=f"u{uuid.uuid4().hex[:8]}", password=TEST_AUTH_SECRET)
+def _make_user(school=None):
+    return User.objects.create_user(username=f"u{uuid.uuid4().hex[:8]}", password=TEST_AUTH_SECRET, school=school)
 
 
 def _make_ay(school, start=AY_START, end=AY_END):
@@ -81,9 +81,12 @@ def _headers(school_id):
     return {"HTTP_X_SCHOOL_ID": str(school_id)}
 
 
-def _authed_client():
+def _authed_client(school=None):
     c = APIClient()
-    c.force_authenticate(user=_make_user())
+    user = _make_user(school)
+    if school:
+        UserRole.objects.create(user=user, school=school, role_code="HEAD_OF_SCHOOL")
+    c.force_authenticate(user=user)
     return c
 
 
@@ -130,7 +133,7 @@ class BellScheduleAuthTest(TestCase):
 
     def test_configure_requires_auth(self):
         school = _make_school()
-        c = _authed_client()
+        c = _authed_client(school)
         r = c.post(BASE_URL, **_headers(school.id))
         sid = r.data["session_id"]
         r2 = APIClient().post(f"{BASE_URL}{sid}/configure/", **_headers(school.id))
@@ -151,7 +154,7 @@ class BellScheduleTenantTest(TestCase):
         school_a = _make_school()
         school_b = _make_school()
         ay = _make_ay(school_a)
-        c = _authed_client()
+        c = _authed_client(school_a)
         r = c.post(BASE_URL, **_headers(school_a.id))
         sid = r.data["session_id"]
         r2 = c.post(
@@ -170,7 +173,7 @@ class BellScheduleTenantTest(TestCase):
 class BellScheduleCreateTest(TestCase):
     def test_create_returns_201_and_draft(self):
         school = _make_school()
-        c = _authed_client()
+        c = _authed_client(school)
         r = c.post(BASE_URL, **_headers(school.id))
         self.assertEqual(r.status_code, 201)
         self.assertEqual(r.data["status"], "draft")
@@ -178,7 +181,7 @@ class BellScheduleCreateTest(TestCase):
 
     def test_create_persists_session(self):
         school = _make_school()
-        c = _authed_client()
+        c = _authed_client(school)
         r = c.post(BASE_URL, **_headers(school.id))
         self.assertTrue(BellScheduleWizardSession.objects.filter(pk=r.data["session_id"]).exists())
 
@@ -191,7 +194,7 @@ class BellScheduleConfigureTest(TestCase):
     def test_configure_single_day_happy(self):
         school = _make_school()
         ay = _make_ay(school)
-        c = _authed_client()
+        c = _authed_client(school)
         r = c.post(BASE_URL, **_headers(school.id))
         sid = r.data["session_id"]
         r2 = c.post(
@@ -207,7 +210,7 @@ class BellScheduleConfigureTest(TestCase):
     def test_configure_day_templates_happy(self):
         school = _make_school()
         ay = _make_ay(school)
-        c = _authed_client()
+        c = _authed_client(school)
         r = c.post(BASE_URL, **_headers(school.id))
         sid = r.data["session_id"]
         r2 = c.post(
@@ -222,7 +225,7 @@ class BellScheduleConfigureTest(TestCase):
     def test_configure_missing_name(self):
         school = _make_school()
         ay = _make_ay(school)
-        c = _authed_client()
+        c = _authed_client(school)
         r = c.post(BASE_URL, **_headers(school.id))
         sid = r.data["session_id"]
         r2 = c.post(
@@ -235,7 +238,7 @@ class BellScheduleConfigureTest(TestCase):
 
     def test_configure_missing_academic_year(self):
         school = _make_school()
-        c = _authed_client()
+        c = _authed_client(school)
         r = c.post(BASE_URL, **_headers(school.id))
         sid = r.data["session_id"]
         r2 = c.post(
@@ -249,7 +252,7 @@ class BellScheduleConfigureTest(TestCase):
     def test_configure_bad_schedule_mode(self):
         school = _make_school()
         ay = _make_ay(school)
-        c = _authed_client()
+        c = _authed_client(school)
         r = c.post(BASE_URL, **_headers(school.id))
         sid = r.data["session_id"]
         r2 = c.post(
@@ -264,7 +267,7 @@ class BellScheduleConfigureTest(TestCase):
         school_a = _make_school()
         school_b = _make_school()
         ay_b = _make_ay(school_b)
-        c = _authed_client()
+        c = _authed_client(school_a)
         r = c.post(BASE_URL, **_headers(school_a.id))
         sid = r.data["session_id"]
         r2 = c.post(
@@ -283,7 +286,7 @@ class BellScheduleConfigureTest(TestCase):
 class BellScheduleBlocksTest(TestCase):
     def test_draft_guard(self):
         school = _make_school()
-        c = _authed_client()
+        c = _authed_client(school)
         r = c.post(BASE_URL, **_headers(school.id))
         sid = r.data["session_id"]
         r2 = c.post(
@@ -297,7 +300,7 @@ class BellScheduleBlocksTest(TestCase):
     def test_happy_single_day(self):
         school = _make_school()
         ay = _make_ay(school)
-        c = _authed_client()
+        c = _authed_client(school)
         sid = _advance_to_configured(c, school, ay, mode="SINGLE_DAY")
         r = c.post(
             f"{BASE_URL}{sid}/blocks/",
@@ -312,7 +315,7 @@ class BellScheduleBlocksTest(TestCase):
     def test_happy_day_templates_ab(self):
         school = _make_school()
         ay = _make_ay(school)
-        c = _authed_client()
+        c = _authed_client(school)
         sid = _advance_to_configured(c, school, ay, mode="DAY_TEMPLATES")
         r = c.post(
             f"{BASE_URL}{sid}/blocks/",
@@ -326,7 +329,7 @@ class BellScheduleBlocksTest(TestCase):
     def test_happy_weekday_templates(self):
         school = _make_school()
         ay = _make_ay(school)
-        c = _authed_client()
+        c = _authed_client(school)
         sid = _advance_to_configured(c, school, ay, mode="DAY_TEMPLATES")
         r = c.post(
             f"{BASE_URL}{sid}/blocks/",
@@ -340,7 +343,7 @@ class BellScheduleBlocksTest(TestCase):
     def test_missing_block_code(self):
         school = _make_school()
         ay = _make_ay(school)
-        c = _authed_client()
+        c = _authed_client(school)
         sid = _advance_to_configured(c, school, ay, mode="SINGLE_DAY")
         bad = [{"template_code": "DEFAULT", "blocks": [
             {"label": "P1", "start_time": "08:00", "end_time": "09:00"}
@@ -351,7 +354,7 @@ class BellScheduleBlocksTest(TestCase):
     def test_start_gte_end_rejected(self):
         school = _make_school()
         ay = _make_ay(school)
-        c = _authed_client()
+        c = _authed_client(school)
         sid = _advance_to_configured(c, school, ay, mode="SINGLE_DAY")
         bad = [{"template_code": "DEFAULT", "blocks": [
             {"code": "P1", "label": "Period 1", "start_time": "09:00", "end_time": "08:00"}
@@ -362,7 +365,7 @@ class BellScheduleBlocksTest(TestCase):
     def test_overlap_rejected(self):
         school = _make_school()
         ay = _make_ay(school)
-        c = _authed_client()
+        c = _authed_client(school)
         sid = _advance_to_configured(c, school, ay, mode="SINGLE_DAY")
         bad = [{"template_code": "DEFAULT", "blocks": [
             {"code": "P1", "label": "Period 1", "start_time": "08:00", "end_time": "09:30"},
@@ -374,7 +377,7 @@ class BellScheduleBlocksTest(TestCase):
     def test_single_day_wrong_template_count(self):
         school = _make_school()
         ay = _make_ay(school)
-        c = _authed_client()
+        c = _authed_client(school)
         sid = _advance_to_configured(c, school, ay, mode="SINGLE_DAY")
         r = c.post(
             f"{BASE_URL}{sid}/blocks/",
@@ -387,7 +390,7 @@ class BellScheduleBlocksTest(TestCase):
     def test_single_day_wrong_template_code(self):
         school = _make_school()
         ay = _make_ay(school)
-        c = _authed_client()
+        c = _authed_client(school)
         sid = _advance_to_configured(c, school, ay, mode="SINGLE_DAY")
         bad = [{"template_code": "A", "blocks": [
             {"code": "P1", "label": "Period 1", "start_time": "08:00", "end_time": "09:00"}
@@ -398,7 +401,7 @@ class BellScheduleBlocksTest(TestCase):
     def test_duplicate_template_code_rejected(self):
         school = _make_school()
         ay = _make_ay(school)
-        c = _authed_client()
+        c = _authed_client(school)
         sid = _advance_to_configured(c, school, ay, mode="DAY_TEMPLATES")
         bad = [
             {"template_code": "A", "blocks": [{"code": "P1", "label": "P1", "start_time": "08:00", "end_time": "09:00"}]},
@@ -416,7 +419,7 @@ class BellScheduleCommitTest(TestCase):
     def test_commit_creates_schedule(self):
         school = _make_school()
         ay = _make_ay(school)
-        c = _authed_client()
+        c = _authed_client(school)
         sid = _advance_to_blocks_set(c, school, ay)
         r = c.post(f"{BASE_URL}{sid}/commit/", format="json", **_headers(school.id))
         self.assertEqual(r.status_code, 200)
@@ -426,7 +429,7 @@ class BellScheduleCommitTest(TestCase):
     def test_commit_creates_day_templates(self):
         school = _make_school()
         ay = _make_ay(school)
-        c = _authed_client()
+        c = _authed_client(school)
         sid = _advance_to_blocks_set(c, school, ay, templates=GOOD_AB_TEMPLATES, mode="DAY_TEMPLATES")
         r = c.post(f"{BASE_URL}{sid}/commit/", format="json", **_headers(school.id))
         self.assertEqual(r.status_code, 200)
@@ -436,7 +439,7 @@ class BellScheduleCommitTest(TestCase):
     def test_commit_creates_period_blocks(self):
         school = _make_school()
         ay = _make_ay(school)
-        c = _authed_client()
+        c = _authed_client(school)
         sid = _advance_to_blocks_set(c, school, ay)
         r = c.post(f"{BASE_URL}{sid}/commit/", format="json", **_headers(school.id))
         sched = BellSchedule.objects.get(pk=r.data["schedule_id"])
@@ -446,7 +449,7 @@ class BellScheduleCommitTest(TestCase):
     def test_commit_returns_schedule_id_and_templates(self):
         school = _make_school()
         ay = _make_ay(school)
-        c = _authed_client()
+        c = _authed_client(school)
         sid = _advance_to_blocks_set(c, school, ay)
         r = c.post(f"{BASE_URL}{sid}/commit/", format="json", **_headers(school.id))
         self.assertIn("schedule_id", r.data)
@@ -454,7 +457,7 @@ class BellScheduleCommitTest(TestCase):
 
     def test_draft_guard(self):
         school = _make_school()
-        c = _authed_client()
+        c = _authed_client(school)
         r = c.post(BASE_URL, **_headers(school.id))
         sid = r.data["session_id"]
         r2 = c.post(f"{BASE_URL}{sid}/commit/", format="json", **_headers(school.id))
@@ -463,7 +466,7 @@ class BellScheduleCommitTest(TestCase):
     def test_configured_guard(self):
         school = _make_school()
         ay = _make_ay(school)
-        c = _authed_client()
+        c = _authed_client(school)
         sid = _advance_to_configured(c, school, ay, mode="SINGLE_DAY")
         r2 = c.post(f"{BASE_URL}{sid}/commit/", format="json", **_headers(school.id))
         self.assertEqual(r2.status_code, 400)
@@ -471,7 +474,7 @@ class BellScheduleCommitTest(TestCase):
     def test_idempotent_commit_replaces_blocks(self):
         school = _make_school()
         ay = _make_ay(school)
-        c = _authed_client()
+        c = _authed_client(school)
         # First commit: 3 blocks
         sid = _advance_to_blocks_set(c, school, ay)
         c.post(f"{BASE_URL}{sid}/commit/", format="json", **_headers(school.id))
@@ -494,7 +497,7 @@ class BellScheduleVerifyTest(TestCase):
     def test_verify_returns_snapshot(self):
         school = _make_school()
         ay = _make_ay(school)
-        c = _authed_client()
+        c = _authed_client(school)
         sid = _advance_to_committed(c, school, ay)
         r = c.get(f"{BASE_URL}{sid}/verify/", **_headers(school.id))
         self.assertEqual(r.status_code, 200)
@@ -504,7 +507,7 @@ class BellScheduleVerifyTest(TestCase):
 
     def test_verify_before_commit_rejected(self):
         school = _make_school()
-        c = _authed_client()
+        c = _authed_client(school)
         r = c.post(BASE_URL, **_headers(school.id))
         sid = r.data["session_id"]
         r2 = c.get(f"{BASE_URL}{sid}/verify/", **_headers(school.id))
@@ -519,7 +522,7 @@ class BellScheduleSingleActiveTest(TestCase):
     def test_committed_schedule_is_active(self):
         school = _make_school()
         ay = _make_ay(school)
-        c = _authed_client()
+        c = _authed_client(school)
         sid = _advance_to_committed(c, school, ay)
         sess = BellScheduleWizardSession.objects.get(pk=sid)
         sched = BellSchedule.objects.get(pk=sess.commit_result["schedule_id"])
@@ -528,7 +531,7 @@ class BellScheduleSingleActiveTest(TestCase):
     def test_second_commit_flips_first_inactive(self):
         school = _make_school()
         ay = _make_ay(school)
-        c = _authed_client()
+        c = _authed_client(school)
         # First commit: Standard (3 blocks)
         sid1 = _advance_to_committed(c, school, ay, name="Standard")
         sess1 = BellScheduleWizardSession.objects.get(pk=sid1)
@@ -551,7 +554,7 @@ class BellScheduleSnapshotTest(TestCase):
     def test_verify_snapshot_block_fields(self):
         school = _make_school()
         ay = _make_ay(school)
-        c = _authed_client()
+        c = _authed_client(school)
         sid = _advance_to_committed(c, school, ay)
         r = c.get(f"{BASE_URL}{sid}/verify/", **_headers(school.id))
         tpl = r.data["snapshot"][0]
@@ -564,7 +567,7 @@ class BellScheduleSnapshotTest(TestCase):
         school_a = _make_school()
         school_b = _make_school()
         ay_a = _make_ay(school_a)
-        c = _authed_client()
+        c = _authed_client(school_a)
         r = c.post(BASE_URL, **_headers(school_a.id))
         sid = r.data["session_id"]
         r2 = c.get(f"{BASE_URL}{sid}/verify/", **_headers(school_b.id))
@@ -596,3 +599,26 @@ class BellScheduleDBConstraintTest(TestCase):
                 template=tpl, code="P1", label="Duplicate",
                 start_time=dtime(9, 5), end_time=dtime(10, 0),
             )
+
+
+
+class BellScheduleRoleBoundaryTest(TestCase):
+    def test_authenticated_user_without_scheduling_role_cannot_create(self):
+        school = _make_school()
+        user = _make_user(school)
+        client = APIClient()
+        client.force_authenticate(user=user)
+        response = client.post(BASE_URL, **_headers(school.id))
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(BellScheduleWizardSession.objects.count(), 0)
+
+    def test_publish_requires_publish_permission(self):
+        school = _make_school()
+        ay = _make_ay(school)
+        client = _authed_client(school)
+        sid = _advance_to_blocks_set(client, school, ay)
+        from core.models import RolePermission
+        RolePermission.objects.filter(role_code="HEAD_OF_SCHOOL", permission__code="scheduling.publish").delete()
+        response = client.post(f"{BASE_URL}{sid}/commit/", **_headers(school.id))
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(BellSchedule.objects.count(), 0)
