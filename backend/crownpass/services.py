@@ -3,7 +3,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Iterable
 
-from advancement.models import Ticket
+from django.db import transaction
+
+from advancement.models import Ticket, TicketScan
 
 
 @dataclass(frozen=True)
@@ -80,3 +82,25 @@ def list_family_tickets(*, school_id, user) -> list[dict]:
         ).as_dict()
         for ticket in family_ticket_queryset(school_id=school_id, user=user)
     ]
+
+
+def get_owned_ticket(*, school_id, user, ticket_id):
+    return family_ticket_queryset(school_id=school_id, user=user).get(id=ticket_id)
+
+
+@transaction.atomic
+def redeem_ticket(*, school_id, ticket_id, scanned_by_id, attempted):
+    ticket = Ticket.objects.select_for_update().get(id=ticket_id, school_id=school_id)
+    result = "duplicate" if ticket.checked_in else "accepted"
+    if result == "accepted":
+        from django.utils import timezone
+        ticket.checked_in = True
+        ticket.checked_in_at = timezone.now()
+        ticket.save(update_fields=["checked_in", "checked_in_at"])
+    return TicketScan.objects.create(
+        school_id=school_id,
+        ticket=ticket,
+        qr_attempted=attempted,
+        scanned_by_id=scanned_by_id,
+        result=result,
+    )
