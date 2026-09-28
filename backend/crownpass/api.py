@@ -15,6 +15,7 @@ from households.scoping import get_request_school_id
 from .credentials import (
     credential_fingerprint,
     issue_admission_credential,
+    render_qr_data_url,
     verify_admission_credential,
 )
 from .services import get_owned_ticket, list_family_tickets, redeem_ticket
@@ -67,6 +68,7 @@ def my_ticket_credential(request, ticket_id):
         "event_name": ticket.event.name,
         "credential": credential,
         "credential_type": "signed-v1",
+        "qr_data_url": render_qr_data_url(credential),
     })
 
 
