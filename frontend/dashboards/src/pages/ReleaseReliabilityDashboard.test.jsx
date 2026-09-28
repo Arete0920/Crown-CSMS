@@ -2,7 +2,7 @@
 /**
  * Release Reliability Dashboard — browser title and metrics proof.
  *
- * Closes: Arete0920/Crown-CSMSvar(--crown-compat-color-c6d42be6b7)
+ * Closes: tcmegahan/Crown2026var(--crown-compat-color-c6d42be6b7)
  *
  * Proof scope:
  *   1. Template resolves with key 'releaseReliability'.

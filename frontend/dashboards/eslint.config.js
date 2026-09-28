@@ -74,6 +74,10 @@ export default [
     },
   },
   {
+    files: ["scripts/run-buyer-sandbox-browser-authority.mjs"],
+    languageOptions: { globals: globals.node },
+  },
+  {
     files: ["src/utils/authClient.js", "src/lib/api.js"],
     rules: { "no-restricted-globals": "off" },
   },
