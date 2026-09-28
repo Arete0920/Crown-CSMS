@@ -1,4 +1,3 @@
-import React from 'react';
 import { afterEach, expect, it, vi } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';
 import PublishedScheduleCard from './PublishedScheduleCard.jsx';
