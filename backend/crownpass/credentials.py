@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import base64
 import hashlib
+import io
 
 from django.core import signing
 
@@ -25,3 +27,13 @@ def verify_admission_credential(*, credential: str, school_id):
 
 def credential_fingerprint(credential: str) -> str:
     return "crownpass:" + hashlib.sha256(credential.encode("utf-8")).hexdigest()[:32]
+
+
+def render_qr_data_url(credential: str) -> str:
+    import qrcode
+
+    image = qrcode.make(credential)
+    buffer = io.BytesIO()
+    image.save(buffer, format="PNG")
+    encoded = base64.b64encode(buffer.getvalue()).decode("ascii")
+    return "data:image/png;base64," + encoded
