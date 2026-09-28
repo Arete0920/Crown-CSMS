@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import CrownLayout from "../components/crown/CrownLayout.jsx";
 
 function apiBase() {
   const base = (import.meta?.env?.VITE_API_BASE_URL || "").trim();
@@ -85,16 +86,8 @@ export default function CrownPassMyTicketsPage() {
   }
 
   return (
-    <main style={{ maxWidth: 860, margin: "0 auto", padding: "2rem 1rem" }}>
-      <header style={{ marginBottom: "1.5rem" }}>
-        <p style={{ margin: 0, fontSize: 13, fontWeight: 700, letterSpacing: "0.08em" }}>
-          CROWNPASS
-        </p>
-        <h1 style={{ margin: "0.35rem 0 0.25rem" }}>My Tickets</h1>
-        <p style={{ margin: 0 }}>
-          Your Crown event tickets in one place.
-        </p>
-      </header>
+    <CrownLayout title="CrownPass — My Tickets" subtitle="Your Crown event tickets in one place">
+      <div style={{ maxWidth: 860, margin: "0 auto" }}>
 
       {status === "loading" && <p>Loading tickets…</p>}
 
@@ -181,6 +174,7 @@ export default function CrownPassMyTicketsPage() {
           ))}
         </section>
       )}
-    </main>
+      </div>
+    </CrownLayout>
   );
 }
