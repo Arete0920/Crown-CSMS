@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import CrownLayout from "../components/crown/CrownLayout.jsx";
 
 function apiBase() {
   const base = (import.meta?.env?.VITE_API_BASE_URL || "").trim();
@@ -107,11 +108,8 @@ export default function CrownPassScannerPage() {
     result?.result === "error" ? "Scanner error" : "";
 
   return (
-    <main style={{ maxWidth: 720, margin: "0 auto", padding: "2rem 1rem" }}>
-      <header>
-        <p style={{ margin: 0, fontWeight: 700 }}>CROWNPASS</p>
-        <h1>Gate Scanner</h1>
-      </header>
+    <CrownLayout title="CrownPass — Gate Scanner" subtitle="Secure event admission and ticket redemption">
+      <div style={{ maxWidth: 720, margin: "0 auto" }}>
 
       {result && (
         <section role="status" style={{ border: "2px solid currentColor", borderRadius: 12, padding: 18, marginBottom: 18 }}>
@@ -153,6 +151,7 @@ export default function CrownPassScannerPage() {
           </button>
         </div>
       </form>
-    </main>
+      </div>
+    </CrownLayout>
   );
 }
