@@ -74,14 +74,12 @@ def my_ticket_credential(request, ticket_id):
 
 @extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
-@permission_classes([CrownModulePermission("advancement.edit")])
+@permission_classes([CrownModulePermission("crownpass.scan")])
 def redeem_credential(request):
     """
     Validate and redeem a CrownPass signed admission credential.
 
-    During the compatibility phase scanner authority uses the existing
-    advancement.edit permission. A dedicated crownpass.scan permission is
-    introduced only when the permission seed/migration is approved.
+    Scanner authority is isolated behind the dedicated crownpass.scan permission.
     """
     school_id = get_request_school_id(request, required=True)
     credential = (request.data.get("credential") or "").strip()
