@@ -87,33 +87,33 @@
 <body>
     <div class="login-container">
         <h1>Crown Platform Login</h1>
-        
+
         {% if form.errors %}
         <div class="errors">
             <strong>Login failed.</strong> Please check your username and password.
         </div>
         {% endif %}
-        
+
         <form method="post">
             {% csrf_token %}
-            
+
             <div class="form-group">
                 <label for="id_username">Username</label>
                 <input type="text" name="username" id="id_username" value="admin" required autofocus>
             </div>
-            
+
             <div class="form-group">
                 <label for="id_password">Password</label>
-                <input type="password" name="password" id="id_password" value="Crown2026!" required>
+                <input type="password" name="password" id="id_password" required>
             </div>
-            
+
             <button type="submit">Log In</button>
-            
+
             <input type="hidden" name="next" value="{{ next }}">
         </form>
-        
+
         <div class="demo-note">
-            <strong>Demo:</strong> Username: <code>admin</code> &mdash; Password: <code>Crown2026!</code>
+            Use the credentials provided by your administrator.
         </div>
     </div>
 </body>

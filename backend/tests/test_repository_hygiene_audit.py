@@ -6,8 +6,8 @@ import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-MODULE_PATH = REPO_ROOT / "scripts" / "quality" / "ai_pattern_audit.py"
-SPEC = importlib.util.spec_from_file_location("ai_pattern_audit", MODULE_PATH)
+MODULE_PATH = REPO_ROOT / "scripts" / "quality" / "repository_hygiene_audit.py"
+SPEC = importlib.util.spec_from_file_location("repository_hygiene_audit", MODULE_PATH)
 assert SPEC is not None and SPEC.loader is not None
 AUDIT = importlib.util.module_from_spec(SPEC)
 sys.modules[SPEC.name] = AUDIT
@@ -47,7 +47,7 @@ def test_excludes_generated_and_explicit_paths(tmp_path: Path) -> None:
 def test_suppression_is_rule_specific() -> None:
     findings = AUDIT.scan_text(
         "scripts/check.ps1",
-        "Set-Location C:\\w\\allowed  # ai-audit: allow AP-02\n$status = \"PASS\"\n",
+        "Set-Location C:\\w\\allowed  # repo-hygiene: allow AP-02\n$status = \"PASS\"\n",
     )
     rules = [item.rule for item in findings]
     assert "AP-02" not in rules

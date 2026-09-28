@@ -64,7 +64,7 @@ try {
 # 3) Trigger DEV Smoke - Golden Path workflow
 Write-Host "`n=== Step 2: Trigger DEV Smoke Workflow ==="
 $workflowName = "DEV Smoke - Golden Path"
-$repo = "tcmegahan/Crown2026"
+$repo = "Arete0920/Crown-CSMS"
 
 $env:GH_PAGER = "cat"
 $env:GH_FORCE_TTY = 0

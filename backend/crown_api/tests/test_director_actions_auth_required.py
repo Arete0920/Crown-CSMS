@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import os
+from unittest.mock import patch
 from datetime import date
 
 from django.contrib.auth import get_user_model
@@ -175,6 +177,7 @@ class DirectorActionsAuthRequiredTests(TestCase):
         )
 
     @override_settings(CROWN_ENV="dev", DEV_SEED_KEY="test-dev-seed-key")
+    @patch.dict(os.environ, {"DEV_ADMIN_PASSWORD": "seed-test-password-only"})
     def test_force_seed_user_security(self):
         url = "/api/director/force_seed_user/"
 
@@ -194,7 +197,7 @@ class DirectorActionsAuthRequiredTests(TestCase):
         data = resp.json()
         self.assertIs(data["ok"], True)
         self.assertNotIn("password", str(data).lower())
-        self.assertNotIn("Crown2026!", str(data))
+        self.assertNotIn("seed-test-password-only", str(data))
         self.assertTrue("admin" not in str(data).lower() or "admin_created" in data)
 
         User = get_user_model()
@@ -214,3 +217,21 @@ class DirectorActionsAuthRequiredTests(TestCase):
             "/api/director/force_seed_user/", HTTP_X_DEV_SEED_KEY="test-dev-seed-key"
         )
         self.assertEqual(resp.status_code, 404)
+
+    @override_settings(CROWN_ENV="dev", DEV_SEED_KEY="test-dev-seed-key")
+    def test_force_seed_user_requires_password_before_any_database_command(self):
+        for password in (None, "", "   "):
+            with self.subTest(password=password), patch.dict(os.environ), patch(
+                "django.core.management.call_command"
+            ) as command:
+                os.environ.pop("DEV_SEED_KEY", None)
+                if password is None:
+                    os.environ.pop("DEV_ADMIN_PASSWORD", None)
+                else:
+                    os.environ["DEV_ADMIN_PASSWORD"] = password
+                response = self.client.post(
+                    "/api/director/force_seed_user/",
+                    HTTP_X_DEV_SEED_KEY="test-dev-seed-key",
+                )
+                self.assertEqual(response.status_code, 503)
+                command.assert_not_called()

@@ -3,7 +3,7 @@
 **Version:** 2.0  
 **Status:** Current architecture authority  
 **Authority:** Crown-CSMS platform doctrine  
-**Repository:** `Arete-Advisory-Group/Crown-CSMS`
+**Repository:** `Arete0920/Crown-CSMS`
 
 ## 1. Purpose
 

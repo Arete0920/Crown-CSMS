@@ -1,6 +1,6 @@
 # CROWN Release Tag Policy
 
-**Last reconciled:** 2026-08-18
+**Last reconciled:** 2026-09-27
 
 ## Immutability
 
@@ -22,9 +22,14 @@ Historical deployment run: `31287503791`.
 
 ## Naming
 
-- Certified production deployment: `prod-deploy-YYYYMMDD-<short-sha>`
-- Historical product milestone: `crown-X.Y.Z-<descriptor>`
-- Hotfix milestone: `crown-X.Y.Z-hotfix-<issue>`
+Current semantic product-release naming is governed by `docs/engineering/VERSIONING_AND_RELEASE_POLICY.md`.
+
+- Product release: `crown-vX.Y.Z`
+- Release candidate: `crown-vX.Y.Z-rc.N`
+- Hotfix release: `crown-vX.Y.Z-hotfix.N`
+- Environment deployment identity, where still required by deployment tooling: `prod-deploy-YYYYMMDD-<short-sha>`
+
+Historical tag names remain immutable and are not renamed simply to match the current convention.
 
 A historical `crown-*` or `prod-deploy-*` tag does not become current Crown-CSMS production identity unless a current authorized release record explicitly selects, deploys, verifies, and accepts that exact identity.
 

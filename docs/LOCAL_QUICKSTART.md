@@ -1,12 +1,12 @@
 # Local Development Quick Start
 
-**Purpose:** Get Crown2026 running locally with demo data for testing category weights and other academics features.
+**Purpose:** Get CROWN running locally with demo data for testing category weights and other academics features.
 
 ## Prerequisites
 
 - Python 3.12+ installed
 - PostgreSQL running (or use SQLite for quick demos)
-- Node.js 18+ for frontend
+- Node.js 20 LTS for frontend
 
 ## Backend Setup (5 minutes)
 
@@ -52,7 +52,7 @@ python manage.py runserver 127.0.0.1:8000
 
 **Admin Credentials:**
 - Username: `admin`
-- Password: `Crown2026!`
+- Password: set through the `CROWN_DEMO_PASSWORD` environment variable
 
 **Test Backend:**
 ```powershell
@@ -88,7 +88,7 @@ npm run dev -- --port 3000
 ### Via API (For Testing):
 ```powershell
 # Get token
-$creds = @{username='admin';password='Crown2026!'} | ConvertTo-Json
+$creds = @{username='admin';password=$env:CROWN_DEMO_PASSWORD} | ConvertTo-Json
 $response = Invoke-RestMethod -Uri 'http://127.0.0.1:8000/api/auth/token/' `
   -Method POST -Headers @{'Content-Type'='application/json'} -Body $creds
 $token = $response.access
@@ -119,7 +119,8 @@ curl.exe -s 'http://127.0.0.1:8000/api/v1/academics/sections/<section_id>/catego
 python manage.py shell
 >>> from core.models import CustomUser
 >>> admin = CustomUser.objects.get(username='admin')
->>> admin.set_password('Crown2026!')
+>>> import os
+>>> admin.set_password(os.environ['CROWN_DEMO_PASSWORD'])
 >>> admin.save()
 ```
 
@@ -151,7 +152,7 @@ python manage.py seed_category_weights --school-id $SCHOOL_ID
 After following this guide:
 
 - ✅ **School:** Crown Demo School (deterministic UUID: a5351136-98fe-4d48-add0-fa8f62d9ceff)
-- ✅ **Admin User:** admin / Crown2026!
+- ✅ **Admin User:** `admin` with password supplied by `CROWN_DEMO_PASSWORD`
 - ✅ **Admissions Funnel:** 100 applicants with realistic stage distribution (golden_path_bootstrap)
 - ✅ **Courses:** 2 courses (MATH-101, ENG-101) with deterministic codes (seed_academics_demo)
 - ✅ **Sections:** 2 sections with term assignments (seed_academics_demo)
