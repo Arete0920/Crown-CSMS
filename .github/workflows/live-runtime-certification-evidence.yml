@@ -227,7 +227,7 @@ jobs:
           test -f ../../audit-artifacts/live-runtime-certification/current/certification-matrix.json
       - name: Upload tenant-context runtime evidence
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: tenant-context-runtime-evidence-${{ github.run_number }}-${{ github.event.workflow_run.head_sha || github.sha }}
           path: audit-artifacts/tenant-context/current/
@@ -235,7 +235,7 @@ jobs:
           retention-days: 30
       - name: Upload live runtime certification evidence
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: live-runtime-certification-evidence-${{ github.run_number }}-${{ github.event.workflow_run.head_sha || github.sha }}
           path: audit-artifacts/live-runtime-certification/current/
@@ -243,7 +243,7 @@ jobs:
           retention-days: 30
       - name: Upload Playwright report
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: live-runtime-certification-playwright-report-${{ github.run_number }}-${{ github.event.workflow_run.head_sha || github.sha }}
           path: frontend/dashboards/playwright-report/
