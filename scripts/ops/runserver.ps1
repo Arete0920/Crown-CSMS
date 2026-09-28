@@ -1,4 +1,4 @@
-# Crown2026 - Run Django server (stable mode)
+# CROWN - Run Django server (stable mode)
 Set-Location "$PSScriptRoot\backend"
 
 if (!(Test-Path ".\venv\Scripts\python.exe")) {

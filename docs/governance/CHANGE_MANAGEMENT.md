@@ -14,7 +14,7 @@ Create one pull request per coherent, independently reversible outcome. Before e
 - Separate materially different security, privacy, legal, schema, deployment, dependency, credential, or rollback boundaries.
 - Identify the final exact head and terminal applicable checks.
 - Distinguish repository proof from deployed-runtime proof.
-- Do not represent self-review or automated review as independent human approval.
+- Do not represent self-review, CI results, static analysis, or test results as independent human approval.
 - Do not use historical branches, issues, PRs, or workflow runs as current authority.
 - Do not close or discard work until unique content and acceptance criteria are dispositioned.
 

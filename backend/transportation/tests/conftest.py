@@ -15,6 +15,10 @@ def _legacy_transportation_client_uses_persistent_authority(request, monkeypatch
     ungranted.
     """
     module = request.module
+    # Only the historical functional suite uses the role-based client helper.
+    # Security suites must retain their own explicit grants and spoofing inputs.
+    if module.__name__.rsplit(".", 1)[-1] != "test_transportation":
+        return
     original = getattr(module, "_client", None)
     if original is None:
         return

@@ -38,3 +38,8 @@ Historical predecessor deployment, recovery, issue, and dashboard evidence may b
 - `../CURRENT_RELEASE_STATUS.md`
 
 The owner handoff requires the successor to understand which procedures are proven mechanics, which have current operational evidence, and which remain to be executed or explicitly accepted as residual risk.
+
+
+## School implementation
+
+Use `SCHOOL_IMPLEMENTATION_RUNBOOK.md` as the canonical contract-to-go-live operating path for school implementations.

@@ -46,7 +46,7 @@ META_GATES = [
     },
 ]
 
-GITHUB_REPO = "tcmegahan/Crown2026"
+GITHUB_REPO = "Arete0920/Crown-CSMS"
 
 # Last known successful prod deploy tag — overwritten each deploy via PROD_DEPLOY_TAG app setting.
 _FALLBACK_DEPLOY_TAG = "prod-deploy-2026-02-22-1315"

@@ -6,7 +6,8 @@ from rest_framework.response import Response
 from academics.models import Section as AcademicSection
 from academics.models import TeacherAssignment
 from academics.models import Term as AcademicTerm
-from core.models import Student as CoreStudent
+from core.models import Student as CoreStudent, StudentIdentityLink
+from households.scoping import get_request_school_id
 from crown_api.access_households import resolve_household_access
 from crown_api.models_scheduling_core import (
     Section as LegacySection,
@@ -255,9 +256,23 @@ def student_schedule(request, student_id):
         return unauth
 
     access = resolve_household_access(request)
-    if not access.is_staff:
+    school_id = get_request_school_id(request, required=True)
+    student = get_object_or_404(CoreStudent, id=student_id, school_id=school_id)
+    link = StudentIdentityLink.objects.filter(
+        school_id=school_id, core_student=student,
+        compatibility_student__school_id=school_id,
+        compatibility_student__is_active=True,
+        verification_status=StudentIdentityLink.STATUS_VERIFIED,
+    ).exclude(evidence_reference="").first()
+    if not access.is_staff and not (link and link.compatibility_student.account_id == request.user.id):
         get_core_student_or_404_for_request(request=request, student_id=student_id)
-    student = get_object_or_404(CoreStudent, id=student_id)
+    if link is not None:
+        sections = AcademicSection.objects.filter(
+            school_id=school_id, term_ref__school_id=school_id, term_ref__active=True,
+            enrollments__school_id=school_id,
+            enrollments__student_id=link.compatibility_student_id,
+        ).select_related("term_ref", "course").distinct().order_by("term_ref__code", "course__code", "id")
+        return Response([_canonical_section_payload(section) for section in sections])
 
     enrollments = (
         LegacySectionEnrollment.objects.filter(student=student, active=True)
@@ -265,3 +280,27 @@ def student_schedule(request, student_id):
         .order_by("section__term__code", "section__course__course_code", "section__section_code")
     )
     return Response(StudentScheduleEnrollmentSerializer(enrollments, many=True).data)
+
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def my_schedule(request):
+    """Published recurring meetings for the authenticated student's or teacher's identity."""
+    school_id = get_request_school_id(request, required=True)
+    user = request.user
+    qs = AcademicSection.objects.filter(school_id=school_id, term_ref__school_id=school_id,
+        term_ref__active=True).select_related("term_ref", "course")
+    if user.staff_id and user.staff.school_id == school_id and user.staff.status == "ACTIVE":
+        qs = qs.filter(teacher_assignments__staff_id=user.staff_id,
+                       teacher_assignments__school_id=school_id)
+    else:
+        student_ids = StudentIdentityLink.objects.filter(
+            school_id=school_id, core_student__school_id=school_id,
+            compatibility_student__school_id=school_id, compatibility_student__account=user,
+            compatibility_student__is_active=True,
+            verification_status=StudentIdentityLink.STATUS_VERIFIED,
+        ).exclude(evidence_reference="").values_list("compatibility_student_id", flat=True)
+        qs = qs.filter(enrollments__school_id=school_id, enrollments__student_id__in=student_ids)
+    rows = [_canonical_section_payload(section) for section in qs.distinct().order_by("course__code", "id")]
+    return Response([row for row in rows if row["meetings"]])

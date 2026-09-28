@@ -101,3 +101,20 @@ def test_permission_in_other_school_does_not_authorize_wizard():
     assert client.get(URL).status_code == 403
     assert client.post(URL, {"late_fee_grace_minutes": 9}, format="json").status_code == 403
     assert not AftercareProgramConfig.objects.filter(school_fk=requested_school).exists()
+
+
+def test_permission_scope_uses_canonical_school_without_middleware():
+    """Direct DRF invocation must never fall back to roles from all schools."""
+    from rest_framework.test import APIRequestFactory, force_authenticate
+    from aftercare.wizard_api import aftercare_setup_wizard
+
+    school = School.objects.create(name="Direct Wizard Requested")
+    other_school = School.objects.create(name="Direct Wizard Other")
+    user = _user(school, "direct-cross-school")
+    _grant(user, other_school, "direct_wizard_other", "extended_care.view", "extended_care.edit")
+    factory = APIRequestFactory()
+    for method in ("get", "post"):
+        request = getattr(factory, method)(URL, {}, format="json", HTTP_X_SCHOOL_ID=str(school.id))
+        force_authenticate(request, user=user)
+        assert aftercare_setup_wizard(request).status_code == 403
+    assert not AftercareProgramConfig.objects.filter(school_fk=school).exists()

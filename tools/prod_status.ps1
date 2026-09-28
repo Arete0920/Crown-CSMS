@@ -3,7 +3,7 @@ $env:GH_PAGER = "cat"
 $env:NO_COLOR = "1"
 
 Write-Host "Latest deploy-prod.yml runs:" -ForegroundColor Cyan
-gh run list --workflow=deploy-prod.yml --repo tcmegahan/Crown2026 --limit 5
+gh run list --workflow=deploy-prod.yml --repo Arete0920/Crown-CSMS --limit 5
 
 Write-Host ""
 Write-Host "Latest prod-deploy tags:" -ForegroundColor Cyan

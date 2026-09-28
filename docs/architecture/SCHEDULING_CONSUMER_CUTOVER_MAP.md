@@ -1,7 +1,7 @@
 # Scheduling Consumer Cutover Map
 
-**Status:** Controlled compatibility/convergence map  
-**Active repository:** `Arete-Advisory-Group/Crown-CSMS`  
+**Status:** Controlled compatibility/convergence map
+**Active repository:** `Arete0920/Crown-CSMS`
 **Last reconciled:** 2026-08-17
 
 ## Canonical target
