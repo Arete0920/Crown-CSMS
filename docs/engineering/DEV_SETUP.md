@@ -6,11 +6,19 @@
 ## Repository
 
 ```bash
-git clone https://github.com/Arete-Advisory-Group/Crown-CSMS.git
+git clone https://github.com/Arete0920/Crown-CSMS.git
 cd Crown-CSMS
 ```
 
 Work from one isolated branch for one coherent outcome. Do not commit directly to `main`.
+
+## Supported toolchain
+
+- Python: 3.12
+- Node.js: 20 LTS
+- npm: use the version bundled with the supported Node 20 runtime unless the lockfile requires otherwise
+
+Version marker files at the repository root are the local-development defaults. CI workflow configuration remains the execution authority for each job.
 
 ## Backend
 

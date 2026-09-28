@@ -116,4 +116,21 @@ def test_permission_in_other_school_does_not_authorize_target_tenant():
     _grant(user, school_a)
     _grant(user, school_a, "transportation.edit")
     response = _client(user, school_b, spoofed_role="transportation_director").get(URL)
+    # Canonical tenant resolution conceals unauthorized cross-school targets.
+    assert response.status_code == 404
+
+
+def test_other_school_grant_does_not_authorize_home_school():
+    school_a = _school("Transport home scope")
+    school_b = _school("Transport foreign grant")
+    user = _user(school_a)
+    _grant(user, school_b)
+    _grant(user, school_b, "transportation.edit")
+    client = _client(user, school_a)
+    response = client.get(URL)
     assert response.status_code == 403
+    assert client.post(
+        URL,
+        {"name": "Denied foreign grant", "vehicle_type": "BUS", "capacity": 20},
+        format="json",
+    ).status_code == 403

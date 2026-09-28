@@ -20,3 +20,14 @@
 The production release is not legal certification. CROWN must not be represented as FERPA certified, COPPA certified, universally compliant, regulator approved, or legally approved for every intended customer or jurisdiction.
 
 Actual subprocessors, contracts, notices, retention schedules, data-lifecycle exercises, support access, incident notification, storage locations, and buyer-selected operating arrangements require qualified review and transaction-specific reconciliation.
+
+
+## Current readiness program
+
+The active compliance-readiness work is maintained in:
+
+- `docs/compliance/COMPLIANCE_READINESS_MATRIX.md`
+- `docs/compliance/SOC2_READINESS_PLAN.md`
+- `docs/compliance/STUDENT_PRIVACY_DATA_PROTECTION_PROGRAM.md`
+
+These documents define the current control, evidence, privacy, retention, vendor, incident-response, and audit-readiness workstream. They do not alter the boundary above: legal applicability and independent audit conclusions require qualified external review.

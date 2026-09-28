@@ -25,8 +25,8 @@ from aftercare.services import (
 from core.models import School
 
 User = get_user_model()
-AFTERCARE_URL = "/api/v1/little-lambs/enrollments/"
-ROSTER_URL = "/api/v1/little-lambs/roster/today/"
+AFTERCARE_URL = "/api/v1/aftercare/enrollments/"
+ROSTER_URL = "/api/v1/aftercare/roster/today/"
 
 
 def _school(s=""):
@@ -348,7 +348,7 @@ class TestModule026EndpointRegistration(TestCase):
         self.school = _school()
 
     def test_config_endpoint_not_500(self):
-        r = APIClient().get("/api/v1/little-lambs/config/", **_hdr(self.school.id))
+        r = APIClient().get("/api/v1/aftercare/config/", **_hdr(self.school.id))
         self.assertNotEqual(
             r.status_code, 500, f"500=server error on config URL, got {r.status_code}."
         )

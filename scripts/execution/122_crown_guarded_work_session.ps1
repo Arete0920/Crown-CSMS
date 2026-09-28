@@ -6,15 +6,13 @@ param(
     [string]$WorkItem = "50 Wizard Deep Dive",
 
     [string[]]$AllowedPrefixes = @(
-        ".github/copilot-instructions.md",
-        ".github/instructions/",
         "docs/operations/",
         "scripts/execution/120_wizard_inventory_audit.ps1",
         "scripts/execution/121_50_wizard_deep_dive_assessment.ps1",
-        "scripts/execution/122_crown_guarded_agent_session.ps1",
+        "scripts/execution/122_crown_guarded_work_session.ps1",
         "audit-artifacts/wizard-inventory/",
         "audit-artifacts/50-wizard-deep-dive/",
-        "audit-artifacts/guarded-agent-sessions/"
+        "audit-artifacts/guarded-work-sessions/"
     )
 )
 
@@ -44,7 +42,7 @@ function Get-Stamp {
 $RepoRoot = git rev-parse --show-toplevel
 Set-Location $RepoRoot
 
-$GuardRoot = "audit-artifacts\guarded-agent-sessions"
+$GuardRoot = "audit-artifacts\guarded-work-sessions"
 New-Item -ItemType Directory -Force -Path $GuardRoot | Out-Null
 $LatestFile = Join-Path $GuardRoot "LATEST.txt"
 
@@ -93,11 +91,11 @@ if ($Mode -eq "Start") {
     $SessionDir | Set-Content $LatestFile
 
     Write-Host ""
-    Write-Host "GUARDED SESSION STARTED"
+    Write-Host "GUARDED WORK SESSION STARTED"
     Write-Host "Session: $SessionDir"
     Write-Host "Backup branch: $BackupBranch"
     Write-Host ""
-    Write-Host "Give VS Code/Copilot only the bounded wizard task. Do not allow broad edits."
+    Write-Host "Keep the work bounded to the approved work item and allowed paths. Do not allow broad edits."
     exit 0
 }
 
@@ -194,7 +192,7 @@ if ($Mode -eq "Close") {
     }
 
     $Summary = @"
-Crown Guarded VS Code Session Close
+Crown Guarded Work Session Close
 Generated: $((Get-Date).ToString("s"))
 
 Decision
@@ -233,7 +231,7 @@ Files To Review
     $Summary | Set-Content (Join-Path $SessionDir "SUMMARY.md")
 
     Write-Host ""
-    Write-Host "GUARDED SESSION CLOSED"
+    Write-Host "GUARDED WORK SESSION CLOSED"
     Write-Host "Decision: $Decision"
     Write-Host "Session: $SessionDir"
     Write-Host ""

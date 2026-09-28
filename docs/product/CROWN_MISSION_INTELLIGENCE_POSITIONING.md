@@ -1,7 +1,7 @@
 # Crown Mission Intelligence Positioning
 
 ## Positioning Thesis
-Crown does not compete by offering generic black-box AI.
+Crown does not compete by offering generic black-box automated decisioning.
 
 Crown competes by offering mission-aligned, governance-safe, transparent institutional intelligence for Christian schools.
 
@@ -33,7 +33,7 @@ Crown’s advantage is:
 - board-ready explainable outputs
 
 ## Messaging to Avoid
-- black-box AI
+- black-box automated decisioning
 - autonomous decisions
 - algorithm says
 - auto-recommendation engine

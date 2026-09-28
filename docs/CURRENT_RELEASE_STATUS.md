@@ -1,73 +1,47 @@
 # CROWN Current Release Status
 
-**Status:** PRODUCTION-READY ENGINEERING CERTIFIED  
-**Last verified:** 2026-08-18  
-**Current repository identity:** resolve exact `refs/heads/main` from Git/GitHub at the decision point; do not copy a mutable SHA into this file  
-**Certification authority:** `docs/release/CROWN_PRODUCTION_READY_ENGINEERING_CERTIFICATION_20260818.md`
+**Status:** RELEASE CANDIDATE — EXACT-HEAD VERIFICATION REQUIRED
+**Last repository security update:** 2026-09-26
+**Current repository identity:** resolve exact `refs/heads/main` from Git/GitHub at the decision point
+**Release rule:** production-ready status is granted only to an exact repository head whose applicable security, dependency, test, schema, tenant-isolation, build, and release gates are passing.
 
 ## Current decision
 
-CROWN is certified as production-ready from a product, codebase, architecture, security, tenant-isolation, authorization, data-integrity, functional, testing, repository-engineering, and handoff-preparation standpoint. The current Crown-CSMS `main` containing the certification record is the production-ready source baseline.
+The August 18, 2026 engineering certification remains historical evidence for that certified baseline. Subsequent dependency, scheduling, architecture, and repository-governance changes require exact-head verification before a current production-ready claim is made.
 
-The engineering certification does not claim that a successor production environment has already been deployed, operationally accepted, or transferred. Repository engineering completion and production-ready source certification are distinct from transaction-time deployment and successor operational transfer.
+The security dependency update merged on September 26, 2026 and upgrades affected backend and frontend dependencies. Current release readiness must be evaluated on the resulting exact head plus any subsequently merged release-hygiene change.
 
-## Current repository state
+## Required release gates
 
-- CROWN product readiness: **PASS / PRODUCTION-READY**
-- Production-ready engineering certification: **PASS**
-- Crown-CSMS active successor repository: **VERIFIED**
-- Exact current repository source: **resolve current `refs/heads/main` from Git/GitHub**
-- Successor migration and engineering gap-closure program: **COMPLETED / HISTORICAL PROGRAM RECORD**
-- Repository authority/hygiene/security closure through PR #116: **COMPLETED / MERGED**
-- Release/change governance: **PASS**
-- Core product/module implementation: **PASS / 95+**
-- Canonical wizard runtime certification: **PASS / 95+**
-- Dashboard implementation/structural integrity: **PASS / 95+**
-- Heritage sandbox/full-surface engineering readiness: **PASS / 95+**
-- Security, tenant isolation, and persistent authorization: **PASS / 95+**
-- Finance/accounting/financial-aid engineering: **PASS / 95+**
-- Architecture, repository hygiene, and handoff preparation: **PASS / 95+**
-- Successor production deployment/runtime identity: **TRANSACTION-TIME / NOT YET ASSERTED**
-- Buyer operational turnover: **POST-CONTRACT / PENDING AUTHORIZED PARTY ACCEPTANCE**
-- Payment processing: **DISABLED / FAIL CLOSED / NOT AUTHORIZED FOR ACTIVATION**
+A production-ready release requires, as applicable:
 
-## Exact-identity rule
+1. dependency audit and vulnerability scan PASS;
+2. CodeQL/static-analysis PASS;
+3. secret scan PASS;
+4. backend and frontend test gates PASS;
+5. tenant-isolation and authorization gates PASS;
+6. schema and migration-governance PASS;
+7. build and route certification PASS;
+8. repository-policy and release-authority PASS;
+9. no unresolved critical or high-severity findings;
+10. exact release head recorded in immutable release evidence.
 
-For every deployment, release, transfer, rollback, diligence, or acceptance decision that requires exact identity:
+**No successor production tag or release is asserted by this record.**
 
-1. resolve the current `refs/heads/main` SHA directly from Git/GitHub;
-2. record the exact SHA in the immutable evidence, release, transfer, or signed transaction record;
-3. verify ancestry and required checks for the applicable exact SHA or certified PR head; and
-4. never substitute an older copied SHA from mutable documentation.
+## Operational boundary
 
-## Certification and operational boundary
-
-Production-ready engineering certification means the software product and repository have met the approved engineering readiness threshold. It is not equivalent to stating that a specific production environment is already running or accepted.
-
-The following remain transaction-time or environment-specific and do not reopen the completed product-engineering program:
-
-1. exact selected deployment/runtime identity;
-2. successor-controlled cloud, domain, certificate, monitoring, backup, billing, and vendor accounts;
-3. authorized immutable rollback execution evidence against the selected production identity;
-4. operational backup/restore evidence tied to that identity, including measured RTO/RPO where required;
-5. production monitoring ownership, routing, and incident-response acceptance;
-6. credential/recovery-factor rotation and seller-access removal; and
-7. successor acceptance of scope, limitations, residual risks, and operating procedures.
-
-## Governance boundary
-
-This record does not claim independent third-party certification or independent human approval. The product owner does not self-review or self-approve as an independent reviewer. When an eligible independent reviewer is unavailable, the approved `SOLO_DEVELOPER_APPROVED_WORKAROUND` governs the compensating-control path. Automated assistance is technical evidence, not approval authority.
+Repository release readiness is separate from environment-specific production operation. Deployment, monitoring ownership, credentials, backups, restore exercises, provider activation, and runtime acceptance must be verified for the selected production environment.
 
 ## Payment boundary
 
 **PAYMENT PROCESSING: DISABLED / FAIL CLOSED / NOT AUTHORIZED FOR ACTIVATION**
 
-Provider selection and contracting, merchant credentials, transaction/webhook/settlement/refund/dispute/reconciliation certification, and applicable qualified legal/accounting review remain separate authorization requirements.
+Provider selection and contracting, merchant credentials, transaction/webhook/settlement/refund/dispute/reconciliation certification, and applicable legal/accounting review remain separate authorization requirements.
 
 ## Claim boundary
 
-The approved current statement is:
+Until the current exact head passes all applicable release gates, the approved statement is:
 
-> **CROWN is a production-ready software product and the current Crown-CSMS `main` is the production-ready source baseline. Actual production deployment, environment-specific operational certification, payment-provider activation, and successor turnover remain separate authorized execution and acceptance activities.**
+> **CROWN has an established production-engineering baseline and is under exact-head release verification following current security and repository-maintenance updates.**
 
-Do not claim a successor production deployment, completed operational transfer, payment activation, legal/regulatory certification, or independent human certification unless current exact evidence and the appropriate authority establish that separate claim.
+After all applicable gates pass on the exact release head, this record may be updated to identify that head as the current production-ready source baseline.

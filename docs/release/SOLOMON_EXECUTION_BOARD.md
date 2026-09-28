@@ -24,12 +24,12 @@ Primary strategy reference: `docs/solomon/SOLOMON_COMPREHENSIVE_PLATFORM_BUILD_P
 | S-107 | Provenance preflight gate | Preflight gate spec drafted with fail-closed rules for missing provenance fields | New gate spec under `docs/solomon/` | OPEN |
 | S-108 | Advisory framework categories | Internal consulting taxonomy defined across governance/operations/admissions/finance/curriculum/spiritual-life | New advisory taxonomy doc under `docs/solomon/` | OPEN |
 | S-109 | Spiritual-life governance process | Governance workflow for spiritual-life content ownership/approval/review formalized | New process doc under `docs/solomon/` | OPEN |
-| S-110 | SOLOMON positioning brief | Packaging and market language finalized (Lite/Core/Professional/Enterprise) without AI-chatbot framing | New positioning brief under `docs/solomon/` | OPEN |
+| S-110 | SOLOMON positioning brief | Packaging and market language finalized (Lite/Core/Professional/Enterprise) without chatbot framing | New positioning brief under `docs/solomon/` | OPEN |
 
 ## Execution Rules
 
 - Governance-first: no canonical promotion without owner + approver + provenance.
 - Rights-first: no publisher bulk ingestion without explicit permission.
-- AI-quiet: external language remains guidance-focused, not chatbot-focused.
+- External language remains guidance-focused and not chatbot-focused.
 - Proof-per-commit: each move advances with explicit artifact evidence.
 - No broad refactors: additive, surgical, evidence-first implementation only.

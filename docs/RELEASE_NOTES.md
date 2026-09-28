@@ -2,7 +2,7 @@
 
 ## Current Crown-CSMS turnover source — 2026-08-18
 
-- **Repository:** `Arete-Advisory-Group/Crown-CSMS`
+- **Repository:** `Arete0920/Crown-CSMS`
 - **Current source authority:** `docs/CURRENT_RELEASE_STATUS.md` and exact current `main`
 - **Owner-handoff authority reconciliation:** PR #103 merged and exact-head certified
 - **Migration/gap-closure issue #14:** completed historical engineering-program record
