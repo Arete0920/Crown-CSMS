@@ -6,7 +6,8 @@ from django.shortcuts import get_object_or_404
 from rest_framework import status
 from rest_framework.authentication import SessionAuthentication
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, BasePermission
+from core.permissions import user_has_permission
 from rest_framework.response import Response
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from drf_spectacular.types import OpenApiTypes
@@ -23,7 +24,18 @@ from .models import (
 )
 
 _AUTH = [JWTAuthentication, SessionAuthentication]
-_PERM = [IsAuthenticated]
+class BellSchedulePermission(BasePermission):
+    def has_permission(self, request, view):
+        from core.models import School
+        school_id = get_request_school_id(request, required=True)
+        school = get_object_or_404(School, id=school_id)
+        code = "scheduling.view" if request.method in ("GET", "HEAD", "OPTIONS") else "scheduling.configure"
+        if request.path.endswith("/commit/"):
+            code = "scheduling.publish"
+        return user_has_permission(request.user, code, school=school)
+
+
+_PERM = [IsAuthenticated, BellSchedulePermission]
 logger = logging.getLogger(__name__)
 
 

@@ -105,7 +105,7 @@ Complete:
 - complete CI workflow, trigger, command, artifact, timeout and proof-owner inventory;
 - classification of every workflow as merge gate, release gate, runtime evidence, scheduled assurance, advisory diagnostic or obsolete duplicate;
 - consolidation only where equivalence and rollback are proven;
-- repository AI-pattern remediation for release-relevant active automation and buyer-facing source hygiene, without delaying runtime proof for low-severity cosmetic findings.
+- repository maintainability-pattern remediation for release-relevant active automation and buyer-facing source hygiene, without delaying runtime proof for low-severity cosmetic findings.
 
 **Stage D exit:** compliance/legal scope accepted, CI authority unambiguous, and no unresolved critical or high-severity hygiene defect remains.
 
@@ -128,7 +128,7 @@ After Stages A-D pass on the same release identity:
 2. Settle PR #1435: production target and final-stage authority.
 3. Settle PR #1428: CI ownership and recovery execution packets.
 4. Settle PR #1429: vendor-neutral engineering authority.
-5. Settle PR #1433: human ownership and AI-assistance controls.
+5. Settle PR #1433: human ownership and engineering-accountability controls.
 6. Settle PR #1434: deterministic repository-pattern inventory and stale triage removal.
 7. Diagnose and repair the shared frontend `npm ci` / frontend-smoke baseline affecting unrelated PRs.
 8. Produce the complete application-surface-to-proof coverage inventory.

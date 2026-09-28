@@ -36,7 +36,7 @@ The original process assigned operational lanes to the Founder/Product Owner, au
 ## Current controlled startup sequence
 
 1. Confirm the current branch, exact head SHA, remote alignment, and worktree status.
-2. Read `AGENTS.md`, `docs/CURRENT_RELEASE_STATUS.md`, the module canon, completion matrix, data-ownership matrix, permission matrix, dashboard-fit matrix, and review RACI.
+2. Read `docs/engineering/REPOSITORY_WORKFLOW.md`, `docs/CURRENT_RELEASE_STATUS.md`, the module canon, completion matrix, data-ownership matrix, permission matrix, dashboard-fit matrix, and review RACI.
 3. Define one bounded module or control lane.
 4. Inventory relevant models, migrations, services, APIs, permissions, tenant controls, frontend routes, tests, runtime dependencies, and evidence.
 5. Identify unsupported claims, duplicate truth, missing wiring, stale records, and blockers.

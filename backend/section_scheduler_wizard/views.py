@@ -21,6 +21,8 @@ from section_scheduler_wizard.models import SectionPlacement, SectionSchedulerWi
 from term_structure_wizard.models import MarkingPeriod
 from drf_spectacular.utils import extend_schema
 from drf_spectacular.types import OpenApiTypes
+from rest_framework.exceptions import ValidationError
+from .services import normalize, publish, undo, snapshot
 
 _AUTH = [JWTAuthentication, SessionAuthentication]
 _VIEW = [CrownModulePermission("scheduling.view")]
@@ -120,7 +122,7 @@ def options(request, session_id):
     for template in DayTemplate.objects.filter(schedule=schedule).order_by("ordering", "template_code"):
         blocks = [{"period_block_id": str(block.id), "code": block.code, "name": block.label, "start_time": str(block.start_time), "end_time": str(block.end_time)} for block in PeriodBlock.objects.filter(template=template).order_by("ordering", "start_time", "code")]
         templates.append({"day_template_id": str(template.id), "template_code": template.template_code, "name": template.template_code, "blocks": blocks})
-    return Response({"academic_year_id": str(sess.academic_year_id), "term_code": sess.term_code, "sections": section_rows, "rooms": room_rows, "day_templates": templates})
+    return Response({"academic_year_id": str(sess.academic_year_id), "term_code": sess.term_code, "sections": section_rows, "rooms": room_rows, "day_templates": templates, "placements": [snapshot(p) for p in SectionPlacement.objects.filter(school_id=school_id, academic_year_id=sess.academic_year_id, section__term=sess.term_code, is_active=True)]})
 
 
 @extend_schema(responses=OpenApiTypes.OBJECT)
@@ -132,43 +134,14 @@ def set_sections(request, session_id):
     sess = _get_session(session_id, school_id)
     if sess.status not in ("configured", "sections_set"):
         return Response({"error": "set_sections requires configured state"}, status=400)
-    rows = request.data.get("sections")
-    if not isinstance(rows, list) or not rows:
-        return Response({"error": "sections must be a non-empty list"}, status=400)
-    schedule = _active_schedule(school_id, sess.academic_year)
-    if not schedule:
-        return Response({"error": "No active BellSchedule for this AcademicYear"}, status=400)
-    normalized = []
-    seen_meetings = set()
-    for i, row in enumerate(rows):
-        if not isinstance(row, dict):
-            return Response({"error": f"sections[{i}] must be an object"}, status=400)
-        try:
-            section_id = _uuid(row.get("section_id"), f"sections[{i}].section_id")
-            template_id = _uuid(row.get("day_template_id"), f"sections[{i}].day_template_id")
-            block_id = _uuid(row.get("period_block_id"), f"sections[{i}].period_block_id")
-            room_id = _uuid(row.get("room_id"), f"sections[{i}].room_id") if row.get("room_id") else None
-        except ValueError as exc:
-            return Response({"error": str(exc)}, status=400)
-        meeting_key = (section_id, template_id, block_id)
-        if meeting_key in seen_meetings:
-            return Response({"error": f"sections[{i}] duplicates the same section/template/block meeting"}, status=400)
-        seen_meetings.add(meeting_key)
-        section = _canonical_section_for_session(section_id, school_id, sess)
-        if not section:
-            return Response({"error": f"sections[{i}].section_id is not a canonical section for this school/year/term"}, status=400)
-        template = DayTemplate.objects.filter(id=template_id, schedule=schedule).first()
-        if not template:
-            return Response({"error": f"sections[{i}].day_template_id is invalid"}, status=400)
-        block = PeriodBlock.objects.filter(id=block_id, template=template).first()
-        if not block:
-            return Response({"error": f"sections[{i}].period_block_id is invalid for the selected template"}, status=400)
-        if room_id and not Room.objects.filter(id=room_id, school__id=school_id, is_active=True).exists():
-            return Response({"error": f"sections[{i}].room_id is not an active room for this school"}, status=400)
-        normalized.append({"section_id": str(section_id), "room_id": str(room_id) if room_id else None, "day_template_id": str(template_id), "period_block_id": str(block_id)})
-    sess.sections = normalized
-    sess.status = "sections_set"
-    sess.save(update_fields=["sections", "status"])
+    with transaction.atomic():
+        sess = SectionSchedulerWizardSession.objects.select_for_update().get(id=sess.id, school_id=school_id)
+        if sess.status not in ("configured", "sections_set"):
+            return Response({"error": "Reload the schedule before editing"}, status=409)
+        normalized = normalize(request.data.get("sections"), sess)
+        sess.sections = normalized
+        sess.status = "sections_set"
+        sess.save(update_fields=["sections", "status"])
     return Response({"status": sess.status, "count": len(normalized)})
 
 
@@ -179,68 +152,25 @@ def set_sections(request, session_id):
 def commit(request, session_id):
     school_id = get_request_school_id(request, required=True)
     sess = _get_session(session_id, school_id)
-    if sess.status == "committed":
+    if sess.status in ("committed", "verified"):
         return Response({"status": sess.status, **(sess.commit_result or {})})
     if sess.status != "sections_set":
         return Response({"error": "Commit requires sections_set state"}, status=400)
     if request.data.get("confirm") is not True:
         return Response({"error": "confirm must be true"}, status=400)
-    ay = sess.academic_year
-    created = 0
-    updated = 0
     try:
         with transaction.atomic():
-            AcademicYear.objects.select_for_update().get(id=ay.id, school_id=school_id)
-            staged_keys = {_placement_key(row["section_id"], row["day_template_id"], row["period_block_id"]) for row in (sess.sections or [])}
-            all_existing = list(SectionPlacement.objects.select_for_update().filter(school_id=school_id, academic_year=ay, is_active=True))
-            existing = [placement for placement in all_existing if (placement.section_id, placement.day_template_id, placement.period_block_id) not in staged_keys]
-            existing_room_slots = {(p.room_id, p.day_template_id, p.period_block_id) for p in existing if p.room_id}
-            existing_teacher_slots = defaultdict(set)
-            for placement in existing:
-                existing_teacher_slots[(placement.day_template_id, placement.period_block_id)].update(_teacher_ids(placement.section_id, school_id))
-            batch_room_slots = set()
-            batch_teacher_slots = defaultdict(set)
-            resolved = []
-            for i, row in enumerate(sess.sections or []):
-                section = _canonical_section_for_session(UUID(row["section_id"]), school_id, sess)
-                if not section:
-                    return Response({"error": f"sections[{i}] canonical section no longer valid"}, status=400)
-                template = DayTemplate.objects.filter(id=row["day_template_id"], schedule__school__id=school_id, schedule__academic_year=ay, schedule__is_active=True).first()
-                block = PeriodBlock.objects.filter(id=row["period_block_id"], template=template).first() if template else None
-                if not template or not block:
-                    return Response({"error": f"sections[{i}] bell-schedule placement no longer valid"}, status=400)
-                room = None
-                if row.get("room_id"):
-                    room = Room.objects.filter(id=row["room_id"], school__id=school_id, is_active=True).first()
-                    if not room:
-                        return Response({"error": f"sections[{i}] room no longer valid"}, status=400)
-                slot = (template.id, block.id)
-                room_slot = (room.id if room else None, template.id, block.id)
-                if room and (room_slot in existing_room_slots or room_slot in batch_room_slots):
-                    return Response({"error": f"Room collision at {template.template_code}:{block.code}"}, status=400)
-                if room:
-                    batch_room_slots.add(room_slot)
-                teachers = _teacher_ids(section.id, school_id)
-                if teachers & existing_teacher_slots[slot] or teachers & batch_teacher_slots[slot]:
-                    return Response({"error": f"Teacher collision at {template.template_code}:{block.code}"}, status=400)
-                batch_teacher_slots[slot].update(teachers)
-                resolved.append((section, room, template, block))
-            for section, room, template, block in resolved:
-                placement = SectionPlacement.objects.filter(section=section, day_template=template, period_block=block, is_active=True).first()
-                if placement is None:
-                    SectionPlacement.objects.create(section=section, school_id=school_id, academic_year=ay, room=room, day_template=template, period_block=block, is_active=True)
-                    created += 1
-                else:
-                    placement.room = room
-                    placement.academic_year = ay
-                    placement.school_id = school_id
-                    placement.save(update_fields=["room", "academic_year", "school", "updated_at"])
-                    updated += 1
-            sess.commit_result = {"created": created, "updated": updated, "total": len(resolved), "replace_semantics": False}
+            sess = SectionSchedulerWizardSession.objects.select_for_update().get(id=sess.id, school_id=school_id)
+            if sess.status in ("committed", "verified"):
+                return Response({"status": sess.status, **(sess.commit_result or {})})
+            if sess.status != "sections_set":
+                return Response({"error": "Reload the schedule before publishing"}, status=409)
+            AcademicYear.objects.select_for_update().get(id=sess.academic_year_id, school_id=school_id)
+            sess.commit_result = publish(sess)
             sess.status = "committed"
             sess.save(update_fields=["commit_result", "status"])
     except IntegrityError:
-        return Response({"error": "Schedule collision detected while publishing; no changes were committed"}, status=409)
+        return Response({"error": "Schedule collision detected; no changes were committed"}, status=409)
     return Response({"status": sess.status, **sess.commit_result})
 
 
@@ -253,13 +183,53 @@ def verify(request, session_id):
     sess = _get_session(session_id, school_id)
     if sess.status not in ("committed", "verified"):
         return Response({"error": "Verify requires committed state"}, status=400)
-    expected_keys = {_placement_key(row["section_id"], row["day_template_id"], row["period_block_id"]) for row in (sess.sections or [])}
-    placements = list(SectionPlacement.objects.filter(school_id=school_id, academic_year_id=sess.academic_year_id, section_id__in={key[0] for key in expected_keys}, is_active=True).select_related("section__course", "room", "day_template", "period_block"))
-    actual_by_key = {(p.section_id, p.day_template_id, p.period_block_id): p for p in placements}
-    missing = sorted(["|".join(str(value) for value in key) for key in expected_keys - set(actual_by_key)])
-    if missing:
-        return Response({"error": "Placement verification mismatch", "missing_meetings": missing}, status=409)
-    rows = [{"section_id": str(actual_by_key[key].section_id), "course_code": actual_by_key[key].section.course.code, "room_code": actual_by_key[key].room.code if actual_by_key[key].room else None, "template_code": actual_by_key[key].day_template.template_code, "block_code": actual_by_key[key].period_block.code} for key in sorted(expected_keys, key=lambda item: tuple(str(value) for value in item))]
+    receipt = sess.commit_result or {}
+    if receipt.get("undone"):
+        return Response({"error": "This publication has been undone"}, status=409)
+    if "after" in receipt:
+        actual = {str(p.id): p for p in SectionPlacement.objects.filter(
+            school_id=school_id, academic_year_id=sess.academic_year_id,
+            id__in=[r["placement_id"] for r in receipt["after"]], is_active=True)}
+        if any(r["placement_id"] not in actual or
+               snapshot(actual[r["placement_id"]]) != r for r in receipt["after"]):
+            return Response({"error": "The published schedule has changed"}, status=409)
+        if SectionPlacement.objects.filter(school_id=school_id,
+                id__in=[r["placement_id"] for r in receipt["before"]], is_active=True).exists():
+            return Response({"error": "A removed meeting has been restored"}, status=409)
+        sess.status = "verified"
+        sess.save(update_fields=["status"])
+        return Response({"status": sess.status, "count": len(actual), "placements": receipt["after"]})
+    # Preserve verification for publications made before reversible receipts existed.
+    expected = sess.sections or []
+    actual = {(str(p.section_id), str(p.day_template_id), str(p.period_block_id)): p
+              for p in SectionPlacement.objects.filter(school_id=school_id,
+                  academic_year_id=sess.academic_year_id, is_active=True)}
+    for row in expected:
+        placement = actual.get((row["section_id"], row["day_template_id"], row["period_block_id"]))
+        if placement is None or (str(placement.room_id) if placement.room_id else None) != row.get("room_id"):
+            return Response({"error": "Placement verification mismatch"}, status=409)
     sess.status = "verified"
     sess.save(update_fields=["status"])
-    return Response({"status": sess.status, "sections": rows, "count": len(rows)})
+    return Response({"status": sess.status, "count": len(expected)})
+
+
+@extend_schema(responses=OpenApiTypes.OBJECT)
+@api_view(["POST"])
+@authentication_classes(_AUTH)
+@permission_classes(_PUBLISH)
+def undo_publication(request, session_id):
+    school_id = get_request_school_id(request, required=True)
+    if request.data.get("confirm") is not True:
+        return Response({"error": "confirm must be true"}, status=400)
+    try:
+        with transaction.atomic():
+            sess = get_object_or_404(SectionSchedulerWizardSession.objects.select_for_update(),
+                                    id=session_id, school_id=school_id)
+            if sess.status not in ("committed", "verified"):
+                return Response({"error": "Only a published schedule can be undone"}, status=409)
+            AcademicYear.objects.select_for_update().get(id=sess.academic_year_id, school_id=school_id)
+            sess.commit_result = undo(sess)
+            sess.save(update_fields=["commit_result"])
+    except IntegrityError:
+        return Response({"error": "The previous schedule now conflicts; nothing was changed"}, status=409)
+    return Response({"status": "undone", **sess.commit_result})

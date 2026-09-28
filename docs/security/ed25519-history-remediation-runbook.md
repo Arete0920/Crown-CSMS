@@ -42,7 +42,7 @@ Before rewriting refs, create one encrypted, access-controlled preservation copy
 Perform this operation from a clean maintenance clone with all intended branches and tags fetched. Coordinate a repository maintenance window before changing shared refs.
 
 ```bash
-git clone --mirror https://github.com/tcmegahan/Crown2026.git Crown2026-remediation.git
+git clone --mirror https://github.com/Arete0920/Crown-CSMS.git Crown2026-remediation.git
 cd Crown2026-remediation.git
 
 git filter-repo \

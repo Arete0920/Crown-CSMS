@@ -10,7 +10,7 @@ if (Get-Variable -Name PSNativeCommandUseErrorActionPreference -ErrorAction Sile
     $PSNativeCommandUseErrorActionPreference = $false
 }
 
-$Repository = 'tcmegahan/Crown2026'
+$Repository = 'Arete0920/Crown-CSMS'
 $AuthorizedBaseSha = [string]::Concat(@(
     'b78e36fc'
     '1b5d5f4e'
