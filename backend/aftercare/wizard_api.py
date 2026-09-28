@@ -2,6 +2,7 @@ from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
+from core.models import School
 from core.permissions import user_has_permission
 
 from .serializers import AftercareProgramConfigSerializer
@@ -9,11 +10,11 @@ from .services import ensure_config
 from .tenant import school_id_from_request
 
 
-def _has_permission(request, code: str) -> bool:
+def _has_permission(request, code: str, school: School) -> bool:
     user = getattr(request, "user", None)
     if not user or not getattr(user, "is_authenticated", False):
         return False
-    return user_has_permission(user, code, school=getattr(request, "school", None))
+    return user_has_permission(user, code, school=school)
 
 
 def _forbidden():
@@ -24,14 +25,18 @@ def _forbidden():
 def aftercare_setup_wizard(request):
     """Read or update the tenant's canonical extended-care program config."""
     school_id = school_id_from_request(request, required=True)
+    # Permission scope must match the canonical tenant used for config access.
+    school = School.objects.filter(pk=school_id).first()
+    if school is None:
+        return _forbidden()
 
     if request.method == "GET":
-        if not _has_permission(request, "extended_care.view"):
+        if not _has_permission(request, "extended_care.view", school):
             return _forbidden()
         cfg = ensure_config(school_id)
         return Response({"config": AftercareProgramConfigSerializer(cfg).data})
 
-    if not _has_permission(request, "extended_care.edit"):
+    if not _has_permission(request, "extended_care.edit", school):
         return _forbidden()
 
     cfg = ensure_config(school_id)
