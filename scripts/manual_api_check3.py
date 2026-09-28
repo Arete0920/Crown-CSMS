@@ -1,8 +1,9 @@
+import os
 import requests
 
 token_response = requests.post(
     "https://crown2026-api-dev.azurewebsites.net/api/auth/token/",
-    json={"username": "admin", "password": "Crown2026!"}
+    json={"username": "admin", "password": os.environ["DEV_ADMIN_PASSWORD"]}
 )
 token = token_response.json()['access']
 
