@@ -42,7 +42,10 @@ export default function CrownPassScannerPage() {
         reason: payload?.reason || "",
         ticketId: payload?.ticket_id || "",
       });
-      if (response.ok) setCredential("");
+      if (response.ok) {
+        setCredential("");
+        stopCamera();
+      }
     } catch (err) {
       setResult({ ok: false, result: "error", reason: String(err?.message || err) });
     } finally {
