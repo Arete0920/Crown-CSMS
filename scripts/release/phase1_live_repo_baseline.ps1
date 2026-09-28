@@ -231,10 +231,10 @@ $rootRulesetFiles = Get-ChildItem -Path $script:RepoRoot -File -Filter "ruleset_
         }
     }
 
-$repoApi = Invoke-GitHubPublicApi -Uri "https://api.github.com/repos/tcmegahan/Crown2026"
-$pullsApi = Invoke-GitHubPublicApi -Uri "https://api.github.com/repos/tcmegahan/Crown2026/pulls?state=open&per_page=100"
-$issuesApi = Invoke-GitHubPublicApi -Uri "https://api.github.com/repos/tcmegahan/Crown2026/issues?state=open&per_page=100"
-$releasesApi = Invoke-GitHubPublicApi -Uri "https://api.github.com/repos/tcmegahan/Crown2026/releases?per_page=100"
+$repoApi = Invoke-GitHubPublicApi -Uri "https://api.github.com/repos/Arete0920/Crown-CSMS"
+$pullsApi = Invoke-GitHubPublicApi -Uri "https://api.github.com/repos/Arete0920/Crown-CSMS/pulls?state=open&per_page=100"
+$issuesApi = Invoke-GitHubPublicApi -Uri "https://api.github.com/repos/Arete0920/Crown-CSMS/issues?state=open&per_page=100"
+$releasesApi = Invoke-GitHubPublicApi -Uri "https://api.github.com/repos/Arete0920/Crown-CSMS/releases?per_page=100"
 
 $openPulls = @()
 if ($pullsApi) { $openPulls = @($pullsApi) }
@@ -262,7 +262,7 @@ $workflowScheduleCount = @($workflowInventory | Where-Object { $_.has_schedule }
 $summary = [ordered]@{
     generated_at_utc = (Get-Date).ToUniversalTime().ToString("o")
     repo = [ordered]@{
-        name               = "tcmegahan/Crown2026"
+        name               = "Arete0920/Crown-CSMS"
         repo_root          = $script:RepoRoot
         origin_url         = $originUrl
         current_branch     = $currentBranch
@@ -335,7 +335,7 @@ $markdown = @"
 Generated UTC: $($summary.generated_at_utc)
 
 ## Repo
-- Name: tcmegahan/Crown2026
+- Name: Arete0920/Crown-CSMS
 - Repo root: $($summary.repo.repo_root)
 - Origin URL: $($summary.repo.origin_url)
 - Current branch: $($summary.repo.current_branch)

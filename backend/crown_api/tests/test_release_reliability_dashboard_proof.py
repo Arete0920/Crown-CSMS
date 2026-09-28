@@ -1,7 +1,7 @@
 """
 Release Reliability Dashboard — API permission and tenant behavior proof.
 
-Closes: tcmegahan/Crown2026#1111
+Closes: Arete0920/Crown-CSMS#1111
 
 Proof scope:
   1. Authentication required — unauthenticated → 401.

@@ -67,7 +67,7 @@
       "problemMatcher": []
     },
     {
-      "label": "CROWN: guarded session start prompt",
+      "label": "CROWN: guarded work session start prompt",
       "type": "shell",
       "command": "powershell",
       "args": [
@@ -75,12 +75,12 @@
         "-ExecutionPolicy",
         "Bypass",
         "-Command",
-        "$ErrorActionPreference='Stop'; $w = Read-Host 'Work item'; ./scripts/execution/122_crown_guarded_agent_session.ps1 -Mode Start -WorkItem $w"
+        "$ErrorActionPreference='Stop'; $w = Read-Host 'Work item'; ./scripts/execution/122_crown_guarded_work_session.ps1 -Mode Start -WorkItem $w"
       ],
       "problemMatcher": []
     },
     {
-      "label": "CROWN: guarded session close prompt",
+      "label": "CROWN: guarded work session close prompt",
       "type": "shell",
       "command": "powershell",
       "args": [
@@ -88,7 +88,7 @@
         "-ExecutionPolicy",
         "Bypass",
         "-Command",
-        "$ErrorActionPreference='Stop'; $w = Read-Host 'Work item'; ./scripts/execution/122_crown_guarded_agent_session.ps1 -Mode Close -WorkItem $w"
+        "$ErrorActionPreference='Stop'; $w = Read-Host 'Work item'; ./scripts/execution/122_crown_guarded_work_session.ps1 -Mode Close -WorkItem $w"
       ],
       "problemMatcher": []
     }

@@ -6132,19 +6132,19 @@
                  },
                  {
                      "area":  "reporting_exports",
-                     "path":  "docs/migrations/BLACKBAUD_MIGRATION.md",
+                     "path":  "docs/migrations/LEGACY_SOURCE_SYSTEM_MIGRATION.md",
                      "keywords":  "export, csv, report",
                      "is_test":  false
                  },
                  {
                      "area":  "reporting_exports",
-                     "path":  "docs/migrations/FACTS_MIGRATION.md",
+                     "path":  "docs/migrations/LEGACY_SOURCE_SYSTEM_MIGRATION.md",
                      "keywords":  "export, csv, report",
                      "is_test":  false
                  },
                  {
                      "area":  "reporting_exports",
-                     "path":  "docs/migrations/GRADELINK_MIGRATION.md",
+                     "path":  "docs/migrations/LEGACY_SOURCE_SYSTEM_MIGRATION.md",
                      "keywords":  "export, csv, report",
                      "is_test":  false
                  },
@@ -8292,7 +8292,7 @@
                  },
                  {
                      "area":  "transcripts_reportcards",
-                     "path":  "docs/migrations/BLACKBAUD_MIGRATION.md",
+                     "path":  "docs/migrations/LEGACY_SOURCE_SYSTEM_MIGRATION.md",
                      "keywords":  "graduation",
                      "is_test":  false
                  },

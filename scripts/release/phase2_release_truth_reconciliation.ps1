@@ -105,10 +105,10 @@ if (-not (Test-Path $phase1Json)) {
 $outDir = Join-Path $script:RepoRoot "docs\release\live-audit\phase2"
 New-Item -ItemType Directory -Force -Path $outDir | Out-Null
 
-$repoApi = Invoke-GitHubPublicApi -Uri "https://api.github.com/repos/tcmegahan/Crown2026"
-$pullsApi = Invoke-GitHubPublicApi -Uri "https://api.github.com/repos/tcmegahan/Crown2026/pulls?state=open&per_page=100"
-$issuesApi = Invoke-GitHubPublicApi -Uri "https://api.github.com/repos/tcmegahan/Crown2026/issues?state=open&per_page=100"
-$releasesApi = Invoke-GitHubPublicApi -Uri "https://api.github.com/repos/tcmegahan/Crown2026/releases?per_page=100"
+$repoApi = Invoke-GitHubPublicApi -Uri "https://api.github.com/repos/Arete0920/Crown-CSMS"
+$pullsApi = Invoke-GitHubPublicApi -Uri "https://api.github.com/repos/Arete0920/Crown-CSMS/pulls?state=open&per_page=100"
+$issuesApi = Invoke-GitHubPublicApi -Uri "https://api.github.com/repos/Arete0920/Crown-CSMS/issues?state=open&per_page=100"
+$releasesApi = Invoke-GitHubPublicApi -Uri "https://api.github.com/repos/Arete0920/Crown-CSMS/releases?per_page=100"
 
 $openPulls = @()
 if ($pullsApi) { $openPulls = @($pullsApi) }
@@ -226,8 +226,8 @@ foreach ($relativeDoc in $targetDocs) {
 
 $referencedPrStates = New-Object System.Collections.Generic.List[object]
 foreach ($prNumber in ($allReferencedPrs | Sort-Object { [int]$_ })) {
-    $prApi = Invoke-GitHubPublicApi -Uri "https://api.github.com/repos/tcmegahan/Crown2026/pulls/$prNumber"
-    $issueApi = Invoke-GitHubPublicApi -Uri "https://api.github.com/repos/tcmegahan/Crown2026/issues/$prNumber"
+    $prApi = Invoke-GitHubPublicApi -Uri "https://api.github.com/repos/Arete0920/Crown-CSMS/pulls/$prNumber"
+    $issueApi = Invoke-GitHubPublicApi -Uri "https://api.github.com/repos/Arete0920/Crown-CSMS/issues/$prNumber"
 
     $state = $null
     $mergedAt = $null
@@ -349,7 +349,7 @@ $liveTruthMarkdown = @"
 Generated UTC: $($phase2Summary.generated_at_utc)
 
 ## Current Public Repo State
-- Repository: tcmegahan/Crown2026
+- Repository: Arete0920/Crown-CSMS
 - Default branch: $($currentState.default_branch)
 - Open pull requests: $($currentState.open_pull_requests)
 - Open issues: $($currentState.open_issues)

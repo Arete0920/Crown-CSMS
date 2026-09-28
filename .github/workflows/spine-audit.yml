@@ -34,7 +34,7 @@ jobs:
             "SECURITY.md"
             "CONTRIBUTING.md"
             "CODEOWNERS"
-            "AGENTS.md"
+            "docs/engineering/REPOSITORY_WORKFLOW.md"
           )
 
           for f in "${REQUIRED_FILES[@]}"; do

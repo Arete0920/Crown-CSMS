@@ -1,6 +1,6 @@
 # CROWN Documentation
 
-This directory contains the current architecture, engineering, operations, security, ownership-transfer, provenance, diligence, and release-authority documentation for CROWN.
+This directory contains the current architecture, engineering, operations, security, ownership-transfer, engineering-history, diligence, and release-authority documentation for CROWN.
 
 ## Documentation principles
 
@@ -38,9 +38,11 @@ Security posture, disclosure handling, secret hygiene, dependency controls, and 
 
 Repository and external-service transfer requirements. Start with `ownership/OWNER_HANDOFF.md`.
 
-### `provenance/`
+## Current versus historical material
 
-Controlled development lineage and attribution records.
+Only documents listed in `canonical/CANONICAL_DOCUMENT_INDEX.md` are current canonical authority. Dated audit, certification, sandbox, release, migration, and proof records outside the canonical index are historical or controlled supporting evidence unless a current canonical document explicitly incorporates them.
+
+Historical evidence should be moved under `archive/` when doing so does not break durable references. Do not delete evidence solely because it is old.
 
 ## Recommended reading order
 

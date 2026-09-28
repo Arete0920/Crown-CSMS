@@ -52,7 +52,7 @@ jobs:
           CUTOFF=$(date -d "60 days ago" +%s)
 
           PROTECTED_EXACT="main develop"
-          PROTECTED_PREFIXES="rc/ release/ stabilize/ hotfix/ copilot/"
+          PROTECTED_PREFIXES="rc/ release/ stabilize/ hotfix/"
 
           echo "=== STALE BRANCH REPORT (>60 days inactive) ==="
           echo "Cutoff date: $(date -d @$CUTOFF '+%Y-%m-%d')"
