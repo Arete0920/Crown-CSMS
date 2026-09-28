@@ -1,4 +1,3 @@
-import React from 'react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { cleanup, render, screen, fireEvent, waitFor } from '@testing-library/react';
 import SectionSchedulerWizard from './SectionSchedulerWizard.jsx';
