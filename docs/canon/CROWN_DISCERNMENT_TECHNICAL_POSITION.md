@@ -39,8 +39,8 @@ If SHAP is used, it should be treated as an implementation method, not the publi
 ## Public Product Language Rule
 Do not market the product as:
 - “SHAP platform”
-- “AI oracle”
-- “autonomous predictive engine”
+- “black-box oracle”
+- “autonomous decision engine”
 
 Preferred language:
 - explainable predictive analytics

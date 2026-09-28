@@ -1,7 +1,7 @@
 # Admissions Wizard Improvement Backlog (P0/P1/P2)
 
 Date: 2026-05-22
-Scope: Crown admissions funnel operation, function, and appearance improvements benchmarked against Blackbaud, Finalsite, Veracross, OpenApply, and Ravenna patterns.
+Scope: Crown admissions funnel operation, function, and appearance improvements derived from general admissions workflow research and school-user needs.
 
 Companion planning artifact:
 - docs/admissions/ADMISSIONS_WIZARD_SPRINT_BOARD_20260522.md
@@ -210,11 +210,6 @@ Process integration playbook:
 
 ## Competitor Pattern Traceability
 
-- Blackbaud patterns: lifecycle continuity, contracts/deposits, one-portal flow -> items 19, 25
-- Finalsite patterns: polished family trust UX, checklist communication automation -> items 3, 4, 8, 9, 25
-- Veracross patterns: reviewer packet depth, forecasting, analytics -> items 10, 12, 16
-- OpenApply patterns: workflow automation and parent progress visibility -> items 4, 5, 14, 22, 23
-- Ravenna patterns: account-first clarity and support discoverability -> items 3, 4, 6, 25
 
 ## Implementation Order
 

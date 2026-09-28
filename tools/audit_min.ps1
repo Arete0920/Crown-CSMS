@@ -1,5 +1,5 @@
 # tools/audit_min.ps1
-# Minimal, deterministic audit runner (no giant prompts, no Copilot needed).
+# Minimal, deterministic audit runner with no external assistant dependency.
 # Usage:
 #   pwsh tools/audit_min.ps1 -ApiBase "http://127.0.0.1:8000" -SchoolId "1"
 

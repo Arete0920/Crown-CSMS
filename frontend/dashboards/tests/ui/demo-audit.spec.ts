@@ -2,14 +2,14 @@
 
 /**
  * Demo-seeded persona route audit.
- * No manual credentials are required for this sandbox proof path.
+ * CROWN_DEMO_PASS must match the configured sandbox seed password.
  */
 
 const UI = process.env.CROWN_UI_BASE || "http://127.0.0.1:4173";
 const API = process.env.CROWN_API_BASE || "http://127.0.0.1:8000";
 const SCHOOL_ID = process.env.CROWN_SCHOOL_ID || "19801b59-8c05-4c84-9312-5d792e4e839d";
 const DEMO_SEED_USER = process.env.CROWN_DEMO_USER || "admin";
-const DEMO_SEED_PASS = process.env.CROWN_DEMO_PASS || "Crown2026!";
+const DEMO_SEED_PASS = process.env.CROWN_DEMO_PASS;
 
 type Persona = { seedRole: string; label: string; homePath: string; allowedFinalPaths: string[]; headingPattern: RegExp };
 
@@ -26,6 +26,7 @@ const blockedTextPattern = /\b401\b|\b403\b|\b404\b|unauthorized|not\s+found|res
 const blockedConsolePattern = /\b401\b|\b403\b|\b404\b|unauthorized|restricted\s+access|not\s+authorized|application\s+error/i;
 
 async function acquireDemoToken(request: any): Promise<string> {
+  if (!DEMO_SEED_PASS?.trim()) throw new Error("Configure CROWN_DEMO_PASS before running this proof.");
   const resp = await request.post(`${API}/api/v1/auth/token/`, {
     data: { username: DEMO_SEED_USER, password: DEMO_SEED_PASS },
   });

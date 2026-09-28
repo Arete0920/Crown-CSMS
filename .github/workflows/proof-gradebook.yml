@@ -1,4 +1,4 @@
-name: Proof €” Gradebook (UI + API)
+name: Proof — Gradebook (UI + API)
 permissions:
   contents: read
 
@@ -44,7 +44,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Guardrail €” print versions
+      - name: Guardrail — print versions
         run: |
           set -euo pipefail
           echo "Node: $(node -v || true)"
@@ -67,7 +67,7 @@ jobs:
         run: |
           python manage.py migrate --noinput
 
-      - name: Guardrail €” required env
+      - name: Guardrail — required env
         env:
           CROWN_DEMO_PASSWORD: "CI-Demo-Password-2026"
         run: |
@@ -196,7 +196,7 @@ jobs:
               echo "Gradebook API ready (HTTP ${HTTP})."
               exit 0
             fi
-            echo "Attempt ${i}: HTTP ${HTTP} €” waiting 2s..."
+            echo "Attempt ${i}: HTTP ${HTTP} — waiting 2s..."
             cat /tmp/gb_ready.json || true
             sleep 2
           done

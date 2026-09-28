@@ -19,7 +19,7 @@ EXCLUDED_DIRS = {
     "node_modules", "vendor", "dist", "build", "coverage", "htmlcov",
     "audit-artifacts",
 }
-SUPPRESSION = re.compile(r"ai-audit:\s*allow\s+(?P<rule>AP-\d{2}|all)", re.I)
+SUPPRESSION = re.compile(r"repo-hygiene:\s*allow\s+(?P<rule>AP-\d{2}|all)", re.I)
 URGENCY_NAME = re.compile(
     r"(?:^|[_\-.])(?:tmp|temp|autopilot|finish[_-]?now|final[_-]?final|"
     r"fix[_-]?everything|one[_-]?click|gauntlet)(?:$|[_\-.])", re.I
@@ -166,8 +166,8 @@ def render_result(result: AuditResult, output_format: str) -> str:
         return json.dumps(result_as_dict(result), indent=2, sort_keys=True) + "\n"
     if output_format == "markdown":
         lines = [
-            "# AI-Pattern Audit", "",
-            "> Findings identify maintainability and provenance risks; they do not prove authorship.", "",
+            "# Repository Hygiene Audit", "",
+            "> Findings identify maintainability and repository-hygiene risks; they do not prove authorship.", "",
             f"- Scanned files: {result.scanned_files}",
             f"- Skipped large files: {result.skipped_large_files}",
             f"- Findings: {len(result.findings)}", "",

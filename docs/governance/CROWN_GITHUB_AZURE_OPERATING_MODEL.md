@@ -1,7 +1,7 @@
 # CROWN GitHub-to-Azure Operating Model
 
-Status: Governance control document  
-Scope: Crown2026 repository, pull requests, evidence gates, and Azure deployment path  
+Status: Governance control document
+Scope: Crown2026 repository, pull requests, evidence gates, and Azure deployment path
 Primary rule: GitHub is the deployment truth source. Azure deploys only from verified GitHub state. VS Code is an optional local utility, not a release authority.
 
 ## 1. Operating Chain
@@ -101,7 +101,7 @@ Environment:
 staging / production
 
 Repository:
-tcmegahan/Crown2026
+Arete0920/Crown-CSMS
 
 Branch:
 [name]

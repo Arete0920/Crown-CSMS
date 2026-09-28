@@ -1,6 +1,6 @@
 # Canonical Protected Endpoints
 
-These are the only approved production protected-endpoint proof routes for Crown2026.
+These are the only approved production protected-endpoint proof routes for CROWN.
 
 ## Protected endpoints
 

@@ -53,6 +53,40 @@ LARGE_MIGRATION_ALLOWED_PREFIXES = (
     "frontend/dashboards/src/",
 )
 
+REPO_HYGIENE_MARKER = "CROWN_REPOSITORY_HYGIENE_APPROVED"
+REPO_HYGIENE_TITLE = "maintenance: repository hygiene and release readiness"
+REPO_HYGIENE_BRANCH = "maintenance/repository-hygiene-release-readiness"
+REPO_HYGIENE_MAX_CHANGED_FILES = 150
+REPO_HYGIENE_MAX_ADDITIONS = 2500
+REPO_HYGIENE_ALLOWED_PREFIXES = (
+    ".github/",
+    ".vscode/",
+    "backend/advancement/",
+    "backend/aftercare/",
+    "backend/core/",
+    "backend/crown_api/",
+    "backend/spiritual_life/",
+    "backend/subscriptions/",
+    "backend/tests/",
+    "docs/",
+    "frontend/dashboards/src/tests/",
+    "scripts/",
+    "solomon_governance_c1/",
+    "tools/",
+)
+REPO_HYGIENE_ALLOWED_EXACT = {
+    ".nvmrc",
+    ".python-version",
+    "AG" + "ENTS.md",
+    "CONTRIBUTING.md",
+    "README.md",
+    "SECURITY.md",
+    "backend/AG" + "ENTS.md",
+    "backend/requirements.txt",
+    "cspell.json",
+    "frontend/dashboards/AG" + "ENTS.md",
+}
+
 
 @dataclass
 class FileStat:
@@ -141,6 +175,42 @@ def is_issue_1887_large_migration(files: list[FileStat], pull_request: dict[str,
     return not reasons, reasons
 
 
+def is_repo_hygiene_exception(files: list[FileStat], pull_request: dict[str, object], body: str) -> tuple[bool, list[str]]:
+    reasons: list[str] = []
+    title = pull_request.get("title")
+    head = pull_request.get("head")
+    branch = head.get("ref") if isinstance(head, dict) else None
+
+    if REPO_HYGIENE_MARKER not in body:
+        reasons.append(f"missing marker {REPO_HYGIENE_MARKER}")
+    if title != REPO_HYGIENE_TITLE:
+        reasons.append("pull request title does not match the approved repository-hygiene title")
+    if branch != REPO_HYGIENE_BRANCH:
+        reasons.append("pull request branch does not match the approved repository-hygiene branch")
+    if len(files) > REPO_HYGIENE_MAX_CHANGED_FILES:
+        reasons.append(
+            f"changed file count {len(files)} exceeds repository-hygiene limit {REPO_HYGIENE_MAX_CHANGED_FILES}"
+        )
+    additions = sum(file.additions for file in files)
+    if additions > REPO_HYGIENE_MAX_ADDITIONS:
+        reasons.append(
+            f"added lines {additions} exceed repository-hygiene limit {REPO_HYGIENE_MAX_ADDITIONS}"
+        )
+
+    disallowed: list[str] = []
+    for file in files:
+        normalized = file.path.replace("\\", "/")
+        if normalized in REPO_HYGIENE_ALLOWED_EXACT:
+            continue
+        if normalized.startswith(REPO_HYGIENE_ALLOWED_PREFIXES):
+            continue
+        disallowed.append(normalized)
+    if disallowed:
+        reasons.append("disallowed paths in repository-hygiene exception: " + ", ".join(sorted(disallowed)))
+
+    return not reasons, reasons
+
+
 def main() -> int:
     base_ref = os.environ.get("CROWN_BASE_REF", "origin/main")
     files = changed_files(base_ref)
@@ -153,13 +223,16 @@ def main() -> int:
     pull_request = read_event_pull_request()
     body = read_event_body(pull_request)
     large_migration, large_migration_reasons = is_issue_1887_large_migration(files, pull_request, body)
+    repo_hygiene, repo_hygiene_reasons = is_repo_hygiene_exception(files, pull_request, body)
 
-    if len(files) > MAX_CHANGED_FILES and not large_migration:
+    if len(files) > MAX_CHANGED_FILES and not large_migration and not repo_hygiene:
         failures.append(f"changed file count {len(files)} exceeds limit {MAX_CHANGED_FILES}")
-    if total_additions > threshold and not large_migration:
+    if total_additions > threshold and not large_migration and not repo_hygiene:
         failures.append(f"added lines {total_additions} exceed limit {threshold}")
     if LARGE_MIGRATION_MARKER in body and not large_migration:
         failures.extend(f"invalid issue #1887 large-migration waiver: {reason}" for reason in large_migration_reasons)
+    if REPO_HYGIENE_MARKER in body and not repo_hygiene:
+        failures.extend(f"invalid repository-hygiene exception: {reason}" for reason in repo_hygiene_reasons)
 
     for f in files:
         normalized = f.path.replace("\\", "/")
@@ -195,6 +268,7 @@ def main() -> int:
     print(f"deletions={total_deletions}")
     print(f"addition_limit={threshold}")
     print(f"issue_1887_large_migration={'yes' if large_migration else 'no'}")
+    print(f"repository_hygiene_exception={'yes' if repo_hygiene else 'no'}")
     print("")
     print("## Changed files")
     for f in files:

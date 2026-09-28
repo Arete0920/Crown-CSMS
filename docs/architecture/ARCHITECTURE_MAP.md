@@ -2,7 +2,7 @@
 
 **Status:** CANONICAL  
 **Owner:** CROWN Engineering  
-**Last verified:** 2026-08-18
+**Last verified:** 2026-09-27
 
 ## Purpose
 
@@ -116,7 +116,7 @@ App presence establishes structure, not completion of every optional capability.
 
 The authoritative decision list is `DECISION_INDEX.md`.
 
-## Current certification boundary
+## Current release-verification boundary
 
 Current source/release status is maintained in `docs/CURRENT_RELEASE_STATUS.md`; exact source identity is resolved directly from Git/GitHub and captured in immutable decision evidence. Transaction-time operational transfer is governed by the current owner-handoff/operational-transfer records and authorized parties. Those authorities govern repository certification, deployment/runtime evidence, recovery evidence, payment containment, and owner-turnover posture within their respective boundaries.
 
@@ -133,7 +133,7 @@ A repository SHA or green workflow matrix does not automatically inherit product
 7. Verify external integration ownership and configuration without committing credentials.
 8. Execute or explicitly disposition current immutable rollback, operational restore, credential-rotation, and monitoring exercises required for owner handoff.
 9. Create remaining ADRs listed in `DECISION_INDEX.md` before material changes to those boundaries.
-10. Keep Student Records/report-card authority, HR/Core staff ownership, Communications/Microsoft transport, and Little Lambs product authority as explicit follow-up architecture records rather than implying those roadmap boundaries are already converged.
+10. Keep Student Records/report-card authority, HR/Core staff ownership, Communications/Microsoft transport, and Diadem Daycare Solutions integration/product boundaries as explicit follow-up architecture records rather than implying those roadmap boundaries are already converged.
 
 ## Change rules
 

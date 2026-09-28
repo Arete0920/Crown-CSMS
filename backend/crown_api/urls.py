@@ -74,7 +74,7 @@ urlpatterns = [
     path("api/auth/me/", me, name="auth_me"),
     # Demo-only dev token endpoint (fail-closed)
     path("api/dev/token/", dev_token, name="dev_token"),
-    # Little Lambs is an operating alias of Aftercare; keep it before api_v1 catch-all.
+    # Legacy daycare compatibility routes map the former Little Lambs URL to canonical Aftercare/Diadem behavior; keep them before the api_v1 catch-all.
     path("api/v1/little-lambs/", include("aftercare.urls")),
     path("api/little-lambs/", include("aftercare.urls")),
     # Canonical API. Specific dashboard routes must precede each broad alias.

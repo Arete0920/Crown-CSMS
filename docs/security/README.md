@@ -1,6 +1,6 @@
 # Security Documentation
 
-This section contains security posture and hardening guidance for Crown2026.
+This section contains security posture and hardening guidance for CROWN.
 
 Use this folder for:
 

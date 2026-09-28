@@ -1,4 +1,4 @@
-# Crown2026 - Migrate DB
+# CROWN - Migrate DB
 Set-Location "$PSScriptRoot\backend"
 
 $env:PYTHONDONTWRITEBYTECODE="1"

@@ -39,8 +39,8 @@ Crown Compass is not:
 - the system of record
 - the admissions system
 - the billing system
-- an autonomous AI decision-maker
-- a black-box analytics product
+- an autonomous decision-maker
+- a black-box decisioning product
 - a replacement for prayer, leadership judgment, pastoral care, family partnership, or board oversight
 
 ## Relationship to Crown Discernment
