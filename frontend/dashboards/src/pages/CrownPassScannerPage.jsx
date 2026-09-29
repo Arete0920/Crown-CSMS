@@ -120,7 +120,7 @@ export default function CrownPassScannerPage() {
       )}
 
       <section style={{ marginBottom: 20 }}>
-        <video ref={videoRef} playsInline muted style={{ width: "100%", maxHeight: 360, background: "#111", borderRadius: 12 }} />
+        <video ref={videoRef} playsInline muted style={{ width: "100%", maxHeight: 360, background: "var(--crown-compat-color-2042bc3e08)", borderRadius: 12 }} />
         <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
           {cameraStatus !== "scanning" ? (
             <button type="button" onClick={startCamera}>Start Camera Scanner</button>
