@@ -49,6 +49,27 @@ export default function PublicSurveyPage() {
             <select value={answers[q.key] ?? ''} onChange={(e) => setAnswers((a) => ({ ...a, [q.key]: e.target.value }))} style={input}>
               <option value="">Select</option>{(q.choices || []).map((v) => <option key={v} value={v}>{v.replaceAll('_',' ')}</option>)}
             </select>
+          ) : q.question_type === 'multi' ? (
+            <div style={{ display: 'grid', gap: 6 }}>
+              {(q.choices || []).map((v) => {
+                const selected = Array.isArray(answers[q.key]) ? answers[q.key] : [];
+                return (
+                  <label key={v} style={{ fontWeight: 400 }}>
+                    <input
+                      type="checkbox"
+                      checked={selected.includes(v)}
+                      onChange={(e) => setAnswers((a) => ({
+                        ...a,
+                        [q.key]: e.target.checked
+                          ? [...selected, v]
+                          : selected.filter((item) => item !== v),
+                      }))}
+                    />{' '}
+                    {v.replaceAll('_',' ')}
+                  </label>
+                );
+              })}
+            </div>
           ) : q.question_type === 'boolean' ? (
             <select value={answers[q.key] ?? ''} onChange={(e) => setAnswers((a) => ({ ...a, [q.key]: e.target.value === 'yes' }))} style={input}>
               <option value="">Select</option><option value="yes">Yes</option><option value="no">No</option>
