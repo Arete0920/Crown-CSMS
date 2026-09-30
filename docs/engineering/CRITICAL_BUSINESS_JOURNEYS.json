@@ -1,0 +1,122 @@
+{
+  "version": 1,
+  "journeys": [
+    {
+      "id": "admissions_to_enrollment",
+      "criticality": "P0",
+      "proof": [
+        "pytest-gate",
+        "contract-gate",
+        "Sandbox Parent Admissions Submit and Status"
+      ],
+      "outcome": "Inquiry/application can progress to authoritative enrollment without duplicate truth."
+    },
+    {
+      "id": "billing_to_payment_reconciliation",
+      "criticality": "P0",
+      "proof": [
+        "Accounting Verification",
+        "Finance Final Hardening"
+      ],
+      "outcome": "Charge, payment, allocation and reconciliation remain idempotent and balanced."
+    },
+    {
+      "id": "financial_aid_to_ledger",
+      "criticality": "P0",
+      "proof": [
+        "CI - Tests and Checks",
+        "Accounting Verification"
+      ],
+      "outcome": "Accepted aid posts once to canonical ledger and remains tenant scoped."
+    },
+    {
+      "id": "attendance_capture",
+      "criticality": "P0",
+      "proof": [
+        "backend-gate",
+        "Tenant Isolation Gate"
+      ],
+      "outcome": "Teacher attendance persists against canonical student/section/day truth."
+    },
+    {
+      "id": "gradebook_publish",
+      "criticality": "P0",
+      "proof": [
+        "Proof — Gradebook (UI + API)"
+      ],
+      "outcome": "Grade entry and publish are proved through UI and API."
+    },
+    {
+      "id": "communications_outbox",
+      "criticality": "P0",
+      "proof": [
+        "pytest-gate",
+        "backend-gate"
+      ],
+      "outcome": "Supported channels deliver; unsupported channels fail once and visibly."
+    },
+    {
+      "id": "reenrollment",
+      "criticality": "P0",
+      "proof": [
+        "pytest-gate",
+        "contract-gate"
+      ],
+      "outcome": "Returning-family workflow transitions legally and idempotently."
+    },
+    {
+      "id": "parent_portal_scope",
+      "criticality": "P0",
+      "proof": [
+        "Tenant Isolation Gate",
+        "UI Proof Gate"
+      ],
+      "outcome": "Parent sees only relationship-authorized student/family data."
+    },
+    {
+      "id": "crownpass_issue_scan_redeem",
+      "criticality": "P1",
+      "proof": [
+        "pytest-gate",
+        "Frontend Quality Gates"
+      ],
+      "outcome": "Ticket credentials issue and redeem without cross-school access."
+    },
+    {
+      "id": "market_study_commit",
+      "criticality": "P1",
+      "proof": [
+        "pytest-gate",
+        "Repository Policy"
+      ],
+      "outcome": "Strategic study cannot commit without source provenance."
+    },
+    {
+      "id": "public_survey_response",
+      "criticality": "P1",
+      "proof": [
+        "pytest-gate",
+        "Release Verify"
+      ],
+      "outcome": "Public response is token-bound, anonymous, validated, rate-limited and expiring."
+    },
+    {
+      "id": "tenant_override",
+      "criticality": "P0",
+      "proof": [
+        "Tenant Isolation Gate"
+      ],
+      "outcome": "Cross-school selection requires assigned-school or explicit support authority."
+    },
+    {
+      "id": "release_claim",
+      "criticality": "P0",
+      "proof": [
+        "False Completion Blocker",
+        "Release Scorecard",
+        "Release Verify"
+      ],
+      "outcome": "Green release claims require current evidence, not stale proof artifacts."
+    }
+  ]
+}
