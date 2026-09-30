@@ -1,6 +1,6 @@
 # CrownPass Implementation Matrix v1
 
-**Branch:** `feature/crownpass-foundation`  
+**Branch:** `feature/crownpass-foundation`
 **Canon:** `docs/product/CROWNPASS_CANON.md`
 
 Legend:
@@ -99,3 +99,4 @@ Keep the first tranche intentionally small:
 - admission credential verification is no longer coupled directly to a raw `qr_code` string
 - payment remains fail-closed until the approved processor contract is active
 - no repository hygiene limits are raised
+
