@@ -1,5 +1,8 @@
+from datetime import timedelta
+
 import pytest
 from django.test import Client
+from django.utils import timezone
 
 from core.models import School
 from survey_sentiment.models import SurveyDefinition, SurveyQuestion, SurveyResponse
@@ -15,6 +18,7 @@ def _public_survey():
         purpose="lost_prospect",
         status="active",
         public_enabled=True,
+        public_expires_at=timezone.now() + timedelta(days=30),
         anonymous_allowed=True,
     )
     SurveyQuestion.objects.create(
@@ -89,3 +93,12 @@ def test_public_link_rotation_invalidates_previous_token_on_reenable():
     # the protected survey-management endpoint before the link is re-enabled.
     disabled = Client().get(f"/api/v1/survey-sentiment/public/{original_token}/")
     assert disabled.status_code == 404
+
+
+def test_public_survey_fails_closed_after_expiry():
+    _, survey = _public_survey()
+    survey.public_expires_at = timezone.now() - timedelta(seconds=1)
+    survey.save(update_fields=["public_expires_at"])
+
+    response = Client().get(f"/api/v1/survey-sentiment/public/{survey.public_token}/")
+    assert response.status_code == 404
