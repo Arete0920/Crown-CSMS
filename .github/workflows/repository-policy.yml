@@ -35,6 +35,9 @@ jobs:
       - name: Enforce external-reference hygiene
         run: python scripts/ci/external_reference_hygiene.py
 
+      - name: Enforce repository maturity contract
+        run: python scripts/ci/repository_maturity_gate.py
+
       - name: Enforce repository identity and naming hygiene
         run: python scripts/ci/repository_identity_hygiene.py
 
