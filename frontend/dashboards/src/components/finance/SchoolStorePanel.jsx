@@ -5,6 +5,7 @@ const base = "/api/v1/payments/store";
 const money = (cents) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(cents / 100);
 
 export default function SchoolStorePanel() {
+  const [salesArea, setSalesArea] = useState("store");
   const [products, setProducts] = useState([]);
   const [page, setPage] = useState(1);
   const [count, setCount] = useState(0);
@@ -19,12 +20,12 @@ export default function SchoolStorePanel() {
     let active = true;
     setLoading(true);
     setError("");
-    apiJson(`${base}/products/?page=${page}`).then((data) => {
+    apiJson(`${base}/products/?page=${page}&sales_area=${salesArea}`).then((data) => {
       if (active) { setProducts(data.results); setCount(data.count); }
     }).catch((err) => { if (active) setError(err.message || "School store unavailable."); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
-  }, [page, version]);
+  }, [page, version, salesArea]);
 
   async function submit(event, action) {
     event.preventDefault();
@@ -38,14 +39,16 @@ export default function SchoolStorePanel() {
     setBusy(true); setError(""); setQuote(null);
     try {
       const items = Object.entries(cart).map(([id, quantity]) => ({ product_id: Number(id), quantity }));
-      setQuote(await apiJson(`${base}/quote/`, { method: "POST", body: JSON.stringify({ items }) }));
+      setQuote(await apiJson(`${base}/quote/`, { method: "POST", body: JSON.stringify({ items, sales_area: salesArea }) }));
     } catch (err) { setError(err.message || "Unable to price cart."); }
     finally { setBusy(false); }
   }
 
   const field = "rounded border border-slate-300 px-3 py-2";
   return <section className="mt-6 rounded-lg border border-slate-200 bg-white p-5" aria-labelledby="school-store-title">
-    <h2 id="school-store-title" className="text-xl font-semibold">School Store</h2>
+    <h2 id="school-store-title" className="text-xl font-semibold">Campus POS</h2>
+    <label>Sales area <select value={salesArea} disabled={busy} onChange={(event) => { setSalesArea(event.target.value); setPage(1); setProducts([]); setCart({}); setQuote(null); }}><option value="store">School Store</option><option value="snack">Snack Stand</option><option value="lunch">School Lunches</option></select></label>
+    {salesArea === "lunch" && <p className="my-2 text-sm text-slate-600">Meal plans and student accounts are not connected yet. If funds are insufficient, use the school-approved meal assistance process.</p>}
     <p className="my-2 text-sm text-slate-600">Manage merchandise and prepare a cart. Payment collection is unavailable. Quotes do not reserve inventory.</p>
     {error && <p role="alert" className="text-red-700">{error}</p>}
     <button type="button" disabled={busy || loading} onClick={() => { setQuote(null); setVersion(version + 1); }}>Refresh catalog</button>
@@ -63,7 +66,7 @@ export default function SchoolStorePanel() {
     <button type="button" disabled>Payment collection unavailable</button>
     <details className="mt-4"><summary>Catalog and inventory management</summary>
       <form className="my-3 flex flex-wrap gap-3" onSubmit={(event) => submit(event, async (data) => {
-        await apiJson(`${base}/products/`, { method: "POST", body: JSON.stringify({ sku: data.get("sku"), name: data.get("name"), barcode: data.get("barcode"), price_cents: Number(data.get("price")), tax_rate_bp: Number(data.get("tax")) }) });
+        await apiJson(`${base}/products/`, { method: "POST", body: JSON.stringify({ sales_area: salesArea, sku: data.get("sku"), name: data.get("name"), barcode: data.get("barcode"), price_cents: Number(data.get("price")), tax_rate_bp: Number(data.get("tax")) }) });
         setVersion(version + 1);
       })}>
         <label>SKU <input className={field} name="sku" required maxLength={64} /></label>

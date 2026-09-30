@@ -2,7 +2,7 @@
 from django.db import transaction
 from rest_framework.exceptions import ValidationError
 
-from .models import StoreProduct, StoreStockMovement
+from .models import CampusSalesArea, StoreProduct, StoreStockMovement
 
 
 def integer(value, field, *, minimum, maximum):
@@ -33,7 +33,14 @@ def adjust_stock(*, school_id, product_id, delta, reason, key, user):
                                              reason=reason.strip(), idempotency_key=key, created_by=user)
 
 
-def quote(*, school_id, items):
+def validate_sales_area(value):
+    if not isinstance(value, str) or value not in CampusSalesArea.values:
+        raise ValidationError({"sales_area": "Select store, snack, or lunch."})
+    return value
+
+
+def quote(*, school_id, items, sales_area="store"):
+    validate_sales_area(sales_area)
     if not isinstance(items, list) or not 1 <= len(items) <= 100:
         raise ValidationError("Provide between 1 and 100 cart items.")
     quantities = {}
@@ -45,9 +52,9 @@ def quote(*, school_id, items):
         quantities[product_id] = quantities.get(product_id, 0) + quantity
         if quantities[product_id] > 1000:
             raise ValidationError("Maximum quantity per product is 1000.")
-    products = list(StoreProduct.objects.filter(school_id=school_id, active=True, pk__in=quantities).order_by("pk"))
+    products = list(StoreProduct.objects.filter(school_id=school_id, sales_area=sales_area, active=True, pk__in=quantities).order_by("pk"))
     if len(products) != len(quantities):
-        raise ValidationError("One or more products are unavailable in this school.")
+        raise ValidationError("One or more products are unavailable in this school and sales area.")
     lines = []
     for product in products:
         quantity = quantities[product.pk]
@@ -61,6 +68,6 @@ def quote(*, school_id, items):
                       "subtotal_cents": subtotal, "tax_cents": tax, "total_cents": subtotal + tax})
     subtotal = sum(line["subtotal_cents"] for line in lines)
     tax = sum(line["tax_cents"] for line in lines)
-    return {"currency": "USD", "items": lines, "subtotal_cents": subtotal, "tax_cents": tax,
+    return {"currency": "USD", "sales_area": sales_area, "items": lines, "subtotal_cents": subtotal, "tax_cents": tax,
             "total_cents": subtotal + tax, "payment_enabled": False, "stock_reserved": False,
             "status": "quote"}

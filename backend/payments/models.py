@@ -699,4 +699,4 @@ class Refund(ImmutableFinancialFact):
                 raise ValidationError("Canonical refund currency must match payment currency.")
 
 # Register store catalog models within the existing Payments application.
-from .store_models import StoreProduct, StoreStockMovement  # noqa: E402,F401
+from .store_models import CampusSalesArea, StoreProduct, StoreStockMovement  # noqa: E402,F401

@@ -17,10 +17,23 @@ describe("school store preparation", () => {
     fireEvent.click(screen.getByRole("button", { name: "Add to cart" }));
     fireEvent.click(screen.getByRole("button", { name: "Calculate total" }));
     await screen.findByText(/Total \$21.19/);
-    expect(apiJson).toHaveBeenLastCalledWith("/api/v1/payments/store/quote/", { method: "POST", body: JSON.stringify({ items: [{ product_id: 7, quantity: 1 }] }) });
+    expect(apiJson).toHaveBeenLastCalledWith("/api/v1/payments/store/quote/", { method: "POST", body: JSON.stringify({ items: [{ product_id: 7, quantity: 1 }], sales_area: "store" }) });
     expect(screen.getByRole("button", { name: "Payment collection unavailable" }).disabled).toBe(true);
     fireEvent.click(screen.getByRole("button", { name: "Clear cart" }));
     expect(screen.queryByText(/Total \$21.19/)).toBeNull();
+  });
+  it("clears the cart when changing from store to lunches", async () => {
+    apiJson.mockResolvedValueOnce({ results: [product], count: 1 })
+      .mockResolvedValueOnce({ results: [], count: 0 });
+    render(<SchoolStorePanel />);
+    await screen.findByText(/School shirt \(SHIRT\)/);
+    fireEvent.click(screen.getByRole("button", { name: "Add to cart" }));
+    expect(screen.getByText("Cart: 1 items")).toBeTruthy();
+    fireEvent.change(screen.getByLabelText("Sales area"), { target: { value: "lunch" } });
+    await screen.findByText("No products on this page.");
+    expect(screen.getByText("Cart: 0 items")).toBeTruthy();
+    expect(apiJson).toHaveBeenLastCalledWith("/api/v1/payments/store/products/?page=1&sales_area=lunch");
+    expect(screen.getByText(/school-approved meal assistance process/)).toBeTruthy();
   });
   it("shows catalog failure and can retry", async () => {
     apiJson.mockRejectedValueOnce(new Error("Access denied"))

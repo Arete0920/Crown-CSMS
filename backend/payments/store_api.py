@@ -10,7 +10,7 @@ from crown_api.billing_api.permissions import IsFinanceRuntimeUser
 from households.scoping import get_request_school_id
 from payments.hold import payment_hold_response
 from .models import StoreProduct, StoreStockMovement
-from .store_services import adjust_stock, quote
+from .store_services import adjust_stock, quote, validate_sales_area
 
 
 class ProductSerializer(serializers.ModelSerializer):
@@ -19,12 +19,12 @@ class ProductSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = StoreProduct
-        fields = ["id", "sku", "name", "barcode", "price_cents", "tax_rate_bp", "stock", "active", "updated_at"]
+        fields = ["id", "sales_area", "sku", "name", "barcode", "price_cents", "tax_rate_bp", "stock", "active", "updated_at"]
         read_only_fields = ["id", "stock", "updated_at"]
         validators = []  # Tenant-qualified uniqueness is enforced by database constraints.
 
     def to_internal_value(self, data):
-        if not isinstance(data, dict) or set(data) - {"sku", "name", "barcode", "price_cents", "tax_rate_bp", "active"}:
+        if not isinstance(data, dict) or set(data) - {"sales_area", "sku", "name", "barcode", "price_cents", "tax_rate_bp", "active"}:
             raise ValidationError({"non_field_errors": ["Unsupported product fields; adjust stock through its audited endpoint."]})
         for field in ("price_cents", "tax_rate_bp"):
             if field in data and type(data[field]) is not int:
@@ -52,7 +52,8 @@ def products(request):
             raise ValidationError("Invalid page.") from exc
         if page < 1:
             raise ValidationError("Invalid page.")
-        rows = StoreProduct.objects.filter(school_id=school_id)
+        sales_area = validate_sales_area(request.query_params.get("sales_area", "store"))
+        rows = StoreProduct.objects.filter(school_id=school_id, sales_area=sales_area)
         count = rows.count()
         return Response({"count": count, "page": page, "results": ProductSerializer(rows[(page-1)*100:page*100], many=True).data})
     serializer = ProductSerializer(data=request.data)
@@ -95,9 +96,9 @@ def stock(request, product_id):
 @permission_classes([IsAuthenticated, IsFinanceRuntimeUser])
 def cart_quote(request):
     school_id = get_request_school_id(request, required=True)
-    if not isinstance(request.data, dict) or set(request.data) != {"items"}:
-        raise ValidationError("Provide only items.")
-    return Response(quote(school_id=school_id, items=request.data["items"]))
+    if not isinstance(request.data, dict) or ("items" not in request.data or set(request.data) - {"items", "sales_area"}):
+        raise ValidationError("Provide items and optionally sales_area.")
+    return Response(quote(school_id=school_id, items=request.data["items"], sales_area=request.data.get("sales_area", "store")))
 
 
 @api_view(["POST"])

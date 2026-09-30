@@ -111,3 +111,28 @@ class SchoolStoreTests(TestCase):
         request = self.factory.get("/api/v1/payments/store/products/", HTTP_X_SCHOOL_ID=str(self.other.pk))
         force_authenticate(request, user=user)
         self.assertEqual(store_api.products(request).status_code, 404)
+
+    def test_sales_areas_are_separated_in_catalog_and_quotes(self):
+        lunch = StoreProduct.objects.create(school=self.school, sales_area="lunch", sku="MEAL", name="Lunch", price_cents=500, stock=10)
+        snack = StoreProduct.objects.create(school=self.school, sales_area="snack", sku="APPLE", name="Apple", price_cents=100, stock=10)
+        result = quote(school_id=self.school.pk, sales_area="lunch", items=[{"product_id": lunch.pk, "quantity": 1}])
+        self.assertEqual(result["total_cents"], 500)
+        self.assertEqual(result["sales_area"], "lunch")
+        with self.assertRaises(ValidationError):
+            quote(school_id=self.school.pk, sales_area="lunch", items=[{"product_id": snack.pk, "quantity": 1}])
+        with self.assertRaises(ValidationError):
+            quote(school_id=self.school.pk, sales_area="invalid", items=[{"product_id": lunch.pk, "quantity": 1}])
+        request = self.request("get", "/api/v1/payments/store/products/?sales_area=lunch")
+        response = store_api.products(request)
+        self.assertEqual([row["id"] for row in response.data["results"]], [lunch.pk])
+        response = store_api.cart_quote(self.request("post", "/api/v1/payments/store/quote/", {"sales_area": "snack", "items": [{"product_id": snack.pk, "quantity": 2}]}))
+        self.assertEqual(response.data["total_cents"], 200)
+
+    def test_api_rejects_invalid_area_and_preserves_product_area(self):
+        path = "/api/v1/payments/store/products/"
+        response = store_api.products(self.request("post", path, {"sales_area": "lunch", "sku": "MEAL", "name": "Meal", "price_cents": 500}))
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.data["sales_area"], "lunch")
+        response = store_api.products(self.request("post", path, {"sales_area": "unknown", "sku": "BAD", "name": "Bad", "price_cents": 1}))
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(store_api.products(self.request("get", path + "?sales_area=unknown")).status_code, 400)

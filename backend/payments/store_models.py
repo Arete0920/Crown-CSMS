@@ -5,8 +5,15 @@ from django.db import models
 from .models import ImmutableFinancialFact
 
 
+class CampusSalesArea(models.TextChoices):
+    STORE = "store", "School Store"
+    SNACK = "snack", "Snack Stand"
+    LUNCH = "lunch", "School Lunches"
+
+
 class StoreProduct(models.Model):
     school = models.ForeignKey("core.School", on_delete=models.PROTECT)
+    sales_area = models.CharField(max_length=16, choices=CampusSalesArea.choices, default=CampusSalesArea.STORE)
     sku = models.CharField(max_length=64)
     name = models.CharField(max_length=160)
     barcode = models.CharField(max_length=64, blank=True, default="")
@@ -19,6 +26,7 @@ class StoreProduct(models.Model):
     class Meta:
         ordering = ["name", "id"]
         constraints = [
+            models.CheckConstraint(condition=models.Q(sales_area__in=["store", "snack", "lunch"]), name="store_sales_area_valid"),
             models.UniqueConstraint(fields=["school", "sku"], name="store_school_sku_unique"),
             models.UniqueConstraint(fields=["school", "barcode"], condition=~models.Q(barcode=""), name="store_school_barcode_unique"),
             models.CheckConstraint(condition=models.Q(tax_rate_bp__lte=10000), name="store_tax_rate_valid"),
