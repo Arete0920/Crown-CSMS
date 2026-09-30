@@ -44,7 +44,9 @@ Submission supports request correlation, abuse controls, and idempotency. A repe
 
 `GET /api/v1/admissions/summary/`
 
-Requires `admissions.view` and returns school-scoped admissions pipeline, conversion, velocity, source, workflow-engine and post-admission rollup data.
+Requires `admissions.view` and returns school-scoped admissions pipeline, conversion, velocity, stage-aging, source, workflow-engine, post-admission rollup, and command-intelligence data.
+
+The command-intelligence payload is additive and derived from existing admissions truth plus the latest auditable enrollment-forecast and retention-support model runs when available. It includes a concise action queue for stale applications, accepted-to-enrolled follow-up, active inquiries, and current source context. Retention output is presented as a proactive support indicator, not as a prediction of an individual family's decision.
 
 ### Drilldown
 
