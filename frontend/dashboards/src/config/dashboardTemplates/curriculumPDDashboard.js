@@ -78,7 +78,7 @@ export default {
     { key: 'summerPD', icon: 'SP', title: 'Summer PD', status: 'Planning', statusTone: 'good',
       mainKpi: 'Retreat July 10â€“11 â€” planning', summary: 'Two-day faculty retreat â€” agenda due June 1.',
       kpis: [{ label: 'Retreat Dates', value: 'Jul 10â€“11' }, { label: 'Agenda Due', value: 'June 1' }, { label: 'Topics Selected', value: '3' }, { label: 'Facilitators', value: '2' }],
-      details: ['Summer retreat: July 10â€“11', '3 focus areas selected: AI literacy, Faith Integration, DEI', '2 external facilitators being contracted', 'Agenda draft due to principal June 1'],
+      details: ['Summer retreat: July 10â€“11', '3 focus areas selected: technology literacy, Faith Integration, DEI', '2 external facilitators being contracted', 'Agenda draft due to principal June 1'],
       primaryActionLabel: 'Summer PD Planning', backActionLabel: 'View Reports',
       primaryActionHref: '/curriculum-pd-dashboard', backActionHref: '/curriculum-pd-dashboard', lastUpdated: '8:25 AM' },
   ],
