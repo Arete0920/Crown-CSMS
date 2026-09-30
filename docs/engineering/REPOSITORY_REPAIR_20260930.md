@@ -15,7 +15,7 @@ Audit baseline: `ee441bdf22c59eb44499d0ca2878eaa2e968ea1e`.
 
 ## Separate operational blocker
 
-Azure Drift Watchdog repeatedly fails before any infrastructure assertion: no Azure authentication is configured. No Azure invariant is verified by those failed runs. Authentication must be configured with the existing OIDC secrets or service-principal credential and a complete dispatch must pass. Its schedule and enforcement remain unchanged in this repair.
+Azure Drift Watchdog repeatedly fails before any infrastructure assertion: no Azure authentication is configured. No Azure invariant is verified by those failed runs. The owner instructed cancellation of automatic Azure checks on September 30, 2026. Remove the watchdog schedule; retain manual dispatch for a future explicit operator request. No Azure run was queued or active when cancellation was requested. Azure infrastructure remains unverified. Any later reactivation requires configured authentication and a complete successful manual dispatch; cancellation does not establish production readiness.
 
 ## Verification and authority
 
