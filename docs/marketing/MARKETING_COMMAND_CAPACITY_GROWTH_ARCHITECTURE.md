@@ -1,6 +1,6 @@
 # Crown Marketing Command and Capacity Growth Architecture
 
-**Status:** Current product/engineering contract  
+**Status:** Current product/engineering contract
 **Purpose:** Define how Crown connects marketing, CRM, enrollment capacity, Portrait of the Graduate, financial aid, Admissions, and campaign economics without duplicating system authority.
 
 ## Canonical authorities
@@ -91,3 +91,4 @@ This architecture does not create:
 - a separate empty-seats module;
 - a second Portrait of the Graduate store;
 - an independent demographic truth source without verified external data.
+
