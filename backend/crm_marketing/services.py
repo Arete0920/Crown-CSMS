@@ -7,23 +7,25 @@ from .models import CampaignTouchpoint, LeadStage, MarketingLead
 
 
 def register_admissions_submit(application, *, source: str = "", start_term: str = ""):
-    lead = MarketingLead.objects.filter(school_id=application.school_id, application=application, campaign__isnull=True).first()
-    if lead is None:
-        lead = MarketingLead.objects.create(
-            school_id=application.school_id,
-            application=application,
-            stage=LeadStage.APPLICATION_SUBMITTED,
-            first_source=source or "",
-            primary_source=source or "",
-        )
-    else:
+    leads = list(MarketingLead.objects.filter(school_id=application.school_id, application=application))
+    if not leads:
+        leads = [
+            MarketingLead.objects.create(
+                school_id=application.school_id,
+                application=application,
+                stage=LeadStage.APPLICATION_SUBMITTED,
+                first_source=source or "",
+                primary_source=source or "",
+            )
+        ]
+    for lead in leads:
         lead.stage = LeadStage.APPLICATION_SUBMITTED
         if source and not lead.first_source:
             lead.first_source = source
         if source:
             lead.primary_source = source
         lead.save(update_fields=["stage", "first_source", "primary_source", "updated_at"])
-    return lead
+    return leads
 
 
 def register_workflow_update(application, *, stage: str, summary: str, payload=None, created_by=None):
@@ -66,6 +68,37 @@ def record_touchpoint(*, lead, channel: str, summary: str, outcome: str = "", me
         occurred_at=now,
         created_by_user_id=getattr(created_by, "id", None),
     )
+
+
+def build_follow_up_playbook(stage: str):
+    playbooks = {
+        LeadStage.INQUIRY: [
+            {"day": 0, "action": "Acknowledge inquiry and confirm family priorities."},
+            {"day": 1, "action": "Personal admissions call or message."},
+            {"day": 3, "action": "Invite family to tour or next admissions event."},
+            {"day": 7, "action": "Share a mission/Portrait story aligned to family interests."},
+        ],
+        LeadStage.TOUR_SCHEDULED: [
+            {"day": 0, "action": "Confirm tour details and family goals."},
+            {"day": 1, "action": "Send post-tour thank-you and next-step application link."},
+            {"day": 4, "action": "Answer unresolved questions and affordability concerns."},
+        ],
+        LeadStage.APPLICATION_STARTED: [
+            {"day": 0, "action": "Confirm application support contact."},
+            {"day": 3, "action": "Remind family of incomplete application items."},
+            {"day": 7, "action": "Offer financial-aid pathway when affordability is a barrier."},
+        ],
+        LeadStage.APPLICATION_SUBMITTED: [
+            {"day": 0, "action": "Confirm receipt and decision timeline."},
+            {"day": 3, "action": "Resolve missing checklist or interview items."},
+        ],
+        LeadStage.ACCEPTED: [
+            {"day": 0, "action": "Celebrate acceptance and explain enrollment steps."},
+            {"day": 2, "action": "Follow up on contract, deposit, and affordability questions."},
+            {"day": 7, "action": "Escalate unresolved accepted-to-enrolled barriers."},
+        ],
+    }
+    return playbooks.get(stage, [])
 
 
 def build_campaign_snapshot(campaign):
@@ -147,6 +180,7 @@ def build_campaign_snapshot(campaign):
             "accepted_marketing_aid_cents_for_grade": aid_committed_cents,
             "campaign_attribution_verified": False,
         },
+        "follow_up_playbooks": {stage: build_follow_up_playbook(stage) for stage in stage_counts.keys()},
         "funnel": {
             "total_leads": leads.count(),
             "inquiries": inquiry_count,
