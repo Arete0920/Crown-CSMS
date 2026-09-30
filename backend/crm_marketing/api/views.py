@@ -10,7 +10,7 @@ from core.permissions import require_permission
 from households.scoping import get_request_school_id
 from spiritual_life.formation_models import PortraitDomain
 
-from crm_marketing.models import MarketingCampaign, MarketingLead
+from crm_marketing.models import CampaignTouchpoint, MarketingCampaign, MarketingLead
 from crm_marketing.services import build_campaign_snapshot, record_touchpoint
 
 
@@ -121,7 +121,7 @@ def campaign_touchpoint(request, campaign_id):
     if lead is None:
         return JsonResponse({"detail": "Lead not found for campaign."}, status=404)
     channel = str(payload.get("channel") or "").strip()
-    valid_channels = {choice[0] for choice in record_touchpoint.__globals__["CampaignTouchpoint"].CHANNEL_CHOICES}
+    valid_channels = {choice[0] for choice in CampaignTouchpoint.CHANNEL_CHOICES}
     if channel not in valid_channels:
         return JsonResponse({"detail": "Invalid channel."}, status=400)
     summary = str(payload.get("summary") or "").strip()
