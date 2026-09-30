@@ -12,7 +12,7 @@ The following remain NO-GO for production release claims until separately proven
 
 - Scheduling PR #859.
 - SOLOMON content ingestion.
-- SOLOMON AI/intelligence activation.
+- SOLOMON automated-intelligence activation.
 - Publisher curriculum integration.
 - BJU Press content ingestion.
 - Teams/SharePoint federation.
