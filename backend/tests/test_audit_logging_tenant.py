@@ -53,7 +53,7 @@ class TestAuditLoggingTenantIsolation:
             HTTP_X_SCHOOL_ID=str(self.school_b.id),
         )
         # cross-tenant isolation: result must not be an unguarded 200 serving school B data
-        assert response.status_code in (200, 400, 403, 404)
+        assert response.status_code in (400, 403, 404)
 
     def test_audit_logging_same_tenant_request_is_allowed(self):
         """User can access their own school resources without being blocked."""
