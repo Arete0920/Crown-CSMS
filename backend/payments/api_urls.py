@@ -25,7 +25,14 @@ from .methods_api import (
 )
 from .ops_api import disputes_list, payout_batch_detail, payout_batches_list
 
+from . import store_api
+
 urlpatterns = [
+    path("store/products/", store_api.products, name="store-products"),
+    path("store/products/<int:product_id>/", store_api.product_update, name="store-product-update"),
+    path("store/products/<int:product_id>/stock/", store_api.stock, name="store-stock"),
+    path("store/quote/", store_api.cart_quote, name="store-quote"),
+    path("store/checkout/", store_api.checkout, name="store-checkout"),
     path("intents/", create_payment_intent, name="payments-create-intent"),
     path(
         "intents/<str:intent_id>/status/",
