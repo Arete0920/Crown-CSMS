@@ -174,6 +174,9 @@ def test_campaign_creation_and_read_are_tenant_scoped(campaign_client):
     assert response.status_code == 201
     campaign_id = response.json()["campaign_id"]
     assert MarketingCampaign.objects.get(id=campaign_id).school_id == school.id
+    user = UserAccount.objects.get(username="campaign-editor")
+    user.is_superuser = True
+    user.save(update_fields=["is_superuser"])
     other_school = School.objects.create(name="Other Campaign School")
     denied = client.get(f"/api/v1/crm/campaigns/{campaign_id}/", HTTP_X_SCHOOL_ID=str(other_school.id))
     assert denied.status_code in (403, 404)
