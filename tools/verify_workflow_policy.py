@@ -16,6 +16,8 @@ CONT_ERR_RE = re.compile(r"^\s*continue-on-error:\s*true\s*$", re.MULTILINE | re
 MOJIBAKE_RE = re.compile(r"[âΓœ†œ©]")
 NAME_RE = re.compile(r"(?m)^name:\s*(.+?)\s*$")
 GROUP_RE = re.compile(r"(?m)^\s{2}group:\s*(.+?)\s*$")
+NODE_VERSION_RE = re.compile(r"(?m)^\s*node-version:\s*[\"']?([0-9]+(?:\.[0-9]+){0,2})[\"']?\s*$")
+MIN_NODE_VERSION = (22, 22, 0)
 
 
 def is_pinned_uses(ref: str) -> bool:
@@ -128,6 +130,27 @@ def _check_curl_safety(text: str, rel: pathlib.Path) -> list[str]:
     return errors
 
 
+def _node_version_tuple(raw: str) -> tuple[int, int, int]:
+    parts = [int(part) for part in raw.split(".")]
+    return tuple((parts + [0, 0])[:3])
+
+
+def _check_node_runtime(text: str, rel: pathlib.Path) -> list[str]:
+    if "actions/setup-node@" not in text:
+        return []
+    versions = NODE_VERSION_RE.findall(text)
+    if not versions:
+        return [f"{rel}: setup-node is used without a numeric node-version"]
+    errors = []
+    for raw in versions:
+        if _node_version_tuple(raw) < MIN_NODE_VERSION:
+            errors.append(
+                f"{rel}: node-version {raw} is below the supported dashboard runtime "
+                f"{'.'.join(str(part) for part in MIN_NODE_VERSION)}"
+            )
+    return errors
+
+
 def check_file(path: pathlib.Path) -> tuple[list[str], str | None, str | None]:
     text = path.read_text(encoding="utf-8", errors="replace")
     rel = path.relative_to(ROOT)
@@ -188,6 +211,7 @@ def check_file(path: pathlib.Path) -> tuple[list[str], str | None, str | None]:
         errors.extend(_check_dispatch_input_descriptions(text, rel))
 
     errors.extend(_check_curl_safety(text, rel))
+    errors.extend(_check_node_runtime(text, rel))
 
     if "deploy-prod" in path.name and re.search(r"(?m)^\s{2}pull_request:\s*$", text):
         errors.append(f"{rel}: production deploy workflow must not trigger on pull_request")
