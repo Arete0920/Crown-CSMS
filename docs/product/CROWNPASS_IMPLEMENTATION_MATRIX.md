@@ -99,4 +99,3 @@ Keep the first tranche intentionally small:
 - admission credential verification is no longer coupled directly to a raw `qr_code` string
 - payment remains fail-closed until the approved processor contract is active
 - no repository hygiene limits are raised
-
