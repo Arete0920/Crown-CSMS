@@ -119,6 +119,16 @@ class TenantHeaderRequiredMiddleware:
                             },
                             status=400,
                         )
+                    if context.override_requested and not context.override_authorized:
+                        _record_tenant_decision(
+                            request,
+                            outcome="denied",
+                            reason="exempt_route_cross_tenant_header_denied",
+                        )
+                        return JsonResponse(
+                            {"detail": "Not found.", "code": "tenant_access_denied"},
+                            status=404,
+                        )
                     return self.get_response(request)
 
             if _dev_open_dashboard_bypass_enabled() and _is_dashboard_api_path(normalized_path):
