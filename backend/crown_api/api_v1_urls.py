@@ -122,6 +122,7 @@ urlpatterns = [
     path("board/", include("board_oversight.urls")),
     path("hr/", include("hr.urls")),
     path("advancement/", include("advancement.urls")),
+    path("crownpass/", include("crownpass.urls")),
     path("pd/", include("pdhub.urls")),
     path("safety/", include("safety.urls")),
     path("connectors/", include("integrations_real.urls")),
