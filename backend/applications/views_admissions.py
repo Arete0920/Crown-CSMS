@@ -2642,6 +2642,134 @@ def _build_follow_up_summary(apps: Any, stage_facts: dict[str, Any]) -> dict[str
     }
 
 
+def _build_stage_aging(apps: Any, stage_facts: dict[str, Any]) -> dict[str, Any]:
+    """Return age and SLA pressure for the operational admissions stages."""
+    now = timezone.now()
+    thresholds = {
+        "application_submitted": 3,
+        "in_review": 5,
+        "accepted": 2,
+    }
+    buckets = {
+        stage: {"count": 0, "over_sla": 0, "max_days": 0, "threshold_days": threshold}
+        for stage, threshold in thresholds.items()
+    }
+
+    for app in apps:
+        stage = _compute_stage(
+            app=app,
+            has_inquiry=(app.id in stage_facts["inquiry"]),
+            has_tour_scheduled=(app.id in stage_facts["tour_scheduled"]),
+            has_tour_completed=(app.id in stage_facts["tour_completed"]),
+            decision=stage_facts["decision"].get(app.id),
+            enrolled=(app.id in stage_facts["enrolled"]),
+        )
+        bucket = buckets.get(stage)
+        if bucket is None:
+            continue
+        reference_at = app.updated_at or app.created_at
+        age_days = max(0, (now - reference_at).days) if reference_at else 0
+        bucket["count"] += 1
+        bucket["max_days"] = max(bucket["max_days"], age_days)
+        if age_days >= bucket["threshold_days"]:
+            bucket["over_sla"] += 1
+
+    return buckets
+
+
+def _latest_predictive_snapshot(school_id: Any) -> dict[str, Any]:
+    """Expose existing auditable enrollment/retention model output without rerunning models."""
+    snapshot = {
+        "enrollment_forecast": None,
+        "retention_support": None,
+    }
+    try:
+        from analytics.models import PredictiveModelRun
+        from analytics.predictors import ENROLLMENT_MODEL_NAME, RETENTION_MODEL_NAME
+    except Exception:
+        return snapshot
+
+    for key, model_name in (
+        ("enrollment_forecast", ENROLLMENT_MODEL_NAME),
+        ("retention_support", RETENTION_MODEL_NAME),
+    ):
+        run = (
+            PredictiveModelRun.objects.filter(school_id=school_id, model_name=model_name)
+            .only("run_date", "output_json")
+            .order_by("-run_date")
+            .first()
+        )
+        if run is not None:
+            snapshot[key] = {
+                "run_date": run.run_date.isoformat(),
+                "result": run.output_json or {},
+            }
+    return snapshot
+
+
+def _build_enrollment_command_intelligence(
+    *,
+    school_id: Any,
+    stage_counts: dict[str, Any],
+    workflow_engine: dict[str, Any],
+    post_admission_rollup: dict[str, Any],
+    top_sources: list[dict[str, Any]],
+) -> dict[str, Any]:
+    """Build a concise action queue from existing admissions and analytics truth."""
+    stale_counts = workflow_engine.get("stale_counts") or {}
+    accepted_pending = int(
+        (post_admission_rollup.get("counts") or {}).get("accepted_pending_enrollment", 0) or 0
+    )
+    actions: list[dict[str, Any]] = []
+
+    if int(stale_counts.get("application_submitted", 0) or 0) > 0:
+        count = int(stale_counts["application_submitted"])
+        actions.append({
+            "priority": "high",
+            "key": "review_submitted",
+            "count": count,
+            "label": f"Review {count} submitted application(s) over SLA.",
+            "route": "/admissions/pipeline",
+        })
+    if int(stale_counts.get("in_review", 0) or 0) > 0:
+        count = int(stale_counts["in_review"])
+        actions.append({
+            "priority": "high",
+            "key": "advance_review",
+            "count": count,
+            "label": f"Advance {count} in-review application(s) over SLA.",
+            "route": "/admissions/pipeline",
+        })
+    if accepted_pending > 0:
+        actions.append({
+            "priority": "high",
+            "key": "accepted_to_enrolled",
+            "count": accepted_pending,
+            "label": f"Complete contract/deposit follow-up for {accepted_pending} accepted family/families.",
+            "route": "/enrollment-conversion",
+        })
+    if int(stage_counts.get("inquiry", 0) or 0) > 0:
+        count = int(stage_counts["inquiry"])
+        actions.append({
+            "priority": "normal",
+            "key": "advance_inquiries",
+            "count": count,
+            "label": f"Advance {count} active inquiry/inquiries toward a tour or application.",
+            "route": "/admissions/pipeline",
+        })
+
+    predictive = _latest_predictive_snapshot(school_id)
+    return {
+        "action_queue": actions[:6],
+        "top_source": top_sources[0] if top_sources else None,
+        "predictive": predictive,
+        "guardrail": (
+            "Retention output is a support indicator for proactive follow-up, not a prediction "
+            "of an individual family's decision."
+        ),
+    }
+
+
 def _build_workflow_engine_summary(stage_counts: dict[str, Any], stage_facts: dict[str, Any], apps: Any) -> dict[str, Any]:
     active_stage = _active_workflow_stage(stage_counts)
     guidance = WORKFLOW_STAGE_GUIDANCE.get(active_stage, WORKFLOW_STAGE_GUIDANCE["inquiry"])
@@ -3248,6 +3376,7 @@ def admissions_summary(request):
     conversion = _build_conversion_rates(stage_counts)
     velocity = _build_velocity(events)
     workflow_engine = _build_workflow_engine_summary(apps=apps, stage_counts=stage_counts, stage_facts=stage_facts)
+    stage_aging = _build_stage_aging(apps=apps, stage_facts=stage_facts)
     post_admission_rollup = _build_post_admission_rollup(
         school_id=school_id,
         stage_counts=stage_counts,
@@ -3263,6 +3392,13 @@ def admissions_summary(request):
         .order_by("-total", "source")[:10]
     )
     top_sources = [{"source": r["source"], "total": r["total"]} for r in top_sources_qs]
+    command_intelligence = _build_enrollment_command_intelligence(
+        school_id=school_id,
+        stage_counts=stage_counts,
+        workflow_engine=workflow_engine,
+        post_admission_rollup=post_admission_rollup,
+        top_sources=top_sources,
+    )
 
     return Response(
         {
@@ -3272,9 +3408,11 @@ def admissions_summary(request):
             "pipeline": {"total": pipeline_total, "by_stage": stage_counts},
             "conversion": conversion,
             "velocity_days": velocity,
+            "stage_aging": stage_aging,
             "top_sources": top_sources,
             "workflow_engine": workflow_engine,
             "post_admission_rollup": post_admission_rollup,
+            "command_intelligence": command_intelligence,
         }
     )
 
