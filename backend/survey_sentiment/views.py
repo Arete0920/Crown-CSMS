@@ -21,6 +21,8 @@ def _serialize(survey):
     return {
         "id": str(survey.id), "name": survey.name, "purpose": survey.purpose,
         "status": survey.status, "anonymous_allowed": survey.anonymous_allowed,
+        "public_enabled": survey.public_enabled,
+        "public_token": str(survey.public_token),
         "linked_campaign_id": str(survey.linked_campaign_id) if survey.linked_campaign_id else None,
         "grade_code": survey.grade_code,
         "questions": [
@@ -71,14 +73,65 @@ def survey_collection(request):
     return JsonResponse(_serialize(survey), status=201)
 
 
-@require_http_methods(["GET"])
+@require_http_methods(["GET", "PATCH"])
 @require_permission("marketing.view")
 def survey_detail(request, survey_id):
     school_id = get_request_school_id(request, required=True)
     survey = SurveyDefinition.objects.filter(school_id=school_id, id=survey_id).prefetch_related("questions").first()
     if survey is None:
         return JsonResponse({"detail": "Survey not found."}, status=404)
+    if request.method == "PATCH":
+        if not user_has_permission(request.user, "marketing.edit", school=getattr(request, "school", None)):
+            return JsonResponse({"detail": "Permission denied."}, status=403)
+        payload = _body(request)
+        if not isinstance(payload, dict):
+            return JsonResponse({"detail": "Invalid JSON body."}, status=400)
+        if payload.get("status") is not None:
+            status = str(payload["status"])
+            if status not in {x[0] for x in SurveyDefinition.STATUS_CHOICES}:
+                return JsonResponse({"detail": "Invalid status."}, status=400)
+            survey.status = status
+        if payload.get("public_enabled") is not None:
+            survey.public_enabled = bool(payload["public_enabled"])
+        survey.save(update_fields=["status", "public_enabled", "updated_at"])
     return JsonResponse(_serialize(survey))
+
+
+@require_http_methods(["GET", "POST"])
+def public_survey(request, public_token):
+    survey = SurveyDefinition.objects.filter(
+        public_token=public_token,
+        public_enabled=True,
+        status="active",
+    ).prefetch_related("questions").first()
+    if survey is None:
+        return JsonResponse({"detail": "Survey not found."}, status=404)
+    if request.method == "GET":
+        data = _serialize(survey)
+        data.pop("public_token", None)
+        data.pop("linked_campaign_id", None)
+        return JsonResponse(data)
+
+    payload = _body(request)
+    if not isinstance(payload, dict):
+        return JsonResponse({"detail": "Invalid JSON body."}, status=400)
+    answers = payload.get("answers") if isinstance(payload.get("answers"), dict) else {}
+    questions = {q.key: q for q in survey.questions.all()}
+    missing = [q.key for q in questions.values() if q.required and q.key not in answers]
+    if missing:
+        return JsonResponse({"detail": "Required answers are missing.", "missing": missing}, status=400)
+    response = SurveyResponse.objects.create(
+        school=survey.school,
+        survey=survey,
+        anonymous=True,
+        campaign_id=survey.linked_campaign_id,
+        metadata_json={"source": "public_token"},
+    )
+    for key, raw in answers.items():
+        question = questions.get(key)
+        if question is not None:
+            SurveyAnswer.objects.create(response=response, question=question, value_json={"value": raw})
+    return JsonResponse({"response_id": str(response.id), "submitted_at": response.submitted_at.isoformat()}, status=201)
 
 
 @require_http_methods(["POST"])
