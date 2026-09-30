@@ -140,7 +140,7 @@ CROWN_ENV = os.getenv("CROWN_ENV", "")
 # When enabled, DemoWriteBlockMiddleware blocks all mutating requests.
 CROWN_DEMO_MODE = _env_bool("CROWN_DEMO_MODE", default=False)
 _assert_not_prod_true("CROWN_DEMO_MODE", CROWN_DEMO_MODE)
-CROWN_DEMO_KEY = os.getenv("CROWN_DEMO_KEY", "CrownDemoKey!2026" if DEBUG else "")
+CROWN_DEMO_KEY = os.getenv("CROWN_DEMO_KEY", "").strip()
 
 # Tenant header enforcement
 # When True, TenantHeaderRequiredMiddleware requires X-School-Id on /api/v1/* routes.
@@ -245,6 +245,7 @@ INSTALLED_APPS = [
     # Stage 5 -- Org Scalability (onboarding already in WIZARD_INSTALLED_APPS)
     'support.apps.SupportConfig',
     'analytics.apps.AnalyticsConfig',
+    'crm_marketing.apps.CrmMarketingConfig',
 ]
 INSTALLED_APPS += WIZARD_INSTALLED_APPS  # wizard SDK: single source of truth in wizard_registry.py
 

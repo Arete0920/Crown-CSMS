@@ -40,6 +40,7 @@ PERMISSIONS = [
     ("financial_aid.edit", "Create or modify aid awards"),
     ("financial_aid.view_rationale", "View per-award case rationale text"),
     ("marketing.view", "View marketing / enrollment funnel"),
+    ("marketing.edit", "Create and manage marketing campaigns and touchpoints"),
     ("advancement.view", "View advancement / fundraising dashboard"),
     ("advancement.edit", "Create or modify advancement / fundraising records"),
     ("crownpass.scan", "Scan and redeem CrownPass admission credentials"),
