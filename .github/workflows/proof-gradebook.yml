@@ -77,7 +77,7 @@ jobs:
       - name: Seed Django (golden path + demo users + academics)
         working-directory: backend
         env:
-          CROWN_DEMO_PASSWORD: "CI-Demo-Password-2026"
+          CROWN_DEMO_PASSWORD: "ci-${{ github.run_id }}-${{ github.run_attempt }}-Crown"
         run: |
           python manage.py golden_path_bootstrap --force --school-id b45b8c5a-6708-4597-aad9-a226627b2962
           python manage.py seed_demo_school --force --students 25
