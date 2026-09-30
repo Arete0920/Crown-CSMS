@@ -135,7 +135,7 @@ def _to_uuid_or_none(value):
         return None
     try:
         return uuid.UUID(str(value))
-    except Exception:
+    except (TypeError, ValueError, AttributeError):
         return None
 
 
