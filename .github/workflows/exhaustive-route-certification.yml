@@ -22,6 +22,7 @@ jobs:
     timeout-minutes: 90
     env:
       CI: "1"
+      NODE_OPTIONS: "--max-old-space-size=8192"
       VITE_DEMO_MODE: "sandbox"
       VITE_SANDBOX_MODE: "1"
       VITE_SANDBOX_READY_ONLY: ""
