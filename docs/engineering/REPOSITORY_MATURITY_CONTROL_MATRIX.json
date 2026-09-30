@@ -17,7 +17,9 @@
       "status": "enforced",
       "evidence": [
         ".github/workflows/false-completion-blocker.yml",
-        "backend/crown_api/metrics_views.py"
+        "backend/crown_api/metrics_views.py",
+        "docs/architecture/AUTHORITATIVE_TRUTH_REGISTRY.json",
+        "docs/release/PROOF_AUTHORITY_POLICY.json"
       ]
     },
     {
@@ -44,9 +46,8 @@
       "name": "Database business invariants",
       "status": "existing",
       "evidence": [
-        "docs/FINANCIAL_INVARIANTS.md",
-        "backend/payments/models.py",
-        "backend/finance/models.py"
+        "docs/engineering/DATABASE_INVARIANT_REGISTER.json",
+        "docs/FINANCIAL_INVARIANTS.md"
       ]
     },
     {
@@ -54,6 +55,7 @@
       "name": "Explicit workflow state machines",
       "status": "existing",
       "evidence": [
+        "docs/engineering/STATE_MACHINE_STANDARD.md",
         "docs/api/ADMISSIONS_API_CONTRACT.md",
         "backend/reenrollment/models.py"
       ]
@@ -63,6 +65,7 @@
       "name": "Mutation idempotency",
       "status": "existing",
       "evidence": [
+        "docs/engineering/IDEMPOTENCY_STANDARD.md",
         "backend/comms/outbox_service.py",
         "backend/payments/models.py",
         "backend/financial_aid/services.py"
@@ -108,8 +111,7 @@
       "name": "Canonical API error contract",
       "status": "existing",
       "evidence": [
-        "docs/api",
-        "backend/crown_api"
+        "docs/api/API_ERROR_CONTRACT.md"
       ]
     },
     {
@@ -158,8 +160,9 @@
       "name": "Business observability",
       "status": "existing",
       "evidence": [
+        "docs/engineering/BUSINESS_OBSERVABILITY_STANDARD.md",
         "backend/core/observability/middleware.py",
-        "backend/audit"
+        "backend/audit/__init__.py"
       ]
     },
     {
@@ -175,8 +178,8 @@
       "name": "Performance budgets",
       "status": "enforced",
       "evidence": [
-        ".github/workflows/frontend-bundle-budget.yml",
-        "docs/security/CROWN_SECURITY_COMPLIANCE_RESILIENCE_TEST_PLAN_20260529.md"
+        "docs/engineering/PERFORMANCE_BUDGETS.json",
+        ".github/workflows/frontend-bundle-budget.yml"
       ]
     },
     {
@@ -184,6 +187,7 @@
       "name": "Data provenance standard",
       "status": "enforced",
       "evidence": [
+        "docs/architecture/AUTHORITATIVE_TRUTH_REGISTRY.json",
         "docs/release/CROWN_DASHBOARD_DATA_PROVENANCE_CONTRACT_20260529.md",
         "backend/market_intelligence/models.py"
       ]
@@ -193,6 +197,7 @@
       "name": "Retention and deletion automation",
       "status": "existing",
       "evidence": [
+        "docs/compliance/DATA_DELETION_PROOF_STANDARD.md",
         "backend/core/services/retention_service.py",
         "docs/compliance/DATA_RETENTION_POLICY.md"
       ]
@@ -203,6 +208,7 @@
       "status": "existing",
       "evidence": [
         "scripts/disaster-recovery/backup_restore_proof.ps1",
+        ".github/workflows/isolated-postgres-restore-drill.yml",
         "docs/DISASTER_RECOVERY_POLICY.md"
       ]
     },
