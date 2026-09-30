@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
+import { certifyWithConcurrency } from "../../scripts/route-certification-pool.mjs";
 
 const SCHOOL_ID = "19801b59-8c05-4c84-9312-5d792e4e839d";
 const EVIDENCE_ROOT = path.resolve("test-results/exhaustive-route-certification");
@@ -325,14 +326,22 @@ test("Heritage roles launch", async ({ page }) => {
   expect(seenRoles).toEqual(personas.map((persona) => persona.value));
 });
 
-test("all registered URLs render without HTTP or browser errors", async ({ context }, testInfo) => {
+test("all registered URLs render without HTTP or browser errors", async ({ browser }, testInfo) => {
   test.setTimeout(45 * 60_000);
   const { inventory, missing } = await buildInventory();
   const appOrigin = applicationOrigin(testInfo);
-  const results = [];
-
-  for (const entry of inventory) {
-    const routePage = await context.newPage();
+  const results = await certifyWithConcurrency(inventory, 2, async (entry) => {
+    // Isolate storage/cookies so logout cannot affect a concurrent route.
+    const use = testInfo.project.use;
+    const routeContext = await browser.newContext({
+      baseURL: appOrigin,
+      viewport: use.viewport,
+      userAgent: use.userAgent,
+      deviceScaleFactor: use.deviceScaleFactor,
+      isMobile: use.isMobile,
+      hasTouch: use.hasTouch,
+    });
+    const routePage = await routeContext.newPage();
     const consoleErrors = [];
     const pageErrors = [];
     const requestFailures = [];
@@ -406,7 +415,7 @@ test("all registered URLs render without HTTP or browser errors", async ({ conte
       animations: "disabled",
     }).catch((error) => blockers.push(`screenshot error: ${error instanceof Error ? error.message : String(error)}`));
 
-    results.push({
+    const result = {
       template: entry.template,
       requestedPath: entry.concrete,
       finalPath,
@@ -419,10 +428,11 @@ test("all registered URLs render without HTTP or browser errors", async ({ conte
       badResponses: finalBadResponses,
       blockers,
       screenshot,
-    });
+    };
 
-    await routePage.close().catch(() => undefined);
-  }
+    await routeContext.close();
+    return result;
+  });
 
   const failures = results.filter((result) => result.status === "FAIL");
   const screenshotPaths = results.map((result) => result.screenshot);
