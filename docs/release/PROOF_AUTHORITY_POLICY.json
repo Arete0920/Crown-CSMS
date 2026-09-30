@@ -1,0 +1,34 @@
+{
+  "version": 1,
+  "authority_rule": "A release or business-operation claim is valid only when the evidence is current, tied to the exact candidate SHA, and proves the named operation rather than a proxy condition.",
+  "acceptable_evidence": [
+    "Exact-head automated workflow result that executes the mapped critical business journey.",
+    "Exact-head integration test proving persisted authoritative state and relevant side effects.",
+    "Current environment runtime proof tied to BUILD_SHA and reconciled to the candidate SHA.",
+    "Current backup/restore or rollback drill tied to the candidate release when the claim concerns recoverability."
+  ],
+  "insufficient_by_itself": [
+    "Archived audit pack",
+    "Historical certification",
+    "Sandbox seed success",
+    "Demo screenshot or video",
+    "Sample payload rendering",
+    "Build success without business-operation proof",
+    "Route existence without persistence proof",
+    "HTTP 200 without authoritative state verification",
+    "Documentation statement",
+    "Stale workflow result from another SHA"
+  ],
+  "freshness": {
+    "repository_claim": "same SHA",
+    "production_runtime_claim": "same deployed BUILD_SHA",
+    "security_dependency_claim": "current dependency graph at candidate SHA",
+    "migration_claim": "current migration graph plus target database proof"
+  },
+  "required_links": [
+    "docs/engineering/CRITICAL_BUSINESS_JOURNEYS.json",
+    "docs/CURRENT_RELEASE_STATUS.md",
+    ".github/workflows/false-completion-blocker.yml",
+    ".github/workflows/release-scorecard.yml"
+  ]
+}
