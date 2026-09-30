@@ -285,30 +285,124 @@ def financial_aid_metrics(request):
 @require_http_methods(["GET"])
 @require_permission("marketing.view")
 def marketing_metrics(request):
-    """Marketing & Advancement dashboard — inquiry funnel, source mix, campaigns."""
-    return JsonResponse({
-        "inquiries_ytd":   187,
-        "tours_scheduled":  62,
-        "applications":     54,
-        "enrolled":         38,
-        "stalled_leads":    11,
-        "inquiry_sources": [
-            {"source": "Website",  "count": 74, "pct": 40},
-            {"source": "Referral", "count": 56, "pct": 30},
-            {"source": "Social",   "count": 37, "pct": 20},
-            {"source": "Event",    "count": 20, "pct": 10},
-        ],
-        "campaigns": [
-            {"name": "Spring Open House", "status": "active",   "leads": 28, "conversions": 9},
-            {"name": "Digital Ads Q1",    "status": "active",   "leads": 41, "conversions": 12},
-            {"name": "Referral Drive",    "status": "complete", "leads": 18, "conversions": 7},
-        ],
-        "alerts": [
-            {"label": "11 leads with no follow-up >7 days",    "severity": "red"},
-            {"label": "Open House RSVPs below target (28/50)", "severity": "yellow"},
-        ],
-        "snapshot_date": _today(),
-    })
+    """Tenant-scoped marketing command metrics derived from admissions truth."""
+    from applications.models import Application, Applicant, ApplicationEvent
+
+    school_id = get_request_school_id(request, required=True)
+    apps = Application.objects.filter(school_id=school_id)
+    app_ids = list(apps.values_list("id", flat=True))
+    events = ApplicationEvent.objects.filter(school_id=school_id, application_id__in=app_ids)
+
+    inquiry_ids = set(
+        events.filter(event_type="inquiry_created").values_list("application_id", flat=True)
+    )
+    tour_ids = set(
+        events.filter(event_type="tour_scheduled").values_list("application_id", flat=True)
+    )
+    enrolled_ids = set(
+        events.filter(event_type="enrollment_confirmed").values_list("application_id", flat=True)
+    )
+    declined_ids = set()
+    for row in events.filter(event_type="decision_made").values("application_id", "payload"):
+        payload = row.get("payload") or {}
+        decision = str(payload.get("decision") or payload.get("status") or "").strip().lower()
+        if decision in {"declined", "denied", "rejected"}:
+            declined_ids.add(row["application_id"])
+
+    application_ids = set(
+        apps.exclude(status="DRAFT").values_list("id", flat=True)
+    )
+    now = timezone.now()
+    stale_cutoff = now - datetime.timedelta(days=7)
+    stalled_leads = (
+        apps.filter(updated_at__lte=stale_cutoff)
+        .exclude(id__in=enrolled_ids)
+        .exclude(id__in=declined_ids)
+        .count()
+    )
+
+    applicants = Applicant.objects.filter(
+        school_id=school_id,
+        application_id__in=app_ids,
+    ).only("application_id", "source")
+    source_map = {}
+    for applicant in applicants:
+        source = str(applicant.source or "Unspecified").strip() or "Unspecified"
+        bucket = source_map.setdefault(source, {"applications": set(), "enrolled": set()})
+        bucket["applications"].add(applicant.application_id)
+        if applicant.application_id in enrolled_ids:
+            bucket["enrolled"].add(applicant.application_id)
+
+    inquiry_sources = []
+    for source, bucket in source_map.items():
+        applications = len(bucket["applications"])
+        enrolled = len(bucket["enrolled"])
+        inquiry_sources.append(
+            {
+                "source": source,
+                "applications": applications,
+                "enrolled": enrolled,
+                "conversion_pct": round((enrolled / applications) * 100, 1) if applications else 0.0,
+            }
+        )
+    inquiry_sources.sort(key=lambda row: (-row["applications"], row["source"].lower()))
+
+    total_applications = len(application_ids)
+    total_enrolled = len(enrolled_ids)
+    overall_conversion_pct = round((total_enrolled / total_applications) * 100, 1) if total_applications else 0.0
+
+    action_queue = []
+    if stalled_leads:
+        action_queue.append(
+            {
+                "title": f"Re-engage {stalled_leads} stalled prospect record(s)",
+                "detail": "No admissions movement recorded in more than seven days.",
+                "state": "Action Required",
+                "priority": "high",
+            }
+        )
+    if inquiry_ids:
+        action_queue.append(
+            {
+                "title": f"Advance {len(inquiry_ids)} active inquiry record(s)",
+                "detail": "Move qualified families toward tours and applications.",
+                "state": "Ready",
+                "priority": "normal",
+            }
+        )
+
+    return JsonResponse(
+        {
+            "inquiries": len(inquiry_ids),
+            "tours_scheduled": len(tour_ids),
+            "applications": total_applications,
+            "enrolled": total_enrolled,
+            "stalled_leads": stalled_leads,
+            "overall_application_to_enrollment_pct": overall_conversion_pct,
+            "source_attribution": inquiry_sources[:10],
+            "action_queue": action_queue[:6],
+            "market_intelligence": {
+                "status": "not_configured",
+                "message": (
+                    "External demographic, drive-time, church, preschool, competitor, "
+                    "and advertising-spend datasets are not yet configured for this school."
+                ),
+            },
+            "advertising": {
+                "status": "not_configured",
+                "message": (
+                    "Advertising spend, impressions, clicks, and campaign cost attribution "
+                    "require an approved campaign-data integration."
+                ),
+            },
+            "snapshot_date": _today(),
+            "_meta": {
+                "source": "live",
+                "scope": "tenant",
+                "provenance": "applications.Application, applications.Applicant, applications.ApplicationEvent",
+            },
+        }
+    )
 
 
 @require_http_methods(["GET"])
