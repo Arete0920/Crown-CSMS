@@ -10,28 +10,28 @@ const creds = {
   admin: {
     roleValue: "school_admin",
     email: process.env.CERT_SANDBOX_ADMIN_EMAIL || "admin@heritage.example.org",
-    password: process.env.CERT_SANDBOX_ADMIN_PASSWORD || "CrownDemo!2026",
+    password: process.env.CERT_SANDBOX_ADMIN_PASSWORD || "",
     expected: IS_SANDBOX ? /school-admin-dashboard|admin|director|wizards/i : /admin|director|wizards/i,
     forbidden: [/\/director\/aid\b/],
   },
   parent: {
     roleValue: "parent",
     email: process.env.CERT_PARENT_EMAIL || "parent.reed@heritage.example.org",
-    password: process.env.CERT_PARENT_PASSWORD || "CrownDemo!2026",
+    password: process.env.CERT_PARENT_PASSWORD || "",
     expected: /parent|portal|dashboard|home/i,
     forbidden: [/\/admin\b/, /\/director\/aid\b/, /\/finance\b/, /school-admin-dashboard/],
   },
   teacher: {
     roleValue: "teacher",
     email: process.env.CERT_TEACHER_EMAIL || "teacher.lower@heritage.example.org",
-    password: process.env.CERT_TEACHER_PASSWORD || "CrownDemo!2026",
+    password: process.env.CERT_TEACHER_PASSWORD || "",
     expected: /teacher|dashboard|home/i,
     forbidden: [/\/admin\b/, /\/director\/aid\b/, /\/finance\b/, /school-admin-dashboard/],
   },
   student: {
     roleValue: "student",
     email: process.env.CERT_STUDENT_EMAIL || "student.avery.reed11@heritage.example.org",
-    password: process.env.CERT_STUDENT_PASSWORD || "CrownDemo!2026",
+    password: process.env.CERT_STUDENT_PASSWORD || "",
     expected: /student|dashboard|home/i,
     forbidden: [
       /\/admin\b/,
@@ -45,6 +45,9 @@ const creds = {
 };
 
 async function login(page, email, password, roleValue) {
+  if (!IS_SANDBOX && !password) {
+    throw new Error(`Credential is required for role ${roleValue}`);
+  }
   await page.goto(`${frontendUrl}/login`, { waitUntil: "networkidle" });
 
   const path = new URL(page.url()).pathname;
