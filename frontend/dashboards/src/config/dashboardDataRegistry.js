@@ -132,6 +132,7 @@ export const DASHBOARD_DATA_REGISTRY = {
   'master-control': createDataConfig(dashboardSummaryPath('master-control')),
   admissions: createDemoCriticalDataConfig('admissions', 'Admissions'),
   advancement: createDataConfig(dashboardSummaryPath('advancement')),
+  marketing: createDataConfig('/api/v1/marketing/metrics/'),
 
   // Sandbox/demo persona dashboards
   parent: createDemoCriticalDataConfig('parent', 'Parent'),
