@@ -1,0 +1,37 @@
+name: Mutation Strength
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 7 * * 6"
+
+permissions:
+  contents: read
+
+jobs:
+  critical-security-mutations:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      DJANGO_SETTINGS_MODULE: crown_api.test_settings
+      SECRET_KEY: mutation-strength-ci-not-secret
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install backend and mutation runner
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install mutmut==3.3.1
+      - name: Tenant authorization mutation proof
+        run: |
+          mutmut run --paths-to-mutate crown_api/tenant.py --tests-dir tests --runner "python -m pytest -q tests/test_*tenant.py"
+      - name: Report surviving mutations
+        if: always()
+        run: mutmut results
