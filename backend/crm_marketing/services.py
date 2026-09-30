@@ -165,13 +165,10 @@ def build_campaign_snapshot(campaign):
     planned_aid_each = int((campaign.aid_strategy or {}).get("planned_aid_per_enrollment_cents") or 0)
     projected_gross = goal * tuition
     projected_aid = goal * planned_aid_each
-    projected_net_first_year = max(projected_gross - projected_aid - int(campaign.budget_cents or 0), 0)
-    projected_lifetime_net = max(
-        goal * max(tuition - planned_aid_each, 0) * int(campaign.expected_retention_years or 1) - int(campaign.budget_cents or 0),
-        0,
-    )
+    projected_net_first_year = projected_gross - projected_aid - int(campaign.budget_cents or 0)
+    projected_lifetime_net = goal * (tuition - planned_aid_each) * int(campaign.expected_retention_years or 1) - int(campaign.budget_cents or 0)
     actual_gross = enrolled * tuition
-    actual_net_before_aid = max(actual_gross - int(campaign.actual_spend_cents or 0), 0)
+    actual_net_before_aid = actual_gross - int(campaign.actual_spend_cents or 0)
 
     return {
         "campaign_id": str(campaign.id),

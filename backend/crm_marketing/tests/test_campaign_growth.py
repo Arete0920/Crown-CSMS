@@ -155,6 +155,18 @@ def test_campaign_enrollment_requires_canonical_confirmation_and_counts_families
     assert snapshot["economics"]["estimated_gross_tuition_from_confirmed_applications_cents"] == 100000
 
 
+def test_campaign_estimates_preserve_losses_instead_of_reporting_zero():
+    school = School.objects.create(name="Campaign Loss School")
+    campaign = MarketingCampaign.objects.create(school=school, name="Loss Estimate", enrollment_goal=1,
+                                                tuition_per_student_cents=100000, budget_cents=200000,
+                                                actual_spend_cents=300000)
+    economics = build_campaign_snapshot(campaign)["economics"]
+    assert economics["projected_net_first_year_cents"] == -100000
+    assert economics["projected_lifetime_net_tuition_cents"] == -100000
+    assert economics["estimated_net_before_aid_cents"] == -300000
+    assert economics["actual_net_before_aid_cents"] is None
+
+
 @pytest.fixture
 def campaign_client(client):
     school = School.objects.create(name="Campaign API School")
