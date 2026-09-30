@@ -9,9 +9,9 @@ const IS_SANDBOX =
 const DEMO_SCHOOL_ID = process.env.CROWN_DEMO_SCHOOL_ID || "19801b59-8c05-4c84-9312-5d792e4e839d";
 const DEMO_TOKEN = process.env.CROWN_DEMO_TOKEN || "playwright-demo-token";
 const primaryEmail = process.env.CERT_SANDBOX_ADMIN_EMAIL || "admin@heritage.example.org";
-const primaryPassword = process.env.CERT_SANDBOX_ADMIN_PASSWORD || "CrownDemo!2026";
+const primaryPassword = process.env.CERT_SANDBOX_ADMIN_PASSWORD || "";
 const secondEmail = process.env.CERT_SANDBOX_SECOND_ADMIN_EMAIL || "miriam.caldwell@heritage.example.org";
-const secondPassword = process.env.CERT_SANDBOX_SECOND_ADMIN_PASSWORD || "CrownDemo!2026";
+const secondPassword = process.env.CERT_SANDBOX_SECOND_ADMIN_PASSWORD || "";
 const schoolAdminRoute = process.env.CERT_SCHOOL_ADMIN_ROUTE || (IS_SANDBOX ? "/school-admin-dashboard" : "/admin");
 const adminRouteExpectation = /\/school-admin-dashboard\b|\/admin\b|\/director\b(?!\/aid)|\/wizards\b/;
 
