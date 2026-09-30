@@ -1,0 +1,59 @@
+{
+  "version": 1,
+  "states": [
+    "configured",
+    "healthy",
+    "degraded",
+    "disabled",
+    "unsupported"
+  ],
+  "capabilities": [
+    {
+      "capability": "email_delivery",
+      "configuration": [
+        "GRAPH_TENANT_ID|AZURE_TENANT_ID",
+        "GRAPH_CLIENT_ID|AZURE_CLIENT_ID",
+        "GRAPH_CLIENT_SECRET|AZURE_CLIENT_SECRET"
+      ],
+      "runtime_contract": "configured is not healthy until a delivery proof succeeds"
+    },
+    {
+      "capability": "sms_delivery",
+      "configuration": [
+        "COMMS_SMS_ENABLED",
+        "TWILIO_ACCOUNT_SID",
+        "TWILIO_AUTH_TOKEN",
+        "TWILIO_PHONE_NUMBER"
+      ],
+      "runtime_contract": "admissions may queue SMS only when complete delivery configuration exists"
+    },
+    {
+      "capability": "payments",
+      "configuration": [
+        "provider-specific credentials"
+      ],
+      "runtime_contract": "webhook verification, idempotency and reconciliation are required"
+    },
+    {
+      "capability": "file_storage",
+      "configuration": [
+        "M365_SHAREPOINT_SITE_ID|M365_DEFAULT_DRIVE_ID"
+      ],
+      "runtime_contract": "document handoff reports unavailable when storage is not configured"
+    },
+    {
+      "capability": "calendar",
+      "configuration": [
+        "provider-specific credentials"
+      ],
+      "runtime_contract": "calendar actions must expose disabled/degraded state rather than silent fallback"
+    },
+    {
+      "capability": "market_data",
+      "configuration": [
+        "verified external source provenance"
+      ],
+      "runtime_contract": "demographic values remain not configured until a traceable source is connected"
+    }
+  ]
+}
