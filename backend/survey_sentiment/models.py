@@ -19,6 +19,7 @@ class SurveyDefinition(models.Model):
     anonymous_allowed = models.BooleanField(default=False)
     public_enabled = models.BooleanField(default=False)
     public_token = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    public_expires_at = models.DateTimeField(null=True, blank=True)
     linked_campaign_id = models.UUIDField(null=True, blank=True)
     grade_code = models.CharField(max_length=3, blank=True, default="")
     audience = models.CharField(max_length=80, blank=True, default="families")
