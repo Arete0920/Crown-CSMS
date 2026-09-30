@@ -1,5 +1,6 @@
+from datetime import date
+
 import pytest
-from django.utils import timezone
 
 from applications.models import Application
 from core.models import AcademicYear, Enrollment, Family, GradeLevel, School, Student
@@ -16,8 +17,8 @@ def _year(school):
     return AcademicYear.objects.create(
         school=school,
         name="2027-2028",
-        start_date=timezone.datetime(2027, 8, 15).date(),
-        end_date=timezone.datetime(2028, 6, 5).date(),
+        start_date=date(2027, 8, 15),
+        end_date=date(2028, 6, 5),
         is_current=True,
     )
 
@@ -41,7 +42,7 @@ def test_capacity_growth_snapshot_connects_capacity_portrait_and_economics():
             student_number=f"S-{index}",
             first_name="Student",
             last_name=str(index),
-            dob=timezone.datetime(2015, 1, 1).date(),
+            dob=date(2015, 1, 1),
             status="ACTIVE",
             current_grade_level=grade,
         )
