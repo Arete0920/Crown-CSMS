@@ -1,3 +1,4 @@
+import SchoolStorePanel from "../components/finance/SchoolStorePanel.jsx";
 import useFinanceDashboardData from "../hooks/useFinanceDashboardData";
 import CrownLayout from "../components/crown/CrownLayout.jsx";
 import SandboxFinanceTransactionPanel from "../components/finance/SandboxFinanceTransactionPanel.jsx";
@@ -174,6 +175,7 @@ export default function FinanceDashboard() {
           </>
         )}
       </section>
+    <SchoolStorePanel />
     </CrownLayout>
   );
 }
