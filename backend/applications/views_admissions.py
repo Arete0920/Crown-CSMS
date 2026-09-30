@@ -388,7 +388,11 @@ def _is_sharepoint_configured() -> bool:
 
 
 def _is_sms_configured() -> bool:
-    return str(os.getenv("COMMS_SMS_ENABLED", "0")).strip().lower() in {"1", "true", "yes", "on"}
+    enabled = str(os.getenv("COMMS_SMS_ENABLED", "0")).strip().lower() in {"1", "true", "yes", "on"}
+    if not enabled:
+        return False
+    from comms.sms_service import sms_delivery_configured
+    return sms_delivery_configured()
 
 
 def _build_contract_m365_handoff(*, application_ids: list[str]) -> dict[str, Any]:
