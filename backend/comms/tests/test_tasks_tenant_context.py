@@ -64,3 +64,29 @@ class OutboxTenantContextTests(TestCase):
         self.assertIn("unknown or inactive school", self.message.last_error)
         send_mock.assert_not_called()
         self.assertIsNone(get_current_school())
+
+
+    @patch("comms.sms_service.send_sms_to_number")
+    def test_sms_outbox_uses_number_delivery(self, send_sms_mock):
+        self.message.channel = "SMS"
+        self.message.to = "+15555550123"
+        self.message.save(update_fields=["channel", "to"])
+
+        result = drain_outbox.run(batch_size=1)
+
+        self.message.refresh_from_db()
+        self.assertEqual(result, {"sent": 1, "failed": 0, "dead": 0})
+        self.assertEqual(self.message.status, OutboxMessage.STATUS_SENT)
+        send_sms_mock.assert_called_once_with("+15555550123", "Body")
+
+    def test_unsupported_channel_is_dead_after_one_attempt(self):
+        self.message.channel = "PUSH"
+        self.message.save(update_fields=["channel"])
+
+        result = drain_outbox.run(batch_size=1)
+
+        self.message.refresh_from_db()
+        self.assertEqual(result, {"sent": 0, "failed": 0, "dead": 1})
+        self.assertEqual(self.message.attempts, 1)
+        self.assertEqual(self.message.status, OutboxMessage.STATUS_DEAD)
+        self.assertIn("not configured", self.message.last_error)
