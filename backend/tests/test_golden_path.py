@@ -110,6 +110,10 @@ def test_admissions_summary_returns_expected_pipeline_shape():
     assert response.status_code == 200
     assert "pipeline" in response.data
     assert "conversion" in response.data
+    assert "stage_aging" in response.data
+    assert "command_intelligence" in response.data
+    assert "action_queue" in response.data["command_intelligence"]
+    assert "predictive" in response.data["command_intelligence"]
     assert response.data["pipeline"]["total"] >= 1
 
 
