@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import json
 import uuid
+from datetime import timedelta
 
 from django.core.cache import cache
 from django.http import JsonResponse
+from django.utils import timezone
 from django.views.decorators.http import require_http_methods
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
@@ -87,6 +89,7 @@ def _serialize(survey):
         "status": survey.status, "anonymous_allowed": survey.anonymous_allowed,
         "public_enabled": survey.public_enabled,
         "public_token": str(survey.public_token),
+        "public_expires_at": survey.public_expires_at.isoformat() if survey.public_expires_at else None,
         "linked_campaign_id": str(survey.linked_campaign_id) if survey.linked_campaign_id else None,
         "grade_code": survey.grade_code,
         "questions": [
@@ -159,8 +162,11 @@ def survey_detail(request, survey_id):
             next_public_enabled = bool(payload["public_enabled"])
             if next_public_enabled and not survey.public_enabled:
                 survey.public_token = uuid.uuid4()
+                survey.public_expires_at = timezone.now() + timedelta(days=30)
+            elif not next_public_enabled:
+                survey.public_expires_at = None
             survey.public_enabled = next_public_enabled
-        survey.save(update_fields=["status", "public_enabled", "public_token", "updated_at"])
+        survey.save(update_fields=["status", "public_enabled", "public_token", "public_expires_at", "updated_at"])
     return JsonResponse(_serialize(survey))
 
 
@@ -171,6 +177,7 @@ def public_survey(request, public_token):
         public_token=public_token,
         public_enabled=True,
         status="active",
+        public_expires_at__gt=timezone.now(),
     ).prefetch_related("questions").first()
     if survey is None:
         return JsonResponse({"detail": "Survey not found."}, status=404)
