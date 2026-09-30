@@ -65,6 +65,8 @@ def build_template_questions(purpose):
             choices = ["parent_referral", "church", "search", "social", "event", "preschool_feeder", "other"]
         elif key == "motivation":
             choices = ["christian_mission", "academics", "safety", "community", "teachers", "student_support", "location", "other"]
+        elif key in {"priority_outcomes", "portrait_priority"}:
+            choices = ["biblical_worldview", "integrity", "leadership", "communication", "critical_thinking", "service", "resilience", "academic_readiness"]
         elif key == "remaining_barrier":
             choices = ["none", "tuition", "financial_aid", "academics", "programs", "transportation", "location", "timing", "other"]
         elif key in {"decisive_factor", "stop_reason", "primary_reason"}:
