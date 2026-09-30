@@ -1,0 +1,229 @@
+{
+  "version": 1,
+  "objective": "Make repository correctness depend on authoritative data, current operational proof, fail-closed security, and explicit provenance rather than duplicated truths or demo evidence.",
+  "controls": [
+    {
+      "id": 1,
+      "name": "Clean-room repository gate",
+      "status": "enforced",
+      "evidence": [
+        "scripts/ci/external_reference_hygiene.py",
+        ".github/workflows/repository-policy.yml"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "Production truth gate",
+      "status": "enforced",
+      "evidence": [
+        ".github/workflows/false-completion-blocker.yml",
+        "backend/crown_api/metrics_views.py"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "Endpoint security manifest",
+      "status": "enforced",
+      "evidence": [
+        "docs/security/ENDPOINT_SECURITY_MANIFEST.json",
+        "docs/security/public_endpoint_policy_matrix.json"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "Tenant isolation at service boundary",
+      "status": "enforced",
+      "evidence": [
+        "backend/crown_api/tenant.py",
+        "backend/core/tenant_header_middleware.py",
+        ".github/workflows/tenant-isolation-gate.yml"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "Database business invariants",
+      "status": "existing",
+      "evidence": [
+        "docs/FINANCIAL_INVARIANTS.md",
+        "backend/payments/models.py",
+        "backend/finance/models.py"
+      ]
+    },
+    {
+      "id": 6,
+      "name": "Explicit workflow state machines",
+      "status": "existing",
+      "evidence": [
+        "docs/api/ADMISSIONS_API_CONTRACT.md",
+        "backend/reenrollment/models.py"
+      ]
+    },
+    {
+      "id": 7,
+      "name": "Mutation idempotency",
+      "status": "existing",
+      "evidence": [
+        "backend/comms/outbox_service.py",
+        "backend/payments/models.py",
+        "backend/financial_aid/services.py"
+      ]
+    },
+    {
+      "id": 8,
+      "name": "No silent failure",
+      "status": "strengthened",
+      "evidence": [
+        "backend/market_intelligence/services.py",
+        "scripts/ci/repository_maturity_gate.py"
+      ]
+    },
+    {
+      "id": 9,
+      "name": "Secrets and credential elimination",
+      "status": "enforced",
+      "evidence": [
+        ".github/workflows/secret-scan.yml",
+        "backend/core/management/commands/seed_demo_school.py"
+      ]
+    },
+    {
+      "id": 10,
+      "name": "Migration release proof",
+      "status": "enforced",
+      "evidence": [
+        ".github/workflows/migration-lock-gate.yml",
+        ".github/workflows/postgres-migration-lock.yml"
+      ]
+    },
+    {
+      "id": 11,
+      "name": "Frontend/backend contract proof",
+      "status": "enforced",
+      "evidence": [
+        ".github/workflows/contract-gate.yml"
+      ]
+    },
+    {
+      "id": 12,
+      "name": "Canonical API error contract",
+      "status": "existing",
+      "evidence": [
+        "docs/api",
+        "backend/crown_api"
+      ]
+    },
+    {
+      "id": 13,
+      "name": "Critical journey matrix",
+      "status": "enforced",
+      "evidence": [
+        "docs/engineering/CRITICAL_BUSINESS_JOURNEYS.json"
+      ]
+    },
+    {
+      "id": 14,
+      "name": "Mutation-strength testing",
+      "status": "scheduled",
+      "evidence": [
+        ".github/workflows/mutation-strength.yml"
+      ]
+    },
+    {
+      "id": 15,
+      "name": "Compatibility retirement ledger",
+      "status": "enforced",
+      "evidence": [
+        "docs/engineering/COMPATIBILITY_RETIREMENT_LEDGER.json"
+      ]
+    },
+    {
+      "id": 16,
+      "name": "Canonical dashboard data architecture",
+      "status": "enforced",
+      "evidence": [
+        "docs/release/CROWN_DASHBOARD_DATA_PROVENANCE_CONTRACT_20260529.md",
+        "scripts/execution/121_crown_dashboard_data_provenance_gate.ps1"
+      ]
+    },
+    {
+      "id": 17,
+      "name": "Integration capability registry",
+      "status": "enforced",
+      "evidence": [
+        "docs/engineering/INTEGRATION_CAPABILITY_REGISTRY.json"
+      ]
+    },
+    {
+      "id": 18,
+      "name": "Business observability",
+      "status": "existing",
+      "evidence": [
+        "backend/crown_api/request_logging_middleware.py",
+        "backend/audit"
+      ]
+    },
+    {
+      "id": 19,
+      "name": "Accessibility certification",
+      "status": "enforced",
+      "evidence": [
+        ".github/workflows/frontend-quality-gates.yml"
+      ]
+    },
+    {
+      "id": 20,
+      "name": "Performance budgets",
+      "status": "enforced",
+      "evidence": [
+        ".github/workflows/frontend-bundle-budget.yml",
+        "docs/security/CROWN_SECURITY_COMPLIANCE_RESILIENCE_TEST_PLAN_20260529.md"
+      ]
+    },
+    {
+      "id": 21,
+      "name": "Data provenance standard",
+      "status": "enforced",
+      "evidence": [
+        "docs/release/CROWN_DASHBOARD_DATA_PROVENANCE_CONTRACT_20260529.md",
+        "backend/market_intelligence/models.py"
+      ]
+    },
+    {
+      "id": 22,
+      "name": "Retention and deletion automation",
+      "status": "existing",
+      "evidence": [
+        "backend/core/services/retention_service.py",
+        "docs/compliance/DATA_RETENTION_POLICY.md"
+      ]
+    },
+    {
+      "id": 23,
+      "name": "Disaster recovery proof",
+      "status": "existing",
+      "evidence": [
+        "scripts/disaster-recovery/backup_restore_proof.ps1",
+        "docs/DISASTER_RECOVERY_POLICY.md"
+      ]
+    },
+    {
+      "id": 24,
+      "name": "Repository quality scorecard",
+      "status": "enforced",
+      "evidence": [
+        "tools/release_scorecard.py",
+        ".github/workflows/release-scorecard.yml"
+      ]
+    },
+    {
+      "id": 25,
+      "name": "Definition of Done",
+      "status": "enforced",
+      "evidence": [
+        "docs/certification/COMPLETION_CONTRACT.md",
+        "docs/canons/SPINE_DEFINITION_OF_DONE.md",
+        "scripts/ci/repository_maturity_gate.py"
+      ]
+    }
+  ]
+}
