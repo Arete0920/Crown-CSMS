@@ -5,11 +5,6 @@ on:
     types: [opened, synchronize, reopened, edited, ready_for_review]
   push:
     branches: [main]
-    paths:
-      - ".github/workflows/**"
-      - "tools/verify_workflow_policy.py"
-      - "tools/ci/**"
-      - "scripts/ci/pr_hygiene_gate.py"
 
 permissions:
   contents: read
@@ -37,8 +32,8 @@ jobs:
       - name: Install policy dependencies
         run: python -m pip install --upgrade pip pyyaml
 
-      - name: Enforce competitor-name hygiene
-        run: python scripts/ci/competitor_name_hygiene.py
+      - name: Enforce external-reference hygiene
+        run: python scripts/ci/external_reference_hygiene.py
 
       - name: Enforce repository identity and naming hygiene
         run: python scripts/ci/repository_identity_hygiene.py
