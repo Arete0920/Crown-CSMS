@@ -95,4 +95,10 @@ def validate_market_inputs(data):
         "strategic_objectives",
     ]
     missing = [key for key in required_sections if not isinstance(data.get(key), dict)]
+    provenance = data.get("source_provenance")
+    if not isinstance(provenance, list) or not any(
+        isinstance(item, dict) and str(item.get("label") or item.get("name") or "").strip()
+        for item in provenance
+    ):
+        missing.append("source_provenance")
     return missing
