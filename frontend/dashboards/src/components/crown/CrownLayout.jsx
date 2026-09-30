@@ -276,7 +276,7 @@ export default function CrownLayout({ title, subtitle, right, children, mainClas
             <span className="crown-pill">{profile.role}</span>
             <span className="crown-pill">{profile.displayName}</span>
           </div>
-        </div>
+        </div>}
 
           {(title || subtitle || right) && (
             <div className="crown-pagehead" style={{ marginBottom: 14, alignItems: "flex-start" }}>
