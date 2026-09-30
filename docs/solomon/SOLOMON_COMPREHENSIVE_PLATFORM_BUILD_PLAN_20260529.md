@@ -177,7 +177,7 @@ CROWN runs school operations.
 SOLOMON governs institutional intelligence.
 ```
 
-## AI Strategy
+## Automation Strategy
 
 External posture:
 - guided support,
@@ -253,7 +253,7 @@ Package progression should follow governance maturity, provenance confidence, an
 
 1. Content dumping -> manifest and review gates
 2. Rights violations -> metadata-only and partnership controls
-3. AI overexposure -> quiet internal assist posture
+3. automation overexposure -> quiet internal assist posture
 4. Governance drift -> advisory-first and append-only provenance
 5. Operational coupling -> optional adapters and fail-closed contracts
 
