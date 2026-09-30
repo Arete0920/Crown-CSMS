@@ -1,0 +1,299 @@
+{
+  "schema_version": 1,
+  "authority": "CROWN operational proof controls",
+  "rule": "A control is complete only when required evidence paths exist and at least one executable proof path is present.",
+  "controls": [
+    {
+      "id": "C01",
+      "name": "Clean-room repository hygiene",
+      "priority": "essential",
+      "evidence": [
+        "scripts/ci/external_reference_hygiene.py",
+        ".github/workflows/repository-policy.yml"
+      ],
+      "proof": [
+        "scripts/ci/external_reference_hygiene.py"
+      ]
+    },
+    {
+      "id": "C02",
+      "name": "Production truth and no silent sample data",
+      "priority": "essential",
+      "evidence": [
+        "scripts/execution/996_false_completion_blocker_gate.ps1",
+        "backend/crown_api/metrics_views.py"
+      ],
+      "proof": [
+        "backend/tests/test_metrics_truth_guard.py"
+      ]
+    },
+    {
+      "id": "C03",
+      "name": "Endpoint security classification",
+      "priority": "essential",
+      "evidence": [
+        "docs/security/public_endpoint_policy_matrix.json",
+        "backend/core/tenant_header_middleware.py"
+      ],
+      "proof": [
+        "tools/verify_public_surface_policy.py"
+      ]
+    },
+    {
+      "id": "C04",
+      "name": "Tenant isolation by construction",
+      "priority": "essential",
+      "evidence": [
+        "docs/architecture/decisions/ADR-0001-tenant-resolution-and-enforcement.md",
+        "backend/core/tenant_header_middleware.py"
+      ],
+      "proof": [
+        "backend/tests/test_tenant_decision_audit_and_dashboard_context.py"
+      ]
+    },
+    {
+      "id": "C05",
+      "name": "Database invariants for critical records",
+      "priority": "essential",
+      "evidence": [
+        "backend/core/models.py",
+        "backend/finance/models.py"
+      ],
+      "proof": [
+        ".github/workflows/migration-lock-gate.yml"
+      ]
+    },
+    {
+      "id": "C06",
+      "name": "Explicit lifecycle state transitions",
+      "priority": "essential",
+      "evidence": [
+        "docs/api/ADMISSIONS_API_CONTRACT.md",
+        "backend/applications/models.py"
+      ],
+      "proof": [
+        "backend/tests/test_golden_path.py"
+      ]
+    },
+    {
+      "id": "C07",
+      "name": "Idempotent consequential mutations",
+      "priority": "essential",
+      "evidence": [
+        "backend/finance/services.py",
+        "backend/comms/tasks.py"
+      ],
+      "proof": [
+        "backend/comms/tests/test_tasks_tenant_context.py"
+      ]
+    },
+    {
+      "id": "C08",
+      "name": "No silent failure",
+      "priority": "essential",
+      "evidence": [
+        "scripts/ci/repository_truth_gate.py"
+      ],
+      "proof": [
+        "scripts/ci/repository_truth_gate.py"
+      ]
+    },
+    {
+      "id": "C09",
+      "name": "Secrets and runtime credential discipline",
+      "priority": "essential",
+      "evidence": [
+        ".github/workflows/secret-scan.yml",
+        "backend/core/management/commands/seed_demo_school.py"
+      ],
+      "proof": [
+        ".github/workflows/secret-scan.yml"
+      ]
+    },
+    {
+      "id": "C10",
+      "name": "Migration release proof",
+      "priority": "essential",
+      "evidence": [
+        ".github/workflows/migration-lock-gate.yml",
+        ".github/workflows/postgres-migration-lock-contention.yml"
+      ],
+      "proof": [
+        ".github/workflows/postgres-migration-lock-contention.yml"
+      ]
+    },
+    {
+      "id": "C11",
+      "name": "Frontend/backend contract proof",
+      "priority": "important",
+      "evidence": [
+        ".github/workflows/contract-gate.yml"
+      ],
+      "proof": [
+        ".github/workflows/contract-gate.yml"
+      ]
+    },
+    {
+      "id": "C12",
+      "name": "Canonical API error contract",
+      "priority": "important",
+      "evidence": [
+        "backend/core/api_errors.py",
+        "frontend/dashboards/src/utils/normalizeApiError.js"
+      ],
+      "proof": [
+        "backend/tests/test_api_error_contract.py"
+      ]
+    },
+    {
+      "id": "C13",
+      "name": "Critical business journey proof",
+      "priority": "important",
+      "evidence": [
+        "docs/engineering/CROWN_CRITICAL_JOURNEY_MANIFEST.json"
+      ],
+      "proof": [
+        "scripts/ci/operational_proof_gate.py"
+      ]
+    },
+    {
+      "id": "C14",
+      "name": "Mutation-resistance on critical controls",
+      "priority": "important",
+      "evidence": [
+        "docs/engineering/CROWN_DEFINITION_OF_DONE.md"
+      ],
+      "proof": [
+        "scripts/ci/operational_proof_gate.py"
+      ]
+    },
+    {
+      "id": "C15",
+      "name": "Compatibility retirement",
+      "priority": "important",
+      "evidence": [
+        "docs/architecture/CROWN_COMPATIBILITY_RETIREMENT_LEDGER.json",
+        "docs/governance/CROWN_LEGACY_API_ROUTE_CLASSIFICATION.md"
+      ],
+      "proof": [
+        "scripts/ci/compatibility_debt_gate.py"
+      ]
+    },
+    {
+      "id": "C16",
+      "name": "Canonical dashboard data architecture",
+      "priority": "important",
+      "evidence": [
+        "docs/release/CROWN_DASHBOARD_DATA_PROVENANCE_CONTRACT_20260529.md",
+        "frontend/dashboards/src/config/dashboardDataRegistry.js"
+      ],
+      "proof": [
+        "scripts/execution/996_false_completion_blocker_gate.ps1"
+      ]
+    },
+    {
+      "id": "C17",
+      "name": "Integration capability registry",
+      "priority": "important",
+      "evidence": [
+        "docs/engineering/CROWN_INTEGRATION_CAPABILITY_REGISTRY.json"
+      ],
+      "proof": [
+        "scripts/ci/operational_proof_gate.py"
+      ]
+    },
+    {
+      "id": "C18",
+      "name": "Operational observability",
+      "priority": "important",
+      "evidence": [
+        "backend/crown_api/audit.py",
+        "backend/platform_ops/models.py"
+      ],
+      "proof": [
+        "backend/crown_api/tests/test_audit_proof.py"
+      ]
+    },
+    {
+      "id": "C19",
+      "name": "Accessibility certification",
+      "priority": "important",
+      "evidence": [
+        "frontend/dashboards/tests/release-accessibility.spec.ts"
+      ],
+      "proof": [
+        "frontend/dashboards/tests/release-accessibility.spec.ts"
+      ]
+    },
+    {
+      "id": "C20",
+      "name": "Performance budgets",
+      "priority": "important",
+      "evidence": [
+        "docs/engineering/CROWN_PERFORMANCE_BUDGETS.json",
+        ".github/workflows/frontend-bundle-budget.yml"
+      ],
+      "proof": [
+        "scripts/ci/operational_proof_gate.py"
+      ]
+    },
+    {
+      "id": "C21",
+      "name": "Data provenance standard",
+      "priority": "recommended",
+      "evidence": [
+        "backend/core/provenance.py",
+        "docs/release/CROWN_DASHBOARD_DATA_PROVENANCE_CONTRACT_20260529.md"
+      ],
+      "proof": [
+        "backend/tests/test_provenance_contract.py"
+      ]
+    },
+    {
+      "id": "C22",
+      "name": "Retention and deletion automation",
+      "priority": "recommended",
+      "evidence": [
+        "backend/core/services/retention_service.py",
+        "docs/compliance/RETENTION_POLICY.md"
+      ],
+      "proof": [
+        "backend/tests/test_retention_service.py"
+      ]
+    },
+    {
+      "id": "C23",
+      "name": "Disaster recovery restore proof",
+      "priority": "recommended",
+      "evidence": [
+        "docs/operations/ISOLATED_POSTGRES_RESTORE_DRILL.md",
+        "scripts/disaster-recovery/backup_restore_proof.ps1"
+      ],
+      "proof": [
+        "scripts/disaster-recovery/backup_restore_proof.ps1"
+      ]
+    },
+    {
+      "id": "C24",
+      "name": "Repository quality scorecard",
+      "priority": "recommended",
+      "evidence": [
+        "docs/quality/CROWN_REPOSITORY_QUALITY_SCORECARD.md"
+      ],
+      "proof": [
+        "scripts/ci/operational_proof_gate.py"
+      ]
+    },
+    {
+      "id": "C25",
+      "name": "Definition of Done",
+      "priority": "recommended",
+      "evidence": [
+        "docs/engineering/CROWN_DEFINITION_OF_DONE.md"
+      ],
+      "proof": [
+        "scripts/ci/operational_proof_gate.py"
+      ]
+    }
+  ]
+}
