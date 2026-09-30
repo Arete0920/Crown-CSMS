@@ -88,6 +88,18 @@ export default function AdmissionsDashboard() {
 
   const topSource = rawSummary?.top_sources?.[0];
   const topSourceLabel = topSource?.source ? `${topSource.source} (${topSource.total})` : 'No source data yet';
+  const commandIntelligence = rawSummary?.command_intelligence || {};
+  const actionQueue = Array.isArray(commandIntelligence.action_queue) ? commandIntelligence.action_queue : [];
+  const enrollmentForecast = commandIntelligence?.predictive?.enrollment_forecast?.result || {};
+  const retentionSupport = commandIntelligence?.predictive?.retention_support?.result || {};
+  const forecastTotal = Number(enrollmentForecast.next_year_total);
+  const retentionSupportCount = Number(retentionSupport.high_risk_count);
+  const forecastLabel = Number.isFinite(forecastTotal)
+    ? `${Math.round(forecastTotal)} projected next-year students`
+    : 'Enrollment forecast not yet available';
+  const retentionLabel = Number.isFinite(retentionSupportCount)
+    ? `${Math.round(retentionSupportCount)} students flagged for proactive retention support`
+    : 'Retention support model not yet available';
 
   const config = cloneConfig(baseConfig);
   // This page owns its authoritative admissions API lifecycle through
@@ -155,6 +167,17 @@ export default function AdmissionsDashboard() {
       tone: totalOverSla > 0 ? 'warn' : 'good',
     },
   ];
+
+  if (actionQueue.length > 0) {
+    config.priorities = actionQueue.slice(0, 5).map((item) => ({
+      title: item.label || 'Admissions follow-up required',
+      detail: item.key === 'accepted_to_enrolled'
+        ? 'Protect yield by completing enrollment conversion steps.'
+        : 'Move the family to the next appropriate admissions milestone.',
+      state: item.priority === 'high' ? 'Action Required' : 'Ready',
+      tone: item.priority === 'high' ? 'warn' : 'good',
+    }));
+  }
 
   config.alerts = [
     {
@@ -236,6 +259,34 @@ export default function AdmissionsDashboard() {
       lastUpdated: hasLiveSummary ? 'Live' : 'Fallback',
     },
   ];
+
+  config.commandModules.push({
+    key: 'intelligence',
+    icon: 'IN',
+    title: 'Enrollment Intelligence',
+    status: actionQueue.some((item) => item.priority === 'high') ? 'Watch' : 'Stable',
+    statusTone: actionQueue.some((item) => item.priority === 'high') ? 'warn' : 'good',
+    mainKpi: actionQueue.length > 0 ? `${actionQueue.length} recommended actions` : 'No urgent actions',
+    summary: `${forecastLabel} · ${retentionLabel}`,
+    kpis: [
+      { label: 'Recommended actions', value: String(actionQueue.length) },
+      { label: 'Forecast', value: Number.isFinite(forecastTotal) ? String(Math.round(forecastTotal)) : '--' },
+      { label: 'Retention support', value: Number.isFinite(retentionSupportCount) ? String(Math.round(retentionSupportCount)) : '--' },
+      { label: 'Top source', value: topSource?.source || '--' },
+    ],
+    details: [
+      forecastLabel,
+      retentionLabel,
+      commandIntelligence.guardrail || 'Use enrollment indicators to guide follow-up and planning.',
+    ],
+    dataState,
+    sourceLabel: dataSourceLabel,
+    primaryActionLabel: 'Review Pipeline',
+    backActionLabel: 'Enrollment Conversion',
+    primaryActionHref: '/admissions/pipeline',
+    backActionHref: '/enrollment-conversion',
+    lastUpdated: hasLiveSummary ? 'Live' : 'Fallback',
+  });
 
   config.trendPanels = [
     {
