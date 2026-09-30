@@ -1,8 +1,13 @@
 from __future__ import annotations
 
 import json
+import uuid
+
+from django.core.cache import cache
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny
 
 from core.permissions import require_permission, user_has_permission
 from households.scoping import get_request_school_id
@@ -15,6 +20,65 @@ def _body(request):
         return json.loads(request.body.decode("utf-8") or "{}")
     except (UnicodeDecodeError, json.JSONDecodeError):
         return None
+
+
+PUBLIC_SURVEY_RATE_LIMIT = 20
+PUBLIC_SURVEY_RATE_WINDOW_SECONDS = 60 * 60
+
+
+def _public_client_key(request, public_token):
+    remote = str(request.META.get("REMOTE_ADDR") or "unknown").strip() or "unknown"
+    return f"public_survey:{public_token}:{remote}"
+
+
+def _rate_limit_public_submission(request, public_token):
+    key = _public_client_key(request, public_token)
+    if cache.add(key, 1, timeout=PUBLIC_SURVEY_RATE_WINDOW_SECONDS):
+        return False
+    try:
+        count = int(cache.incr(key))
+    except ValueError:
+        cache.set(key, 1, timeout=PUBLIC_SURVEY_RATE_WINDOW_SECONDS)
+        return False
+    return count > PUBLIC_SURVEY_RATE_LIMIT
+
+
+def _validate_answers(questions, answers):
+    errors = {}
+    for question in questions.values():
+        if question.required and question.key not in answers:
+            errors[question.key] = "This response is required."
+            continue
+        if question.key not in answers:
+            continue
+        raw = answers[question.key]
+        if question.question_type == "scale":
+            try:
+                value = float(raw)
+            except (TypeError, ValueError):
+                errors[question.key] = "A numeric rating is required."
+                continue
+            if value < 1 or value > 5:
+                errors[question.key] = "Rating must be between 1 and 5."
+        elif question.question_type == "choice":
+            if raw not in (question.choices or []):
+                errors[question.key] = "Select one of the available choices."
+        elif question.question_type == "multi":
+            if not isinstance(raw, list):
+                errors[question.key] = "A list of choices is required."
+            else:
+                invalid = [item for item in raw if item not in (question.choices or [])]
+                if invalid:
+                    errors[question.key] = "One or more selected choices are invalid."
+        elif question.question_type == "boolean":
+            if not isinstance(raw, bool):
+                errors[question.key] = "A yes/no response is required."
+        elif question.question_type == "text":
+            if not isinstance(raw, str):
+                errors[question.key] = "A text response is required."
+            elif len(raw) > 4000:
+                errors[question.key] = "Response is too long."
+    return errors
 
 
 def _serialize(survey):
@@ -92,12 +156,16 @@ def survey_detail(request, survey_id):
                 return JsonResponse({"detail": "Invalid status."}, status=400)
             survey.status = status
         if payload.get("public_enabled") is not None:
-            survey.public_enabled = bool(payload["public_enabled"])
-        survey.save(update_fields=["status", "public_enabled", "updated_at"])
+            next_public_enabled = bool(payload["public_enabled"])
+            if next_public_enabled and not survey.public_enabled:
+                survey.public_token = uuid.uuid4()
+            survey.public_enabled = next_public_enabled
+        survey.save(update_fields=["status", "public_enabled", "public_token", "updated_at"])
     return JsonResponse(_serialize(survey))
 
 
-@require_http_methods(["GET", "POST"])
+@api_view(["GET", "POST"])
+@permission_classes([AllowAny])
 def public_survey(request, public_token):
     survey = SurveyDefinition.objects.filter(
         public_token=public_token,
@@ -115,11 +183,13 @@ def public_survey(request, public_token):
     payload = _body(request)
     if not isinstance(payload, dict):
         return JsonResponse({"detail": "Invalid JSON body."}, status=400)
+    if _rate_limit_public_submission(request, public_token):
+        return JsonResponse({"detail": "Too many submissions. Please try again later."}, status=429)
     answers = payload.get("answers") if isinstance(payload.get("answers"), dict) else {}
     questions = {q.key: q for q in survey.questions.all()}
-    missing = [q.key for q in questions.values() if q.required and q.key not in answers]
-    if missing:
-        return JsonResponse({"detail": "Required answers are missing.", "missing": missing}, status=400)
+    errors = _validate_answers(questions, answers)
+    if errors:
+        return JsonResponse({"detail": "Survey response is invalid.", "errors": errors}, status=400)
     response = SurveyResponse.objects.create(
         school=survey.school,
         survey=survey,
@@ -149,9 +219,9 @@ def survey_response_submit(request, survey_id):
         return JsonResponse({"detail": "Anonymous responses are not allowed for this survey."}, status=400)
     answers = payload.get("answers") if isinstance(payload.get("answers"), dict) else {}
     questions = {q.key: q for q in survey.questions.all()}
-    missing = [q.key for q in questions.values() if q.required and q.key not in answers]
-    if missing:
-        return JsonResponse({"detail": "Required answers are missing.", "missing": missing}, status=400)
+    errors = _validate_answers(questions, answers)
+    if errors:
+        return JsonResponse({"detail": "Survey response is invalid.", "errors": errors}, status=400)
     response = SurveyResponse.objects.create(
         school_id=school_id, survey=survey, anonymous=anonymous,
         household_id=None if anonymous else payload.get("household_id"),
