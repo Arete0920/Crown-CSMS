@@ -142,8 +142,13 @@ def test_market_study_requires_all_strategic_sections_before_commit():
         "financial_profile": {},
         "program_capacity": {},
         "strategic_objectives": {},
+        "source_provenance": [{"label": "Verified market source"}],
     }
     assert validate_market_inputs(data) == []
 
     del data["financial_profile"]
     assert validate_market_inputs(data) == ["financial_profile"]
+
+    data["financial_profile"] = {}
+    data["source_provenance"] = []
+    assert validate_market_inputs(data) == ["source_provenance"]
