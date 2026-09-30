@@ -41,6 +41,9 @@ import BoardDashboard from "../pages/BoardDashboard.jsx";
 import FinanceDashboard from "../pages/FinanceDashboard.jsx";
 import ITDashboard from "../pages/ITDashboard.jsx";
 import MarketingDashboard from "../pages/MarketingDashboard.jsx";
+import MarketStudyWizardPage from "../pages/MarketStudyWizardPage.jsx";
+import SurveySentimentPage from "../pages/SurveySentimentPage.jsx";
+import PublicSurveyPage from "../pages/PublicSurveyPage.jsx";
 import SpiritualLifeDashboard from "../pages/SpiritualLifeDashboard.jsx";
 import OfficeDashboard from "../pages/OfficeDashboard.jsx";
 import HealthDashboard from "../pages/HealthDashboard.jsx";
@@ -725,6 +728,26 @@ export const router = createBrowserRouter([
   {
     path: PATHS.MARKETING,
     element: <MarketingDashboard />,
+  },
+  {
+    path: '/kingdom-path/market-study',
+    element: (
+      <RoleGuard allowedRoles={["super_admin", "school_admin", "head_of_school", "marketing", "admissions_manager"]}>
+        <MarketStudyWizardPage />
+      </RoleGuard>
+    ),
+  },
+  {
+    path: '/survey-intelligence',
+    element: (
+      <RoleGuard allowedRoles={["super_admin", "school_admin", "head_of_school", "marketing", "admissions_manager"]}>
+        <SurveySentimentPage />
+      </RoleGuard>
+    ),
+  },
+  {
+    path: '/survey/:token',
+    element: <PublicSurveyPage />,
   },
   {
     path: PATHS.SPIRITUAL_LIFE,
