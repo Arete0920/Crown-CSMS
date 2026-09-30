@@ -3,6 +3,18 @@ from __future__ import annotations
 from collections import Counter, defaultdict
 
 STANDARD_TEMPLATES = {
+    "inquiry": [
+        ("motivation", "What prompted you to begin exploring our school?", "choice", ["growth", "marketing"]),
+        ("first_source", "How did you first hear about the school?", "choice", ["marketing", "attribution"]),
+        ("priority_outcomes", "Which student outcomes matter most to your family?", "multi", ["portrait", "growth"]),
+        ("affordability_concern", "How significant is affordability in your decision?", "scale", ["affordability", "financial_aid"]),
+    ],
+    "post_tour": [
+        ("tour_experience", "How would you rate your tour/admissions experience?", "scale", ["admissions", "conversion"]),
+        ("mission_clarity", "How clearly did the visit communicate the school's Christian mission?", "scale", ["mission", "conversion"]),
+        ("remaining_barrier", "What is the biggest remaining barrier to applying or enrolling?", "choice", ["conversion", "affordability"]),
+        ("next_step_likelihood", "How likely are you to take the next admissions step?", "scale", ["conversion"]),
+    ],
     "parent_pulse": [
         ("overall_satisfaction", "How satisfied are you with your child's overall experience?", "scale", ["retention", "satisfaction"]),
         ("mission_delivery", "How strongly is the school delivering its Christian mission?", "scale", ["mission", "retention"]),
@@ -51,6 +63,10 @@ def build_template_questions(purpose):
             choices = ["tuition", "financial_aid", "academics", "mission", "leadership", "teachers", "relationships", "athletics", "location", "transportation", "special_needs", "relocation", "other"]
         elif key == "first_source":
             choices = ["parent_referral", "church", "search", "social", "event", "preschool_feeder", "other"]
+        elif key == "motivation":
+            choices = ["christian_mission", "academics", "safety", "community", "teachers", "student_support", "location", "other"]
+        elif key == "remaining_barrier":
+            choices = ["none", "tuition", "financial_aid", "academics", "programs", "transportation", "location", "timing", "other"]
         elif key in {"decisive_factor", "stop_reason", "primary_reason"}:
             choices = ["christian_mission", "academics", "safety", "community", "teachers", "tuition", "financial_aid", "athletics", "location", "transportation", "student_support", "another_school", "other"]
         rows.append({"key": key, "prompt": prompt, "question_type": question_type, "strategic_tags": tags, "choices": choices, "required": key != "improvement", "sort_order": order})
