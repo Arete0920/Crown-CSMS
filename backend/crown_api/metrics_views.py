@@ -8,13 +8,17 @@ Endpoints registered in crown_api/api_urls.py:
   GET /api/v1/finance/metrics/
 
 These return stable JSON shapes that the frontend dashboards consume.
-Demo-realistic numbers are hardcoded for MVP; real model queries can replace
-each value later without changing the response shape.
+Legacy sample payloads are retained only for explicitly enabled non-production
+demo/sandbox use. Production requests fail closed unless a live implementation
+backs the endpoint.
 """
 
 import datetime
+import os
 from decimal import Decimal
+from functools import wraps
 
+from django.conf import settings
 from django.http import JsonResponse
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods
@@ -31,8 +35,49 @@ def _today() -> str:
     return datetime.date.today().isoformat()
 
 
+def _is_production_runtime() -> bool:
+    env = (
+        str(getattr(settings, "CROWN_ENV", "") or "")
+        or str(getattr(settings, "DJANGO_ENV", "") or "")
+        or str(getattr(settings, "ENVIRONMENT", "") or "")
+        or str(os.getenv("CROWN_ENV", "") or "")
+        or str(os.getenv("DJANGO_ENV", "") or "")
+        or str(os.getenv("ENVIRONMENT", "") or "")
+        or str(os.getenv("AZURE_ENVIRONMENT", "") or "")
+    ).strip().lower()
+    return env in {"prod", "production", "live"} or bool(os.getenv("WEBSITE_HOSTNAME"))
+
+
+def _sample_metrics_allowed() -> bool:
+    if _is_production_runtime():
+        return False
+    return bool(
+        getattr(settings, "CROWN_ALLOW_SAMPLE_DASHBOARD_PAYLOADS", False)
+        or getattr(settings, "CROWN_DEMO_MODE", False)
+        or getattr(settings, "CROWN_DEV_OPEN_API", False)
+    )
+
+
+def _sample_metrics_only(view_func):
+    @wraps(view_func)
+    def wrapped(request, *args, **kwargs):
+        if not _sample_metrics_allowed():
+            return JsonResponse(
+                {
+                    "detail": "Live metrics are not configured for this dashboard.",
+                    "_meta": {"source": "unavailable", "scope": "tenant"},
+                },
+                status=503,
+            )
+        response = view_func(request, *args, **kwargs)
+        response["X-Crown-Data-Mode"] = "sample"
+        return response
+    return wrapped
+
+
 @require_http_methods(["GET"])
 @require_permission("admin.view")
+@_sample_metrics_only
 def admin_metrics(request):
     """
     Administration dashboard – principal / operations.
@@ -69,6 +114,7 @@ def admin_metrics(request):
 
 @require_http_methods(["GET"])
 @require_permission("board.view")
+@_sample_metrics_only
 def board_metrics(request):
     """
     School Board dashboard – governance / mission / finance oversight.
@@ -154,6 +200,7 @@ def finance_metrics(request):
 
 @require_http_methods(["GET"])
 @require_permission("teacher.view")
+@_sample_metrics_only
 def teacher_metrics(request):
     """Teacher dashboard — today's schedule, attendance, assignments."""
     return JsonResponse({
@@ -174,6 +221,7 @@ def teacher_metrics(request):
 
 @require_http_methods(["GET"])
 @require_permission("parent.view")
+@_sample_metrics_only
 def parent_metrics(request):
     """Parent dashboard — child grades, missing work, messages, balance."""
     return JsonResponse({
@@ -208,6 +256,7 @@ def parent_metrics(request):
 
 @require_http_methods(["GET"])
 @require_permission("student.view")
+@_sample_metrics_only
 def student_metrics(request):
     """Student dashboard — today's schedule, assignments due, grade snapshot."""
     return JsonResponse({
@@ -232,6 +281,7 @@ def student_metrics(request):
 
 @require_http_methods(["GET"])
 @require_permission("it.view")
+@_sample_metrics_only
 def it_metrics(request):
     """IT Director dashboard — system health, open tickets, device compliance."""
     return JsonResponse({
@@ -257,6 +307,7 @@ def it_metrics(request):
 
 @require_http_methods(["GET"])
 @require_permission("financial_aid.view")
+@_sample_metrics_only
 def financial_aid_metrics(request):
     """Financial Aid Director dashboard — applications, budget, overdue decisions."""
     return JsonResponse({
@@ -427,6 +478,7 @@ def marketing_metrics(request):
 
 @require_http_methods(["GET"])
 @require_permission("spiritual_life.view")
+@_sample_metrics_only
 def spiritual_life_metrics(request):
     """Spiritual Life Director dashboard — chapel, service hours, pastoral care."""
     return JsonResponse({
@@ -452,6 +504,7 @@ def spiritual_life_metrics(request):
 
 @require_http_methods(["GET"])
 @require_permission("office.view")
+@_sample_metrics_only
 def office_metrics(request):
     """Office Manager / HR dashboard — staff absences, requests, HR tasks, compliance."""
     return JsonResponse({
@@ -484,6 +537,7 @@ def office_metrics(request):
 
 @require_http_methods(["GET"])
 @require_permission("health.view")
+@_sample_metrics_only
 def health_metrics(request):
     """Health / Nurse dashboard — daily visits, medications, immunization compliance."""
     return JsonResponse({
@@ -524,6 +578,7 @@ def health_metrics(request):
 
 @require_http_methods(["GET"])
 @require_permission("counseling.view")
+@_sample_metrics_only
 def counseling_metrics(request):
     """Counseling / Discipline dashboard — referrals, plans, detentions, caseload."""
     return JsonResponse({
@@ -561,6 +616,7 @@ def counseling_metrics(request):
 
 @require_http_methods(["GET"])
 @require_permission("food.view")
+@_sample_metrics_only
 def food_metrics(request):
     """Food Services dashboard — meals, inventory, participation, payments."""
     return JsonResponse({
@@ -604,6 +660,7 @@ def food_metrics(request):
 
 @require_http_methods(["GET"])
 @require_permission("athletics.view")
+@_sample_metrics_only
 def athletics_metrics(request):
     """Athletic Director dashboard — events, eligibility, injuries, transport."""
     return JsonResponse({
@@ -641,6 +698,7 @@ def athletics_metrics(request):
 
 @require_http_methods(["GET"])
 @require_permission("advancement.view")
+@_sample_metrics_only
 def advancement_metrics(request):
     """Advancement / Fundraising dashboard — donors, campaigns, pledges, stewardship."""
     return JsonResponse({
@@ -680,6 +738,7 @@ def advancement_metrics(request):
 
 @require_http_methods(["GET"])
 @require_permission("transportation.view")
+@_sample_metrics_only
 def transportation_metrics(request):
     """Transportation dashboard — routes, riders, late runs, maintenance."""
     return JsonResponse({
@@ -713,6 +772,7 @@ def transportation_metrics(request):
 
 @require_http_methods(["GET"])
 @require_permission("facilities.view")
+@_sample_metrics_only
 def facilities_metrics(request):
     """Facilities dashboard — work orders, SLA, PM calendar, vendor visits."""
     return JsonResponse({
@@ -753,6 +813,7 @@ def facilities_metrics(request):
 
 @require_http_methods(["GET"])
 @require_permission("security.view")
+@_sample_metrics_only
 def security_metrics(request):
     """Security / Safety dashboard — drills, incidents, access exceptions, cameras."""
     return JsonResponse({
@@ -788,6 +849,7 @@ def security_metrics(request):
 
 @require_http_methods(["GET"])
 @require_permission("academic_support.view")
+@_sample_metrics_only
 def academic_support_metrics(request):
     """Academic Support / SPED dashboard — IEPs, accommodations, caseload.
     Privacy rule: all student references use opaque IDs, never names."""
@@ -831,6 +893,7 @@ def academic_support_metrics(request):
 
 @require_http_methods(["GET"])
 @require_permission("fine_arts.view")
+@_sample_metrics_only
 def fine_arts_metrics(request):
     """Fine Arts Director dashboard — performances, ensembles, equipment."""
     return JsonResponse({
@@ -868,6 +931,7 @@ def fine_arts_metrics(request):
 
 @require_http_methods(["GET"])
 @require_permission("library.view")
+@_sample_metrics_only
 def library_metrics(request):
     """Library / Media Center dashboard — circulation, collection, digital resources."""
     return JsonResponse({
@@ -909,6 +973,7 @@ def library_metrics(request):
 
 @require_http_methods(["GET"])
 @require_permission("extended_care.view")
+@_sample_metrics_only
 def extended_care_metrics(request):
     """Extended Care / Aftercare dashboard — roster, staff, trends.
     Privacy rule: show aggregate program counts only, no student names."""
@@ -947,6 +1012,7 @@ def extended_care_metrics(request):
 
 @require_http_methods(["GET"])
 @require_permission("registrar.view")
+@_sample_metrics_only
 def registrar_metrics(request):
     """Registrar / Records dashboard — enrollment, requests, transcripts, holds."""
     return JsonResponse({
@@ -987,6 +1053,7 @@ def registrar_metrics(request):
 
 @require_http_methods(["GET"])
 @require_permission("communications.view")
+@_sample_metrics_only
 def communications_metrics(request):
     """Communications Director dashboard — campaigns, engagement, announcements."""
     return JsonResponse({
@@ -1025,6 +1092,7 @@ def communications_metrics(request):
 
 @require_http_methods(["GET"])
 @require_permission("pd.view")
+@_sample_metrics_only
 def pd_metrics(request):
     """PD / Staff Development dashboard — sessions, certifications, completion."""
     return JsonResponse({
@@ -1063,6 +1131,7 @@ def pd_metrics(request):
 
 @require_http_methods(["GET"])
 @require_permission("student_services.view")
+@_sample_metrics_only
 def student_services_metrics(request):
     """Student Services dashboard — lunch balances, applications, active services.
     Privacy rule: aggregate grade-level counts only, no individual records."""
@@ -1106,6 +1175,7 @@ def student_services_metrics(request):
 
 @require_http_methods(["GET"])
 @require_permission("volunteer_management.view")
+@_sample_metrics_only
 def volunteer_management_metrics(request):
     """Volunteer Management dashboard metrics."""
     get_request_school_id(request, required=True)
@@ -1134,6 +1204,7 @@ def volunteer_management_metrics(request):
 
 @require_http_methods(["GET"])
 @require_permission("alumni.view")
+@_sample_metrics_only
 def alumni_metrics(request):
     """Alumni Relations dashboard metrics."""
     get_request_school_id(request, required=True)
@@ -1160,6 +1231,7 @@ def alumni_metrics(request):
 
 @require_http_methods(["GET"])
 @require_permission("network_benchmarking.view")
+@_sample_metrics_only
 def network_benchmarking_metrics(request):
     """Network Benchmarking dashboard metrics."""
     get_request_school_id(request, required=True)
@@ -1191,6 +1263,7 @@ def network_benchmarking_metrics(request):
 
 @require_http_methods(["GET"])
 @require_permission("platform_ops.view")
+@_sample_metrics_only
 def platform_ops_metrics(request):
     """Platform Operations dashboard metrics."""
     get_request_school_id(request, required=True)
