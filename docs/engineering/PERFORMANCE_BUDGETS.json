@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "principle": "Budgets apply to user/business workflows, not only bundle size.",
+  "budgets": [
+    {
+      "surface": "frontend_initial_bundle",
+      "authority": ".github/workflows/frontend-bundle-budget.yml"
+    },
+    {
+      "surface": "common_api_list",
+      "target": "avoid unbounded result sets and N+1 query growth"
+    },
+    {
+      "surface": "dashboard_summary",
+      "target": "single tenant-scoped aggregation path; no sample fallback in production"
+    },
+    {
+      "surface": "batch_enrollment",
+      "target": "bounded transaction/query growth with explicit failure reporting"
+    },
+    {
+      "surface": "financial_export",
+      "target": "bounded memory use and deterministic reconciliation totals"
+    },
+    {
+      "surface": "route_certification",
+      "target": "8GB Node heap ceiling in exhaustive browser proof"
+    }
+  ],
+  "scale_profiles": [
+    "250 students",
+    "500 students",
+    "1000 students"
+  ]
+}
