@@ -35,11 +35,24 @@ def build_internal_school_context(*, school_id, academic_year=None):
         str(value or "Unspecified").strip() or "Unspecified"
         for value in Applicant.objects.filter(school_id=school_id).values_list("source", flat=True)
     )
+    try:
+        from survey_sentiment.services import survey_insights
+        survey_context = {
+            "parent_pulse": survey_insights(school_id=school_id, purpose="parent_pulse"),
+            "reenrollment_intent": survey_insights(school_id=school_id, purpose="reenrollment_intent"),
+            "new_family": survey_insights(school_id=school_id, purpose="new_family"),
+            "lost_prospect": survey_insights(school_id=school_id, purpose="lost_prospect"),
+            "exit": survey_insights(school_id=school_id, purpose="exit"),
+        }
+    except Exception:
+        survey_context = {}
+
     return {
         "current_enrollment": enrollment_qs.count(),
         "grade_capacity": capacities,
         "accepted_aid_cents": int(aid_total),
         "top_admissions_sources": [{"source": k, "count": v} for k, v in sources.most_common(10)],
+        "survey_intelligence": survey_context,
     }
 
 
