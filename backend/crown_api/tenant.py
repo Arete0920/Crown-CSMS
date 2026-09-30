@@ -94,6 +94,26 @@ def _principal_school_id(principal) -> Optional[UUID]:
     return None
 
 
+def principal_can_select_tenant(principal, school_id) -> bool:
+    """Allow explicit tenant selection only for a school the principal actually belongs to."""
+    if principal is None or not getattr(principal, "is_authenticated", False):
+        return False
+    target = _parse_uuid(school_id)
+    if target is None:
+        return False
+    direct = _parse_uuid(getattr(principal, "school_id", None))
+    if direct == target:
+        return True
+    roles = getattr(principal, "roles", None)
+    if roles is not None:
+        try:
+            if roles.filter(school_id=target).exists():
+                return True
+        except Exception:
+            return False
+    return False
+
+
 def principal_can_override_tenant(principal) -> bool:
     """Require explicit cross-school authority; ordinary staff status is insufficient."""
     if principal is None or not getattr(principal, "is_authenticated", False):
@@ -167,7 +187,11 @@ def build_tenant_context(request, *, school=None) -> TenantContext:
         and not drf_force_fixture_selection
     )
     override_authorized = bool(
-        override_requested and principal_can_override_tenant(principal)
+        override_requested
+        and (
+            principal_can_select_tenant(principal, resolution.school_id)
+            or principal_can_override_tenant(principal)
+        )
     )
 
     return TenantContext(
