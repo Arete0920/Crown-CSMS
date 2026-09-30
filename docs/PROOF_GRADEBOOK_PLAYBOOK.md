@@ -51,7 +51,7 @@ gh run view <run-id> -R Arete0920/Crown-CSMS --log-failed
 8. **Node setup** — 20.x installed
 9. **Frontend** — Vite dev server on 127.0.0.1:3000, health check passes
 10. **API proof** — Playwright test:
-    - Logs in as `head@crown-demo.local` (password: `demo1234`)
+    - Logs in as `head@crown-demo.local` (password supplied through `CROWN_DEMO_PASSWORD`)
     - Fetches first section from API (no hardcoded UUIDs)
     - Calls 3 endpoints: roster (200), grades (200), assignments (200)
     - All return 200 with proper auth headers
