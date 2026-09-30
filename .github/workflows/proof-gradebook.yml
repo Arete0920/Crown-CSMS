@@ -211,7 +211,7 @@ jobs:
           CROWN_UI_URL: "http://localhost:3000"
           API_BASE_URL: "http://localhost:8000"
           CROWN_TEST_USER: "head@crown-demo.local"
-          CROWN_TEST_PASS: "CI-Demo-Password-2026"
+          CROWN_TEST_PASS: "ci-${{ github.run_id }}-${{ github.run_attempt }}-Crown"
           CROWN_TEST_SCHOOL_ID: "b45b8c5a-6708-4597-aad9-a226627b2962"
         run: npm run api:proof:gradebook
 
@@ -220,7 +220,7 @@ jobs:
         working-directory: frontend/dashboards
         env:
           CROWN_TEST_USER: "head@crown-demo.local"
-          CROWN_TEST_PASS: "CI-Demo-Password-2026"
+          CROWN_TEST_PASS: "ci-${{ github.run_id }}-${{ github.run_attempt }}-Crown"
           CROWN_TEST_SCHOOL_ID: "b45b8c5a-6708-4597-aad9-a226627b2962"
         run: npm run ui:proof:gradebook
 
