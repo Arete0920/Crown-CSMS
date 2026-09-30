@@ -1,0 +1,148 @@
+{
+  "version": 1,
+  "rule": "Each business concept has one canonical write authority. Read models, dashboards, projections, compatibility adapters and exports may consume that authority but may not become competing truth stores.",
+  "domains": [
+    {
+      "domain": "admissions_application",
+      "authority": "applications.Application",
+      "write_surface": "applications/views_admissions.py",
+      "consumers": [
+        "crm_marketing",
+        "dashboards",
+        "market_intelligence"
+      ]
+    },
+    {
+      "domain": "enrollment",
+      "authority": "core.Enrollment",
+      "write_surface": "canonical enrollment services",
+      "consumers": [
+        "admissions",
+        "market_intelligence",
+        "dashboards"
+      ]
+    },
+    {
+      "domain": "grade_capacity",
+      "authority": "enrollment_period_wizard.GradeCapacity",
+      "write_surface": "enrollment period wizard",
+      "consumers": [
+        "crm_marketing",
+        "market_intelligence"
+      ]
+    },
+    {
+      "domain": "financial_aid_award",
+      "authority": "aid.AidAward",
+      "write_surface": "aid services",
+      "consumers": [
+        "finance",
+        "market_intelligence",
+        "director actions"
+      ]
+    },
+    {
+      "domain": "ledger",
+      "authority": "ledger/finance canonical posting services",
+      "write_surface": "finance and ledger services",
+      "consumers": [
+        "billing",
+        "payments",
+        "financial_aid"
+      ]
+    },
+    {
+      "domain": "payment",
+      "authority": "payments canonical payment authority",
+      "write_surface": "payments services",
+      "consumers": [
+        "finance",
+        "billing",
+        "exports"
+      ]
+    },
+    {
+      "domain": "student",
+      "authority": "core.Student",
+      "write_surface": "core student services",
+      "consumers": [
+        "academics",
+        "attendance",
+        "health",
+        "transportation"
+      ]
+    },
+    {
+      "domain": "household",
+      "authority": "households/core canonical household",
+      "write_surface": "household services",
+      "consumers": [
+        "parent portal",
+        "billing",
+        "admissions"
+      ]
+    },
+    {
+      "domain": "portrait_of_graduate",
+      "authority": "spiritual_life.PortraitDomain",
+      "write_surface": "spiritual life formation services",
+      "consumers": [
+        "market_intelligence",
+        "crm_marketing",
+        "surveys"
+      ]
+    },
+    {
+      "domain": "survey_response",
+      "authority": "survey_sentiment.SurveyResponse",
+      "write_surface": "survey_sentiment views/services",
+      "consumers": [
+        "market_intelligence",
+        "retention analytics"
+      ]
+    },
+    {
+      "domain": "marketing_campaign",
+      "authority": "crm_marketing.MarketingCampaign",
+      "write_surface": "crm_marketing API/services",
+      "consumers": [
+        "marketing dashboard",
+        "market_intelligence"
+      ]
+    },
+    {
+      "domain": "market_study",
+      "authority": "market_intelligence.MarketStudy",
+      "write_surface": "market_intelligence wizard/services",
+      "consumers": [
+        "Kingdom Path",
+        "marketing strategy"
+      ]
+    },
+    {
+      "domain": "communications_outbox",
+      "authority": "comms.OutboxMessage",
+      "write_surface": "comms outbox service",
+      "consumers": [
+        "email",
+        "sms"
+      ]
+    },
+    {
+      "domain": "crownpass_ticket",
+      "authority": "crownpass ticketing services",
+      "write_surface": "crownpass services/API",
+      "consumers": [
+        "family tickets",
+        "scanner"
+      ]
+    }
+  ],
+  "prohibited_patterns": [
+    "A dashboard storing its own operational truth.",
+    "A compatibility adapter silently writing a second canonical record.",
+    "A sample/demo payload being accepted as production evidence.",
+    "A forecast overwriting observed historical truth.",
+    "A survey or demographic estimate being represented as verified operational data without provenance."
+  ]
+}
