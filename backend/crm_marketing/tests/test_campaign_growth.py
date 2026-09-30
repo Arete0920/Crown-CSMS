@@ -1,9 +1,10 @@
-from datetime import date
+from datetime import date, timedelta
 import json
+from django.utils import timezone
 
 import pytest
 
-from applications.models import Application
+from applications.models import Application, ApplicationEvent
 from core.models import AcademicYear, CrownPermission, Enrollment, Family, GradeLevel, RolePermission, School, Student, UserAccount, UserRole
 from crm_marketing.models import LeadStage, MarketingCampaign, MarketingLead
 from crm_marketing.services import build_campaign_snapshot, register_admissions_submit
@@ -129,6 +130,29 @@ def test_admissions_submit_preserves_existing_campaign_attribution():
     assert lead.campaign_id == campaign.id
     assert lead.stage == LeadStage.APPLICATION_SUBMITTED
     assert MarketingLead.objects.filter(application=application).count() == 1
+
+
+def test_campaign_enrollment_requires_canonical_confirmation_and_counts_families_once():
+    school = School.objects.create(name="Confirmed Campaign School")
+    household = Household.objects.create(school_id=school.id, name="Confirmed Household")
+    application = Application.objects.create(school_id=school.id, household=household, status="SUBMITTED")
+    campaign = MarketingCampaign.objects.create(school=school, name="Confirmation", tuition_per_student_cents=100000)
+    for _ in range(2):
+        MarketingLead.objects.create(school=school, campaign=campaign, application=application, stage=LeadStage.ENROLLED,
+                                     next_follow_up_at=timezone.now() - timedelta(days=1))
+    snapshot = build_campaign_snapshot(campaign)
+    assert snapshot["funnel"]["enrolled"] == 0
+    assert snapshot["funnel"]["unverified_enrollment_leads"] == 2
+    assert snapshot["funnel"]["followups_due"] == 2
+    assert snapshot["economics"]["actual_gross_tuition_cents"] is None
+    assert snapshot["economics"]["estimated_gross_tuition_from_confirmed_applications_cents"] == 0
+    ApplicationEvent.objects.create(school_id=school.id, application=application, event_type="enrollment_confirmed")
+    snapshot = build_campaign_snapshot(campaign)
+    assert snapshot["funnel"]["enrolled"] == 1
+    assert snapshot["funnel"]["unverified_enrollment_leads"] == 0
+    assert snapshot["funnel"]["followups_due"] == 0
+    assert snapshot["economics"]["actual_gross_tuition_cents"] is None
+    assert snapshot["economics"]["estimated_gross_tuition_from_confirmed_applications_cents"] == 100000
 
 
 @pytest.fixture

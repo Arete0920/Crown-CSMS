@@ -103,6 +103,7 @@ def build_follow_up_playbook(stage: str):
 
 def build_campaign_snapshot(campaign):
     from aid.models import AidAward
+    from applications.models import ApplicationEvent
     from core.models import Enrollment
     from enrollment_period_wizard.models import GradeCapacity
     from spiritual_life.formation_models import PortraitDomain
@@ -142,12 +143,22 @@ def build_campaign_snapshot(campaign):
             ).values_list("awarded_cents", flat=True)
         )
 
-    leads = campaign.leads.all()
-    stage_counts = Counter(leads.values_list("stage", flat=True))
-    enrolled = int(stage_counts.get(LeadStage.ENROLLED, 0))
+    leads = campaign.leads.filter(school=campaign.school)
+    lead_rows = list(leads.values_list("stage", "application_id"))
+    confirmed_ids = set(ApplicationEvent.objects.filter(
+        school_id=campaign.school_id, application__school_id=campaign.school_id,
+        application_id__in=[app_id for _, app_id in lead_rows if app_id],
+        event_type="enrollment_confirmed",
+    ).values_list("application_id", flat=True))
+    stage_counts = Counter(
+        LeadStage.ENROLLED if app_id in confirmed_ids else
+        "enrollment_unverified" if stage == LeadStage.ENROLLED else stage
+        for stage, app_id in lead_rows
+    )
+    enrolled = len(confirmed_ids)
     inquiry_count = int(stage_counts.get(LeadStage.INQUIRY, 0))
     application_count = int(stage_counts.get(LeadStage.APPLICATION_SUBMITTED, 0)) + int(stage_counts.get(LeadStage.APPLICATION_STARTED, 0))
-    due_followups = leads.filter(next_follow_up_at__lte=timezone.now()).exclude(stage__in=[LeadStage.ENROLLED, LeadStage.LOST]).count()
+    due_followups = leads.filter(next_follow_up_at__lte=timezone.now()).exclude(stage=LeadStage.LOST).exclude(application_id__in=confirmed_ids).count()
 
     tuition = int(campaign.tuition_per_student_cents or 0)
     goal = int(campaign.enrollment_goal or 0)
@@ -186,6 +197,9 @@ def build_campaign_snapshot(campaign):
             "inquiries": inquiry_count,
             "applications": application_count,
             "enrolled": enrolled,
+            "enrollment_source": "applications.ApplicationEvent.enrollment_confirmed",
+            "enrollment_unit": "confirmed_application",
+            "unverified_enrollment_leads": stage_counts.get("enrollment_unverified", 0),
             "by_stage": dict(stage_counts),
             "followups_due": due_followups,
             "touchpoints": campaign.touchpoints.count(),
@@ -198,8 +212,12 @@ def build_campaign_snapshot(campaign):
             "projected_aid_cents": projected_aid,
             "projected_net_first_year_cents": projected_net_first_year,
             "projected_lifetime_net_tuition_cents": projected_lifetime_net,
-            "actual_gross_tuition_cents": actual_gross,
-            "actual_net_before_aid_cents": actual_net_before_aid,
+            "actual_gross_tuition_cents": None,
+            "actual_net_before_aid_cents": None,
+            "estimated_gross_tuition_from_confirmed_applications_cents": actual_gross,
+            "estimated_net_before_aid_cents": actual_net_before_aid,
+            "tuition_basis": "Configured tuition per confirmed application; not verified student counts or billing receipts.",
+            "actual_financials_note": "Unavailable until canonical billing receipts are explicitly linked to campaign-attributed enrollments.",
             "cost_per_enrollment_cents": round(int(campaign.actual_spend_cents or 0) / enrolled) if enrolled else None,
             "actual_net_after_aid_cents": None,
             "actual_net_after_aid_note": "Unavailable until aid is explicitly linked to campaign-attributed enrollments.",

@@ -155,7 +155,7 @@ export default function MarketingDashboard() {
       status: primaryCampaign ? (primaryCampaign.status === 'active' ? 'Active' : 'Stable') : 'Not Configured',
       statusTone: primaryCampaign ? 'good' : 'warn',
       mainKpi: primaryCampaign
-        ? `${primaryCampaign.capacity?.empty_seats ?? '--'} open seat(s) · ${primaryCampaign.funnel?.enrolled ?? 0} enrolled`
+        ? `${primaryCampaign.capacity?.empty_seats ?? '--'} open seat(s) · ${primaryCampaign.funnel?.enrolled ?? 0} confirmed application(s)`
         : 'No capacity campaign configured',
       summary: primaryCampaign
         ? `${primaryCampaign.name} · Grade ${primaryCampaign.capacity?.grade_code || '--'} · ${projectedGrossLabel}`
@@ -163,7 +163,7 @@ export default function MarketingDashboard() {
       kpis: primaryCampaign ? [
         { label: 'Empty seats', value: String(primaryCampaign.capacity?.empty_seats ?? '--') },
         { label: 'Campaign leads', value: String(primaryCampaign.funnel?.total_leads ?? 0) },
-        { label: 'Enrollments', value: String(primaryCampaign.funnel?.enrolled ?? 0) },
+        { label: 'Confirmed applications', value: String(primaryCampaign.funnel?.enrolled ?? 0) },
         { label: 'Follow-ups due', value: String(primaryCampaign.funnel?.followups_due ?? 0) },
       ] : [
         { label: 'Campaigns', value: '0' },
@@ -172,6 +172,8 @@ export default function MarketingDashboard() {
         { label: 'Follow-ups', value: '--' },
       ],
       details: primaryCampaign ? [
+        `Unconfirmed enrollment leads: ${primaryCampaign.funnel?.unverified_enrollment_leads ?? 0}`,
+        'Enrollment totals require admissions confirmation; tuition projections use configured campaign estimates.',
         `Portrait outcomes: ${(primaryCampaign.portrait || []).map((item) => item.name).join(', ') || 'Not selected'}`,
         `Projected first-year net: ${Math.round((primaryCampaign.economics?.projected_net_first_year_cents || 0) / 100).toLocaleString()}`,
         `Projected lifetime net: ${Math.round((primaryCampaign.economics?.projected_lifetime_net_tuition_cents || 0) / 100).toLocaleString()}`,
