@@ -63,8 +63,8 @@ class Migration(migrations.Migration):
             ],
             options={"ordering":["-updated_at"]},
         ),
-        migrations.AddIndex(model_name="marketstudy", index=models.Index(fields=["school","status"], name="market_intel_school__98dba0_idx")),
-        migrations.AddIndex(model_name="marketstudy", index=models.Index(fields=["school","analysis_year"], name="market_intel_school__f27ea1_idx")),
-        migrations.AddIndex(model_name="strategicrecommendation", index=models.Index(fields=["school","category","priority"], name="market_intel_school__9d0f0b_idx")),
-        migrations.AddIndex(model_name="marketstudywizardsession", index=models.Index(fields=["school","status"], name="market_intel_school__600725_idx")),
+        migrations.AddIndex(model_name="marketstudy", index=models.Index(fields=["school","status"], name="market_inte_school__a285a4_idx")),
+        migrations.AddIndex(model_name="marketstudy", index=models.Index(fields=["school","analysis_year"], name="market_inte_school__2ceb86_idx")),
+        migrations.AddIndex(model_name="strategicrecommendation", index=models.Index(fields=["school","category","priority"], name="market_inte_school__c791e6_idx")),
+        migrations.AddIndex(model_name="marketstudywizardsession", index=models.Index(fields=["school","status"], name="market_inte_school__f7812c_idx")),
     ]
