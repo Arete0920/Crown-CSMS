@@ -1,0 +1,90 @@
+{
+  "version": 1,
+  "purpose": "Machine-readable classification of sensitive/public API surface families. Specific public exceptions remain governed by public_endpoint_policy_matrix.json.",
+  "classes": [
+    {
+      "prefix": "/api/v1/auth",
+      "classification": "authentication",
+      "tenant_required": false,
+      "auth": "mixed"
+    },
+    {
+      "prefix": "/api/v1/health",
+      "classification": "operational_health",
+      "tenant_required": false,
+      "auth": "public_or_internal"
+    },
+    {
+      "prefix": "/api/v1/system/health",
+      "classification": "operational_health",
+      "tenant_required": false,
+      "auth": "public_or_internal"
+    },
+    {
+      "prefix": "/api/v1/admissions/submit",
+      "classification": "public_intake",
+      "tenant_required": false,
+      "auth": "public_policy"
+    },
+    {
+      "prefix": "/api/v1/admissions/public-config",
+      "classification": "public_configuration",
+      "tenant_required": false,
+      "auth": "public_policy"
+    },
+    {
+      "prefix": "/api/v1/survey-sentiment/public/",
+      "classification": "public_token_bound",
+      "tenant_required": false,
+      "auth": "public_policy"
+    },
+    {
+      "prefix": "/api/v1/payments/webhooks/",
+      "classification": "signed_webhook",
+      "tenant_required": false,
+      "auth": "provider_signature"
+    },
+    {
+      "prefix": "/api/v1/dashboards",
+      "classification": "tenant_read",
+      "tenant_required": true,
+      "auth": "authenticated_permission"
+    },
+    {
+      "prefix": "/api/v1/market-intelligence",
+      "classification": "tenant_strategy",
+      "tenant_required": true,
+      "auth": "authenticated_permission"
+    },
+    {
+      "prefix": "/api/v1/survey-sentiment/surveys",
+      "classification": "tenant_survey_admin",
+      "tenant_required": true,
+      "auth": "authenticated_permission"
+    },
+    {
+      "prefix": "/api/v1/crm",
+      "classification": "tenant_marketing",
+      "tenant_required": true,
+      "auth": "authenticated_permission"
+    },
+    {
+      "prefix": "/api/director/actions",
+      "classification": "privileged_mutation",
+      "tenant_required": true,
+      "auth": "school_role"
+    },
+    {
+      "prefix": "/api/v1/crownpass",
+      "classification": "tenant_ticketing",
+      "tenant_required": true,
+      "auth": "authenticated_permission"
+    }
+  ],
+  "invariants": [
+    "Unclassified public endpoints are prohibited.",
+    "Tenant business endpoints require canonical tenant context.",
+    "Privileged mutations require role evidence for the target school.",
+    "Public token endpoints must fail closed when disabled or expired."
+  ]
+}
