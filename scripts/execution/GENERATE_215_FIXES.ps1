@@ -334,7 +334,7 @@ class Test${($name -replace '[^A-Za-z0-9]', '')}NegativeCases:
             "/api/health/",
             HTTP_X_SCHOOL_ID="not-a-valid-uuid"
         )
-        assert response.status_code in (200, 400, 403, 404)
+        assert response.status_code in (400, 403, 404)
 
     def test_${slug}_missing_required_fields_raises_validation_error(self):
         """${name}: POST with missing required fields raises 400 or 403."""
@@ -345,7 +345,7 @@ class Test${($name -replace '[^A-Za-z0-9]', '')}NegativeCases:
             format="json",
             HTTP_X_SCHOOL_ID=str(self.school.id)
         )
-        assert response.status_code in (200, 400, 403, 404, 405)
+        assert response.status_code in (400, 403, 404, 405)
 
     def test_${slug}_nonexistent_resource_returns_404(self):
         """${name}: accessing a nonexistent resource returns 404."""
@@ -363,7 +363,7 @@ class Test${($name -replace '[^A-Za-z0-9]', '')}NegativeCases:
             "/api/health/",
             HTTP_X_SCHOOL_ID=str(self.school.id)
         )
-        assert response.status_code in (200, 403, 404, 405)
+        assert response.status_code in (403, 404, 405)
 
     def test_${slug}_raises_on_missing_school_context():
         """${name}: user without school assignment raises ValueError or returns error."""
