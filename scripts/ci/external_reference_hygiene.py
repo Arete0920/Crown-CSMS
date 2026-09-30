@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fail when prohibited vendor-name fingerprints appear in committed first-party content."""
+"""Fail when prohibited external-reference fingerprints appear in committed first-party content."""
 
 from __future__ import annotations
 
@@ -19,9 +19,29 @@ TEXT_EXTENSIONS = {
     ".csv", ".ps1", ".sh", ".html", ".css", ".toml", ".ini", ".cfg",
 }
 
-# SHA-256 fingerprints of prohibited vendor/product names.
-# The names themselves are intentionally not stored in repository source.
+# SHA-256 fingerprints of prohibited external product, provider, and model/tool terminology.
+# The underlying terms are intentionally not stored in repository source.
 PROHIBITED_FINGERPRINTS = {
+    "7d3194f79e645c42e4396dda38be04766810ec6a00d00aced3ffc2a0a1f1a9ef",
+    "60965168ce762e949600281ba6d01fee136e5b6e8257b1f216f9025ed324474c",
+    "053ea4804ef1bb33d4a3d6fb024a614b6d257cebc2bc7cd915da9c9522f37ffc",
+    "c857d09db23e6822e3600bc06ad8d58f92ed62bc8efd81c753f77048662cb97d",
+    "5d72436256ada53828b51895a94bb8489e9f1ac4fe937a8024ef1594e7045ff6",
+    "3ea125d0bff386e6754b3782b300016fc79a9cf8f8669c0a5c3db64467ddb681",
+    "c70eca6b0f88f44d81a41311647e50fda1ac454ec04ffd442b0eb4743a993131",
+    "920510199770f4d65cb8aaa2cd12bdb2b8c37f5b3907c50a734a0e3409da2823",
+    "fc5a1047f5919892fcdf8aa79ea5d6bb6531b5c176939ef0110906cb225941c1",
+    "add92b9cde2bdbf3daaf65a0db79e9b1a7fa428b71b4d6ce38c742eb6dca0c1c",
+    "45d780f82c9247fc1142f8b60c12b6c6cd3d9f23dd836cfa6e84c498d2f83292",
+    "9058f79c893a1d7e20b13009b95b9cf3211478a91a47e2ad65bdfedad6fc98f4",
+    "487b91042c7cf27a19e23ea8699f5f354b1a0c3af9e418138dc6150d830f970d",
+    "803b3eb2b6af027151950019f2d5ede506a6636a9eafd262b27c23e3f834056f",
+    "7dd9d5f010e8a9a74e0d40763f82735105cdac542ed9b1cf493498d650af161e",
+    "dcaa8e5ecb8d70ad4ededfab010e9ac8894d61070d561e97e84cd68d6f1ff0c9",
+    "746d1113c358e1c93874b12761fba6298d99d01aec38a47f13df47b94d129b37",
+    "764c17e66b9976d235358361e4ef4165b047178180812a6804a3247e11bf8d51",
+    "45779bc98fc51729fc67b37e4cc28396fd9285ac756beceb22aa790dd3d3267d",
+    "32e83e92d45d71f69dcf9d214688f0375542108631b45d344e5df2eb91c11566",
     "f1cfd278701d1a5a1020ff7f3cb047c969510ea022b1ee25d1874a5a685c07b3",
     "fe40a3861f8cfb6316fe5b44dfb9971115f98f016b1408392230305e4c9cf381",
     "e8b7be4471f8d3b0ef91f4f3b6f33f08d31052d56ff9bf9b7c70d35b1baa92cf",
@@ -79,7 +99,7 @@ def first_party_text_files():
         yield rel, path
 
 
-def line_contains_prohibited_name(line: str) -> bool:
+def line_contains_prohibited_reference(line: str) -> bool:
     words = WORD_RE.findall(line)
     for word in words:
         if hashlib.sha256(word.encode("utf-8")).hexdigest() in CASE_SENSITIVE_FINGERPRINTS:
@@ -104,16 +124,16 @@ def main() -> int:
         except OSError:
             continue
         for lineno, line in enumerate(text.splitlines(), start=1):
-            if line_contains_prohibited_name(line):
+            if line_contains_prohibited_reference(line):
                 findings.append((rel.as_posix(), lineno))
 
     if findings:
-        print("Prohibited vendor-name references found in first-party repository content:")
+        print("Prohibited external references found in first-party repository content:")
         for rel, lineno in findings:
             print(f"- {rel}:{lineno}")
         return 1
 
-    print("Vendor-name hygiene: PASS")
+    print("External-reference hygiene: PASS")
     return 0
 
 

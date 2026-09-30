@@ -274,7 +274,7 @@ class Test{comp}TenantIsolation:
             HTTP_X_SCHOOL_ID=str(self.school_b.id),
         )
         # cross-tenant isolation: result must not be an unguarded 200 serving school B data
-        assert response.status_code in (200, 400, 403, 404)
+        assert response.status_code in (400, 403, 404)
 
     def test_{slug}_same_tenant_request_is_allowed(self):
         """User can access their own school resources without being blocked."""
@@ -364,7 +364,7 @@ class Test{comp}NegativeCases:
             "/api/health/",
             HTTP_X_SCHOOL_ID="not-a-valid-uuid",
         )
-        assert response.status_code in (200, 400, 403, 404)
+        assert response.status_code in (400, 403, 404)
 
     def test_{slug}_post_with_empty_body_returns_400_or_405(self):
         """POST with empty body to protected route returns 400 or 405 (not 200)."""
@@ -393,7 +393,7 @@ class Test{comp}NegativeCases:
             "/api/health/",
             HTTP_X_SCHOOL_ID=str(self.school.id),
         )
-        assert response.status_code in (200, 403, 404, 405)
+        assert response.status_code in (403, 404, 405)
 
     def test_{slug}_raises_when_school_missing_from_request():
         """User without school triggers correct error handling — no 500."""

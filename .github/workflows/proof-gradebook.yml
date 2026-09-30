@@ -34,9 +34,9 @@ jobs:
       DJANGO_SECRET_KEY: "ci-test-secret-key"
       # Demo mode configuration (for single-button dev token login)
       CROWN_DEMO_MODE: "true"
-      CROWN_DEMO_KEY: "CrownDemoKey!2026"
+      CROWN_DEMO_KEY: "key-${{ github.run_id }}-${{ github.run_attempt }}-Crown"
       CROWN_DEMO_SCHOOL_ID: "b45b8c5a-6708-4597-aad9-a226627b2962"
-      VITE_DEMO_KEY: "CrownDemoKey!2026"
+      VITE_DEMO_KEY: "key-${{ github.run_id }}-${{ github.run_attempt }}-Crown"
 
     steps:
       - name: Checkout
@@ -69,7 +69,7 @@ jobs:
 
       - name: Guardrail — required env
         env:
-          CROWN_DEMO_PASSWORD: "CI-Demo-Password-2026"
+          CROWN_DEMO_PASSWORD: "ci-${{ github.run_id }}-${{ github.run_attempt }}-Crown"
         run: |
           set -euo pipefail
           test -n "${CROWN_DEMO_PASSWORD}" || (echo "Missing CROWN_DEMO_PASSWORD secret" && exit 1)
@@ -77,7 +77,7 @@ jobs:
       - name: Seed Django (golden path + demo users + academics)
         working-directory: backend
         env:
-          CROWN_DEMO_PASSWORD: "CI-Demo-Password-2026"
+          CROWN_DEMO_PASSWORD: "ci-${{ github.run_id }}-${{ github.run_attempt }}-Crown"
         run: |
           python manage.py golden_path_bootstrap --force --school-id b45b8c5a-6708-4597-aad9-a226627b2962
           python manage.py seed_demo_school --force --students 25
@@ -107,7 +107,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: "20"
+          node-version: "22.22.0"
           cache: "npm"
           cache-dependency-path: frontend/dashboards/package-lock.json
 
@@ -211,7 +211,7 @@ jobs:
           CROWN_UI_URL: "http://localhost:3000"
           API_BASE_URL: "http://localhost:8000"
           CROWN_TEST_USER: "head@crown-demo.local"
-          CROWN_TEST_PASS: "CI-Demo-Password-2026"
+          CROWN_TEST_PASS: "ci-${{ github.run_id }}-${{ github.run_attempt }}-Crown"
           CROWN_TEST_SCHOOL_ID: "b45b8c5a-6708-4597-aad9-a226627b2962"
         run: npm run api:proof:gradebook
 
@@ -220,7 +220,7 @@ jobs:
         working-directory: frontend/dashboards
         env:
           CROWN_TEST_USER: "head@crown-demo.local"
-          CROWN_TEST_PASS: "CI-Demo-Password-2026"
+          CROWN_TEST_PASS: "ci-${{ github.run_id }}-${{ github.run_attempt }}-Crown"
           CROWN_TEST_SCHOOL_ID: "b45b8c5a-6708-4597-aad9-a226627b2962"
         run: npm run ui:proof:gradebook
 

@@ -51,6 +51,7 @@ jobs:
       ENVIRONMENT: dev
       DJANGO_SECRET_KEY: ci-test-secret-key
       CROWN_DEMO_MODE: "true"
+      CROWN_DEMO_PASSWORD: "ci-${{ github.run_id }}-${{ github.run_attempt }}-Crown"
       BUILD_SHA: ${{ github.sha }}
       DEV_OPS_SECRET: ${{ secrets.DEV_OPS_SECRET }}
       CROWN_GATE_SCHOOL_ID: ""
@@ -72,7 +73,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
-          node-version: "20"
+          node-version: "22.22.0"
           cache: npm
           cache-dependency-path: frontend/dashboards/package-lock.json
       - name: Install backend deps
@@ -128,7 +129,7 @@ jobs:
             $frontend = Start-Process -FilePath $npm -ArgumentList @('run','dev','--','--host','127.0.0.1','--port','3000') -WorkingDirectory (Join-Path $env:GITHUB_WORKSPACE 'frontend/dashboards') -RedirectStandardOutput $frontendOut -RedirectStandardError $frontendErr -PassThru
             Wait-Http 'Backend' 'http://127.0.0.1:8000/' $backend $backendOut $backendErr
             Wait-Http 'Frontend' 'http://127.0.0.1:3000/' $frontend $frontendOut $frontendErr
-            $body = '{"username":"head@crown-demo.local","password":"demo1234"}'
+            $body = @{ username='head@crown-demo.local'; password=$env:CROWN_DEMO_PASSWORD } | ConvertTo-Json -Compress
             $resp = Invoke-RestMethod -Method Post -Uri 'http://127.0.0.1:8000/api/v1/auth/token/' -ContentType 'application/json' -Body $body
             if (-not $resp.access) { throw 'Failed to acquire gate JWT' }
             $env:CROWN_DEMO_TOKEN = $resp.access

@@ -81,6 +81,8 @@ class TenantHeaderRequiredMiddleware:
         "/api/admissions/submit",
         "/api/v1/admissions/public-config",
         "/api/admissions/public-config",
+        "/api/v1/survey-sentiment/public/",
+        "/api/survey-sentiment/public/",
     )
 
     def __init__(self, get_response):
@@ -116,6 +118,16 @@ class TenantHeaderRequiredMiddleware:
                                 "code": "invalid_tenant_header",
                             },
                             status=400,
+                        )
+                    if context.override_requested and not context.override_authorized:
+                        _record_tenant_decision(
+                            request,
+                            outcome="denied",
+                            reason="exempt_route_cross_tenant_header_denied",
+                        )
+                        return JsonResponse(
+                            {"detail": "Not found.", "code": "tenant_access_denied"},
+                            status=404,
                         )
                     return self.get_response(request)
 

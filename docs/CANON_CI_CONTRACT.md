@@ -43,7 +43,7 @@ Every CI workflow MUST:
   - Admin user (username="admin", password=$CROWN_DEMO_PASSWORD)
   - Financial aid sample data
 - `seed_demo_school --students <N>` creates:
-  - Director users (head@crown-demo.local, finance@crown-demo.local, etc., password="demo1234")
+  - Director users (head@crown-demo.local, finance@crown-demo.local, etc., password supplied through `CROWN_DEMO_PASSWORD`)
   - Sections with deterministic UUIDs
   - Students and enrollments
 

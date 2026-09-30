@@ -130,9 +130,9 @@ The command center should surface these dashboard cards:
 19. Speaker & Ministry Vetting
 20. Formation Evidence & Reports
 
-## AI Devotional Safeguards
+## Automated Drafting Safeguards
 
-AI may assist in drafting devotions, family prompts, staff notes, chapel follow-up, and reflection questions. AI must not publish devotional content without human review.
+Drafting tools may assist with devotions, family prompts, staff notes, chapel follow-up, and reflection questions. No assisted draft may be published without human review.
 
 Required guardrails:
 

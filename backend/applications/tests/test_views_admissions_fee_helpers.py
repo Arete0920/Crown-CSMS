@@ -157,17 +157,27 @@ def test_graph_configuration_accepts_graph_or_azure_credentials(monkeypatch):
 
 
 def test_sharepoint_and_sms_configuration(monkeypatch):
-    monkeypatch.delenv("M365_SHAREPOINT_SITE_ID", raising=False)
-    monkeypatch.delenv("M365_DEFAULT_DRIVE_ID", raising=False)
-    monkeypatch.delenv("COMMS_SMS_ENABLED", raising=False)
+    for name in (
+        "M365_SHAREPOINT_SITE_ID",
+        "M365_DEFAULT_DRIVE_ID",
+        "COMMS_SMS_ENABLED",
+        "TWILIO_ACCOUNT_SID",
+        "TWILIO_AUTH_TOKEN",
+        "TWILIO_PHONE_NUMBER",
+    ):
+        monkeypatch.delenv(name, raising=False)
 
     assert views._is_sharepoint_configured() is False
     assert views._is_sms_configured() is False
 
     monkeypatch.setenv("M365_DEFAULT_DRIVE_ID", "drive")
     monkeypatch.setenv("COMMS_SMS_ENABLED", " YES ")
-
     assert views._is_sharepoint_configured() is True
+    assert views._is_sms_configured() is False
+
+    monkeypatch.setenv("TWILIO_ACCOUNT_SID", "account")
+    monkeypatch.setenv("TWILIO_AUTH_TOKEN", "token")
+    monkeypatch.setenv("TWILIO_PHONE_NUMBER", "+15555550123")
     assert views._is_sms_configured() is True
 
 

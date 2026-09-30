@@ -1,9 +1,4 @@
-"""
-Twilio SMS service for CROWN.
-
-Recipient UserAccount must have a `phone_number` field.
-SMS is opt-in only — check NotificationPreference before calling.
-"""
+"""SMS delivery service for Crown."""
 from __future__ import annotations
 
 import logging
@@ -15,23 +10,40 @@ from .models import MessageLog
 
 logger = logging.getLogger(__name__)
 
-_ACCOUNT_SID  = os.getenv("TWILIO_ACCOUNT_SID", "")
-_AUTH_TOKEN   = os.getenv("TWILIO_AUTH_TOKEN", "")
-_FROM_NUMBER  = os.getenv("TWILIO_PHONE_NUMBER", "")
+
+def sms_delivery_configured() -> bool:
+    """Return True only when all required delivery credentials are present."""
+    return bool(
+        os.getenv("TWILIO_ACCOUNT_SID", "").strip()
+        and os.getenv("TWILIO_AUTH_TOKEN", "").strip()
+        and os.getenv("TWILIO_PHONE_NUMBER", "").strip()
+    )
+
+
+def send_sms_to_number(phone: str, message: str) -> str:
+    """Send one SMS to a raw phone number and return the external message id."""
+    phone = str(phone or "").strip()
+    if not phone:
+        raise ValueError("SMS recipient phone number is required.")
+    if not sms_delivery_configured():
+        raise RuntimeError("SMS delivery is not configured.")
+
+    from twilio.rest import Client
+
+    client = Client(
+        os.getenv("TWILIO_ACCOUNT_SID", "").strip(),
+        os.getenv("TWILIO_AUTH_TOKEN", "").strip(),
+    )
+    sent = client.messages.create(
+        body=str(message or "")[:1600],
+        from_=os.getenv("TWILIO_PHONE_NUMBER", "").strip(),
+        to=phone,
+    )
+    return str(sent.sid)
 
 
 def send_sms(sender, recipient, message: str) -> MessageLog:
-    """
-    Send an SMS to `recipient` via Twilio.
-
-    Args:
-        sender:    UserAccount instance (logged for audit).
-        recipient: UserAccount instance — must have `phone_number` attribute.
-        message:   Plain-text message body (max 1600 chars).
-
-    Returns:
-        MessageLog record.
-    """
+    """Send an opt-in SMS to a user account and persist delivery evidence."""
     log = MessageLog.objects.create(
         sender=sender,
         recipient=recipient,
@@ -43,27 +55,21 @@ def send_sms(sender, recipient, message: str) -> MessageLog:
     phone = getattr(recipient, "phone_number", None)
     if not phone:
         log.delivery_status = "failed"
-        log.error_message   = "Recipient has no phone_number"
-        log.save()
-        logger.warning("SMS skipped — no phone_number for %s", recipient)
+        log.error_message = "Recipient has no phone_number"
+        log.save(update_fields=["delivery_status", "error_message"])
+        logger.warning("SMS skipped - no phone_number for recipient_id=%s", getattr(recipient, "id", None))
         return log
 
     try:
-        from twilio.rest import Client  # lazy import; Twilio optional
-        client = Client(_ACCOUNT_SID, _AUTH_TOKEN)
-        msg = client.messages.create(
-            body=message,
-            from_=_FROM_NUMBER,
-            to=phone,
-        )
-        log.external_id     = msg.sid
+        external_id = send_sms_to_number(phone, message)
+        log.external_id = external_id
         log.delivery_status = "sent"
-        log.delivered_at    = timezone.now()
-        logger.info("SMS sent sid=%s recipient_id=%s", msg.sid, getattr(recipient, "id", None))
+        log.delivered_at = timezone.now()
+        logger.info("SMS sent external_id=%s recipient_id=%s", external_id, getattr(recipient, "id", None))
     except Exception as exc:
         log.delivery_status = "failed"
-        log.error_message   = str(exc)
-        logger.error("SMS failed recipient_id=%s: %s", getattr(recipient, "id", None), exc)
+        log.error_message = str(exc)[:1000]
+        logger.exception("SMS delivery failed recipient_id=%s", getattr(recipient, "id", None))
 
     log.save()
     return log

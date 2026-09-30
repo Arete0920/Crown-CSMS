@@ -16,7 +16,7 @@ The current approved production release scope is the release-governed mainline s
 
 - Draft or unreleased scheduling work.
 - SOLOMON ingestion.
-- AI or client-facing intelligence activation.
+- Automated or client-facing intelligence activation.
 - Publisher integrations.
 - Curriculum ingestion.
 - Any unmerged PR work.

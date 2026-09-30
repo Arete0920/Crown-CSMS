@@ -99,12 +99,17 @@ function normalizeRoleScopedNav(navData) {
 const BUILD_SHA = (import.meta?.env?.VITE_BUILD_SHA || "dev").slice(0, 7);
 const DEPLOY_TAG = import.meta?.env?.VITE_DEPLOY_TAG || "";
 
-export default function CrownLayout({ title, subtitle, right, children, mainClassName = "" }) {
+export default function CrownLayout({ title, subtitle, right, children, mainClassName = "", publicMode = false }) {
   const [nav, setNav] = useState(null);
   const [navError, setNavError] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
+    if (publicMode) {
+      setNav(EMPTY_ROLE_SCOPED_NAV);
+      setNavError(false);
+      return undefined;
+    }
     let mounted = true;
     fetchNav()
       .then((data) => {
@@ -120,7 +125,7 @@ export default function CrownLayout({ title, subtitle, right, children, mainClas
         }
       });
     return () => { mounted = false; };
-  }, []);
+  }, [publicMode]);
 
   const activeNav = nav || (navError ? EMPTY_ROLE_SCOPED_NAV : null);
   const pathname = typeof window !== "undefined" ? globalThis.location.pathname : "";
@@ -134,16 +139,16 @@ export default function CrownLayout({ title, subtitle, right, children, mainClas
 
   return (
     <div className="crown-app">
-      <button
+      {!publicMode && <button
         type="button"
         className="crown-sidebar-toggle"
         onClick={() => setSidebarOpen((v) => !v)}
         aria-label="Toggle navigation"
       >
         Menu
-      </button>
+      </button>}
 
-      {sidebarOpen ? (
+      {!publicMode && sidebarOpen ? (
         <button
           type="button"
           className="crown-sidebar-backdrop"
@@ -152,7 +157,7 @@ export default function CrownLayout({ title, subtitle, right, children, mainClas
         />
       ) : null}
 
-      <aside
+      {!publicMode && <aside
         className={`crown-sidebar ${sidebarOpen ? "is-open" : ""}`.trim()}
         style={{
           background: "linear-gradient(180deg, var(--crown-primary-strong), var(--crown-primary-deep))",
@@ -232,11 +237,14 @@ export default function CrownLayout({ title, subtitle, right, children, mainClas
             </React.Fragment>
           ))}
         </nav>
-      </aside>
+      </aside>}
 
-      <main className={`crown-main ${operationalLayoutClass} ${mainClassName}`.trim()}>
+      <main
+        className={`crown-main ${operationalLayoutClass} ${mainClassName}`.trim()}
+        style={publicMode ? { marginLeft: 0 } : undefined}
+      >
         <div style={{ maxWidth: 1200, margin: "0 auto", padding: "4px 0 8px" }}>
-          <div className="crown-utility-row" style={{ marginBottom: 10, alignItems: "center" }}>
+          {!publicMode && <div className="crown-utility-row" style={{ marginBottom: 10, alignItems: "center" }}>
             <div className="crown-breadcrumbs" aria-label="Breadcrumb" style={{ fontSize: 12, opacity: 0.9 }}>
             {breadcrumbs.map((crumb, index) => {
               const isLast = index === breadcrumbs.length - 1;
@@ -268,7 +276,7 @@ export default function CrownLayout({ title, subtitle, right, children, mainClas
             <span className="crown-pill">{profile.role}</span>
             <span className="crown-pill">{profile.displayName}</span>
           </div>
-        </div>
+        </div>}
 
           {(title || subtitle || right) && (
             <div className="crown-pagehead" style={{ marginBottom: 14, alignItems: "flex-start" }}>
@@ -280,7 +288,7 @@ export default function CrownLayout({ title, subtitle, right, children, mainClas
             </div>
           )}
 
-          {navError ? (
+          {!publicMode && navError ? (
             <div className="crown-global-notice" role="status" style={{ marginBottom: 12 }}>
               Navigation service unavailable. Role-scoped navigation is hidden until the service recovers.
             </div>

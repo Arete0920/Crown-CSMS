@@ -6,12 +6,10 @@ const IS_SANDBOX =
   process.env.CERT_SANDBOX_MODE === "1" ||
   process.env.VITE_SANDBOX_MODE === "1" ||
   process.env.VITE_DEMO_MODE === "sandbox";
-const DEMO_SCHOOL_ID = process.env.CROWN_DEMO_SCHOOL_ID || "19801b59-8c05-4c84-9312-5d792e4e839d";
-const DEMO_TOKEN = process.env.CROWN_DEMO_TOKEN || "playwright-demo-token";
 const primaryEmail = process.env.CERT_SANDBOX_ADMIN_EMAIL || "admin@heritage.example.org";
-const primaryPassword = process.env.CERT_SANDBOX_ADMIN_PASSWORD || "CrownDemo!2026";
+const primaryPassword = process.env.CERT_SANDBOX_ADMIN_PASSWORD || "";
 const secondEmail = process.env.CERT_SANDBOX_SECOND_ADMIN_EMAIL || "miriam.caldwell@heritage.example.org";
-const secondPassword = process.env.CERT_SANDBOX_SECOND_ADMIN_PASSWORD || "CrownDemo!2026";
+const secondPassword = process.env.CERT_SANDBOX_SECOND_ADMIN_PASSWORD || "";
 const schoolAdminRoute = process.env.CERT_SCHOOL_ADMIN_ROUTE || (IS_SANDBOX ? "/school-admin-dashboard" : "/admin");
 const adminRouteExpectation = /\/school-admin-dashboard\b|\/admin\b|\/director\b(?!\/aid)|\/wizards\b/;
 
@@ -45,10 +43,8 @@ async function login(page: Page, email: string, password: string) {
     return "devjwt";
   }
 
-  // Runtime-safe fallback when login surface is unavailable/unexpected.
   if (new URL(page.url()).pathname === "/" || new URL(page.url()).pathname === "/login") {
-    await seedSandboxAdminSession(page);
-    return "seeded";
+    throw new Error("No supported authentication path established a real session.");
   }
 
   return "already-authenticated";
@@ -83,9 +79,7 @@ async function tryCredentialLogin(page: Page, email: string, password: string): 
     return "credentials";
   }
 
-  // Runtime-safe fallback: keep route cert deterministic when auth fixtures drift.
-  await seedSandboxAdminSession(page);
-  return "seeded";
+  throw new Error("Credential authentication did not establish a real session.");
 }
 
 async function selectSchoolAdminRoleIfAvailable(page: Page): Promise<void> {
@@ -98,17 +92,6 @@ async function selectSchoolAdminRoleIfAvailable(page: Page): Promise<void> {
   if ((await schoolAdminOption.count()) > 0) {
     await roleSelect.selectOption("school_admin");
   }
-}
-
-async function seedSandboxAdminSession(page: Page): Promise<void> {
-  await page.evaluate(({ token, schoolId }) => {
-    sessionStorage.setItem("crown.jwt.access", token);
-    sessionStorage.setItem("crown.role", "school_admin");
-    localStorage.setItem("crown.role", "school_admin");
-    sessionStorage.setItem("crown.school.id", schoolId);
-  }, { token: DEMO_TOKEN, schoolId: DEMO_SCHOOL_ID });
-
-  await page.goto(`${frontendUrl}/admin`, { waitUntil: "networkidle" });
 }
 
 async function assertAdminLanding(page: Page): Promise<void> {

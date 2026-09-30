@@ -6192,7 +6192,7 @@
                  },
                  {
                      "area":  "reporting_exports",
-                     "path":  "docs/ops/COPILOT_TASK_PROTOCOL.md",
+                     "path":  "docs/ops/AUTOMATION_TASK_PROTOCOL.md",
                      "keywords":  "report",
                      "is_test":  false
                  },
