@@ -36,7 +36,7 @@ async function createSectionSchedulerPrerequisites(page: any, fixture: any) {
 test('Section Scheduler publishes a real canonical placement and verifies persistence', async ({ page }) => {
   await launchHeritageRole(page, 'admin');
   await page.goto(`${frontendUrl}/section-scheduler-setup`, { waitUntil: 'networkidle' });
-  await expect(page.getByRole('heading', { name: /section scheduler/i })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /^Kairos$/i })).toBeVisible();
 
   const fixture = await createSchedulingFixture(page, `PLACE${Date.now().toString().slice(-6)}`);
   await createSectionSchedulerPrerequisites(page, fixture);

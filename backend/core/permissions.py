@@ -123,6 +123,7 @@ class CrownModulePermission:
                     school = School.objects.filter(pk=school_id).first()
                     if school is None:
                         return False
+                    request.school = school
                 code = _write_code if request.method not in ("GET", "HEAD", "OPTIONS") else _read_code
                 return user_has_permission(request.user, code, school=school)
 

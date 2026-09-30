@@ -1,5 +1,4 @@
-﻿"""Module 026 - After-School and Extended Care - Evidence Test"""
-
+"""Extended-care evidence using canonical students and persistent tenant grants."""
 import uuid
 from datetime import date, datetime, time, timedelta
 from unittest.mock import patch
@@ -10,345 +9,173 @@ from django.utils import timezone
 from rest_framework.test import APIClient
 
 from aftercare.models import (
-    AftercareAttendance,
-    AftercareEnrollment,
-    AftercareIncident,
-    AftercareMonthlyChargeRun,
-    AftercareProgramConfig,
+    AftercareAttendance, AftercareEnrollment, AftercareIncident,
+    AftercareMonthlyChargeRun, AftercareProgramConfig,
 )
-from aftercare.services import (
-    checkin_student,
-    checkout_student,
-    record_incident,
-    run_monthly_flat_billing,
-)
-from core.models import School
+from aftercare.services import checkin_student, checkout_student, record_incident, run_monthly_flat_billing
+from core.models import CrownPermission, RolePermission, School, UserRole
+from households.models import Household, Student
 
-User = get_user_model()
 AFTERCARE_URL = "/api/v1/aftercare/enrollments/"
 ROSTER_URL = "/api/v1/aftercare/roster/today/"
 
 
-def _school(s=""):
-    return School.objects.create(
-        name=f"M026 {s or uuid.uuid4().hex[:5]}",
-        timezone="America/Chicago",
-        is_active=True,
-    )
+def _school():
+    return School.objects.create(name=f"M026 {uuid.uuid4().hex[:8]}")
 
 
-def _sid() -> int:
-    return int(uuid.uuid4().int % 900000) + 1000
+def _student(school):
+    household = Household.objects.create(school_id=school.id, name="Evidence household")
+    return Student.objects.create(school_id=school.id, household=household,
+                                  first_name="Student", last_name="Evidence", grade_level="4")
 
 
-def _hdr(sid):
-    return {"HTTP_X_SCHOOL_ID": str(sid)}
+def _user(school, *, grants=(), is_staff=False):
+    token = uuid.uuid4().hex
+    user = get_user_model().objects.create_user(username=token, email=f"{token}@example.test",
+                                               password="pass1234", school=school, is_staff=is_staff)
+    role = f"m026_{token[:8]}"
+    UserRole.objects.create(user=user, school=school, role_code=role)
+    for code in grants:
+        permission, _ = CrownPermission.objects.get_or_create(code=code)
+        RolePermission.objects.create(role_code=role, permission=permission)
+    return user
 
 
-def _staff_user(tag="staff"):
-    suffix = uuid.uuid4().hex[:6]
-    return User.objects.create_user(
-        username=f"m026_{tag}_{suffix}",
-        email=f"m026_{tag}_{suffix}@example.com",
-        password="pass1234",
-        is_staff=True,
-    )
+def _client(user, school):
+    client = APIClient()
+    client.force_authenticate(user)
+    client.credentials(HTTP_X_SCHOOL_ID=str(school.id))
+    return client
 
 
-def _regular_user(tag="user"):
-    suffix = uuid.uuid4().hex[:6]
-    return User.objects.create_user(
-        username=f"m026_{tag}_{suffix}",
-        email=f"m026_{tag}_{suffix}@example.com",
-        password="pass1234",
-    )
+def _payload(student):
+    return {"student_id": str(student.id), "start_date": "2026-06-01",
+            "days_of_week": ["MON", "TUE", "WED", "THU", "FRI"],
+            "billing_model": "FLAT_MONTHLY", "monthly_rate": "160.00", "is_active": True}
 
 
-def _enrollment_payload(student_id=101, school_id=1001, **overrides):
-    payload = {
-        "school_id": school_id,
-        "student_id": student_id,
-        "start_date": str(date.today() - timedelta(days=5)),
-        "end_date": None,
-        "days_of_week": ["MON", "TUE", "WED", "THU", "FRI"],
-        "billing_model": "FLAT_MONTHLY",
-        "monthly_rate": "150.00",
-        "prepaid_sessions_balance": 0,
-        "dropin_daily_rate": None,
-        "is_active": True,
-    }
-    payload.update(overrides)
-    return payload
+def _enroll(school, student, **overrides):
+    values = dict(school_fk=school, student_fk=student, start_date=date(2026, 6, 1),
+                  days_of_week=["MON", "TUE", "WED", "THU", "FRI"],
+                  billing_model="FLAT_MONTHLY", monthly_rate="160.00", is_active=True)
+    values.update(overrides)
+    return AftercareEnrollment.objects.create(**values)
 
 
 class TestModule026ModelContract(TestCase):
-    def test_program_config_importable(self):
-        self.assertTrue(hasattr(AftercareProgramConfig, "_meta"))
+    def test_program_config_uses_canonical_school(self):
+        school = _school()
+        config = AftercareProgramConfig.objects.create(school_fk=school)
+        self.assertEqual(config.school_fk_id, school.id)
+        self.assertIsNone(config.school_id)
+        self.assertEqual(AftercareProgramConfig._meta.get_field("school_fk").related_model, School)
 
-    def test_enrollment_importable(self):
-        self.assertTrue(hasattr(AftercareEnrollment, "_meta"))
-
-    def test_config_school_id_is_required(self):
-        f = AftercareProgramConfig._meta.get_field("school_id")
-        self.assertFalse(getattr(f, "null", True), "school_id must be non-null")
-
-    def test_school_id_non_fk_integer_enforces_isolation(self):
-        f = AftercareProgramConfig._meta.get_field("school_id")
-        self.assertFalse(getattr(f, "null", True))
-
-
-class TestModule026Auth(TestCase):
-    def setUp(self):
-        self.school = _school()
-
-    def test_unauthed_401(self):
-        r = APIClient().get(AFTERCARE_URL, **_hdr(self.school.id))
-        self.assertEqual(
-            r.status_code, 401, f"Expected 401 got {r.status_code}. 404=URL not wired."
-        )
-
-    def test_unauthed_post_401(self):
-        payload = _enrollment_payload(student_id=11, school_id=_sid())
-        r = APIClient().post(
-            AFTERCARE_URL, payload, format="json", **_hdr(self.school.id)
-        )
-        self.assertEqual(r.status_code, 401, f"Expected 401 got {r.status_code}.")
+    def test_enrollment_uses_canonical_student_and_school(self):
+        school = _school()
+        student = _student(school)
+        enrollment = _enroll(school, student)
+        self.assertEqual(enrollment.school_fk_id, school.id)
+        self.assertEqual(enrollment.student_fk_id, student.id)
+        self.assertIsNone(enrollment.student_id)
 
 
 class TestModule026EnrollmentAndIsolation(TestCase):
     def setUp(self):
-        self.school_a_id = _sid()
-        self.school_b_id = _sid()
-        self.staff = _staff_user("admin")
-        self.regular = _regular_user("nonadmin")
+        self.school = _school()
+        self.student = _student(self.school)
 
-    @patch("aftercare.api.school_id_from_request")
-    def test_non_admin_post_forbidden(self, mock_school_id):
-        mock_school_id.return_value = self.school_a_id
+    def test_unauthed_read_and_write_401(self):
         client = APIClient()
-        client.force_authenticate(self.regular)
-        payload = _enrollment_payload(student_id=201, school_id=self.school_a_id)
-        r = client.post(AFTERCARE_URL, payload, format="json", **_hdr(self.school_a_id))
-        self.assertEqual(r.status_code, 403, f"Expected 403 got {r.status_code}.")
+        header = {"HTTP_X_SCHOOL_ID": str(self.school.id)}
+        self.assertEqual(client.get(AFTERCARE_URL, **header).status_code, 401)
+        self.assertEqual(client.post(AFTERCARE_URL, _payload(self.student), format="json", **header).status_code, 401)
 
-    @patch("aftercare.api.school_id_from_request")
-    def test_admin_post_and_list_are_school_scoped(self, mock_school_id):
-        mock_school_id.side_effect = [
-            self.school_a_id,
-            self.school_b_id,
-            self.school_a_id,
-        ]
-        client = APIClient()
-        client.force_authenticate(self.staff)
+    def test_staff_flag_without_persistent_grant_is_forbidden(self):
+        client = _client(_user(self.school, is_staff=True), self.school)
+        self.assertEqual(client.post(AFTERCARE_URL, _payload(self.student), format="json").status_code, 403)
 
-        payload_a = _enrollment_payload(student_id=301, school_id=self.school_a_id)
-        payload_b = _enrollment_payload(student_id=302, school_id=self.school_b_id)
-        ra = client.post(
-            AFTERCARE_URL, payload_a, format="json", **_hdr(self.school_a_id)
-        )
-        rb = client.post(
-            AFTERCARE_URL, payload_b, format="json", **_hdr(self.school_b_id)
-        )
+    def test_granted_write_and_list_are_school_scoped(self):
+        foreign = _school()
+        foreign_student = _student(foreign)
+        _enroll(foreign, foreign_student)
+        user = _user(self.school, grants=("extended_care.view", "extended_care.edit"))
+        client = _client(user, self.school)
+        created = client.post(AFTERCARE_URL, _payload(self.student), format="json")
+        self.assertEqual(created.status_code, 201, created.data)
+        self.assertEqual(client.post(AFTERCARE_URL, _payload(foreign_student), format="json").status_code, 400)
+        listed = client.get(AFTERCARE_URL)
+        self.assertEqual(listed.status_code, 200)
+        self.assertEqual({str(row["student_id"]) for row in listed.data}, {str(self.student.id)})
+        self.assertEqual(_client(user, foreign).get(AFTERCARE_URL).status_code, 404)
 
-        self.assertEqual(ra.status_code, 201, getattr(ra, "data", ra.content))
-        self.assertEqual(rb.status_code, 201, getattr(rb, "data", rb.content))
-
-        list_a = client.get(AFTERCARE_URL, **_hdr(self.school_a_id))
-        self.assertEqual(list_a.status_code, 200)
-        student_ids = {row["student_id"] for row in list_a.data}
-        self.assertIn(301, student_ids)
-        self.assertNotIn(302, student_ids)
-
-
-class TestModule026RosterFiltering(TestCase):
-    def setUp(self):
-        self.school_id = _sid()
-        self.staff = _staff_user("roster")
-
-    @patch("aftercare.api.school_id_from_request")
     @patch("aftercare.api.timezone.now")
-    def test_roster_day_and_active_expiry_filtering(self, mock_now, mock_school_id):
-        mock_school_id.return_value = self.school_id
-        mock_now.return_value = timezone.make_aware(datetime(2026, 6, 15, 16, 0, 0))
+    def test_roster_day_and_active_expiry_filtering(self, mock_now):
+        mock_now.return_value = timezone.make_aware(datetime(2026, 6, 15, 16))
         today = mock_now.return_value.date()
-
-        AftercareEnrollment.objects.create(
-            school_id=self.school_id,
-            student_id=401,
-            start_date=today - timedelta(days=10),
-            end_date=None,
-            days_of_week=["MON"],
-            billing_model="FLAT_MONTHLY",
-            monthly_rate="125.00",
-            is_active=True,
-        )
-        AftercareEnrollment.objects.create(
-            school_id=self.school_id,
-            student_id=402,
-            start_date=today - timedelta(days=10),
-            end_date=None,
-            days_of_week=["MON"],
-            billing_model="FLAT_MONTHLY",
-            monthly_rate="125.00",
-            is_active=False,
-        )
-        AftercareEnrollment.objects.create(
-            school_id=self.school_id,
-            student_id=403,
-            start_date=today - timedelta(days=20),
-            end_date=today - timedelta(days=1),
-            days_of_week=["MON"],
-            billing_model="FLAT_MONTHLY",
-            monthly_rate="125.00",
-            is_active=True,
-        )
-        AftercareEnrollment.objects.create(
-            school_id=self.school_id,
-            student_id=404,
-            start_date=today - timedelta(days=10),
-            end_date=None,
-            days_of_week=["TUE"],
-            billing_model="FLAT_MONTHLY",
-            monthly_rate="125.00",
-            is_active=True,
-        )
-
-        client = APIClient()
-        client.force_authenticate(self.staff)
-        r = client.get(ROSTER_URL, **_hdr(self.school_id))
-        self.assertEqual(r.status_code, 200, r.data)
-        self.assertEqual(r.data["dow"], "MON")
-
-        roster_ids = {row["student_id"] for row in r.data["rows"]}
-        self.assertEqual(roster_ids, {401})
+        _enroll(self.school, self.student, days_of_week=["MON"])
+        _enroll(self.school, _student(self.school), is_active=False)
+        _enroll(self.school, _student(self.school), end_date=today-timedelta(days=1))
+        _enroll(self.school, _student(self.school), days_of_week=["TUE"])
+        client = _client(_user(self.school, grants=("extended_care.view",)), self.school)
+        response = client.get(ROSTER_URL)
+        self.assertEqual(response.status_code, 200, response.data)
+        self.assertEqual(response.data["dow"], "MON")
+        self.assertEqual({str(row["student_id"]) for row in response.data["rows"]}, {str(self.student.id)})
 
 
 class TestModule026AttendanceAndBilling(TestCase):
     def setUp(self):
-        self.school_id = _sid()
+        self.school = _school()
+        self.student = _student(self.school)
+        _enroll(self.school, self.student)
+        self.when = timezone.make_aware(datetime(2026, 6, 15, 15, 5))
 
-    def test_checkin_creates_attendance(self):
-        when = timezone.make_aware(datetime(2026, 6, 15, 15, 5, 0))
-        attendance = checkin_student(
-            school_id=self.school_id,
-            student_id=501,
-            when=when,
-            note="arrived",
-        )
-        self.assertIsNotNone(attendance.pk)
-        self.assertTrue(
-            AftercareAttendance.objects.filter(
-                school_id=self.school_id, student_id=501, date=when.date()
-            ).exists()
-        )
+    def test_checkin_creates_canonical_attendance(self):
+        attendance = checkin_student(self.school.id, self.student.id, when=self.when)
+        self.assertTrue(AftercareAttendance.objects.filter(pk=attendance.pk,
+                        school_fk=self.school, student_fk=self.student, date=self.when.date()).exists())
 
-    @patch("aftercare.services.create_ledger_charge_aftercare", return_value=9001)
-    def test_checkout_computes_late_fee(self, _mock_charge):
-        checkin_dt = timezone.make_aware(datetime(2026, 6, 15, 15, 5, 0))
-        checkout_dt = timezone.make_aware(datetime(2026, 6, 15, 18, 31, 0))
+    @patch("aftercare.services.create_ledger_charge_aftercare", return_value="obligation-9001")
+    def test_checkout_computes_late_fee(self, charge):
+        AftercareProgramConfig.objects.create(school_fk=self.school, start_time=time(15), end_time=time(18),
+                                             late_fee_per_10_min="10.00", late_fee_cap="100.00")
+        checkin_student(self.school.id, self.student.id, when=self.when)
+        attendance = checkout_student(self.school.id, self.student.id, pickup_contact_id=None,
+                     pickup_name_freeform="Parent", pickup_verified=True,
+                     when=timezone.make_aware(datetime(2026, 6, 15, 18, 31)))
+        self.assertEqual(attendance.late_minutes, 31)
+        self.assertEqual(attendance.late_fee_cents, 4000)
+        self.assertEqual(attendance.late_fee_charge_id, "obligation-9001")
+        self.assertEqual(charge.call_args.kwargs["student_id"], self.student.id)
 
-        # Ensure typed TimeField values are present for deterministic late-fee math.
-        AftercareProgramConfig.objects.create(
-            school_id=self.school_id,
-            start_time=time(15, 0),
-            end_time=time(18, 0),
-            late_fee_per_10_min="10.00",
-            late_fee_grace_minutes=0,
-            late_fee_cap="100.00",
-        )
-
-        checkin_student(
-            school_id=self.school_id,
-            student_id=502,
-            when=checkin_dt,
-            note="present",
-        )
-
-        att = checkout_student(
-            school_id=self.school_id,
-            student_id=502,
-            pickup_contact_id=None,
-            pickup_name_freeform="Parent",
-            pickup_verified=True,
-            when=checkout_dt,
-        )
-
-        self.assertEqual(att.date, checkin_dt.date())
-        self.assertEqual(att.late_minutes, 31)
-        self.assertGreater(att.late_fee_cents, 0)
-        self.assertEqual(att.late_fee_charge_id, 9001)
-
-    @patch("aftercare.services.create_ledger_charge_aftercare", return_value=777)
-    def test_monthly_billing_idempotent(self, mock_charge):
-        AftercareEnrollment.objects.create(
-            school_id=self.school_id,
-            student_id=601,
-            start_date=date(2026, 6, 1),
-            end_date=None,
-            days_of_week=["MON", "WED"],
-            billing_model="FLAT_MONTHLY",
-            monthly_rate="160.00",
-            is_active=True,
-        )
-
-        first = run_monthly_flat_billing(self.school_id, 2026, 6)
-        second = run_monthly_flat_billing(self.school_id, 2026, 6)
-
-        self.assertEqual(first["status"], "ok")
-        self.assertEqual(first["charged"], 1)
+    @patch("aftercare.services.create_ledger_charge_aftercare", return_value="obligation-777")
+    def test_monthly_billing_idempotent(self, charge):
+        first = run_monthly_flat_billing(self.school.id, 2026, 6)
+        second = run_monthly_flat_billing(self.school.id, 2026, 6)
+        self.assertEqual(first, {"status": "ok", "charged": 1})
         self.assertEqual(second["status"], "already_ran")
-        self.assertEqual(mock_charge.call_count, 1)
-        self.assertEqual(
-            AftercareMonthlyChargeRun.objects.filter(
-                school_id=self.school_id, year=2026, month=6
-            ).count(),
-            1,
-        )
+        charge.assert_called_once()
+        self.assertEqual(charge.call_args.kwargs["student_id"], self.student.id)
+        self.assertEqual(AftercareMonthlyChargeRun.objects.filter(school_fk=self.school, year=2026, month=6).count(), 1)
 
 
 class TestModule026IncidentBehavior(TestCase):
     @patch("aftercare.services.create_discipline_record_for_incident")
-    def test_major_incident_links_discipline(self, mock_discipline):
-        school_id = _sid()
-        mock_discipline.return_value = uuid.uuid4()
-
-        inc = record_incident(
-            school_id=school_id,
-            student_id=701,
-            severity="MAJOR",
-            description="Unsafe conduct",
-            attendance_id=None,
-            parent_notified=True,
-        )
-
-        self.assertEqual(inc.severity, "MAJOR")
-        self.assertTrue(bool(inc.discipline_record_id))
-        self.assertEqual(
-            AftercareIncident.objects.filter(school_id=school_id).count(), 1
-        )
+    def test_major_incident_links_discipline(self, bridge):
+        school = _school()
+        student = _student(school)
+        bridge.return_value = uuid.uuid4()
+        incident = record_incident(school.id, student.id, "MAJOR", "Unsafe conduct")
+        self.assertEqual(incident.discipline_record_id, bridge.return_value)
+        self.assertEqual(incident.school_fk_id, school.id)
+        self.assertEqual(incident.student_fk_id, student.id)
+        bridge.assert_called_once()
 
     @patch("aftercare.services.create_discipline_record_for_incident")
-    def test_minor_incident_does_not_link_discipline(self, mock_discipline):
-        school_id = _sid()
-        inc = record_incident(
-            school_id=school_id,
-            student_id=702,
-            severity="MINOR",
-            description="Minor note",
-            attendance_id=None,
-            parent_notified=False,
-        )
-
-        self.assertIsNone(inc.discipline_record_id)
-        mock_discipline.assert_not_called()
-
-
-class TestModule026EndpointRegistration(TestCase):
-    def setUp(self):
-        self.school = _school()
-
-    def test_config_endpoint_not_500(self):
-        r = APIClient().get("/api/v1/aftercare/config/", **_hdr(self.school.id))
-        self.assertNotEqual(
-            r.status_code, 500, f"500=server error on config URL, got {r.status_code}."
-        )
+    def test_minor_incident_does_not_link_discipline(self, bridge):
+        school = _school()
+        incident = record_incident(school.id, _student(school).id, "MINOR", "Minor note")
+        self.assertIsNone(incident.discipline_record_id)
+        bridge.assert_not_called()
+        self.assertEqual(AftercareIncident.objects.filter(school_fk=school).count(), 1)

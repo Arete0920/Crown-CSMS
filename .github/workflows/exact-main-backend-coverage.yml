@@ -1,6 +1,17 @@
 name: Exact Main Backend Coverage
 
 on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "backend/**"
+      - ".coveragerc"
+      - "pytest.ini"
+      - "requirements.txt"
+      - "scripts/release/run_backend_coverage.ps1"
+      - "scripts/release/evaluate_backend_coverage.py"
+      - "scripts/release/backend_coverage_boundary.json"
+      - ".github/workflows/exact-main-backend-coverage.yml"
   push:
     branches:
       - main

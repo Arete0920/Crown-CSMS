@@ -23,6 +23,7 @@ def _user(school, role_code, permissions):
     User = get_user_model()
     user = User.objects.create_user(
         username=f"curriculum-{uuid.uuid4().hex[:10]}",
+        email=f"{uuid.uuid4().hex}@example.test",
         password="pass12345!",
         school=school,
     )

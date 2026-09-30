@@ -111,4 +111,5 @@ def test_coach_eligibility_list_is_limited_to_assigned_teams():
     assert response.status_code == 200
     payload = response.json()
     assert len(payload) == 1
-    assert payload[0]["id"] == assigned_eligibility.id
+    assert str(payload[0]["team"]) == str(assigned_eligibility.team_id)
+    assert str(payload[0]["student"]) == str(assigned_eligibility.student_id)

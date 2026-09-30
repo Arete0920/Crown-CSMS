@@ -1,6 +1,14 @@
 name: Wizard E2E Evidence Gate
 
 on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "backend/**"
+      - "frontend/dashboards/**"
+      - "tests/e2e/**"
+      - "scripts/execution/wizard_e2e_scope.json"
+      - ".github/workflows/wizard-e2e-evidence-gate.yml"
   push:
     branches: [ main ]
   workflow_dispatch:

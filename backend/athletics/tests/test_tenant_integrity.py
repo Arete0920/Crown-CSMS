@@ -58,6 +58,7 @@ def _team(school: School, suffix: str) -> Team:
 def _director(school: School):
     user = User.objects.create_user(
         username=f"ath_dir_{uuid.uuid4().hex[:8]}",
+        email=f"{uuid.uuid4().hex}@example.test",
         password=TEST_AUTH_SECRET,
         school=school,
     )
@@ -118,6 +119,7 @@ def test_team_coach_rejects_foreign_team():
     foreign = _school("Foreign Coach Team")
     coach = User.objects.create_user(
         username=f"coach_{uuid.uuid4().hex[:8]}",
+        email=f"{uuid.uuid4().hex}@example.test",
         password=TEST_AUTH_SECRET,
         school=school,
     )
@@ -134,6 +136,7 @@ def test_team_coach_rejects_foreign_user():
     foreign = _school("Foreign Coach User")
     coach = User.objects.create_user(
         username=f"foreign_coach_{uuid.uuid4().hex[:8]}",
+        email=f"{uuid.uuid4().hex}@example.test",
         password=TEST_AUTH_SECRET,
         school=foreign,
     )
@@ -149,6 +152,7 @@ def test_team_coach_accepts_single_role_school_membership_when_direct_school_uns
     school = _school("Role Membership School")
     coach = User.objects.create_user(
         username=f"role_coach_{uuid.uuid4().hex[:8]}",
+        email=f"{uuid.uuid4().hex}@example.test",
         password=TEST_AUTH_SECRET,
         school=None,
     )

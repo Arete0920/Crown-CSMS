@@ -10,7 +10,13 @@ def test_safety_metrics_uses_resolved_state_and_preserves_status_contract(monkey
     school = SimpleNamespace(id="school-a")
     request = APIRequestFactory().get("/api/v1/safety/metrics/")
     request.school = school
-    force_authenticate(request, user=SimpleNamespace(is_authenticated=True))
+    roles = MagicMock()
+    roles.all.return_value.filter.return_value.values_list.return_value = []
+    force_authenticate(request, user=SimpleNamespace(is_authenticated=True, roles=roles))
+    denied = safety_api.safety_metrics(request)
+    assert denied.status_code == 403
+    # Isolate aggregation only after proving the public wrapper fails closed.
+    monkeypatch.setattr("core.permissions.user_has_permission", lambda user, code, school=None: code == "safety.view" and school is request.school)
 
     manager = MagicMock()
     queryset = MagicMock()
