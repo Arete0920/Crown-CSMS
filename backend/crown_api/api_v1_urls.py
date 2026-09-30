@@ -139,6 +139,10 @@ urlpatterns = [
 
     # M365 readiness/status routes (governance.urls at m365/ prefix)
     path("m365/", include("governance.urls")),
+    # Kingdom Path strategic market intelligence
+    path("market-intelligence/", include("market_intelligence.urls")),
+    # Survey / sentiment engine for retention and enrollment growth
+    path("survey-sentiment/", include("survey_sentiment.urls")),
 
     # Legacy api_urls catch-all (must come AFTER specific module includes above)
     path("", include("crown_api.api_urls")),
