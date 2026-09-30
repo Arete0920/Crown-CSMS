@@ -19,6 +19,7 @@ class Migration(migrations.Migration):
                 ("anonymous_allowed", models.BooleanField(default=False)),
                 ("public_enabled", models.BooleanField(default=False)),
                 ("public_token", models.UUIDField(default=uuid.uuid4, editable=False, unique=True)),
+                ("public_expires_at", models.DateTimeField(blank=True, null=True)),
                 ("linked_campaign_id", models.UUIDField(blank=True, null=True)),
                 ("grade_code", models.CharField(blank=True, default="", max_length=3)),
                 ("audience", models.CharField(blank=True, default="families", max_length=80)),
