@@ -1,0 +1,67 @@
+import pytest
+from django.test import Client
+
+from core.models import School
+from survey_sentiment.models import SurveyDefinition, SurveyQuestion, SurveyResponse
+
+pytestmark = pytest.mark.django_db
+
+
+def _public_survey():
+    school = School.objects.create(name="Public Survey School")
+    survey = SurveyDefinition.objects.create(
+        school=school,
+        name="Lost Prospect Survey",
+        purpose="lost_prospect",
+        status="active",
+        public_enabled=True,
+        anonymous_allowed=True,
+    )
+    SurveyQuestion.objects.create(
+        survey=survey,
+        key="stop_reason",
+        prompt="What most influenced your decision not to continue?",
+        question_type="choice",
+        choices=["tuition", "location", "another_school"],
+        required=True,
+        sort_order=1,
+    )
+    return school, survey
+
+
+def test_public_survey_get_requires_only_valid_enabled_token():
+    _, survey = _public_survey()
+    response = Client().get(f"/api/v1/survey-sentiment/public/{survey.public_token}/")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["name"] == "Lost Prospect Survey"
+    assert "public_token" not in payload
+    assert "linked_campaign_id" not in payload
+
+
+def test_public_survey_submit_is_anonymous_and_tenant_bound_by_token():
+    school, survey = _public_survey()
+    response = Client().post(
+        f"/api/v1/survey-sentiment/public/{survey.public_token}/",
+        data={"answers": {"stop_reason": "tuition"}},
+        content_type="application/json",
+    )
+
+    assert response.status_code == 201
+    saved = SurveyResponse.objects.get(id=response.json()["response_id"])
+    assert saved.school_id == school.id
+    assert saved.survey_id == survey.id
+    assert saved.anonymous is True
+    assert saved.household_id is None
+    assert saved.application_id is None
+    assert saved.student_id is None
+
+
+def test_public_survey_fails_closed_when_disabled():
+    _, survey = _public_survey()
+    survey.public_enabled = False
+    survey.save(update_fields=["public_enabled"])
+
+    response = Client().get(f"/api/v1/survey-sentiment/public/{survey.public_token}/")
+    assert response.status_code == 404
