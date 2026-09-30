@@ -45,7 +45,7 @@ PowerShell -NoProfile -ExecutionPolicy Bypass -File .\RUN_PROOF_NO_MANUAL_CLEANU
 
 # Click path (UI)
 1. Open http://127.0.0.1:3000
-2. Login: head@crown-demo.local / demo1234
+2. Login with the configured demo user and the runtime `CROWN_DEMO_PASSWORD` value
 3. Academics → Sections → ENG-101 → Gradebook
 4. See 5 assignments, 4 rows, live grades
 ```
