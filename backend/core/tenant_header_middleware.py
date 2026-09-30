@@ -81,6 +81,8 @@ class TenantHeaderRequiredMiddleware:
         "/api/admissions/submit",
         "/api/v1/admissions/public-config",
         "/api/admissions/public-config",
+        "/api/v1/survey-sentiment/public/",
+        "/api/survey-sentiment/public/",
     )
 
     def __init__(self, get_response):
