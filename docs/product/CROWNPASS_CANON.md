@@ -1,8 +1,8 @@
 # CrownPass Canon v1
-**Status:** Draft implementation authority  
-**Product:** CrownPass  
-**Parent module:** Activities / Athletics / Events  
-**Primary role:** Integrated digital ticketing, event admission, pass management, venue access, and event revenue workflow for Crown schools  
+**Status:** Draft implementation authority
+**Product:** CrownPass
+**Parent module:** Activities / Athletics / Events
+**Primary role:** Integrated digital ticketing, event admission, pass management, venue access, and event revenue workflow for Crown schools
 **Branch:** `feature/crownpass-foundation`
 ## 1. Governing definition
 CrownPass is Crown's reusable ticketing and event-access subsystem for athletics, activities, fine arts, advancement, alumni, summer programs, and other school events.
@@ -217,3 +217,4 @@ A certified CrownPass release requires evidence that:
 Do not delay pilot for:
 - dynamic pricing · resale marketplace · third-party broker integrations · complex ticket-exchange marketplace · stadium-scale NFC hardware rollout · sophisticated concessions system · enterprise entertainment-industry promoter tooling
 CrownPass should first be the best integrated ticketing experience a small-to-mid-sized Christian school needs.
+
