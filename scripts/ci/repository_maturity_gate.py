@@ -14,6 +14,8 @@ ENDPOINTS = ROOT / "docs/security/ENDPOINT_SECURITY_MANIFEST.json"
 JOURNEYS = ROOT / "docs/engineering/CRITICAL_BUSINESS_JOURNEYS.json"
 INTEGRATIONS = ROOT / "docs/engineering/INTEGRATION_CAPABILITY_REGISTRY.json"
 RETIREMENT = ROOT / "docs/engineering/COMPATIBILITY_RETIREMENT_LEDGER.json"
+TRUTH_REGISTRY = ROOT / "docs/architecture/AUTHORITATIVE_TRUTH_REGISTRY.json"
+PROOF_AUTHORITY = ROOT / "docs/release/PROOF_AUTHORITY_POLICY.json"
 
 
 def fail(message: str) -> None:
@@ -89,6 +91,38 @@ def main() -> int:
         for key in ("owner", "replacement", "deletion_condition", "status"):
             if not str(entry.get(key) or "").strip():
                 fail(f"compatibility entry {entry.get('surface')} missing {key}")
+
+    truth_doc = load_json(TRUTH_REGISTRY)
+    domains = truth_doc.get("domains") or []
+    domain_names = [item.get("domain") for item in domains]
+    if len(domain_names) != len(set(domain_names)):
+        fail("authoritative truth registry contains duplicate domain names")
+    for item in domains:
+        if not str(item.get("authority") or "").strip():
+            fail(f"truth domain {item.get('domain')} has no canonical authority")
+        if not str(item.get("write_surface") or "").strip():
+            fail(f"truth domain {item.get('domain')} has no canonical write surface")
+
+    proof_doc = load_json(PROOF_AUTHORITY)
+    authority_rule = str(proof_doc.get("authority_rule") or "").lower()
+    if "exact candidate sha" not in authority_rule:
+        fail("proof authority policy must require exact candidate SHA")
+    insufficient = " ".join(proof_doc.get("insufficient_by_itself") or []).lower()
+    for required_phrase in ("historical certification", "sample payload", "http 200", "stale workflow"):
+        if required_phrase not in insufficient:
+            fail(f"proof authority policy missing insufficient-evidence rule: {required_phrase}")
+
+    workflow_names = set()
+    workflow_dir = ROOT / ".github/workflows"
+    for workflow in workflow_dir.glob("*.y*ml"):
+        text = workflow.read_text(encoding="utf-8", errors="replace")
+        match = re.search(r"(?m)^name:\s*[\"']?(.+?)[\"']?\s*$", text)
+        if match:
+            workflow_names.add(match.group(1).strip())
+    for journey in journeys:
+        for proof_name in journey.get("proof") or []:
+            if proof_name not in workflow_names:
+                fail(f"critical journey {journey.get('id')} references unknown workflow: {proof_name}")
 
     # Concrete truth boundaries. These are intentionally narrow and fail closed.
     require_text(
