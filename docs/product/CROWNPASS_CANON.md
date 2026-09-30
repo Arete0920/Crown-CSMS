@@ -217,4 +217,3 @@ A certified CrownPass release requires evidence that:
 Do not delay pilot for:
 - dynamic pricing · resale marketplace · third-party broker integrations · complex ticket-exchange marketplace · stadium-scale NFC hardware rollout · sophisticated concessions system · enterprise entertainment-industry promoter tooling
 CrownPass should first be the best integrated ticketing experience a small-to-mid-sized Christian school needs.
-

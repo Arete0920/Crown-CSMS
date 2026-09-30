@@ -1,9 +1,10 @@
 from datetime import date
+import json
 
 import pytest
 
 from applications.models import Application
-from core.models import AcademicYear, Enrollment, Family, GradeLevel, School, Student
+from core.models import AcademicYear, CrownPermission, Enrollment, Family, GradeLevel, RolePermission, School, Student, UserAccount, UserRole
 from crm_marketing.models import LeadStage, MarketingCampaign, MarketingLead
 from crm_marketing.services import build_campaign_snapshot, register_admissions_submit
 from enrollment_period_wizard.models import GradeCapacity
@@ -128,3 +129,80 @@ def test_admissions_submit_preserves_existing_campaign_attribution():
     assert lead.campaign_id == campaign.id
     assert lead.stage == LeadStage.APPLICATION_SUBMITTED
     assert MarketingLead.objects.filter(application=application).count() == 1
+
+
+@pytest.fixture
+def campaign_client(client):
+    school = School.objects.create(name="Campaign API School")
+    user = UserAccount.objects.create_user(username="campaign-editor", email="campaign-editor@example.com")
+    UserRole.objects.create(user=user, school=school, role_code="campaign_editor_test")
+    for code in ("marketing.view", "marketing.edit"):
+        permission, _ = CrownPermission.objects.get_or_create(code=code)
+        RolePermission.objects.get_or_create(role_code="campaign_editor_test", permission=permission)
+    client.force_login(user)
+    return client, school
+
+
+@pytest.mark.parametrize("extra", [
+    {"academic_year_id": "invalid"},
+    {"portrait_domain_ids": "invalid"},
+    {"portrait_domain_ids": ["invalid"]},
+    {"budget_cents": -1},
+    {"budget_cents": 1.5},
+    {"budget_cents": True},
+    {"budget_cents": 2**63},
+    {"enrollment_goal": 2**31},
+    {"expected_retention_years": 0},
+    {"expected_retention_years": 32768},
+    {"aid_strategy": {"planned_aid_per_enrollment_cents": "invalid"}},
+    {"aid_strategy": {"planned_aid_per_enrollment_cents": -1}},
+    {"aid_strategy": []},
+    {"target_segment": []},
+])
+def test_campaign_rejects_invalid_input_without_persisting(campaign_client, extra):
+    client, school = campaign_client
+    response = client.post("/api/v1/crm/campaigns/", data=json.dumps({"name": "Invalid", **extra}),
+                           content_type="application/json", HTTP_X_SCHOOL_ID=str(school.id))
+    assert response.status_code == 400
+    assert not MarketingCampaign.objects.filter(school=school).exists()
+
+
+def test_campaign_creation_and_read_are_tenant_scoped(campaign_client):
+    client, school = campaign_client
+    response = client.post("/api/v1/crm/campaigns/", data=json.dumps({"name": "Verified", "budget_cents": 100}),
+                           content_type="application/json", HTTP_X_SCHOOL_ID=str(school.id))
+    assert response.status_code == 201
+    campaign_id = response.json()["campaign_id"]
+    assert MarketingCampaign.objects.get(id=campaign_id).school_id == school.id
+    other_school = School.objects.create(name="Other Campaign School")
+    denied = client.get(f"/api/v1/crm/campaigns/{campaign_id}/", HTTP_X_SCHOOL_ID=str(other_school.id))
+    assert denied.status_code in (403, 404)
+    denied = client.post("/api/v1/crm/campaigns/", data=json.dumps({"name": "Cross-school"}),
+                         content_type="application/json", HTTP_X_SCHOOL_ID=str(other_school.id))
+    assert denied.status_code in (403, 404)
+    assert not MarketingCampaign.objects.filter(school=other_school).exists()
+    denied = client.get("/api/v1/marketing/metrics/", HTTP_X_SCHOOL_ID=str(other_school.id))
+    assert denied.status_code in (403, 404)
+
+
+def test_campaign_view_permission_cannot_create(campaign_client):
+    client, school = campaign_client
+    RolePermission.objects.filter(role_code="campaign_editor_test", permission__code="marketing.edit").delete()
+    response = client.post("/api/v1/crm/campaigns/", data=json.dumps({"name": "Read-only"}),
+                           content_type="application/json", HTTP_X_SCHOOL_ID=str(school.id))
+    assert response.status_code == 403
+    assert not MarketingCampaign.objects.filter(school=school).exists()
+
+
+def test_campaign_touchpoint_persists_only_valid_tenant_lead(campaign_client):
+    client, school = campaign_client
+    campaign = MarketingCampaign.objects.create(school=school, name="Touchpoint")
+    lead = MarketingLead.objects.create(school=school, campaign=campaign)
+    url = f"/api/v1/crm/campaigns/{campaign.id}/touchpoints/"
+    for lead_id, expected in [("invalid", 400), (str(lead.id), 201)]:
+        response = client.post(url, data=json.dumps({"lead_id": lead_id, "channel": "phone", "summary": "Called family"}),
+                               content_type="application/json", HTTP_X_SCHOOL_ID=str(school.id))
+        assert response.status_code == expected
+    touchpoint = campaign.touchpoints.get()
+    assert touchpoint.school_id == school.id
+    assert touchpoint.lead_id == lead.id

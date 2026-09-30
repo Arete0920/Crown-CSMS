@@ -338,8 +338,13 @@ def financial_aid_metrics(request):
 def marketing_metrics(request):
     """Tenant-scoped marketing command metrics derived from admissions truth."""
     from applications.models import Application, Applicant, ApplicationEvent
+    from core.models import School
+    from core.permissions import user_has_permission
 
     school_id = get_request_school_id(request, required=True)
+    school = School.objects.filter(id=school_id).first()
+    if school is None or not user_has_permission(request.user, "marketing.view", school=school):
+        return JsonResponse({"detail": "Permission denied."}, status=403)
     apps = Application.objects.filter(school_id=school_id)
     app_ids = list(apps.values_list("id", flat=True))
     events = ApplicationEvent.objects.filter(school_id=school_id, application_id__in=app_ids)

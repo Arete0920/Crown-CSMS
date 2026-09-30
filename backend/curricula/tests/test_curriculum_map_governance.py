@@ -5,6 +5,7 @@ from uuid import uuid4
 import pytest
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
+from django.db import transaction
 
 from academics.models import Course
 from core.models import School
@@ -165,9 +166,9 @@ def test_publishing_freezes_unit_and_lesson_authoring():
     lesson.title = "Changed lesson"
     with pytest.raises(ValidationError):
         lesson.save()
-    with pytest.raises(ValidationError):
+    with pytest.raises(ValidationError), transaction.atomic():
         lesson.delete()
-    with pytest.raises(ValidationError):
+    with pytest.raises(ValidationError), transaction.atomic():
         unit.delete()
 
 

@@ -9,6 +9,7 @@
 
 import pytest
 from django.test import Client
+from django.test import override_settings
 
 from core.models import CrownPermission, RolePermission, UserAccount, School, UserRole
 
@@ -106,6 +107,7 @@ def test_metrics_denies_without_permission(module, url):
 
 
 @pytest.mark.parametrize("module, url", METRICS)
+@override_settings(CROWN_ALLOW_SAMPLE_DASHBOARD_PAYLOADS=True)
 def test_metrics_allows_with_permission(module, url):
     """
     An authenticated user whose role IS granted <module>.view must receive 200.

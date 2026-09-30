@@ -33,7 +33,8 @@ export default function MarketingDashboard() {
   const applications = Number(payload.applications || 0);
   const enrolled = Number(payload.enrolled || 0);
   const stalled = Number(payload.stalled_leads || 0);
-  const conversion = Number(payload.overall_application_to_enrollment_pct);
+  const conversion = isLive ? Number(payload.overall_application_to_enrollment_pct) : NaN;
+  const countLabel = (value) => isLive ? String(value) : '--';
   const sources = Array.isArray(payload.source_attribution) ? payload.source_attribution : [];
   const actions = Array.isArray(payload.action_queue) ? payload.action_queue : [];
   const campaigns = Array.isArray(payload.campaigns) ? payload.campaigns : [];
@@ -55,13 +56,15 @@ export default function MarketingDashboard() {
     : 'Marketing Command is waiting for verified live data.';
 
   config.metrics = [
-    { label: 'Inquiries', value: String(inquiries), detail: 'Prospective-family inquiry records.', accent: 'blue', dataState, sourceLabel },
-    { label: 'Tours Scheduled', value: String(tours), detail: 'Families with a scheduled tour event.', accent: 'gold', dataState, sourceLabel },
-    { label: 'Applications', value: String(applications), detail: 'Non-draft applications in the active tenant.', accent: 'navy', dataState, sourceLabel },
-    { label: 'Stalled Prospects', value: String(stalled), detail: 'Open records with no movement for more than seven days.', accent: stalled > 0 ? 'gold' : 'emerald', dataState, sourceLabel },
+    { label: 'Inquiries', value: countLabel(inquiries), detail: 'Prospective-family inquiry records.', accent: 'blue', dataState, sourceLabel },
+    { label: 'Tours Scheduled', value: countLabel(tours), detail: 'Families with a scheduled tour event.', accent: 'gold', dataState, sourceLabel },
+    { label: 'Applications', value: countLabel(applications), detail: 'Non-draft applications in the active tenant.', accent: 'navy', dataState, sourceLabel },
+    { label: 'Stalled Prospects', value: countLabel(stalled), detail: 'Open records with no movement for more than seven days.', accent: !isLive || stalled > 0 ? 'gold' : 'emerald', dataState, sourceLabel },
   ];
 
-  config.priorities = actions.length > 0
+  config.priorities = !isLive
+    ? [{ title: 'Marketing data unavailable', detail: 'Follow-up priorities require current school data.', state: 'Unavailable', tone: 'warn' }]
+    : actions.length > 0
     ? actions.map((item) => ({
         title: item.title,
         detail: item.detail,
@@ -97,18 +100,18 @@ export default function MarketingDashboard() {
       key: 'funnel',
       icon: 'FN',
       title: 'Enrollment Funnel',
-      status: stalled > 0 ? 'Watch' : 'Stable',
-      statusTone: stalled > 0 ? 'warn' : 'good',
-      mainKpi: `${inquiries} → ${tours} → ${applications} → ${enrolled}`,
+      status: !isLive ? 'Unavailable' : stalled > 0 ? 'Watch' : 'Stable',
+      statusTone: !isLive || stalled > 0 ? 'warn' : 'good',
+      mainKpi: `${countLabel(inquiries)} → ${countLabel(tours)} → ${countLabel(applications)} → ${countLabel(enrolled)}`,
       summary: `Application-to-enrollment conversion: ${percent(conversion)}`,
       kpis: [
-        { label: 'Inquiries', value: String(inquiries) },
-        { label: 'Tours', value: String(tours) },
-        { label: 'Applications', value: String(applications) },
-        { label: 'Enrolled', value: String(enrolled) },
+        { label: 'Inquiries', value: countLabel(inquiries) },
+        { label: 'Tours', value: countLabel(tours) },
+        { label: 'Applications', value: countLabel(applications) },
+        { label: 'Enrolled', value: countLabel(enrolled) },
       ],
       details: [
-        `Stalled prospects: ${stalled}`,
+        `Stalled prospects: ${countLabel(stalled)}`,
         `Application-to-enrollment: ${percent(conversion)}`,
         'Admissions remains the canonical enrollment workflow.',
       ],
