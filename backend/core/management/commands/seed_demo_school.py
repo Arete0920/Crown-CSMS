@@ -1,3 +1,4 @@
+import os
 import random
 from datetime import date
 
@@ -112,7 +113,8 @@ class Command(BaseCommand):
         )
 
         # --- 4) Staff + Crown UserAccounts + Roles (Directors) ---
-        directors = self._ensure_directors(school)
+        demo_password = os.getenv("CROWN_DEMO_PASSWORD", "").strip()
+        directors = self._ensure_directors(school, demo_password=demo_password)
 
         # --- 5) Create families/guardians/students/enrollments ---
         families = self._create_families(school, target_students=students_target)
@@ -361,7 +363,7 @@ class Command(BaseCommand):
             out[code] = obj
         return out
 
-    def _ensure_directors(self, school: School):
+    def _ensure_directors(self, school: School, *, demo_password: str):
         def ensure_staff(first, last, email, role_type):
             st, _ = Staff.objects.get_or_create(
                 school=school,
@@ -376,8 +378,11 @@ class Command(BaseCommand):
                 email=email,
                 defaults={"username": email, "is_active": True, "is_staff": True, "is_superuser": True, "staff": staff},
             )
-            if created:
-                ua.set_password("demo1234")
+            if demo_password:
+                ua.set_password(demo_password)
+                ua.save(update_fields=["password"])
+            elif created:
+                ua.set_unusable_password()
                 ua.save(update_fields=["password"])
             if staff and ua.staff_id != staff.id:
                 ua.staff = staff
