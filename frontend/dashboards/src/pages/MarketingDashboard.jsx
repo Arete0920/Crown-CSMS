@@ -36,6 +36,8 @@ export default function MarketingDashboard() {
   const conversion = Number(payload.overall_application_to_enrollment_pct);
   const sources = Array.isArray(payload.source_attribution) ? payload.source_attribution : [];
   const actions = Array.isArray(payload.action_queue) ? payload.action_queue : [];
+  const campaigns = Array.isArray(payload.campaigns) ? payload.campaigns : [];
+  const primaryCampaign = campaigns[0] || null;
   const marketConfigured = payload.market_intelligence?.status !== 'not_configured';
   const advertisingConfigured = payload.advertising?.status !== 'not_configured';
 
@@ -138,6 +140,118 @@ export default function MarketingDashboard() {
       primaryActionHref: '/admissions/pipeline',
       backActionHref: '/marketing',
       lastUpdated: isLive ? 'Live' : 'Unavailable',
+    },
+    {
+      key: 'capacity-growth',
+      icon: 'CG',
+      title: 'Capacity Growth Campaigns',
+      status: primaryCampaign ? (primaryCampaign.status === 'active' ? 'Active' : 'Stable') : 'Not Configured',
+      statusTone: primaryCampaign ? 'good' : 'warn',
+      mainKpi: primaryCampaign
+        ? `${primaryCampaign.capacity?.empty_seats ?? '--'} open seat(s) · ${primaryCampaign.funnel?.enrolled ?? 0} enrolled`
+        : 'No capacity campaign configured',
+      summary: primaryCampaign
+        ? `${primaryCampaign.name} · Grade ${primaryCampaign.capacity?.grade_code || '--'} · Goal ${primaryCampaign.economics?.projected_gross_tuition_cents ? '
+      icon: 'MI',
+      title: 'Market Intelligence',
+      status: marketConfigured ? 'Stable' : 'Not Configured',
+      statusTone: marketConfigured ? 'good' : 'warn',
+      mainKpi: marketConfigured ? 'Market data connected' : 'External market data required',
+      summary: payload.market_intelligence?.message || 'Demographics, drive-time, church, preschool, and competitor data are not connected.',
+      kpis: [
+        { label: 'Demographics', value: marketConfigured ? 'Ready' : '--' },
+        { label: 'Drive-time', value: marketConfigured ? 'Ready' : '--' },
+        { label: 'Church/feeder', value: marketConfigured ? 'Ready' : '--' },
+        { label: 'Competitors', value: marketConfigured ? 'Ready' : '--' },
+      ],
+      details: [
+        'Designed for addressable-family, market-penetration, feeder, and geographic opportunity analysis.',
+        'No estimates are shown until verified external data are connected.',
+      ],
+      dataState: marketConfigured ? dataState : 'unavailable',
+      sourceLabel: marketConfigured ? sourceLabel : 'External market datasets not configured',
+      primaryActionLabel: 'Marketing Command',
+      backActionLabel: 'Admissions',
+      primaryActionHref: '/marketing',
+      backActionHref: '/admissions',
+      lastUpdated: marketConfigured ? 'Configured' : 'Pending integration',
+    },
+    {
+      key: 'advertising',
+      icon: 'AD',
+      title: 'Advertising ROI',
+      status: advertisingConfigured ? 'Stable' : 'Not Configured',
+      statusTone: advertisingConfigured ? 'good' : 'warn',
+      mainKpi: advertisingConfigured ? 'Campaign attribution connected' : 'Spend data required',
+      summary: payload.advertising?.message || 'Advertising ROI requires verified spend and campaign-attribution data.',
+      kpis: [
+        { label: 'Spend', value: '--' },
+        { label: 'Cost / inquiry', value: '--' },
+        { label: 'Cost / application', value: '--' },
+        { label: 'Cost / enrollment', value: '--' },
+      ],
+      details: [
+        'Will connect campaign spend to inquiry, application, and enrollment outcomes.',
+        'Crown will not calculate ROI from unverified or manually assumed spend.',
+      ],
+      dataState: advertisingConfigured ? dataState : 'unavailable',
+      sourceLabel: advertisingConfigured ? sourceLabel : 'Advertising data not configured',
+      primaryActionLabel: 'Marketing Command',
+      backActionLabel: 'Reports',
+      primaryActionHref: '/marketing',
+      backActionHref: '/reports',
+      lastUpdated: advertisingConfigured ? 'Configured' : 'Pending integration',
+    },
+  ];
+
+  config.trendPanels = [];
+  config.activities = [
+    `Tracked sources: ${sources.length}`,
+    `Open stalled prospect records: ${stalled}`,
+    `Capacity-growth campaigns: ${campaigns.length}`,
+    marketConfigured ? 'Market intelligence data connected.' : 'Market intelligence integration pending.',
+    advertisingConfigured ? 'Advertising attribution connected.' : 'Advertising attribution integration pending.',
+  ];
+  config.statuses = [
+    { label: 'Marketing Data Source', state: sourceLabel },
+    { label: 'Admissions Attribution', state: sources.length > 0 ? 'Active' : 'Needs source data' },
+    { label: 'Market Intelligence', state: marketConfigured ? 'Configured' : 'Not configured' },
+    { label: 'Advertising Attribution', state: advertisingConfigured ? 'Configured' : 'Not configured' },
+    { label: 'Capacity Growth Campaigns', state: campaigns.length > 0 ? `${campaigns.length} configured` : 'Not configured' },
+  ];
+
+  return <CrownDashboardTemplate config={config} roleKey="marketing" />;
+}
+ + Math.round(primaryCampaign.economics.projected_gross_tuition_cents / 100).toLocaleString() + ' gross tuition' : 'economics pending'}`
+        : 'Create a campaign that connects open seats, Portrait outcomes, affordability strategy, and enrollment conversion.',
+      kpis: primaryCampaign ? [
+        { label: 'Empty seats', value: String(primaryCampaign.capacity?.empty_seats ?? '--') },
+        { label: 'Campaign leads', value: String(primaryCampaign.funnel?.total_leads ?? 0) },
+        { label: 'Enrollments', value: String(primaryCampaign.funnel?.enrolled ?? 0) },
+        { label: 'Follow-ups due', value: String(primaryCampaign.funnel?.followups_due ?? 0) },
+      ] : [
+        { label: 'Campaigns', value: '0' },
+        { label: 'Empty seats', value: '--' },
+        { label: 'Enrollments', value: '--' },
+        { label: 'Follow-ups', value: '--' },
+      ],
+      details: primaryCampaign ? [
+        `Portrait outcomes: ${(primaryCampaign.portrait || []).map((item) => item.name).join(', ') || 'Not selected'}`,
+        `Projected first-year net: ${Math.round((primaryCampaign.economics?.projected_net_first_year_cents || 0) / 100).toLocaleString()}`,
+        `Projected lifetime net: ${Math.round((primaryCampaign.economics?.projected_lifetime_net_tuition_cents || 0) / 100).toLocaleString()}`,
+        primaryCampaign.aid?.campaign_attribution_verified
+          ? 'Financial-aid campaign attribution verified.'
+          : 'Financial-aid campaign attribution remains unverified until awards are explicitly linked.',
+      ] : [
+        'Designed to connect grade capacity, Portrait of the Graduate, Jireh affordability, campaign targeting, and enrollment economics.',
+      ],
+      dataState: primaryCampaign ? dataState : 'unavailable',
+      sourceLabel: primaryCampaign ? sourceLabel : 'No capacity-growth campaign configured',
+      primaryActionLabel: 'Marketing Command',
+      backActionLabel: 'Admissions',
+      primaryActionHref: '/marketing',
+      backActionHref: '/admissions',
+      lastUpdated: primaryCampaign ? 'Live' : 'Pending configuration',
     },
     {
       key: 'market',
