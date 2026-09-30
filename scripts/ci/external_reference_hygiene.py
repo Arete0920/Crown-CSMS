@@ -11,7 +11,12 @@ ROOT = Path(__file__).resolve().parents[2]
 
 EXCLUDED_PARTS = {
     ".git", ".venv", "venv", "node_modules", "dist", "build", "coverage",
-    "__pycache__", ".pytest_cache", "audit-artifacts",
+    "__pycache__", ".pytest_cache", "audit-artifacts", "migrations",
+}
+
+EXCLUDED_FILENAMES = {
+    "package-lock.json",
+    "npm-shrinkwrap.json",
 }
 
 TEXT_EXTENSIONS = {
@@ -93,6 +98,8 @@ def first_party_text_files():
             continue
         rel = path.relative_to(ROOT)
         if any(part in EXCLUDED_PARTS for part in rel.parts):
+            continue
+        if path.name in EXCLUDED_FILENAMES:
             continue
         if path.suffix.lower() not in TEXT_EXTENSIONS:
             continue
