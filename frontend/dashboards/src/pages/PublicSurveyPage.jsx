@@ -90,5 +90,5 @@ export default function PublicSurveyPage() {
   );
 }
 
-const input = { padding: 10, border: '1px solid #bbb', borderRadius: 6, font: 'inherit' };
-const button = { padding: '11px 20px', border: 0, borderRadius: 6, background: '#23395d', color: 'white', fontWeight: 700, cursor: 'pointer' };
+const input = { padding: 10, border: '1px solid var(--crown-border)', borderRadius: 6, font: 'inherit' };
+const button = { padding: '11px 20px', border: 0, borderRadius: 6, background: 'var(--crown-brand)', color: 'var(--crown-surface)', fontWeight: 700, cursor: 'pointer' };
