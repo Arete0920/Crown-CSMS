@@ -1,0 +1,42 @@
+{
+  "version": 1,
+  "rule": "Business invariants belong as close to authoritative persistence as practical; application validation alone is insufficient for money, identity, tenant, and lifecycle correctness.",
+  "invariants": [
+    {
+      "area": "enrollment",
+      "rule": "one canonical enrollment per school/student/academic-year",
+      "evidence": "core.Enrollment unique_together"
+    },
+    {
+      "area": "user_role",
+      "rule": "one school/user/role tuple",
+      "evidence": "core.UserRole unique_together"
+    },
+    {
+      "area": "payments",
+      "rule": "idempotent external/payment references and canonical allocation relationships",
+      "evidence": "payments models/services"
+    },
+    {
+      "area": "finance",
+      "rule": "ledger postings preserve balanced and auditable relationships",
+      "evidence": "docs/FINANCIAL_INVARIANTS.md + accounting verification"
+    },
+    {
+      "area": "survey",
+      "rule": "one answer per response/question",
+      "evidence": "survey_sentiment.SurveyAnswer unique_together"
+    },
+    {
+      "area": "market",
+      "rule": "study and recommendations remain school-scoped",
+      "evidence": "market_intelligence foreign keys and indexes"
+    },
+    {
+      "area": "crm",
+      "rule": "campaign/lead/touchpoint records remain school-scoped",
+      "evidence": "crm_marketing models"
+    }
+  ],
+  "release_requirement": "Schema Governance and migration-lock gates must pass on the exact candidate SHA."
+}
