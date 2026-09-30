@@ -34,9 +34,9 @@ jobs:
       DJANGO_SECRET_KEY: "ci-test-secret-key"
       # Demo mode configuration (for single-button dev token login)
       CROWN_DEMO_MODE: "true"
-      CROWN_DEMO_KEY: "CrownDemoKey!2026"
+      CROWN_DEMO_KEY: "key-${{ github.run_id }}-${{ github.run_attempt }}-Crown"
       CROWN_DEMO_SCHOOL_ID: "b45b8c5a-6708-4597-aad9-a226627b2962"
-      VITE_DEMO_KEY: "CrownDemoKey!2026"
+      VITE_DEMO_KEY: "key-${{ github.run_id }}-${{ github.run_attempt }}-Crown"
 
     steps:
       - name: Checkout
