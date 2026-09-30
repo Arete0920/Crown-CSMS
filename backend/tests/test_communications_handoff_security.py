@@ -80,7 +80,7 @@ def test_communications_staff_thread_read_is_tenant_scoped():
 
     response = _client(user, school_a).get("/api/threads/")
     assert response.status_code == 200
-    ids = {row["id"] for row in response.json()}
+    ids = {row["thread_id"] for row in response.json()}
     assert str(thread_a.id) in ids
     assert str(thread_b.id) not in ids
 

@@ -147,6 +147,8 @@ def test_student_care_view_allows_list_and_metrics_but_redacts_list_state():
     assert list_response.status_code == 200
     row = next(item for item in list_response.data if str(item["id"]) == str(incident.id))
     assert "parent_notified" not in row
+    assert _client(user, school).get(METRICS_URL).status_code == 403
+    _grant(user, school, "student-care.view_restricted")
     assert _client(user, school).get(METRICS_URL).status_code == 200
 
 
