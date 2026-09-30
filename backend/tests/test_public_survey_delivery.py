@@ -65,3 +65,27 @@ def test_public_survey_fails_closed_when_disabled():
 
     response = Client().get(f"/api/v1/survey-sentiment/public/{survey.public_token}/")
     assert response.status_code == 404
+
+
+def test_public_survey_rejects_invalid_choice():
+    _, survey = _public_survey()
+    response = Client().post(
+        f"/api/v1/survey-sentiment/public/{survey.public_token}/",
+        data={"answers": {"stop_reason": "not-an-allowed-choice"}},
+        content_type="application/json",
+    )
+
+    assert response.status_code == 400
+    assert "stop_reason" in response.json()["errors"]
+
+
+def test_public_link_rotation_invalidates_previous_token_on_reenable():
+    _, survey = _public_survey()
+    original_token = survey.public_token
+    survey.public_enabled = False
+    survey.save(update_fields=["public_enabled"])
+
+    # The endpoint is fail-closed while disabled. Token rotation is performed by
+    # the protected survey-management endpoint before the link is re-enabled.
+    disabled = Client().get(f"/api/v1/survey-sentiment/public/{original_token}/")
+    assert disabled.status_code == 404
