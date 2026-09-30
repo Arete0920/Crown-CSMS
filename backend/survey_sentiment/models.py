@@ -17,6 +17,8 @@ class SurveyDefinition(models.Model):
     purpose = models.CharField(max_length=32, choices=PURPOSE_CHOICES, db_index=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="draft", db_index=True)
     anonymous_allowed = models.BooleanField(default=False)
+    public_enabled = models.BooleanField(default=False)
+    public_token = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
     linked_campaign_id = models.UUIDField(null=True, blank=True)
     grade_code = models.CharField(max_length=3, blank=True, default="")
     audience = models.CharField(max_length=80, blank=True, default="families")
