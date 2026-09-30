@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router';
+import CrownLayout from '../components/crown/CrownLayout.jsx';
 
 export default function PublicSurveyPage() {
   const { token } = useParams();
@@ -30,14 +31,17 @@ export default function PublicSurveyPage() {
     setState('done');
   };
 
-  if (state === 'loading') return <main style={shell}><p>Loading survey…</p></main>;
-  if (state === 'error') return <main style={shell}><h1>Survey unavailable</h1><p>{message}</p></main>;
-  if (state === 'done') return <main style={shell}><h1>Thank you</h1><p>Your response has been recorded.</p></main>;
+  if (state === 'loading') return <CrownLayout publicMode title="Survey"><p>Loading survey…</p></CrownLayout>;
+  if (state === 'error') return <CrownLayout publicMode title="Survey unavailable"><p>{message}</p></CrownLayout>;
+  if (state === 'done') return <CrownLayout publicMode title="Thank you"><p>Your response has been recorded.</p></CrownLayout>;
 
   return (
-    <main style={shell}>
-      <h1>{survey.name}</h1>
-      <p>Your feedback helps the school improve enrollment, family experience, affordability planning, and retention.</p>
+    <CrownLayout
+      publicMode
+      title={survey.name}
+      subtitle="Your feedback helps the school improve enrollment, family experience, affordability planning, and retention."
+    >
+      <div className="crown-card" style={{ padding: 24, maxWidth: 720 }}>
       {(survey.questions || []).map((q) => (
         <label key={q.key} style={{ display: 'grid', gap: 7, margin: '20px 0', fontWeight: 600 }}>
           {q.prompt}{q.required ? ' *' : ''}
@@ -81,10 +85,10 @@ export default function PublicSurveyPage() {
       ))}
       {message && <p>{message}</p>}
       <button onClick={submit} disabled={state === 'submitting'} style={button}>{state === 'submitting' ? 'Submitting…' : 'Submit Survey'}</button>
-    </main>
+      </div>
+    </CrownLayout>
   );
 }
 
-const shell = { maxWidth: 720, margin: '40px auto', padding: 28, fontFamily: 'system-ui, sans-serif' };
 const input = { padding: 10, border: '1px solid #bbb', borderRadius: 6, font: 'inherit' };
 const button = { padding: '11px 20px', border: 0, borderRadius: 6, background: '#23395d', color: 'white', fontWeight: 700, cursor: 'pointer' };
