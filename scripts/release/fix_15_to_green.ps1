@@ -119,7 +119,7 @@ jobs:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22.22.0"
           cache: "npm"
           cache-dependency-path: frontend/dashboards/package-lock.json
       - name: Install frontend dependencies
@@ -176,7 +176,7 @@ jobs:
         run: pytest -q tests/test_release_tenant_and_urls.py
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22.22.0"
           cache: "npm"
           cache-dependency-path: frontend/dashboards/package-lock.json
       - name: Frontend smoke
