@@ -69,7 +69,7 @@ jobs:
 
       - name: Guardrail — required env
         env:
-          CROWN_DEMO_PASSWORD: "CI-Demo-Password-2026"
+          CROWN_DEMO_PASSWORD: "ci-${{ github.run_id }}-${{ github.run_attempt }}-Crown"
         run: |
           set -euo pipefail
           test -n "${CROWN_DEMO_PASSWORD}" || (echo "Missing CROWN_DEMO_PASSWORD secret" && exit 1)
