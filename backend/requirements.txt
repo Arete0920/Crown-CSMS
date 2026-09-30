@@ -14,7 +14,7 @@ pytest==9.0.3
 pytest-django==4.7.0
 # JWT auth (alongside sessions)
 djangorestframework-simplejwt>=5.3.1
-PyJWT==2.13.0
+PyJWT==2.15.1
 # CORS headers for frontend integration
 django-cors-headers==4.3.1
 drf-spectacular>=0.27.2
