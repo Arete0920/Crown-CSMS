@@ -43,6 +43,6 @@ This list ranks the remaining work needed to reach a credible 95+ production-rel
 ## Out-of-Scope For This List
 
 - Scheduling PR #859 as a production claim.
-- SOLOMON ingestion or AI/client-facing activation.
+- SOLOMON ingestion or client-facing automated-intelligence activation.
 - Publisher content activation.
 - Any feature without hosted green gates.
