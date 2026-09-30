@@ -23,6 +23,10 @@ logger = logging.getLogger(__name__)
 MAX_ATTEMPTS = 10
 
 
+class UnsupportedOutboxChannel(ValueError):
+    pass
+
+
 def _backoff_seconds(attempts: int) -> int:
     """Exponential backoff: 1, 2, 4, ... capped at 3600s."""
     return min(3600, 2 ** min(attempts, 12))
@@ -61,10 +65,13 @@ def _send(msg: OutboxMessage) -> None:
             channel_id=channel_id,
             message=msg.body,
         )
-    elif msg.channel in ("SMS", "PUSH"):
-        raise NotImplementedError(f"Channel {msg.channel!r} not yet implemented")
+    elif msg.channel == "SMS":
+        from comms.sms_service import send_sms_to_number  # noqa: PLC0415
+        send_sms_to_number(msg.to, msg.body)
+    elif msg.channel == "PUSH":
+        raise UnsupportedOutboxChannel("PUSH delivery is not configured.")
     else:
-        raise ValueError(f"Unknown channel: {msg.channel!r}")
+        raise UnsupportedOutboxChannel(f"Unknown channel: {msg.channel!r}")
 
 
 def _send_in_tenant(msg: OutboxMessage) -> None:
@@ -111,7 +118,12 @@ def drain_outbox(self, batch_size: int = 25) -> dict:
 
         except Exception as exc:  # noqa: BLE001
             msg.last_error = str(exc)[:1000]
-            if msg.attempts >= MAX_ATTEMPTS:
+            if isinstance(exc, UnsupportedOutboxChannel):
+                msg.status = OutboxMessage.STATUS_DEAD
+                msg.save(update_fields=["status", "last_error"])
+                dead += 1
+                logger.error("OutboxMessage %s rejected channel %s: %s", msg.id, msg.channel, exc)
+            elif msg.attempts >= MAX_ATTEMPTS:
                 msg.status = OutboxMessage.STATUS_DEAD
                 msg.save(update_fields=["status", "last_error"])
                 dead += 1
