@@ -33,6 +33,8 @@ NAV_ITEMS: List[NavItem] = [
     NavItem(group="Enrollment & Revenue", label="Admissions",      href="/admissions",    permission="admissions.view"),
     NavItem(group="Enrollment & Revenue", label="Financial Aid",   href="/financial-aid", permission="financial_aid.view"),
     NavItem(group="Enrollment & Revenue", label="Marketing",       href="/marketing",     permission="marketing.view"),
+    NavItem(group="Enrollment & Revenue", label="Kingdom Path",    href="/kingdom-path/market-study", permission="marketing.view"),
+    NavItem(group="Enrollment & Revenue", label="Survey Intelligence", href="/survey-intelligence", permission="marketing.view"),
     NavItem(group="Enrollment & Revenue", label="Advancement",     href="/advancement",   permission="advancement.view"),
 
     # ── Academics ──────────────────────────────────────────────────────────
