@@ -351,6 +351,14 @@ def marketing_metrics(request):
     total_enrolled = len(enrolled_ids)
     overall_conversion_pct = round((total_enrolled / total_applications) * 100, 1) if total_applications else 0.0
 
+    from crm_marketing.models import MarketingCampaign
+    from crm_marketing.services import build_campaign_snapshot
+
+    campaign_snapshots = [
+        build_campaign_snapshot(campaign)
+        for campaign in MarketingCampaign.objects.filter(school_id=school_id).select_related("academic_year")[:8]
+    ]
+
     action_queue = []
     if stalled_leads:
         action_queue.append(
@@ -370,6 +378,17 @@ def marketing_metrics(request):
                 "priority": "normal",
             }
         )
+    for snapshot in campaign_snapshots:
+        empty_seats = snapshot.get("capacity", {}).get("empty_seats")
+        if snapshot.get("status") == "active" and isinstance(empty_seats, int) and empty_seats > 0:
+            action_queue.append(
+                {
+                    "title": f"{snapshot['name']}: {empty_seats} target-grade seat(s) remain open",
+                    "detail": "Review campaign funnel, follow-ups, affordability path, and channel performance.",
+                    "state": "Ready",
+                    "priority": "normal",
+                }
+            )
 
     return JsonResponse(
         {
@@ -381,6 +400,7 @@ def marketing_metrics(request):
             "overall_application_to_enrollment_pct": overall_conversion_pct,
             "source_attribution": inquiry_sources[:10],
             "action_queue": action_queue[:6],
+            "campaigns": campaign_snapshots,
             "market_intelligence": {
                 "status": "not_configured",
                 "message": (
