@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "rules": [
+    "Compatibility paths require an owner, replacement, last consumer and deletion condition.",
+    "Demo/proof paths cannot be production truth sources.",
+    "Archived evidence cannot satisfy current release proof.",
+    "A compatibility adapter must fail visibly when its canonical authority is unavailable."
+  ],
+  "entries": [
+    {
+      "surface": "legacy metrics sample payloads",
+      "owner": "platform",
+      "replacement": "canonical live module services",
+      "deletion_condition": "all dashboard consumers use live services",
+      "status": "retiring"
+    },
+    {
+      "surface": "legacy api_urls metric catch-all",
+      "owner": "platform",
+      "replacement": "specific module includes",
+      "deletion_condition": "all specific module routes precede and replace legacy paths",
+      "status": "retiring"
+    },
+    {
+      "surface": "legacy auth token compatibility",
+      "owner": "security",
+      "replacement": "canonical access-token authentication",
+      "deletion_condition": "all active clients migrated",
+      "status": "compatibility"
+    },
+    {
+      "surface": "historical demo/proof scripts",
+      "owner": "release",
+      "replacement": "current exact-head proof workflows",
+      "deletion_condition": "no current release authority references",
+      "status": "retiring"
+    }
+  ]
+}
