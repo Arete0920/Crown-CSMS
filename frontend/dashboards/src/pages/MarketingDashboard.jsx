@@ -38,8 +38,8 @@ export default function MarketingDashboard() {
   const actions = Array.isArray(payload.action_queue) ? payload.action_queue : [];
   const campaigns = Array.isArray(payload.campaigns) ? payload.campaigns : [];
   const primaryCampaign = campaigns[0] || null;
-  const marketConfigured = payload.market_intelligence?.status !== 'not_configured';
-  const advertisingConfigured = payload.advertising?.status !== 'not_configured';
+  const marketConfigured = Boolean(payload.market_intelligence && payload.market_intelligence.status !== 'not_configured');
+  const advertisingConfigured = Boolean(payload.advertising && payload.advertising.status !== 'not_configured');
 
   const config = cloneConfig(baseConfig);
   config.disableLiveData = true;
