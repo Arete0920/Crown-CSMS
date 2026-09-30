@@ -245,6 +245,7 @@ INSTALLED_APPS = [
     # Stage 5 -- Org Scalability (onboarding already in WIZARD_INSTALLED_APPS)
     'support.apps.SupportConfig',
     'analytics.apps.AnalyticsConfig',
+    'crm_marketing.apps.CrmMarketingConfig',
 ]
 INSTALLED_APPS += WIZARD_INSTALLED_APPS  # wizard SDK: single source of truth in wizard_registry.py
 
