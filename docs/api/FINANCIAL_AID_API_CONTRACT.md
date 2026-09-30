@@ -424,7 +424,7 @@ curl -i \
 
 ```powershell
 $API = "https://crown-api-dev.azurewebsites.net"
-# Set password first: $env:CROWN_PASSWORD = 'demo1234'
+# Set CROWN_PASSWORD from the approved runtime credential before authenticating.
 $token = (Invoke-RestMethod -Uri "$API/api/v1/auth/token/" `
   -Method Post `
   -ContentType "application/json" `
