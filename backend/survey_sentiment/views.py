@@ -32,13 +32,13 @@ def _serialize(survey):
 
 
 @require_http_methods(["GET", "POST"])
-@require_permission("survey.view")
+@require_permission("marketing.view")
 def survey_collection(request):
     school_id = get_request_school_id(request, required=True)
     if request.method == "GET":
         rows = SurveyDefinition.objects.filter(school_id=school_id).prefetch_related("questions")[:100]
         return JsonResponse({"results": [_serialize(row) for row in rows]})
-    if not user_has_permission(request.user, "survey.edit", school=getattr(request, "school", None)):
+    if not user_has_permission(request.user, "marketing.edit", school=getattr(request, "school", None)):
         return JsonResponse({"detail": "Permission denied."}, status=403)
     payload = _body(request)
     if not isinstance(payload, dict):
@@ -72,7 +72,7 @@ def survey_collection(request):
 
 
 @require_http_methods(["GET"])
-@require_permission("survey.view")
+@require_permission("marketing.view")
 def survey_detail(request, survey_id):
     school_id = get_request_school_id(request, required=True)
     survey = SurveyDefinition.objects.filter(school_id=school_id, id=survey_id).prefetch_related("questions").first()
@@ -82,7 +82,7 @@ def survey_detail(request, survey_id):
 
 
 @require_http_methods(["POST"])
-@require_permission("survey.view")
+@require_permission("marketing.view")
 def survey_response_submit(request, survey_id):
     school_id = get_request_school_id(request, required=True)
     survey = SurveyDefinition.objects.filter(school_id=school_id, id=survey_id, status="active").prefetch_related("questions").first()
@@ -115,7 +115,7 @@ def survey_response_submit(request, survey_id):
 
 
 @require_http_methods(["GET"])
-@require_permission("survey.view")
+@require_permission("marketing.view")
 def survey_insights_view(request):
     school_id = get_request_school_id(request, required=True)
     purpose = request.GET.get("purpose") or None
