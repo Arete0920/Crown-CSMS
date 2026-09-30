@@ -3,7 +3,10 @@
 import requests
 import json
 
-BASE = "http://127.0.0.1:8000"
+BASE = os.getenv("CROWN_BASE_URL", "http://127.0.0.1:8000").rstrip("/")
+USERNAME = os.getenv("CROWN_DEMO_USER", "head@crown-demo.local")
+PASSWORD = os.environ["CROWN_DEMO_PASSWORD"]
+SCHOOL_ID = os.environ["CROWN_SCHOOL_ID"]
 
 print("=" * 60)
 print("ABSOLUTE PROOF OF CORRECTNESS")
@@ -13,7 +16,7 @@ print("=" * 60)
 print("\n1. Testing login endpoint...")
 resp1 = requests.post(
     f"{BASE}/api/v1/auth/token/",
-    json={"username": "head@crown-demo.local", "password": "demo1234"}
+    json={"username": USERNAME, "password": PASSWORD}
 )
 print(f"   Status: {resp1.status_code}")
 assert resp1.status_code == 200, "Login failed"
@@ -26,7 +29,7 @@ print(f"   ✓ Token received: {token[:30]}...")
 print("\n2. Testing sections endpoint with auth headers...")
 headers = {
     "Authorization": f"Bearer {token}",
-    "X-School-Id": "7d965a83-e714-413d-86ba-776c4176b50f"
+    "X-School-Id": SCHOOL_ID
 }
 resp2 = requests.get(f"{BASE}/api/v1/gradebook/sections/", headers=headers)
 print(f"   Status: {resp2.status_code}")
@@ -51,6 +54,6 @@ print("  - Backend validates token and returns data")
 print("  - Headers are required (401/403 without them)")
 print("  - Diagnostics panel will display:")
 print(f"    • Token: {len(token)} chars")
-print(f"    • School ID: 7d965a83-e714-413d-86ba-776c4176b50f")
+print(f"    • School ID: {SCHOOL_ID}")
 print(f"    • Last Request: sections → /api/v1/gradebook/sections/ [200]")
 print(f"    • Sections Count: {section_count}")
