@@ -68,6 +68,6 @@ class Migration(migrations.Migration):
             ],
             options={"unique_together":{("response","question")}},
         ),
-        migrations.AddIndex(model_name="surveydefinition", index=models.Index(fields=["school","purpose","status"], name="survey_sent_school__e923ab_idx")),
-        migrations.AddIndex(model_name="surveyresponse", index=models.Index(fields=["school","survey","submitted_at"], name="survey_sent_school__329a85_idx")),
+        migrations.AddIndex(model_name="surveydefinition", index=models.Index(fields=["school","purpose","status"], name="survey_sent_school__6b05a6_idx")),
+        migrations.AddIndex(model_name="surveyresponse", index=models.Index(fields=["school","survey","submitted_at"], name="survey_sent_school__b0eb7a_idx")),
     ]
