@@ -4,7 +4,7 @@ import ClassroomWorkspace from './ClassroomWorkspace.jsx';
 import { crownApiClient as api } from '../../api/client';
 vi.mock('../../api/client', () => ({ crownApiClient: { get: vi.fn() } }));
 afterEach(() => { cleanup(); vi.clearAllMocks(); });
-const payload = { audience: 'student', from: '2026-09-30', to: '2026-10-14', generated_at: '2026-09-30T12:00:00Z', terms: [], sections: [], students: [], lesson_plans: [], limitations: [], assignments: [{ id: 'a', student_id: 's', name: 'Observation', course: 'Science', due_date: '2026-10-01', state: 'awaiting_grading', points_earned: null, points_possible: 10, category: 'Practice', submitted_at: '2026-09-30T12:00:00Z' }] };
+const payload = { source: 'live', audience: 'student', from: '2026-09-30', to: '2026-10-14', generated_at: '2026-09-30T12:00:00Z', terms: [], sections: [], students: [], lesson_plans: [], limitations: [], assignments: [{ id: 'a', student_id: 's', name: 'Observation', course: 'Science', due_date: '2026-10-01', state: 'awaiting_grading', points_earned: null, points_possible: 10, category: 'Practice', submitted_at: '2026-09-30T12:00:00Z' }] };
 it('shows submission evidence without calling it missing or a zero grade', async () => {
   api.get.mockResolvedValue({ data: payload });
   render(<ClassroomWorkspace audience="student" />);
@@ -23,4 +23,11 @@ it('renders board definitions without individual work', async () => {
   render(<ClassroomWorkspace audience="board" />);
   expect(await screen.findByText('Recorded course sections.')).toBeTruthy();
   expect(screen.queryByText('Observation')).toBeNull();
+});
+
+it('handles malformed classroom data without crashing or inventing counts', async () => {
+  api.get.mockResolvedValue({ data: { results: [] } });
+  render(<ClassroomWorkspace audience="student" />);
+  expect((await screen.findByRole('alert')).textContent).toContain('could not be loaded');
+  expect(screen.queryByText(/No assignments recorded/)).toBeNull();
 });

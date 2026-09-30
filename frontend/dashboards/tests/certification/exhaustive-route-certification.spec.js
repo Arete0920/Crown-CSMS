@@ -160,6 +160,12 @@ function universalCollection() {
 }
 
 function fixture(pathname, method) {
+  if (pathname === "/api/v1/academics/classroom/workspace/") return {
+    source: "live", from: "2026-09-30", to: "2026-10-14", generated_at: "2026-09-30T12:00:00Z",
+    terms: ["2026-FALL"], sections: [], students: [], assignments: [], lesson_plans: [], categories: [],
+    limitations: ["Recorded sections do not establish a bell schedule."],
+    summary: { sections: 0, definitions: { sections: "Recorded course sections." } }, can_manage: false,
+  };
   if (pathname === "/api/v1/board/kpis/") {
     return { enrollment: 312, netTuition: 2_850_000, aidAwarded: 640_000, attendancePct: 94.6 };
   }

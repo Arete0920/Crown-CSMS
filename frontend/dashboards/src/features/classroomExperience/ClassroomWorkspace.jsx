@@ -19,7 +19,13 @@ export default function ClassroomWorkspace({ audience }) {
     setData(null);
     try {
       const response = await api.get('/api/v1/academics/classroom/workspace/', { params: { audience, term, student_id: student || undefined, section_id: section || undefined }, signal });
-      if (!signal?.aborted) setData(response.data);
+      const payload = response.data;
+      const arrays = audience === 'board' ? ['terms', 'limitations'] : ['terms', 'limitations', 'sections', 'students', 'assignments', 'lesson_plans'];
+      if (!payload || payload.source !== 'live' || arrays.some((key) => !Array.isArray(payload[key]))
+          || (audience === 'board' && (!payload.summary || typeof payload.summary.definitions !== 'object'))) {
+        throw new Error('Invalid classroom record contract');
+      }
+      if (!signal?.aborted) setData(payload);
     } catch (err) {
       if (!signal?.aborted) setError(err.response?.data?.detail || 'Classroom records could not be loaded. Retry or contact your school.');
     } finally {
