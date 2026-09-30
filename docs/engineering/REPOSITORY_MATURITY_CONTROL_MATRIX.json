@@ -92,7 +92,7 @@
       "status": "enforced",
       "evidence": [
         ".github/workflows/migration-lock-gate.yml",
-        ".github/workflows/postgres-migration-lock.yml"
+        ".github/workflows/postgresql-migration-lock-contention.yml"
       ]
     },
     {
@@ -158,7 +158,7 @@
       "name": "Business observability",
       "status": "existing",
       "evidence": [
-        "backend/crown_api/request_logging_middleware.py",
+        "backend/core/observability/middleware.py",
         "backend/audit"
       ]
     },
