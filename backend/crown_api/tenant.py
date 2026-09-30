@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import logging
 from typing import Optional
 from uuid import UUID
 
@@ -10,6 +11,8 @@ TENANT_HEADER_LEGACY = "HTTP_X_CROWN_SCHOOL_ID"
 TENANT_ATTR = "tenant_school_id"
 CANONICAL_TENANT_ATTR = "crown_tenant"
 TENANT_OVERRIDE_PERMISSION = "core.override_tenant_context"
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -36,7 +39,7 @@ class TenantContext:
 def _parse_uuid(value: object) -> Optional[UUID]:
     try:
         return UUID(str(value).strip())
-    except Exception:
+    except (TypeError, ValueError, AttributeError):
         return None
 
 
@@ -86,7 +89,8 @@ def _principal_school_id(principal) -> Optional[UUID]:
             .values_list("school_id", flat=True)
             .distinct()[:2]
         )
-    except Exception:
+    except Exception as exc:
+        logger.warning("tenant principal school resolution failed closed", exc_info=exc)
         return None
 
     if len(school_ids) == 1:
@@ -109,7 +113,8 @@ def principal_can_select_tenant(principal, school_id) -> bool:
         try:
             if roles.filter(school_id=target).exists():
                 return True
-        except Exception:
+        except Exception as exc:
+            logger.warning("tenant assigned-school lookup failed closed", exc_info=exc)
             return False
     return False
 
@@ -126,16 +131,16 @@ def principal_can_override_tenant(principal) -> bool:
         try:
             if has_perm(TENANT_OVERRIDE_PERMISSION):
                 return True
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.warning("tenant override permission lookup failed closed", exc_info=exc)
 
     roles = getattr(principal, "roles", None)
     if roles is not None:
         try:
             if roles.filter(role_code="SUPPORT").exists():
                 return True
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.warning("tenant support-role lookup failed closed", exc_info=exc)
 
     staff_profile = getattr(principal, "staff", None)
     return bool(staff_profile and getattr(staff_profile, "role_type", None) == "SUPPORT")
