@@ -46,7 +46,7 @@ class TestGradeLevelsTenantIsolation:
 
     def test_grade_levels_cross_tenant_header_is_rejected_or_scoped(self):
         """User from school A cannot freely access school B resources (cross-tenant 403/404)."""
-        self.client.force_authenticate(user=self.user_a)
+        self.client.force_login(self.user_a)
         # Using integrity endpoint with school B's ID â€” should be denied or scoped out
         response = self.client.get(
             "/api/integrity/",
