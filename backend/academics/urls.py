@@ -1,3 +1,4 @@
+from .support_views import classroom_support
 from .instruction_views import classroom_instruction
 from .operations_views import classroom_operations
 from .family_views import family_workspace
@@ -85,6 +86,7 @@ from .submission_workflow_views import assignment_work
 from .collaboration_views import record_collection, record_action
 
 urlpatterns = [
+    path("academics/classroom/support/", classroom_support),
     path("academics/classroom/instruction/", classroom_instruction),
     path("academics/classroom/operations/", classroom_operations),
     path("academics/classroom/family/", family_workspace),

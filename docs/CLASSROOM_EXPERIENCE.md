@@ -18,13 +18,13 @@ All 60 requests are accepted requirements. Existing models or screens alone do n
 | T03 | Curriculum-linked reusable planning | Implemented: curriculum objective links and authorized plan reuse with fresh delivery evidence; private notes not copied. |
 | T04 | Dependable gradebook and weighting | Strengthened: explicit grade-source conflicts and provisional weighted previews; authoritative report-card policies remain existing. |
 | T05 | Assignment publishing and reuse | Implemented: explicit publication and authorized draft copies; retry-safe student workflow. |
-| T06 | Actionable student support | Tracked requirement; verify authorized workflow before marking complete. |
+| T06 | Actionable student support | Implemented: canonical instructional intervention cases with account-linked owner, required review and versioned outcomes. |
 | T07 | Accommodation implementation reminders | Implemented: staff-only accommodation instructions, required review date and follow-through; deadline overrides pending. |
 | T08 | Formative assessment checks | Implemented: teacher understanding checks, private responses and feedback. |
 | T09 | Flexible instructional groups | Implemented: enrolled groups, roles and milestone records. |
 | T10 | Feedback and reusable rubrics | Implemented: immutable reusable rubric criteria and rubric-based feedback templates with revision history. |
 | T11 | Contextual parent communication | Implemented: contextual designated-guardian conversations, concern state and resolution notes. |
-| T12 | Behavior and restorative follow-through | Tracked requirement; verify authorized workflow before marking complete. |
+| T12 | Behavior and restorative follow-through | Implemented: verified-identity restorative plans use canonical discipline incidents and immutable action evidence. |
 | T13 | Expiring substitute access and packet | Implemented: staff-issued grant, maximum seven days, immediate revocation, per-request expiry and public lesson packet. |
 | T14 | Emergency roster accountability | Implemented: printable roster and unknown-first drill/incident checks; unaccounted students prevent completion. |
 | T15 | Observable Christian formation | Tracked requirement; verify authorized workflow before marking complete. |
@@ -61,7 +61,7 @@ All 60 requests are accepted requirements. Existing models or screens alone do n
 | A01 | Classroom operational health | Tracked requirement; verify authorized workflow before marking complete. |
 | A02 | Curriculum coverage and alignment | Tracked requirement; verify authorized workflow before marking complete. |
 | A03 | Dated student growth evidence | Implemented: dated mastery evidence preserves earlier levels and teacher observations; no inferred growth score. |
-| A04 | Intervention ownership and reviews | Tracked requirement; verify authorized workflow before marking complete. |
+| A04 | Intervention ownership and reviews | Implemented: account-linked canonical case ownership, scheduled reviews and preserved follow-through; legacy integer owners remain explicitly unmapped. |
 | A05 | Teacher workload visibility | Tracked requirement; verify authorized workflow before marking complete. |
 | A06 | Confidential observation and coaching | Partial: leadership-only coaching records with review dates; observation framework pending. |
 | A07 | Grading consistency and policies | Strengthened: immutable rubrics, weight-total checks and explicit evidence coverage/conflicts. |
@@ -69,7 +69,7 @@ All 60 requests are accepted requirements. Existing models or screens alone do n
 | A09 | Support implementation oversight | Tracked requirement; verify authorized workflow before marking complete. |
 | A10 | Class size and staffing planning | Tracked requirement; verify authorized workflow before marking complete. |
 | A11 | Instructional resource use and cost | Partial: resource references and recorded cost; usage reporting pending. |
-| A12 | Classroom climate and restorative outcomes | Tracked requirement; verify authorized workflow before marking complete. |
+| A12 | Classroom climate and restorative outcomes | Implemented: canonical restorative incidents, review dates and outcome notes; aggregate climate reporting follows. |
 | A13 | Family concern resolution | Implemented: school-authorized concern resolution, preserved messages and disclosure restrictions. |
 | A14 | Mission and Portrait evidence | Tracked requirement; verify authorized workflow before marking complete. |
 | A15 | Board aggregate reporting and provenance | Implemented: dated aggregate section facts and definitions; expanded oversight reports pending. |
@@ -122,3 +122,9 @@ Immutable reusable rubrics describe academic criteria and performance levels. Ex
 Student-specific deadline adjustments require teacher authority, private reasons, student-visible makeup instructions, retry keys and expected versions. The student work endpoint applies the effective deadline when classifying submission timing. Shared workspace tasks use the adjusted date; private reasons are withheld. Resource references require HTTPS and include accessible descriptions and alternative instructions.
 
 Progress previews use the existing grade sources, active category weights and scored evidence only. Invalid weights, unscored categories or source conflicts withhold the weighted preview. Unscored work is not zero, and the preview does not replace report-card authority. Mastery writes update existing MasteryRecord rows and append dated evidence, preserving prior levels. Academic mastery evidence is not a personal faith or classroom quality score.
+
+## Support and restorative batch
+
+Instructional support references canonical signals InterventionCase/InterventionAction records. Verified account owner and actor foreign keys, review dates and versions support UUID accounts; legacy integer evidence remains intact without guessed conversions. Existing owned cases can be linked to a classroom. New support and outcome actions preserve retry and version evidence. Raw signal drivers require leadership; legacy intervention reads require explicit leadership or current assigned ownership, and client-supplied actor IDs cannot spoof authorship.
+
+Restorative plans resolve the verified student identity before creating canonical discipline incidents. Teacher notes, review dates and closed outcome evidence are preserved through canonical actions and append-only classroom audit events. No saved plan claims a parent was notified. Families receive only explicitly approved shared support records through the separate classroom disclosure controls.
