@@ -17,6 +17,7 @@ from .collaboration_models import ClassroomRecord, ClassroomResponse
 from .family_models import ClassroomFamilyThread
 from .support_models import ClassroomInterventionLink, ClassroomRestorativeLink
 from .experience_access import taught_sections
+from .classroom_reporting import attendance_summary, coverage_rows, instructional_time_summary
 
 
 @api_view(['GET'])
@@ -64,6 +65,14 @@ def classroom_leadership(request):
     sizes = dict(enrollments.values('section_id').annotate(n=Count('id')).values_list('section_id', 'n'))
     planning = [{'id': s.id, 'course': s.course.name, 'term': s.term, 'roster_size': sizes.get(s.id, 0),
                  'verified_teachers': sum(s.id in ids for ids in assigned.values())} for s in section_rows]
+    coverage = coverage_rows(school, section_rows, lessons, start, end)
+    summary.update(attendance_summary(school, sections, start, end))
+    summary.update(instructional_time_summary(lessons))
+    summary.update({'known_objective_section_pairs': sum(row['known_objectives'] for row in coverage),
+                    'planned_objective_section_pairs': sum(row['planned_objectives'] for row in coverage),
+                    'confirmed_taught_objective_section_pairs': sum(row['confirmed_taught_objectives'] for row in coverage),
+                    'curriculum_alignment_issues': sum(row['alignment_issues'] for row in coverage),
+                    'sections_without_objective_inventory': sum(row['known_objectives'] == 0 for row in coverage)})
     summary.update({'sections_without_verified_teacher': sum(row['verified_teachers'] == 0 for row in planning),
                     'largest_recorded_section': max(sizes.values(), default=0),
                     'target_class_size': target,
@@ -103,12 +112,16 @@ def classroom_leadership(request):
         'formation': 'Service opportunities and responses are participation evidence, not a measure of personal faith.',
         'resources': 'Recorded resource costs are declared planning costs, not purchases. Reflections do not prove resource effectiveness.',
         'curriculum': 'Planned links and confirmed taught lessons are distinct; neither count proves mastery.',
+        'coverage': 'Coverage uses the current recorded course objective inventory per section. Repeated teaching links count once. Delivery is confirmed taught evidence within the selected plan dates. An empty objective inventory withholds the percentage; recorded inventory does not establish external curriculum completeness.',
+        'attendance': 'Presence percentage is PRESENT plus TARDY divided by the frozen expected rosters of audited section-day sessions; ABSENT and EXCUSED remain in the denominator. Missing roster, identity or status evidence withholds the percentage. This is not a schoolwide attendance rate or a count of every scheduled school day.',
+        'instructional_time': 'Actual/planned minutes for dated lesson links only. Any missing value or zero planned total withholds the ratio. The ratio can exceed 100 and is not an effectiveness score.',
         'planning': 'Roster sizes and verified staffing are current snapshots. Target class size is a planning scenario, not an approved room capacity. Additional sections assume current rosters can be divided evenly; no timetable, hiring or budget feasibility is inferred.',
     })
     result = {'source': 'live', 'audience': audience, 'generated_at': timezone.now(), 'from': start, 'to': end, 'terms': terms, 'summary': summary,
-              'provenance': ['academics.Enrollment', 'academics.Assignment', 'academics.Submission', 'gradebook.GradeEntry', 'academics.LessonPlanLesson', 'academics.ClassroomMasteryEvidence', 'signals.InterventionCase', 'academics.ClassroomRecord', 'academics.ClassroomFamilyThread'],
+              'provenance': ['academics.Enrollment', 'academics.Assignment', 'academics.Submission', 'gradebook.GradeEntry', 'academics.LessonPlanLesson', 'academics.PublisherObjective', 'academics.ClassroomAttendanceSession', 'core.StudentIdentityLink', 'crown_api.AttendanceRecord', 'academics.ClassroomMasteryEvidence', 'signals.InterventionCase', 'academics.ClassroomRecord', 'academics.ClassroomFamilyThread'],
               'limitations': ['Operational counts do not establish classroom quality, instructional effectiveness or a spiritual score.', 'No attendance rate is inferred without a verified expected attendance denominator.', 'No teacher ranking or report-card policy is inferred.']}
     if audience == 'admin':
+        result['curriculum_coverage'] = coverage
         result['sections'] = [{**row,
                               'plans': plans.filter(section=s).count(), 'planned_lessons': lessons.filter(lesson_plan__section=s).count(),
                               'confirmed_taught_lessons': lessons.filter(lesson_plan__section=s, delivery_status='taught', actual_completed_at__isnull=False).count()} for s, row in zip(section_rows, planning)]

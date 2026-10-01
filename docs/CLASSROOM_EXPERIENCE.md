@@ -44,14 +44,14 @@ All 60 requests are accepted requirements. Existing models or screens alone do n
 | S14 | Absence recovery plans | Implemented: public dated recovery lessons and student-specific makeup instructions/deadlines. |
 | S15 | Worldview and service connections | Implemented: school-defined Portrait and worldview links, Scripture references and private service responses. |
 | P01 | Verified children classroom overview | Implemented: canonical guardian accounts, active household scope and explicit classroom disclosure restrictions; no claim of system-wide custody enforcement. |
-| P02 | Useful weekly classroom digest | Implemented: live seven-day digest and deduplicated weekly notices; periodic task registered, deployed worker/beat execution NOT VERIFIED. |
+| P02 | Useful weekly classroom digest | Implemented: live seven-day digest and deduplicated weekly notices; periodic task registered and real local worker execution tested; hosted deployment is a separate release check. |
 | P03 | Published assignment visibility | Implemented: published assignment directions and criteria; drafts withheld. |
 | P04 | Accurate submission and grading status | Implemented: submission receipts and grading status, no inferred missing or zero. |
 | P05 | Understandable grades and next steps | Implemented: source-aware provisional category-weighted previews and explicit withheld states. |
 | P06 | Contextual teacher conversations | Implemented: designated-guardian conversations with assignment context and immutable message history. |
-| P07 | Notification preferences and deduplication | Implemented: validated preferences, quiet hours and deduplicated in-app notices; deployed recurring execution NOT VERIFIED. |
+| P07 | Notification preferences and deduplication | Implemented: validated preferences, quiet hours and deduplicated in-app notices; recurring task tested through a real local worker; hosted deployment is a separate release check. |
 | P08 | Absence explanation and recovery | Implemented: guardian absence explanations, dated recovery lessons and teacher-set makeup deadlines. |
-| P09 | Conference scheduling and follow-up | Implemented: availability, locked bookings, cancellations and follow-up; reminder task registered, deployed execution NOT VERIFIED. |
+| P09 | Conference scheduling and follow-up | Implemented: availability, locked bookings, cancellations and follow-up; reminder task registered and worker execution tested; hosted deployment is a separate release check. |
 | P10 | Teacher-approved support at home | Implemented: assignment home support and classroom home-support records. |
 | P11 | Positive observations and balanced updates | Implemented: individual positive observations with family visibility. |
 | P12 | Authorized student support plans | Implemented: only school leadership can explicitly share classroom support records with verified families; confidential clinical information remains outside this workflow. |
@@ -59,13 +59,13 @@ All 60 requests are accepted requirements. Existing models or screens alone do n
 | P14 | Shared portfolios | Implemented: student-selected family portfolio visibility. |
 | P15 | Family mission and service partnership | Implemented: verified guardian service participation and school-defined Portrait/worldview links. |
 | A01 | Classroom operational health | Implemented: dated classroom operation counts and clearly separated current support/staffing snapshots; no single quality score. |
-| A02 | Curriculum coverage and alignment | Partial: planned versus confirmed-taught curriculum links; full objective coverage denominator and alignment audit NOT VERIFIED. |
+| A02 | Curriculum coverage and alignment | Implemented: recorded course objective inventory, deduplicated planned/confirmed-taught coverage and assignment alignment audit; empty inventories withhold percentages. |
 | A03 | Dated student growth evidence | Implemented: dated mastery evidence preserves earlier levels and teacher observations; no inferred growth score. |
 | A04 | Intervention ownership and reviews | Implemented: account-linked canonical case ownership, scheduled reviews and preserved follow-through; legacy integer owners remain explicitly unmapped. |
 | A05 | Teacher workload visibility | Implemented: deduplicated active primary/co-teacher workload, roster sizes and pending grading; no ranking. |
 | A06 | Confidential observation and coaching | Implemented: confidential coaching to one assigned active teacher, recipient acknowledgement and leadership-only resolution; validated narrative observations, no inferred rating. |
 | A07 | Grading consistency and policies | Strengthened: immutable rubrics, weight-total checks and explicit evidence coverage/conflicts. |
-| A08 | Attendance and instructional time | Partial: canonical audited attendance and recorded instructional/interruption minutes; expected attendance denominator and instructional-time rate NOT VERIFIED. |
+| A08 | Attendance and instructional time | Implemented: immutable section-day expected rosters, verified identity/status denominators and complete recorded-minute ratios; incomplete evidence withholds percentages. |
 | A09 | Support implementation oversight | Implemented: overdue accommodation and support-review inventory, verified case owners and follow-through. |
 | A10 | Class size and staffing planning | Implemented: current roster and verified staffing inventory with optional target-size scenario; room capacity, timetable and hiring feasibility NOT VERIFIED. |
 | A11 | Instructional resource use and cost | Implemented: declared resource costs and private student reflections; effectiveness is not inferred from usage. |
@@ -152,3 +152,11 @@ The leadership report accepts optional `target_class_size` (1–1000). Current r
 `academics.tasks.prepare_family_notices` is registered in the existing Celery beat schedule every fifteen minutes. It prepares the existing deduplicated, preference-aware digest and conference notices. A deployment must run Celery worker and beat with a functioning broker; registration alone does not prove delivery. The management command remains available for manual recovery. Failures propagate to task monitoring; no successful-empty fallback is supplied.
 
 Remaining acceptance gaps: complete objective coverage/alignment (A02), verified attendance/instructional-time denominators (A08), deployed notice execution, production migration and persona validation. All sixty are tracked; this register tracks repository implementation and records separate deployment verification.
+
+## Coverage, attendance denominators and runtime verification
+
+Course objective inventory is the denominator for recorded curriculum coverage. Repeated delivery links count once per section/objective. Published assignments are checked against the objective and its actual lesson/course. An empty recorded inventory withholds its percentage rather than claiming complete curriculum coverage.
+
+New attendance sessions snapshot the active roster and verified identity references on the day of roll call. The expectation cannot be replaced by later enrollment changes or retroactively reconstructed for legacy sessions. Missing expected rosters, identity evidence or attendance statuses withhold the audited-session presence rate. This rate covers recorded sessions, not all scheduled school days. Actual/planned instructional time requires complete recorded minutes and a positive planned total; recorded zero remains zero.
+
+A real local Celery worker executes the schedule's registered notice task twice, verifying persisted notice creation and duplicate suppression. The Classroom Verification workflow runs the complete classroom/backend persona suite against PostgreSQL with actual migrations. Board reports retain only aggregate source-defined counts and omit individual coverage rows and roster identifiers. No source test substitutes for production release acceptance.

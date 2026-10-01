@@ -33,3 +33,12 @@ it('sends an explicit planning target while labeling it a scenario', async () =>
   await waitFor(() => expect(api.get.mock.lastCall[1].params.target_class_size).toBe('20'));
   expect(screen.getByText('Optional scenario using current rosters')).toBeTruthy();
 });
+it('shows recorded objective coverage and withholds an empty inventory', async () => {
+  api.get.mockResolvedValue({ data: { ...data, sections: [{ id: 's1', course: 'Science' }, { id: 's2', course: 'History' }], curriculum_coverage: [
+    { section_id: 's1', known_objectives: 2, planned_objectives: 1, confirmed_taught_objectives: 1, unplanned_objectives: 1, alignment_issues: 0, known_objective_delivery_percent: 50 },
+    { section_id: 's2', known_objectives: 0, planned_objectives: 0, confirmed_taught_objectives: 0, unplanned_objectives: 0, alignment_issues: 0, known_objective_delivery_percent: null },
+  ] } });
+  render(<ClassroomLeadership audience="admin" />);
+  expect(await screen.findByText(/Science: 2 known objectives.*50%/)).toBeTruthy();
+  expect(screen.getByText(/History: 0 known objectives.*withheld/)).toBeTruthy();
+});

@@ -39,6 +39,8 @@ export default function ClassroomLeadership({ audience }) {
       {audience === 'admin' && <>
         <Typography component="h3" variant="h6">Section planning and delivery</Typography>
         {(data.sections || []).map((s) => <Typography key={s.id}>{s.course} · {s.term}: {s.roster_size} section enrollments; {s.verified_teachers} verified assigned teachers; {s.planned_lessons} planned lesson links; {s.confirmed_taught_lessons} confirmed taught lessons.</Typography>)}
+        <Typography component="h3" variant="h6" sx={{ mt: 2 }}>Recorded curriculum coverage</Typography>
+        {(data.curriculum_coverage || []).map((row) => <Typography key={row.section_id}>{data.sections?.find((s) => s.id === row.section_id)?.course || 'Section'}: {row.known_objectives} known objectives; {row.planned_objectives} planned; {row.confirmed_taught_objectives} confirmed taught; {row.unplanned_objectives} unplanned; {row.alignment_issues} alignment issues. Recorded objective delivery: {row.known_objective_delivery_percent === null ? 'withheld — no objective inventory' : `${row.known_objective_delivery_percent}%`}.</Typography>)}
         <Typography component="h3" variant="h6" sx={{ mt: 2 }}>Recorded teacher workload</Typography>
         {(data.teacher_workload || []).map((t) => <Typography key={t.teacher_id}>{t.teacher}: {t.sections} sections; {t.section_enrollments} section enrollments; {t.unique_students} unique students; {t.assignments_due} assignments due; {t.pending_grading} submissions awaiting grading; planned minutes {t.planned_minutes === null ? 'not recorded' : t.planned_minutes}.</Typography>)}
       </>}
