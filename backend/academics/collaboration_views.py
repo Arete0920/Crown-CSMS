@@ -140,7 +140,7 @@ def record_collection(request):
     if kind not in KINDS:
         raise ValidationError('Invalid classroom record kind.')
     section = get_object_or_404(sections, id=_uuid(data.get('section_id'), 'section_id'))
-    manager = is_leader(request.user, school) or taught_sections(request.user, school).filter(id=section.id).exists()
+    manager = _can_manage_section(request.user, school, section)
     if audience == 'parent' and kind not in {'absence_explanation', 'family_service'}:
         raise PermissionDenied('Parents may record absence explanations and family service participation.')
     if audience == 'student' and kind not in STUDENT_KINDS:
@@ -197,7 +197,7 @@ def record_collection(request):
 def record_action(request, record_id):
     school, audience, sections, students = context(request)
     record = get_object_or_404(visible_records(request, school, audience, sections, students), id=record_id)
-    manager = is_leader(request.user, school) or taught_sections(request.user, school).filter(id=record.section_id).exists()
+    manager = _can_manage_section(request.user, school, record.section)
     if not isinstance(request.data, dict):
         raise ValidationError('Request must be an object.')
     action = request.data.get('action')

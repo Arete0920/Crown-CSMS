@@ -10,11 +10,13 @@ from gradebook.models import GradeEntry
 from signals.models import InterventionCase
 from .experience_access import classroom_scope
 from .experience_views import reporting_window, report_sections
-from .models import Enrollment, Assignment, Submission, LessonPlan, TeacherAssignment
+from .models import Enrollment, Assignment, Submission, LessonPlan, TeacherAssignment, PublisherObjective
 from .lesson_execution_models import LessonPlanLesson
 from .instruction_models import ClassroomMasteryEvidence
 from .collaboration_models import ClassroomRecord, ClassroomResponse
 from .family_models import ClassroomFamilyThread
+from .planning_models import ClassroomSectionPlanning
+from crown_api.models_academics_core import AttendanceRecord
 from .support_models import ClassroomInterventionLink, ClassroomRestorativeLink
 
 
@@ -46,6 +48,8 @@ def classroom_leadership(request):
                if not hasattr(s, 'grade') and (s.assignment_id, s.enrollment.student_id) not in graded_pairs]
     summary = report_sections(school, sections, start, end)
     summary.update({
+        'recorded_attendance_rows': AttendanceRecord.objects.filter(student__school_id=school, section__in=sections, date__range=(start, end)).count(),
+        'recorded_absences': AttendanceRecord.objects.filter(student__school_id=school, section__in=sections, date__range=(start, end), status='ABSENT').count(),
         'unique_students': enrollments.values('student_id').distinct().count(),
         'pending_grading': len(pending),
         'planned_lesson_links': lessons.count(),
@@ -74,6 +78,8 @@ def classroom_leadership(request):
     summary['definitions'].update({
         'window': 'Due assignments, scheduled plans and created activity use the selected dates. Open cases, reviews and concerns are current snapshots.',
         'pending_grading': 'Timestamped submissions for assignments due in the window, without a recorded grade in either grade store.',
+        'attendance': 'Recorded student-section-day statuses only; no attendance percentage or unrecorded absences are inferred.',
+        'planning': 'Target class size is an administrator planning input; it does not enforce enrollment limits.',
         'minutes': 'Sums of recorded values only. Missing minutes remain unknown; a recorded zero is preserved.',
         'support': 'Linked cases follow the selected term. Unlinked cases are a separate school-wide current inventory.',
         'formation': 'Service opportunities and responses are participation evidence, not a measure of personal faith.',
@@ -81,13 +87,20 @@ def classroom_leadership(request):
         'curriculum': 'Planned links and confirmed taught lessons are distinct; neither count proves mastery.',
     })
     result = {'source': 'live', 'audience': audience, 'generated_at': timezone.now(), 'from': start, 'to': end, 'terms': terms, 'summary': summary,
-              'provenance': ['academics.Enrollment', 'academics.Assignment', 'academics.Submission', 'gradebook.GradeEntry', 'academics.LessonPlanLesson', 'academics.ClassroomMasteryEvidence', 'signals.InterventionCase', 'academics.ClassroomRecord', 'academics.ClassroomFamilyThread'],
+              'provenance': ['academics.Enrollment', 'academics.Assignment', 'academics.Submission', 'gradebook.GradeEntry', 'academics.LessonPlanLesson', 'academics.ClassroomMasteryEvidence', 'signals.InterventionCase', 'academics.ClassroomRecord', 'academics.ClassroomFamilyThread', 'crown_api.AttendanceRecord', 'academics.ClassroomSectionPlanning'],
               'limitations': ['Operational counts do not establish classroom quality, instructional effectiveness or a spiritual score.', 'No attendance rate is inferred without a verified expected attendance denominator.', 'No teacher ranking or report-card policy is inferred.']}
     if audience == 'admin':
         section_rows = list(sections.select_related('course', 'teacher').order_by('term', 'id'))
+        planning = {p.section_id: p for p in ClassroomSectionPlanning.objects.filter(school_id=school, section__in=sections)}
         result['sections'] = [{'id': s.id, 'course': s.course.name, 'term': s.term, 'roster_size': enrollments.filter(section=s).count(),
+                              'target_size': planning[s.id].target_size if s.id in planning else None,
+                              'planning_note': planning[s.id].planning_note if s.id in planning else '',
+                              'planning_version': planning[s.id].version if s.id in planning else 0,
                               'plans': plans.filter(section=s).count(), 'planned_lessons': lessons.filter(lesson_plan__section=s).count(),
-                              'confirmed_taught_lessons': lessons.filter(lesson_plan__section=s, delivery_status='taught', actual_completed_at__isnull=False).count()} for s in section_rows]
+                              'confirmed_taught_lessons': lessons.filter(lesson_plan__section=s, delivery_status='taught', actual_completed_at__isnull=False).count(),
+                              'known_curriculum_objectives': PublisherObjective.objects.filter(school_id=school, lesson__unit__course=s.course, lesson__school_id=school).count(),
+                              'planned_objectives': PublisherObjective.objects.filter(school_id=school, lesson_id__in=lessons.filter(lesson_plan__section=s).values('lesson_id')).count(),
+                              'objectives_with_dated_evidence': ClassroomMasteryEvidence.objects.filter(school_id=school, assignment__section=s, created_at__date__range=(start, end)).values('record__objective_id').distinct().count()} for s in section_rows]
         from django.contrib.auth import get_user_model
         primary = {s.teacher_id for s in section_rows if s.teacher_id}
         staff_ids = TeacherAssignment.objects.filter(school_id=school, section__in=sections, staff__school_id=school).values('staff_id')

@@ -43,7 +43,10 @@ def classroom_support(request):
         if audience != 'admin': restorative = restorative.filter(incident__assigned_to=request.user)
         available = InterventionCase.objects.filter(school_id=school, student__in=students)
         if audience != 'admin': available = available.filter(owner_account=request.user)
-        return Response({'available_cases': list(available.values('id', 'student_id', 'reason', 'owner_account_id', 'version')[:100]), 'source': 'live', 'cases': [{'id': l.case.id, 'section_id': l.section_id, 'student_id': l.case.student_id,
+        owners = []
+        if audience == 'admin':
+            owners = [{'id':u.id, 'name':u.get_full_name() or u.username} for u in get_user_model().objects.filter(is_active=True, school_id=school) if is_leader(u, school) or any(_can_manage_section(u, school, section) for section in sections)]
+        return Response({'owners':owners, 'available_cases': list(available.values('id', 'student_id', 'reason', 'owner_account_id', 'version')[:100]), 'source': 'live', 'cases': [{'id': l.case.id, 'section_id': l.section_id, 'student_id': l.case.student_id,
             'reason': l.case.reason, 'priority': l.case.priority, 'state': l.case.status, 'version': l.case.version,
             'owner_id': l.case.owner_account_id, 'review_at': l.case.review_at, 'overdue_review': bool(l.case.review_at and l.case.review_at < timezone.now() and l.case.status != 'CLOSED'),
             'actions': list(l.case.actions.values('id', 'action_type', 'note', 'created_at'))} for l in links.select_related('case')[:100]],
@@ -57,7 +60,7 @@ def classroom_support(request):
     if not _can_manage_section(request.user, school, section):
         raise PermissionDenied('Active assigned teacher or explicit school leadership required.')
     operation = data.get('operation')
-    if operation not in {'case', 'follow_up', 'close_case', 'reopen_case', 'restorative', 'restorative_note', 'close_restorative', 'link_case'}:
+    if operation not in {'case', 'follow_up', 'close_case', 'reopen_case', 'restorative', 'restorative_note', 'close_restorative', 'link_case', 'assign_case'}:
         raise ValidationError('Invalid support operation.')
     key = _uuid(data.get('request_key'), 'request_key')
     fingerprint = hashlib.sha256(json.dumps(data, sort_keys=True).encode()).hexdigest()
@@ -67,13 +70,23 @@ def classroom_support(request):
         previous = ClassroomSupportEvent.objects.filter(school_id=school, actor=request.user, request_key=key).first()
         if previous:
             return Response(previous.result) if previous.fingerprint == fingerprint else Response({'detail': 'Retry key conflict.'}, status=409)
-        if operation == 'link_case':
+        if operation in {'link_case', 'assign_case'}:
             case = get_object_or_404(InterventionCase, id=_uuid(data.get('case_id'), 'case_id'), school_id=school, student__in=students)
             get_object_or_404(Enrollment, school_id=school, section=section, student=case.student)
             if not is_leader(request.user, school) and case.owner_account_id != request.user.id:
                 raise PermissionDenied('Only an owned case may be linked to this classroom.')
+            if operation == 'assign_case':
+                if audience != 'admin' or not is_leader(request.user, school):
+                    raise PermissionDenied('School leadership must assign canonical support owners.')
+                case = InterventionCase.objects.select_for_update().get(id=case.id)
+                if type(data.get('version')) is not int or data['version'] != case.version:
+                    return Response({'detail':'Support case changed; refresh.'}, status=409)
+                owner = get_object_or_404(get_user_model(), id=_uuid(data.get('owner_id'), 'owner_id'), is_active=True)
+                if not _can_manage_section(owner, school, section): raise ValidationError('Owner must be authorized for the selected classroom.')
+                case.owner_account=owner; case.review_at=reviewed_date(data); case.version+=1; case.save()
+                InterventionAction.objects.create(school_id=school, case=case, created_by_account=request.user, action_type='PLAN', note=text(data,'note'))
             ClassroomInterventionLink.objects.get_or_create(school_id=school, section=section, case=case)
-            result = {'saved': True, 'case_id': case.id}
+            result = {'saved': True, 'case_id': str(case.id), 'version': case.version}
         elif operation in {'case', 'restorative'}:
             student = get_object_or_404(students, id=_uuid(data.get('student_id'), 'student_id'))
             get_object_or_404(Enrollment, school_id=school, section=section, student=student)

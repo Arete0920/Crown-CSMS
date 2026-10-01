@@ -1,7 +1,35 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import PropTypes from 'prop-types';
 import { Alert, Box, Button, Card, CardContent, MenuItem, Stack, TextField, Typography } from '@mui/material';
 import { crownApiClient as api } from '../../api/client';
+
+function PlanningInput({ section, refresh }) {
+  const [size, setSize] = useState(section.target_size ?? '');
+  const [note, setNote] = useState(section.planning_note || '');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const retry = useRef(null);
+  async function save() {
+    const payload = { section_id: section.id, target_size: Number(size), planning_note: note, version: section.planning_version };
+    const signature = JSON.stringify(payload);
+    if (retry.current?.signature !== signature) retry.current = { signature, payload: { ...payload, request_key: crypto.randomUUID() } };
+    setBusy(true); setError('');
+    try { await api.post('/api/v1/academics/classroom/planning/', retry.current.payload); retry.current = null; refresh(); }
+    catch (err) { setError(String(err.response?.data?.detail || 'Planning save not confirmed. Your note is retained; retry or refresh.')); }
+    finally { setBusy(false); }
+  }
+  return <Box sx={{ my: 1 }}>
+    <Typography>{section.course} · {section.term}: {section.roster_size} enrolled; planning target {section.target_size ?? 'not set'}.</Typography>
+    {error && <Alert severity="warning">{error}</Alert>}
+    <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
+      <TextField type="number" label={`Target class size: ${section.course}`} value={size} onChange={(e) => setSize(e.target.value)} />
+      <TextField label={`Planning rationale: ${section.course}`} value={note} onChange={(e) => setNote(e.target.value)} />
+      <Button disabled={busy || !size || !note.trim()} onClick={save}>Save planning target</Button>
+    </Stack>
+    <Typography variant="caption">Planning input only; enrollment limits are not changed.</Typography>
+  </Box>;
+}
+PlanningInput.propTypes = { section: PropTypes.object.isRequired, refresh: PropTypes.func.isRequired };
 
 export default function ClassroomLeadership({ audience }) {
   const [data, setData] = useState(null);
@@ -36,7 +64,8 @@ export default function ClassroomLeadership({ audience }) {
       <Card sx={{ my: 2 }}><CardContent><dl>{Object.entries(data.summary).filter(([k]) => k !== 'definitions').map(([k, v]) => <div key={k}><dt>{k.replaceAll('_', ' ')}</dt><dd>{v === null ? 'No recorded value' : String(v)}</dd></div>)}</dl></CardContent></Card>
       {audience === 'admin' && <>
         <Typography component="h3" variant="h6">Section planning and delivery</Typography>
-        {(data.sections || []).map((s) => <Typography key={s.id}>{s.course} · {s.term}: {s.roster_size} section enrollments; {s.planned_lessons} planned lesson links; {s.confirmed_taught_lessons} confirmed taught lessons.</Typography>)}
+        {(data.sections || []).map((s) => <PlanningInput key={`${s.id}-${s.planning_version}`} section={s} refresh={() => load()} />)}
+        {(data.sections || []).map((s) => <Typography key={s.id}>{s.course} · {s.term}: {s.roster_size} section enrollments; {s.planned_lessons} planned lesson links; {s.confirmed_taught_lessons} confirmed taught lessons; {s.known_curriculum_objectives} known curriculum objectives; {s.planned_objectives} linked to scheduled lessons; {s.objectives_with_dated_evidence} with dated academic evidence.</Typography>)}
         <Typography component="h3" variant="h6" sx={{ mt: 2 }}>Recorded teacher workload</Typography>
         {(data.teacher_workload || []).map((t) => <Typography key={t.teacher_id}>{t.teacher}: {t.sections} sections; {t.section_enrollments} section enrollments; {t.unique_students} unique students; {t.assignments_due} assignments due; {t.pending_grading} submissions awaiting grading; planned minutes {t.planned_minutes === null ? 'not recorded' : t.planned_minutes}.</Typography>)}
       </>}

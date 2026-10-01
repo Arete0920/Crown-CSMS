@@ -1,3 +1,4 @@
+from .planning_views import classroom_planning
 from .leadership_views import classroom_leadership
 from .support_views import classroom_support
 from .instruction_views import classroom_instruction
@@ -87,6 +88,7 @@ from .submission_workflow_views import assignment_work
 from .collaboration_views import record_collection, record_action
 
 urlpatterns = [
+    path("academics/classroom/planning/", classroom_planning),
     path("academics/classroom/leadership/", classroom_leadership),
     path("academics/classroom/support/", classroom_support),
     path("academics/classroom/instruction/", classroom_instruction),

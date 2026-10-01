@@ -19,7 +19,7 @@ All 60 requests are accepted requirements. Existing models or screens alone do n
 | T04 | Dependable gradebook and weighting | Strengthened: explicit grade-source conflicts and provisional weighted previews; authoritative report-card policies remain existing. |
 | T05 | Assignment publishing and reuse | Implemented: explicit publication and authorized draft copies; retry-safe student workflow. |
 | T06 | Actionable student support | Implemented: canonical instructional intervention cases with account-linked owner, required review and versioned outcomes. |
-| T07 | Accommodation implementation reminders | Implemented: staff-only accommodation instructions, required review date and follow-through; deadline overrides pending. |
+| T07 | Accommodation implementation reminders | Implemented source: staff-only accommodations, review dates and student-specific makeup deadlines; pending batch CI/merge. |
 | T08 | Formative assessment checks | Implemented: teacher understanding checks, private responses and feedback. |
 | T09 | Flexible instructional groups | Implemented: enrolled groups, roles and milestone records. |
 | T10 | Feedback and reusable rubrics | Implemented: immutable reusable rubric criteria and rubric-based feedback templates with revision history. |
@@ -27,7 +27,7 @@ All 60 requests are accepted requirements. Existing models or screens alone do n
 | T12 | Behavior and restorative follow-through | Implemented: verified-identity restorative plans use canonical discipline incidents and immutable action evidence. |
 | T13 | Expiring substitute access and packet | Implemented: staff-issued grant, maximum seven days, immediate revocation, per-request expiry and public lesson packet. |
 | T14 | Emergency roster accountability | Implemented: printable roster and unknown-first drill/incident checks; unaccounted students prevent completion. |
-| T15 | Observable Christian formation | Tracked requirement; verify authorized workflow before marking complete. |
+| T15 | Observable Christian formation | Implemented source: service opportunities linked to school Portrait domains, worldview priorities and Scripture references; no personal faith scoring. |
 | S01 | My classroom workspace | Implemented: enrolled student workspace with live source and reporting window. |
 | S02 | Clear assignment directions and criteria | Implemented: assignment purpose, directions and success criteria. |
 | S03 | Persisted drafts and submission receipts | Implemented: versioned saved drafts and server-timestamped receipts. |
@@ -42,8 +42,8 @@ All 60 requests are accepted requirements. Existing models or screens alone do n
 | S12 | Goals and reflection | Implemented: dated goals and private/shared reflections with explicit audience. |
 | S13 | Work portfolios | Implemented: portfolio reflections reference canonical published assignments. |
 | S14 | Absence recovery plans | Implemented: public dated recovery lessons and student-specific makeup instructions/deadlines. |
-| S15 | Worldview and service connections | Tracked requirement; verify authorized workflow before marking complete. |
-| P01 | Verified children classroom overview | Implemented: canonical guardian accounts and active household scope; custody control pending. |
+| S15 | Worldview and service connections | Implemented source: school service connections with private student participation reflections and teacher feedback. |
+| P01 | Verified children classroom overview | Implemented source: canonical guardian relationships, active households and explicit classroom disclosure controls; no inferred legal custody judgment. |
 | P02 | Useful weekly classroom digest | Implemented: live seven-day digest and deduplicated weekly notices; deployment scheduler required. |
 | P03 | Published assignment visibility | Implemented: published assignment directions and criteria; drafts withheld. |
 | P04 | Accurate submission and grading status | Implemented: submission receipts and grading status, no inferred missing or zero. |
@@ -54,25 +54,25 @@ All 60 requests are accepted requirements. Existing models or screens alone do n
 | P09 | Conference scheduling and follow-up | Implemented: conflict-checked availability, locked bookings, cancellations and follow-up; deployment scheduler required for reminders. |
 | P10 | Teacher-approved support at home | Implemented: assignment home support and classroom home-support records. |
 | P11 | Positive observations and balanced updates | Implemented: individual positive observations with family visibility. |
-| P12 | Authorized student support plans | Tracked requirement; verify authorized workflow before marking complete. |
+| P12 | Authorized student support plans | Implemented source: school leadership explicitly shares approved family support plans; confidential accommodation records remain staff-only. |
 | P13 | Classroom consent and permissions | Implemented: staff-issued permission requests and designated-guardian consent/decline evidence. |
 | P14 | Shared portfolios | Implemented: student-selected family portfolio visibility. |
-| P15 | Family mission and service partnership | Tracked requirement; verify authorized workflow before marking complete. |
-| A01 | Classroom operational health | Tracked requirement; verify authorized workflow before marking complete. |
-| A02 | Curriculum coverage and alignment | Tracked requirement; verify authorized workflow before marking complete. |
+| P15 | Family mission and service partnership | Implemented source: verified guardians record family service participation for an enrolled child and school-defined mission links. |
+| A01 | Classroom operational health | Implemented source: sourced operational counts, dates, current-case snapshots and explicit unknown values. |
+| A02 | Curriculum coverage and alignment | Implemented source: known course objectives, objectives linked to planned lessons, confirmed taught lessons and dated academic evidence; no inferred mastery rate. |
 | A03 | Dated student growth evidence | Implemented: dated mastery evidence preserves earlier levels and teacher observations; no inferred growth score. |
-| A04 | Intervention ownership and reviews | Implemented: account-linked canonical case ownership, scheduled reviews and preserved follow-through; legacy integer owners remain explicitly unmapped. |
-| A05 | Teacher workload visibility | Tracked requirement; verify authorized workflow before marking complete. |
-| A06 | Confidential observation and coaching | Partial: leadership-only coaching records with review dates; observation framework pending. |
+| A04 | Intervention ownership and reviews | Implemented source: canonical account-linked owners, review dates, outcomes and leadership reassignment; legacy integer owners remain unmapped and preserved. |
+| A05 | Teacher workload visibility | Implemented source: primary/co-teacher workloads deduplicate sections and students; no ranking inferred. |
+| A06 | Confidential observation and coaching | Implemented source: dated leadership coaching for a specific active assigned teacher, recipient acknowledgement and leadership resolution; peer/family isolation. |
 | A07 | Grading consistency and policies | Strengthened: immutable rubrics, weight-total checks and explicit evidence coverage/conflicts. |
-| A08 | Attendance and instructional time | Partial: dated canonical attendance audit and interruption evidence; leadership instructional-time aggregation follows. |
-| A09 | Support implementation oversight | Tracked requirement; verify authorized workflow before marking complete. |
-| A10 | Class size and staffing planning | Tracked requirement; verify authorized workflow before marking complete. |
-| A11 | Instructional resource use and cost | Partial: resource references and recorded cost; usage reporting pending. |
-| A12 | Classroom climate and restorative outcomes | Implemented: canonical restorative incidents, review dates and outcome notes; aggregate climate reporting follows. |
+| A08 | Attendance and instructional time | Implemented source: canonical attendance counts/audits, recorded planned/actual minutes and interruptions; no invented attendance denominator. |
+| A09 | Support implementation oversight | Implemented source: current linked support, unverified owners and overdue review counts plus separately labeled unlinked school inventory. |
+| A10 | Class size and staffing planning | Implemented source: section roster sizes, recorded workloads and versioned administrator class-size planning targets; targets do not change enrollment limits. |
+| A11 | Instructional resource use and cost | Implemented source: declared resource costs and private student resource reflections; no purchases or effectiveness inferred. |
+| A12 | Classroom climate and restorative outcomes | Implemented source: canonical restorative incidents, review/outcome notes and dated aggregate activity counts; no climate score inferred. |
 | A13 | Family concern resolution | Implemented: school-authorized concern resolution, preserved messages and disclosure restrictions. |
-| A14 | Mission and Portrait evidence | Tracked requirement; verify authorized workflow before marking complete. |
-| A15 | Board aggregate reporting and provenance | Implemented: dated aggregate section facts and definitions; expanded oversight reports pending. |
+| A14 | Mission and Portrait evidence | Implemented source: service participation linked to school Portrait and Biblical worldview priorities; no personal faith score. |
+| A15 | Board aggregate reporting and provenance | Implemented source: board-only aggregate report with dates, definitions, sources and limitations; no student, teacher or confidential planning details. |
 
 ## Workspace contract
 
@@ -142,3 +142,7 @@ The legacy student-grade summary now requires a verified student, guardian or cl
 ## Formation partnership and confidential coaching
 
 School-defined Portrait domains and Biblical worldview priorities can be linked to service opportunities with a brief Scripture reference. Students record private participation reflections, and verified guardians can contribute family service participation for an enrolled child. These records are participation evidence, never a personal faith score. Leadership creates coaching for a specific active assigned teacher; other co-teachers and families cannot read it. The recipient can acknowledge with a next-step note; resolution remains with leadership. Resource reflections now use the existing private student-response workflow. Focused formation, collaboration and oversight validation: 22 backend tests passed; interface tests, build, lint and migration consistency remain recorded with this batch. PR45 is merged; later batches remain pending exact-head CI and merge.
+
+## Capacity planning and verified ownership
+
+Administrators save class-size planning targets with a rationale, expected version, retry key and immutable history. Targets do not modify rosters or enforcement policy. Leadership may explicitly map or reassign canonical intervention ownership to an authorized active account and set the next review, preserving earlier actions and legacy numeric IDs. Board reports include sourced canonical attendance counts without individual notes or an inferred rate. Curriculum coverage distinguishes known objectives, scheduled lesson links, confirmed teaching and dated academic observations. Focused validation: 16 planning/oversight/support backend tests and 22 formation/collaboration/planning tests passed; five related UI tests, production build and targeted lint passed. Actual migration and exact-head CI remain required. All sixty entries now identify an implemented or strengthened source workflow; later feature branches still await CI, merge and operational deployment dependencies.

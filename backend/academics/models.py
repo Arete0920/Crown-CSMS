@@ -593,3 +593,5 @@ from .operations_models import ClassroomAttendanceSession, ClassroomAttendanceAu
 from .instruction_models import ClassroomRubric, ClassroomDeadlineAdjustment, ClassroomInstructionEvent, ClassroomMasteryEvidence
 
 from .support_models import ClassroomInterventionLink, ClassroomRestorativeLink, ClassroomSupportEvent
+
+from .planning_models import ClassroomSectionPlanning, ClassroomPlanningEvent  # noqa: E402,F401
