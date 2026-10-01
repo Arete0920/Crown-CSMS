@@ -79,7 +79,11 @@ router.register(
 from .experience_views import classroom_workspace
 from .submission_workflow_views import assignment_work
 
+from .collaboration_views import record_collection, record_action
+
 urlpatterns = [
+    path("academics/classroom/records/", record_collection, name="classroom-records"),
+    path("academics/classroom/records/<uuid:record_id>/actions/", record_action, name="classroom-record-actions"),
     path("academics/assignments/<uuid:assignment_id>/copy/", assignment_copy, name="assignment-copy"),
     path("academics/assignments/<uuid:assignment_id>/work/", assignment_work, name="assignment-work"),
     path("academics/classroom/workspace/", classroom_workspace, name="classroom-workspace"),
