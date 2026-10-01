@@ -1,3 +1,4 @@
+import ClassroomOperations from '../features/classroomExperience/ClassroomOperations.jsx';
 import ClassroomWorkspace from '../features/classroomExperience/ClassroomWorkspace.jsx';
 import { useEffect, useMemo, useState } from 'react';
 import CrownDashboardTemplate from '../components/crown-dashboard/CrownDashboardTemplate.jsx';
@@ -249,7 +250,7 @@ export default function SchoolAdministratorDashboard() {
 
   return (
     <>
-      <ClassroomWorkspace audience="admin" />
+      <ClassroomOperations audience="admin" /><ClassroomWorkspace audience="admin" />
       <SandboxAdminTransactionPanel />
       <CrownDashboardTemplate config={config} roleKey="schoolAdministrator" />
     </>

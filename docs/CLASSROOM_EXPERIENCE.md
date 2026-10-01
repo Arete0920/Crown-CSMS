@@ -14,7 +14,7 @@ All 60 requests are accepted requirements. Existing models or screens alone do n
 | ID | Improvement | Verification state |
 |---|---|---|
 | T01 | Daily classroom workspace | Implemented: assigned-section workspace; relationship and private-note tests. |
-| T02 | Fast audited attendance | Tracked requirement; verify authorized workflow before marking complete. |
+| T02 | Fast audited attendance | Implemented: canonical roll call, mandatory new-workflow reasons, versions and immutable correction evidence; legacy writer also audited. |
 | T03 | Curriculum-linked reusable planning | Tracked requirement; verify authorized workflow before marking complete. |
 | T04 | Dependable gradebook and weighting | Tracked requirement; verify authorized workflow before marking complete. |
 | T05 | Assignment publishing and reuse | Implemented: explicit publication and authorized draft copies; retry-safe student workflow. |
@@ -25,8 +25,8 @@ All 60 requests are accepted requirements. Existing models or screens alone do n
 | T10 | Feedback and reusable rubrics | Tracked requirement; verify authorized workflow before marking complete. |
 | T11 | Contextual parent communication | Implemented: contextual designated-guardian conversations, concern state and resolution notes. |
 | T12 | Behavior and restorative follow-through | Tracked requirement; verify authorized workflow before marking complete. |
-| T13 | Expiring substitute access and packet | Tracked requirement; verify authorized workflow before marking complete. |
-| T14 | Emergency roster accountability | Tracked requirement; verify authorized workflow before marking complete. |
+| T13 | Expiring substitute access and packet | Implemented: staff-issued grant, maximum seven days, immediate revocation, per-request expiry and public lesson packet. |
+| T14 | Emergency roster accountability | Implemented: printable roster and unknown-first drill/incident checks; unaccounted students prevent completion. |
 | T15 | Observable Christian formation | Tracked requirement; verify authorized workflow before marking complete. |
 | S01 | My classroom workspace | Implemented: enrolled student workspace with live source and reporting window. |
 | S02 | Clear assignment directions and criteria | Implemented: assignment purpose, directions and success criteria. |
@@ -65,7 +65,7 @@ All 60 requests are accepted requirements. Existing models or screens alone do n
 | A05 | Teacher workload visibility | Tracked requirement; verify authorized workflow before marking complete. |
 | A06 | Confidential observation and coaching | Partial: leadership-only coaching records with review dates; observation framework pending. |
 | A07 | Grading consistency and policies | Tracked requirement; verify authorized workflow before marking complete. |
-| A08 | Attendance and instructional time | Tracked requirement; verify authorized workflow before marking complete. |
+| A08 | Attendance and instructional time | Partial: dated canonical attendance audit and interruption evidence; leadership instructional-time aggregation follows. |
 | A09 | Support implementation oversight | Tracked requirement; verify authorized workflow before marking complete. |
 | A10 | Class size and staffing planning | Tracked requirement; verify authorized workflow before marking complete. |
 | A11 | Instructional resource use and cost | Partial: resource references and recorded cost; usage reporting pending. |
@@ -106,3 +106,11 @@ Designated-guardian conversations preserve message history and published assignm
 Leadership can record a verified classroom disclosure restriction or restoration per student/guardian. Restricted guardians are excluded from the canonical classroom relationship helper, workspace, collaboration records, assignment work and family threads. This is an explicit classroom disclosure control, not a determination of legal custody and not a claim that every legacy school module enforces it.
 
 Notification preferences validate timezone, digest weekday and quiet hours. In-app thread notices use unique source keys; disabled preferences suppress notices and quiet hours defer availability. The management command `prepare_classroom_digests` prepares deduplicated weekly digest notices and upcoming conference reminders. Deployment must schedule this command periodically before recurring notices are operational. No email/SMS provider is activated. The on-demand seven-day digest always remains readable independently of notification preference.
+
+## Classroom operations batch
+
+The operations workspace uses existing canonical AttendanceRecord entries and verified StudentIdentityLink mappings. Unknown identities remain unmarked. New attendance writes require an expected session version and a reason. The legacy section attendance writer also appends before/after evidence under the same section lock, so later classroom writes detect those changes. Attendance history is append-only.
+
+School-authorized teachers/substitutes may receive section-specific access for 5 minutes–7 days. Active grants authorize only the operations packet, roster and roll call, not grades, private lesson notes or family conversations. Expiry and revocation are rechecked on each mutation. Packets show public dated lessons, student names, recorded attendance and intentionally supplied substitute instructions.
+
+Drill/incident rosters begin with every student unknown. Individual checks require verification notes. Sessions cannot complete while any student is missing or unknown. 'Accounted elsewhere' is roster evidence, not authorization for custody release. No emergency dispatch, medical record or external contact action is created.

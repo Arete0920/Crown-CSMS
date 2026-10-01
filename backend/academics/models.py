@@ -582,3 +582,5 @@ from .experience_models import SubmissionRevision  # noqa: E402,F401
 from .collaboration_models import ClassroomRecord, ClassroomResponse, ClassroomEvent  # noqa: E402,F401
 
 from .family_models import ClassroomDisclosure, ClassroomNotificationPreference, ClassroomConferenceSlot, ClassroomFamilyThread, ClassroomFamilyMessage, ClassroomFamilyMutation, ClassroomFamilyNotice
+
+from .operations_models import ClassroomAttendanceSession, ClassroomAttendanceAudit, ClassroomSubstituteGrant, ClassroomEmergencySession, ClassroomEmergencyCheck, ClassroomOperationEvent
