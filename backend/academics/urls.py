@@ -8,6 +8,7 @@ from .assignments_views import (
 )
 from .assignment_teacher_views import (
     assignment_list_create,
+    assignment_copy,
     assignment_update_delete,
 )
 from .lesson_plan_views import (
@@ -76,8 +77,11 @@ router.register(
 )
 
 from .experience_views import classroom_workspace
+from .submission_workflow_views import assignment_work
 
 urlpatterns = [
+    path("academics/assignments/<uuid:assignment_id>/copy/", assignment_copy, name="assignment-copy"),
+    path("academics/assignments/<uuid:assignment_id>/work/", assignment_work, name="assignment-work"),
     path("academics/classroom/workspace/", classroom_workspace, name="classroom-workspace"),
     path("", include(router.urls)),
     path("school/", SchoolProfileView.as_view(), name="school-profile"),

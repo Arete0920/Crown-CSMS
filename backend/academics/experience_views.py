@@ -11,7 +11,7 @@ from rest_framework.response import Response
 from households.scoping import get_request_school_id
 from gradebook.models import GradeEntry
 from .experience_access import classroom_scope
-from .models import Assignment, AssignmentCategory, Enrollment, LessonPlan, Submission
+from .models import Assignment, AssignmentCategory, Enrollment, LessonPlan, Submission, Grade
 
 
 def reporting_window(request):
@@ -98,14 +98,29 @@ def classroom_workspace(request):
     grades = GradeEntry.objects.filter(school_id=school_id, assignment__in=rows, student__in=students,
                                        section__in=sections)
     grade_map = {(g.assignment_id, g.student_id): g for g in grades}
+    academic_grades = Grade.objects.filter(school_id=school_id, submission__assignment__in=rows,
+                                           submission__enrollment__in=enrollments).select_related('submission__enrollment')
+    academic_map = {(g.submission.assignment_id, g.submission.enrollment.student_id): g for g in academic_grades}
     tasks = []
     for a in rows:
         targets = enrollments.filter(section_id=a.section_id) if audience in {"parent", "student"} else [None]
         for e in targets:
             s = submission_map.get((a.id, e.student_id)) if e else None
             g = grade_map.get((a.id, e.student_id)) if e else None
+            academic = academic_map.get((a.id, e.student_id)) if e else None
+            recorded_points = g.points_earned if g and g.points_earned is not None else academic.numeric_score if academic else None
+            possible = g.points_possible if g and g.points_possible is not None else a.points_possible
+            grade_source = 'gradebook.GradeEntry' if g and g.points_earned is not None else 'academics.Grade' if academic else None
+            conflict = bool(g and g.points_earned is not None and academic and (g.points_earned != academic.numeric_score or possible != a.points_possible))
+            if conflict:
+                recorded_points = None
+                grade_source = 'conflict_requires_teacher_review'
             state = "draft" if not a.is_published else "submitted" if s and s.submitted_at else "assigned"
-            if g and g.points_earned is not None:
+            if s and s.status in {"draft", "returned"}:
+                state = s.status
+            elif conflict:
+                state = 'grade_conflict'
+            elif recorded_points is not None:
                 state = "graded"
             elif state == "submitted":
                 state = "awaiting_grading"
@@ -113,12 +128,12 @@ def classroom_workspace(request):
                 state = "missing"
             elif a.due_date and a.due_date < timezone.localdate() and state == "assigned":
                 state = "overdue_unconfirmed"
-            tasks.append({"id": str(a.id), "name": a.name, "section_id": str(a.section_id),
+            tasks.append({"id": str(a.id), "name": a.name, **{key: getattr(a, key) for key in ("purpose", "instructions", "success_criteria", "home_support")}, "section_id": str(a.section_id),
                           "course": a.section.course.name, "student_id": str(e.student_id) if e else None,
                           "due_date": a.due_date, "published": a.is_published, "state": state,
                           "submitted_at": s.submitted_at if s else None,
-                          "points_earned": g.points_earned if g else None,
-                          "points_possible": a.points_possible, "category": a.category.name})
+                          "points_earned": recorded_points, "grade_source": grade_source,
+                          "points_possible": possible, "category": a.category.name})
     plans = LessonPlan.objects.filter(school_id=school_id, section__in=sections, plan_date__range=(start, end)).order_by("plan_date", "id")
     plan_fields = ["id", "section_id", "plan_date", "objectives", "materials", "activities", "homework"]
     result.update({"sections": list(sections.order_by("course__name", "id").values("id", "course__name", "term")[:200]),

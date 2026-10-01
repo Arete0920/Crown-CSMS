@@ -83,3 +83,12 @@ The workspace reads academics sections, enrollments, assignments, lesson plans a
 ## Delivery status
 
 The shared relationship-scoped workspace is the first implementation batch. Later acceptance requirements remain open until their behavior and tests are complete. No deployment, external notification delivery, curriculum license, personal faith score or classroom quality score is implied. Guardian account linkage alone does not encode custody restrictions; an explicit disclosure control is required before claiming that capability.
+
+
+## Assignment workflow batch
+
+Canonical assignments now store purpose, instructions, success criteria and home support. Publication accepts actual booleans. Copies into authorized sections start as drafts, preserve teaching content and never copy student evidence. Assignments with student evidence cannot be deleted through the teacher API.
+
+GET/POST `/api/v1/academics/assignments/<id>/work/?audience=student|parent|teacher|admin` supports save_draft, submit, feedback and return. Student account ownership is mandatory for save/submit. Teacher assignment or explicit leadership authority is mandatory for feedback/return. Parents cannot submit work for children. Each mutation uses a UUID request key and expected version; conflicts return 409. Submitted work needs a teacher return before editing. Revisions are append-only and drafts are not shared with families. UI keeps unsaved text on failures and reports submission success only after receiving a server timestamp. PostgreSQL row locking is implemented but concurrency certification still requires its runtime tests.
+
+Legacy submission mutation routes cannot edit or delete submission evidence. Grade reads are relationship-scoped; a staff flag alone is not grading authority. Academic submission grades and gradebook points are explicitly sourced; disagreement shows a review requirement rather than silently selecting a preferred value. This is reconciliation of existing stores, not a new grade authority.

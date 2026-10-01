@@ -208,6 +208,11 @@ class Assignment(TimeStampedModel):
     assigned_date = models.DateField(null=True, blank=True)
     is_published = models.BooleanField(default=True)
 
+    purpose = models.TextField(blank=True, default="")
+    instructions = models.TextField(blank=True, default="")
+    success_criteria = models.TextField(blank=True, default="")
+    home_support = models.TextField(blank=True, default="")
+
     # Curriculum links (optional, for standards-based grading)
     lesson = models.ForeignKey("Lesson", on_delete=models.SET_NULL, null=True, blank=True, related_name="assignments")
     objective = models.ForeignKey("PublisherObjective", on_delete=models.SET_NULL, null=True, blank=True, related_name="assignments")
@@ -338,6 +343,8 @@ class Submission(TimeStampedModel):
     Status workflow: assigned → submitted → graded (or missing/late).
     """
     class Status(models.TextChoices):
+        DRAFT = "draft", "Draft"
+        RETURNED = "returned", "Returned for revision"
         ASSIGNED = "assigned", "Assigned"
         SUBMITTED = "submitted", "Submitted"
         LATE = "late", "Late"
@@ -352,6 +359,9 @@ class Submission(TimeStampedModel):
 
     status = models.CharField(max_length=16, choices=Status.choices, default=Status.ASSIGNED)
     submitted_at = models.DateTimeField(null=True, blank=True)
+
+    draft_content = models.TextField(blank=True, default="")
+    version = models.PositiveIntegerField(default=0)
 
     # File upload (MVP)
     upload = models.FileField(upload_to="submissions/", null=True, blank=True)
@@ -566,3 +576,5 @@ class TranscriptEntry(TimeStampedModel):
 
     def __str__(self) -> str:
         return f"Transcript({self.student_id} - {self.course.code} - {self.final_letter_grade})"
+
+from .experience_models import SubmissionRevision  # noqa: E402,F401

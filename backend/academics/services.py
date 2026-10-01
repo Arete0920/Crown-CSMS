@@ -42,16 +42,21 @@ def upsert_grade_for_submission(
     """
     Create or update grade for a submission.
     Triggers mastery update if assignment is linked to an objective.
-    
+
     Args:
         submission: Submission instance
         numeric_score: Raw score (e.g., 85 out of 100)
         graded_by: User who graded
         feedback: Teacher feedback text
-    
+
     Returns:
         Grade instance
     """
+    from .models import Enrollment, SubmissionRevision
+    import hashlib
+    import uuid
+    Enrollment.objects.select_for_update().get(id=submission.enrollment_id)
+    submission = Submission.objects.select_for_update().get(id=submission.id)
     points_possible = submission.assignment.points_possible
     pct = compute_percentage(numeric_score, points_possible).quantize(Decimal("0.01"))
     letter = percentage_to_letter(pct)
@@ -70,7 +75,11 @@ def upsert_grade_for_submission(
 
     # Mark submission as graded
     submission.status = Submission.Status.GRADED
-    submission.save(update_fields=["status", "updated_at"])
+    submission.version += 1
+    submission.save(update_fields=["status", "version", "updated_at"])
+    SubmissionRevision.objects.create(submission=submission, actor=graded_by, sequence=submission.version,
+        action="graded", content="", feedback=feedback, request_key=uuid.uuid4(),
+        fingerprint=hashlib.sha256(str(numeric_score).encode()).hexdigest())
 
     # Update mastery if assignment has objective
     if submission.assignment.objective_id:
@@ -82,7 +91,7 @@ def upsert_grade_for_submission(
 def mastery_from_percentage(pct: Decimal) -> int:
     """
     Map percentage to mastery level (1-4).
-    
+
     Levels:
     - 4 (Advanced): 90-100%
     - 3 (Proficient): 80-89%
@@ -130,31 +139,31 @@ def mark_submission_submitted(submission: Submission) -> None:
     """
     now = timezone.now()
     submission.submitted_at = now
-    
+
     # Late rule: submitted after due date
     if submission.assignment.due_date and now.date() > submission.assignment.due_date:
         submission.status = Submission.Status.LATE
     else:
         submission.status = Submission.Status.SUBMITTED
-    
+
     submission.save(update_fields=["status", "submitted_at", "updated_at"])
 
 
 def mark_submissions_missing_if_past_due() -> int:
     """
     Batch job: mark all assigned submissions as MISSING if past due date.
-    
+
     Returns:
         Count of submissions marked missing
     """
     from django.utils import timezone
     now = timezone.now().date()
-    
+
     missing_submissions = Submission.objects.filter(
         status=Submission.Status.ASSIGNED,
         assignment__due_date__lt=now,
         submitted_at__isnull=True
     )
-    
+
     count = missing_submissions.update(status=Submission.Status.MISSING)
     return count
