@@ -150,3 +150,7 @@ Administrators save class-size planning targets with a rationale, expected versi
 ## Scheduled in-app notices
 
 The existing Celery beat schedule now invokes the classroom notice task every fifteen minutes. Weekly digest eligibility uses the saved local weekday/timezone; conference reminders use the next twenty-four hours. Existing preference, quiet-hour, disclosure and source-key deduplication rules remain authoritative. The management command remains available for operational recovery. Twelve notice/family tests passed, including task registration, weekly deduplication, conference recipients and disabled-parent preference. Deployment must run the configured worker and beat service; no external email/SMS provider or deployment is activated here.
+
+## PostgreSQL runtime proof and workflow guide
+
+The dedicated classroom PostgreSQL lane applies actual migrations and proves competing draft/retry saves, conference bookings, attendance writes and planning edits. The job asserts PostgreSQL before running; normal SQLite lanes explicitly skip these engine-specific contention tests and cannot count as that proof. Local syntax checks passed; PostgreSQL runtime results are pending the isolated branch CI. The classroom workflow guide describes each audience and operational verification without claiming a deployed rollout. Combined focused source verification passed 96 backend and 24 UI tests before the scheduling addition; notice/family verification passed twelve tests. All pending batches still require exact-head CI and bounded merges.

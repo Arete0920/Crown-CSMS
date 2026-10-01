@@ -145,3 +145,21 @@ def test_disabled_preferences_and_restrictions_hide_notices(classroom):
     assert request(classroom, **args).status_code == 200
     assert request(classroom, method='get').data['notices'] == []
     assert ClassroomFamilyNotice.objects.count() == 1
+
+
+def test_replay_cannot_disclose_restricted_child_when_sibling_remains_authorized(classroom):
+    from households.models import Student
+    from academics.models import Enrollment
+    c=classroom
+    sibling=Student.objects.create(school_id=c[0].id,household=c[4].household,first_name='Sibling',last_name='One')
+    Enrollment.objects.create(school_id=c[0].id,section=c[5],student=sibling)
+    client=APIClient();client.force_authenticate(c[2])
+    payload={'operation':'create','section_id':str(c[5].id),'student_id':str(c[4].id),'kind':'conversation','title':'Private child concern','content':'Restricted child information','request_key':str(uuid.uuid4())}
+    endpoint='/api/v1/academics/classroom/family/?audience=parent'
+    assert client.post(endpoint,payload,format='json',HTTP_X_SCHOOL_ID=str(c[0].id)).status_code==200
+    guardian=Guardian.objects.get(account=c[2])
+    ClassroomDisclosure.objects.create(school_id=c[0].id,student=c[4],guardian=guardian,allowed=False,reason='School restriction',updated_by=c[1])
+    assert client.get(endpoint,HTTP_X_SCHOOL_ID=str(c[0].id)).status_code==200
+    replay=client.post(endpoint,payload,format='json',HTTP_X_SCHOOL_ID=str(c[0].id))
+    assert replay.status_code==404
+    assert 'Restricted child information' not in str(replay.data)

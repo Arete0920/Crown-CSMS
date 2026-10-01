@@ -1,0 +1,65 @@
+name: Classroom PostgreSQL Workflow Proof
+on:
+  push:
+    branches: [feature/classroom-runtime-proof]
+  pull_request:
+    branches: [main]
+    paths:
+      - 'backend/academics/**'
+      - 'backend/gradebook/**'
+      - 'backend/signals/**'
+      - 'backend/crown_api/settings.py'
+      - '.github/workflows/classroom-postgresql-proof.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: classroom-postgresql-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  classroom-postgresql:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: crown
+          POSTGRES_PASSWORD: crown_test_pw
+          POSTGRES_DB: crown_classroom_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd="pg_isready -U crown -d crown_classroom_test"
+          --health-interval=10s --health-timeout=5s --health-retries=5
+    env:
+      DATABASE_URL: postgresql://crown:crown_test_pw@localhost:5432/crown_classroom_test
+      DJANGO_SETTINGS_MODULE: crown_api.test_settings
+      DJANGO_SECRET_KEY: classroom-ci-test-key
+      PYTHONPATH: backend
+    steps:
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - uses: actions/setup-python@7f4fc3e22c37d6ff65e88745f38bd3157c663f7c
+        with:
+          python-version: '3.12'
+      - name: Install backend dependencies
+        run: pip install -r backend/requirements.txt
+      - name: Require PostgreSQL and apply actual migrations
+        run: |
+          python -c "import django; django.setup(); from django.db import connection; assert connection.vendor == 'postgresql', connection.vendor"
+          python backend/manage.py migrate --noinput
+      - name: Prove classroom workflows and concurrent writes
+        run: |
+          set -o pipefail
+          python -m pytest -q \
+            backend/academics/tests/test_classroom_*.py \
+            backend/academics/tests/test_submission_workflow.py \
+            backend/gradebook/tests/test_classroom_grade_access.py \
+            backend/gradebook/tests/test_parent_grades_e2e.py \
+            backend/gradebook/tests/test_gradebook_mutation_authority.py \
+            2>&1 | tee classroom-postgresql-proof.log
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: classroom-postgresql-proof
+          path: classroom-postgresql-proof.log
+          if-no-files-found: error
