@@ -160,6 +160,7 @@ function universalCollection() {
 }
 
 function fixture(pathname, method) {
+  if (pathname === "/api/v1/academics/classroom/records/") return { source: "live", records: [], total: 0, truncated: false };
   if (pathname === "/api/v1/academics/classroom/workspace/") return {
     source: "live", from: "2026-09-30", to: "2026-10-14", generated_at: "2026-09-30T12:00:00Z",
     terms: ["2026-FALL"], sections: [], students: [], assignments: [], lesson_plans: [], categories: [],
