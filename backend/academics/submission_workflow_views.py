@@ -92,7 +92,10 @@ def assignment_work(request, assignment_id):
         elif action == 'submit':
             submission.draft_content = content
             submission.submitted_at = timezone.now()
-            submission.status = 'late' if assignment.due_date and assignment.due_date < timezone.localdate() else 'submitted'
+            from .instruction_models import ClassroomDeadlineAdjustment
+            adjustment = ClassroomDeadlineAdjustment.objects.filter(school_id=school_id, assignment=assignment, student=enrollment.student).first()
+            effective_due = adjustment.due_date if adjustment else assignment.due_date
+            submission.status = 'late' if effective_due and effective_due < timezone.localdate() else 'submitted'
         elif action == 'return':
             submission.status = 'returned'
         submission.version += 1

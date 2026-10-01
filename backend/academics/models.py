@@ -213,6 +213,8 @@ class Assignment(TimeStampedModel):
     success_criteria = models.TextField(blank=True, default="")
     home_support = models.TextField(blank=True, default="")
 
+    classroom_rubric = models.ForeignKey('academics.ClassroomRubric', on_delete=models.PROTECT, null=True, blank=True)
+
     # Curriculum links (optional, for standards-based grading)
     lesson = models.ForeignKey("Lesson", on_delete=models.SET_NULL, null=True, blank=True, related_name="assignments")
     objective = models.ForeignKey("PublisherObjective", on_delete=models.SET_NULL, null=True, blank=True, related_name="assignments")
@@ -531,6 +533,9 @@ class LessonResource(TimeStampedModel):
     title = models.CharField(max_length=255)
     kind = models.CharField(max_length=32, choices=KIND_CHOICES, default=KIND_LINK)
     url = models.URLField(blank=True, default="")
+    accessible_description = models.TextField(blank=True, default="")
+    alternative_instructions = models.TextField(blank=True, default="")
+
     # Reference to internal file service (if Crown has one)
     file_ref = models.CharField(max_length=128, blank=True, default="")
 
@@ -584,3 +589,5 @@ from .collaboration_models import ClassroomRecord, ClassroomResponse, ClassroomE
 from .family_models import ClassroomDisclosure, ClassroomNotificationPreference, ClassroomConferenceSlot, ClassroomFamilyThread, ClassroomFamilyMessage, ClassroomFamilyMutation, ClassroomFamilyNotice
 
 from .operations_models import ClassroomAttendanceSession, ClassroomAttendanceAudit, ClassroomSubstituteGrant, ClassroomEmergencySession, ClassroomEmergencyCheck, ClassroomOperationEvent
+
+from .instruction_models import ClassroomRubric, ClassroomDeadlineAdjustment, ClassroomInstructionEvent, ClassroomMasteryEvidence
