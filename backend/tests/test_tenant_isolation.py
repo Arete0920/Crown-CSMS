@@ -4,7 +4,7 @@ import pytest
 from django.contrib.auth import get_user_model
 from rest_framework.test import APIClient
 
-from core.models import School
+from core.models import School, UserRole
 
 
 pytestmark = pytest.mark.django_db
@@ -62,9 +62,15 @@ class TestTenantIsolation:
         assert response.status_code == 404
 
     def test_staff_same_tenant_can_reach_gradebook_surface(self):
+        UserRole.objects.create(user=self.staff_a, school=self.school_a, role_code="REGISTRAR")
         self.client.force_authenticate(user=self.staff_a)
         response = self.client.get("/api/v1/gradebook/sections/", HTTP_X_SCHOOL_ID=str(self.school_a.id))
         assert response.status_code == 200
+
+    def test_staff_flag_without_gradebook_role_is_denied(self):
+        self.client.force_authenticate(user=self.staff_a)
+        response = self.client.get("/api/v1/gradebook/sections/", HTTP_X_SCHOOL_ID=str(self.school_a.id))
+        assert response.status_code == 403
 
     def test_unauthenticated_request_is_denied(self):
         response = self.client.get("/api/v1/billing/runs/", HTTP_X_SCHOOL_ID=str(self.school_a.id))
