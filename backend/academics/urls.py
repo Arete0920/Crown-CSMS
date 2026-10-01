@@ -1,3 +1,4 @@
+from .family_views import family_workspace
 from django.urls import include, path
 from rest_framework.routers import SimpleRouter
 
@@ -82,6 +83,7 @@ from .submission_workflow_views import assignment_work
 from .collaboration_views import record_collection, record_action
 
 urlpatterns = [
+    path("academics/classroom/family/", family_workspace),
     path("academics/classroom/records/", record_collection, name="classroom-records"),
     path("academics/classroom/records/<uuid:record_id>/actions/", record_action, name="classroom-record-actions"),
     path("academics/assignments/<uuid:assignment_id>/copy/", assignment_copy, name="assignment-copy"),

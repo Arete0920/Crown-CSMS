@@ -160,6 +160,7 @@ function universalCollection() {
 }
 
 function fixture(pathname, method) {
+  if (pathname === "/api/v1/academics/classroom/family/") return { source: "live", threads: [], slots: [], guardians: [], notices: [], disclosures: [], preferences: { in_app: true, digest_day: 0, timezone: "UTC" }, digest: { from: "2026-10-01", to: "2026-10-07", prepared_at: "2026-10-01T12:00:00Z", assignments: [], recorded_submissions: 0, open_conversations: 0 } };
   if (pathname === "/api/v1/academics/classroom/records/") return { source: "live", records: [], total: 0, truncated: false };
   if (pathname === "/api/v1/academics/classroom/workspace/") return {
     source: "live", from: "2026-09-30", to: "2026-10-14", generated_at: "2026-09-30T12:00:00Z",
