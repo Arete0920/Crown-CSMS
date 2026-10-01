@@ -11,6 +11,7 @@ from rest_framework.response import Response
 from households.scoping import get_request_school_id
 from gradebook.models import GradeEntry
 from .experience_access import classroom_scope
+from .instruction_models import ClassroomDeadlineAdjustment
 from .models import Assignment, AssignmentCategory, Enrollment, LessonPlan, Submission, Grade
 
 
@@ -89,7 +90,7 @@ def classroom_workspace(request):
     assignments = Assignment.objects.filter(school_id=school_id, section__in=sections).select_related("category", "section__course")
     if audience in {"parent", "student"}:
         assignments = assignments.filter(is_published=True)
-    assignments = assignments.filter(Q(due_date__range=(start, end)) | Q(due_date__isnull=True)).order_by("due_date", "id")
+    assignments = assignments.filter(Q(due_date__range=(start, end)) | Q(due_date__isnull=True) | Q(deadline_adjustments__student__in=students, deadline_adjustments__due_date__range=(start, end))).distinct().order_by("due_date", "id")
     total = assignments.count()
     rows = list(assignments[:200])
     submissions = Submission.objects.filter(school_id=school_id, assignment__in=rows,
@@ -101,10 +102,15 @@ def classroom_workspace(request):
     academic_grades = Grade.objects.filter(school_id=school_id, submission__assignment__in=rows,
                                            submission__enrollment__in=enrollments).select_related('submission__enrollment')
     academic_map = {(g.submission.assignment_id, g.submission.enrollment.student_id): g for g in academic_grades}
+    adjustments = {(r.assignment_id, r.student_id): r for r in ClassroomDeadlineAdjustment.objects.filter(school_id=school_id, assignment__in=rows, student__in=students)}
     tasks = []
     for a in rows:
         targets = enrollments.filter(section_id=a.section_id) if audience in {"parent", "student"} else [None]
         for e in targets:
+            adjustment = adjustments.get((a.id, e.student_id)) if e else None
+            due = adjustment.due_date if adjustment else a.due_date
+            if e and due and not start <= due <= end:
+                continue
             s = submission_map.get((a.id, e.student_id)) if e else None
             g = grade_map.get((a.id, e.student_id)) if e else None
             academic = academic_map.get((a.id, e.student_id)) if e else None
@@ -126,11 +132,11 @@ def classroom_workspace(request):
                 state = "awaiting_grading"
             elif s and s.status == "missing":
                 state = "missing"
-            elif a.due_date and a.due_date < timezone.localdate() and state == "assigned":
+            elif due and due < timezone.localdate() and state == "assigned":
                 state = "overdue_unconfirmed"
             tasks.append({"id": str(a.id), "name": a.name, **{key: getattr(a, key) for key in ("purpose", "instructions", "success_criteria", "home_support")}, "section_id": str(a.section_id),
                           "course": a.section.course.name, "student_id": str(e.student_id) if e else None,
-                          "due_date": a.due_date, "published": a.is_published, "state": state,
+                          "due_date": due, "original_due_date": a.due_date, "makeup_instructions": adjustment.instructions if adjustment else "", "rubric": {"title": a.classroom_rubric.title, "criteria": a.classroom_rubric.criteria} if a.classroom_rubric_id else None, "published": a.is_published, "state": state,
                           "submitted_at": s.submitted_at if s else None,
                           "points_earned": recorded_points, "grade_source": grade_source,
                           "points_possible": possible, "category": a.category.name})
