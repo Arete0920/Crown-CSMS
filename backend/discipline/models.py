@@ -3,6 +3,7 @@ from __future__ import annotations
 import uuid
 from django.conf import settings
 from django.db import models
+from core.immutable_history import AppendOnlyHistory
 
 class DisciplineIncident(models.Model):
     """
@@ -68,7 +69,7 @@ class DisciplineIncident(models.Model):
         return f"Incident({self.student_id}, {self.category}, {self.severity}, {self.status})"
 
 
-class DisciplineAction(models.Model):
+class DisciplineAction(AppendOnlyHistory):
     """
     Timeline log for an incident (demo-friendly, audit-ish).
     """

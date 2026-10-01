@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import uuid
 
+from django.conf import settings
 from django.db import models
+from core.immutable_history import AppendOnlyHistory
 from django.utils import timezone
 
 from core.models import School
@@ -106,7 +108,10 @@ class InterventionCase(models.Model):
 
     reason = models.CharField(max_length=200)
     linked_signals = models.JSONField(default=list)     # [{"key":..., "weight":...}]
-    owner_user_id = models.IntegerField(null=True, blank=True)
+    owner_user_id = models.IntegerField(null=True, blank=True)  # Legacy integer identity, retained without guessing UUID mappings.
+    owner_account = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, null=True, blank=True, related_name='owned_intervention_cases')
+    review_at = models.DateTimeField(null=True, blank=True)
+    version = models.PositiveIntegerField(default=1)
 
     last_action_at = models.DateTimeField(null=True, blank=True)
 
@@ -117,7 +122,7 @@ class InterventionCase(models.Model):
         ]
 
 
-class InterventionAction(models.Model):
+class InterventionAction(AppendOnlyHistory):
     """
     Timeline of actions: note, call, meeting, plan, follow-up.
     """
@@ -128,7 +133,8 @@ class InterventionAction(models.Model):
 
     action_type = models.CharField(max_length=24, default="NOTE")   # NOTE/CALL/MEETING/PLAN/FOLLOWUP
     note = models.TextField()
-    created_by_user_id = models.IntegerField()
+    created_by_user_id = models.IntegerField(null=True, blank=True)  # Legacy evidence remains intact.
+    created_by_account = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, null=True, blank=True)
     created_at = models.DateTimeField(default=timezone.now)
 
     class Meta:
