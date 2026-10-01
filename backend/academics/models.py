@@ -591,3 +591,5 @@ from .family_models import ClassroomDisclosure, ClassroomNotificationPreference,
 from .operations_models import ClassroomAttendanceSession, ClassroomAttendanceAudit, ClassroomSubstituteGrant, ClassroomEmergencySession, ClassroomEmergencyCheck, ClassroomOperationEvent
 
 from .instruction_models import ClassroomRubric, ClassroomDeadlineAdjustment, ClassroomInstructionEvent, ClassroomMasteryEvidence
+
+from .support_models import ClassroomInterventionLink, ClassroomRestorativeLink, ClassroomSupportEvent

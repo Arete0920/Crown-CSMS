@@ -33,14 +33,14 @@ class InterventionCaseSerializer(serializers.ModelSerializer):
         fields = [
             "id", "student_id", "opened_at", "closed_at",
             "status", "priority", "reason", "linked_signals",
-            "owner_user_id", "last_action_at",
+            "owner_user_id", "owner_account_id", "review_at", "version", "last_action_at",
         ]
 
 
 class InterventionActionSerializer(serializers.ModelSerializer):
     class Meta:
         model = InterventionAction
-        fields = ["id", "case_id", "action_type", "note", "created_by_user_id", "created_at"]
+        fields = ["id", "case_id", "action_type", "note", "created_by_user_id", "created_by_account_id", "created_at"]
 
 
 class BoardExecutiveMetricSerializer(serializers.ModelSerializer):
