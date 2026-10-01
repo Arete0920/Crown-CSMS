@@ -35,7 +35,9 @@ def related_students(user, school_id, *, audience):
     households = Guardian.objects.filter(account_id=user.id, school_id=school_id,
                                           household__school_id=school_id,
                                           household__is_active=True).values("household_id")
-    return qs.filter(household_id__in=households)
+    from .family_models import ClassroomDisclosure
+    blocked = ClassroomDisclosure.objects.filter(school_id=school_id, guardian__account=user, allowed=False).values('student_id')
+    return qs.filter(household_id__in=households).exclude(id__in=blocked)
 
 
 def classroom_scope(user, school_id, audience):
