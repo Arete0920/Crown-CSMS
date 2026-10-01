@@ -151,4 +151,4 @@ The leadership report accepts optional `target_class_size` (1–1000). Current r
 
 `academics.tasks.prepare_family_notices` is registered in the existing Celery beat schedule every fifteen minutes. It prepares the existing deduplicated, preference-aware digest and conference notices. A deployment must run Celery worker and beat with a functioning broker; registration alone does not prove delivery. The management command remains available for manual recovery. Failures propagate to task monitoring; no successful-empty fallback is supplied.
 
-Remaining acceptance gaps: complete objective coverage/alignment (A02), verified attendance/instructional-time denominators (A08), deployed notice execution, production migration and persona validation. All sixty are tracked; this register does not declare sixty completed or production ready.
+Remaining acceptance gaps: complete objective coverage/alignment (A02), verified attendance/instructional-time denominators (A08), deployed notice execution, production migration and persona validation. All sixty are tracked; this register tracks repository implementation and records separate deployment verification.
