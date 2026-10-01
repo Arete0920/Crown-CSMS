@@ -193,11 +193,17 @@ def section_attendance_submit(request, section_id):
 
         prepared.append((core_student, raw_status))
 
+    if len({str(student.id) for student, _ in prepared}) != len(prepared):
+        return Response({'detail': 'Attendance students must be unique.'}, status=400)
     created = 0
     updated = 0
     try:
         with transaction.atomic():
+            Section.objects.select_for_update().get(id=section.id)
+            changes = []
             for core_student, raw_status in prepared:
+                before = AttendanceRecord.objects.filter(student=core_student, section=section, date=day).values_list('status', flat=True).first()
+                changes.append({'core_student_id': str(core_student.id), 'before': before, 'after': raw_status})
                 _, was_created = AttendanceRecord.objects.update_or_create(
                     student=core_student,
                     section=section,
@@ -208,6 +214,8 @@ def section_attendance_submit(request, section_id):
                     created += 1
                 else:
                     updated += 1
+            from academics.attendance_evidence import record_attendance_evidence
+            record_attendance_evidence(section, day, request.user, changes, str(payload.get('reason', 'Legacy attendance entry'))[:20000])
     except Exception:
         logger.exception(
             "section_attendance_submit: failed to save attendance submission",
