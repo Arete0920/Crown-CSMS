@@ -578,3 +578,5 @@ class TranscriptEntry(TimeStampedModel):
         return f"Transcript({self.student_id} - {self.course.code} - {self.final_letter_grade})"
 
 from .experience_models import SubmissionRevision  # noqa: E402,F401
+
+from .collaboration_models import ClassroomRecord, ClassroomResponse, ClassroomEvent  # noqa: E402,F401
