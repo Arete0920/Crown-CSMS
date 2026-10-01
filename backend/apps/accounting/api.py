@@ -2,6 +2,7 @@ from decimal import Decimal, InvalidOperation
 
 from django.core.exceptions import ValidationError
 from django.db import transaction
+from django.utils import timezone
 from django.utils.dateparse import parse_date
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
@@ -321,7 +322,7 @@ def purchase_orders(request):
                 tenant_id=school_id,
                 vendor=vendor,
                 number=_required_text(request.data, "number"),
-                ordered_on=_date(request.data, "ordered_on", required=False) or __import__("django").utils.timezone.localdate(),
+                ordered_on=_date(request.data, "ordered_on", required=False) or timezone.localdate(),
                 expected_on=_date(request.data, "expected_on", required=False),
                 currency=str(request.data.get("currency") or "USD").upper(),
                 memo=str(request.data.get("memo") or ""),
