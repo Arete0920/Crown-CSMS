@@ -8,6 +8,7 @@ from rest_framework.response import Response
 from households.scoping import get_request_school_id
 from households.models import Student
 from academics.models import Enrollment, Section, Course, Grade
+from academics.grade_evidence import resolve_grade
 from academics.experience_access import accessible_enrollments, is_leader, related_students
 from rest_framework.exceptions import PermissionDenied
 from .models import GradeEntry
@@ -81,15 +82,18 @@ def student_grades_summary(request, student_id):
             assignment_name = entry.assignment.name if entry.assignment else entry.assignment_name
             points_possible = entry.assignment.points_possible if entry.assignment else entry.points_possible
             points_earned = entry.points_earned
-            other = academic.get(entry.assignment_id)
-            conflict = bool(other and points_earned is not None and (other.numeric_score != points_earned or entry.points_possible != points_possible))
+            conflict = False
+            source = 'gradebook.GradeEntry'
+            if entry.assignment:
+                evidence = resolve_grade(entry.assignment, entry, academic.get(entry.assignment_id))
+                points_earned, points_possible, conflict = evidence['earned'], evidence['possible'], evidence['conflict']
+                source = evidence['source']
             if conflict:
                 conflicts.append(str(entry.assignment_id))
-                points_earned = None
 
             assignments.append({
                 "assignment_name": assignment_name or "Unknown Assignment",
-                "source": "gradebook.GradeEntry",
+                "source": source,
                 "grade_conflict": conflict,
                 "legacy_unlinked_assignment": entry.assignment_id is None,
                 "points_possible": str(points_possible) if points_possible else "0.00",
