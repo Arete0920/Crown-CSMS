@@ -559,6 +559,10 @@ CELERY_TIMEZONE                = TIME_ZONE
 try:
     from celery.schedules import crontab  # noqa: F401
     CELERY_BEAT_SCHEDULE = {
+        "classroom-notices-every-15-minutes": {
+            "task": "academics.tasks.prepare_classroom_notices",
+            "schedule": crontab(minute="*/15"),
+        },
         "drain-outbox-every-10-seconds": {
             "task": "comms.tasks.drain_outbox",
             "schedule": 10.0,
