@@ -1,6 +1,7 @@
 """Provisional category-weighted evidence preview, never report-card authority."""
 from decimal import Decimal
 from gradebook.models import GradeEntry
+from .grade_evidence import resolve_grade
 from .models import Assignment, AssignmentCategory, Enrollment, Grade, Submission
 
 
@@ -16,10 +17,10 @@ def progress_rows(school, sections, students):
         conflicts = []; sources = set()
         for a in assignments:
             entry, grade = entries.get(a.id), academic.get(a.id)
-            if entry and entry.points_earned is not None and grade and (entry.points_earned != grade.numeric_score or entry.points_possible != a.points_possible):
+            evidence = resolve_grade(a, entry, grade)
+            if evidence['conflict']:
                 conflicts.append(str(a.id)); continue
-            earned = entry.points_earned if entry and entry.points_earned is not None else grade.numeric_score if grade else None
-            possible = entry.points_possible if entry and entry.points_earned is not None else a.points_possible
+            earned, possible = evidence['earned'], evidence['possible']
             if earned is None or possible is None or possible <= 0 or a.category_id not in buckets:
                 continue
             sources.add('gradebook.GradeEntry' if entry and entry.points_earned is not None else 'academics.Grade')

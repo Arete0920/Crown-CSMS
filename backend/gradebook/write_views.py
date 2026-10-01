@@ -11,6 +11,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from academics.models import Assignment, Enrollment, Section, TeacherAssignment
+from academics.experience_access import taught_sections
 from core.models import School, UserRole
 from core.permissions import user_has_permission
 from households.models import Student
@@ -50,11 +51,8 @@ def _require_grade_write_authority(request, school_id, section) -> None:
         raise PermissionDenied("Grade write permission denied.")
 
     staff = getattr(request.user, "staff", None)
-    if staff is None or not TeacherAssignment.objects.filter(
-        school_id=school_id,
-        section=section,
-        staff=staff,
-    ).exists():
+    if (staff is None or staff.school_id != school_id or staff.status != "ACTIVE"
+        or staff.role_type != "TEACHER" or not taught_sections(request.user, school_id).filter(id=section.id).exists()):
         # Preserve tenant/section concealment for teachers without assignment.
         raise Http404()
 

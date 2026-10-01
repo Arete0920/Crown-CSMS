@@ -11,6 +11,7 @@ from rest_framework.response import Response
 from households.scoping import get_request_school_id
 from gradebook.models import GradeEntry
 from .experience_access import classroom_scope
+from .grade_evidence import resolve_grade
 from .instruction_models import ClassroomDeadlineAdjustment
 from .models import Assignment, AssignmentCategory, Enrollment, LessonPlan, Submission, Grade
 
@@ -114,13 +115,9 @@ def classroom_workspace(request):
             s = submission_map.get((a.id, e.student_id)) if e else None
             g = grade_map.get((a.id, e.student_id)) if e else None
             academic = academic_map.get((a.id, e.student_id)) if e else None
-            recorded_points = g.points_earned if g and g.points_earned is not None else academic.numeric_score if academic else None
-            possible = g.points_possible if g and g.points_possible is not None else a.points_possible
-            grade_source = 'gradebook.GradeEntry' if g and g.points_earned is not None else 'academics.Grade' if academic else None
-            conflict = bool(g and g.points_earned is not None and academic and (g.points_earned != academic.numeric_score or possible != a.points_possible))
-            if conflict:
-                recorded_points = None
-                grade_source = 'conflict_requires_teacher_review'
+            evidence = resolve_grade(a, g, academic)
+            recorded_points, possible = evidence['earned'], evidence['possible']
+            grade_source, conflict = evidence['source'], evidence['conflict']
             state = "draft" if not a.is_published else "submitted" if s and s.submitted_at else "assigned"
             if s and s.status in {"draft", "returned"}:
                 state = s.status
