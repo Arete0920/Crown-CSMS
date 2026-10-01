@@ -734,7 +734,10 @@ class SubmissionViewSet(TenantScopedViewSet):
         return SubmissionSerializer
 
     def get_queryset(self):
-        qs = super().get_queryset()  # school scoping handled by base class
+        qs = super().get_queryset()
+        from .experience_access import accessible_enrollments
+        school_id = get_request_school_id(self.request)
+        qs = qs.filter(enrollment__in=accessible_enrollments(self.request.user, school_id))
 
         # Filter by assignment if provided
         assignment_id = self.request.query_params.get("assignment_id")
@@ -749,6 +752,27 @@ class SubmissionViewSet(TenantScopedViewSet):
         return qs.order_by("-submitted_at")
 
 
+    def perform_create(self, serializer):
+        school_id = get_request_school_id(self.request)
+        assignment = serializer.validated_data['assignment']
+        enrollment = serializer.validated_data['enrollment']
+        if (assignment.school_id != school_id or enrollment.school_id != school_id
+                or assignment.section_id != enrollment.section_id
+                or enrollment.student.account_id != self.request.user.id
+                or not assignment.is_published):
+            raise PermissionDenied('Only an enrolled student may submit their own published assignment.')
+        serializer.save(school_id=school_id)
+
+    def update(self, request, *args, **kwargs):
+        raise PermissionDenied('Use the versioned assignment work workflow for revisions.')
+
+    def partial_update(self, request, *args, **kwargs):
+        raise PermissionDenied('Use the versioned assignment work workflow for revisions.')
+
+    def destroy(self, request, *args, **kwargs):
+        raise PermissionDenied('Submission evidence must be preserved.')
+
+
 class GradeViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [IsAuthenticated]
     serializer_class = GradeSerializer
@@ -758,7 +782,9 @@ class GradeViewSet(viewsets.ReadOnlyModelViewSet):
 
     def get_queryset(self):
         school_id = get_request_school_id(self.request)
-        qs = self.queryset.filter(school_id=school_id)
+        from .experience_access import accessible_enrollments
+        qs = self.queryset.filter(school_id=school_id,
+                                  submission__enrollment__in=accessible_enrollments(self.request.user, school_id))
 
         # Filter by submission if provided
         submission_id = self.request.query_params.get("submission_id")
@@ -794,28 +820,9 @@ class GradeViewSet(viewsets.ReadOnlyModelViewSet):
         if submission.school_id != school_id:
             raise PermissionDenied("Submission not in your school")
 
-        # Authorization gate for grading.
-        user = getattr(request, "user", None)
-        roles = _role_codes(user, school_id)
-        has_admin_or_director_role = "ADMIN" in roles or "DIRECTOR" in roles
-        if not _is_staffish(user, roles) and not has_admin_or_director_role:
-            if "TEACHER" not in roles:
-                raise PermissionDenied("Role not permitted to grade submissions")
-
-            staff = getattr(user, "staff", None)
-            user_id = getattr(user, "id", None)
-            section_id = submission.assignment.section_id
-
-            # Allow teachers connected through the section primary teacher FK.
-            if not (user_id and submission.assignment.section.teacher_id == user_id):
-                if not staff:
-                    raise PermissionDenied("Teacher must be linked to staff profile")
-                if not TeacherAssignment.objects.filter(
-                    school_id=school_id,
-                    section_id=section_id,
-                    staff=staff,
-                ).exists():
-                    raise PermissionDenied("Teacher not assigned to this section")
+        from .experience_access import is_leader, taught_sections
+        if not (is_leader(request.user, school_id) or taught_sections(request.user, school_id).filter(id=submission.assignment.section_id).exists()):
+            raise PermissionDenied("Only a school leader or assigned teacher may grade work.")
 
         grade = upsert_grade_for_submission(
             submission=submission,

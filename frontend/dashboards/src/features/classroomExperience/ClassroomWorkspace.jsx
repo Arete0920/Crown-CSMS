@@ -1,10 +1,13 @@
+import AssignmentReuse from './AssignmentReuse.jsx';
+import AssignmentWork from './AssignmentWork.jsx';
+import AssignmentEditor from './AssignmentEditor.jsx';
 import { useCallback, useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
 import { Alert, Box, Button, Card, CardContent, FormControl, InputLabel, MenuItem, Select, Stack, TextField, Typography } from '@mui/material';
 import { crownApiClient as api } from '../../api/client';
 
 const labels = { teacher: "Today's Classroom", student: 'My Classroom', parent: 'My Children’s Classrooms', admin: 'Classroom Operations', board: 'Classroom Evidence' };
-const statuses = { assigned: 'Assigned', draft: 'Draft — not visible to families', awaiting_grading: 'Submitted — awaiting grading', graded: 'Graded', missing: 'Marked missing', overdue_unconfirmed: 'Past due — submission not confirmed' };
+const statuses = { assigned: 'Assigned', draft: 'Draft — not visible to families', awaiting_grading: 'Submitted — awaiting grading', graded: 'Graded', grade_conflict: 'Grade records disagree — teacher review required', returned: 'Returned for revision', missing: 'Marked missing', overdue_unconfirmed: 'Past due — submission not confirmed' };
 
 export default function ClassroomWorkspace({ audience }) {
   const [data, setData] = useState(null);
@@ -12,6 +15,7 @@ export default function ClassroomWorkspace({ audience }) {
   const [loading, setLoading] = useState(true);
   const [term, setTerm] = useState('');
   const [student, setStudent] = useState('');
+  const [openWork, setOpenWork] = useState('');
   const [section, setSection] = useState('');
   const load = useCallback(async (signal) => {
     setLoading(true);
@@ -65,6 +69,7 @@ export default function ClassroomWorkspace({ audience }) {
         <Typography>No classroom quality score is inferred from these counts.</Typography>
       </CardContent></Card> : <>
         <Typography component="h3" variant="h6">Assignments and workload</Typography>
+        {data.can_manage && <details><summary>Create an assignment</summary><AssignmentEditor sections={data.sections} categories={data.categories} refresh={() => load()} /></details>}
         {data.truncated && <Alert severity="info">This view reached its record limit. Select a section or child to narrow the results.</Alert>}
         {!data.assignments.length && <Typography>No assignments recorded in this window for this selection.</Typography>}
         <Stack spacing={1} sx={{ my: 2 }}>{data.assignments.map((a) => <Card key={`${a.id}-${a.student_id || 'section'}`}><CardContent>
@@ -74,6 +79,10 @@ export default function ClassroomWorkspace({ audience }) {
           <Typography>{statuses[a.state] || a.state}</Typography>
           {a.submitted_at && <Typography>Submission recorded {new Date(a.submitted_at).toLocaleString()}</Typography>}
           {a.points_earned !== null && <Typography>Recorded points: {a.points_earned} / {a.points_possible}</Typography>}
+          {['purpose', 'instructions', 'success_criteria', 'home_support'].map((key) => a[key] && <Typography key={key} sx={{ whiteSpace: 'pre-wrap' }}>{key.replaceAll('_', ' ')}: {a[key]}</Typography>)}
+          {data.can_manage && <details><summary>Reuse this assignment</summary><AssignmentReuse assignment={a} sections={data.sections} categories={data.categories} refresh={() => load()} /></details>}
+          <Button onClick={() => setOpenWork(openWork === `${a.id}-${a.student_id || 'section'}` ? '' : `${a.id}-${a.student_id || 'section'}`)}>Open work and feedback</Button>
+          {openWork === `${a.id}-${a.student_id || 'section'}` && <AssignmentWork assignment={a} audience={audience} students={data.students} />}
           <Typography variant="body2">{a.category} · {a.points_possible} possible points</Typography>
         </CardContent></Card>)}</Stack>
         <Typography component="h3" variant="h6">Learning and absence recovery</Typography>
