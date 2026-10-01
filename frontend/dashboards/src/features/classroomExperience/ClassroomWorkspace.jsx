@@ -1,3 +1,4 @@
+import ClassroomSupport from './ClassroomSupport.jsx';
 import ClassroomInstruction from './ClassroomInstruction.jsx';
 import ClassroomFamily from './ClassroomFamily.jsx';
 import ClassroomRecords from './ClassroomRecords.jsx';
@@ -90,6 +91,7 @@ export default function ClassroomWorkspace({ audience }) {
           {openWork === `${a.id}-${a.student_id || 'section'}` && <AssignmentWork assignment={a} audience={audience} students={data.students} />}
           <Typography variant="body2">{a.category} · {a.points_possible} possible points</Typography>
         </CardContent></Card>)}</Stack>
+        {data.can_manage && <ClassroomSupport audience={audience} sections={data.sections} students={data.students} />}
         <ClassroomInstruction audience={audience} sections={data.sections} students={data.students} assignments={data.assignments} />
         {audience !== 'student' && <ClassroomFamily audience={audience} sections={data.sections} students={data.students} assignments={data.assignments} />}
       <ClassroomRecords audience={audience} sections={data.sections} students={data.students} assignments={data.assignments} />
