@@ -61,6 +61,9 @@ def classroom_leadership(request):
         'open_family_concerns': ClassroomFamilyThread.objects.filter(school_id=school, section__in=sections, kind='conversation', state='open').count(),
         'restorative_plans_created': ClassroomRestorativeLink.objects.filter(school_id=school, section__in=sections, incident__school_id=school, incident__occurred_at__date__range=(start, end)).count(),
         'service_opportunities': activity.filter(kind='service').count(),
+        'family_service_participation': activity.filter(kind='family_service').count(),
+        'portrait_linked_service': activity.filter(kind__in=['service', 'family_service'], metadata__has_key='portrait_domain_id').count(),
+        'worldview_linked_service': activity.filter(kind__in=['service', 'family_service'], metadata__has_key='worldview_priority_id').count(),
         'service_responses': responses.filter(record__kind='service').count(),
         'resource_reflections': responses.filter(record__kind='resource').count(),
     })

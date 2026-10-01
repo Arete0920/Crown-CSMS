@@ -32,3 +32,10 @@ it('parents have no controls to submit a student response', async () => {
   expect(screen.queryByText('Save response')).toBeNull();
   expect(screen.queryByLabelText('Your response or contribution')).toBeNull();
 });
+
+it('offers family service participation alongside absence explanations', async () => {
+  api.get.mockResolvedValue({ data: { source: 'live', records: [], portrait_domains: [], worldview_priorities: [] } });
+  render(<ClassroomRecords audience="parent" sections={[]} students={[]} assignments={[]} />);
+  await screen.findByText('No classroom records yet.');
+  expect(screen.getByLabelText('Record type').textContent).toContain('absence explanation');
+});

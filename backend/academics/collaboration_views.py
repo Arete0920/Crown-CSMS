@@ -14,6 +14,7 @@ from households.scoping import get_request_school_id
 from .experience_access import classroom_scope, is_leader, taught_sections
 from .collaboration_models import ClassroomEvent, ClassroomRecord, ClassroomResponse, KINDS
 from .models import Assignment, Enrollment
+from .assignment_teacher_views import _can_manage_section
 from .submission_workflow_views import _uuid
 
 STUDENT_KINDS = {'help_request', 'goal', 'reflection', 'portfolio'}
@@ -33,7 +34,7 @@ def visible_records(request, school, audience, sections, students):
     qs = ClassroomRecord.objects.filter(school_id=school, section__in=sections)
     if audience in {'admin', 'teacher'}:
         if audience == 'teacher':
-            qs = qs.exclude(kind='coaching')
+            qs = qs.exclude(Q(kind='coaching') & ~Q(owner=request.user))
         return qs.exclude(Q(visibility='private') & ~Q(created_by=request.user))
     own = Q(created_by=request.user)
     scope = own | Q(visibility='class', student__isnull=True) | Q(visibility='family', student__in=students)
@@ -52,7 +53,7 @@ def serialize(record, students, manager, user):
             'kind': record.kind, 'title': record.title, 'body': record.body, 'visibility': record.visibility,
             'due_at': record.due_at, 'state': record.state, 'version': record.version, 'metadata': record.metadata,
             'owner_id': record.owner_id, 'created_at': record.created_at,
-            'can_manage': manager, 'can_edit': manager or record.created_by_id == user.id,
+            'can_close': record.kind != 'coaching' or is_leader(user, record.school_id), 'can_manage': manager, 'can_edit': manager or record.created_by_id == user.id,
             'responses': list(responses.values('id', 'student_id', 'content', 'feedback', 'state', 'version', 'updated_at'))}
 
 
@@ -61,7 +62,8 @@ def validate_metadata(payload, *, kind, section, school, student):
     if not isinstance(metadata, dict) or len(json.dumps(metadata)) > 20000:
         raise ValidationError('Metadata must be an object of at most 20000 characters.')
     allowed = {'formative_check': {'questions'}, 'group_project': {'members', 'roles', 'milestones'},
-               'portfolio': {'assignment_id'}, 'service': {'portrait_domain_id'},
+               'portfolio': {'assignment_id'}, 'service': {'portrait_domain_id', 'worldview_priority_id', 'scripture_reference'},
+               'family_service': {'portrait_domain_id', 'worldview_priority_id', 'scripture_reference'}, 'coaching': {'teacher_account_id'},
                'resource': {'reference', 'cost_cents'}, 'interruption': {'minutes'}}.get(kind, set())
     if set(metadata) - allowed:
         raise ValidationError('Unsupported metadata fields for this record kind.')
@@ -90,9 +92,20 @@ def validate_metadata(payload, *, kind, section, school, student):
         if not student or not Enrollment.objects.filter(section=section, student=student, school_id=school).exists():
             raise ValidationError('Portfolio work must belong to an enrolled student.')
         metadata['assignment_id'] = str(assignment.id)
-    if kind == 'service' and metadata.get('portrait_domain_id'):
-        from spiritual_life.formation_models import PortraitDomain
-        get_object_or_404(PortraitDomain, id=_uuid(metadata['portrait_domain_id'], 'portrait_domain_id'), school_id=school, is_active=True)
+    if kind in {'service', 'family_service'}:
+        from spiritual_life.formation_models import PortraitDomain, BiblicalWorldviewPriority
+        for field, model in [('portrait_domain_id', PortraitDomain), ('worldview_priority_id', BiblicalWorldviewPriority)]:
+            if metadata.get(field):
+                obj = get_object_or_404(model, id=_uuid(metadata[field], field), school_id=school, is_active=True)
+                metadata[field] = str(obj.id)
+        reference = metadata.get('scripture_reference', '')
+        if not isinstance(reference, str) or len(reference) > 160:
+            raise ValidationError('Scripture reference must be brief text.')
+    if kind == 'coaching':
+        teacher = get_object_or_404(get_user_model(), id=_uuid(metadata.get('teacher_account_id'), 'teacher_account_id'), is_active=True)
+        if not _can_manage_section(teacher, school, section) or not taught_sections(teacher, school).filter(id=section.id).exists():
+            raise ValidationError('Coaching teacher must be active and assigned to this classroom.')
+        metadata['teacher_account_id'] = str(teacher.id)
     for field in ('minutes', 'cost_cents'):
         if field in metadata and (isinstance(metadata[field], bool) or not isinstance(metadata[field], int) or not 0 <= metadata[field] <= 100000000):
             raise ValidationError(f'{field} must be a non-negative integer.')
@@ -112,7 +125,13 @@ def record_collection(request):
         qs = visible_records(request, school, audience, sections, students)
         if request.query_params.get('section_id'):
             qs = qs.filter(section_id=_uuid(request.query_params['section_id'], 'section_id'))
-        return Response({'records': [serialize(r, students, audience in {'teacher', 'admin'}, request.user) for r in qs[:100]],
+        from spiritual_life.formation_models import PortraitDomain, BiblicalWorldviewPriority
+        teachers = []
+        if audience == 'admin':
+            teachers = [{'id': u.id, 'name': u.get_full_name() or u.username} for u in get_user_model().objects.filter(is_active=True, staff__school_id=school, staff__status='ACTIVE', staff__role_type='TEACHER') if taught_sections(u, school).exists()]
+        return Response({'portrait_domains': list(PortraitDomain.objects.filter(school_id=school, is_active=True).values('id', 'name', 'scripture_anchor')),
+                         'worldview_priorities': list(BiblicalWorldviewPriority.objects.filter(school_id=school, is_active=True).values('id', 'title', 'scripture_anchor')),
+                         'coaching_teachers': teachers, 'records': [serialize(r, students, audience in {'teacher', 'admin'}, request.user) for r in qs[:100]],
                          'total': qs.count(), 'truncated': qs.count() > 100, 'source': 'live'})
     data = request.data
     if not isinstance(data, dict):
@@ -122,8 +141,8 @@ def record_collection(request):
         raise ValidationError('Invalid classroom record kind.')
     section = get_object_or_404(sections, id=_uuid(data.get('section_id'), 'section_id'))
     manager = is_leader(request.user, school) or taught_sections(request.user, school).filter(id=section.id).exists()
-    if audience == 'parent' and kind != 'absence_explanation':
-        raise PermissionDenied('Parents may record absence explanations; teaching records require staff authority.')
+    if audience == 'parent' and kind not in {'absence_explanation', 'family_service'}:
+        raise PermissionDenied('Parents may record absence explanations and family service participation.')
     if audience == 'student' and kind not in STUDENT_KINDS:
         raise PermissionDenied('Students may create help, goal, reflection and portfolio records.')
     if audience in {'teacher', 'admin'} and not manager:
@@ -135,12 +154,12 @@ def record_collection(request):
         student = get_object_or_404(students, id=_uuid(data['student_id'], 'student_id'))
         if not Enrollment.objects.filter(section=section, student=student, school_id=school).exists():
             raise ValidationError('Student must be enrolled in this section.')
-    if kind in STUDENT_KINDS | {'absence_explanation', 'accommodation', 'support_plan', 'positive_observation'} and student is None:
+    if kind in STUDENT_KINDS | {'absence_explanation', 'family_service', 'accommodation', 'support_plan', 'positive_observation'} and student is None:
         raise ValidationError('Choose the student for this record.')
     visibility = data.get('visibility', 'private' if kind in STUDENT_KINDS else 'family' if student else 'class')
     if kind in PRIVATE_SUPPORT or kind == 'help_request':
         visibility = 'family' if kind == 'support_plan' and visibility == 'family' and is_leader(request.user, school) else 'staff'
-    if kind == 'absence_explanation':
+    if kind in {'absence_explanation', 'family_service'}:
         visibility = 'family'
     if visibility not in {'class', 'family', 'staff', 'private'} or (student and visibility == 'class'):
         raise ValidationError('Invalid visibility for this record.')
@@ -168,7 +187,7 @@ def record_collection(request):
             return Response(serialize(existing, students, manager, request.user)) if existing.fingerprint == fingerprint else Response({'detail': 'Creation retry key conflict.'}, status=409)
         record = ClassroomRecord.objects.create(request_key=key, fingerprint=fingerprint, school_id=school, section=section, student=student, kind=kind,
                   title=title.strip(), body=body, visibility=visibility, created_by=request.user,
-                  owner=section.teacher if kind == 'help_request' and section.teacher_id else request.user,
+                  owner_id=metadata['teacher_account_id'] if kind == 'coaching' else section.teacher_id if kind == 'help_request' and section.teacher_id else request.user.id,
                   due_at=due, metadata=metadata)
     return Response(serialize(record, students, manager, request.user), status=201)
 
@@ -192,6 +211,8 @@ def record_action(request, record_id):
         expected = request.data.get('version')
         if isinstance(expected, bool) or not isinstance(expected, int) or expected != record.version:
             return Response({'detail': 'Record changed. Refresh before acting.'}, status=409)
+        if record.kind == 'coaching' and action != 'acknowledge' and not is_leader(request.user, school):
+            raise PermissionDenied('Only school leadership may resolve or reopen coaching.')
         if action in {'acknowledge', 'resolve', 'reopen'}:
             if not manager:
                 raise PermissionDenied('Teacher or school leader follow-through required.')
@@ -202,7 +223,7 @@ def record_action(request, record_id):
         elif action == 'respond':
             if record.state == 'resolved':
                 raise ValidationError('This record is closed.')
-            if record.kind not in {'practice', 'formative_check', 'group_project', 'service', 'announcement', 'home_support'}:
+            if record.kind not in {'practice', 'formative_check', 'group_project', 'service', 'resource', 'announcement', 'home_support'}:
                 raise ValidationError('This kind uses teacher follow-through instead of student responses.')
             student = get_object_or_404(students, id=_uuid(request.data.get('student_id'), 'student_id'))
             if student.account_id != request.user.id or not Enrollment.objects.filter(section=record.section, student=student, school_id=school).exists():
