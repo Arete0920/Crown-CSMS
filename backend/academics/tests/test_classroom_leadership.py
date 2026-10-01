@@ -79,3 +79,34 @@ def test_zero_resource_cost_is_preserved_and_invalid_window_rejected(classroom):
     assert report(classroom, client, **{'from':'2026-01-01', 'to':'2026-03-01'}).status_code == 400
     assert report(classroom, client, section_id=str(classroom[5].id)).status_code == 400
     assert client.post(URL, {}, format='json', HTTP_X_SCHOOL_ID=str(classroom[0].id)).status_code == 405
+
+
+def test_planning_target_uses_current_roster_and_never_changes_sections(classroom):
+    from academics.models import Enrollment, Section
+    from households.models import Student
+    c = classroom
+    for name in ['Second', 'Third']:
+        student = Student.objects.create(school_id=c[0].id, household=c[4].household, first_name=name, last_name='Student')
+        Enrollment.objects.create(school_id=c[0].id, section=c[5], student=student)
+    client = reader(c)
+    before = Section.objects.count()
+    response = report(c, client, target_class_size='2')
+    assert response.status_code == 200
+    assert response.data['summary']['sections_above_target'] == 1
+    assert response.data['summary']['additional_sections_for_target'] == 1
+    assert response.data['sections'][0]['verified_teachers'] == 1
+    assert Section.objects.count() == before
+    assert report(c, client).data['summary']['sections_above_target'] is None
+    for invalid in ['0', '-1', '2.5', '1001', 'false']:
+        assert report(c, client, target_class_size=invalid).status_code == 400
+
+
+def test_staffing_counts_require_active_verified_teacher_relationship(classroom):
+    c = classroom
+    client = reader(c, 'BOARD')
+    c[1].staff.status = 'INACTIVE'
+    c[1].staff.save()
+    response = report(c, client, audience='board', target_class_size='20')
+    assert response.data['summary']['sections_without_verified_teacher'] == 1
+    assert 'sections' not in response.data and 'teacher_workload' not in response.data
+    assert str(c[1].id) not in json.dumps(response.data, default=str)

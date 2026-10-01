@@ -1,5 +1,5 @@
 import { afterEach, expect, it, vi } from 'vitest';
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import ClassroomLeadership from './ClassroomLeadership.jsx';
 import { crownApiClient as api } from '../../api/client';
 vi.mock('../../api/client', () => ({ crownApiClient: { get: vi.fn() } }));
@@ -24,4 +24,12 @@ it('failed fetch does not render successful empty counts', async () => {
   render(<ClassroomLeadership audience="board" />);
   expect((await screen.findByRole('alert')).textContent).toContain('could not be loaded');
   expect(screen.queryByText('Definitions and sources')).toBeNull();
+});
+it('sends an explicit planning target while labeling it a scenario', async () => {
+  api.get.mockResolvedValue({ data });
+  render(<ClassroomLeadership audience="admin" />);
+  await screen.findByText('Only recorded minutes are summed.');
+  fireEvent.change(screen.getByLabelText('Planning target: students per section'), { target: { value: '20' } });
+  await waitFor(() => expect(api.get.mock.lastCall[1].params.target_class_size).toBe('20'));
+  expect(screen.getByText('Optional scenario using current rosters')).toBeTruthy();
 });
