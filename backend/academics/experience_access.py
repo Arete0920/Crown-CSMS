@@ -59,3 +59,13 @@ def classroom_scope(user, school_id, audience):
     if audience == "board" and (is_leader(user, school_id) or role_codes(user, school_id) & BOARD_ROLES):
         return all_sections, Student.objects.none()
     raise PermissionDenied("No classroom relationship for this view.")
+
+
+def accessible_enrollments(user, school_id):
+    qs = Enrollment.objects.filter(school_id=school_id, section__school_id=school_id,
+                                   student__school_id=school_id, student__is_active=True)
+    if is_leader(user, school_id):
+        return qs
+    related = related_students(user, school_id, audience='parent').values('id')
+    return qs.filter(Q(section__in=taught_sections(user, school_id)) |
+                     Q(student__account_id=user.id) | Q(student_id__in=related)).distinct()

@@ -317,15 +317,15 @@ class TestGradeSubmissionAuthorization:
             "teacher_feedback": "Well done",
         }
 
-    def test_staffish_user_can_grade_submission(self):
-        """is_staff/is_superuser path can grade within tenant scope."""
+    def test_staff_flag_alone_cannot_grade_submission(self):
+        """Administrative account flags alone do not grant classroom grading authority."""
         self.client.force_authenticate(user=self.staffish_user)
         response = self.client.post(
             f"{GRADES_URL}grade/",
             data=self._grade_payload(),
             format="json",
         )
-        assert response.status_code == 200, response.content
+        assert response.status_code == 403, response.content
 
     def test_non_staff_admin_role_can_grade_submission(self):
         self.client.force_authenticate(user=self.admin_user)

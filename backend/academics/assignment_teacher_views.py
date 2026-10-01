@@ -25,28 +25,18 @@ def _roles(user, school_id) -> set[str]:
 
 
 def _can_manage_section(user, school_id, section: Section) -> bool:
-    if getattr(user, "is_superuser", False):
+    from .experience_access import is_leader, taught_sections
+    if is_leader(user, school_id):
         return True
-    roles = _roles(user, school_id)
-    if "ADMIN" in roles or "DIRECTOR" in roles:
-        return True
-    if "TEACHER" not in roles:
-        return False
-    staff = getattr(user, "staff", None)
-    if staff is None:
-        return False
-    return bool(
-        str(section.teacher_id or "") == str(user.id)
-        or TeacherAssignment.objects.filter(
-            school_id=school_id,
-            section=section,
-            staff=staff,
-        ).exists()
-    )
+    staff = getattr(user, 'staff', None)
+    return bool(staff and staff.school_id == school_id and staff.status == 'ACTIVE'
+                and _roles(user, school_id) & {'TEACHER', 'teacher'}
+                and taught_sections(user, school_id).filter(id=section.id).exists())
 
 
 def _serialize(assignment: Assignment) -> dict:
     return {
+        **{key: getattr(assignment, key) for key in ("purpose", "instructions", "success_criteria", "home_support")},
         "id": str(assignment.id),
         "name": assignment.name,
         "category_id": str(assignment.category_id),
@@ -65,7 +55,7 @@ def _positive_points(value) -> Decimal:
         points = Decimal(str(value))
     except (InvalidOperation, ValueError, TypeError):
         raise ValidationError("points_possible must be a valid number")
-    if not points.is_finite() or points <= 0:
+    if not points.is_finite() or points <= 0 or points > Decimal("99999.99") or points.as_tuple().exponent < -2:
         raise ValidationError("points_possible must be greater than 0")
     return points
 
@@ -75,7 +65,10 @@ def _optional_date(value, field_name):
         return None
     if hasattr(value, "isoformat") and not isinstance(value, str):
         return value
-    parsed = parse_date(str(value))
+    try:
+        parsed = parse_date(str(value))
+    except ValueError:
+        parsed = None
     if parsed is None:
         raise ValidationError(f"{field_name} must be a valid ISO date (YYYY-MM-DD)")
     return parsed
@@ -88,19 +81,25 @@ def assignment_list_create(request, section_id):
     section = get_object_or_404(Section, id=section_id, school_id=school_id)
 
     if request.method == "GET":
+        from .experience_access import accessible_enrollments
+        manager = _can_manage_section(request.user, school_id, section)
+        if not manager and not accessible_enrollments(request.user, school_id).filter(section=section).exists():
+            raise PermissionDenied("No relationship to this classroom.")
         assignments = (
             Assignment.objects.filter(section=section, school_id=school_id)
             .select_related("category")
             .order_by("category__sort_order", "due_date", "name")
         )
+        if not manager:
+            assignments = assignments.filter(is_published=True)
         return Response({"assignments": [_serialize(row) for row in assignments]})
 
     if not _can_manage_section(request.user, school_id, section):
         raise PermissionDenied("Only school leaders or teachers assigned to this section can create assignments")
 
     name = str(request.data.get("name") or "").strip()
-    if not name:
-        raise ValidationError("name is required")
+    if not name or len(name) > 120:
+        raise ValidationError("name is required and must be at most 120 characters")
     category_id = request.data.get("category_id")
     if not category_id:
         raise ValidationError("category_id is required")
@@ -110,7 +109,11 @@ def assignment_list_create(request, section_id):
         section=section,
         school_id=school_id,
     )
+    details = _details(request.data)
+    if Assignment.objects.filter(section=section, name=name).exists():
+        raise ValidationError("An assignment with this name already exists in the section.")
     assignment = Assignment.objects.create(
+        **details,
         school_id=school_id,
         section=section,
         category=category,
@@ -118,7 +121,7 @@ def assignment_list_create(request, section_id):
         points_possible=_positive_points(request.data.get("points_possible", "0")),
         due_date=_optional_date(request.data.get("due_date"), "due_date"),
         assigned_date=_optional_date(request.data.get("assigned_date"), "assigned_date"),
-        is_published=bool(request.data.get("is_published", True)),
+        is_published=_published(request.data.get("is_published", True)),
     )
     return Response(_serialize(assignment), status=status.HTTP_201_CREATED)
 
@@ -136,6 +139,8 @@ def assignment_update_delete(request, assignment_id):
         raise PermissionDenied("Only school leaders or teachers assigned to this section can modify assignments")
 
     if request.method == "DELETE":
+        if assignment.submissions.exists() or assignment.grade_entries.exists():
+            return Response({"detail": "Assignment has student evidence and cannot be deleted."}, status=409)
         assignment.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -158,6 +163,65 @@ def assignment_update_delete(request, assignment_id):
     if "assigned_date" in request.data:
         assignment.assigned_date = _optional_date(request.data.get("assigned_date"), "assigned_date")
     if "is_published" in request.data:
-        assignment.is_published = bool(request.data.get("is_published"))
+        assignment.is_published = _published(request.data.get("is_published"))
+    for key, value in _details(request.data).items():
+        setattr(assignment, key, value)
     assignment.save()
     return Response(_serialize(assignment))
+
+
+def _details(payload):
+    result = {}
+    for key in ("purpose", "instructions", "success_criteria", "home_support"):
+        if key in payload:
+            value = payload[key]
+            if not isinstance(value, str) or len(value) > 20000:
+                raise ValidationError(f"{key} must be text of at most 20000 characters.")
+            result[key] = value
+    return result
+
+
+def _published(value):
+    if not isinstance(value, bool):
+        raise ValidationError("is_published must be true or false.")
+    return value
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def assignment_copy(request, assignment_id):
+    from django.db import transaction
+    school_id = get_request_school_id(request)
+    source = get_object_or_404(Assignment, id=assignment_id, school_id=school_id)
+    if not _can_manage_section(request.user, school_id, source.section):
+        raise PermissionDenied('Source section access required.')
+    targets = request.data.get('targets')
+    name = request.data.get('name', source.name)
+    if not isinstance(name, str) or not name.strip() or len(name) > 120:
+        raise ValidationError('A name of at most 120 characters is required.')
+    if not isinstance(targets, list) or not 1 <= len(targets) <= 20:
+        raise ValidationError('Choose 1 to 20 target sections.')
+    prepared, seen = [], set()
+    for target in targets:
+        if not isinstance(target, dict):
+            raise ValidationError('Each target must be an object.')
+        from .submission_workflow_views import _uuid
+        section = get_object_or_404(Section, id=_uuid(target.get('section_id'), 'section_id'), school_id=school_id)
+        if section.id in seen or not _can_manage_section(request.user, school_id, section):
+            raise PermissionDenied('Each target must be unique and authorized.')
+        seen.add(section.id)
+        category = get_object_or_404(AssignmentCategory, id=_uuid(target.get('category_id'), 'category_id'),
+                                     section=section, school_id=school_id, is_active=True)
+        due = _optional_date(target.get('due_date', source.due_date), 'due_date')
+        prepared.append((section, category, due))
+    with transaction.atomic():
+        for section, _, _ in prepared:
+            Section.objects.select_for_update().get(id=section.id)
+            if Assignment.objects.filter(section=section, name=name.strip()).exists():
+                raise ValidationError('An assignment with this name already exists in a target section.')
+        copies = [Assignment.objects.create(school_id=school_id, section=section, category=category,
+                    name=name.strip(), due_date=due, points_possible=source.points_possible,
+                    purpose=source.purpose, instructions=source.instructions,
+                    success_criteria=source.success_criteria, home_support=source.home_support,
+                    is_published=False) for section, category, due in prepared]
+    return Response({'assignments': [_serialize(a) for a in copies]}, status=201)
