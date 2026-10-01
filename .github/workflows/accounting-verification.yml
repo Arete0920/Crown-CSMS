@@ -35,6 +35,7 @@ jobs:
       - name: Run Accounting Tests
         run: |
           python backend/manage.py test apps.accounting
+          python -m pytest -q backend/apps/accounting/tests
 
       - name: Prevent Float Usage
         run: |
