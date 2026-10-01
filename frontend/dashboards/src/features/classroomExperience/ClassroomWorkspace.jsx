@@ -1,3 +1,4 @@
+import ClassroomFamily from './ClassroomFamily.jsx';
 import ClassroomRecords from './ClassroomRecords.jsx';
 import AssignmentReuse from './AssignmentReuse.jsx';
 import AssignmentWork from './AssignmentWork.jsx';
@@ -86,7 +87,8 @@ export default function ClassroomWorkspace({ audience }) {
           {openWork === `${a.id}-${a.student_id || 'section'}` && <AssignmentWork assignment={a} audience={audience} students={data.students} />}
           <Typography variant="body2">{a.category} · {a.points_possible} possible points</Typography>
         </CardContent></Card>)}</Stack>
-        <ClassroomRecords audience={audience} sections={data.sections} students={data.students} assignments={data.assignments} />
+        {audience !== 'student' && <ClassroomFamily audience={audience} sections={data.sections} students={data.students} assignments={data.assignments} />}
+      <ClassroomRecords audience={audience} sections={data.sections} students={data.students} assignments={data.assignments} />
         <Typography component="h3" variant="h6">Learning and absence recovery</Typography>
         {!data.lesson_plans.length && <Typography>No lesson plans recorded in this window.</Typography>}
         {data.lesson_plans.map((p) => <Card key={p.id} sx={{ my: 1 }}><CardContent>

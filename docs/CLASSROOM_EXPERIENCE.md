@@ -23,7 +23,7 @@ All 60 requests are accepted requirements. Existing models or screens alone do n
 | T08 | Formative assessment checks | Implemented: teacher understanding checks, private responses and feedback. |
 | T09 | Flexible instructional groups | Implemented: enrolled groups, roles and milestone records. |
 | T10 | Feedback and reusable rubrics | Tracked requirement; verify authorized workflow before marking complete. |
-| T11 | Contextual parent communication | Tracked requirement; verify authorized workflow before marking complete. |
+| T11 | Contextual parent communication | Implemented: contextual designated-guardian conversations, concern state and resolution notes. |
 | T12 | Behavior and restorative follow-through | Tracked requirement; verify authorized workflow before marking complete. |
 | T13 | Expiring substitute access and packet | Tracked requirement; verify authorized workflow before marking complete. |
 | T14 | Emergency roster accountability | Tracked requirement; verify authorized workflow before marking complete. |
@@ -44,18 +44,18 @@ All 60 requests are accepted requirements. Existing models or screens alone do n
 | S14 | Absence recovery plans | Tracked requirement; verify authorized workflow before marking complete. |
 | S15 | Worldview and service connections | Tracked requirement; verify authorized workflow before marking complete. |
 | P01 | Verified children classroom overview | Implemented: canonical guardian accounts and active household scope; custody control pending. |
-| P02 | Useful weekly classroom digest | Tracked requirement; verify authorized workflow before marking complete. |
+| P02 | Useful weekly classroom digest | Implemented: live seven-day digest and deduplicated weekly notices; deployment scheduler required. |
 | P03 | Published assignment visibility | Implemented: published assignment directions and criteria; drafts withheld. |
 | P04 | Accurate submission and grading status | Implemented: submission receipts and grading status, no inferred missing or zero. |
 | P05 | Understandable grades and next steps | Tracked requirement; verify authorized workflow before marking complete. |
-| P06 | Contextual teacher conversations | Tracked requirement; verify authorized workflow before marking complete. |
-| P07 | Notification preferences and deduplication | Tracked requirement; verify authorized workflow before marking complete. |
+| P06 | Contextual teacher conversations | Implemented: designated-guardian conversations with assignment context and immutable message history. |
+| P07 | Notification preferences and deduplication | Implemented: validated preferences, quiet hours, source-key deduplication and in-app notices; recurring command needs deployment scheduling. |
 | P08 | Absence explanation and recovery | Tracked requirement; verify authorized workflow before marking complete. |
-| P09 | Conference scheduling and follow-up | Tracked requirement; verify authorized workflow before marking complete. |
+| P09 | Conference scheduling and follow-up | Implemented: conflict-checked availability, locked bookings, cancellations and follow-up; deployment scheduler required for reminders. |
 | P10 | Teacher-approved support at home | Implemented: assignment home support and classroom home-support records. |
 | P11 | Positive observations and balanced updates | Implemented: individual positive observations with family visibility. |
 | P12 | Authorized student support plans | Tracked requirement; verify authorized workflow before marking complete. |
-| P13 | Classroom consent and permissions | Tracked requirement; verify authorized workflow before marking complete. |
+| P13 | Classroom consent and permissions | Implemented: staff-issued permission requests and designated-guardian consent/decline evidence. |
 | P14 | Shared portfolios | Implemented: student-selected family portfolio visibility. |
 | P15 | Family mission and service partnership | Tracked requirement; verify authorized workflow before marking complete. |
 | A01 | Classroom operational health | Tracked requirement; verify authorized workflow before marking complete. |
@@ -70,7 +70,7 @@ All 60 requests are accepted requirements. Existing models or screens alone do n
 | A10 | Class size and staffing planning | Tracked requirement; verify authorized workflow before marking complete. |
 | A11 | Instructional resource use and cost | Partial: resource references and recorded cost; usage reporting pending. |
 | A12 | Classroom climate and restorative outcomes | Tracked requirement; verify authorized workflow before marking complete. |
-| A13 | Family concern resolution | Tracked requirement; verify authorized workflow before marking complete. |
+| A13 | Family concern resolution | Implemented: school-authorized concern resolution, preserved messages and disclosure restrictions. |
 | A14 | Mission and Portrait evidence | Tracked requirement; verify authorized workflow before marking complete. |
 | A15 | Board aggregate reporting and provenance | Implemented: dated aggregate section facts and definitions; expanded oversight reports pending. |
 
@@ -98,3 +98,11 @@ Legacy submission mutation routes cannot edit or delete submission evidence. Gra
 Classroom records support teaching updates, home support, practice, private understanding checks, enrolled groups with roles and milestones, positive observations, accommodations, dated support reviews, help requests, goals, reflections and portfolio links. Staff actions require follow-through notes. Creation and actions use retry keys; actions require expected versions. Answers and answer-history are scoped to the responding student and their authorized guardian; peers cannot read them. Private reflections remain private even from assigned teachers. School leaders alone may share support plans with families. Absence explanations are communication records, not attendance corrections. Coaching is leadership-only. Resource costs and interruption minutes are recorded evidence, not measures of effectiveness.
 
 POST/GET `/api/v1/academics/classroom/records/` and POST `records/<id>/actions/` enforce the same canonical classroom relationships. Events cannot be edited or deleted through model interfaces. Existing academic work remains the portfolio authority. Classroom support records describe instructional implementation and do not replace clinical records or the existing signals intervention case system. No external delivery is implied by a saved record.
+
+## Family partnership batch
+
+Designated-guardian conversations preserve message history and published assignment context. Staff record resolution notes; guardians can reply but cannot close concerns on behalf of staff. Staff issue consent requests and only the designated guardian can agree or decline, with timestamped immutable responses. Conferences use staff availability, collision checks, locked booking, retry-safe confirmation, cancellation notes and follow-up messages.
+
+Leadership can record a verified classroom disclosure restriction or restoration per student/guardian. Restricted guardians are excluded from the canonical classroom relationship helper, workspace, collaboration records, assignment work and family threads. This is an explicit classroom disclosure control, not a determination of legal custody and not a claim that every legacy school module enforces it.
+
+Notification preferences validate timezone, digest weekday and quiet hours. In-app thread notices use unique source keys; disabled preferences suppress notices and quiet hours defer availability. The management command `prepare_classroom_digests` prepares deduplicated weekly digest notices and upcoming conference reminders. Deployment must schedule this command periodically before recurring notices are operational. No email/SMS provider is activated. The on-demand seven-day digest always remains readable independently of notification preference.
