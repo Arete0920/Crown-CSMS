@@ -50,6 +50,7 @@ def test_family_summary_hides_drafts_and_withholds_conflicts(classroom):
 def test_primary_teacher_grade_writes_keep_action_permission_gate(classroom):
     from core.models import CrownPermission, RolePermission
     c=classroom
+    RolePermission.objects.filter(role_code='TEACHER',permission__code='gradebook.edit').delete()
     client=APIClient();client.force_authenticate(c[1])
     url=f'/api/v1/gradebook/sections/{c[5].id}/assignments/{c[8].id}/grades/upsert/'
     payload={'grades':[{'student_id':str(c[4].id),'points_earned':0}]}
