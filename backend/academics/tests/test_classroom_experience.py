@@ -3,7 +3,7 @@ from decimal import Decimal
 import pytest
 from django.utils import timezone
 from rest_framework.test import APIClient
-from core.models import School, UserAccount, UserRole
+from core.models import School, Staff, UserAccount, UserRole
 from households.models import Guardian, Household, Student
 from academics.models import Assignment, AssignmentCategory, Course, Enrollment, LessonPlan, Section, Submission
 from gradebook.models import GradeEntry
@@ -16,6 +16,8 @@ URL = '/api/v1/academics/classroom/workspace/'
 def classroom():
     school = School.objects.create(name='Classroom school')
     teacher = UserAccount.objects.create_user(username='classroom-teacher', email='teacher@example.com', school=school)
+    teacher.staff = Staff.objects.create(school=school, first_name='Teacher', last_name='One', email=teacher.email, role_type='TEACHER', status='ACTIVE')
+    teacher.save(update_fields=['staff'])
     UserRole.objects.create(user=teacher, school=school, role_code='TEACHER')
     parent = UserAccount.objects.create_user(username='classroom-parent', school=school, email='parent@example.com')
     student_account = UserAccount.objects.create_user(username='classroom-student', email='student@example.com', school=school)

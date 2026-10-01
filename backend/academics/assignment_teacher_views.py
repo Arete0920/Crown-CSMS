@@ -26,7 +26,12 @@ def _roles(user, school_id) -> set[str]:
 
 def _can_manage_section(user, school_id, section: Section) -> bool:
     from .experience_access import is_leader, taught_sections
-    return is_leader(user, school_id) or taught_sections(user, school_id).filter(id=section.id).exists()
+    if is_leader(user, school_id):
+        return True
+    staff = getattr(user, 'staff', None)
+    return bool(staff and staff.school_id == school_id and staff.status == 'ACTIVE'
+                and _roles(user, school_id) & {'TEACHER', 'teacher'}
+                and taught_sections(user, school_id).filter(id=section.id).exists())
 
 
 def _serialize(assignment: Assignment) -> dict:
