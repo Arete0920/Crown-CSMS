@@ -150,7 +150,10 @@ def assignment_update_delete(request, assignment_id):
             raise ValidationError("name cannot be empty")
         assignment.name = name
     if "points_possible" in request.data:
-        assignment.points_possible = _positive_points(request.data.get("points_possible"))
+        points = _positive_points(request.data.get("points_possible"))
+        if points != assignment.points_possible and (assignment.submissions.filter(submitted_at__isnull=False).exists() or assignment.grade_entries.filter(points_earned__isnull=False).exists()):
+            return Response({'detail': 'Recorded student evidence fixes possible points. Reuse as a new assignment to change the denominator.'}, status=409)
+        assignment.points_possible = points
     if "category_id" in request.data:
         assignment.category = get_object_or_404(
             AssignmentCategory,

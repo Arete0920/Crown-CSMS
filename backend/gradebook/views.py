@@ -15,6 +15,7 @@ from households.scoping import get_request_school_id
 from crown_api.tenant_decorators import require_tenant
 
 from academics.models import Assignment, Enrollment, Section, TeacherAssignment
+from academics.experience_access import is_leader, taught_sections
 from academics.serializers import SectionSerializer, StudentSerializer
 from academics.views import PaginatedReadOnlyViewSet
 
@@ -86,16 +87,6 @@ def _role_codes(user, school_id) -> set[str]:
     )
 
 
-def _is_staffish(user, roles: set[str]) -> bool:
-    return bool(
-        getattr(user, "is_staff", False)
-        or getattr(user, "is_superuser", False)
-        or ("HEAD_OF_SCHOOL" in roles)
-        or ("ADMIN" in roles)
-        or ("DIRECTOR" in roles)
-    )
-
-
 def _sections_for_gradebook(request, school_id):
     user = getattr(request, "user", None)
     roles = _role_codes(user, school_id)
@@ -106,14 +97,14 @@ def _sections_for_gradebook(request, school_id):
         .annotate(roster_count=Count("enrollments", distinct=True))
     )
 
-    if _is_staffish(user, roles):
+    if is_leader(user, school_id):
         return qs
 
-    if "TEACHER" in roles:
+    if roles & {"TEACHER", "teacher"}:
         staff = getattr(user, "staff", None)
-        if not staff:
+        if not staff or staff.school_id != school_id or staff.status != "ACTIVE" or staff.role_type != "TEACHER":
             return qs.none()
-        return qs.filter(teacher_assignments__staff=staff).distinct()
+        return qs.filter(id__in=taught_sections(user, school_id)).distinct()
 
     raise PermissionDenied("Role not permitted for gradebook endpoints.")
 
@@ -338,16 +329,16 @@ def students_list(request):
 def section_drilldown(request, section_id):
     """
     GET /api/v1/gradebook/sections/<section_id>/drilldown/
-    
+
     Paginated drilldown rows for a section, filtered by bucket (missing|below_threshold|all).
-    
+
     Query params:
     - bucket: 'missing', 'below_threshold', or 'all' (default: 'all')
     - threshold: float (default: 70) – used only when bucket='below_threshold'
     - category_id: UUID (optional, currently not implemented)
     - limit: int (default: 25, max: 200)
     - offset: int (default: 0)
-    
+
     Response shape:
     {
       "section_id": "...",
@@ -381,7 +372,7 @@ def section_drilldown(request, section_id):
     bucket = (request.query_params.get("bucket") or "all").strip().lower()
     threshold = float(request.query_params.get("threshold") or 70)
     category_id = request.query_params.get("category_id")  # not used in MVP
-    
+
     try:
         limit = int(request.query_params.get("limit") or 25)
         offset = int(request.query_params.get("offset") or 0)
@@ -488,14 +479,14 @@ def section_drilldown(request, section_id):
 def update_grade_entry(request, entry_id):
     """
     PATCH /api/v1/gradebook/grade-entries/{entry_id}/
-    
+
     Update points_earned for a specific grade entry.
-    
+
     Tenant-scoped: must include X-School-Id header matching entry's school_id.
-    
+
     Request:
       {"points_earned": 95}
-    
+
     Returns updated entry or 400/403/404.
     """
     school_id = get_request_school_id(request, required=True)
