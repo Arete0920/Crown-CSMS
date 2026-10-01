@@ -1,3 +1,4 @@
+from .instruction_views import classroom_instruction
 from .operations_views import classroom_operations
 from .family_views import family_workspace
 from django.urls import include, path
@@ -84,6 +85,7 @@ from .submission_workflow_views import assignment_work
 from .collaboration_views import record_collection, record_action
 
 urlpatterns = [
+    path("academics/classroom/instruction/", classroom_instruction),
     path("academics/classroom/operations/", classroom_operations),
     path("academics/classroom/family/", family_workspace),
     path("academics/classroom/records/", record_collection, name="classroom-records"),

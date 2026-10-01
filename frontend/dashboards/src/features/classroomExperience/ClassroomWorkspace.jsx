@@ -1,3 +1,4 @@
+import ClassroomInstruction from './ClassroomInstruction.jsx';
 import ClassroomFamily from './ClassroomFamily.jsx';
 import ClassroomRecords from './ClassroomRecords.jsx';
 import AssignmentReuse from './AssignmentReuse.jsx';
@@ -79,6 +80,8 @@ export default function ClassroomWorkspace({ audience }) {
           <Typography>{a.course} · {a.due_date ? `Due ${a.due_date}` : 'Due date not set'}</Typography>
           {a.student_id && <Typography>{data.students.find((s) => s.id === a.student_id)?.first_name || 'Student'}</Typography>}
           <Typography>{statuses[a.state] || a.state}</Typography>
+          {a.makeup_instructions && <Typography>Makeup plan: {a.makeup_instructions}</Typography>}
+          {a.rubric && <details><summary>{a.rubric.title}</summary>{a.rubric.criteria.map((c) => <Box key={c.name}><Typography>{c.name}: {c.description}</Typography>{c.levels.map((v,i) => <Typography key={`${i}-${v}`} variant="body2">{i+1}. {v}</Typography>)}</Box>)}</details>}
           {a.submitted_at && <Typography>Submission recorded {new Date(a.submitted_at).toLocaleString()}</Typography>}
           {a.points_earned !== null && <Typography>Recorded points: {a.points_earned} / {a.points_possible}</Typography>}
           {['purpose', 'instructions', 'success_criteria', 'home_support'].map((key) => a[key] && <Typography key={key} sx={{ whiteSpace: 'pre-wrap' }}>{key.replaceAll('_', ' ')}: {a[key]}</Typography>)}
@@ -87,6 +90,7 @@ export default function ClassroomWorkspace({ audience }) {
           {openWork === `${a.id}-${a.student_id || 'section'}` && <AssignmentWork assignment={a} audience={audience} students={data.students} />}
           <Typography variant="body2">{a.category} · {a.points_possible} possible points</Typography>
         </CardContent></Card>)}</Stack>
+        <ClassroomInstruction audience={audience} sections={data.sections} students={data.students} assignments={data.assignments} />
         {audience !== 'student' && <ClassroomFamily audience={audience} sections={data.sections} students={data.students} assignments={data.assignments} />}
       <ClassroomRecords audience={audience} sections={data.sections} students={data.students} assignments={data.assignments} />
         <Typography component="h3" variant="h6">Learning and absence recovery</Typography>

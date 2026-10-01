@@ -223,5 +223,5 @@ def assignment_copy(request, assignment_id):
                     name=name.strip(), due_date=due, points_possible=source.points_possible,
                     purpose=source.purpose, instructions=source.instructions,
                     success_criteria=source.success_criteria, home_support=source.home_support,
-                    is_published=False) for section, category, due in prepared]
+                    classroom_rubric=source.classroom_rubric, is_published=False) for section, category, due in prepared]
     return Response({'assignments': [_serialize(a) for a in copies]}, status=201)

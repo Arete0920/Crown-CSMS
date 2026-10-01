@@ -15,14 +15,14 @@ All 60 requests are accepted requirements. Existing models or screens alone do n
 |---|---|---|
 | T01 | Daily classroom workspace | Implemented: assigned-section workspace; relationship and private-note tests. |
 | T02 | Fast audited attendance | Implemented: canonical roll call, mandatory new-workflow reasons, versions and immutable correction evidence; legacy writer also audited. |
-| T03 | Curriculum-linked reusable planning | Tracked requirement; verify authorized workflow before marking complete. |
-| T04 | Dependable gradebook and weighting | Tracked requirement; verify authorized workflow before marking complete. |
+| T03 | Curriculum-linked reusable planning | Implemented: curriculum objective links and authorized plan reuse with fresh delivery evidence; private notes not copied. |
+| T04 | Dependable gradebook and weighting | Strengthened: explicit grade-source conflicts and provisional weighted previews; authoritative report-card policies remain existing. |
 | T05 | Assignment publishing and reuse | Implemented: explicit publication and authorized draft copies; retry-safe student workflow. |
 | T06 | Actionable student support | Tracked requirement; verify authorized workflow before marking complete. |
 | T07 | Accommodation implementation reminders | Implemented: staff-only accommodation instructions, required review date and follow-through; deadline overrides pending. |
 | T08 | Formative assessment checks | Implemented: teacher understanding checks, private responses and feedback. |
 | T09 | Flexible instructional groups | Implemented: enrolled groups, roles and milestone records. |
-| T10 | Feedback and reusable rubrics | Tracked requirement; verify authorized workflow before marking complete. |
+| T10 | Feedback and reusable rubrics | Implemented: immutable reusable rubric criteria and rubric-based feedback templates with revision history. |
 | T11 | Contextual parent communication | Implemented: contextual designated-guardian conversations, concern state and resolution notes. |
 | T12 | Behavior and restorative follow-through | Tracked requirement; verify authorized workflow before marking complete. |
 | T13 | Expiring substitute access and packet | Implemented: staff-issued grant, maximum seven days, immediate revocation, per-request expiry and public lesson packet. |
@@ -31,26 +31,26 @@ All 60 requests are accepted requirements. Existing models or screens alone do n
 | S01 | My classroom workspace | Implemented: enrolled student workspace with live source and reporting window. |
 | S02 | Clear assignment directions and criteria | Implemented: assignment purpose, directions and success criteria. |
 | S03 | Persisted drafts and submission receipts | Implemented: versioned saved drafts and server-timestamped receipts. |
-| S04 | Cross-class workload and milestones | Tracked requirement; verify authorized workflow before marking complete. |
+| S04 | Cross-class workload and milestones | Implemented: cross-class dated assignments and group milestones; individualized deadlines are explicit. |
 | S05 | Understandable progress and missing/zero distinction | Implemented: recorded points, missing/awaiting grading states and explicit grade-source conflict. |
 | S06 | Private help requests | Implemented: staff-only help requests with acknowledgement, owner and closure history. |
 | S07 | Feedback response and preserved revisions | Implemented: teacher returns, student revisions and append-only evidence. |
-| S08 | Accessible learning materials | Tracked requirement; verify authorized workflow before marking complete. |
+| S08 | Accessible learning materials | Implemented: HTTPS resource references with accessible descriptions and alternative instructions. |
 | S09 | Teacher-approved lesson practice | Implemented: teacher-created practice with private student responses and feedback. |
 | S10 | Private understanding checks | Implemented: private understanding-check responses; peer-answer isolation tests. |
 | S11 | Group roles and contribution evidence | Implemented: roster-validated groups, roles, milestones and private contributions. |
 | S12 | Goals and reflection | Implemented: dated goals and private/shared reflections with explicit audience. |
 | S13 | Work portfolios | Implemented: portfolio reflections reference canonical published assignments. |
-| S14 | Absence recovery plans | Tracked requirement; verify authorized workflow before marking complete. |
+| S14 | Absence recovery plans | Implemented: public dated recovery lessons and student-specific makeup instructions/deadlines. |
 | S15 | Worldview and service connections | Tracked requirement; verify authorized workflow before marking complete. |
 | P01 | Verified children classroom overview | Implemented: canonical guardian accounts and active household scope; custody control pending. |
 | P02 | Useful weekly classroom digest | Implemented: live seven-day digest and deduplicated weekly notices; deployment scheduler required. |
 | P03 | Published assignment visibility | Implemented: published assignment directions and criteria; drafts withheld. |
 | P04 | Accurate submission and grading status | Implemented: submission receipts and grading status, no inferred missing or zero. |
-| P05 | Understandable grades and next steps | Tracked requirement; verify authorized workflow before marking complete. |
+| P05 | Understandable grades and next steps | Implemented: source-aware provisional category-weighted previews and explicit withheld states. |
 | P06 | Contextual teacher conversations | Implemented: designated-guardian conversations with assignment context and immutable message history. |
 | P07 | Notification preferences and deduplication | Implemented: validated preferences, quiet hours, source-key deduplication and in-app notices; recurring command needs deployment scheduling. |
-| P08 | Absence explanation and recovery | Tracked requirement; verify authorized workflow before marking complete. |
+| P08 | Absence explanation and recovery | Implemented: guardian absence explanations, dated recovery lessons and teacher-set makeup deadlines. |
 | P09 | Conference scheduling and follow-up | Implemented: conflict-checked availability, locked bookings, cancellations and follow-up; deployment scheduler required for reminders. |
 | P10 | Teacher-approved support at home | Implemented: assignment home support and classroom home-support records. |
 | P11 | Positive observations and balanced updates | Implemented: individual positive observations with family visibility. |
@@ -60,11 +60,11 @@ All 60 requests are accepted requirements. Existing models or screens alone do n
 | P15 | Family mission and service partnership | Tracked requirement; verify authorized workflow before marking complete. |
 | A01 | Classroom operational health | Tracked requirement; verify authorized workflow before marking complete. |
 | A02 | Curriculum coverage and alignment | Tracked requirement; verify authorized workflow before marking complete. |
-| A03 | Dated student growth evidence | Tracked requirement; verify authorized workflow before marking complete. |
+| A03 | Dated student growth evidence | Implemented: dated mastery evidence preserves earlier levels and teacher observations; no inferred growth score. |
 | A04 | Intervention ownership and reviews | Tracked requirement; verify authorized workflow before marking complete. |
 | A05 | Teacher workload visibility | Tracked requirement; verify authorized workflow before marking complete. |
 | A06 | Confidential observation and coaching | Partial: leadership-only coaching records with review dates; observation framework pending. |
-| A07 | Grading consistency and policies | Tracked requirement; verify authorized workflow before marking complete. |
+| A07 | Grading consistency and policies | Strengthened: immutable rubrics, weight-total checks and explicit evidence coverage/conflicts. |
 | A08 | Attendance and instructional time | Partial: dated canonical attendance audit and interruption evidence; leadership instructional-time aggregation follows. |
 | A09 | Support implementation oversight | Tracked requirement; verify authorized workflow before marking complete. |
 | A10 | Class size and staffing planning | Tracked requirement; verify authorized workflow before marking complete. |
@@ -114,3 +114,11 @@ The operations workspace uses existing canonical AttendanceRecord entries and ve
 School-authorized teachers/substitutes may receive section-specific access for 5 minutes–7 days. Active grants authorize only the operations packet, roster and roll call, not grades, private lesson notes or family conversations. Expiry and revocation are rechecked on each mutation. Packets show public dated lessons, student names, recorded attendance and intentionally supplied substitute instructions.
 
 Drill/incident rosters begin with every student unknown. Individual checks require verification notes. Sessions cannot complete while any student is missing or unknown. 'Accounted elsewhere' is roster evidence, not authorization for custody release. No emergency dispatch, medical record or external contact action is created.
+
+## Instruction and evidence batch
+
+Immutable reusable rubrics describe academic criteria and performance levels. Existing submitted evidence prevents replacing an assignment rubric. Teacher feedback can begin from the attached criteria without generating a grade. Plan reuse requires source and target authority, validates course links, omits private notes and resets actual delivery evidence. Curriculum tags reference existing PublisherObjective and Lesson records.
+
+Student-specific deadline adjustments require teacher authority, private reasons, student-visible makeup instructions, retry keys and expected versions. The student work endpoint applies the effective deadline when classifying submission timing. Shared workspace tasks use the adjusted date; private reasons are withheld. Resource references require HTTPS and include accessible descriptions and alternative instructions.
+
+Progress previews use the existing grade sources, active category weights and scored evidence only. Invalid weights, unscored categories or source conflicts withhold the weighted preview. Unscored work is not zero, and the preview does not replace report-card authority. Mastery writes update existing MasteryRecord rows and append dated evidence, preserving prior levels. Academic mastery evidence is not a personal faith or classroom quality score.
