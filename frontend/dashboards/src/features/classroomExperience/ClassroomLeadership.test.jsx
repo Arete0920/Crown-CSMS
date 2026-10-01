@@ -1,0 +1,27 @@
+import { afterEach, expect, it, vi } from 'vitest';
+import { cleanup, render, screen } from '@testing-library/react';
+import ClassroomLeadership from './ClassroomLeadership.jsx';
+import { crownApiClient as api } from '../../api/client';
+vi.mock('../../api/client', () => ({ crownApiClient: { get: vi.fn() } }));
+afterEach(() => { cleanup(); vi.clearAllMocks(); });
+const data = { source: 'live', from: '2026-10-01', to: '2026-10-01', generated_at: '2026-10-01T12:00:00Z', terms: [], summary: { recorded_actual_minutes: null, recorded_resource_cost_cents: 0, definitions: { minutes: 'Only recorded minutes are summed.' } }, provenance: ['academics.LessonPlanLesson'], limitations: [] };
+it('preserves unknown values and source definitions', async () => {
+  api.get.mockResolvedValue({ data });
+  render(<ClassroomLeadership audience="admin" />);
+  expect(await screen.findByText('No recorded value')).toBeTruthy();
+  expect(screen.getByText('0')).toBeTruthy();
+  expect(screen.getByText('Only recorded minutes are summed.')).toBeTruthy();
+});
+it('board UI does not render supplied individual staff rows', async () => {
+  api.get.mockResolvedValue({ data: { ...data, teacher_workload: [{ teacher_id: '1', teacher: 'Private teacher' }] } });
+  render(<ClassroomLeadership audience="board" />);
+  await screen.findByText('Only recorded minutes are summed.');
+  expect(screen.queryByText(/Private teacher/)).toBeNull();
+  expect(screen.queryByText('Recorded teacher workload')).toBeNull();
+});
+it('failed fetch does not render successful empty counts', async () => {
+  api.get.mockRejectedValue(new Error('offline'));
+  render(<ClassroomLeadership audience="board" />);
+  expect((await screen.findByRole('alert')).textContent).toContain('could not be loaded');
+  expect(screen.queryByText('Definitions and sources')).toBeNull();
+});
