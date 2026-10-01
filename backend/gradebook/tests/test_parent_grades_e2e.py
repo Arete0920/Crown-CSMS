@@ -17,7 +17,7 @@ from rest_framework.test import APIClient
 from academics.models import Course, Enrollment, Section
 from core.models import School
 from gradebook.models import GradeEntry
-from households.models import Household, Student
+from households.models import Household, Student, Guardian
 
 pytestmark = pytest.mark.django_db
 
@@ -152,6 +152,7 @@ def test_parent_grades_summary_payload_shape():
     school = _make_school()
     user = _make_user(school)
     student, section = _seed(school)
+    Guardian.objects.create(school_id=school.id, household=student.household, account=user, first_name="Parent", last_name="Demo")
 
     client = APIClient()
     client.force_authenticate(user=user)
@@ -181,7 +182,8 @@ def test_parent_grades_summary_payload_shape():
 
     # Grade computation: (90 + 78) / (100 + 100) = 84.0 → B
     assert course_data["overall_percentage"] == 84.0
-    assert course_data["letter_grade"] == "B"
+    assert course_data["letter_grade"] is None
+    assert "Provisional unweighted" in course_data["calculation"]
 
     assignments = course_data["assignments"]
     assert len(assignments) == 2
@@ -204,6 +206,7 @@ def test_parent_grades_summary_no_grades_returns_empty_courses():
         first_name="Empty",
         last_name="Student",
     )
+    Guardian.objects.create(school_id=school.id, household=hh, account=user, first_name="Parent", last_name="Demo")
     client = APIClient()
     client.force_authenticate(user=user)
     resp = client.get(

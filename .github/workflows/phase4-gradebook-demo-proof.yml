@@ -39,6 +39,8 @@ jobs:
       DJANGO_SECRET_KEY: ci-test-secret-key
       DATABASE_URL: postgresql://crown:crown_test_pw@localhost:5432/crown_test
       CROWN_DEMO_MODE: "true"
+      # Local CI server only; both the proof client and server require this key.
+      CROWN_DEMO_KEY: "ci-gradebook-${{ github.run_id }}"
 
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
@@ -87,4 +89,3 @@ jobs:
         run: |
           echo "---- django.log (last 200 lines) ----"
           tail -200 /tmp/django.log || true
-

@@ -28,7 +28,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from rest_framework.test import APIClient
 
-from core.models import School
+from core.models import School, UserRole
 
 User = get_user_model()
 
@@ -51,7 +51,7 @@ class _TenantBase(TestCase):
             password="p72pass",
             school_id=self.school_a.id,
         )
-        # Staff user â€” bypasses role checks; used for correct-school 200 tests.
+        # Staff flag alone does not authorize gradebook access.
         self.staff_a = User.objects.create_user(
             username="p72_staff_a",
             email="p72_staff_a@example.com",
@@ -117,14 +117,18 @@ class Phase72GradebookTenantTests(_TenantBase):
 
     def test_correct_school_returns_200(self):
         """
-        Staff user with correct school header â†’ HTTP 200.
-        Non-staff users without a gradebook role get 403 from _sections_for_gradebook().
-        Using is_staff=True user to confirm the endpoint itself is reachable without
-        the tenant guard firing.
+        Explicit school registrar role with the correct school header returns 200.
+        The positive tenant proof must also satisfy gradebook authorization.
         """
+        UserRole.objects.create(user=self.staff_a, school=self.school_a, role_code="REGISTRAR")
         self.client.force_authenticate(user=self.staff_a)
         resp = self.client.get(self.URL, HTTP_X_SCHOOL_ID=str(self.school_a.id))
         self.assertEqual(resp.status_code, 200)
+
+    def test_staff_flag_without_gradebook_role_returns_403(self):
+        self.client.force_authenticate(user=self.staff_a)
+        resp = self.client.get(self.URL, HTTP_X_SCHOOL_ID=str(self.school_a.id))
+        self.assertEqual(resp.status_code, 403)
 
     def test_wrong_school_nonstaff_returns_404(self):
         """
