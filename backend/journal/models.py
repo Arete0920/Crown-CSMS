@@ -215,10 +215,18 @@ class JournalLine(models.Model):
     credit = models.DecimalField(
         max_digits=14, decimal_places=2, default=Decimal("0.00")
     )
+    fund_code = models.CharField(max_length=32, blank=True, default="")
+    department_code = models.CharField(max_length=32, blank=True, default="")
+    program_code = models.CharField(max_length=32, blank=True, default="")
+    campus_code = models.CharField(max_length=32, blank=True, default="")
+    project_code = models.CharField(max_length=32, blank=True, default="")
 
     class Meta:
         db_table = "journal_line"
-        indexes = [models.Index(fields=["entry", "account"])]
+        indexes = [
+            models.Index(fields=["entry", "account"]),
+            models.Index(fields=["account", "fund_code"], name="journal_line_account_fund_idx"),
+        ]
 
     def clean(self):
         if self.debit < 0 or self.credit < 0:

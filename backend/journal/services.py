@@ -150,6 +150,11 @@ def post_journal_entry(
                 account=line["account"],
                 debit=line.get("debit", Decimal("0.00")),
                 credit=line.get("credit", Decimal("0.00")),
+                fund_code=line.get("fund_code", ""),
+                department_code=line.get("department_code", ""),
+                program_code=line.get("program_code", ""),
+                campus_code=line.get("campus_code", ""),
+                project_code=line.get("project_code", ""),
             )
 
         entry.locked = True
@@ -225,6 +230,11 @@ def create_reversal_entry(
                 account=line.account,
                 debit=line.credit,
                 credit=line.debit,
+                fund_code=line.fund_code,
+                department_code=line.department_code,
+                program_code=line.program_code,
+                campus_code=line.campus_code,
+                project_code=line.project_code,
             )
             for line in original_entry.lines.all()
         ]

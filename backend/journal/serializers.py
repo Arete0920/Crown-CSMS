@@ -12,7 +12,10 @@ class GLAccountSerializer(serializers.ModelSerializer):
 class JournalLineSerializer(serializers.ModelSerializer):
     class Meta:
         model = JournalLine
-        fields = ["id", "entry", "account", "debit", "credit"]
+        fields = [
+            "id", "entry", "account", "debit", "credit",
+            "fund_code", "department_code", "program_code", "campus_code", "project_code",
+        ]
         read_only_fields = ["id"]
 
 
