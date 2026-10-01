@@ -75,7 +75,10 @@ router.register(
     basename="transcript-entries",
 )
 
+from .experience_views import classroom_workspace
+
 urlpatterns = [
+    path("academics/classroom/workspace/", classroom_workspace, name="classroom-workspace"),
     path("", include(router.urls)),
     path("school/", SchoolProfileView.as_view(), name="school-profile"),
     path(

@@ -1,4 +1,4 @@
-﻿"""
+"""
 Lesson Plan API views.
 
 Endpoints:
@@ -109,16 +109,9 @@ def _can_write_lesson_resource(user, school_id, lesson: Lesson) -> bool:
     return bool(assignment and _can_write(user, school_id, assignment.section))
 
 
-def _can_read_private(user, school_id) -> bool:
-    """Teacher notes visibility: staff / admin / director."""
-    if getattr(user, "is_staff", False) or getattr(user, "is_superuser", False):
-        return True
-    if not getattr(user, "is_authenticated", False):
-        return False
-    roles = set(
-        UserRole.objects.filter(user_id=user.id, school_id=school_id).values_list("role_code", flat=True)
-    )
-    return bool(roles)
+def _can_read_private(user, school_id, section) -> bool:
+    from .experience_access import is_leader, taught_sections
+    return is_leader(user, school_id) or taught_sections(user, school_id).filter(id=section.id).exists()
 
 
 def _validate_lesson_ids_for_section(*, school_id, section, lesson_ids):
@@ -183,7 +176,7 @@ def lesson_plan_list_create(request, section_id):
 
         qs = qs.order_by("plan_date")
 
-        include_private = _can_read_private(request.user, school_id)
+        include_private = _can_read_private(request.user, school_id, section)
         ser_class = LessonPlanSerializer if include_private else LessonPlanPublicSerializer
         return Response(ser_class(qs, many=True).data)
 
@@ -234,7 +227,7 @@ def lesson_plan_detail(request, plan_id):
     plan = get_object_or_404(LessonPlan, id=plan_id, school_id=school_id)
 
     if request.method == "GET":
-        include_private = _can_read_private(request.user, school_id)
+        include_private = _can_read_private(request.user, school_id, plan.section)
         ser_class = LessonPlanSerializer if include_private else LessonPlanPublicSerializer
         return Response(ser_class(plan).data)
 
