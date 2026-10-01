@@ -6,7 +6,7 @@ from .experience_models import RevisionQuerySet
 
 KINDS = ['announcement', 'home_support', 'practice', 'formative_check', 'group_project', 'positive_observation',
          'accommodation', 'support_plan', 'service', 'resource', 'coaching', 'interruption',
-         'help_request', 'goal', 'reflection', 'portfolio', 'absence_explanation']
+         'help_request', 'goal', 'reflection', 'portfolio', 'absence_explanation', 'family_service']
 
 
 class ClassroomRecord(models.Model):
