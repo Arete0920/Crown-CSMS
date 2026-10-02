@@ -1,7 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
 
 /**
- * Crown2026 Playwright configuration.
+ * CROWN Playwright configuration.
  *
  * Local dev: `npm run test:e2e` (starts Vite via webServer automatically)
  * Headed:    `npm run test:e2e:headed`

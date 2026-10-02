@@ -5,10 +5,30 @@ on:
   push:
     branches:
       - release/accounting-foundation-stage1
+    paths:
+      - "backend/apps/accounting/**"
+      - "backend/finance/**"
+      - "backend/ledger/**"
+      - "backend/journal/**"
+      - "backend/crown_api/urls.py"
+      - "backend/crown_api/settings.py"
+      - "backend/requirements*.txt"
+      - "docs/accounting/**"
+      - ".github/workflows/accounting-verification.yml"
   pull_request:
     branches:
       - main
       - release/**
+    paths:
+      - "backend/apps/accounting/**"
+      - "backend/finance/**"
+      - "backend/ledger/**"
+      - "backend/journal/**"
+      - "backend/crown_api/urls.py"
+      - "backend/crown_api/settings.py"
+      - "backend/requirements*.txt"
+      - "docs/accounting/**"
+      - ".github/workflows/accounting-verification.yml"
 
 concurrency:
   group: accounting-verification-${{ github.workflow }}-${{ github.ref }}

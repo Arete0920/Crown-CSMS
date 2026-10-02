@@ -1,5 +1,5 @@
 """
-Tenant context resolution for Crown2026.
+Tenant context resolution for CROWN.
 
 Thin wrapper over the canonical households.scoping resolver.
 Provides a typed TenantContext dataclass for callers that want
