@@ -37,6 +37,8 @@ Approved explanatory methods may include:
 If SHAP is used, it should be treated as an implementation method, not the public product identity.
 
 ## Public Product Language Rule
+
+Follow the [public language policy](../governance/PUBLIC_LANGUAGE_POLICY.md).
 Do not market the product as:
 - “SHAP platform”
 - “black-box oracle”
