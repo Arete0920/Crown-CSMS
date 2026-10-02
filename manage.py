@@ -24,8 +24,7 @@ def main() -> None:
     if not backend_manage.exists():
         raise SystemExit(f"ERROR: expected backend/manage.py at: {backend_manage}")
 
-    # Prepend backend/ so `import crown_api.settings` resolves to backend/crown_api
-    # (and not the similarly-named repo-root `crown_api/` package).
+    # Prepend backend/ so `import crown_api.settings` resolves to backend/crown_api.
     sys.path.insert(0, str(backend_dir))
 
     # Ensure relative paths behave as if launched from repo root.

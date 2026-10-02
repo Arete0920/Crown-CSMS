@@ -1,5 +1,5 @@
 /**
- * authGuard.js  session-based auth probe for Crown2026.
+ * authGuard.js  session-based auth probe for CROWN.
  *
  * Calls /auth/me/ with credentials: "include" so the browser sends the
  * session cookie that /auth/microsoft/callback/ set on login.

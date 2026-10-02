@@ -1,5 +1,5 @@
 """
-Crown2026 – Dashboard Metrics Views
+CROWN – Dashboard Metrics Views
 Read-only JSON endpoints for the three persona dashboards.
 
 Endpoints registered in crown_api/api_urls.py:

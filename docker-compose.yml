@@ -1,4 +1,4 @@
-# Crown2026 – Docker Compose (dev + wallet service)
+# CROWN – Docker Compose (dev + wallet service)
 #
 # Usage:
 #   cp .env.example .env          # fill in real values
