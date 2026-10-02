@@ -4,7 +4,7 @@ from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.utils import timezone
 
-from apps.accounting.models.institutional import PayableBill, PurchaseOrder
+from apps.accounting.models.institutional import Budget, PayableBill, PurchaseOrder
 from journal.services import create_reversal_entry, post_journal_entry
 
 
@@ -67,6 +67,20 @@ def approve_purchase_order(*, purchase_order: PurchaseOrder, actor_id) -> Purcha
     purchase_order.approved_at = timezone.now()
     purchase_order.save(update_fields=["status", "approved_by", "approved_at", "updated_at"])
     return purchase_order
+
+
+@transaction.atomic
+def approve_budget(*, budget: Budget, actor_id) -> Budget:
+    budget = Budget.objects.select_for_update().get(pk=budget.pk)
+    if budget.status != Budget.Status.DRAFT:
+        raise ValidationError("Only draft budgets may be approved.")
+    if not budget.lines.exists():
+        raise ValidationError("Budget requires at least one line.")
+    budget.status = Budget.Status.APPROVED
+    budget.approved_by = actor_id
+    budget.approved_at = timezone.now()
+    budget.save(update_fields=["status", "approved_by", "approved_at", "updated_at"])
+    return budget
 
 
 @transaction.atomic

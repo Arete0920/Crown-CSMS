@@ -94,6 +94,8 @@ urlpatterns = [
     path("api/executive360/", include("executive360.api.urls")),
     # Finance & Tuition Management (Phase 8)
     path("api/finance/", include("finance.api_urls")),
+    # Institutional accounting / ERP-Lite business office
+    path("api/accounting/", include("apps.accounting.urls")),
     # Platform Operations (super-admin, cross-tenant, no X-School-ID required)
     path("api/platform/", include("platform_ops.urls")),
     # Subscriptions & Entitlements
