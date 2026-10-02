@@ -56,6 +56,10 @@ class Fund(TenantAccountingModel):
         constraints = [models.UniqueConstraint(fields=["tenant_id", "code"], name="accounting_fund_tenant_code_uq")]
         ordering = ["code"]
 
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        return super().save(*args, **kwargs)
+
     def __str__(self):
         return f"{self.code} - {self.name}"
 
@@ -76,6 +80,10 @@ class AccountingDimension(TenantAccountingModel):
         db_table = "accounting_dimension"
         constraints = [models.UniqueConstraint(fields=["tenant_id", "kind", "code"], name="accounting_dimension_tenant_kind_code_uq")]
         ordering = ["kind", "code"]
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        return super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.kind}:{self.code} - {self.name}"
@@ -174,6 +182,8 @@ class PurchaseOrderLine(TenantAccountingModel):
             raise ValidationError({"unit_cost": "Unit cost cannot be negative."})
 
     def save(self, *args, **kwargs):
+        if self.purchase_order.status != PurchaseOrder.Status.DRAFT:
+            raise ValidationError("Purchase order lines may only be changed while the order is draft.")
         self.full_clean()
         return super().save(*args, **kwargs)
 
@@ -251,6 +261,8 @@ class PayableBillLine(TenantAccountingModel):
             raise ValidationError({"amount": "Bill line amount must be positive."})
 
     def save(self, *args, **kwargs):
+        if self.bill.status != PayableBill.Status.DRAFT:
+            raise ValidationError("Payable bill lines may only be changed while the bill is draft.")
         self.full_clean()
         return super().save(*args, **kwargs)
 
@@ -309,5 +321,7 @@ class BudgetLine(TenantAccountingModel):
             raise ValidationError({"amount": "Budget amount cannot be negative."})
 
     def save(self, *args, **kwargs):
+        if self.budget.status != Budget.Status.DRAFT:
+            raise ValidationError("Budget lines may only be changed while the budget is draft.")
         self.full_clean()
         return super().save(*args, **kwargs)
