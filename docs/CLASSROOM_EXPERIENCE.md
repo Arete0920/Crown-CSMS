@@ -19,7 +19,7 @@ All 60 requests are accepted requirements. Existing models or screens alone do n
 | T04 | Dependable gradebook and weighting | Strengthened: explicit grade-source conflicts and provisional weighted previews; authoritative report-card policies remain existing. |
 | T05 | Assignment publishing and reuse | Implemented: explicit publication and authorized draft copies; retry-safe student workflow. |
 | T06 | Actionable student support | Implemented: canonical instructional intervention cases with account-linked owner, required review and versioned outcomes. |
-| T07 | Accommodation implementation reminders | Implemented: staff-only accommodation instructions, required review date and follow-through; deadline overrides pending. |
+| T07 | Accommodation implementation reminders | Implemented: staff-only accommodation instructions, required review and follow-through; individualized assignment deadlines require private reasons and student-visible recovery directions. |
 | T08 | Formative assessment checks | Implemented: teacher understanding checks, private responses and feedback. |
 | T09 | Flexible instructional groups | Implemented: enrolled groups, roles and milestone records. |
 | T10 | Feedback and reusable rubrics | Implemented: immutable reusable rubric criteria and rubric-based feedback templates with revision history. |
@@ -27,7 +27,7 @@ All 60 requests are accepted requirements. Existing models or screens alone do n
 | T12 | Behavior and restorative follow-through | Implemented: verified-identity restorative plans use canonical discipline incidents and immutable action evidence. |
 | T13 | Expiring substitute access and packet | Implemented: staff-issued grant, maximum seven days, immediate revocation, per-request expiry and public lesson packet. |
 | T14 | Emergency roster accountability | Implemented: printable roster and unknown-first drill/incident checks; unaccounted students prevent completion. |
-| T15 | Observable Christian formation | Tracked requirement; verify authorized workflow before marking complete. |
+| T15 | Observable Christian formation | Implemented: observable positive narratives and school-defined service/Portrait links; no personal faith score. |
 | S01 | My classroom workspace | Implemented: enrolled student workspace with live source and reporting window. |
 | S02 | Clear assignment directions and criteria | Implemented: assignment purpose, directions and success criteria. |
 | S03 | Persisted drafts and submission receipts | Implemented: versioned saved drafts and server-timestamped receipts. |
@@ -42,37 +42,37 @@ All 60 requests are accepted requirements. Existing models or screens alone do n
 | S12 | Goals and reflection | Implemented: dated goals and private/shared reflections with explicit audience. |
 | S13 | Work portfolios | Implemented: portfolio reflections reference canonical published assignments. |
 | S14 | Absence recovery plans | Implemented: public dated recovery lessons and student-specific makeup instructions/deadlines. |
-| S15 | Worldview and service connections | Tracked requirement; verify authorized workflow before marking complete. |
-| P01 | Verified children classroom overview | Implemented: canonical guardian accounts and active household scope; custody control pending. |
-| P02 | Useful weekly classroom digest | Implemented: live seven-day digest and deduplicated weekly notices; deployment scheduler required. |
+| S15 | Worldview and service connections | Implemented: school-defined Portrait and worldview links, Scripture references and private service responses. |
+| P01 | Verified children classroom overview | Implemented: canonical guardian accounts, active household scope and explicit classroom disclosure restrictions; no claim of system-wide custody enforcement. |
+| P02 | Useful weekly classroom digest | Implemented: live seven-day digest and deduplicated weekly notices; periodic task registered and real local worker execution tested; hosted deployment is a separate release check. |
 | P03 | Published assignment visibility | Implemented: published assignment directions and criteria; drafts withheld. |
 | P04 | Accurate submission and grading status | Implemented: submission receipts and grading status, no inferred missing or zero. |
 | P05 | Understandable grades and next steps | Implemented: source-aware provisional category-weighted previews and explicit withheld states. |
 | P06 | Contextual teacher conversations | Implemented: designated-guardian conversations with assignment context and immutable message history. |
-| P07 | Notification preferences and deduplication | Implemented: validated preferences, quiet hours, source-key deduplication and in-app notices; recurring command needs deployment scheduling. |
+| P07 | Notification preferences and deduplication | Implemented: validated preferences, quiet hours and deduplicated in-app notices; recurring task tested through a real local worker; hosted deployment is a separate release check. |
 | P08 | Absence explanation and recovery | Implemented: guardian absence explanations, dated recovery lessons and teacher-set makeup deadlines. |
-| P09 | Conference scheduling and follow-up | Implemented: conflict-checked availability, locked bookings, cancellations and follow-up; deployment scheduler required for reminders. |
+| P09 | Conference scheduling and follow-up | Implemented: availability, locked bookings, cancellations and follow-up; reminder task registered and worker execution tested; hosted deployment is a separate release check. |
 | P10 | Teacher-approved support at home | Implemented: assignment home support and classroom home-support records. |
 | P11 | Positive observations and balanced updates | Implemented: individual positive observations with family visibility. |
-| P12 | Authorized student support plans | Tracked requirement; verify authorized workflow before marking complete. |
+| P12 | Authorized student support plans | Implemented: only school leadership can explicitly share classroom support records with verified families; confidential clinical information remains outside this workflow. |
 | P13 | Classroom consent and permissions | Implemented: staff-issued permission requests and designated-guardian consent/decline evidence. |
 | P14 | Shared portfolios | Implemented: student-selected family portfolio visibility. |
-| P15 | Family mission and service partnership | Tracked requirement; verify authorized workflow before marking complete. |
-| A01 | Classroom operational health | Tracked requirement; verify authorized workflow before marking complete. |
-| A02 | Curriculum coverage and alignment | Tracked requirement; verify authorized workflow before marking complete. |
+| P15 | Family mission and service partnership | Implemented: verified guardian service participation and school-defined Portrait/worldview links. |
+| A01 | Classroom operational health | Implemented: dated classroom operation counts and clearly separated current support/staffing snapshots; no single quality score. |
+| A02 | Curriculum coverage and alignment | Implemented: recorded course objective inventory, deduplicated planned/confirmed-taught coverage and assignment alignment audit; empty inventories withhold percentages. |
 | A03 | Dated student growth evidence | Implemented: dated mastery evidence preserves earlier levels and teacher observations; no inferred growth score. |
 | A04 | Intervention ownership and reviews | Implemented: account-linked canonical case ownership, scheduled reviews and preserved follow-through; legacy integer owners remain explicitly unmapped. |
-| A05 | Teacher workload visibility | Tracked requirement; verify authorized workflow before marking complete. |
-| A06 | Confidential observation and coaching | Partial: leadership-only coaching records with review dates; observation framework pending. |
+| A05 | Teacher workload visibility | Implemented: deduplicated active primary/co-teacher workload, roster sizes and pending grading; no ranking. |
+| A06 | Confidential observation and coaching | Implemented: confidential coaching to one assigned active teacher, recipient acknowledgement and leadership-only resolution; validated narrative observations, no inferred rating. |
 | A07 | Grading consistency and policies | Strengthened: immutable rubrics, weight-total checks and explicit evidence coverage/conflicts. |
-| A08 | Attendance and instructional time | Partial: dated canonical attendance audit and interruption evidence; leadership instructional-time aggregation follows. |
-| A09 | Support implementation oversight | Tracked requirement; verify authorized workflow before marking complete. |
-| A10 | Class size and staffing planning | Tracked requirement; verify authorized workflow before marking complete. |
-| A11 | Instructional resource use and cost | Partial: resource references and recorded cost; usage reporting pending. |
+| A08 | Attendance and instructional time | Implemented: immutable section-day expected rosters, verified identity/status denominators and complete recorded-minute ratios; incomplete evidence withholds percentages. |
+| A09 | Support implementation oversight | Implemented: overdue accommodation and support-review inventory, verified case owners and follow-through. |
+| A10 | Class size and staffing planning | Implemented: current roster and verified staffing inventory with optional target-size scenario; room capacity, timetable and hiring feasibility NOT VERIFIED. |
+| A11 | Instructional resource use and cost | Implemented: declared resource costs and private student reflections; effectiveness is not inferred from usage. |
 | A12 | Classroom climate and restorative outcomes | Implemented: canonical restorative incidents, review dates and outcome notes; aggregate climate reporting follows. |
 | A13 | Family concern resolution | Implemented: school-authorized concern resolution, preserved messages and disclosure restrictions. |
-| A14 | Mission and Portrait evidence | Tracked requirement; verify authorized workflow before marking complete. |
-| A15 | Board aggregate reporting and provenance | Implemented: dated aggregate section facts and definitions; expanded oversight reports pending. |
+| A14 | Mission and Portrait evidence | Implemented: school-defined Portrait/worldview service links and aggregate participation evidence; no spiritual score. |
+| A15 | Board aggregate reporting and provenance | Implemented: dated aggregate reporting, current snapshot definitions and source provenance; confidential identifiers withheld. |
 
 ## Workspace contract
 
@@ -131,14 +131,32 @@ Restorative plans resolve the verified student identity before creating canonica
 
 ## Delivery status and aggregate oversight
 
-Implementation status in the register describes feature source and focused validation, not a claim that all sixty requirements are merged or deployed. Only PR44 is merged at this checkpoint; PR45 remains gated by exhaustive browser certification. Later feature branches remain pending exact-head CI and bounded merges.
+Implementation status in the register describes feature source and focused validation, not a claim that all sixty requirements are merged or deployed. Historical batch status has been superseded: classroom PRs through #53 are merged. Deployment remains NOT VERIFIED.
 
-Leadership reports now provide dated assignment, lesson delivery, academic mastery, declared resource cost, service participation and restorative activity counts, alongside explicitly labeled current support-review and family-concern snapshots. Administrators receive section and deduplicated primary/co-teacher workloads. Board responses contain aggregate counts and source definitions, without classroom identifiers, teacher names or confidential notes. Missing minutes and costs remain unknown. No teacher ranking, effectiveness score or personal faith score is inferred. Focused validation: five backend tests, three UI tests, production build and targeted lint passed. Capacity planning, confidential coaching, formation links and legacy gradebook hardening remain pending.
+Leadership reports now provide dated assignment, lesson delivery, academic mastery, declared resource cost, service participation and restorative activity counts, alongside explicitly labeled current support-review and family-concern snapshots. Administrators receive section and deduplicated primary/co-teacher workloads. Board responses contain aggregate counts and source definitions, without classroom identifiers, teacher names or confidential notes. Missing minutes and costs remain unknown. No teacher ranking, effectiveness score or personal faith score is inferred. Focused validation: five backend tests, three UI tests, production build and targeted lint passed. Confidential coaching, formation links and legacy gradebook hardening are merged; planning scenarios are described below.
 
 ## Gradebook access hardening
 
-The legacy student-grade summary now requires a verified student, guardian or classroom relationship and honors classroom disclosure restrictions. Family reads exclude linked unpublished assignments. Conflicting academic and gradebook entries withhold the affected score and aggregate. Unlinked legacy entries are labeled, and the recorded-points average is explicitly provisional; no fixed-scale letter grade is inferred. Gradebook reads and writes support primary and co-teachers with active staff profiles; grade writes retain the existing action-permission gate. Focused tests passed (20 related tests plus four access/write tests). A broader schema-synchronized run had 56 passes and three permission-seed failures, reproduced unchanged on the preceding branch; actual migrations and full exact-head CI remain required. This feature is pending merge and deployment.
+The legacy student-grade summary now requires a verified student, guardian or classroom relationship and honors classroom disclosure restrictions. Family reads exclude linked unpublished assignments. Conflicting academic and gradebook entries withhold the affected score and aggregate. Unlinked legacy entries are labeled, and the recorded-points average is explicitly provisional; no fixed-scale letter grade is inferred. Gradebook reads and writes support primary and co-teachers with active staff profiles; grade writes retain the existing action-permission gate. Focused tests passed (20 related tests plus four access/write tests). A broader schema-synchronized run had 56 passes and three permission-seed failures, reproduced unchanged on the preceding branch; actual migrations and full exact-head CI remain required. This feature is merged; deployment remains NOT VERIFIED.
 
 ## Formation partnership and confidential coaching
 
-School-defined Portrait domains and Biblical worldview priorities can be linked to service opportunities with a brief Scripture reference. Students record private participation reflections, and verified guardians can contribute family service participation for an enrolled child. These records are participation evidence, never a personal faith score. Leadership creates coaching for a specific active assigned teacher; other co-teachers and families cannot read it. The recipient can acknowledge with a next-step note; resolution remains with leadership. Resource reflections now use the existing private student-response workflow. Focused formation, collaboration and oversight validation: 22 backend tests passed; interface tests, build, lint and migration consistency remain recorded with this batch. PR45 is merged; later batches remain pending exact-head CI and merge.
+School-defined Portrait domains and Biblical worldview priorities can be linked to service opportunities with a brief Scripture reference. Students record private participation reflections, and verified guardians can contribute family service participation for an enrolled child. These records are participation evidence, never a personal faith score. Leadership creates coaching for a specific active assigned teacher; other co-teachers and families cannot read it. The recipient can acknowledge with a next-step note; resolution remains with leadership. Resource reflections now use the existing private student-response workflow. Focused formation, collaboration and oversight validation: 22 backend tests passed; interface tests, build, lint and migration consistency remain recorded with this batch. PRs #44–#53 are merged; deployment remains NOT VERIFIED.
+
+## Staffing planning and recurring notices
+
+Base: `89e3565da433d271b3d288e8e4f5e911f74cede3`. Decision owner: TC. Scope: current roster and verified staffing scenarios, periodic in-app notice preparation and register reconciliation. Rollback: revert this batch, removing the classroom beat entry. No enrollment, grade or attendance authority changes.
+
+The leadership report accepts optional `target_class_size` (1–1000). Current rosters determine sections above that target and the minimum additional sections under an even-split scenario. Staffing counts require active accounts, active school staff, teacher roles and canonical section assignments. Board reports retain aggregate counts only. Targets are planning inputs, not approved physical capacity; no timetable, hiring or budget feasibility is inferred.
+
+`academics.tasks.prepare_family_notices` is registered in the existing Celery beat schedule every fifteen minutes. It prepares the existing deduplicated, preference-aware digest and conference notices. A deployment must run Celery worker and beat with a functioning broker; registration alone does not prove delivery. The management command remains available for manual recovery. Failures propagate to task monitoring; no successful-empty fallback is supplied.
+
+Remaining acceptance gaps: complete objective coverage/alignment (A02), verified attendance/instructional-time denominators (A08), deployed notice execution, production migration and persona validation. All sixty are tracked; this register tracks repository implementation and records separate deployment verification.
+
+## Coverage, attendance denominators and runtime verification
+
+Course objective inventory is the denominator for recorded curriculum coverage. Repeated delivery links count once per section/objective. Published assignments are checked against the objective and its actual lesson/course. An empty recorded inventory withholds its percentage rather than claiming complete curriculum coverage.
+
+New attendance sessions snapshot the active roster and verified identity references on the day of roll call. The expectation cannot be replaced by later enrollment changes or retroactively reconstructed for legacy sessions. Missing expected rosters, identity evidence or attendance statuses withhold the audited-session presence rate. This rate covers recorded sessions, not all scheduled school days. Actual/planned instructional time requires complete recorded minutes and a positive planned total; recorded zero remains zero.
+
+A real local Celery worker executes the schedule's registered notice task twice, verifying persisted notice creation and duplicate suppression. The Classroom Verification workflow runs the complete classroom/backend persona suite against PostgreSQL with actual migrations. Board reports retain only aggregate source-defined counts and omit individual coverage rows and roster identifiers. No source test substitutes for production release acceptance.

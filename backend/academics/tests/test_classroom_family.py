@@ -145,3 +145,17 @@ def test_disabled_preferences_and_restrictions_hide_notices(classroom):
     assert request(classroom, **args).status_code == 200
     assert request(classroom, method='get').data['notices'] == []
     assert ClassroomFamilyNotice.objects.count() == 1
+
+
+def test_scheduled_notice_task_is_registered_and_deduplicates(classroom):
+    from django.conf import settings
+    from academics.tasks import prepare_family_notices
+    from academics.family_models import ClassroomNotificationPreference, ClassroomFamilyNotice
+    c = classroom
+    ClassroomNotificationPreference.objects.create(school_id=c[0].id, account=c[2], in_app=True,
+        digest_day=timezone.now().weekday(), timezone='UTC')
+    schedule = settings.CELERY_BEAT_SCHEDULE['classroom-family-notices-every-15-minutes']
+    assert schedule['task'] == prepare_family_notices.name
+    assert prepare_family_notices.run()['digests'] == 1
+    assert prepare_family_notices.run()['digests'] == 0
+    assert ClassroomFamilyNotice.objects.filter(source_key__startswith='digest:').count() == 1
