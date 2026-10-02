@@ -63,3 +63,9 @@ Use a reviewed sale/release SHA and retain source identity, workflow URLs, scann
 ## OWASP supplemental scan setup
 
 The manual **OWASP Buyer Dependency Evidence** workflow requires `NVD_API_KEY` as an Actions secret and `DEPENDENCY_CHECK_IMAGE` as an Actions variable containing a reviewed official `owasp/dependency-check@sha256:<digest>` image. It records tool version, image digest and source SHA, scans backend plus both Node lockfiles, retains JSON/HTML, and rejects findings at CVSS 7 or higher. Missing configuration fails explicitly. This workflow has not run against an NVD-backed database and establishes no clearance. Python support is experimental; retain pip-audit and npm audit as complementary checks. See [OWASP documentation](https://dependency-check.github.io/DependencyCheck/) and [NVD API key registration](https://nvd.nist.gov/developers/request-an-api-key).
+
+## Verified follow-up findings
+
+At PR head `274c1acbb1739c50b96759e1678bff4dc3d52592`, retained CodeQL artifacts from run `37018754230` contain zero Python and zero JavaScript results. This closes the observed crawler finding for that scanned source; it does not clear historic secrets or dependencies. Node license inventories report 79 Wallet and 415 frontend locked packages, with no missing reported license labels. Frontend includes MPL-2.0 and CC-BY-4.0; node-forge offers `(BSD-3-Clause OR GPL-2.0)`. Review applicable obligations and document license selection; do not equate labels with legal clearance.
+
+The previous Dependency Review job only printed that review was unavailable and exited successfully. It is replaced with GitHub's pinned review action at a high-severity failure threshold, with no skip-success fallback. Dependency-graph access failures must remain visible. SBOM generation now includes Wallet. The OWASP and Sonar workflows remain unconfigured/unexecuted; Azure remains assigned to the owner. New checks must be read against the updated PR head.
