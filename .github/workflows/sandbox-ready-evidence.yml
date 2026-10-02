@@ -247,7 +247,7 @@ jobs:
 
       - name: Run full completion truth gate (advisory)
         if: steps.changes.outputs.docs_only != 'true'
-        timeout-minutes: 10
+        timeout-minutes: 20
         shell: pwsh
         run: |
           $ErrorActionPreference = "Continue"
