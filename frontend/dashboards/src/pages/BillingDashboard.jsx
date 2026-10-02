@@ -2,7 +2,7 @@
 import { getDashboardTemplate } from '../config/dashboardTemplates/index.js';
 
 /*
-  Crown2026 ? Billing Dashboard (0101 UI)
+  CROWN ? Billing Dashboard (0101 UI)
   - Export Center for 0093?0096
   - Manual Record Payment (0102)
   - Open invoice lookup (0102)

@@ -5,6 +5,7 @@ on:
     paths:
       - backend/**
       - frontend/dashboards/**
+      - services/wallet/apple-pass-service/**
       - .github/workflows/license-audit.yml
   push:
     branches:
@@ -12,6 +13,7 @@ on:
     paths:
       - backend/**
       - frontend/dashboards/**
+      - services/wallet/apple-pass-service/**
       - .github/workflows/license-audit.yml
 
 permissions:
@@ -54,9 +56,13 @@ jobs:
   node-licenses:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        directory: [frontend/dashboards, services/wallet/apple-pass-service]
     defaults:
       run:
-        working-directory: frontend/dashboards
+        working-directory: ${{ matrix.directory }}
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
@@ -64,18 +70,34 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: "20"
+          node-version: "24"
           cache: npm
-          cache-dependency-path: frontend/dashboards/package-lock.json
+          cache-dependency-path: ${{ matrix.directory }}/package-lock.json
 
       - name: Install dependencies
         run: npm ci
 
       - name: Export Node license report
-        run: npx --yes license-checker --json --out node-licenses.json
+        shell: python
+        run: |
+          import json
+          from pathlib import Path
+          lock = json.loads(Path('package-lock.json').read_text())
+          packages = lock.get('packages')
+          if not isinstance(packages, dict) or len(packages) < 2:
+              raise SystemExit('Missing dependency license inventory')
+          report = [{'path': path, 'version': value.get('version'),
+                     'license': value.get('license', 'UNKNOWN'),
+                     'resolved': value.get('resolved'), 'integrity': value.get('integrity')}
+                    for path, value in packages.items() if path]
+          Path('node-licenses.json').write_text(json.dumps(report, indent=2))
+          print('Inventory only; legal review required. Unknown licenses:',
+                sum(row['license'] == 'UNKNOWN' for row in report))
 
       - name: Upload Node license artifact
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: node-license-report-${{ github.run_id }}
-          path: frontend/dashboards/node-licenses.json
+          name: node-license-report-${{ strategy.job-index }}-${{ github.sha }}
+          path: ${{ matrix.directory }}/node-licenses.json
+          if-no-files-found: error
+          retention-days: 30

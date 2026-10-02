@@ -1,0 +1,61 @@
+name: OWASP Buyer Dependency Evidence
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: owasp-buyer-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  dependency-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout exact source
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+        with:
+          persist-credentials: false
+      - name: Validate scanner provenance and advisory access
+        env:
+          SCANNER_IMAGE: ${{ vars.DEPENDENCY_CHECK_IMAGE }}
+          NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
+        shell: python
+        run: |
+          import os, re
+          if not re.fullmatch(r'owasp/dependency-check@sha256:[0-9a-f]{64}', os.environ.get('SCANNER_IMAGE', '')):
+              raise SystemExit('BLOCKED: DEPENDENCY_CHECK_IMAGE must pin the official image digest')
+          if not os.environ.get('NVD_API_KEY'):
+              raise SystemExit('BLOCKED: NVD_API_KEY is required for the advisory database')
+      - name: Scan backend manifests and both locked Node applications
+        env:
+          SCANNER_IMAGE: ${{ vars.DEPENDENCY_CHECK_IMAGE }}
+          NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p dependency-check-reports
+          git rev-parse HEAD > dependency-check-reports/source-sha.txt
+          printf '%s\n' "$SCANNER_IMAGE" > dependency-check-reports/scanner-image.txt
+          docker run --rm --entrypoint /usr/share/dependency-check/bin/dependency-check.sh \
+            "$SCANNER_IMAGE" --version > dependency-check-reports/tool-version.txt
+          docker run --rm --user "$(id -u):$(id -g)" \
+            -v "$PWD:/src:ro" -v "$PWD/dependency-check-reports:/report" \
+            "$SCANNER_IMAGE" --project CROWN --enableExperimental \
+            --scan /src/backend --scan /src/frontend/dashboards/package-lock.json \
+            --scan /src/services/wallet/apple-pass-service/package-lock.json \
+            --data /tmp/crown-dependency-data --out /report --format JSON --format HTML --failOnCVSS 7 \
+            --nvdApiKey "$NVD_API_KEY"
+          test -s dependency-check-reports/dependency-check-report.json
+          test -s dependency-check-reports/dependency-check-report.html
+      - name: Retain advisory evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: owasp-dependency-check-${{ github.sha }}
+          path: dependency-check-reports/
+          if-no-files-found: error
+          retention-days: 30

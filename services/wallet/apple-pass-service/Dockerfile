@@ -4,8 +4,8 @@ LABEL maintainer="Crown Engineering"
 WORKDIR /app
 
 # Install dependencies first (cache layer)
-COPY package.json ./
-RUN npm install --omit=dev
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev --ignore-scripts
 
 # App source
 COPY server.js ./

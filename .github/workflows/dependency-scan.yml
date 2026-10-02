@@ -47,10 +47,6 @@ jobs:
               result = subprocess.run(
                   [
                       "pip-audit",
-                      "--ignore-vuln",
-                      "PYSEC-2025-183",
-                      "--ignore-vuln",
-                      "PYSEC-2024-271",
                       "-r",
                       str(req),
                       "-f",
