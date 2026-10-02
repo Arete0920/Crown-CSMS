@@ -1,0 +1,129 @@
+name: Azure Classroom Release Preflight
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'scripts/ops/azure_classroom_preflight.py'
+      - 'scripts/ops/test_azure_classroom_preflight.py'
+      - '.github/workflows/azure-classroom-preflight.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/ops/azure_classroom_preflight.py'
+      - 'scripts/ops/test_azure_classroom_preflight.py'
+      - '.github/workflows/azure-classroom-preflight.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: azure-classroom-preflight-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  collector-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout preflight source
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Set up preflight Python
+        uses: actions/setup-python@7f4fc3e22c37d6ff65e88745f38bd3157c663f7c
+        with:
+          python-version: '3.12'
+      - name: Verify read-only and withheld-release contracts
+        run: python -m unittest discover -s scripts/ops -p test_azure_classroom_preflight.py -v
+
+  azure-inventory:
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
+    needs: collector-tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: production
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout reviewed main preflight
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+        with:
+          ref: ${{ github.sha }}
+      - name: Validate existing Azure authentication configuration
+        id: auth
+        shell: bash
+        env:
+          AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, os, re
+          raw = os.environ.get('AZURE_CREDENTIALS', '')
+          guid = re.compile(r'[0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}')
+          if raw:
+              try:
+                  data = json.loads(raw)
+              except ValueError:
+                  raise SystemExit('BLOCKED: Azure credentials JSON is invalid.') from None
+              if not isinstance(data, dict) or not data.get('clientSecret'):
+                  raise SystemExit('BLOCKED: Azure credentials are incomplete.')
+              values = [data.get(k, '') for k in ('clientId', 'tenantId', 'subscriptionId')]
+              mode = 'sp'
+          else:
+              values = [os.environ.get(k, '') for k in
+                        ('AZURE_CLIENT_ID', 'AZURE_TENANT_ID', 'AZURE_SUBSCRIPTION_ID')]
+              mode = 'oidc'
+          if not all(isinstance(v, str) and guid.fullmatch(v) for v in values):
+              raise SystemExit('BLOCKED: Azure authentication IDs are missing or invalid.')
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              output.write(f'mode={mode}\n')
+          PY
+      - name: Azure preflight service principal login
+        if: steps.auth.outputs.mode == 'sp'
+        uses: azure/login@a457da9ea143d694b1b9c7c869ebb04ebe844ef5
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+      - name: Azure preflight federated login
+        if: steps.auth.outputs.mode == 'oidc'
+        uses: azure/login@a457da9ea143d694b1b9c7c869ebb04ebe844ef5
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - name: Collect scoped Azure inventory without mutation
+        shell: bash
+        env:
+          EXPECTED_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          subscription="$(az account show --query id --output tsv --only-show-errors)"
+          test -n "$subscription"
+          python3 scripts/ops/azure_classroom_preflight.py \
+            --subscription "$subscription" \
+            --resource-group crown-rg \
+            --api-app crown-api-prod \
+            --expected-sha "$EXPECTED_SHA" > azure-classroom-preflight.json
+      - name: Retain Azure inventory or blocked evidence
+        if: always() && hashFiles('azure-classroom-preflight.json') != ''
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: azure-classroom-preflight-${{ github.sha }}
+          path: azure-classroom-preflight.json
+          retention-days: 7
+          if-no-files-found: error
+      - name: Record preflight release boundary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## Azure classroom preflight'
+            echo '- This job collects inventory only.'
+            echo '- Production deployment and classroom runtime remain NOT VERIFIED.'
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Clear Azure preflight session
+        if: always()
+        run: az logout
