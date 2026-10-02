@@ -247,6 +247,7 @@ jobs:
 
       - name: Run full completion truth gate (advisory)
         if: steps.changes.outputs.docs_only != 'true'
+        continue-on-error: true
         timeout-minutes: 10
         shell: pwsh
         run: |
