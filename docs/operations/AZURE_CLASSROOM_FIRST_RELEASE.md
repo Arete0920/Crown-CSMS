@@ -4,6 +4,8 @@ Azure is the selected destination. Crown is currently undeployed; merged classro
 
 ## Read-only inventory
 
+After this preparation is merged, dispatch **Azure Classroom Release Preflight** from `main` in GitHub Actions. Its tests run without Azure credentials. Only manual dispatch from main enters the production environment and authenticates through the existing service-principal or federated identity path. It collects the configured `crown-rg` / `crown-api-prod` metadata, retains a seven-day artifact, and never certifies release readiness. Existing environment protection and Azure permissions still apply. Missing credentials, rejected federation or inaccessible resources fail the job; no deployment, migration or settings command is executed.
+
 In an authenticated Azure CLI environment, identify the intended subscription and run:
 
 ```bash
