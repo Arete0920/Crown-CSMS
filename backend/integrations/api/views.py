@@ -42,7 +42,7 @@ class TeamsPreview(APIView):
             "channel": channel,
             "title": title,
             "text": text,
-            "source": "crown2026",
+            "source": "crown",
             "demo_mode": True,
         }
 
