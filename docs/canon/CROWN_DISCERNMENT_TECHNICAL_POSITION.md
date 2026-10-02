@@ -16,7 +16,7 @@ Not approved for production integration yet.
 ## Approved Technical Direction
 Crown Discernment may eventually use:
 - transparent statistical methods
-- explainable machine learning
+- explainable statistical prediction
 - forecast models
 - scenario simulation logic
 - auditable feature-attribution methods
