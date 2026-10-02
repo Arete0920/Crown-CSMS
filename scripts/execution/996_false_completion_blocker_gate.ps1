@@ -175,6 +175,12 @@ else {
     Add-Finding -Id "FC-031" -Severity "BLOCKER" -Area "wizard-completion" -File $wizardRoutes -Evidence "Missing wizard route registry." -RequiredFix "Restore wizard route registry and certify every production-visible route."
 }
 
+$sandboxReadyWorkflow = ".github/workflows/sandbox-ready-evidence.yml"
+$sandboxReadyText = Read-TextFile $sandboxReadyWorkflow
+if ($sandboxReadyText -match "121_50_wizard_deep_dive_assessment\.ps1|all\s+50\s+wizards\s+are\s+complete\s+and\s+proof-backed") {
+    Add-Finding -Id "FC-032" -Severity "BLOCKER" -Area "wizard-completion" -File $sandboxReadyWorkflow -Evidence "Sandbox readiness still relies on legacy 50-row structural scoring or an unconditional 50-wizard proof-backed claim." -RequiredFix "Use canonical registered-wizard evidence and live runtime proof instead of structural inventory."
+}
+
 # 5. 120-school launch authority remains blocking until every row is PASS/N/A.
 $sandboxGate = "docs/release/final-95-plus-sprint/SANDBOX_120_SCHOOL_LAUNCH_GATE_20260601.md"
 $sandboxText = Read-TextFile $sandboxGate
