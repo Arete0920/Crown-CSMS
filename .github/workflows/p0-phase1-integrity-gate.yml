@@ -118,13 +118,7 @@ jobs:
           NODE_PATH: ${{ github.workspace }}/frontend/dashboards/node_modules
         run: |
           npx --prefix frontend/dashboards playwright test \
-            tests/e2e/audit_logging.spec.ts \
-            tests/e2e/notifications_framework.spec.ts \
-            tests/e2e/document_file_framework.spec.ts \
-            tests/e2e/shared_frontend_shell.spec.ts \
-            tests/e2e/christian_pd_hub.spec.ts \
-            tests/e2e/crm_marketing.spec.ts \
-            tests/e2e/survey_sentiment.spec.ts \
+            tests/e2e/platform_integrity.spec.ts \
             --config frontend/dashboards/playwright.p0.config.ts \
             --reporter=line,html
 
