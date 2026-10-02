@@ -1,7 +1,7 @@
 /**
  * entitlements.ts
  *
- * TypeScript contract for the Crown2026 entitlements system.
+ * TypeScript contract for the CROWN entitlements system.
  *
  * Mirrors the shape returned by GET /api/v1/subscriptions/me/entitlements/
  */
