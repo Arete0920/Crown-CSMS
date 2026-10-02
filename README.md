@@ -31,6 +31,7 @@ CROWN is maintained under controlled software-engineering and release-management
 15. [CI Architecture](docs/engineering/CI_ARCHITECTURE.md)
 16. [Public Repository Licensing Decision](docs/governance/PUBLIC_REPOSITORY_LICENSING_DECISION.md)
 17. [School Implementation Runbook](docs/operations/SCHOOL_IMPLEMENTATION_RUNBOOK.md)
+18. [Buyer Readiness Evidence and Blocking Findings](docs/engineering/BUYER_READINESS_EVIDENCE.md)
 
 ## Authority and claim boundary
 

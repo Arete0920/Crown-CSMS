@@ -1,0 +1,64 @@
+name: SonarQube Buyer Quality Evidence
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sonar-buyer-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analysis:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout exact source
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Require configured analysis service
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ vars.SONAR_HOST_URL }}
+          SONAR_PROJECT_KEY: ${{ vars.SONAR_PROJECT_KEY }}
+          SONAR_ORGANIZATION: ${{ vars.SONAR_ORGANIZATION }}
+        shell: python
+        run: |
+          import os
+          from urllib.parse import urlparse
+          required = ('SONAR_TOKEN', 'SONAR_HOST_URL', 'SONAR_PROJECT_KEY')
+          missing = [name for name in required if not os.environ.get(name)]
+          if missing:
+              raise SystemExit('BLOCKED: missing ' + ', '.join(missing))
+          host = urlparse(os.environ['SONAR_HOST_URL'])
+          if host.scheme != 'https' or not host.hostname or host.username or host.password:
+              raise SystemExit('BLOCKED: Sonar host must be an HTTPS URL without credentials')
+          if host.hostname in ('sonarcloud.io', 'sonarqube.us') and not os.environ.get('SONAR_ORGANIZATION'):
+              raise SystemExit('BLOCKED: SonarQube Cloud requires SONAR_ORGANIZATION')
+      - name: Analyze runtime code and enforce server quality gate
+        uses: SonarSource/sonarqube-scan-action@fd88b7d7ccbaefd23d8f36f73b59db7a3d246602
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ vars.SONAR_HOST_URL }}
+        with:
+          args: >
+            -Dsonar.projectKey=${{ vars.SONAR_PROJECT_KEY }}
+            -Dsonar.organization=${{ vars.SONAR_ORGANIZATION }}
+            -Dsonar.sources=backend,frontend/dashboards/src,services/wallet/apple-pass-service
+            -Dsonar.exclusions=**/node_modules/**,**/dist/**,**/__pycache__/**,**/migrations/**,**/tests/**,**/test_*.py,**/*.test.*,**/*.spec.*
+            -Dsonar.python.version=3.12
+            -Dsonar.scm.revision=${{ github.sha }}
+            -Dsonar.qualitygate.wait=true
+            -Dsonar.qualitygate.timeout=600
+      - name: Retain analysis task identity
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: sonar-task-${{ github.sha }}
+          path: .scannerwork/report-task.txt
+          if-no-files-found: error
+          retention-days: 30
