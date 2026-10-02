@@ -287,7 +287,7 @@ during any Slice 3 implementation work:
 - Notification systems (email, in-app, Teams)
 - Automated approval or rejection logic
 - Auto-archival or auto-remediation of any kind
-- AI scoring or semantic prioritization of review items
+- Automated scoring or semantic prioritization of review items
 - Cross-module orchestration from governance signals
 - Curriculum ingestion or alignment signals
 - User-facing analytics or reporting surfaces
