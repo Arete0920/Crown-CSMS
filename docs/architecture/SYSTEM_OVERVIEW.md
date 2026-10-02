@@ -129,7 +129,7 @@ A workflow or runbook existing in source is not equivalent to an executed operat
 5. Reconcile HR/Core Staff ownership before migrating or deleting duplicate lifecycle/identity fields.
 6. Complete Student Records/report-card authority and behavioral proof without duplicating Transcript/Gradebook authority.
 7. Treat Communications/Microsoft transport, canonical recipient policy, SMS/outbox, and provider-side configuration as explicit roadmap/integration work rather than completed current authority.
-8. Define Little Lambs daycare-specific authority before representing it as a separately completed product beyond Aftercare compatibility.
+8. Define Diadem daycare-specific authority before representing it as a separately completed product beyond Aftercare compatibility.
 9. Execute or explicitly disposition immutable rollback, operational restore, credential-rotation, monitoring, and transfer exercises required by the owner handoff.
 10. Create additional ADRs listed in `DECISION_INDEX.md` before material changes to those boundaries.
 

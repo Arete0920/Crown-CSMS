@@ -2,7 +2,7 @@ import CrownDashboardTemplate from '../components/crown-dashboard/CrownDashboard
 import { getDashboardTemplate } from '../config/dashboardTemplates/index.js';
 
 /*
-  Crown2026 - Financial Aid Dashboard
+  CROWN - Financial Aid Dashboard
   - Gold template: CrownDashboardTemplate
   - Config key: financialAid
 */
