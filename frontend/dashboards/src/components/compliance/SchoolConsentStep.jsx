@@ -11,19 +11,19 @@ export default function SchoolConsentStep({ onAccepted }) {
 
       <div className="space-y-4 text-sm text-slate-700">
         <p>
-          The school authorizes CROWN2026 to process
+          The school authorizes CROWN to process
           student information solely for legitimate
           educational purposes.
         </p>
 
         <p>
-          CROWN2026 acts as a school official under FERPA
+          CROWN acts as a school official under FERPA
           and processes child information under the
           school-consent educational exception of COPPA.
         </p>
 
         <p>
-          CROWN2026 does not use student data for
+          CROWN does not use student data for
           advertising, profiling, or commercial resale.
         </p>
       </div>
