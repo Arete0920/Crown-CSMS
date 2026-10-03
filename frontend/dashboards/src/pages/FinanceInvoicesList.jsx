@@ -6,6 +6,8 @@ import { getInvoices } from '../api/finance';
 import { csvEscape, downloadTextFile } from '../lib/export/csv';
 import { useAsyncPageData } from '../hooks/useAsyncPageData';
 import { usePersistentTableState } from '../hooks/usePersistentTableState';
+import { getCurrentUserRoles } from '../auth/roleAdapter';
+import { apiGet } from '../api/request';
 
 const SM = { fontSize: '0.75rem', padding: '3px 10px', cursor: 'pointer', borderRadius: '4px', border: '1px solid var(--crown-compat-color-cb69c739b8)', background: 'transparent', color: 'var(--crown-compat-color-cb69c739b8)' };
 const SM_ON = { ...SM, background: 'var(--crown-compat-color-cb69c739b8)', color: 'var(--crown-compat-color-e08de71387)' };
@@ -20,7 +22,26 @@ function formatCurrency(value) {
   }).format(Number(value || 0));
 }
 
+function ParentFamilyBalance() {
+  const { loading, error, data, reload } = useAsyncPageData(() => apiGet('/api/finance/parent/balance/'), []);
+  const money = (cents) => formatCurrency(Number(cents || 0) / 100);
+  return <CrownLayout title="Family Billing" subtitle="Your family's tuition account">
+    {loading ? <p role="status">Loading your family balance...</p> : null}
+    {error ? <p role="alert">{error.message || 'Family balance unavailable.'}</p> : null}
+    {data ? <dl>
+      <dt>Total charges</dt><dd>{money(data.total_due_cents)}</dd>
+      <dt>Payments allocated</dt><dd>{money(data.paid_cents)}</dd>
+      <dt>Balance due</dt><dd>{money(data.balance_cents)}</dd>
+    </dl> : null}
+    <button type="button" style={BTN} onClick={reload}>Refresh family balance</button>
+  </CrownLayout>;
+}
+
 export default function FinanceInvoicesList() {
+  return getCurrentUserRoles().includes('parent') ? <ParentFamilyBalance /> : <SchoolInvoiceList />;
+}
+
+function SchoolInvoiceList() {
   const [selected, setSelected] = useState(null);
 
   const {

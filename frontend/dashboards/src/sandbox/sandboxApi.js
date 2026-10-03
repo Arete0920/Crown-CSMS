@@ -1,3 +1,5 @@
+import { authenticatedJson } from "../utils/authClient";
+
 const API_BASE = (import.meta.env.VITE_API_BASE_URL || "").replace(/\/+$/, "");
 
 function apiUrl(path) {
@@ -54,7 +56,7 @@ export function storeSandboxSession(session) {
 
 export async function recordSandboxEvent(payload) {
   try {
-    await globalThis.fetch(apiUrl("/api/v1/sandbox/events/"), {
+    await authenticatedJson("/api/v1/sandbox/events/", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload || {}),

@@ -24,7 +24,7 @@ export const SANDBOX_SCHOOL_ARCHETYPES = [
     name: "Heritage Christian Academy",
     archetype: "Christian School Demonstration Environment",
     bestFor: "full-system school operations, family communication, attendance, academics, and finance",
-    enrollment: 420,
+    enrollment: 700,
     tour: "core-operations",
     demo_data_only: true,
   },
