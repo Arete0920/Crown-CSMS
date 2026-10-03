@@ -7,9 +7,9 @@ export default function ParentDashboard() {
   const config = getDashboardTemplate('parent');
   return (
     <>
-      <ClassroomWorkspace audience="parent" />
-      <ParentSandboxDailyPanel />
       <CrownDashboardTemplate config={config} roleKey="parent" />
+      <ParentSandboxDailyPanel />
+      <details><summary>Open my children's classroom records</summary><ClassroomWorkspace audience="parent" /></details>
     </>
   );
 }

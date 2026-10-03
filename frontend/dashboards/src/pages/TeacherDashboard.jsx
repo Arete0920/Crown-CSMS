@@ -5,5 +5,5 @@ import { getDashboardTemplate } from '../config/dashboardTemplates/index.js';
 
 export default function TeacherDashboard() {
   const config = getDashboardTemplate('teacher');
-  return <><ClassroomOperations audience="teacher" /><ClassroomWorkspace audience="teacher" /><CrownDashboardTemplate config={config} roleKey="teacher" /></>;
+  return <><CrownDashboardTemplate config={config} roleKey="teacher" /><details><summary>Open classroom operations and records</summary><ClassroomOperations audience="teacher" /><ClassroomWorkspace audience="teacher" /></details></>;
 }
