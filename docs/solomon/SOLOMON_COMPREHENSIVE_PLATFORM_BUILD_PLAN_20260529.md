@@ -56,7 +56,7 @@ SOLOMON may assist discovery and organization, but must not silently approve, pu
 
 ### 3) Quiet Intelligence
 
-Externally use guidance language, not AI branding. Keep AI assistive and internal by default.
+Use guidance language that accurately describes shipped capabilities. Keep recommendations advisory and subject to staff review.
 
 ### 4) Publisher Respect
 
@@ -177,23 +177,18 @@ CROWN runs school operations.
 SOLOMON governs institutional intelligence.
 ```
 
-## AI Strategy
+## Staff Review Strategy
 
-External posture:
+Approved support posture:
 - guided support,
 - contextual resource delivery,
 - trusted knowledge support,
 - role-based recommendations.
 
-Internal AI assist only:
-- classification suggestions,
-- duplicate detection,
-- summarization drafts,
-- policy comparison,
-- crosswalk suggestions,
-- relevance ranking.
+Staff own classification, summaries, policy comparison, and crosswalk decisions.
+Drafting and semantic ranking automation are outside this plan.
 
-Hard AI boundary:
+Hard decision-support boundary:
 - no autonomous approvals,
 - no doctrine or policy authority,
 - no lifecycle or visibility mutation.
@@ -253,7 +248,7 @@ Package progression should follow governance maturity, provenance confidence, an
 
 1. Content dumping -> manifest and review gates
 2. Rights violations -> metadata-only and partnership controls
-3. AI overexposure -> quiet internal assist posture
+3. Capability overstatement -> accurately describe implemented, approved features
 4. Governance drift -> advisory-first and append-only provenance
 5. Operational coupling -> optional adapters and fail-closed contracts
 

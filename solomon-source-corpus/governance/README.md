@@ -18,7 +18,7 @@ This corpus is source-index only. It is not active SOLOMON ingestion.
 ## Not Allowed
 
 - ingestion into SOLOMON models
-- AI summarization
+- automated summarization
 - automated classification
 - semantic indexing
 - vectorization
