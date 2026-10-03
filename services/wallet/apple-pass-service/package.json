@@ -5,14 +5,12 @@
   "type": "module",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "test": "node --test test/*.test.js"
   },
   "dependencies": {
     "express-rate-limit": "^7.4.0",
     "express": "^4.19.2",
-    "passkit-generator": "^3.2.0"
-  },
-  "overrides": {
-    "joi": "17.13.8"
+    "fflate": "0.8.3"
   }
 }

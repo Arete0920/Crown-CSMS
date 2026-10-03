@@ -65,6 +65,9 @@ jobs:
           cache-dependency-path: ${{ matrix.directory }}/package-lock.json
       - name: Install frontend dependencies
         run: npm ci
+      - name: Verify Wallet signing
+        if: matrix.name == 'wallet-npm-audit'
+        run: npm test
       - name: Capture frontend dependency audit
         shell: bash
         run: |
