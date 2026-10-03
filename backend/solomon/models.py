@@ -5,7 +5,7 @@ Approved by ALR-1:
 - Core knowledge/resource structure only
 - Additive Solomon app models only
 - No live module wiring
-- No curriculum/scripture/devotional/publisher/AI/Microsoft integration
+- No curriculum/scripture/devotional/publisher/Microsoft integration
 """
 
 from __future__ import annotations

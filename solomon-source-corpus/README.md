@@ -12,7 +12,7 @@ Allowed:
 
 Not allowed:
 - ingestion into SOLOMON models
-- AI summarization
+- automated summarization
 - automated classification
 - semantic indexing
 - vectorization

@@ -232,7 +232,7 @@ Evidence is admissible for C1 review only if it is:
 
 - unattributed screenshots
 - unverifiable summaries
-- AI-generated claims without source references
+- generated claims without source references
 - stale references without date context
 - undocumented copies
 """

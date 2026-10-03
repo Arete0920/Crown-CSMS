@@ -15,7 +15,7 @@
 - [ ] No draft PR modules are included in the production claim.
 - [ ] No SOLOMON ingestion is included in the production claim.
 - [ ] No publisher content is included in the production claim.
-- [ ] No AI/client-facing intelligence claims are included in the production claim.
+- [ ] No unapproved client-facing intelligence claims are included in the production claim.
 
 ## Acceptance Rule
 
