@@ -1,13 +1,20 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import MicrosoftProductLogo from './MicrosoftProductLogo';
 
 afterEach(() => {
   cleanup();
+  vi.unstubAllEnvs();
 });
 
 describe('MicrosoftProductLogo', () => {
+  it('uses labelled local icons without requesting external artwork in the local demo', () => {
+    vi.stubEnv('VITE_LOCAL_DEMO', '1');
+    const { container } = render(<MicrosoftProductLogo product="teams" label="Microsoft Teams" />);
+    expect(container.querySelector('img')).toBeNull();
+    expect(screen.getByLabelText('Microsoft Teams').textContent).toBe('Microsoft Teams');
+  });
   it('renders the approved Microsoft-hosted product image when configured', () => {
     render(<MicrosoftProductLogo product="teams" label="Microsoft Teams" />);
 
