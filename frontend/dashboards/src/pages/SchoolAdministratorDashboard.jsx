@@ -251,9 +251,11 @@ export default function SchoolAdministratorDashboard() {
 
   return (
     <>
-      <ClassroomOperations audience="admin" /><ClassroomWorkspace audience="admin" /><ClassroomLeadership audience="admin" />
-      <SandboxAdminTransactionPanel />
       <CrownDashboardTemplate config={config} roleKey="schoolAdministrator" />
+      <SandboxAdminTransactionPanel />
+      <details><summary>Open school classroom operations and records</summary>
+        <ClassroomOperations audience="admin" /><ClassroomWorkspace audience="admin" /><ClassroomLeadership audience="admin" />
+      </details>
     </>
   );
 }

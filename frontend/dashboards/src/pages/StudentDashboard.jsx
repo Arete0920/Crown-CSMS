@@ -7,9 +7,9 @@ export default function StudentDashboard() {
   const config = getDashboardTemplate('student');
   return (
     <>
-      <ClassroomWorkspace audience="student" />
-      <SandboxStudentSelfService />
       <CrownDashboardTemplate config={config} roleKey="student" />
+      <SandboxStudentSelfService />
+      <details><summary>Open my classroom work and feedback</summary><ClassroomWorkspace audience="student" /></details>
     </>
   );
 }

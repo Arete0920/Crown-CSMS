@@ -27,7 +27,7 @@ export default {
     initials: 'SJ',
     name: 'Sarah James',
     role: 'School Administrator',
-    avatar: 'https://i.pravatar.cc/80?img=47',
+    avatar: null,
   },
   heroMessage: '"Let the peace of Christ rule in your hearts." â€” Colossians 3:15',
   title: 'Good morning, Sarah!',

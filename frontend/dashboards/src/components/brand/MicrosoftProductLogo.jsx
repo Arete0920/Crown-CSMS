@@ -19,7 +19,7 @@ export default function MicrosoftProductLogo({
   compactFallback = false,
   decorative = false,
 }) {
-  const src = getMicrosoftLogoPath(product);
+  const src = import.meta.env.VITE_LOCAL_DEMO === '1' ? null : getMicrosoftLogoPath(product);
   const displayLabel = label || product;
   const [failedSrc, setFailedSrc] = useState(null);
   const imgFailed = failedSrc === src;
