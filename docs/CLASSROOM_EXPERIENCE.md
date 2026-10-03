@@ -44,7 +44,7 @@ All 60 requests are accepted requirements. Existing models or screens alone do n
 | S14 | Absence recovery plans | Implemented: public dated recovery lessons and student-specific makeup instructions/deadlines. |
 | S15 | Worldview and service connections | Implemented: school-defined Portrait and worldview links, Scripture references and private service responses. |
 | P01 | Verified children classroom overview | Implemented: canonical guardian accounts, active household scope and explicit classroom disclosure restrictions; no claim of system-wide custody enforcement. |
-| P02 | Useful weekly classroom digest | Implemented: live seven-day digest and deduplicated weekly notices; periodic task registered and real local worker execution tested; hosted deployment is a separate release check. |
+| P02 | Useful weekly classroom digest | Implemented: child-specific seven-day agenda with approved individual deadlines, recorded submission states, family/child filtering, explicit list limits and deduplicated weekly notices. See `docs/engineering/FAMILY_WEEKLY_AGENDA.md`. Periodic task registered and real local worker execution tested; hosted deployment is a separate release check. |
 | P03 | Published assignment visibility | Implemented: published assignment directions and criteria; drafts withheld. |
 | P04 | Accurate submission and grading status | Implemented: submission receipts and grading status, no inferred missing or zero. |
 | P05 | Understandable grades and next steps | Implemented: source-aware provisional category-weighted previews and explicit withheld states. |
