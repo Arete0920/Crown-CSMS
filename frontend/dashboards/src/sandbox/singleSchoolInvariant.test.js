@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import heritageManifest from "../../../../sandbox/seed_packs/school/heritage_core/manifest.json";
 
 import {
   SANDBOX_SCHOOL_ARCHETYPES,
@@ -24,5 +25,11 @@ describe("single sandbox school invariant", () => {
     for (const value of [undefined, "heritage", "trinity-k12", "grace-finance", "unknown-school"]) {
       expect(getSandboxSchool(value)).toEqual(heritage);
     }
+  });
+
+  it("keeps the advertised school profile aligned with the maintained seed pack", () => {
+    expect(SANDBOX_SCHOOL_ARCHETYPES[0].enrollment).toBe(heritageManifest.school.enrollment);
+    expect(heritageManifest.expected_metrics.students).toBe(heritageManifest.school.enrollment);
+    expect(heritageManifest.school.archetype).toContain("PK–12");
   });
 });
