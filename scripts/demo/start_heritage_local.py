@@ -91,6 +91,9 @@ def run(command: list[str], env: dict[str, str], cwd: Path = ROOT) -> None:
 def available_ports() -> None:
     for port in (8000, 4173):
         with socket.socket() as probe:
+            # A stopped server can leave TCP connections in TIME_WAIT. Reuse
+            # those addresses while still refusing a currently bound service.
+            probe.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             try:
                 probe.bind(("127.0.0.1", port))
             except OSError as exc:
