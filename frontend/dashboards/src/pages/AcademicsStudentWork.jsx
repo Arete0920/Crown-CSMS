@@ -21,6 +21,8 @@ import {
 } from "@mui/material";
 
 import { listStudentSubmissions, listMastery, listStudents } from "../lib/academicsApi";
+import { getCurrentUserRoles } from "../auth/roleAdapter";
+import ClassroomWorkspace from "../features/classroomExperience/ClassroomWorkspace.jsx";
 
 function statusChip(status) {
   const s = (status || "").toLowerCase();
@@ -44,6 +46,13 @@ function statusChip(status) {
 }
 
 export default function AcademicsStudentWork() {
+  if (getCurrentUserRoles().includes("student")) {
+    return <Box sx={{ p: 2 }}><Typography variant="h5" component="h1" sx={{ mb: 2 }}>Student Work</Typography><ClassroomWorkspace audience="student" /></Box>;
+  }
+  return <FamilyStudentWork />;
+}
+
+function FamilyStudentWork() {
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState("");
 
@@ -199,4 +208,3 @@ export default function AcademicsStudentWork() {
     </Box>
   );
 }
-

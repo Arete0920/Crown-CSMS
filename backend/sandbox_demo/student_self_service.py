@@ -82,7 +82,7 @@ def _canonical_schedule_fixture(user: UserAccount) -> AcademicStudent:
         defaults={
             "school_id": school_id,
             "household": household,
-            "account": None,
+            "account": user,
             "first_name": "Avery",
             "last_name": "Reed",
             "grade_level": "7",
@@ -92,9 +92,14 @@ def _canonical_schedule_fixture(user: UserAccount) -> AcademicStudent:
     if not academic_student_created and (
         str(academic_student.school_id) != str(school_id)
         or academic_student.household_id != household.id
-        or academic_student.account_id is not None
+        or academic_student.account_id not in {None, user.id}
     ):
         raise SandboxStudentError("canonical_student_authority_mismatch")
+    if academic_student.account_id is None:
+        # Migrate this exact deterministic sandbox identity, never an email match.
+        academic_student.account = user
+        academic_student.full_clean()
+        academic_student.save(update_fields=["account"])
 
     course, _ = AcademicCourse.objects.get_or_create(
         school_id=school_id,

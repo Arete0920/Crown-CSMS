@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+from django.conf import settings
 from typing import Any
 
 from households.models import Guardian, Household
@@ -78,6 +79,14 @@ def resolve_household_for_account(user: Any) -> Household:
     school_id = getattr(user, "school_id", None)
     if school_id in (None, ""):
         raise Parent360IdentityError("account_tenant_required")
+
+    # Local demo classroom and admissions fixtures use separate households.
+    # Keep the established sandbox admissions continuation on its newest
+    # application while the explicit classroom guardian supplies academic scope.
+    if settings.DEBUG and settings.CROWN_ENV == "local" and settings.DATABASES["default"]["ENGINE"].endswith("sqlite3"):
+        sandbox_household = _sandbox_parent_household(user, school_id)
+        if sandbox_household is not None:
+            return sandbox_household
 
     guardian = (
         Guardian.objects.select_related("household", "account")
