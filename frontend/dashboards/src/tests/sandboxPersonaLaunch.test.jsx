@@ -9,11 +9,11 @@ vi.mock("../components/brand/CrownLogo", () => ({
 
 beforeEach(() => {
   vi.restoreAllMocks();
+  sessionStorage.clear();
+  localStorage.clear();
   vi.stubGlobal("fetch", vi.fn((url) => {
     if (String(url).includes("/api/v1/sandbox/session/")) {
-      return Promise.resolve({
-        ok: true,
-        json: () => Promise.resolve({
+      return Promise.resolve(new Response(JSON.stringify({
           access: "access-token",
           refresh: "refresh-token",
           school_id: "19801b59-8c05-4c84-9312-5d792e4e839d",
@@ -23,14 +23,14 @@ beforeEach(() => {
           guidance: "guided",
           tour: "Daily operating picture",
           command_center: {},
-        }),
-      });
+        }), { status: 200, headers: { "Content-Type": "application/json" } }));
     }
-    return Promise.resolve({ ok: true, json: () => Promise.resolve({ ok: true }) });
+    return Promise.resolve(new Response(JSON.stringify({ ok: true }), { status: 200, headers: { "Content-Type": "application/json" } }));
   }));
   delete window.location;
   window.location = {
     href: "",
+    origin: "http://localhost",
     search: "",
     assign(url) {
       this.href = url;
@@ -61,7 +61,9 @@ describe("Sandbox persona launch", () => {
     expect(window.location.href).toBe("/school-admin-dashboard");
   });
 
-  it("sends structured sandbox feedback telemetry from the command center", async () => {
+  it("sends authenticated tenant-scoped sandbox feedback telemetry from the command center", async () => {
+    sessionStorage.setItem("crown.jwt.access", "feedback-test-access");
+    sessionStorage.setItem("crown.school.id", "19801b59-8c05-4c84-9312-5d792e4e839d");
     const { default: SandboxCommandCenter } = await import("../sandbox/SandboxCommandCenter.jsx");
     render(
       <MemoryRouter>
@@ -76,7 +78,7 @@ describe("Sandbox persona launch", () => {
         "/api/v1/sandbox/events/",
         expect.objectContaining({
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          credentials: "include",
           body: JSON.stringify({
             event: "feedback_requested",
             track: "school",
@@ -88,5 +90,10 @@ describe("Sandbox persona launch", () => {
         })
       );
     });
+    const [, options] = globalThis.fetch.mock.calls.find(([url]) => url === "/api/v1/sandbox/events/");
+    const headers = new Headers(options.headers);
+    expect(headers.get("Content-Type")).toBe("application/json");
+    expect(headers.get("Authorization")).toBe("Bearer feedback-test-access");
+    expect(headers.get("X-School-Id")).toBe("19801b59-8c05-4c84-9312-5d792e4e839d");
   });
 });

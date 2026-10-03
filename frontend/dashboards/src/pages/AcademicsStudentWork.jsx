@@ -22,7 +22,6 @@ import {
 
 import { listStudentSubmissions, listMastery, listStudents } from "../lib/academicsApi";
 import { getCurrentUserRoles } from "../auth/roleAdapter";
-import CrownLayout from "../components/crown/CrownLayout.jsx";
 import ClassroomWorkspace from "../features/classroomExperience/ClassroomWorkspace.jsx";
 
 function statusChip(status) {
@@ -48,7 +47,7 @@ function statusChip(status) {
 
 export default function AcademicsStudentWork() {
   if (getCurrentUserRoles().includes("student")) {
-    return <CrownLayout title="Student Work" subtitle="Your assignments and feedback"><ClassroomWorkspace audience="student" /></CrownLayout>;
+    return <Box sx={{ p: 2 }}><Typography variant="h5" component="h1" sx={{ mb: 2 }}>Student Work</Typography><ClassroomWorkspace audience="student" /></Box>;
   }
   return <FamilyStudentWork />;
 }
