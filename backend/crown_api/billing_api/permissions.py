@@ -1,4 +1,5 @@
 from rest_framework.permissions import BasePermission
+from core.permissions import user_has_permission
 
 
 ALLOWED_GROUPS = {
@@ -34,6 +35,12 @@ def has_finance_runtime_role(user) -> bool:
         return False
 
     if getattr(user, "is_superuser", False):
+        return True
+
+    # Crown UserRole/RolePermission is authoritative for current role accounts.
+    # Restrict the lookup to the user's bound school; unrelated tenant grants
+    # must not authorize school-wide finance access.
+    if getattr(user, "school", None) is not None and user_has_permission(user, "finance.edit", school=user.school):
         return True
 
     group_names = {g.name.lower() for g in user.groups.all()}

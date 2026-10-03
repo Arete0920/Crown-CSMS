@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { authenticatedJson } from "../../utils/authClient";
+import { getCurrentUserRoles } from "../../auth/roleAdapter";
 
 const sandboxEnabled = String(import.meta.env.VITE_SANDBOX_MODE || "") === "1";
 
@@ -8,22 +9,23 @@ function dollars(cents) {
 }
 
 export default function SandboxFinanceTransactionPanel() {
+  const eligible = getCurrentUserRoles().includes("finance_director");
   const [state, setState] = useState(null);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
 
   const load = useCallback(async () => {
-    if (!sandboxEnabled) return;
+    if (!sandboxEnabled || !eligible) return;
     setError("");
     try {
       setState(await authenticatedJson("/api/v1/sandbox/finance/state/"));
     } catch (err) {
       setError(err?.response?.data?.detail || err?.message || "Unable to load finance transaction state.");
     }
-  }, []);
+  }, [eligible]);
 
   useEffect(() => { void load(); }, [load]);
-  if (!sandboxEnabled) return null;
+  if (!sandboxEnabled || !eligible) return null;
 
   async function applyPayment() {
     setSaving(true);

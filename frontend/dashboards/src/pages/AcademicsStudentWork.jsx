@@ -21,6 +21,9 @@ import {
 } from "@mui/material";
 
 import { listStudentSubmissions, listMastery, listStudents } from "../lib/academicsApi";
+import { getCurrentUserRoles } from "../auth/roleAdapter";
+import CrownLayout from "../components/crown/CrownLayout.jsx";
+import ClassroomWorkspace from "../features/classroomExperience/ClassroomWorkspace.jsx";
 
 function statusChip(status) {
   const s = (status || "").toLowerCase();
@@ -44,6 +47,13 @@ function statusChip(status) {
 }
 
 export default function AcademicsStudentWork() {
+  if (getCurrentUserRoles().includes("student")) {
+    return <CrownLayout title="Student Work" subtitle="Your assignments and feedback"><ClassroomWorkspace audience="student" /></CrownLayout>;
+  }
+  return <FamilyStudentWork />;
+}
+
+function FamilyStudentWork() {
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState("");
 
@@ -199,4 +209,3 @@ export default function AcademicsStudentWork() {
     </Box>
   );
 }
-

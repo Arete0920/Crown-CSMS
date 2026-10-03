@@ -61,7 +61,7 @@ async function launchPersona(page: Page, label: string) {
   await expect(page.getByText('No buyer password')).toBeVisible();
   await expect(page.getByText('Heritage Christian Academy', { exact: true })).toBeVisible();
 
-  const card = page.locator('.sandbox-persona-card').filter({ hasText: label }).first();
+  const card = page.locator('.sandbox-persona-card').filter({ has: page.getByText(label, { exact: true }) });
   await expect(card, `sandbox persona card missing: ${label}`).toBeVisible();
   const launchButton = card.getByRole('button', { name: /Start guided/i });
   await Promise.all([

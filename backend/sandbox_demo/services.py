@@ -4,7 +4,7 @@ import os
 import re
 import uuid
 from dataclasses import asdict
-from datetime import date, timedelta
+from datetime import date
 
 from django.conf import settings
 from django.db import transaction
@@ -244,6 +244,10 @@ def _clear_flagship_data(school: School) -> None:
     FinancePayment.objects.filter(school=school).delete()
     FinanceObligation.objects.filter(school=school).delete()
     UserRole.objects.filter(school=school).delete()
+    # Release only this school's explicit demo account bindings before reset.
+    from households.models import Guardian as HouseholdGuardian, Student as HouseholdStudent
+    HouseholdGuardian.objects.filter(school_id=school.id, account_id__in=user_ids).update(account=None)
+    HouseholdStudent.objects.filter(school_id=school.id, account_id__in=user_ids).update(account=None)
     UserAccount.objects.filter(school=school).delete()
     StudentTuition.objects.filter(school=school).delete()
     Enrollment.objects.filter(school=school).delete()
@@ -360,7 +364,11 @@ def seed_heritage_flagship(*, reset: bool = False) -> dict:
                     "family": family,
                     "first_name": f"Student{student_index:04d}",
                     "last_name": "Demo",
-                    "dob": date(2010, 1, 1) - timedelta(days=student_index * 5),
+                    "dob": date(
+                        academic_year.start_date.year - (4 if code == "PK" else 5 if code == "K" else int(code) + 5),
+                        3 + student_index % 4,
+                        1 + student_index % 27,
+                    ),
                     "status": "ACTIVE",
                     "current_grade_level": grade,
                 },
@@ -397,6 +405,8 @@ def seed_heritage_flagship(*, reset: bool = False) -> dict:
     ).first()
     if parent_user:
         for n in range(1, 13):
+            month_index = academic_year.start_date.month - 1 + n - 1
+            due_date = date(academic_year.start_date.year + month_index // 12, month_index % 12 + 1, 15)
             obligation, _ = FinanceObligation.objects.update_or_create(
                 school=school,
                 payer_user=parent_user,
@@ -405,7 +415,7 @@ def seed_heritage_flagship(*, reset: bool = False) -> dict:
                     "obligation_type": ObligationType.TUITION,
                     "status": MoneyStatus.OPEN,
                     "description": f"Monthly tuition installment {n}",
-                    "due_date": date(2026, n, 15),
+                    "due_date": due_date,
                     "amount_cents": 87500,
                     "currency": "USD",
                     "academic_year_label": "2026-2027",
@@ -452,6 +462,31 @@ def proof_metrics(school: School) -> dict:
         "finance_obligations": FinanceObligation.objects.filter(school=school).count(),
         "finance_invoices": FinanceInvoice.objects.filter(school=school).count(),
     }
+
+
+@transaction.atomic
+def seed_local_heritage_relationships() -> None:
+    """Provision explicit family relationships only in the isolated local demo."""
+    from django.conf import settings
+    from households.models import Guardian as HouseholdGuardian
+    from core.models import StudentIdentityLink
+    from .parent_daily import _ensure_daily_records
+    from .student_self_service import _ensure_student_records
+
+    if not settings.DEBUG or settings.CROWN_ENV != "local" or not settings.DATABASES["default"]["ENGINE"].endswith("sqlite3"):
+        raise RuntimeError("Local Heritage relationship seed requires the local SQLite demo.")
+    school_id = uuid.UUID(str(SANDBOX_SCHOOLS["heritage-core"].id))
+    parent = UserAccount.objects.get(school_id=school_id, username=SANDBOX_PERSONAS["parent"].email)
+    student_user = UserAccount.objects.get(school_id=school_id, username=SANDBOX_PERSONAS["student"].email)
+    jordan = _ensure_daily_records(parent)
+    jordan_link = StudentIdentityLink.objects.select_related("compatibility_student__household").get(core_student=jordan, school_id=school_id)
+    _ensure_student_records(student_user)
+    HouseholdGuardian.objects.update_or_create(
+        account=parent, school_id=parent.school_id,
+        # Account binding supplies classroom authority. Keep the existing Reed
+        # finance contact as the sole email-to-ledger mapping.
+        defaults={"household": jordan_link.compatibility_student.household, "first_name": parent.first_name, "last_name": parent.last_name, "email": "", "is_primary": True},
+    )
 
 
 def assert_flagship_proof() -> list[dict]:

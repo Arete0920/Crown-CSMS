@@ -3,21 +3,51 @@
   "pack": "heritage_core",
   "display_name": "Heritage Christian Academy Core School Demo",
   "status": "implementation_baseline",
-  "description": "Deterministic K-8 Christian school sandbox scenario for leadership, admissions, academics, attendance, finance, communications, family, and student proof paths.",
+  "description": "Deterministic PK–12 Christian school sandbox scenario for leadership, admissions, academics, attendance, finance, communications, family, and student proof paths.",
   "school": {
     "name": "Heritage Christian Academy",
-    "archetype": "Small K-8 Christian School",
-    "enrollment": 420,
+    "archetype": "Flagship PK–12 Christian School",
+    "enrollment": 700,
     "demo_domain": "heritage.example.org"
   },
   "default_mode": "guided",
   "personas": [
-    { "key": "school_admin", "label": "Head of School", "email": "admin@heritage.example.org", "route": "/school-admin-dashboard" },
-    { "key": "admissions_director", "label": "Admissions Director", "email": "admin@heritage.example.org", "route": "/admissions-dashboard" },
-    { "key": "finance_director", "label": "Finance Director", "email": "admin@heritage.example.org", "route": "/finance" },
-    { "key": "teacher", "label": "Teacher", "email": "teacher.lower@heritage.example.org", "route": "/teacher" },
-    { "key": "parent", "label": "Parent", "email": "parent.reed@heritage.example.org", "route": "/parent" },
-    { "key": "student", "label": "Student", "email": "student.avery.reed11@heritage.example.org", "route": "/student" }
+    {
+      "key": "school_admin",
+      "label": "Head of School",
+      "email": "admin@heritage.example.org",
+      "route": "/school-admin-dashboard"
+    },
+    {
+      "key": "admissions_director",
+      "label": "Admissions Director",
+      "email": "admissions@heritage.example.org",
+      "route": "/admissions-dashboard"
+    },
+    {
+      "key": "finance_director",
+      "label": "Finance Director",
+      "email": "finance@heritage.example.org",
+      "route": "/finance"
+    },
+    {
+      "key": "teacher",
+      "label": "Teacher",
+      "email": "teacher.lower@heritage.example.org",
+      "route": "/teacher"
+    },
+    {
+      "key": "parent",
+      "label": "Parent",
+      "email": "parent.reed@heritage.example.org",
+      "route": "/parent"
+    },
+    {
+      "key": "student",
+      "label": "Student",
+      "email": "student.avery.reed11@heritage.example.org",
+      "route": "/student"
+    }
   ],
   "guided_story": [
     "Review the leadership dashboard.",
@@ -27,13 +57,14 @@
     "Switch to parent view and confirm family clarity."
   ],
   "expected_metrics": {
-    "students": 420,
+    "students": 700,
     "families": 286,
-    "teachers": 32,
-    "open_inquiries": 28,
-    "attendance_rate_percent": 96.4,
-    "open_family_balances": 37
+    "enrollments": 700,
+    "student_tuitions": 700,
+    "finance_obligations": 12,
+    "finance_invoices": 12
   },
   "reset_required": true,
-  "demo_data_only": true
+  "demo_data_only": true,
+  "metrics_semantics": "Minimum baseline seed counts; scenario records may increase final counts. Measure actual counts after all seed steps. This manifest does not certify runtime workflow completion."
 }
