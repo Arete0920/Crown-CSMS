@@ -53,12 +53,24 @@ def test_role_sessions_authorize_finance_without_granting_parent_or_teacher_acce
 
 
 @pytest.mark.django_db
-def test_local_seed_links_real_classroom_relationships_and_preserves_denials(settings):
+def test_local_seed_links_real_classroom_relationships_and_preserves_denials(settings, monkeypatch):
     settings.DEBUG = True
     settings.CROWN_ENV = "local"
     settings.CROWN_SANDBOX_ALLOW_OPEN_SESSION = True
+    monkeypatch.setenv("CROWN_SANDBOX_ALLOW_OPEN_SESSION", "true")
     seed_heritage_flagship(reset=True)
+    from sandbox_demo.parent_enrollment import seed_parent_enrollment_scenario
+    from parent360.identity import resolve_household_for_account
+    from households.models import Guardian as HouseholdGuardian
+    from applications.models import Application
+    seed_parent_enrollment_scenario()
     seed_local_heritage_relationships()
+    parent = UserAccount.objects.get(username=SANDBOX_PERSONAS["parent"].email)
+    application = Application.objects.filter(school_id=parent.school_id, household__name="Reed Family").latest("created_at")
+    assert resolve_household_for_account(parent).id == application.household_id
+    settings.DEBUG = False
+    assert resolve_household_for_account(parent).id == HouseholdGuardian.objects.get(account=parent).household_id
+    settings.DEBUG = True
     from sandbox_demo.finance import apply_demo_payment
     director = UserAccount.objects.get(username=SANDBOX_PERSONAS["finance_director"].email)
     assert apply_demo_payment(director)["reconciliation_status"] == "reconciled"
