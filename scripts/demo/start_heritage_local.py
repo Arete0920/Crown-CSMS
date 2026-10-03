@@ -88,6 +88,11 @@ def run(command: list[str], env: dict[str, str], cwd: Path = ROOT) -> None:
     subprocess.run(command, cwd=cwd, env=env, check=True)
 
 
+def preview_command() -> list[str]:
+    # Launch Vite directly so shutdown stops the server, rather than only npm.
+    return [shutil.which("node"), str(FRONTEND / "node_modules/vite/bin/vite.js"), "preview", "--host", "127.0.0.1", "--port", "4173", "--strictPort"]
+
+
 def available_ports() -> None:
     for port in (8000, 4173):
         with socket.socket() as probe:
@@ -180,7 +185,7 @@ def main() -> int:
             return 0
         for name, command, cwd in [
             ("backend", [str(python), str(ROOT / "backend/manage.py"), "runserver", "127.0.0.1:8000", "--noreload"], ROOT),
-            ("frontend", npm + ["run", "preview", "--", "--host", "127.0.0.1", "--port", "4173", "--strictPort"], FRONTEND),
+            ("frontend", preview_command(), FRONTEND),
         ]:
             log = (STATE / f"{name}.log").open("w", encoding="utf-8")
             logs.append(log)
