@@ -4,6 +4,23 @@ Status: Planning Control Matrix
 Parent Canon: `docs/product/CROWN_MODULES_AND_DASHBOARDS_CANON.md`
 Release Authority: `docs/CURRENT_RELEASE_STATUS.md`
 
+> **Implementation authority:** This is a **target control-design matrix**, not an
+> inventory of currently seeded permissions. Live permission authority is the current
+> `backend/core/management/commands/seed_permissions.py` registry together with
+> backend permission enforcement and its tests. A permission name in this planning
+> matrix must not be represented as implemented until those sources prove it.
+
+### Current naming / convergence exceptions
+
+- Re-enrollment staff management currently enforces tenant-scoped
+  `admissions.edit` or `admin.view`; guardian family actions are separately
+  account/household scoped. The target `reenrollment.*` taxonomy is not currently seeded.
+- Financial-aid runtime currently uses `financial_aid.view`,
+  `financial_aid.edit`, and `financial_aid.view_rationale`. The target naming in
+  this matrix is planning vocabulary until deliberately reconciled.
+- Other target permissions below likewise require implementation and tests before
+  certification; this document alone does not create or prove an authorization control.
+
 ## Purpose
 
 This matrix defines action-level permissions for CROWN modules and dashboards. Page-level access is not sufficient. Hidden navigation is not security. Every module action, dashboard summary, drilldown, and export must enforce backend permission checks.
@@ -109,7 +126,7 @@ These frontend role groupings must be aligned to backend `UserRole`, `CrownPermi
 
 ## Phase 0: Control Layer Permissions
 
-| Module Key | Required Permissions | Primary Roles | Sensitive Notes | Required Tests |
+| Module Key | Target Permissions | Primary Roles | Sensitive Notes | Required Tests |
 |---|---|---|---|---|
 | tenant-context | tenant.view, tenant.configure, tenant.switch, tenant.audit | super_admin, master_control, school_admin | Tenant switching is high risk. | cross-tenant deny, tenant header required, wrong school blocked |
 | identity-roles | identity.view, identity.create, identity.edit, identity.disable, identity.assign_role | super_admin, master_control, school_admin, hr_manager where appropriate | Role assignment can escalate privileges. | unauthorized role assignment blocked, audit event logged |
@@ -121,7 +138,7 @@ These frontend role groupings must be aligned to backend `UserRole`, `CrownPermi
 
 ## Phase 1: Core SIS Permissions
 
-| Module Key | Required Permissions | Primary Roles | Restricted Access | Required Tests |
+| Module Key | Target Permissions | Primary Roles | Restricted Access | Required Tests |
 |---|---|---|---|---|
 | school-year-grade | school-year.view, school-year.configure, grade-level.configure | school_admin, registrar, master_control | Setup affects all modules. | unauthorized setup blocked; tenant-scoped setup only |
 | staff-user-role | staff.view, staff.create, staff.edit, staff.disable, staff.export | school_admin, hr_manager | Staff HR details may be restricted. | staff from another school blocked; export audited |
@@ -136,10 +153,10 @@ These frontend role groupings must be aligned to backend `UserRole`, `CrownPermi
 
 ## Phase 2: Commercial Operating Permissions
 
-| Module Key | Required Permissions | Primary Roles | Restricted Access | Required Tests |
+| Module Key | Target Permissions | Primary Roles | Restricted Access | Required Tests |
 |---|---|---|---|---|
 | admissions | admissions.view, admissions.create, admissions.edit, admissions.approve, admissions.reject, admissions.export | admissions_manager, school_admin | Applicant/family data confidential. | applicant conversion audited; exports permissioned |
-| re-enrollment | staff management: admissions.edit or admin.view; family flows: authenticated guardian/account scope | registrar, admissions, school_admin; linked guardians for family actions | Contract data confidential. | tenant-scoped staff management; guardian household/account scope; publication and family-response audit |
+| re-enrollment | reenrollment.view, reenrollment.configure, reenrollment.submit, reenrollment.approve, reenrollment.export | registrar, admissions, school_admin | Contract data confidential. | parent submission scope; school approval audit |
 | billing-tuition-ledger | billing.view, billing.create_charge, billing.adjust, billing.reverse, billing.export, billing.dashboard | finance_admin, school_admin limited | Highly sensitive financial data. | reversal not delete; small-cell dashboard suppression |
 | financial-aid | financial-aid.view, financial-aid.view_restricted, financial-aid.award, financial-aid.approve, financial-aid.export | aid_director, finance_admin limited, school_admin limited | Highly sensitive. | restricted awards hidden; award-to-billing path audited |
 | communications | communications.view, communications.create, communications.send, communications.approve, communications.export | school_admin, communications_director, teacher scoped | Messages may include student data. | role-targeting, emergency override, delivery audit |
@@ -149,7 +166,7 @@ These frontend role groupings must be aligned to backend `UserRole`, `CrownPermi
 
 ## Phase 3: Operational Expansion Permissions
 
-| Module Key | Required Permissions | Primary Roles | Restricted Access | Required Tests |
+| Module Key | Target Permissions | Primary Roles | Restricted Access | Required Tests |
 |---|---|---|---|---|
 | scheduling | scheduling.view, scheduling.configure, scheduling.edit, scheduling.publish | registrar, academic_admin, school_admin | Schedule changes affect many modules. | conflict publish test; unauthorized publish blocked |
 | activities-athletics | activities.view, activities.edit, athletics.view, athletics.edit, athletics.eligibility | athletics_director, student_life, school_admin | Eligibility may expose grades/attendance. | eligibility redacted by role |
@@ -163,7 +180,7 @@ These frontend role groupings must be aligned to backend `UserRole`, `CrownPermi
 
 ## Phase 4: Enrichment, Mission, Advancement Permissions
 
-| Module Key | Required Permissions | Primary Roles | Restricted Access | Required Tests |
+| Module Key | Target Permissions | Primary Roles | Restricted Access | Required Tests |
 |---|---|---|---|---|
 | fine-arts | fine-arts.view, fine-arts.edit, fine-arts.export | fine_arts_director, school_admin | Student participation confidential. | roster scope/export tests |
 | library-media | library.view, library.edit, library.export | librarian, media_specialist, school_admin | Student borrowing data restricted. | circulation visibility tests |
@@ -180,7 +197,7 @@ These frontend role groupings must be aligned to backend `UserRole`, `CrownPermi
 
 ## Phase 5: Platform Ops Permissions
 
-| Module Key | Required Permissions | Primary Roles | Restricted Access | Required Tests |
+| Module Key | Target Permissions | Primary Roles | Restricted Access | Required Tests |
 |---|---|---|---|---|
 | implementation-success | implementation.view, implementation.edit, implementation.export | implementation_team, master_control | Customer onboarding data restricted. | customer/tenant scope tests |
 | data-migration | migration.view, migration.run, migration.rollback, migration.export | data_ops, master_control | Imported data highly sensitive. | rollback, validation, and audit tests |
