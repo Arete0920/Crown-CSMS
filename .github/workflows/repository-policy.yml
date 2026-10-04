@@ -46,7 +46,7 @@ jobs:
       - name: Run pull-request hygiene
         if: github.event_name == 'pull_request'
         env:
-          CROWN_BASE_REF: ${{ github.event.pull_request.base.sha }}
+          CROWN_BASE_REF: refs/remotes/origin/${{ github.event.pull_request.base.ref }}
           CROWN_MAX_NORMAL_ADDITIONS: "1500"
           CROWN_MAX_DOC_AUDIT_ADDITIONS: "3000"
           CROWN_MAX_CHANGED_FILES: "20"

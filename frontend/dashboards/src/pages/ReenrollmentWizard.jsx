@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import CrownLayout from "../components/crown/CrownLayout.jsx";
 import CrownWizard from "../components/crown/CrownWizard.jsx";
 import { useWizardDraft } from "../hooks/useWizardDraft";
@@ -8,6 +8,8 @@ import Step3Select from "./reenrollment/Step3Select.jsx";
 import Step4Preview from "./reenrollment/Step4Preview.jsx";
 import Step5Commit from "./reenrollment/Step5Commit.jsx";
 import Step6Verify from "./reenrollment/Step6Verify.jsx";
+
+import { ContentReleaseWorkbench } from "../features/contentOperations/ContentReleases.jsx";
 
 const STEP_COMPONENTS = [
   Step1Config,
@@ -31,6 +33,9 @@ export default function ReenrollmentWizard() {
   const [initialContext] = useState(() => ({}));
   const { value, saveDraft, loaded } = useWizardDraft("reenrollment", initialContext);
 
+  const [activeContext, setActiveContext] = useState(null);
+  const updateContext = useCallback((next) => { setActiveContext(next); saveDraft(next); }, [saveDraft]);
+
   if (!loaded) {
     return null;
   }
@@ -42,9 +47,10 @@ export default function ReenrollmentWizard() {
           stepComponents={STEP_COMPONENTS}
           stepLabels={STEP_LABELS}
           initialContext={value}
-          onContextChange={saveDraft}
+          onContextChange={updateContext}
         />
       </div>
+      <ContentReleaseWorkbench sessionId={(activeContext || value).sessionId} />
     </CrownLayout>
   );
 }
