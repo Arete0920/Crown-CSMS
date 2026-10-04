@@ -309,7 +309,6 @@ Most multi-tenant SaaS products rely on developer discipline ("remember to filte
 - CRITICAL #3: `crown_api/audit_views.py` — `AuditEvent.objects.all()` unfiltered → conditional `X-School-Id` filter added (UUID-validated; invalid UUID → 400)
 - 4 new invariant tests added: `backend/crown_api/tests/test_attendance_tenant_invariants.py` — all passing
 - Full suite after merge: 609 passed, 11 skipped, 0 failed
-- Patch notes: `docs/SECURITY_PATCH_NOTES_2026-02-25.md`
 
 **2026-02-18:** Initial canon baseline
 - Layers 04-10 complete and tagged
