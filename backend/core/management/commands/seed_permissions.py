@@ -15,6 +15,8 @@ from core.models import CrownPermission, RolePermission
 
 PERMISSIONS = [
     ("health.view", "View health / system-status dashboard"),
+    ("student_health.view", "View restricted school clinical records"),
+    ("student_health.edit", "Record restricted school clinical evidence"),
     ("director.actions", "Execute director-level admin actions"),
     ("metrics.view", "View all KPI dashboards"),
     ("finance.edit", "Post ledger entries, reverse transactions"),
@@ -118,7 +120,12 @@ ROLE_PERMISSIONS: dict = {
     "aid_director": ["financial_aid.view", "financial_aid.edit", "financial_aid.view_rationale", "admissions.view"],
     "registrar": ["admissions.view", "academics.view", "registrar.view", "classroom.view", "rosters.edit", "gradebook.edit", "attendance.configure", "scheduling.view", "scheduling.configure", "scheduling.edit", "scheduling.publish"],
     "teacher": ["teacher.view", "academics.view", "academics.edit", "gradebook.edit", "classroom.view"],
-    "nurse": ["health.view"], "health": ["health.view"], "counselor": ["counseling.view"],
+    "nurse": ["health.view", "student_health.view", "student_health.edit"],
+    "health": ["health.view", "student_health.view", "student_health.edit"],
+    "health_office": ["student_health.view", "student_health.edit"],
+    "NURSE": ["student_health.view", "student_health.edit"],
+    "HEALTH_OFFICE": ["student_health.view", "student_health.edit"],
+    "counselor": ["counseling.view"],
     "food_service": ["food.view"], "athletic_director": ["athletics.view", "crownpass.scan", "crownpass.manage"], "transportation": ["transportation.view", "transportation.edit"],
     "facilities": ["facilities.view"], "hr": ["hr.view", "hr.edit"], "safety": ["safety.view", "safety.edit"],
     "security": ["security.view"], "it": ["it.view", "integrity.view"], "marketing": ["marketing.view"],
