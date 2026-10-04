@@ -1,4 +1,5 @@
 import uuid
+from datetime import date
 
 import pytest
 from django.test import Client
@@ -56,8 +57,8 @@ def _baseline_school(label="Quality"):
     academic_year = AcademicYear.objects.create(
         school=school,
         name="2026-2027",
-        start_date=timezone.datetime(2026, 8, 1).date(),
-        end_date=timezone.datetime(2027, 6, 30).date(),
+        start_date=date(2026, 8, 1),
+        end_date=date(2027, 6, 30),
         is_current=True,
     )
     grade = GradeLevel.objects.create(
@@ -100,7 +101,7 @@ def _baseline_school(label="Quality"):
         student_number=f"{label[:2].upper()}-001",
         first_name="Student",
         last_name=label,
-        dob=timezone.datetime(2015, 1, 1).date(),
+        dob=date(2015, 1, 1),
         status="ACTIVE",
         current_grade_level=grade,
     )
