@@ -80,7 +80,6 @@ jobs:
 
           echo "All registered release tags are present and immutable"
 
-
   test:
     runs-on: ubuntu-latest
     timeout-minutes: 30
