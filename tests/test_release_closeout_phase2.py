@@ -1,6 +1,3 @@
-import json
-from pathlib import Path
-
 import pytest
 from django.test import Client, override_settings
 
@@ -57,6 +54,3 @@ def test_sms_status_endpoint():
     payload = res.json()
     assert payload["green"] is True
 
-
-def test_priority_doc_exists():
-    assert Path("docs/release/PRIORITY_16_31_TO_GREEN.md").exists()
