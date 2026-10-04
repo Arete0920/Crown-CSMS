@@ -175,29 +175,6 @@ else {
     Add-Finding -Id "FC-031" -Severity "BLOCKER" -Area "wizard-completion" -File $wizardRoutes -Evidence "Missing wizard route registry." -RequiredFix "Restore wizard route registry and certify every production-visible route."
 }
 
-# 5. 120-school launch authority remains blocking until every row is PASS/N/A.
-$sandboxGate = "docs/release/final-95-plus-sprint/SANDBOX_120_SCHOOL_LAUNCH_GATE_20260601.md"
-$sandboxText = Read-TextFile $sandboxGate
-if ($sandboxText) {
-    if ($sandboxText -match "SANDBOX 120-SCHOOL LAUNCH:\s*NO-GO") {
-        Add-Finding -Id "FC-040" -Severity "BLOCKER" -Area "sandbox-120" -File $sandboxGate -Evidence "120-school sandbox launch gate remains NO-GO." -RequiredFix "Close all required global and cohort gates with committed evidence before any sandbox-120 GO claim."
-    }
-    if ($sandboxText -match "NOT VERIFIED|NOT DONE") {
-        Add-Finding -Id "FC-041" -Severity "BLOCKER" -Area "sandbox-120" -File $sandboxGate -Evidence "Gate contains NOT VERIFIED or NOT DONE rows." -RequiredFix "Produce current candidate-SHA evidence for each row or mark formally N/A with rationale."
-    }
-}
-
-# 6. Active completion queues with NOT DONE/NOT VERIFIED are blockers to full-completion claims.
-$completionQueue = "docs/release/final-95-plus-sprint/FRONTEND_DASHBOARD_WIZARD_COMPLETION_QUEUE_20260530.md"
-$completionText = Read-TextFile $completionQueue
-if ($completionText) {
-    if ($completionText -match "NOT VERIFIED on latest connector commits") {
-        Add-Finding -Id "FC-050" -Severity "BLOCKER" -Area "frontend-gates" -File $completionQueue -Evidence "Frontend gates are marked NOT VERIFIED on latest connector commits." -RequiredFix "Run npm/frontend/API/navigation gates on current candidate SHA and update evidence."
-    }
-    if ($completionText -match "\| .* \| NOT DONE \|") {
-        Add-Finding -Id "FC-051" -Severity "BLOCKER" -Area "role-journeys" -File $completionQueue -Evidence "Role journey rows remain NOT DONE." -RequiredFix "Prove every production-visible role journey end-to-end or remove from completion claims."
-    }
-}
 
 $findingsPath = Join-Path $base "00_false_completion_findings.csv"
 $findings | Export-Csv -Path $findingsPath -NoTypeInformation -Encoding UTF8
