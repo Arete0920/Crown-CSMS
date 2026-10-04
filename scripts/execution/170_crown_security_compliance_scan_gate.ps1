@@ -28,7 +28,10 @@ $requiredWorkflows = @(
 )
 
 $requiredArtifacts = @(
-    "docs/security/CROWN_SECURITY_COMPLIANCE_RESILIENCE_TEST_PLAN_20260529.md",
+    "SECURITY.md",
+    "docs/CURRENT_RELEASE_STATUS.md",
+    "docs/KNOWN_LIMITATIONS.md",
+    "docs/canonical/DILIGENCE_EVIDENCE_INDEX.md",
     "docs/compliance/FERPA_POSITION.md",
     "docs/compliance/COPPA_POSITION.md",
     "docs/compliance/DPA_TEMPLATE.md",
@@ -36,9 +39,8 @@ $requiredArtifacts = @(
     "docs/compliance/RETENTION_POLICY.md",
     "docs/compliance/PRIVACY_COMPLIANCE_EVIDENCE_STATUS.md",
     "docs/compliance/STUDENT_PRIVACY_DATA_PROTECTION_PROGRAM.md",
-    "docs/operations/CROWN_OBSERVABILITY_AND_INCIDENT_READINESS_20260529.md",
-    "docs/release/CROWN_RELEASE_AUTHORITY_INDEX_20260529.md",
-    "docs/release/CROWN_FINAL_RELEASE_AUTHORITY_SIGNOFF_TEMPLATE_20260529.md"
+    "docs/operations/README.md",
+    "docs/security/SECRETS_ROTATION_AND_BREAK_GLASS_RUNBOOK.md"
 )
 
 $scanRows = @()
