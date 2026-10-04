@@ -1,5 +1,7 @@
 # PYSEC-2025-183 PyJWT Risk Acceptance
 
+Status: **retired on 2026-10-02**. An unfiltered `pip-audit 2.10.1 --strict` run against backend and load-test requirements completed with no known vulnerabilities. CI no longer ignores this advisory. The dated rationale below is historical and does not authorize future suppression.
+
 Date: 2026-05-20
 
 ## Advisory
