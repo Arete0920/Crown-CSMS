@@ -4,7 +4,7 @@ import { stageAidAwards } from "../../api/aid_wizard.js";
 import "../../styles/crown-wizard.css";
 
 function emptyRow(buckets) {
-  return { application_id: "", bucket: buckets[0] || "need", amount: "", rationale: "" };
+  return { application_id: "", student_id: "", bucket: buckets[0] || "need", amount: "", rationale: "" };
 }
 
 export default function Step3Awards({ context, setContext, goNext, goPrev, stepIndex, totalSteps, steps }) {
@@ -45,16 +45,17 @@ export default function Step3Awards({ context, setContext, goNext, goPrev, stepI
 
   async function handleContinue() {
     const awards = rows
-      .filter((r) => r.application_id.trim())
+      .filter((r) => r.application_id.trim() && r.student_id.trim())
       .map((r) => ({
         application_id: r.application_id.trim(),
+        student_id: r.student_id.trim(),
         bucket: r.bucket,
         amount: r.amount,
         rationale: r.rationale.trim(),
       }));
 
     if (awards.length === 0) {
-      setError("Add at least one award, or use 'No Awards — Skip'.");
+      setError("Add an application and student for at least one award, or use 'No Awards — Skip'.");
       return;
     }
 
@@ -75,7 +76,7 @@ export default function Step3Awards({ context, setContext, goNext, goPrev, stepI
     <div>
       <CrownWizardStepHeader
         title="Stage Awards"
-        subtitle="Enter the aid awards for this cycle. Each row is one award for one application."
+        subtitle="Enter one offered award per student. Each award is tied explicitly to a Jireh application and student."
         stepIndex={stepIndex}
         totalSteps={totalSteps}
         steps={steps}
@@ -115,10 +116,25 @@ export default function Step3Awards({ context, setContext, goNext, goPrev, stepI
                 <div style={{ fontSize: 11, color: "var(--crown-muted)" }}>Application ID *</div>
                 <input
                   className="crown-input"
-                  type="text"
-                  placeholder="UUID of the FinancialAidApplication"
+                  type="number"
+                  min="1"
+                  step="1"
+                  placeholder="Canonical Jireh application ID"
                   value={row.application_id}
                   onChange={(e) => updateRow(i, "application_id", e.target.value)}
+                  style={{ width: "100%", boxSizing: "border-box" }}
+                />
+              </div>
+              <div>
+                <div style={{ fontSize: 11, color: "var(--crown-muted)" }}>Student ID *</div>
+                <input
+                  className="crown-input"
+                  type="number"
+                  min="1"
+                  step="1"
+                  placeholder="Student receiving this award"
+                  value={row.student_id}
+                  onChange={(e) => updateRow(i, "student_id", e.target.value)}
                   style={{ width: "100%", boxSizing: "border-box" }}
                 />
               </div>
