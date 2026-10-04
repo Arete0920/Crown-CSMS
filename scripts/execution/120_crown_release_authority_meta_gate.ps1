@@ -104,26 +104,21 @@ New-Dir $outDir
 New-Dir $latestDir
 
 $requiredArtifacts = @(
-    "docs/release/CROWN_FULL_COMPLETION_BLOCKERS_20260529.md",
-    "docs/release/CROWN_CORE_SIS_SUPERIORITY_GATE_20260529.md",
-    "docs/release/CROWN_CORE_SIS_COMPETITOR_MATRIX_20260529.csv",
-    "docs/release/CROWN_CORE_SIS_MODULE_PROOF_REGISTER_20260529.csv",
-    "docs/release/CROWN_CORE_SIS_REMEDIATION_LEDGER_20260529.csv",
+    "README.md",
+    "SECURITY.md",
+    "docs/CURRENT_RELEASE_STATUS.md",
+    "docs/KNOWN_LIMITATIONS.md",
+    "docs/canonical/CANONICAL_DOCUMENT_INDEX.md",
+    "docs/canonical/DILIGENCE_EVIDENCE_INDEX.md",
+    "docs/architecture/ARCHITECTURE_MAP.md",
+    "docs/engineering/REPOSITORY_WORKFLOW.md",
+    "docs/compliance/PRIVACY_COMPLIANCE_EVIDENCE_STATUS.md",
     "docs/compliance/FERPA_POSITION.md",
     "docs/compliance/COPPA_POSITION.md",
     "docs/compliance/DPA_TEMPLATE.md",
     "docs/compliance/SUBPROCESSOR_REGISTER.md",
     "docs/compliance/RETENTION_POLICY.md",
-    "docs/compliance/PRIVACY_COMPLIANCE_EVIDENCE_STATUS.md",
-    "docs/compliance/STUDENT_PRIVACY_DATA_PROTECTION_PROGRAM.md",
-    "docs/release/CROWN_CONTROLLED_PILOT_ENTRY_EXIT_CHECKLIST_20260529.md",
-    "docs/release/CROWN_FINAL_RELEASE_AUTHORITY_SIGNOFF_TEMPLATE_20260529.md",
-    "docs/release/CROWN_RELEASE_AUTHORITY_INDEX_20260529.md",
-    "docs/release/CROWN_DASHBOARD_DATA_PROVENANCE_CONTRACT_20260529.md",
-    "docs/architecture/CROWN_CORE_SIS_DOMAIN_MODEL_CERTIFICATION_20260529.md",
-    "docs/release/CROWN_FINANCIAL_CONTROLS_GATE_20260529.md",
-    "docs/operations/CROWN_OBSERVABILITY_AND_INCIDENT_READINESS_20260529.md",
-    "docs/customer/CROWN_GO_LIVE_RUNBOOK_20260529.md"
+    "docs/operations/README.md"
 )
 
 $scriptArtifacts = @(
