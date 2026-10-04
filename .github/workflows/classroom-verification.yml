@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'backend/academics/**'
+      - 'backend/hr/**'
       - 'backend/gradebook/**'
       - 'backend/student_import_wizard/**'
       - 'backend/core/**'
@@ -15,6 +16,7 @@ on:
     branches: [main]
     paths:
       - 'backend/academics/**'
+      - 'backend/hr/**'
       - 'backend/gradebook/**'
       - 'backend/student_import_wizard/**'
       - 'backend/core/**'
@@ -67,4 +69,5 @@ jobs:
           python -m pytest backend/student_import_wizard/tests
           backend/academics/tests/test_classroom*.py
           backend/academics/tests/test_submission_workflow.py
-          backend/gradebook/tests/test_classroom_grade_access.py -q
+          backend/gradebook/tests/test_classroom_grade_access.py
+          backend/hr/test_requirements.py -q

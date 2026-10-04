@@ -1,5 +1,6 @@
 from django.db import models
 import uuid
+from .requirement_models import StaffRequirement, StaffRequirementEvent
 
 
 class Employee(models.Model):

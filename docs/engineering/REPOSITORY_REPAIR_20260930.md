@@ -23,4 +23,4 @@ Local Python and frontend vulnerability audits report no known vulnerabilities. 
 
 SOLO_DEVELOPER_APPROVED_WORKAROUND
 
-Audit note: this repair changes central tenant-context propagation and adds pre-merge gates. Automated assistance is not approval authority. Merge remains conditional on exact-head checks and the approved solo-maintainer controls.
+Audit note: this repair changes central tenant-context propagation and adds pre-merge gates. Repository tooling provides evidence but is not approval authority. Merge remains conditional on exact-head checks and the approved solo-maintainer controls.
