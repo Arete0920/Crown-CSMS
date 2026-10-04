@@ -99,6 +99,8 @@ def _grant_attendance_configuration_access(user, school, role_code="REGISTRAR"):
 def _grant_wizard_access_if_required(description, user, school):
     if description in ("enrollment_conversion", "reenrollment"):
         _grant_enrollment_conversion_access(user, school)
+    elif description == "student_import":
+        _grant_permission(user, school, "REGISTRAR", "rosters.edit", "Edit canonical school rosters")
     elif description == "section_assign":
         _grant_section_assign_access(user, school)
     elif description in ("scheduling", "section_scheduler"):
