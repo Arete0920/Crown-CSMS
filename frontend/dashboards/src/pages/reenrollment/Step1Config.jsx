@@ -5,6 +5,8 @@ import "../../styles/crown-wizard.css";
 
 export default function Step1Config({ context, setContext, goNext, stepIndex, totalSteps, steps }) {
   const [yearLabel, setYearLabel] = useState(context.targetYearLabel || "");
+  const [deadline, setDeadline] = useState(context.deadlineAt || "");
+  const [zone, setZone] = useState(context.communicationTimezone || "America/New_York");
   const [fee, setFee] = useState(context.enrollmentFee ?? "");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -23,11 +25,13 @@ export default function Step1Config({ context, setContext, goNext, stepIndex, to
         const created = await createReenrollmentSession();
         sessionId = created.session_id;
       }
-      const data = await configureSession(sessionId, yearLabel.trim(), String(feeNum.toFixed(2)));
+      const data = await configureSession(sessionId, yearLabel.trim(), String(feeNum.toFixed(2)), deadline ? { deadline_at: deadline, communication_timezone: zone } : {});
       setContext({
         sessionId,
         targetYearLabel: yearLabel.trim(),
         enrollmentFee: feeNum,
+        deadlineAt: deadline,
+        communicationTimezone: zone,
         configure: data,
         candidates: null,
         selectedExcluded: [],
@@ -85,6 +89,13 @@ export default function Step1Config({ context, setContext, goNext, stepIndex, to
           />
         </div>
 
+        <label>Re-enrollment deadline (ISO date, time and offset)
+          <input className="crown-input" placeholder="2027-03-01T17:00:00-05:00" value={deadline} onChange={(e) => setDeadline(e.target.value)} />
+        </label>
+        <label>School communication timezone
+          <input className="crown-input" value={zone} onChange={(e) => setZone(e.target.value)} />
+        </label>
+        <p>Set a deadline to prepare coordinated family communications.</p>
         {error && <div className="crown-alert">{error}</div>}
       </div>
 
