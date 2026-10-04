@@ -6,6 +6,7 @@ on:
     paths:
       - 'backend/academics/**'
       - 'backend/gradebook/**'
+      - 'backend/student_import_wizard/**'
       - 'backend/core/**'
       - 'backend/crown_api/settings.py'
       - 'frontend/dashboards/src/features/classroomExperience/**'
@@ -15,6 +16,7 @@ on:
     paths:
       - 'backend/academics/**'
       - 'backend/gradebook/**'
+      - 'backend/student_import_wizard/**'
       - 'backend/core/**'
       - 'backend/crown_api/settings.py'
       - 'frontend/dashboards/src/features/classroomExperience/**'
@@ -62,6 +64,7 @@ jobs:
         run: python backend/manage.py makemigrations --check --dry-run
       - name: Verify classroom personas, evidence and worker execution
         run: >-
-          python -m pytest backend/academics/tests/test_classroom*.py
+          python -m pytest backend/student_import_wizard/tests
+          backend/academics/tests/test_classroom*.py
           backend/academics/tests/test_submission_workflow.py
           backend/gradebook/tests/test_classroom_grade_access.py -q
