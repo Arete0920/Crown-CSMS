@@ -22,7 +22,7 @@ Where no eligible independent human reviewer is available, the approved `SOLO_DE
 4. zero unresolved actionable review threads;
 5. fresh ancestry and mergeability verification;
 6. expected-head-SHA protection for the governed merge;
-7. explicit documentation that **automated assistance is not approval authority**; and
+7. explicit documentation that **repository tooling and automated checks are not approval authority**; and
 8. no self-approval or false independent-review claim.
 
 The completed issue #14 governance record documents this approved path and supersedes older CROWN control text that made an unavailable independent human reviewer an absolute certification blocker. This does **not** weaken technical, tenant, permission, security, privacy, data-integrity, runtime, evidence, or recovery requirements.

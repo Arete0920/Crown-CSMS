@@ -25,6 +25,6 @@ Historical commits, archived artifacts, old scripts, issue records, and retained
 
 ## Verification rule
 
-Automated assistance and automated checks are evidence tools. They are not independent human review, human authorship, security approval, product acceptance, or production authorization.
+Repository tooling and automated checks are evidence tools. They are not independent human review, security approval, product acceptance, or production authorization.
 
 Any material claim must remain tied to inspected evidence, exact-head tests where applicable, and the controlling Founder/Product Owner decision.

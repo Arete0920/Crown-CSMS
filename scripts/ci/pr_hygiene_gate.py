@@ -258,7 +258,7 @@ def main() -> int:
     )
     if "SOLO_DEVELOPER_APPROVED_WORKAROUND" in body and not approval_disclaimer:
         failures.append(
-            "solo-developer workaround language must state that automated assistance is not approval authority"
+            "solo-developer workaround language must state that repository tooling is not approval authority"
         )
 
     print("# CROWN PR Hygiene Gate")
