@@ -44,7 +44,7 @@ Key disposition:
 
 ## Evidence boundaries
 
-This engineering certification is not a claim of independent third-party certification. The product owner does not self-review or self-approve as an independent reviewer. The approved `SOLO_DEVELOPER_APPROVED_WORKAROUND` remains the governance path where an eligible independent human reviewer is unavailable; automated assistance is technical evidence, not approval authority.
+This engineering certification is not a claim of independent third-party certification. The product owner does not self-review or self-approve as an independent reviewer. The approved `SOLO_DEVELOPER_APPROVED_WORKAROUND` remains the governance path where an eligible independent human reviewer is unavailable; repository tooling and automated checks provide technical evidence, not approval authority.
 
 This certification also does not assert any of the following before the applicable authorized transaction-time evidence exists:
 

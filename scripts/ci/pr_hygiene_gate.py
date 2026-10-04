@@ -100,12 +100,12 @@ def run(args: list[str]) -> str:
     return subprocess.check_output(args, text=True, stderr=subprocess.STDOUT).strip()
 
 
-def changed_files(base_ref: str) -> list[FileStat]:
-    out = run(["git", "diff", "--numstat", "--diff-filter=ACMR", f"{base_ref}...HEAD"])
+def changed_files(base_ref: str, head_ref: str = "HEAD") -> list[FileStat]:
+    out = run(["git", "diff", "--numstat", "--diff-filter=ACMR", f"{base_ref}...{head_ref}"])
     rows: list[FileStat] = []
     if not out:
         return rows
-    status_out = run(["git", "diff", "--name-status", "--diff-filter=ACMR", f"{base_ref}...HEAD"])
+    status_out = run(["git", "diff", "--name-status", "--diff-filter=ACMR", f"{base_ref}...{head_ref}"])
     status_by_path: dict[str, str] = {}
     for line in status_out.splitlines():
         parts = line.split("\t")
@@ -213,14 +213,24 @@ def is_repo_hygiene_exception(files: list[FileStat], pull_request: dict[str, obj
 
 def main() -> int:
     base_ref = os.environ.get("CROWN_BASE_REF", "origin/main")
-    files = changed_files(base_ref)
+    pull_request = read_event_pull_request()
+    head_ref = "HEAD"
+    if pull_request:
+        head = pull_request.get("head")
+        head_sha = head.get("sha") if isinstance(head, dict) else None
+        if not isinstance(head_sha, str) or not re.fullmatch(r"[0-9a-fA-F]{40}", head_sha):
+            print("NO-GO: pull-request event requires an exact source head SHA.")
+            return 1
+        head_ref = head_sha
+    # Actions checks out a synthetic merge commit. Count the PR source diff,
+    # excluding independent changes that have already landed on its base.
+    files = changed_files(base_ref, head_ref)
     total_additions = sum(f.additions for f in files)
     total_deletions = sum(f.deletions for f in files)
     threshold = MAX_DOC_AUDIT_ADDITIONS if is_doc_or_audit_only(files) else MAX_NORMAL_ADDITIONS
     failures: list[str] = []
     warnings: list[str] = []
 
-    pull_request = read_event_pull_request()
     body = read_event_body(pull_request)
     large_migration, large_migration_reasons = is_issue_1887_large_migration(files, pull_request, body)
     repo_hygiene, repo_hygiene_reasons = is_repo_hygiene_exception(files, pull_request, body)
@@ -258,7 +268,7 @@ def main() -> int:
     )
     if "SOLO_DEVELOPER_APPROVED_WORKAROUND" in body and not approval_disclaimer:
         failures.append(
-            "solo-developer workaround language must state that automated assistance is not approval authority"
+            "solo-developer workaround language must state that repository tooling is not approval authority"
         )
 
     print("# CROWN PR Hygiene Gate")
