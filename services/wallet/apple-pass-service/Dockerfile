@@ -1,11 +1,13 @@
-FROM node:20-alpine
+FROM node:24-alpine
 LABEL maintainer="Crown Engineering"
+
+RUN apk add --no-cache openssl
 
 WORKDIR /app
 
 # Install dependencies first (cache layer)
-COPY package.json ./
-RUN npm install --omit=dev
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev --ignore-scripts
 
 # App source
 COPY server.js ./
