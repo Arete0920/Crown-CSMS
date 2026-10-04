@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'backend/academics/**'
+      - 'backend/hr/**'
       - 'backend/gradebook/**'
       - 'backend/core/**'
       - 'backend/crown_api/settings.py'
@@ -14,6 +15,7 @@ on:
     branches: [main]
     paths:
       - 'backend/academics/**'
+      - 'backend/hr/**'
       - 'backend/gradebook/**'
       - 'backend/core/**'
       - 'backend/crown_api/settings.py'
@@ -64,4 +66,5 @@ jobs:
         run: >-
           python -m pytest backend/academics/tests/test_classroom*.py
           backend/academics/tests/test_submission_workflow.py
-          backend/gradebook/tests/test_classroom_grade_access.py -q
+          backend/gradebook/tests/test_classroom_grade_access.py
+          backend/hr/test_requirements.py -q
