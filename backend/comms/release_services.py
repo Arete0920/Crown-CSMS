@@ -13,7 +13,7 @@ Allowed: comms release models/services/API/tests, re-enrollment deadline and gua
 existing wizard, parent dashboard and status center, targeted verification workflow.
 Forbidden: deployment, credentials, dependency changes, relaxed repository gates,
 new wizard patterns, finance/grade/identity truth, marketing tracking services.
-Decision owner: product owner; implementation authorized in this conversation.
+Decision owner: repository product owner under the documented solo-maintainer control path.
 Rollback: revert application commit; additive tables may remain until data has been
 exported and a deliberate reverse migration is approved.
 Verification: tenant and role denial, approval invalidation, schedule/expiry,
