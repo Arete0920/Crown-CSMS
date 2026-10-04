@@ -1,0 +1,127 @@
+name: Dependency Scan
+permissions:
+  contents: read
+
+
+on:
+  push:
+    branches: [main, "chore/**", "feat/**", "fix/**"]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Run weekly on Monday at 06:00 UTC regardless of pushes
+    - cron: "0 6 * * 1"
+
+concurrency:
+  group: dependency-scan-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+jobs:
+  python-pip-audit:
+    name: Python - pip-audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+      - name: Set up Python
+        uses: actions/setup-python@7f4fc3e22c37d6ff65e88745f38bd3157c663f7c # v4
+        with:
+          python-version: "3.12"
+
+      - name: Install pip-audit
+        run: pip install pip-audit
+
+      - name: Run pip-audit
+        working-directory: backend
+        run: |
+          python - <<'PY'
+          import json
+          import subprocess
+          from pathlib import Path
+
+          reqs = [Path("requirements.txt"), Path("requirements-loadtest.txt")]
+          outputs = []
+          for req in reqs:
+              if not req.exists():
+                  continue
+              result = subprocess.run(
+                  [
+                      "pip-audit",
+                      "--ignore-vuln",
+                      "PYSEC-2025-183",
+                      "--ignore-vuln",
+                      "PYSEC-2024-271",
+                      "-r",
+                      str(req),
+                      "-f",
+                      "json",
+                  ],
+                  capture_output=True,
+                  text=True,
+              )
+              parsed = []
+              parse_error = False
+              stdout = result.stdout.strip()
+              stderr = result.stderr.strip()
+              if stdout:
+                  try:
+                      parsed = json.loads(stdout)
+                  except json.JSONDecodeError:
+                      parse_error = True
+                      parsed = [{"requirements_file": str(req), "parse_error": stdout}]
+
+              vuln_count = 0
+              for item in parsed if isinstance(parsed, list) else []:
+                  if isinstance(item, dict):
+                      vulns = item.get("vulns")
+                      if isinstance(vulns, list):
+                          vuln_count += len(vulns)
+
+              failed = False
+              if parse_error or vuln_count > 0:
+                  failed = True
+              elif result.returncode != 0 and "No known vulnerabilities found" not in stderr:
+                  failed = True
+
+              outputs.append(
+                  {
+                      "requirements_file": str(req),
+                      "exit_code": result.returncode,
+                      "failed": failed,
+                      "vulnerability_count": vuln_count,
+                      "results": parsed,
+                      "stderr": stderr,
+                  }
+              )
+          Path("pip-audit-results.json").write_text(json.dumps(outputs, indent=2), encoding="utf-8")
+          print(json.dumps(outputs, indent=2))
+          if any(item["failed"] for item in outputs):
+              raise SystemExit(1)
+          PY
+
+      - name: Upload pip-audit results
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: pip-audit-results
+          path: backend/pip-audit-results.json
+          if-no-files-found: ignore
+
+  node-audit:
+    name: Node - npm audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+      - name: Set up Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "24"
+
+      - name: npm audit (dashboards)
+        working-directory: frontend/dashboards
+        run: |
+          npm ci --prefer-offline 2>/dev/null || npm install
+          npm audit --audit-level=high
+
