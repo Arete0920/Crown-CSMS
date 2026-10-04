@@ -33,3 +33,23 @@ it('shows staff follow-through without guardian consent controls', async () => {
   expect(screen.queryByText('Grant permission')).toBeNull();
   expect(screen.queryByText('Decline permission')).toBeNull();
 });
+
+it('hides prior audience records while a new audience is loading', async () => {
+  api.get.mockResolvedValueOnce({ data }).mockImplementationOnce(() => new Promise(() => {}));
+  const { rerender } = render(<ClassroomFamily {...props} />);
+  await screen.findByText('Trip permission');
+  rerender(<ClassroomFamily {...props} audience="teacher" />);
+  expect(screen.queryByText('Trip permission')).toBeNull();
+});
+
+it('withholds old homework after a failed refresh and recovers on retry', async () => {
+  api.get.mockResolvedValueOnce({ data }).mockRejectedValueOnce(new Error('offline')).mockResolvedValueOnce({ data });
+  render(<ClassroomFamily {...props} />);
+  await screen.findByText('Trip permission');
+  fireEvent.click(screen.getByText('Refresh family workspace'));
+  await screen.findByText(/could not be loaded/);
+  expect(screen.queryByText('Trip permission')).toBeNull();
+  fireEvent.click(screen.getByText('Refresh family workspace'));
+  await screen.findByText('Trip permission');
+  expect(screen.queryByText(/could not be loaded/)).toBeNull();
+});
