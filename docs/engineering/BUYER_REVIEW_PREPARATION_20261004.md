@@ -1,7 +1,7 @@
 # Buyer repository review preparation
 
 Assessment date: October 4, 2026. Intended review window: October 11, 2026.
-Inspected main: `af873827c8cec81a29bab01a9d55883091875cd9`.
+Baseline refreshed after PR #74 at `b47e5f2d1930f2790cbbf6c0df4780662d1326a2`; re-resolve current `main` before any decision.
 This is a remediation register, not clearance for source distribution, production, or transfer.
 
 ## Cleanup and evidence boundaries
@@ -14,10 +14,10 @@ History maintenance must follow the [existing security runbook](../security/ed25
 
 | Work | Observed status | Closure evidence |
 |---|---|---|
-| Wallet dependency remediation | Useful replacement preserved in closed, unmerged PR #60; recovered for current-main review | Clean locked install, unfiltered audit, cryptographic tests, exact-head CI; real Apple certificate/device acceptance separately recorded |
+| Wallet dependency remediation | **Merged in PR #74** with locked npm install, replacement signing implementation, audit coverage and signing tests | Preserve exact-head audit/test evidence; real Apple certificate/device acceptance remains environment-specific |
 | Dependency Review | Main workflow prints an unavailable/skip message and returns success | Actual pinned review action passes with Dependency Graph enabled; no skip-success fallback |
 | Retained-history security | Known private-key path remains in published history; three earlier documentation-token candidates unresolved | Trust-consumer inventory, retirement verification, adjudicated all-ref scan, reviewed rewrite, authoritative remote rescan and replacement of distributable copies |
-| Branch enforcement | Live branch read reports protection disabled and no required check contexts | Owner/admin configuration and a fresh read establishing intended enforcement |
+| Branch enforcement | **Protected on October 4, 2026** with enforcement for everyone and 16 required GitHub Actions contexts; force pushes and branch deletion blocked | Re-read live protection before buyer access; keep `docs/release/BRANCH_PROTECTION_EVIDENCE.md` current |
 | Hosted operation | Azure problem remains unresolved; no fresh production acceptance established here | Exact deployed SHA, migrations, tenant checks, worker/beat execution, monitoring, backup and restore exercise |
 | Ownership and licenses | Policy and notices exist; complete assignment and shipped-dependency clearance not established | Contributor rights/assignments, dependency and asset inventory, applicable obligations and notices reviewed |
 | Buyer evidence | PR closure and old green CI do not establish readiness | Final reviewed SHA, current reports, unresolved exceptions, reproducible setup and verified sanitized delivery |
