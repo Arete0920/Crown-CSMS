@@ -52,7 +52,20 @@ jobs:
         working-directory: frontend/dashboards
         run: |
           test -f test-results/visual-dashboard-review/manifest.json
-          node -e 'const m=require("./test-results/visual-dashboard-review/manifest.json"); if(m.expectedScreenshots!==84 || m.screenshots.length!==84){throw new Error(`Expected 84 screenshots; manifest has ${m.screenshots.length}`)}'
+          node <<'JS'
+          const fs = require("node:fs");
+          const m = require("./test-results/visual-dashboard-review/manifest.json");
+          const keys = new Set(m.screenshots.map(s => `${s.viewport}:${s.route}`));
+          if (m.expectedScreenshots !== 84 || m.screenshots.length !== 84 || keys.size !== 84) {
+            throw new Error(`Expected 84 unique screenshots; manifest has ${m.screenshots.length}, unique ${keys.size}`);
+          }
+          for (const s of m.screenshots) {
+            const png = fs.readFileSync(`test-results/${s.screenshot}`);
+            if (png.length < 24 || png.subarray(0, 8).toString("hex") !== "89504e470d0a1a0a") {
+              throw new Error(`Missing or invalid PNG evidence: ${s.screenshot}`);
+            }
+          }
+          JS
 
       - name: Upload dashboard visual evidence
         if: always()
