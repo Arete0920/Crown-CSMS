@@ -4,7 +4,12 @@
   "scope": "comprehensive-repository-bounded",
   "observed_source_identity": "ea79bec207f9d82b617235f86ab3173d8f52bc0e",
   "generated_date": "2026-07-29",
-  "controlling_issues": [1764, 1759, 1629, 1619],
+  "controlling_issues": [
+    1764,
+    1759,
+    1629,
+    1619
+  ],
   "boundaries": {
     "production_runtime_certified": false,
     "legal_compliance_certified": false,
@@ -133,8 +138,7 @@
       "backend/apps/compliance/management/commands/compliance_retention_review.py",
       "tools/generate_retention_control_inventory.py",
       "docs/compliance/RETENTION_POLICY.md",
-      "docs/compliance/DATA_RETENTION_POLICY.md",
-      "docs/compliance/BACKUP_RESTORE_POLICY.md"
+      "docs/DISASTER_RECOVERY_POLICY.md"
     ],
     "audit_logging_derived_data": [
       "backend/audit/models.py",
