@@ -47,10 +47,6 @@ jobs:
               result = subprocess.run(
                   [
                       "pip-audit",
-                      "--ignore-vuln",
-                      "PYSEC-2025-183",
-                      "--ignore-vuln",
-                      "PYSEC-2024-271",
                       "-r",
                       str(req),
                       "-f",
@@ -70,18 +66,15 @@ jobs:
                       parse_error = True
                       parsed = [{"requirements_file": str(req), "parse_error": stdout}]
 
-              vuln_count = 0
-              for item in parsed if isinstance(parsed, list) else []:
-                  if isinstance(item, dict):
-                      vulns = item.get("vulns")
-                      if isinstance(vulns, list):
-                          vuln_count += len(vulns)
-
-              failed = False
-              if parse_error or vuln_count > 0:
-                  failed = True
-              elif result.returncode != 0 and "No known vulnerabilities found" not in stderr:
-                  failed = True
+              dependencies = parsed.get("dependencies") if isinstance(parsed, dict) else parsed
+              valid_report = (
+                  isinstance(dependencies, list)
+                  and bool(dependencies)
+                  and all(isinstance(item, dict) and isinstance(item.get("vulns"), list)
+                          for item in dependencies)
+              )
+              vuln_count = sum(len(item["vulns"]) for item in dependencies) if valid_report else 0
+              failed = parse_error or not valid_report or vuln_count > 0 or result.returncode != 0
 
               outputs.append(
                   {
@@ -95,7 +88,7 @@ jobs:
               )
           Path("pip-audit-results.json").write_text(json.dumps(outputs, indent=2), encoding="utf-8")
           print(json.dumps(outputs, indent=2))
-          if any(item["failed"] for item in outputs):
+          if not outputs or any(item["failed"] for item in outputs):
               raise SystemExit(1)
           PY
 
@@ -105,7 +98,8 @@ jobs:
         with:
           name: pip-audit-results
           path: backend/pip-audit-results.json
-          if-no-files-found: ignore
+          if-no-files-found: error
+          retention-days: 30
 
   node-audit:
     name: Node - npm audit
@@ -122,6 +116,6 @@ jobs:
       - name: npm audit (dashboards)
         working-directory: frontend/dashboards
         run: |
-          npm ci --prefer-offline 2>/dev/null || npm install
+          npm ci --prefer-offline
           npm audit --audit-level=high
 

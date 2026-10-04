@@ -276,7 +276,7 @@ async function seedClientAuthStorage(
 function isAllowedExternalFailure(url: string): boolean {
   try {
     const parsed = new URL(url);
-    return parsed.pathname.includes("favicon") || parsed.hostname.endsWith("visualstudio.com");
+    return parsed.pathname.includes("favicon") || (parsed.hostname === "visualstudio.com" || parsed.hostname.endsWith(".visualstudio.com"));
   } catch {
     return false;
   }
