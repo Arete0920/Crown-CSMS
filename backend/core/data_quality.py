@@ -15,7 +15,15 @@ from core.models import (
 from households.models import Student as CompatibilityStudent
 
 
-def _check(*, check_id: str, label: str, severity: str, count: int, description: str, action: str) -> dict:
+def _check(
+    *,
+    check_id: str,
+    label: str,
+    severity: str,
+    count: int,
+    description: str,
+    action: str,
+) -> dict:
     return {
         "id": check_id,
         "label": label,
@@ -136,7 +144,9 @@ def build_school_data_quality_summary(*, school_id) -> dict:
         ]
     )
 
-    current_year_issue_count = 0 if current_year_count == 1 else max(1, current_year_count - 1)
+    current_year_issue_count = (
+        0 if current_year_count == 1 else max(1, current_year_count - 1)
+    )
 
     checks = [
         _check(
