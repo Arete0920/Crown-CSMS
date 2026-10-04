@@ -6,7 +6,7 @@ from django.test import TestCase
 from rest_framework.test import APIClient
 
 from aid.models import AidApplication, AidAuditEvent, AidAward
-from core.models import AcademicYear, Family, School, Student
+from core.models import AcademicYear, CrownPermission, Family, RolePermission, School, Student, UserRole
 from financial_aid_wizard.models import FinancialAidWizardSession
 
 
@@ -29,9 +29,15 @@ def _make_year(school, name="2026-2027", start_year=2026):
     )
 
 
-def _make_user(school, username=None):
+def _make_user(school, username=None, grant_aid=True):
     username = username or f"user_{uuid.uuid4().hex[:8]}"
-    return User.objects.create_user(username=username, password=TEST_AUTH_SECRET, school=school)
+    user = User.objects.create_user(username=username, password=TEST_AUTH_SECRET, school=school)
+    if grant_aid:
+        UserRole.objects.create(user=user, school=school, role_code="AID_DIRECTOR")
+        for code in ("financial_aid.view", "financial_aid.edit"):
+            permission, _ = CrownPermission.objects.get_or_create(code=code, defaults={"description": ""})
+            RolePermission.objects.get_or_create(role_code="AID_DIRECTOR", permission=permission)
+    return user
 
 
 def _make_family(school, family_name="Doe"):
@@ -85,6 +91,13 @@ class TestAuth(TestCase):
             **_headers(self.school.id),
         )
         self.assertEqual(response.status_code, 401)
+
+    def test_authenticated_user_without_financial_aid_permission_is_denied(self):
+        user = _make_user(self.school, grant_aid=False)
+        client = APIClient()
+        client.force_authenticate(user=user)
+        response = client.post(BASE_URL, **_headers(self.school.id))
+        self.assertEqual(response.status_code, 403)
 
 
 class TestTenantIsolation(TestCase):
