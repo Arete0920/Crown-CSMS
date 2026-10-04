@@ -3,6 +3,7 @@ import json
 import uuid
 from datetime import timedelta
 from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError as ModelValidationError
 from django.db import transaction
 from django.db.models import Case, When, Value, CharField, Count, Q
 from django.shortcuts import get_object_or_404
@@ -15,7 +16,7 @@ from drf_spectacular.utils import extend_schema
 from drf_spectacular.types import OpenApiTypes
 from core.models import Staff
 from core.permissions import CrownModulePermission, user_has_permission
-from .requirement_models import StaffRequirement, StaffRequirementEvent
+from .requirement_models import StaffRequirement, StaffRequirementEvent, school_today
 
 
 def identifier(value, name):
@@ -54,7 +55,7 @@ def snapshot(row):
 
 
 def scoped_requirements(school):
-    today = timezone.localdate()
+    today = school_today(school)
     return StaffRequirement.objects.filter(school=school, staff__school=school).select_related('staff').annotate(
         status=Case(
             When(completed_on__isnull=False, valid_until__lt=today, then=Value('expired')),
@@ -74,6 +75,10 @@ def staff_requirements(request):
     if not request.user.is_active:
         raise PermissionDenied('Active account required.')
     school = request.school
+    try:
+        today = school_today(school)
+    except ModelValidationError as exc:
+        raise ValidationError(exc.messages)
     if request.method == 'GET':
         rows = scoped_requirements(school)
         staff = Staff.objects.filter(school=school, status='ACTIVE')
@@ -107,7 +112,7 @@ def staff_requirements(request):
             history = {'requirement_id': str(selected.id), 'total': history_total, 'offset': history_offset,
                 'next_offset': history_offset+100 if history_offset+100 < history_total else None,
                 'events': list(events.order_by('-created_at', '-id').values('action', 'version', 'before', 'after', 'reason', 'created_at', 'actor_id')[history_offset:history_offset+100])}
-        return Response({'source': 'live', 'generated_at': timezone.now(), 'can_edit': user_has_permission(request.user, 'hr.edit', school),
+        return Response({'source': 'live', 'generated_at': timezone.now(), 'today': today.isoformat(), 'can_edit': user_has_permission(request.user, 'hr.edit', school),
             'requirements': visible, 'total': total, 'offset': offset, 'next_offset': offset+100 if offset+100 < total else None,
             'summary': summary, 'staff': list(staff.values('id', 'first_name', 'last_name')[:200]), 'staff_total': staff.count(), 'history': history})
     data = request.data
@@ -116,7 +121,7 @@ def staff_requirements(request):
     key = identifier(data.get('request_key'), 'request_key')
     fingerprint = hashlib.sha256(json.dumps(data, sort_keys=True).encode()).hexdigest()
     operation = data.get('operation')
-    if operation not in {'create', 'complete', 'reopen', 'reschedule'}:
+    if not isinstance(operation, str) or operation not in {'create', 'complete', 'reopen', 'reschedule'}:
         raise ValidationError('Choose create, complete, reopen or reschedule.')
     reason = text(data, 'reason', 2000)
     with transaction.atomic():
@@ -131,7 +136,7 @@ def staff_requirements(request):
             staff = get_object_or_404(Staff.objects.select_for_update(), school=school,
                 id=identifier(data.get('staff_id'), 'staff_id'), status='ACTIVE')
             category = data.get('category')
-            if category not in dict(StaffRequirement._meta.get_field('category').choices):
+            if not isinstance(category, str) or category not in dict(StaffRequirement._meta.get_field('category').choices):
                 raise ValidationError('Choose a supported requirement category.')
             row = StaffRequirement.objects.create(school=school, staff=staff, title=text(data, 'title', 160),
                 category=category, due_date=date_value(data, 'due_date'))
@@ -146,7 +151,7 @@ def staff_requirements(request):
                     return Response({'detail': 'Reopen the requirement before recording new completion evidence.'}, status=409)
                 row.completed_on = date_value(data, 'completed_on')
                 row.valid_until = date_value(data, 'valid_until', optional=True)
-                if row.completed_on > timezone.localdate() or (row.valid_until and row.valid_until < row.completed_on):
+                if row.completed_on > today or (row.valid_until and row.valid_until < row.completed_on):
                     raise ValidationError('Completion cannot be in the future; expiry cannot precede completion.')
                 row.evidence_reference = text(data, 'evidence_reference', 300)
             elif operation == 'reopen':

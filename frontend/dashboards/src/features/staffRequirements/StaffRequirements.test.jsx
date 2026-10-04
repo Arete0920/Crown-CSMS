@@ -91,3 +91,15 @@ it('requests older review evidence through bounded history pages', async () => {
   fireEvent.click(screen.getByText('Next history page'));
   await waitFor(() => expect(api.get.mock.calls.some(([url]) => url.includes('history_offset=100'))).toBe(true));
 });
+
+
+it('uses the school calendar completion default and clears revoked access', async () => {
+  await start({ ...data, today: '2026-10-03' });
+  expect(screen.getByLabelText('Completion date for Annual training').value).toBe('2026-10-03');
+  api.post.mockRejectedValue({ response: { status: 403, data: { detail: 'Access revoked' } } });
+  fireEvent.change(screen.getByLabelText('Review reason for Annual training'), { target: { value: 'Reviewed' } });
+  fireEvent.change(screen.getByLabelText('Evidence reference for Annual training'), { target: { value: 'source' } });
+  fireEvent.click(screen.getByText('Record reviewed completion'));
+  await screen.findByText('Access revoked');
+  expect(screen.queryByText('Grace Teacher · Annual training')).toBeNull();
+});
