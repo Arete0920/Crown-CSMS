@@ -15,6 +15,9 @@ All endpoints are tenant-scoped via X-School-Id → get_request_school_id().
 Tenant isolation: every ReenrollmentSession lookup uses school=school on the FK.
 """
 from decimal import Decimal, InvalidOperation
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+from django.utils.dateparse import parse_datetime
+from django.utils import timezone
 
 from django.db import transaction
 from django.shortcuts import get_object_or_404
@@ -43,9 +46,10 @@ PERM_CLASSES = [IsAuthenticated]
 # Tenant-scoped session helper
 # ---------------------------------------------------------------------------
 
-def _get_session(session_id, school_id):
+def _get_session(session_id, school_id, *, locked=False):
     """Return ReenrollmentSession scoped to school; 404 if not found or wrong school."""
-    return get_object_or_404(ReenrollmentSession, id=session_id, school__id=school_id)
+    qs = ReenrollmentSession.objects.select_for_update() if locked else ReenrollmentSession.objects
+    return get_object_or_404(qs, id=session_id, school__id=school_id)
 
 
 # ---------------------------------------------------------------------------
@@ -60,6 +64,10 @@ def create_session(request):
     school_id = get_request_school_id(request)
     from core.models import School
     school = get_object_or_404(School, id=school_id)
+
+    denied = require_reenrollment_access(request, school)
+    if denied is not None:
+        return denied
 
     session = ReenrollmentSession.objects.create(
         school=school,
@@ -78,6 +86,7 @@ def create_session(request):
 @api_view(["POST"])
 @authentication_classes(AUTH_CLASSES)
 @permission_classes(PERM_CLASSES)
+@transaction.atomic
 def configure_session(request, session_id):
     """
     POST /api/v1/reenrollment/sessions/<id>/configure/
@@ -86,11 +95,29 @@ def configure_session(request, session_id):
     Idempotent: calling again with new settings re-snapshots and overwrites.
     """
     school_id = get_request_school_id(request)
-    session = _get_session(session_id, school_id)
+    session = _get_session(session_id, school_id, locked=True)
 
     denied = require_reenrollment_access(request, session.school)
     if denied is not None:
         return denied
+
+    if session.status not in (ReenrollmentSession.STATUS_DRAFT, ReenrollmentSession.STATUS_CONFIGURED):
+        return Response({"detail": "Committed billing configuration is immutable."}, status=409)
+    if not isinstance(request.data.get("target_year_label"), str):
+        return Response({"detail": "target_year_label must be text."}, status=400)
+    deadline = session.deadline_at
+    zone = request.data.get("communication_timezone", session.communication_timezone)
+    try:
+        if not isinstance(zone, str):
+            raise ValueError("Timezone must be text.")
+        ZoneInfo(zone)
+        if "deadline_at" in request.data:
+            raw = request.data["deadline_at"]
+            deadline = parse_datetime(raw) if isinstance(raw, str) else None
+            if deadline is None or timezone.is_naive(deadline):
+                raise ValueError("Deadline must include a timezone offset.")
+    except (ValueError, ZoneInfoNotFoundError):
+        return Response({"detail": "Use a valid timezone and an offset-aware deadline."}, status=400)
 
     target_year_label = (request.data.get("target_year_label") or "").strip()
     if not target_year_label:
@@ -103,6 +130,8 @@ def configure_session(request, session_id):
         enrollment_fee = Decimal(str(raw_fee))
     except (InvalidOperation, TypeError):
         return Response({"detail": "enrollment_fee must be a valid decimal number."}, status=400)
+    if not enrollment_fee.is_finite() or enrollment_fee > Decimal("99999999.99") or enrollment_fee.as_tuple().exponent < -2:
+        return Response({"detail": "Use a finite fee with at most two decimal places."}, status=400)
     if enrollment_fee < Decimal("0"):
         return Response({"detail": "enrollment_fee cannot be negative."}, status=400)
 
@@ -123,12 +152,16 @@ def configure_session(request, session_id):
         for s in students_qs
     ]
 
+    session.deadline_at = deadline
+    session.communication_timezone = zone
     session.target_year_label = target_year_label
     session.enrollment_fee = enrollment_fee
     session.candidates_snapshot = snapshot
     session.excluded_ids = []  # reset exclusions when re-configuring
     session.status = ReenrollmentSession.STATUS_CONFIGURED
     session.save()
+    from comms.release_services import invalidate_session_releases
+    invalidate_session_releases(session, request.user)
 
     return Response({
         "ok": True,
@@ -183,6 +216,7 @@ def list_candidates(request, session_id):
 @api_view(["POST"])
 @authentication_classes(AUTH_CLASSES)
 @permission_classes(PERM_CLASSES)
+@transaction.atomic
 def select_students(request, session_id):
     """
     POST /api/v1/reenrollment/sessions/<id>/select/
@@ -190,7 +224,7 @@ def select_students(request, session_id):
     Saves the director's exclusion list. Idempotent.
     """
     school_id = get_request_school_id(request)
-    session = _get_session(session_id, school_id)
+    session = _get_session(session_id, school_id, locked=True)
 
     denied = require_reenrollment_access(request, session.school)
     if denied is not None:
@@ -210,15 +244,17 @@ def select_students(request, session_id):
 
     # Validate all provided IDs exist in the snapshot
     snapshot_ids = {s["id"] for s in (session.candidates_snapshot or [])}
-    invalid = [eid for eid in raw_excluded if eid not in snapshot_ids]
+    invalid = [eid for eid in raw_excluded if not isinstance(eid, str) or eid not in snapshot_ids]
     if invalid:
         return Response(
             {"detail": f"Unknown student IDs: {invalid[:5]}"},
             status=400,
         )
 
-    session.excluded_ids = list(raw_excluded)
+    session.excluded_ids = list(dict.fromkeys(raw_excluded))
     session.save(update_fields=["excluded_ids", "updated_at"])
+    from comms.release_services import invalidate_session_releases
+    invalidate_session_releases(session, request.user)
 
     total = len(snapshot_ids)
     excluded = len(session.excluded_ids)
@@ -236,6 +272,7 @@ def select_students(request, session_id):
 @api_view(["POST"])
 @authentication_classes(AUTH_CLASSES)
 @permission_classes(PERM_CLASSES)
+@transaction.atomic
 def commit_session(request, session_id):
     """
     POST /api/v1/reenrollment/sessions/<id>/commit/
@@ -244,14 +281,14 @@ def commit_session(request, session_id):
     Idempotent: second call on status=committed returns existing result.
     """
     school_id = get_request_school_id(request)
-    session = _get_session(session_id, school_id)
+    session = _get_session(session_id, school_id, locked=True)
 
     denied = require_reenrollment_access(request, session.school)
     if denied is not None:
         return denied
 
     # Idempotency guard — must check BEFORE confirm flag
-    if session.status == ReenrollmentSession.STATUS_COMMITTED:
+    if session.status in (ReenrollmentSession.STATUS_COMMITTED, ReenrollmentSession.STATUS_VERIFIED):
         return Response({"ok": True, "already_committed": True, **session.commit_result})
 
     if session.status != ReenrollmentSession.STATUS_CONFIGURED:
@@ -260,7 +297,7 @@ def commit_session(request, session_id):
             status=400,
         )
 
-    if not request.data.get("confirm"):
+    if request.data.get("confirm") is not True:
         return Response({"detail": "Set confirm=true to execute the re-enrollment commit."}, status=400)
 
     excluded_set = set(session.excluded_ids or [])
@@ -281,8 +318,8 @@ def commit_session(request, session_id):
         ).select_related("household")
     )
 
-    if not students:
-        return Response({"detail": "No active students found matching selection."}, status=400)
+    if len(students) != len(selected_ids):
+        return Response({"detail": "Selected students changed; refresh selection before billing."}, status=409)
 
     enrollment_fee = session.enrollment_fee
 
@@ -352,6 +389,7 @@ def commit_session(request, session_id):
 @api_view(["GET"])
 @authentication_classes(AUTH_CLASSES)
 @permission_classes(PERM_CLASSES)
+@transaction.atomic
 def verify_session(request, session_id):
     """
     GET /api/v1/reenrollment/sessions/<id>/verify/
@@ -359,7 +397,7 @@ def verify_session(request, session_id):
     Subsequent calls return the same result without mutating the session.
     """
     school_id = get_request_school_id(request)
-    session = _get_session(session_id, school_id)
+    session = _get_session(session_id, school_id, locked=True)
 
     denied = require_reenrollment_access(request, session.school)
     if denied is not None:
