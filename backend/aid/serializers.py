@@ -9,7 +9,15 @@ into DRF's ModelSerializer (source="<field>_id" is automatic via depth=0 + id).
 
 from rest_framework import serializers
 
-from aid.models import AidApplication, AidAward, AidBudgetTracker, AidPolicy
+from aid.models import (
+    AidApplication,
+    AidAward,
+    AidBudgetTracker,
+    AidFinancialLineItem,
+    AidFinancialProfile,
+    AidHouseholdMember,
+    AidPolicy,
+)
 
 
 class AidApplicationSerializer(serializers.ModelSerializer):
@@ -115,3 +123,42 @@ class AidBudgetTrackerSerializer(serializers.ModelSerializer):
             "updated_at",
         ]
         read_only_fields = ["id", "school_id", "awarded_cents", "remaining_cents", "updated_at"]
+
+
+class AidHouseholdMemberSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AidHouseholdMember
+        fields = [
+            "id", "role", "first_name", "last_name", "relationship",
+            "student_id", "lives_in_household", "financially_responsible",
+        ]
+        read_only_fields = fields
+
+
+class AidFinancialLineItemSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AidFinancialLineItem
+        fields = [
+            "id", "category", "subcategory", "label", "annual_amount_cents",
+            "source_type", "source_reference", "verified", "verified_at", "verified_by_id",
+        ]
+        read_only_fields = fields
+
+
+class AidFinancialProfileSerializer(serializers.ModelSerializer):
+    totals = serializers.SerializerMethodField()
+    household_members = AidHouseholdMemberSerializer(many=True, read_only=True)
+    line_items = AidFinancialLineItemSerializer(many=True, read_only=True)
+
+    def get_totals(self, obj):
+        return obj.totals()
+
+    class Meta:
+        model = AidFinancialProfile
+        fields = [
+            "id", "school_id", "academic_year_id", "family_id",
+            "carried_forward_from_id", "verification_status", "consent_to_reuse",
+            "confirmed_at", "confirmed_by_id", "last_verified_at",
+            "totals", "household_members", "line_items", "created_at", "updated_at",
+        ]
+        read_only_fields = fields
