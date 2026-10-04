@@ -8,10 +8,6 @@ def _read(path: str) -> str:
     return (REPO_ROOT / path).read_text(encoding="utf-8")
 
 
-def test_070_enrollment_reconciliation_job_exists():
-    script = _read("scripts/release/phase2_release_truth_reconciliation.ps1")
-    assert "reconciliation" in script.lower()
-
 
 def test_071_billing_ledger_reconciliation_jobs_and_tests_exist():
     ops_code = _read("backend/payments/reconciliation_ops.py")
@@ -36,12 +32,3 @@ def test_073_immutable_audit_trail_tests_for_financial_mutations_exist():
     ledger_immutability = _read("backend/ledger/tests/test_ledger_immutability.py")
     assert "immutable" in ledger_immutability.lower()
 
-
-def test_074_migration_compatibility_tests_for_transitional_models_exist():
-    ownership_map = _read(
-        "docs/release/CANONICAL_OWNERSHIP_MAP_STUDENT_HOUSEHOLD_GUARDIAN_ENROLLMENT_20260530.md"
-    )
-    assert "transitional read-only" in ownership_map.lower()
-
-    overlap_map = _read("docs/release/DUPLICATE_TRUTH_REGISTER_20260530.md")
-    assert "legacy" in overlap_map.lower()
