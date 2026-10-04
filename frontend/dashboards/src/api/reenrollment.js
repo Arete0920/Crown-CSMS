@@ -35,10 +35,10 @@ export async function createReenrollmentSession() {
 }
 
 /** Step 2: configure session (set year label + enrollment fee, snapshot candidates) */
-export async function configureSession(sessionId, targetYearLabel, enrollmentFee) {
+export async function configureSession(sessionId, targetYearLabel, enrollmentFee, communication = {}) {
   return requestJson(`${API_BASE}/api/v1/reenrollment/sessions/${sessionId}/configure/`, {
     method: "POST",
-    data: { target_year_label: targetYearLabel, enrollment_fee: enrollmentFee },
+    data: { target_year_label: targetYearLabel, enrollment_fee: enrollmentFee, ...communication },
   });
 }
 
