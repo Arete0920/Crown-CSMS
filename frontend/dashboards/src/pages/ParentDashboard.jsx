@@ -1,3 +1,4 @@
+import { FamilyReleaseFeed } from "../features/contentOperations/ContentReleases.jsx";
 import ClassroomWorkspace from '../features/classroomExperience/ClassroomWorkspace.jsx';
 import CrownDashboardTemplate from '../components/crown-dashboard/CrownDashboardTemplate.jsx';
 import ParentSandboxDailyPanel from '../features/parentJourney/ParentSandboxDailyPanel.jsx';
@@ -9,6 +10,7 @@ export default function ParentDashboard() {
     <>
       <CrownDashboardTemplate config={config} roleKey="parent" />
       <ParentSandboxDailyPanel />
+      <FamilyReleaseFeed />
       <details><summary>Open my children's classroom records</summary><ClassroomWorkspace audience="parent" /></details>
     </>
   );

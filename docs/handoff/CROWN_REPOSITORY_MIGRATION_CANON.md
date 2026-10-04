@@ -15,7 +15,7 @@ Crown-CSMS is the active engineering and owner-turnover repository. Crown2026 re
 - Do not convert UNKNOWN or NOT VERIFIED into PASS.
 - Do not imply reviews, approvals, contributors, or teams that did not exist.
 - Keep active documentation concise, current, nonduplicative, and tool-neutral unless a named tool is operationally material.
-- Automated assistance is not independent human review or approval.
+- Repository tooling and automated checks do not constitute independent human review or approval.
 - Do not carry secrets, credentials, generated proof dumps, copied conversations, local-machine paths, obsolete automation, or superseded operating instructions into the buyer-facing authority surface.
 
 ## Separate gates

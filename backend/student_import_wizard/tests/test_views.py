@@ -3,7 +3,8 @@ from django.contrib.auth import get_user_model
 from django.test import TestCase
 from rest_framework.test import APIClient
 
-from core.models import School
+from core.models import School, Family, HouseholdFamilyLink, UserRole, CrownPermission, RolePermission
+from households.models import Household
 from student_import_wizard.models import StudentImportWizardSession
 
 
@@ -13,16 +14,29 @@ User = get_user_model()
 
 BASE_URL = "/api/v1/student-import-wizard/sessions/"
 
-COLUMN_MAP = {"First": "first_name", "Last": "last_name", "Grade": "grade_level"}
+COLUMN_MAP = {"First": "first_name", "Last": "last_name", "Number": "student_number", "Birth": "dob", "Status": "status", "Family": "family_id", "Household": "household_id"}
 STAGED_ROWS = [{"First": "Alice", "Last": "Smith", "Grade": "K"}]
 
 
 def _school():
-    return School.objects.create(name=f"S{uuid.uuid4().hex[:6]}", timezone="America/Chicago", is_active=True)
+    school = School.objects.create(name=f"S{uuid.uuid4().hex[:6]}", timezone="America/Chicago", is_active=True)
+    family = Family.objects.create(school=school, family_name='Synthetic import family')
+    household = Household.objects.create(school_id=school.id, name='Synthetic import household')
+    HouseholdFamilyLink.objects.create(school=school, family=family, household_id=household.id, source='manual')
+    return school
+
+
+def _rows(school):
+    bridge = HouseholdFamilyLink.objects.get(school=school)
+    return [{'First':'Alice','Last':'Smith','Number':'SYNTHETIC-001','Birth':'2014-01-01','Status':'ACTIVE',
+             'Family':str(bridge.family_id),'Household':str(bridge.household_id)}]
 
 
 def _client(school):
     u = User.objects.create_user(username=f"u{uuid.uuid4().hex[:8]}", password=TEST_AUTH_SECRET)
+    UserRole.objects.create(user=u, school=school, role_code='REGISTRAR')
+    permission, _ = CrownPermission.objects.get_or_create(code='rosters.edit')
+    RolePermission.objects.get_or_create(role_code='REGISTRAR', permission=permission)
     c = APIClient()
     c.force_authenticate(user=u)
     return c
@@ -59,7 +73,7 @@ class TestStudentImportWizardConfigure(TestCase):
     def test_configure_ok(self):
         r = self.c.post(
             self._url(),
-            {"column_map": COLUMN_MAP, "staged_rows": STAGED_ROWS},
+            {"column_map": COLUMN_MAP, "staged_rows": _rows(self.school)},
             format="json",
             **_h(self.school.id),
         )
@@ -69,7 +83,7 @@ class TestStudentImportWizardConfigure(TestCase):
     def test_configure_missing_column_map(self):
         r = self.c.post(
             self._url(),
-            {"staged_rows": STAGED_ROWS},
+            {"staged_rows": _rows(self.school)},
             format="json",
             **_h(self.school.id),
         )
@@ -84,7 +98,7 @@ class TestStudentImportWizardPreview(TestCase):
         sid = r.data["session_id"]
         self.c.post(
             f"{BASE_URL}{sid}/configure/",
-            {"column_map": COLUMN_MAP, "staged_rows": STAGED_ROWS},
+            {"column_map": COLUMN_MAP, "staged_rows": _rows(self.school)},
             format="json",
             **_h(self.school.id),
         )
@@ -116,7 +130,7 @@ class TestStudentImportWizardTenantIsolation(TestCase):
         # school_b tries to configure school_a's session
         r2 = c_b.post(
             f"{BASE_URL}{session_id}/configure/",
-            {"column_map": COLUMN_MAP, "staged_rows": STAGED_ROWS},
+            {"column_map": COLUMN_MAP, "staged_rows": _rows(school_b)},
             format="json",
             **_h(school_b.id),
         )

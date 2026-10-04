@@ -74,7 +74,7 @@ Control path used:
 Solo-developer approved workaround using GitHub connector evidence, GitHub required checks, CI/release gates, PR diff review, and explicit PASS / NO-GO evidence packet.
 
 Development-support role:
-Support, architecture, engineering review, and evidence audit only. Automated assistance is not approval authority.
+Engineering support, architecture, review, and evidence audit are advisory. Approval authority remains with the repository owner under the documented control path.
 ```
 
 ## 6. Required Enforcement
