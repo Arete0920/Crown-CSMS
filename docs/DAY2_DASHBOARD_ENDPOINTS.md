@@ -6,7 +6,7 @@
 >
 > Current controlling sources:
 > - docs/CURRENT_RELEASE_STATUS.md
-> - docs/release/CURRENT_RELEASE_SCORECARD_20260528.md
+> - docs/canonical/DILIGENCE_EVIDENCE_INDEX.md
 
 **Status**: Read-only dashboard APIs with tenant isolation
 **Date**: January 27, 2026
