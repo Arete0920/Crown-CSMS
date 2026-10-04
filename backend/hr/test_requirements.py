@@ -3,6 +3,7 @@ from datetime import timedelta
 import pytest
 from django.core.exceptions import ValidationError
 from django.utils import timezone
+from django.test import override_settings
 from rest_framework.test import APIClient
 from core.models import CrownPermission, RolePermission, School, Staff, UserAccount, UserRole
 from hr.models import Employee
@@ -101,6 +102,12 @@ def test_permissions_are_persistent_school_scoped_and_write_specific(context):
     RolePermission.objects.filter(role_code=c[2]).delete()
     assert get(c).status_code == 403
     assert c[4].get(URL).status_code in {400, 403}
+
+
+@override_settings(MIDDLEWARE=[])
+def test_missing_explicit_school_is_rejected_before_rbac_without_middleware(context):
+    assert context[4].get(URL).status_code == 400
+    assert context[4].post(URL, {}, format='json').status_code == 400
 
 
 def test_foreign_school_and_inactive_accounts_are_rejected(context):

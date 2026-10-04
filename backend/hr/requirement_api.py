@@ -19,6 +19,13 @@ from core.permissions import CrownModulePermission, user_has_permission
 from .requirement_models import StaffRequirement, StaffRequirementEvent, school_today
 
 
+class StaffRequirementPermission(CrownModulePermission('hr.view', write_code='hr.edit')):
+    def has_permission(self, request, view):
+        if request.user and request.user.is_authenticated and not request.headers.get('X-School-Id'):
+            raise ValidationError('X-School-Id is required for staff requirements.')
+        return super().has_permission(request, view)
+
+
 def identifier(value, name):
     try:
         return uuid.UUID(str(value))
@@ -68,7 +75,7 @@ def scoped_requirements(school):
 @extend_schema(methods=['GET'], responses=OpenApiTypes.OBJECT)
 @extend_schema(methods=['POST'], request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
 @api_view(['GET', 'POST'])
-@permission_classes([CrownModulePermission('hr.view', write_code='hr.edit')])
+@permission_classes([StaffRequirementPermission])
 def staff_requirements(request):
     if not request.headers.get('X-School-Id'):
         raise ValidationError('X-School-Id is required for staff requirements.')
