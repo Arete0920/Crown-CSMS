@@ -2,8 +2,7 @@
   "schema_version": 1,
   "authority": {
     "frontend_manifest": "frontend/dashboards/src/routes/wizard-manifest.js",
-    "backend_registry": "backend/crown_api/wizard_registry.py",
-    "release_matrix": "docs/release/WIZARD_CERTIFICATION_MATRIX_20260530.md"
+    "backend_registry": "backend/crown_api/wizard_registry.py"
   },
   "canonical_required": {
     "onboarding": "tests/e2e/onboarding_wizard_spec.ts",
