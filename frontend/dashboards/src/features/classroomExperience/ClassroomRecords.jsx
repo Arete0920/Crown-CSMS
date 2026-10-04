@@ -43,6 +43,7 @@ export default function ClassroomRecords({ audience, sections, students, assignm
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [due, setDue] = useState('');
+  const [absenceDate, setAbsenceDate] = useState('');
   const [visibility, setVisibility] = useState('private');
   const [extra, setExtra] = useState('');
   const [members, setMembers] = useState([]);
@@ -81,6 +82,7 @@ export default function ClassroomRecords({ audience, sections, students, assignm
     const metadata = kind === 'formative_check' ? { questions: extra.split('\n').filter((v) => v.trim()) } : kind === 'group_project' ? { members, roles, milestones: extra.split('\n').filter((v) => v.trim()) } : kind === 'portfolio' ? { assignment_id: extra } : kind === 'resource' ? { reference: extra, cost_cents: Number(cost) } : kind === 'interruption' ? { minutes: Number(extra) } : {};
     if (['service', 'family_service'].includes(kind)) { if (portrait) metadata.portrait_domain_id = portrait; if (worldview) metadata.worldview_priority_id = worldview; metadata.scripture_reference = scripture; }
     if (kind === 'coaching') metadata.teacher_account_id = coachingTeacher;
+    if (kind === 'absence_explanation') metadata.absence_date = absenceDate;
     save(url, { kind, section_id: section, student_id: student || null, title, body, metadata, visibility: audience === 'student' ? visibility : individualKinds.includes(kind) ? 'family' : 'class', due_at: due ? new Date(due).toISOString() : null });
   }
   return <Box sx={{ mt: 3 }}>
@@ -94,6 +96,8 @@ export default function ClassroomRecords({ audience, sections, students, assignm
       <TextField label="Title" value={title} inputProps={{ maxLength: 160 }} onChange={(e) => setTitle(e.target.value)} />
       <TextField multiline minRows={3} label="Details, evidence or next steps" value={body} onChange={(e) => setBody(e.target.value)} />
       <TextField label="Review or due date" type="datetime-local" InputLabelProps={{ shrink: true }} value={due} onChange={(e) => setDue(e.target.value)} />
+      {kind === 'absence_explanation' && <TextField label="Absence date" type="date"
+        InputLabelProps={{ shrink: true }} value={absenceDate} onChange={(e) => setAbsenceDate(e.target.value)} />}
       {audience === 'student' && kind !== 'help_request' && <TextField select label="Share with" value={visibility} onChange={(e) => setVisibility(e.target.value)}>{['private', 'staff', 'family'].map((v) => <MenuItem key={v} value={v}>{v === 'private' ? 'Only me' : v === 'staff' ? 'My classroom staff' : 'My classroom staff and family'}</MenuItem>)}</TextField>}
       {kind === 'help_request' && <Typography variant="body2">Your request is shared with your classroom staff.</Typography>}
       {['formative_check', 'group_project', 'resource', 'interruption'].includes(kind) && <TextField multiline={kind === 'formative_check' || kind === 'group_project'} label={kind === 'formative_check' ? 'Questions, one per line' : kind === 'group_project' ? 'Milestones, one per line' : kind === 'resource' ? 'HTTPS resource link' : 'Minutes interrupted'} value={extra} onChange={(e) => setExtra(e.target.value)} />}
@@ -108,7 +112,7 @@ export default function ClassroomRecords({ audience, sections, students, assignm
       {kind === 'coaching' && <TextField select label="Teacher receiving coaching" value={coachingTeacher} onChange={(e) => setCoachingTeacher(e.target.value)}><MenuItem value="">Choose teacher</MenuItem>{(records?.coaching_teachers || []).map((v) => <MenuItem key={v.id} value={v.id}>{v.name}</MenuItem>)}</TextField>}
       {kind === 'resource' && <TextField type="number" label="Recorded resource cost in cents" value={cost} onChange={(e) => setCost(e.target.value)} />}
       {kind === 'portfolio' && <TextField select label="Assignment evidence" value={extra} onChange={(e) => setExtra(e.target.value)}><MenuItem value="">Choose assignment</MenuItem>{assignments.filter((a) => a.section_id === section && a.is_published !== false).map((a) => <MenuItem key={`${a.id}-${a.student_id || ''}`} value={a.id}>{a.name}</MenuItem>)}</TextField>}
-      <Button disabled={busy || !section || !title.trim() || !body.trim() || (individualKinds.includes(kind) && !student)} onClick={create}>Save classroom record</Button>
+      <Button disabled={busy || !section || !title.trim() || !body.trim() || (individualKinds.includes(kind) && !student) || (kind === 'absence_explanation' && !absenceDate)} onClick={create}>Save classroom record</Button>
     </Stack></details>
     {records?.truncated && <Alert severity="info">Showing the latest 100 of {records.total} records.</Alert>}
     {records && records.records.length === 0 && <Typography>No classroom records yet.</Typography>}

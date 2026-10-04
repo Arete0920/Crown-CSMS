@@ -1,11 +1,12 @@
 import hashlib
 import json
+from datetime import timedelta
 from django.contrib.auth import get_user_model
 from django.db import transaction
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
-from django.utils.dateparse import parse_datetime
+from django.utils.dateparse import parse_datetime, parse_date
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.permissions import IsAuthenticated
@@ -64,9 +65,18 @@ def validate_metadata(payload, *, kind, section, school, student):
     allowed = {'formative_check': {'questions'}, 'group_project': {'members', 'roles', 'milestones'},
                'portfolio': {'assignment_id'}, 'service': {'portrait_domain_id', 'worldview_priority_id', 'scripture_reference'},
                'family_service': {'portrait_domain_id', 'worldview_priority_id', 'scripture_reference'}, 'coaching': {'teacher_account_id'},
-               'resource': {'reference', 'cost_cents'}, 'interruption': {'minutes'}}.get(kind, set())
+               'resource': {'reference', 'cost_cents'}, 'interruption': {'minutes'},
+               'absence_explanation': {'absence_date'}}.get(kind, set())
     if set(metadata) - allowed:
         raise ValidationError('Unsupported metadata fields for this record kind.')
+    if kind == 'absence_explanation' and 'absence_date' in metadata:
+        try:
+            day = parse_date(metadata['absence_date'])
+        except (ValueError, TypeError):
+            day = None
+        if not day or not timezone.localdate() - timedelta(days=365) <= day <= timezone.localdate():
+            raise ValidationError('Absence date must be within the last year, including today.')
+        metadata['absence_date'] = day.isoformat()
     if kind == 'formative_check':
         questions = metadata.get('questions', [])
         if not isinstance(questions, list) or not 1 <= len(questions) <= 10 or any(not isinstance(q, str) or not q.strip() or len(q) > 1000 for q in questions):

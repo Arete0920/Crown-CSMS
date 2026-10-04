@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import PropTypes from 'prop-types';
 import { Alert, Box, Button, MenuItem, Stack, TextField, Typography } from '@mui/material';
 import { crownApiClient as api } from '../../api/client';
+import AbsenceReview from './AbsenceReview';
 
 function Emergency({ session, roster, busy, save }) {
   const [student, setStudent] = useState('');
@@ -59,6 +60,9 @@ export default function ClassroomOperations({ audience }) {
     <Button disabled={busy} onClick={() => setRefresh((v) => v + 1)}>Refresh operational records</Button>
     {data && <><Stack direction="row" spacing={1}><TextField select fullWidth label="Operational classroom" value={section} onChange={(e) => setSection(e.target.value)}><MenuItem value="">Choose classroom</MenuItem>{data.sections.map((s) => <MenuItem key={s.id} value={s.id}>{s['course__name']} · {s.term}</MenuItem>)}</TextField><TextField type="date" label="Roster date" InputLabelProps={{ shrink: true }} value={date} onChange={(e) => setDate(e.target.value)} /></Stack>
       {data.roster && <>
+        {data.can_review_absences && <AbsenceReview rows={data.absence_explanations || []}
+          total={data.absence_explanations_total || 0} roster={data.roster} date={date}
+          version={data.attendance_version} busy={busy} save={save} />}
         <details><summary>Roll call and attendance corrections</summary><Button onClick={() => setMarks(Object.fromEntries(data.roster.filter((r) => r.identity_verified).map((r) => [r.id, 'PRESENT'])))}>Set verified roster present; review before saving</Button>
           {data.roster.map((r) => <TextField key={r.id} select fullWidth label={`${r.name}${r.identity_verified ? '' : ' — verified identity required'}`} disabled={!r.identity_verified || busy} value={marks[r.id] || ''} onChange={(e) => setMarks({ ...marks, [r.id]: e.target.value })}><MenuItem value="">Unmarked</MenuItem>{['PRESENT', 'ABSENT', 'TARDY', 'EXCUSED'].map((v) => <MenuItem key={v} value={v}>{v}</MenuItem>)}</TextField>)}
           <TextField fullWidth multiline label="Attendance confirmation or correction reason" value={reason} onChange={(e) => setReason(e.target.value)} /><Button disabled={busy || !reason.trim() || !Object.keys(marks).length} onClick={() => save({ operation: 'attendance', version: data.attendance_version, reason, items: Object.entries(marks).map(([student_id, status]) => ({ student_id, status })) })}>Save confirmed attendance</Button>
