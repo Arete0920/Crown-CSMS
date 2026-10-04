@@ -1,6 +1,23 @@
 import uuid
 from django.conf import settings
 from django.db import models
+from django.core.exceptions import ValidationError
+
+
+class SessionQuerySet(models.QuerySet):
+    def update(self, **kwargs):
+        raise ValidationError('Use validated import session transitions.')
+
+    def bulk_update(self, *args, **kwargs):
+        raise ValidationError('Use validated import session transitions.')
+
+    def bulk_create(self, *args, **kwargs):
+        raise ValidationError('Use validated import session transitions.')
+
+    def delete(self):
+        if self.filter(status__in=['committed', 'verified']).exists():
+            raise ValidationError('Committed import evidence must be retained.')
+        return super().delete()
 
 
 class StudentImportWizardSession(models.Model):
@@ -18,17 +35,18 @@ class StudentImportWizardSession(models.Model):
         (STATUS_VERIFIED, "Verified"),
     ]
 
+    objects = SessionQuerySet.as_manager()
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     school = models.ForeignKey(
         "core.School",
-        on_delete=models.CASCADE,
+        on_delete=models.PROTECT,
         related_name="student_import_wizard_sessions",
     )
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         null=True,
         blank=True,
-        on_delete=models.SET_NULL,
+        on_delete=models.PROTECT,
         related_name="+",
     )
     # Column mapping: {"first_name": "col_A", "last_name": "col_B", ...}
@@ -53,3 +71,17 @@ class StudentImportWizardSession(models.Model):
 
     def __str__(self):
         return f"StudentImportWizard {self.id} ({self.status})"
+
+    def save(self, *args, **kwargs):
+        if not self._state.adding:
+            previous = type(self).objects.get(pk=self.pk)
+            if previous.status in {self.STATUS_COMMITTED, self.STATUS_VERIFIED}:
+                retained = ('school_id', 'created_by_id', 'column_map', 'staged_rows', 'preview_result', 'commit_result')
+                if any(getattr(previous, key) != getattr(self, key) for key in retained) or self.status not in {previous.status, self.STATUS_VERIFIED}:
+                    raise ValidationError('Committed import evidence is retained; start a new reviewed session.')
+        return super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        if self.status in {self.STATUS_COMMITTED, self.STATUS_VERIFIED}:
+            raise ValidationError('Committed import evidence must be retained.')
+        return super().delete(*args, **kwargs)
