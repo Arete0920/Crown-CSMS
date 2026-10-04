@@ -256,7 +256,6 @@ A: Yes. No secrets printed, exit codes are deterministic, handles errors gracefu
 - Config: [CROWN_DEV_CANON.md](CROWN_DEV_CANON.md)
 - API Routes: [backend/crown_api/api_v1_urls.py](backend/crown_api/api_v1_urls.py)
 - Proof Script: [proof_dev_gradebook_final.ps1](proof_dev_gradebook_final.ps1)
-- Proof Docs: [docs/PROOF_DEV_GRADEBOOK_FINAL.md](docs/PROOF_DEV_GRADEBOOK_FINAL.md)
 - Ops Reset Workflow: [.github/workflows/ops-reset-dev.yml](.github/workflows/ops-reset-dev.yml)
 - Deploy Workflow: [.github/workflows/stabilization-20260116-spine_crown-api-dev.yml](.github/workflows/stabilization-20260116-spine_crown-api-dev.yml)
 
