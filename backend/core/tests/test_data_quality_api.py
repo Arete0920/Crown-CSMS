@@ -3,8 +3,6 @@ from datetime import date
 
 import pytest
 from django.test import Client
-from django.utils import timezone
-
 from core.models import (
     AcademicYear,
     CrownPermission,
