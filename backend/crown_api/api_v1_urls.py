@@ -24,6 +24,7 @@ from applications.views_admissions_identity import (
     admissions_lifecycle_chain_update,
 )
 from crown_api.admissions_runtime import admissions_summary
+from crown_api.data_quality_views import school_data_quality
 from crown_api.system_views import SeedStatusView, demo_reset_view, diagnose_db_tables_view, fix_schema_drift_view
 from crown_api.ops_views import ensure_ci_user, demo_school
 from crown_api.release_gate_views import (
@@ -92,6 +93,9 @@ urlpatterns = [
         name="admissions_application_event_replay",
     ),
     path("learning-continuity/", include("learning_continuity.urls")),
+    # School data quality (tenant-scoped, read-only)
+    path("integrity/data-quality/", school_data_quality, name="integrity-data-quality"),
+
     # System telemetry
     path("system/seed-status/", SeedStatusView.as_view(), name="seed_status"),
     path("system/demo-reset/", demo_reset_view, name="system-demo-reset"),

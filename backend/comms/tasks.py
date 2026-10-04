@@ -85,42 +85,35 @@ def drain_outbox(self, batch_size: int = 25) -> dict:
     Each delivery is executed inside an explicit school tenant context. The
     context manager restores or clears task-local state after success or error.
     """
+    from .release_services import activate_due_releases
+
+    activate_due_releases()
     now = timezone.now()
     sent = failed = dead = 0
-
-    with transaction.atomic():
-        batch = list(
-            OutboxMessage.objects
-            .select_for_update(skip_locked=True)
-            .filter(status=OutboxMessage.STATUS_PENDING, next_attempt_at__lte=now)
-            .order_by("next_attempt_at")[:batch_size]
-        )
-
-    for msg in batch:
-        try:
+    # Lock one message through the provider call and persistence. Other workers
+    # skip it; retries remain at-least-once if the provider accepts before a crash.
+    for _ in range(max(0, min(batch_size, 100))):
+        with transaction.atomic():
+            msg = (OutboxMessage.objects.select_for_update(skip_locked=True)
+                   .filter(status=OutboxMessage.STATUS_PENDING, next_attempt_at__lte=now)
+                   .order_by("next_attempt_at", "id").first())
+            if msg is None:
+                break
             msg.attempts += 1
-            msg.save(update_fields=["attempts"])
-
-            _send_in_tenant(msg)
-
-            msg.status = OutboxMessage.STATUS_SENT
-            msg.sent_at = timezone.now()
-            msg.last_error = ""
-            msg.save(update_fields=["status", "sent_at", "last_error"])
-            sent += 1
-
-        except Exception as exc:  # noqa: BLE001
-            msg.last_error = str(exc)[:1000]
-            if msg.attempts >= MAX_ATTEMPTS:
-                msg.status = OutboxMessage.STATUS_DEAD
-                msg.save(update_fields=["status", "last_error"])
-                dead += 1
-                logger.error("OutboxMessage %s moved to DEAD after %d attempts: %s", msg.id, msg.attempts, exc)
-            else:
-                delay = _backoff_seconds(msg.attempts)
-                msg.next_attempt_at = timezone.now() + timezone.timedelta(seconds=delay)
-                msg.save(update_fields=["last_error", "next_attempt_at"])
-                failed += 1
-                logger.warning("OutboxMessage %s failed (attempt %d), retry in %ds: %s", msg.id, msg.attempts, delay, exc)
-
+            try:
+                _send_in_tenant(msg)
+                msg.status = OutboxMessage.STATUS_SENT
+                msg.sent_at = timezone.now()
+                msg.last_error = ""
+                sent += 1
+            except Exception as exc:  # noqa: BLE001
+                msg.last_error = str(exc)[:1000]
+                if msg.attempts >= MAX_ATTEMPTS:
+                    msg.status = OutboxMessage.STATUS_DEAD
+                    dead += 1
+                else:
+                    msg.next_attempt_at = timezone.now() + timezone.timedelta(seconds=_backoff_seconds(msg.attempts))
+                    failed += 1
+                logger.warning("OutboxMessage %s failed on attempt %d", msg.id, msg.attempts)
+            msg.save(update_fields=["attempts", "status", "sent_at", "last_error", "next_attempt_at"])
     return {"sent": sent, "failed": failed, "dead": dead}

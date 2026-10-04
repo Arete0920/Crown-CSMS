@@ -126,3 +126,6 @@ class MessageLog(models.Model):
             f"MessageLog({self.channel}, {self.delivery_status}, "
             f"{self.created_at:%Y-%m-%d})"
         )
+
+# Register versioned content models with the canonical communications app.
+from .release_models import ContentRelease, ReleaseReceipt  # noqa: E402,F401
