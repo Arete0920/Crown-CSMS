@@ -4,7 +4,7 @@ set -euo pipefail
 
 REPO="Arete0920/Crown-CSMS"
 BRANCH="main"
-EXPORT_PATH="docs/release/branch-protection-export.json"
+EXPORT_PATH="audit-artifacts/branch-protection/branch-protection-export.json"
 
 echo "==> Applying branch protection rules to ${REPO}/${BRANCH}..."
 
