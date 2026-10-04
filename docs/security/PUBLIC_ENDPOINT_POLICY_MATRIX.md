@@ -10,7 +10,6 @@ Machine authority: docs/security/public_endpoint_policy_matrix.json
 | backend/applications/views_admissions.py | admissions_submit | approved | Admissions Platform |
 | backend/board_oversight/api_governance.py | public_roadmap | approved | Governance Platform |
 | backend/board_oversight/api_governance.py | release_notes | approved | Governance Platform |
-| backend/crown_api/director_views.py | force_seed_user | temporary | Platform Engineering |
 | backend/crown_api/ops_views.py | ensure_ci_user | temporary | Platform Engineering |
 | backend/onboarding/api_onboarding.py | solomon_articles | approved | Onboarding Team |
 | backend/onboarding/api_onboarding.py | solomon_article_detail | approved | Onboarding Team |
