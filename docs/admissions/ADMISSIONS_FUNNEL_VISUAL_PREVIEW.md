@@ -78,17 +78,10 @@ Current state reflects implemented and tested behavior:
 
 ## 7) Primary Source Links
 
-- Industry benchmark and mission-fit comparison:
-  - docs/admissions/ADMISSIONS_WIZARD_BENCHMARK_20260522.md
-
-- Phased execution backlog with 25 improvements:
-  - docs/admissions/ADMISSIONS_WIZARD_IMPROVEMENT_BACKLOG_20260522.md
-
-- Sprint 1-6 execution board with ticket IDs and dependencies:
-  - docs/admissions/ADMISSIONS_WIZARD_SPRINT_BOARD_20260522.md
-
 - Mission-aligned process baseline:
   - docs/admissions/ADMISSIONS_FUNNEL_PROCESS_MISSION_ALIGNED.md
+- Current admissions/enrollment authority:
+  - docs/admissions/ADMISSIONS_ENROLLMENT_AUTHORITY_20260808.md
 - Runtime pipeline page:
   - frontend/dashboards/src/pages/AdmissionsPipelineList.jsx
 - Public admissions wizard page:
