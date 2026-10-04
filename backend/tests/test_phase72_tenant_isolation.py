@@ -19,7 +19,7 @@ For each module we test three invariants:
   2. Valid header, correct school â†’ 200 (user owns their data)
   3. Valid header, wrong school   â†’ 404 (canonical) or data-isolated 200 (non-canonical)
 
-Evidence basis: TENANT_AUDIT_CERTIFICATION.md Â§4 "Test Coverage"
+Evidence basis: current tenant-isolation implementation and regression coverage
 Branch: phase/7.2-tenant-isolation-audit
 """
 
