@@ -1,0 +1,52 @@
+name: Content Operations Verification
+on:
+  pull_request:
+    branches: [main]
+    paths: ['backend/comms/**', 'backend/reenrollment/**', 'frontend/dashboards/src/features/contentOperations/**', 'frontend/dashboards/src/pages/ReenrollmentWizard.jsx', 'frontend/dashboards/src/pages/ParentLifecycleStatusCenterPage.jsx', 'frontend/dashboards/src/pages/ParentDashboard.jsx', 'frontend/dashboards/src/pages/reenrollment/**', 'frontend/dashboards/src/api/reenrollment.js', '.github/workflows/content-operations-verification.yml']
+  push:
+    branches: [main]
+    paths: ['backend/comms/**', 'backend/reenrollment/**', 'frontend/dashboards/src/features/contentOperations/**', '.github/workflows/content-operations-verification.yml']
+permissions:
+  contents: read
+concurrency:
+  group: content-operations-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  content-operations-postgresql:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: content_ci
+          POSTGRES_USER: content_ci
+          POSTGRES_PASSWORD: content-ci-only
+        ports: ['5432:5432']
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+    env:
+      DATABASE_URL: postgresql://content_ci:content-ci-only@localhost:5432/content_ci
+      SECRET_KEY: content-ci-only-secret
+      DEBUG: '0'
+      ALLOWED_HOSTS: localhost,127.0.0.1,testserver
+    steps:
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - uses: actions/setup-python@7f4fc3e22c37d6ff65e88745f38bd3157c663f7c
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+      - run: python -m pip install -r backend/requirements.txt
+      - run: python backend/manage.py makemigrations --check --dry-run
+      - run: python -m pytest backend/comms/tests backend/reenrollment/tests backend/payments/tests/test_school_store.py -q
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - run: npm ci --no-audit --no-fund
+        working-directory: frontend/dashboards
+      - run: npx vitest run src/features/contentOperations/ContentReleases.test.jsx
+        working-directory: frontend/dashboards
+      - run: npx eslint src/features/contentOperations/*.jsx src/pages/ReenrollmentWizard.jsx src/pages/ParentLifecycleStatusCenterPage.jsx src/pages/ParentDashboard.jsx src/pages/reenrollment/Step1Config.jsx src/api/reenrollment.js
+        working-directory: frontend/dashboards
+      - run: npm run build
+        working-directory: frontend/dashboards
