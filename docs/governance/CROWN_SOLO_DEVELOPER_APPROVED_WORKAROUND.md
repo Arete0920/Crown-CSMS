@@ -60,7 +60,7 @@ Control path used:
 [Independent reviewer / GitHub required checks / CI release gate / Solo-developer approved workaround]
 
 Development-support role:
-Support, architecture, engineering review, and evidence audit only. Automated assistance is not approval authority.
+Engineering support, architecture, review, and evidence audit are advisory. Approval authority remains with the repository owner under this control path.
 ```
 
 ## 5. Deployment Rule
