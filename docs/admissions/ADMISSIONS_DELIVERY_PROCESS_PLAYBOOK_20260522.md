@@ -6,7 +6,7 @@
 >
 > Current controlling sources:
 > - docs/CURRENT_RELEASE_STATUS.md
-> - docs/release/CURRENT_RELEASE_SCORECARD_20260528.md
+> - docs/canonical/CANONICAL_DOCUMENT_INDEX.md
 
 Date: 2026-05-22
 Purpose: operationalize the admissions funnel improvement roadmap into daily execution, governance, and measurable outcomes.
