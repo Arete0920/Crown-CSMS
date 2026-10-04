@@ -1,5 +1,7 @@
 # PYSEC-2024-271 Flask-Cors Risk Acceptance
 
+Status: **retired on 2026-10-02**. An unfiltered `pip-audit 2.10.1 --strict` run against backend and load-test requirements completed with no known vulnerabilities. CI no longer ignores this advisory. The dated rationale below is historical and does not authorize future suppression.
+
 Date: 2026-05-21
 
 ## Advisory
