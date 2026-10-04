@@ -42,7 +42,7 @@ Repository and external-service transfer requirements. Start with `ownership/OWN
 
 Only documents listed in `canonical/CANONICAL_DOCUMENT_INDEX.md` are current canonical authority. Dated audit, certification, sandbox, release, migration, and proof records outside the canonical index are historical or controlled supporting evidence unless a current canonical document explicitly incorporates them.
 
-Historical evidence should be moved under `archive/` when doing so does not break durable references. Do not delete evidence solely because it is old.
+Historical material should not remain in the active tree merely because it once existed. Git history is the default archive for superseded status snapshots and retired execution records. Keep historical files in the working tree only when a current legal, audit, operational, or diligence requirement explicitly depends on them.
 
 ## Recommended reading order
 
