@@ -1,5 +1,5 @@
 # tools/audit/run_audit.ps1
-# Crown2026 Deep Audit Runner (repo-wide + dashboards focus)
+# CROWN Deep Audit Runner (repo-wide + dashboards focus)
 # Produces: ./AUDIT_REPORT.md and ./audit_artifacts/*
 
 $ErrorActionPreference = "Continue"
@@ -58,7 +58,7 @@ $art   = Join-Path (Get-Location) "audit_artifacts"
 New-Item -ItemType Directory -Force -Path $art | Out-Null
 
 $report = Join-Path (Get-Location) "AUDIT_REPORT.md"
-"## Crown2026 Deep Audit Report"        | Set-Content  $report
+"## CROWN Deep Audit Report"        | Set-Content  $report
 "**Generated:** $stamp"                 | Add-Content $report
 ""                                      | Add-Content $report
 
@@ -89,7 +89,7 @@ AppendFenced "" ($pyVer.out + $pipVer.out + $nodeVer.out + $npmVer.out)
 Section "3) Backend audit"
 Push-Location ".\backend"
 
-$venvPy = "C:\Users\JMega\OneDrive\Desktop\Crown2026\.venv\Scripts\python.exe"
+$venvPy = Join-Path (Resolve-Path "..") ".venv\Scripts\python.exe"
 if (!(Test-Path $venvPy)) { $venvPy = "python" }
 
 $reqPath = "..\requirements.txt"
@@ -97,9 +97,9 @@ if (Test-Path $reqPath) {
   $hasPA = & $venvPy -m pip show pip-audit 2>$null
   if ($hasPA) {
     $pipAudit = RunWithTimeout "pip-audit" 90 {
-      $py = "C:\Users\JMega\OneDrive\Desktop\Crown2026\.venv\Scripts\python.exe"
+      $py = Join-Path (Resolve-Path "..") ".venv\Scripts\python.exe"
       if (!(Test-Path $py)) { $py = "python" }
-      & $py -m pip_audit -r "C:\Users\JMega\OneDrive\Desktop\Crown2026\requirements.txt" 2>&1
+      & $py -m pip_audit -r (Join-Path (Resolve-Path "..") "requirements.txt") 2>&1
     }
   } else {
     $pipAudit = @{ ok=$false; out="pip-audit not installed - skipping" }
@@ -111,9 +111,9 @@ if (Test-Path $reqPath) {
 $hasB = & $venvPy -m pip show bandit 2>$null
 if ($hasB) {
   $bandit = RunWithTimeout "bandit" 60 {
-    $py = "C:\Users\JMega\OneDrive\Desktop\Crown2026\.venv\Scripts\python.exe"
+    $py = Join-Path (Resolve-Path "..") ".venv\Scripts\python.exe"
     if (!(Test-Path $py)) { $py = "python" }
-    Set-Location "C:\Users\JMega\OneDrive\Desktop\Crown2026\backend"
+    Set-Location (Resolve-Path ".")
     & $py -m bandit -r . -q -ll 2>&1
   }
 } else {
@@ -121,8 +121,8 @@ if ($hasB) {
 }
 
 $pytest = RunWithTimeout "pytest" 120 {
-  Set-Location "C:\Users\JMega\OneDrive\Desktop\Crown2026\backend"
-  $py = "C:\Users\JMega\OneDrive\Desktop\Crown2026\.venv\Scripts\python.exe"
+  Set-Location (Resolve-Path ".")
+  $py = Join-Path (Resolve-Path "..") ".venv\Scripts\python.exe"
   if (!(Test-Path $py)) { $py = "python" }
   & $py -m pytest -q --tb=no -x 2>&1
 }

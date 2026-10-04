@@ -1,17 +1,14 @@
 param(
   [Alias("APITimeout")][int]$TimeoutSec = 20,
-  [int]$AdmissionsCount = 10,
-  [string]$TagName = ""
+  [int]$AdmissionsCount = 10
 )
 
 $ErrorActionPreference = "Stop"
 
 $mainRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\.."))
 $backendRoot = Join-Path $mainRoot "backend"
-$scriptsRoot = Join-Path $mainRoot "tools\dev_scripts"
 $py = Join-Path $mainRoot ".venv\Scripts\python.exe"
 
-$tagger = Join-Path $scriptsRoot "tag_green3.ps1"
 
 if (-not (Test-Path $py)) { throw "Python not found: $py" }
 if (-not (Test-Path $backendRoot)) { throw "Backend path not found: $backendRoot" }
@@ -130,11 +127,6 @@ catch {
 }
 Pop-Location
 
-if (-not [string]::IsNullOrWhiteSpace($TagName)) {
-  if (-not (Test-Path $tagger)) { throw "Missing script: $tagger" }
-  powershell -ExecutionPolicy Bypass -File $tagger -TagName $TagName
-  if ($LASTEXITCODE -ne 0) { throw "tag_green3 failed exit=$LASTEXITCODE" }
-}
 
 Write-Host "LOCKDOWN_RUN=GREEN"
 exit 0
