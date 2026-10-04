@@ -5,12 +5,12 @@ from django.shortcuts import get_object_or_404
 from rest_framework import status
 from rest_framework.authentication import SessionAuthentication
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
-from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from aid.models import AidApplication, AidAuditEvent, AidAward
 from core.models import AcademicYear, School, Student
+from core.permissions import CrownModulePermission
 from households.scoping import get_request_school_id
 
 from .models import FinancialAidWizardSession
@@ -18,7 +18,8 @@ from drf_spectacular.utils import extend_schema
 from drf_spectacular.types import OpenApiTypes
 
 _AUTH = [JWTAuthentication, SessionAuthentication]
-_PERM = [IsAuthenticated]
+_VIEW_PERM = [CrownModulePermission("financial_aid.view")]
+_EDIT_PERM = [CrownModulePermission("financial_aid.view", write_code="financial_aid.edit")]
 BUCKET_MAP = {value.lower(): value for value, _label in AidAward.TYPE_CHOICES}
 VALID_BUCKETS = set(BUCKET_MAP)
 
@@ -54,7 +55,7 @@ def _currency_to_cents(amount: Decimal) -> int:
 @extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 @authentication_classes(_AUTH)
-@permission_classes(_PERM)
+@permission_classes(_EDIT_PERM)
 def create_session(request):
     school_id = get_request_school_id(request)
     school = get_object_or_404(School, id=school_id)
@@ -68,7 +69,7 @@ def create_session(request):
 @extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 @authentication_classes(_AUTH)
-@permission_classes(_PERM)
+@permission_classes(_EDIT_PERM)
 def configure_session(request, session_id):
     school_id = get_request_school_id(request)
     session = _get_session(session_id, school_id)
@@ -86,7 +87,7 @@ def configure_session(request, session_id):
 @extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 @authentication_classes(_AUTH)
-@permission_classes(_PERM)
+@permission_classes(_EDIT_PERM)
 def save_buckets(request, session_id):
     school_id = get_request_school_id(request)
     session = _get_session(session_id, school_id)
@@ -119,7 +120,7 @@ def save_buckets(request, session_id):
 @extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 @authentication_classes(_AUTH)
-@permission_classes(_PERM)
+@permission_classes(_EDIT_PERM)
 def stage_awards(request, session_id):
     school_id = get_request_school_id(request)
     session = _get_session(session_id, school_id)
@@ -184,7 +185,7 @@ def stage_awards(request, session_id):
 @extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 @authentication_classes(_AUTH)
-@permission_classes(_PERM)
+@permission_classes(_EDIT_PERM)
 def commit_session(request, session_id):
     school_id = get_request_school_id(request)
     session = _get_session(session_id, school_id)
@@ -297,7 +298,7 @@ def commit_session(request, session_id):
 @extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["GET"])
 @authentication_classes(_AUTH)
-@permission_classes(_PERM)
+@permission_classes(_VIEW_PERM)
 def verify_session(request, session_id):
     school_id = get_request_school_id(request)
     session = _get_session(session_id, school_id)
