@@ -20,6 +20,7 @@ from .family_views import text, timestamp
 from .models import Section, Enrollment, LessonPlan
 from .operations_models import ClassroomAttendanceSession, ClassroomSubstituteGrant, ClassroomEmergencySession, ClassroomEmergencyCheck, ClassroomOperationEvent
 from .attendance_evidence import record_attendance_evidence
+from .absence_review import pending_explanations, review_explanation
 from .submission_workflow_views import _uuid
 
 
@@ -77,7 +78,11 @@ def classroom_operations(request):
         session = ClassroomAttendanceSession.objects.filter(school_id=school, section=section, date=day).first()
         emergencies = ClassroomEmergencySession.objects.filter(school_id=school, section=section).order_by('-started_at')
         own_authority = is_leader(request.user, school) or taught_sections(request.user, school).filter(id=section.id).exists()
+        explanations = pending_explanations(school, section, day) if own_authority else None
         result.update({'section_id': section.id, 'date': day, 'can_delegate': own_authority, 'attendance_version': session.version if session else 0,
+            'can_review_absences': own_authority,
+            'absence_explanations': list(explanations.values('id', 'student_id', 'title', 'body', 'metadata', 'version')[:100]) if own_authority else [],
+            'absence_explanations_total': explanations.count() if own_authority else 0,
             'roster': [{'id': s.id, 'name': f'{s.first_name} {s.last_name}', 'identity_verified': s.id in links,
                         'attendance': attendance.get(links.get(s.id))} for s in students],
             'attendance_history': list(session.events.values('version', 'changes', 'reason', 'created_at')) if session else [],
@@ -92,11 +97,11 @@ def classroom_operations(request):
         raise ValidationError('Request must be an object.')
     section = get_object_or_404(sections, id=_uuid(data.get('section_id'), 'section_id'))
     operation = data.get('operation')
-    if operation not in {'attendance', 'grant', 'revoke', 'emergency', 'check', 'complete'}:
+    if operation not in {'attendance', 'review_absence', 'grant', 'revoke', 'emergency', 'check', 'complete'}:
         raise ValidationError('Invalid classroom operation.')
     own_authority = is_leader(request.user, school) or taught_sections(request.user, school).filter(id=section.id).exists()
-    if operation in {'grant', 'revoke'} and not own_authority:
-        raise PermissionDenied('Substitutes cannot delegate or extend access.')
+    if operation in {'grant', 'revoke', 'review_absence'} and not own_authority:
+        raise PermissionDenied('Assigned teacher or school leader authority required.')
     key = _uuid(data.get('request_key'), 'request_key')
     fingerprint = hashlib.sha256(json.dumps(data, sort_keys=True).encode()).hexdigest()
     with transaction.atomic():
@@ -107,7 +112,12 @@ def classroom_operations(request):
         previous = ClassroomOperationEvent.objects.filter(school_id=school, actor=request.user, request_key=key).first()
         if previous:
             return Response(previous.result) if previous.fingerprint == fingerprint else Response({'detail': 'Retry key conflict.'}, status=409)
-        if operation == 'attendance':
+        if operation == 'review_absence':
+            if not (is_leader(request.user, school) or taught_sections(request.user, school).filter(id=section.id).exists()):
+                raise PermissionDenied('Assigned teacher or school leader authority required.')
+            result = review_explanation(school=school, section=section, day=day_for(data.get('date')),
+                actor=request.user, data=data, key=key, fingerprint=fingerprint)
+        elif operation == 'attendance':
             day = day_for(data.get('date'))
             session = ClassroomAttendanceSession.objects.filter(school_id=school, section=section, date=day).first()
             expected = data.get('version')

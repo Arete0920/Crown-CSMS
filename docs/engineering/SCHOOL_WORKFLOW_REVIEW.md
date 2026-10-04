@@ -35,7 +35,8 @@ external interfaces, narration, branding, or proprietary implementation.
 ## Integration order
 
 1. Repair the existing family agenda, with scoped tests and explicit list limits.
-2. Exercise admissions document continuity, absence review, care billing and scheduling
+2. Absence review now uses the audited canonical attendance workflow; see
+   `ABSENCE_REVIEW.md`. Exercise admissions document continuity, care billing and scheduling
    scenarios against the authoritative source; create changes only for reproducible gaps.
 3. Establish separately reviewable health and staff-requirement contracts with canonical
    ownership and access controls before introducing new persistence.
