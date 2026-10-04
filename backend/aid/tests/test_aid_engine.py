@@ -316,6 +316,6 @@ class TestRecommendAward(TestCase):
             pastoral_reference_score=90,
             pog_preassessment_score=90,
         )
-        rec = recommend_award(policy, app, gross_tuition_cents=10_000_00)
+        rec = recommend_award(policy, app, gross_tuition_cents=10_000_00, award_type="MISSION")
         self.assertEqual(rec.mas_score, 90)
         self.assertEqual(rec.mas_modifier_bps, 1000)  # 90 → +10% band

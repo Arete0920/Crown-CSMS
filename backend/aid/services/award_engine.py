@@ -124,9 +124,12 @@ class AwardRecommendation:
     explanation: Dict[str, Any]
 
 
-def recommend_award(policy, app, gross_tuition_cents: int) -> AwardRecommendation:
+def recommend_award(policy, app, gross_tuition_cents: int, award_type: str = "NEED") -> AwardRecommendation:
     """
     Compute a deterministic, explainable award recommendation.
+
+    Economic need is calculated independently from mission-alignment inputs.
+    Mission-alignment modifiers are applied only to MISSION awards.
 
     Returns AwardRecommendation with all intermediate values in .explanation
     for use in transparency screens and audit logs.
@@ -134,16 +137,15 @@ def recommend_award(policy, app, gross_tuition_cents: int) -> AwardRecommendatio
     No side effects; does not write to the database.
     """
     mas_score, mas_detail = compute_mas_score(policy, app)
-    mod_bps = mas_modifier_bps(mas_score)
+    mission_modifier_candidate_bps = mas_modifier_bps(mas_score)
+    mod_bps = mission_modifier_candidate_bps if award_type == "MISSION" else 0
 
     need_cents, need_detail = compute_economic_need_cents(policy, app, gross_tuition_cents)
 
-    # Base award = need, bounded by [min_percent, max_percent] of gross tuition
     max_award = int(gross_tuition_cents * (policy.max_award_percent / 100.0))
     min_award = int(gross_tuition_cents * (policy.min_award_percent / 100.0))
     base_award = clamp_int(need_cents, min_award, max_award)
 
-    # Apply MAS modifier to base award; re-clamp to [0, max_award]
     adjusted = int(base_award * (1.0 + mod_bps / 10_000.0))
     adjusted = clamp_int(adjusted, 0, max_award)
 
@@ -153,6 +155,12 @@ def recommend_award(policy, app, gross_tuition_cents: int) -> AwardRecommendatio
         "mas": mas_detail,
         "base_award_cents": base_award,
         "mas_modifier_bps": mod_bps,
+        "mission_modifier_candidate_bps": mission_modifier_candidate_bps,
+        "institutional_adjustment": {
+            "award_type": award_type,
+            "mission_modifier_applied": award_type == "MISSION",
+            "applied_modifier_bps": mod_bps,
+        },
         "recommended_award_cents": adjusted,
         "bounds": {
             "min_award_cents": min_award,
