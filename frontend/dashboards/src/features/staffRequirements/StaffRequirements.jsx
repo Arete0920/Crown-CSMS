@@ -8,7 +8,7 @@ const today = () => new Date().toLocaleDateString('en-CA');
 
 function Requirement({ row, canEdit, busy, save }) {
   const [reason, setReason] = useState('');
-  const [completed, setCompleted] = useState(today());
+  const [completed, setCompleted] = useState(row.today || today());
   const [expiry, setExpiry] = useState('');
   const [evidence, setEvidence] = useState('');
   const [due, setDue] = useState(row.due_date);
@@ -83,7 +83,10 @@ export default function StaffRequirements() {
     if (retry.current?.signature !== signature) retry.current = { signature, payload: { ...payload, request_key: crypto.randomUUID() } };
     setBusy(true); setError(''); setMessage('');
     try { await api.post(endpoint, retry.current.payload); retry.current = null; setSnapshot(null); setMessage('Staff requirement record saved.'); setRefresh((v) => v + 1); }
-    catch (err) { setError(String(err.response?.data?.detail || 'Save not confirmed. Your entries are retained; retry or refresh before changing this record.')); }
+    catch (err) {
+      if ([401, 403, 404].includes(err.response?.status)) { setSnapshot(null); retry.current = null; }
+      setError(String(err.response?.data?.detail || 'Save not confirmed. Your entries are retained; retry or refresh before changing this record.'));
+    }
     finally { setBusy(false); }
   }
   return <Box sx={{ p: 2 }}><Typography component="h2" variant="h6">Staff requirements and renewals</Typography>
@@ -107,7 +110,7 @@ export default function StaffRequirements() {
       <Typography>Showing {data.requirements.length ? data.offset + 1 : 0}–{data.offset + data.requirements.length} of {data.total} requirements</Typography>
       <Button disabled={busy || offset === 0} onClick={() => setOffset(Math.max(0, offset - 100))}>Previous requirement page</Button>
       <Button disabled={busy || data.next_offset === null} onClick={() => setOffset(data.next_offset)}>Next requirement page</Button>
-      {data.requirements.map((row) => <Requirement key={`${row.id}:${row.version}`} row={row} canEdit={data.can_edit} busy={busy} save={save} />)}
+      {data.requirements.map((row) => <Requirement key={`${row.id}:${row.version}`} row={{ ...row, today: data.today }} canEdit={data.can_edit} busy={busy} save={save} />)}
     </>}
   </Box>;
 }

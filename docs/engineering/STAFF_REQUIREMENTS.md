@@ -17,7 +17,8 @@ stores references and decisions, not confidential background-report contents.
 
 Statuses derive from the recorded dates: pending, overdue, complete, expired, and
 expiring within 30 days. Expiry is inclusive through its date; a record expires on the
-following day. Counts cover the full selected set; requirements and review histories use 100-row pages. Staff
+following day in the school timezone. Completion limits and the default completion
+date also use the school calendar; invalid school timezones fail closed. Counts cover the full selected set; requirements and review histories use 100-row pages. Staff
 choices are bounded to 200 with a search and full counts. Inactive staff retain their
 historical requirements but cannot receive new assignments.
 

@@ -14,7 +14,7 @@ URL = '/api/v1/hr/staff-requirements/'
 
 @pytest.fixture
 def context():
-    school = School.objects.create(name='Staff requirements school')
+    school = School.objects.create(name='Staff requirements school', timezone='UTC')
     user = UserAccount.objects.create_user(username='requirements-reviewer', school=school)
     role = f'requirements-{uuid.uuid4().hex[:8]}'
     UserRole.objects.create(user=user, school=school, role_code=role)
@@ -170,9 +170,11 @@ def test_staff_search_and_selected_staff_never_expand_scope(context):
     assert get(c, staff_id=str(uuid.uuid4())).status_code == 404
 
 
-@pytest.mark.parametrize('payload', [{'operation': 'delete'}, {'operation': 'create', 'staff_id': 'invalid'},
+@pytest.mark.parametrize('payload', [{'operation': []}, {'operation': 'create', 'staff_id': str(uuid.uuid4()), 'category': []}, {'operation': 'delete'}, {'operation': 'create', 'staff_id': 'invalid'},
     {'operation': 'create', 'staff_id': None}, {'operation': 'reopen', 'requirement_id': 'invalid', 'version': 1}])
 def test_invalid_operations_and_identifiers_fail_closed(context, payload):
+    if 'category' in payload:
+        payload = {**payload, 'staff_id': str(context[3].id)}
     assert post(context, **payload).status_code == 400
 
 
@@ -188,3 +190,19 @@ def test_review_history_pages_retain_every_event(context):
     assert second['events'][-1]['version'] == 1 and second['next_offset'] is None
     assert get(c, requirement_id=row['id'], history_offset=-1).status_code == 400
     assert get(c, requirement_id=row['id'], history_offset='bad').status_code == 400
+
+
+def test_requirement_dates_use_school_calendar_at_utc_midnight(context, monkeypatch):
+    from datetime import datetime, timezone as dt_timezone
+    c=context; c[0].timezone='America/New_York'; c[0].save()
+    monkeypatch.setattr(timezone, 'now', lambda: datetime(2026,10,4,2,tzinfo=dt_timezone.utc))
+    row=create(c).data
+    assert post(c,operation='complete',requirement_id=row['id'],version=1,completed_on='2026-10-04',evidence_reference='record').status_code == 400
+    assert post(c,operation='complete',requirement_id=row['id'],version=1,completed_on='2026-10-03',valid_until='2026-10-03',evidence_reference='record').status_code == 200
+    data=get(c).data
+    assert data['today'] == '2026-10-03' and data['requirements'][0]['status'] == 'expiring'
+
+
+def test_invalid_school_timezone_fails_closed(context):
+    c=context; c[0].timezone='Invalid/School'; c[0].save()
+    assert get(c).status_code == 400 and create(c).status_code == 400

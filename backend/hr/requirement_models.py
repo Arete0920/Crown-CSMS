@@ -1,9 +1,17 @@
 """School requirements referencing canonical staff, with retained review evidence."""
 import uuid
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
+
+
+def school_today(school):
+    try:
+        return timezone.now().astimezone(ZoneInfo(school.timezone)).date()
+    except (ZoneInfoNotFoundError, ValueError, TypeError):
+        raise ValidationError('A valid school timezone is required for requirement dates.')
 
 
 class RequirementQuerySet(models.QuerySet):
@@ -45,7 +53,7 @@ class StaffRequirement(models.Model):
             raise ValidationError('Requirement and staff must belong to the same school.')
         if self.completed_on and not self.evidence_reference.strip():
             raise ValidationError('Completion requires an evidence reference.')
-        if self.completed_on and self.completed_on > timezone.localdate():
+        if self.completed_on and self.completed_on > school_today(self.school):
             raise ValidationError('Completion cannot be recorded in the future.')
         if self.valid_until and (not self.completed_on or self.valid_until < self.completed_on):
             raise ValidationError('Expiry must be on or after the recorded completion date.')
