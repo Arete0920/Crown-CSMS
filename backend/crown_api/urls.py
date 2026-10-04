@@ -3,7 +3,6 @@ URL configuration for crown_api project.
 """
 
 import logging
-import importlib.util
 from django.urls import include, path
 from django.views.generic import RedirectView
 from drf_spectacular.views import (
@@ -146,12 +145,3 @@ try:
     urlpatterns.append(path("admin/", site.urls))
 except Exception:
     logger.exception("crown_api.urls: failed to register admin URL")
-
-urlpatterns += [
-    # Optional app in some environments; avoid crashing URLConf when absent.
-    *(
-        [path("", include("release_closeout.urls"))]
-        if importlib.util.find_spec("release_closeout")
-        else []
-    ),
-]

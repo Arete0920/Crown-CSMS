@@ -639,16 +639,6 @@ GOOGLE_WALLET_ISSUER_ID = os.getenv("GOOGLE_WALLET_ISSUER_ID", "")
 GOOGLE_WALLET_SERVICE_ACCOUNT_JSON = os.getenv("GOOGLE_WALLET_SERVICE_ACCOUNT_JSON", "")  # JSON string or file path
 GOOGLE_WALLET_BASE_URL = os.getenv("GOOGLE_WALLET_BASE_URL", "https://pay.google.com/gp/v/save/")
 
-import importlib.util
-import sys
-if str(BASE_DIR.parent) not in sys.path:
-    sys.path.append(str(BASE_DIR.parent))
-
-INSTALLED_APPS = globals().get("INSTALLED_APPS", [])
-if importlib.util.find_spec("release_closeout") and "release_closeout" not in INSTALLED_APPS:
-    INSTALLED_APPS.append("release_closeout")
-
-INSTALLED_APPS = globals().get("INSTALLED_APPS", INSTALLED_APPS if "INSTALLED_APPS" in globals() else [])
 if "django_extensions" not in INSTALLED_APPS:
     INSTALLED_APPS.append("django_extensions")
 # === CROWN DEPLOY SECURITY SETTINGS START ===
