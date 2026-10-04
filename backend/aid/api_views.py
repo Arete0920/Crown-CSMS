@@ -14,14 +14,16 @@ from rest_framework import status
 from django.utils import timezone
 from django.db.models import Sum
 
-from aid.models import AidApplication, AidAward, AidPolicy, AidBudgetTracker
+from aid.models import AidApplication, AidAward, AidPolicy, AidBudgetTracker, AidFinancialProfile
 from aid.serializers import (
     AidApplicationSerializer,
     AidAwardSerializer,
     AidAwardWithExplanationSerializer,
     AidBudgetTrackerSerializer,
+    AidFinancialProfileSerializer,
 )
 from aid.services.award_engine import recommend_award
+from aid.services.profile_service import build_engine_application, build_review_signals, carry_forward_profile
 from aid.services.ledger_bridge import AidBudgetError, approve_award
 from core.models import AcademicYear, LedgerEntry
 from households.scoping import MissingSchoolContext, get_request_school_id
@@ -343,7 +345,8 @@ def admin_recommend_award(request):
             status=status.HTTP_404_NOT_FOUND,
         )
 
-    rec = recommend_award(policy, app, gross_tuition_cents)
+    engine_app = build_engine_application(app)
+    rec = recommend_award(policy, engine_app, gross_tuition_cents, award_type=bucket)
 
     award = AidAward.objects.create(
         school=app.school,
@@ -453,3 +456,62 @@ def family_aid_status(request):
         "application": AidApplicationSerializer(application).data if application else None,
         "awards": AidAwardSerializer(awards, many=True).data,
     })
+
+
+@extend_schema(responses=OpenApiTypes.OBJECT)
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def admin_application_review(request, application_id):
+    """Return deterministic review signals and canonical profile data."""
+    school_id = get_request_school_id(request)
+    try:
+        app = (
+            AidApplication.objects
+            .select_related("financial_profile")
+            .get(pk=application_id, school_id=school_id)
+        )
+    except AidApplication.DoesNotExist:
+        return Response({"detail": "AidApplication not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    profile = app.financial_profile
+    return Response({
+        "application_id": app.id,
+        "review_signals": build_review_signals(app),
+        "financial_profile": AidFinancialProfileSerializer(profile).data if profile else None,
+    })
+
+
+@extend_schema(responses=OpenApiTypes.OBJECT)
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def admin_carry_forward_profile(request):
+    """
+    Create a new annual profile from a prior profile with explicit reuse consent.
+
+    Required body: source_profile_id, academic_year_id
+    """
+    school_id = get_request_school_id(request)
+    source_profile_id = request.data.get("source_profile_id")
+    academic_year_id = request.data.get("academic_year_id")
+    if not source_profile_id or not academic_year_id:
+        return Response(
+            {"detail": "source_profile_id and academic_year_id are required"},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    try:
+        source = AidFinancialProfile.objects.get(pk=source_profile_id, school_id=school_id)
+        academic_year = AcademicYear.objects.get(pk=academic_year_id, school_id=school_id)
+    except (AidFinancialProfile.DoesNotExist, AcademicYear.DoesNotExist):
+        return Response({"detail": "Profile or academic year not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    try:
+        profile = carry_forward_profile(
+            source_profile=source,
+            academic_year=academic_year,
+            actor_user=request.user if request.user.is_authenticated else None,
+        )
+    except ValueError as exc:
+        return Response({"detail": str(exc)}, status=status.HTTP_409_CONFLICT)
+
+    return Response(AidFinancialProfileSerializer(profile).data, status=status.HTTP_201_CREATED)

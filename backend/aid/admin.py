@@ -1,7 +1,18 @@
 from django.contrib import admin, messages
 from django.db.models import Count, Q, Sum
 
-from .models import AidApplication, AidDocument, AidReview, AidAward, AidAuditEvent
+from .models import (
+    AidApplication,
+    AidDocument,
+    AidReview,
+    AidAward,
+    AidAuditEvent,
+    AidFinancialProfile,
+    AidFinancialLineItem,
+    AidHouseholdMember,
+    AidQuestion,
+    AidResponse,
+)
 from finance.models import JournalBatch, ChartAccount
 
 
@@ -148,3 +159,39 @@ class AidAuditEventAdmin(admin.ModelAdmin):
     list_filter = ("school", "entity_type", "action")
     search_fields = ("action", "actor_user__email")
     ordering = ("-timestamp",)
+
+
+class AidHouseholdMemberInline(admin.TabularInline):
+    model = AidHouseholdMember
+    extra = 0
+
+
+class AidFinancialLineItemInline(admin.TabularInline):
+    model = AidFinancialLineItem
+    extra = 0
+    readonly_fields = ("source_type", "source_reference", "verified_at", "verified_by")
+
+
+@admin.register(AidFinancialProfile)
+class AidFinancialProfileAdmin(admin.ModelAdmin):
+    list_display = (
+        "school", "academic_year", "family", "verification_status",
+        "confirmed_at", "last_verified_at", "carried_forward_from",
+    )
+    list_filter = ("school", "academic_year", "verification_status", "consent_to_reuse")
+    search_fields = ("family__family_name",)
+    inlines = [AidHouseholdMemberInline, AidFinancialLineItemInline]
+
+
+class AidResponseInline(admin.TabularInline):
+    model = AidResponse
+    extra = 0
+
+
+@admin.register(AidQuestion)
+class AidQuestionAdmin(admin.ModelAdmin):
+    list_display = ("school", "academic_year", "key", "prompt", "response_type", "required", "active")
+    list_filter = ("school", "academic_year", "response_type", "required", "active")
+    search_fields = ("key", "prompt")
+    ordering = ("school", "academic_year", "display_order", "id")
+    inlines = [AidResponseInline]

@@ -54,3 +54,42 @@ export async function fetchFinancialAidDrilldown({ academicYear, bucket, limit =
 
   return res.json();
 }
+
+
+/**
+ * Fetch deterministic review signals and canonical profile evidence.
+ * @param {string|number} applicationId
+ */
+export async function fetchAidApplicationReview(applicationId) {
+  const url = `${API_BASE}/api/aid/admin/applications/${applicationId}/review/`;
+  const res = await authenticatedFetch(url);
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Failed to fetch aid application review (${res.status}): ${text}`);
+  }
+
+  return res.json();
+}
+
+/**
+ * Carry a consented prior-year profile into a new aid year.
+ */
+export async function carryForwardAidFinancialProfile({ sourceProfileId, academicYearId }) {
+  const url = `${API_BASE}/api/aid/admin/financial-profiles/carry-forward/`;
+  const res = await authenticatedFetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      source_profile_id: sourceProfileId,
+      academic_year_id: academicYearId,
+    }),
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Failed to carry forward aid profile (${res.status}): ${text}`);
+  }
+
+  return res.json();
+}
