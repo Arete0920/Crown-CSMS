@@ -26,6 +26,8 @@ urlpatterns = [
     path("admin/overview/", api_views.admin_aid_overview, name="aid_admin_overview"),
     path("admin/recommend-award/", api_views.admin_recommend_award, name="aid_admin_recommend_award"),
     path("admin/awards/<int:award_id>/approve/", api_views.admin_approve_award, name="aid_admin_approve_award"),
+    path("admin/applications/<int:application_id>/review/", api_views.admin_application_review, name="aid_admin_application_review"),
+    path("admin/financial-profiles/carry-forward/", api_views.admin_carry_forward_profile, name="aid_admin_profile_carry_forward"),
 
     # Phase 7.5: Family portal
     path("family/status/", api_views.family_aid_status, name="aid_family_status"),
