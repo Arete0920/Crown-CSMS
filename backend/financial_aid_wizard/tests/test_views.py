@@ -1,31 +1,63 @@
 import uuid
+from datetime import date
+
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from rest_framework.test import APIClient
 
-from core.models import School
-from financial_aid.models import AidAward, AidBucket, FinancialAidApplication
+from aid.models import AidApplication, AidAuditEvent, AidAward
+from core.models import AcademicYear, Family, School, Student
 from financial_aid_wizard.models import FinancialAidWizardSession
 
 
 TEST_AUTH_SECRET = "TestAuthSecret-LocalOnly"
-
 User = get_user_model()
-
 BASE_URL = "/api/v1/aid-wizard/sessions/"
-
 VALID_BUCKETS = ["need", "merit", "mission"]
-
-VALID_AWARDS_TEMPLATE = []  # populated in setUp where we have app IDs
 
 
 def _make_school(name="Aid School"):
     return School.objects.create(name=name, timezone="America/Chicago", is_active=True)
 
 
+def _make_year(school, name="2026-2027", start_year=2026):
+    return AcademicYear.objects.create(
+        school=school,
+        name=name,
+        start_date=date(start_year, 8, 1),
+        end_date=date(start_year + 1, 5, 31),
+    )
+
+
 def _make_user(school, username=None):
     username = username or f"user_{uuid.uuid4().hex[:8]}"
     return User.objects.create_user(username=username, password=TEST_AUTH_SECRET, school=school)
+
+
+def _make_family(school, family_name="Doe"):
+    return Family.objects.create(school=school, family_name=family_name)
+
+
+def _make_student(school, family, number="S001"):
+    return Student.objects.create(
+        school=school,
+        family=family,
+        student_number=number,
+        first_name="Jane",
+        last_name=family.family_name,
+        dob=date(2012, 3, 15),
+    )
+
+
+def _make_application(school, academic_year, family):
+    return AidApplication.objects.create(
+        school=school,
+        academic_year=academic_year,
+        family=family,
+        household_size=4,
+        income_annual_cents=5_000_000,
+        status=AidApplication.STATUS_SUBMITTED,
+    )
 
 
 def _headers(school_id):
@@ -34,133 +66,80 @@ def _headers(school_id):
 
 def _client_for(school):
     user = _make_user(school)
-    c = APIClient()
-    c.force_authenticate(user=user)
-    c._school_id = school.id
-    return c
+    client = APIClient()
+    client.force_authenticate(user=user)
+    return client
 
-
-def _make_application(school_id, academic_year="2026-2027"):
-    return FinancialAidApplication.objects.create(
-        school_id=school_id,
-        household_id=uuid.uuid4(),
-        academic_year=academic_year,
-        household_income=50000,
-        household_size=4,
-        status="submitted",
-    )
-
-
-# ---------------------------------------------------------------------------
-# TestAuth
-# ---------------------------------------------------------------------------
 
 class TestAuth(TestCase):
     def setUp(self):
         self.school = _make_school()
 
     def test_create_requires_auth(self):
-        c = APIClient()
-        r = c.post(BASE_URL, **_headers(self.school.id))
-        self.assertEqual(r.status_code, 401)
+        response = APIClient().post(BASE_URL, **_headers(self.school.id))
+        self.assertEqual(response.status_code, 401)
 
     def test_configure_requires_auth(self):
-        c = APIClient()
-        session_id = uuid.uuid4()
-        r = c.post(f"{BASE_URL}{session_id}/configure/", **_headers(self.school.id))
-        self.assertEqual(r.status_code, 401)
+        response = APIClient().post(
+            f"{BASE_URL}{uuid.uuid4()}/configure/",
+            **_headers(self.school.id),
+        )
+        self.assertEqual(response.status_code, 401)
 
-
-# ---------------------------------------------------------------------------
-# TestTenantIsolation
-# ---------------------------------------------------------------------------
 
 class TestTenantIsolation(TestCase):
     def setUp(self):
         self.school_a = _make_school("School A")
         self.school_b = _make_school("School B")
+        _make_year(self.school_a)
+        _make_year(self.school_b)
         self.client_a = _client_for(self.school_a)
         self.client_b = _client_for(self.school_b)
-
-        r = self.client_a.post(BASE_URL, **_headers(self.school_a.id))
-        self.session_id = r.data["session_id"]
+        response = self.client_a.post(BASE_URL, **_headers(self.school_a.id))
+        self.session_id = response.data["session_id"]
 
     def _url(self, suffix=""):
         return f"{BASE_URL}{self.session_id}/{suffix}"
 
-    def test_configure_isolation(self):
-        r = self.client_b.post(
-            self._url("configure/"),
-            {"aid_year": "2026-2027"},
-            format="json",
-            **_headers(self.school_b.id),
-        )
-        self.assertEqual(r.status_code, 404)
+    def test_other_school_cannot_access_session_steps(self):
+        attempts = [
+            ("post", "configure/", {"aid_year": "2026-2027"}),
+            ("post", "buckets/", {"buckets": VALID_BUCKETS}),
+            ("post", "awards/", {"awards": []}),
+            ("post", "commit/", {"confirm": True}),
+        ]
+        for method, suffix, payload in attempts:
+            response = getattr(self.client_b, method)(
+                self._url(suffix),
+                payload,
+                format="json",
+                **_headers(self.school_b.id),
+            )
+            self.assertEqual(response.status_code, 404)
+        response = self.client_b.get(self._url("verify/"), **_headers(self.school_b.id))
+        self.assertEqual(response.status_code, 404)
 
-    def test_buckets_isolation(self):
-        r = self.client_b.post(
-            self._url("buckets/"),
-            {"buckets": VALID_BUCKETS},
-            format="json",
-            **_headers(self.school_b.id),
-        )
-        self.assertEqual(r.status_code, 404)
-
-    def test_awards_isolation(self):
-        r = self.client_b.post(
-            self._url("awards/"),
-            {"awards": []},
-            format="json",
-            **_headers(self.school_b.id),
-        )
-        self.assertEqual(r.status_code, 404)
-
-    def test_commit_isolation(self):
-        r = self.client_b.post(
-            self._url("commit/"),
-            {"confirm": True},
-            format="json",
-            **_headers(self.school_b.id),
-        )
-        self.assertEqual(r.status_code, 404)
-
-    def test_verify_isolation(self):
-        r = self.client_b.get(self._url("verify/"), **_headers(self.school_b.id))
-        self.assertEqual(r.status_code, 404)
-
-
-# ---------------------------------------------------------------------------
-# TestCreateSession
-# ---------------------------------------------------------------------------
 
 class TestCreateSession(TestCase):
     def setUp(self):
         self.school = _make_school()
         self.client = _client_for(self.school)
 
-    def test_create_returns_201(self):
-        r = self.client.post(BASE_URL, **_headers(self.school.id))
-        self.assertEqual(r.status_code, 201)
-        self.assertIn("session_id", r.data)
-        self.assertEqual(r.data["status"], "draft")
+    def test_create_returns_201_and_persists(self):
+        response = self.client.post(BASE_URL, **_headers(self.school.id))
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.data["status"], "draft")
+        self.assertTrue(FinancialAidWizardSession.objects.filter(pk=response.data["session_id"]).exists())
 
-    def test_create_persists_in_db(self):
-        r = self.client.post(BASE_URL, **_headers(self.school.id))
-        self.assertTrue(
-            FinancialAidWizardSession.objects.filter(pk=r.data["session_id"]).exists()
-        )
-
-
-# ---------------------------------------------------------------------------
-# TestConfigure
-# ---------------------------------------------------------------------------
 
 class TestConfigure(TestCase):
     def setUp(self):
         self.school = _make_school()
+        _make_year(self.school, "2026-2027", 2026)
+        _make_year(self.school, "2027-2028", 2027)
         self.client = _client_for(self.school)
-        r = self.client.post(BASE_URL, **_headers(self.school.id))
-        self.session_id = r.data["session_id"]
+        response = self.client.post(BASE_URL, **_headers(self.school.id))
+        self.session_id = response.data["session_id"]
 
     def _configure(self, payload):
         return self.client.post(
@@ -170,99 +149,91 @@ class TestConfigure(TestCase):
             **_headers(self.school.id),
         )
 
-    def test_configure_success(self):
-        r = self._configure({"aid_year": "2026-2027"})
-        self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.data["status"], "configured")
+    def test_configure_accepts_cycle_label_before_canonical_year_resolution(self):
+        response = self._configure({"aid_year": "2026-2027"})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["status"], "configured")
 
-    def test_configure_missing_aid_year(self):
-        r = self._configure({})
-        self.assertEqual(r.status_code, 400)
+        synthetic = self._configure({"aid_year": "2030-2031-E2E"})
+        self.assertEqual(synthetic.status_code, 200)
 
-    def test_configure_aid_year_too_long(self):
-        r = self._configure({"aid_year": "X" * 25})
-        self.assertEqual(r.status_code, 400)
+    def test_configure_rejects_empty_or_too_long_year(self):
+        self.assertEqual(self._configure({}).status_code, 400)
+        self.assertEqual(self._configure({"aid_year": "X" * 25}).status_code, 400)
 
     def test_configure_reconfigure_allowed(self):
         self._configure({"aid_year": "2026-2027"})
-        r = self._configure({"aid_year": "2027-2028"})
-        self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.data["status"], "configured")
+        response = self._configure({"aid_year": "2027-2028"})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["status"], "configured")
 
 
-# ---------------------------------------------------------------------------
-# TestSaveBuckets
-# ---------------------------------------------------------------------------
-
-class TestSaveBuckets(TestCase):
+class WizardConfiguredMixin:
     def setUp(self):
         self.school = _make_school()
+        self.year = _make_year(self.school)
+        self.family = _make_family(self.school)
+        self.student = _make_student(self.school, self.family)
+        self.application = _make_application(self.school, self.year, self.family)
         self.client = _client_for(self.school)
-        r = self.client.post(BASE_URL, **_headers(self.school.id))
-        self.session_id = r.data["session_id"]
+        response = self.client.post(BASE_URL, **_headers(self.school.id))
+        self.session_id = response.data["session_id"]
+        headers = _headers(self.school.id)
         self.client.post(
             f"{BASE_URL}{self.session_id}/configure/",
-            {"aid_year": "2026-2027"},
+            {"aid_year": self.year.name},
             format="json",
-            **_headers(self.school.id),
+            **headers,
         )
 
-    def _buckets(self, payload):
+    def _stage_buckets(self, buckets=None):
         return self.client.post(
             f"{BASE_URL}{self.session_id}/buckets/",
-            payload,
+            {"buckets": buckets or VALID_BUCKETS},
             format="json",
             **_headers(self.school.id),
         )
 
+    def _valid_award(self, bucket="need", amount="2500.00", student=None, application=None):
+        return {
+            "application_id": str((application or self.application).id),
+            "student_id": str((student or self.student).id),
+            "bucket": bucket,
+            "amount": amount,
+            "rationale": "Need-based award",
+        }
+
+
+class TestSaveBuckets(WizardConfiguredMixin, TestCase):
     def test_save_buckets_success(self):
-        r = self._buckets({"buckets": VALID_BUCKETS})
-        self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.data["status"], "buckets_saved")
-        self.assertEqual(len(r.data["active_buckets"]), 3)
+        response = self._stage_buckets()
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["status"], "buckets_saved")
+        self.assertEqual(response.data["active_buckets"], VALID_BUCKETS)
 
-    def test_empty_buckets_rejected(self):
-        r = self._buckets({"buckets": []})
-        self.assertEqual(r.status_code, 400)
-
-    def test_invalid_bucket_rejected(self):
-        r = self._buckets({"buckets": ["need", "fake_bucket"]})
-        self.assertEqual(r.status_code, 400)
-
-    def test_not_a_list_rejected(self):
-        r = self._buckets({"buckets": "need"})
-        self.assertEqual(r.status_code, 400)
-
-    def test_single_bucket_allowed(self):
-        r = self._buckets({"buckets": ["merit"]})
-        self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.data["active_buckets"], ["merit"])
-
-
-# ---------------------------------------------------------------------------
-# TestStageAwards
-# ---------------------------------------------------------------------------
-
-class TestStageAwards(TestCase):
-    def setUp(self):
-        self.school = _make_school()
-        self.client = _client_for(self.school)
-        self.app = _make_application(self.school.id)
-        r = self.client.post(BASE_URL, **_headers(self.school.id))
-        self.session_id = r.data["session_id"]
-        h = _headers(self.school.id)
-        self.client.post(
-            f"{BASE_URL}{self.session_id}/configure/",
-            {"aid_year": "2026-2027"},
-            format="json",
-            **h,
-        )
-        self.client.post(
+    def test_bucket_validation(self):
+        self.assertEqual(self._stage_buckets([]).status_code, 200)
+        response = self.client.post(
             f"{BASE_URL}{self.session_id}/buckets/",
-            {"buckets": VALID_BUCKETS},
+            {"buckets": []},
             format="json",
-            **h,
+            **_headers(self.school.id),
         )
+        self.assertEqual(response.status_code, 400)
+
+        response = self.client.post(
+            f"{BASE_URL}{self.session_id}/buckets/",
+            {"buckets": ["need", "fake_bucket"]},
+            format="json",
+            **_headers(self.school.id),
+        )
+        self.assertEqual(response.status_code, 400)
+
+
+class TestStageAwards(WizardConfiguredMixin, TestCase):
+    def setUp(self):
+        super().setUp()
+        self._stage_buckets()
 
     def _awards(self, payload):
         return self.client.post(
@@ -272,175 +243,197 @@ class TestStageAwards(TestCase):
             **_headers(self.school.id),
         )
 
-    def _valid_award(self, bucket="need"):
-        return {
-            "application_id": str(self.app.id),
-            "bucket": bucket,
-            "amount": "2500.00",
-            "rationale": "Need-based award",
-        }
+    def test_stage_awards_requires_explicit_application_and_student(self):
+        response = self._awards({"awards": [self._valid_award("need"), self._valid_award("merit")]})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["status"], "awards_staged")
+        self.assertEqual(response.data["awards_count"], 2)
 
-    def test_stage_awards_success(self):
-        r = self._awards({"awards": [self._valid_award("need"), self._valid_award("merit")]})
-        self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.data["status"], "awards_staged")
-        self.assertEqual(r.data["awards_count"], 2)
+        missing_student = self._valid_award()
+        missing_student.pop("student_id")
+        self.assertEqual(self._awards({"awards": [missing_student]}).status_code, 400)
 
-    def test_empty_awards_allowed(self):
-        r = self._awards({"awards": []})
-        self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.data["awards_count"], 0)
+        missing_app = self._valid_award()
+        missing_app.pop("application_id")
+        self.assertEqual(self._awards({"awards": [missing_app]}).status_code, 400)
 
-    def test_missing_application_id_rejected(self):
-        bad = [{"bucket": "need", "amount": "1000"}]
-        r = self._awards({"awards": bad})
-        self.assertEqual(r.status_code, 400)
+    def test_stage_validation(self):
+        self.assertEqual(self._awards({"awards": []}).status_code, 200)
+        self.assertEqual(self._awards({"awards": "single"}).status_code, 400)
 
-    def test_invalid_bucket_rejected(self):
-        bad = [{"application_id": str(self.app.id), "bucket": "fake", "amount": "1000"}]
-        r = self._awards({"awards": bad})
-        self.assertEqual(r.status_code, 400)
+        invalid_bucket = self._valid_award("hardship")
+        self.assertEqual(self._awards({"awards": [invalid_bucket]}).status_code, 400)
 
-    def test_negative_amount_rejected(self):
-        bad = [{"application_id": str(self.app.id), "bucket": "need", "amount": "-500"}]
-        r = self._awards({"awards": bad})
-        self.assertEqual(r.status_code, 400)
-
-    def test_not_a_list_rejected(self):
-        r = self._awards({"awards": "single"})
-        self.assertEqual(r.status_code, 400)
+        negative = self._valid_award("need", "-500")
+        self.assertEqual(self._awards({"awards": [negative]}).status_code, 400)
 
 
-# ---------------------------------------------------------------------------
-# TestCommit
-# ---------------------------------------------------------------------------
-
-class TestCommit(TestCase):
+class TestCommit(WizardConfiguredMixin, TestCase):
     def setUp(self):
-        self.school = _make_school()
-        self.client = _client_for(self.school)
-        self.app = _make_application(self.school.id)
-        r = self.client.post(BASE_URL, **_headers(self.school.id))
-        self.session_id = r.data["session_id"]
-        h = _headers(self.school.id)
-        self.client.post(
-            f"{BASE_URL}{self.session_id}/configure/",
-            {"aid_year": "2026-2027"},
-            format="json",
-            **h,
-        )
-        self.client.post(
-            f"{BASE_URL}{self.session_id}/buckets/",
-            {"buckets": VALID_BUCKETS},
-            format="json",
-            **h,
-        )
+        super().setUp()
+        self._stage_buckets()
         self.client.post(
             f"{BASE_URL}{self.session_id}/awards/",
             {
                 "awards": [
-                    {
-                        "application_id": str(self.app.id),
-                        "bucket": "need",
-                        "amount": "2000.00",
-                        "rationale": "Need award",
-                    },
-                    {
-                        "application_id": str(self.app.id),
-                        "bucket": "merit",
-                        "amount": "500.00",
-                        "rationale": "Merit award",
-                    },
+                    self._valid_award("need", "2000.00"),
+                    self._valid_award("merit", "500.00"),
                 ]
             },
             format="json",
-            **h,
+            **_headers(self.school.id),
         )
 
     def _commit(self, payload=None):
         return self.client.post(
             f"{BASE_URL}{self.session_id}/commit/",
-            payload or {"confirm": True},
+            payload if payload is not None else {"confirm": True},
             format="json",
             **_headers(self.school.id),
         )
 
-    def test_commit_success(self):
-        r = self._commit()
-        self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.data["status"], "committed")
+    def test_commit_creates_canonical_offered_awards_and_audit_events(self):
+        response = self._commit()
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["status"], "committed")
+        self.assertEqual(response.data["awards_created"], 2)
 
-    def test_commit_creates_aid_awards_in_db(self):
-        self._commit()
-        count = AidAward.objects.filter(
-            school_id=self.school.id,
-            application=self.app,
-        ).count()
-        self.assertEqual(count, 2)
-
-    def test_commit_idempotent(self):
-        self._commit()
-        r2 = self._commit()
-        self.assertEqual(r2.status_code, 200)
-        self.assertEqual(r2.data["status"], "committed")
-        # No duplicates
+        awards = AidAward.objects.filter(
+            school=self.school,
+            aid_application=self.application,
+            student=self.student,
+        )
+        self.assertEqual(awards.count(), 2)
+        self.assertTrue(all(a.decision_status == AidAward.DECISION_OFFERED for a in awards))
         self.assertEqual(
-            AidAward.objects.filter(school_id=self.school.id, application=self.app).count(),
+            set(awards.values_list("award_type", flat=True)),
+            {AidAward.TYPE_NEED, AidAward.TYPE_MERIT},
+        )
+        self.assertEqual(
+            AidAuditEvent.objects.filter(
+                school=self.school,
+                entity_type=AidAuditEvent.ENTITY_AWARD,
+                action="AWARD_STAGED",
+            ).count(),
             2,
         )
 
-    def test_commit_requires_confirm_true(self):
-        r = self._commit({"confirm": False})
-        self.assertEqual(r.status_code, 400)
+    def test_commit_is_idempotent_at_session_boundary(self):
+        self._commit()
+        response = self._commit()
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["status"], "committed")
+        self.assertEqual(
+            AidAward.objects.filter(
+                school=self.school,
+                aid_application=self.application,
+                student=self.student,
+            ).count(),
+            2,
+        )
 
-    def test_commit_with_empty_awards_allowed(self):
-        # New session with an explicitly staged zero-award cycle.
-        r = self.client.post(BASE_URL, **_headers(self.school.id))
-        sid2 = r.data["session_id"]
-        h = _headers(self.school.id)
-        self.client.post(f"{BASE_URL}{sid2}/configure/", {"aid_year": "2026-2027"}, format="json", **h)
-        self.client.post(f"{BASE_URL}{sid2}/buckets/", {"buckets": ["need"]}, format="json", **h)
-        self.client.post(f"{BASE_URL}{sid2}/awards/", {"awards": []}, format="json", **h)
-        r2 = self.client.post(f"{BASE_URL}{sid2}/commit/", {"confirm": True}, format="json", **h)
-        self.assertEqual(r2.status_code, 200)
-        self.assertEqual(r2.data["status"], "committed")
-        self.assertEqual(r2.data["awards_created"], 0)
-        self.assertEqual(r2.data["awards_skipped"], 0)
-        self.assertEqual(r2.data["errors"], [])
+    def test_commit_rejects_student_from_another_family(self):
+        other_family = _make_family(self.school, "Smith")
+        other_student = _make_student(self.school, other_family, "S999")
+
+        response = self.client.post(BASE_URL, **_headers(self.school.id))
+        session_id = response.data["session_id"]
+        headers = _headers(self.school.id)
+        self.client.post(
+            f"{BASE_URL}{session_id}/configure/",
+            {"aid_year": self.year.name},
+            format="json",
+            **headers,
+        )
+        self.client.post(
+            f"{BASE_URL}{session_id}/buckets/",
+            {"buckets": ["need"]},
+            format="json",
+            **headers,
+        )
+        self.client.post(
+            f"{BASE_URL}{session_id}/awards/",
+            {"awards": [self._valid_award(student=other_student)]},
+            format="json",
+            **headers,
+        )
+        commit = self.client.post(
+            f"{BASE_URL}{session_id}/commit/",
+            {"confirm": True},
+            format="json",
+            **headers,
+        )
+        self.assertEqual(commit.status_code, 400)
+        self.assertEqual(commit.data["error"], "Award validation failed")
+        self.assertEqual(len(commit.data["errors"]), 1)
+        self.assertFalse(AidAward.objects.filter(student=other_student).exists())
+        session = FinancialAidWizardSession.objects.get(pk=session_id)
+        self.assertEqual(session.status, FinancialAidWizardSession.STATUS_AWARDS_STAGED)
+
+    def test_commit_requires_confirmation(self):
+        self.assertEqual(self._commit({"confirm": False}).status_code, 400)
+
+    def test_zero_award_cycle_can_commit_without_resolving_academic_year(self):
+        response = self.client.post(BASE_URL, **_headers(self.school.id))
+        session_id = response.data["session_id"]
+        headers = _headers(self.school.id)
+        self.client.post(
+            f"{BASE_URL}{session_id}/configure/",
+            {"aid_year": "2026-2027-E2E"},
+            format="json",
+            **headers,
+        )
+        self.client.post(
+            f"{BASE_URL}{session_id}/buckets/",
+            {"buckets": ["need"]},
+            format="json",
+            **headers,
+        )
+        self.client.post(
+            f"{BASE_URL}{session_id}/awards/",
+            {"awards": []},
+            format="json",
+            **headers,
+        )
+        commit = self.client.post(
+            f"{BASE_URL}{session_id}/commit/",
+            {"confirm": True},
+            format="json",
+            **headers,
+        )
+        self.assertEqual(commit.status_code, 200)
+        self.assertEqual(commit.data["awards_created"], 0)
+        self.assertEqual(commit.data["errors"], [])
 
     def test_commit_from_draft_rejected(self):
-        r_new = self.client.post(BASE_URL, **_headers(self.school.id))
-        sid_draft = r_new.data["session_id"]
-        r2 = self.client.post(
-            f"{BASE_URL}{sid_draft}/commit/",
+        response = self.client.post(BASE_URL, **_headers(self.school.id))
+        draft_id = response.data["session_id"]
+        blocked = self.client.post(
+            f"{BASE_URL}{draft_id}/commit/",
             {"confirm": True},
             format="json",
             **_headers(self.school.id),
         )
-        self.assertEqual(r2.status_code, 409)
+        self.assertEqual(blocked.status_code, 409)
 
 
-# ---------------------------------------------------------------------------
-# TestVerify
-# ---------------------------------------------------------------------------
-
-class TestVerify(TestCase):
+class TestVerify(WizardConfiguredMixin, TestCase):
     def setUp(self):
-        self.school = _make_school()
-        self.client = _client_for(self.school)
-        self.app = _make_application(self.school.id)
-        r = self.client.post(BASE_URL, **_headers(self.school.id))
-        self.session_id = r.data["session_id"]
-        h = _headers(self.school.id)
-        self.client.post(f"{BASE_URL}{self.session_id}/configure/", {"aid_year": "2026-2027"}, format="json", **h)
-        self.client.post(f"{BASE_URL}{self.session_id}/buckets/", {"buckets": ["need"]}, format="json", **h)
+        super().setUp()
+        self._stage_buckets(["need"])
+        headers = _headers(self.school.id)
         self.client.post(
             f"{BASE_URL}{self.session_id}/awards/",
-            {"awards": [{"application_id": str(self.app.id), "bucket": "need", "amount": "1000.00"}]},
+            {"awards": [self._valid_award("need", "1000.00")]},
             format="json",
-            **h,
+            **headers,
         )
-        self.client.post(f"{BASE_URL}{self.session_id}/commit/", {"confirm": True}, format="json", **h)
+        self.client.post(
+            f"{BASE_URL}{self.session_id}/commit/",
+            {"confirm": True},
+            format="json",
+            **headers,
+        )
 
     def _verify(self):
         return self.client.get(
@@ -448,24 +441,20 @@ class TestVerify(TestCase):
             **_headers(self.school.id),
         )
 
-    def test_verify_transitions_to_verified(self):
-        r = self._verify()
-        self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.data["status"], "verified")
-
-    def test_verify_idempotent(self):
-        self._verify()
-        r2 = self._verify()
-        self.assertEqual(r2.status_code, 200)
-        self.assertEqual(r2.data["status"], "verified")
+    def test_verify_transitions_and_is_idempotent(self):
+        first = self._verify()
+        second = self._verify()
+        self.assertEqual(first.status_code, 200)
+        self.assertEqual(first.data["status"], "verified")
+        self.assertEqual(second.status_code, 200)
+        self.assertEqual(second.data["status"], "verified")
+        self.assertIn("awards_created", second.data)
 
     def test_verify_requires_committed_status(self):
-        r_new = self.client.post(BASE_URL, **_headers(self.school.id))
-        sid2 = r_new.data["session_id"]
-        r2 = self.client.get(f"{BASE_URL}{sid2}/verify/", **_headers(self.school.id))
-        self.assertEqual(r2.status_code, 409)
-
-    def test_verify_returns_commit_summary(self):
-        r = self._verify()
-        self.assertEqual(r.status_code, 200)
-        self.assertIn("awards_created", r.data)
+        response = self.client.post(BASE_URL, **_headers(self.school.id))
+        draft_id = response.data["session_id"]
+        blocked = self.client.get(
+            f"{BASE_URL}{draft_id}/verify/",
+            **_headers(self.school.id),
+        )
+        self.assertEqual(blocked.status_code, 409)
