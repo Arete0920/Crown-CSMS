@@ -19,6 +19,7 @@ from .experience_access import classroom_scope, is_leader, related_students, tau
 from .family_models import ClassroomDisclosure, ClassroomNotificationPreference, ClassroomConferenceSlot, ClassroomFamilyThread, ClassroomFamilyMessage, ClassroomFamilyMutation, ClassroomFamilyNotice
 from .models import Assignment, Enrollment, Submission
 from .family_notifications import queue_notice
+from .family_digest import weekly_agenda
 from .submission_workflow_views import _uuid
 
 
@@ -76,24 +77,29 @@ def family_workspace(request):
     manager = audience in {'teacher', 'admin'}
     if request.method == 'GET':
         preferences = ClassroomNotificationPreference.objects.filter(school_id=school, account=request.user).first()
-        start = timezone.localdate(); end = start + timedelta(days=6)
+        digest_zone = ZoneInfo(preferences.timezone) if preferences else timezone.get_current_timezone()
+        start = timezone.localdate(timezone=digest_zone); end = start + timedelta(days=6)
         assignments = Assignment.objects.filter(school_id=school, section__in=sections, is_published=True, due_date__range=(start, end)).order_by('due_date', 'id')
         if not manager:
             assignments = assignments.filter(section__enrollments__student__in=students, section__enrollments__school_id=school).distinct()
         submitted = Submission.objects.filter(school_id=school, assignment__in=assignments, enrollment__student__in=students, submitted_at__isnull=False)
+        agenda = weekly_agenda(school, sections, students, start, end) if not manager else {
+            'assignments': list(assignments.values('id', 'section_id', 'name', 'due_date', 'home_support')[:100]),
+            'assignments_total': assignments.count(), 'truncated': assignments.count() > 100,
+            'recorded_submissions': submitted.count(),
+        }
         slots = ClassroomConferenceSlot.objects.filter(school_id=school, section__in=sections, state='available', starts_at__gt=timezone.now())
         guardian_rows = Guardian.objects.filter(school_id=school, household_id__in=students.values('household_id'), account__is_active=True) if manager else Guardian.objects.filter(school_id=school, account=request.user)
         notices = ClassroomFamilyNotice.objects.filter(school_id=school, account=request.user, available_at__lte=timezone.now(), dismissed_at__isnull=True).filter(Q(thread__in=threads) | Q(thread__isnull=True))
         if preferences and not preferences.in_app:
             notices = notices.none()
         return Response({'notices': list(notices.values('id', 'title', 'available_at')[:100]), 'source': 'live', 'generated_at': timezone.now(), 'threads': [thread_data(t, request.user) for t in threads[:100]],
-          'truncated': threads.count() > 100 or assignments.count() > 100 or slots.count() > 100,
+          'truncated': threads.count() > 100 or agenda['truncated'] or slots.count() > 100,
           'slots': list(slots.values('id', 'section_id', 'starts_at', 'ends_at', 'location')[:100]),
           'guardians': list(guardian_rows.values('id', 'household_id', 'first_name', 'last_name')),
           'preferences': {key: getattr(preferences, key) for key in ['in_app', 'digest_day', 'timezone', 'quiet_start', 'quiet_end']} if preferences else {'in_app': True, 'digest_day': 0, 'timezone': 'UTC', 'quiet_start': None, 'quiet_end': None},
           'digest': {'from': start, 'to': end, 'prepared_at': timezone.now(), 'delivery': 'in_app',
-                     'assignments': list(assignments.values('id', 'section_id', 'name', 'due_date', 'home_support')[:100]),
-                     'recorded_submissions': submitted.count(), 'open_conversations': threads.filter(state='open').count()},
+                     **agenda, 'open_conversations': threads.filter(state='open').count()},
           'disclosures': list(ClassroomDisclosure.objects.filter(school_id=school).values('student_id', 'guardian_id', 'allowed', 'reason', 'updated_at')) if audience == 'admin' else []})
     data = request.data
     if not isinstance(data, dict):

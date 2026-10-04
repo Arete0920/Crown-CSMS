@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import PropTypes from 'prop-types';
 import { Alert, Box, Button, MenuItem, Stack, TextField, Typography } from '@mui/material';
 import { crownApiClient as api } from '../../api/client';
+import FamilyWeeklyAgenda from './FamilyWeeklyAgenda';
 
 function Thread({ row, manager, busy, save }) {
   const [reply, setReply] = useState('');
@@ -23,7 +24,7 @@ Thread.propTypes = { row: PropTypes.object.isRequired, manager: PropTypes.bool.i
 
 export default function ClassroomFamily({ audience, sections, students, assignments }) {
   const manager = audience === 'teacher' || audience === 'admin';
-  const [data, setData] = useState(null);
+  const [snapshot, setSnapshot] = useState(null);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
@@ -44,12 +45,13 @@ export default function ClassroomFamily({ audience, sections, students, assignme
   const [reason, setReason] = useState('');
   const retry = useRef(null);
   const url = `/api/v1/academics/classroom/family/?audience=${audience}`;
+  const data = snapshot?.url === url ? snapshot.data : null;
   useEffect(() => {
     let active = true;
     api.get(url).then((r) => {
-      if (r.data.source !== 'live' || !Array.isArray(r.data.threads) || !Array.isArray(r.data.slots) || !Array.isArray(r.data.notices) || !Array.isArray(r.data.guardians) || !r.data.digest) throw new Error('Invalid family response');
-      if (active) { setData(r.data); setPreferences((p) => p || r.data.preferences); }
-    }).catch(() => { if (active) setError('Family workspace could not be loaded. Refresh to retry.'); });
+      if (r.data.source !== 'live' || !Array.isArray(r.data.threads) || !Array.isArray(r.data.slots) || !Array.isArray(r.data.notices) || !Array.isArray(r.data.guardians) || !Array.isArray(r.data.digest?.assignments)) throw new Error('Invalid family response');
+      if (active) { setSnapshot({ url, data: r.data }); setError(''); setPreferences((p) => p || r.data.preferences); }
+    }).catch(() => { if (active) { setSnapshot(null); setError('Family workspace could not be loaded. Refresh to retry.'); } });
     return () => { active = false; };
   }, [url, refresh]);
   async function save(payload) {
@@ -67,7 +69,8 @@ export default function ClassroomFamily({ audience, sections, students, assignme
     <Button disabled={busy} onClick={() => { setError(''); setRefresh((v) => v + 1); }}>Refresh family workspace</Button>
     {data && <>
       {data.notices.map((n) => <Alert key={n.id} severity="info" action={<Button disabled={busy} onClick={() => save({ operation: 'dismiss', notice_id: n.id })}>Dismiss</Button>}>{n.title}</Alert>)}
-      <details><summary>Next seven days: classroom digest</summary><Typography>{data.digest.from}–{data.digest.to} · Prepared {new Date(data.digest.prepared_at).toLocaleString()}</Typography>{data.digest.assignments.map((a) => <Box key={a.id}><Typography>{a.name} · Due {a.due_date}</Typography>{a.home_support && <Typography>Support at home: {a.home_support}</Typography>}</Box>)}<Typography>{data.digest.recorded_submissions} recorded submissions · {data.digest.open_conversations} open conversations</Typography>{data.truncated && <Alert severity="info">This view shows up to 100 items per list.</Alert>}</details>
+      <FamilyWeeklyAgenda digest={data.digest} manager={manager} />
+      {data.truncated && <Alert severity="info">This view shows up to 100 items per list.</Alert>}
       <details><summary>Start a conversation, request permission or book a conference</summary><Stack spacing={1} sx={{ mt: 1 }}>
         <TextField select label="Family action" value={kind} onChange={(e) => setKind(e.target.value)}><MenuItem value="conversation">Conversation</MenuItem>{manager && <MenuItem value="consent">Permission request</MenuItem>}<MenuItem value="conference">Conference</MenuItem></TextField>
         <TextField select label="Family classroom" value={section} onChange={(e) => { setSection(e.target.value); setAssignment(''); setSlot(''); }}><MenuItem value="">Choose classroom</MenuItem>{sections.map((s) => <MenuItem key={s.id} value={s.id}>{s['course__name'] || s.course_name || s.id}</MenuItem>)}</TextField>
