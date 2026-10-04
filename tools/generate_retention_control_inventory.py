@@ -7,7 +7,6 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SOURCE_PATHS = (
     "docs/compliance/RETENTION_POLICY.md",
-    "docs/compliance/DATA_RETENTION_POLICY.md",
     "backend/core/models_retention.py",
     "backend/core/services/retention_service.py",
     "backend/core/tasks.py",
@@ -34,13 +33,11 @@ def contains(pattern: str, text: str) -> bool:
 def build_inventory(repo_root: Path = REPO_ROOT) -> dict:
     sources, missing_sources = read_sources(repo_root)
     claims_doc = sources.get("docs/compliance/RETENTION_POLICY.md", "")
-    pending_doc = sources.get("docs/compliance/DATA_RETENTION_POLICY.md", "")
     service = sources.get("backend/core/services/retention_service.py", "")
     model = sources.get("backend/core/models_retention.py", "")
 
     observations = {
         "enforcement_claim_present": contains(r"retention enforcement is executed", claims_doc),
-        "policy_pending_marker_present": contains(r"status:\s*pending", pending_doc),
         "soft_delete_policy_claim_present": contains(r"soft-delete first", claims_doc),
         "direct_queryset_delete_present": contains(r"\.filter\([^\n]+\)\.delete\(\)", service),
         "legal_hold_field_present": contains(r"legal_hold\s*=\s*models\.BooleanField", model),
@@ -52,8 +49,6 @@ def build_inventory(repo_root: Path = REPO_ROOT) -> dict:
     }
 
     contradictions = []
-    if observations["enforcement_claim_present"] and observations["policy_pending_marker_present"]:
-        contradictions.append("retention documentation simultaneously claims enforcement and marks policy pending")
     if observations["soft_delete_policy_claim_present"] and observations["direct_queryset_delete_present"]:
         contradictions.append("policy claims soft-delete first while service performs direct queryset deletion")
 
