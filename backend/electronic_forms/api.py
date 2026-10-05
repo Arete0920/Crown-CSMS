@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from django.core.exceptions import ValidationError
+from django.db import transaction
 from rest_framework import permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -154,30 +155,31 @@ class ElectronicEnvelopeCreateView(APIView):
             return Response({"detail": "At least one signer is required."}, status=400)
 
         try:
-            envelope = create_envelope(
-                template=template,
-                created_by=request.user,
-                form_data=payload.get("form_data") or {},
-                subject_type=str(payload.get("subject_type") or ""),
-                subject_id=str(payload.get("subject_id") or ""),
-                title=str(payload.get("title") or ""),
-            )
-            for index, signer_payload in enumerate(signer_payloads, start=1):
-                signer_user = UserAccount.objects.filter(
-                    pk=signer_payload.get("user_id"),
-                    school=school,
-                ).first()
-                if signer_user is None:
-                    raise ValidationError("Each signer must be an existing user in this school.")
-                add_signer(
-                    envelope=envelope,
-                    user=signer_user,
-                    display_name=str(signer_payload.get("display_name") or signer_user.get_full_name() or signer_user.email),
-                    email=str(signer_payload.get("email") or signer_user.email or ""),
-                    role_label=str(signer_payload.get("role_label") or ""),
-                    signing_order=int(signer_payload.get("signing_order") or index),
+            with transaction.atomic():
+                envelope = create_envelope(
+                    template=template,
+                    created_by=request.user,
+                    form_data=payload.get("form_data") or {},
+                    subject_type=str(payload.get("subject_type") or ""),
+                    subject_id=str(payload.get("subject_id") or ""),
+                    title=str(payload.get("title") or ""),
                 )
-            envelope = send_envelope(envelope)
+                for index, signer_payload in enumerate(signer_payloads, start=1):
+                    signer_user = UserAccount.objects.filter(
+                        pk=signer_payload.get("user_id"),
+                        school=school,
+                    ).first()
+                    if signer_user is None:
+                        raise ValidationError("Each signer must be an existing user in this school.")
+                    add_signer(
+                        envelope=envelope,
+                        user=signer_user,
+                        display_name=str(signer_payload.get("display_name") or signer_user.get_full_name() or signer_user.email),
+                        email=str(signer_payload.get("email") or signer_user.email or ""),
+                        role_label=str(signer_payload.get("role_label") or ""),
+                        signing_order=int(signer_payload.get("signing_order") or index),
+                    )
+                envelope = send_envelope(envelope)
         except (ValidationError, ValueError) as exc:
             return _validation_response(exc)
 
