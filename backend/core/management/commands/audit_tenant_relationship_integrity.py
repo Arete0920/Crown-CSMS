@@ -64,9 +64,6 @@ RELATIONSHIPS = (
 
 UNVERIFIED_TENANT_AUTHORITY_MODELS = frozenset(
     {
-        "home_academy.HomeAcademyEnrollment",
-        "home_academy.Offering",
-        "home_academy.OfferingEnrollment",
         "accounting.LedgerEntry",
         "accounting.JournalEntry",
     }
