@@ -24,8 +24,10 @@ pytestmark = pytest.mark.django_db
 
 def _user(school, group_name=None):
     User = get_user_model()
+    identity = uuid.uuid4()
     user = User.objects.create_user(
-        username=f"user-{uuid.uuid4()}",
+        username=f"user-{identity}",
+        email=f"user-{identity}@example.org",
         password="pass12345!",
     )
     if hasattr(user, "school_id"):
