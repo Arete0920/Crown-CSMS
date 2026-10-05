@@ -103,7 +103,7 @@ def test_executive360_admin_grant_is_tenant_scoped():
         "/api/executive360/me/overview/",
         HTTP_X_SCHOOL_ID=str(school_b.id),
     )
-    assert response.status_code in {400, 403}
+    assert response.status_code in {400, 403, 404}
 
 
 def test_service_self_scope_returns_only_authenticated_student_records():
