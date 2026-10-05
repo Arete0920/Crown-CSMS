@@ -228,7 +228,7 @@ Evidence and remaining limitations
 | --- | --- | --- |
 | Source-based answers | Fixed documentation/support resource and source links | Rights-cleared knowledge corpus, evaluated retrieval and provider activation |
 | Role-specific training | Adult training checklist and reusable agenda | Maintained role curricula and generative tailoring |
-| Communication drafts | General announcement template | Generative drafting; sending remains a human operation |
+| Communication drafts | General announcement template and optional gated generic rewording adapter | Private provider release evidence and live evaluation; sending remains a human operation |
 | Teacher preparation | Lesson outline and rubric dimensions | Subject/grade-specific approved curriculum and evaluated generation |
 | Leadership support | General meeting agenda | Confidential deliberations remain prohibited |
 | Kingdom Path | Public outreach outline and verification checklist | Vetted public datasets and source-backed demographic analysis |
@@ -236,7 +236,8 @@ Evidence and remaining limitations
 | Accessibility/language | Plain-language template, general Spanish example requiring review | Qualified translation and accessibility validation of actual content |
 | Software quality | Synthetic test planning checklist | Development-time generation and independently verified tests |
 
-External AI remains blocked. No search over arbitrary school content, translation
+The optional provider adapter is implemented but live generation remains disabled
+pending verified release evidence. No search over arbitrary school content, translation
 engine, demographic feed, synthetic-data generator, or automatic lesson generator
 is claimed by this catalog. Follow [the existing privacy boundary](SOLOMON_AI_PRIVACY_BOUNDARY.md)
 for provider contracts, legal/impact review, outbound controls, cost limits,
