@@ -2328,6 +2328,20 @@ def _serialize_enrollment_contract(contract: EnrollmentContract) -> dict[str, An
         "countersigned_at": contract.countersigned_at.isoformat() if contract.countersigned_at else None,
         "created_at": contract.created_at.isoformat() if contract.created_at else None,
         "updated_at": contract.updated_at.isoformat() if contract.updated_at else None,
+        "electronic_signature": (
+            {
+                "envelope_id": str(contract.electronic_envelope_id),
+                "status": contract.electronic_envelope.status,
+                "document_sha256": contract.electronic_envelope.document_sha256,
+                "completed_at": (
+                    contract.electronic_envelope.completed_at.isoformat()
+                    if contract.electronic_envelope.completed_at
+                    else None
+                ),
+            }
+            if contract.electronic_envelope_id
+            else None
+        ),
         "m365_handoff": _build_contract_m365_handoff(application_ids=[str(contract.application_id)]),
     }
 
@@ -4031,42 +4045,63 @@ def admissions_contract_amend(request, application_id):
     amended_line_items = _normalize_contract_line_items(payload.get("line_items"))
     if not amended_line_items:
         amended_line_items = latest.line_items or []
-    amended_totals = _compute_contract_totals(amended_line_items, payload.get("totals") or latest.contract_totals)
-
-    latest.status = EnrollmentContractStatus.SUPERSEDED
-    latest.save(update_fields=["status", "updated_at"])
-
-    amended = EnrollmentContract.objects.create(
-        school_id=app.school_id,
-        application=app,
-        version=latest.version + 1,
-        status=EnrollmentContractStatus.ISSUED,
-        line_items=amended_line_items,
-        contract_totals=amended_totals,
-        net_amount_cents=amended_totals.get("net_family_obligation_cents", 0),
-        currency=latest.currency,
-        payment_plan=str(payload.get("payment_plan") or latest.payment_plan or "")[:80],
-        payment_schedule=str(payload.get("payment_schedule") or latest.payment_schedule or "")[:255],
-        responsible_payer=str(payload.get("responsible_payer") or latest.responsible_payer or "")[:255],
-        refund_terms=str(payload.get("refund_terms") or latest.refund_terms or "")[:2000],
-        note=str(payload.get("note") or payload.get("amendment_reason") or "Contract amended")[:2000],
-        issued_at=timezone.now(),
-        amended_from=latest,
-        created_by=str(getattr(request.user, "email", "") or getattr(request.user, "username", ""))[:255],
+    amended_totals = _compute_contract_totals(
+        amended_line_items,
+        payload.get("totals") or latest.contract_totals,
     )
 
-    ApplicationEvent.objects.create(
-        school_id=school.pk,
-        application=app,
-        event_type="contract_amended",
-        payload={
-            "from_contract_id": str(latest.id),
-            "to_contract_id": str(amended.id),
-            "from_version": latest.version,
-            "to_version": amended.version,
-            "amendment_reason": amended.note,
-        },
-    )
+    try:
+        from .electronic_contracts import (
+            ensure_enrollment_contract_envelope,
+            void_pending_enrollment_contract_envelope,
+        )
+
+        with transaction.atomic():
+            void_pending_enrollment_contract_envelope(latest)
+
+            latest.status = EnrollmentContractStatus.SUPERSEDED
+            latest.save(update_fields=["status", "updated_at"])
+
+            amended = EnrollmentContract.objects.create(
+                school_id=app.school_id,
+                application=app,
+                version=latest.version + 1,
+                status=EnrollmentContractStatus.ISSUED,
+                line_items=amended_line_items,
+                contract_totals=amended_totals,
+                net_amount_cents=amended_totals.get("net_family_obligation_cents", 0),
+                currency=latest.currency,
+                payment_plan=str(payload.get("payment_plan") or latest.payment_plan or "")[:80],
+                payment_schedule=str(payload.get("payment_schedule") or latest.payment_schedule or "")[:255],
+                responsible_payer=str(payload.get("responsible_payer") or latest.responsible_payer or "")[:255],
+                refund_terms=str(payload.get("refund_terms") or latest.refund_terms or "")[:2000],
+                note=str(payload.get("note") or payload.get("amendment_reason") or "Contract amended")[:2000],
+                issued_at=timezone.now(),
+                amended_from=latest,
+                created_by=str(getattr(request.user, "email", "") or getattr(request.user, "username", ""))[:255],
+            )
+            envelope = ensure_enrollment_contract_envelope(
+                contract=amended,
+                actor_user=request.user,
+            )
+            amended.refresh_from_db()
+
+            ApplicationEvent.objects.create(
+                school_id=school.pk,
+                application=app,
+                event_type="contract_amended",
+                payload={
+                    "from_contract_id": str(latest.id),
+                    "to_contract_id": str(amended.id),
+                    "from_version": latest.version,
+                    "to_version": amended.version,
+                    "amendment_reason": amended.note,
+                    "electronic_envelope_id": str(envelope.id),
+                    "document_sha256": envelope.document_sha256,
+                },
+            )
+    except ValidationError as exc:
+        return Response({"detail": "; ".join(exc.messages)}, status=409)
 
     return Response(
         {
