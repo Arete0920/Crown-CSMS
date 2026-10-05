@@ -13,6 +13,7 @@ from households.models import Student
 from ledger.models import LedgerAccount, Charge
 
 from .models import BillingRun, Invoice, InvoiceLine, InstallmentPlan, InstallmentScheduleItem
+from .payer_services import generate_payer_shares_for_invoice
 
 
 @dataclass(frozen=True)
@@ -185,6 +186,8 @@ def create_tuition_billing_run(
                 )
                 students_billed += 1
 
+            generate_payer_shares_for_invoice(inv)
+
             acct, _ = LedgerAccount.objects.get_or_create(school_id=school_id, household_id=household_id)
             ch = Charge.objects.create(
                 school_id=school_id,
@@ -228,6 +231,8 @@ def create_tuition_billing_run(
                     amount=line_amt,
                 )
                 students_billed += 1
+
+            generate_payer_shares_for_invoice(inv)
 
             acct, _ = LedgerAccount.objects.get_or_create(school_id=school_id, household_id=household_id)
             ch = Charge.objects.create(
