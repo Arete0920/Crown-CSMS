@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
+from django.core.exceptions import ValidationError
 from django.db import transaction
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
@@ -330,18 +331,22 @@ def admissions_enrollment_state_update(request, application_id):
             return identity_error
         assert context is not None
 
-        contract_record, billing_handoff = legacy_views._commit_enrollment_state_update(
-            school=school,
-            app=app,
-            request_payload=request.data if isinstance(request.data, dict) else {},
-            actor_user=request.user,
-            requested_contract=requested_contract,
-            requested_deposit=requested_deposit,
-            note=note,
-            transition_reason=transition_reason,
-            owner_assignment=owner_assignment,
-            trace_id=trace_id,
-        )
+        try:
+            contract_record, billing_handoff = legacy_views._commit_enrollment_state_update(
+                school=school,
+                app=app,
+                request_payload=request.data if isinstance(request.data, dict) else {},
+                actor_user=request.user,
+                requested_contract=requested_contract,
+                requested_deposit=requested_deposit,
+                note=note,
+                transition_reason=transition_reason,
+                owner_assignment=owner_assignment,
+                trace_id=trace_id,
+            )
+        except ValidationError as exc:
+            transaction.set_rollback(True)
+            return Response({"detail": "; ".join(exc.messages)}, status=409)
         legacy_bridge, bridge_error = _upsert_verified_legacy_admissions(
             school=school,
             context=context,
