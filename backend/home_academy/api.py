@@ -21,6 +21,7 @@ from .serializers import (
     OfferingEnrollmentSerializer,
     OfferingSerializer,
 )
+from .integrations import HomeAcademyIntegrationError, create_finance_obligation_for_registration
 from .services import apply_eligibility_to_registration, evaluate_offering_eligibility
 from .tenant import school_id_from_request
 
@@ -210,6 +211,53 @@ def offering_enrollments(request):
     registration = serializer.save(school_id=school_id)
     registration = apply_eligibility_to_registration(registration)
     return Response(OfferingEnrollmentSerializer(registration).data, status=status.HTTP_201_CREATED)
+
+
+@api_view(["POST"])
+def activate_offering_enrollment(request, registration_id: int):
+    school_id = school_id_from_request(request, required=True)
+    module_error = require_home_academy_enabled(school_id)
+    if module_error is not None:
+        return module_error
+    if not require_role(request, {"admin", "registrar"}):
+        return Response({"detail": "Forbidden"}, status=status.HTTP_403_FORBIDDEN)
+
+    registration = (
+        OfferingEnrollment.objects.filter(pk=registration_id, school_id=school_id)
+        .select_related("offering")
+        .first()
+    )
+    if registration is None:
+        return Response({"detail": "Registration not found."}, status=status.HTTP_404_NOT_FOUND)
+
+    if registration.status == "active":
+        return Response(OfferingEnrollmentSerializer(registration).data)
+
+    registration.admin_approved = True
+    registration.save(update_fields=["admin_approved", "updated_at"])
+    registration = apply_eligibility_to_registration(registration)
+    if not registration.eligibility_status == "eligible":
+        return Response(
+            {
+                "detail": "Registration is not eligible for activation.",
+                "failures": registration.eligibility_failures,
+            },
+            status=status.HTTP_409_CONFLICT,
+        )
+
+    try:
+        create_finance_obligation_for_registration(registration)
+    except HomeAcademyIntegrationError as exc:
+        return Response(
+            {"detail": str(exc), "code": "FINANCE_INTEGRATION_BLOCKED"},
+            status=status.HTTP_409_CONFLICT,
+        )
+
+    registration.refresh_from_db()
+    registration.status = "active"
+    registration.roster_status = "active"
+    registration.save(update_fields=["status", "roster_status", "updated_at"])
+    return Response(OfferingEnrollmentSerializer(registration).data)
 
 
 @extend_schema(responses=EligibilityResponseSerializer)
