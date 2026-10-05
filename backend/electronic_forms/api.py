@@ -199,7 +199,13 @@ class MyElectronicEnvelopesView(APIView):
             .prefetch_related("signers")
             .distinct()
         )
-        return Response([_serialize_envelope(row) for row in envelopes])
+        payload = []
+        for row in envelopes:
+            item = _serialize_envelope(row)
+            signer = _signer_for_user(envelope=row, user=request.user)
+            item["current_signer"] = _serialize_signer(signer) if signer else None
+            payload.append(item)
+        return Response(payload)
 
 
 class ElectronicEnvelopeDetailView(APIView):
@@ -216,7 +222,9 @@ class ElectronicEnvelopeDetailView(APIView):
         can_manage = user_has_permission(request.user, "forms.manage", school=school)
         if signer is None and not can_manage:
             return Response({"detail": "Permission denied."}, status=403)
-        return Response(_serialize_envelope(envelope, include_document=True))
+        payload = _serialize_envelope(envelope, include_document=True)
+        payload["current_signer"] = _serialize_signer(signer) if signer else None
+        return Response(payload)
 
 
 class ElectronicEnvelopeConsentView(APIView):
