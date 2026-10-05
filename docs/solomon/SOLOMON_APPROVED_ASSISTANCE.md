@@ -1,7 +1,8 @@
 # Solomon approved assistance catalog
 
 Version: solomon-assistance-v1. Maintained by CROWN. Content is repository-owned,
-general adult assistance, not model-generated or independently certified.
+general adult assistance, served without runtime model generation. It is not
+independently certified.
 The owner authorized this expansion on October 4, 2026. Human review is required
 before use; authorization to implement is not a legal clearance or content license
 for unrelated materials.
