@@ -213,3 +213,72 @@ describe('optional structured staff guidance', () => {
     await waitFor(() => expect(screen.queryByText('Review school roles.')).toBeNull());
   });
 });
+
+
+describe('optional OpenAI drafting', () => {
+  const draft = { topic: 'communications', title: 'General AI draft', guidance: 'Verify every placeholder.',
+    steps: ['Review the maintained source.'], draft: '<b>Plain text [date]</b>',
+    mode: 'generated_guidance', generated_by_ai: true, human_review_required: true,
+    source_document: 'docs/solomon/SOLOMON_APPROVED_ASSISTANCE.md', source_section: 'communications' };
+  const setup = async (external = true) => {
+    vi.stubEnv('VITE_SOLOMON_GUIDANCE_ENABLED', 'true');
+    vi.stubEnv('VITE_SOLOMON_EXTERNAL_ENABLED', external ? 'true' : 'false');
+    sessionStorage.setItem('crown.role', 'teacher');
+    apiFetch.mockResolvedValue(reply({}, 404));
+    render(<HelpTooltip slug="missing" />);
+    fireEvent.click(screen.getByRole('button', { name: 'Help from Solomon' }));
+    await screen.findByText(/No published guidance/);
+    fireEvent.change(screen.getByRole('combobox', { name: 'Guidance topic' }), { target: { value: 'communications' } });
+  };
+  it('keeps external drafting hidden unless separately enabled', async () => {
+    await setup(false);
+    expect(screen.queryByRole('button', { name: 'Draft with AI' })).toBeNull();
+  });
+  it('requires explicit review and topic selection and renders an honest plain text draft', async () => {
+    await setup();
+    const button = screen.getByRole('button', { name: 'Draft with AI' });
+    expect(button.disabled).toBe(true);
+    fireEvent.click(screen.getByRole('checkbox', { name: /I will review/ }));
+    apiFetch.mockResolvedValue(reply(draft));
+    fireEvent.click(button);
+    await screen.findByText(/AI draft · Verify against/);
+    const [path, options] = apiFetch.mock.calls.at(-1);
+    expect(path).toBe('/api/solomon/assistance/');
+    expect(JSON.parse(options.body)).toEqual({ topic: 'communications', human_review_acknowledged: true });
+    expect(document.querySelector('.solomon-guidance-draft b')).toBeNull();
+    fireEvent.change(screen.getByRole('combobox', { name: 'Guidance topic' }), { target: { value: 'strategy' } });
+    fireEvent.click(screen.getByRole('checkbox', { name: /I will review/ }));
+    expect(button.disabled).toBe(true);
+    expect(screen.queryByText('Verify every placeholder.')).toBeNull();
+  });
+  it('identifies a curated fallback without claiming generation', async () => {
+    await setup();
+    apiFetch.mockResolvedValue(reply({ ...draft, mode: 'curated_guidance', generated_by_ai: false,
+      external_ai_status: 'unavailable_showing_curated' }));
+    fireEvent.click(screen.getByRole('checkbox', { name: /I will review/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Draft with AI' }));
+    await screen.findByText(/AI drafting is unavailable/);
+    expect(screen.getByText(/Curated CROWN guidance/)).toBeTruthy();
+    expect(screen.queryByText(/AI draft · Verify against/)).toBeNull();
+  });
+  it('rejects generated responses without maintained provenance', async () => {
+    await setup();
+    apiFetch.mockResolvedValue(reply({ ...draft, source_document: undefined }));
+    fireEvent.click(screen.getByRole('checkbox', { name: /I will review/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Draft with AI' }));
+    await screen.findByText(/Guidance could not be loaded/);
+    expect(screen.queryByText('Verify every placeholder.')).toBeNull();
+  });
+  it('aborts display on dismissal and ignores a late generated response', async () => {
+    await setup();
+    let resolve;
+    apiFetch.mockReturnValue(new Promise(r => { resolve = r; }));
+    fireEvent.click(screen.getByRole('checkbox', { name: /I will review/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Draft with AI' }));
+    const options = apiFetch.mock.calls.at(-1)[1];
+    fireEvent.click(screen.getByRole('button', { name: 'Close help' }));
+    expect(options.signal.aborted).toBe(true);
+    resolve(reply(draft));
+    await waitFor(() => expect(screen.queryByText('Verify every placeholder.')).toBeNull());
+  });
+});

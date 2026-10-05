@@ -2,11 +2,12 @@ from django.urls import path
 
 from .views import audiences_list, categories_list, context_view, playbooks_list, resources_list, review_queue, topics_list
 
-from .guidance_views import guidance_view
+from .guidance_views import assistance_view, guidance_view
 
 app_name = "solomon"
 
 urlpatterns = [
+    path("api/solomon/assistance/", assistance_view, name="solomon-assistance"),
     path("api/solomon/guidance/", guidance_view, name="solomon-guidance"),
     path("api/solomon/categories/", categories_list, name="solomon-categories"),
     path("api/solomon/topics/", topics_list, name="solomon-topics"),

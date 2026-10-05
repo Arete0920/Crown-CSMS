@@ -10,7 +10,10 @@ for unrelated materials.
 The existing school-scoped endpoint and independent default-off frontend/backend
 flags serve these resources. Inputs remain exactly a maintained topic and a human
 review acknowledgement. No free text, uploads, user-selected sources, records,
-metrics, recipient lists, network transport, or operational writes are accepted.
+metrics, recipient lists, or operational writes are accepted. The curated endpoint
+has no network transport. A separately gated optional OpenAI adapter can reword
+these generic resources; see [the provider release review](SOLOMON_PROVIDER_RELEASE_REVIEW.md).
+Generated responses are explicitly labeled and remain drafts requiring verification.
 All nine resources are available from the shared Solomon help dialog when enabled
 for authorized staff. Checklists and drafts are plain text with maintained-source
 links; no draft is automatically saved, sent, or acted on.

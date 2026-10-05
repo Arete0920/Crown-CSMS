@@ -69,7 +69,7 @@ export default defineConfig({
       stderr: "pipe",
       env: {
         ...process.env,
-        ...(IS_GUIDANCE_CONTRACT ? { VITE_SOLOMON_GUIDANCE_ENABLED: "true" } : {}),
+        ...(IS_GUIDANCE_CONTRACT ? { VITE_SOLOMON_GUIDANCE_ENABLED: "true", VITE_SOLOMON_EXTERNAL_ENABLED: "true" } : {}),
         ...(IS_SCAFFOLD_CERTIFICATION ? { VITE_SANDBOX_MODE: "1" } : {}),
       },
     },

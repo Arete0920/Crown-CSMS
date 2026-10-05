@@ -53,8 +53,27 @@ CROWN_DEV_OPEN_API = _env_bool("CROWN_DEV_OPEN_API", default=False)
 # SOLOMON read-only API gate. Keep closed until Phase 3 is explicitly enabled.
 CROWN_SOLOMON_API_ENABLED = _env_bool("CROWN_SOLOMON_API_ENABLED", default=False)
 
-# Optional structured adult guidance. External AI transport is not configured.
+# Optional structured adult guidance; external drafting has independent release gates.
 CROWN_SOLOMON_GUIDANCE_ENABLED = _env_bool("CROWN_SOLOMON_GUIDANCE_ENABLED", default=False)
+
+# OpenAI drafting is disabled until private release evidence and credentials are configured.
+CROWN_SOLOMON_EXTERNAL_ENABLED = _env_bool("CROWN_SOLOMON_EXTERNAL_ENABLED", default=False)
+CROWN_SOLOMON_RELEASE_APPROVED = _env_bool("CROWN_SOLOMON_RELEASE_APPROVED", default=False)
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
+CROWN_SOLOMON_MODEL = os.getenv("CROWN_SOLOMON_MODEL", "")
+CROWN_SOLOMON_QUOTA_REDIS_URL = os.getenv("CROWN_SOLOMON_QUOTA_REDIS_URL", "")
+CROWN_SOLOMON_QUOTA_NAMESPACE = os.getenv("CROWN_SOLOMON_QUOTA_NAMESPACE", "")
+CROWN_SOLOMON_RELEASE_FINGERPRINT = os.getenv("CROWN_SOLOMON_RELEASE_FINGERPRINT", "")
+CROWN_SOLOMON_CONTRACT_REVIEW_REF = os.getenv("CROWN_SOLOMON_CONTRACT_REVIEW_REF", "")
+CROWN_SOLOMON_RETENTION_REVIEW_REF = os.getenv("CROWN_SOLOMON_RETENTION_REVIEW_REF", "")
+CROWN_SOLOMON_EVALUATION_REVIEW_REF = os.getenv("CROWN_SOLOMON_EVALUATION_REVIEW_REF", "")
+CROWN_SOLOMON_BUDGET_REVIEW_REF = os.getenv("CROWN_SOLOMON_BUDGET_REVIEW_REF", "")
+CROWN_SOLOMON_CORPUS_REVIEW_REF = os.getenv("CROWN_SOLOMON_CORPUS_REVIEW_REF", "")
+try:
+    CROWN_SOLOMON_DAILY_REQUEST_LIMIT = int(os.getenv("CROWN_SOLOMON_DAILY_REQUEST_LIMIT", "0"))
+except ValueError:
+    CROWN_SOLOMON_DAILY_REQUEST_LIMIT = 0
+
 
 # SOLOMON internal context consumption gate. Separate from API gate.
 CROWN_SOLOMON_CONTEXT_ENABLED = _env_bool("CROWN_SOLOMON_CONTEXT_ENABLED", default=False)

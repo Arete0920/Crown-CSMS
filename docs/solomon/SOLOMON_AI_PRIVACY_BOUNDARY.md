@@ -1,6 +1,6 @@
 # Solomon optional AI and guidance boundary
 
-Owner: TC Megahan. Status: curated guidance implemented; external AI disabled.
+Owner: TC Megahan. Status: curated guidance and optional OpenAI adapter implemented; external AI disabled.
 
 ## Accepted product boundary
 
@@ -34,7 +34,7 @@ and a catalog version; the digest covers the full resource.
 The response is explicitly labeled curated guidance, not AI-generated. Strategy
 returns a human advisory handoff. Acknowledgement means the user accepted the
 review requirement; it is not proof that review or a decision has occurred.
-There are no decision actions, model calls, or domain-record reads.
+The curated endpoint has no decision actions, model calls, or domain-record reads.
 
 The privacy gateway `build_external_payload` constructs only repository-owned
 generic guidance. It rejects unknown fields, raw text, uploads, identifiers,
@@ -42,7 +42,7 @@ student/parent records, credentials, health, financial, discipline and pastoral
 information. It also rejects aggregates until disclosure controls are validated.
 It does not ingest existing knowledge-base text: publication or global visibility
 alone is not evidence of privacy clearance or permission to send to a provider.
-The gateway builds a payload only; there is no external transport or provider.
+The gateway builds a payload only. The separately gated OpenAI adapter accepts this closed vocabulary and maintained generic checklist/template content; see the [provider release review](SOLOMON_PROVIDER_RELEASE_REVIEW.md).
 
 Successful guidance is durably audited using the existing audit store: internal
 actor, school, topic, policy version and source digest. No raw input or generated
@@ -55,9 +55,11 @@ runtime verification. Rejection cannot undo data a caller improperly submits.
 
 ## External activation requirements
 
-External AI remains unavailable in this implementation. Selecting an endpoint or
-changing the guidance flag cannot activate it. A later coherent implementation
-must establish all of the following before production use:
+External AI remains disabled by default. The optional adapter, tests and separate
+release controls are implemented; production activation requires verified private
+evidence. Changing the curated guidance flag alone cannot activate it.
+The [provider release review](SOLOMON_PROVIDER_RELEASE_REVIEW.md) records current
+terms, remaining account checks and exact configuration. Before production use:
 
 - Selected, replaceable provider adapter and contracted data-processing terms:
   no training, advertising or secondary use; documented retention/deletion,
@@ -99,7 +101,7 @@ claim is authorized by this document or passing tests.
 
 Run `pytest backend/solomon/tests backend/onboarding/tests/test_solomon_services.py`
 and `python backend/manage.py check` with the supported environment.
-Negative tests cover rejected data, missing/conflicting tenant, role escalation,
-student/parent access, missing acknowledgement, audit failure and no network use.
+Synthetic tests cover provider boundaries as well as rejected data, missing/conflicting tenant, role escalation,
+student/parent access, missing acknowledgement, audit failure and no network use for curated guidance.
 Revert this coherent change or set `CROWN_SOLOMON_GUIDANCE_ENABLED=false`.
 No domain schema migration or payment change is included.

@@ -23,6 +23,14 @@ test('Solomon help supports native keyboard dismissal, focus return and mobile r
       expect(['onboarding', 'communications']).toContain(topic);
       expect(route.request().postDataJSON()).toEqual({ topic, human_review_acknowledged: true });
       await route.fulfill({ json: { topic, steps: ['Review dates before sending.'], draft: 'General event reminder: complete [date] before use.', source_document: 'docs/solomon/SOLOMON_APPROVED_ASSISTANCE.md', source_section: topic === 'onboarding' ? 'existing-guidance' : topic, title: 'Implementation guidance', guidance: 'Review school roles.', mode: 'curated_guidance', generated_by_ai: false, human_review_required: true } });
+    } else if (url.pathname === '/api/solomon/assistance/') {
+      expect(route.request().method()).toBe('POST');
+      expect(route.request().postDataJSON()).toEqual({ topic: 'communications', human_review_acknowledged: true });
+      await route.fulfill({ json: { topic: 'communications', title: 'General AI draft',
+        guidance: 'Verify this draft against the maintained source.', steps: ['Review placeholders.'],
+        draft: 'General event: [date]', source_document: 'docs/solomon/SOLOMON_APPROVED_ASSISTANCE.md',
+        source_section: 'communications', mode: 'generated_guidance', generated_by_ai: true,
+        human_review_required: true } });
     } else {
       await route.fulfill({ json: {} });
     }
@@ -55,6 +63,9 @@ test('Solomon help supports native keyboard dismissal, focus return and mobile r
   await staffGuidance.getByRole('button', { name: 'View guidance' }).click();
   await expect(staffGuidance.getByRole('region', { name: 'Reusable draft' })).toBeVisible();
   await expect(staffGuidance.getByRole('link', { name: 'Read the maintained source' })).toHaveAttribute('href', /#communications$/);
+  await staffGuidance.getByRole('button', { name: 'Draft with AI' }).click();
+  await expect(staffGuidance.getByText(/AI draft · Verify against/)).toBeVisible();
+  await expect(staffGuidance.getByRole('textbox')).toHaveCount(0);
   await page.keyboard.press('Escape');
   await expect(panel).not.toBeVisible();
   await expect(trigger).toBeFocused();

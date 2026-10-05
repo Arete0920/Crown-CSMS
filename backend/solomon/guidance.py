@@ -97,7 +97,7 @@ def local_guidance(data):
         "generated_by_ai": False,
         "human_review_required": True,
         "advisory_handoff": topic == "strategy",
-        "external_ai_status": "blocked_pending_provider_and_release_review",
+        "external_ai_status": "disabled_pending_release_review",
         "policy_version": POLICY_VERSION,
         "source": "CROWN Solomon guidance catalog",
         "source_digest": provenance,

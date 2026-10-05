@@ -22,11 +22,12 @@ const sourceDocument = 'docs/solomon/SOLOMON_APPROVED_ASSISTANCE.md';
 const existingTopics = ['onboarding', 'interpretation', 'governance', 'strategy'];
 const staffRoles = ['head_of_school', 'teacher', 'finance_director', 'aid_director', 'registrar', 'support'];
 
-/** Optional curated guidance only. Backend tenant/role gates remain authoritative. */
+/** Optional adult guidance. Backend tenant, role and release gates remain authoritative. */
 export default function SolomonStaffGuidance() {
   const roles = getCurrentUserRoles();
   const enabled = import.meta.env.VITE_SOLOMON_GUIDANCE_ENABLED === 'true'
     && !roles.includes('student') && roles.some(role => staffRoles.includes(role));
+  const aiEnabled = enabled && import.meta.env.VITE_SOLOMON_EXTERNAL_ENABLED === 'true';
   const [acknowledged, setAcknowledged] = useState(false);
   const [topic, setTopic] = useState('onboarding');
   const [status, setStatus] = useState('idle');
@@ -34,16 +35,16 @@ export default function SolomonStaffGuidance() {
   const request = useRef(null);
   useEffect(() => () => request.current?.abort(), []);
 
-  async function load(event) {
+  async function load(event, useAI = false) {
     event.preventDefault();
-    if (!enabled || !acknowledged) return;
+    if (!enabled || !acknowledged || (useAI && (!aiEnabled || topic === 'strategy'))) return;
     request.current?.abort();
     const controller = new AbortController();
     request.current = controller;
     setStatus('loading');
     setGuidance(null);
     try {
-      const response = await apiFetch('/api/solomon/guidance/', {
+      const response = await apiFetch(useAI ? '/api/solomon/assistance/' : '/api/solomon/guidance/', {
         method: 'POST',
         body: JSON.stringify({ topic, human_review_acknowledged: true }),
         signal: controller.signal,
@@ -54,7 +55,9 @@ export default function SolomonStaffGuidance() {
       if (!response.ok) throw new Error('Guidance unavailable');
       const payload = await response.json();
       if (controller.signal.aborted) return;
-      if (payload.mode !== 'curated_guidance' || payload.generated_by_ai !== false
+      const curated = payload.mode === 'curated_guidance' && payload.generated_by_ai === false;
+      const generated = useAI && payload.mode === 'generated_guidance' && payload.generated_by_ai === true;
+      if ((!curated && !generated)
         || payload.human_review_required !== true || payload.topic !== topic
         || typeof payload.title !== 'string' || typeof payload.guidance !== 'string') {
         throw new Error('Invalid guidance response');
@@ -64,6 +67,10 @@ export default function SolomonStaffGuidance() {
         || (payload.source_document !== undefined && payload.source_document !== sourceDocument)
         || (payload.source_section !== undefined && payload.source_section !== (existingTopics.includes(topic) ? 'existing-guidance' : topic))) {
         throw new Error('Invalid assistance resource');
+      }
+      if (generated && (!Array.isArray(payload.steps) || typeof payload.draft !== 'string'
+        || payload.source_document !== sourceDocument || typeof payload.source_section !== 'string')) {
+        throw new Error('Missing AI provenance');
       }
       setGuidance(payload);
       setStatus('ready');
@@ -102,13 +109,15 @@ export default function SolomonStaffGuidance() {
           }} />
           I will review this guidance before acting.
         </label>
-        <button type="button" onClick={load} disabled={!acknowledged || status === 'loading'}>View guidance</button>
+        <button type="button" onClick={event => load(event)} disabled={!acknowledged || status === 'loading'}>View guidance</button>
+        {aiEnabled && <button type="button" onClick={event => load(event, true)} disabled={!acknowledged || status === 'loading' || topic === 'strategy'}>Draft with AI</button>}
       </div>
       <div aria-live="polite" aria-busy={status === 'loading'}>
         {status === 'loading' && <p>Loading general guidance…</p>}
         {status === 'unavailable' && <p>Staff guidance is not enabled for this account or school.</p>}
         {status === 'error' && <p>Guidance could not be loaded. Please try again.</p>}
         {guidance && <>
+          {guidance.external_ai_status === 'unavailable_showing_curated' && <p>AI drafting is unavailable. Showing maintained guidance instead.</p>}
           <h4>{guidance.title}</h4>
           <p>{guidance.guidance}</p>
           {guidance.steps?.length > 0 && <ol>{guidance.steps.map((step, index) => <li key={index}>{step}</li>)}</ol>}
@@ -117,7 +126,7 @@ export default function SolomonStaffGuidance() {
             <p className="solomon-guidance-draft">{guidance.draft}</p>
           </section>}
           {guidance.source_document === sourceDocument && <p><a href={`https://github.com/Arete0920/Crown-CSMS/blob/main/${sourceDocument}#${guidance.source_section || 'existing-guidance'}`} target="_blank" rel="noopener noreferrer">Read the maintained source</a></p>}
-          <small>Curated CROWN guidance · Human review required</small>
+          <small>{guidance.generated_by_ai ? 'AI draft · Verify against the maintained source · Human review required' : 'Curated CROWN guidance · Human review required'}</small>
         </>}
       </div>
     </section>
