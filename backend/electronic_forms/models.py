@@ -183,7 +183,7 @@ class ElectronicSigner(models.Model):
         if self.envelope_id and self.school_id != self.envelope.school_id:
             raise ValidationError({"envelope": "Signer and envelope must belong to the same school."})
         user_school_id = getattr(self.user, "school_id", None) if self.user_id else None
-        if user_school_id and user_school_id != self.school_id:
+        if user_school_id != self.school_id:
             raise ValidationError({"user": "Signer user must belong to the same school."})
 
     def save(self, *args, **kwargs):
