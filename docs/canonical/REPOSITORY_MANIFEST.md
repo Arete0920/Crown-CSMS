@@ -13,7 +13,7 @@ This manifest explains the intended role of the repository's major areas after o
 | Path | Classification | Purpose |
 |---|---|---|
 | `backend/` | Runtime source | Django backend, APIs, domain logic, persistence, permissions, migrations, and backend tests. |
-| `frontend/` | Runtime source | Browser applications, dashboards, UI components, routes, frontend tests, and build configuration. |
+| `frontend/dashboards/` | Runtime source | Canonical browser application, dashboards, UI components, routes, frontend tests, and build configuration. Legacy or evidence-only frontend trees must not be treated as runtime source. |
 | `.github/` | Repository governance | Pull-request templates, ownership rules, workflows, and GitHub configuration. |
 | `docs/architecture/` | Architecture | System boundaries, runtime entrypoints, tenancy, integrations, and deployment design. |
 | `docs/engineering/` | Engineering | Setup, contribution practices, testing, and engineering policy. |
