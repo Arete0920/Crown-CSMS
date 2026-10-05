@@ -1,0 +1,72 @@
+name: Merged Branch Cleanup
+
+on:
+  pull_request:
+    types: [closed]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: merged-branch-cleanup-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  delete-merged-head:
+    if: github.event_name == 'pull_request' && github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Delete merged branch when no open PR depends on it
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPOSITORY: ${{ github.repository }}
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [ "$HEAD_REPO" != "$REPOSITORY" ]; then
+            echo "Fork branch is outside this repository; nothing to delete."
+            exit 0
+          fi
+
+          if [ -z "$HEAD_BRANCH" ] || [ "$HEAD_BRANCH" = "$DEFAULT_BRANCH" ]; then
+            echo "Default or empty branch is never deleted."
+            exit 0
+          fi
+
+          branch_json="$(
+            curl --fail --silent --show-error               -H "Authorization: Bearer $GH_TOKEN"               -H "Accept: application/vnd.github+json"               "https://api.github.com/repos/$REPOSITORY/branches/$HEAD_BRANCH"
+          )"
+          if [ "$(printf '%s' "$branch_json" | jq -r '.protected')" = "true" ]; then
+            echo "Branch is protected; retaining $HEAD_BRANCH."
+            exit 0
+          fi
+
+          encoded_base="$(python - <<'PY'
+import os, urllib.parse
+print(urllib.parse.quote(os.environ["HEAD_BRANCH"], safe=""))
+PY
+)"
+          dependent_count="$(
+            curl --fail --silent --show-error               -H "Authorization: Bearer $GH_TOKEN"               -H "Accept: application/vnd.github+json"               "https://api.github.com/repos/$REPOSITORY/pulls?state=open&base=$encoded_base&per_page=100"               | jq 'length'
+          )"
+
+          if [ "$dependent_count" -gt 0 ]; then
+            echo "Retaining $HEAD_BRANCH because $dependent_count open PR(s) still use it as a base."
+            exit 0
+          fi
+
+          encoded_ref="$(python - <<'PY'
+import os, urllib.parse
+print(urllib.parse.quote("heads/" + os.environ["HEAD_BRANCH"], safe="/"))
+PY
+)"
+          curl --fail --silent --show-error -X DELETE             -H "Authorization: Bearer $GH_TOKEN"             -H "Accept: application/vnd.github+json"             "https://api.github.com/repos/$REPOSITORY/git/refs/$encoded_ref"
+
+          echo "Deleted merged branch: $HEAD_BRANCH"
