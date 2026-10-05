@@ -141,7 +141,8 @@ class TestWizardRequiresSchoolHeader(TestCase):
 
     def _assert_400(self, description, url):
         client, user = _make_authed_client_with_user(self.school)
-        _grant_wizard_access_if_required(description, user, self.school)
+        if description == "financial_aid":
+            _grant_financial_aid_access(user, self.school)
         r = client.post(url)
         self.assertIn(r.status_code, (400, 422), f"{description} ({url}): expected 400 for missing X-School-Id, got {r.status_code}.")
 
