@@ -5,7 +5,7 @@ djangorestframework==3.18.1
 django-extensions==4.1
 python-dotenv==1.2.4
 gunicorn==22.0.0
-dj-database-url==2.3.0
+dj-database-url==3.1.2
 # Database drivers
 # psycopg (v3) supports Python 3.14; psycopg2-binary is EOL for 3.14+
 psycopg[binary]==3.3.6
