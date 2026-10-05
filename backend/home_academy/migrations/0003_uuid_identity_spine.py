@@ -84,7 +84,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="offeringenrollment",
             name="finance_obligation_id",
-            field=models.UUIDField(blank=True, db_index=True, null=True),
+            field=models.PositiveBigIntegerField(blank=True, db_index=True, null=True),
         ),
         migrations.AlterField(
             model_name="financialaidrule",
