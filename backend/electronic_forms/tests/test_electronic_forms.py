@@ -279,3 +279,47 @@ def test_cross_school_manager_cannot_access_other_school_envelope():
         HTTP_X_SCHOOL_ID=str(school_b.id),
     )
     assert response.status_code == 404
+
+
+def test_template_version_is_immutable_after_creation():
+    school = School.objects.create(name="Immutable Template School")
+    manager = _user(school=school, prefix="immutable-manager")
+    template = _template(school=school, creator=manager)
+
+    template.body = "Changed body"
+    with pytest.raises(ValidationError):
+        template.save()
+
+
+def test_api_envelope_issue_rolls_back_if_any_signer_is_invalid():
+    school = School.objects.create(name="Envelope Atomic School")
+    manager = _user(school=school, prefix="atomic-manager")
+    valid_signer = _user(school=school, prefix="atomic-signer")
+    _grant_manage(user=manager, school=school, role_code="forms_atomic_manager")
+    template = _template(school=school, creator=manager)
+
+    client = APIClient()
+    client.force_authenticate(manager)
+    response = client.post(
+        "/api/v1/forms/envelopes/",
+        {
+            "template_id": str(template.id),
+            "form_data": {"student_name": "Jordan Reed"},
+            "signers": [
+                {
+                    "user_id": str(valid_signer.id),
+                    "display_name": "Valid Signer",
+                },
+                {
+                    "user_id": str(uuid.uuid4()),
+                    "display_name": "Missing Signer",
+                },
+            ],
+        },
+        format="json",
+        HTTP_X_SCHOOL_ID=str(school.id),
+    )
+
+    assert response.status_code == 409
+    assert ElectronicEnvelope.objects.filter(school=school).count() == 0
+    assert ElectronicSigner.objects.filter(school=school).count() == 0
