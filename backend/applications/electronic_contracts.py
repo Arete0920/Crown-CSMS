@@ -29,10 +29,10 @@ ENROLLMENT_CONTRACT_TEMPLATE_BODY = (
 )
 
 WORKFLOW_STATUS_BY_CONTRACT_STATUS = {
-    EnrollmentContractStatus.DRAFT: "not_started",
-    EnrollmentContractStatus.ISSUED: "sent",
-    EnrollmentContractStatus.SIGNED: "signed",
-    EnrollmentContractStatus.COUNTERSIGNED: "countersigned",
+    EnrollmentContractStatus.DRAFT.value: "not_started",
+    EnrollmentContractStatus.ISSUED.value: "sent",
+    EnrollmentContractStatus.SIGNED.value: "signed",
+    EnrollmentContractStatus.COUNTERSIGNED.value: "countersigned",
 }
 
 
