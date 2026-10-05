@@ -5,6 +5,7 @@ import pytest
 from django.test import Client
 
 from core.models import CrownPermission, RolePermission, School, UserAccount, UserRole
+from subscriptions.models import SchoolModule
 
 pytestmark = pytest.mark.django_db
 
@@ -191,3 +192,45 @@ class TestNavResponseShape:
         response = client.get("/api/v1/nav/", HTTP_X_SCHOOL_ID=str(school_b.id))
         assert response.status_code == 404
         assert response.json()["code"] == "tenant_access_denied"
+
+
+class TestHomeAcademyNavEntitlement:
+    def test_parent_home_academy_link_hidden_until_module_enabled(self):
+        school = _school("Home Academy Parent Nav")
+        parent = _user("ha-parent")
+        _assign_role(parent, school, "parent")
+        _grant("parent", "parent.view")
+        client = Client()
+        client.force_login(parent)
+
+        before = client.get("/api/v1/nav/", HTTP_X_SCHOOL_ID=str(school.id))
+        assert before.status_code == 200
+        assert "/parent/home-academy" not in _nav_flat_hrefs(before.json())
+
+        SchoolModule.objects.create(
+            school=school,
+            module_key="home_academy",
+            status="active",
+        )
+        after = client.get("/api/v1/nav/", HTTP_X_SCHOOL_ID=str(school.id))
+        assert after.status_code == 200
+        assert "/parent/home-academy" in _nav_flat_hrefs(after.json())
+
+    def test_registrar_home_academy_link_requires_edit_permission_and_entitlement(self):
+        school = _school("Home Academy Registrar Nav")
+        registrar = _user("ha-registrar")
+        _assign_role(registrar, school, "registrar")
+        _grant("registrar", "home_academy.edit")
+        SchoolModule.objects.create(
+            school=school,
+            module_key="home_academy",
+            status="active",
+        )
+        client = Client()
+        client.force_login(registrar)
+
+        response = client.get("/api/v1/nav/", HTTP_X_SCHOOL_ID=str(school.id))
+
+        assert response.status_code == 200
+        assert "/home-academy" in _nav_flat_hrefs(response.json())
+        assert "/parent/home-academy" not in _nav_flat_hrefs(response.json())
