@@ -321,8 +321,8 @@ class ContractAssentEvidence(models.Model):
         db_table = "contract_assent_evidence"
         ordering = ["accepted_at", "id"]
         indexes = [
-            models.Index(fields=["school_id", "contract", "action"]),
-            models.Index(fields=["school_id", "actor_user", "accepted_at"]),
+            models.Index(fields=["school_id", "contract", "action"], name="contract_as_school__8b7bb6_idx"),
+            models.Index(fields=["school_id", "actor_user", "accepted_at"], name="contract_as_school__7e37d4_idx"),
         ]
         constraints = [
             models.UniqueConstraint(
