@@ -70,3 +70,81 @@ PY
           curl --fail --silent --show-error -X DELETE             -H "Authorization: Bearer $GH_TOKEN"             -H "Accept: application/vnd.github+json"             "https://api.github.com/repos/$REPOSITORY/git/refs/$encoded_ref"
 
           echo "Deleted merged branch: $HEAD_BRANCH"
+
+  sweep-existing-merged-branches:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Delete only provably merged inactive branches
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPOSITORY: ${{ github.repository }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          owner="${REPOSITORY%%/*}"
+          deleted=0
+          retained=0
+
+          mapfile -t branches < <(
+            gh api --paginate "repos/$REPOSITORY/branches?per_page=100" --jq '.[].name'
+          )
+
+          for branch in "${branches[@]}"; do
+            if [ "$branch" = "$DEFAULT_BRANCH" ]; then
+              continue
+            fi
+
+            branch_json="$(gh api "repos/$REPOSITORY/branches/$branch")"
+            protected="$(printf '%s' "$branch_json" | jq -r '.protected')"
+            branch_sha="$(printf '%s' "$branch_json" | jq -r '.commit.sha')"
+
+            if [ "$protected" = "true" ]; then
+              echo "KEEP protected: $branch"
+              retained=$((retained + 1))
+              continue
+            fi
+
+            open_head_count="$(
+              gh api --method GET "repos/$REPOSITORY/pulls"                 -f state=open -f head="$owner:$branch" -f per_page=100                 --jq 'length'
+            )"
+            if [ "$open_head_count" -gt 0 ]; then
+              echo "KEEP open-head: $branch"
+              retained=$((retained + 1))
+              continue
+            fi
+
+            open_base_count="$(
+              gh api --method GET "repos/$REPOSITORY/pulls"                 -f state=open -f base="$branch" -f per_page=100                 --jq 'length'
+            )"
+            if [ "$open_base_count" -gt 0 ]; then
+              echo "KEEP open-base: $branch"
+              retained=$((retained + 1))
+              continue
+            fi
+
+            merged_same_head="$(
+              gh api --method GET "repos/$REPOSITORY/pulls"                 -f state=closed -f head="$owner:$branch" -f per_page=100                 --jq "[.[] | select(.merged_at != null and .head.sha == \"$branch_sha\")] | length"
+            )"
+
+            if [ "$merged_same_head" -eq 0 ]; then
+              echo "KEEP not-proven-merged-at-current-head: $branch"
+              retained=$((retained + 1))
+              continue
+            fi
+
+            encoded_ref="$(python - "$branch" <<'PY'
+import sys, urllib.parse
+print(urllib.parse.quote("heads/" + sys.argv[1], safe="/"))
+PY
+)"
+            gh api --method DELETE "repos/$REPOSITORY/git/refs/$encoded_ref"
+            echo "DELETE merged current-head branch: $branch"
+            deleted=$((deleted + 1))
+          done
+
+          echo "Deleted branches: $deleted"
+          echo "Retained branches: $retained"
