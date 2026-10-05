@@ -259,6 +259,13 @@ class EnrollmentContract(TimeStampedModel):
         on_delete=models.SET_NULL,
         related_name="amendments",
     )
+    electronic_envelope = models.ForeignKey(
+        "electronic_forms.ElectronicEnvelope",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="enrollment_contracts",
+    )
     created_by = models.CharField(max_length=255, blank=True, default="")
 
     class Meta:
@@ -275,6 +282,7 @@ class EnrollmentContract(TimeStampedModel):
         super().clean()
         _require_same_school(self, "application")
         _require_same_school(self, "amended_from")
+        _require_same_school(self, "electronic_envelope")
         if self.amended_from_id and self.application_id != self.amended_from.application_id:
             raise ValidationError(
                 {"amended_from": "Amended contract must belong to the same application."}
