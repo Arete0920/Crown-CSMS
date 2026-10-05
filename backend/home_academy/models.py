@@ -253,7 +253,7 @@ class OfferingEnrollment(models.Model):
     eligibility_status = models.CharField(max_length=40, default="pending")
     eligibility_failures = models.JSONField(default=list, blank=True)
     payment_status = models.CharField(max_length=20, choices=PAYMENT_STATUSES, default="pending")
-    finance_obligation_id = models.UUIDField(null=True, blank=True, db_index=True)
+    finance_obligation_id = models.PositiveBigIntegerField(null=True, blank=True, db_index=True)
     form_status = models.CharField(max_length=20, choices=FORM_STATUSES, default="missing")
     roster_status = models.CharField(max_length=40, default="pending")
     transcript_posting_status = models.CharField(max_length=40, default="not_applicable")
