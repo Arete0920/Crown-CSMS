@@ -96,6 +96,11 @@ def _grant_attendance_configuration_access(user, school, role_code="REGISTRAR"):
     _grant_permission(user, school, role_code, "attendance.configure", "Configure attendance")
 
 
+def _grant_financial_aid_access(user, school, role_code="AID_DIRECTOR"):
+    for code in ("financial_aid.view", "financial_aid.edit"):
+        _grant_permission(user, school, role_code, code, f"Financial aid permission: {code}")
+
+
 def _grant_wizard_access_if_required(description, user, school):
     if description in ("enrollment_conversion", "reenrollment"):
         _grant_enrollment_conversion_access(user, school)
@@ -107,6 +112,8 @@ def _grant_wizard_access_if_required(description, user, school):
         _grant_section_scheduler_access(user, school)
     elif description in ("attendance_rules", "attendance_codes"):
         _grant_attendance_configuration_access(user, school)
+    elif description == "financial_aid":
+        _grant_financial_aid_access(user, school)
 
 
 def _headers(school_id):
@@ -133,7 +140,8 @@ class TestWizardRequiresSchoolHeader(TestCase):
         self.school = _make_school("Header Test School")
 
     def _assert_400(self, description, url):
-        client, _ = _make_authed_client_with_user(self.school)
+        client, user = _make_authed_client_with_user(self.school)
+        _grant_wizard_access_if_required(description, user, self.school)
         r = client.post(url)
         self.assertIn(r.status_code, (400, 422), f"{description} ({url}): expected 400 for missing X-School-Id, got {r.status_code}.")
 
