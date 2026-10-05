@@ -3967,27 +3967,36 @@ def admissions_contract_update(request, application_id):
         return Response({"detail": APPLICATION_NOT_FOUND_DETAIL}, status=404)
 
     payload = request.data if isinstance(request.data, dict) else {}
-    contract = _upsert_contract_for_application(
-        app=app,
-        actor_user=request.user,
-        payload=payload,
-    )
-    billing_handoff = _ensure_billing_obligation_for_countersigned_contract(
-        school=school,
-        app=app,
-        contract=contract,
-        actor_user=request.user,
-    )
-    ApplicationEvent.objects.create(
-        school_id=school.pk,
-        application=app,
-        event_type="contract_updated",
-        payload={
-            "contract_id": str(contract.id),
-            "contract_version": contract.version,
-            "status": contract.status,
-        },
-    )
+    try:
+        with transaction.atomic():
+            contract = _upsert_contract_for_application(
+                app=app,
+                actor_user=request.user,
+                payload=payload,
+            )
+            billing_handoff = _ensure_billing_obligation_for_countersigned_contract(
+                school=school,
+                app=app,
+                contract=contract,
+                actor_user=request.user,
+            )
+            ApplicationEvent.objects.create(
+                school_id=school.pk,
+                application=app,
+                event_type="contract_updated",
+                payload={
+                    "contract_id": str(contract.id),
+                    "contract_version": contract.version,
+                    "status": contract.status,
+                    "electronic_envelope_id": (
+                        str(contract.electronic_envelope_id)
+                        if contract.electronic_envelope_id
+                        else None
+                    ),
+                },
+            )
+    except ValidationError as exc:
+        return Response({"detail": "; ".join(exc.messages)}, status=409)
 
     return Response(
         {
