@@ -76,7 +76,6 @@ class TenantHeaderRequiredMiddleware:
         "/api/v1/payments/webhooks/",
         "/api/schema",
         "/api/docs",
-        "/api/director/force_seed_user",
         "/api/v1/admissions/submit",
         "/api/admissions/submit",
         "/api/v1/admissions/public-config",
