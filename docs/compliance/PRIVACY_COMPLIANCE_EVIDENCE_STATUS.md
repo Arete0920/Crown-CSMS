@@ -26,7 +26,7 @@ Actual subprocessors, contracts, notices, retention schedules, data-lifecycle ex
 
 The active compliance-readiness work is maintained in:
 
-- `docs/compliance/COMPLIANCE_READINESS_MATRIX.md`
+- `docs/compliance/COMPLIANCE_MATRIX.md`
 - `docs/compliance/SOC2_READINESS_PLAN.md`
 - `docs/compliance/STUDENT_PRIVACY_DATA_PROTECTION_PROGRAM.md`
 

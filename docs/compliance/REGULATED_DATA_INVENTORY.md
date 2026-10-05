@@ -119,8 +119,7 @@ Verified repository paths include:
 - `backend/apps/compliance/management/commands/compliance_retention_review.py`;
 - `tools/generate_retention_control_inventory.py`;
 - `docs/compliance/RETENTION_POLICY.md`;
-- `docs/compliance/DATA_RETENTION_POLICY.md`;
-- `docs/compliance/BACKUP_RESTORE_POLICY.md`.
+- `docs/DISASTER_RECOVERY_POLICY.md`.
 
 `TenantSafeModel.delete()` blocks hard deletion for tenant-owned models, ledger entries use reversals, and reviewed relations use `CASCADE`, `PROTECT` and `SET_NULL`. Current settings define `CROWN_BACKUP_RETENTION_DAYS` with a default of 30 days.
 

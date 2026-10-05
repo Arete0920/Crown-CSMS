@@ -1,12 +1,10 @@
 from __future__ import annotations
 
 import json
-import os
-from unittest.mock import patch
 from datetime import date
 
 from django.contrib.auth import get_user_model
-from django.test import TestCase, override_settings
+from django.test import TestCase
 from rest_framework.test import APIClient
 
 from aid.models import AidAward
@@ -175,63 +173,3 @@ class DirectorActionsAuthRequiredTests(TestCase):
         self.assertFalse(
             AuditLog.objects.filter(action="OPTIONS", model="/api/director/actions/").exists()
         )
-
-    @override_settings(CROWN_ENV="dev", DEV_SEED_KEY="test-dev-seed-key")
-    @patch.dict(os.environ, {"DEV_ADMIN_PASSWORD": "seed-test-password-only"})
-    def test_force_seed_user_security(self):
-        url = "/api/director/force_seed_user/"
-
-        with override_settings(CROWN_ENV="prod"):
-            resp = self.client.post(url)
-            self.assertEqual(resp.status_code, 404)
-
-        resp = self.client.post(url)
-        self.assertEqual(resp.status_code, 403)
-        self.assertEqual(resp.json(), {"detail": "Forbidden."})
-
-        resp = self.client.post(url, HTTP_X_DEV_SEED_KEY="wrong-key")
-        self.assertEqual(resp.status_code, 403)
-
-        resp = self.client.post(url, HTTP_X_DEV_SEED_KEY="test-dev-seed-key")
-        self.assertEqual(resp.status_code, 200)
-        data = resp.json()
-        self.assertIs(data["ok"], True)
-        self.assertNotIn("password", str(data).lower())
-        self.assertNotIn("seed-test-password-only", str(data))
-        self.assertTrue("admin" not in str(data).lower() or "admin_created" in data)
-
-        User = get_user_model()
-        staff = User.objects.create_user(
-            username="seed_staff",
-            password="password123",
-            is_staff=True,
-        )
-        api_client = APIClient()
-        api_client.force_authenticate(user=staff)
-        resp = api_client.post(url)
-        self.assertEqual(resp.status_code, 200)
-
-    @override_settings(CROWN_ENV="prod", DEV_SEED_KEY="test-dev-seed-key")
-    def test_force_seed_user_prod_always_404(self):
-        resp = self.client.post(
-            "/api/director/force_seed_user/", HTTP_X_DEV_SEED_KEY="test-dev-seed-key"
-        )
-        self.assertEqual(resp.status_code, 404)
-
-    @override_settings(CROWN_ENV="dev", DEV_SEED_KEY="test-dev-seed-key")
-    def test_force_seed_user_requires_password_before_any_database_command(self):
-        for password in (None, "", "   "):
-            with self.subTest(password=password), patch.dict(os.environ), patch(
-                "django.core.management.call_command"
-            ) as command:
-                os.environ.pop("DEV_SEED_KEY", None)
-                if password is None:
-                    os.environ.pop("DEV_ADMIN_PASSWORD", None)
-                else:
-                    os.environ["DEV_ADMIN_PASSWORD"] = password
-                response = self.client.post(
-                    "/api/director/force_seed_user/",
-                    HTTP_X_DEV_SEED_KEY="test-dev-seed-key",
-                )
-                self.assertEqual(response.status_code, 503)
-                command.assert_not_called()

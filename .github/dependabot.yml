@@ -34,6 +34,9 @@ updates:
           - "@testing-library/*"
           - "vitest"
           - "jsdom"
+          - "vite"
+          - "@vitejs/*"
+          - "esbuild"
         update-types:
           - "minor"
           - "patch"
@@ -44,6 +47,19 @@ updates:
           - "@testing-library/*"
           - "vitest"
           - "jsdom"
+        update-types:
+          - "minor"
+          - "patch"
+
+  - package-ecosystem: "npm"
+    directory: "/services/wallet/apple-pass-service"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:45"
+    open-pull-requests-limit: 3
+    groups:
+      wallet-minor-patch:
         update-types:
           - "minor"
           - "patch"
