@@ -1,3 +1,4 @@
+from uuid import UUID
 from drf_spectacular.utils import extend_schema
 from rest_framework import status
 from rest_framework.decorators import api_view
@@ -373,7 +374,7 @@ def post_offering_transcript(request, registration_id: int):
 
 @extend_schema(responses=EligibilityResponseSerializer)
 @api_view(["GET"])
-def offering_eligibility(request, offering_id: int, student_id: int):
+def offering_eligibility(request, offering_id: int, student_id: UUID):
     school_id = school_id_from_request(request, required=True)
     module_error = require_home_academy_enabled(school_id)
     if module_error is not None:
