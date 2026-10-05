@@ -85,7 +85,6 @@ import NotFoundPage from "../pages/NotFoundPage.jsx";
 import CrownLaunchDashboardPage from "../pages/CrownLaunchDashboardPage.jsx";
 import CrownLaunchModulePage from "../pages/CrownLaunchModulePage.jsx";
 import SchoolSettingsPage from "../pages/SchoolSettingsPage.jsx";
-import MyElectronicFormsPage from "../pages/MyElectronicFormsPage.jsx";
 import SandboxCommandCenter from "../pages/SandboxCommandCenter.jsx";
 import { dashboardRoutes } from "./dashboardRoutes";
 import { wizardRoutes } from "./wizards.js";
@@ -632,10 +631,6 @@ export const router = createBrowserRouter([
         <FinanceInvoicesList />
       </RoleRouteGuard>
     ),
-  },
-  {
-    path: PATHS.MY_FORMS,
-    element: <MyElectronicFormsPage />,
   },
   {
     path: PATHS.COMMUNICATIONS,
