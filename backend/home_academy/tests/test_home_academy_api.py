@@ -5,7 +5,10 @@ from django.core.management import call_command
 from rest_framework.test import APIClient
 
 from core.models import Family, Guardian, School, Student, UserAccount, UserRole
-from home_academy.models import HomeAcademyEnrollment, HomeAcademyProgram, Offering
+from home_academy.models import HomeAcademyEnrollment, HomeAcademyProgram, Offering, OfferingEnrollment
+from finance.models import FinanceObligation
+from households.models import Guardian as HouseholdGuardian, Household
+from ledger.models import Charge
 from subscriptions.models import SchoolModule
 
 pytestmark = pytest.mark.django_db
@@ -202,3 +205,87 @@ def test_enrollment_write_derives_household_from_canonical_student():
     enrollment = HomeAcademyEnrollment.objects.get(pk=response.json()["id"])
     assert enrollment.student_id == student.id
     assert enrollment.household_id == student.family_id
+
+
+def test_activation_posts_one_canonical_finance_obligation_and_is_idempotent():
+    school = make_school("Billing")
+    enable_home_academy(school)
+    registrar = make_user(school, "billing-registrar", role_code="REGISTRAR")
+
+    family = Family.objects.create(school=school, family_name="Billing Family")
+    student = make_student(school, "Billing", family=family)
+    core_guardian = Guardian.objects.create(
+        school=school,
+        family=family,
+        first_name="Billing",
+        last_name="Parent",
+        email="billing-parent@example.test",
+        relationship="GUARDIAN",
+        portal_access=True,
+    )
+    parent = make_user(school, "billing-parent", role_code="PARENT", guardian=core_guardian)
+
+    compatibility_household = Household.objects.create(
+        school_id=school.id,
+        name="Billing Compatibility Household",
+    )
+    HouseholdGuardian.objects.create(
+        school_id=school.id,
+        household=compatibility_household,
+        account=parent,
+        first_name="Billing",
+        last_name="Parent",
+        email=parent.email,
+        is_primary=True,
+    )
+
+    program = HomeAcademyProgram.objects.create(
+        school_id=school.id,
+        public_program_name="Billing Home Academy",
+    )
+    academy_enrollment = HomeAcademyEnrollment.objects.create(
+        school_id=school.id,
+        student_id=student.id,
+        household_id=family.id,
+        program=program,
+    )
+    offering = Offering.objects.create(
+        school_id=school.id,
+        program=program,
+        offering_type="academic_course",
+        title="Biology",
+        price="125.00",
+        school_year="2026-2027",
+        homeschool_seat_cap=5,
+        total_capacity=10,
+        requires_academic_anchor=False,
+        requires_admin_approval=True,
+        blocks_if_forms_missing=False,
+    )
+    registration = OfferingEnrollment.objects.create(
+        school_id=school.id,
+        student_id=student.id,
+        offering=offering,
+        home_academy_enrollment=academy_enrollment,
+        form_status="complete",
+        payment_status="pending",
+    )
+
+    client, headers = auth_client(registrar, school)
+    url = f"/api/v1/home-academy/offering-enrollments/{registration.id}/activate/"
+
+    first = client.post(url, {}, format="json", **headers)
+    second = client.post(url, {}, format="json", **headers)
+
+    assert first.status_code == 200
+    assert second.status_code == 200
+    registration.refresh_from_db()
+    assert registration.status == "active"
+    assert registration.finance_obligation_id is not None
+    assert FinanceObligation.objects.filter(
+        pk=registration.finance_obligation_id,
+        school=school,
+        amount_cents=12500,
+    ).count() == 1
+    assert FinanceObligation.objects.filter(school=school).count() == 1
+    assert Charge.objects.filter(school_id=school.id).count() == 1
