@@ -436,6 +436,87 @@ def financial_aid_rules(request):
 
 
 @api_view(["GET"])
+def parent_summary(request):
+    school_id = school_id_from_request(request, required=True)
+    module_error = require_home_academy_enabled(school_id)
+    if module_error is not None:
+        return module_error
+    if not require_role(request, {"parent"}):
+        return Response({"detail": "Forbidden"}, status=status.HTTP_403_FORBIDDEN)
+
+    user = getattr(request, "user", None)
+    guardian = getattr(user, "guardian", None)
+    if (
+        guardian is None
+        or guardian.school_id != school_id
+        or not guardian.portal_access
+    ):
+        return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
+
+    students = list(
+        Student.objects.filter(
+            school_id=school_id,
+            family_id=guardian.family_id,
+            status="ACTIVE",
+        ).order_by("last_name", "first_name")
+    )
+    student_ids = [student.id for student in students]
+    enrollments = HomeAcademyEnrollment.objects.filter(
+        school_id=school_id,
+        student_id__in=student_ids,
+        is_active=True,
+    ).select_related("program")
+    registrations = OfferingEnrollment.objects.filter(
+        school_id=school_id,
+        student_id__in=student_ids,
+    ).select_related("offering")
+
+    enrollment_by_student = {row.student_id: row for row in enrollments}
+    registrations_by_student = {}
+    for row in registrations:
+        registrations_by_student.setdefault(row.student_id, []).append(row)
+
+    program = HomeAcademyProgram.objects.filter(
+        school_id=school_id,
+        is_active=True,
+    ).first()
+    offerings = Offering.objects.filter(
+        school_id=school_id,
+        active=True,
+    ).order_by("offering_type", "title")[:1000]
+
+    return Response(
+        {
+            "program": HomeAcademyProgramSerializer(program).data if program else None,
+            "students": [
+                {
+                    "id": str(student.id),
+                    "name": f"{student.first_name} {student.last_name}".strip(),
+                    "grade_level": (
+                        student.current_grade_level.name
+                        if student.current_grade_level_id
+                        else ""
+                    ),
+                    "home_academy_enrollment": (
+                        HomeAcademyEnrollmentSerializer(
+                            enrollment_by_student.get(student.id)
+                        ).data
+                        if enrollment_by_student.get(student.id)
+                        else None
+                    ),
+                    "registrations": OfferingEnrollmentSerializer(
+                        registrations_by_student.get(student.id, []),
+                        many=True,
+                    ).data,
+                }
+                for student in students
+            ],
+            "offerings": OfferingSerializer(offerings, many=True).data,
+        }
+    )
+
+
+@api_view(["GET"])
 def board_summary(request):
     school_id = school_id_from_request(request, required=True)
     module_error = require_home_academy_enabled(school_id)
