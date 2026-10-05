@@ -153,7 +153,7 @@ class HomeAcademyEnrollment(models.Model):
     grade_level = models.CharField(max_length=20, blank=True)
     advisor_id = models.UUIDField(null=True, blank=True)
     registrar_id = models.UUIDField(null=True, blank=True)
-    start_date = models.DateField(default=timezone.now)
+    start_date = models.DateField(default=timezone.localdate)
     end_date = models.DateField(null=True, blank=True)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(default=timezone.now)
