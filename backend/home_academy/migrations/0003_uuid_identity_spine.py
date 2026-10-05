@@ -23,6 +23,44 @@ def assert_no_legacy_integer_identity_rows(apps, schema_editor):
         )
 
 
+
+def preconvert_postgresql_identity_columns(apps, schema_editor):
+    """
+    PostgreSQL cannot implicitly cast integer columns to uuid.
+
+    The preceding guard proves these tables contain no legacy rows, so this
+    database-only pre-conversion changes column types without inventing an
+    identity mapping. Django's following AlterField operations then update
+    migration state and remain portable to SQLite/test environments.
+    """
+    if schema_editor.connection.vendor != "postgresql":
+        return
+
+    columns = {
+        "home_academy_homeacademyprogram": ["school_id"],
+        "home_academy_homeacademyenrollment": [
+            "school_id",
+            "student_id",
+            "household_id",
+            "advisor_id",
+            "registrar_id",
+        ],
+        "home_academy_offering": ["school_id", "staff_owner_id"],
+        "home_academy_offeringenrollment": ["school_id", "student_id"],
+        "home_academy_financialaidrule": ["school_id"],
+    }
+    with schema_editor.connection.cursor() as cursor:
+        for table, field_names in columns.items():
+            quoted_table = schema_editor.quote_name(table)
+            for field_name in field_names:
+                quoted_field = schema_editor.quote_name(field_name)
+                cursor.execute(
+                    f"ALTER TABLE {quoted_table} "
+                    f"ALTER COLUMN {quoted_field} TYPE uuid "
+                    "USING NULL::uuid"
+                )
+
+
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -31,6 +69,7 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.RunPython(assert_no_legacy_integer_identity_rows, migrations.RunPython.noop),
+        migrations.RunPython(preconvert_postgresql_identity_columns, migrations.RunPython.noop),
         migrations.AlterField(
             model_name="homeacademyprogram",
             name="school_id",
