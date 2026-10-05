@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from .models import HomeAcademyEnrollment, Offering, OfferingEnrollment
+from .models import FinancialAidRule, HomeAcademyEnrollment, Offering, OfferingEnrollment
 
 
 @dataclass(frozen=True)
@@ -161,4 +161,38 @@ def apply_eligibility_to_registration(registration: OfferingEnrollment) -> Offer
         "roster_status",
         "updated_at",
     ])
+    return registration
+
+
+AID_CHARGE_TYPE_BY_OFFERING = {
+    "academic_course": "course_fee",
+    "lab": "lab_fee",
+    "sport": "athletic_fee",
+    "music": "activity_fee",
+    "drama": "activity_fee",
+    "art": "activity_fee",
+    "club": "activity_fee",
+    "student_life": "activity_fee",
+    "testing": "testing_fee",
+    "transcript_review": "transcript_fee",
+    "graduation_audit": "graduation_audit_fee",
+}
+
+
+def classify_financial_aid(registration: OfferingEnrollment) -> OfferingEnrollment:
+    """Persist charge-level financial-aid classification from school-controlled rules."""
+    charge_type = AID_CHARGE_TYPE_BY_OFFERING.get(registration.offering.offering_type)
+    rule = None
+    if charge_type:
+        rule = FinancialAidRule.objects.filter(
+            school_id=registration.school_id,
+            charge_type=charge_type,
+            active=True,
+        ).first()
+
+    registration.financial_aid_rule_id = rule.pk if rule else None
+    registration.aid_eligible = bool(rule and rule.aid_eligible)
+    registration.save(
+        update_fields=["financial_aid_rule_id", "aid_eligible", "updated_at"]
+    )
     return registration
