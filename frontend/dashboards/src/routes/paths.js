@@ -42,6 +42,7 @@ export const PATHS = {
   STAFF: '/staff-setup',
   SETTINGS: '/settings',
   PROFILE: '/profile',
+  MY_FORMS: '/my-forms',
 
   WIZARDS: '/wizards',
   WIZARD_ADMISSIONS: '/onboarding',
