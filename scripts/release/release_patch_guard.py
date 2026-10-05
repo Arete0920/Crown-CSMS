@@ -11,15 +11,12 @@ SETTINGS_BLOCKS = [
     "REST_FRAMEWORK = globals().get('REST_FRAMEWORK', {})",
     "REST_FRAMEWORK['DEFAULT_SCHEMA_CLASS'] = 'drf_spectacular.openapi.AutoSchema'",
     "'TITLE': 'Crown API'",
-    "if \"release_closeout\" not in INSTALLED_APPS:",
-    "INSTALLED_APPS.append(\"release_closeout\")",
 ]
 
 URL_BLOCKS = [
     "from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView",
     "path('api/schema/', SpectacularAPIView.as_view(), name='api-schema')",
     "path('api/docs/', SpectacularSwaggerView.as_view(url_name='api-schema'), name='api-docs')",
-    "path(\"\", include(\"release_closeout.urls\"))",
 ]
 
 
