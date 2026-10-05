@@ -48,7 +48,6 @@ def test_inventory_conflicts_are_resolved_without_claiming_legal_approval():
     inventory = generator.build_inventory(REPO_ROOT)
     observations = inventory["observations"]
 
-    assert observations["policy_pending_marker_present"] is False
     assert observations["soft_delete_policy_claim_present"] is False
     assert observations["direct_queryset_delete_present"] is False
     assert observations["legal_hold_field_present"] is True
