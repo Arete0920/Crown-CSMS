@@ -23,7 +23,7 @@ on:
 
 concurrency:
   group: contract-gate-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 jobs:
   contract-gate:
     name: contract-gate
