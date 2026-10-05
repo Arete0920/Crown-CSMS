@@ -18,13 +18,13 @@ PyJWT==2.15.1
 # CORS headers for frontend integration
 django-cors-headers==4.9.0
 drf-spectacular>=0.27.2
-drf-spectacular-sidecar>=2025.3.1
+drf-spectacular-sidecar>=2026.10.1
 # Microsoft 365 SSO (OAuth2 via Authlib)
 authlib>=1.6.11
 requests>=2.34.2
 cryptography>=50.0.2
 # Transitive security floors (pulled by requests/twilio/reportlab)
-urllib3>=2.7.0
+urllib3>=2.8.0
 idna>=3.15
 aiohttp>=3.13.4
 pillow>=12.2.0
@@ -35,12 +35,12 @@ sentry-sdk>=2.0.0
 celery>=5.4.0
 redis>=5.0.0
 # SMS provider client (used by comms/sms_service.py when SMS is enabled)
-twilio>=9.0.0
+twilio>=9.11.2
 # Board Packet PDF generation (Stage 4)
 reportlab>=5.0.1
 # Analytics runtime dependencies
 numpy>=1.26.4
-pandas>=2.2.3
+pandas>=3.0.6
 scikit-learn>=1.5.2
 tzlocal==5.4.4
 
