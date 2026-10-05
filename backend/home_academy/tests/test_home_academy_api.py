@@ -4,10 +4,18 @@ import pytest
 from django.core.management import call_command
 from rest_framework.test import APIClient
 
-from core.models import Family, Guardian, School, Student, UserAccount, UserRole
-from home_academy.models import HomeAcademyEnrollment, HomeAcademyProgram, Offering, OfferingEnrollment
+from core.models import AcademicYear, Family, Guardian, School, Student, StudentIdentityLink, UserAccount, UserRole
+from academics.models import Course, Term, TranscriptEntry
+from home_academy.models import (
+    FinancialAidRule,
+    HomeAcademyEnrollment,
+    HomeAcademyProgram,
+    Offering,
+    OfferingEnrollment,
+    TranscriptPostingRule,
+)
 from finance.models import FinanceObligation
-from households.models import Guardian as HouseholdGuardian, Household
+from households.models import Guardian as HouseholdGuardian, Household, Student as CompatibilityStudent
 from ledger.models import Charge
 from subscriptions.models import SchoolModule
 
@@ -289,3 +297,191 @@ def test_activation_posts_one_canonical_finance_obligation_and_is_idempotent():
     ).count() == 1
     assert FinanceObligation.objects.filter(school=school).count() == 1
     assert Charge.objects.filter(school_id=school.id).count() == 1
+
+
+def test_registration_persists_school_controlled_financial_aid_classification():
+    school = make_school("Aid")
+    enable_home_academy(school)
+    registrar = make_user(school, "aid-registrar", role_code="REGISTRAR")
+    student = make_student(school, "Aid")
+    program = HomeAcademyProgram.objects.create(
+        school_id=school.id,
+        public_program_name="Aid Home Academy",
+    )
+    academy_enrollment = HomeAcademyEnrollment.objects.create(
+        school_id=school.id,
+        student_id=student.id,
+        household_id=student.family_id,
+        program=program,
+    )
+    offering = Offering.objects.create(
+        school_id=school.id,
+        program=program,
+        offering_type="academic_course",
+        title="Aid Biology",
+        homeschool_seat_cap=5,
+        total_capacity=10,
+        requires_academic_anchor=False,
+        requires_admin_approval=False,
+        blocks_if_forms_missing=False,
+    )
+    rule = FinancialAidRule.objects.create(
+        school_id=school.id,
+        charge_type="course_fee",
+        aid_eligible=True,
+        active=True,
+    )
+
+    client, headers = auth_client(registrar, school)
+    response = client.post(
+        "/api/v1/home-academy/offering-enrollments/",
+        {
+            "student_id": str(student.id),
+            "offering": offering.id,
+            "home_academy_enrollment": academy_enrollment.id,
+            "form_status": "complete",
+            "payment_status": "not_required",
+            "admin_approved": True,
+        },
+        format="json",
+        **headers,
+    )
+
+    assert response.status_code == 201
+    registration = OfferingEnrollment.objects.get(pk=response.json()["id"])
+    assert registration.aid_eligible is True
+    assert registration.financial_aid_rule_id == rule.id
+
+
+def test_completed_registration_posts_transcript_only_through_verified_identity_mapping():
+    school = make_school("Transcript")
+    enable_home_academy(school)
+    registrar = make_user(school, "transcript-registrar", role_code="REGISTRAR")
+
+    family = Family.objects.create(school=school, family_name="Transcript Family")
+    core_student = make_student(school, "Transcript", family=family)
+    compatibility_household = Household.objects.create(
+        school_id=school.id,
+        name="Transcript Household",
+    )
+    compatibility_student = CompatibilityStudent.objects.create(
+        school_id=school.id,
+        household=compatibility_household,
+        first_name="Student",
+        last_name="Transcript",
+        grade_level="10",
+        is_active=True,
+    )
+    StudentIdentityLink.objects.create(
+        school=school,
+        core_student=core_student,
+        compatibility_student=compatibility_student,
+        source=StudentIdentityLink.SOURCE_MANUAL,
+        verification_status=StudentIdentityLink.STATUS_VERIFIED,
+        evidence_reference="home-academy-test-verified-link",
+    )
+
+    academic_year = AcademicYear.objects.create(
+        school=school,
+        name="2026-2027",
+        start_date=date(2026, 8, 1),
+        end_date=date(2027, 6, 1),
+        is_current=True,
+    )
+    term = Term.objects.create(
+        school_id=school.id,
+        academic_year=academic_year,
+        code="FALL",
+        name="Fall",
+        school_year="2026-2027",
+    )
+    course = Course.objects.create(
+        school_id=school.id,
+        code="BIO-HA",
+        name="Biology",
+        credits="1.00",
+    )
+
+    program = HomeAcademyProgram.objects.create(
+        school_id=school.id,
+        public_program_name="Transcript Home Academy",
+    )
+    academy_enrollment = HomeAcademyEnrollment.objects.create(
+        school_id=school.id,
+        student_id=core_student.id,
+        household_id=family.id,
+        program=program,
+        status="homeschool_school_of_record",
+        school_of_record_status="school_is_record",
+    )
+    offering = Offering.objects.create(
+        school_id=school.id,
+        program=program,
+        offering_type="academic_course",
+        title="Biology",
+        school_year="2026-2027",
+        term="fall",
+        academic_course_id=course.id,
+        academic_term_id=term.id,
+        credit_bearing=True,
+        transcript_eligible=True,
+        homeschool_seat_cap=5,
+        total_capacity=10,
+        requires_academic_anchor=False,
+        requires_admin_approval=False,
+        blocks_if_forms_missing=False,
+    )
+    TranscriptPostingRule.objects.create(
+        offering=offering,
+        requires_registrar_approval=True,
+        transcript_category="Science",
+        credit_value="1.00",
+        grade_source="Home Academy final",
+        active=True,
+    )
+    registration = OfferingEnrollment.objects.create(
+        school_id=school.id,
+        student_id=core_student.id,
+        offering=offering,
+        home_academy_enrollment=academy_enrollment,
+        status="active",
+        eligibility_status="eligible",
+        form_status="complete",
+        payment_status="not_required",
+        roster_status="active",
+    )
+
+    client, headers = auth_client(registrar, school)
+    complete_url = f"/api/v1/home-academy/offering-enrollments/{registration.id}/complete/"
+    post_url = f"/api/v1/home-academy/offering-enrollments/{registration.id}/post-transcript/"
+
+    completed = client.post(
+        complete_url,
+        {"final_letter_grade": "A", "final_percentage": "94.50"},
+        format="json",
+        **headers,
+    )
+    first_post = client.post(post_url, {}, format="json", **headers)
+    second_post = client.post(post_url, {}, format="json", **headers)
+
+    assert completed.status_code == 200
+    assert completed.json()["transcript_posting_status"] == "pending_registrar"
+    assert first_post.status_code == 200
+    assert second_post.status_code == 200
+    registration.refresh_from_db()
+    assert registration.transcript_posting_status == "posted"
+    assert registration.transcript_entry_id is not None
+    assert TranscriptEntry.objects.filter(
+        pk=registration.transcript_entry_id,
+        school_id=school.id,
+        student=compatibility_student,
+        course=course,
+        term=term,
+        final_letter_grade="A",
+    ).count() == 1
+    assert TranscriptEntry.objects.filter(
+        school_id=school.id,
+        student=compatibility_student,
+        course=course,
+        term=term,
+    ).count() == 1
