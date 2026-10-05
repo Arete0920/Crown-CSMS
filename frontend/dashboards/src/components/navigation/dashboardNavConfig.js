@@ -57,6 +57,12 @@ const STATIC_NAV_SECTIONS = [
     ],
   },
   {
+    label: 'Forms',
+    children: [
+      { key: 'my-forms', label: 'My Forms & Signatures', href: PATHS.MY_FORMS, tier: 0, roles: ROLE_GROUPS.ALL_AUTHENTICATED },
+    ],
+  },
+  {
     label: 'Communications',
     children: [
       { key: 'communications', label: 'Communications', href: PATHS.COMMUNICATIONS, tier: 0, roles: ROLE_GROUPS.ALL_AUTHENTICATED, permissions: [APP_PERMISSIONS.COMMUNICATIONS_VIEW] },
