@@ -13,6 +13,16 @@ urlpatterns = [
         name="home-academy-offering-enrollment-activate",
     ),
     path(
+        "offering-enrollments/<int:registration_id>/complete/",
+        api.complete_offering_enrollment,
+        name="home-academy-offering-enrollment-complete",
+    ),
+    path(
+        "offering-enrollments/<int:registration_id>/post-transcript/",
+        api.post_offering_transcript,
+        name="home-academy-offering-enrollment-post-transcript",
+    ),
+    path(
         "offerings/<int:offering_id>/students/<uuid:student_id>/eligibility/",
         api.offering_eligibility,
         name="home-academy-offering-eligibility",
