@@ -194,6 +194,7 @@ INSTALLED_APPS = [
     'admissions.apps.AdmissionsConfig',
     'households',
     'applications',
+    'electronic_forms.apps.ElectronicFormsConfig',
     'learning_continuity.apps.LearningContinuityConfig',
     'ledger.apps.LedgerConfig',
     'journal',
