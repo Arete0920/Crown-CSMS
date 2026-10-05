@@ -1,3 +1,4 @@
+from uuid import UUID
 from dataclasses import dataclass
 
 from .models import FinancialAidRule, HomeAcademyEnrollment, Offering, OfferingEnrollment
@@ -11,7 +12,7 @@ class EligibilityResult:
     waitlist_available: bool
 
 
-def count_active_academic_courses(school_id: int, student_id: int, school_year: str = "", term: str = "") -> int:
+def count_active_academic_courses(school_id: UUID, student_id: UUID, school_year: str = "", term: str = "") -> int:
     """Count active/approved credit-bearing academic course enrollments for the student."""
     qs = OfferingEnrollment.objects.filter(
         school_id=school_id,
@@ -57,7 +58,7 @@ def homeschool_seats_remaining(offering: Offering) -> int:
     return max(released_cap - used, 0)
 
 
-def get_home_academy_enrollment(school_id: int, student_id: int) -> HomeAcademyEnrollment | None:
+def get_home_academy_enrollment(school_id: UUID, student_id: UUID) -> HomeAcademyEnrollment | None:
     return (
         HomeAcademyEnrollment.objects.filter(
             school_id=school_id,
@@ -71,8 +72,8 @@ def get_home_academy_enrollment(school_id: int, student_id: int) -> HomeAcademyE
 
 def evaluate_offering_eligibility(
     *,
-    school_id: int,
-    student_id: int,
+    school_id: UUID,
+    student_id: UUID,
     offering: Offering,
     forms_complete: bool = False,
     account_current: bool = True,
