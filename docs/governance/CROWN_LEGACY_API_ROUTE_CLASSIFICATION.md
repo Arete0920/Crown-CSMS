@@ -56,7 +56,6 @@ The following eight routes are explicitly documented in source as deprecated com
 - `director/priority/`
 - `director/actions/`
 - `director/timeline/`
-- `director/force_seed_user/`
 
 Their deprecated label is not sufficient evidence for deletion. Consumer references, resolver winners, authentication, tenant boundaries, and replacement-path parity must be proven first.
 
@@ -86,3 +85,7 @@ The test is intentionally read-only and does not modify routing.
 ## Release authority
 
 This inventory improves traceability only. It does not alter deployment or release authority. Production remains **NOT APPROVED**.
+
+## Retired temporary bootstrap route
+
+The former `director/force_seed_user/` HTTP bootstrap route was retired after confirming that no active workflow consumes it. Development/bootstrap operations must use controlled management commands or explicit deployment automation rather than a public application route.
