@@ -7,7 +7,19 @@ const topics = [
   ['interpretation', 'Understanding forecasts'],
   ['governance', 'Operating governance'],
   ['strategy', 'School-specific strategy'],
+  ['knowledge', 'Documentation and support'],
+  ['training', 'Staff training'],
+  ['communications', 'General announcements'],
+  ['teaching', 'Teacher preparation'],
+  ['leadership', 'Leadership agendas'],
+  ['outreach', 'Kingdom Path outreach'],
+  ['care', 'Diadem, care, camps and activities'],
+  ['accessibility', 'Clear instructions and language'],
+  ['quality', 'Synthetic quality checks'],
+
 ];
+const sourceDocument = 'docs/solomon/SOLOMON_APPROVED_ASSISTANCE.md';
+const existingTopics = ['onboarding', 'interpretation', 'governance', 'strategy'];
 const staffRoles = ['head_of_school', 'teacher', 'finance_director', 'aid_director', 'registrar', 'support'];
 
 /** Optional curated guidance only. Backend tenant/role gates remain authoritative. */
@@ -46,6 +58,12 @@ export default function SolomonStaffGuidance() {
         || payload.human_review_required !== true || payload.topic !== topic
         || typeof payload.title !== 'string' || typeof payload.guidance !== 'string') {
         throw new Error('Invalid guidance response');
+      }
+      if ((payload.steps !== undefined && (!Array.isArray(payload.steps) || payload.steps.some(step => typeof step !== 'string')))
+        || (payload.draft !== undefined && typeof payload.draft !== 'string')
+        || (payload.source_document !== undefined && payload.source_document !== sourceDocument)
+        || (payload.source_section !== undefined && payload.source_section !== (existingTopics.includes(topic) ? 'existing-guidance' : topic))) {
+        throw new Error('Invalid assistance resource');
       }
       setGuidance(payload);
       setStatus('ready');
@@ -93,6 +111,12 @@ export default function SolomonStaffGuidance() {
         {guidance && <>
           <h4>{guidance.title}</h4>
           <p>{guidance.guidance}</p>
+          {guidance.steps?.length > 0 && <ol>{guidance.steps.map((step, index) => <li key={index}>{step}</li>)}</ol>}
+          {guidance.draft && <section aria-label="Reusable draft">
+            <h4>Reusable draft — review and complete before use</h4>
+            <p className="solomon-guidance-draft">{guidance.draft}</p>
+          </section>}
+          {guidance.source_document === sourceDocument && <p><a href={`https://github.com/Arete0920/Crown-CSMS/blob/main/${sourceDocument}#${guidance.source_section || 'existing-guidance'}`} target="_blank" rel="noopener noreferrer">Read the maintained source</a></p>}
           <small>Curated CROWN guidance · Human review required</small>
         </>}
       </div>

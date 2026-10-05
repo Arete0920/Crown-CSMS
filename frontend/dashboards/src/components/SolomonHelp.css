@@ -29,3 +29,5 @@
 .solomon-guidance-review { display: flex; align-items: center; gap: .5rem; }
 .solomon-guidance-review input { min-width: 24px; min-height: 24px; }
 .solomon-staff-guidance button { min-height: 44px; font: inherit; }
+
+.solomon-guidance-draft { white-space: pre-wrap; overflow-wrap: anywhere; }

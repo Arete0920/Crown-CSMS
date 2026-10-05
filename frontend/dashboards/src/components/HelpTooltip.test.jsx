@@ -160,6 +160,38 @@ describe('optional structured staff guidance', () => {
     await screen.findByText(/Guidance could not be loaded/);
     expect(screen.queryByText('Must not show')).toBeNull();
   });
+  it.each(['knowledge', 'training', 'communications', 'teaching', 'leadership', 'outreach', 'care', 'accessibility', 'quality'])('loads the %s resource with exact structured input and safe source links', async topic => {
+    setup();
+    await screen.findByText(/No published guidance/);
+    fireEvent.change(screen.getByRole('combobox', { name: 'Guidance topic' }), { target: { value: topic } });
+    apiFetch.mockResolvedValue(reply({ ...guidance, topic, steps: ['Review the approved source.'],
+      draft: '<script>plain text only</script>\nComplete [placeholder] before use.',
+      source_document: 'docs/solomon/SOLOMON_APPROVED_ASSISTANCE.md', source_section: topic }));
+    fireEvent.click(screen.getByRole('checkbox', { name: /I will review/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'View guidance' }));
+    await screen.findByRole('region', { name: 'Reusable draft' });
+    expect(JSON.parse(apiFetch.mock.calls.at(-1)[1].body)).toEqual({ topic, human_review_acknowledged: true });
+    expect(screen.getByText('Review the approved source.')).toBeTruthy();
+    expect(document.querySelector('.solomon-guidance-draft script')).toBeNull();
+    expect(screen.getByRole('link', { name: 'Read the maintained source' }).getAttribute('href')).toBe(`https://github.com/Arete0920/Crown-CSMS/blob/main/docs/solomon/SOLOMON_APPROVED_ASSISTANCE.md#${topic}`);
+    expect(screen.queryByRole('textbox')).toBeNull();
+    expect(screen.queryByRole('button', { name: /send|publish|save/i })).toBeNull();
+  });
+  it.each([
+    { source_document: 'javascript:alert(1)' },
+    { source_document: 'docs/solomon/SOLOMON_APPROVED_ASSISTANCE.md', source_section: '../../private' },
+    { source_document: 'docs/solomon/SOLOMON_APPROVED_ASSISTANCE.md', source_section: 'teaching' },
+    { steps: ['Approved', { unsafe: true }] },
+    { draft: { html: '<script>unsafe</script>' } },
+  ])('rejects malformed resources and unsafe source references %j', async extra => {
+    setup();
+    await screen.findByText(/No published guidance/);
+    apiFetch.mockResolvedValue(reply({ ...guidance, ...extra, guidance: 'Must not show' }));
+    fireEvent.click(screen.getByRole('checkbox', { name: /I will review/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'View guidance' }));
+    await screen.findByText(/Guidance could not be loaded/);
+    expect(screen.queryByText('Must not show')).toBeNull();
+  });
   it('explains a disabled backend without inventing advice', async () => {
     setup();
     await screen.findByText(/No published guidance/);

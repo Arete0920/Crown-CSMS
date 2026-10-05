@@ -73,6 +73,18 @@ class GuidanceApiTests(TestCase):
         self.assertEqual(set(event.metadata), {"school_id", "topic", "policy_version", "source_digest",
                                                "mode", "human_review_acknowledged"})
 
+    def test_expanded_resources_share_authorization_and_audit(self):
+        from solomon.assistance_catalog import ASSISTANCE
+        for topic in ASSISTANCE:
+            response = self.post({**SELECTION, "topic": topic})
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(response.data["topic"], topic)
+            self.assertTrue(response.data["draft"])
+            self.assertEqual(response["Cache-Control"], "no-store")
+        self.assertEqual(AuditLog.objects.filter(action="solomon.guidance.read").count(), len(ASSISTANCE))
+        UserRole.objects.create(user=self.user, school=self.school, role_code="STUDENT")
+        self.assertEqual(self.post({**SELECTION, "topic": "teaching"}).status_code, 404)
+
     def test_flags_remain_independent_and_default_closed(self):
         for flag in ("CROWN_SOLOMON_API_ENABLED", "CROWN_SOLOMON_GUIDANCE_ENABLED"):
             with override_settings(**{flag: False}):
@@ -127,3 +139,51 @@ class GuidanceApiTests(TestCase):
             response = self.post()
         self.assertEqual(response.status_code, 503)
         self.assertNotIn("synthetic-secret", str(response.data))
+
+
+class AssistanceCatalogTests(SimpleTestCase):
+    def test_every_resource_is_plain_curated_and_source_backed(self):
+        from solomon.assistance_catalog import ASSISTANCE, CATALOG_VERSION, SOURCE_DOCUMENT
+        for topic, resource in ASSISTANCE.items():
+            with self.subTest(topic=topic), patch("socket.socket.connect", side_effect=AssertionError("No network")):
+                payload = local_guidance({**SELECTION, "topic": topic})
+                self.assertEqual(payload["steps"], resource["steps"])
+                self.assertEqual(payload["draft"], resource["draft"])
+                self.assertEqual(payload["catalog_version"], CATALOG_VERSION)
+                self.assertEqual(payload["source_document"], SOURCE_DOCUMENT)
+                self.assertEqual(payload["source_section"], topic)
+                self.assertFalse(payload["generated_by_ai"])
+                self.assertTrue(payload["human_review_required"])
+                self.assertEqual(len(payload["source_digest"]), 64)
+                external = build_external_payload({**SELECTION, "topic": topic})
+                self.assertEqual(external["source"]["guidance"], resource["guidance"])
+                self.assertNotIn("draft", external["source"])
+
+    def test_complete_resource_changes_affect_provenance(self):
+        from solomon.assistance_catalog import ASSISTANCE
+        topic = "communications"
+        original = local_guidance({**SELECTION, "topic": topic})
+        modified = {**ASSISTANCE, topic: {**ASSISTANCE[topic], "draft": "Revised synthetic draft"}}
+        with patch("solomon.guidance.ASSISTANCE", modified):
+            changed = local_guidance({**SELECTION, "topic": topic})
+        self.assertNotEqual(original["source_digest"], changed["source_digest"])
+
+    def test_all_resources_reject_arbitrary_fields_and_missing_review(self):
+        from solomon.assistance_catalog import ASSISTANCE
+        for topic in ASSISTANCE:
+            for extra in ({"prompt": "private"}, {"student_id": "private"}, {"metrics": [1, 2]}):
+                with self.subTest(topic=topic, extra=extra), self.assertRaises(GuidanceInputError):
+                    local_guidance({**SELECTION, "topic": topic, **extra})
+            with self.assertRaises(GuidanceInputError):
+                local_guidance({"topic": topic, "human_review_acknowledged": False})
+
+    def test_docs_and_frontend_cover_exact_catalog(self):
+        from pathlib import Path
+        from django.conf import settings
+        from solomon.assistance_catalog import ASSISTANCE, SOURCE_DOCUMENT
+        root = Path(settings.BASE_DIR).parent
+        doc = (root / SOURCE_DOCUMENT).read_text()
+        ui = (root / "frontend/dashboards/src/components/SolomonStaffGuidance.jsx").read_text()
+        for topic in ASSISTANCE:
+            self.assertIn(f"## {topic}\n", doc)
+            self.assertIn(f"['{topic}',", ui)
