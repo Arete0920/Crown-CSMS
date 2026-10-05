@@ -228,8 +228,8 @@ class BillingPayer(TimeStampedModel):
 	class Meta:
 		db_table = "billing_payer"
 		indexes = [
-			models.Index(fields=["school_id", "household", "is_active"]),
-			models.Index(fields=["school_id", "account", "is_active"]),
+			models.Index(fields=["school_id", "household", "is_active"], name="billing_pay_school__d32d57_idx"),
+			models.Index(fields=["school_id", "account", "is_active"], name="billing_pay_school__b09b75_idx"),
 		]
 		constraints = [
 			models.UniqueConstraint(
@@ -287,8 +287,8 @@ class BillingResponsibilityRule(TimeStampedModel):
 	class Meta:
 		db_table = "billing_responsibility_rule"
 		indexes = [
-			models.Index(fields=["school_id", "household", "charge_type", "is_active"]),
-			models.Index(fields=["school_id", "student", "charge_type", "is_active"]),
+			models.Index(fields=["school_id", "household", "charge_type", "is_active"], name="billing_res_school__8853ca_idx"),
+			models.Index(fields=["school_id", "student", "charge_type", "is_active"], name="billing_res_school__d19f7d_idx"),
 		]
 		constraints = [
 			models.UniqueConstraint(
@@ -329,8 +329,8 @@ class InvoicePayerShare(TimeStampedModel):
 	class Meta:
 		db_table = "invoice_payer_share"
 		indexes = [
-			models.Index(fields=["school_id", "payer"]),
-			models.Index(fields=["school_id", "invoice"]),
+			models.Index(fields=["school_id", "payer"], name="invoice_pay_school__f9bd7c_idx"),
+			models.Index(fields=["school_id", "invoice"], name="invoice_pay_school__a6db58_idx"),
 		]
 		constraints = [
 			models.UniqueConstraint(fields=["invoice", "payer"], name="uniq_invoice_payer_share"),
@@ -361,8 +361,8 @@ class PayerAllocationAttribution(TimeStampedModel):
 	class Meta:
 		db_table = "payer_allocation_attribution"
 		indexes = [
-			models.Index(fields=["school_id", "share"]),
-			models.Index(fields=["school_id", "allocation"]),
+			models.Index(fields=["school_id", "share"], name="payer_alloc_school__53e532_idx"),
+			models.Index(fields=["school_id", "allocation"], name="payer_alloc_school__6c6b39_idx"),
 		]
 		constraints = [
 			models.UniqueConstraint(fields=["share", "allocation"], name="uniq_payer_share_allocation"),
