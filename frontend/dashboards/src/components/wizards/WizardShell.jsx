@@ -1,3 +1,4 @@
+import SolomonContextHelp from '../SolomonContextHelp.jsx';
 import {
   Box,
   Button,
@@ -31,6 +32,7 @@ export default function WizardShell({
           <Typography variant="h4" fontWeight={700}>
             {title}
           </Typography>
+          <SolomonContextHelp />
           {subtitle ? (
             <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
               {subtitle}

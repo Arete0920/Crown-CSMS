@@ -1,0 +1,21 @@
+.solomon-help { display: inline-flex; vertical-align: middle; }
+.solomon-help-trigger { display: inline-flex; align-items: center; gap: .35rem; min-height: 48px; min-width: 44px; padding: .15rem .5rem; border: 1px solid var(--crown-border); border-radius: .75rem; background: var(--crown-surface); color: var(--crown-text); font: inherit; font-size: .8rem; cursor: pointer; }
+.solomon-help-trigger img, .solomon-help-heading img { object-fit: contain; flex-shrink: 0; }
+.solomon-help-trigger:hover img { animation: solomon-greet 450ms ease-out 1; }
+.solomon-help-trigger:focus-visible, .solomon-help-panel button:focus-visible { outline: 3px solid var(--crown-primary); outline-offset: 3px; }
+.solomon-help-panel { box-sizing: border-box; width: min(440px, calc(100vw - 32px)); max-height: calc(100dvh - 32px); padding: 1.25rem; border: 1px solid var(--crown-border); border-radius: 1rem; color: var(--crown-text); background: var(--crown-surface); box-shadow: var(--crown-shadow-lift); overflow: auto; }
+.solomon-help-panel::backdrop { background: var(--crown-compat-color-00f71480c5); }
+.solomon-help-panel[open] { animation: solomon-arrive 160ms ease-out 1; }
+.solomon-help-heading { display: flex; align-items: center; gap: .75rem; }
+.solomon-help-heading h2 { font-size: 1.15rem; margin: .25rem 0; }
+.solomon-help-heading small { font-size: .75rem; }
+.solomon-help-close { align-self: flex-start; margin-left: auto; min-width: 44px; min-height: 44px; border: 0; background: transparent; color: inherit; cursor: pointer; font-size: 1.5rem; }
+.solomon-help-content { line-height: 1.6; overflow-wrap: anywhere; }
+.solomon-help-article { white-space: pre-wrap; }
+.solomon-help-panel footer { padding-top: .75rem; border-top: 1px solid var(--crown-border); font-size: .75rem; }
+@keyframes solomon-greet { 50% { transform: translateY(-2px) rotate(-3deg); } }
+@keyframes solomon-arrive { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+@media (prefers-reduced-motion: reduce) { .solomon-help-trigger:hover img, .solomon-help-panel[open] { animation: none; } }
+
+.solomon-help-footer { display: flex; align-items: center; justify-content: space-between; gap: .75rem; flex-wrap: wrap; }
+.solomon-help-link { min-height: 44px; padding: .25rem .5rem; border: 0; border-radius: .5rem; background: transparent; color: var(--crown-primary-deep); font: inherit; text-decoration: underline; cursor: pointer; }
