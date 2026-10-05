@@ -143,6 +143,22 @@ def send_envelope(envelope: ElectronicEnvelope) -> ElectronicEnvelope:
     return locked
 
 
+
+@transaction.atomic
+def void_envelope(*, envelope: ElectronicEnvelope) -> ElectronicEnvelope:
+    locked = ElectronicEnvelope.objects.select_for_update().get(pk=envelope.pk)
+    if locked.status == ElectronicEnvelope.Status.COMPLETED:
+        raise ValidationError("Completed electronic envelopes cannot be voided.")
+    if locked.status == ElectronicEnvelope.Status.VOID:
+        return locked
+
+    provider = get_signature_provider(locked.provider_code)
+    provider.void_envelope(locked)
+    locked.status = ElectronicEnvelope.Status.VOID
+    locked.voided_at = timezone.now()
+    locked.save(update_fields=["status", "voided_at", "updated_at"])
+    return locked
+
 def _evidence_metadata(request_meta: dict | None) -> dict:
     meta = request_meta or {}
     forwarded = str(meta.get("HTTP_X_FORWARDED_FOR") or "").split(",")[0].strip()
