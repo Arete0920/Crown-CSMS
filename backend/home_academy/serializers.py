@@ -21,7 +21,7 @@ class HomeAcademyEnrollmentSerializer(serializers.ModelSerializer):
     class Meta:
         model = HomeAcademyEnrollment
         fields = "__all__"
-        read_only_fields = ["school_id", "created_at", "updated_at"]
+        read_only_fields = ["school_id", "household_id", "created_at", "updated_at"]
 
 
 class OfferingSerializer(serializers.ModelSerializer):
@@ -40,6 +40,13 @@ class OfferingEnrollmentSerializer(serializers.ModelSerializer):
             "eligibility_status",
             "eligibility_failures",
             "roster_status",
+            "finance_obligation_id",
+            "transcript_posting_status",
+            "transcript_entry_id",
+            "final_letter_grade",
+            "final_percentage",
+            "aid_eligible",
+            "financial_aid_rule_id",
             "created_at",
             "updated_at",
         ]
