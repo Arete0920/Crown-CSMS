@@ -6,18 +6,25 @@ from decimal import Decimal, InvalidOperation
 from django.utils.timezone import now
 
 from django.db import transaction
-from django.db.models import Sum
+from django.db.models import Q, Sum
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from households.models import Household
+from households.models import Guardian, Household, Student
 from households.scoping import get_request_school_id
 
-from billing.models import BillingAuditEvent, Invoice as BillingInvoice
+from billing.models import (
+    BillingAuditEvent,
+    BillingPayer,
+    BillingResponsibilityRule,
+    Invoice as BillingInvoice,
+    InvoicePayerShare,
+    PayerAllocationAttribution,
+)
 from ledger.models import Allocation, Charge, LedgerAccount, Payment
 
-from .permissions import IsFinanceRole
+from .permissions import IsFinanceRole, IsFinanceRuntimeUser, has_finance_runtime_role
 
 
 def _d(x) -> Decimal:
@@ -523,3 +530,319 @@ class PaymentsRecordView(APIView):
             },
             status=201,
         )
+
+
+class HouseholdBillingPayersView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, household_id):
+        school_id = get_request_school_id(request)
+        if not school_id:
+            return Response({"detail": "Missing school context"}, status=403)
+        if not has_finance_runtime_role(request.user):
+            return Response({"detail": "You do not have permission to access billing."}, status=403)
+        if not Household.objects.filter(pk=household_id, school_id=school_id).exists():
+            return Response({"detail": "Not found"}, status=404)
+        rows = BillingPayer.objects.filter(
+            school_id=school_id, household_id=household_id
+        ).select_related("guardian", "account").order_by("created_at", "id")
+        return Response({
+            "household_id": str(household_id),
+            "items": [
+                {
+                    "payer_id": str(row.id),
+                    "payer_type": row.payer_type,
+                    "display_name": row.display_name or (str(row.guardian) if row.guardian_id else ""),
+                    "guardian_id": str(row.guardian_id) if row.guardian_id else None,
+                    "account_id": row.account_id,
+                    "email": row.email,
+                    "is_active": row.is_active,
+                }
+                for row in rows
+            ],
+        })
+
+    @transaction.atomic
+    def post(self, request, household_id):
+        school_id = get_request_school_id(request)
+        if not school_id:
+            return Response({"detail": "Missing school context"}, status=403)
+        if not has_finance_runtime_role(request.user):
+            return Response({"detail": "You do not have permission to access billing."}, status=403)
+        household = Household.objects.filter(pk=household_id, school_id=school_id).first()
+        if not household:
+            return Response({"detail": "Not found"}, status=404)
+
+        payload = request.data or {}
+        payer_type = str(payload.get("payer_type") or BillingPayer.PayerType.GUARDIAN)
+        guardian_id = payload.get("guardian_id")
+        account_id = payload.get("account_id")
+        display_name = str(payload.get("display_name") or "").strip()
+        email = str(payload.get("email") or "").strip()
+
+        guardian = None
+        if guardian_id:
+            guardian = Guardian.objects.filter(
+                pk=guardian_id, school_id=school_id, household_id=household_id
+            ).select_related("account").first()
+            if not guardian:
+                return Response({"detail": "guardian_id not found in household"}, status=400)
+            if account_id and guardian.account_id and str(guardian.account_id) != str(account_id):
+                return Response({"detail": "account_id does not match guardian account"}, status=400)
+            if not account_id and guardian.account_id:
+                account_id = guardian.account_id
+            if not display_name:
+                display_name = str(guardian)
+            if not email:
+                email = guardian.email
+
+        if payer_type == BillingPayer.PayerType.GUARDIAN and not guardian:
+            return Response({"detail": "guardian payer_type requires guardian_id"}, status=400)
+        if not guardian and not display_name:
+            return Response({"detail": "display_name is required for non-guardian payers"}, status=400)
+
+        payer = BillingPayer(
+            school_id=school_id,
+            household=household,
+            guardian=guardian,
+            account_id=account_id or None,
+            payer_type=payer_type,
+            display_name=display_name,
+            email=email,
+        )
+        try:
+            payer.full_clean()
+            payer.save()
+        except Exception as exc:
+            return Response({"detail": str(exc)}, status=400)
+
+        BillingAuditEvent.log(
+            school_id=school_id,
+            entity_type="PAYER",
+            entity_id=payer.id,
+            action="PAYER_CREATED",
+            actor_user=getattr(request, "user", None),
+            details={"household_id": str(household_id), "payer_type": payer.payer_type},
+        )
+        return Response({"payer_id": str(payer.id)}, status=201)
+
+
+class HouseholdBillingResponsibilityRulesView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, household_id):
+        school_id = get_request_school_id(request)
+        if not school_id:
+            return Response({"detail": "Missing school context"}, status=403)
+        if not has_finance_runtime_role(request.user):
+            return Response({"detail": "You do not have permission to access billing."}, status=403)
+        if not Household.objects.filter(pk=household_id, school_id=school_id).exists():
+            return Response({"detail": "Not found"}, status=404)
+        rows = BillingResponsibilityRule.objects.filter(
+            school_id=school_id, household_id=household_id
+        ).select_related("payer", "student").order_by("charge_type", "student_id", "created_at", "id")
+        return Response({
+            "household_id": str(household_id),
+            "items": [
+                {
+                    "rule_id": str(row.id),
+                    "payer_id": str(row.payer_id),
+                    "student_id": str(row.student_id) if row.student_id else None,
+                    "charge_type": row.charge_type,
+                    "percentage_bps": row.percentage_bps,
+                    "is_active": row.is_active,
+                }
+                for row in rows
+            ],
+        })
+
+    @transaction.atomic
+    def post(self, request, household_id):
+        school_id = get_request_school_id(request)
+        if not school_id:
+            return Response({"detail": "Missing school context"}, status=403)
+        if not has_finance_runtime_role(request.user):
+            return Response({"detail": "You do not have permission to access billing."}, status=403)
+        household = Household.objects.filter(pk=household_id, school_id=school_id).first()
+        if not household:
+            return Response({"detail": "Not found"}, status=404)
+
+        payload = request.data or {}
+        payer_id = payload.get("payer_id")
+        student_id = payload.get("student_id")
+        charge_type = str(payload.get("charge_type") or "TUITION").strip()[:32]
+        try:
+            percentage_bps = int(payload.get("percentage_bps"))
+        except (TypeError, ValueError):
+            return Response({"detail": "percentage_bps must be an integer"}, status=400)
+
+        payer = BillingPayer.objects.filter(
+            pk=payer_id, school_id=school_id, household_id=household_id, is_active=True
+        ).first()
+        if not payer:
+            return Response({"detail": "payer_id not found in household"}, status=400)
+
+        student = None
+        if student_id:
+            student = Student.objects.filter(
+                pk=student_id, school_id=school_id, household_id=household_id
+            ).first()
+            if not student:
+                return Response({"detail": "student_id not found in household"}, status=400)
+
+        rule = BillingResponsibilityRule(
+            school_id=school_id,
+            household=household,
+            payer=payer,
+            student=student,
+            charge_type=charge_type,
+            percentage_bps=percentage_bps,
+        )
+        try:
+            rule.full_clean()
+            rule.save()
+        except Exception as exc:
+            return Response({"detail": str(exc)}, status=400)
+
+        scope = BillingResponsibilityRule.objects.filter(
+            school_id=school_id,
+            household_id=household_id,
+            charge_type=charge_type,
+            is_active=True,
+        )
+        if student:
+            scope = scope.filter(student=student)
+        else:
+            scope = scope.filter(student__isnull=True)
+        configured_bps = scope.aggregate(total=Sum("percentage_bps")).get("total") or 0
+
+        BillingAuditEvent.log(
+            school_id=school_id,
+            entity_type="PAYER_RULE",
+            entity_id=rule.id,
+            action="PAYER_RULE_CREATED",
+            actor_user=getattr(request, "user", None),
+            details={
+                "household_id": str(household_id),
+                "payer_id": str(payer.id),
+                "student_id": str(student.id) if student else None,
+                "charge_type": charge_type,
+                "percentage_bps": percentage_bps,
+                "configured_scope_bps": configured_bps,
+            },
+        )
+        return Response(
+            {"rule_id": str(rule.id), "configured_scope_bps": configured_bps},
+            status=201,
+        )
+
+
+class MyPayerSharesView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        school_id = get_request_school_id(request)
+        if not school_id:
+            return Response({"detail": "Missing school context"}, status=403)
+
+        shares = (
+            InvoicePayerShare.objects.filter(
+                school_id=school_id,
+                payer__is_active=True,
+            )
+            .filter(
+                Q(payer__account=request.user)
+                | Q(payer__guardian__account=request.user)
+            )
+            .select_related("payer", "invoice", "invoice__billing_run")
+            .order_by("invoice__due_on", "invoice_id")
+            .distinct()
+        )
+
+        from billing.payer_services import payer_share_statement
+
+        return Response({"items": [payer_share_statement(share) for share in shares]})
+
+
+
+class PayerAllocationAttributionView(APIView):
+    permission_classes = [IsAuthenticated, IsFinanceRuntimeUser]
+
+    @transaction.atomic
+    def post(self, request):
+        school_id = get_request_school_id(request)
+        if not school_id:
+            return Response({"detail": "Missing school context"}, status=403)
+        payload = request.data or {}
+        share_id = payload.get("share_id")
+        allocation_id = payload.get("allocation_id")
+        amount = _cents_to_amount(payload.get("amount_cents"))
+        if amount <= 0:
+            return Response({"detail": "amount_cents must be > 0"}, status=400)
+
+        share = (
+            InvoicePayerShare.objects.select_for_update().select_related("invoice")
+            .filter(pk=share_id, school_id=school_id)
+            .first()
+        )
+        if not share:
+            return Response({"detail": "share_id not found"}, status=404)
+        allocation = Allocation.objects.filter(
+            pk=allocation_id, school_id=school_id, payment__is_void=False, charge__is_void=False
+        ).first()
+        if not allocation:
+            return Response({"detail": "allocation_id not found"}, status=404)
+        # Serialize attribution with the canonical refund bridge's payment lock.
+        Payment.objects.select_for_update().get(pk=allocation.payment_id)
+        allocation = Allocation.objects.select_for_update().filter(
+            pk=allocation.pk, school_id=school_id,
+            payment__is_void=False, charge__is_void=False,
+        ).first()
+        if not allocation:
+            return Response({"detail": "allocation_id not found"}, status=404)
+        if share.invoice.ledger_charge_id != allocation.charge_id:
+            return Response({"detail": "allocation does not belong to the share invoice"}, status=400)
+
+        from billing.payer_services import payer_share_paid_amount
+
+        allocated_to_share = payer_share_paid_amount(share)
+        share_capacity = _d(share.amount) - _d(share.waived_amount) - _d(allocated_to_share)
+
+        attributed_to_allocation = (
+            PayerAllocationAttribution.objects.filter(
+                school_id=school_id, allocation=allocation
+            ).aggregate(total=Sum("amount")).get("total")
+            or Decimal("0.00")
+        )
+        allocation_capacity = _d(allocation.amount) - _d(attributed_to_allocation)
+
+        if amount > share_capacity:
+            return Response({"detail": "amount exceeds payer share balance"}, status=400)
+        if amount > allocation_capacity:
+            return Response({"detail": "amount exceeds unattributed allocation balance"}, status=400)
+
+        attribution = PayerAllocationAttribution(
+            school_id=school_id,
+            share=share,
+            allocation=allocation,
+            amount=amount,
+        )
+        try:
+            attribution.full_clean()
+            attribution.save()
+        except Exception as exc:
+            return Response({"detail": str(exc)}, status=400)
+
+        BillingAuditEvent.log(
+            school_id=school_id,
+            entity_type="PAYER_ATTRIBUTION",
+            entity_id=attribution.id,
+            action="PAYER_PAYMENT_ATTRIBUTED",
+            actor_user=getattr(request, "user", None),
+            details={
+                "share_id": str(share.id),
+                "allocation_id": str(allocation.id),
+                "amount_cents": _amount_to_cents(amount),
+            },
+        )
+        return Response({"attribution_id": str(attribution.id)}, status=201)

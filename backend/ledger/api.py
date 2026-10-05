@@ -429,6 +429,10 @@ def charge_balance(request: HttpRequest, charge_id: str):
 @login_required
 @require_http_methods(["GET"])
 def ledger_account_statement(request: HttpRequest, account_id: str):
+    from crown_api.billing_api.permissions import has_finance_runtime_role
+
+    if not has_finance_runtime_role(request.user):
+        return _json_error("Finance permission required for household statements", status=403)
     sid = get_request_school_id(request)
     if not sid:
         return _json_error("school_id could not be derived for request", status=403)
@@ -683,7 +687,12 @@ def void_charge(request: HttpRequest, charge_id: str):
         if ch.is_void:
             return _envelope({"id": str(ch.id), "is_void": True, "note": "already void"}, status=200)
 
-        Allocation.objects.filter(school_id=sid, charge=ch).delete()
+        from crown_api.billing_api.permissions import has_finance_runtime_role
+        if (ch.allocations.filter(payer_attributions__isnull=False).exists()
+                or ch.payer_refund_attributions.exists()) and not has_finance_runtime_role(request.user):
+            return _json_error("Finance permission required for payer reversals", status=403)
+
+        Allocation.objects.filter(school_id=sid, charge=ch, payer_attributions__isnull=True).delete()
         ch.is_void = True
         ch.save(update_fields=["is_void"])
 
@@ -714,7 +723,19 @@ def void_payment(request: HttpRequest, payment_id: str):
         if p.is_void:
             return _envelope({"id": str(p.id), "is_void": True, "note": "already void"}, status=200)
 
-        Allocation.objects.filter(school_id=sid, payment=p).delete()
+        from crown_api.billing_api.permissions import has_finance_runtime_role
+        if p.allocations.filter(payer_attributions__isnull=False).exists() and not has_finance_runtime_role(request.user):
+            return _json_error("Finance permission required for payer reversals", status=403)
+
+        from billing.models import PayerRefundAttribution
+
+        if PayerRefundAttribution.objects.filter(
+            school_id=sid, attribution__allocation__payment=p,
+            refund_charge__is_void=False,
+        ).exists():
+            return _json_error("Reverse active payer refunds before voiding the payment", status=400)
+
+        Allocation.objects.filter(school_id=sid, payment=p, payer_attributions__isnull=True).delete()
         p.is_void = True
         p.save(update_fields=["is_void"])
 

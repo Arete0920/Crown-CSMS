@@ -1,7 +1,8 @@
-﻿import uuid
+import uuid
 import pytest
 from decimal import Decimal
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group
 from django.test import Client
 
 from core.models import School
@@ -20,6 +21,8 @@ def _mk_user_with_school(school: School):
     if hasattr(u, "school_id"):
         setattr(u, "school_id", school.id)
         u.save(update_fields=["school_id"])
+    group, _ = Group.objects.get_or_create(name="finance_admin")
+    u.groups.add(group)
     return u
 
 
