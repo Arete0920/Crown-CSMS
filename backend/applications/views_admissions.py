@@ -3238,6 +3238,23 @@ def _validate_enrollment_state_update_request(
             status=409,
         )
 
+    if requested_contract == CONTRACT_SIGNED and current["contract_status"] != CONTRACT_SIGNED:
+        return Response(
+            {"detail": "Contract signature must be completed by the assigned signer through electronic forms."},
+            status=409,
+        )
+
+    if requested_contract == CONTRACT_COUNTERSIGNED and current["contract_status"] != CONTRACT_COUNTERSIGNED:
+        latest_contract = _latest_contract_for_application(app)
+        if latest_contract is None:
+            return Response({"detail": "Enrollment contract must be signed before countersignature."}, status=409)
+        try:
+            from .electronic_contracts import assert_contract_can_be_countersigned
+
+            assert_contract_can_be_countersigned(latest_contract)
+        except ValidationError as exc:
+            return Response({"detail": "; ".join(exc.messages)}, status=409)
+
     contract_error = _validate_state_transition(
         current=current["contract_status"],
         requested=requested_contract,
@@ -3733,18 +3750,22 @@ def _admissions_enrollment_state_update_impl(request, application_id):
     if validation_error is not None:
         return validation_error
 
-    contract_record, billing_handoff = _commit_enrollment_state_update(
-        school=school,
-        app=app,
-        request_payload=request.data if isinstance(request.data, dict) else {},
-        actor_user=request.user,
-        requested_contract=requested_contract,
-        requested_deposit=requested_deposit,
-        note=note,
-        transition_reason=transition_reason,
-        owner_assignment=owner_assignment,
-        trace_id=trace_id,
-    )
+    try:
+        with transaction.atomic():
+            contract_record, billing_handoff = _commit_enrollment_state_update(
+                school=school,
+                app=app,
+                request_payload=request.data if isinstance(request.data, dict) else {},
+                actor_user=request.user,
+                requested_contract=requested_contract,
+                requested_deposit=requested_deposit,
+                note=note,
+                transition_reason=transition_reason,
+                owner_assignment=owner_assignment,
+                trace_id=trace_id,
+            )
+    except ValidationError as exc:
+        return Response({"detail": "; ".join(exc.messages)}, status=409)
     legacy_bridge = _upsert_legacy_admissions_applications(
         app=app,
         actor_user=request.user,
