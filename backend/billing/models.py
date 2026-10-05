@@ -238,6 +238,10 @@ class BillingPayer(TimeStampedModel):
 			),
 		]
 
+	def save(self, *args, **kwargs):
+		self.full_clean()
+		return super().save(*args, **kwargs)
+
 	def clean(self):
 		if self.household_id and self.school_id != self.household.school_id:
 			raise ValidationError({"household": "Household must belong to the same school."})
@@ -303,6 +307,10 @@ class BillingResponsibilityRule(TimeStampedModel):
 			),
 		]
 
+	def save(self, *args, **kwargs):
+		self.full_clean()
+		return super().save(*args, **kwargs)
+
 	def clean(self):
 		if self.household_id and self.school_id != self.household.school_id:
 			raise ValidationError({"household": "Household must belong to the same school."})
@@ -339,6 +347,10 @@ class InvoicePayerShare(TimeStampedModel):
 			models.CheckConstraint(condition=models.Q(waived_amount__lte=models.F("amount")), name="payer_share_waived_lte_amount"),
 		]
 
+	def save(self, *args, **kwargs):
+		self.full_clean()
+		return super().save(*args, **kwargs)
+
 	def clean(self):
 		if self.invoice_id:
 			if self.school_id != self.invoice.school_id:
@@ -369,12 +381,74 @@ class PayerAllocationAttribution(TimeStampedModel):
 			models.CheckConstraint(condition=models.Q(amount__gt=0), name="payer_attribution_amount_positive"),
 		]
 
+	def save(self, *args, **kwargs):
+		self.full_clean()
+		return super().save(*args, **kwargs)
+
 	def clean(self):
 		if self.share_id and self.school_id != self.share.school_id:
 			raise ValidationError({"share": "Payer share must belong to the same school."})
 		if self.allocation_id:
 			if self.school_id != self.allocation.school_id:
 				raise ValidationError({"allocation": "Allocation must belong to the same school."})
+			allocation = self.allocation
+			if allocation.payment.is_void or allocation.charge.is_void:
+				raise ValidationError({"allocation": "Cannot attribute a void financial fact."})
+			payment = allocation.payment
+			if payment.source == "FINANCE_SETTLED" and payment.reference.startswith("finance_payment:"):
+				from finance.models import FinanceRefund
+				from ledger.models import Charge
+
+				refund_ids = FinanceRefund.objects.filter(
+					school_id=self.school_id, payment_id=payment.reference.split(":", 1)[1],
+				).values_list("id", flat=True)
+				if Charge.objects.filter(
+					school_id=self.school_id, account_id=payment.account_id, is_void=False,
+					description__in=[f"finance_refund:{pk}" for pk in refund_ids],
+				).exists():
+					raise ValidationError({"allocation": "Cannot add attribution after a payment refund."})
+			if allocation.payment.school_id != self.school_id or allocation.charge.school_id != self.school_id:
+				raise ValidationError({"allocation": "Allocation financial facts must belong to the same school."})
+			if allocation.payment.account_id != allocation.charge.account_id:
+				raise ValidationError({"allocation": "Allocation payment and charge must belong to the same household account."})
 			if self.share_id:
+				self.share.clean()
+				if allocation.charge.account.household_id != self.share.invoice.household_id:
+					raise ValidationError({"allocation": "Allocation account must belong to the invoice household."})
 				if self.share.invoice.ledger_charge_id != self.allocation.charge_id:
 					raise ValidationError({"allocation": "Allocation must apply to the payer share invoice charge."})
+
+
+class PayerRefundAttribution(TimeStampedModel):
+    """Immutable responsibility restoration linked to a canonical refund debit."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    school_id = models.UUIDField(db_index=True)
+    attribution = models.ForeignKey(PayerAllocationAttribution, on_delete=models.PROTECT, related_name="refund_attributions")
+    refund_charge = models.ForeignKey("ledger.Charge", on_delete=models.PROTECT, related_name="payer_refund_attributions")
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["attribution", "refund_charge"], name="uniq_payer_attribution_refund"),
+            models.CheckConstraint(condition=models.Q(amount__gt=0), name="payer_refund_amount_positive"),
+        ]
+
+    def clean(self):
+        attribution = self.attribution
+        charge = self.refund_charge
+        if self.school_id != attribution.school_id or self.school_id != charge.school_id:
+            raise ValidationError("Refund attribution school mismatch.")
+        if charge.account_id != attribution.allocation.payment.account_id:
+            raise ValidationError("Refund attribution household mismatch.")
+        if not charge.description.startswith("finance_refund:"):
+            raise ValidationError("Refund attribution requires a canonical refund debit.")
+
+    def save(self, *args, **kwargs):
+        if not self._state.adding:
+            raise ValidationError("Refund attributions are immutable.")
+        self.full_clean()
+        return super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        raise ValidationError("Refund attributions cannot be deleted.")

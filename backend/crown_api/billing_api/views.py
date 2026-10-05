@@ -759,28 +759,10 @@ class MyPayerSharesView(APIView):
             .distinct()
         )
 
-        items = []
-        for share in shares:
-            attributed = (
-                PayerAllocationAttribution.objects.filter(
-                    school_id=school_id,
-                    share=share,
-                ).aggregate(total=Sum("amount")).get("total")
-                or Decimal("0.00")
-            )
-            due = _d(share.amount) - _d(share.waived_amount) - _d(attributed)
-            items.append({
-                "share_id": str(share.id),
-                "invoice_id": str(share.invoice_id),
-                "term": share.invoice.billing_run.term,
-                "charge_type": share.invoice.billing_run.run_type,
-                "due_on": share.invoice.due_on.isoformat() if share.invoice.due_on else None,
-                "assigned_amount": str(_d(share.amount)),
-                "waived_amount": str(_d(share.waived_amount)),
-                "paid_amount": str(_d(attributed)),
-                "balance": str(max(due, Decimal("0.00"))),
-            })
-        return Response({"items": items})
+        from billing.payer_services import payer_share_statement
+
+        return Response({"items": [payer_share_statement(share) for share in shares]})
+
 
 
 class PayerAllocationAttributionView(APIView):
@@ -799,24 +781,31 @@ class PayerAllocationAttributionView(APIView):
             return Response({"detail": "amount_cents must be > 0"}, status=400)
 
         share = (
-            InvoicePayerShare.objects.select_related("invoice")
+            InvoicePayerShare.objects.select_for_update().select_related("invoice")
             .filter(pk=share_id, school_id=school_id)
             .first()
         )
         if not share:
             return Response({"detail": "share_id not found"}, status=404)
-        allocation = Allocation.objects.filter(pk=allocation_id, school_id=school_id).first()
+        allocation = Allocation.objects.filter(
+            pk=allocation_id, school_id=school_id, payment__is_void=False, charge__is_void=False
+        ).first()
+        if not allocation:
+            return Response({"detail": "allocation_id not found"}, status=404)
+        # Serialize attribution with the canonical refund bridge's payment lock.
+        Payment.objects.select_for_update().get(pk=allocation.payment_id)
+        allocation = Allocation.objects.select_for_update().filter(
+            pk=allocation.pk, school_id=school_id,
+            payment__is_void=False, charge__is_void=False,
+        ).first()
         if not allocation:
             return Response({"detail": "allocation_id not found"}, status=404)
         if share.invoice.ledger_charge_id != allocation.charge_id:
             return Response({"detail": "allocation does not belong to the share invoice"}, status=400)
 
-        allocated_to_share = (
-            PayerAllocationAttribution.objects.filter(
-                school_id=school_id, share=share
-            ).aggregate(total=Sum("amount")).get("total")
-            or Decimal("0.00")
-        )
+        from billing.payer_services import payer_share_paid_amount
+
+        allocated_to_share = payer_share_paid_amount(share)
         share_capacity = _d(share.amount) - _d(share.waived_amount) - _d(allocated_to_share)
 
         attributed_to_allocation = (

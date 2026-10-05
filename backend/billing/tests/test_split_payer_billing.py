@@ -166,3 +166,43 @@ def test_incomplete_responsibility_percentages_roll_back_billing_run():
     assert BillingRun.objects.count() == 0
     assert Invoice.objects.count() == 0
     assert InvoicePayerShare.objects.count() == 0
+
+
+@pytest.mark.parametrize("foreign_school", [False, True])
+def test_mismatched_payer_rule_fails_closed_and_rolls_back(foreign_school):
+    from django.core.exceptions import ValidationError
+    from ledger.models import Charge
+
+    school = School.objects.create(name="Authority School")
+    other_school = School.objects.create(name="Other School") if foreign_school else school
+    household = Household.objects.create(school_id=school.id, name="Billed Family")
+    other_household = Household.objects.create(school_id=other_school.id, name="Other Family")
+    _enrolled_student(school=school, household=household)
+    payer = _payer(school=school, household=household, name="Payer")
+    rule = BillingResponsibilityRule.objects.create(
+        school_id=school.id, household=household, payer=payer, percentage_bps=10000,
+    )
+    foreign_payer = _payer(school=other_school, household=other_household, name="Foreign Payer")
+    # Simulate stale/imported data bypassing application validation.
+    BillingResponsibilityRule.objects.filter(pk=rule.id).update(payer=foreign_payer)
+    with pytest.raises(ValidationError, match="same school and household"):
+        create_tuition_billing_run(school_id=school.id, term="2026-FALL", amount_per_student=Decimal("100.00"))
+    assert BillingRun.objects.count() == 0
+    assert Invoice.objects.count() == 0
+    assert InvoicePayerShare.objects.count() == 0
+    assert Charge.objects.count() == 0
+
+
+@pytest.mark.parametrize("foreign_school", [False, True])
+def test_direct_payer_save_rejects_household_mismatch(foreign_school):
+    from django.core.exceptions import ValidationError
+    from households.models import Guardian
+
+    school = School.objects.create(name="Bound School")
+    other_school = School.objects.create(name="Other School") if foreign_school else school
+    household = Household.objects.create(school_id=school.id, name="Family")
+    other_household = Household.objects.create(school_id=other_school.id, name="Other Family")
+    guardian = Guardian.objects.create(school_id=other_school.id, household=other_household, first_name="Other", last_name="Guardian")
+    with pytest.raises(ValidationError):
+        BillingPayer.objects.create(school_id=school.id, household=household, guardian=guardian)
+    assert BillingPayer.objects.count() == 0

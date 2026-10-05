@@ -139,6 +139,7 @@ def ledger_post_payment_settled(
     return LedgerPostResult(ok=True, reference=f"payment:{ledger_payment.id}")
 
 
+@transaction.atomic
 def ledger_post_refund(refund: FinanceRefund) -> LedgerPostResult:
     """
     Post reversal pair: Cash credit + A/R debit (or Refund expense).
@@ -156,6 +157,9 @@ def ledger_post_refund(refund: FinanceRefund) -> LedgerPostResult:
         description=f"finance_refund:{refund.id}",
         defaults={"amount": _money_from_cents(refund.amount_cents)},
     )
+    from billing.payer_services import attribute_payer_refund
+
+    attribute_payer_refund(finance_payment=refund.payment, refund_charge=charge)
     return LedgerPostResult(ok=True, reference=f"refund_charge:{charge.id}")
 
 
@@ -314,4 +318,3 @@ def initiate_refund(
     if not post_result.ok:
         raise ValueError(f"Ledger refund posting failed: {post_result.reference}")
     return refund
-
