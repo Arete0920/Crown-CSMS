@@ -283,16 +283,17 @@ def test_overall_anomaly_rows_are_deduplicated_across_relationships(monkeypatch)
 
 
 @pytest.mark.django_db
-def test_home_academy_integer_tenant_family_is_explicitly_unverified(monkeypatch):
+def test_home_academy_uuid_tenant_family_is_verified(monkeypatch):
     from home_academy.models import HomeAcademyEnrollment, HomeAcademyProgram
 
+    school = School.objects.create(name="Home Academy School")
     program = HomeAcademyProgram.objects.create(
-        school_id=101,
+        school_id=school.id,
         public_program_name="Home Academy",
     )
     HomeAcademyEnrollment.objects.create(
-        school_id=101,
-        student_id=501,
+        school_id=school.id,
+        student_id=uuid.uuid4(),
         program=program,
     )
     monkeypatch.setattr(
@@ -302,17 +303,16 @@ def test_home_academy_integer_tenant_family_is_explicitly_unverified(monkeypatch
     )
 
     stdout = StringIO()
-    call_command("audit_tenant_relationship_integrity", stdout=stdout)
+    call_command(
+        "audit_tenant_relationship_integrity",
+        fail_on_unverified_authority=True,
+        stdout=stdout,
+    )
     payload = json.loads(stdout.getvalue())
     relationship = payload["relationships"][0]
 
-    assert relationship["tenant_field_type"] == "IntegerField"
-    assert relationship["tenant_authority_verified"] is False
+    assert relationship["tenant_field_type"] == "UUIDField"
+    assert relationship["tenant_authority_verified"] is True
     assert relationship["identity_partition"]["equation_holds"] is True
+    assert payload["totals"]["unverified_tenant_authority_relationships"] == 0
 
-    with pytest.raises(CommandError, match="unresolved tenant authority family"):
-        call_command(
-            "audit_tenant_relationship_integrity",
-            fail_on_unverified_authority=True,
-            stdout=StringIO(),
-        )
