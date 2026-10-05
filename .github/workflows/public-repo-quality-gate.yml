@@ -12,7 +12,7 @@ permissions:
 
 concurrency:
   group: public-repo-quality-gate-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 jobs:
   public-repo-quality-gate:
     runs-on: ubuntu-latest
