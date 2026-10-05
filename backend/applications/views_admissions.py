@@ -4009,6 +4009,15 @@ def admissions_contract_update(request, application_id):
                     ),
                 },
             )
+            from .electronic_contracts import record_contract_workflow_state
+
+            record_contract_workflow_state(
+                contract=contract,
+                updated_by=str(
+                    getattr(request.user, "email", "")
+                    or getattr(request.user, "username", "")
+                ),
+            )
     except ValidationError as exc:
         return Response({"detail": "; ".join(exc.messages)}, status=409)
 
@@ -4099,6 +4108,15 @@ def admissions_contract_amend(request, application_id):
                     "electronic_envelope_id": str(envelope.id),
                     "document_sha256": envelope.document_sha256,
                 },
+            )
+            from .electronic_contracts import record_contract_workflow_state
+
+            record_contract_workflow_state(
+                contract=amended,
+                updated_by=str(
+                    getattr(request.user, "email", "")
+                    or getattr(request.user, "username", "")
+                ),
             )
     except ValidationError as exc:
         return Response({"detail": "; ".join(exc.messages)}, status=409)
