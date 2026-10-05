@@ -7,6 +7,7 @@ import success from '../assets/solomon/success.webp';
 const poses = { guide, explain, review, caution, success };
 
 /** Decorative artwork: the surrounding control or heading supplies accessible text. */
-export default function SolomonCharacter({ pose = 'guide', height = 48 }) {
-  return <img src={poses[pose] || guide} alt="" width={Math.round(height * .52)} height={height} />;
+export default function SolomonCharacter({ pose = 'guide', height = 48, variant = 'context' }) {
+  const artwork = variant === 'introduction' ? explain : poses[pose] || guide;
+  return <img src={artwork} alt="" width={Math.round(height * .52)} height={height} />;
 }

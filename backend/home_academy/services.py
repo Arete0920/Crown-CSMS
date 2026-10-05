@@ -1,6 +1,7 @@
+from uuid import UUID
 from dataclasses import dataclass
 
-from .models import HomeAcademyEnrollment, Offering, OfferingEnrollment
+from .models import FinancialAidRule, HomeAcademyEnrollment, Offering, OfferingEnrollment
 
 
 @dataclass(frozen=True)
@@ -11,7 +12,7 @@ class EligibilityResult:
     waitlist_available: bool
 
 
-def count_active_academic_courses(school_id: int, student_id: int, school_year: str = "", term: str = "") -> int:
+def count_active_academic_courses(school_id: UUID, student_id: UUID, school_year: str = "", term: str = "") -> int:
     """Count active/approved credit-bearing academic course enrollments for the student."""
     qs = OfferingEnrollment.objects.filter(
         school_id=school_id,
@@ -57,7 +58,7 @@ def homeschool_seats_remaining(offering: Offering) -> int:
     return max(released_cap - used, 0)
 
 
-def get_home_academy_enrollment(school_id: int, student_id: int) -> HomeAcademyEnrollment | None:
+def get_home_academy_enrollment(school_id: UUID, student_id: UUID) -> HomeAcademyEnrollment | None:
     return (
         HomeAcademyEnrollment.objects.filter(
             school_id=school_id,
@@ -71,8 +72,8 @@ def get_home_academy_enrollment(school_id: int, student_id: int) -> HomeAcademyE
 
 def evaluate_offering_eligibility(
     *,
-    school_id: int,
-    student_id: int,
+    school_id: UUID,
+    student_id: UUID,
     offering: Offering,
     forms_complete: bool = False,
     account_current: bool = True,
@@ -161,4 +162,38 @@ def apply_eligibility_to_registration(registration: OfferingEnrollment) -> Offer
         "roster_status",
         "updated_at",
     ])
+    return registration
+
+
+AID_CHARGE_TYPE_BY_OFFERING = {
+    "academic_course": "course_fee",
+    "lab": "lab_fee",
+    "sport": "athletic_fee",
+    "music": "activity_fee",
+    "drama": "activity_fee",
+    "art": "activity_fee",
+    "club": "activity_fee",
+    "student_life": "activity_fee",
+    "testing": "testing_fee",
+    "transcript_review": "transcript_fee",
+    "graduation_audit": "graduation_audit_fee",
+}
+
+
+def classify_financial_aid(registration: OfferingEnrollment) -> OfferingEnrollment:
+    """Persist charge-level financial-aid classification from school-controlled rules."""
+    charge_type = AID_CHARGE_TYPE_BY_OFFERING.get(registration.offering.offering_type)
+    rule = None
+    if charge_type:
+        rule = FinancialAidRule.objects.filter(
+            school_id=registration.school_id,
+            charge_type=charge_type,
+            active=True,
+        ).first()
+
+    registration.financial_aid_rule_id = rule.pk if rule else None
+    registration.aid_eligible = bool(rule and rule.aid_eligible)
+    registration.save(
+        update_fields=["financial_aid_rule_id", "aid_eligible", "updated_at"]
+    )
     return registration
