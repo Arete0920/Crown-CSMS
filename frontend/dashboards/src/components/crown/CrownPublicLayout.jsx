@@ -1,3 +1,4 @@
+import { HelpTooltip } from '../HelpTooltip.jsx';
 const BUILD_SHA = (import.meta?.env?.VITE_BUILD_SHA || "dev").slice(0, 7);
 const DEPLOY_TAG = import.meta?.env?.VITE_DEPLOY_TAG || "";
 
@@ -50,6 +51,7 @@ export default function CrownPublicLayout({ title, subtitle, right, helpNotice, 
               className="crown-card"
               style={{ marginBottom: 14, padding: "10px 14px", fontSize: 13 }}
             >
+              <HelpTooltip context={{ route_path: "/admissions", module: "admissions" }} />
               {helpNotice}
             </section>
           ) : null}

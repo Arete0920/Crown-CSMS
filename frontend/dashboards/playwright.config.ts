@@ -12,6 +12,8 @@ import { defineConfig, devices } from "@playwright/test";
  */
 
 const IS_LIVE_RUNTIME_CERTIFICATION = process.env.CROWN_CERTIFICATION_LIVE_RUNTIME === "1";
+// Structured guidance is enabled only in the stubbed smoke contract lane.
+const IS_GUIDANCE_CONTRACT = process.env.npm_lifecycle_event === "test:e2e:smoke";
 const IS_SCAFFOLD_CERTIFICATION = process.env.npm_lifecycle_event === "certify:scaffold-crawler";
 const BASE_URL = IS_LIVE_RUNTIME_CERTIFICATION
   ? process.env.CROWN_LIVE_FRONTEND_URL
@@ -67,6 +69,7 @@ export default defineConfig({
       stderr: "pipe",
       env: {
         ...process.env,
+        ...(IS_GUIDANCE_CONTRACT ? { VITE_SOLOMON_GUIDANCE_ENABLED: "true" } : {}),
         ...(IS_SCAFFOLD_CERTIFICATION ? { VITE_SANDBOX_MODE: "1" } : {}),
       },
     },
