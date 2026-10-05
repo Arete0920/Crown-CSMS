@@ -54,7 +54,6 @@ def _serialize_signer(signer):
     return {
         "id": str(signer.id),
         "display_name": signer.display_name,
-        "email": signer.email,
         "role_label": signer.role_label,
         "signing_order": signer.signing_order,
         "status": signer.status,
