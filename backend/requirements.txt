@@ -22,7 +22,7 @@ drf-spectacular-sidecar>=2025.3.1
 # Microsoft 365 SSO (OAuth2 via Authlib)
 authlib>=1.6.11
 requests>=2.34.2
-cryptography>=46.0.7
+cryptography>=50.0.2
 # Transitive security floors (pulled by requests/twilio/reportlab)
 urllib3>=2.7.0
 idna>=3.15
@@ -37,7 +37,7 @@ redis>=5.0.0
 # SMS provider client (used by comms/sms_service.py when SMS is enabled)
 twilio>=9.0.0
 # Board Packet PDF generation (Stage 4)
-reportlab>=4.2.0
+reportlab>=5.0.1
 # Analytics runtime dependencies
 numpy>=1.26.4
 pandas>=2.2.3
