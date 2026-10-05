@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from django.core.exceptions import ValidationError
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from rest_framework import permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -129,7 +129,7 @@ class ElectronicFormTemplateListCreateView(APIView):
                 form_schema=payload.get("form_schema") or {},
                 created_by=request.user,
             )
-        except (ValidationError, ValueError) as exc:
+        except (IntegrityError, ValidationError, ValueError) as exc:
             return _validation_response(exc)
         return Response({"id": str(template.id), "key": template.key, "version": template.version}, status=201)
 
@@ -180,7 +180,7 @@ class ElectronicEnvelopeCreateView(APIView):
                         signing_order=int(signer_payload.get("signing_order") or index),
                     )
                 envelope = send_envelope(envelope)
-        except (ValidationError, ValueError) as exc:
+        except (IntegrityError, ValidationError, ValueError) as exc:
             return _validation_response(exc)
 
         envelope = ElectronicEnvelope.objects.prefetch_related("signers").get(pk=envelope.pk)
