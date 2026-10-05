@@ -88,7 +88,7 @@ PERMISSIONS = [
 
 ROLE_PERMISSIONS: dict = {
     "HEAD_OF_SCHOOL": [
-        "admin.view", "board.view", "finance.view", "billing.view", "admissions.view", "financial_aid.view", "financial_aid.edit",
+        "admin.view", "board.view", "finance.view", "billing.view", "admissions.view", "financial_aid.view",
         "academics.view", "teacher.view", "registrar.view", "academic_support.view", "library.view", "rosters.edit",
         "gradebook.edit", "attendance.configure", "scheduling.view", "scheduling.configure", "scheduling.edit", "scheduling.publish",
         "extended_care.view", "extended_care.edit", "pd.view", "communications.view", "health.view", "counseling.view", "food.view",
