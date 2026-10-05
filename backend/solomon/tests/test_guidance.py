@@ -53,7 +53,7 @@ class GuidanceApiTests(TestCase):
     def setUp(self):
         self.school = School.objects.create(name="Synthetic A")
         self.other_school = School.objects.create(name="Synthetic B")
-        self.user = UserAccount.objects.create_user(username="synthetic-teacher", school=self.school)
+        self.user = UserAccount.objects.create_user(username="synthetic-teacher", email="teacher@example.invalid", school=self.school)
         UserRole.objects.create(user=self.user, school=self.school, role_code="TEACHER")
         self.client = APIClient()
         self.client.force_authenticate(self.user)
@@ -85,7 +85,7 @@ class GuidanceApiTests(TestCase):
 
     def test_parent_student_and_unassigned_staff_are_denied(self):
         for role in ("PARENT", "STUDENT", None):
-            user = UserAccount.objects.create_user(username=f"synthetic-{role}", school=self.school, is_staff=True)
+            user = UserAccount.objects.create_user(username=f"synthetic-{role}", email=f"{role}@example.invalid", school=self.school, is_staff=True)
             if role:
                 UserRole.objects.create(user=user, school=self.school, role_code=role)
             self.client.force_authenticate(user)
@@ -105,6 +105,7 @@ class GuidanceApiTests(TestCase):
     def test_missing_and_malformed_tenant_are_denied(self):
         self.user.school = None
         self.user.save()
+        self.user.roles.all().delete()
         self.assertEqual(self.post().status_code, 400)
         self.assertEqual(self.post(HTTP_X_SCHOOL_ID="bad").status_code, 400)
 
