@@ -29,6 +29,7 @@ export const STATIC_SHELL_PATHS = [
   "/summer-camp-dashboard/setup",
   "/communications",
   "/communications-director",
+  "/my-forms",
 ];
 
 function unique(values) {
