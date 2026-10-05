@@ -102,8 +102,6 @@ export const PATHS = {
   SAFETY: '/safety',
   BOARD_EXECUTIVE: '/board/executive',
   AFTERCARE_ROSTER: '/aftercare/roster',
-  HOME_ACADEMY: '/home-academy',
-  PARENT_HOME_ACADEMY: '/parent/home-academy',
   FINANCE_FAMILY_ACCOUNT: '/finance/family-account',
   FINANCE_DISPUTES: '/finance/disputes',
   FINANCE_PAYOUT_RECONCILIATION: '/finance/payout-reconciliation',
