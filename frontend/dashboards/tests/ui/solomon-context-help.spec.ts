@@ -19,8 +19,10 @@ test('Solomon help supports native keyboard dismissal, focus return and mobile r
       await route.fulfill({ json: { primary_article: { title: 'Review billing before posting', content: 'Confirm the billing period and review invoice totals.' } } });
     } else if (url.pathname === '/api/solomon/guidance/') {
       expect(route.request().method()).toBe('POST');
-      expect(route.request().postDataJSON()).toEqual({ topic: 'onboarding', human_review_acknowledged: true });
-      await route.fulfill({ json: { topic: 'onboarding', title: 'Implementation guidance', guidance: 'Review school roles.', mode: 'curated_guidance', generated_by_ai: false, human_review_required: true } });
+      const topic = route.request().postDataJSON().topic;
+      expect(['onboarding', 'communications']).toContain(topic);
+      expect(route.request().postDataJSON()).toEqual({ topic, human_review_acknowledged: true });
+      await route.fulfill({ json: { topic, steps: ['Review dates before sending.'], draft: 'General event reminder: complete [date] before use.', source_document: 'docs/solomon/SOLOMON_APPROVED_ASSISTANCE.md', source_section: topic === 'onboarding' ? 'existing-guidance' : topic, title: 'Implementation guidance', guidance: 'Review school roles.', mode: 'curated_guidance', generated_by_ai: false, human_review_required: true } });
     } else {
       await route.fulfill({ json: {} });
     }
@@ -46,6 +48,13 @@ test('Solomon help supports native keyboard dismissal, focus return and mobile r
   await staffGuidance.getByRole('checkbox', { name: /I will review/ }).check();
   await staffGuidance.getByRole('button', { name: 'View guidance' }).click();
   await expect(staffGuidance.getByText('Review school roles.')).toBeVisible();
+  await staffGuidance.getByRole('combobox', { name: 'Guidance topic' }).selectOption('communications');
+  await expect(staffGuidance.getByText('Review school roles.')).toHaveCount(0);
+  await expect(staffGuidance.getByRole('button', { name: 'View guidance' })).toBeDisabled();
+  await staffGuidance.getByRole('checkbox', { name: /I will review/ }).check();
+  await staffGuidance.getByRole('button', { name: 'View guidance' }).click();
+  await expect(staffGuidance.getByRole('region', { name: 'Reusable draft' })).toBeVisible();
+  await expect(staffGuidance.getByRole('link', { name: 'Read the maintained source' })).toHaveAttribute('href', /#communications$/);
   await page.keyboard.press('Escape');
   await expect(panel).not.toBeVisible();
   await expect(trigger).toBeFocused();

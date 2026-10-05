@@ -8,9 +8,11 @@ from __future__ import annotations
 from hashlib import sha256
 import json
 from types import MappingProxyType
+from .assistance_catalog import ASSISTANCE, CATALOG_VERSION, SOURCE_DOCUMENT
 
-POLICY_VERSION = "solomon-guidance-v1"
+POLICY_VERSION = "solomon-guidance-v2"
 GUIDANCE = MappingProxyType({
+    **{topic: (resource["title"], resource["guidance"]) for topic, resource in ASSISTANCE.items()},
     "onboarding": (
         "Plan CROWN implementation",
         "Confirm the school's implementation owner, assigned roles, training schedule, "
@@ -74,11 +76,20 @@ def build_external_payload(data):
 def local_guidance(data):
     topic = validate_selection(data)
     title, guidance = GUIDANCE[topic]
+    resource = ASSISTANCE.get(topic)
+    additions = {
+        "catalog_version": CATALOG_VERSION,
+        "steps": list(resource["steps"]) if resource else [],
+        "draft": resource["draft"] if resource else "",
+        "source_document": SOURCE_DOCUMENT,
+        "source_section": topic if resource else "existing-guidance",
+    }
     provenance = sha256(json.dumps(
-        {"policy": POLICY_VERSION, "topic": topic, "guidance": guidance},
+        {"policy": POLICY_VERSION, "topic": topic, "title": title, "guidance": guidance, **additions},
         sort_keys=True,
     ).encode("utf-8")).hexdigest()
     return {
+        **additions,
         "topic": topic,
         "title": title,
         "guidance": guidance,

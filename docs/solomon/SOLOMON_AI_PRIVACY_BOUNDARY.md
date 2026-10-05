@@ -1,6 +1,6 @@
 # Solomon optional AI and guidance boundary
 
-Owner: TC Megahan. Status: implementation candidate; external AI disabled.
+Owner: TC Megahan. Status: curated guidance implemented; external AI disabled.
 
 ## Accepted product boundary
 
@@ -27,7 +27,10 @@ The JSON request must contain exactly:
 {"topic": "onboarding", "human_review_acknowledged": true}
 ```
 
-Supported topics: `onboarding`, `interpretation`, `governance`, `strategy`.
+Supported topics: `onboarding`, `interpretation`, `governance`, `strategy`, plus
+the nine maintained resources in [the approved assistance catalog](SOLOMON_APPROVED_ASSISTANCE.md).
+Additional output contains plain-text checklists, reusable drafts, source references,
+and a catalog version; the digest covers the full resource.
 The response is explicitly labeled curated guidance, not AI-generated. Strategy
 returns a human advisory handoff. Acknowledgement means the user accepted the
 review requirement; it is not proof that review or a decision has occurred.
