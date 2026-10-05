@@ -6,6 +6,7 @@ from django.test import Client
 from crown_api.authenticated_contract_probe import create_probe_user
 from crown_api.tenant_seed_adapter import (
     attach_user_to_school_if_possible,
+    grant_probe_access_if_required,
     resolve_probe_school_context,
 )
 from crown_api.write_probe_adapter import (
@@ -179,6 +180,7 @@ def execute_write_contract_entry(entry, client=None, user=None, school_context=N
     effective_school_context = school_context or resolve_probe_school_context(default_school_id=probe_school_id)
     effective_school_id = str(effective_school_context.get("schoolId") or probe_school_id)
     attached_fields = attach_user_to_school_if_possible(probe_user, effective_school_context)
+    grant_probe_access_if_required(entry.get("moduleKey"), probe_user, effective_school_context)
 
     if requires_auth:
         probe_client.force_login(probe_user)
