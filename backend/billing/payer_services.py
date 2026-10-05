@@ -142,7 +142,7 @@ def attribute_payer_refund(*, finance_payment, refund_charge):
     ).first()
     if payment is None:
         return
-    rows = list(PayerAllocationAttribution.objects.select_for_update().filter(
+    rows = list(PayerAllocationAttribution.objects.select_for_update(of=("self",)).filter(
         school_id=finance_payment.school_id, allocation__payment=payment,
     ).select_related("share__payer__guardian", "allocation").order_by("created_at", "id"))
     if not rows:
