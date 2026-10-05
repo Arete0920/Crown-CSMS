@@ -187,3 +187,36 @@ def attach_user_to_school_if_possible(user, school_context):
         user.save()
 
     return sorted(set(changed_fields))
+
+
+def grant_probe_access_if_required(module_key, user, school_context):
+    """Grant only the module permissions required by an authorized CI probe identity."""
+    if not user:
+        return []
+
+    school_obj = school_context.get("schoolObj") if school_context else None
+    if school_obj is None:
+        return []
+
+    grants = {
+        "financial-aid-setup": (
+            "AID_DIRECTOR",
+            ("financial_aid.view", "financial_aid.edit"),
+        ),
+    }
+    grant = grants.get(str(module_key or "").strip())
+    if grant is None:
+        return []
+
+    role_code, permission_codes = grant
+    from core.models import CrownPermission, RolePermission, UserRole
+
+    UserRole.objects.get_or_create(user=user, school=school_obj, role_code=role_code)
+    for permission_code in permission_codes:
+        permission, _ = CrownPermission.objects.get_or_create(
+            code=permission_code,
+            defaults={"description": f"CI probe permission: {permission_code}"},
+        )
+        RolePermission.objects.get_or_create(role_code=role_code, permission=permission)
+
+    return list(permission_codes)

@@ -104,12 +104,13 @@ class CrownModulePermission:
                 if school is None:
                     school_header = request.headers.get("X-School-Id")
                     if not school_header:
-                        # Scheduling wizards require an explicit tenant header. Raise
-                        # the canonical 400 here so RBAC cannot mask missing tenant
-                        # context as a generic 403 or fall back to a principal role.
+                        # Selected wizard APIs require an explicit tenant header.
+                        # Raise the canonical tenant-context error before RBAC so
+                        # missing context is not misreported as permission denial.
                         if request.path.startswith((
                             "/api/v1/scheduling-wizard/",
                             "/api/v1/section-scheduler-wizard/",
+                            "/api/v1/aid-wizard/",
                         )):
                             from households.scoping import MissingSchoolContext
 
