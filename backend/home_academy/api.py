@@ -3,7 +3,9 @@ from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
+from core.models import Student
 from core.permissions import user_has_permission
+from subscriptions.gates import school_has_module
 from .models import (
     FinancialAidRule,
     HomeAcademyEnrollment,
@@ -39,10 +41,51 @@ def require_role(request, allowed_roles: set) -> bool:
     if normalized.intersection({"admin", "advisor", "registrar", "coach", "director"}):
         if user_has_permission(user, "home_academy.view", school=school):
             return True
-    if "parent" in normalized and user_has_permission(user, "parent360.view", school=school):
+    if "parent" in normalized and user_has_permission(user, "parent.view", school=school):
         return True
 
     return False
+
+
+def require_home_academy_enabled(school_id):
+    if school_has_module(school_id, "home_academy"):
+        return None
+    return Response(
+        {
+            "detail": "Home Academy module is not enabled for this school.",
+            "code": "MODULE_NOT_ENABLED",
+        },
+        status=status.HTTP_403_FORBIDDEN,
+    )
+
+
+def canonical_student(school_id, student_id):
+    return Student.objects.filter(
+        pk=student_id,
+        school_id=school_id,
+        status="ACTIVE",
+    ).select_related("family").first()
+
+
+def parent_can_access_student(request, school_id, student_id) -> bool:
+    user = getattr(request, "user", None)
+    guardian = getattr(user, "guardian", None)
+    if guardian is None:
+        return False
+    if guardian.school_id != school_id or not guardian.portal_access:
+        return False
+    return Student.objects.filter(
+        pk=student_id,
+        school_id=school_id,
+        family_id=guardian.family_id,
+        status="ACTIVE",
+    ).exists()
+
+
+def is_parent_only_request(request) -> bool:
+    return require_role(request, {"parent"}) and not require_role(
+        request, {"admin", "advisor", "registrar", "coach", "director"}
+    )
 
 
 @extend_schema(methods=["GET"], responses=HomeAcademyProgramSerializer)
@@ -50,8 +93,13 @@ def require_role(request, allowed_roles: set) -> bool:
 @api_view(["GET", "PUT"])
 def program_config(request):
     school_id = school_id_from_request(request, required=True)
+    module_error = require_home_academy_enabled(school_id)
+    if module_error is not None:
+        return module_error
 
     if request.method == "GET":
+        if not require_role(request, {"admin", "advisor", "registrar", "parent"}):
+            return Response({"detail": "Forbidden"}, status=status.HTTP_403_FORBIDDEN)
         program = HomeAcademyProgram.objects.filter(school_id=school_id).first()
         if not program:
             return Response({"detail": "Home Academy program is not configured."}, status=status.HTTP_404_NOT_FOUND)
@@ -72,8 +120,13 @@ def program_config(request):
 @api_view(["GET", "POST"])
 def enrollments(request):
     school_id = school_id_from_request(request, required=True)
+    module_error = require_home_academy_enabled(school_id)
+    if module_error is not None:
+        return module_error
 
     if request.method == "GET":
+        if not require_role(request, {"admin", "advisor", "registrar"}):
+            return Response({"detail": "Forbidden"}, status=status.HTTP_403_FORBIDDEN)
         qs = HomeAcademyEnrollment.objects.filter(school_id=school_id).order_by("-created_at")[:500]
         return Response(HomeAcademyEnrollmentSerializer(qs, many=True).data)
 
@@ -82,7 +135,13 @@ def enrollments(request):
 
     serializer = HomeAcademyEnrollmentSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
-    serializer.save(school_id=school_id)
+    student = canonical_student(school_id, serializer.validated_data["student_id"])
+    if student is None:
+        return Response({"detail": "Student not found."}, status=status.HTTP_404_NOT_FOUND)
+    program = serializer.validated_data.get("program")
+    if program is not None and program.school_id != school_id:
+        return Response({"detail": "Program not found."}, status=status.HTTP_404_NOT_FOUND)
+    serializer.save(school_id=school_id, household_id=student.family_id)
     return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
@@ -91,8 +150,13 @@ def enrollments(request):
 @api_view(["GET", "POST"])
 def offerings(request):
     school_id = school_id_from_request(request, required=True)
+    module_error = require_home_academy_enabled(school_id)
+    if module_error is not None:
+        return module_error
 
     if request.method == "GET":
+        if not require_role(request, {"admin", "advisor", "registrar", "parent"}):
+            return Response({"detail": "Forbidden"}, status=status.HTTP_403_FORBIDDEN)
         qs = Offering.objects.filter(school_id=school_id, active=True).order_by("offering_type", "title")[:1000]
         return Response(OfferingSerializer(qs, many=True).data)
 
@@ -101,6 +165,9 @@ def offerings(request):
 
     serializer = OfferingSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
+    program = serializer.validated_data.get("program")
+    if program is not None and program.school_id != school_id:
+        return Response({"detail": "Program not found."}, status=status.HTTP_404_NOT_FOUND)
     serializer.save(school_id=school_id)
     return Response(serializer.data, status=status.HTTP_201_CREATED)
 
@@ -110,8 +177,13 @@ def offerings(request):
 @api_view(["GET", "POST"])
 def offering_enrollments(request):
     school_id = school_id_from_request(request, required=True)
+    module_error = require_home_academy_enabled(school_id)
+    if module_error is not None:
+        return module_error
 
     if request.method == "GET":
+        if not require_role(request, {"admin", "advisor", "registrar"}):
+            return Response({"detail": "Forbidden"}, status=status.HTTP_403_FORBIDDEN)
         qs = OfferingEnrollment.objects.filter(school_id=school_id).select_related("offering").order_by("-created_at")[:1000]
         return Response(OfferingEnrollmentSerializer(qs, many=True).data)
 
@@ -120,6 +192,21 @@ def offering_enrollments(request):
 
     serializer = OfferingEnrollmentSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
+    student = canonical_student(school_id, serializer.validated_data["student_id"])
+    if student is None:
+        return Response({"detail": "Student not found."}, status=status.HTTP_404_NOT_FOUND)
+    offering = serializer.validated_data["offering"]
+    if offering.school_id != school_id:
+        return Response({"detail": "Offering not found."}, status=status.HTTP_404_NOT_FOUND)
+    academy_enrollment = serializer.validated_data.get("home_academy_enrollment")
+    if academy_enrollment is not None and (
+        academy_enrollment.school_id != school_id
+        or academy_enrollment.student_id != student.id
+    ):
+        return Response(
+            {"detail": "Home Academy enrollment not found."},
+            status=status.HTTP_404_NOT_FOUND,
+        )
     registration = serializer.save(school_id=school_id)
     registration = apply_eligibility_to_registration(registration)
     return Response(OfferingEnrollmentSerializer(registration).data, status=status.HTTP_201_CREATED)
@@ -129,8 +216,17 @@ def offering_enrollments(request):
 @api_view(["GET"])
 def offering_eligibility(request, offering_id: int, student_id: int):
     school_id = school_id_from_request(request, required=True)
+    module_error = require_home_academy_enabled(school_id)
+    if module_error is not None:
+        return module_error
     if not require_role(request, {"admin", "advisor", "registrar", "parent"}):
         return Response({"detail": "Forbidden"}, status=status.HTTP_403_FORBIDDEN)
+    if is_parent_only_request(request) and not parent_can_access_student(
+        request, school_id, student_id
+    ):
+        return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
+    if canonical_student(school_id, student_id) is None:
+        return Response({"detail": "Student not found."}, status=status.HTTP_404_NOT_FOUND)
 
     try:
         offering = Offering.objects.get(school_id=school_id, pk=offering_id, active=True)
@@ -161,8 +257,13 @@ def offering_eligibility(request, offering_id: int, student_id: int):
 @api_view(["GET", "POST"])
 def financial_aid_rules(request):
     school_id = school_id_from_request(request, required=True)
+    module_error = require_home_academy_enabled(school_id)
+    if module_error is not None:
+        return module_error
 
     if request.method == "GET":
+        if not require_role(request, {"admin", "advisor", "registrar"}):
+            return Response({"detail": "Forbidden"}, status=status.HTTP_403_FORBIDDEN)
         qs = FinancialAidRule.objects.filter(school_id=school_id, active=True).order_by("charge_type")
         return Response(FinancialAidRuleSerializer(qs, many=True).data)
 
@@ -178,6 +279,9 @@ def financial_aid_rules(request):
 @api_view(["GET"])
 def board_summary(request):
     school_id = school_id_from_request(request, required=True)
+    module_error = require_home_academy_enabled(school_id)
+    if module_error is not None:
+        return module_error
     if not require_role(request, {"admin", "registrar"}):
         return Response({"detail": "Forbidden"}, status=status.HTTP_403_FORBIDDEN)
 
