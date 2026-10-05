@@ -485,3 +485,85 @@ def test_completed_registration_posts_transcript_only_through_verified_identity_
         course=course,
         term=term,
     ).count() == 1
+
+
+def test_parent_summary_contains_only_guardians_family():
+    school = make_school("Parent Summary")
+    enable_home_academy(school)
+    family_a = Family.objects.create(school=school, family_name="Summary A")
+    family_b = Family.objects.create(school=school, family_name="Summary B")
+    own_student = make_student(school, "SummaryOwn", family=family_a)
+    other_student = make_student(school, "SummaryOther", family=family_b)
+    guardian = Guardian.objects.create(
+        school=school,
+        family=family_a,
+        first_name="Summary",
+        last_name="Parent",
+        email="summary-parent@example.test",
+        relationship="GUARDIAN",
+        portal_access=True,
+    )
+    parent = make_user(school, "summary-parent", role_code="PARENT", guardian=guardian)
+    program = HomeAcademyProgram.objects.create(
+        school_id=school.id,
+        public_program_name="Summary Home Academy",
+    )
+    HomeAcademyEnrollment.objects.create(
+        school_id=school.id,
+        student_id=own_student.id,
+        household_id=family_a.id,
+        program=program,
+    )
+    HomeAcademyEnrollment.objects.create(
+        school_id=school.id,
+        student_id=other_student.id,
+        household_id=family_b.id,
+        program=program,
+    )
+
+    client, headers = auth_client(parent, school)
+    response = client.get("/api/v1/home-academy/parent/summary/", **headers)
+
+    assert response.status_code == 200
+    ids = {row["id"] for row in response.json()["students"]}
+    assert ids == {str(own_student.id)}
+    assert str(other_student.id) not in response.content.decode()
+
+
+def test_offering_rejects_cross_school_academic_course_mapping():
+    school_a = make_school("Mapping A")
+    school_b = make_school("Mapping B")
+    enable_home_academy(school_a)
+    admin = UserAccount.objects.create_superuser(
+        username="ha-mapping-admin",
+        email="ha-mapping-admin@example.test",
+        password="test-pass",
+    )
+    program = HomeAcademyProgram.objects.create(
+        school_id=school_a.id,
+        public_program_name="Mapping Home Academy",
+    )
+    foreign_course = Course.objects.create(
+        school_id=school_b.id,
+        code="FOREIGN",
+        name="Foreign Course",
+        credits="1.00",
+    )
+    client, headers = auth_client(admin, school_a)
+
+    response = client.post(
+        "/api/v1/home-academy/offerings/",
+        {
+            "program": program.id,
+            "offering_type": "academic_course",
+            "title": "Unsafe Mapping",
+            "academic_course_id": str(foreign_course.id),
+            "homeschool_seat_cap": 5,
+            "requires_academic_anchor": False,
+        },
+        format="json",
+        **headers,
+    )
+
+    assert response.status_code == 404
+    assert Offering.objects.filter(school_id=school_a.id, title="Unsafe Mapping").count() == 0
