@@ -204,6 +204,33 @@ def sync_enrollment_contract_signature(
             "document_sha256": envelope.document_sha256,
         },
     )
+
+    prior_state = (
+        ApplicationEvent.objects.filter(
+            school_id=contract.school_id,
+            application=contract.application,
+            event_type="enrollment_state_updated",
+        )
+        .order_by("-created_at")
+        .values_list("payload", flat=True)
+        .first()
+        or {}
+    )
+    state_payload = dict(prior_state)
+    state_payload.update(
+        {
+            "contract_status": "signed",
+            "updated_by": "electronic-signature-evidence",
+            "electronic_envelope_id": str(envelope.id),
+            "document_sha256": envelope.document_sha256,
+        }
+    )
+    ApplicationEvent.objects.create(
+        school_id=contract.school_id,
+        application=contract.application,
+        event_type="enrollment_state_updated",
+        payload=state_payload,
+    )
     return contract
 
 
