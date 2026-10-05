@@ -36,3 +36,11 @@ Future endpoints may include:
 ## Release Protection
 
 SOLOMON work must not change release certification results unless intentionally included in a future gate.
+
+## Optional adult guidance extension
+
+The owner-authorized optional guidance slice is governed by
+[Solomon AI privacy boundary](SOLOMON_AI_PRIVACY_BOUNDARY.md). Its structured POST
+is read-only with respect to school operations and writes only an audit event.
+It returns curated guidance and does not activate autonomous generation or
+external AI. Existing first-pass resource APIs remain read-only.

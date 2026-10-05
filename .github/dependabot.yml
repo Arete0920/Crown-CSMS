@@ -21,7 +21,29 @@ updates:
       time: "06:30"
     open-pull-requests-limit: 5
     groups:
-      frontend-minor-patch:
+      frontend-runtime-minor-patch:
+        dependency-type: "production"
+        update-types:
+          - "minor"
+          - "patch"
+      frontend-tooling-minor-patch:
+        dependency-type: "development"
+        exclude-patterns:
+          - "@playwright/*"
+          - "@axe-core/*"
+          - "@testing-library/*"
+          - "vitest"
+          - "jsdom"
+        update-types:
+          - "minor"
+          - "patch"
+      frontend-testing-minor-patch:
+        patterns:
+          - "@playwright/*"
+          - "@axe-core/*"
+          - "@testing-library/*"
+          - "vitest"
+          - "jsdom"
         update-types:
           - "minor"
           - "patch"
@@ -46,3 +68,8 @@ updates:
       day: "monday"
       time: "07:00"
     open-pull-requests-limit: 5
+    groups:
+      actions-minor-patch:
+        update-types:
+          - "minor"
+          - "patch"

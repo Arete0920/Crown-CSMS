@@ -14,7 +14,7 @@
     "lint:fix": "eslint . --fix",
     "check:visual-system": "node scripts/check-visual-system.mjs",
     "test:e2e": "playwright test",
-    "test:e2e:smoke": "playwright test tests/proof-smoke.spec.ts --reporter=line",
+    "test:e2e:smoke": "playwright test tests/proof-smoke.spec.ts tests/ui/solomon-context-help.spec.ts --reporter=line",
     "test:e2e:magus": "playwright test tests/magus-verification-smoke.spec.ts --reporter=line",
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:report": "playwright show-report",
