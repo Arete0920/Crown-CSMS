@@ -28,6 +28,13 @@ ENROLLMENT_CONTRACT_TEMPLATE_BODY = (
     "and responsibility terms before signing."
 )
 
+WORKFLOW_STATUS_BY_CONTRACT_STATUS = {
+    EnrollmentContractStatus.DRAFT: "not_started",
+    EnrollmentContractStatus.ISSUED: "sent",
+    EnrollmentContractStatus.SIGNED: "signed",
+    EnrollmentContractStatus.COUNTERSIGNED: "countersigned",
+}
+
 
 def _guardian_signer_account(contract: EnrollmentContract):
     guardians = list(
@@ -205,6 +212,18 @@ def sync_enrollment_contract_signature(
         },
     )
 
+    record_contract_workflow_state(
+        contract=contract,
+        updated_by="electronic-signature-evidence",
+    )
+    return contract
+
+
+def record_contract_workflow_state(
+    *,
+    contract: EnrollmentContract,
+    updated_by: str,
+) -> ApplicationEvent:
     prior_state = (
         ApplicationEvent.objects.filter(
             school_id=contract.school_id,
@@ -219,19 +238,26 @@ def sync_enrollment_contract_signature(
     state_payload = dict(prior_state)
     state_payload.update(
         {
-            "contract_status": "signed",
-            "updated_by": "electronic-signature-evidence",
-            "electronic_envelope_id": str(envelope.id),
-            "document_sha256": envelope.document_sha256,
+            "contract_status": WORKFLOW_STATUS_BY_CONTRACT_STATUS.get(
+                contract.status,
+                "not_started",
+            ),
+            "updated_by": updated_by,
         }
     )
-    ApplicationEvent.objects.create(
+    if contract.electronic_envelope_id:
+        state_payload.update(
+            {
+                "electronic_envelope_id": str(contract.electronic_envelope_id),
+                "document_sha256": contract.electronic_envelope.document_sha256,
+            }
+        )
+    return ApplicationEvent.objects.create(
         school_id=contract.school_id,
         application=contract.application,
         event_type="enrollment_state_updated",
         payload=state_payload,
     )
-    return contract
 
 
 def assert_contract_can_be_countersigned(contract: EnrollmentContract) -> None:
