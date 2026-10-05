@@ -68,6 +68,8 @@ import HumanResources from "../pages/HumanResources.jsx";
 import SafetyDashboard from "../pages/SafetyDashboard.jsx";
 import BoardExecutiveDashboard from "../pages/BoardExecutiveDashboard.jsx";
 import AftercareRosterPage from "../pages/AftercareRosterPage.jsx";
+import HomeAcademyPage from "../pages/HomeAcademyPage.jsx";
+import ParentHomeAcademyPage from "../pages/ParentHomeAcademyPage.jsx";
 import AftercareSetupWizard from "../pages/wizards/AftercareSetupWizard.jsx";
 import SummerCampSetupWizard from "../pages/wizards/SummerCampSetupWizard.jsx";
 import FinanceSetupWizard from "../pages/wizards/FinanceSetupWizard.jsx";
@@ -885,6 +887,22 @@ export const router = createBrowserRouter([
   {
     path: PATHS.AFTERCARE_ROSTER,
     element: <AftercareRosterPage />,
+  },
+  {
+    path: PATHS.HOME_ACADEMY,
+    element: (
+      <RoleGuard allowedRoles={["super_admin", "school_admin", "head_of_school", "registrar", "admin"]}>
+        <HomeAcademyPage />
+      </RoleGuard>
+    ),
+  },
+  {
+    path: PATHS.PARENT_HOME_ACADEMY,
+    element: (
+      <RoleRouteGuard allowedRoles={["parent"]}>
+        <ParentHomeAcademyPage />
+      </RoleRouteGuard>
+    ),
   },
   {
     path: PATHS.WIZARD_AFTERCARE_SETUP,
