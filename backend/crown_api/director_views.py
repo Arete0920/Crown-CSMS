@@ -10,7 +10,10 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
+import logging
 from decimal import Decimal
+
+logger = logging.getLogger(__name__)
 
 from aid.models import AidApplication, AidAuditEvent, AidAward, AidDocument
 from admissions.models import AdmissionsApplication
