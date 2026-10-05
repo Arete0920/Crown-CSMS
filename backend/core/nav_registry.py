@@ -16,7 +16,6 @@ class NavItem:
     label: str
     href: str
     permission: Optional[str] = None  # None = always visible (keep minimal)
-    module_key: Optional[str] = None  # Optional SchoolModule entitlement gate
 
 
 NAV_ITEMS: List[NavItem] = [
@@ -35,7 +34,6 @@ NAV_ITEMS: List[NavItem] = [
     NavItem(group="Enrollment & Revenue", label="Financial Aid",   href="/financial-aid", permission="financial_aid.view"),
     NavItem(group="Enrollment & Revenue", label="Marketing",       href="/marketing",     permission="marketing.view"),
     NavItem(group="Enrollment & Revenue", label="Advancement",     href="/advancement",   permission="advancement.view"),
-    NavItem(group="Enrollment & Revenue", label="Home Academy", href="/home-academy", permission="home_academy.edit", module_key="home_academy"),
 
     # ── Academics ──────────────────────────────────────────────────────────
     NavItem(group="Academics", label="Academics",             href="/academics",        permission="academics.view"),
@@ -49,7 +47,6 @@ NAV_ITEMS: List[NavItem] = [
 
     # ── Student & Family ───────────────────────────────────────────────────
     NavItem(group="Student & Family", label="Parent",              href="/parent",         permission="parent.view"),
-    NavItem(group="Student & Family", label="Home Academy", href="/parent/home-academy", permission="parent.view", module_key="home_academy"),
     NavItem(group="Student & Family", label="Student",             href="/student",        permission="student.view"),
     NavItem(group="Student & Family", label="Health / Nurse",      href="/health",         permission="health.view"),
     NavItem(group="Student & Family", label="Counseling",          href="/counseling",     permission="counseling.view"),
