@@ -34,6 +34,9 @@ updates:
           - "@testing-library/*"
           - "vitest"
           - "jsdom"
+          - "vite"
+          - "@vitejs/*"
+          - "esbuild"
         update-types:
           - "minor"
           - "patch"
