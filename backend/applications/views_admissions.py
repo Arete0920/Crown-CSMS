@@ -11,6 +11,7 @@ import uuid
 from typing import Any, TypedDict, cast
 
 from django.core.cache import cache
+from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.utils import timezone
 from django.contrib.auth import get_user_model
@@ -2478,14 +2479,67 @@ def _update_contract_for_application(*, latest: EnrollmentContract, payload: dic
     return latest
 
 
+CONTRACT_TERM_FIELDS = {
+    "line_items",
+    "totals",
+    "payment_plan",
+    "payment_schedule",
+    "responsible_payer",
+    "refund_terms",
+    "note",
+}
+
+
+def _validate_contract_record_mutation(
+    *,
+    latest: EnrollmentContract | None,
+    requested_status: str,
+    payload: dict[str, Any],
+) -> None:
+    signed = EnrollmentContractStatus.SIGNED.value
+    countersigned = EnrollmentContractStatus.COUNTERSIGNED.value
+
+    if requested_status == signed and (latest is None or latest.status not in {signed, countersigned}):
+        raise ValidationError(
+            "Enrollment contracts become signed only from completed electronic signature evidence."
+        )
+
+    if requested_status == countersigned:
+        if latest is None:
+            raise ValidationError("Enrollment contract must be signed before countersignature.")
+        from .electronic_contracts import assert_contract_can_be_countersigned
+
+        assert_contract_can_be_countersigned(latest)
+
+    if latest is None:
+        return
+
+    if latest.status == countersigned and requested_status != countersigned:
+        raise ValidationError("A countersigned enrollment contract is immutable; create an amendment.")
+
+    if latest.status == signed and requested_status not in {signed, countersigned}:
+        raise ValidationError("A signed enrollment contract is immutable; create an amendment.")
+
+    if latest.electronic_envelope_id and any(field in payload for field in CONTRACT_TERM_FIELDS):
+        raise ValidationError(
+            "Issued enrollment contract terms are immutable after signature delivery; create an amendment."
+        )
+
+
 def _upsert_contract_for_application(*, app: Application, actor_user, payload: dict[str, Any], status_hint: str | None = None):
     latest = _latest_contract_for_application(app)
     line_items = _normalize_contract_line_items(payload.get("line_items"))
     totals = _compute_contract_totals(line_items, payload.get("totals"))
     requested_status = _resolve_requested_contract_status(latest=latest, payload=payload, status_hint=status_hint)
 
+    _validate_contract_record_mutation(
+        latest=latest,
+        requested_status=requested_status,
+        payload=payload,
+    )
+
     if latest is None:
-        return _create_contract_for_application(
+        contract = _create_contract_for_application(
             app=app,
             actor_user=actor_user,
             payload=payload,
@@ -2493,14 +2547,22 @@ def _upsert_contract_for_application(*, app: Application, actor_user, payload: d
             line_items=line_items,
             totals=totals,
         )
+    else:
+        contract = _update_contract_for_application(
+            latest=latest,
+            payload=payload,
+            status=requested_status,
+            line_items=line_items,
+            totals=totals,
+        )
 
-    return _update_contract_for_application(
-        latest=latest,
-        payload=payload,
-        status=requested_status,
-        line_items=line_items,
-        totals=totals,
-    )
+    if contract.status == EnrollmentContractStatus.ISSUED.value:
+        from .electronic_contracts import ensure_enrollment_contract_envelope
+
+        ensure_enrollment_contract_envelope(contract=contract, actor_user=actor_user)
+        contract.refresh_from_db()
+
+    return contract
 
 
 def _collect_stage_facts(events):
