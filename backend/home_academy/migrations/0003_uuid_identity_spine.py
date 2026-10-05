@@ -86,6 +86,41 @@ class Migration(migrations.Migration):
             name="finance_obligation_id",
             field=models.PositiveBigIntegerField(blank=True, db_index=True, null=True),
         ),
+        migrations.AddField(
+            model_name="offering",
+            name="academic_course_id",
+            field=models.UUIDField(blank=True, db_index=True, null=True),
+        ),
+        migrations.AddField(
+            model_name="offering",
+            name="academic_term_id",
+            field=models.UUIDField(blank=True, db_index=True, null=True),
+        ),
+        migrations.AddField(
+            model_name="offeringenrollment",
+            name="transcript_entry_id",
+            field=models.UUIDField(blank=True, db_index=True, null=True),
+        ),
+        migrations.AddField(
+            model_name="offeringenrollment",
+            name="final_letter_grade",
+            field=models.CharField(blank=True, max_length=2),
+        ),
+        migrations.AddField(
+            model_name="offeringenrollment",
+            name="final_percentage",
+            field=models.DecimalField(blank=True, decimal_places=2, max_digits=6, null=True),
+        ),
+        migrations.AddField(
+            model_name="offeringenrollment",
+            name="aid_eligible",
+            field=models.BooleanField(default=False),
+        ),
+        migrations.AddField(
+            model_name="offeringenrollment",
+            name="financial_aid_rule_id",
+            field=models.PositiveBigIntegerField(blank=True, null=True),
+        ),
         migrations.AlterField(
             model_name="financialaidrule",
             name="school_id",
