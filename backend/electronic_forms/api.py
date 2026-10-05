@@ -61,7 +61,7 @@ def _serialize_signer(signer):
     }
 
 
-def _serialize_envelope(envelope, *, include_document=False):
+def _serialize_envelope(envelope, *, include_document=False, include_signers=True):
     payload = {
         "id": str(envelope.id),
         "title": envelope.title,
@@ -74,8 +74,9 @@ def _serialize_envelope(envelope, *, include_document=False):
         "status": envelope.status,
         "sent_at": envelope.sent_at.isoformat() if envelope.sent_at else None,
         "completed_at": envelope.completed_at.isoformat() if envelope.completed_at else None,
-        "signers": [_serialize_signer(s) for s in envelope.signers.all()],
     }
+    if include_signers:
+        payload["signers"] = [_serialize_signer(s) for s in envelope.signers.all()]
     if include_document:
         payload["document_snapshot"] = envelope.document_snapshot
     return payload
@@ -200,7 +201,7 @@ class MyElectronicEnvelopesView(APIView):
         )
         payload = []
         for row in envelopes:
-            item = _serialize_envelope(row)
+            item = _serialize_envelope(row, include_signers=False)
             signer = _signer_for_user(envelope=row, user=request.user)
             item["current_signer"] = _serialize_signer(signer) if signer else None
             payload.append(item)
@@ -221,7 +222,7 @@ class ElectronicEnvelopeDetailView(APIView):
         can_manage = user_has_permission(request.user, "forms.manage", school=school)
         if signer is None and not can_manage:
             return Response({"detail": "Permission denied."}, status=403)
-        payload = _serialize_envelope(envelope, include_document=True)
+        payload = _serialize_envelope(envelope, include_document=True, include_signers=can_manage)
         payload["current_signer"] = _serialize_signer(signer) if signer else None
         return Response(payload)
 
