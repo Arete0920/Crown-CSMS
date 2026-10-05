@@ -323,3 +323,20 @@ def test_api_envelope_issue_rolls_back_if_any_signer_is_invalid():
     assert response.status_code == 409
     assert ElectronicEnvelope.objects.filter(school=school).count() == 0
     assert ElectronicSigner.objects.filter(school=school).count() == 0
+
+
+def test_signature_evidence_queryset_blocks_bulk_mutation_and_delete():
+    school = School.objects.create(name="Evidence Bulk Guard School")
+    manager = _user(school=school, prefix="bulk-manager")
+    signer_user = _user(school=school, prefix="bulk-signer")
+    _, signer = _sent_envelope(school=school, creator=manager, signer_user=signer_user)
+    evidence = record_consent(
+        signer=signer,
+        user=signer_user,
+        disclosure_version=ELECTRONIC_CONSENT_VERSION,
+        hardware_software_ack=True,
+    )
+    with pytest.raises(ValidationError):
+        ElectronicSignatureEvidence.objects.filter(pk=evidence.pk).update(consent_text="changed")
+    with pytest.raises(ValidationError):
+        ElectronicSignatureEvidence.objects.filter(pk=evidence.pk).delete()
