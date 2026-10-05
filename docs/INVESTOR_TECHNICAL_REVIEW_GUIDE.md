@@ -12,9 +12,11 @@ CROWN is a multi-tenant Christian school management platform with documented arc
 Read:
 - `README.md`
 - `docs/CURRENT_RELEASE_STATUS.md`
+- `docs/PUBLIC_REPO_STATUS.md`
+- `docs/engineering/BUYER_REVIEW_PREPARATION_20261004.md`
 - `docs/canonical/DILIGENCE_EVIDENCE_INDEX.md`
 
-These documents define what is current, what is historical, and what remains environment-specific.
+These documents define the current authoritative line, verified repository controls, active diligence exceptions, what is historical, and what remains environment-specific. Closed or superseded PRs and stale workflow runs are historical engineering records, not current release authority.
 
 ### 2. Architecture and ownership
 Read:
@@ -88,4 +90,4 @@ CROWN does not claim independent SOC 2 attestation or legal certification solely
 
 ## Current review statement
 
-CROWN is appropriate for technical and investment diligence review. Production deployment evidence, customer contracts, payment-provider activation, legal/privacy applicability, and independent audit attestations should be reviewed as separate diligence workstreams.
+CROWN is appropriate for technical and investment diligence review. Review should be anchored to the current protected `main` line and its exact-head evidence rather than historical branch state. Production deployment evidence, customer contracts, payment-provider activation, external generative-AI activation, legal/privacy applicability, and independent audit attestations should be reviewed as separate diligence workstreams.
