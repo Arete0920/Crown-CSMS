@@ -5,7 +5,9 @@ counts and the internal ``v1/`` prefix inversion so future changes must update
 the controlled governance ledger intentionally.
 """
 
-from django.urls import URLPattern, URLResolver
+from django.urls import Resolver404, URLPattern, URLResolver, resolve
+
+import pytest
 
 from crown_api import api_urls, api_v1_urls, urls as root_urls
 
@@ -153,3 +155,8 @@ def test_dual_mount_creates_the_prefix_inversion_without_changing_callbacks():
     assert all(path.startswith("api/v1/v1/") for path in canonical_mount_paths)
     assert all(path.startswith("api/v1/") for path in compatibility_mount_paths)
     assert all(not path.startswith("api/v1/v1/") for path in compatibility_mount_paths)
+
+
+def test_retired_force_seed_http_route_no_longer_resolves():
+    with pytest.raises(Resolver404):
+        resolve("/api/director/force_seed_user/")
