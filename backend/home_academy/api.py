@@ -494,7 +494,7 @@ def parent_summary(request):
                     "id": str(student.id),
                     "name": f"{student.first_name} {student.last_name}".strip(),
                     "grade_level": (
-                        student.current_grade_level.name
+                        student.current_grade_level.label
                         if student.current_grade_level_id
                         else ""
                     ),
