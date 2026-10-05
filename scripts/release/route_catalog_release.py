@@ -11,7 +11,6 @@ OUT_MD = ROOT / "audit-artifacts" / "release-manifest" / "release_route_catalog.
 ROUTES = [
     r"api/v1/release-closeout/[^\"]+",
     r"api/v1/reports/[^\"]+",
-    r"api/v1/notifications/sms/status/",
     r"api/schema/",
     r"api/docs/",
 ]

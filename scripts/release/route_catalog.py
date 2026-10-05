@@ -11,7 +11,6 @@ REPORT_MD = ROOT / "audit-artifacts" / "release-manifest" / "route_catalog.md"
 PATTERNS = [
     r"api/v1/release-closeout/[^\"]+",
     r"api/v1/reports/[^\"]+",
-    r"api/v1/notifications/sms/status/",
     r"api/health/",
     r"api/integrity/",
 ]
