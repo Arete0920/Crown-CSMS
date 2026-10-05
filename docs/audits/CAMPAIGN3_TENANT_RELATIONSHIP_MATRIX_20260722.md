@@ -55,10 +55,10 @@ This document is a verified seed inventory and closure contract. The hand-mainta
 | Transcript | `academics.TranscriptEntry` | `school_id` | `student` | `student.school_id` | None identified | transcript school differs from student school |
 | Transcript | `academics.TranscriptEntry` | `school_id` | `course` | `course.school_id` | None identified | transcript school differs from course school |
 | Transcript | `academics.TranscriptEntry` | `school_id` | optional `term` | `term.school_id` | None identified | transcript school differs from term school |
-| Home Academy | `home_academy.HomeAcademyEnrollment` | integer `school_id` | optional `program` | `program.school_id` | None identified | enrollment school differs from program school |
-| Home Academy | `home_academy.Offering` | integer `school_id` | optional `program` | `program.school_id` | None identified | offering school differs from program school |
-| Home Academy | `home_academy.OfferingEnrollment` | integer `school_id` | `offering` | `offering.school_id` | None identified | offering enrollment differs from offering school |
-| Home Academy | `home_academy.OfferingEnrollment` | integer `school_id` | optional `home_academy_enrollment` | `home_academy_enrollment.school_id` | None identified | linked enrollments cross school boundary |
+| Home Academy | `home_academy.HomeAcademyEnrollment` | UUID `school_id` | optional `program` | `program.school_id` | None identified | enrollment school differs from program school |
+| Home Academy | `home_academy.Offering` | UUID `school_id` | optional `program` | `program.school_id` | None identified | offering school differs from program school |
+| Home Academy | `home_academy.OfferingEnrollment` | UUID `school_id` | `offering` | `offering.school_id` | None identified | offering enrollment differs from offering school |
+| Home Academy | `home_academy.OfferingEnrollment` | UUID `school_id` | optional `home_academy_enrollment` | `home_academy_enrollment.school_id` | None identified | linked enrollments cross school boundary |
 
 The Home Academy integer tenant identifiers are also a representation-consistency finding because the primary school domain uses UUID identifiers. They require explicit mapping or formal isolation proof; they must not be silently compared or coerced as though they were the same identifier family.
 
