@@ -28,5 +28,6 @@ urlpatterns = [
         name="home-academy-offering-eligibility",
     ),
     path("financial-aid-rules/", api.financial_aid_rules, name="home-academy-financial-aid-rules"),
+    path("parent/summary/", api.parent_summary, name="home-academy-parent-summary"),
     path("board/summary/", api.board_summary, name="home-academy-board-summary"),
 ]
