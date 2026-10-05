@@ -1,5 +1,6 @@
 import uuid
 
+from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.db import models
 
@@ -282,3 +283,68 @@ class EnrollmentContract(TimeStampedModel):
 
     def __str__(self) -> str:
         return f"Contract v{self.version} ({self.status})"
+
+
+
+class ContractAssentEvidence(models.Model):
+    """Append-only evidence that an authenticated actor assented to one exact contract version."""
+
+    class Action(models.TextChoices):
+        SIGN = "SIGN", "Sign"
+        COUNTERSIGN = "COUNTERSIGN", "Countersign"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    school_id = models.UUIDField(db_index=True)
+    contract = models.ForeignKey(
+        EnrollmentContract,
+        on_delete=models.PROTECT,
+        related_name="assent_evidence",
+    )
+    action = models.CharField(max_length=16, choices=Action.choices)
+    actor_user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="enrollment_contract_assents",
+    )
+    signer_name = models.CharField(max_length=255)
+    signer_email = models.EmailField(blank=True, default="")
+    contract_sha256 = models.CharField(max_length=64, db_index=True)
+    consent_version = models.CharField(max_length=64, default="crown-contract-assent-v1")
+    consent_text = models.TextField()
+    accepted_at = models.DateTimeField()
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.CharField(max_length=512, blank=True, default="")
+    request_id = models.CharField(max_length=128, blank=True, default="", db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "contract_assent_evidence"
+        ordering = ["accepted_at", "id"]
+        indexes = [
+            models.Index(fields=["school_id", "contract", "action"]),
+            models.Index(fields=["school_id", "actor_user", "accepted_at"]),
+        ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["contract", "action", "actor_user", "contract_sha256"],
+                name="uniq_contract_actor_assent_digest",
+            ),
+        ]
+
+    def clean(self):
+        super().clean()
+        _require_same_school(self, "contract")
+        actor_school_id = getattr(self.actor_user, "school_id", None) if self.actor_user_id else None
+        if actor_school_id and actor_school_id != self.school_id:
+            raise ValidationError({"actor_user": "Actor must belong to the same school."})
+        if len(self.contract_sha256) != 64:
+            raise ValidationError({"contract_sha256": "A SHA-256 contract digest is required."})
+
+    def save(self, *args, **kwargs):
+        if self.pk and type(self).objects.filter(pk=self.pk).exists():
+            raise ValidationError("Contract assent evidence is append-only and cannot be modified.")
+        self.full_clean()
+        return super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        raise ValidationError("Contract assent evidence is retained and cannot be deleted.")
