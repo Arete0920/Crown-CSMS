@@ -24,7 +24,7 @@ from billing.models import (
 )
 from ledger.models import Allocation, Charge, LedgerAccount, Payment
 
-from .permissions import IsFinanceRole
+from .permissions import IsFinanceRole, IsFinanceRuntimeUser, has_finance_runtime_role
 
 
 def _d(x) -> Decimal:
@@ -539,8 +539,8 @@ class HouseholdBillingPayersView(APIView):
         school_id = get_request_school_id(request)
         if not school_id:
             return Response({"detail": "Missing school context"}, status=403)
-        if not IsFinanceRole().has_permission(request, self):
-            return Response({"detail": IsFinanceRole.message}, status=403)
+        if not has_finance_runtime_role(request.user):
+            return Response({"detail": "You do not have permission to access billing."}, status=403)
         if not Household.objects.filter(pk=household_id, school_id=school_id).exists():
             return Response({"detail": "Not found"}, status=404)
         rows = BillingPayer.objects.filter(
@@ -567,8 +567,8 @@ class HouseholdBillingPayersView(APIView):
         school_id = get_request_school_id(request)
         if not school_id:
             return Response({"detail": "Missing school context"}, status=403)
-        if not IsFinanceRole().has_permission(request, self):
-            return Response({"detail": IsFinanceRole.message}, status=403)
+        if not has_finance_runtime_role(request.user):
+            return Response({"detail": "You do not have permission to access billing."}, status=403)
         household = Household.objects.filter(pk=household_id, school_id=school_id).first()
         if not household:
             return Response({"detail": "Not found"}, status=404)
@@ -634,8 +634,8 @@ class HouseholdBillingResponsibilityRulesView(APIView):
         school_id = get_request_school_id(request)
         if not school_id:
             return Response({"detail": "Missing school context"}, status=403)
-        if not IsFinanceRole().has_permission(request, self):
-            return Response({"detail": IsFinanceRole.message}, status=403)
+        if not has_finance_runtime_role(request.user):
+            return Response({"detail": "You do not have permission to access billing."}, status=403)
         if not Household.objects.filter(pk=household_id, school_id=school_id).exists():
             return Response({"detail": "Not found"}, status=404)
         rows = BillingResponsibilityRule.objects.filter(
@@ -661,8 +661,8 @@ class HouseholdBillingResponsibilityRulesView(APIView):
         school_id = get_request_school_id(request)
         if not school_id:
             return Response({"detail": "Missing school context"}, status=403)
-        if not IsFinanceRole().has_permission(request, self):
-            return Response({"detail": IsFinanceRole.message}, status=403)
+        if not has_finance_runtime_role(request.user):
+            return Response({"detail": "You do not have permission to access billing."}, status=403)
         household = Household.objects.filter(pk=household_id, school_id=school_id).first()
         if not household:
             return Response({"detail": "Not found"}, status=404)
@@ -784,7 +784,7 @@ class MyPayerSharesView(APIView):
 
 
 class PayerAllocationAttributionView(APIView):
-    permission_classes = [IsAuthenticated, IsFinanceRole]
+    permission_classes = [IsAuthenticated, IsFinanceRuntimeUser]
 
     @transaction.atomic
     def post(self, request):
