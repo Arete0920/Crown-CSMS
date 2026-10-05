@@ -4,7 +4,7 @@ import pytest
 from django.core.management import call_command
 from rest_framework.test import APIClient
 
-from core.models import AcademicYear, Family, Guardian, School, Student, StudentIdentityLink, UserAccount, UserRole
+from core.models import AcademicYear, Family, GradeLevel, Guardian, School, Student, StudentIdentityLink, UserAccount, UserRole
 from academics.models import Course, Term, TranscriptEntry
 from home_academy.models import (
     FinancialAidRule,
@@ -493,6 +493,13 @@ def test_parent_summary_contains_only_guardians_family():
     family_a = Family.objects.create(school=school, family_name="Summary A")
     family_b = Family.objects.create(school=school, family_name="Summary B")
     own_student = make_student(school, "SummaryOwn", family=family_a)
+    own_student.current_grade_level = GradeLevel.objects.create(
+        school=school,
+        code="7",
+        label="Grade 7",
+        sort_order=7,
+    )
+    own_student.save(update_fields=["current_grade_level"])
     other_student = make_student(school, "SummaryOther", family=family_b)
     guardian = Guardian.objects.create(
         school=school,
@@ -527,6 +534,7 @@ def test_parent_summary_contains_only_guardians_family():
     assert response.status_code == 200
     ids = {row["id"] for row in response.json()["students"]}
     assert ids == {str(own_student.id)}
+    assert response.json()["students"][0]["grade_level"] == "Grade 7"
     assert str(other_student.id) not in response.content.decode()
 
 
