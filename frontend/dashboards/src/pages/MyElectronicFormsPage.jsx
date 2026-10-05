@@ -192,7 +192,7 @@ export default function MyElectronicFormsPage() {
                     <h3>Electronic record consent</h3>
                     <p>{disclosure?.text}</p>
                     <p style={{ fontSize: 12, color: "var(--crown-muted)" }}>
-                      Requirements: {disclosure?.hardware_software_requirements} Paper copy fee: ${disclosure?.paper_copy_fee || "0.00"}.
+                      Requirements: {disclosure?.hardware_software_requirements} Paper copy fee: $<span>{disclosure?.paper_copy_fee || "0.00"}</span>.
                     </p>
                   </div>
 
