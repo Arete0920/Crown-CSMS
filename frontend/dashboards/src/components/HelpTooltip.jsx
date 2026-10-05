@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { apiFetch } from '../lib/api';
 import SolomonCharacter from './SolomonCharacter';
+import SolomonStaffGuidance from './SolomonStaffGuidance';
 import './SolomonHelp.css';
 
 /** On-demand governed help. No form values, records or free-text prompts are sent. */
@@ -17,6 +18,9 @@ export function HelpTooltip({ slug, context, label = 'Help from Solomon', pose =
   const returnButton = useRef(null);
 
   useEffect(() => () => request.current?.abort(), []);
+  useEffect(() => {
+    if (open) dialog.current?.querySelector("button")?.focus();
+  }, [open]);
 
   function close() {
     request.current?.abort();
@@ -70,6 +74,7 @@ export function HelpTooltip({ slug, context, label = 'Help from Solomon', pose =
       </button>
       <dialog ref={dialog} id={id} className="solomon-help-panel"
         aria-labelledby={`${id}-title`} onCancel={close} onClose={() => setOpen(false)}>
+        {open && <>
         <header className="solomon-help-heading">
           <SolomonCharacter height={88} pose={introducing ? 'guide' : status === 'loading' ? 'review' : status === 'error' ? 'caution' : pose} />
           <div><small>Solomon · CROWN help</small>
@@ -96,6 +101,7 @@ export function HelpTooltip({ slug, context, label = 'Help from Solomon', pose =
             {status === 'ready' && <p className="solomon-help-article">{article.content}</p>}
           </div>
         )}
+        {!introducing && <SolomonStaffGuidance />}
         <footer className="solomon-help-footer">
           {introducing ? (
             <button ref={returnButton} type="button" className="solomon-help-link" onClick={() => {
@@ -111,6 +117,7 @@ export function HelpTooltip({ slug, context, label = 'Help from Solomon', pose =
             </>
           )}
         </footer>
+        </>}
       </dialog>
     </span>
   );

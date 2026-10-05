@@ -13,9 +13,19 @@
 .solomon-help-content { line-height: 1.6; overflow-wrap: anywhere; }
 .solomon-help-article { white-space: pre-wrap; }
 .solomon-help-panel footer { padding-top: .75rem; border-top: 1px solid var(--crown-border); font-size: .75rem; }
+
 @keyframes solomon-greet { 50% { transform: translateY(-2px) rotate(-3deg); } }
+
 @keyframes solomon-arrive { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
 @media (prefers-reduced-motion: reduce) { .solomon-help-trigger:hover img, .solomon-help-panel[open] { animation: none; } }
 
 .solomon-help-footer { display: flex; align-items: center; justify-content: space-between; gap: .75rem; flex-wrap: wrap; }
 .solomon-help-link { min-height: 44px; padding: .25rem .5rem; border: 0; border-radius: .5rem; background: transparent; color: var(--crown-primary-deep); font: inherit; text-decoration: underline; cursor: pointer; }
+
+.solomon-staff-guidance { padding-block: 1rem; border-top: 1px solid var(--crown-border); }
+.solomon-guidance-controls { display: grid; gap: .75rem; }
+.solomon-staff-guidance select { display: block; max-width: 100%; min-height: 44px; margin-top: .25rem; font: inherit; color: var(--crown-text); background: var(--crown-surface); }
+.solomon-guidance-review { display: flex; align-items: center; gap: .5rem; }
+.solomon-guidance-review input { min-width: 24px; min-height: 24px; }
+.solomon-staff-guidance button { min-height: 44px; font: inherit; }

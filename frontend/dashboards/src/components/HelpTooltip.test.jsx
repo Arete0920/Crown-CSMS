@@ -10,7 +10,7 @@ beforeEach(() => {
   HTMLDialogElement.prototype.close = function () { this.removeAttribute('open'); };
   apiFetch.mockReset();
 });
-afterEach(cleanup);
+afterEach(() => { cleanup(); vi.unstubAllEnvs(); sessionStorage.clear(); localStorage.clear(); });
 const reply = (data, status = 200) => ({ ok: status === 200, status, json: async () => data });
 
 describe('Solomon contextual help', () => {
@@ -18,6 +18,7 @@ describe('Solomon contextual help', () => {
     apiFetch.mockResolvedValue(reply({ title: 'Review invoices', content: '<script>unsafe</script>\nReview totals.' }));
     render(<HelpTooltip slug="billing-guide" />);
     expect(apiFetch).not.toHaveBeenCalled();
+    expect(document.querySelector('.solomon-help-panel h2')).toBeNull();
     const button = screen.getByRole('button', { name: 'Help from Solomon' });
     fireEvent.click(button);
     await screen.findByRole('heading', { name: 'Review invoices' });
@@ -104,5 +105,79 @@ describe('Meet Solomon introduction', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Close help' }));
     fireEvent.click(screen.getByRole('button', { name: 'Help from Solomon' }));
     expect(screen.queryByRole('heading', { name: 'Meet Solomon' })).toBeNull();
+  });
+});
+
+
+describe('optional structured staff guidance', () => {
+  const guidance = { topic: 'onboarding', title: 'Implementation guidance', guidance: 'Review school roles.',
+    mode: 'curated_guidance', generated_by_ai: false, human_review_required: true };
+  const setup = (role = 'teacher') => {
+    vi.stubEnv('VITE_SOLOMON_GUIDANCE_ENABLED', 'true');
+    sessionStorage.setItem('crown.role', role);
+    apiFetch.mockResolvedValue(reply({}, 404));
+    render(<HelpTooltip slug="missing" />);
+    fireEvent.click(screen.getByRole('button', { name: 'Help from Solomon' }));
+  };
+  it('remains hidden by default even for staff', async () => {
+    sessionStorage.setItem('crown.role', 'teacher');
+    apiFetch.mockResolvedValue(reply({}, 404));
+    render(<HelpTooltip slug="missing" />);
+    fireEvent.click(screen.getByRole('button', { name: 'Help from Solomon' }));
+    await screen.findByText(/No published guidance/);
+    expect(screen.queryByRole('region', { name: 'General staff guidance' })).toBeNull();
+  });
+  it.each(['parent', 'student', 'unknown'])('does not expose staff guidance to %s', async role => {
+    setup(role);
+    await screen.findByText(/No published guidance/);
+    expect(screen.queryByRole('region', { name: 'General staff guidance' })).toBeNull();
+  });
+  it('requires review acknowledgement and sends only the selected topic', async () => {
+    setup();
+    await screen.findByText(/No published guidance/);
+    const view = screen.getByRole('button', { name: 'View guidance' });
+    expect(view.disabled).toBe(true);
+    expect(screen.queryByRole('textbox')).toBeNull();
+    fireEvent.click(screen.getByRole('checkbox', { name: /I will review/ }));
+    apiFetch.mockResolvedValue(reply(guidance));
+    fireEvent.click(view);
+    await screen.findByText('Review school roles.');
+    const [path, options] = apiFetch.mock.calls.at(-1);
+    expect(path).toBe('/api/solomon/guidance/');
+    expect(options.method).toBe('POST');
+    expect(JSON.parse(options.body)).toEqual({ topic: 'onboarding', human_review_acknowledged: true });
+    expect(screen.getByText(/Curated CROWN guidance/)).toBeTruthy();
+    fireEvent.change(screen.getByRole('combobox', { name: 'Guidance topic' }), { target: { value: 'strategy' } });
+    expect(screen.queryByText('Review school roles.')).toBeNull();
+    expect(view.disabled).toBe(true);
+  });
+  it('rejects generated or mismatched responses instead of presenting them', async () => {
+    setup();
+    await screen.findByText(/No published guidance/);
+    apiFetch.mockResolvedValue(reply({ ...guidance, generated_by_ai: true, guidance: 'Must not show' }));
+    fireEvent.click(screen.getByRole('checkbox', { name: /I will review/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'View guidance' }));
+    await screen.findByText(/Guidance could not be loaded/);
+    expect(screen.queryByText('Must not show')).toBeNull();
+  });
+  it('explains a disabled backend without inventing advice', async () => {
+    setup();
+    await screen.findByText(/No published guidance/);
+    fireEvent.click(screen.getByRole('checkbox', { name: /I will review/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'View guidance' }));
+    await screen.findByText(/Staff guidance is not enabled/);
+  });
+  it('aborts pending guidance when the dialog is closed', async () => {
+    setup();
+    await screen.findByText(/No published guidance/);
+    let resolve;
+    apiFetch.mockReturnValue(new Promise(r => { resolve = r; }));
+    fireEvent.click(screen.getByRole('checkbox', { name: /I will review/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'View guidance' }));
+    const options = apiFetch.mock.calls.at(-1)[1];
+    fireEvent.click(screen.getByRole('button', { name: 'Close help' }));
+    expect(options.signal.aborted).toBe(true);
+    resolve(reply(guidance));
+    await waitFor(() => expect(screen.queryByText('Review school roles.')).toBeNull());
   });
 });
