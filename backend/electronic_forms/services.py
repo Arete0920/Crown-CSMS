@@ -326,4 +326,9 @@ def sign_envelope(
         envelope.completed_at = now
         envelope.save(update_fields=["status", "completed_at", "updated_at"])
 
+        if envelope.subject_type == "enrollment_contract":
+            from applications.electronic_contracts import sync_enrollment_contract_signature
+
+            sync_enrollment_contract_signature(envelope=envelope, signed_at=now)
+
     return evidence
