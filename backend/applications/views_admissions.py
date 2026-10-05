@@ -23,7 +23,7 @@ from rest_framework.response import Response
 
 from core.models import AcademicYear, School
 from crown_api.tenant import resolve_tenant_school_id
-from households.models import Household
+from households.models import Guardian, Household
 from .models import (
     Application,
     Applicant,
@@ -31,10 +31,12 @@ from .models import (
     ApplicationChecklistItem,
     ApplicationChecklistDocument,
     ChecklistItemStatus,
+    ContractAssentEvidence,
     EnrollmentContract,
     EnrollmentContractStatus,
 )
 from .aid_projection import build_award_summary_by_household
+from .contract_assent import actor_is_household_guardian, record_contract_assent
 
 
 logger = logging.getLogger(__name__)
@@ -3884,6 +3886,17 @@ def admissions_contract_update(request, application_id):
         return Response({"detail": APPLICATION_NOT_FOUND_DETAIL}, status=404)
 
     payload = request.data if isinstance(request.data, dict) else {}
+    requested_contract_status = str(payload.get("status") or "").strip().lower()
+    if requested_contract_status in {
+        EnrollmentContractStatus.SIGNED.value,
+        EnrollmentContractStatus.COUNTERSIGNED.value,
+        CONTRACT_SIGNED,
+        CONTRACT_COUNTERSIGNED,
+    }:
+        return Response(
+            {"detail": "Signed and countersigned transitions require the contract assent endpoint."},
+            status=409,
+        )
     contract = _upsert_contract_for_application(
         app=app,
         actor_user=request.user,
@@ -3910,6 +3923,99 @@ def admissions_contract_update(request, application_id):
         {
             "application_id": str(app.id),
             "contract": _serialize_enrollment_contract(contract),
+            "billing_handoff": billing_handoff,
+        },
+        status=200,
+    )
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def admissions_contract_assent(request, application_id):
+    """Record authenticated assent to the exact current contract version."""
+    from core.permissions import user_has_permission
+
+    school, tenant_error = _resolve_school(request)
+    if tenant_error is not None:
+        return tenant_error
+
+    app = Application.objects.filter(school_id=school.pk, id=application_id).first()
+    if app is None:
+        return Response({"detail": APPLICATION_NOT_FOUND_DETAIL}, status=404)
+
+    contract = _latest_contract_for_application(app)
+    if contract is None:
+        return Response({"detail": "No enrollment contract exists for this application."}, status=404)
+
+    payload = request.data if isinstance(request.data, dict) else {}
+    action = str(payload.get("action") or "").strip().upper()
+    signer_name = str(payload.get("signer_name") or "").strip()
+    signer_email = str(payload.get("signer_email") or getattr(request.user, "email", "") or "").strip()
+
+    if action == ContractAssentEvidence.Action.SIGN:
+        if not actor_is_household_guardian(contract=contract, user=request.user):
+            return Response({"detail": "Only an authenticated guardian for this household may sign."}, status=403)
+    elif action == ContractAssentEvidence.Action.COUNTERSIGN:
+        if not user_has_permission(request.user, ADMISSIONS_EDIT_PERMISSION, school=school):
+            return Response({"detail": PERMISSION_DENIED_DETAIL}, status=403)
+    else:
+        return Response({"detail": "action must be SIGN or COUNTERSIGN."}, status=400)
+
+    forwarded_for = str(request.META.get("HTTP_X_FORWARDED_FOR") or "").split(",")[0].strip()
+    remote_addr = str(request.META.get("REMOTE_ADDR") or "").strip()
+    ip_address = forwarded_for or remote_addr or None
+    user_agent = str(request.META.get("HTTP_USER_AGENT") or "")
+    request_id = str(
+        request.META.get("HTTP_X_REQUEST_ID")
+        or request.META.get("HTTP_X_CORRELATION_ID")
+        or ""
+    )
+
+    try:
+        evidence = record_contract_assent(
+            contract=contract,
+            user=request.user,
+            action=action,
+            signer_name=signer_name,
+            signer_email=signer_email,
+            ip_address=ip_address,
+            user_agent=user_agent,
+            request_id=request_id,
+        )
+    except ValueError as exc:
+        return Response({"detail": str(exc)}, status=409)
+
+    contract.refresh_from_db()
+    billing_handoff = _ensure_billing_obligation_for_countersigned_contract(
+        school=school,
+        app=app,
+        contract=contract,
+        actor_user=request.user,
+    )
+    ApplicationEvent.objects.create(
+        school_id=school.pk,
+        application=app,
+        event_type="contract_assent_recorded",
+        payload={
+            "contract_id": str(contract.id),
+            "contract_version": contract.version,
+            "action": action,
+            "evidence_id": str(evidence.id),
+            "contract_sha256": evidence.contract_sha256,
+        },
+    )
+
+    return Response(
+        {
+            "application_id": str(app.id),
+            "contract": _serialize_enrollment_contract(contract),
+            "assent": {
+                "evidence_id": str(evidence.id),
+                "action": evidence.action,
+                "contract_sha256": evidence.contract_sha256,
+                "consent_version": evidence.consent_version,
+                "accepted_at": evidence.accepted_at.isoformat(),
+            },
             "billing_handoff": billing_handoff,
         },
         status=200,
