@@ -361,3 +361,32 @@ def test_cross_school_guardian_account_is_rejected_at_model_boundary():
     contract = _issued_contract(school=school_a, app=app, manager=manager)
     with pytest.raises(ValidationError, match="authenticated guardian"):
         ensure_enrollment_contract_envelope(contract=contract, actor_user=manager)
+
+
+def test_enrollment_state_transition_rejects_manual_sent_to_signed():
+    _, manager, _, app, contract = _setup_contract()
+    ensure_enrollment_contract_envelope(contract=contract, actor_user=manager)
+
+    response = admissions._validate_enrollment_state_update_request(
+        app=app,
+        current={"contract_status": "sent", "deposit_status": "pending"},
+        requested_contract="signed",
+        requested_deposit="pending",
+    )
+
+    assert response is not None
+    assert response.status_code == 409
+    assert "electronic forms" in response.data["detail"]
+
+
+def test_contract_countersign_mutation_rejects_incomplete_envelope():
+    _, manager, _, _, contract = _setup_contract()
+    ensure_enrollment_contract_envelope(contract=contract, actor_user=manager)
+    contract.refresh_from_db()
+
+    with pytest.raises(ValidationError, match="electronically signed"):
+        admissions._validate_contract_record_mutation(
+            latest=contract,
+            requested_status=EnrollmentContractStatus.COUNTERSIGNED.value,
+            payload={"status": EnrollmentContractStatus.COUNTERSIGNED.value},
+        )
