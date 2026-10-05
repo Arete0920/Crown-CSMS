@@ -191,7 +191,16 @@ class ElectronicSigner(models.Model):
         return super().save(*args, **kwargs)
 
 
+class ElectronicSignatureEvidenceQuerySet(models.QuerySet):
+    def update(self, **kwargs):
+        raise ValidationError("Electronic signature evidence is append-only and cannot be modified.")
+
+    def delete(self):
+        raise ValidationError("Electronic signature evidence is retained and cannot be deleted.")
+
+
 class ElectronicSignatureEvidence(models.Model):
+    objects = ElectronicSignatureEvidenceQuerySet.as_manager()
     class Action(models.TextChoices):
         CONSENT = "CONSENT", "Consent to electronic records"
         WITHDRAW_CONSENT = "WITHDRAW_CONSENT", "Withdraw electronic consent"
