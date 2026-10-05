@@ -76,7 +76,7 @@ export function HelpTooltip({ slug, context, label = 'Help from Solomon', pose =
         aria-labelledby={`${id}-title`} onCancel={close} onClose={() => setOpen(false)}>
         {open && <>
         <header className="solomon-help-heading">
-          <SolomonCharacter height={88} pose={introducing ? 'guide' : status === 'loading' ? 'review' : status === 'error' ? 'caution' : pose} />
+          <SolomonCharacter height={introducing ? 144 : 88} variant={introducing ? 'introduction' : 'context'} pose={introducing ? 'guide' : status === 'loading' ? 'review' : status === 'error' ? 'caution' : pose} />
           <div><small>Solomon · CROWN help</small>
             <h2 id={`${id}-title`}>{introducing ? 'Meet Solomon' : article?.title || 'How can I help?'}</h2>
           </div>

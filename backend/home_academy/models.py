@@ -107,7 +107,7 @@ AID_CHARGE_TYPES = [
 class HomeAcademyProgram(models.Model):
     """School-branded Home Academy / homeschool affiliation program configuration."""
 
-    school_id = models.IntegerField(db_index=True, unique=True)
+    school_id = models.UUIDField(db_index=True, unique=True)
     public_program_name = models.CharField(max_length=160)
     program_type = models.CharField(max_length=40, choices=PROGRAM_TYPES, default="support_only")
     handbook_document_id = models.CharField(max_length=120, blank=True)
@@ -129,9 +129,9 @@ class HomeAcademyProgram(models.Model):
 class HomeAcademyEnrollment(models.Model):
     """Student relationship to the school's Home Academy program."""
 
-    school_id = models.IntegerField(db_index=True)
-    student_id = models.IntegerField(db_index=True)
-    household_id = models.IntegerField(null=True, blank=True, db_index=True)
+    school_id = models.UUIDField(db_index=True)
+    student_id = models.UUIDField(db_index=True)
+    household_id = models.UUIDField(null=True, blank=True, db_index=True)
     program = models.ForeignKey(
         HomeAcademyProgram,
         on_delete=models.CASCADE,
@@ -151,9 +151,9 @@ class HomeAcademyEnrollment(models.Model):
         default="not_eligible",
     )
     grade_level = models.CharField(max_length=20, blank=True)
-    advisor_id = models.IntegerField(null=True, blank=True)
-    registrar_id = models.IntegerField(null=True, blank=True)
-    start_date = models.DateField(default=timezone.now)
+    advisor_id = models.UUIDField(null=True, blank=True)
+    registrar_id = models.UUIDField(null=True, blank=True)
+    start_date = models.DateField(default=timezone.localdate)
     end_date = models.DateField(null=True, blank=True)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(default=timezone.now)
@@ -181,7 +181,7 @@ class HomeAcademyEnrollment(models.Model):
 class Offering(models.Model):
     """A school-approved academic, athletic, arts, chapel, testing, or service offering."""
 
-    school_id = models.IntegerField(db_index=True)
+    school_id = models.UUIDField(db_index=True)
     program = models.ForeignKey(
         HomeAcademyProgram,
         on_delete=models.CASCADE,
@@ -196,6 +196,8 @@ class Offering(models.Model):
     term = models.CharField(max_length=40, blank=True)
     price = models.DecimalField(max_digits=9, decimal_places=2, default=0)
     billing_frequency = models.CharField(max_length=20, choices=BILLING_FREQUENCIES, default="one_time")
+    academic_course_id = models.UUIDField(null=True, blank=True, db_index=True)
+    academic_term_id = models.UUIDField(null=True, blank=True, db_index=True)
     credit_bearing = models.BooleanField(default=False)
     transcript_eligible = models.BooleanField(default=False)
     diploma_track_eligible = models.BooleanField(default=False)
@@ -212,7 +214,7 @@ class Offering(models.Model):
     buffer_seats = models.PositiveIntegerField(default=0)
     waitlist_enabled = models.BooleanField(default=True)
     active = models.BooleanField(default=True)
-    staff_owner_id = models.IntegerField(null=True, blank=True)
+    staff_owner_id = models.UUIDField(null=True, blank=True)
     location = models.CharField(max_length=160, blank=True)
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
@@ -239,8 +241,8 @@ class Offering(models.Model):
 class OfferingEnrollment(models.Model):
     """Student registration/roster row for a Home Academy offering."""
 
-    school_id = models.IntegerField(db_index=True)
-    student_id = models.IntegerField(db_index=True)
+    school_id = models.UUIDField(db_index=True)
+    student_id = models.UUIDField(db_index=True)
     offering = models.ForeignKey(Offering, on_delete=models.CASCADE, related_name="enrollments")
     home_academy_enrollment = models.ForeignKey(
         HomeAcademyEnrollment,
@@ -253,9 +255,15 @@ class OfferingEnrollment(models.Model):
     eligibility_status = models.CharField(max_length=40, default="pending")
     eligibility_failures = models.JSONField(default=list, blank=True)
     payment_status = models.CharField(max_length=20, choices=PAYMENT_STATUSES, default="pending")
+    finance_obligation_id = models.PositiveBigIntegerField(null=True, blank=True, db_index=True)
     form_status = models.CharField(max_length=20, choices=FORM_STATUSES, default="missing")
     roster_status = models.CharField(max_length=40, default="pending")
     transcript_posting_status = models.CharField(max_length=40, default="not_applicable")
+    transcript_entry_id = models.UUIDField(null=True, blank=True, db_index=True)
+    final_letter_grade = models.CharField(max_length=2, blank=True)
+    final_percentage = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
+    aid_eligible = models.BooleanField(default=False)
+    financial_aid_rule_id = models.PositiveBigIntegerField(null=True, blank=True)
     admin_approved = models.BooleanField(default=False)
     coach_or_director_approved = models.BooleanField(default=False)
     created_at = models.DateTimeField(default=timezone.now)
@@ -275,7 +283,7 @@ class OfferingEnrollment(models.Model):
 class FinancialAidRule(models.Model):
     """Charge-level aid eligibility rule for Home Academy charges."""
 
-    school_id = models.IntegerField(db_index=True)
+    school_id = models.UUIDField(db_index=True)
     charge_type = models.CharField(max_length=40, choices=AID_CHARGE_TYPES)
     aid_eligible = models.BooleanField(default=False)
     esa_eligible = models.BooleanField(default=False)
