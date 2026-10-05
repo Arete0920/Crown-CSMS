@@ -8,10 +8,10 @@ from django.db.models import F, Sum
 from django.db.models.functions import Coalesce
 from django.http import JsonResponse
 from django.utils import timezone
-from rest_framework import permissions
 from rest_framework.views import APIView
 
 from core.models import School
+from core.permissions import CrownModulePermission
 
 
 logger = logging.getLogger(__name__)
@@ -39,7 +39,7 @@ class ExecutiveSelfOverview(APIView):
     cannot be resolved or any model is absent.
     """
 
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [CrownModulePermission("admin.view")]
 
     def get(self, request):
         school = _get_school(request)
