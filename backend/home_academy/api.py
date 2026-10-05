@@ -21,8 +21,16 @@ from .serializers import (
     OfferingEnrollmentSerializer,
     OfferingSerializer,
 )
-from .integrations import HomeAcademyIntegrationError, create_finance_obligation_for_registration
-from .services import apply_eligibility_to_registration, evaluate_offering_eligibility
+from .integrations import (
+    HomeAcademyIntegrationError,
+    create_finance_obligation_for_registration,
+    post_transcript_for_registration,
+)
+from .services import (
+    apply_eligibility_to_registration,
+    classify_financial_aid,
+    evaluate_offering_eligibility,
+)
 from .tenant import school_id_from_request
 
 
@@ -210,6 +218,7 @@ def offering_enrollments(request):
         )
     registration = serializer.save(school_id=school_id)
     registration = apply_eligibility_to_registration(registration)
+    registration = classify_financial_aid(registration)
     return Response(OfferingEnrollmentSerializer(registration).data, status=status.HTTP_201_CREATED)
 
 
@@ -258,6 +267,91 @@ def activate_offering_enrollment(request, registration_id: int):
     registration.roster_status = "active"
     registration.save(update_fields=["status", "roster_status", "updated_at"])
     return Response(OfferingEnrollmentSerializer(registration).data)
+
+
+@api_view(["POST"])
+def complete_offering_enrollment(request, registration_id: int):
+    school_id = school_id_from_request(request, required=True)
+    module_error = require_home_academy_enabled(school_id)
+    if module_error is not None:
+        return module_error
+    if not require_role(request, {"admin", "registrar"}):
+        return Response({"detail": "Forbidden"}, status=status.HTTP_403_FORBIDDEN)
+
+    registration = (
+        OfferingEnrollment.objects.filter(pk=registration_id, school_id=school_id)
+        .select_related("offering")
+        .first()
+    )
+    if registration is None:
+        return Response({"detail": "Registration not found."}, status=status.HTTP_404_NOT_FOUND)
+    if registration.status not in {"active", "completed"}:
+        return Response(
+            {"detail": "Registration must be active before completion."},
+            status=status.HTTP_409_CONFLICT,
+        )
+
+    letter = str(request.data.get("final_letter_grade", "")).strip().upper()
+    percentage = request.data.get("final_percentage")
+    if registration.offering.credit_bearing and not letter:
+        return Response(
+            {"detail": "Final letter grade is required for credit-bearing offerings."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    registration.final_letter_grade = letter
+    registration.final_percentage = percentage if percentage not in ("", None) else None
+    registration.status = "completed"
+    registration.roster_status = "completed"
+    if registration.offering.credit_bearing and registration.offering.transcript_eligible:
+        registration.transcript_posting_status = "pending_registrar"
+    else:
+        registration.transcript_posting_status = "not_applicable"
+    registration.save(
+        update_fields=[
+            "final_letter_grade",
+            "final_percentage",
+            "status",
+            "roster_status",
+            "transcript_posting_status",
+            "updated_at",
+        ]
+    )
+    return Response(OfferingEnrollmentSerializer(registration).data)
+
+
+@api_view(["POST"])
+def post_offering_transcript(request, registration_id: int):
+    school_id = school_id_from_request(request, required=True)
+    module_error = require_home_academy_enabled(school_id)
+    if module_error is not None:
+        return module_error
+    if not require_role(request, {"admin", "registrar"}):
+        return Response({"detail": "Forbidden"}, status=status.HTTP_403_FORBIDDEN)
+
+    registration = (
+        OfferingEnrollment.objects.filter(pk=registration_id, school_id=school_id)
+        .select_related("offering")
+        .first()
+    )
+    if registration is None:
+        return Response({"detail": "Registration not found."}, status=status.HTTP_404_NOT_FOUND)
+
+    try:
+        entry = post_transcript_for_registration(registration)
+    except HomeAcademyIntegrationError as exc:
+        return Response(
+            {"detail": str(exc), "code": "TRANSCRIPT_INTEGRATION_BLOCKED"},
+            status=status.HTTP_409_CONFLICT,
+        )
+
+    registration.refresh_from_db()
+    return Response(
+        {
+            "registration": OfferingEnrollmentSerializer(registration).data,
+            "transcript_entry_id": str(entry.id),
+        }
+    )
 
 
 @extend_schema(responses=EligibilityResponseSerializer)
