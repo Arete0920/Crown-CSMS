@@ -15,7 +15,11 @@ on:
       - "backend/gradebook/**"
       - "backend/academics/**"
       - "backend/core/management/commands/**"
-      - "backend/crown_api/**"
+      - "backend/crown_api/api_v1_urls.py"
+      - "backend/crown_api/wizard_registry.py"
+      - "backend/crown_api/system_views.py"
+      - "backend/crown_api/management/commands/seed_demo_parent_gradebook.py"
+      - "backend/crown_api/management/commands/proof_phase4_gradebook_demo.py"
 
 concurrency:
   group: proof-gradebook-${{ github.ref }}
