@@ -16,6 +16,7 @@ from applications.views_admissions import (
     admissions_enrollment_state,
     admissions_contract_detail,
     admissions_contract_update,
+    admissions_contract_assent,
     admissions_contract_amend,
     admissions_application_event_replay,
 )
@@ -76,6 +77,11 @@ urlpatterns = [
         "admissions/applications/<uuid:application_id>/contract/update/",
         admissions_contract_update,
         name="admissions_contract_update",
+    ),
+    path(
+        "admissions/applications/<uuid:application_id>/contract/assent/",
+        admissions_contract_assent,
+        name="admissions_contract_assent",
     ),
     path(
         "admissions/applications/<uuid:application_id>/contract/amend/",
