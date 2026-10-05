@@ -149,7 +149,7 @@ function discoverWizardLikeFiles() {
 }
 
 function discoverFrontendComponentFiles() {
-  const roots = [path.join(root, 'frontend')];
+  const roots = [path.join(root, 'frontend', 'dashboards')];
   const candidates = [];
 
   for (const baseRoot of roots) {
@@ -166,8 +166,7 @@ function discoverFrontendComponentFiles() {
       }
 
       const isDashboardComponent = lowered.includes('frontend/dashboards/src/components/');
-      const isFrontendComponent = lowered.includes('frontend/src/components/');
-      if (!isDashboardComponent && !isFrontendComponent) {
+      if (!isDashboardComponent) {
         continue;
       }
 
