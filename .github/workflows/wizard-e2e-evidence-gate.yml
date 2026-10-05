@@ -107,6 +107,7 @@ jobs:
         run: |
           set -euo pipefail
           python manage.py migrate --noinput
+          python manage.py seed_permissions
           python manage.py sandbox_seed_flagship --reset
           # Synthetic existing-school mapping only; the import must create its own students.
           python manage.py shell <<'PYFIXTURE'
