@@ -179,6 +179,7 @@ async function appendManifestEntry(entry: {
   } catch {
     screenshots = [];
   }
+  screenshots = screenshots.filter((item) => item.viewport !== entry.viewport || item.route !== entry.route);
   screenshots.push(entry);
   screenshots.sort((a, b) =>
     `${a.viewport}:${a.route}`.localeCompare(`${b.viewport}:${b.route}`)
@@ -200,6 +201,8 @@ async function appendManifestEntry(entry: {
 }
 
 test.describe("Dashboard visual evidence", () => {
+  // Playwright clears test-results once per run. A retry starts a new worker;
+  // initialize exclusively so that worker cannot erase completed evidence.
   test.beforeAll(async () => {
     await mkdir(EVIDENCE_DIR, { recursive: true });
     await writeFile(
@@ -214,8 +217,10 @@ test.describe("Dashboard visual evidence", () => {
         null,
         2
       ) + "\n",
-      "utf-8"
-    );
+      { encoding: "utf-8", flag: "wx" }
+    ).catch((error) => {
+      if (error.code !== "EEXIST") throw error;
+    });
   });
 
   for (const viewport of VIEWPORTS) {

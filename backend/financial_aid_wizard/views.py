@@ -1,4 +1,5 @@
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
+from uuid import UUID
 
 from django.db import transaction
 from django.shortcuts import get_object_or_404
@@ -33,6 +34,8 @@ def _parse_decimal(value, field_name, min_val=None):
         parsed = Decimal(str(value))
     except (InvalidOperation, TypeError, ValueError):
         return None, f"{field_name} must be a valid number"
+    if not parsed.is_finite():
+        return None, f"{field_name} must be a finite number"
     if min_val is not None and parsed < Decimal(str(min_val)):
         return None, f"{field_name} must be >= {min_val}"
     return parsed, None
@@ -46,6 +49,13 @@ def _parse_positive_int(value, field_name):
     if parsed <= 0:
         return None, f"{field_name} must be a positive integer"
     return parsed, None
+
+
+def _parse_uuid(value, field_name):
+    try:
+        return str(UUID(str(value).strip())), None
+    except (TypeError, ValueError, AttributeError):
+        return None, f"{field_name} must be a valid UUID"
 
 
 def _currency_to_cents(amount: Decimal) -> int:
@@ -142,7 +152,7 @@ def stage_awards(request, session_id):
             continue
 
         application_id, app_error = _parse_positive_int(award.get("application_id"), f"{prefix}.application_id")
-        student_id, student_error = _parse_positive_int(award.get("student_id"), f"{prefix}.student_id")
+        student_id, student_error = _parse_uuid(award.get("student_id"), f"{prefix}.student_id")
         if app_error:
             errors.append(app_error)
         if student_error:
@@ -275,7 +285,7 @@ def commit_session(request, session_id):
                 actor_user=request.user if request.user.is_authenticated else None,
                 details={
                     "application_id": application.id,
-                    "student_id": student.id,
+                    "student_id": str(student.id),
                     "award_type": award_type,
                     "awarded_cents": amount_cents,
                     "wizard_session_id": str(session.id),

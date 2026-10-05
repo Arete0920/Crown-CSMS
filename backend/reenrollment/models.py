@@ -65,6 +65,9 @@ class ReenrollmentSession(models.Model):
         help_text='Per-student enrollment fee for the new year.',
     )
 
+    deadline_at = models.DateTimeField(null=True, blank=True)
+    communication_timezone = models.CharField(max_length=64, default="America/New_York")
+
     # Step 3: exclusion list — list of student UUID strings (str) set by the director
     excluded_ids = models.JSONField(
         default=list,

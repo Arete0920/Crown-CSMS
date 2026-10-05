@@ -1,8 +1,7 @@
 [CmdletBinding()]
 param(
   [int]$APITimeout = 20,
-  [switch]$SkipSnapshot,
-  [switch]$SkipTag
+  [switch]$SkipSnapshot
 )
 
 $ErrorActionPreference = "Stop"
@@ -17,12 +16,10 @@ function Require-File([string]$path) {
 $lockdownRun = Join-Path $PSScriptRoot "lockdown_run.ps1"
 $goldenGate  = Join-Path $PSScriptRoot "golden_path_gate.ps1"
 $snapshot    = Join-Path $PSScriptRoot "demo_snapshot.ps1"
-$tagGreen    = Join-Path $PSScriptRoot "tag_green3.ps1"
 
 Require-File $lockdownRun
 Require-File $goldenGate
 if (-not $SkipSnapshot) { Require-File $snapshot }
-if (-not $SkipTag)      { Require-File $tagGreen }
 
 Write-Host "Step 1: Boot + seed + smoke" -ForegroundColor Yellow
 & $lockdownRun -APITimeout $APITimeout
@@ -39,9 +36,4 @@ if (-not $SkipSnapshot) {
   & $snapshot
 }
 
-if (-not $SkipTag) {
-  Write-Host "Step 4: Tag green proof" -ForegroundColor Yellow
-  & $tagGreen
-}
-
-Write-Host "✅ ONE-CLICK GATE COMPLETE" -ForegroundColor Green
+Write-Host "ONE-CLICK GATE COMPLETE" -ForegroundColor Green

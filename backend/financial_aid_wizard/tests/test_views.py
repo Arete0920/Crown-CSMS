@@ -270,6 +270,18 @@ class TestStageAwards(WizardConfiguredMixin, TestCase):
         missing_app.pop("application_id")
         self.assertEqual(self._awards({"awards": [missing_app]}).status_code, 400)
 
+    def test_stage_rejects_non_uuid_student_identifiers(self):
+        for invalid in (1, "1", "not-a-uuid", "", None):
+            award = self._valid_award()
+            award["student_id"] = invalid
+            with self.subTest(student_id=invalid):
+                self.assertEqual(self._awards({"awards": [award]}).status_code, 400)
+
+    def test_stage_rejects_nonfinite_award_amounts(self):
+        for invalid in ("NaN", "Infinity", "-Infinity"):
+            with self.subTest(amount=invalid):
+                self.assertEqual(self._awards({"awards": [self._valid_award("need", invalid)]}).status_code, 400)
+
     def test_stage_validation(self):
         self.assertEqual(self._awards({"awards": []}).status_code, 200)
         self.assertEqual(self._awards({"awards": "single"}).status_code, 400)

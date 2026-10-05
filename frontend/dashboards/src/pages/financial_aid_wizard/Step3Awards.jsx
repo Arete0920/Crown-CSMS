@@ -129,10 +129,8 @@ export default function Step3Awards({ context, setContext, goNext, goPrev, stepI
                 <div style={{ fontSize: 11, color: "var(--crown-muted)" }}>Student ID *</div>
                 <input
                   className="crown-input"
-                  type="number"
-                  min="1"
-                  step="1"
-                  placeholder="Student receiving this award"
+                  type="text"
+                  placeholder="UUID of the student receiving this award"
                   value={row.student_id}
                   onChange={(e) => updateRow(i, "student_id", e.target.value)}
                   style={{ width: "100%", boxSizing: "border-box" }}
