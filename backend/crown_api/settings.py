@@ -53,6 +53,9 @@ CROWN_DEV_OPEN_API = _env_bool("CROWN_DEV_OPEN_API", default=False)
 # SOLOMON read-only API gate. Keep closed until Phase 3 is explicitly enabled.
 CROWN_SOLOMON_API_ENABLED = _env_bool("CROWN_SOLOMON_API_ENABLED", default=False)
 
+# Optional structured adult guidance. External AI transport is not configured.
+CROWN_SOLOMON_GUIDANCE_ENABLED = _env_bool("CROWN_SOLOMON_GUIDANCE_ENABLED", default=False)
+
 # SOLOMON internal context consumption gate. Separate from API gate.
 CROWN_SOLOMON_CONTEXT_ENABLED = _env_bool("CROWN_SOLOMON_CONTEXT_ENABLED", default=False)
 

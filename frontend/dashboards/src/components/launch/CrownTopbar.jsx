@@ -1,4 +1,5 @@
 import { Link, useInRouterContext } from 'react-router';
+import SolomonContextHelp from '../SolomonContextHelp.jsx';
 
 export default function CrownTopbar({
   schoolName = 'Heritage Christian Academy',
@@ -20,11 +21,7 @@ export default function CrownTopbar({
         ) : (
           <a href="/communications" className="launch-icon-button">Updates <span className="launch-counter">{updatesCount}</span></a>
         )}
-        {hasRouterContext ? (
-          <Link to="/settings" className="launch-icon-button">Help</Link>
-        ) : (
-          <a href="/settings" className="launch-icon-button">Help</a>
-        )}
+        <SolomonContextHelp />
         <div className="launch-school-chip">{schoolName}</div>
         <div className="launch-user-menu">{userInitials}</div>
       </div>
