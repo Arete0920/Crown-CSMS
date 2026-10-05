@@ -109,6 +109,16 @@ jobs:
           python manage.py migrate --noinput
           python manage.py seed_permissions
           python manage.py sandbox_seed_flagship --reset
+          # The financial-aid wizard proof uses the sandbox school-admin persona for
+          # navigation, but backend write authority remains the AID_DIRECTOR role.
+          # Add that role only in this disposable CI database; production grants are unchanged.
+          python manage.py shell <<'PYRBAC'
+          import os
+          from core.models import School, UserAccount, UserRole
+          school = School.objects.get(id=os.environ['CROWN_DEMO_SCHOOL_ID'])
+          user = UserAccount.objects.get(school=school, username='admin@heritage.example.org')
+          UserRole.objects.get_or_create(user=user, school=school, role_code='AID_DIRECTOR')
+          PYRBAC
           # Synthetic existing-school mapping only; the import must create its own students.
           python manage.py shell <<'PYFIXTURE'
           import os
