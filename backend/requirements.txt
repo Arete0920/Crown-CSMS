@@ -37,7 +37,7 @@ redis>=5.0.0
 # SMS provider client (used by comms/sms_service.py when SMS is enabled)
 twilio>=9.0.0
 # Board Packet PDF generation (Stage 4)
-reportlab>=4.2.0
+reportlab>=5.0.1
 # Analytics runtime dependencies
 numpy>=1.26.4
 pandas>=2.2.3
