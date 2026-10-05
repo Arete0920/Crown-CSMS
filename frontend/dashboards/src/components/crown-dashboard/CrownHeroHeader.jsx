@@ -3,6 +3,7 @@ import { Link, useInRouterContext } from 'react-router';
 import CrownLogo from '../brand/CrownLogo';
 import MicrosoftProductLogo from '../brand/MicrosoftProductLogo';
 import CrownIcon from '../icons/CrownIcon.jsx';
+import SolomonContextHelp from '../SolomonContextHelp.jsx';
 import { normalizeDisplayText } from '../../utils/displayTextIntegrity.js';
 import '../../styles/visual-proof-integrity.css';
 
@@ -53,17 +54,7 @@ export default function CrownHeroHeader({
         <div className="launch-topbar-actions launch-hero-topbar-actions">
           <div className="launch-school-chip launch-hero-action-btn" style={ACCESSIBLE_HERO_ACTION_STYLE}>{schoolName}</div>
 
-          {hasRouterContext ? (
-            <Link to="/settings" className="launch-icon-button launch-hero-action-btn" style={ACCESSIBLE_HERO_ACTION_STYLE}>
-              <CrownIcon name="help" size={17} />
-              Help
-            </Link>
-          ) : (
-            <a href="/settings" className="launch-icon-button launch-hero-action-btn" style={ACCESSIBLE_HERO_ACTION_STYLE}>
-              <CrownIcon name="help" size={17} />
-              Help
-            </a>
-          )}
+          <SolomonContextHelp />
 
           {hasRouterContext ? (
             <Link to="/communications" className="launch-icon-button launch-hero-action-btn" style={ACCESSIBLE_HERO_ACTION_STYLE}>
