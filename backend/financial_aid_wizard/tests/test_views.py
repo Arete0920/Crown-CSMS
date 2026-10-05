@@ -282,6 +282,16 @@ class TestStageAwards(WizardConfiguredMixin, TestCase):
             with self.subTest(amount=invalid):
                 self.assertEqual(self._awards({"awards": [self._valid_award("need", invalid)]}).status_code, 400)
 
+    def test_stage_rejects_amounts_outside_canonical_cents_range(self):
+        for invalid in ("21474836.48", "1E1000"):
+            with self.subTest(amount=invalid):
+                response = self._awards({"awards": [self._valid_award("need", invalid)]})
+                self.assertEqual(response.status_code, 400)
+        self.assertEqual(
+            self._awards({"awards": [self._valid_award("need", "21474836.47")]}).status_code,
+            200,
+        )
+
     def test_stage_validation(self):
         self.assertEqual(self._awards({"awards": []}).status_code, 200)
         self.assertEqual(self._awards({"awards": "single"}).status_code, 400)

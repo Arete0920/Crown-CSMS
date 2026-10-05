@@ -23,6 +23,8 @@ _VIEW_PERM = [CrownModulePermission("financial_aid.view")]
 _EDIT_PERM = [CrownModulePermission("financial_aid.view", write_code="financial_aid.edit")]
 BUCKET_MAP = {value.lower(): value for value, _label in AidAward.TYPE_CHOICES}
 VALID_BUCKETS = set(BUCKET_MAP)
+# Canonical AidAward cents fields use a portable signed 32-bit IntegerField.
+MAX_AWARD_AMOUNT = Decimal("21474836.47")
 
 
 def _get_session(session_id, school_id):
@@ -171,6 +173,10 @@ def stage_awards(request, session_id):
         amount, error = _parse_decimal(award.get("amount", 0), f"{prefix}.amount", min_val=0)
         if error:
             errors.append(error)
+            continue
+
+        if amount > MAX_AWARD_AMOUNT:
+            errors.append(f"{prefix}.amount must be <= {MAX_AWARD_AMOUNT}")
             continue
 
         normalised.append(
