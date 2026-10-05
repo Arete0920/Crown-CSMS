@@ -39,7 +39,7 @@ jobs:
       - run: python -m pip install -r backend/requirements.txt
       - run: python backend/manage.py makemigrations --check --dry-run
       - run: python -m pytest backend/comms/tests backend/reenrollment/tests backend/payments/tests/test_school_store.py -q
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
         with:
           node-version: '24'
       - run: npm ci --no-audit --no-fund
