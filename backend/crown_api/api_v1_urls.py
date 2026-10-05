@@ -93,6 +93,7 @@ urlpatterns = [
         name="admissions_application_event_replay",
     ),
     path("learning-continuity/", include("learning_continuity.urls")),
+    path("forms/", include("electronic_forms.urls")),
     # School data quality (tenant-scoped, read-only)
     path("integrity/data-quality/", school_data_quality, name="integrity-data-quality"),
 
