@@ -6,7 +6,7 @@ Base commit: `6a40ed83c01764e139af7ba91951e12f9b98124a`
 
 ## Purpose
 
-This ledger classifies the 118 declarations in `backend/crown_api/api_urls.py` before any route retirement, alias correction, or prefix repair. It does not authorize removal or behavioral changes.
+This ledger classifies the 117 declarations in `backend/crown_api/api_urls.py` before any route retirement, alias correction, or prefix repair. It does not authorize removal or behavioral changes.
 
 The module is included by `backend/crown_api/api_v1_urls.py`, which is mounted twice by the project URL configuration:
 
@@ -23,10 +23,10 @@ Most declarations are unprefixed and therefore resolve naturally under both moun
 | Class | Count | Treatment |
 |---|---:|---|
 | Internally `v1/`-prefixed declarations | 29 | Hold for consumer and resolver review; do not remove blindly |
-| Deprecated director compatibility routes | 8 | Preserve until consumer evidence supports retirement |
+| Deprecated director compatibility routes | 7 | Preserve until consumer evidence supports retirement |
 | Other direct routes | 68 | Retain; review mutations separately for authorization and tenant boundaries |
 | Other nested includes | 13 | Retain; inspect precedence and child route ownership separately |
-| **Total** | **118** | Exact reconciliation |
+| **Total** | **117** | Exact reconciliation |
 
 The 29 internally prefixed declarations consist of 28 direct routes and one nested include (`v1/finance-setup/`).
 
@@ -47,7 +47,7 @@ The 29 internally prefixed declarations consist of 28 direct routes and one nest
 
 ## Deprecated director routes
 
-The following eight routes are explicitly documented in source as deprecated compatibility surfaces:
+The following seven routes are explicitly documented in source as deprecated compatibility surfaces:
 
 - `director/aid/summary/`
 - `director/finance/summary/`
@@ -56,7 +56,6 @@ The following eight routes are explicitly documented in source as deprecated com
 - `director/priority/`
 - `director/actions/`
 - `director/timeline/`
-- `director/force_seed_user/`
 
 Their deprecated label is not sufficient evidence for deletion. Consumer references, resolver winners, authentication, tenant boundaries, and replacement-path parity must be proven first.
 
@@ -64,10 +63,10 @@ Their deprecated label is not sufficient evidence for deletion. Consumer referen
 
 `backend/tests/test_legacy_api_url_classification.py` binds:
 
-1. the exact 118-declaration total;
+1. the exact 117-declaration total;
 2. the 104 direct / 14 include split;
 3. the exact 29 internally prefixed declarations;
-4. the exact eight deprecated director routes;
+4. the exact seven deprecated director routes;
 5. the exact 13 non-`v1/` nested includes;
 6. the dual `/api/v1/` and `/api/` mounts;
 7. the resulting prefix inversion.
@@ -86,3 +85,7 @@ The test is intentionally read-only and does not modify routing.
 ## Release authority
 
 This inventory improves traceability only. It does not alter deployment or release authority. Production remains **NOT APPROVED**.
+
+## Retired temporary bootstrap route
+
+The former `director/force_seed_user/` HTTP bootstrap route was retired after confirming that no active workflow consumes it. Development/bootstrap operations must use controlled management commands or explicit deployment automation rather than a public application route.
