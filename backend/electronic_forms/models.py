@@ -40,6 +40,26 @@ class ElectronicFormTemplate(models.Model):
         ]
         ordering = ["school_id", "key", "-version"]
 
+    def save(self, *args, **kwargs):
+        if self.pk:
+            prior = type(self).objects.filter(pk=self.pk).values(
+                "school_id", "key", "version", "name", "title", "body", "form_schema", "created_by_id"
+            ).first()
+            if prior:
+                immutable = {
+                    "school_id": self.school_id,
+                    "key": self.key,
+                    "version": self.version,
+                    "name": self.name,
+                    "title": self.title,
+                    "body": self.body,
+                    "form_schema": self.form_schema,
+                    "created_by_id": self.created_by_id,
+                }
+                if prior != immutable:
+                    raise ValidationError("Electronic form template versions are immutable; create a new version instead.")
+        return super().save(*args, **kwargs)
+
     def __str__(self):
         return f"{self.key} v{self.version}"
 
