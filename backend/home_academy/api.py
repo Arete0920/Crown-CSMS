@@ -3,6 +3,7 @@ from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
+from academics.models import Course, Term
 from core.models import Student
 from core.permissions import user_has_permission
 from subscriptions.gates import school_has_module
@@ -177,6 +178,22 @@ def offerings(request):
     program = serializer.validated_data.get("program")
     if program is not None and program.school_id != school_id:
         return Response({"detail": "Program not found."}, status=status.HTTP_404_NOT_FOUND)
+    academic_course_id = serializer.validated_data.get("academic_course_id")
+    if academic_course_id and not Course.objects.filter(
+        pk=academic_course_id, school_id=school_id
+    ).exists():
+        return Response(
+            {"detail": "Academic course not found."},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+    academic_term_id = serializer.validated_data.get("academic_term_id")
+    if academic_term_id and not Term.objects.filter(
+        pk=academic_term_id, school_id=school_id
+    ).exists():
+        return Response(
+            {"detail": "Academic term not found."},
+            status=status.HTTP_404_NOT_FOUND,
+        )
     serializer.save(school_id=school_id)
     return Response(serializer.data, status=status.HTTP_201_CREATED)
 
