@@ -24,6 +24,7 @@ from crown_api.audit_views import recent_audit_events
 from crown_api.auth_views import login, refresh, me
 from crown_api.dev_token_views import dev_token
 from crown_api.system_views import whoami
+from solomon.guidance_views import guidance_view
 
 
 logger = logging.getLogger(__name__)
@@ -34,6 +35,7 @@ ops_summary = demo_ops_only(_ops_summary)
 ops_alerts = demo_ops_only(_ops_alerts)
 
 urlpatterns = [
+    path("api/solomon/guidance/", guidance_view, name="solomon-guidance"),
     path("", RedirectView.as_view(url="director/", permanent=False)),
     path("api/v1/graduation/", include("graduation.urls")),
     path(
