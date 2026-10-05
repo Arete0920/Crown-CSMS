@@ -1,6 +1,6 @@
 # Buyer repository review preparation
 
-Assessment date: October 4, 2026. Intended review window: October 11, 2026.
+Assessment date: October 4, 2026; dependency and PR triage update: October 5, 2026. Intended review window: October 11, 2026.
 Baseline refreshed after PR #74 at `b47e5f2d1930f2790cbbf6c0df4780662d1326a2`; re-resolve current `main` before any decision.
 This is a remediation register, not clearance for source distribution, production, or transfer.
 
@@ -16,7 +16,7 @@ History maintenance must follow the [existing security runbook](../security/ed25
 |---|---|---|
 | Wallet dependency remediation | **Merged in PR #74** with locked npm install, replacement signing implementation, audit coverage and signing tests | Preserve exact-head audit/test evidence; real Apple certificate/device acceptance remains environment-specific |
 | Dependency Review | Main workflow prints an unavailable/skip message and returns success | Actual pinned review action passes with Dependency Graph enabled; no skip-success fallback |
-| Retained-history security | Known private-key path remains in published history; three earlier documentation-token candidates unresolved | Trust-consumer inventory, retirement verification, adjudicated all-ref scan, reviewed rewrite, authoritative remote rescan and replacement of distributable copies |
+| Retained-history security | Known private-key history verification remains failed; current-tree path is documented as a redacted placeholder. Follow-through: [#104](https://github.com/Arete0920/Crown-CSMS/issues/104). The earlier scan's three truncated JWT examples were adjudicated in closed PR #75, which did not clear history distribution. | Trust-consumer inventory, retirement verification, adjudicated all-ref scan, reviewed rewrite, authoritative remote rescan and replacement of distributable copies |
 | Branch enforcement | **Protected on October 4, 2026** with enforcement for everyone and 16 required GitHub Actions contexts; force pushes and branch deletion blocked | Re-read live protection before buyer access; keep `docs/release/BRANCH_PROTECTION_EVIDENCE.md` current |
 | Hosted operation | Azure problem remains unresolved; no fresh production acceptance established here | Exact deployed SHA, migrations, tenant checks, worker/beat execution, monitoring, backup and restore exercise |
 | Ownership and licenses | Policy and notices exist; complete assignment and shipped-dependency clearance not established | Contributor rights/assignments, dependency and asset inventory, applicable obligations and notices reviewed |
@@ -40,3 +40,9 @@ This record is an engineering disclosure recommendation. Transaction counsel det
 6. Record the final review SHA and disclose remaining material exceptions before buyer access or delivery.
 
 If any prerequisite remains open at the review date, report its actual status. The date does not waive security or evidence requirements.
+
+## October 5 PR discipline
+
+PR #102 merged bounded frontend runtime, tooling and testing minor/patch groups, plus an Actions minor/patch group. Major upgrades remain independent proposals with no ignore rule or automatic approval. Incompatible or unverified version-only proposals #90 and #94–#101 were closed unmerged with technical reasons. #91 consolidates minimum-floor changes from #91–#93 and still requires its final exact-head checks and merge before implementation is claimed.
+
+Broad retirement proposals #82 and #83 were closed unmerged after finding current enforcement evidence and an active workflow consumer in their deletion scopes. [#105](https://github.com/Arete0920/Crown-CSMS/issues/105) records the replacement requirements. Current main enforcement evidence and active audit execution must be preserved. PR closure is a disposition, not evidence that rejected code landed or that buyer/security blockers were resolved.
