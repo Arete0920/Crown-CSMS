@@ -10,7 +10,7 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        ("core", "0018_student_health_permissions"),
+        ("core", "0019_electronic_forms_permission"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
