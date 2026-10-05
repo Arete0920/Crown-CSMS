@@ -8,7 +8,7 @@ urlpatterns = [
     path("offerings/", api.offerings, name="home-academy-offerings"),
     path("offering-enrollments/", api.offering_enrollments, name="home-academy-offering-enrollments"),
     path(
-        "offerings/<int:offering_id>/students/<int:student_id>/eligibility/",
+        "offerings/<int:offering_id>/students/<uuid:student_id>/eligibility/",
         api.offering_eligibility,
         name="home-academy-offering-eligibility",
     ),
