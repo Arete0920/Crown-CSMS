@@ -67,10 +67,12 @@ describe("legacy operational dashboard canonical layout contract", () => {
     expect(flipCard).not.toContain("background: 'var(--crown-brand)'");
   });
 
-  it("does not render an undefined communications open-rate metric", () => {
+  it("fails closed instead of substituting demo communications metrics", () => {
     const communications = load("../pages/CommunicationsDirectorDashboard.jsx");
 
-    expect(communications).toContain("data.open_rate_pct ?? DEMO.open_rate_pct");
-    expect(communications).not.toContain("value={`${data.open_rate_pct}%`}");
+    expect(communications).not.toContain("reverting to demo data");
+    expect(communications).not.toContain("const DEMO =");
+    expect(communications).toContain("Static demo values are not substituted for production data.");
+    expect(communications).toContain("data.open_rate_pct == null ? '—' :");
   });
 });

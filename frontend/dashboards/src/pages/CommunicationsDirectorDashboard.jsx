@@ -20,30 +20,7 @@ function getSession() {
   } catch { return { token: '', schoolId: '' }; }
 }
 
-const DEMO = {
-  messages_sent_week: 1840, open_rate_pct: 64, announcements_scheduled: 5, unsubscribes_week: 3,
-  snapshot_date: '2026-02-28',
-  campaigns: [
-    { name: 'Spring Enrollment Drive',  sent: 1240, open_rate: '68%', status: 'sent'      },
-    { name: 'Family Night Invite',       sent:  430, open_rate: '71%', status: 'sent'      },
-    { name: 'Tuition Reminder Q2',       sent:    0, open_rate: '',   status: 'scheduled' },
-    { name: 'Summer Program Preview',    sent:    0, open_rate: '',   status: 'draft'     },
-  ],
-  channel_engagement: [
-    { channel: 'Email',       open_rate: '68%', pct: 68 },
-    { channel: 'Push (App)',  open_rate: '52%', pct: 52 },
-    { channel: 'SMS',         open_rate: '84%', pct: 84 },
-  ],
-  upcoming_announcements: [
-    { subject: 'Spring Field Day Details',  audience: 'All Families',  scheduled: '2026-03-05', status: 'scheduled' },
-    { subject: 'Tuition Portal Open  Q2',  audience: 'All Families',  scheduled: '2026-03-10', status: 'scheduled' },
-    { subject: 'Board Meeting Summary',     audience: 'Staff',         scheduled: '2026-03-12', status: 'draft'     },
-  ],
-  alerts: [
-    { label: '3 unsubscribes this week  review list hygiene', severity: 'yellow' },
-    { label: 'SMS delivery rate dropped to 91% (was 97%)',       severity: 'red'    },
-  ],
-};
+
 
 async function fetchCommunicationsMetrics() {
   const { token, schoolId } = getSession();
@@ -54,14 +31,14 @@ async function fetchCommunicationsMetrics() {
   try {
     const res = await globalThis.fetch(url, { headers });
     if (!res.ok) throw new Error(`${res.status}`);
-    return { ok: true, data: await res.json() };
+    return { ok: true, data: await res.json(), error: null };
   } catch (e) {
-    console.error('[Dashboard Integration] Communications metrics fetch failed — reverting to demo data', {
+    console.warn('[Dashboard Integration] Communications metrics unavailable', {
       url,
       error: e?.message || e,
       timestamp: new Date().toISOString()
     });
-    return { ok: false, data: DEMO };
+    return { ok: false, data: null, error: e };
   }
 }
 
@@ -83,40 +60,68 @@ function Pill({ color = 'gray', children }) {
 }
 
 /*  Communications KPI flip cards  */
-const ADMIN_KPI = [
-  { label: "Messages Today",     value: "14",  trend: null,              trendUp: null,
-    definition: "Total messages sent through the Crown platform today (email, SMS, in-app).",
-    dataSource: "Communications Module", dataHref: "/communications" },
-  { label: "Open Rate",          value: "68%", trend: "+4% vs last wk",  trendUp: true,
-    definition: "Percentage of messages sent today that were opened by at least one recipient.",
-    dataSource: "Communications Module", dataHref: "/communications" },
-  { label: "Active Threads",     value: "32",  trend: null,              trendUp: null,
-    definition: "Conversation threads with at least one message in the last 7 days.",
-    dataSource: "Communications Module", dataHref: "/communications" },
-  { label: "Alerts Pending",     value: "2",   trend: null,              trendUp: null,
-    definition: "Scheduled announcements or emergency alerts waiting to be reviewed and sent.",
-    dataSource: "Communications Module", dataHref: "/communications" },
-];
+function buildCommunicationsKpis(data) {
+  return [
+    { label: "Messages Sent (Week)", value: String(data.messages_sent_week ?? "—"), trend: null, trendUp: null,
+      definition: "Total messages sent through the Crown platform this week.",
+      dataSource: "Communications Module", dataHref: "/communications" },
+    { label: "Open Rate", value: data.open_rate_pct == null ? "—" : `${data.open_rate_pct}%`, trend: null, trendUp: null,
+      definition: "Percentage of delivered communications opened by recipients.",
+      dataSource: "Communications Module", dataHref: "/communications" },
+    { label: "Announcements Scheduled", value: String(data.announcements_scheduled ?? "—"), trend: null, trendUp: null,
+      definition: "Announcements currently scheduled for delivery.",
+      dataSource: "Communications Module", dataHref: "/communications" },
+    { label: "Unsubscribes (Week)", value: String(data.unsubscribes_week ?? "—"), trend: null, trendUp: null,
+      definition: "Recipient unsubscribes recorded this week.",
+      dataSource: "Communications Module", dataHref: "/communications" },
+  ];
+}
 export default function CommunicationsDirectorDashboard() {
-  const [state, setState] = useState({ loading: true, live: false, data: DEMO });
+  const [state, setState] = useState({ loading: true, live: false, data: null, error: null });
 
   useEffect(() => {
-    fetchCommunicationsMetrics().then(({ ok, data }) => setState({ loading: false, live: ok, data }));
+    fetchCommunicationsMetrics().then(({ ok, data, error }) => (
+      setState({ loading: false, live: ok, data, error })
+    ));
   }, []);
 
   const { loading, live, data } = state;
+
+  if (loading && !data) {
+    return (
+      <CrownLayout title="Communications Director" subtitle="Loading live communications metrics"
+        right={<Pill color="gray">LOADING</Pill>}
+      >
+        <p style={{ color: 'var(--crown-muted)', padding: 16 }}>Loading</p>
+      </CrownLayout>
+    );
+  }
+
+  if (!data) {
+    return (
+      <CrownLayout title="Communications Director" subtitle="Live communications metrics unavailable"
+        right={<Pill color="gray">UNAVAILABLE</Pill>}
+      >
+        <DegradationBadge visible />
+        <CrownCard title="Communications data unavailable">
+          <p style={{ color: 'var(--crown-muted)' }}>
+            Live communications metrics could not be loaded. Static demo values are not substituted for production data.
+          </p>
+        </CrownCard>
+      </CrownLayout>
+    );
+  }
   return (
-    <CrownLayout title="Communications Director" subtitle={`Snapshot: ${data.snapshot_date || DEMO.snapshot_date}`}
-      right={<Pill color={live ? 'green' : 'gray'}>{live ? 'LIVE' : 'DEMO'}</Pill>}
+    <CrownLayout title="Communications Director" subtitle={data?.snapshot_date ? `Snapshot: ${data.snapshot_date}` : 'Loading live communications metrics'}
+      right={<Pill color={live ? 'green' : 'gray'}>{live ? 'LIVE' : 'LOADING'}</Pill>}
     >
       <DegradationBadge visible={!live && !loading} />
-      <KpiStrip cards={ADMIN_KPI} />
-      {loading && <p style={{ color: 'var(--crown-muted)', padding: 16 }}>Loading</p>}
+      {data ? <KpiStrip cards={buildCommunicationsKpis(data)} /> : null}
 
       <DashboardSection title="Overview">
         <CrownGrid>
           <Col span={3}><CrownMetricCard label="Messages Sent (Week)"      value={data.messages_sent_week}        /></Col>
-          <Col span={3}><CrownMetricCard label="Open Rate"                 value={`${data.open_rate_pct ?? DEMO.open_rate_pct}%`} /></Col>
+          <Col span={3}><CrownMetricCard label="Open Rate"                 value={data.open_rate_pct == null ? '—' : `${data.open_rate_pct}%`} /></Col>
           <Col span={3}><CrownMetricCard label="Announcements Scheduled"   value={data.announcements_scheduled}   /></Col>
           <Col span={3}><CrownMetricCard label="Unsubscribes (Week)"       value={data.unsubscribes_week}         /></Col>
         </CrownGrid>

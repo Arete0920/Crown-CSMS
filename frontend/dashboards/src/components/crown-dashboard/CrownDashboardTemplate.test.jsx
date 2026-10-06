@@ -216,7 +216,7 @@ describe('CrownDashboardTemplate data truth defaults', () => {
     expect(screen.getByText(/^Student Life$/i)).toBeTruthy();
   });
 
-  it('surfaces sample API data and does not mark template modules as live', () => {
+  it('surfaces sample API metrics without promoting static template modules to sample/live', () => {
     mockUseDashboardData.mockReturnValue({
       data: {
         metrics: [{ label: 'Donors YTD', value: '188', secondary: 'Served from dashboard summary API.' }],
@@ -253,8 +253,44 @@ describe('CrownDashboardTemplate data truth defaults', () => {
     expect(captured.metrics[0].value).toBe('188');
     expect(captured.metrics[0].dataState).toBe('sample');
     expect(captured.metrics[0].sourceLabel).toContain('Dashboard summary service sample');
-    expect(captured.modules[0].dataState).toBe('sample');
-    expect(captured.modules[0].sourceLabel).toContain('Dashboard summary service sample');
+    expect(captured.modules[0].dataState).toBe('fallback');
+    expect(captured.modules[0].sourceLabel).toBe('Static dashboard scaffold');
+  });
+
+  it('suppresses static template metrics when live dashboard data is unavailable', () => {
+    mockUseDashboardData.mockReturnValue({
+      data: null,
+      error: new Error('summary unavailable'),
+      loading: false,
+      source: 'none',
+      config: { endpoint: '/api/v1/dashboards/advancement/summary' },
+    });
+
+    render(
+      <CrownDashboardTemplate
+        roleKey="advancement"
+        config={{
+          key: 'advancement',
+          liveDataKey: 'advancement',
+          title: 'Advancement Dashboard',
+          metrics: [{ label: 'Donors YTD', value: '152' }],
+          commandModules: [{ key: 'donors', title: 'Donor Management' }],
+          quickActions: [],
+          statuses: [],
+          activities: [],
+          trendPanels: [],
+          priorities: [],
+          alerts: [],
+        }}
+      />,
+    );
+
+    expect(captured.metrics).toHaveLength(0);
+    expect(captured.modules).toHaveLength(1);
+    expect(captured.modules[0].dataState).toBe('fallback');
+    expect(captured.modules[0].sourceLabel).toBe('Static dashboard scaffold');
+    expect(captured.truthStatus[0].dataState).toBe('error');
+    expect(captured.truthStatus[0].sourceLabel).toContain('Dashboard summary service unavailable');
   });
 
   it('skips live data loading when disableLiveData is set', () => {

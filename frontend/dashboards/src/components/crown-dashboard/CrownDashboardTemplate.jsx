@@ -154,7 +154,8 @@ function buildLiveDashboardConfig(config, payload, endpointConfig, loading, erro
   const sourceLabel = getDashboardSourceLabel(dataState, endpointConfig?.endpoint, payload);
   const fallbackMetrics = Array.isArray(config.metrics) ? config.metrics : [];
   const payloadMetrics = Array.isArray(payload?.metrics) ? payload.metrics : [];
-  const metrics = (payloadMetrics.length > 0 ? payloadMetrics : fallbackMetrics).map((item, index) => ({
+  const unavailable = dataState === 'error' || dataState === 'unavailable';
+  const metrics = (unavailable || dataState === 'loading' ? [] : payloadMetrics).map((item, index) => ({
     label: item.label,
     value: item.value,
     detail: item.secondary || fallbackMetrics[index]?.detail || sourceLabel,
@@ -162,6 +163,8 @@ function buildLiveDashboardConfig(config, payload, endpointConfig, loading, erro
     dataState,
     sourceLabel,
   }));
+  const templateDataState = config.dataState || 'fallback';
+  const templateSourceLabel = config.sourceLabel || 'Static dashboard scaffold';
 
   return {
     ...config,
@@ -177,8 +180,8 @@ function buildLiveDashboardConfig(config, payload, endpointConfig, loading, erro
       { label: 'Dashboard Data Source', state: sourceLabel },
       ...(Array.isArray(config.statuses) ? config.statuses : []),
     ],
-    commandModules: applyDataTruth(config.commandModules, dataState, sourceLabel),
-    errorState: (dataState === 'error' || dataState === 'unavailable') && metrics.length === 0
+    commandModules: applyDataTruth(config.commandModules, templateDataState, templateSourceLabel),
+    errorState: unavailable
       ? {
           title: 'Dashboard data unavailable',
           message: sourceLabel,
