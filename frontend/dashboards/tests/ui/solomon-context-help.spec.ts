@@ -22,7 +22,7 @@ test('Solomon help supports native keyboard dismissal, focus return and mobile r
       const topic = route.request().postDataJSON().topic;
       expect(['onboarding', 'communications']).toContain(topic);
       expect(route.request().postDataJSON()).toEqual({ topic, human_review_acknowledged: true });
-      await route.fulfill({ json: { topic, steps: ['Review dates before sending.'], draft: 'General event reminder: complete [date] before use.', source_document: 'docs/solomon/SOLOMON_APPROVED_ASSISTANCE.md', source_section: topic === 'onboarding' ? 'existing-guidance' : topic, title: 'Implementation guidance', guidance: 'Review school roles.', mode: 'curated_guidance', generated_by_ai: false, human_review_required: true } });
+      await route.fulfill({ json: { topic, steps: ['Review dates before sending.'], draft: 'General event reminder: complete [date] before use.', source_document: 'docs/solomon/SOLOMON_APPROVED_ASSISTANCE.md', source_section: topic === 'onboarding' ? 'existing-guidance' : topic, title: 'Implementation guidance', guidance: 'Review school roles.', mode: 'curated_guidance', content_origin: 'curated_internal', human_review_required: true } });
     } else {
       await route.fulfill({ json: {} });
     }
