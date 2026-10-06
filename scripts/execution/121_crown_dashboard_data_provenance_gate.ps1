@@ -32,7 +32,7 @@ if (Test-Path $templateDir) {
         $usesBaseStatus = $content -match "BASE_STATUS"
         $usesBaseActivity = $content -match "BASE_ACTIVITY"
         $hasDataState = $content -match "dataState\s*:"
-        $hasLiveState = $content -match "dataState\s*:\s*['\"]live['\"]"
+        $hasLiveState = $content -match 'dataState\s*:\s*[''"]live[''"]'
         $hasSource = $content -match "source(Service|Endpoint|Type|Label)\s*:"
         $hasTenantSignal = $content -match "tenantFiltered\s*:\s*true"
         $hasRoleSignal = $content -match "roleScoped\s*:\s*true"

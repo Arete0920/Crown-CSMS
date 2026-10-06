@@ -26,6 +26,17 @@ jobs:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
 
+      - name: Establish clean exact-SHA evidence context
+        shell: pwsh
+        run: |
+          if ('${{ github.event_name }}' -eq 'pull_request') {
+            git switch -c "pr-${{ github.event.pull_request.number }}-evidence" HEAD
+          }
+          Add-Content -Path .git/info/exclude -Value ".crown-audit/"
+          if (git status --porcelain) {
+            throw "Release authority evidence context is not clean before audit generation."
+          }
+
       - name: Prepare audit output marker
         shell: pwsh
         run: |
@@ -35,15 +46,13 @@ jobs:
 
       - name: Run CROWN release authority stack
         shell: pwsh
+        env:
+          CROWN_DEMO_TOKEN: playwright-demo-token
         run: |
           powershell -ExecutionPolicy Bypass -File .\scripts\execution\118_run_crown_release_authority_stack.ps1
           $stackExit = $LASTEXITCODE
           if ($stackExit -ne 0) {
-            if ('${{ github.event_name }}' -eq 'pull_request') {
-              Write-Warning "Release authority stack exited with code $stackExit on pull_request; preserving artifacts without failing PR gate."
-              exit 0
-            }
-            exit $stackExit
+            throw "CROWN release authority stack failed with exit code $stackExit."
           }
 
       - name: List CROWN audit artifacts
