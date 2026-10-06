@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { authenticatedFetch } from "../../utils/authClient.js";
 
 async function json(path, options = {}) {
@@ -43,7 +43,7 @@ export default function TeacherClassworkPanel() {
       .catch((err) => setError(err?.message || "Unable to load assigned sections."));
   }, []);
 
-  async function reloadClasswork(id = sectionId) {
+  const reloadClasswork = useCallback(async (id) => {
     if (!id) return;
     const [categoryPayload, assignmentPayload] = await Promise.all([
       json(`/api/v1/academics/sections/${encodeURIComponent(id)}/categories/`),
@@ -51,13 +51,13 @@ export default function TeacherClassworkPanel() {
     ]);
     setCategories(categoryPayload?.categories || []);
     setAssignments(assignmentPayload?.assignments || []);
-  }
+  }, []);
 
   useEffect(() => {
     if (!sectionId) return;
     setError("");
     reloadClasswork(sectionId).catch((err) => setError(err?.message || "Unable to load classwork."));
-  }, [sectionId]);
+  }, [sectionId, reloadClasswork]);
 
   async function createAssignment(event) {
     event.preventDefault();
