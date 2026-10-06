@@ -1,5 +1,8 @@
 # CROWN2026 - PRIORITIES 47-61 TO GREEN
 
+> **Superseded authority notice (2026-10-05):** This predecessor priority list is retained for provenance only. It is not a current work queue or release authority source.
+
+
 47. W002 offender inventory
 Green when the repo writes a ranked per-file W002 inventory and summary.
 48. W002 budget gate
