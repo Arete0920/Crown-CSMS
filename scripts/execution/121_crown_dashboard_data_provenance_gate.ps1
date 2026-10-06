@@ -11,7 +11,10 @@ function Get-RelativePathSafe { param([string]$Root, [string]$Path) return $Path
 $repoRoot = (git rev-parse --show-toplevel).Trim()
 if ([string]::IsNullOrWhiteSpace($repoRoot)) { throw "Not inside a git repository." }
 Set-Location $repoRoot
-$branchName = Get-BranchNameSafe
+$branchName = (git branch --show-current 2>$null)
+if ([string]::IsNullOrWhiteSpace($branchName)) { $branchName = $env:GITHUB_HEAD_REF }
+if ([string]::IsNullOrWhiteSpace($branchName)) { $branchName = $env:GITHUB_REF_NAME }
+if ([string]::IsNullOrWhiteSpace($branchName)) { $branchName = "detached-head" } else { $branchName = $branchName.Trim() }
 
 $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
 $outDir = Join-Path $repoRoot ".crown-audit\dashboard-provenance\$timestamp"
@@ -56,13 +59,6 @@ if (Test-Path $templateDir) {
     }
 }
 
-function Get-BranchNameSafe {
-    $name = (git branch --show-current 2>$null)
-    if (-not [string]::IsNullOrWhiteSpace($name)) { return $name.Trim() }
-    if (-not [string]::IsNullOrWhiteSpace($env:GITHUB_HEAD_REF)) { return $env:GITHUB_HEAD_REF.Trim() }
-    if (-not [string]::IsNullOrWhiteSpace($env:GITHUB_REF_NAME)) { return $env:GITHUB_REF_NAME.Trim() }
-    return "detached-head"
-}
 
 $fallbackViolations = @($rows | Where-Object { $_.UsesBaseNote -or $_.UsesBaseTrend -or $_.UsesBaseStatus -or $_.UsesBaseActivity })
 $rows | Export-Csv -Path (Join-Path $outDir "10_widget_provenance.csv") -NoTypeInformation -Encoding UTF8
