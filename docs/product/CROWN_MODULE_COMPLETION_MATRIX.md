@@ -110,7 +110,7 @@ For each row, promotion requires evidence for: domain ownership; models/schema; 
 
 ## Promotion checklist
 
-A row may move above `Inventory` only when the evidence packet names the exact source SHA and proves the relevant stages. A row may move to `Certified` only when all required evidence is current, zero required evidence items are pending/failed, the approved governance review path is recorded, actionable findings are resolved, and the retained certification record references the exact evidence packet. The work author may not self-review or self-approve; automated assistance is not approval authority.
+A row may move above `Inventory` only when the evidence packet names the exact source SHA and proves the relevant stages. A row may move to `Certified` only when all required evidence is current, zero required evidence items are pending/failed, the approved governance review path is recorded, actionable findings are resolved, and the retained certification record references the exact evidence packet. The work author may not self-review or self-approve; tool output is not approval authority.
 
 ## Current baseline summary
 
