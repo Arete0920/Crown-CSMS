@@ -16,7 +16,6 @@ HISTORICAL_PREFIXES = (
     "archive/",
     "docs/archive/",
     "docs/release/",
-    "docs/certification/",
     "docs/demo-proof/",
     "docs/instruction-ledger/",
     "solomon_governance_c1/governance/c1/runtime/audit_pack/",
