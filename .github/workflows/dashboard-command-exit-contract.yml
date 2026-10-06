@@ -1,0 +1,74 @@
+name: Dashboard Command Exit Contract
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - scripts/execution/105_dashboard_module_completion_gate.ps1
+      - .github/workflows/dashboard-command-exit-contract.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dashboard-command-exit-contract-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  command-exit-contract:
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+
+      - name: Verify actual subprocess failures remain failures
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          Set-StrictMode -Version Latest
+          $PSNativeCommandUseErrorActionPreference = $false
+          $tokens = $null
+          $errors = $null
+          $source = (Resolve-Path scripts/execution/105_dashboard_module_completion_gate.ps1).Path
+          $ast = [System.Management.Automation.Language.Parser]::ParseFile($source, [ref]$tokens, [ref]$errors)
+          if ($errors.Count -ne 0) { throw "Dashboard audit runner has PowerShell parse errors." }
+          foreach ($name in @('Write-Utf8', 'Invoke-LoggedCommand')) {
+            $definitions = @($ast.FindAll({ param($node) $node -is [System.Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -eq $name }, $true))
+            if ($definitions.Count -ne 1) { throw "Expected exactly one $name definition." }
+            . ([scriptblock]::Create($definitions[0].Extent.Text))
+          }
+          $script:OutDir = Join-Path $env:RUNNER_TEMP 'dashboard-command-exit-contract'
+          New-Item -ItemType Directory -Force $script:OutDir | Out-Null
+          $batch = Join-Path $script:OutDir 'failing-command.cmd'
+          "@echo off`r`necho deliberate-batch-failure`r`nexit /b 37`r`n" | Set-Content $batch -Encoding ascii
+          $cases = @(
+            @{ Name = 'pwsh_success'; Exe = 'pwsh'; CmdArgs = @('-NoProfile', '-Command', 'exit 0'); Expected = 0 },
+            @{ Name = 'pwsh_failure'; Exe = 'pwsh'; CmdArgs = @('-NoProfile', '-Command', 'exit 41'); Expected = 41 },
+            @{ Name = 'powershell_success'; Exe = 'powershell'; CmdArgs = @('-NoProfile', '-Command', 'exit 0'); Expected = 0 },
+            @{ Name = 'powershell_failure'; Exe = 'powershell'; CmdArgs = @('-NoProfile', '-Command', 'exit 43'); Expected = 43 },
+            @{ Name = 'batch_failure'; Exe = $batch; CmdArgs = @(); Expected = 37 },
+            @{ Name = 'missing_executable'; Exe = 'crown-deliberately-missing-command'; CmdArgs = @(); Expected = 1 }
+          )
+          for ($round = 1; $round -le 3; $round++) {
+            foreach ($case in $cases) {
+              $result = Invoke-LoggedCommand -Name "$($case.Name)_$round" -WorkingDirectory $script:OutDir -Exe $case.Exe -CmdArgs $case.CmdArgs
+              if ($result.ExitCode -ne $case.Expected -or $result.Passed -ne ($case.Expected -eq 0)) {
+                throw "Incorrect command result for $($case.Name), round $round: $($result | ConvertTo-Json -Compress)"
+              }
+              if (-not (Test-Path $result.Log)) { throw "Command evidence log is missing." }
+              if ($case.Name -eq 'batch_failure' -and (Get-Content $result.Log -Raw) -notmatch 'deliberate-batch-failure') {
+                throw "Batch failure output was not preserved."
+              }
+            }
+          }
+          Write-Host 'PASS: 18 actual process exit-code cases, including repeated failures and missing commands.'
+
+      - name: Upload command exit evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: dashboard-command-exit-contract-${{ github.sha }}
+          path: ${{ runner.temp }}/dashboard-command-exit-contract
+          if-no-files-found: error
