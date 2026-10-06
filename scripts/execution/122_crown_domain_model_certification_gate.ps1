@@ -10,6 +10,7 @@ function Write-JsonFile { param([string]$Path, $Object) ($Object | ConvertTo-Jso
 $repoRoot = (git rev-parse --show-toplevel).Trim()
 if ([string]::IsNullOrWhiteSpace($repoRoot)) { throw "Not inside a git repository." }
 Set-Location $repoRoot
+$branchName = Get-BranchNameSafe
 . (Join-Path $repoRoot "scripts/execution/modules/runtime_evidence_validation.ps1")
 
 $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
@@ -63,6 +64,14 @@ $backendFiles = @()
 $frontendFiles = @()
 if (Test-Path $backendRoot) {
     $backendFiles = Get-ChildItem $backendRoot -Recurse -File -ErrorAction SilentlyContinue | Where-Object { $_.Extension -match "\.(py|json|yaml|yml)$" }
+}
+
+function Get-BranchNameSafe {
+    $name = (git branch --show-current 2>$null)
+    if (-not [string]::IsNullOrWhiteSpace($name)) { return $name.Trim() }
+    if (-not [string]::IsNullOrWhiteSpace($env:GITHUB_HEAD_REF)) { return $env:GITHUB_HEAD_REF.Trim() }
+    if (-not [string]::IsNullOrWhiteSpace($env:GITHUB_REF_NAME)) { return $env:GITHUB_REF_NAME.Trim() }
+    return "detached-head"
 }
 if (Test-Path $frontendRoot) {
     $frontendFiles = Get-ChildItem $frontendRoot -Recurse -File -ErrorAction SilentlyContinue | Where-Object { $_.Extension -match "\.(js|jsx|ts|tsx|json)$" }
@@ -126,7 +135,7 @@ $summary = @(
     "# CROWN Domain Model Certification Gate",
     "",
     "- Generated: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')",
-    "- Branch: $((git branch --show-current).Trim())",
+    "- Branch: $branchName",
     "- Head: $((git rev-parse HEAD).Trim())",
     "- Entities: $($entities.Count)",
     "- Non-pass rows: $($nonPass.Count)",
@@ -142,7 +151,7 @@ Write-Utf8 -Path (Join-Path $outDir "00_SUMMARY.md") -Lines $summary
 $status = [ordered]@{
     runtime_evidence_errors = @($runtime.errors)
     generated_at = (Get-Date).ToString("s")
-    branch = (git branch --show-current).Trim()
+    branch = $branchName
     head = (git rev-parse HEAD).Trim()
     pass = $pass
     entity_count = $entities.Count
