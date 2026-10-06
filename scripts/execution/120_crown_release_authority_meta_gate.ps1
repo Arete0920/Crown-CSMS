@@ -20,6 +20,14 @@ function Write-JsonFile {
     ($Object | ConvertTo-Json -Depth 12) | Set-Content -Path $Path -Encoding UTF8
 }
 
+function Get-BranchNameSafe {
+    $name = (git branch --show-current 2>$null)
+    if (-not [string]::IsNullOrWhiteSpace($name)) { return $name.Trim() }
+    if (-not [string]::IsNullOrWhiteSpace($env:GITHUB_HEAD_REF)) { return $env:GITHUB_HEAD_REF.Trim() }
+    if (-not [string]::IsNullOrWhiteSpace($env:GITHUB_REF_NAME)) { return $env:GITHUB_REF_NAME.Trim() }
+    return "detached-head"
+}
+
 function Test-JsonPass {
     param([string]$Path)
     if (-not (Test-Path $Path)) {
@@ -96,6 +104,7 @@ function Find-BlockingMarkers {
 $repoRoot = (git rev-parse --show-toplevel).Trim()
 if ([string]::IsNullOrWhiteSpace($repoRoot)) { throw "Not inside a git repository." }
 Set-Location $repoRoot
+$branchName = Get-BranchNameSafe
 
 $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
 $outDir = Join-Path $repoRoot ".crown-audit\release-authority\$timestamp"
@@ -173,7 +182,7 @@ $summary = New-Object System.Collections.Generic.List[string]
 $summary.Add("# CROWN Release Authority Meta Gate")
 $summary.Add("")
 $summary.Add("- Generated: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')")
-$summary.Add("- Branch: $((git branch --show-current).Trim())")
+$summary.Add("- Branch: $branchName")
 $summary.Add("- Head: $((git rev-parse HEAD).Trim())")
 $summary.Add("- Required artifacts: $($requiredArtifacts.Count)")
 $summary.Add("- Required scripts/workflow files: $($scriptArtifacts.Count)")
@@ -191,7 +200,7 @@ Write-Utf8 -Path (Join-Path $outDir "00_SUMMARY.md") -Lines $summary
 
 $status = [ordered]@{
     generated_at = (Get-Date).ToString("s")
-    branch = (git branch --show-current).Trim()
+    branch = $branchName
     head = (git rev-parse HEAD).Trim()
     required_artifact_count = $requiredArtifacts.Count
     required_script_artifact_count = $scriptArtifacts.Count
