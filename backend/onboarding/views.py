@@ -335,9 +335,9 @@ def commit_session(request, session_id):
     Idempotent: second call on an already-committed session returns the stored result.
     Atomic: all DB writes inside transaction.atomic().
 
-    MVP: parses CSV and records planned record counts in commit_result.
-    Actual model creation is scaffolded — extend this view when the
-    Student/Household intake models are ready (see note below).
+    For student/guardian imports, validated rows are written atomically to the
+    canonical tenant-scoped Household, Student, and Guardian models. The stored
+    commit_result records actual created counts and bounded row exceptions.
     """
     school_id = get_request_school_id(request)
     session = _get_session(session_id, school_id)
