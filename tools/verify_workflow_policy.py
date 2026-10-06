@@ -41,6 +41,7 @@ def _check_dispatch_input_descriptions(text: str, rel: pathlib.Path) -> list[str
 
     in_dispatch = False
     in_inputs = False
+    inputs_indent: int | None = None
     current_input: str | None = None
     has_description = False
 
@@ -51,6 +52,7 @@ def _check_dispatch_input_descriptions(text: str, rel: pathlib.Path) -> list[str
         if line == "workflow_dispatch:":
             in_dispatch = True
             in_inputs = False
+            inputs_indent = None
             current_input = None
             has_description = False
             continue
@@ -68,21 +70,23 @@ def _check_dispatch_input_descriptions(text: str, rel: pathlib.Path) -> list[str
 
         if line == "inputs:" and indent >= 4:
             in_inputs = True
+            inputs_indent = indent
             continue
 
         if not in_inputs:
             continue
 
-        if indent <= 3:
+        if inputs_indent is not None and indent <= inputs_indent:
             if current_input and not has_description:
                 errors.append(f"{rel}: workflow_dispatch input '{current_input}' missing description")
             in_inputs = False
+            inputs_indent = None
             current_input = None
             has_description = False
             continue
 
         input_match = re.match(r"^([A-Za-z0-9_-]+):\s*$", line)
-        if indent >= 6 and input_match:
+        if inputs_indent is not None and indent == inputs_indent + 2 and input_match:
             if current_input and not has_description:
                 errors.append(f"{rel}: workflow_dispatch input '{current_input}' missing description")
             current_input = input_match.group(1)
