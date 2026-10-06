@@ -161,7 +161,7 @@ A release or deployment is NO-GO when any of these are true:
 
 The product owner cannot serve as independent reviewer for work they own or directed. Review and approval must be routed through an appropriate independent reviewer, required GitHub ruleset, or release authority.
 
-Development-support tools and automated services may inspect, audit, draft, patch, and recommend. They must not be treated as independent human approval authorities.
+Repository tooling may inspect, audit, draft, patch, and recommend. Tool output must not be treated as independent human approval.
 
 ## 9. Crown Evidence Language
 
