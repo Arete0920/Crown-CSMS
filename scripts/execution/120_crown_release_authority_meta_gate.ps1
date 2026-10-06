@@ -20,13 +20,6 @@ function Write-JsonFile {
     ($Object | ConvertTo-Json -Depth 12) | Set-Content -Path $Path -Encoding UTF8
 }
 
-function Get-BranchNameSafe {
-    $name = (git branch --show-current 2>$null)
-    if (-not [string]::IsNullOrWhiteSpace($name)) { return $name.Trim() }
-    if (-not [string]::IsNullOrWhiteSpace($env:GITHUB_HEAD_REF)) { return $env:GITHUB_HEAD_REF.Trim() }
-    if (-not [string]::IsNullOrWhiteSpace($env:GITHUB_REF_NAME)) { return $env:GITHUB_REF_NAME.Trim() }
-    return "detached-head"
-}
 
 function Test-JsonPass {
     param([string]$Path)
@@ -104,7 +97,10 @@ function Find-BlockingMarkers {
 $repoRoot = (git rev-parse --show-toplevel).Trim()
 if ([string]::IsNullOrWhiteSpace($repoRoot)) { throw "Not inside a git repository." }
 Set-Location $repoRoot
-$branchName = Get-BranchNameSafe
+$branchName = (git branch --show-current 2>$null)
+if ([string]::IsNullOrWhiteSpace($branchName)) { $branchName = $env:GITHUB_HEAD_REF }
+if ([string]::IsNullOrWhiteSpace($branchName)) { $branchName = $env:GITHUB_REF_NAME }
+if ([string]::IsNullOrWhiteSpace($branchName)) { $branchName = "detached-head" } else { $branchName = $branchName.Trim() }
 
 $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
 $outDir = Join-Path $repoRoot ".crown-audit\release-authority\$timestamp"
