@@ -1,5 +1,8 @@
 # CROWN2026 â€” 15 HIGHEST PRIORITIES TO GREEN
 
+> **Superseded authority notice (2026-10-05):** This predecessor priority list is retained for provenance only. It is not a current work queue or release authority source.
+
+
 1. Auth / RBAC / Tenant proof
    Green when tenant isolation and negative-access tests pass in CI.
 2. Health and integrity endpoint proof
