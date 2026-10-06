@@ -111,7 +111,7 @@ describe('Meet Solomon introduction', () => {
 
 describe('optional structured staff guidance', () => {
   const guidance = { topic: 'onboarding', title: 'Implementation guidance', guidance: 'Review school roles.',
-    mode: 'curated_guidance', generated_by_ai: false, human_review_required: true };
+    mode: 'curated_guidance', content_origin: 'curated_internal', human_review_required: true };
   const setup = (role = 'teacher') => {
     vi.stubEnv('VITE_SOLOMON_GUIDANCE_ENABLED', 'true');
     sessionStorage.setItem('crown.role', role);
@@ -154,7 +154,7 @@ describe('optional structured staff guidance', () => {
   it('rejects generated or mismatched responses instead of presenting them', async () => {
     setup();
     await screen.findByText(/No published guidance/);
-    apiFetch.mockResolvedValue(reply({ ...guidance, generated_by_ai: true, guidance: 'Must not show' }));
+    apiFetch.mockResolvedValue(reply({ ...guidance, content_origin: 'external_generated', guidance: 'Must not show' }));
     fireEvent.click(screen.getByRole('checkbox', { name: /I will review/ }));
     fireEvent.click(screen.getByRole('button', { name: 'View guidance' }));
     await screen.findByText(/Guidance could not be loaded/);
