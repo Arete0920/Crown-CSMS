@@ -19,21 +19,26 @@ SUMMARY_JSON = VERIFY_DIR / "schema_w002_summary.json"
 DETAIL_JSON = VERIFY_DIR / "schema_w002_inventory.json"
 DETAIL_CSV = VERIFY_DIR / "schema_w002_inventory.csv"
 DETAIL_MD = VERIFY_DIR / "schema_w002_inventory.md"
+SCHEMA_OUTPUT = ROOT / "docs" / "openapi" / "crown-openapi.yaml"
 
 
-def run_deploy_check() -> str:
+def run_schema_export() -> tuple[str, int]:
     manage = ROOT / "backend" / "manage.py"
+    SCHEMA_OUTPUT.parent.mkdir(parents=True, exist_ok=True)
     cmd = [
         sys.executable,
         str(manage if manage.exists() else ROOT / "manage.py"),
-        "check",
-        "--deploy",
+        "spectacular",
+        "--file",
+        str(SCHEMA_OUTPUT),
     ]
     env = {
         "DJANGO_DEBUG": "0",
         "DJANGO_ENV": "production",
         "CROWN_ENV": "prod",
-        "DJANGO_SECRET_KEY": os.getenv("DJANGO_SECRET_KEY") or os.getenv("SECRET_KEY") or secrets.token_urlsafe(32),
+        "DJANGO_SECRET_KEY": os.getenv("DJANGO_SECRET_KEY")
+        or os.getenv("SECRET_KEY")
+        or secrets.token_urlsafe(32),
         "DATABASE_URL": os.getenv("DATABASE_URL", "sqlite:///./ci.sqlite3"),
     }
     result = subprocess.run(
@@ -45,31 +50,33 @@ def run_deploy_check() -> str:
     )
     output = (result.stdout or "") + ("\n" + result.stderr if result.stderr else "")
     CHECK_OUTPUT.write_text(output, encoding="utf-8")
-    return output
+    return output, result.returncode
 
 
-def parse_output(output: str) -> tuple[int, list[dict]]:
+def parse_output(output: str) -> tuple[int, int, int, list[dict]]:
     lines = output.splitlines()
     root_pattern = re.escape(str(ROOT)).replace("\\\\", r"[\\/]")
     file_pattern = re.compile(root_pattern + r"[\\/](backend[\\/][^ :]+)")
 
-    total = 0
-    per_file: dict[str, int] = {}
+    error_summary = re.search(r"Errors:\s+(\d+)\s+\((\d+) unique\)", output)
+    warning_summary = re.search(r"Warnings:\s+(\d+)\s+\((\d+) unique\)", output)
 
-    for i, line in enumerate(lines):
-        if "drf_spectacular.W002" not in line:
-            continue
-        total += 1
-        chunk = " ".join(lines[i:i + 4])
-        match = file_pattern.search(chunk)
-        if match:
-            rel = match.group(1).replace("\\", "/")
-        else:
-            rel = "unknown"
+    unique_error_lines = sorted({line.strip() for line in lines if " Error [" in line})
+    total_errors = int(error_summary.group(1)) if error_summary else len(unique_error_lines)
+    unique_errors = int(error_summary.group(2)) if error_summary else len(unique_error_lines)
+    unique_warnings = int(warning_summary.group(2)) if warning_summary else 0
+
+    per_file: dict[str, int] = {}
+    for line in unique_error_lines:
+        match = file_pattern.search(line)
+        rel = match.group(1).replace("\\", "/") if match else "unknown"
         per_file[rel] = per_file.get(rel, 0) + 1
 
-    ranked = [{"file": k, "count": v} for k, v in sorted(per_file.items(), key=lambda x: (-x[1], x[0]))]
-    return total, ranked
+    ranked = [
+        {"file": file_name, "count": count}
+        for file_name, count in sorted(per_file.items(), key=lambda item: (-item[1], item[0]))
+    ]
+    return total_errors, unique_errors, unique_warnings, ranked
 
 
 def load_budget() -> dict:
@@ -79,39 +86,55 @@ def load_budget() -> dict:
 
 
 def main() -> None:
-    output = run_deploy_check()
-    total, ranked = parse_output(output)
+    output, returncode = run_schema_export()
+    total_errors, unique_errors, unique_warnings, ranked = parse_output(output)
     budget = load_budget()
+    current_max = int(budget.get("current_max", 999999))
+    goal = int(budget.get("goal", 0))
 
     summary = {
-        "total_w002": total,
-        "budget_current_max": budget.get("current_max", 999999),
-        "budget_next_target": budget.get("next_target", 0),
-        "budget_pass": total <= int(budget.get("current_max", 999999)),
+        "metric": "unique_schema_generation_errors",
+        "total_w002": unique_errors,
+        "total_schema_errors": total_errors,
+        "unique_schema_errors": unique_errors,
+        "unique_schema_warnings": unique_warnings,
+        "schema_export_returncode": returncode,
+        "budget_current_max": current_max,
+        "budget_next_target": int(budget.get("next_target", 0)),
+        "budget_goal": goal,
+        "budget_pass": returncode == 0 and unique_errors <= current_max,
+        "production_ready": returncode == 0 and unique_errors <= goal,
         "top_files": ranked[:25],
     }
 
     SUMMARY_JSON.write_text(json.dumps(summary, indent=2), encoding="utf-8")
     DETAIL_JSON.write_text(json.dumps(ranked, indent=2), encoding="utf-8")
 
-    with DETAIL_CSV.open("w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=["file", "count"])
+    with DETAIL_CSV.open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.DictWriter(handle, fieldnames=["file", "count"])
         writer.writeheader()
         writer.writerows(ranked)
 
     md = [
-        "# W002 Inventory",
+        "# OpenAPI Schema Error Inventory",
         "",
-        f"Total W002: {total}",
-        f"Budget Current Max: {budget.get('current_max', 999999)}",
+        f"Total schema errors: {total_errors}",
+        f"Unique schema errors: {unique_errors}",
+        f"Unique schema warnings: {unique_warnings}",
+        f"Budget Current Max: {current_max}",
         f"Budget Pass: {summary['budget_pass']}",
+        f"Production Ready (goal={goal}): {summary['production_ready']}",
         "",
-        "| File | Count |",
+        "| File | Unique Error Count |",
         "|---|---:|",
     ]
     for item in ranked[:50]:
         md.append(f"| `{item['file']}` | {item['count']} |")
     DETAIL_MD.write_text("\n".join(md) + "\n", encoding="utf-8")
+
+    if returncode != 0:
+        print(f"Schema export failed with exit code {returncode}.", file=sys.stderr)
+        sys.exit(returncode)
 
 
 if __name__ == "__main__":
