@@ -13,6 +13,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: route-exposure-guard-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   route-exposure-guard:
     name: Route Exposure Guard
@@ -20,7 +24,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
 
       - name: Run route exposure guard gate
         shell: pwsh
@@ -28,7 +32,7 @@ jobs:
 
       - name: Upload route exposure evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: route-exposure-guard-${{ github.run_number }}
           if-no-files-found: warn
