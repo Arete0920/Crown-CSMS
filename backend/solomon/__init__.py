@@ -1,1 +1,1 @@
-"""SOLOMON Phase 1 scaffold package."""
+"""SOLOMON governed knowledge and curated-guidance package."""
