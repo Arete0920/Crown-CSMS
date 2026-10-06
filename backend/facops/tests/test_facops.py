@@ -320,7 +320,7 @@ class TestDrills:
         s = _school("Drill School")
         u = _user("drilluser", is_staff=True)
         from datetime import date
-        Drill.objects.create(school=s, drill_type="FIRE", planned_for=date.today())
+        Drill.objects.create(school=s, drill_type="FIRE", planned_for=timezone.now())
         c = _client(u, s, role="safety_officer")
         resp = c.get(self.URL)
         assert resp.status_code == 200
