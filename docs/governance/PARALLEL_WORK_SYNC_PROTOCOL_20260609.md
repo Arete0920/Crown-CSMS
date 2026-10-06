@@ -5,11 +5,11 @@ Updated: 2026-08-05
 
 ## Purpose
 
-Keep automated assistants, repository connectors, local terminals, and worktrees synchronized through durable repository evidence rather than hidden conversation state.
+Keep repository tools, connectors, local terminals, and worktrees synchronized through durable repository evidence rather than hidden session state.
 
 ## Scope
 
-This protocol applies whenever more than one assistant, tool, terminal, connector, or worktree is active around CROWN.
+This protocol applies whenever more than one tool, terminal, connector, or worktree is active around CROWN.
 
 Tools do not share private state. Synchronization must happen through retained evidence.
 
@@ -45,9 +45,9 @@ A product pull request must contain only files required for its named lane. Do n
 
 ## Human-authority boundary
 
-Automated systems may assist with inspection, implementation, testing, analysis, drafting, and evidence organization. They are not human contributors, independent reviewers, approvers, certification authorities, acceptance authorities, or release authorities.
+Development tooling may support inspection, implementation, testing, analysis, drafting, and evidence organization. Tool output does not constitute independent human review, approval, certification, acceptance, or release authority.
 
-Independent review means review by a qualified person who did not author the work. Automated findings are supporting evidence only.
+Independent review means review by a qualified person who did not author the work. Tool findings are supporting evidence only.
 
 ## Required reporting format
 
