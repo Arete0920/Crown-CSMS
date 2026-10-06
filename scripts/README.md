@@ -40,4 +40,4 @@ Secret scanning must run before commit. Do not bypass a secret-scanning hook or 
 
 ## Authority boundary
 
-Automated systems may assist with inspection, implementation, testing, analysis, and evidence organization. They are not human authors, independent reviewers, approvers, certification authorities, or release authorities.
+Development tooling may support inspection, implementation, testing, analysis, and evidence organization. Tool output does not constitute independent human review, approval, certification, or release authority.
