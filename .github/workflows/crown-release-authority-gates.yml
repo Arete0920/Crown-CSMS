@@ -6,6 +6,9 @@ permissions:
   security-events: read
 
 on:
+  push:
+    branches:
+      - main
   pull_request:
     branches:
       - main
@@ -20,6 +23,11 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Set release CI values
+        shell: pwsh
+        run: |
+          "CROWN_DEMO_TOKEN=ci-${{ github.run_id }}-${{ github.run_attempt }}-release" | Add-Content -Path $env:GITHUB_ENV -Encoding UTF8
 
       - name: Prepare audit output marker
         shell: pwsh
