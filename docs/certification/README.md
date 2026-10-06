@@ -1,5 +1,8 @@
 # Crown2026 Certification Program (Locked)
 
+> **Superseded authority notice (2026-10-05):** This certification program is retained as historical evidence only. It is not the current repository source of truth. Current authority is `docs/CURRENT_RELEASE_STATUS.md`, `docs/canonical/CANONICAL_DOCUMENT_INDEX.md`, and exact-head GitHub evidence.
+
+
 Status date: 2026-03-15
 
 Current branch: fix/track11-12-write-and-lifecycle-proof
