@@ -12,14 +12,19 @@ on:
       - 'release/**'
   workflow_dispatch:
 
+concurrency:
+  group: crown-release-authority-gates-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   release-authority-gates:
     name: Release authority gates
     runs-on: windows-latest
+    timeout-minutes: 30
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
 
       - name: Prepare audit output marker
         shell: pwsh
@@ -62,7 +67,7 @@ jobs:
 
       - name: Upload CROWN audit artifacts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: crown-release-authority-audit
           path: crown-audit-export/**
