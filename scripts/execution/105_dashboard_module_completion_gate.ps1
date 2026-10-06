@@ -111,7 +111,6 @@ function Invoke-LoggedCommand {
 
             $startProcessArgs = @{
                 FilePath = $resolvedCommand.Source
-                ArgumentList = $CmdArgs
                 WorkingDirectory = (Get-Location).Path
                 NoNewWindow = $true
                 PassThru = $true
@@ -120,6 +119,7 @@ function Invoke-LoggedCommand {
                 RedirectStandardError = $stderrTmp
             }
 
+            if ($CmdArgs.Count -gt 0) { $startProcessArgs.ArgumentList = $CmdArgs }
             $proc = Start-Process @startProcessArgs
 
             $proc.Refresh()
