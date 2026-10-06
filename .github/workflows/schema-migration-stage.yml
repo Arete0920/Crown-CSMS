@@ -42,6 +42,10 @@ on:
         required: true
         type: string
 
+concurrency:
+  group: schema-migration-stage-${{ github.ref }}
+  cancel-in-progress: false
+
 permissions:
   contents: read
   id-token: write
