@@ -65,7 +65,7 @@ class GuidanceApiTests(TestCase):
         with patch("socket.socket.connect", side_effect=AssertionError("Network forbidden")):
             response = self.post()
         self.assertEqual(response.status_code, 200)
-        self.assertFalse(response.data["generated_by_ai"])
+        self.assertEqual(response.data["content_origin"], "curated_internal")
         self.assertTrue(response.data["human_review_required"])
         self.assertEqual(response["Cache-Control"], "no-store")
         event = AuditLog.objects.get(action="solomon.guidance.read")
@@ -152,7 +152,7 @@ class AssistanceCatalogTests(SimpleTestCase):
                 self.assertEqual(payload["catalog_version"], CATALOG_VERSION)
                 self.assertEqual(payload["source_document"], SOURCE_DOCUMENT)
                 self.assertEqual(payload["source_section"], topic)
-                self.assertFalse(payload["generated_by_ai"])
+                self.assertEqual(payload["content_origin"], "curated_internal")
                 self.assertTrue(payload["human_review_required"])
                 self.assertEqual(len(payload["source_digest"]), 64)
                 external = build_external_payload({**SELECTION, "topic": topic})
