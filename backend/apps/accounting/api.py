@@ -8,6 +8,7 @@ from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from drf_spectacular.utils import extend_schema
 
 from apps.accounting.models import (
     AccountingDimension,
@@ -33,6 +34,24 @@ from apps.accounting.services.institutional import (
     post_payable_bill,
     submit_purchase_order,
     void_payable_bill,
+)
+from apps.accounting.serializers import (
+    AccountingDimensionListSerializer,
+    AccountingDimensionSerializer,
+    BalanceSheetSerializer,
+    BudgetListSerializer,
+    BudgetSerializer,
+    BudgetVarianceSerializer,
+    FundListSerializer,
+    FundSerializer,
+    IncomeStatementSerializer,
+    PayableBillListSerializer,
+    PayableBillSerializer,
+    PurchaseOrderListSerializer,
+    PurchaseOrderSerializer,
+    TrialBalanceSerializer,
+    VendorListSerializer,
+    VendorSerializer,
 )
 from crown_api.billing_api.permissions import has_finance_runtime_role
 from households.scoping import get_request_school_id
@@ -228,6 +247,8 @@ def _budget_json(row):
     }
 
 
+@extend_schema(methods=["GET"], responses=VendorListSerializer)
+@extend_schema(methods=["POST"], responses=VendorSerializer)
 @api_view(["GET", "POST"])
 @permission_classes([IsAuthenticated])
 def vendors(request):
@@ -257,6 +278,8 @@ def vendors(request):
         return _error(exc)
 
 
+@extend_schema(methods=["GET"], responses=FundListSerializer)
+@extend_schema(methods=["POST"], responses=FundSerializer)
 @api_view(["GET", "POST"])
 @permission_classes([IsAuthenticated])
 def funds(request):
@@ -278,6 +301,8 @@ def funds(request):
         return _error(exc)
 
 
+@extend_schema(methods=["GET"], responses=AccountingDimensionListSerializer)
+@extend_schema(methods=["POST"], responses=AccountingDimensionSerializer)
 @api_view(["GET", "POST"])
 @permission_classes([IsAuthenticated])
 def dimensions(request):
@@ -301,6 +326,8 @@ def dimensions(request):
         return _error(exc)
 
 
+@extend_schema(methods=["GET"], responses=PurchaseOrderListSerializer)
+@extend_schema(methods=["POST"], responses=PurchaseOrderSerializer)
 @api_view(["GET", "POST"])
 @permission_classes([IsAuthenticated])
 def purchase_orders(request):
@@ -346,6 +373,7 @@ def purchase_orders(request):
         return _error(exc)
 
 
+@extend_schema(responses=PurchaseOrderSerializer)
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def purchase_order_action(request, po_id, action):
@@ -368,6 +396,8 @@ def purchase_order_action(request, po_id, action):
         return _error(exc)
 
 
+@extend_schema(methods=["GET"], responses=PayableBillListSerializer)
+@extend_schema(methods=["POST"], responses=PayableBillSerializer)
 @api_view(["GET", "POST"])
 @permission_classes([IsAuthenticated])
 def payable_bills(request):
@@ -424,6 +454,7 @@ def payable_bills(request):
         return _error(exc)
 
 
+@extend_schema(responses=PayableBillSerializer)
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def payable_bill_action(request, bill_id, action):
@@ -448,6 +479,8 @@ def payable_bill_action(request, bill_id, action):
         return _error(exc)
 
 
+@extend_schema(methods=["GET"], responses=BudgetListSerializer)
+@extend_schema(methods=["POST"], responses=BudgetSerializer)
 @api_view(["GET", "POST"])
 @permission_classes([IsAuthenticated])
 def budgets(request):
@@ -483,6 +516,7 @@ def budgets(request):
         return _error(exc)
 
 
+@extend_schema(responses=BudgetSerializer)
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def budget_approve(request, budget_id):
@@ -506,6 +540,7 @@ def _report_guard(request):
     return _school_id(request), None
 
 
+@extend_schema(responses=TrialBalanceSerializer)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def trial_balance_report(request):
@@ -520,6 +555,7 @@ def trial_balance_report(request):
         return _error(exc)
 
 
+@extend_schema(responses=IncomeStatementSerializer)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def income_statement_report(request):
@@ -536,6 +572,7 @@ def income_statement_report(request):
         return _error(exc)
 
 
+@extend_schema(responses=BalanceSheetSerializer)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def balance_sheet_report(request):
@@ -548,6 +585,7 @@ def balance_sheet_report(request):
         return _error(exc)
 
 
+@extend_schema(responses=BudgetVarianceSerializer)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def budget_variance_report(request, budget_id):
