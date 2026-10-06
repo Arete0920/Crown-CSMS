@@ -1,5 +1,8 @@
 # Crown2026 Blocker Ledger
 
+> **Superseded authority notice (2026-10-05):** This blocker ledger records a March 2026 predecessor certification cycle. Its open items are historical and must not be interpreted as the current Crown-CSMS blocker register or investor-readiness state.
+
+
 Status date: 2026-03-15
 Current branch: fix/track11-12-write-and-lifecycle-proof
 Current head sha: 34ca98d3
