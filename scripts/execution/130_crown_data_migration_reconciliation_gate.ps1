@@ -10,6 +10,7 @@ function Write-JsonFile { param([string]$Path, $Object) ($Object | ConvertTo-Jso
 $repoRoot = (git rev-parse --show-toplevel).Trim()
 if ([string]::IsNullOrWhiteSpace($repoRoot)) { throw "Not inside a git repository." }
 Set-Location $repoRoot
+. (Join-Path $repoRoot "scripts/execution/modules/runtime_evidence_validation.ps1")
 
 $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
 $outDir = Join-Path $repoRoot ".crown-audit\data-migration\$timestamp"
@@ -53,6 +54,13 @@ foreach ($domain in $requiredDomains) {
     }
 }
 
+$runtime = Read-CrownRuntimeEvidence -Gate "data-migration" -Keys $requiredDomains -Criteria @("rehearsal", "count_reconciliation", "error_reconciliation", "rollback", "tenant_isolation") -OutputDir $outDir
+if ($runtime.pass -eq $true) {
+    foreach ($row in $rows) {
+        if ($row.CompletionStatus -notlike "BLOCKED_*") { $row.CompletionStatus = "PASS" }
+    }
+}
+
 $errorRows = @($rows | Where-Object { $_.CompletionStatus -ne "PASS" })
 $rows | Export-Csv -Path (Join-Path $outDir "10_import_counts.csv") -NoTypeInformation -Encoding UTF8
 $errorRows | Export-Csv -Path (Join-Path $outDir "20_reconciliation_errors.csv") -NoTypeInformation -Encoding UTF8
@@ -60,12 +68,12 @@ $errorRows | Export-Csv -Path (Join-Path $outDir "20_reconciliation_errors.csv")
 $rollback = @(
     "# CROWN Data Migration Rollback Test",
     "",
-    "No executable rollback proof was produced by this static gate.",
+    $(if ($runtime.pass -eq $true) { "Validated rollback execution proof: $env:CROWN_RELEASE_RUNTIME_EVIDENCE" } else { "No executable rollback proof was validated." }),
     "A green migration gate requires live import rehearsal, count reconciliation, error reconciliation, rollback execution, and tenant isolation proof."
 )
 Write-Utf8 -Path (Join-Path $outDir "30_rollback_test.md") -Lines $rollback
 
-$pass = $false
+$pass = ($runtime.pass -eq $true -and $errorRows.Count -eq 0)
 $summary = @(
     "# CROWN Data Migration Reconciliation Gate",
     "",
@@ -75,13 +83,14 @@ $summary = @(
     "- Required domains: $($requiredDomains.Count)",
     "- Non-pass rows: $($errorRows.Count)",
     "",
-    "REVIEW REQUIRED",
+    $(if ($pass) { "PASS" } else { "REVIEW REQUIRED" }),
     "",
     "This static gate documents migration/reconciliation coverage signals but intentionally does not pass without live rehearsal evidence."
 )
 Write-Utf8 -Path (Join-Path $outDir "00_SUMMARY.md") -Lines $summary
 
 $status = [ordered]@{
+    runtime_evidence_errors = @($runtime.errors)
     generated_at = (Get-Date).ToString("s")
     branch = (git branch --show-current).Trim()
     head = (git rev-parse HEAD).Trim()
@@ -96,4 +105,4 @@ Copy-Item -Path (Join-Path $outDir "*") -Destination $latestDir -Recurse -Force
 Write-Host "DONE"
 Write-Host "SUMMARY: $(Join-Path $outDir '00_SUMMARY.md')"
 Write-Host "STATUS:  $(Join-Path $outDir '99_STATUS.json')"
-exit 1
+if (-not $pass) { exit 1 }

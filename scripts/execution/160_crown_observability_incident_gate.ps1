@@ -10,6 +10,7 @@ function Write-JsonFile { param([string]$Path, $Object) ($Object | ConvertTo-Jso
 $repoRoot = (git rev-parse --show-toplevel).Trim()
 if ([string]::IsNullOrWhiteSpace($repoRoot)) { throw "Not inside a git repository." }
 Set-Location $repoRoot
+. (Join-Path $repoRoot "scripts/execution/modules/runtime_evidence_validation.ps1")
 
 $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
 $outDir = Join-Path $repoRoot ".crown-audit\observability\$timestamp"
@@ -43,11 +44,13 @@ $incidentControls = @(
     "contact_roster"
 )
 
+$runtime = Read-CrownRuntimeEvidence -Gate "observability" -Keys @($monitoringControls + $incidentControls) -Criteria @("executed_control") -OutputDir $outDir
+
 $monitorRows = foreach ($control in $monitoringControls) {
-    [pscustomobject]@{ Control = $control; RuntimeEvidence = "missing"; CompletionStatus = "BLOCKED_NO_RUNTIME_MONITORING_EVIDENCE" }
+    [pscustomobject]@{ Control = $control; RuntimeEvidence = if ($runtime.pass -eq $true) { $env:CROWN_RELEASE_RUNTIME_EVIDENCE } else { "missing or invalid" }; CompletionStatus = if ($runtime.pass -eq $true) { "PASS" } else { "BLOCKED_NO_RUNTIME_MONITORING_EVIDENCE" } }
 }
 $incidentRows = foreach ($control in $incidentControls) {
-    [pscustomobject]@{ Control = $control; RuntimeEvidence = "missing"; CompletionStatus = "BLOCKED_NO_INCIDENT_TEST_EVIDENCE" }
+    [pscustomobject]@{ Control = $control; RuntimeEvidence = if ($runtime.pass -eq $true) { $env:CROWN_RELEASE_RUNTIME_EVIDENCE } else { "missing or invalid" }; CompletionStatus = if ($runtime.pass -eq $true) { "PASS" } else { "BLOCKED_NO_INCIDENT_TEST_EVIDENCE" } }
 }
 
 $monitorRows | Export-Csv -Path (Join-Path $outDir "10_monitoring_controls.csv") -NoTypeInformation -Encoding UTF8
@@ -55,10 +58,11 @@ $incidentRows | Export-Csv -Path (Join-Path $outDir "20_incident_response_contro
 Write-Utf8 -Path (Join-Path $outDir "30_tabletop_or_test.md") -Lines @(
     "# CROWN Incident Tabletop / Test Evidence",
     "",
-    "No incident tabletop or production-like incident test evidence is attached by this static gate.",
+    $(if ($runtime.pass -eq $true) { "Validated incident exercise proof: $env:CROWN_RELEASE_RUNTIME_EVIDENCE" } else { "No incident exercise proof was validated." }),
     "A green result requires executed tabletop/test evidence and current contact/escalation proof."
 )
 
+$pass = ($runtime.pass -eq $true)
 $summary = @(
     "# CROWN Observability and Incident Readiness Gate",
     "",
@@ -68,17 +72,18 @@ $summary = @(
     "- Monitoring controls: $($monitoringControls.Count)",
     "- Incident controls: $($incidentControls.Count)",
     "",
-    "REVIEW REQUIRED",
+    $(if ($pass) { "PASS" } else { "REVIEW REQUIRED" }),
     "",
     "This gate intentionally fails until live monitoring and incident-response evidence are attached."
 )
 Write-Utf8 -Path (Join-Path $outDir "00_SUMMARY.md") -Lines $summary
 
 $status = [ordered]@{
+    runtime_evidence_errors = @($runtime.errors)
     generated_at = (Get-Date).ToString("s")
     branch = (git branch --show-current).Trim()
     head = (git rev-parse HEAD).Trim()
-    pass = $false
+    pass = $pass
     monitoring_control_count = $monitoringControls.Count
     incident_control_count = $incidentControls.Count
     monitoring_controls = $monitorRows
@@ -90,4 +95,4 @@ Copy-Item -Path (Join-Path $outDir "*") -Destination $latestDir -Recurse -Force
 Write-Host "DONE"
 Write-Host "SUMMARY: $(Join-Path $outDir '00_SUMMARY.md')"
 Write-Host "STATUS:  $(Join-Path $outDir '99_STATUS.json')"
-exit 1
+if (-not $pass) { exit 1 }
