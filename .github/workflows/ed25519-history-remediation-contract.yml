@@ -17,6 +17,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ed25519-history-remediation-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   remediation-contract:
     runs-on: ubuntu-latest
