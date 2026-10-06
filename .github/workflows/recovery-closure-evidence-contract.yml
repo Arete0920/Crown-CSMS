@@ -22,6 +22,10 @@ on:
       - ".github/workflows/recovery-closure-evidence-contract.yml"
   workflow_dispatch:
 
+concurrency:
+  group: recovery-closure-evidence-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
