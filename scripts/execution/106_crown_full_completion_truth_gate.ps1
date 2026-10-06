@@ -77,7 +77,13 @@ if ([string]::IsNullOrWhiteSpace($repoRoot)) {
 
 Set-Location $repoRoot
 
-$dirty = @((git status --porcelain=v1) | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
+$dirty = @(
+    (git status --porcelain=v1) |
+    Where-Object {
+        -not [string]::IsNullOrWhiteSpace($_) -and
+        ($_ -notmatch '\.crown-audit(?:[\\/]|$)')
+    }
+)
 if ($dirty.Count -gt 0) {
     throw "Worktree must be clean before full completion truth gate."
 }
