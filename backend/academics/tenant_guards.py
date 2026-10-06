@@ -425,16 +425,21 @@ def enforce_submission_tenant_consistency(
 
 
 def _serialized_save(model, original_save, instance, *args, **kwargs):
-    positional_using = args[2] if len(args) >= 3 else None
-    using = kwargs.get("using") or positional_using or instance._state.db or router.db_for_write(
+    positional_names = ("force_insert", "force_update", "using", "update_fields")
+    if len(args) > len(positional_names):
+        raise TypeError(
+            f"Model.save() takes from 1 to {len(positional_names) + 1} positional arguments "
+            f"but {len(args) + 1} were given"
+        )
+    for name, value in zip(positional_names, args):
+        if name in kwargs:
+            raise TypeError(f"Model.save() got multiple values for argument '{name}'")
+        kwargs[name] = value
+
+    using = kwargs.get("using") or instance._state.db or router.db_for_write(
         model, instance=instance
     )
-    if len(args) >= 3 and positional_using is None:
-        normalized_args = list(args)
-        normalized_args[2] = using
-        args = tuple(normalized_args)
-    elif len(args) < 3:
-        kwargs["using"] = using
+    kwargs["using"] = using
 
     with transaction.atomic(using=using):
         if not instance._state.adding:
@@ -444,7 +449,7 @@ def _serialized_save(model, original_save, instance, *args, **kwargs):
                 )
             except model.DoesNotExist:
                 pass
-        return original_save(instance, *args, **kwargs)
+        return original_save(instance, **kwargs)
 
 
 def _install_serialized_save(model):
