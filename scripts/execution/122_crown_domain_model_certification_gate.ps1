@@ -10,6 +10,7 @@ function Write-JsonFile { param([string]$Path, $Object) ($Object | ConvertTo-Jso
 $repoRoot = (git rev-parse --show-toplevel).Trim()
 if ([string]::IsNullOrWhiteSpace($repoRoot)) { throw "Not inside a git repository." }
 Set-Location $repoRoot
+. (Join-Path $repoRoot "scripts/execution/modules/runtime_evidence_validation.ps1")
 
 $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
 $outDir = Join-Path $repoRoot ".crown-audit\domain-model\$timestamp"
@@ -105,6 +106,13 @@ foreach ($entity in $entities) {
     }
 }
 
+$runtime = Read-CrownRuntimeEvidence -Gate "domain-model" -Keys $entities -Criteria @("model", "migration", "tenant_boundary", "object_authorization", "api_surface", "workflow_usage", "lifecycle", "audit", "import_export", "retention", "runtime", "current_tests") -OutputDir $outDir
+if ($runtime.pass -eq $true) {
+    foreach ($row in $rows) {
+        if ($row.CompletionStatus -notlike "BLOCKED_*") { $row.CompletionStatus = "PASS" }
+    }
+}
+
 $missingModelOrMigration = @($rows | Where-Object { $_.BackendSignalCount -eq 0 -or $_.MigrationSignalCount -eq 0 })
 $missingTenantOrPermission = @($rows | Where-Object { -not $_.TenantSignal -or -not $_.PermissionSignal })
 $nonPass = @($rows | Where-Object { $_.CompletionStatus -ne "PASS" })
@@ -113,6 +121,7 @@ $rows | Export-Csv -Path (Join-Path $outDir "10_entity_certification.csv") -NoTy
 $missingModelOrMigration | Export-Csv -Path (Join-Path $outDir "20_missing_model_or_migration.csv") -NoTypeInformation -Encoding UTF8
 $missingTenantOrPermission | Export-Csv -Path (Join-Path $outDir "30_missing_tenant_or_permission_proof.csv") -NoTypeInformation -Encoding UTF8
 
+$pass = ($runtime.pass -eq $true -and $nonPass.Count -eq 0)
 $summary = @(
     "# CROWN Domain Model Certification Gate",
     "",
@@ -124,17 +133,18 @@ $summary = @(
     "- Missing model/migration rows: $($missingModelOrMigration.Count)",
     "- Missing tenant/permission rows: $($missingTenantOrPermission.Count)",
     "",
-    "REVIEW REQUIRED",
+    $(if ($pass) { "PASS" } else { "REVIEW REQUIRED" }),
     "",
     "This gate intentionally fails until each core SIS entity has current model, migration, tenant, permission, test, and runtime proof."
 )
 Write-Utf8 -Path (Join-Path $outDir "00_SUMMARY.md") -Lines $summary
 
 $status = [ordered]@{
+    runtime_evidence_errors = @($runtime.errors)
     generated_at = (Get-Date).ToString("s")
     branch = (git branch --show-current).Trim()
     head = (git rev-parse HEAD).Trim()
-    pass = $false
+    pass = $pass
     entity_count = $entities.Count
     non_pass_count = $nonPass.Count
     missing_model_or_migration_count = $missingModelOrMigration.Count
@@ -147,4 +157,4 @@ Copy-Item -Path (Join-Path $outDir "*") -Destination $latestDir -Recurse -Force
 Write-Host "DONE"
 Write-Host "SUMMARY: $(Join-Path $outDir '00_SUMMARY.md')"
 Write-Host "STATUS:  $(Join-Path $outDir '99_STATUS.json')"
-exit 1
+if (-not $pass) { exit 1 }

@@ -10,6 +10,7 @@ function Write-JsonFile { param([string]$Path, $Object) ($Object | ConvertTo-Jso
 $repoRoot = (git rev-parse --show-toplevel).Trim()
 if ([string]::IsNullOrWhiteSpace($repoRoot)) { throw "Not inside a git repository." }
 Set-Location $repoRoot
+. (Join-Path $repoRoot "scripts/execution/modules/runtime_evidence_validation.ps1")
 
 $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
 $outDir = Join-Path $repoRoot ".crown-audit\financial-controls\$timestamp"
@@ -60,16 +61,24 @@ foreach ($control in $controls) {
     }
 }
 
+$runtime = Read-CrownRuntimeEvidence -Gate "financial-controls" -Keys $controls -Criteria @("runtime_control", "ledger_reconciliation") -OutputDir $outDir
+if ($runtime.pass -eq $true) {
+    foreach ($row in $rows) {
+        if ($row.CompletionStatus -notlike "BLOCKED_*") { $row.CompletionStatus = "PASS" }
+    }
+}
+
 $failures = @($rows | Where-Object { $_.CompletionStatus -ne "PASS" })
 $rows | Export-Csv -Path (Join-Path $outDir "10_control_results.csv") -NoTypeInformation -Encoding UTF8
 $failures | Export-Csv -Path (Join-Path $outDir "20_financial_permission_failures.csv") -NoTypeInformation -Encoding UTF8
 Write-Utf8 -Path (Join-Path $outDir "30_ledger_reconciliation.md") -Lines @(
     "# CROWN Ledger Reconciliation",
     "",
-    "No live ledger reconciliation was executed by this static gate.",
+    $(if ($runtime.pass -eq $true) { "Validated ledger reconciliation proof: $env:CROWN_RELEASE_RUNTIME_EVIDENCE" } else { "No live ledger reconciliation proof was validated." }),
     "A green result requires invoice/payment/credit/refund/statement reconciliation against tenant-scoped runtime data."
 )
 
+$pass = ($runtime.pass -eq $true -and $failures.Count -eq 0)
 $summary = @(
     "# CROWN Financial Controls Gate",
     "",
@@ -79,17 +88,18 @@ $summary = @(
     "- Controls: $($controls.Count)",
     "- Non-pass rows: $($failures.Count)",
     "",
-    "REVIEW REQUIRED",
+    $(if ($pass) { "PASS" } else { "REVIEW REQUIRED" }),
     "",
     "This gate intentionally fails until financial controls are proven through runtime tests and ledger reconciliation evidence."
 )
 Write-Utf8 -Path (Join-Path $outDir "00_SUMMARY.md") -Lines $summary
 
 $status = [ordered]@{
+    runtime_evidence_errors = @($runtime.errors)
     generated_at = (Get-Date).ToString("s")
     branch = (git branch --show-current).Trim()
     head = (git rev-parse HEAD).Trim()
-    pass = $false
+    pass = $pass
     control_count = $controls.Count
     non_pass_count = $failures.Count
     controls = $rows
@@ -100,4 +110,4 @@ Copy-Item -Path (Join-Path $outDir "*") -Destination $latestDir -Recurse -Force
 Write-Host "DONE"
 Write-Host "SUMMARY: $(Join-Path $outDir '00_SUMMARY.md')"
 Write-Host "STATUS:  $(Join-Path $outDir '99_STATUS.json')"
-exit 1
+if (-not $pass) { exit 1 }
