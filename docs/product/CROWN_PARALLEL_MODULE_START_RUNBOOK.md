@@ -10,13 +10,13 @@
 
 This file preserves the June 10, 2026 module-first startup approach. It is retained for chronology and must not be treated as the current development workflow, reviewer assignment, approval path, certification process, or release authority.
 
-The original process assigned operational lanes to the Founder/Product Owner, automated assistants, repository tooling, and local development tooling. That tooling-specific structure is no longer controlling. Current work must follow the repository's human-ownership, provenance, RACI, pull-request hygiene, and release-authority controls.
+The original process assigned operational lanes to the Founder/Product Owner and supporting development tooling. That tooling-specific structure is no longer controlling. Current work must follow the repository's human-ownership, provenance, RACI, pull-request hygiene, and release-authority controls.
 
 ## Current authority correction
 
 - The Founder/Product Owner is the accountable human decision owner.
-- Automated systems and tools may assist with inspection, implementation, testing, analysis, drafting, and evidence organization.
-- Automated systems and tools are not human contributors, independent reviewers, approvers, acceptance authorities, certification authorities, or release authorities.
+- Development tooling may support inspection, implementation, testing, analysis, drafting, and evidence organization.
+- Tool output does not constitute independent human review, approval, acceptance, certification, or release authority.
 - A qualified independent reviewer must be a person who did not author the work and whose review is retained.
 - Where independent review is unavailable, `SOLO_DEVELOPER_APPROVED_WORKAROUND` provides bounded founder verification but is not independent review, self-approval, or production authorization.
 - Current-head CI and evidence remain mandatory where required.
@@ -30,7 +30,7 @@ The original process assigned operational lanes to the Founder/Product Owner, au
 4. Registry coverage is not completion.
 5. Page rendering is not workflow proof.
 6. Sample or template data is not production proof.
-7. Screenshots and automated findings are supporting evidence, not independent approval.
+7. Screenshots and tool findings are supporting evidence, not independent approval.
 8. No merge, certification, promotion, or release claim may exceed the retained evidence.
 
 ## Current controlled startup sequence
@@ -48,7 +48,7 @@ The original process assigned operational lanes to the Founder/Product Owner, au
 
 ## Historical tooling references
 
-Earlier references in repository history to named automated assistants or editor-specific review paths describe assistance or historical process only. They do not establish human authorship, independent review, approval, certification, or release authority.
+Earlier tool-specific review paths in repository history describe historical process only. They do not establish human authorship, independent review, approval, certification, or release authority.
 
 ## Non-approval statement
 

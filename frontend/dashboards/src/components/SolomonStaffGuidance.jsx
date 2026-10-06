@@ -54,7 +54,7 @@ export default function SolomonStaffGuidance() {
       if (!response.ok) throw new Error('Guidance unavailable');
       const payload = await response.json();
       if (controller.signal.aborted) return;
-      if (payload.mode !== 'curated_guidance' || payload.generated_by_ai !== false
+      if (payload.mode !== 'curated_guidance' || payload.content_origin !== 'curated_internal'
         || payload.human_review_required !== true || payload.topic !== topic
         || typeof payload.title !== 'string' || typeof payload.guidance !== 'string') {
         throw new Error('Invalid guidance response');

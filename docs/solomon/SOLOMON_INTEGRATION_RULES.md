@@ -40,7 +40,7 @@ SOLOMON work must not change release certification results unless intentionally 
 ## Optional adult guidance extension
 
 The owner-authorized optional guidance slice is governed by
-[Solomon AI privacy boundary](SOLOMON_AI_PRIVACY_BOUNDARY.md). Its structured POST
+[Solomon provider privacy boundary](SOLOMON_PROVIDER_PRIVACY_BOUNDARY.md). Its structured POST
 is read-only with respect to school operations and writes only an audit event.
 It returns curated guidance and does not activate autonomous generation or
-external AI. Existing first-pass resource APIs remain read-only.
+an external content-generation provider. Existing first-pass resource APIs remain read-only.
