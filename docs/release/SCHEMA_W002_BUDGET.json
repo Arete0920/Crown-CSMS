@@ -1,6 +1,7 @@
 {
-  "current_max": 331,
-  "next_target": 100,
+  "metric": "unique_schema_generation_errors",
+  "current_max": 381,
+  "next_target": 300,
   "goal": 0,
-  "notes": "Ratchet down only after a verified green schema pass. Baseline reset to current measured W002 inventory (331) for CI closure; next schema change must reduce, not increase."
+  "notes": "This ratchet measures the actual drf-spectacular OpenAPI export, not Django deploy-check warnings. The 381 baseline is the verified unique-error count from the current release export and is not comparable to the retired W002 count. Production readiness requires goal=0; the ratchet may only move downward."
 }

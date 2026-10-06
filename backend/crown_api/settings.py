@@ -711,11 +711,12 @@ import os as _crown_os
 import sys as _crown_sys
 
 _CROWN_ENV = (
-    _crown_os.getenv("DJANGO_ENV")
+    _crown_os.getenv("CROWN_ENV")
+    or _crown_os.getenv("DJANGO_ENV")
     or _crown_os.getenv("ENVIRONMENT")
     or _crown_os.getenv("AZURE_ENVIRONMENT")
     or ""
-).lower()
+).strip().lower()
 
 _CROWN_IS_PROD = _CROWN_ENV in {"prod", "production"} or bool(_crown_os.getenv("WEBSITE_HOSTNAME"))
 _CROWN_IS_DEPLOY_CHECK = "--deploy" in _crown_sys.argv
