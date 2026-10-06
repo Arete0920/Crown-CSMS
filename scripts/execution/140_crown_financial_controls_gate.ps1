@@ -10,6 +10,7 @@ function Write-JsonFile { param([string]$Path, $Object) ($Object | ConvertTo-Jso
 $repoRoot = (git rev-parse --show-toplevel).Trim()
 if ([string]::IsNullOrWhiteSpace($repoRoot)) { throw "Not inside a git repository." }
 Set-Location $repoRoot
+$branchName = Get-BranchNameSafe
 . (Join-Path $repoRoot "scripts/execution/modules/runtime_evidence_validation.ps1")
 
 $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
@@ -40,6 +41,14 @@ $scanRoots = @("backend", "frontend", "docs", "scripts") | ForEach-Object { Join
 $allFiles = @()
 foreach ($root in $scanRoots) {
     $allFiles += Get-ChildItem $root -Recurse -File -ErrorAction SilentlyContinue | Where-Object { $_.Extension -match "\.(py|ps1|js|jsx|ts|tsx|md|json|csv)$" }
+}
+
+function Get-BranchNameSafe {
+    $name = (git branch --show-current 2>$null)
+    if (-not [string]::IsNullOrWhiteSpace($name)) { return $name.Trim() }
+    if (-not [string]::IsNullOrWhiteSpace($env:GITHUB_HEAD_REF)) { return $env:GITHUB_HEAD_REF.Trim() }
+    if (-not [string]::IsNullOrWhiteSpace($env:GITHUB_REF_NAME)) { return $env:GITHUB_REF_NAME.Trim() }
+    return "detached-head"
 }
 
 $rows = @()
@@ -83,7 +92,7 @@ $summary = @(
     "# CROWN Financial Controls Gate",
     "",
     "- Generated: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')",
-    "- Branch: $((git branch --show-current).Trim())",
+    "- Branch: $branchName",
     "- Head: $((git rev-parse HEAD).Trim())",
     "- Controls: $($controls.Count)",
     "- Non-pass rows: $($failures.Count)",
@@ -97,7 +106,7 @@ Write-Utf8 -Path (Join-Path $outDir "00_SUMMARY.md") -Lines $summary
 $status = [ordered]@{
     runtime_evidence_errors = @($runtime.errors)
     generated_at = (Get-Date).ToString("s")
-    branch = (git branch --show-current).Trim()
+    branch = $branchName
     head = (git rev-parse HEAD).Trim()
     pass = $pass
     control_count = $controls.Count
