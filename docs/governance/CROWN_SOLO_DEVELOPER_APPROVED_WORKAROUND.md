@@ -21,8 +21,8 @@ This rule applies to:
 
 When an independent human reviewer is not immediately available, Crown uses the approved solo-developer workaround:
 
-1. Human-directed development-support tools may assist with architecture, engineering review, and evidence audit.
-2. Development-support tools and automated services do not act as independent human approval authorities.
+1. Engineering tooling may support architecture review, implementation review, and evidence audit.
+2. Tool output does not constitute independent human approval.
 3. GitHub connector is used as the primary source of repository truth.
 4. GitHub Actions, required checks, branch rules, PR evidence, and deployment evidence provide the control path.
 5. The work remains draft, NO-GO, or blocked until the required evidence packet is complete.
