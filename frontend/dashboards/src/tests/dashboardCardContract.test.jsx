@@ -42,18 +42,21 @@ describe('dashboard registry contract', () => {
       expect(screen.getAllByText('Heritage Christian Academy').length).toBeGreaterThan(0);
       expect(screen.queryByText('Sandbox preview data shown. Connect backend for live records.')).toBeNull();
       expect(screen.getByText('Source and sync status')).toBeTruthy();
-        expect(screen.getByText('Updated from current school operations snapshot')).toBeTruthy();
-        expect(screen.getAllByText(/dashboard (records|data)/i).length).toBeGreaterThan(0);
+      expect(screen.getByText('Updated from current school operations snapshot')).toBeTruthy();
+      expect(screen.getAllByText(/dashboard (records|data)/i).length).toBeGreaterThan(0);
 
-      expect(screen.getAllByText('Live Data Certification').length).toBeGreaterThan(0);
-      expect(screen.getAllByText('Demo Data State').length).toBeGreaterThan(0);
-      expect(screen.getAllByText('Permission Proof').length).toBeGreaterThan(0);
-      expect(screen.getAllByText('Tenant Proof').length).toBeGreaterThan(0);
+      // Live-backed KPI labels must not be supplied by the static template while
+      // the dashboard summary is unavailable or still loading.
+      expect(screen.queryByText('Live Data Certification')).toBeNull();
+      expect(screen.queryByText('Demo Data State')).toBeNull();
+      expect(screen.queryByText('Permission Proof')).toBeNull();
+      expect(screen.queryByText('Tenant Proof')).toBeNull();
       expect(screen.queryByText('Attendance Completion')).toBeNull();
       expect(screen.queryByText('Tuition / AR Risk')).toBeNull();
       expect(screen.queryByText('Enrollment')).toBeNull();
       expect(screen.queryByText('Safety / Student Care')).toBeNull();
 
+      // Static navigation/command scaffold remains visible and retains its own provenance.
       expect(screen.getAllByText('Admissions / Enrollment').length).toBeGreaterThan(0);
       expect(screen.getAllByText('Attendance').length).toBeGreaterThan(0);
       expect(screen.getAllByText('Academics / Gradebook').length).toBeGreaterThan(0);
@@ -84,32 +87,36 @@ describe('dashboard registry contract', () => {
     }
   }, 20000);
 
-  it('module launch pages render through the same template shell', () => {
+  it('module launch pages render through the same template shell without static live KPIs', () => {
     render(<CrownLaunchModulePage moduleKey="gradebook" activePath="/gradebook" />);
 
     expect(screen.getByAltText('CROWN Christian School Management Solution')).toBeTruthy();
     expect(screen.getByAltText('CROWN - Christian School Management Solution')).toBeTruthy();
     expect(screen.getByText('Academic Performance View')).toBeTruthy();
-    expect(screen.getAllByText('Live Data Certification').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('Demo Data State').length).toBeGreaterThan(0);
+    expect(screen.getByText('Source and sync status')).toBeTruthy();
+    expect(screen.queryByText('Live Data Certification')).toBeNull();
+    expect(screen.queryByText('Demo Data State')).toBeNull();
   });
 
-  it('teacher, parent, and student routes use canonical shared shell', () => {
+  it('teacher, parent, and student routes use canonical shared shell without static live KPIs', () => {
     const { unmount } = render(<TeacherDashboard />);
     expect(screen.getByText('Teacher Dashboard')).toBeTruthy();
-    expect(screen.getAllByText('Live Data Certification').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('Demo Data State').length).toBeGreaterThan(0);
+    expect(screen.getByText('Source and sync status')).toBeTruthy();
+    expect(screen.queryByText('Live Data Certification')).toBeNull();
+    expect(screen.queryByText('Demo Data State')).toBeNull();
     unmount();
 
     const parentRender = render(<ParentDashboard />);
     expect(screen.getByText('Parent Dashboard')).toBeTruthy();
-    expect(screen.getAllByText('Live Data Certification').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('Demo Data State').length).toBeGreaterThan(0);
+    expect(screen.getByText('Source and sync status')).toBeTruthy();
+    expect(screen.queryByText('Live Data Certification')).toBeNull();
+    expect(screen.queryByText('Demo Data State')).toBeNull();
     parentRender.unmount();
 
     render(<StudentDashboard />);
     expect(screen.getByText('Student Dashboard')).toBeTruthy();
-    expect(screen.getAllByText('Live Data Certification').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('Demo Data State').length).toBeGreaterThan(0);
+    expect(screen.getByText('Source and sync status')).toBeTruthy();
+    expect(screen.queryByText('Live Data Certification')).toBeNull();
+    expect(screen.queryByText('Demo Data State')).toBeNull();
   });
 });
