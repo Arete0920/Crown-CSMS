@@ -34,8 +34,8 @@ def run_schema_export() -> tuple[str, int]:
     ]
     env = {
         "DJANGO_DEBUG": "0",
-        "DJANGO_ENV": "production",
-        "CROWN_ENV": "prod",
+        "DJANGO_ENV": "ci",
+        "CROWN_ENV": "ci",
         "DJANGO_SECRET_KEY": os.getenv("DJANGO_SECRET_KEY")
         or os.getenv("SECRET_KEY")
         or secrets.token_urlsafe(32),
@@ -133,6 +133,7 @@ def main() -> None:
     DETAIL_MD.write_text("\n".join(md) + "\n", encoding="utf-8")
 
     if returncode != 0:
+        print(output, file=sys.stderr)
         print(f"Schema export failed with exit code {returncode}.", file=sys.stderr)
         sys.exit(returncode)
 
