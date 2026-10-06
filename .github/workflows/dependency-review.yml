@@ -17,8 +17,12 @@ jobs:
       contents: read
 
     steps:
-      - name: Dependency review unavailable on this repository
-        run: |
-          echo "Dependency review is not supported on this repository because"
-          echo "GitHub dependency review/advanced security is not enabled."
-          echo "Skipping this check without blocking the PR."
+      - name: Checkout reviewed source
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+        with:
+          persist-credentials: false
+      - name: Review changed dependencies
+        uses: actions/dependency-review-action@05fe4576374b728f0c523d6a13d64c25081e0803
+        with:
+          fail-on-severity: high
+          comment-summary-in-pr: never
