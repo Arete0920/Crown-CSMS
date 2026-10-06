@@ -17,6 +17,12 @@ MOJIBAKE_RE = re.compile(r"[âΓœ†œ©]")
 NAME_RE = re.compile(r"(?m)^name:\s*(.+?)\s*$")
 GROUP_RE = re.compile(r"(?m)^\s{2}group:\s*(.+?)\s*$")
 
+PRODUCTION_DEPLOY_GROUP = "crown-api-prod-deploy"
+PRODUCTION_DEPLOY_WORKFLOWS = {
+    pathlib.Path(".github/workflows/deploy-prod.yml"),
+    pathlib.Path(".github/workflows/deploy-prod-dispatch.yml"),
+}
+
 
 def is_pinned_uses(ref: str) -> bool:
     if ref.startswith("./") or ref.startswith("docker://"):
@@ -204,6 +210,7 @@ def main() -> int:
     all_errors: list[str] = []
     names: dict[str, pathlib.Path] = {}
     groups: dict[str, pathlib.Path] = {}
+    workflow_groups: dict[pathlib.Path, str] = {}
     files = targets if targets else sorted(WORKFLOWS.glob("*.yml"))
     for wf in files:
         if not wf.exists() or wf.suffix.lower() != ".yml":
@@ -223,12 +230,28 @@ def main() -> int:
                 names[name] = wf
 
         if group:
+            workflow_groups[rel] = group
             if group in groups and groups[group] != wf:
-                all_errors.append(
-                    f"{rel}: duplicate top-level concurrency group '{group}' also used by {groups[group].relative_to(ROOT)}"
-                )
+                existing_rel = groups[group].relative_to(ROOT)
+                shared_pair = {existing_rel, rel}
+                if not (
+                    group == PRODUCTION_DEPLOY_GROUP
+                    and shared_pair == PRODUCTION_DEPLOY_WORKFLOWS
+                ):
+                    all_errors.append(
+                        f"{rel}: duplicate top-level concurrency group '{group}' also used by {existing_rel}"
+                    )
             else:
                 groups[group] = wf
+
+    if not targets:
+        for rel in sorted(PRODUCTION_DEPLOY_WORKFLOWS):
+            actual_group = workflow_groups.get(rel)
+            if actual_group != PRODUCTION_DEPLOY_GROUP:
+                all_errors.append(
+                    f"{rel}: production deployment workflow must use shared concurrency group "
+                    f"'{PRODUCTION_DEPLOY_GROUP}' (found: {actual_group!r})"
+                )
 
     if all_errors:
         print("Workflow policy violations detected:")
