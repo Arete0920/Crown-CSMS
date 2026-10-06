@@ -98,7 +98,7 @@ PR titles should use the same concise outcome-oriented style.
 - current operational instructions must use the current repository identity
 - do not embed developer-specific absolute filesystem paths
 - do not commit real credentials or reusable demo passwords
-- named competitors and development-assistance vendors are prohibited from current repository content under the applicable hygiene policies
+- named competitors and development-tool vendors are prohibited from current repository content under the applicable hygiene policies
 
 ## 9. Compatibility naming
 

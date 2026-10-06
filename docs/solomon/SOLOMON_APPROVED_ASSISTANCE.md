@@ -1,7 +1,7 @@
 # Solomon approved assistance catalog
 
 Version: solomon-assistance-v1. Maintained by CROWN. Content is repository-owned,
-general adult assistance, served without runtime model generation. It is not
+general adult assistance, served without runtime external generation. It is not
 independently certified.
 The owner authorized this expansion on October 4, 2026. Human review is required
 before use; authorization to implement is not a legal clearance or content license
@@ -201,7 +201,7 @@ Revise la información antes de continuar. Si necesita ayuda, comuníquese con l
 
 ### Prepare synthetic software quality checks
 
-Use synthetic fixtures and maintained specifications. Verify tenant isolation, permissions, failure handling, accessibility, and human review. Do not upload production databases, credentials, private logs, or identifiable screenshots to an external assistant.
+Use synthetic fixtures and maintained specifications. Verify tenant isolation, permissions, failure handling, accessibility, and human review. Do not upload production databases, credentials, private logs, or identifiable screenshots to an external service.
 
 1. Define expected behavior and a synthetic fixture.
 2. Test authorized and unauthorized roles and school boundaries.
@@ -224,18 +224,18 @@ Evidence and remaining limitations
 | Proposed capability | Implemented now | Still requires later work |
 | --- | --- | --- |
 | Source-based answers | Fixed documentation/support resource and source links | Rights-cleared knowledge corpus, evaluated retrieval and provider activation |
-| Role-specific training | Adult training checklist and reusable agenda | Maintained role curricula and generative tailoring |
-| Communication drafts | General announcement template | Generative drafting; sending remains a human operation |
-| Teacher preparation | Lesson outline and rubric dimensions | Subject/grade-specific approved curriculum and evaluated generation |
+| Role-specific training | Adult training checklist and reusable agenda | Maintained role curricula and provider-based tailoring |
+| Communication drafts | General announcement template | Provider-based drafting; sending remains a human operation |
+| Teacher preparation | Lesson outline and rubric dimensions | Subject/grade-specific approved curriculum and evaluated provider output |
 | Leadership support | General meeting agenda | Confidential deliberations remain prohibited |
 | Kingdom Path | Public outreach outline and verification checklist | Vetted public datasets and source-backed demographic analysis |
 | Diadem/care/camps/activities | General operational planning resource | Qualified local licensing and safety review |
 | Accessibility/language | Plain-language template, general Spanish example requiring review | Qualified translation and accessibility validation of actual content |
-| Software quality | Synthetic test planning checklist | Development-time generation and independently verified tests |
+| Software quality | Synthetic test planning checklist | Development-time tooling and independently verified tests |
 
-External AI remains blocked. No search over arbitrary school content, translation
+External content-generation providers remain blocked. No search over arbitrary school content, translation
 engine, demographic feed, synthetic-data generator, or automatic lesson generator
-is claimed by this catalog. Follow [the existing privacy boundary](SOLOMON_AI_PRIVACY_BOUNDARY.md)
+is claimed by this catalog. Follow [the existing privacy boundary](SOLOMON_PROVIDER_PRIVACY_BOUNDARY.md)
 for provider contracts, legal/impact review, outbound controls, cost limits,
 evaluations, and environment-specific release evidence. Keep calculations,
 authorization, financial aid, grades, attendance, payments, and consequential

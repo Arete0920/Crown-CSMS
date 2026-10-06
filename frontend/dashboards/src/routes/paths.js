@@ -32,6 +32,7 @@ export const PATHS = {
   LEDGER: '/finance/bank-reconciliation',
 
   SERVICE_HOURS: '/service-hours',
+  SERVICE_HOURS_SELF: '/my-service-hours',
   SERVICE_HOURS_DASHBOARD: '/portrait-service-dashboard',
   SPIRITUAL_LIFE: '/spiritual-life',
   DISCIPLINE: '/discipline',

@@ -74,4 +74,4 @@ A task is done only when:
 - review requirements are satisfied;
 - deployment identity is verified where applicable.
 
-Development tools and automated systems may assist with work and findings. They cannot independently approve their own output or authorize release.
+Development tooling may support work and findings. Tool output does not constitute independent approval or release authority.

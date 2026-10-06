@@ -10,7 +10,7 @@ This script DOES NOT:
   - index files
   - chunk documents
   - semantically enrich content
-  - call an external text-generation service
+  - call an external content service
   - activate retrieval
   - mutate downstream systems
 

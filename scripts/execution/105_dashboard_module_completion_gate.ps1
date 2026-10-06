@@ -111,17 +111,21 @@ function Invoke-LoggedCommand {
 
             $startProcessArgs = @{
                 FilePath = $resolvedCommand.Source
-                ArgumentList = $CmdArgs
                 WorkingDirectory = (Get-Location).Path
                 NoNewWindow = $true
                 PassThru = $true
+                Wait = $true
                 RedirectStandardOutput = $stdoutTmp
                 RedirectStandardError = $stderrTmp
             }
 
+            if ($CmdArgs.Count -gt 0) { $startProcessArgs.ArgumentList = $CmdArgs }
             $proc = Start-Process @startProcessArgs
 
-            $proc.WaitForExit()
+            $proc.Refresh()
+            if (-not $proc.HasExited -or $null -eq $proc.ExitCode) {
+                throw "Command terminated without a verifiable exit code: $Exe"
+            }
             $exitCode = [int]$proc.ExitCode
         } catch {
             "ERROR invoking command: $_" | Add-Content -Path $logPath -Encoding UTF8
