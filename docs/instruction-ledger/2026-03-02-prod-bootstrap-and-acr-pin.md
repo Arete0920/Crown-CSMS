@@ -3,7 +3,7 @@
 **Date:** 2026-03-02  
 **Branch:** `fix/system-wiring-and-test-fixes` (PR #502)  
 **HEAD at close:** `4807c9916edcfc7522578a5d5a98f450e44cb398`  
-**Recorded source:** automated operations assistance under owner direction
+**Recorded source:** owner-directed operations tooling
 
 ## Historical purpose
 
@@ -37,4 +37,4 @@ These observations are historical. Current disposition must be verified against 
 
 ## Authority boundary
 
-Automated systems may assist with implementation, analysis, and evidence capture. They are not human authors, independent reviewers, approvers, certification authorities, or release authorities.
+Development tooling may support implementation, analysis, and evidence capture. Tool output does not constitute independent human review, approval, certification, or release authority.
