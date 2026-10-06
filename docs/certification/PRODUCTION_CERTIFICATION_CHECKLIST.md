@@ -1,5 +1,8 @@
 # Crown2026 Production Certification Checklist
 
+> **Superseded authority notice (2026-10-05):** This document belongs to a predecessor certification cycle and is retained for historical evidence only. Current authority is `docs/CURRENT_RELEASE_STATUS.md`, `docs/canonical/CANONICAL_DOCUMENT_INDEX.md`, and exact-head GitHub evidence.
+
+
 Status date: 2026-03-15
 Certification state: Not certified
 
