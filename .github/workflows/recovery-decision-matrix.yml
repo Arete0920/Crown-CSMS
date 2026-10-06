@@ -17,6 +17,10 @@ on:
       - "docs/operations/RECOVERY_DECISION_MATRIX.md"
   workflow_dispatch: {}
 
+concurrency:
+  group: recovery-decision-matrix-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
@@ -65,7 +69,6 @@ jobs:
       - name: Execute scenario
         id: scenario
         shell: bash
-        continue-on-error: true
         env:
           HEALTH: ${{ matrix.health }}
           IMMUTABLE: ${{ matrix.immutable }}
