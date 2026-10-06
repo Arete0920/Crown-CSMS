@@ -55,7 +55,7 @@ ASSISTANCE = MappingProxyType({
     },
     "quality": {
         "title": "Prepare synthetic software quality checks",
-        "guidance": "Use synthetic fixtures and maintained specifications. Verify tenant isolation, permissions, failure handling, accessibility, and human review. Do not upload production databases, credentials, private logs, or identifiable screenshots to an external assistant.",
+        "guidance": "Use synthetic fixtures and maintained specifications. Verify tenant isolation, permissions, failure handling, accessibility, and human review. Do not upload production databases, credentials, private logs, or identifiable screenshots to an external service.",
         "steps": ["Define expected behavior and a synthetic fixture.", "Test authorized and unauthorized roles and school boundaries.", "Test unavailable services, malformed input, and cancellation.", "Verify accessible layout, source labels, and review requirements."],
         "draft": "Synthetic test case outline\nFeature and expected behavior\nSynthetic role and school fixtures\nAuthorized success scenario\nUnauthorized and cross-school rejection scenarios\nInvalid-input and unavailable-service scenarios\nKeyboard, mobile, and reduced-motion checks\nEvidence and remaining limitations",
     },
