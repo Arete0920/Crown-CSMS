@@ -7,14 +7,16 @@ import ImplementationSuccessDashboard from '../pages/ImplementationSuccessDashbo
 afterEach(() => {
   cleanup();
 });
+
 describe('implementation-success dashboard runtime template proof', () => {
-  it('renders expected title and metrics for /implementation-success-dashboard', () => {
+  it('withholds static live KPIs while runtime dashboard data is loading', () => {
     render(<ImplementationSuccessDashboard />);
 
     expect(screen.getByText('Good morning, Implementation Team!')).toBeTruthy();
-    expect(screen.getByText('Schools Onboarding')).toBeTruthy();
-    expect(screen.getByText('Milestones Completed')).toBeTruthy();
-    expect(screen.getByText('Active Blockers')).toBeTruthy();
-    expect(screen.getByText('Go-Lives YTD')).toBeTruthy();
+    expect(screen.getByText('Source and sync status')).toBeTruthy();
+    expect(screen.queryByText('Schools Onboarding')).toBeNull();
+    expect(screen.queryByText('Milestones Completed')).toBeNull();
+    expect(screen.queryByText('Active Blockers')).toBeNull();
+    expect(screen.queryByText('Go-Lives YTD')).toBeNull();
   });
 });
