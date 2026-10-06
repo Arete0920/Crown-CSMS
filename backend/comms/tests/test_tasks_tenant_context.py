@@ -37,6 +37,21 @@ class OutboxTenantContextTests(TestCase):
         self.assertEqual(self.message.status, OutboxMessage.STATUS_SENT)
         self.assertIsNone(get_current_school())
 
+    @patch("comms.sms_service.send_sms_to_number")
+    def test_sms_outbox_dispatches_to_raw_number_transport(self, send_sms_mock):
+        self.message.channel = "SMS"
+        self.message.to = "+15555550123"
+        self.message.subject = ""
+        self.message.save(update_fields=["channel", "to", "subject"])
+
+        result = drain_outbox.run(batch_size=1)
+
+        self.message.refresh_from_db()
+        self.assertEqual(result, {"sent": 1, "failed": 0, "dead": 0})
+        self.assertEqual(self.message.status, OutboxMessage.STATUS_SENT)
+        send_sms_mock.assert_called_once_with("+15555550123", "Body")
+        self.assertIsNone(get_current_school())
+
     @patch("comms.tasks._send")
     def test_delivery_clears_context_after_channel_failure(self, send_mock):
         def fail_inside_context(_message):
