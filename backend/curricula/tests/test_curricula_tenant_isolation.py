@@ -9,7 +9,8 @@ from rest_framework.test import APIClient
 from academics.models import Course
 from core.models import CrownPermission, RolePermission, School, UserRole
 from curricula.governance import create_new_draft
-from curricula.models import CurriculumMap, Lesson, Unit
+from curricula.models import CurriculumMap, CurriculumMapVersion, Lesson, Unit
+from curricula.views import CurriculumMapViewSet, CurriculumMapVersionViewSet, LessonViewSet, UnitViewSet
 
 pytestmark = pytest.mark.django_db
 
@@ -202,3 +203,22 @@ def test_cross_tenant_relations_fail_closed(two_schools):
 def test_unauthenticated_requests_are_denied():
     client = APIClient()
     assert client.get("/api/v1/curricula/maps/").status_code in (401, 403)
+
+
+@pytest.mark.parametrize(
+    ("view_class", "model"),
+    [
+        (CurriculumMapViewSet, CurriculumMap),
+        (CurriculumMapVersionViewSet, CurriculumMapVersion),
+        (UnitViewSet, Unit),
+        (LessonViewSet, Lesson),
+    ],
+)
+def test_schema_introspection_does_not_require_tenant_context(view_class, model):
+    view = view_class()
+    view.swagger_fake_view = True
+
+    queryset = view.get_queryset()
+
+    assert queryset.model is model
+    assert not queryset.exists()

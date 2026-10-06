@@ -40,6 +40,8 @@ class CurriculumMapViewSet(viewsets.ModelViewSet):
     permission_classes = [CrownModulePermission("curriculum.view", write_code="curriculum.edit")]
 
     def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):
+            return CurriculumMap.objects.none()
         school_id = _school_id(self.request)
         qs = CurriculumMap.objects.filter(school_id=school_id)
         course_id = self.request.query_params.get("course_id")
@@ -111,6 +113,8 @@ class CurriculumMapVersionViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [CrownModulePermission("curriculum.view", write_code="curriculum.edit")]
 
     def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):
+            return CurriculumMapVersion.objects.none()
         school_id = _school_id(self.request)
         qs = CurriculumMapVersion.objects.filter(school_id=school_id)
         curriculum_map_id = self.request.query_params.get("curriculum_map_id")
@@ -166,6 +170,8 @@ class UnitViewSet(viewsets.ModelViewSet):
     permission_classes = [CrownModulePermission("curriculum.view", write_code="curriculum.edit")]
 
     def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):
+            return Unit.objects.none()
         school_id = _school_id(self.request)
         qs = Unit.objects.filter(school_id=school_id)
         curriculum_map_id = self.request.query_params.get("curriculum_map_id")
@@ -198,6 +204,8 @@ class LessonViewSet(viewsets.ModelViewSet):
     permission_classes = [CrownModulePermission("curriculum.view", write_code="curriculum.edit")]
 
     def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):
+            return Lesson.objects.none()
         school_id = _school_id(self.request)
         qs = Lesson.objects.filter(school_id=school_id)
         unit_id = self.request.query_params.get("unit_id")
