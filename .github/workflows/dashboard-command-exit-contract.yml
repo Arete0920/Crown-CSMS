@@ -55,7 +55,7 @@ jobs:
             foreach ($case in $cases) {
               $result = Invoke-LoggedCommand -Name "$($case.Name)_$round" -WorkingDirectory $script:OutDir -Exe $case.Exe -CmdArgs $case.CmdArgs
               if ($result.ExitCode -ne $case.Expected -or $result.Passed -ne ($case.Expected -eq 0)) {
-                throw "Incorrect command result for $($case.Name), round $round: $($result | ConvertTo-Json -Compress)"
+                throw "Incorrect command result for $($case.Name), round ${round}: $($result | ConvertTo-Json -Compress)"
               }
               if (-not (Test-Path $result.Log)) { throw "Command evidence log is missing." }
               if ($case.Name -eq 'batch_failure' -and (Get-Content $result.Log -Raw) -notmatch 'deliberate-batch-failure') {
