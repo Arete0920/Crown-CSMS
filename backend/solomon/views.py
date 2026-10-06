@@ -143,7 +143,8 @@ def solomon_status(request):
     return JsonResponse(
         {
             "module": "solomon",
-            "status": "scaffold",
-            "implementation": "not_started",
+            "status": "implemented",
+            "implementation": "curated_guidance",
+            "external_ai_status": "disabled_pending_provider_and_release_review",
         }
     )
