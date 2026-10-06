@@ -2,7 +2,9 @@ from django.urls import path
 
 from .api import my_ticket_credential, my_tickets, redeem_credential
 
-app_name = "crownpass"
+# Intentionally unnamespaced: this URLconf is mounted through both /api/v1/
+# and the /api/ compatibility alias. A shared app_name would register the same
+# namespace twice and make Django reverse resolution ambiguous.
 
 urlpatterns = [
     path("my-tickets/", my_tickets, name="my-tickets"),
