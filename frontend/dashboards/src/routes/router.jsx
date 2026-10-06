@@ -15,6 +15,7 @@ import ParentApplicationFeePaymentPage from "../pages/ParentApplicationFeePaymen
 import CommunicationsThreadsList from "../pages/CommunicationsThreadsList.jsx";
 import ClassroomsDashboard from "../pages/ClassroomsDashboard.jsx";
 import ServiceHoursPage from "../pages/ServiceHoursPage.jsx";
+import StudentServiceHoursPage from "../pages/StudentServiceHoursPage.jsx";
 import Student360Page from "../pages/Student360Page.jsx";
 import ParentStudent360Page from "../pages/ParentStudent360Page.jsx";
 import CrownPassMyTicketsPage from "../pages/CrownPassMyTicketsPage.jsx";
@@ -153,6 +154,16 @@ const MICROSOFT_EDUCATION_ALLOWED_ROLES = [
   "academic_admin",
   "it_admin",
   "admin",
+];
+
+const SERVICE_HOURS_APPROVER_ROLES = [
+  "super_admin",
+  "school_admin",
+  "head_of_school",
+  "service_learning_coordinator",
+  "admin",
+  "director",
+  "principal",
 ];
 
 const CROWNPASS_SCANNER_ROLES = [
@@ -640,7 +651,19 @@ export const router = createBrowserRouter([
   },
   {
     path: PATHS.SERVICE_HOURS,
-    element: <ServiceHoursPage />,
+    element: (
+      <RoleRouteGuard allowedRoles={SERVICE_HOURS_APPROVER_ROLES}>
+        <ServiceHoursPage />
+      </RoleRouteGuard>
+    ),
+  },
+  {
+    path: PATHS.SERVICE_HOURS_SELF,
+    element: (
+      <RoleRouteGuard allowedRoles={["student"]}>
+        <StudentServiceHoursPage />
+      </RoleRouteGuard>
+    ),
   },
   {
     path: PATHS.ACADEMICS_TEACHER_GRADING,

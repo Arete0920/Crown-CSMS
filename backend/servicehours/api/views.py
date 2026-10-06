@@ -5,9 +5,11 @@ from rest_framework import permissions
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from core.models import School, Student
+from core.models import School, Student, StudentIdentityLink
+from core.permissions import user_has_permission
 from servicehours.models import ServiceEntry
 from servicehours.api.serializers import ServiceEntrySerializer, ServiceApprovalSerializer
+
 
 def _get_school_from_request(request):
     school = getattr(request, "school", None)
@@ -21,6 +23,35 @@ def _get_school_from_request(request):
     except School.DoesNotExist:
         return None
 
+
+def _own_core_student(request, school):
+    links = list(
+        StudentIdentityLink.objects.select_related("core_student")
+        .filter(
+            school=school,
+            verification_status=StudentIdentityLink.STATUS_VERIFIED,
+            core_student__school=school,
+            compatibility_student__school_id=school.id,
+            compatibility_student__account=request.user,
+        )[:2]
+    )
+    if len(links) != 1:
+        return None
+    return links[0].core_student
+
+
+def _service_scope(request, school):
+    if user_has_permission(request.user, "service.manage", school=school):
+        return "manage", None
+    if user_has_permission(request.user, "service.self", school=school):
+        return "self", _own_core_student(request, school)
+    return "none", None
+
+
+def _forbidden():
+    return Response({"detail": "Permission denied."}, status=403)
+
+
 class ServiceEntriesListCreate(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -29,7 +60,13 @@ class ServiceEntriesListCreate(APIView):
         if not school:
             return Response({"detail":"Missing or invalid school context"}, status=400)
 
+        scope, own_student = _service_scope(request, school)
+        if scope == "none" or (scope == "self" and own_student is None):
+            return _forbidden()
+
         qs = ServiceEntry.objects.filter(school=school)
+        if scope == "self":
+            qs = qs.filter(student=own_student)
 
         status_q = request.query_params.get("status")
         if status_q:
@@ -37,6 +74,8 @@ class ServiceEntriesListCreate(APIView):
 
         student_id = request.query_params.get("student")
         if student_id:
+            if scope == "self" and str(own_student.id) != str(student_id):
+                return _forbidden()
             qs = qs.filter(student_id=student_id)
 
         return Response(ServiceEntrySerializer(qs[:1000], many=True).data)
@@ -46,6 +85,10 @@ class ServiceEntriesListCreate(APIView):
         if not school:
             return Response({"detail":"Missing or invalid school context"}, status=400)
 
+        scope, own_student = _service_scope(request, school)
+        if scope == "none" or (scope == "self" and own_student is None):
+            return _forbidden()
+
         payload = request.data or {}
         if "student" not in payload:
             return Response({"detail":"Missing student"}, status=400)
@@ -54,6 +97,9 @@ class ServiceEntriesListCreate(APIView):
             student = Student.objects.get(pk=payload["student"], school=school)
         except Student.DoesNotExist:
             return Response({"detail":"Student not found in school"}, status=404)
+
+        if scope == "self" and student.id != own_student.id:
+            return _forbidden()
 
         entry = ServiceEntry.objects.create(
             school=school,
@@ -69,6 +115,7 @@ class ServiceEntriesListCreate(APIView):
         )
         return Response(ServiceEntrySerializer(entry).data, status=201)
 
+
 class ServiceStudentSummary(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -76,6 +123,12 @@ class ServiceStudentSummary(APIView):
         school = _get_school_from_request(request)
         if not school:
             return Response({"detail":"Missing or invalid school context"}, status=400)
+
+        scope, own_student = _service_scope(request, school)
+        if scope == "none" or (scope == "self" and own_student is None):
+            return _forbidden()
+        if scope == "self" and str(own_student.id) != str(student_id):
+            return _forbidden()
 
         try:
             Student.objects.get(pk=student_id, school=school)
@@ -94,6 +147,7 @@ class ServiceStudentSummary(APIView):
             "lifetime_hours": float(lifetime),
         })
 
+
 class ServiceApprovalQueue(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -101,9 +155,12 @@ class ServiceApprovalQueue(APIView):
         school = _get_school_from_request(request)
         if not school:
             return Response({"detail":"Missing or invalid school context"}, status=400)
+        if not user_has_permission(request.user, "service.approve", school=school):
+            return _forbidden()
 
         qs = ServiceEntry.objects.filter(school=school, status="pending").order_by("-created_at")[:300]
         return Response(ServiceEntrySerializer(qs, many=True).data)
+
 
 class ServiceApproveReject(APIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -112,6 +169,8 @@ class ServiceApproveReject(APIView):
         school = _get_school_from_request(request)
         if not school:
             return Response({"detail":"Missing or invalid school context"}, status=400)
+        if not user_has_permission(request.user, "service.approve", school=school):
+            return _forbidden()
 
         try:
             entry = ServiceEntry.objects.get(pk=entry_id, school=school)
