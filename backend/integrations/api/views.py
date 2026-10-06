@@ -1,10 +1,10 @@
 from __future__ import annotations
-from rest_framework import permissions
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from integrations.models import TeamsPreviewAudit
 from core.models import School
+from core.permissions import CrownModulePermission
 
 def _get_school_from_request(request):
     school = getattr(request, "school", None)
@@ -24,7 +24,7 @@ class TeamsPreview(APIView):
     Returns the message card payload that WOULD be sent to Teams.
     Also writes to TeamsPreviewAudit for demo credibility.
     """
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [CrownModulePermission("integrations.view", write_code="integrations.run")]
 
     def post(self, request):
         school = _get_school_from_request(request)

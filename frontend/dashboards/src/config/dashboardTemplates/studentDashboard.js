@@ -187,8 +187,8 @@ export default {
       ],
       primaryActionLabel: 'Log Service Hours',
       backActionLabel: 'View History',
-      primaryActionHref: '/service-hours',
-      backActionHref: '/service-hours',
+      primaryActionHref: '/my-service-hours',
+      backActionHref: '/my-service-hours',
       lastUpdated: '8:00 AM',
     },
     {
