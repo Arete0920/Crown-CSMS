@@ -8,6 +8,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from drf_spectacular.utils import extend_schema
 
 from core.models import UserRole
 from households.models import Student
@@ -20,7 +21,15 @@ from academics.serializers import SectionSerializer, StudentSerializer
 from academics.views import PaginatedReadOnlyViewSet
 
 from .models import GradeEntry
-from .serializers import GradebookAssignmentSerializer, GradebookStudentSerializer
+from .serializers import (
+    GradebookAssignmentSerializer,
+    GradebookStudentSerializer,
+    SectionAssignmentsResponseSerializer,
+    SectionDrilldownResponseSerializer,
+    SectionGradesResponseSerializer,
+    SectionRosterResponseSerializer,
+    SectionSummaryResponseSerializer,
+)
 
 
 
@@ -125,6 +134,7 @@ class GradebookSectionViewSet(PaginatedReadOnlyViewSet):
         return _sections_for_gradebook(self.request, school_id).order_by("term", "course__code")
 
 
+@extend_schema(responses=SectionRosterResponseSerializer)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 @require_tenant
@@ -148,6 +158,7 @@ def section_roster(request, section_id):
     )
 
 
+@extend_schema(responses=SectionAssignmentsResponseSerializer)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 @require_tenant
@@ -165,6 +176,7 @@ def section_assignments(request, section_id):
     )
 
 
+@extend_schema(responses=SectionSummaryResponseSerializer)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def section_summary(request, section_id):
@@ -208,6 +220,7 @@ def section_summary(request, section_id):
     )
 
 
+@extend_schema(responses=SectionGradesResponseSerializer)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 @require_tenant
@@ -284,6 +297,7 @@ def section_grades(request, section_id):
         }
     )
 
+@extend_schema(responses=GradebookAssignmentSerializer(many=True))
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def assignments_list(request):
@@ -300,6 +314,7 @@ def assignments_list(request):
     assignments = _assignment_rows_for_section(school_id, section)
 
     return Response(GradebookAssignmentSerializer(assignments, many=True).data)
+@extend_schema(responses=GradebookStudentSerializer(many=True))
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def students_list(request):
@@ -324,6 +339,7 @@ def students_list(request):
     )
 
     return Response(GradebookStudentSerializer(students, many=True).data)
+@extend_schema(responses=SectionDrilldownResponseSerializer)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def section_drilldown(request, section_id):
