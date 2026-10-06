@@ -61,8 +61,12 @@ def _send(msg: OutboxMessage) -> None:
             channel_id=channel_id,
             message=msg.body,
         )
-    elif msg.channel in ("SMS", "PUSH"):
-        raise NotImplementedError(f"Channel {msg.channel!r} not yet implemented")
+    elif msg.channel == "SMS":
+        from comms.sms_service import send_sms_to_number  # noqa: PLC0415
+
+        send_sms_to_number(msg.to, msg.body)
+    elif msg.channel == "PUSH":
+        raise NotImplementedError("PUSH delivery is not an enabled CROWN channel")
     else:
         raise ValueError(f"Unknown channel: {msg.channel!r}")
 
