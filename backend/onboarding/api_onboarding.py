@@ -13,6 +13,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
+from drf_spectacular.utils import extend_schema
 
 from core.models import School
 from core.permissions import user_has_permission
@@ -25,6 +26,17 @@ from onboarding.models_tasks import (
     SolomonTopic,
     can_activate_school,
     seed_onboarding_tasks,
+)
+from onboarding.serializers import (
+    OnboardingActivationResponseSerializer,
+    OnboardingProgressResponseSerializer,
+    OnboardingTaskCompleteResponseSerializer,
+    SolomonArticleAuthorResponseSerializer,
+    SolomonArticleResponseSerializer,
+    SolomonCategoriesResponseSerializer,
+    SolomonContextResponseSerializer,
+    SolomonPlaybooksResponseSerializer,
+    SolomonSearchResponseSerializer,
 )
 from onboarding.solomon_seed import ensure_solomon_seed_data
 from onboarding.solomon_services import (
@@ -51,6 +63,7 @@ def _can_administer_tenant(request) -> bool:
     )
 
 
+@extend_schema(responses=OnboardingProgressResponseSerializer)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def onboarding_progress(request, school_id):
@@ -90,6 +103,7 @@ def onboarding_progress(request, school_id):
     return Response(response_payload)
 
 
+@extend_schema(responses=OnboardingTaskCompleteResponseSerializer)
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def mark_task_complete(request, school_id, task_id):
@@ -112,6 +126,7 @@ def mark_task_complete(request, school_id, task_id):
     return Response({"id": task.id, "status": task.status, "completed_at": task.completed_at})
 
 
+@extend_schema(responses=OnboardingActivationResponseSerializer)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def activation_gate(request, school_id):
@@ -148,6 +163,7 @@ def _can_manage_solomon(user) -> bool:
     )
 
 
+@extend_schema(responses=SolomonArticleResponseSerializer)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def help_article(request, slug):
@@ -160,6 +176,8 @@ def help_article(request, slug):
     return Response(article)
 
 
+@extend_schema(methods=["GET"], responses=SolomonSearchResponseSerializer)
+@extend_schema(methods=["POST"], responses=SolomonArticleAuthorResponseSerializer)
 @api_view(["GET", "POST"])
 @permission_classes([AllowAny])
 def solomon_articles(request):
@@ -225,6 +243,7 @@ def solomon_articles(request):
     )
 
 
+@extend_schema(responses=SolomonArticleResponseSerializer)
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def solomon_article_detail(request, slug):
@@ -235,6 +254,7 @@ def solomon_article_detail(request, slug):
     return Response(article)
 
 
+@extend_schema(responses=SolomonContextResponseSerializer)
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def solomon_context(request):
@@ -251,6 +271,7 @@ def solomon_context(request):
     return Response(payload)
 
 
+@extend_schema(responses=SolomonCategoriesResponseSerializer)
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def solomon_categories(request):
@@ -258,6 +279,7 @@ def solomon_categories(request):
     return Response({"categories": payload.get("categories", [])})
 
 
+@extend_schema(responses=SolomonPlaybooksResponseSerializer)
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def solomon_playbooks(request):
@@ -270,6 +292,7 @@ def solomon_playbooks(request):
     return Response({"playbooks": payload.get("playbooks", [])})
 
 
+@extend_schema(responses=SolomonSearchResponseSerializer)
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def solomon_search(request):
