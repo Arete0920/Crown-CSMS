@@ -1,6 +1,6 @@
 # External Confidentiality and Tooling Language
 
-**Status:** Canonical external-communications control  
+**Status:** Canonical external-communications control
 **Owner:** TC Megahan, Founder/Product Owner
 
 ## Prospect confidentiality
