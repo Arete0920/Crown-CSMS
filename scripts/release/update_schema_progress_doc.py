@@ -12,16 +12,22 @@ def main() -> None:
     payload = json.loads(SUMMARY.read_text(encoding="utf-8"))
 
     lines = [
-        "# SCHEMA W002 PROGRESS",
+        "# OPENAPI SCHEMA ERROR PROGRESS",
         "",
-        f"- Current W002: {payload['total_w002']}",
+        f"- Metric: {payload['metric']}",
+        f"- Unique schema errors: {payload['unique_schema_errors']}",
+        f"- Total schema errors: {payload['total_schema_errors']}",
+        f"- Unique schema warnings: {payload['unique_schema_warnings']}",
         f"- Budget Current Max: {payload['budget_current_max']}",
         f"- Budget Pass: {payload['budget_pass']}",
         f"- Next Target: {payload['budget_next_target']}",
+        f"- Zero-error schema goal met (NOT_VERIFIED release authority): {payload['production_ready']}",
+        "",
+        "Production readiness requires zero schema-generation errors. The ratchet may only move downward.",
         "",
         "## Top Offenders",
         "",
-        "| File | Count |",
+        "| File | Unique Error Count |",
         "|---|---:|",
     ]
     for item in payload.get("top_files", [])[:25]:

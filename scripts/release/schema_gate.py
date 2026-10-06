@@ -14,21 +14,37 @@ def main() -> None:
     summary = json.loads(SUMMARY.read_text(encoding="utf-8"))
     budget = json.loads(BUDGET.read_text(encoding="utf-8"))
 
-    current = int(summary["total_w002"])
+    current = int(summary["unique_schema_errors"])
     current_max = int(budget["current_max"])
-    passed = current <= current_max
+    goal = int(budget.get("goal", 0))
+    export_ok = int(summary.get("schema_export_returncode", 1)) == 0
+    passed = export_ok and current <= current_max
+    production_ready = export_ok and current <= goal
 
     payload = {
-        "current_w002": current,
+        "metric": "unique_schema_generation_errors",
+        "current": current,
         "budget_current_max": current_max,
         "budget_next_target": int(budget.get("next_target", 0)),
+        "goal": goal,
+        "schema_export_ok": export_ok,
         "passed": passed,
+        "production_ready": production_ready,
     }
     OUT.write_text(json.dumps(payload, indent=2), encoding="utf-8")
 
     if not passed:
-        print(f"W002 gate failed: current={current} max={current_max}", file=sys.stderr)
+        print(
+            f"Schema error ratchet failed: current={current} max={current_max} export_ok={export_ok}",
+            file=sys.stderr,
+        )
         sys.exit(1)
+
+    if not production_ready:
+        print(
+            f"Schema production readiness remains blocked: current={current} goal={goal}.",
+            file=sys.stderr,
+        )
 
 
 if __name__ == "__main__":
