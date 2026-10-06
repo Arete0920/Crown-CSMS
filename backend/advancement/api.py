@@ -1176,6 +1176,7 @@ def _ticket_ids_for_order(order) -> list[str]:
 @permission_classes([CrownModulePermission("advancement.view")])
 def order_status(request, order_id):
     """GET /orders/<uuid>/status/ ? poll order fulfillment status."""
+    school = _require_school(request)
     from .models_stage3_2 import PendingSeatOrder
     try:
         order = PendingSeatOrder.objects.get(pk=order_id, school_id=school.id)
