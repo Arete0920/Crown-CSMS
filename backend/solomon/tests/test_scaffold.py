@@ -6,7 +6,7 @@ from solomon.apps import SolomonConfig
 from solomon.views import solomon_status
 
 
-class SolomonScaffoldTests(SimpleTestCase):
+class SolomonStatusTests(SimpleTestCase):
     def setUp(self):
         self.factory = RequestFactory()
 
@@ -25,5 +25,9 @@ class SolomonScaffoldTests(SimpleTestCase):
         payload = json.loads(response.content)
 
         self.assertEqual(payload.get("module"), "solomon")
-        self.assertEqual(payload.get("status"), "scaffold")
-        self.assertEqual(payload.get("implementation"), "not_started")
+        self.assertEqual(payload.get("status"), "implemented")
+        self.assertEqual(payload.get("implementation"), "curated_guidance")
+        self.assertEqual(
+            payload.get("external_ai_status"),
+            "disabled_pending_provider_and_release_review",
+        )
