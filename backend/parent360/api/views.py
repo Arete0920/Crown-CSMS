@@ -95,33 +95,6 @@ def _try_get_core_student(households_student: Any, school_id: Any = None) -> Any
     return None
 
 
-def _resolve_household_for_user(user: Any) -> Any | None:
-    """
-    Resolve the calling user to a households.Household.
-
-    Primary: match user.email to households.Guardian.email (Guardian has household FK).
-    Demo-safe; not production-safe without a direct User to Household FK.
-    """
-    email = getattr(user, "email", None)
-    if not email:
-        return None
-
-    try:
-        from households.models import Guardian
-        guardian_qs = Guardian.objects.filter(email__iexact=email)
-        school_id = getattr(user, "school_id", None)
-        if school_id not in (None, ""):
-            guardian_qs = guardian_qs.filter(school_id=str(school_id))
-
-        guardian = guardian_qs.select_related("household").first()
-        if guardian and getattr(guardian, "household_id", None):
-            return guardian.household
-    except Exception:
-        _log_degraded_path("guardian_email_bridge_unavailable", email=email)
-
-    return None
-
-
 def _get_children_for_household(household: Any) -> list[Any]:
     """Return list of active households.Student for the household."""
     try:
