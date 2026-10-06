@@ -82,8 +82,17 @@ jobs:
         run: |
           powershell -ExecutionPolicy Bypass -File .\scripts\execution\118_run_crown_release_authority_stack.ps1
           $stackExit = $LASTEXITCODE
-          if ($stackExit -ne 0) {
-            throw "CROWN release authority stack failed with exit code $stackExit."
+          $statusPath = ".crown-audit/release-authority-stack/latest/99_STATUS.json"
+          if (-not (Test-Path $statusPath)) { throw "Release authority stack status is missing." }
+          $status = Get-Content $statusPath -Raw | ConvertFrom-Json
+          if ($status.head -ne (git rev-parse HEAD).Trim()) { throw "Release authority status does not match the tested SHA." }
+          foreach ($gate in $status.steps) {
+            if ($gate.ExitCode -ne 0 -or $gate.Status -ne "PASS") {
+              Write-Host "::error::Release subcheck $($gate.Name) failed (exit $($gate.ExitCode)); evidence: $($gate.LogPath)"
+            }
+          }
+          if ($null -eq $stackExit -or $stackExit -ne 0 -or $status.pass -ne $true -or $status.failure_count -ne 0 -or $status.step_count -ne 9) {
+            throw "CROWN release authority stack failed; inspect the named subchecks and retained audit artifact."
           }
 
       - name: List CROWN audit artifacts
