@@ -98,6 +98,20 @@ class RuntimeEvidenceTests(unittest.TestCase):
         self.report.set("errors", "1")
         self.assertFalse(self.result()["pass"])
 
+    def test_declared_aggregate_failures_are_rejected(self):
+        self.report.tag = "testsuites"
+        self.assertTrue(self.result()["pass"])
+        for field in ("failures", "errors", "skipped", "disabled"):
+            with self.subTest(field=field):
+                self.report.set(field, "1")
+                self.assertFalse(self.result()["pass"])
+                self.report.set(field, "0")
+
+    def test_duplicate_identity_properties_are_rejected(self):
+        props = self.report.find("properties")
+        ET.SubElement(props, "property", name="source_sha", value=self.sha)
+        self.assertFalse(self.result()["pass"])
+
     def test_incomplete_or_duplicate_control_coverage_is_rejected(self):
         records = self.payload["gates"]["domain-model"]["records"]
         records.pop()
@@ -173,6 +187,12 @@ class RuntimeEvidenceTests(unittest.TestCase):
     def test_performance_requires_accepted_targets(self):
         record = self.performance()
         del record["target_approval_reference"]
+        self.assertFalse(self.result()["pass"])
+
+    def test_duplicate_measurement_properties_are_rejected(self):
+        self.performance()
+        props = self.report.find("testcase/properties")
+        ET.SubElement(props, "property", name="p95_ms", value="50")
         self.assertFalse(self.result()["pass"])
 
     def test_performance_rejects_boolean_and_nonfinite_measurements(self):

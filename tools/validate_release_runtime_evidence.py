@@ -24,6 +24,16 @@ def read_json(path: Path):
                       parse_constant=lambda value: (_ for _ in ()).throw(ValueError(value)))
 
 
+def report_properties(element):
+    properties = {}
+    for item in element.findall("./properties/property"):
+        name, value = item.get("name"), item.get("value")
+        if not name or value is None or name in properties:
+            raise ValueError("JUnit properties must have unique names and explicit values")
+        properties[name] = value
+    return properties
+
+
 def validate(path: Path, sha: str, environment: str, gate: str,
              keys: list[str], criteria: list[str], now=None) -> dict:
     errors = []
@@ -68,7 +78,7 @@ def validate(path: Path, sha: str, environment: str, gate: str,
         root = ET.fromstring(content)
         if root.tag not in {"testsuite", "testsuites"}:
             raise ValueError("Expected a JUnit testsuite report")
-        properties = {item.get("name"): item.get("value") for item in root.findall("./properties/property")}
+        properties = report_properties(root)
         for field in ("source_sha", "backend_sha", "frontend_sha", "environment", "runtime_id", "run_reference"):
             if properties.get(field) != payload[field]:
                 raise ValueError(f"JUnit {field} does not match the evidence packet")
@@ -82,7 +92,9 @@ def validate(path: Path, sha: str, environment: str, gate: str,
                 raise ValueError("Runtime report contains failed, errored, or skipped proof")
         if not cases:
             raise ValueError("Runtime report contains no testcases")
-        for suite in root.iter("testsuite"):
+        for suite in root.iter():
+            if suite.tag not in {"testsuite", "testsuites"}:
+                continue
             for field in ("failures", "errors", "skipped", "disabled"):
                 if int(suite.get(field, "0")) != 0:
                     raise ValueError("Runtime report declares non-passing proof")
@@ -119,7 +131,7 @@ def validate(path: Path, sha: str, environment: str, gate: str,
                 if measured["users"] < targets["users"] or measured["p95_ms"] > targets["p95_ms"] or measured["error_rate"] > targets["error_rate"]:
                     raise ValueError(f"{key}: measured performance misses accepted targets")
                 case = cases[tuple(proofs["load_test"])]
-                measurements = {item.get("name"): item.get("value") for item in case.findall("./properties/property")}
+                measurements = report_properties(case)
                 if any(float(measurements[field]) != measured[field] for field in ("users", "p95_ms", "error_rate")):
                     raise ValueError(f"{key}: performance measurements disagree with the executed report")
         if set(by_key) != set(keys):
