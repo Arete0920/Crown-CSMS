@@ -123,7 +123,7 @@ def main() -> None:
         f"Unique schema warnings: {unique_warnings}",
         f"Budget Current Max: {current_max}",
         f"Budget Pass: {summary['budget_pass']}",
-        f"Production Ready (goal={goal}): {summary['production_ready']}",
+        f"Zero-error schema goal met (NOT_VERIFIED release authority; goal={goal}): {summary['production_ready']}",
         "",
         "| File | Unique Error Count |",
         "|---|---:|",
