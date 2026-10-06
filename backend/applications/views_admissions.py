@@ -20,6 +20,7 @@ from django.utils.dateparse import parse_date
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
+from drf_spectacular.utils import extend_schema
 
 from core.models import AcademicYear, School
 from crown_api.tenant import resolve_tenant_school_id
@@ -35,6 +36,16 @@ from .models import (
     EnrollmentContractStatus,
 )
 from .aid_projection import build_award_summary_by_household
+from .serializers import (
+    AdmissionsContractAmendResponseSerializer,
+    AdmissionsContractDetailResponseSerializer,
+    AdmissionsContractUpdateResponseSerializer,
+    AdmissionsDrilldownResponseSerializer,
+    AdmissionsEnrollmentStateResponseSerializer,
+    AdmissionsEventReplayResponseSerializer,
+    AdmissionsPublicConfigResponseSerializer,
+    AdmissionsSubmitResponseSerializer,
+)
 
 
 logger = logging.getLogger(__name__)
@@ -2983,6 +2994,7 @@ def _build_drilldown_rows(apps, applicants_qs, stage_facts: dict, stage_filter: 
     return rows
 
 
+@extend_schema(responses=AdmissionsPublicConfigResponseSerializer)
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def admissions_public_config(_request):
@@ -3542,12 +3554,14 @@ def _admissions_submit_impl(request):
     return _attach_correlation(Response(response_payload, status=201), correlation_id)
 
 
+@extend_schema(responses=AdmissionsSubmitResponseSerializer)
 @api_view(["POST"])
 @permission_classes([AllowAny])
 def admissions_submit(request):
     return _admissions_submit_impl(request)
 
 
+@extend_schema(responses=AdmissionsDrilldownResponseSerializer)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def admissions_drilldown(request):
@@ -3616,6 +3630,7 @@ def admissions_drilldown(request):
     return response
 
 
+@extend_schema(responses=AdmissionsEnrollmentStateResponseSerializer)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def admissions_enrollment_state(request, application_id):
@@ -3706,6 +3721,7 @@ def _admissions_enrollment_state_update_impl(request, application_id):
     )
 
 
+@extend_schema(responses=AdmissionsEventReplayResponseSerializer)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def admissions_application_event_replay(request, application_id):
@@ -3829,6 +3845,7 @@ def _commit_enrollment_state_update(
     return contract_record, billing_handoff
 
 
+@extend_schema(responses=AdmissionsContractDetailResponseSerializer)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def admissions_contract_detail(request, application_id):
@@ -3868,6 +3885,7 @@ def admissions_contract_detail(request, application_id):
     )
 
 
+@extend_schema(responses=AdmissionsContractUpdateResponseSerializer)
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def admissions_contract_update(request, application_id):
@@ -3916,6 +3934,7 @@ def admissions_contract_update(request, application_id):
     )
 
 
+@extend_schema(responses=AdmissionsContractAmendResponseSerializer)
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def admissions_contract_amend(request, application_id):
