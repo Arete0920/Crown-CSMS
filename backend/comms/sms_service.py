@@ -67,3 +67,30 @@ def send_sms(sender, recipient, message: str) -> MessageLog:
 
     log.save()
     return log
+
+
+def send_sms_to_number(to: str, message: str) -> str:
+    """Send an outbox SMS to an already-authorized raw phone number.
+
+    The caller owns consent/entitlement checks before enqueueing. This transport
+    validates provider configuration at delivery time and raises on provider
+    failure so the durable outbox can retry rather than falsely marking sent.
+    """
+    phone = str(to or "").strip()
+    if not phone:
+        raise ValueError("SMS recipient phone number is required")
+    if not (_ACCOUNT_SID and _AUTH_TOKEN and _FROM_NUMBER):
+        raise RuntimeError("SMS provider credentials are not configured")
+
+    from twilio.rest import Client
+
+    client = Client(_ACCOUNT_SID, _AUTH_TOKEN)
+    sent = client.messages.create(
+        body=str(message or "")[:1600],
+        from_=_FROM_NUMBER,
+        to=phone,
+    )
+    sid = str(getattr(sent, "sid", "") or "").strip()
+    if not sid:
+        raise RuntimeError("SMS provider returned no delivery identifier")
+    return sid
