@@ -17,3 +17,16 @@ class AADBearerAuthenticationExtension(OpenApiAuthenticationExtension):
             "bearerFormat": "JWT",
             "description": "Azure Active Directory Bearer token (Microsoft Entra ID).",
         }
+
+
+class CrownAccessTokenAuthenticationExtension(OpenApiAuthenticationExtension):
+    target_class = "crown_api.auth_middleware.CrownAccessTokenAuthentication"
+    name = "CrownAccessTokenAuthentication"
+
+    def get_security_definition(self, auto_schema):
+        return {
+            "type": "http",
+            "scheme": "bearer",
+            "bearerFormat": "JWT",
+            "description": "CROWN access bearer token.",
+        }
