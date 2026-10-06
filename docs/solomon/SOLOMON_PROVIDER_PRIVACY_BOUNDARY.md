@@ -1,11 +1,11 @@
-# Solomon optional AI and guidance boundary
+# Solomon optional provider and guidance boundary
 
-Owner: TC Megahan. Status: curated guidance implemented; external AI disabled.
+Owner: TC Megahan. Status: curated guidance implemented; external provider disabled.
 
 ## Accepted product boundary
 
 Solomon provides optional adult-facing explanations, implementation guidance and
-operating resources. Core CROWN must function without generative AI. Teachers,
+operating resources. Core CROWN must function without external generation services. Teachers,
 leadership and spiritual discernment remain human responsibilities. Solomon does
 not make admissions, grading, disciplinary, financial aid, health, safeguarding,
 pastoral or other consequential decisions. School-specific strategy belongs with
@@ -31,7 +31,7 @@ Supported topics: `onboarding`, `interpretation`, `governance`, `strategy`, plus
 the nine maintained resources in [the approved assistance catalog](SOLOMON_APPROVED_ASSISTANCE.md).
 Additional output contains plain-text checklists, reusable drafts, source references,
 and a catalog version; the digest covers the full resource.
-The response is explicitly labeled curated guidance, not AI-generated. Strategy
+The response is explicitly labeled curated guidance, curated internal content. Strategy
 returns a human advisory handoff. Acknowledgement means the user accepted the
 review requirement; it is not proof that review or a decision has occurred.
 There are no decision actions, model calls, or domain-record reads.
@@ -45,7 +45,7 @@ alone is not evidence of privacy clearance or permission to send to a provider.
 The gateway builds a payload only; there is no external transport or provider.
 
 Successful guidance is durably audited using the existing audit store: internal
-actor, school, topic, policy version and source digest. No raw input or generated
+actor, school, topic, policy version and source digest. No raw input or returned guidance
 output is stored. Audit failure closes the guidance response. Source digest
 identifies the catalog version; it does not prove legal or independent approval.
 Existing audit retention/access rules apply; review them before production enablement.
@@ -55,7 +55,7 @@ runtime verification. Rejection cannot undo data a caller improperly submits.
 
 ## External activation requirements
 
-External AI remains unavailable in this implementation. Selecting an endpoint or
+External content-generation providers remain unavailable in this implementation. Selecting an endpoint or
 changing the guidance flag cannot activate it. A later coherent implementation
 must establish all of the following before production use:
 

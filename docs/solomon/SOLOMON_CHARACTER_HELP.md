@@ -18,17 +18,17 @@ The launch topbar, dashboard hero Help control, shared wizard shell, and admissi
 
 The panel uses native modal dialog focus containment and Escape support, explicit Close, responsive sizing, loading/error/empty states, cancellation of stale requests, unique control IDs, and plain-text rendering. Animation is one short greeting on hover and one short panel entrance; both are disabled under reduced-motion preferences. Published article text remains the backend source of truth. Existing school support instructions remain available.
 
-Only a help slug or allowlisted static route/module is included in the guidance request. URL query values, record identifiers, student/parent records, financial records, and form values are not forwarded. The existing authenticated API client supplies its normal authentication and school context. This interface does not add model calls or free-text question submission.
+Only a help slug or allowlisted static route/module is included in the guidance request. URL query values, record identifiers, student/parent records, financial records, and form values are not forwarded. The existing authenticated API client supplies its normal authentication and school context. This interface does not add external generation calls or free-text question submission.
 
 The shared panel also hosts optional structured staff guidance from the protected
 `/api/solomon/guidance/` endpoint introduced in #85. `VITE_SOLOMON_GUIDANCE_ENABLED`
 defaults off; the backend retains its own independent flags and school role/tenant
 checks. The frontend uses CROWN’s role adapter and canonical API transport, accepts
 only a fixed topic and review acknowledgement, renders curated text plainly, and
-rejects responses labeled generated or missing human-review requirements. Parent,
+rejects responses not labeled as curated internal content or missing human-review requirements. Parent,
 student and unknown roles have no staff controls. Missing backend enablement has
 an explicit unavailable state. No external provider is configured. See
-[AI privacy boundary](SOLOMON_AI_PRIVACY_BOUNDARY.md) for activation requirements.
+[provider privacy boundary](SOLOMON_PROVIDER_PRIVACY_BOUNDARY.md) for activation requirements.
 
 ## Validation and limits
 

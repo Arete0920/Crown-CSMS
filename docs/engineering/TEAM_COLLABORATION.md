@@ -183,7 +183,7 @@ Screenshots and narrative summaries do not replace raw logs, test results, netwo
 
 Implementation approval, merge approval, sandbox authorization, pilot authorization, and production authorization are separate decisions.
 
-No collaborator, automated workflow, development-support service, or tool independently grants production authorization. Production authorization requires an explicit Product Owner decision after applicable evidence gates pass.
+No collaborator, workflow, or tool independently grants production authorization. Production authorization requires an explicit Product Owner decision after applicable evidence gates pass.
 
 ## Onboarding checklist
 

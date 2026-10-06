@@ -35,7 +35,7 @@ Historical predecessor issue numbers, copied SHAs in obsolete documents, and ret
 
 ## Review and authority boundary
 
-Automated systems may assist with inspection, implementation, testing, analysis, drafting, and evidence organization. They are not independent human reviewers, approvers, acceptance authorities, legal/compliance authorities, or release authorities.
+Development tooling may support inspection, implementation, testing, analysis, drafting, and evidence organization. Tool output does not constitute independent human review, approval, acceptance, legal/compliance authority, or release authority.
 
 A qualified independent reviewer is a person who did not author the work and has the required authority. Where an approved compensating-control process applies because an eligible independent reviewer is unavailable, describe that control accurately; it does not become independent review or self-approval.
 
