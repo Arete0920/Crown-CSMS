@@ -21,7 +21,7 @@ def main() -> None:
         f"- Budget Current Max: {payload['budget_current_max']}",
         f"- Budget Pass: {payload['budget_pass']}",
         f"- Next Target: {payload['budget_next_target']}",
-        f"- Production Ready: {payload['production_ready']}",
+        f"- Zero-error schema goal met (NOT_VERIFIED release authority): {payload['production_ready']}",
         "",
         "Production readiness requires zero schema-generation errors. The ratchet may only move downward.",
         "",
