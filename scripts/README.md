@@ -6,7 +6,7 @@ This directory contains scripts and modules for safe credential handling, redact
 
 - Never place live credentials, tokens, connection strings, or private keys in repository files, issue comments, pull requests, chat transcripts, or retained evidence.
 - Use environment variables, approved secret stores, or ignored local secret files.
-- Redact outputs before sharing them with any person, automated assistant, connector, or support channel.
+- Redact outputs before sharing them with any person, tool, connector, or support channel.
 - Confirm secret existence with boolean or name-only queries rather than dumping values.
 - Rotate any credential that may have been exposed and verify the old credential is invalid.
 
