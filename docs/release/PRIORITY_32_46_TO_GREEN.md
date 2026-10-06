@@ -1,5 +1,8 @@
 # CROWN2026 â€” PRIORITIES 32â€“46 TO GREEN
 
+> **Superseded authority notice (2026-10-05):** This predecessor priority list is retained for provenance only. It is not a current work queue or release authority source.
+
+
 32. Release patch idempotency
 Green when duplicate injected blocks in settings.py and urls.py are normalized and reported.
 33. Release package readiness
