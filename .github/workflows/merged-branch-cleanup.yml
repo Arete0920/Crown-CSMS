@@ -40,21 +40,19 @@ jobs:
             exit 0
           fi
 
-          branch_json="$(
-            curl --fail --silent --show-error               -H "Authorization: Bearer $GH_TOKEN"               -H "Accept: application/vnd.github+json"               "https://api.github.com/repos/$REPOSITORY/branches/$HEAD_BRANCH"
-          )"
+          encoded_branch="$(python - "$HEAD_BRANCH" <<'PY'
+import sys, urllib.parse
+print(urllib.parse.quote(sys.argv[1], safe=""))
+PY
+)"
+          branch_json="$(gh api "repos/$REPOSITORY/branches/$encoded_branch")"
           if [ "$(printf '%s' "$branch_json" | jq -r '.protected')" = "true" ]; then
             echo "Branch is protected; retaining $HEAD_BRANCH."
             exit 0
           fi
 
-          encoded_base="$(python - <<'PY'
-import os, urllib.parse
-print(urllib.parse.quote(os.environ["HEAD_BRANCH"], safe=""))
-PY
-)"
           dependent_count="$(
-            curl --fail --silent --show-error               -H "Authorization: Bearer $GH_TOKEN"               -H "Accept: application/vnd.github+json"               "https://api.github.com/repos/$REPOSITORY/pulls?state=open&base=$encoded_base&per_page=100"               | jq 'length'
+            gh api --method GET "repos/$REPOSITORY/pulls"               -f state=open -f base="$HEAD_BRANCH" -f per_page=100               --jq 'length'
           )"
 
           if [ "$dependent_count" -gt 0 ]; then
@@ -62,13 +60,12 @@ PY
             exit 0
           fi
 
-          encoded_ref="$(python - <<'PY'
-import os, urllib.parse
-print(urllib.parse.quote("heads/" + os.environ["HEAD_BRANCH"], safe="/"))
+          encoded_ref="$(python - "$HEAD_BRANCH" <<'PY'
+import sys, urllib.parse
+print(urllib.parse.quote("heads/" + sys.argv[1], safe="/"))
 PY
 )"
-          curl --fail --silent --show-error -X DELETE             -H "Authorization: Bearer $GH_TOKEN"             -H "Accept: application/vnd.github+json"             "https://api.github.com/repos/$REPOSITORY/git/refs/$encoded_ref"
-
+          gh api --method DELETE "repos/$REPOSITORY/git/refs/$encoded_ref"
           echo "Deleted merged branch: $HEAD_BRANCH"
 
   sweep-existing-merged-branches:
@@ -98,7 +95,12 @@ PY
               continue
             fi
 
-            branch_json="$(gh api "repos/$REPOSITORY/branches/$branch")"
+            encoded_branch="$(python - "$branch" <<'PY'
+import sys, urllib.parse
+print(urllib.parse.quote(sys.argv[1], safe=""))
+PY
+)"
+            branch_json="$(gh api "repos/$REPOSITORY/branches/$encoded_branch")"
             protected="$(printf '%s' "$branch_json" | jq -r '.protected')"
             branch_sha="$(printf '%s' "$branch_json" | jq -r '.commit.sha')"
 
