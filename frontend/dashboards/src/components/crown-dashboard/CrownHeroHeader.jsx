@@ -21,8 +21,6 @@ const ACCESSIBLE_HERO_ACTION_STYLE = {
   WebkitTextFillColor: 'var(--crown-primary-deep)',
 };
 
-export const normalizeHeroDisplayText = normalizeDisplayText;
-
 export default function CrownHeroHeader({
   schoolName = 'Heritage Christian Academy',
   updatesCount = 3,
@@ -33,7 +31,7 @@ export default function CrownHeroHeader({
 }) {
   const hasRouterContext = useInRouterContext();
   const [avatarFailed, setAvatarFailed] = useState(false);
-  const displayHeroMessage = normalizeHeroDisplayText(heroMessage);
+  const displayHeroMessage = normalizeDisplayText(heroMessage);
 
   useEffect(() => {
     setAvatarFailed(false);
