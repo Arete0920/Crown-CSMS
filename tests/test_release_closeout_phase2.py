@@ -1,62 +1,15 @@
-import json
 from pathlib import Path
 
-import pytest
-from django.test import Client, override_settings
+
+def test_release_closeout_runtime_package_is_retired():
+    assert not Path("release_closeout").exists()
 
 
-pytestmark = pytest.mark.filterwarnings("ignore::DeprecationWarning")
+def test_release_closeout_is_not_wired_into_runtime():
+    dockerfile = Path("Dockerfile").read_text(encoding="utf-8")
+    settings = Path("backend/crown_api/settings.py").read_text(encoding="utf-8")
+    urls = Path("backend/crown_api/urls.py").read_text(encoding="utf-8")
 
-
-@override_settings(ROOT_URLCONF="release_closeout.urls", TENANT_HEADER_REQUIRED=False, SECURE_SSL_REDIRECT=False)
-@pytest.mark.django_db
-def test_release_closeout_status_endpoint():
-    client = Client()
-    res = client.get("/api/v1/release-closeout/status/")
-    assert res.status_code == 200
-    payload = res.json()
-    assert payload["discipline_escalation"] is True
-    assert payload["transcript_export"] is True
-    assert payload["report_card_export"] is True
-    assert payload["graduation_readiness"] is True
-
-
-@override_settings(ROOT_URLCONF="release_closeout.urls", TENANT_HEADER_REQUIRED=False, SECURE_SSL_REDIRECT=False)
-@pytest.mark.django_db
-def test_release_closeout_live_metrics_endpoint():
-    client = Client()
-    res = client.get("/api/v1/release-closeout/metrics/live/")
-    assert res.status_code == 200
-    payload = res.json()
-    assert "backend_python_files" in payload
-    assert "frontend_tsx_files" in payload
-    assert "mock_or_seed_hits" in payload
-
-
-@override_settings(ROOT_URLCONF="release_closeout.urls", TENANT_HEADER_REQUIRED=False, SECURE_SSL_REDIRECT=False)
-@pytest.mark.django_db
-@pytest.mark.parametrize("route", [
-    "/api/v1/reports/transcript/DEMO-001/",
-    "/api/v1/reports/report-card/DEMO-001/",
-    "/api/v1/reports/discipline/DEMO-001/",
-    "/api/v1/reports/board/",
-])
-def test_pdf_endpoints(route):
-    client = Client()
-    res = client.get(route)
-    assert res.status_code == 200
-    assert res["Content-Type"] == "application/pdf"
-
-
-@override_settings(ROOT_URLCONF="release_closeout.urls", TENANT_HEADER_REQUIRED=False, SECURE_SSL_REDIRECT=False)
-@pytest.mark.django_db
-def test_sms_status_endpoint():
-    client = Client()
-    res = client.get("/api/v1/notifications/sms/status/")
-    assert res.status_code == 200
-    payload = res.json()
-    assert payload["green"] is True
-
-
-def test_priority_doc_exists():
-    assert Path("docs/release/PRIORITY_16_31_TO_GREEN.md").exists()
+    assert "COPY release_closeout" not in dockerfile
+    assert "release_closeout" not in settings
+    assert "release_closeout" not in urls
