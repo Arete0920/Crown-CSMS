@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import CrownWizardStepHeader from "../../components/crown/CrownWizardStepHeader.jsx";
 import {
   configureSchedulingSession,
@@ -14,6 +14,10 @@ export default function Step1Term({ context, setContext, goNext, stepIndex, tota
   const [loading, setLoading] = useState(false);
   const [loadingScope, setLoadingScope] = useState(true);
   const [error, setError] = useState(null);
+  const initialScopeRef = useRef({
+    academicYearId: context.academicYearId || "",
+    termId: context.termId || "",
+  });
 
   useEffect(() => {
     let active = true;
@@ -24,12 +28,12 @@ export default function Step1Term({ context, setContext, goNext, stepIndex, tota
         const data = await getSchedulingScopeOptions();
         if (!active) return;
         setScope(data);
-        const preferredYear = academicYearId
+        const preferredYear = initialScopeRef.current.academicYearId
           || data.academic_years?.find((year) => year.is_current)?.academic_year_id
           || data.academic_years?.[0]?.academic_year_id
           || "";
         setAcademicYearId(preferredYear);
-        if (!termId && preferredYear) {
+        if (!initialScopeRef.current.termId && preferredYear) {
           const preferredTerm = data.terms?.find(
             (term) => term.academic_year_id === preferredYear && term.active,
           ) || data.terms?.find((term) => term.academic_year_id === preferredYear);
