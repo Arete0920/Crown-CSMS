@@ -1,58 +1,91 @@
 # Workflow Consolidation Plan
 
-Last updated: 2026-04-02
+Last updated: 2026-10-06
 
 ## Goal
 
-Reduce the current GitHub Actions workflow sprawl to a canonical set of 12 workflows that
-cover security, test gates, deployments, smoke checks, demo reset, and release verification.
+Keep GitHub Actions small, authoritative, fail-closed, and understandable for a solo-maintained production repository. Top-level workflows are reserved for required merge gates, deployment/runtime operations, domain verification that materially differs from the general test suite, resilience drills, security, and repository maintenance.
 
-## Current State Snapshot
+## October 2026 consolidation
 
-- Phase 2 workflow classification completed and documented in:
-	- `docs/repo-cleanup/WORKFLOW_CLASSIFICATION_PHASE2.md`
-	- `docs/repo-cleanup/WORKFLOW_TRIGGER_MAP_PHASE2.md`
-	- `docs/repo-cleanup/REQUIRED_CHECKS_MAP_PHASE2.md`
-- Two low-value workflows were removed in Phase 2:
-	- `.github/workflows/msgraph-smoke.yml`
-	- `.github/workflows/demo-surface-gate.yml`
-- Remaining consolidation, required-check hardening, and noise reduction are tracked as follow-up actions.
+- Starting top-level workflow count: **116**
+- Canonical active workflow count after this cleanup: **43**
+- Reduction: **73 workflows removed (63%)**
+- Underlying application tests, audit scripts, and release evidence code remain in the repository unless independently obsolete.
+- No branch-required workflow identified in the current required-check map was removed.
+- Legacy phase, RC, proof-ceremony, sandbox-depth, duplicate evidence-contract, duplicate dependency-scan, duplicate deploy-dispatch, and duplicate smoke entrypoints were retired.
+- `tools/verify_workflow_policy.py` now enforces the canonical workflow filename inventory, so workflow sprawl cannot silently return.
 
-## Canonical Target Set
+## Canonical workflow classes
 
-| Workflow | Purpose |
-|---|---|
-| codeql.yml | Static security analysis |
-| dependency-audit.yml | pip-audit and npm audit |
-| backend-gate.yml | Django tests and API contracts |
-| frontend-gate.yml | Frontend tests and smoke |
-| contract-gate.yml | API contract validation |
-| secret-scan.yml | Secret detection |
-| deploy-prod.yml | Production deployment |
-| deploy-dev.yml | Development deployment |
-| dev-smoke.yml | Post-deploy development smoke |
-| prod-health-watch.yml | Production health polling |
-| demo-reset.yml | Manual demo reset and seed |
-| release-verify.yml | Manual pre-release verification |
+### Required merge and repository gates
 
-## Known Duplicate / Legacy Candidates
+- `backend-gate.yml`
+- `codeql.yml`
+- `contract-gate.yml`
+- `crown-release-authority-gates.yml`
+- `dashboards-build-gate.yml`
+- `dependency-audit.yml`
+- `dependency-review.yml`
+- `pytest-gate.yml`
+- `release-verify.yml`
+- `repository-policy.yml`
+- `schema-governance.yml`
+- `secret-scan.yml`
+- `tests.yml`
 
-- ui-proof-gates.yml -> ui-proof-gate.yml
-- dev-smoke-azure-dev.yml -> dev-smoke.yml
-- deploy-prod-dispatch.yml -> deploy-prod.yml
-- demo-reset-smoke.yml -> demo-reset.yml
-- tests.yml -> ci.yml
-- dependency-scan.yml -> dependency-audit.yml
+### Core CI and specialized verification
 
-## Execution Notes
+- `ci.yml`
+- `accounting-verification.yml`
+- `classroom-verification.yml`
+- `content-operations-verification.yml`
+- `finance-final-hardening.yml`
+- `migration-lock-gate.yml`
+- `tenant-isolation-gate.yml`
+- `ui-proof-gate.yml`
+- `wizard-e2e-evidence-gate.yml`
+- `pr-preflight.yml`
+- `crown-claims-guard.yml`
 
-1. Verify recent run history before deleting a workflow.
-2. Keep a single canonical workflow for each operational purpose.
-3. Update branch protection required checks only after canonical workflows are green on `main`.
-4. Preserve evidence of the before and after workflow inventory for the release packet.
+### Deployment and runtime operations
 
-## Governance Caveat
+- `azure-classroom-preflight.yml`
+- `azure-drift-watchdog.yml`
+- `deploy-dashboard.yml`
+- `deploy-dev.yml`
+- `deploy-prod.yml`
+- `schema-migration-stage.yml`
+- `dev-smoke.yml`
+- `demo-reset.yml`
+- `ops-reset-dev.yml`
+- `prod-health-watch.yml`
+- `prod-rollback-on-failure.yml`
 
-Current ruleset snapshot shows only one required check context (`proof-ceremony`).
-Additional checks should be promoted to required only after they are stable and green on main.
-See `docs/release/BRANCH_PROTECTION_EVIDENCE.md` and `docs/release/FINAL_RELEASE_GATE.md`.
+### Resilience, security, and maintenance
+
+- `isolated-postgres-restore-drill.yml`
+- `prod-immutable-rollback-drill.yml`
+- `recovery-control-drill.yml`
+- `license-audit.yml`
+- `sbom-generation.yml`
+- `repository-freshness.yml`
+- `stale-branches.yml`
+- `workflow-permissions-audit.yml`
+
+## Operating rules
+
+1. **Do not create a new top-level workflow for a module, phase, proof packet, or one-time investigation.**
+2. Add ordinary tests to an existing canonical workflow or test suite.
+3. New deployment or resilience entrypoints require a distinct operational lifecycle that cannot safely live in an existing workflow.
+4. Every external Action reference must use a full immutable commit SHA.
+5. Every runner job must have a timeout.
+6. Every workflow must declare least-privilege permissions and a concurrency policy.
+7. Required PR gates fail closed. Runtime certification may report blocked/not-verified, but must not convert an actual gate failure into success.
+8. Production deployment remains exact-tag/exact-SHA based; mutable image labels must never be deployment authority.
+9. Remove obsolete workflow entrypoints when their purpose is absorbed; do not leave historical workflows active for provenance.
+10. Historical evidence belongs in documentation/audit records, not in permanently active Actions entrypoints.
+
+## Next reduction
+
+The remaining 43 workflows are the safe canonical ceiling under the current required-check and operational model. A second reduction should occur only after GitHub branch-protection/ruleset administration is updated so several existing required contexts can be replaced by a smaller set of stable aggregate gates. That administrative change must precede deleting required check-producing workflows.
