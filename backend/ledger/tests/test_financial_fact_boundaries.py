@@ -144,3 +144,14 @@ def test_reversal_posting_failure_rolls_back_void(model, account):
     row.refresh_from_db()
     assert not row.is_void
     assert JournalEntry.objects.count() == entries
+
+
+def test_void_endpoints_do_not_swallow_unexpected_failures():
+    """Unexpected persistence faults must not be mislabeled as 404s."""
+    from pathlib import Path
+
+    source = (Path(__file__).resolve().parents[1] / "api.py").read_text(encoding="utf-8-sig")
+    assert "except (Charge.DoesNotExist, Exception):" not in source
+    assert "except (Payment.DoesNotExist, Exception):" not in source
+    assert "except (ValueError, Charge.DoesNotExist):" in source
+    assert "except (ValueError, Payment.DoesNotExist):" in source
