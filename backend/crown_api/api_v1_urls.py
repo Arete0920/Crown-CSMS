@@ -5,6 +5,8 @@ All /api/v1/* and /api/* routes resolve through here.
 from importlib.util import find_spec
 
 from django.urls import include, path
+from rest_framework.exceptions import APIException
+from rest_framework.response import Response
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView,
@@ -24,6 +26,11 @@ from applications.views_admissions_identity import (
     admissions_lifecycle_chain_update,
 )
 from crown_api.admissions_runtime import admissions_summary
+from crown_api.auth_rate_limit import (
+    check_auth_rate_limit,
+    clear_auth_identity_failures,
+    record_auth_failure,
+)
 from crown_api.data_quality_views import school_data_quality
 from crown_api.system_views import SeedStatusView, demo_reset_view, diagnose_db_tables_view, fix_schema_drift_view
 from crown_api.ops_views import ensure_ci_user, demo_school
@@ -42,6 +49,96 @@ def _optional_module_exists(module_path: str) -> bool:
         return False
 
 
+class RateLimitedTokenObtainPairView(TokenObtainPairView):
+    """SimpleJWT login with fixed-window abuse protection."""
+
+    def post(self, request, *args, **kwargs):
+        identity = str(
+            request.data.get("username")
+            or request.data.get("email")
+            or "unknown"
+        ).strip().lower()
+        rate = check_auth_rate_limit(
+            request,
+            scope="simplejwt-login",
+            identity=identity,
+        )
+        if not rate.allowed:
+            return Response(
+                {"detail": "Too many authentication attempts.", "code": "rate_limited"},
+                status=429,
+                headers={"Retry-After": str(rate.retry_after_seconds)},
+            )
+
+        try:
+            response = super().post(request, *args, **kwargs)
+        except APIException:
+            record_auth_failure(
+                request,
+                scope="simplejwt-login",
+                identity=identity,
+            )
+            raise
+
+        if response.status_code >= 400:
+            record_auth_failure(
+                request,
+                scope="simplejwt-login",
+                identity=identity,
+            )
+        else:
+            clear_auth_identity_failures(
+                request,
+                scope="simplejwt-login",
+                identity=identity,
+            )
+        return response
+
+
+class RateLimitedTokenRefreshView(TokenRefreshView):
+    """SimpleJWT refresh with abuse protection for invalid token attempts."""
+
+    def post(self, request, *args, **kwargs):
+        identity = str(request.data.get("refresh") or "missing").strip()
+        rate = check_auth_rate_limit(
+            request,
+            scope="simplejwt-refresh",
+            identity=identity,
+            identity_limit=20,
+            ip_limit=100,
+        )
+        if not rate.allowed:
+            return Response(
+                {"detail": "Too many refresh attempts.", "code": "rate_limited"},
+                status=429,
+                headers={"Retry-After": str(rate.retry_after_seconds)},
+            )
+
+        try:
+            response = super().post(request, *args, **kwargs)
+        except APIException:
+            record_auth_failure(
+                request,
+                scope="simplejwt-refresh",
+                identity=identity,
+            )
+            raise
+
+        if response.status_code >= 400:
+            record_auth_failure(
+                request,
+                scope="simplejwt-refresh",
+                identity=identity,
+            )
+        else:
+            clear_auth_identity_failures(
+                request,
+                scope="simplejwt-refresh",
+                identity=identity,
+            )
+        return response
+
+
 urlpatterns = [
     # DEV-only ops endpoints (must come early before includes)
     path("system/ensure-ci-user/", ensure_ci_user, name="system-ensure-ci-user"),
@@ -49,8 +146,8 @@ urlpatterns = [
 
     # Authentication
     path("sandbox/", include("sandbox_demo.urls")),
-    path("auth/token/", TokenObtainPairView.as_view(), name="v1_token_obtain_pair"),
-    path("auth/token/refresh/", TokenRefreshView.as_view(), name="v1_token_refresh"),
+    path("auth/token/", RateLimitedTokenObtainPairView.as_view(), name="v1_token_obtain_pair"),
+    path("auth/token/refresh/", RateLimitedTokenRefreshView.as_view(), name="v1_token_refresh"),
 
     # Admissions funnel (frozen contract)
     path("admissions/public-config/", admissions_public_config, name="admissions_public_config"),
