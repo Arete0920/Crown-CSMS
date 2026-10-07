@@ -47,13 +47,13 @@ Each retrievable source must have:
 - source version
 - approved provenance tier (P0-P2)
 - approved review status
-- explicit rights status
+- explicit rights status and documented rights basis
 - privacy classification
 - tenant scope
 - optional role scope
 - effective/expiry dates where applicable
 - human review date
-- supersession metadata where applicable
+- supersession metadata where applicable; superseded sources are rejected
 
 The machine-readable contract is:
 `solomon_governance_c1/governance/c1/schemas/retrieval_source.schema.json`.
@@ -143,9 +143,9 @@ Cache keys must bind:
 - topic
 - corpus version
 - policy version
-- normalized question fingerprint
+- normalized question content protected by a keyed digest
 
-Raw question text must not be stored in the cache key.
+Raw question text must not be stored in the cache key. Cache identifiers use a keyed digest so low-entropy or predictable questions cannot be recovered by simple offline guessing against an unkeyed hash.
 
 Any corpus or policy version change naturally creates a new cache namespace and prevents stale answers from being reused under the old evidence state.
 
