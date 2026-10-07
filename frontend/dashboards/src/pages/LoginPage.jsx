@@ -129,12 +129,16 @@ function persistAuthenticatedSession(payload, role, selectedSchoolId, email) {
   localStorage.removeItem("crown_user");
   localStorage.removeItem("crown_current_user");
   localStorage.removeItem("crown_user_roles");
+  localStorage.removeItem("crown.role");
+  localStorage.removeItem("crown.active.role");
   localStorage.setItem("crown.school.id", schoolId);
-  localStorage.setItem("crown.role", role.value);
-  localStorage.setItem("crown.active.role", role.value);
 
   if (IS_SANDBOX) {
+    localStorage.setItem("crown.role", role.value);
+    localStorage.setItem("crown.active.role", role.value);
     localStorage.setItem("crown.demo.role", role.value);
+  } else {
+    localStorage.removeItem("crown.demo.role");
   }
 }
 
