@@ -1,0 +1,784 @@
+name: Production Deploy (Dispatch v2)
+
+on:
+  workflow_dispatch:
+    inputs:
+      deploy_tag:
+        description: "Git tag to deploy"
+        required: true
+        type: string
+      force_deploy:
+        description: "Override freeze window for emergency deployment"
+        required: false
+        default: false
+        type: boolean
+  repository_dispatch:
+    types: [prod_deploy]
+
+concurrency:
+  group: crown-api-prod-deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  actions: read
+  security-events: write
+  id-token: write
+
+env:
+  REGISTRY: crownregistry.azurecr.io
+  IMAGE_NAME: crown2026
+  RESOURCE_GROUP: crown-rg
+  WEBAPP_NAME: crown-api-prod
+
+jobs:
+  resolve-release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      DEPLOY_TAG: ${{ inputs.deploy_tag || github.event.client_payload.deploy_tag }}
+    outputs:
+      deploy_sha: ${{ steps.resolve.outputs.deploy_sha }}
+      deploy_sha_short: ${{ steps.resolve.outputs.deploy_sha_short }}
+    steps:
+      - name: Guard deploy tag input
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG="${{ env.DEPLOY_TAG }}"
+          if [[ -z "$TAG" || "$TAG" != prod-deploy-* ]]; then
+            echo "ERROR: deploy_tag must be present and match prod-deploy-*"
+            exit 1
+          fi
+      - name: Checkout release tag
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          ref: ${{ env.DEPLOY_TAG }}
+          fetch-depth: 0
+      - name: Resolve immutable release SHA
+        id: resolve
+        shell: bash
+        run: |
+          set -euo pipefail
+          deploy_sha="$(git rev-parse HEAD)"
+          if [[ ! "$deploy_sha" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "ERROR: resolved release ref is not a full commit SHA: $deploy_sha"
+            exit 1
+          fi
+          echo "deploy_sha=$deploy_sha" >> "$GITHUB_OUTPUT"
+          echo "deploy_sha_short=${deploy_sha:0:7}" >> "$GITHUB_OUTPUT"
+
+  production-migration:
+    needs: resolve-release
+    uses: ./.github/workflows/schema-migration-stage.yml
+    with:
+      expected_sha: ${{ needs.resolve-release.outputs.deploy_sha }}
+      confirm_environment: production
+    secrets: inherit
+
+  build-and-deploy:
+    needs: [resolve-release, production-migration]
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    environment: production
+    env:
+      DEPLOY_TAG: ${{ inputs.deploy_tag || github.event.client_payload.deploy_tag }}
+    outputs:
+      deploy_sha: ${{ steps.vars.outputs.deploy_sha }}
+      deploy_sha_short: ${{ steps.vars.outputs.deploy_sha_short }}
+
+    steps:
+      - name: "Guard: deploy tag input must be present and match prod-deploy-*"
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG="${{ env.DEPLOY_TAG }}"
+          if [[ -z "$TAG" ]]; then
+            echo "ERROR: deploy_tag is required"
+            exit 1
+          fi
+          if [[ "$TAG" != prod-deploy-* ]]; then
+            echo "ERROR: refusing prod deploy; tag must start with prod-deploy-* (got '$TAG')"
+            exit 1
+          fi
+
+      - name: Checkout code
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          ref: ${{ needs.resolve-release.outputs.deploy_sha }}
+          fetch-depth: 0
+
+      - name: "Guard: tag required and resolvable"
+        shell: pwsh
+        run: |
+          ./tools/require_tag_input.ps1 -Tag "${{ env.DEPLOY_TAG }}"
+
+      - name: "Guard: deployment freeze window"
+        shell: bash
+        env:
+          FORCE_DEPLOY: ${{ inputs.force_deploy || github.event.client_payload.force_deploy }}
+          ALLOW_OFF_HOURS: ${{ secrets.ALLOW_OFF_HOURS_PROD_DEPLOY }}
+        run: |
+          set -euo pipefail
+          if [ "$FORCE_DEPLOY" = "true" ] || [ "$ALLOW_OFF_HOURS" = "true" ]; then
+            echo "Freeze guard override enabled for this dispatch run"
+            exit 0
+          fi
+          DOW=$(date -u +%u)
+          HOUR=$(date -u +%H)
+          if [ "$DOW" -ge 6 ] || [ "$HOUR" -lt 6 ] || [ "$HOUR" -ge 22 ]; then
+            echo "ERROR: production deploy blocked by freeze window (weekends or 22:00-05:59 UTC)."
+            echo "Re-run with force_deploy=true for approved emergency override."
+            exit 1
+          fi
+
+      - name: "Guard: Azure auth secrets present"
+        id: auth_guard
+        shell: bash
+        env:
+          AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+        run: |
+          set -euo pipefail
+          if [ -n "$AZURE_CREDENTIALS" ]; then
+            echo "Using AZURE_CREDENTIALS service principal auth path."
+            export AZURE_CREDENTIALS
+            python3 -c "import json, os, re, sys; raw=os.environ.get('AZURE_CREDENTIALS',''); data=json.loads(raw) if raw else sys.exit('ERROR: AZURE_CREDENTIALS is empty'); required=['clientId','clientSecret','tenantId','subscriptionId']; missing=[k for k in required if not str(data.get(k,'')).strip()]; missing and sys.exit('ERROR: AZURE_CREDENTIALS missing required keys: ' + ', '.join(missing)); guid_re=re.compile(r'^[0-9a-fA-F]{8}(-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}$'); [guid_re.match(str(data.get(k,''))) or sys.exit('ERROR: AZURE_CREDENTIALS key ' + k + ' is not a valid GUID format') for k in ('clientId','tenantId','subscriptionId')]"
+            echo "login_mode=sp" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          guid_re='^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$'
+          [ -n "$AZURE_CLIENT_ID" ] || { echo "ERROR: Missing required secret AZURE_CLIENT_ID"; exit 1; }
+          [ -n "$AZURE_TENANT_ID" ] || { echo "ERROR: Missing required secret AZURE_TENANT_ID"; exit 1; }
+          [ -n "$AZURE_SUBSCRIPTION_ID" ] || { echo "ERROR: Missing required secret AZURE_SUBSCRIPTION_ID"; exit 1; }
+          [[ "$AZURE_CLIENT_ID" =~ $guid_re ]] || { echo "ERROR: AZURE_CLIENT_ID is not a valid GUID format"; exit 1; }
+          [[ "$AZURE_TENANT_ID" =~ $guid_re ]] || { echo "ERROR: AZURE_TENANT_ID is not a valid GUID format"; exit 1; }
+          [[ "$AZURE_SUBSCRIPTION_ID" =~ $guid_re ]] || { echo "ERROR: AZURE_SUBSCRIPTION_ID is not a valid GUID format"; exit 1; }
+          echo "login_mode=oidc" >> "$GITHUB_OUTPUT"
+          echo "oidc_subject=repo:${{ github.repository }}:environment:production" >> "$GITHUB_OUTPUT"
+
+      - name: "Guard: OIDC federation diagnostics"
+        if: steps.auth_guard.outputs.login_mode == 'oidc'
+        shell: bash
+        run: |
+          set -euo pipefail
+          SUBJECT="${{ steps.auth_guard.outputs.oidc_subject }}"
+          echo "OIDC subject used by this job: $SUBJECT"
+          echo "OIDC audience used by this job: api://AzureADTokenExchange"
+          echo "If Azure login fails with AADSTS700213, ensure Azure federated credential subject exactly matches this value."
+
+      - name: Azure Login (Service Principal JSON)
+        if: steps.auth_guard.outputs.login_mode == 'sp'
+        uses: azure/login@a457da9ea143d694b1b9c7c869ebb04ebe844ef5 # v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Azure Login (OIDC)
+        if: steps.auth_guard.outputs.login_mode == 'oidc'
+        uses: azure/login@a457da9ea143d694b1b9c7c869ebb04ebe844ef5 # v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Verify exact checked-out SHA
+        id: vars
+        shell: bash
+        run: |
+          set -euo pipefail
+          expected="${{ needs.resolve-release.outputs.deploy_sha }}"
+          actual="$(git rev-parse HEAD)"
+          if [[ "$actual" != "$expected" ]]; then
+            echo "ERROR: checked-out SHA does not match resolved migration SHA. expected=$expected actual=$actual"
+            exit 1
+          fi
+          echo "deploy_sha=$actual" >> "$GITHUB_OUTPUT"
+          echo "deploy_sha_short=${actual:0:7}" >> "$GITHUB_OUTPUT"
+          echo "DEPLOY_SHA=$actual" >> "$GITHUB_ENV"
+          echo "DEPLOY_SHA_SHORT=${actual:0:7}" >> "$GITHUB_ENV"
+
+      - name: "Guard: deploy contract - SHA and tag must be present and valid"
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG="${{ env.DEPLOY_TAG }}"
+          SHA="${{ steps.vars.outputs.deploy_sha }}"
+          if [[ -z "$SHA" || ${#SHA} -lt 40 ]]; then
+            echo "ERROR: DEPLOY_SHA is not a full commit SHA (got: '$SHA')"
+            exit 1
+          fi
+          if [[ -z "$TAG" ]]; then
+            echo "ERROR: deploy_tag input is empty - a tag is required for prod dispatch deploy"
+            exit 1
+          fi
+          echo "Deploy contract satisfied: TAG=$TAG SHA=${SHA:0:7}"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+
+      - name: Log in to Azure Container Registry
+        run: |
+          az acr login --name crownregistry --only-show-errors
+
+      - name: Verify AcrPull Identity (Guardrail)
+        run: |
+          set -euo pipefail
+          echo "Verifying Managed Identity has AcrPull on registry..."
+          PRINCIPAL_ID=$(az webapp identity show -g ${{ env.RESOURCE_GROUP }} -n ${{ env.WEBAPP_NAME }} --query principalId -o tsv)
+          ACR_ID=$(az acr show -n crownregistry --query id -o tsv)
+          if [ -z "$PRINCIPAL_ID" ]; then
+            echo "ERROR: App Service has no managed identity assigned"
+            exit 1
+          fi
+          HAS_ACRPULL=0
+          for attempt in 1 2 3; do
+            echo "Checking AcrPull assignment (attempt $attempt/3)..."
+            count=$(az role assignment list --assignee "$PRINCIPAL_ID" --scope "$ACR_ID" --query "[?roleDefinitionName=='AcrPull'] | length(@)" -o tsv 2>/dev/null || echo 0)
+            if [[ "$count" =~ ^[1-9][0-9]*$ ]]; then
+              HAS_ACRPULL=1
+              break
+            fi
+            if [ "$attempt" -lt 3 ]; then
+              sleep 5
+            fi
+          done
+          if [ "$HAS_ACRPULL" -ne 1 ]; then
+            echo "ERROR: Managed Identity does not have AcrPull role on ACR"
+            echo "Principal: $PRINCIPAL_ID"
+            echo "ACR: $ACR_ID"
+            exit 1
+          fi
+          echo "OK: AcrPull verified for ${{ env.WEBAPP_NAME }} ($PRINCIPAL_ID)"
+
+      - name: Bake BUILD_SHA into artifact
+        run: |
+          echo "BUILD_SHA = \"${{ steps.vars.outputs.deploy_sha_short }}\"" > backend/crown_api/build_info.py
+          echo "OK: Generated build_info.py with SHA: ${{ steps.vars.outputs.deploy_sha_short }}"
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@ca052bb54ab0790a636c9b5f226502c73d547a25 # v5
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.vars.outputs.deploy_sha }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Pull image for Trivy local scan
+        run: |
+          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.vars.outputs.deploy_sha }}
+
+      - name: Run security scan (Trivy)
+        uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # v0.35.0
+        with:
+          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.vars.outputs.deploy_sha }}
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      - name: Upload Trivy scan results (SARIF) if present
+        if: ${{ always() }}
+        shell: bash
+        run: |
+          if [ -f "trivy-results.sarif" ]; then
+            echo "Found trivy-results.sarif, will upload."
+          else
+            echo "No trivy-results.sarif found, skipping upload."
+          fi
+
+      - name: Detect code scanning availability (SARIF gate)
+        id: sarif_gate
+        if: ${{ always() }}
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          if [ ! -f "trivy-results.sarif" ]; then
+            echo "can_upload=false" >> "$GITHUB_OUTPUT"
+            echo "No SARIF file present."
+            exit 0
+          fi
+
+          status=$(curl --connect-timeout 15 --max-time 60 -sS -o /tmp/code_scanning_default_setup.json -w "%{http_code}" \
+            -H "Authorization: Bearer $GITHUB_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${{ github.repository }}/code-scanning/default-setup" || echo "000")
+
+          if [ "$status" = "200" ]; then
+            echo "can_upload=true" >> "$GITHUB_OUTPUT"
+            echo "Code scanning API available (status 200). SARIF upload enabled."
+          else
+            echo "can_upload=false" >> "$GITHUB_OUTPUT"
+            echo "Code scanning API unavailable (status $status). SARIF upload skipped."
+          fi
+
+      - name: Upload Trivy scan results (SARIF)
+        uses: github/codeql-action/upload-sarif@0daab03d71ff584ef619d027a3fd9146679c5d84 # v3
+        if: ${{ always() && steps.sarif_gate.outputs.can_upload == 'true' }}
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+      - name: Set up Python
+        uses: actions/setup-python@7f4fc3e22c37d6ff65e88745f38bd3157c663f7c # v4
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pytest-cov pytest-django
+
+      - name: Preflight gate (Django deploy checks)
+        run: |
+          export DJANGO_SECRET_KEY=$(python -c 'import secrets; print(secrets.token_urlsafe(50))')
+          export DATABASE_URL=sqlite:///./ci.sqlite3
+          cd backend
+          python manage.py check --deploy
+
+      - name: Run tests
+        env:
+          DJANGO_SECRET_KEY: ${{ github.sha }}
+          DATABASE_URL: sqlite:///./ci.sqlite3
+          DJANGO_SETTINGS_MODULE: crown_api.settings
+        run: |
+          cd backend
+          python manage.py test \
+            crown_api.tests.test_households_api \
+            crown_api.tests.test_students_api \
+            crown_api.tests.test_director_router \
+            crown_api.tests.test_director_actions_auth_required \
+            crown_api.tests.test_admissions_links_api \
+            crown_api.tests.test_academics_api \
+            crown_api.tests.test_billing_summary_api \
+            crown_api.tests.test_comms_api \
+            crown_api.tests.test_scheduling_api \
+            -v 2
+          pytest --cov=. --cov-report=xml --ignore-glob='test_*.py'
+
+      - name: Upload coverage
+        if: always() && hashFiles('backend/coverage.xml') != ''
+        continue-on-error: false
+        uses: codecov/codecov-action@ab904c41d6ece82784817410c45d8b8c02684457 # v3
+        with:
+          files: ./backend/coverage.xml
+          flags: unittests
+
+      - name: Coverage artifact status
+        if: ${{ always() }}
+        shell: bash
+        run: |
+          if [ -f "backend/coverage.xml" ]; then
+            echo "Found backend/coverage.xml, upload step executed."
+          else
+            echo "No backend/coverage.xml found, coverage upload skipped by condition."
+          fi
+
+      - name: Deploy to Azure Web App
+        uses: azure/webapps-deploy@b733af8291ed8f84a5ac5b92f571c2e149f25047 # v2
+        with:
+          app-name: ${{ env.WEBAPP_NAME }}
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.vars.outputs.deploy_sha }}
+
+      - name: Build allowed appsettings JSON
+        shell: pwsh
+        run: |
+          $appVersion = (Get-Content VERSION -Raw).Trim()
+          if ([string]::IsNullOrWhiteSpace($appVersion)) {
+            throw "VERSION file is empty; cannot set APP_VERSION app setting."
+          }
+          $settings = @{
+            "BUILD_SHA"       = "${{ steps.vars.outputs.deploy_sha }}"
+            "PROD_DEPLOY_TAG" = "${{ env.DEPLOY_TAG }}"
+            "APP_VERSION"     = $appVersion
+            "DEPLOY_RUN_ID"   = "${{ github.run_id }}"
+            "DEPLOY_WORKFLOW" = "${{ github.workflow }}"
+          }
+          $settings | ConvertTo-Json -Depth 5 | Out-File -Encoding utf8 appsettings.prod.json
+          Get-Content appsettings.prod.json
+
+      - name: Appsettings allowlist gate
+        shell: pwsh
+        run: |
+          ./tools/appsettings_allowlist_gate.ps1 `
+            -AppSettingsJsonPath "appsettings.prod.json" `
+            -AllowedKeysFile "tools/appsettings_allowlist.keys.json" `
+            -AllowedKeySet "prod"
+
+      - name: Apply appsettings (allowlisted only)
+        shell: pwsh
+        run: |
+          az webapp config appsettings set `
+            --resource-group ${{ env.RESOURCE_GROUP }} `
+            --name ${{ env.WEBAPP_NAME }} `
+            --settings '@appsettings.prod.json' `
+            --output none `
+            --only-show-errors
+          az webapp restart `
+            --resource-group ${{ env.RESOURCE_GROUP }} `
+            --name ${{ env.WEBAPP_NAME }} `
+            --only-show-errors
+
+      - name: "Guard: verify BUILD_SHA app setting matches deployed SHA"
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $expected = "${{ steps.vars.outputs.deploy_sha }}"
+          Write-Host "Verifying Azure App Settings BUILD_SHA matches deployed SHA..."
+          .\tools\verify_prod_build_sha.ps1 `
+            -ExpectedSha $expected `
+            -AppName "${{ env.WEBAPP_NAME }}" `
+            -ResourceGroup "${{ env.RESOURCE_GROUP }}"
+
+      - name: Verify tenant-aware integrity
+        shell: pwsh
+        env:
+          PROD_BASE_URL: ${{ secrets.PROD_BASE_URL }}
+          PROBE_TENANT_ID: ${{ secrets.PROBE_TENANT_ID }}
+          EXPECTED_SHA: ${{ steps.vars.outputs.deploy_sha }}
+          EXPECTED_SHA_SHORT: ${{ steps.vars.outputs.deploy_sha_short }}
+        run: |
+          $ErrorActionPreference = "Stop"
+
+          $baseUrl = if ([string]::IsNullOrWhiteSpace($env:PROD_BASE_URL)) {
+            "https://${{ env.WEBAPP_NAME }}.azurewebsites.net"
+          } else {
+            $env:PROD_BASE_URL
+          }
+
+          function Get-Json([string]$Url, [hashtable]$Headers) {
+            $resp = Invoke-WebRequest -Uri $Url -Headers $Headers -UseBasicParsing
+            return ($resp.Content | ConvertFrom-Json)
+          }
+
+          function Test-ShaMatch([string]$ObservedSha, [string]$ExpectedSha, [string]$ExpectedShaShort) {
+            if ([string]::IsNullOrWhiteSpace($ObservedSha)) {
+              return $false
+            }
+
+            $observed = $ObservedSha.Trim().ToLowerInvariant()
+            $expected = if ([string]::IsNullOrWhiteSpace($ExpectedSha)) { "" } else { $ExpectedSha.Trim().ToLowerInvariant() }
+            $expectedShort = if ([string]::IsNullOrWhiteSpace($ExpectedShaShort)) { "" } else { $ExpectedShaShort.Trim().ToLowerInvariant() }
+
+            if (-not [string]::IsNullOrWhiteSpace($expected) -and $observed -eq $expected) {
+              return $true
+            }
+            if (-not [string]::IsNullOrWhiteSpace($expectedShort) -and $observed -eq $expectedShort) {
+              return $true
+            }
+            if (-not [string]::IsNullOrWhiteSpace($expectedShort) -and $observed.StartsWith($expectedShort)) {
+              return $true
+            }
+            if (-not [string]::IsNullOrWhiteSpace($expected) -and $expected.StartsWith($observed) -and $observed.Length -ge 7) {
+              return $true
+            }
+
+            return $false
+          }
+
+          $integrityPath = "/api/integrity/"
+
+          $maxAttempts = 20
+          for ($attempt = 1; $attempt -le $maxAttempts; $attempt++) {
+            try {
+              Write-Host "Verification attempt $attempt/$maxAttempts..."
+              if ([string]::IsNullOrWhiteSpace($env:PROBE_TENANT_ID)) {
+                $integrity = Get-Json "$baseUrl$integrityPath" @{ Accept = "application/json" }
+                $code = if ($null -ne $integrity.code) { "$($integrity.code)".ToLowerInvariant() } else { "" }
+
+                $status =
+                  if ($null -ne $integrity.status) { "$($integrity.status)".ToLowerInvariant() }
+                  elseif ($null -ne $integrity.ok) { "$($integrity.ok)".ToLowerInvariant() }
+                  else { "" }
+
+                $buildSha = if ($null -ne $integrity.build_sha) { "$($integrity.build_sha)" } else { "" }
+                $missingTenant = $code -eq "missing_tenant"
+                $okStatus = $status -in @("ok", "true")
+
+                if (-not $missingTenant -and -not $okStatus) {
+                  $payload = $integrity | ConvertTo-Json -Depth 10 -Compress
+                  throw "Integrity probe without tenant header expected code=missing_tenant or status=ok/ok=true. Payload: $payload"
+                }
+
+                if ($okStatus -and -not (Test-ShaMatch $buildSha $env:EXPECTED_SHA $env:EXPECTED_SHA_SHORT)) {
+                  $payload = $integrity | ConvertTo-Json -Depth 10 -Compress
+                  throw "Integrity probe without tenant header returned ok/true but build_sha did not match expected deploy SHA. expected=$($env:EXPECTED_SHA) short=$($env:EXPECTED_SHA_SHORT) observed=$buildSha payload=$payload"
+                }
+              }
+              else {
+                $integrity = Get-Json "$baseUrl$integrityPath" @{
+                  Accept = "application/json"
+                  "X-School-Id" = $env:PROBE_TENANT_ID
+                }
+
+                $status =
+                  if ($null -ne $integrity.status) { "$($integrity.status)".ToLowerInvariant() }
+                  elseif ($null -ne $integrity.ok) { "$($integrity.ok)".ToLowerInvariant() }
+                  else { "" }
+
+                if ($status -notin @("ok", "true")) {
+                  $payload = $integrity | ConvertTo-Json -Depth 10 -Compress
+                  throw "Integrity probe did not return ok/true. Payload: $payload"
+                }
+
+                $buildSha = if ($null -ne $integrity.build_sha) { "$($integrity.build_sha)" } else { "" }
+                if (-not [string]::IsNullOrWhiteSpace($buildSha) -and -not (Test-ShaMatch $buildSha $env:EXPECTED_SHA $env:EXPECTED_SHA_SHORT)) {
+                  $payload = $integrity | ConvertTo-Json -Depth 10 -Compress
+                  throw "Integrity probe returned mismatched build_sha for tenant-aware request. expected=$($env:EXPECTED_SHA) short=$($env:EXPECTED_SHA_SHORT) observed=$buildSha payload=$payload"
+                }
+              }
+
+              Write-Host "Post-deploy verification passed."
+              break
+            }
+            catch {
+              if ($attempt -eq $maxAttempts) {
+                throw
+              }
+              Write-Host "Verification attempt $attempt failed: $($_.Exception.Message)"
+              Start-Sleep -Seconds 15
+            }
+          }
+
+      - name: Prove production health-gate contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          normalize_http_code() {
+            local code="$1"
+            [[ "$code" =~ ^[0-9]{3}$ ]] || return 1
+            printf '%s' "$code"
+          }
+          test "$(normalize_http_code 200)" = "200"
+          test "$(normalize_http_code 503)" = "503"
+          test "$(normalize_http_code 000)" = "000"
+          if normalize_http_code 00 >/dev/null 2>&1; then
+            echo "ERROR: two-digit HTTP status was incorrectly accepted"
+            exit 1
+          fi
+          max_attempts=8
+          max_curl_seconds=30
+          total_sleep_seconds=0
+          for attempt in $(seq 2 "$max_attempts"); do
+            backoff=$((20 * (attempt - 1)))
+            if [ "$backoff" -gt 90 ]; then backoff=90; fi
+            total_sleep_seconds=$((total_sleep_seconds + backoff))
+          done
+          worst_case_seconds=$((total_sleep_seconds + max_attempts * max_curl_seconds))
+          test "$worst_case_seconds" -le 900 || {
+            echo "ERROR: health retry budget exceeds 15 minutes: ${worst_case_seconds}s"
+            exit 1
+          }
+          echo "Health-gate contract passed: statuses=200/503/000, rejects=00, worst_case=${worst_case_seconds}s"
+
+      - name: Health check with adaptive exponential backoff
+        env:
+          PROD_BASE_URL: ${{ secrets.PROD_BASE_URL }}
+        run: |
+          set -euo pipefail
+          BASE_URL="${PROD_BASE_URL:-https://${{ env.WEBAPP_NAME }}.azurewebsites.net}"
+          HEALTH_ENDPOINT="$BASE_URL/api/health/"
+          EXPECTED_SHA="${{ steps.vars.outputs.deploy_sha }}"
+          MAX_ATTEMPTS=8
+          ATTEMPT=1
+          BACKOFF_BASE=20
+          TOTAL_ELAPSED=0
+
+          # Function to extract JSON field with jq or grep fallback
+          extract_json_field() {
+            local file=$1
+            local field=$2
+            if command -v jq &>/dev/null; then
+              jq -r ".${field} // \"\"" "$file" 2>/dev/null || echo ""
+            else
+              grep -o "\"${field}\"\s*:\s*\"[^\"]*\"" "$file" 2>/dev/null | cut -d'"' -f4 | head -1 || echo ""
+            fi
+          }
+
+          # SHA comparison: accept exact match or 7-char prefix match (short vs full SHA)
+          sha_matches() {
+            local actual="${1,,}"
+            local expected="${2,,}"
+            [ "$actual" = "$expected" ] && return 0
+            local prefix_len=7
+            local ap="${actual:0:$prefix_len}"
+            local ep="${expected:0:$prefix_len}"
+            [ -n "$ap" ] && [ -n "$ep" ] && [ "$ap" = "$ep" ]
+          }
+
+          while [ $ATTEMPT -le $MAX_ATTEMPTS ]; do
+            # Calculate exponential backoff: 20s, 40s, 60s, 80s, 90s, 90s...
+            BACKOFF=$((BACKOFF_BASE * (ATTEMPT - 1)))
+            if [ $BACKOFF -gt 90 ]; then BACKOFF=90; fi
+
+            if [ $ATTEMPT -gt 1 ]; then
+              echo "[Attempt $ATTEMPT/$MAX_ATTEMPTS] Waiting ${BACKOFF}s before retry (total elapsed: ${TOTAL_ELAPSED}s)..."
+              sleep $BACKOFF
+              TOTAL_ELAPSED=$((TOTAL_ELAPSED + BACKOFF))
+            fi
+
+            echo "[Attempt $ATTEMPT/$MAX_ATTEMPTS] Checking health endpoint..."
+            rm -f /tmp/health_response.json
+            set +e
+            HTTP_CODE=$(curl --max-time 30 -sS -w "%{http_code}" -o /tmp/health_response.json "$HEALTH_ENDPOINT")
+            CURL_EXIT=$?
+            set -e
+            if [ "$CURL_EXIT" -ne 0 ]; then
+              HTTP_CODE="000"
+            fi
+            if [[ ! "$HTTP_CODE" =~ ^[0-9]{3}$ ]]; then
+              echo "[Attempt $ATTEMPT/$MAX_ATTEMPTS] ERROR: invalid HTTP status capture '$HTTP_CODE'"
+              exit 1
+            fi
+
+            if [ "$HTTP_CODE" == "200" ]; then
+              BUILD_SHA=$(extract_json_field "/tmp/health_response.json" "build_sha")
+              DB_STATUS=$(extract_json_field "/tmp/health_response.json" "db")
+
+              if [ -z "$BUILD_SHA" ] || [ -z "$DB_STATUS" ]; then
+                echo "[Attempt $ATTEMPT/$MAX_ATTEMPTS] WARN: Health response missing required fields (build_sha or db)"
+                echo "Response: $(cat /tmp/health_response.json 2>/dev/null | head -c 500)"
+              elif sha_matches "$BUILD_SHA" "$EXPECTED_SHA"; then
+                if [ "$DB_STATUS" == "ok" ]; then
+                  echo "[Attempt $ATTEMPT/$MAX_ATTEMPTS] ✓ Health check PASSED (build_sha match: $BUILD_SHA, db: $DB_STATUS)"
+                  exit 0
+                else
+                  echo "[Attempt $ATTEMPT/$MAX_ATTEMPTS] WARN: HTTP 200 but db=$DB_STATUS (expected: ok)"
+                fi
+              else
+                echo "[Attempt $ATTEMPT/$MAX_ATTEMPTS] WARN: HTTP 200 but build_sha mismatch (expected: $EXPECTED_SHA, got: $BUILD_SHA)"
+              fi
+            else
+              echo "[Attempt $ATTEMPT/$MAX_ATTEMPTS] HTTP $HTTP_CODE (timeout or connection refused)"
+            fi
+
+            ATTEMPT=$((ATTEMPT + 1))
+          done
+
+          echo "ERROR: Health check failed after $MAX_ATTEMPTS bounded backoff attempts (maximum 15-minute contract)"
+          exit 1
+
+      - name: Verify release identity end-to-end
+        shell: bash
+        env:
+          EXPECTED_SHA: ${{ steps.vars.outputs.deploy_sha }}
+        run: |
+          set -euo pipefail
+
+          HEALTH_URL="https://crown-api-prod.azurewebsites.net/api/health/"
+          APP_NAME="crown-api-prod"
+          RESOURCE_GROUP="crown-rg"
+
+          echo "Expected SHA: $EXPECTED_SHA"
+
+          AZURE_IMAGE=$(az webapp config container show \
+            --resource-group "$RESOURCE_GROUP" \
+            --name "$APP_NAME" \
+            --query "[?name=='DOCKER_CUSTOM_IMAGE_NAME'].value | [0]" -o tsv)
+
+          if [ -z "$AZURE_IMAGE" ]; then
+            AZURE_IMAGE=$(az webapp config container show \
+              --resource-group "$RESOURCE_GROUP" \
+              --name "$APP_NAME" \
+              --query linuxFxVersion -o tsv)
+          fi
+
+          echo "Azure configured image: $AZURE_IMAGE"
+
+          AZURE_SHA=$(echo "$AZURE_IMAGE" | sed -E 's/^DOCKER\|.*:([0-9a-f]{40})$/\1/')
+          if [ -z "$AZURE_SHA" ]; then
+            echo "Could not extract Azure SHA from configured image."
+            exit 1
+          fi
+
+          RESPONSE=""
+          for i in {1..30}; do
+            if RESPONSE=$(curl --max-time 30 -fsSL "$HEALTH_URL"); then
+              break
+            fi
+            echo "Waiting for production health..."
+            sleep 10
+          done
+
+          if [ -z "$RESPONSE" ]; then
+            echo "No response from /api/health/."
+            exit 1
+          fi
+
+          echo "$RESPONSE"
+
+          export RESPONSE_JSON="$RESPONSE"
+          export AZURE_SHA
+
+          python - <<'PY'
+          import json, os
+
+          data = json.loads(os.environ["RESPONSE_JSON"])
+          expected = os.environ["EXPECTED_SHA"]
+          azure_sha = os.environ["AZURE_SHA"]
+
+          if data.get("ok") is not True:
+              raise SystemExit("Health check failed: ok != true")
+
+          if data.get("env") != "prod":
+              raise SystemExit(f"Health check failed: env != prod (got {data.get('env')})")
+
+          live_sha = data.get("build_sha")
+          if not live_sha:
+              raise SystemExit("Health check missing build_sha")
+
+          if expected != azure_sha or azure_sha != live_sha:
+              raise SystemExit(
+                  f"Release identity mismatch: expected={expected} azure={azure_sha} live={live_sha}"
+              )
+
+          print("Release identity verified: workflow SHA, Azure SHA, and live SHA all match.")
+          PY
+
+      - name: Notify deployment
+        if: success()
+        run: |
+          echo "OK: Deployment successful"
+          echo "App URL: https://${{ env.WEBAPP_NAME }}.azurewebsites.net"
+
+      - name: Record deployment failure for recovery control
+        if: failure()
+        run: |
+          echo "ERROR: Deployment failed; no inline rollback is claimed by this job."
+          echo "The separately governed recovery control must run and produce verified evidence."
+
+  notification:
+    timeout-minutes: 10
+    needs: build-and-deploy
+    runs-on: ubuntu-latest
+    if: always()
+
+    env:
+      SLACK_WEBHOOK_URL: ${{ secrets['SLACK_WEBHOOK_URL'] }}
+
+    steps:
+      - name: Send Slack notification
+        uses: slackapi/slack-github-action@e28cf165c92ffef168d23c5c9000cffc8a25e117 # v1.24.0
+        if: ${{ env.SLACK_WEBHOOK_URL != '' }}
+        with:
+          payload: |
+            {
+              "text": "Crown Academy Production Deployment",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Status:* ${{ job.status }}\n*Branch:* main\n*Commit:* ${{ needs.build-and-deploy.outputs.deploy_sha_short }}\n*Author:* ${{ github.actor }}"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK

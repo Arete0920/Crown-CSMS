@@ -22,8 +22,14 @@ jobs:
       - uses: actions/setup-python@7f4fc3e22c37d6ff65e88745f38bd3157c663f7c # v4
         with:
           python-version: "3.12"
-      - name: Install pip-audit
-        run: python -m pip install --upgrade pip pip-audit
+      - name: Install dependency security tooling
+        run: python -m pip install --upgrade pip pip-audit pip-licenses
+      - name: Enforce backend dependency license policy
+        run: |
+          pip install -r backend/requirements.txt
+          pip-licenses --format=json --output-file backend/python-licenses.json
+          python tools/verify_license_policy.py backend/python-licenses.json
+
       - name: Audit backend dependencies
         run: |
           REQUIREMENTS_FOUND=0
@@ -68,6 +74,11 @@ jobs:
       - name: Verify Wallet signing
         if: matrix.name == 'wallet-npm-audit'
         run: npm test
+      - name: Enforce dependency license policy
+        run: |
+          npx --yes license-checker --json --out license-policy-report.json
+          python "${{ github.workspace }}/tools/verify_license_policy.py" license-policy-report.json
+
       - name: Capture frontend dependency audit
         shell: bash
         run: |

@@ -13,7 +13,7 @@ Keep GitHub Actions small, authoritative, fail-closed, and understandable for a 
 - Reduction: **73 workflows removed (62%)**
 - Underlying application tests, audit scripts, and release evidence code remain in the repository unless independently obsolete.
 - No branch-required workflow identified in the current required-check map was removed.
-- Legacy phase, RC, proof-ceremony, sandbox-depth, duplicate evidence-contract, duplicate dependency-scan, duplicate deploy-dispatch, and duplicate smoke entrypoints were retired.
+- Legacy phase, RC, proof-ceremony, sandbox-depth, duplicate evidence-contract, duplicate dependency-scan, duplicate smoke, and standalone stale-branch entrypoints were retired or absorbed.
 - `tools/verify_workflow_policy.py` now enforces the canonical workflow filename inventory, so workflow sprawl cannot silently return.
 
 ## Canonical workflow classes
@@ -54,6 +54,7 @@ Keep GitHub Actions small, authoritative, fail-closed, and understandable for a 
 - `azure-drift-watchdog.yml`
 - `deploy-dashboard.yml`
 - `deploy-dev.yml`
+- `deploy-prod-dispatch.yml`
 - `deploy-prod.yml`
 - `schema-migration-stage.yml`
 - `dev-smoke.yml`
@@ -72,7 +73,6 @@ Keep GitHub Actions small, authoritative, fail-closed, and understandable for a 
 - `license-audit.yml`
 - `sbom-generation.yml`
 - `repository-freshness.yml`
-- `stale-branches.yml`
 - `workflow-permissions-audit.yml`
 
 ## Operating rules
@@ -87,6 +87,13 @@ Keep GitHub Actions small, authoritative, fail-closed, and understandable for a 
 8. Production deployment remains exact-tag/exact-SHA based; mutable image labels must never be deployment authority.
 9. Remove obsolete workflow entrypoints when their purpose is absorbed; do not leave historical workflows active for provenance.
 10. Historical evidence belongs in documentation/audit records, not in permanently active Actions entrypoints.
+
+The two production deployment entrypoints intentionally share the
+`crown-api-prod-deploy` concurrency group. The dispatch entrypoint retains the
+governed `repository_dispatch` surface and both paths remain fail-closed. The
+weekly stale-branch report is preserved as a separately scheduled job in
+`repository-freshness.yml`, avoiding an extra top-level workflow without
+removing that maintenance control.
 
 ## Next reduction
 
