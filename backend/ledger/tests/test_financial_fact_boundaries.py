@@ -155,3 +155,19 @@ def test_void_endpoints_do_not_swallow_unexpected_failures():
     assert "except (Payment.DoesNotExist, Exception):" not in source
     assert "except (ValueError, Charge.DoesNotExist):" in source
     assert "except (ValueError, Payment.DoesNotExist):" in source
+
+
+@pytest.mark.parametrize("model", [Charge, Credit, Payment])
+@pytest.mark.parametrize("amount", [Decimal("0.00"), Decimal("-1.00")])
+def test_nonpositive_financial_fact_amounts_are_rejected(model, account, amount):
+    values = dict(school_id=account.school_id, account=account, amount=amount)
+    if model is Charge:
+        values["description"] = "Invalid synthetic fact"
+    else:
+        values.update(
+            source="ADJUSTMENT" if model is Credit else "EXTERNAL",
+            reference=str(uuid.uuid4()),
+        )
+    with pytest.raises(ValidationError):
+        model.objects.create(**values)
+    assert model.objects.count() == 0
