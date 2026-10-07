@@ -36,7 +36,8 @@ Operational certification may require current evidence for deployed identity, da
 
 A missing or failed operational-certification artifact blocks the corresponding operational claim. It does not retroactively invalidate otherwise passing repository/source engineering evidence.
 
-**No successor production deployment, tag, runtime identity, or operational acceptance is asserted by this record.**
+**No successor production tag or release is asserted by this record.**  
+No successor production deployment, runtime identity, or operational acceptance is asserted by this record.
 
 ## Payment boundary
 
