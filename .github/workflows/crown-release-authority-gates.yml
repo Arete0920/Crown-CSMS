@@ -23,7 +23,7 @@ jobs:
   release-authority-gates:
     name: Release authority gates
     runs-on: windows-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
 
     steps:
       - name: Checkout
@@ -75,10 +75,7 @@ jobs:
           powershell -ExecutionPolicy Bypass -File .\scripts\execution\118_run_crown_release_authority_stack.ps1
           $stackExit = $LASTEXITCODE
           if ($stackExit -ne 0) {
-            if ('${{ github.event_name }}' -eq 'pull_request') {
-              Write-Warning "Release authority stack exited with code $stackExit on pull_request; preserving artifacts without failing PR gate."
-              exit 0
-            }
+            Write-Error "Release authority stack failed with exit code $stackExit."
             exit $stackExit
           }
 
