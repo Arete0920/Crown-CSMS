@@ -1,0 +1,276 @@
+name: Production Certification Evidence
+run-name: Production Certification Evidence (${{ github.ref_name }})
+
+on:
+  workflow_call:
+    inputs:
+      live_frontend_url:
+        description: "Deployed frontend URL to certify"
+        required: true
+        type: string
+      live_api_base_url:
+        description: "Deployed backend/API base URL expected during certification"
+        required: true
+        type: string
+      expected_frontend_sha:
+        description: "Exact frontend commit SHA expected in deployed build.json"
+        required: true
+        type: string
+      expected_api_sha:
+        description: "Backend commit SHA expected from /api/v1/version/; falls back to CROWN_EXPECTED_API_SHA repository variable"
+        required: false
+        default: ""
+        type: string
+  workflow_dispatch:
+    inputs:
+      live_frontend_url:
+        description: "Deployed frontend URL to certify"
+        required: false
+        default: "https://yellow-forest-0eecc8b0f.7.azurestaticapps.net"
+        type: string
+      live_api_base_url:
+        description: "Deployed backend/API base URL expected during certification"
+        required: false
+        default: "https://crown-api-prod.azurewebsites.net"
+        type: string
+      expected_frontend_sha:
+        description: "Exact frontend commit SHA expected in deployed build.json"
+        required: true
+        type: string
+      expected_api_sha:
+        description: "Exact backend commit SHA expected from /api/v1/version/; falls back to CROWN_EXPECTED_API_SHA repository variable"
+        required: false
+        default: ""
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-certification-evidence-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  production-certification-evidence:
+    name: Production Certification Evidence
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: frontend/dashboards
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Validate exact release SHA inputs
+        shell: bash
+        env:
+          EXPECTED_FRONTEND_SHA: ${{ inputs.expected_frontend_sha }}
+          EXPECTED_API_SHA: ${{ inputs.expected_api_sha || vars.CROWN_EXPECTED_API_SHA || '' }}
+        run: |
+          set -euo pipefail
+          if [[ ! "$EXPECTED_FRONTEND_SHA" =~ ^[0-9a-fA-F]{40}$ ]]; then
+            echo "ERROR: expected_frontend_sha must be a full 40-character Git SHA"
+            exit 1
+          fi
+          if [[ ! "$EXPECTED_API_SHA" =~ ^[0-9a-fA-F]{40}$ ]]; then
+            echo "ERROR: exact backend SHA is required. Pass expected_api_sha or set repository variable CROWN_EXPECTED_API_SHA."
+            exit 1
+          fi
+          echo "Exact release SHA inputs validated"
+
+      - name: Wait for exact frontend and backend deployment
+        shell: bash
+        env:
+          FRONTEND_URL: ${{ inputs.live_frontend_url || vars.CROWN_LIVE_FRONTEND_URL || 'https://yellow-forest-0eecc8b0f.7.azurestaticapps.net' }}
+          API_URL: ${{ inputs.live_api_base_url || vars.CROWN_LIVE_API_BASE_URL || 'https://crown-api-prod.azurewebsites.net' }}
+          EXPECTED_FRONTEND_SHA: ${{ inputs.expected_frontend_sha }}
+          EXPECTED_API_SHA: ${{ inputs.expected_api_sha || vars.CROWN_EXPECTED_API_SHA || '' }}
+          TENANT_HEADER_SCHOOL_ID: ${{ vars.CROWN_LIVE_SCHOOL_ID || vars.CROWN_DEMO_SCHOOL_ID || '19801b59-8c05-4c84-9312-5d792e4e839d' }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          import os
+          import time
+          import urllib.error
+          import urllib.request
+
+          frontend = os.environ["FRONTEND_URL"].rstrip("/") + "/build.json"
+          health = os.environ["API_URL"].rstrip("/") + "/api/health/"
+          version = os.environ["API_URL"].rstrip("/") + "/api/v1/version/"
+          expected_frontend = os.environ["EXPECTED_FRONTEND_SHA"].strip().lower()
+          expected_api = os.environ["EXPECTED_API_SHA"].strip().lower()
+          school_id = os.environ["TENANT_HEADER_SCHOOL_ID"].strip()
+
+          def fetch(url, extra_headers=None):
+              headers = {"Accept": "application/json"}
+              if extra_headers:
+                  headers.update(extra_headers)
+              req = urllib.request.Request(url, headers=headers)
+              try:
+                  with urllib.request.urlopen(req, timeout=20) as response:
+                      return response.status, response.read().decode("utf-8", "replace")
+              except urllib.error.HTTPError as exc:
+                  return exc.code, exc.read().decode("utf-8", "replace")
+
+          tenant_headers = {"X-School-Id": school_id} if school_id else {}
+          last = []
+          for attempt in range(1, 31):
+              last = []
+              try:
+                  status, body = fetch(frontend)
+                  payload = json.loads(body)
+                  actual = str(payload.get("build_sha") or payload.get("commit") or "").strip().lower()
+                  if status != 200:
+                      last.append(f"frontend status={status} body={body[:300]}")
+                  elif len(actual) != 40:
+                      last.append(f"frontend build SHA must be full length; actual={actual!r}")
+                  elif actual != expected_frontend:
+                      last.append(f"frontend SHA expected={expected_frontend} actual={actual}")
+              except Exception as exc:
+                  last.append(f"frontend error={exc}")
+
+              try:
+                  status, body = fetch(health, tenant_headers)
+                  if status != 200:
+                      last.append(f"api health status={status} body={body[:300]}")
+              except Exception as exc:
+                  last.append(f"api health error={exc}")
+
+              try:
+                  status, body = fetch(version, tenant_headers)
+                  payload = json.loads(body)
+                  actual = str(payload.get("build_sha") or "").strip().lower()
+                  if status != 200:
+                      last.append(f"api version status={status} body={body[:300]}")
+                  elif len(actual) != 40:
+                      last.append(f"backend build SHA must be full length; actual={actual!r}")
+                  elif actual != expected_api:
+                      last.append(f"backend SHA expected={expected_api} actual={actual}")
+              except Exception as exc:
+                  last.append(f"api version error={exc}")
+
+              if not last:
+                  print(f"Exact Azure frontend/backend deployment ready on attempt {attempt}")
+                  break
+              print(f"Attempt {attempt}/30 not ready: {'; '.join(last)}")
+              time.sleep(10)
+          else:
+              raise SystemExit("Azure deployment did not become ready: " + "; ".join(last))
+          PY
+
+      - name: Validate passwordless Heritage demo session
+        shell: bash
+        env:
+          API_URL: ${{ inputs.live_api_base_url || vars.CROWN_LIVE_API_BASE_URL || 'https://crown-api-prod.azurewebsites.net' }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          import os
+          import urllib.error
+          import urllib.request
+
+          api_url = os.environ["API_URL"].rstrip("/")
+          session_url = f"{api_url}/api/v1/sandbox/session/"
+          payload = json.dumps({
+              "role": "school_admin",
+              "school": "heritage-core",
+              "guidance": "guided",
+              "track": "school",
+          }).encode("utf-8")
+          request = urllib.request.Request(
+              session_url,
+              data=payload,
+              method="POST",
+              headers={
+                  "Accept": "application/json",
+                  "Content-Type": "application/json",
+              },
+          )
+          try:
+              with urllib.request.urlopen(request, timeout=20) as response:
+                  status = response.status
+                  body = response.read().decode("utf-8", "replace")
+          except urllib.error.HTTPError as exc:
+              body = exc.read().decode("utf-8", "replace")
+              raise SystemExit(
+                  f"Passwordless Heritage demo session failed with HTTP {exc.code}: {body[:300]}"
+              ) from exc
+          except OSError as exc:
+              raise SystemExit(f"Passwordless Heritage demo session failed: {exc}") from exc
+
+          if status != 201:
+              raise SystemExit(f"Passwordless Heritage demo session returned HTTP {status}; expected 201 Created.")
+          result = json.loads(body)
+          if not (result.get("access") or result.get("token")):
+              raise SystemExit("Passwordless Heritage demo session returned no access token.")
+          school_key = result.get("school_key") or result.get("school", {}).get("key")
+          if school_key and school_key != "heritage-core":
+              raise SystemExit(f"Unexpected demo school returned: {school_key}")
+          print("Passwordless Heritage demo session is available without invitation or password.")
+          PY
+
+      - name: Set up Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: frontend/dashboards/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install chromium --with-deps
+
+      - name: Run production certification crawler against deployed runtime
+        run: npm run certify:production
+        env:
+          CI: "1"
+          CROWN_CERTIFICATION_LIVE_RUNTIME: "1"
+          CROWN_EXPECTED_FRONTEND_SHA: ${{ inputs.expected_frontend_sha }}
+          CROWN_EXPECTED_API_SHA: ${{ inputs.expected_api_sha || vars.CROWN_EXPECTED_API_SHA || '' }}
+          CROWN_LIVE_FRONTEND_URL: ${{ inputs.live_frontend_url || vars.CROWN_LIVE_FRONTEND_URL || 'https://yellow-forest-0eecc8b0f.7.azurestaticapps.net' }}
+          CROWN_LIVE_API_BASE_URL: ${{ inputs.live_api_base_url || vars.CROWN_LIVE_API_BASE_URL || 'https://crown-api-prod.azurewebsites.net' }}
+          CROWN_CERTIFICATION_TENANT_MODE: "sandbox"
+          CROWN_DEMO_SCHOOL_ID: ${{ vars.CROWN_DEMO_SCHOOL_ID || '19801b59-8c05-4c84-9312-5d792e4e839d' }}
+          CROWN_LIVE_SCHOOL_ID: ${{ vars.CROWN_LIVE_SCHOOL_ID || '' }}
+          CROWN_LIVE_SCHOOL_LABEL: ${{ vars.CROWN_LIVE_SCHOOL_LABEL || 'Heritage Christian Academy' }}
+          CROWN_LIVE_USE_SANDBOX_CREDENTIALS: "1"
+
+      - name: Confirm evidence summary exists
+        if: always()
+        run: |
+          test -f ../../audit-artifacts/production-certification/current/certification-summary.md
+          test -f ../../audit-artifacts/production-certification/current/certification-matrix.json
+          test -f ../../audit-artifacts/production-certification/current/route-results.csv
+
+      - name: Upload production certification evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: production-certification-evidence-${{ github.run_number }}-${{ github.sha }}
+          path: audit-artifacts/production-certification/current/
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Upload raw Playwright test results
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: production-certification-test-results-${{ github.run_number }}-${{ github.sha }}
+          path: frontend/dashboards/test-results/
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: production-certification-playwright-report-${{ github.run_number }}-${{ github.sha }}
+          path: frontend/dashboards/playwright-report/
+          if-no-files-found: ignore
+          retention-days: 14
