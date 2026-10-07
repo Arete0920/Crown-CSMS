@@ -50,6 +50,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 _is_azure = bool(os.getenv("WEBSITE_HOSTNAME") or os.getenv("WEBSITE_INSTANCE_ID"))
 CROWN_DEV_OPEN_API = _env_bool("CROWN_DEV_OPEN_API", default=False)
 
+# Production API documentation is closed by default. It may be explicitly
+# enabled for controlled staff-only access when required for an integration.
+CROWN_API_DOCS_ENABLED = _env_bool("CROWN_API_DOCS_ENABLED", default=False)
+
 # SOLOMON read-only API gate. Keep closed until Phase 3 is explicitly enabled.
 CROWN_SOLOMON_API_ENABLED = _env_bool("CROWN_SOLOMON_API_ENABLED", default=False)
 
@@ -496,11 +500,13 @@ if _env_is_prod():
         try:
             import sentry_sdk
             from sentry_sdk.integrations.django import DjangoIntegration
+            from core.observability.sentry import before_send
             sentry_sdk.init(
                 dsn=_sentry_dsn,
                 integrations=[DjangoIntegration()],
                 traces_sample_rate=0.2,
                 send_default_pii=False,
+                before_send=before_send,
                 release=BUILD_SHA,
             )
         except ImportError:
@@ -547,6 +553,29 @@ LOGGING = {
         },
     },
 }
+
+# ---------------------------------------------------------------------------
+# Shared cache (auth throttling and other short-lived coordination)
+# ---------------------------------------------------------------------------
+# Prefer an explicit cache URL; reuse an explicitly configured Redis broker only
+# when a dedicated cache endpoint is not supplied. Local/test environments keep
+# Django's process-local default cache.
+_CROWN_CACHE_URL = os.getenv("CROWN_CACHE_URL", "").strip() or os.getenv("REDIS_URL", "").strip()
+if not _CROWN_CACHE_URL:
+    _configured_broker = os.getenv("CELERY_BROKER_URL", "").strip()
+    if _configured_broker.startswith(("redis://", "rediss://")):
+        _CROWN_CACHE_URL = _configured_broker
+
+if _CROWN_CACHE_URL:
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.redis.RedisCache",
+            "LOCATION": _CROWN_CACHE_URL,
+            "KEY_PREFIX": "crown",
+            "TIMEOUT": 300,
+        }
+    }
+
 
 # ---------------------------------------------------------------------------
 # Celery (background tasks / outbox drain)

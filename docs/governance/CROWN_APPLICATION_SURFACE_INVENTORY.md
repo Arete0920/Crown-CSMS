@@ -36,7 +36,7 @@ Create one authoritative census of every active CROWN application surface before
 | Layer | Representative prefix or endpoint | Disposition | Initial proof mechanism | Open reconciliation |
 |---|---|---|---|---|
 | Health and diagnostics | `/health/`, `/api/health/`, `/health/version/`, `/api/system/health/`, `/api/integrity/`, `/api/v1/version/` | ACTIVE | API_CONTRACT | Bind to deployed identity and access policy |
-| API schema and documentation | `/api/schema/`, `/api/docs/`, `/api/redoc/` | ACTIVE or environment-limited | API_CONTRACT + MANUAL_REVIEW | Confirm production exposure policy |
+| API schema and documentation | `/api/schema/`, `/api/docs/`, `/api/redoc/` | NON-PRODUCTION ACTIVE / PRODUCTION CLOSED BY DEFAULT | API_CONTRACT + NEGATIVE AUTH TESTS | Production returns 404 unless `CROWN_API_DOCS_ENABLED=true`; when enabled, authenticated staff/superuser access is still required |
 | Authentication | `/api/auth/login/`, `/api/auth/refresh/`, `/api/auth/me/`, `/accounts/` | ACTIVE | API_CONTRACT + PLAYWRIGHT | Reconcile JWT, session and Microsoft identity flows |
 | Tenant identity proof | `/api/system/whoami/` | ACTIVE | API_CONTRACT | Confirm tenant and role outputs in deployed runtime |
 | Wizard discovery and routes | `/api/v1/wizards/` and registry-derived prefixes | ACTIVE | API_CONTRACT + PLAYWRIGHT | Expand all 28 workflows |
