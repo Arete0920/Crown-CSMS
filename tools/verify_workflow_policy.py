@@ -17,6 +17,52 @@ MOJIBAKE_RE = re.compile(r"[âΓœ†œ©]")
 NAME_RE = re.compile(r"(?m)^name:\s*(.+?)\s*$")
 GROUP_RE = re.compile(r"(?m)^\s{2}group:\s*(.+?)\s*$")
 
+CANONICAL_WORKFLOW_FILES = {
+    "accounting-verification.yml",
+    "azure-classroom-preflight.yml",
+    "azure-drift-watchdog.yml",
+    "backend-gate.yml",
+    "ci.yml",
+    "classroom-verification.yml",
+    "codeql.yml",
+    "content-operations-verification.yml",
+    "contract-gate.yml",
+    "crown-claims-guard.yml",
+    "crown-release-authority-gates.yml",
+    "dashboards-build-gate.yml",
+    "demo-reset.yml",
+    "dependency-audit.yml",
+    "dependency-review.yml",
+    "deploy-dashboard.yml",
+    "deploy-dev.yml",
+    "deploy-prod.yml",
+    "dev-smoke.yml",
+    "finance-final-hardening.yml",
+    "isolated-postgres-restore-drill.yml",
+    "license-audit.yml",
+    "migration-lock-gate.yml",
+    "ops-reset-dev.yml",
+    "pr-preflight.yml",
+    "prod-health-watch.yml",
+    "prod-immutable-rollback-drill.yml",
+    "prod-rollback-on-failure.yml",
+    "pytest-gate.yml",
+    "recovery-control-drill.yml",
+    "release-verify.yml",
+    "repository-freshness.yml",
+    "repository-policy.yml",
+    "sbom-generation.yml",
+    "schema-governance.yml",
+    "schema-migration-stage.yml",
+    "secret-scan.yml",
+    "stale-branches.yml",
+    "tenant-isolation-gate.yml",
+    "tests.yml",
+    "ui-proof-gate.yml",
+    "wizard-e2e-evidence-gate.yml",
+    "workflow-permissions-audit.yml",
+}
+
 
 def is_pinned_uses(ref: str) -> bool:
     if ref.startswith("./") or ref.startswith("docker://"):
