@@ -9,7 +9,7 @@ ROOT = Path(__file__).resolve().parents[2]
 EVIDENCE_STATUS = ROOT / "audit-artifacts" / "wizard-e2e-evidence" / "latest" / "99_STATUS.json"
 
 LEGACY_SCORE_SCRIPT = ROOT / "scripts" / "execution" / "121_50_wizard_deep_dive_assessment.ps1"
-SANDBOX_WORKFLOW = ROOT / ".github" / "workflows" / "sandbox-ready-evidence.yml"
+WIZARD_WORKFLOW = ROOT / ".github" / "workflows" / "wizard-e2e-evidence-gate.yml"
 
 FALSE_COMPLETION_PATTERNS = (
     re.compile(r"all\s+50\s+wizards\s+are\s+complete\s+and\s+proof-backed", re.I),
@@ -40,13 +40,13 @@ def legacy_structural_score_is_not_functional_proof() -> list[str]:
 
 def stale_completion_claims() -> list[str]:
     failures: list[str] = []
-    if not SANDBOX_WORKFLOW.exists():
+    if not WIZARD_WORKFLOW.exists():
         return failures
-    text = SANDBOX_WORKFLOW.read_text(encoding="utf-8", errors="replace")
+    text = WIZARD_WORKFLOW.read_text(encoding="utf-8", errors="replace")
     for pattern in FALSE_COMPLETION_PATTERNS:
         if pattern.search(text):
             failures.append(
-                f"{SANDBOX_WORKFLOW.relative_to(ROOT)} still contains an unconditional 50-wizard proof-backed completion claim"
+                f"{WIZARD_WORKFLOW.relative_to(ROOT)} still contains an unconditional 50-wizard proof-backed completion claim"
             )
             break
     return failures
