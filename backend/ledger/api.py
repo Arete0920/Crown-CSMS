@@ -681,7 +681,7 @@ def void_charge(request: HttpRequest, charge_id: str):
     with transaction.atomic():
         try:
             ch = Charge.objects.select_for_update().get(id=UUID(charge_id), school_id=sid)
-        except (Charge.DoesNotExist, Exception):
+        except (ValueError, Charge.DoesNotExist):
             return _json_error("charge not found", status=404)
 
         if ch.is_void:
@@ -712,7 +712,7 @@ def void_payment(request: HttpRequest, payment_id: str):
     with transaction.atomic():
         try:
             p = Payment.objects.select_for_update().get(id=UUID(payment_id), school_id=sid)
-        except (Payment.DoesNotExist, Exception):
+        except (ValueError, Payment.DoesNotExist):
             return _json_error("payment not found", status=404)
 
         if p.is_void:
