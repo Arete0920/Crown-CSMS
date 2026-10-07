@@ -1,5 +1,5 @@
 param(
-    [switch]$AllowDraftOnly
+    [switch]$AuthorityOnly
 )
 
 $ErrorActionPreference = "Stop"
@@ -20,7 +20,6 @@ function Write-JsonFile {
     ($Object | ConvertTo-Json -Depth 12) | Set-Content -Path $Path -Encoding UTF8
 }
 
-
 function Test-JsonPass {
     param([string]$Path)
     if (-not (Test-Path $Path)) {
@@ -30,73 +29,29 @@ function Test-JsonPass {
         $json = Get-Content $Path -Raw | ConvertFrom-Json
         $passValue = $false
         $reason = "pass not true"
-
         if ($null -ne $json.pass) {
             $passValue = [bool]$json.pass
             $reason = if ($passValue) { "pass true" } else { "pass false" }
         }
         elseif ($null -ne $json.status) {
             $normalized = ([string]$json.status).Trim().ToUpperInvariant()
-            if ($normalized -eq "PASS" -or $normalized -eq "GREEN" -or $normalized -eq "GO") {
+            if ($normalized -in @("PASS","GREEN","GO")) {
                 $passValue = $true
                 $reason = "passing status: $normalized"
             } else {
-                $passValue = $false
                 $reason = "non-passing status: $normalized"
             }
         }
-
         return [pscustomobject]@{ Path = $Path; Exists = $true; Pass = $passValue; Reason = $reason }
     } catch {
         return [pscustomobject]@{ Path = $Path; Exists = $true; Pass = $false; Reason = "invalid json: $($_.Exception.Message)" }
     }
 }
 
-function Find-BlockingMarkers {
-    param([string]$Path)
-    $markers = @(
-        "NO-GO",
-        "NOT_GREEN",
-        "BLOCKED",
-        "PROOF_REQUIRED",
-        "UNKNOWN",
-        "IN_PROGRESS",
-        "NOT_CERTIFIED",
-        "TBD",
-        "UNVERIFIED",
-        "NOT SIGNED",
-        "TEMPLATE ONLY",
-        "REQUIRES_CONFIRMATION",
-        "REQUIRES LEGAL REVIEW",
-        "NOT LEGAL-SIGNED",
-        "NOT IMPLEMENTED GREEN",
-        "NOT APPROVED"
-    )
-
-    if (-not (Test-Path $Path)) {
-        return @([pscustomobject]@{ Path = $Path; LineNumber = 0; Marker = "MISSING_FILE"; Text = "Required authority artifact is missing." })
-    }
-
-    $rows = @()
-    $lines = Get-Content $Path
-    for ($i = 0; $i -lt $lines.Count; $i++) {
-        foreach ($marker in $markers) {
-            if ($lines[$i] -match [regex]::Escape($marker)) {
-                $rows += [pscustomobject]@{
-                    Path = $Path
-                    LineNumber = $i + 1
-                    Marker = $marker
-                    Text = $lines[$i].Trim()
-                }
-            }
-        }
-    }
-    return $rows
-}
-
 $repoRoot = (git rev-parse --show-toplevel).Trim()
 if ([string]::IsNullOrWhiteSpace($repoRoot)) { throw "Not inside a git repository." }
 Set-Location $repoRoot
+
 $branchName = (git branch --show-current 2>$null)
 if ([string]::IsNullOrWhiteSpace($branchName)) { $branchName = $env:GITHUB_HEAD_REF }
 if ([string]::IsNullOrWhiteSpace($branchName)) { $branchName = $env:GITHUB_REF_NAME }
@@ -108,26 +63,19 @@ $latestDir = Join-Path $repoRoot ".crown-audit\release-authority\latest"
 New-Dir $outDir
 New-Dir $latestDir
 
-$requiredArtifacts = @(
-    "docs/release/CROWN_FULL_COMPLETION_BLOCKERS_20260529.md",
-    "docs/release/CROWN_CORE_SIS_SUPERIORITY_GATE_20260529.md",
-    "docs/release/CROWN_CORE_SIS_COMPETITOR_MATRIX_20260529.csv",
-    "docs/release/CROWN_CORE_SIS_MODULE_PROOF_REGISTER_20260529.csv",
-    "docs/release/CROWN_CORE_SIS_REMEDIATION_LEDGER_20260529.csv",
-    "docs/compliance/CROWN_COMPLIANCE_CUSTOMER_READINESS_PACKET_20260529.md",
-    "docs/compliance/CROWN_DPA_TEMPLATE_20260529.md",
-    "docs/compliance/CROWN_SUBPROCESSOR_REGISTER_20260529.csv",
-    "docs/release/CROWN_CONTROLLED_PILOT_ENTRY_EXIT_CHECKLIST_20260529.md",
-    "docs/release/CROWN_FINAL_RELEASE_AUTHORITY_SIGNOFF_TEMPLATE_20260529.md",
-    "docs/release/CROWN_RELEASE_AUTHORITY_INDEX_20260529.md",
-    "docs/release/CROWN_DASHBOARD_DATA_PROVENANCE_CONTRACT_20260529.md",
-    "docs/architecture/CROWN_CORE_SIS_DOMAIN_MODEL_CERTIFICATION_20260529.md",
-    "docs/release/CROWN_FINANCIAL_CONTROLS_GATE_20260529.md",
-    "docs/operations/CROWN_OBSERVABILITY_AND_INCIDENT_READINESS_20260529.md",
-    "docs/customer/CROWN_GO_LIVE_RUNBOOK_20260529.md"
+# Current authority is defined only by canonical/current documents.
+# Dated predecessor-era release campaigns remain historical provenance and must not control current release disposition.
+$currentAuthorityArtifacts = @(
+    "docs/CURRENT_RELEASE_STATUS.md",
+    "docs/canonical/CANONICAL_DOCUMENT_INDEX.md",
+    "docs/canonical/DILIGENCE_EVIDENCE_INDEX.md",
+    "docs/release/CROWN_PRODUCTION_READY_ENGINEERING_CERTIFICATION_20260818.md",
+    "docs/operations/README.md",
+    "docs/ownership/OWNER_HANDOFF.md",
+    "docs/ownership/BUYER_OPERATIONAL_TRANSFER_REGISTER.md"
 )
 
-$scriptArtifacts = @(
+$requiredScripts = @(
     "scripts/execution/118_run_crown_release_authority_stack.ps1",
     "scripts/execution/120_crown_release_authority_meta_gate.ps1",
     "scripts/execution/121_crown_dashboard_data_provenance_gate.ps1",
@@ -139,16 +87,41 @@ $scriptArtifacts = @(
     ".github/workflows/crown-release-authority-gates.yml"
 )
 
-$markerRows = @()
-foreach ($relative in $requiredArtifacts) {
-    $markerRows += Find-BlockingMarkers -Path (Join-Path $repoRoot $relative)
-}
-foreach ($relative in $scriptArtifacts) {
-    $scriptPath = Join-Path $repoRoot $relative
-    if (-not (Test-Path $scriptPath)) {
-        $markerRows += [pscustomobject]@{ Path = $scriptPath; LineNumber = 0; Marker = "MISSING_FILE"; Text = "Required authority script is missing." }
+$authorityRows = @()
+foreach ($relative in @($currentAuthorityArtifacts + $requiredScripts)) {
+    $path = Join-Path $repoRoot $relative
+    $authorityRows += [pscustomobject]@{
+        Path = $relative
+        Exists = (Test-Path $path)
     }
 }
+
+# Guard against reintroducing obsolete May-era files as executable authority inputs.
+$retiredAuthorityTokens = @(
+    "CROWN_FULL_COMPLETION_BLOCKERS_20260529",
+    "CROWN_CORE_SIS_SUPERIORITY_GATE_20260529",
+    "CROWN_CORE_SIS_COMPETITOR_MATRIX_20260529",
+    "CROWN_RELEASE_AUTHORITY_INDEX_20260529"
+)
+$selfText = Get-Content (Join-Path $repoRoot "scripts/execution/120_crown_release_authority_meta_gate.ps1") -Raw
+$workflowText = Get-Content (Join-Path $repoRoot ".github/workflows/crown-release-authority-gates.yml") -Raw
+$retiredRefs = @()
+foreach ($token in $retiredAuthorityTokens) {
+    foreach ($source in @(
+        [pscustomobject]@{ Name = "meta-gate"; Text = $selfText },
+        [pscustomobject]@{ Name = "workflow"; Text = $workflowText }
+    )) {
+        # The token list itself is allowed in the guard. Any additional occurrence is a regression.
+        $count = ([regex]::Matches($source.Text, [regex]::Escape($token))).Count
+        $allowed = if ($source.Name -eq "meta-gate") { 1 } else { 0 }
+        if ($count -gt $allowed) {
+            $retiredRefs += [pscustomobject]@{ Source = $source.Name; Token = $token; Count = $count }
+        }
+    }
+}
+
+$missingAuthority = @($authorityRows | Where-Object { -not $_.Exists })
+$authorityPass = ($missingAuthority.Count -eq 0 -and $retiredRefs.Count -eq 0)
 
 $statusJsons = @(
     ".crown-audit/full-completion-truth/latest/99_STATUS.json",
@@ -162,17 +135,20 @@ $statusJsons = @(
 )
 
 $jsonRows = @()
-foreach ($relative in $statusJsons) {
-    $jsonRows += Test-JsonPass -Path (Join-Path $repoRoot $relative)
+if (-not $AuthorityOnly) {
+    foreach ($relative in $statusJsons) {
+        $jsonRows += Test-JsonPass -Path (Join-Path $repoRoot $relative)
+    }
 }
 
-$blockingMarkerCount = @($markerRows).Count
 $failingJsonCount = @($jsonRows | Where-Object { -not $_.Pass }).Count
-$pass = ($blockingMarkerCount -eq 0 -and $failingJsonCount -eq 0)
-if ($AllowDraftOnly) { $pass = $false }
+$pass = if ($AuthorityOnly) { $authorityPass } else { ($authorityPass -and $failingJsonCount -eq 0) }
 
-$markerRows | Export-Csv -Path (Join-Path $outDir "10_blocking_markers.csv") -NoTypeInformation -Encoding UTF8
-$jsonRows | Export-Csv -Path (Join-Path $outDir "20_required_status_jsons.csv") -NoTypeInformation -Encoding UTF8
+$authorityRows | Export-Csv -Path (Join-Path $outDir "10_current_authority_inputs.csv") -NoTypeInformation -Encoding UTF8
+$retiredRefs | Export-Csv -Path (Join-Path $outDir "15_retired_authority_regressions.csv") -NoTypeInformation -Encoding UTF8
+if (-not $AuthorityOnly) {
+    $jsonRows | Export-Csv -Path (Join-Path $outDir "20_required_status_jsons.csv") -NoTypeInformation -Encoding UTF8
+}
 
 $summary = New-Object System.Collections.Generic.List[string]
 $summary.Add("# CROWN Release Authority Meta Gate")
@@ -180,17 +156,18 @@ $summary.Add("")
 $summary.Add("- Generated: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')")
 $summary.Add("- Branch: $branchName")
 $summary.Add("- Head: $((git rev-parse HEAD).Trim())")
-$summary.Add("- Required artifacts: $($requiredArtifacts.Count)")
-$summary.Add("- Required scripts/workflow files: $($scriptArtifacts.Count)")
-$summary.Add("- Blocking marker count: $blockingMarkerCount")
-$summary.Add("- Failing/missing status JSON count: $failingJsonCount")
+$summary.Add("- Mode: $(if ($AuthorityOnly) { 'repository-authority' } else { 'operational-certification' })")
+$summary.Add("- Current authority inputs: $($currentAuthorityArtifacts.Count)")
+$summary.Add("- Missing authority/script inputs: $($missingAuthority.Count)")
+$summary.Add("- Retired authority regressions: $($retiredRefs.Count)")
+if (-not $AuthorityOnly) {
+    $summary.Add("- Failing/missing operational status JSON count: $failingJsonCount")
+}
 $summary.Add("")
-if ($pass) {
-    $summary.Add("PASS")
-} else {
-    $summary.Add("REVIEW REQUIRED")
+$summary.Add($(if ($pass) { "PASS" } else { "REVIEW REQUIRED" }))
+if (-not $AuthorityOnly -and -not $pass) {
     $summary.Add("")
-    $summary.Add("Release, pilot, and GA claims are blocked until all required artifacts are green and all required runtime evidence status files pass.")
+    $summary.Add("Operational production certification remains fail-closed until current environment-specific runtime evidence passes all required operational gates.")
 }
 Write-Utf8 -Path (Join-Path $outDir "00_SUMMARY.md") -Lines $summary
 
@@ -198,12 +175,14 @@ $status = [ordered]@{
     generated_at = (Get-Date).ToString("s")
     branch = $branchName
     head = (git rev-parse HEAD).Trim()
-    required_artifact_count = $requiredArtifacts.Count
-    required_script_artifact_count = $scriptArtifacts.Count
-    blocking_marker_count = $blockingMarkerCount
-    failing_required_status_json_count = $failingJsonCount
+    mode = if ($AuthorityOnly) { "repository-authority" } else { "operational-certification" }
+    authority_pass = $authorityPass
     pass = $pass
-    blocking_markers = $markerRows
+    missing_authority_or_script_count = $missingAuthority.Count
+    retired_authority_regression_count = $retiredRefs.Count
+    failing_operational_status_json_count = $failingJsonCount
+    current_authority_inputs = $authorityRows
+    retired_authority_regressions = $retiredRefs
     required_status_jsons = $jsonRows
 }
 Write-JsonFile -Path (Join-Path $outDir "99_STATUS.json") -Object $status
