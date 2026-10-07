@@ -11,6 +11,7 @@
     "provenance_tier",
     "review_status",
     "rights_status",
+    "rights_basis",
     "privacy_classification",
     "tenant_scope",
     "reviewed_on"
@@ -44,6 +45,10 @@
       "type": "string",
       "enum": ["owned", "licensed", "approved_use"]
     },
+    "rights_basis": {
+      "type": "string",
+      "minLength": 1
+    },
     "privacy_classification": {
       "type": "string",
       "enum": ["public", "internal"]
@@ -73,6 +78,9 @@
       "format": "date"
     },
     "supersedes": {
+      "type": "string"
+    },
+    "superseded_by": {
       "type": "string"
     }
   },
