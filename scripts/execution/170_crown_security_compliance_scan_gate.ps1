@@ -19,12 +19,13 @@ New-Dir $latestDir
 
 $requiredWorkflows = @(
     ".github/workflows/secret-scan.yml",
+    ".github/workflows/codeql.yml",
     ".github/workflows/dependency-audit.yml",
     ".github/workflows/dependency-review.yml",
-    ".github/workflows/dependency-scan.yml",
     ".github/workflows/sbom-generation.yml",
-    ".github/workflows/workflow-lint.yml",
-    ".github/workflows/workflow-policy-gate.yml"
+    ".github/workflows/license-audit.yml",
+    ".github/workflows/repository-policy.yml",
+    ".github/workflows/workflow-permissions-audit.yml"
 )
 
 $requiredArtifacts = @(
