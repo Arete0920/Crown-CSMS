@@ -9,12 +9,13 @@ from datetime import datetime, timezone
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 
 REQUIRED_POLICY_WORKFLOWS = [
-    ".github/workflows/workflow-policy-gate.yml",
-    ".github/workflows/workflow-lint.yml",
-    ".github/workflows/frontend-quality-gates.yml",
-    ".github/workflows/dependency-integrity-gate.yml",
+    ".github/workflows/repository-policy.yml",
+    ".github/workflows/codeql.yml",
+    ".github/workflows/dependency-audit.yml",
+    ".github/workflows/dashboards-build-gate.yml",
     ".github/workflows/sbom-generation.yml",
     ".github/workflows/prod-rollback-on-failure.yml",
+    ".github/workflows/release-verify.yml",
 ]
 
 
