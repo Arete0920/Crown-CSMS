@@ -119,13 +119,19 @@ function persistAuthenticatedSession(payload, role, selectedSchoolId, email) {
   sessionStorage.setItem("crown_current_user", serializedUser);
   sessionStorage.setItem("crown_user_roles", serializedRoles);
 
-  localStorage.setItem("crown.jwt.access", access);
+  // Persistent storage is limited to non-secret UI context. Bearer tokens and
+  // authenticated-user payloads stay in sessionStorage so closing the tab drops them.
+  localStorage.removeItem("crown.jwt.access");
+  localStorage.removeItem("crown.jwt.refresh");
+  localStorage.removeItem("crown_auth_token");
+  localStorage.removeItem("access_token");
+  localStorage.removeItem("crown_auth");
+  localStorage.removeItem("crown_user");
+  localStorage.removeItem("crown_current_user");
+  localStorage.removeItem("crown_user_roles");
   localStorage.setItem("crown.school.id", schoolId);
   localStorage.setItem("crown.role", role.value);
   localStorage.setItem("crown.active.role", role.value);
-  localStorage.setItem("crown_user", serializedUser);
-  localStorage.setItem("crown_current_user", serializedUser);
-  localStorage.setItem("crown_user_roles", serializedRoles);
 
   if (IS_SANDBOX) {
     localStorage.setItem("crown.demo.role", role.value);
@@ -220,8 +226,11 @@ export default function LoginPage() {
         return;
       }
 
-      const username = email || "demo@crown.example.org";
-      const pass = password || "demo-password";
+      const username = email.trim();
+      const pass = password;
+      if (!username || !pass) {
+        throw new Error("Email and password are required.");
+      }
       const response = await globalThis.fetch(apiUrl("/api/v1/auth/token/"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
