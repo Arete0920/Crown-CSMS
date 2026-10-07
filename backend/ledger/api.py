@@ -8,6 +8,7 @@ from django.contrib.auth.decorators import login_required
 from django.db import transaction
 
 from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
 from core.permissions import CrownModulePermission, require_permission
 from django.db.models import Sum
 from django.http import JsonResponse, HttpRequest
@@ -581,7 +582,7 @@ def open_invoices(request: HttpRequest):
 
 @extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["GET"])
-@permission_classes([CrownModulePermission("finance.view", write_code="finance.edit")])
+@permission_classes([IsAuthenticated])
 def ledger_invariants(request: HttpRequest):
     """
     GET /api/v1/ledger/invariants/
