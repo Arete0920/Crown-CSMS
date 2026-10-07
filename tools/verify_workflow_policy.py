@@ -124,7 +124,7 @@ def _check_dispatch_input_descriptions(text: str, rel: pathlib.Path) -> list[str
             continue
 
         input_match = re.match(r"^([A-Za-z0-9_-]+):\s*$", line)
-        if indent >= 6 and input_match:
+        if indent == 6 and input_match:
             if current_input and not has_description:
                 errors.append(f"{rel}: workflow_dispatch input '{current_input}' missing description")
             current_input = input_match.group(1)
