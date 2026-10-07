@@ -47,13 +47,13 @@ jobs:
           $targets = @(
             'scripts/execution/118_run_crown_release_authority_stack.ps1',
             'scripts/execution/105_dashboard_module_completion_gate.ps1',
-            'scripts/execution/106_full_completion_truth_gate.ps1',
-            'scripts/execution/121_dashboard_data_provenance_gate.ps1',
-            'scripts/execution/122_domain_model_certification_gate.ps1',
-            'scripts/execution/130_data_migration_reconciliation_gate.ps1',
-            'scripts/execution/140_financial_controls_gate.ps1',
-            'scripts/execution/150_performance_load_gate.ps1',
-            'scripts/execution/160_observability_incident_gate.ps1'
+            'scripts/execution/106_crown_full_completion_truth_gate.ps1',
+            'scripts/execution/121_crown_dashboard_data_provenance_gate.ps1',
+            'scripts/execution/122_crown_domain_model_certification_gate.ps1',
+            'scripts/execution/130_crown_data_migration_reconciliation_gate.ps1',
+            'scripts/execution/140_crown_financial_controls_gate.ps1',
+            'scripts/execution/150_crown_performance_load_gate.ps1',
+            'scripts/execution/160_crown_observability_incident_gate.ps1'
           )
           foreach ($target in $targets) {
             if (-not (Test-Path $target)) { throw "Missing release-authority script: $target" }
@@ -65,7 +65,7 @@ jobs:
               [ref]$errors
             ) | Out-Null
             if ($errors.Count -gt 0) {
-              $errors | ForEach-Object { Write-Error "$target: $($_.Message)" }
+              $errors | ForEach-Object { Write-Error "${target}: $($_.Message)" }
               throw "PowerShell parse validation failed for $target"
             }
           }
