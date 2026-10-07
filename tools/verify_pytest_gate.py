@@ -17,6 +17,9 @@ from pathlib import Path
 
 # Curated fast test set: core + RBAC + ledger invariants
 FAST_TEST_PATHS = [
+    # Required regression proof for the repaired trust boundary
+    "backend/core/tests/test_runtime_admin_bootstrap.py",
+    "backend/core/tests/test_schema_deployment_contract.py",
     # RBAC / auth / tenant
     "backend/core/tests/test_rbac_contract.py",
     "backend/crown_api/tests/test_rbac_proof.py",
