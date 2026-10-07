@@ -7,6 +7,7 @@ from django.http import StreamingHttpResponse
 from django.utils.timezone import now
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
+from drf_spectacular.utils import OpenApiTypes, extend_schema
 
 from households.scoping import get_request_school_id
 from django.core.exceptions import FieldDoesNotExist
@@ -90,6 +91,7 @@ class InvoicesCSVExportView(APIView):
     permission_classes = [IsAuthenticated, IsFinanceRole]
     throttle_classes = [ExportUserMinuteThrottle, ExportUserHourThrottle, ExportIPMinuteThrottle]
 
+    @extend_schema(responses={(200, "text/csv"): OpenApiTypes.BINARY})
     def get(self, request):
         sid = get_request_school_id(request)
         _log_export_access(request, "invoices.csv", sid)
@@ -171,6 +173,7 @@ class InstallmentScheduleCSVExportView(APIView):
     permission_classes = [IsAuthenticated, IsFinanceRole]
     throttle_classes = [ExportUserMinuteThrottle, ExportUserHourThrottle, ExportIPMinuteThrottle]
 
+    @extend_schema(responses={(200, "text/csv"): OpenApiTypes.BINARY})
     def get(self, request):
         sid = get_request_school_id(request)
         _log_export_access(request, "installment-schedule.csv", sid)
@@ -277,6 +280,7 @@ class _BaseModelCSVExportView(APIView):
                 continue
         return qs
 
+    @extend_schema(responses={(200, "text/csv"): OpenApiTypes.BINARY})
     def get(self, request):
         try:
             model = resolve_model(self.model_candidates)
@@ -595,6 +599,7 @@ class StatementsCSVExportView(APIView):
         ModelCandidate("accounting", "Allocation"),
     ]
 
+    @extend_schema(responses={(200, "text/csv"): OpenApiTypes.BINARY})
     def get(self, request):
         household_id = request.query_params.get("household_id")
         as_of = request.query_params.get("as_of")  # YYYY-MM-DD
@@ -800,6 +805,7 @@ class StatementLinesCSVExportView(APIView):
         ModelCandidate("accounting", "Payment"),
     ]
 
+    @extend_schema(responses={(200, "text/csv"): OpenApiTypes.BINARY})
     def get(self, request):
         household_id = request.query_params.get("household_id")
         as_of = request.query_params.get("as_of")  # YYYY-MM-DD
@@ -1198,6 +1204,7 @@ class YearEndTuitionPaidCSVExportView(APIView):
         ModelCandidate("accounting", "LedgerCharge"),
     ]
 
+    @extend_schema(responses={(200, "text/csv"): OpenApiTypes.BINARY})
     def get(self, request):
         year_raw = request.query_params.get("year")
         try:
@@ -1399,6 +1406,7 @@ class PaymentsQuickBooksCSVExportView(APIView):
         ModelCandidate("accounting", "Payment"),
     ]
 
+    @extend_schema(responses={(200, "text/csv"): OpenApiTypes.BINARY})
     def get(self, request):
         try:
             PaymentModel = resolve_model(self.payment_candidates)
