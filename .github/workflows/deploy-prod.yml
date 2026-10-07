@@ -259,25 +259,26 @@ jobs:
           echo "BUILD_SHA = \"${{ steps.vars.outputs.deploy_sha_short }}\"" > backend/crown_api/build_info.py
           echo "OK: Generated build_info.py with SHA: ${{ steps.vars.outputs.deploy_sha_short }}"
 
-      - name: Build and push Docker image
+      - name: Build production image for verification
         uses: docker/build-push-action@ca052bb54ab0790a636c9b5f226502c73d547a25 # v5
         with:
           context: .
-          push: true
+          load: true
+          push: false
           tags: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.vars.outputs.deploy_sha }}
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Pull image for Trivy local scan
-        run: |
-          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.vars.outputs.deploy_sha }}
-
-      - name: Run security scan (Trivy)
+      - name: Run blocking security scan (Trivy)
         uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # v0.35.0
         with:
           image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.vars.outputs.deploy_sha }}
+          scanners: 'vuln'
+          severity: 'HIGH,CRITICAL'
+          ignore-unfixed: false
+          exit-code: '1'
           format: 'sarif'
           output: 'trivy-results.sarif'
 
@@ -324,6 +325,13 @@ jobs:
         if: ${{ always() && steps.sarif_gate.outputs.can_upload == 'true' }}
         with:
           sarif_file: 'trivy-results.sarif'
+
+      - name: Push verified production image
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.vars.outputs.deploy_sha }}
+          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
 
       - name: Set up Python
         uses: actions/setup-python@7f4fc3e22c37d6ff65e88745f38bd3157c663f7c # v4
