@@ -3,6 +3,11 @@ URL configuration for crown_api project.
 """
 
 import logging
+import os
+from functools import wraps
+
+from django.conf import settings
+from django.http import Http404
 from django.urls import include, path
 from django.views.generic import RedirectView
 from drf_spectacular.views import (
@@ -28,6 +33,42 @@ from solomon.guidance_views import guidance_view
 
 logger = logging.getLogger(__name__)
 
+
+def _production_like_runtime() -> bool:
+    env = (
+        str(getattr(settings, "CROWN_ENV", "") or "")
+        or str(getattr(settings, "DJANGO_ENV", "") or "")
+        or str(getattr(settings, "ENVIRONMENT", "") or "")
+        or str(os.getenv("CROWN_ENV", "") or "")
+        or str(os.getenv("DJANGO_ENV", "") or "")
+        or str(os.getenv("ENVIRONMENT", "") or "")
+        or str(os.getenv("AZURE_ENVIRONMENT", "") or "")
+    ).strip().lower()
+    return env in {"prod", "production", "live"} or bool(os.getenv("WEBSITE_HOSTNAME"))
+
+
+def _guard_api_docs(view):
+    """Hide schema/docs in production unless explicitly enabled for staff."""
+
+    @wraps(view)
+    def wrapped(request, *args, **kwargs):
+        if not _production_like_runtime():
+            return view(request, *args, **kwargs)
+
+        if not bool(getattr(settings, "CROWN_API_DOCS_ENABLED", False)):
+            raise Http404
+
+        user = getattr(request, "user", None)
+        if not user or not getattr(user, "is_authenticated", False):
+            raise Http404
+        if not (getattr(user, "is_staff", False) or getattr(user, "is_superuser", False)):
+            raise Http404
+
+        return view(request, *args, **kwargs)
+
+    return wrapped
+
+
 # Public demo/CI proof endpoints are wrapped at the routing boundary so an
 # unknown or production-like runtime cannot expose their operational metadata.
 ops_summary = demo_ops_only(_ops_summary)
@@ -44,13 +85,17 @@ urlpatterns = [
     path("health/", health, name="health"),
     path("api/health/", health, name="api_health"),
     path("api/integrity/", integrity, name="api_integrity"),
-    path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
+    path("api/schema/", _guard_api_docs(SpectacularAPIView.as_view()), name="schema"),
     path(
         "api/docs/",
-        SpectacularSwaggerView.as_view(url_name="schema"),
+        _guard_api_docs(SpectacularSwaggerView.as_view(url_name="schema")),
         name="swagger-ui",
     ),
-    path("api/redoc/", SpectacularRedocView.as_view(url_name="schema"), name="redoc"),
+    path(
+        "api/redoc/",
+        _guard_api_docs(SpectacularRedocView.as_view(url_name="schema")),
+        name="redoc",
+    ),
     path("api/system/health/", system_health, name="system_health"),
     path("health/version/", health_version, name="health_version"),
     # Gate 1C: WhoAmI proof endpoint (requires auth)
