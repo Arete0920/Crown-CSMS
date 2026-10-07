@@ -72,7 +72,7 @@ foreach ($row in $missingArtifactRows) {
 $claimPatterns = @(
     "CROWN is GA",
     "CROWN is pilot-approved",
-    "unrestricted-production ready",
+    "unrestricted-production ready", # forbidden claim
     "superior to all 25",
     "all modules.*complete"
 )
