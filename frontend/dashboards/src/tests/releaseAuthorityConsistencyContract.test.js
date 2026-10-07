@@ -24,7 +24,7 @@ describe('release authority consistency contract', () => {
 
   it('keeps actual buyer turnover pending and payment processing disabled', () => {
     const source = readRepoFile('docs/CURRENT_RELEASE_STATUS.md');
-    expect(source.includes('Repository release readiness is separate from environment-specific production operation.')).toBe(true);
+    expect(source.includes('Environment-specific production certification is a separate, explicit fail-closed activity.')).toBe(true);
     expect(source.includes('**PAYMENT PROCESSING: DISABLED / FAIL CLOSED / NOT AUTHORIZED FOR ACTIVATION**')).toBe(true);
   });
 
