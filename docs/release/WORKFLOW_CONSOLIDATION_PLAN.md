@@ -9,8 +9,8 @@ Keep GitHub Actions small, authoritative, fail-closed, and understandable for a 
 ## October 2026 consolidation
 
 - Starting top-level workflow count: **118**
-- Canonical active workflow count after this cleanup: **44**
-- Reduction: **74 workflows removed (63%)**
+- Canonical active workflow count after this cleanup: **45**
+- Reduction: **73 workflows removed (62%)**
 - Underlying application tests, audit scripts, and release evidence code remain in the repository unless independently obsolete.
 - No branch-required workflow identified in the current required-check map was removed.
 - Legacy phase, RC, proof-ceremony, sandbox-depth, duplicate evidence-contract, duplicate dependency-scan, duplicate deploy-dispatch, and duplicate smoke entrypoints were retired.
@@ -68,6 +68,7 @@ Keep GitHub Actions small, authoritative, fail-closed, and understandable for a 
 - `isolated-postgres-restore-drill.yml`
 - `prod-immutable-rollback-drill.yml`
 - `recovery-control-drill.yml`
+- `secrets-control-drill.yml`
 - `license-audit.yml`
 - `sbom-generation.yml`
 - `repository-freshness.yml`
@@ -89,4 +90,4 @@ Keep GitHub Actions small, authoritative, fail-closed, and understandable for a 
 
 ## Next reduction
 
-The remaining 44 workflows are the safe canonical ceiling under the current required-check and operational model. A second reduction should occur only after GitHub branch-protection/ruleset administration is updated so several existing required contexts can be replaced by a smaller set of stable aggregate gates. That administrative change must precede deleting required check-producing workflows.
+The remaining 45 workflows are the safe canonical ceiling under the current required-check and operational model. A second reduction should occur only after GitHub branch-protection/ruleset administration is updated so several existing required contexts can be replaced by a smaller set of stable aggregate gates. That administrative change must precede deleting required check-producing workflows.
