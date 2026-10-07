@@ -24,7 +24,8 @@ jobs:
   pytest-internal:
     name: pytest-internal
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    # PR #153 used ~30 minutes including setup; retain full-suite and artifact headroom.
+    timeout-minutes: 45
     defaults:
       run:
         working-directory: backend
