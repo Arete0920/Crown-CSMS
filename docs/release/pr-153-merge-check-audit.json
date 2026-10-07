@@ -1,0 +1,60 @@
+{
+  "audit": "PR #153 merge checks",
+  "pr": 153,
+  "repository": "Arete0920/Crown-CSMS",
+  "head_sha": "d8269b303e0708b47b871e85c81ebbc028fa3deb",
+  "merge_sha": "21cab5add118ca8f7d81fe6a8c5f59ecbb90176f",
+  "merged_at": "2026-10-07T10:09:16Z",
+  "check_count": 50,
+  "conclusions": {
+    "success": 48,
+    "skipped": 1,
+    "cancelled": 1
+  },
+  "non_success_check": {
+    "name": "pytest-internal",
+    "workflow": "Tests",
+    "run_id": 37563733869,
+    "job_id": 112606631284,
+    "run_attempt": 1,
+    "started_at": "2026-10-07T03:03:35Z",
+    "completed_at": "2026-10-07T03:33:49Z",
+    "conclusion": "cancelled",
+    "url": "https://github.com/Arete0920/Crown-CSMS/actions/runs/37563733869/job/112606631284",
+    "log_summary": {
+      "passed": 5059,
+      "skipped": 19,
+      "subtests_passed": 211,
+      "elapsed_seconds": 1616.46
+    },
+    "interpretation": "Passing pytest summary does not supersede the cancelled GitHub check conclusion. Cancellation timing is consistent with the configured 30-minute job timeout."
+  },
+  "merge_time_verification": {
+    "all_returned_checks_completed_before_merge": true,
+    "required_check_membership": "UNVERIFIED",
+    "compliance": "UNVERIFIED",
+    "branch_protection_read": "403 Resource not accessible by integration",
+    "rulesets_at_audit": [],
+    "historical_rulesets": "UNVERIFIED",
+    "stored_export": "docs/release/branch-protection-export.json targets tcmegahan/Crown2026; not admissible for Crown-CSMS merge-time requirements"
+  },
+  "current_main_snapshot": {
+    "sha": "6340022a3b206e495e951d481d83f0cfffbb6374",
+    "checks": 34,
+    "success": 32,
+    "failure": 1,
+    "in_progress": 1,
+    "failed_check": "Sandbox Ready Evidence",
+    "running_check": "pytest-internal",
+    "fully_green": false
+  },
+  "repair": {
+    "scope": "Raise Tests pytest-internal bounded job timeout from 30 to 45 minutes; preserve suite, pipefail, check name, triggers and mandatory log artifact.",
+    "governance_settings_changed": false
+  },
+  "remaining_evidence": [
+    "Merge-time branch-protection required contexts and enforcement/bypass settings.",
+    "Protection change history spanning the merge, or a contemporaneous settings export.",
+    "Terminal results for the repair PR and current main."
+  ]
+}
