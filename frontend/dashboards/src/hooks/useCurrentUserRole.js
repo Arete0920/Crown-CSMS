@@ -6,9 +6,7 @@ function readStoredUser() {
   }
 
   const sources = [
-    window.localStorage.getItem('crown_user'),
     window.sessionStorage.getItem('crown_user'),
-    window.localStorage.getItem('crown_current_user'),
     window.sessionStorage.getItem('crown_current_user'),
   ];
 
@@ -34,10 +32,7 @@ export function useCurrentUserRole() {
 
       if (!parsed) {
         // Fallback: read the simpler role key used by demo/test session seeding.
-        const simpleRole =
-          sessionStorage.getItem('crown.role') ||
-          localStorage.getItem('crown.role') ||
-          localStorage.getItem('crown.demo.role');
+        const simpleRole = sessionStorage.getItem('crown.role');
         if (simpleRole) return simpleRole.trim().toLowerCase();
         return 'guest';
       }
