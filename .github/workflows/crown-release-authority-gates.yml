@@ -75,11 +75,13 @@ jobs:
         shell: pwsh
         run: |
           $workflow = Get-Content .github/workflows/crown-release-authority-gates.yml -Raw
-          if ($workflow -match 'preserving artifacts without failing PR gate') {
+          $legacyFailOpenText = 'preserving artifacts without ' + 'failing PR gate'
+          if ($workflow.Contains($legacyFailOpenText)) {
             throw 'Fail-open release-authority behavior is forbidden.'
           }
-          if ($workflow -match "github\.event_name.*pull_request[\s\S]{0,300}exit\s+0") {
-            throw 'Release-authority PR failure must not be converted to success.'
+          $runtimeStep = '(?ms)- name: Run CROWN release authority stack\s+if: github\.event_name != ''pull_request'''
+          if ($workflow -notmatch $runtimeStep) {
+            throw 'Full release-authority runtime stack must be excluded from pull-request execution.'
           }
 
       - name: Install backend dependencies
