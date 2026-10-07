@@ -8,9 +8,9 @@ Keep GitHub Actions small, authoritative, fail-closed, and understandable for a 
 
 ## October 2026 consolidation
 
-- Starting top-level workflow count: **116**
+- Starting top-level workflow count: **118**
 - Canonical active workflow count after this cleanup: **43**
-- Reduction: **73 workflows removed (63%)**
+- Reduction: **75 workflows removed (64%)**
 - Underlying application tests, audit scripts, and release evidence code remain in the repository unless independently obsolete.
 - No branch-required workflow identified in the current required-check map was removed.
 - Legacy phase, RC, proof-ceremony, sandbox-depth, duplicate evidence-contract, duplicate dependency-scan, duplicate deploy-dispatch, and duplicate smoke entrypoints were retired.
