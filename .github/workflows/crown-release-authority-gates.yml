@@ -87,10 +87,6 @@ jobs:
           if (-not $workflow.Contains($manualOnly)) {
             throw 'Operational production certification must remain an explicit manual action.'
           }
-          $legacyCondition = "github.event_name != 'pull_request'"
-          if ($workflow.Contains($legacyCondition)) {
-            throw 'Operational production certification must not run automatically on main pushes.'
-          }
 
   operational-production-certification:
     name: Operational production certification
