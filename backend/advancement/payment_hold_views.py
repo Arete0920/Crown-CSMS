@@ -20,7 +20,7 @@ def authenticated_post_payment_on_hold(request, *args, **kwargs):
 
 
 @api_view(["POST"])
-@permission_classes([CrownModulePermission("advancement.view")])
+@permission_classes([CrownModulePermission("advancement.view", write_code="advancement.view")])
 def advancement_view_post_payment_on_hold(request, *args, **kwargs):
     """Preserve Advancement view permission, tenant context, and POST-only behavior."""
 
@@ -38,7 +38,7 @@ def advancement_view_get_payment_on_hold(request, *args, **kwargs):
 
 
 @api_view(["POST"])
-@permission_classes([CrownModulePermission("advancement.edit")])
+@permission_classes([CrownModulePermission("advancement.edit", write_code="advancement.edit")])
 def advancement_edit_post_payment_on_hold(request, *args, **kwargs):
     """Preserve Advancement edit permission, tenant context, and POST-only behavior."""
 

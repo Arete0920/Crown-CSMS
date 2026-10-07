@@ -2,7 +2,7 @@ from rest_framework.exceptions import ValidationError
 from core.permissions import CrownModulePermission
 
 
-class ImportPermission(CrownModulePermission('rosters.edit')):
+class ImportPermission(CrownModulePermission('rosters.edit', write_code='rosters.edit')):
     def has_permission(self, request, view):
         if not request.user or not request.user.is_authenticated:
             return False

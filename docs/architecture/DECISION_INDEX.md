@@ -17,6 +17,10 @@ This index is the authoritative list of accepted architecture decisions. Documen
 | ADR-0003 | `decisions/ADR-0003-tenant-aware-background-jobs.md` | ACCEPTED | Tenant-owned asynchronous mutation must execute under explicit school context. Provider-dependent payment jobs remain fail closed while payment processing is disabled. |
 | ADR-001 | `ADR-001-CANONICAL-HOUSEHOLD-GUARDIAN-STUDENT.md` | ACCEPTED FOR OPERATIONAL WRITES | `core.Family`, `core.Guardian`, and `core.Student` own canonical operational writes; compatibility-domain reconciliation remains controlled convergence work. |
 
+## Proposed decisions
+
+- ADR-0004 — `decisions/ADR-0004-explicit-school-and-mutation-permissions.md`: explicit school scope and mutation permission defaults; acceptance pending governed merge and exact-head checks.
+
 ## Decisions still required before material boundary changes
 
 The following topics do not yet have an accepted ADR in this index. Their absence does not erase current implemented controls, but material changes in these areas require an accepted ADR first:
