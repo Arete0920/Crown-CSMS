@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Button, CircularProgress, Tooltip } from "@mui/material";
-import axios from "axios";
+import { authenticatedFetch } from "../../utils/authClient";
 
 const DownloadIcon = () => <span aria-hidden="true">DL</span>;
 
@@ -58,20 +58,9 @@ const ExportButton: React.FC<ExportButtonProps> = ({
   const handleDownload = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem("auth_token");
-      const schoolId = localStorage.getItem("school_id");
       const url = REPORT_URLS[type]({ type, studentId, householdId, applicationId, params, label, variant, size, color });
-
-      const resp = await axios.get(url, {
-        params,
-        responseType: "blob",
-        headers: {
-          Authorization: token ? `Bearer ${token}` : "",
-          "X-School-Id": schoolId || "",
-        },
-      });
-
-      const blob = new Blob([resp.data], { type: "application/pdf" });
+      const resp = await authenticatedFetch(url, { query: params });
+      const blob = await resp.blob();
       const link = Object.assign(document.createElement("a"), {
         href: window.URL.createObjectURL(blob),
         download: `${type}.pdf`,

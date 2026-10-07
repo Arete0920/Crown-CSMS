@@ -9,9 +9,8 @@ import { getCurrentUserRoles } from '../auth/roleAdapter';
 function readCurrentUser() {
   try {
     const raw =
-      window.localStorage.getItem('crown_user') ||
-      window.localStorage.getItem('crown_current_user') ||
-      window.sessionStorage.getItem('crown_user');
+      window.sessionStorage.getItem('crown_user') ||
+      window.sessionStorage.getItem('crown_current_user');
 
     return raw ? JSON.parse(raw) : null;
   } catch {

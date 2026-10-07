@@ -150,13 +150,9 @@ export function clearSelectedSchoolId() {
 export function getAccessToken() {
   try {
     return sessionStorage.getItem(TOKEN_KEY)
-      || localStorage.getItem(TOKEN_KEY)
       || sessionStorage.getItem("crown_auth_token")
-      || localStorage.getItem("crown_auth_token")
       || sessionStorage.getItem("access_token")
-      || localStorage.getItem("access_token")
       || tokenFromStoredAuth(sessionStorage.getItem("crown_auth"))
-      || tokenFromStoredAuth(localStorage.getItem("crown_auth"))
       || "";
   } catch {
     return "";
