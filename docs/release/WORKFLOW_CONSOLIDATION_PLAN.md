@@ -91,3 +91,22 @@ Keep GitHub Actions small, authoritative, fail-closed, and understandable for a 
 ## Next reduction
 
 The remaining 45 workflows are the safe canonical ceiling under the current required-check and operational model. A second reduction should occur only after GitHub branch-protection/ruleset administration is updated so several existing required contexts can be replaced by a smaller set of stable aggregate gates. That administrative change must precede deleting required check-producing workflows.
+
+## Specialized history-remediation coverage and merge audit
+
+The canonical `codeql.yml` security workflow retains the Ed25519
+`remediation-contract` job on pull requests, main pushes, and manual runs.
+Synthetic fixtures reject dirty history and current-tree deletion alone, accept
+a clean mirror and restored clean bundle, and enforce the verifier/runbook
+non-authority boundaries. The job runs independently of the CodeQL matrix.
+Fixture success does not establish operational key retirement, adjudicated
+all-ref scanning, authoritative remote-ref remediation, or a real distributable
+bundle. Issue #104 stays open until its full acceptance evidence is verified.
+
+Solo-maintainer audit: the consolidation preserves the 16 branch-required
+check producers and the 45-workflow inventory. The restored contract is folded
+into an already-modified canonical security gate to honor the normal 20-file
+PR hygiene limit without an exception. No shared-ref rewrite, key retirement,
+or production certification is authorized by this change. Merge requires
+terminal-success required checks for the current head and current main,
+including a successful remediation fixture job and no unresolved review threads.

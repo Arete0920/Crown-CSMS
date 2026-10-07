@@ -3,9 +3,7 @@ import { getBuildInfo } from '../../utils/buildInfo';
 
 function getRole() {
   try {
-    const raw =
-      window.localStorage.getItem('crown_user') ||
-      window.sessionStorage.getItem('crown_user');
+    const raw = window.sessionStorage.getItem('crown_user');
 
     if (!raw) return 'guest';
 

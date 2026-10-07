@@ -44,6 +44,64 @@ const PROD_ROLES = [
   { value: "student", label: "Student/Learner", route: "/student" },
 ];
 
+const PROD_ROLE_SERVER_ALIASES = {
+  head_of_school: new Set(["head_of_school", "school_admin", "admin"]),
+  finance_director: new Set(["finance_director", "finance_admin", "finance", "biz_office"]),
+  admissions_director: new Set(["admissions_director", "admissions_manager", "admissions", "registrar"]),
+  teacher: new Set(["teacher"]),
+  parent: new Set(["parent"]),
+  student: new Set(["student"]),
+};
+
+function normalizeServerRole(value) {
+  return String(value || "").trim().toLowerCase().replace(/^role_/, "");
+}
+
+function productionRoleIsAuthorized(selectedRole, serverRoles) {
+  const allowed = PROD_ROLE_SERVER_ALIASES[selectedRole] || new Set([selectedRole]);
+  return (Array.isArray(serverRoles) ? serverRoles : [])
+    .map(normalizeServerRole)
+    .some((role) => allowed.has(role));
+}
+
+async function fetchAuthenticatedIdentity(access) {
+  const response = await globalThis.fetch(apiUrl("/api/system/whoami/"), {
+    method: "GET",
+    headers: {
+      Accept: "application/json",
+      Authorization: `Bearer ${access}`,
+    },
+  });
+  if (!response.ok) {
+    throw new Error("Unable to verify your authenticated school context.");
+  }
+  const identity = await response.json();
+  const schoolId = identity?.user?.school_id || "";
+  if (!schoolId) {
+    throw new Error("This account is not assigned to an active school.");
+  }
+  return identity;
+}
+
+async function fetchAuthorizedRoleContext(access, schoolId) {
+  const response = await globalThis.fetch(apiUrl("/api/v1/dashboards/me/"), {
+    method: "GET",
+    headers: {
+      Accept: "application/json",
+      Authorization: `Bearer ${access}`,
+      "X-School-Id": schoolId,
+    },
+  });
+  if (!response.ok) {
+    throw new Error("Unable to verify your school and role access.");
+  }
+  const context = await response.json();
+  return {
+    ...context,
+    roles: Array.isArray(context?.roles) ? context.roles : [],
+  };
+}
+
 function fallbackSandboxSchools() {
   return [{ id: DEMO_SCHOOL, name: HERITAGE_SCHOOL_NAME, schoolKey: HERITAGE_SCHOOL_KEY }];
 }
@@ -65,8 +123,9 @@ function buildSchoolList(manifestSchools, sandboxMode) {
     : [{ id: DEMO_SCHOOL, name: HERITAGE_SCHOOL_NAME }];
 }
 
-function normalizeRoleList(payload, selectedRole) {
+function normalizeRoleList(payload, selectedRole, authoritativeRoles = []) {
   const rawRoles = [
+    ...(Array.isArray(authoritativeRoles) ? authoritativeRoles : []),
     selectedRole,
     payload?.role,
     payload?.primaryRole,
@@ -84,10 +143,11 @@ function normalizeRoleList(payload, selectedRole) {
     .filter(Boolean))];
 }
 
-function buildSessionUser(payload, role, selectedSchoolId, email) {
+function buildSessionUser(payload, role, selectedSchoolId, email, authoritativeRoles = []) {
   const schoolId = payload?.school_id || payload?.schoolId || payload?.school?.id || selectedSchoolId || DEMO_SCHOOL;
-  const roles = normalizeRoleList(payload, role.value);
-  const primaryRole = roles[0] || role.value;
+  const selectedRole = IS_SANDBOX ? role.value : null;
+  const roles = normalizeRoleList(payload, selectedRole, authoritativeRoles);
+  const primaryRole = IS_SANDBOX ? (roles[0] || role.value) : (role.value || roles[0] || "");
 
   return {
     ...(payload?.user && typeof payload.user === "object" ? payload.user : {}),
@@ -102,16 +162,20 @@ function buildSessionUser(payload, role, selectedSchoolId, email) {
   };
 }
 
-function persistAuthenticatedSession(payload, role, selectedSchoolId, email) {
+function persistAuthenticatedSession(payload, role, selectedSchoolId, email, authoritativeRoles = []) {
   const access = payload?.access || payload?.token || "";
   const refresh = payload?.refresh || "";
-  const currentUser = buildSessionUser(payload, role, selectedSchoolId, email);
+  const currentUser = buildSessionUser(payload, role, selectedSchoolId, email, authoritativeRoles);
   const schoolId = currentUser.school_id || selectedSchoolId || DEMO_SCHOOL;
   const serializedUser = JSON.stringify(currentUser);
   const serializedRoles = JSON.stringify(currentUser.roles || [role.value]);
 
   sessionStorage.setItem("crown.jwt.access", access);
-  sessionStorage.setItem("crown.jwt.refresh", refresh);
+  if (IS_SANDBOX && refresh) {
+    sessionStorage.setItem("crown.jwt.refresh", refresh);
+  } else {
+    sessionStorage.removeItem("crown.jwt.refresh");
+  }
   sessionStorage.setItem("crown.school.id", schoolId);
   sessionStorage.setItem("crown.role", role.value);
   sessionStorage.setItem("crown.active.role", role.value);
@@ -119,16 +183,26 @@ function persistAuthenticatedSession(payload, role, selectedSchoolId, email) {
   sessionStorage.setItem("crown_current_user", serializedUser);
   sessionStorage.setItem("crown_user_roles", serializedRoles);
 
-  localStorage.setItem("crown.jwt.access", access);
+  // Persistent storage is limited to non-secret UI context. Bearer tokens and
+  // authenticated-user payloads stay in sessionStorage so closing the tab drops them.
+  localStorage.removeItem("crown.jwt.access");
+  localStorage.removeItem("crown.jwt.refresh");
+  localStorage.removeItem("crown_auth_token");
+  localStorage.removeItem("access_token");
+  localStorage.removeItem("crown_auth");
+  localStorage.removeItem("crown_user");
+  localStorage.removeItem("crown_current_user");
+  localStorage.removeItem("crown_user_roles");
+  localStorage.removeItem("crown.role");
+  localStorage.removeItem("crown.active.role");
   localStorage.setItem("crown.school.id", schoolId);
-  localStorage.setItem("crown.role", role.value);
-  localStorage.setItem("crown.active.role", role.value);
-  localStorage.setItem("crown_user", serializedUser);
-  localStorage.setItem("crown_current_user", serializedUser);
-  localStorage.setItem("crown_user_roles", serializedRoles);
 
   if (IS_SANDBOX) {
+    localStorage.setItem("crown.role", role.value);
+    localStorage.setItem("crown.active.role", role.value);
     localStorage.setItem("crown.demo.role", role.value);
+  } else {
+    localStorage.removeItem("crown.demo.role");
   }
 }
 
@@ -157,7 +231,8 @@ export default function LoginPage() {
   const [isBusy, setIsBusy] = useState(false);
 
   useEffect(() => {
-    fetchSchools(IS_SANDBOX).then((loadedSchools) => {
+    if (!IS_SANDBOX) return;
+    fetchSchools(true).then((loadedSchools) => {
       setSchools(loadedSchools);
       if (!loadedSchools.some((school) => school.id === selectedSchoolId)) {
         setSelectedSchoolId(loadedSchools[0]?.id || DEMO_SCHOOL);
@@ -220,8 +295,11 @@ export default function LoginPage() {
         return;
       }
 
-      const username = email || "demo@crown.example.org";
-      const pass = password || "demo-password";
+      const username = email.trim();
+      const pass = password;
+      if (!username || !pass) {
+        throw new Error("Email and password are required.");
+      }
       const response = await globalThis.fetch(apiUrl("/api/v1/auth/token/"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -234,7 +312,32 @@ export default function LoginPage() {
       }
 
       const payload = await response.json();
-      persistAuthenticatedSession(payload, role, selectedSchoolId, username);
+      const access = payload?.access || payload?.token || "";
+      if (!access) {
+        throw new Error("Login response missing access token.");
+      }
+
+      const identity = await fetchAuthenticatedIdentity(access);
+      const authenticatedSchoolId = identity.user.school_id;
+      const roleContext = await fetchAuthorizedRoleContext(access, authenticatedSchoolId);
+      if (!productionRoleIsAuthorized(role.value, roleContext.roles)) {
+        throw new Error("The selected role is not assigned to this account for your authenticated school.");
+      }
+
+      persistAuthenticatedSession(
+        {
+          ...payload,
+          school_id: roleContext.school_id || authenticatedSchoolId,
+          user: {
+            ...(payload?.user && typeof payload.user === "object" ? payload.user : {}),
+            ...(identity?.user && typeof identity.user === "object" ? identity.user : {}),
+          },
+        },
+        role,
+        authenticatedSchoolId,
+        username,
+        roleContext.roles,
+      );
 
       globalThis.location.href = role.route;
     } catch (authError) {
@@ -579,10 +682,10 @@ export default function LoginPage() {
             <p className="brand-guidance">
               {IS_SANDBOX
                 ? "Choose a role and continue into demo-only CROWN workflows. No password is required for this preview."
-                : "Choose your school, choose your role, and continue with the correct context before entering any records."}
+                : "Your school is verified from your authenticated account. Choose an assigned role to continue."}
             </p>
             <ul className="brand-bullets">
-              <li>{IS_SANDBOX ? "Heritage Christian Academy is the only approved sandbox school." : "Clear school and role context on every login."}</li>
+              <li>{IS_SANDBOX ? "Heritage Christian Academy is the only approved sandbox school." : "School context is derived from the authenticated account, not browser input."}</li>
               <li>Sandbox-safe workflows for tester and operator training.</li>
               <li>Permission-scoped access for each stakeholder role.</li>
             </ul>
@@ -609,20 +712,26 @@ export default function LoginPage() {
             {error && <div className="error-banner" role="alert">{error}</div>}
 
             <div className="field-grid">
-              <div>
-                <label className="field-label" htmlFor="login-school">School</label>
-                <select
-                  id="login-school"
-                  className="field-select"
-                  value={selectedSchoolId}
-                  onChange={(event) => setSelectedSchoolId(event.target.value)}
-                  disabled={IS_SANDBOX}
-                >
-                  {schools.map((school) => (
-                    <option key={school.id} value={school.id}>{school.name}</option>
-                  ))}
-                </select>
-              </div>
+              {IS_SANDBOX ? (
+                <div>
+                  <label className="field-label" htmlFor="login-school">School</label>
+                  <select
+                    id="login-school"
+                    className="field-select"
+                    value={selectedSchoolId}
+                    onChange={(event) => setSelectedSchoolId(event.target.value)}
+                    disabled
+                  >
+                    {schools.map((school) => (
+                      <option key={school.id} value={school.id}>{school.name}</option>
+                    ))}
+                  </select>
+                </div>
+              ) : (
+                <p className="support-note">
+                  School context is verified from your authenticated account and cannot be selected in the browser.
+                </p>
+              )}
 
               <div>
                 <label className="field-label" htmlFor="login-role">Role</label>
