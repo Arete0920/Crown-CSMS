@@ -118,6 +118,24 @@ describe("canonical authenticated client", () => {
     expect(init.headers.get("X-Correlation-Id")).toBe("corr-same-origin");
   });
 
+  it("ignores bearer tokens persisted in localStorage", async () => {
+    vi.stubGlobal("sessionStorage", memoryStorage({
+      "crown.school.id": "school-123",
+    }));
+    vi.stubGlobal("localStorage", memoryStorage({
+      "crown.jwt.access": "persistent-token-must-not-be-used",
+    }));
+
+    const response = new Response("ok", { status: 200 });
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(response);
+
+    await authenticatedFetch("/api/v1/nav/");
+
+    const [, init] = fetchMock.mock.calls[0];
+    expect(init.headers.has("Authorization")).toBe(false);
+    expect(init.headers.get("X-School-Id")).toBe("school-123");
+  });
+
   it("does not forward Crown credentials or tenant context to caller-supplied external URLs", async () => {
     const response = new Response("ok", { status: 200 });
     const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(response);

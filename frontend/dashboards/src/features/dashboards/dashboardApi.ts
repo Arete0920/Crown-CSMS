@@ -37,7 +37,7 @@ function getSchoolDashboardContext(): SchoolDashboardContext {
     return {
       apiBaseUrl,
       schoolId: sessionStorage.getItem("crown.school.id") || localStorage.getItem("crown.school.id") || localStorage.getItem("schoolId") || "",
-      token: sessionStorage.getItem("crown.jwt.access") || localStorage.getItem("crown.jwt.access") || "",
+      token: sessionStorage.getItem("crown.jwt.access") || "",
     };
   } catch {
     return {
@@ -64,8 +64,7 @@ function getStoredTokenCandidates(): string[] {
   try {
     return [
       sessionStorage.getItem("crown.jwt.access") || "",
-      localStorage.getItem("crown.jwt.access") || "",
-    ].filter((value, index, array) => Boolean(value) && array.indexOf(value) === index);
+    ].filter(Boolean);
   } catch {
     return [];
   }
