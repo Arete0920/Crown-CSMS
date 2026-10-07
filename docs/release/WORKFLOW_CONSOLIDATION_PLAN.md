@@ -98,7 +98,9 @@ The canonical `codeql.yml` security workflow retains the Ed25519
 `remediation-contract` job on pull requests, main pushes, and manual runs.
 Synthetic fixtures reject dirty history and current-tree deletion alone, accept
 a clean mirror and restored clean bundle, and enforce the verifier/runbook
-non-authority boundaries. The job runs independently of the CodeQL matrix.
+non-authority boundaries. The fixture job runs before the CodeQL matrix. Both branch-required Analyze
+checks explicitly fail unless its result is success, including failed, skipped,
+or cancelled fixture outcomes; a dependency skip cannot count as a green gate.
 Fixture success does not establish operational key retirement, adjudicated
 all-ref scanning, authoritative remote-ref remediation, or a real distributable
 bundle. Issue #104 stays open until its full acceptance evidence is verified.

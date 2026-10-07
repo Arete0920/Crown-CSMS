@@ -20,6 +20,8 @@ concurrency:
 
 jobs:
   analyze:
+    needs: remediation-contract
+    if: always()
     name: Analyze (${{ matrix.language }})
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -29,6 +31,11 @@ jobs:
         language: [ 'python', 'javascript-typescript' ]
 
     steps:
+      - name: Require successful history-remediation contract
+        env:
+          CONTRACT_RESULT: ${{ needs.remediation-contract.result }}
+        run: test "$CONTRACT_RESULT" = success
+
       - name: Checkout repository
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
