@@ -11,6 +11,10 @@ function Get-RelativePathSafe { param([string]$Root, [string]$Path) return $Path
 $repoRoot = (git rev-parse --show-toplevel).Trim()
 if ([string]::IsNullOrWhiteSpace($repoRoot)) { throw "Not inside a git repository." }
 Set-Location $repoRoot
+$branchName = (git branch --show-current 2>$null)
+if ([string]::IsNullOrWhiteSpace($branchName)) { $branchName = $env:GITHUB_HEAD_REF }
+if ([string]::IsNullOrWhiteSpace($branchName)) { $branchName = $env:GITHUB_REF_NAME }
+if ([string]::IsNullOrWhiteSpace($branchName)) { $branchName = "detached-head" } else { $branchName = $branchName.Trim() }
 
 $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
 $outDir = Join-Path $repoRoot ".crown-audit\dashboard-provenance\$timestamp"
@@ -32,7 +36,7 @@ if (Test-Path $templateDir) {
         $usesBaseStatus = $content -match "BASE_STATUS"
         $usesBaseActivity = $content -match "BASE_ACTIVITY"
         $hasDataState = $content -match "dataState\s*:"
-        $hasLiveState = $content -match "dataState\s*:\s*['\"]live['\"]"
+        $hasLiveState = $content -match 'dataState\s*:\s*[''"]live[''"]'
         $hasSource = $content -match "source(Service|Endpoint|Type|Label)\s*:"
         $hasTenantSignal = $content -match "tenantFiltered\s*:\s*true"
         $hasRoleSignal = $content -match "roleScoped\s*:\s*true"
@@ -55,6 +59,7 @@ if (Test-Path $templateDir) {
     }
 }
 
+
 $fallbackViolations = @($rows | Where-Object { $_.UsesBaseNote -or $_.UsesBaseTrend -or $_.UsesBaseStatus -or $_.UsesBaseActivity })
 $rows | Export-Csv -Path (Join-Path $outDir "10_widget_provenance.csv") -NoTypeInformation -Encoding UTF8
 $violations | Export-Csv -Path (Join-Path $outDir "20_missing_or_invalid_provenance.csv") -NoTypeInformation -Encoding UTF8
@@ -65,7 +70,7 @@ $summary = @(
     "# CROWN Dashboard Data Provenance Gate",
     "",
     "- Generated: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')",
-    "- Branch: $((git branch --show-current).Trim())",
+    "- Branch: $branchName",
     "- Head: $((git rev-parse HEAD).Trim())",
     "- Dashboard template rows: $($rows.Count)",
     "- Invalid/missing provenance rows: $($violations.Count)",
@@ -79,7 +84,7 @@ Write-Utf8 -Path (Join-Path $outDir "00_SUMMARY.md") -Lines $summary
 
 $status = [ordered]@{
     generated_at = (Get-Date).ToString("s")
-    branch = (git branch --show-current).Trim()
+    branch = $branchName
     head = (git rev-parse HEAD).Trim()
     pass = $pass
     dashboard_template_count = $rows.Count

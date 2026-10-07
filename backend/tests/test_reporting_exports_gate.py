@@ -23,7 +23,7 @@ def test_openapi_docs_visible(client):
     seen = []
     ok = False
     for path in candidates:
-        resp = client.get(path)
+        resp = client.get(path, secure=True)
         seen.append((path, resp.status_code))
         if resp.status_code == 200:
             ok = True
@@ -36,7 +36,7 @@ def test_health_endpoint_live(client):
     seen = []
     ok = False
     for path in candidates:
-        resp = client.get(path)
+        resp = client.get(path, secure=True)
         seen.append((path, resp.status_code, bytes(resp.content[:200])))
         if resp.status_code == 200:
             ok = True
@@ -49,7 +49,7 @@ def test_integrity_endpoint_live(client):
     seen = []
     ok = False
     for path in candidates:
-        resp = client.get(path)
+        resp = client.get(path, secure=True)
         seen.append((path, resp.status_code, bytes(resp.content[:200])))
         if resp.status_code == 200:
             ok = True
@@ -66,7 +66,7 @@ def test_transcript_route_exists_and_requires_auth(client):
     ]
     seen = []
     for path in candidates:
-        resp = client.get(path)
+        resp = client.get(path, secure=True)
         seen.append((path, resp.status_code))
     assert any(code in (200, 301, 302, 401, 403) for _, code in seen), (
         f"No transcript route found. Tried: {seen}"
@@ -84,7 +84,7 @@ def test_reporting_export_routes_exist_and_are_not_404(client):
     ]
     seen = []
     for path in candidates:
-        resp = client.get(path)
+        resp = client.get(path, secure=True)
         seen.append((path, resp.status_code))
     assert any(code != 404 for _, code in seen), f"All report/export routes 404. Tried: {seen}"
 
@@ -97,7 +97,7 @@ def test_unauthorized_export_is_denied(client):
     ]
     seen = []
     for path in candidates:
-        resp = client.get(path)
+        resp = client.get(path, secure=True)
         seen.append((path, resp.status_code))
     assert any(code in (401, 403) for _, code in seen), (
         f"Unauthorized export denial not proven. Tried: {seen}"
@@ -110,7 +110,7 @@ def test_export_download_response_shape_if_present(client, django_user_model):
     acceptable = {200, 202, 204, 400, 403}
     seen = []
     for path in candidates:
-        resp = client.get(path)
+        resp = client.get(path, secure=True)
         seen.append((path, resp.status_code, dict(resp.items())))
         if resp.status_code in (200, 202):
             content_type = resp.headers.get("Content-Type", "")
@@ -133,7 +133,7 @@ def test_transcript_generation_or_denial_is_explicit(client, django_user_model):
     ]
     seen = []
     for path in candidates:
-        resp = client.post(path, data={})
+        resp = client.post(path, data={}, secure=True)
         seen.append((path, resp.status_code, bytes(resp.content[:200])))
     assert any(code in (200, 201, 202, 400, 403, 405) for _, code, _ in seen), (
         f"Transcript generation path not explicit. Tried: {seen}"

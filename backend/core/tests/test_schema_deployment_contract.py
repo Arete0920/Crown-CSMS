@@ -9,7 +9,6 @@ STARTUP_SCRIPTS = (
 )
 DEPLOY_WORKFLOWS = (
     REPOSITORY_ROOT / ".github" / "workflows" / "deploy-prod.yml",
-    REPOSITORY_ROOT / ".github" / "workflows" / "deploy-prod-dispatch.yml",
 )
 CONTROLLED_MIGRATION_WORKFLOW = "./.github/workflows/schema-migration-stage.yml"
 RESOLVED_SHA_EXPRESSION = "${{ needs.resolve-release.outputs.deploy_sha }}"
@@ -88,8 +87,8 @@ def test_production_appsettings_do_not_reenable_startup_migrations() -> None:
         assert "RUN_MIGRATIONS" not in workflow
 
 
-def test_dispatch_workflow_has_one_appsettings_application_path() -> None:
-    workflow = _read(REPOSITORY_ROOT / ".github" / "workflows" / "deploy-prod-dispatch.yml")
+def test_production_workflow_has_one_appsettings_application_path() -> None:
+    workflow = _read(REPOSITORY_ROOT / ".github" / "workflows" / "deploy-prod.yml")
 
     assert workflow.count("- name: Build allowed appsettings JSON") == 1
     assert workflow.count("- name: Appsettings allowlist gate") == 1

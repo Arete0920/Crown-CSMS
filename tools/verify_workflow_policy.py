@@ -17,6 +17,60 @@ MOJIBAKE_RE = re.compile(r"[âΓœ†œ©]")
 NAME_RE = re.compile(r"(?m)^name:\s*(.+?)\s*$")
 GROUP_RE = re.compile(r"(?m)^\s{2}group:\s*(.+?)\s*$")
 
+PRODUCTION_DEPLOY_GROUP = "crown-api-prod-deploy"
+PRODUCTION_DEPLOY_WORKFLOWS = {
+    pathlib.Path(".github/workflows/deploy-prod.yml"),
+    pathlib.Path(".github/workflows/deploy-prod-dispatch.yml"),
+}
+
+CANONICAL_WORKFLOW_FILES = {
+    "accounting-verification.yml",
+    "azure-classroom-preflight.yml",
+    "azure-drift-watchdog.yml",
+    "backend-gate.yml",
+    "ci.yml",
+    "classroom-verification.yml",
+    "codeql.yml",
+    "content-operations-verification.yml",
+    "contract-gate.yml",
+    "crown-claims-guard.yml",
+    "crown-release-authority-gates.yml",
+    "dashboards-build-gate.yml",
+    "demo-reset.yml",
+    "dependency-audit.yml",
+    "dependency-review.yml",
+    "deploy-dashboard.yml",
+    "deploy-dev.yml",
+    "deploy-prod-dispatch.yml",
+    "deploy-prod.yml",
+    "dev-smoke.yml",
+    "finance-final-hardening.yml",
+    "isolated-postgres-restore-drill.yml",
+    "license-audit.yml",
+    "migration-lock-gate.yml",
+    "ops-reset-dev.yml",
+    "pr-preflight.yml",
+    "prod-health-watch.yml",
+    "prod-immutable-rollback-drill.yml",
+    "prod-rollback-on-failure.yml",
+    "production-certification-evidence.yml",
+    "pytest-gate.yml",
+    "recovery-control-drill.yml",
+    "release-verify.yml",
+    "repository-freshness.yml",
+    "repository-policy.yml",
+    "sbom-generation.yml",
+    "schema-governance.yml",
+    "schema-migration-stage.yml",
+    "secret-scan.yml",
+    "secrets-control-drill.yml",
+    "tenant-isolation-gate.yml",
+    "tests.yml",
+    "ui-proof-gate.yml",
+    "wizard-e2e-evidence-gate.yml",
+    "workflow-permissions-audit.yml",
+}
+
 
 def is_pinned_uses(ref: str) -> bool:
     if ref.startswith("./") or ref.startswith("docker://"):
@@ -76,7 +130,7 @@ def _check_dispatch_input_descriptions(text: str, rel: pathlib.Path) -> list[str
             continue
 
         input_match = re.match(r"^([A-Za-z0-9_-]+):\s*$", line)
-        if indent >= 6 and input_match:
+        if indent == 6 and input_match:
             if current_input and not has_description:
                 errors.append(f"{rel}: workflow_dispatch input '{current_input}' missing description")
             current_input = input_match.group(1)
@@ -202,6 +256,26 @@ def check_file(path: pathlib.Path) -> tuple[list[str], str | None, str | None]:
 def main() -> int:
     targets = [pathlib.Path(p).resolve() for p in sys.argv[1:]]
     all_errors: list[str] = []
+
+    active_workflows = {path.name for path in WORKFLOWS.glob("*.yml")}
+    unexpected = sorted(active_workflows - CANONICAL_WORKFLOW_FILES)
+    missing = sorted(CANONICAL_WORKFLOW_FILES - active_workflows)
+    if unexpected:
+        all_errors.append(
+            "unexpected top-level workflows outside the canonical inventory: "
+            + ", ".join(unexpected)
+        )
+    if missing:
+        all_errors.append(
+            "canonical workflow inventory is missing expected files: "
+            + ", ".join(missing)
+        )
+    if len(active_workflows) != len(CANONICAL_WORKFLOW_FILES):
+        all_errors.append(
+            f"workflow count {len(active_workflows)} does not match canonical count "
+            f"{len(CANONICAL_WORKFLOW_FILES)}"
+        )
+
     names: dict[str, pathlib.Path] = {}
     groups: dict[str, pathlib.Path] = {}
     workflow_groups: dict[pathlib.Path, str] = {}

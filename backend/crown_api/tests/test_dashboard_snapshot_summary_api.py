@@ -8,6 +8,10 @@ from rest_framework.test import APIClient
 from crown_api.dashboards.models import DashboardSnapshot
 
 
+def _https_client():
+    return APIClient(SERVER_PORT="443", **{"wsgi.url_scheme": "https"})
+
+
 def _authed_client(
     username="dashboard-summary-tester",
     *,
@@ -24,7 +28,7 @@ def _authed_client(
     )
     user.set_unusable_password()
     user.save(update_fields=["password"])
-    client = APIClient()
+    client = _https_client()
     client.force_authenticate(user=user)
     return client
 
@@ -169,7 +173,7 @@ def test_master_control_summary_serves_sample_payload_in_development():
 @override_settings(TENANT_HEADER_REQUIRED=False, CROWN_ENV="development")
 @pytest.mark.django_db
 def test_master_control_summary_requires_authentication():
-    client = APIClient()
+    client = _https_client()
     response = client.get(
         reverse("dashboard-summary", kwargs={"dashboard_key": "master-control"}),
         HTTP_X_SCHOOL_ID="heritage-demo",
@@ -293,7 +297,7 @@ def test_master_control_summary_rejects_cross_tenant_access_for_non_staff_user()
 @override_settings(TENANT_HEADER_REQUIRED=False, CROWN_ENV="development")
 @pytest.mark.django_db
 def test_implementation_success_summary_requires_authentication():
-    client = APIClient()
+    client = _https_client()
     response = client.get(
         reverse(
             "dashboard-summary", kwargs={"dashboard_key": "implementation-success"}
@@ -462,7 +466,7 @@ def test_dashboard_certification_center_superuser_receives_summary_payload():
     ["dashboard-certification-center", "release-reliability", "compliance-audit"],
 )
 def test_batch0_summary_routes_require_authentication(dashboard_key):
-    client = APIClient()
+    client = _https_client()
     response = client.get(
         reverse("dashboard-summary", kwargs={"dashboard_key": dashboard_key}),
         HTTP_X_SCHOOL_ID="heritage-demo",

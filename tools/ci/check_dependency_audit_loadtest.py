@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fail if hardened workflows stop covering backend/requirements-loadtest.txt."""
+"""Fail if the canonical dependency audit stops covering load-test requirements."""
 
 from __future__ import annotations
 
@@ -10,16 +10,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
 REQUIRED_WORKFLOWS = {
-    ".github/workflows/crown-magus0-gate.yml": [
-        "backend/requirements-loadtest.txt",
-    ],
     ".github/workflows/dependency-audit.yml": [
-        "backend/requirements-loadtest.txt",
-    ],
-    ".github/workflows/dependency-scan.yml": [
-        "requirements-loadtest.txt",
-    ],
-    ".github/workflows/dependency-integrity-gate.yml": [
         "backend/requirements-loadtest.txt",
     ],
 }
@@ -40,16 +31,16 @@ def main() -> int:
                 violations.append(f"{rel_path} missing required token: {token}")
 
     if violations:
-        print("FAIL: hardened dependency-audit coverage drift detected.\n")
+        print("FAIL: canonical dependency-audit coverage drift detected.\n")
         for violation in violations:
             print(f"- {violation}")
         print(
-            "\nRequired workflows must retain backend/requirements-loadtest.txt coverage "
-            "to protect release audit fidelity."
+            "\nThe retained dependency audit must cover "
+            "backend/requirements-loadtest.txt to protect release audit fidelity."
         )
         return 1
 
-    print("OK: requirements-loadtest coverage present in hardened workflows.")
+    print("OK: load-test requirements coverage present in canonical dependency audit.")
     return 0
 
 

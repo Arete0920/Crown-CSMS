@@ -10,6 +10,10 @@ function Write-JsonFile { param([string]$Path, $Object) ($Object | ConvertTo-Jso
 $repoRoot = (git rev-parse --show-toplevel).Trim()
 if ([string]::IsNullOrWhiteSpace($repoRoot)) { throw "Not inside a git repository." }
 Set-Location $repoRoot
+$branchName = (git branch --show-current 2>$null)
+if ([string]::IsNullOrWhiteSpace($branchName)) { $branchName = $env:GITHUB_HEAD_REF }
+if ([string]::IsNullOrWhiteSpace($branchName)) { $branchName = $env:GITHUB_REF_NAME }
+if ([string]::IsNullOrWhiteSpace($branchName)) { $branchName = "detached-head" } else { $branchName = $branchName.Trim() }
 . (Join-Path $repoRoot "scripts/execution/modules/runtime_evidence_validation.ps1")
 
 $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
@@ -49,6 +53,7 @@ $runtime = Read-CrownRuntimeEvidence -Gate "observability" -Keys @($monitoringCo
 $monitorRows = foreach ($control in $monitoringControls) {
     [pscustomobject]@{ Control = $control; RuntimeEvidence = if ($runtime.pass -eq $true) { $env:CROWN_RELEASE_RUNTIME_EVIDENCE } else { "missing or invalid" }; CompletionStatus = if ($runtime.pass -eq $true) { "PASS" } else { "BLOCKED_NO_RUNTIME_MONITORING_EVIDENCE" } }
 }
+
 $incidentRows = foreach ($control in $incidentControls) {
     [pscustomobject]@{ Control = $control; RuntimeEvidence = if ($runtime.pass -eq $true) { $env:CROWN_RELEASE_RUNTIME_EVIDENCE } else { "missing or invalid" }; CompletionStatus = if ($runtime.pass -eq $true) { "PASS" } else { "BLOCKED_NO_INCIDENT_TEST_EVIDENCE" } }
 }
@@ -67,7 +72,7 @@ $summary = @(
     "# CROWN Observability and Incident Readiness Gate",
     "",
     "- Generated: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')",
-    "- Branch: $((git branch --show-current).Trim())",
+    "- Branch: $branchName",
     "- Head: $((git rev-parse HEAD).Trim())",
     "- Monitoring controls: $($monitoringControls.Count)",
     "- Incident controls: $($incidentControls.Count)",
@@ -81,7 +86,7 @@ Write-Utf8 -Path (Join-Path $outDir "00_SUMMARY.md") -Lines $summary
 $status = [ordered]@{
     runtime_evidence_errors = @($runtime.errors)
     generated_at = (Get-Date).ToString("s")
-    branch = (git branch --show-current).Trim()
+    branch = $branchName
     head = (git rev-parse HEAD).Trim()
     pass = $pass
     monitoring_control_count = $monitoringControls.Count
