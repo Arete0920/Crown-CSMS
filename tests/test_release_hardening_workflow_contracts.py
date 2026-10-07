@@ -34,7 +34,7 @@ def test_prod_removed_redundant_verification_steps():
 
 def test_prod_applies_appsettings_before_integrity_probe():
     text = _read(PROD_WORKFLOW)
-    assert text.index('name: Apply appsettings (allowlisted only)') < text.index('name: Verify tenant-aware integrity')
+    assert text.index('name: Apply appsettings (allowlisted only)') < text.index('name: Verify deployed build SHA and tenant-aware integrity')
 
 
 def test_prod_health_check_uses_extended_backoff_window():
