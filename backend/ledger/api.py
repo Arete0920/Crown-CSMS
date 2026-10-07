@@ -8,7 +8,7 @@ from django.contrib.auth.decorators import login_required
 from django.db import transaction
 
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated
+from core.permissions import CrownModulePermission, require_permission
 from django.db.models import Sum
 from django.http import JsonResponse, HttpRequest
 from django.views.decorators.http import require_http_methods
@@ -114,7 +114,7 @@ def _payment_to_dict(p: Payment):
 
 @extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
-@permission_classes([IsAuthenticated])
+@permission_classes([CrownModulePermission("finance.view", write_code="finance.edit")])
 def ensure_account(request: HttpRequest):
     """
     Create the household's ledger account if missing.
@@ -148,7 +148,7 @@ def ensure_account(request: HttpRequest):
 
 @extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["GET"])
-@permission_classes([IsAuthenticated])
+@permission_classes([CrownModulePermission("finance.view", write_code="finance.edit")])
 def account_detail(request: HttpRequest, account_id: str):
     sid = get_request_school_id(request)
     if not sid:
@@ -171,7 +171,7 @@ def account_detail(request: HttpRequest, account_id: str):
 
 @extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
-@permission_classes([IsAuthenticated])
+@permission_classes([CrownModulePermission("finance.view", write_code="finance.edit")])
 def create_charge(request: HttpRequest):
     sid = get_request_school_id(request)
     if not sid:
@@ -218,7 +218,7 @@ def create_charge(request: HttpRequest):
 
 @extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
-@permission_classes([IsAuthenticated])
+@permission_classes([CrownModulePermission("finance.view", write_code="finance.edit")])
 def record_payment(request: HttpRequest):
     """
     Body: {
@@ -368,6 +368,7 @@ def record_payment(request: HttpRequest):
 
 @login_required
 @require_http_methods(["POST"])
+@require_permission("finance.edit")
 def payment_allocate(request: HttpRequest, payment_id: str):
     sid = get_request_school_id(request)
     if not sid:
@@ -396,6 +397,7 @@ def payment_allocate(request: HttpRequest, payment_id: str):
 
 @login_required
 @require_http_methods(["GET"])
+@require_permission("finance.view")
 def ledger_account_balance(request: HttpRequest, account_id: str):
     sid = get_request_school_id(request)
     if not sid:
@@ -412,6 +414,7 @@ def ledger_account_balance(request: HttpRequest, account_id: str):
 
 @login_required
 @require_http_methods(["GET"])
+@require_permission("finance.view")
 def charge_balance(request: HttpRequest, charge_id: str):
     sid = get_request_school_id(request)
     if not sid:
@@ -428,6 +431,7 @@ def charge_balance(request: HttpRequest, charge_id: str):
 
 @login_required
 @require_http_methods(["GET"])
+@require_permission("finance.view")
 def ledger_account_statement(request: HttpRequest, account_id: str):
     sid = get_request_school_id(request)
     if not sid:
@@ -444,7 +448,7 @@ def ledger_account_statement(request: HttpRequest, account_id: str):
 
 @extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["GET"])
-@permission_classes([IsAuthenticated])
+@permission_classes([CrownModulePermission("finance.view", write_code="finance.edit")])
 def open_charges(request: HttpRequest):
     """List open (unpaid) charges for an account/household.
 
@@ -511,7 +515,7 @@ def open_charges(request: HttpRequest):
 
 @extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["GET"])
-@permission_classes([IsAuthenticated])
+@permission_classes([CrownModulePermission("finance.view", write_code="finance.edit")])
 def open_invoices(request: HttpRequest):
     """List open invoices (via billing.Invoice) with computed balances from ledger allocations.
 
@@ -577,7 +581,7 @@ def open_invoices(request: HttpRequest):
 
 @extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["GET"])
-@permission_classes([IsAuthenticated])
+@permission_classes([CrownModulePermission("finance.view", write_code="finance.edit")])
 def ledger_invariants(request: HttpRequest):
     """
     GET /api/v1/ledger/invariants/
@@ -661,7 +665,7 @@ def ledger_invariants(request: HttpRequest):
 
 @extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
-@permission_classes([IsAuthenticated])
+@permission_classes([CrownModulePermission("finance.view", write_code="finance.edit")])
 def void_charge(request: HttpRequest, charge_id: str):
     """
     POST /api/v1/ledger/charges/<charge_id>/void/
@@ -692,7 +696,7 @@ def void_charge(request: HttpRequest, charge_id: str):
 
 @extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
-@permission_classes([IsAuthenticated])
+@permission_classes([CrownModulePermission("finance.view", write_code="finance.edit")])
 def void_payment(request: HttpRequest, payment_id: str):
     """
     POST /api/v1/ledger/payments/<payment_id>/void/

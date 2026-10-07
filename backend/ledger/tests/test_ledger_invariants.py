@@ -18,6 +18,7 @@ from core.models import School, UserRole
 from households.models import Household
 from ledger.models import LedgerAccount, Charge, Payment, Allocation
 from ledger.services import allocate_payment_fifo
+from ledger.tests.factories import grant_finance_authority
 
 pytestmark = pytest.mark.django_db
 
@@ -36,6 +37,7 @@ def _school_and_user():
         user.school_id = sid
         user.save(update_fields=["school_id"])
     UserRole.objects.create(school_id=sid, user=user, role_code="HEAD_OF_SCHOOL")
+    grant_finance_authority(user, sid)
     return sid, user
 
 

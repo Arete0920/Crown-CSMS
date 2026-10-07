@@ -5,6 +5,7 @@ import pytest
 from django.contrib.auth import get_user_model
 from django.test import Client
 
+from ledger.tests.factories import grant_finance_authority
 from core.models import School
 from households.models import Household
 from ledger.models import LedgerAccount, Charge, Payment, Allocation
@@ -22,6 +23,7 @@ def _mk_user_with_school_id(school_id):
     if hasattr(u, "school_id"):
         setattr(u, "school_id", school_id)
         u.save(update_fields=["school_id"])
+    grant_finance_authority(u, school_id)
     return u
 
 

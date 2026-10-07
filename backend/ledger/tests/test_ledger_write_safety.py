@@ -15,6 +15,7 @@ from decimal import Decimal
 from django.contrib.auth import get_user_model
 from django.test import Client
 
+from ledger.tests.factories import grant_finance_authority
 from core.models import School
 from households.models import Household
 from ledger.models import LedgerAccount, Charge, Payment
@@ -38,6 +39,7 @@ def _school_and_account():
         password=TEST_AUTH_SECRET,
         school=school,
     )
+    grant_finance_authority(user, sid)
     return sid, acct, user
 
 
