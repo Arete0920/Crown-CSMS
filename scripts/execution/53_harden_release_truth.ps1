@@ -214,8 +214,6 @@ $copiedArtifacts | Export-Csv (Join-Path $hardeningOut "11_artifacts_manifest.cs
 # ----------------------------
 $deployProdLog = Join-Path $hardeningOut "12_deploy_prod_recent.txt"
 Run-Capture -Title "deploy-prod recent history" -Path $deployProdLog -CommandText "gh run list --limit 20 --workflow deploy-prod.yml --json databaseId,displayTitle,status,conclusion,createdAt,headSha,url"
-$deployDispatchLog = Join-Path $hardeningOut "13_deploy_prod_dispatch_recent.txt"
-Run-Capture -Title "deploy-prod-dispatch recent history" -Path $deployDispatchLog -CommandText "gh run list --limit 20 --workflow deploy-prod-dispatch.yml --json databaseId,displayTitle,status,conclusion,createdAt,headSha,url"
 $healthWatchLog = Join-Path $hardeningOut "14_prod_health_watch_recent.txt"
 Run-Capture -Title "prod-health-watch recent history" -Path $healthWatchLog -CommandText "gh run list --limit 20 --workflow prod-health-watch.yml --json databaseId,displayTitle,status,conclusion,createdAt,headSha,url"
 
@@ -288,7 +286,6 @@ Set-Utf8File -Path (Join-Path $truthEvidenceRoot "02_OPERATING_RISKS.md") -Conte
 Set-Utf8File -Path (Join-Path $truthEvidenceRoot "03_DEPLOY_WATCH_MATRIX.csv") -Content @"
 WatchArea,Owner,Status,Notes
 deploy-prod recent history,Release owner,Open,Review 12_deploy_prod_recent.txt before release
-deploy-prod-dispatch history,Release owner,Open,Review 13_deploy_prod_dispatch_recent.txt before release
 prod-health-watch history,Verification owner,Open,Review 14_prod_health_watch_recent.txt before release
 health probe after deploy,Verification owner,Open,Use release-launch latest probes
 integrity probe after deploy,Verification owner,Open,Use release-launch latest probes
@@ -352,7 +349,6 @@ code `"$truthEvidenceRoot\03_DEPLOY_WATCH_MATRIX.csv`"
 code `"$hardeningOut\10_audit_pack_completeness.csv`"
 code `"$hardeningOut\11_artifacts_manifest.csv`"
 code `"$hardeningOut\12_deploy_prod_recent.txt`"
-code `"$hardeningOut\13_deploy_prod_dispatch_recent.txt`"
 code `"$hardeningOut\14_prod_health_watch_recent.txt`"
 code `"$worktreeRoot\_release_truth\04_EXECUTE_FROM_TRUTH.ps1`"
 "@
@@ -421,7 +417,6 @@ if ($OpenFiles) {
     Open-IfExists (Join-Path $hardeningLatest "10_audit_pack_completeness.csv")
     Open-IfExists (Join-Path $hardeningLatest "11_artifacts_manifest.csv")
     Open-IfExists (Join-Path $hardeningLatest "12_deploy_prod_recent.txt")
-    Open-IfExists (Join-Path $hardeningLatest "13_deploy_prod_dispatch_recent.txt")
     Open-IfExists (Join-Path $hardeningLatest "14_prod_health_watch_recent.txt")
     Open-IfExists (Join-Path $truthEvidenceRoot "01_RELEASE_TRUTH.md")
     Open-IfExists (Join-Path $truthEvidenceRoot "02_OPERATING_RISKS.md")
