@@ -5,6 +5,7 @@ on:
     paths:
       - backend/**
       - frontend/dashboards/**
+      - services/wallet/apple-pass-service/**
       - .github/workflows/sbom-generation.yml
   push:
     branches:
@@ -12,6 +13,7 @@ on:
     paths:
       - backend/**
       - frontend/dashboards/**
+      - services/wallet/apple-pass-service/**
       - .github/workflows/sbom-generation.yml
 
 permissions:
@@ -77,3 +79,32 @@ jobs:
         with:
           name: frontend-sbom-${{ github.run_id }}
           path: frontend/dashboards/frontend-sbom.cdx.json
+
+  wallet-sbom:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: services/wallet/apple-pass-service
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+      - name: Set up Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: services/wallet/apple-pass-service/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Wallet SBOM
+        run: npx --yes @cyclonedx/cyclonedx-npm --output-file wallet-sbom.cdx.json
+
+      - name: Upload Wallet SBOM
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: wallet-sbom-${{ github.run_id }}
+          path: services/wallet/apple-pass-service/wallet-sbom.cdx.json

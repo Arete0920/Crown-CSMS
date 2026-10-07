@@ -25,6 +25,7 @@
 - Allowed files:
 - Forbidden files:
 - Security, tenant, data, migration, deployment, dependency, and payment impact:
+- New direct dependencies, if any, have an approved entry in `docs/security/dependency-admissions.json`:
 
 ## Proof
 
