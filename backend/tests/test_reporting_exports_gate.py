@@ -1,4 +1,7 @@
+import os
+
 import pytest
+from django.conf import settings
 
 pytestmark = pytest.mark.django_db
 
@@ -18,17 +21,23 @@ def _client_with_user(client, django_user_model, email, password="export-test-pa
     return user
 
 
-def test_openapi_docs_visible(client):
-    candidates = ["/api/docs/", "/swagger/", "/docs/"]
-    seen = []
-    ok = False
-    for path in candidates:
-        resp = client.get(path)
-        seen.append((path, resp.status_code))
-        if resp.status_code == 200:
-            ok = True
-            break
-    assert ok, f"OpenAPI/Swagger docs not visible. Tried: {seen}"
+def test_openapi_docs_follow_environment_exposure_policy(client):
+    candidates = ["/api/schema/", "/api/docs/", "/api/redoc/"]
+    seen = [(path, client.get(path).status_code) for path in candidates]
+
+    env = str(getattr(settings, "CROWN_ENV", "") or os.getenv("CROWN_ENV", "")).strip().lower()
+    production_like = env in {"prod", "production", "live"} or bool(os.getenv("WEBSITE_HOSTNAME"))
+    docs_enabled = bool(getattr(settings, "CROWN_API_DOCS_ENABLED", False))
+
+    if production_like and not docs_enabled:
+        assert all(code == 404 for _, code in seen), (
+            f"Production API docs must remain hidden by default. Tried: {seen}"
+        )
+        return
+
+    assert any(code == 200 for _, code in seen), (
+        f"Expected an enabled OpenAPI documentation surface. Tried: {seen}"
+    )
 
 
 def test_health_endpoint_live(client):

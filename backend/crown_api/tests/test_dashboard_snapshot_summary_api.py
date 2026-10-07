@@ -29,6 +29,12 @@ def _authed_client(
     return client
 
 
+def _secure_get(client, *args, **kwargs):
+    """Exercise dashboard routes as HTTPS in production-like test contexts."""
+    kwargs.setdefault("secure", True)
+    return client.get(*args, **kwargs)
+
+
 @override_settings(TENANT_HEADER_REQUIRED=False, CROWN_ENV="production")
 @pytest.mark.django_db
 def test_attendance_summary_serves_snapshot_first_even_in_production():
@@ -49,7 +55,7 @@ def test_attendance_summary_serves_snapshot_first_even_in_production():
     )
 
     client = _authed_client("dashboard-summary-snapshot")
-    response = client.get(
+    response = _secure_get(client, 
         reverse("dashboard-summary", kwargs={"dashboard_key": "attendance"}),
         HTTP_X_SCHOOL_ID="heritage-demo",
     )
@@ -69,7 +75,7 @@ def test_attendance_summary_serves_snapshot_first_even_in_production():
 @pytest.mark.django_db
 def test_attendance_summary_falls_back_to_sample_payload_in_non_production():
     client = _authed_client("dashboard-summary-nonprod")
-    response = client.get(
+    response = _secure_get(client, 
         reverse("dashboard-summary", kwargs={"dashboard_key": "attendance"}),
         HTTP_X_SCHOOL_ID="heritage-demo",
     )
@@ -86,7 +92,7 @@ def test_attendance_summary_falls_back_to_sample_payload_in_non_production():
 @pytest.mark.django_db
 def test_attendance_summary_rejects_sample_payload_in_production_without_snapshot():
     client = _authed_client("dashboard-summary-prod-reject")
-    response = client.get(
+    response = _secure_get(client, 
         reverse("dashboard-summary", kwargs={"dashboard_key": "attendance"}),
         HTTP_X_SCHOOL_ID="heritage-demo",
     )
@@ -106,7 +112,7 @@ def test_attendance_summary_rejects_sample_payload_in_production_without_snapsho
 @pytest.mark.django_db
 def test_attendance_summary_allows_sample_payload_when_explicitly_enabled():
     client = _authed_client("dashboard-summary-prod-explicit")
-    response = client.get(
+    response = _secure_get(client, 
         reverse("dashboard-summary", kwargs={"dashboard_key": "attendance"}),
         HTTP_X_SCHOOL_ID="heritage-demo",
     )
@@ -128,7 +134,7 @@ def test_batch0_school_scoped_summary_routes_serve_sample_payloads_in_developmen
     dashboard_key,
 ):
     client = _authed_client(f"dashboard-summary-batch0-{dashboard_key}")
-    response = client.get(
+    response = _secure_get(client, 
         reverse("dashboard-summary", kwargs={"dashboard_key": dashboard_key}),
         HTTP_X_SCHOOL_ID="heritage-demo",
     )
@@ -148,7 +154,7 @@ def test_master_control_summary_serves_sample_payload_in_development():
         "dashboard-summary-batch5-master-control",
         school_id=school.id,
     )
-    response = client.get(
+    response = _secure_get(client, 
         reverse("dashboard-summary", kwargs={"dashboard_key": "master-control"}),
         HTTP_X_SCHOOL_ID=str(school.id),
     )
@@ -170,7 +176,7 @@ def test_master_control_summary_serves_sample_payload_in_development():
 @pytest.mark.django_db
 def test_master_control_summary_requires_authentication():
     client = APIClient()
-    response = client.get(
+    response = _secure_get(client, 
         reverse("dashboard-summary", kwargs={"dashboard_key": "master-control"}),
         HTTP_X_SCHOOL_ID="heritage-demo",
     )
@@ -187,7 +193,7 @@ def test_master_control_summary_allows_same_tenant_access():
         school_id=school.id,
     )
 
-    response = client.get(
+    response = _secure_get(client, 
         reverse("dashboard-summary", kwargs={"dashboard_key": "master-control"}),
         HTTP_X_SCHOOL_ID=str(school.id),
     )
@@ -207,7 +213,7 @@ def test_implementation_success_summary_serves_sample_payload_in_development():
         "dashboard-summary-batch5-implementation-success",
         school_id=school.id,
     )
-    response = client.get(
+    response = _secure_get(client, 
         reverse(
             "dashboard-summary", kwargs={"dashboard_key": "implementation-success"}
         ),
@@ -236,7 +242,7 @@ def test_implementation_success_summary_allows_same_tenant_access():
         school_id=school.id,
     )
 
-    response = client.get(
+    response = _secure_get(client, 
         reverse(
             "dashboard-summary", kwargs={"dashboard_key": "implementation-success"}
         ),
@@ -260,7 +266,7 @@ def test_implementation_success_summary_rejects_cross_tenant_access_for_non_staf
         school_id=school.id,
     )
 
-    response = client.get(
+    response = _secure_get(client, 
         reverse(
             "dashboard-summary", kwargs={"dashboard_key": "implementation-success"}
         ),
@@ -281,7 +287,7 @@ def test_master_control_summary_rejects_cross_tenant_access_for_non_staff_user()
         school_id=school.id,
     )
 
-    response = client.get(
+    response = _secure_get(client, 
         reverse("dashboard-summary", kwargs={"dashboard_key": "master-control"}),
         HTTP_X_SCHOOL_ID=str(other_school.id),
     )
@@ -294,7 +300,7 @@ def test_master_control_summary_rejects_cross_tenant_access_for_non_staff_user()
 @pytest.mark.django_db
 def test_implementation_success_summary_requires_authentication():
     client = APIClient()
-    response = client.get(
+    response = _secure_get(client, 
         reverse(
             "dashboard-summary", kwargs={"dashboard_key": "implementation-success"}
         ),
@@ -307,7 +313,7 @@ def test_implementation_success_summary_requires_authentication():
 @pytest.mark.django_db
 def test_implementation_success_summary_requires_explicit_tenant_header():
     client = _authed_client("dashboard-summary-batch5-implementation-success-no-header")
-    response = client.get(
+    response = _secure_get(client, 
         reverse(
             "dashboard-summary", kwargs={"dashboard_key": "implementation-success"}
         ),
@@ -321,7 +327,7 @@ def test_implementation_success_summary_requires_explicit_tenant_header():
 @pytest.mark.django_db
 def test_compliance_audit_summary_requires_explicit_tenant_header():
     client = _authed_client("dashboard-summary-batch0-compliance-audit-no-header")
-    response = client.get(
+    response = _secure_get(client, 
         reverse("dashboard-summary", kwargs={"dashboard_key": "compliance-audit"}),
     )
 
@@ -333,7 +339,7 @@ def test_compliance_audit_summary_requires_explicit_tenant_header():
 @pytest.mark.django_db
 def test_compliance_audit_summary_rejects_invalid_tenant_header():
     client = _authed_client("dashboard-summary-batch0-compliance-audit-invalid-header")
-    response = client.get(
+    response = _secure_get(client, 
         reverse("dashboard-summary", kwargs={"dashboard_key": "compliance-audit"}),
         HTTP_X_SCHOOL_ID="not-a-uuid",
     )
@@ -346,7 +352,7 @@ def test_compliance_audit_summary_rejects_invalid_tenant_header():
 @pytest.mark.django_db
 def test_compliance_audit_summary_rejects_nonexistent_school():
     client = _authed_client("dashboard-summary-batch0-compliance-audit-missing-school")
-    response = client.get(
+    response = _secure_get(client, 
         reverse("dashboard-summary", kwargs={"dashboard_key": "compliance-audit"}),
         HTTP_X_SCHOOL_ID="00000000-0000-0000-0000-000000000000",
     )
@@ -360,7 +366,7 @@ def test_compliance_audit_summary_rejects_nonexistent_school():
 def test_compliance_audit_summary_serves_sample_payload_for_request_school():
     school = School.objects.create(name="Heritage Demo")
     client = _authed_client("dashboard-summary-batch0-compliance-audit-allowed")
-    response = client.get(
+    response = _secure_get(client, 
         reverse("dashboard-summary", kwargs={"dashboard_key": "compliance-audit"}),
         HTTP_X_SCHOOL_ID=str(school.id),
     )
@@ -394,7 +400,7 @@ def test_compliance_audit_summary_blocks_cross_tenant_access():
         school_id=school_a.id,
     )
 
-    response = client.get(
+    response = _secure_get(client, 
         reverse("dashboard-summary", kwargs={"dashboard_key": "compliance-audit"}),
         HTTP_X_SCHOOL_ID=str(school_b.id),
     )
@@ -407,7 +413,7 @@ def test_compliance_audit_summary_blocks_cross_tenant_access():
 @pytest.mark.django_db
 def test_dashboard_certification_center_staff_user_receives_summary_payload():
     client = _authed_client("dashboard-cert-center-staff", is_staff=True)
-    response = client.get(
+    response = _secure_get(client, 
         reverse(
             "dashboard-summary",
             kwargs={"dashboard_key": "dashboard-certification-center"},
@@ -426,7 +432,7 @@ def test_dashboard_certification_center_staff_user_receives_summary_payload():
 @pytest.mark.django_db
 def test_dashboard_certification_center_non_staff_user_is_forbidden():
     client = _authed_client("dashboard-cert-center-non-staff")
-    response = client.get(
+    response = _secure_get(client, 
         reverse(
             "dashboard-summary",
             kwargs={"dashboard_key": "dashboard-certification-center"},
@@ -442,7 +448,7 @@ def test_dashboard_certification_center_non_staff_user_is_forbidden():
 @pytest.mark.django_db
 def test_dashboard_certification_center_superuser_receives_summary_payload():
     client = _authed_client("dashboard-cert-center-superuser", is_superuser=True)
-    response = client.get(
+    response = _secure_get(client, 
         reverse(
             "dashboard-summary",
             kwargs={"dashboard_key": "dashboard-certification-center"},
@@ -463,7 +469,7 @@ def test_dashboard_certification_center_superuser_receives_summary_payload():
 )
 def test_batch0_summary_routes_require_authentication(dashboard_key):
     client = APIClient()
-    response = client.get(
+    response = _secure_get(client, 
         reverse("dashboard-summary", kwargs={"dashboard_key": dashboard_key}),
         HTTP_X_SCHOOL_ID="heritage-demo",
     )
@@ -475,7 +481,7 @@ def test_batch0_summary_routes_require_authentication(dashboard_key):
 @pytest.mark.django_db
 def test_unknown_dashboard_returns_404():
     client = _authed_client("dashboard-summary-unknown")
-    response = client.get(
+    response = _secure_get(client, 
         reverse("dashboard-summary", kwargs={"dashboard_key": "does-not-exist"}),
         HTTP_X_SCHOOL_ID="heritage-demo",
     )
@@ -483,3 +489,17 @@ def test_unknown_dashboard_returns_404():
     assert response.status_code == 404
     data = response.json()
     assert data["code"] == "unknown_dashboard"
+
+
+def test_sandbox_ready_workflow_runs_on_dashboard_pull_requests():
+    from pathlib import Path
+
+    workflow = (
+        Path(__file__).resolve().parents[3]
+        / ".github"
+        / "workflows"
+        / "sandbox-ready-evidence.yml"
+    ).read_text(encoding="utf-8")
+    assert "pull_request:" in workflow
+    assert '"backend/crown_api/tests/test_dashboard_snapshot_summary_api.py"' in workflow
+    assert '".github/workflows/sandbox-ready-evidence.yml"' in workflow
