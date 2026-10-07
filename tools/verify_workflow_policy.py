@@ -56,6 +56,7 @@ CANONICAL_WORKFLOW_FILES = {
     "schema-governance.yml",
     "schema-migration-stage.yml",
     "secret-scan.yml",
+    "secrets-control-drill.yml",
     "stale-branches.yml",
     "tenant-isolation-gate.yml",
     "tests.yml",
