@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CROWN Solomon Governed Retrieval Source",
+  "description": "Provider-neutral evidence contract for a source eligible for governed Solomon retrieval. This schema does not activate ingestion, indexing, embeddings, or generated responses.",
+  "type": "object",
+  "required": [
+    "source_id",
+    "title",
+    "source_digest",
+    "source_version",
+    "provenance_tier",
+    "review_status",
+    "rights_status",
+    "rights_basis",
+    "privacy_classification",
+    "tenant_scope",
+    "reviewed_on"
+  ],
+  "properties": {
+    "source_id": {
+      "type": "string",
+      "minLength": 3
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "source_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "provenance_tier": {
+      "type": "string",
+      "enum": ["P0", "P1", "P2"]
+    },
+    "review_status": {
+      "type": "string",
+      "enum": ["APPROVED_CANONICAL", "APPROVED_REFERENCE_ONLY"]
+    },
+    "rights_status": {
+      "type": "string",
+      "enum": ["owned", "licensed", "approved_use"]
+    },
+    "rights_basis": {
+      "type": "string",
+      "minLength": 1
+    },
+    "privacy_classification": {
+      "type": "string",
+      "enum": ["public", "internal"]
+    },
+    "tenant_scope": {
+      "type": "string",
+      "minLength": 1
+    },
+    "role_scope": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "effective_date": {
+      "type": ["string", "null"],
+      "format": "date"
+    },
+    "expires_on": {
+      "type": ["string", "null"],
+      "format": "date"
+    },
+    "reviewed_on": {
+      "type": "string",
+      "format": "date"
+    },
+    "supersedes": {
+      "type": "string"
+    },
+    "superseded_by": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false
+}
