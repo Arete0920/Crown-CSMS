@@ -496,11 +496,13 @@ if _env_is_prod():
         try:
             import sentry_sdk
             from sentry_sdk.integrations.django import DjangoIntegration
+            from core.observability.sentry import before_send
             sentry_sdk.init(
                 dsn=_sentry_dsn,
                 integrations=[DjangoIntegration()],
                 traces_sample_rate=0.2,
                 send_default_pii=False,
+                before_send=before_send,
                 release=BUILD_SHA,
             )
         except ImportError:
