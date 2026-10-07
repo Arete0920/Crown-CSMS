@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "blocked_markers": [
+    "UNKNOWN",
+    "UNLICENSED",
+    "AGPL",
+    "SSPL",
+    "BUSL",
+    "BUSINESS SOURCE LICENSE",
+    "COMMONS CLAUSE"
+  ],
+  "review_required_markers": [
+    "GPL",
+    "LGPL"
+  ],
+  "approved_review_exceptions": [
+    {
+      "package": "psycopg==3.3.6",
+      "license": "LGPL-3.0-only",
+      "rationale": "Existing PostgreSQL runtime dependency. Dynamic/runtime use is compatible with CROWN distribution; retain version-specific approval so future upgrades are re-reviewed."
+    },
+    {
+      "package": "psycopg-binary==3.3.6",
+      "license": "LGPL-3.0-only",
+      "rationale": "Binary distribution paired with the approved psycopg runtime dependency; version-specific approval requires re-review on upgrade."
+    }
+  ],
+  "ignored_project_packages": [
+    "crown-dashboards@0.0.0",
+    "crown-apple-pass-service@0.1.0"
+  ]
+}
