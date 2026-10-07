@@ -4,6 +4,8 @@
 
 **TEMPLATE — REQUIRES LEGAL REVIEW AND CUSTOMER EXECUTION.**
 
+Readiness reconciliation: 2026-10-07. Clause corrections do not establish legal approval, executed terms, or verified operating safeguards.
+
 This template is intended to provide a baseline DPA structure for CROWN production customers. It is not legal advice and is not effective until incorporated into an executed agreement.
 
 ## 1. Parties
@@ -40,6 +42,7 @@ Provider will not sell Customer Data, use Student Data for behavioral advertisin
 
 Where Customer determines that Provider acts as a school official or service provider for FERPA-covered education records, Provider will:
 
+- Remain under Customer's direct control over the use and maintenance of education records as required by the applicable FERPA exception.
 - Use education records only for legitimate educational interests and contracted Services.
 - Maintain confidentiality of education records.
 - Refrain from redisclosing education records except as authorized by Customer, this DPA, or law.
@@ -47,7 +50,9 @@ Where Customer determines that Provider acts as a school official or service pro
 
 ## 6. COPPA support
 
-Where Services are used by children under 13 under school direction, Customer is responsible for determining the lawful consent model. Provider will process such data only for school-authorized educational or operational purposes and will not use it for behavioral advertising or unrelated commercial profiling.
+Where COPPA applies, Provider retains responsibility for its obligations as the online-service operator. School authorization may be used only in the permitted educational context, after the required notice and verified authorization. Customer will cooperate in documenting authorized school use; this cooperation does not transfer Provider's COPPA obligations to Customer.
+
+Provider will obtain and document verifiable parental consent when required, provide applicable notice and review/deletion mechanisms, limit collection and retention, and assess third-party disclosures under the amended rule. Provider will not use school-authorized child data for behavioral advertising or unrelated commercial profiling. Relevant collection must not be enabled until the applicable notice/authorization/consent workflow is verified.
 
 ## 7. Confidentiality
 
@@ -61,7 +66,7 @@ Provider will maintain administrative, technical, and physical safeguards approp
 - Role-based access control.
 - Least-privilege administrative access.
 - Encryption in transit.
-- Encryption at rest where supported by hosting/storage providers.
+- Encryption at rest for restricted production data and backups, with configuration and access evidence verified before the corresponding operational claim.
 - Audit logging for privileged access and data exports.
 - Secure SDLC practices.
 - Secret-management controls.
@@ -76,7 +81,9 @@ Emergency access must be documented and reviewed after the event.
 
 ## 10. Incident notice
 
-Provider will notify Customer without undue delay after confirming a security incident involving Customer Data. Notice should include, to the extent known:
+Provider will investigate suspected security incidents promptly and notify Customer according to applicable law and the executed agreement, including any obligations triggered by awareness or suspicion. Provider will not defer a triggered notice solely while awaiting final confirmation or a completed investigation. The executed agreement must define reporting triggers, deadlines, recipients, and escalation. Initial notices may state uncertainty and be supplemented as facts become available.
+
+Notice should include, to the extent known:
 
 - Nature of incident.
 - Data categories affected.
@@ -89,7 +96,7 @@ Cross-tenant exposure is treated as critical unless disproven.
 
 ## 11. Subprocessors
 
-Provider may use subprocessors only for Services delivery. Provider will maintain a subprocessor register identifying vendor, purpose, data categories, and contract/security status.
+Provider may use subprocessors only for Services delivery under approved contractual and security arrangements. Before activation, Provider will identify the actual vendor, service, processing location, data categories, permissions, contract/security status, and applicable customer authorization/notice requirements. An example integration or candidate vendor is not an approved active subprocessor.
 
 Provider remains responsible for subprocessors' processing of Customer Data to the extent required by the agreement.
 
