@@ -7,7 +7,7 @@ import {
   Divider,
   Typography,
 } from "@mui/material";
-import axios from "axios";
+import { authenticatedFetch } from "../../utils/authClient";
 
 const ArrowDropDownIcon = () => <span aria-hidden="true">v</span>;
 
@@ -36,17 +36,8 @@ const BulkExportMenu: React.FC<BulkExportMenuProps> = ({
     setLoading(true);
     close();
     try {
-      const token = localStorage.getItem("auth_token");
-      const schoolId = localStorage.getItem("school_id");
-      const resp = await axios.get(url, {
-        params,
-        responseType: "blob",
-        headers: {
-          Authorization: token ? `Bearer ${token}` : "",
-          "X-School-Id": schoolId || ""
-        },
-      });
-      const blob = new Blob([resp.data], { type: "application/pdf" });
+      const resp = await authenticatedFetch(url, { query: params });
+      const blob = await resp.blob();
       const link = Object.assign(document.createElement("a"), {
         href: window.URL.createObjectURL(blob),
         download: filename,
