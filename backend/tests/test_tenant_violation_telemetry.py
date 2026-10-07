@@ -3,6 +3,7 @@ from django.test import TestCase
 
 from core.models import School
 from core.tenant_models import (
+    tenant_context,
     set_current_school,
     clear_current_school,
     require_tenant_context,
@@ -18,8 +19,10 @@ class TestTenantViolationTelemetry(TestCase):
         clear_current_school()
         self.a = School.objects.create(name="Tenant A")
         self.b = School.objects.create(name="Tenant B")
-        Classroom.objects.create(name="A-1", school=self.a)
-        Classroom.objects.create(name="B-1", school=self.b)
+        with tenant_context(self.a):
+            Classroom.objects.create(name="A-1", school=self.a)
+        with tenant_context(self.b):
+            Classroom.objects.create(name="B-1", school=self.b)
 
     def tearDown(self):
         clear_current_school()

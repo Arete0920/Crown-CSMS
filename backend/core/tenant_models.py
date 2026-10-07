@@ -1,4 +1,4 @@
-from django.db import models
+from django.db import models, router
 from django.core.exceptions import ImproperlyConfigured
 from django.conf import settings
 from contextlib import contextmanager
@@ -80,11 +80,39 @@ class TenantQuerySet(models.QuerySet):
         if current is None:
             _log_tenant_violation(violation_type='bulk_update', tenant_school_id=None, model=getattr(self.model,'__name__',None), operation='update')
             raise TenantBulkOpViolation('TENANT_CONTEXT_MISSING_BULK_UPDATE')
+        # Tenant ownership is immutable; expressions cannot reparent rows.
+        if 'school' in kwargs or 'school_id' in kwargs:
+            raise TenantWriteViolation('TENANT_OWNERSHIP_IMMUTABLE')
         # Ensure we are tenant-scoped before bulk update
         if hasattr(self.model, 'school'):
             qs = self.filter(school=current)
             return super(TenantQuerySet, qs).update(**kwargs)
         return super().update(**kwargs)
+
+    def bulk_create(self, objs, batch_size=None, ignore_conflicts=False,
+                    update_conflicts=False, update_fields=None, unique_fields=None):
+        current = require_tenant_context()
+        objs = list(objs)
+        if {'school', 'school_id'} & set(update_fields or ()):
+            raise TenantWriteViolation('TENANT_OWNERSHIP_IMMUTABLE')
+        using = self._db or router.db_for_write(self.model)
+        for obj in objs:
+            obj._assert_tenant_ownership(current, using=using)
+        return super().bulk_create(
+            objs, batch_size=batch_size, ignore_conflicts=ignore_conflicts,
+            update_conflicts=update_conflicts, update_fields=update_fields,
+            unique_fields=unique_fields,
+        )
+
+    def bulk_update(self, objs, fields, *args, **kwargs):
+        current = require_tenant_context()
+        fields = tuple(fields)
+        if {'school', 'school_id'} & set(fields):
+            raise TenantWriteViolation('TENANT_OWNERSHIP_IMMUTABLE')
+        objs = tuple(objs)
+        for obj in objs:
+            obj._assert_tenant_ownership(current, using=self._db or router.db_for_write(self.model))
+        return super().bulk_update(objs, fields, *args, **kwargs)
 
     def delete(self):
         """Guard bulk delete - require tenant context (fail-closed)."""
@@ -134,19 +162,40 @@ class TenantScopedModel(models.Model):
 
     objects = TenantManager()
 
+    def _assert_tenant_ownership(self, current, *, using):
+        if self.school_id is None:
+            self.school_id = current.id
+        if self.school_id != current.id:
+            _log_tenant_violation(
+                violation_type='write', tenant_school_id=current.id,
+                model=self.__class__.__name__, operation='write',
+                extra={'target_school_id': str(self.school_id)},
+            )
+            raise TenantWriteViolation('CROSS_TENANT_WRITE_BLOCKED')
+        if self.pk is not None:
+            stored_school_id = (
+                self.__class__._base_manager.using(using).filter(pk=self.pk)
+                .values_list('school_id', flat=True).first()
+            )
+            if stored_school_id is not None and stored_school_id != current.id:
+                _log_tenant_violation(
+                    violation_type='write', tenant_school_id=current.id,
+                    model=self.__class__.__name__, operation='reparent',
+                )
+                raise TenantWriteViolation('TENANT_OWNERSHIP_IMMUTABLE')
+
     def save(self, *args, **kwargs):
-        """Enforce tenant write protection."""
-        current = get_current_school()
-        # If there is tenant context, enforce writes stay in-tenant
-        if current is not None:
-            if hasattr(self, "school_id"):
-                if self.school_id is None:
-                    # Safe convenience: bind new objects to current tenant
-                    self.school_id = current.id
-                elif self.school_id != current.id:
-                    _log_tenant_violation(violation_type='write', tenant_school_id=getattr(current,'id',None), model=self.__class__.__name__, operation='save', extra={'target_school_id': str(self.school_id)})
-                    raise TenantWriteViolation("CROSS_TENANT_WRITE_BLOCKED")
+        """Require explicit scope for creates and updates; never reparent records."""
+        current = require_tenant_context()
+        using = kwargs.get('using') or (args[2] if len(args) > 2 else None) or router.db_for_write(self.__class__, instance=self)
+        self._assert_tenant_ownership(current, using=using)
         return super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        current = require_tenant_context()
+        using = kwargs.get('using') or (args[0] if args else None) or router.db_for_write(self.__class__, instance=self)
+        self._assert_tenant_ownership(current, using=using)
+        return super().delete(*args, **kwargs)
 
     class Meta:
         abstract = True
