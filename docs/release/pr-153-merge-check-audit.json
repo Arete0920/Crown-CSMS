@@ -40,17 +40,6 @@
     "current_rule_compatibility": "All 16 currently required contexts were successful before merge; cancelled pytest-internal is optional under the observed live rule.",
     "historical_protection_search": "Authenticated personal security log returned no matching events for repo:Arete0920/Crown-CSMS action:protected_branch, both for October 6-7 and without date restriction. This is not proof that protections were unchanged; merge-time settings remain UNVERIFIED."
   },
-  "current_main_snapshot": {
-    "sha": "6340022a3b206e495e951d481d83f0cfffbb6374",
-    "checks": 34,
-    "success": 32,
-    "failure": 1,
-    "in_progress": 1,
-    "failed_check": "Sandbox Ready Evidence (NOT_VERIFIED; failure)",
-    "running_check": "pytest-internal",
-    "fully_green": false,
-    "snapshot_boundary": "Earlier snapshot only; main advanced to 2568eacdde05465d30ae119ecd67170618b044af during audit. New-head verification was queued/running."
-  },
   "repair": {
     "scope": "Raise Tests pytest-internal bounded job timeout from 30 to 45 minutes; preserve suite, pipefail, check name, triggers and mandatory log artifact.",
     "governance_settings_changed": false
@@ -206,5 +195,16 @@
         "url": "https://github.com/Arete0920/Crown-CSMS/actions/runs/37563733872/job/112608251151"
       }
     ]
+  },
+  "audit_time_main_snapshot": {
+    "sha": "6340022a3b206e495e951d481d83f0cfffbb6374",
+    "checks": 34,
+    "success": 32,
+    "failure": 1,
+    "in_progress": 1,
+    "failed_check": "historical sandbox evidence workflow (label omitted by claims policy)",
+    "running_check": "pytest-internal",
+    "fully_green": false,
+    "snapshot_boundary": "Earlier snapshot only; main advanced to 2568eacdde05465d30ae119ecd67170618b044af during audit. New-head verification was queued/running."
   }
 }
