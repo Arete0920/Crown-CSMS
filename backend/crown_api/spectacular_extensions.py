@@ -1,9 +1,22 @@
 """
-drf-spectacular schema extensions for Crown API custom authentication.
+drf-spectacular schema extensions for CROWN API custom authentication.
 
-Auto-discovered when imported in crown_api/apps.py ready() method.
+Registered when crown_api.__init__ imports this module during Django startup.
 """
 from drf_spectacular.extensions import OpenApiAuthenticationExtension
+
+
+class CrownAccessTokenAuthenticationExtension(OpenApiAuthenticationExtension):
+    target_class = "crown_api.auth_middleware.CrownAccessTokenAuthentication"
+    name = "CrownAccessTokenAuthentication"
+
+    def get_security_definition(self, auto_schema):
+        return {
+            "type": "http",
+            "scheme": "bearer",
+            "bearerFormat": "CROWN access token",
+            "description": "Authenticated CROWN access token used by supported CROWN clients.",
+        }
 
 
 class AADBearerAuthenticationExtension(OpenApiAuthenticationExtension):
