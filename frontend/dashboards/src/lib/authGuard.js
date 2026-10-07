@@ -12,27 +12,34 @@
  *
  * Returns the decoded session payload on success, null on redirect.
  *
- * Demo/test mode: if sessionStorage (or localStorage) contains "crown.jwt.access"
- * the backend probe is skipped and a synthetic payload is returned from stored
- * "crown.role" / "crown.school.id" values.  This allows Playwright smoke tests
- * to seed a deterministic session without a running backend.
+ * Demo/test mode is fail-closed: browser storage may satisfy this UI guard only
+ * when the build explicitly enables sandbox/certification mode. Production
+ * builds always verify authentication with the backend and never treat
+ * browser-controlled storage as proof of authentication.
  */
 
 const AUTH_ME_URL = "/auth/me/";
 
-/** Read a key from sessionStorage, falling back to localStorage. */
+function _demoBypassEnabled() {
+  return Boolean(
+    import.meta.env.VITE_DEMO_MODE === "sandbox"
+    || import.meta.env.VITE_SANDBOX_MODE === "1"
+    || import.meta.env.VITE_WIZARD_CERTIFICATION === "1"
+  );
+}
+
+/** Read a demo-only key from browser storage. */
 function _stored(key) {
   try {
-    return (
-      sessionStorage.getItem(key) ?? localStorage.getItem(key) ?? null
-    );
+    return sessionStorage.getItem(key) ?? localStorage.getItem(key) ?? null;
   } catch {
     return null;
   }
 }
 
-/** Build a synthetic session payload from storage (demo / Playwright mode). */
+/** Build a synthetic session payload only for an explicitly enabled demo build. */
 function _demoPayload() {
+  if (!_demoBypassEnabled()) return null;
   const token = _stored("crown.jwt.access");
   if (!token) return null;
   return {
@@ -47,7 +54,7 @@ function _demoPayload() {
  * @returns {object|null}      - session payload { email, role, school_id } or null
  */
 export async function requireAuth(navigate) {
-  // Demo / Playwright mode  skip backend probe entirely.
+  // Explicit demo/certification mode only; production always probes the backend.
   const demo = _demoPayload();
   if (demo) return demo;
 
@@ -79,7 +86,7 @@ export async function requireAuth(navigate) {
  * @returns {object|null}
  */
 export async function getSession() {
-  // Demo / Playwright mode  skip backend probe entirely.
+  // Explicit demo/certification mode only; production always probes the backend.
   const demo = _demoPayload();
   if (demo) return demo;
 

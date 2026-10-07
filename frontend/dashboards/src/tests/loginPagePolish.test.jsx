@@ -25,6 +25,8 @@ vi.mock("axios", () => {
 beforeEach(() => {
   vi.restoreAllMocks();
   vi.unstubAllEnvs();
+  sessionStorage.clear();
+  localStorage.clear();
   vi.stubEnv("VITE_DEMO_MODE", "sandbox");
   vi.stubEnv("VITE_SANDBOX_MODE", "1");
   vi.stubGlobal("fetch", vi.fn(() =>
@@ -136,6 +138,137 @@ describe("login page polish", () => {
       String(url).includes("/api/v1/auth/token/")
     );
     expect(tokenCalls.length).toBe(0);
+  });
+
+
+  it("verifies the selected production role against the authenticated school context", async () => {
+    vi.unstubAllEnvs();
+    vi.stubEnv("VITE_DEMO_MODE", "production");
+    vi.stubEnv("VITE_SANDBOX_MODE", "0");
+    vi.stubEnv("VITE_API_BASE_URL", "https://api.example.test");
+
+    const fetchMock = vi.fn((url) => {
+      if (String(url).endsWith("/api/v1/auth/token/")) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({ access: "prod-token", refresh: "refresh-token" }),
+        });
+      }
+      if (String(url).endsWith("/api/system/whoami/")) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({
+            user: { school_id: "19801b59-8c05-4c84-9312-5d792e4e839d" },
+          }),
+        });
+      }
+      if (String(url).endsWith("/api/v1/dashboards/me/")) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({
+            school_id: "19801b59-8c05-4c84-9312-5d792e4e839d",
+            roles: ["TEACHER"],
+          }),
+        });
+      }
+      return Promise.resolve({ ok: false, json: () => Promise.resolve({}) });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    vi.resetModules();
+    const { default: LoginPage } = await import("../pages/LoginPage.jsx");
+    render(<LoginPage />);
+
+    fireEvent.change(screen.getByLabelText("Role"), { target: { value: "teacher" } });
+    fireEvent.change(screen.getByLabelText("Email"), { target: { value: "teacher@example.test" } });
+    fireEvent.change(screen.getByLabelText("Password"), { target: { value: "ValidPass1!" } });
+    fireEvent.click(screen.getByRole("button", { name: "Sign In" }));
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith(
+        "https://api.example.test/api/system/whoami/",
+        expect.objectContaining({
+          method: "GET",
+          headers: expect.objectContaining({
+            Authorization: "Bearer prod-token",
+          }),
+        }),
+      );
+      expect(fetchMock).toHaveBeenCalledWith(
+        "https://api.example.test/api/v1/dashboards/me/",
+        expect.objectContaining({
+          method: "GET",
+          headers: expect.objectContaining({
+            Authorization: "Bearer prod-token",
+            "X-School-Id": "19801b59-8c05-4c84-9312-5d792e4e839d",
+          }),
+        }),
+      );
+    });
+  });
+
+  it("does not expose a browser-selectable school in production", async () => {
+    vi.unstubAllEnvs();
+    vi.stubEnv("VITE_DEMO_MODE", "production");
+    vi.stubEnv("VITE_SANDBOX_MODE", "0");
+
+    vi.resetModules();
+    const { default: LoginPage } = await import("../pages/LoginPage.jsx");
+    render(<LoginPage />);
+
+    expect(screen.queryByLabelText("School")).toBeNull();
+    expect(
+      screen.getByText("School context is verified from your authenticated account and cannot be selected in the browser.")
+    ).toBeTruthy();
+  });
+
+  it("rejects a production role selection that the server did not assign", async () => {
+    vi.unstubAllEnvs();
+    vi.stubEnv("VITE_DEMO_MODE", "production");
+    vi.stubEnv("VITE_SANDBOX_MODE", "0");
+    vi.stubEnv("VITE_API_BASE_URL", "https://api.example.test");
+
+    const fetchMock = vi.fn((url) => {
+      if (String(url).endsWith("/api/v1/auth/token/")) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({ access: "prod-token", refresh: "refresh-token" }),
+        });
+      }
+      if (String(url).endsWith("/api/system/whoami/")) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({
+            user: { school_id: "19801b59-8c05-4c84-9312-5d792e4e839d" },
+          }),
+        });
+      }
+      if (String(url).endsWith("/api/v1/dashboards/me/")) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({
+            school_id: "19801b59-8c05-4c84-9312-5d792e4e839d",
+            roles: ["TEACHER"],
+          }),
+        });
+      }
+      return Promise.resolve({ ok: false, json: () => Promise.resolve({}) });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    vi.resetModules();
+    const { default: LoginPage } = await import("../pages/LoginPage.jsx");
+    render(<LoginPage />);
+
+    fireEvent.change(screen.getByLabelText("Role"), { target: { value: "head_of_school" } });
+    fireEvent.change(screen.getByLabelText("Email"), { target: { value: "teacher@example.test" } });
+    fireEvent.change(screen.getByLabelText("Password"), { target: { value: "ValidPass1!" } });
+    fireEvent.click(screen.getByRole("button", { name: "Sign In" }));
+
+    await waitFor(() => {
+      expect(screen.getByText("The selected role is not assigned to this account for your authenticated school.")).toBeTruthy();
+    });
+    expect(sessionStorage.getItem("crown.jwt.access")).toBeNull();
   });
 
   it("surfaces the approved-link message when the sandbox invite is required", async () => {
