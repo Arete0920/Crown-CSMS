@@ -32,6 +32,8 @@ class ImmutableMoneyMixin:
     IMMUTABLE_FIELDS = ()
 
     def _immutable_check(self, *, using):
+        if self.amount is None or self.amount <= Decimal("0.00"):
+            raise ValidationError({"amount": "Financial fact amount must be greater than zero."})
         if self.account_id and self.account.school_id != self.school_id:
             raise ValidationError({"account": "Financial fact and account must belong to the same school."})
         if not self.pk:
