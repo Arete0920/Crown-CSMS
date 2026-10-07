@@ -22,6 +22,9 @@ jobs:
         with:
           persist-credentials: false
           fetch-depth: 0
+      - name: Prove supply-chain verifier rejection paths
+        run: python tools/tests/test_supply_chain_verifiers.py
+
       - name: Enforce dependency admission
         env:
           CROWN_BASE_SHA: ${{ github.event.pull_request.base.sha }}
