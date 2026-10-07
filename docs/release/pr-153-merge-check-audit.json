@@ -36,7 +36,9 @@
     "branch_protection_read": "403 Resource not accessible by integration",
     "rulesets_at_audit": [],
     "historical_rulesets": "UNVERIFIED",
-    "stored_export": "docs/release/branch-protection-export.json targets tcmegahan/Crown2026; not admissible for Crown-CSMS merge-time requirements"
+    "stored_export": "docs/release/branch-protection-export.json targets tcmegahan/Crown2026; not admissible for Crown-CSMS merge-time requirements",
+    "current_rule_compatibility": "All 16 currently required contexts were successful before merge; cancelled pytest-internal is optional under the observed live rule.",
+    "historical_protection_search": "Authenticated personal security log returned no matching events for repo:Arete0920/Crown-CSMS action:protected_branch, both for October 6-7 and without date restriction. This is not proof that protections were unchanged; merge-time settings remain UNVERIFIED."
   },
   "current_main_snapshot": {
     "sha": "6340022a3b206e495e951d481d83f0cfffbb6374",
@@ -44,17 +46,165 @@
     "success": 32,
     "failure": 1,
     "in_progress": 1,
-    "failed_check": "Sandbox Ready Evidence",
+    "failed_check": "Sandbox Ready Evidence (NOT_VERIFIED; failure)",
     "running_check": "pytest-internal",
-    "fully_green": false
+    "fully_green": false,
+    "snapshot_boundary": "Earlier snapshot only; main advanced to 2568eacdde05465d30ae119ecd67170618b044af during audit. New-head verification was queued/running."
   },
   "repair": {
     "scope": "Raise Tests pytest-internal bounded job timeout from 30 to 45 minutes; preserve suite, pipefail, check name, triggers and mandatory log artifact.",
     "governance_settings_changed": false
   },
   "remaining_evidence": [
-    "Merge-time branch-protection required contexts and enforcement/bypass settings.",
-    "Protection change history spanning the merge, or a contemporaneous settings export.",
+    "A contemporaneous protection snapshot or authoritative historical change evidence to settle merge-time compliance.",
     "Terminal results for the repair PR and current main."
-  ]
+  ],
+  "live_protection_observation": {
+    "observed_at": "2026-10-07T11:05:00Z",
+    "source": "Authenticated browser settings",
+    "url": "https://github.com/Arete0920/Crown-CSMS/settings/branch_protection_rules/84210754",
+    "rule_id": 84210754,
+    "pattern": "main",
+    "required_pull_request": true,
+    "required_approving_reviews": 0,
+    "strict_required_status_checks": true,
+    "enforce_administrators": true,
+    "required_conversation_resolution": true,
+    "allow_force_pushes": false,
+    "allow_deletions": false,
+    "required_contexts": [
+      "Analyze (javascript-typescript)",
+      "Analyze (python)",
+      "Release authority gates",
+      "contract-gate",
+      "backend-gate",
+      "backend-pip-audit",
+      "gitleaks",
+      "dashboards-build-gate",
+      "dependency-review",
+      "frontend-npm-audit",
+      "schema-governance",
+      "pytest-gate",
+      "release-verify",
+      "repository-policy",
+      "wallet-npm-audit",
+      "test"
+    ],
+    "expected_app": "GitHub Actions",
+    "pytest_internal_required": false,
+    "head_check_mapping": [
+      {
+        "name": "Analyze (javascript-typescript)",
+        "job_id": 112606628438,
+        "conclusion": "success",
+        "completed_at": "2026-10-07T03:05:34Z",
+        "url": "https://github.com/Arete0920/Crown-CSMS/actions/runs/37563733904/job/112606628438"
+      },
+      {
+        "name": "Analyze (python)",
+        "job_id": 112606628298,
+        "conclusion": "success",
+        "completed_at": "2026-10-07T03:05:31Z",
+        "url": "https://github.com/Arete0920/Crown-CSMS/actions/runs/37563733904/job/112606628298"
+      },
+      {
+        "name": "Release authority gates",
+        "job_id": 112606628737,
+        "conclusion": "success",
+        "completed_at": "2026-10-07T02:58:59Z",
+        "url": "https://github.com/Arete0920/Crown-CSMS/actions/runs/37563734074/job/112606628737"
+      },
+      {
+        "name": "contract-gate",
+        "job_id": 112607648978,
+        "conclusion": "success",
+        "completed_at": "2026-10-07T03:13:24Z",
+        "url": "https://github.com/Arete0920/Crown-CSMS/actions/runs/37563733857/job/112607648978"
+      },
+      {
+        "name": "backend-gate",
+        "job_id": 112606632759,
+        "conclusion": "success",
+        "completed_at": "2026-10-07T02:55:39Z",
+        "url": "https://github.com/Arete0920/Crown-CSMS/actions/runs/37563734165/job/112606632759"
+      },
+      {
+        "name": "backend-pip-audit",
+        "job_id": 112607968898,
+        "conclusion": "success",
+        "completed_at": "2026-10-07T03:20:07Z",
+        "url": "https://github.com/Arete0920/Crown-CSMS/actions/runs/37563733896/job/112607968898"
+      },
+      {
+        "name": "gitleaks",
+        "job_id": 112607800289,
+        "conclusion": "success",
+        "completed_at": "2026-10-07T03:09:06Z",
+        "url": "https://github.com/Arete0920/Crown-CSMS/actions/runs/37563733973/job/112607800289"
+      },
+      {
+        "name": "dashboards-build-gate",
+        "job_id": 112606632141,
+        "conclusion": "success",
+        "completed_at": "2026-10-07T03:01:45Z",
+        "url": "https://github.com/Arete0920/Crown-CSMS/actions/runs/37563734058/job/112606632141"
+      },
+      {
+        "name": "dependency-review",
+        "job_id": 112606665731,
+        "conclusion": "success",
+        "completed_at": "2026-10-07T02:53:47Z",
+        "url": "https://github.com/Arete0920/Crown-CSMS/actions/runs/37563733827/job/112606665731"
+      },
+      {
+        "name": "frontend-npm-audit",
+        "job_id": 112607968881,
+        "conclusion": "success",
+        "completed_at": "2026-10-07T03:15:14Z",
+        "url": "https://github.com/Arete0920/Crown-CSMS/actions/runs/37563733896/job/112607968881"
+      },
+      {
+        "name": "schema-governance",
+        "job_id": 112606632438,
+        "conclusion": "success",
+        "completed_at": "2026-10-07T02:55:49Z",
+        "url": "https://github.com/Arete0920/Crown-CSMS/actions/runs/37563733928/job/112606632438"
+      },
+      {
+        "name": "pytest-gate",
+        "job_id": 112606631575,
+        "conclusion": "success",
+        "completed_at": "2026-10-07T03:01:03Z",
+        "url": "https://github.com/Arete0920/Crown-CSMS/actions/runs/37563733908/job/112606631575"
+      },
+      {
+        "name": "release-verify",
+        "job_id": 112606631993,
+        "conclusion": "success",
+        "completed_at": "2026-10-07T02:56:46Z",
+        "url": "https://github.com/Arete0920/Crown-CSMS/actions/runs/37563734046/job/112606631993"
+      },
+      {
+        "name": "repository-policy",
+        "job_id": 112606631578,
+        "conclusion": "success",
+        "completed_at": "2026-10-07T02:54:40Z",
+        "url": "https://github.com/Arete0920/Crown-CSMS/actions/runs/37563734012/job/112606631578"
+      },
+      {
+        "name": "wallet-npm-audit",
+        "job_id": 112607968721,
+        "conclusion": "success",
+        "completed_at": "2026-10-07T03:13:50Z",
+        "url": "https://github.com/Arete0920/Crown-CSMS/actions/runs/37563733896/job/112607968721"
+      },
+      {
+        "name": "test",
+        "job_id": 112608251151,
+        "conclusion": "success",
+        "completed_at": "2026-10-07T03:18:54Z",
+        "url": "https://github.com/Arete0920/Crown-CSMS/actions/runs/37563733872/job/112608251151"
+      }
+    ]
+  }
 }
