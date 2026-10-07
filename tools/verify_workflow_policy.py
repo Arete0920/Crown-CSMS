@@ -202,6 +202,26 @@ def check_file(path: pathlib.Path) -> tuple[list[str], str | None, str | None]:
 def main() -> int:
     targets = [pathlib.Path(p).resolve() for p in sys.argv[1:]]
     all_errors: list[str] = []
+
+    active_workflows = {path.name for path in WORKFLOWS.glob("*.yml")}
+    unexpected = sorted(active_workflows - CANONICAL_WORKFLOW_FILES)
+    missing = sorted(CANONICAL_WORKFLOW_FILES - active_workflows)
+    if unexpected:
+        all_errors.append(
+            "unexpected top-level workflows outside the canonical inventory: "
+            + ", ".join(unexpected)
+        )
+    if missing:
+        all_errors.append(
+            "canonical workflow inventory is missing expected files: "
+            + ", ".join(missing)
+        )
+    if len(active_workflows) != len(CANONICAL_WORKFLOW_FILES):
+        all_errors.append(
+            f"workflow count {len(active_workflows)} does not match canonical count "
+            f"{len(CANONICAL_WORKFLOW_FILES)}"
+        )
+
     names: dict[str, pathlib.Path] = {}
     groups: dict[str, pathlib.Path] = {}
     files = targets if targets else sorted(WORKFLOWS.glob("*.yml"))
