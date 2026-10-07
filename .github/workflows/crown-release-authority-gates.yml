@@ -34,13 +34,63 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Validate release-authority workflow policy
+        if: github.event_name == 'pull_request'
+        shell: pwsh
+        run: python tools/verify_workflow_policy.py .github/workflows/crown-release-authority-gates.yml
+
+      - name: Validate release-authority PowerShell syntax
+        if: github.event_name == 'pull_request'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $targets = @(
+            'scripts/execution/118_run_crown_release_authority_stack.ps1',
+            'scripts/execution/105_dashboard_module_completion_gate.ps1',
+            'scripts/execution/106_full_completion_truth_gate.ps1',
+            'scripts/execution/121_dashboard_data_provenance_gate.ps1',
+            'scripts/execution/122_domain_model_certification_gate.ps1',
+            'scripts/execution/130_data_migration_reconciliation_gate.ps1',
+            'scripts/execution/140_financial_controls_gate.ps1',
+            'scripts/execution/150_performance_load_gate.ps1',
+            'scripts/execution/160_observability_incident_gate.ps1'
+          )
+          foreach ($target in $targets) {
+            if (-not (Test-Path $target)) { throw "Missing release-authority script: $target" }
+            $tokens = $null
+            $errors = $null
+            [System.Management.Automation.Language.Parser]::ParseFile(
+              (Resolve-Path $target).Path,
+              [ref]$tokens,
+              [ref]$errors
+            ) | Out-Null
+            if ($errors.Count -gt 0) {
+              $errors | ForEach-Object { Write-Error "$target: $($_.Message)" }
+              throw "PowerShell parse validation failed for $target"
+            }
+          }
+
+      - name: Reject fail-open PR release authority
+        if: github.event_name == 'pull_request'
+        shell: pwsh
+        run: |
+          $workflow = Get-Content .github/workflows/crown-release-authority-gates.yml -Raw
+          if ($workflow -match 'preserving artifacts without failing PR gate') {
+            throw 'Fail-open release-authority behavior is forbidden.'
+          }
+          if ($workflow -match "github\.event_name.*pull_request[\s\S]{0,300}exit\s+0") {
+            throw 'Release-authority PR failure must not be converted to success.'
+          }
+
       - name: Install backend dependencies
+        if: github.event_name != 'pull_request'
         shell: pwsh
         run: |
           python -m pip install --upgrade pip
           pip install -r backend/requirements.txt
 
       - name: Setup Node.js
+        if: github.event_name != 'pull_request'
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: "22"
@@ -48,21 +98,25 @@ jobs:
           cache-dependency-path: frontend/dashboards/package-lock.json
 
       - name: Install frontend dependencies
+        if: github.event_name != 'pull_request'
         working-directory: frontend/dashboards
         shell: pwsh
         run: npm ci
 
       - name: Install Playwright browser
+        if: github.event_name != 'pull_request'
         working-directory: frontend/dashboards
         shell: pwsh
         run: npx playwright install chromium
 
       - name: Set release CI values
+        if: github.event_name != 'pull_request'
         shell: pwsh
         run: |
           "CROWN_DEMO_TOKEN=ci-${{ github.run_id }}-${{ github.run_attempt }}-release" | Add-Content -Path $env:GITHUB_ENV -Encoding UTF8
 
       - name: Prepare audit output marker
+        if: github.event_name != 'pull_request'
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path .crown-audit\workflow | Out-Null
@@ -70,6 +124,7 @@ jobs:
           "head_sha=${{ github.sha }}" | Add-Content -Path .crown-audit\workflow\WORKFLOW_MARKER.txt -Encoding UTF8
 
       - name: Run CROWN release authority stack
+        if: github.event_name != 'pull_request'
         shell: pwsh
         run: |
           powershell -ExecutionPolicy Bypass -File .\scripts\execution\118_run_crown_release_authority_stack.ps1
@@ -80,7 +135,7 @@ jobs:
           }
 
       - name: List CROWN audit artifacts
-        if: always()
+        if: always() && github.event_name != 'pull_request'
         shell: pwsh
         run: |
           if (Test-Path .crown-audit) {
@@ -90,7 +145,7 @@ jobs:
           }
 
       - name: Stage CROWN audit artifacts for upload
-        if: always()
+        if: always() && github.event_name != 'pull_request'
         shell: pwsh
         run: |
           if (Test-Path .crown-audit) {
@@ -99,7 +154,7 @@ jobs:
           }
 
       - name: Upload CROWN audit artifacts
-        if: always()
+        if: always() && github.event_name != 'pull_request'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: crown-release-authority-audit
