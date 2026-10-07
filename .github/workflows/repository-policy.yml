@@ -12,8 +12,11 @@ on:
       - "scripts/ci/pr_hygiene_gate.py"
       - "infra/**"
       - "Dockerfile*"
+      - "**/Dockerfile*"
       - "docker-compose*.yml"
+      - "**/docker-compose*.yml"
       - "docker-compose*.yaml"
+      - "**/docker-compose*.yaml"
 
 permissions:
   contents: read
@@ -40,6 +43,9 @@ jobs:
 
       - name: Install policy dependencies
         run: python -m pip install --upgrade pip pyyaml
+
+      - name: Verify Repository Policy security-path contract
+        run: python tools/ci/check_repository_policy_security_paths.py
 
       - name: Enforce competitor-name hygiene
         run: python scripts/ci/competitor_name_hygiene.py
@@ -90,7 +96,9 @@ jobs:
             HEAD_SHA="${{ github.sha }}"
           fi
           git diff --name-only "$BASE_SHA" "$HEAD_SHA" -- \
-            'infra/**' 'Dockerfile*' 'docker-compose*.yml' 'docker-compose*.yaml' \
+            'infra/**' 'Dockerfile*' '**/Dockerfile*' \
+            'docker-compose*.yml' '**/docker-compose*.yml' \
+            'docker-compose*.yaml' '**/docker-compose*.yaml' \
             '.github/workflows/*.yml' '.github/workflows/*.yaml' \
             > changed-security-config.txt || true
           if [ -s changed-security-config.txt ]; then
