@@ -11,6 +11,7 @@ from dataclasses import dataclass
 from datetime import date
 from enum import Enum
 from hashlib import sha256
+import hmac
 import json
 import re
 from typing import Iterable, Sequence
@@ -76,6 +77,7 @@ class SourceEvidence:
     provenance_tier: str
     review_status: str
     rights_status: str
+    rights_basis: str
     privacy_classification: str
     tenant_scope: str
     role_scope: tuple[str, ...] = ()
@@ -83,6 +85,7 @@ class SourceEvidence:
     expires_on: date | None = None
     reviewed_on: date | None = None
     supersedes: str = ""
+    superseded_by: str = ""
 
 
 @dataclass(frozen=True, slots=True)
@@ -152,21 +155,29 @@ def build_cache_key(
     corpus_version: str,
     policy_version: str,
     question: str,
+    cache_key_secret: str | bytes,
 ) -> str:
-    """Build a deterministic cache key without retaining raw question text."""
+    """Build a deterministic keyed cache identifier without exposing raw question text."""
 
-    normalized_question = " ".join(str(question).split()).strip().casefold()
-    question_fingerprint = sha256(normalized_question.encode("utf-8")).hexdigest()
+    if isinstance(cache_key_secret, str):
+        secret = cache_key_secret.encode("utf-8")
+    else:
+        secret = bytes(cache_key_secret)
+    if not secret:
+        raise ValueError("cache_key_secret is required")
+
     key_material = {
         "corpus_version": str(corpus_version).strip(),
         "policy_version": str(policy_version).strip(),
-        "question_fingerprint": question_fingerprint,
+        "question": " ".join(str(question).split()).strip().casefold(),
         "role": str(role).strip().upper(),
         "tenant_id": str(tenant_id).strip(),
         "topic": str(topic).strip().casefold(),
     }
-    digest = sha256(
-        json.dumps(key_material, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    digest = hmac.new(
+        secret,
+        json.dumps(key_material, sort_keys=True, separators=(",", ":")).encode("utf-8"),
+        sha256,
     ).hexdigest()
     return f"solomon:retrieval:v1:{digest}"
 
@@ -197,8 +208,12 @@ def validate_source_evidence(
         reasons.append("unapproved_review_status")
     if source.rights_status not in APPROVED_RIGHTS_STATUSES:
         reasons.append("unapproved_rights_status")
+    if not source.rights_basis.strip():
+        reasons.append("missing_rights_basis")
     if source.privacy_classification not in APPROVED_PRIVACY_CLASSES:
         reasons.append("restricted_privacy_classification")
+    if source.superseded_by.strip():
+        reasons.append("superseded_source")
 
     normalized_scope = source.tenant_scope.strip()
     if normalized_scope != "global" and normalized_scope != str(tenant_id).strip():
