@@ -8,6 +8,7 @@ from django.contrib.auth.hashers import check_password, make_password
 
 from crown_api.auth_models import CrownUser
 from crown_api.auth_middleware import require_auth
+from crown_api.auth_rate_limit import check_auth_rate_limit
 from crown_api.jwt_utils import build_access_token, build_refresh_token, decode_refresh
 from crown_api.request_parsing import parse_json_object
 
@@ -28,6 +29,12 @@ def login(request):
 
     if not email or not password:
         return JsonResponse({"ok": False, "error": "missing_credentials"}, status=400)
+
+    rate = check_auth_rate_limit(request, scope="crown-login", identity=email)
+    if not rate.allowed:
+        response = JsonResponse({"ok": False, "error": "rate_limited"}, status=429)
+        response["Retry-After"] = str(rate.retry_after_seconds)
+        return response
 
     user = CrownUser.objects.filter(email=email, is_active=True).first()
     if not user:
