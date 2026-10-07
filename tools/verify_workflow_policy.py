@@ -46,6 +46,7 @@ CANONICAL_WORKFLOW_FILES = {
     "prod-health-watch.yml",
     "prod-immutable-rollback-drill.yml",
     "prod-rollback-on-failure.yml",
+    "production-certification-evidence.yml",
     "pytest-gate.yml",
     "recovery-control-drill.yml",
     "release-verify.yml",
