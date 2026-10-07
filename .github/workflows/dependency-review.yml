@@ -21,6 +21,12 @@ jobs:
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
         with:
           persist-credentials: false
+          fetch-depth: 0
+      - name: Enforce dependency admission
+        env:
+          CROWN_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: python tools/verify_dependency_admission.py
+
       - name: Review changed dependencies
         uses: actions/dependency-review-action@05fe4576374b728f0c523d6a13d64c25081e0803
         with:
