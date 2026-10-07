@@ -5,6 +5,7 @@ All /api/v1/* and /api/* routes resolve through here.
 from importlib.util import find_spec
 
 from django.urls import include, path
+from rest_framework.response import Response
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView,
@@ -24,6 +25,7 @@ from applications.views_admissions_identity import (
     admissions_lifecycle_chain_update,
 )
 from crown_api.admissions_runtime import admissions_summary
+from crown_api.auth_rate_limit import check_auth_rate_limit
 from crown_api.data_quality_views import school_data_quality
 from crown_api.system_views import SeedStatusView, demo_reset_view, diagnose_db_tables_view, fix_schema_drift_view
 from crown_api.ops_views import ensure_ci_user, demo_school
@@ -42,6 +44,29 @@ def _optional_module_exists(module_path: str) -> bool:
         return False
 
 
+class RateLimitedTokenObtainPairView(TokenObtainPairView):
+    """SimpleJWT login with fixed-window abuse protection."""
+
+    def post(self, request, *args, **kwargs):
+        identity = str(
+            request.data.get("username")
+            or request.data.get("email")
+            or "unknown"
+        )
+        rate = check_auth_rate_limit(
+            request,
+            scope="simplejwt-login",
+            identity=identity,
+        )
+        if not rate.allowed:
+            return Response(
+                {"detail": "Too many authentication attempts.", "code": "rate_limited"},
+                status=429,
+                headers={"Retry-After": str(rate.retry_after_seconds)},
+            )
+        return super().post(request, *args, **kwargs)
+
+
 urlpatterns = [
     # DEV-only ops endpoints (must come early before includes)
     path("system/ensure-ci-user/", ensure_ci_user, name="system-ensure-ci-user"),
@@ -49,7 +74,7 @@ urlpatterns = [
 
     # Authentication
     path("sandbox/", include("sandbox_demo.urls")),
-    path("auth/token/", TokenObtainPairView.as_view(), name="v1_token_obtain_pair"),
+    path("auth/token/", RateLimitedTokenObtainPairView.as_view(), name="v1_token_obtain_pair"),
     path("auth/token/refresh/", TokenRefreshView.as_view(), name="v1_token_refresh"),
 
     # Admissions funnel (frozen contract)
