@@ -17,6 +17,7 @@ from solomon.retrieval import (
 
 
 GOOD_DIGEST = "a" * 64
+CACHE_SECRET = "test-only-cache-secret"
 
 
 def evidence(**overrides):
@@ -28,6 +29,7 @@ def evidence(**overrides):
         "provenance_tier": "P1",
         "review_status": "APPROVED_CANONICAL",
         "rights_status": "owned",
+        "rights_basis": "CROWN-owned canonical policy",
         "privacy_classification": "internal",
         "tenant_scope": "school-1",
         "role_scope": ("HEAD_OF_SCHOOL", "SUPPORT"),
@@ -103,6 +105,16 @@ class SolomonRetrievalEvidenceTests(SimpleTestCase):
         self.assertIn("unapproved_rights_status", result.reasons)
         self.assertIn("expired", result.reasons)
 
+    def test_missing_rights_basis_fails(self):
+        result = validate_source_evidence(
+            evidence(rights_basis=""),
+            tenant_id="school-1",
+            role="HEAD_OF_SCHOOL",
+            as_of=date(2026, 10, 6),
+        )
+        self.assertFalse(result.valid)
+        self.assertIn("missing_rights_basis", result.reasons)
+
     def test_missing_review_date_fails(self):
         result = validate_source_evidence(
             evidence(reviewed_on=None),
@@ -122,6 +134,16 @@ class SolomonRetrievalEvidenceTests(SimpleTestCase):
         )
         self.assertFalse(result.valid)
         self.assertIn("role_scope_mismatch", result.reasons)
+
+    def test_superseded_source_fails(self):
+        result = validate_source_evidence(
+            evidence(superseded_by="C1-GOV-0042"),
+            tenant_id="school-1",
+            role="HEAD_OF_SCHOOL",
+            as_of=date(2026, 10, 6),
+        )
+        self.assertFalse(result.valid)
+        self.assertIn("superseded_source", result.reasons)
 
 
 class SolomonAnswerAuthorityGateTests(SimpleTestCase):
@@ -194,6 +216,7 @@ class SolomonAnswerAuthorityGateTests(SimpleTestCase):
             corpus_version="7",
             policy_version="2",
             question=question,
+            cache_key_secret=CACHE_SECRET,
         )
         second = build_cache_key(
             tenant_id="school-1",
@@ -202,7 +225,33 @@ class SolomonAnswerAuthorityGateTests(SimpleTestCase):
             corpus_version="7",
             policy_version="2",
             question="  What   is our approved re-enrollment policy? ",
+            cache_key_secret=CACHE_SECRET,
         )
         self.assertEqual(first, second)
         self.assertNotIn("re-enrollment", first)
         self.assertTrue(first.startswith("solomon:retrieval:v1:"))
+
+    def test_cache_key_requires_secret(self):
+        with self.assertRaises(ValueError):
+            build_cache_key(
+                tenant_id="school-1",
+                role="HEAD_OF_SCHOOL",
+                topic="reenrollment",
+                corpus_version="7",
+                policy_version="2",
+                question="What is our policy?",
+                cache_key_secret="",
+            )
+
+    def test_cache_key_changes_with_secret(self):
+        common = {
+            "tenant_id": "school-1",
+            "role": "HEAD_OF_SCHOOL",
+            "topic": "reenrollment",
+            "corpus_version": "7",
+            "policy_version": "2",
+            "question": "What is our policy?",
+        }
+        first = build_cache_key(**common, cache_key_secret="secret-a")
+        second = build_cache_key(**common, cache_key_secret="secret-b")
+        self.assertNotEqual(first, second)
