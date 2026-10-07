@@ -10,6 +10,10 @@ on:
       - "tools/verify_workflow_policy.py"
       - "tools/ci/**"
       - "scripts/ci/pr_hygiene_gate.py"
+      - "infra/**"
+      - "Dockerfile*"
+      - "docker-compose*.yml"
+      - "docker-compose*.yaml"
 
 permissions:
   contents: read
@@ -72,6 +76,38 @@ jobs:
           else
             echo "changed=false" >> "$GITHUB_OUTPUT"
           fi
+
+      - name: Resolve security-sensitive configuration changes
+        id: security_config_changes
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE_SHA="${{ github.event.pull_request.base.sha }}"
+            HEAD_SHA="${{ github.event.pull_request.head.sha }}"
+          else
+            BASE_SHA="${{ github.event.before }}"
+            HEAD_SHA="${{ github.sha }}"
+          fi
+          git diff --name-only "$BASE_SHA" "$HEAD_SHA" -- \
+            'infra/**' 'Dockerfile*' 'docker-compose*.yml' 'docker-compose*.yaml' \
+            '.github/workflows/*.yml' '.github/workflows/*.yaml' \
+            > changed-security-config.txt || true
+          if [ -s changed-security-config.txt ]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Enforce infrastructure and configuration security
+        if: steps.security_config_changes.outputs.changed == 'true'
+        uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # v0.35.0
+        with:
+          scan-type: 'config'
+          scan-ref: '.'
+          severity: 'HIGH,CRITICAL'
+          exit-code: '1'
+          format: 'table'
 
       - name: Parse workflow YAML
         if: steps.workflow_changes.outputs.changed == 'true'
