@@ -87,6 +87,22 @@ REPO_HYGIENE_ALLOWED_EXACT = {
     "frontend/dashboards/AG" + "ENTS.md",
 }
 
+WORKFLOW_CONSOLIDATION_MARKER = "CROWN_WORKFLOW_CONSOLIDATION_APPROVED"
+WORKFLOW_CONSOLIDATION_TITLE = "ci: consolidate GitHub Actions workflow architecture"
+WORKFLOW_CONSOLIDATION_BRANCH = "maintenance/workflow-consolidation-20261006"
+WORKFLOW_CONSOLIDATION_MAX_CHANGED_FILES = 110
+WORKFLOW_CONSOLIDATION_MAX_ADDITIONS = 1000
+WORKFLOW_CONSOLIDATION_ALLOWED_PREFIXES = (
+    ".github/workflows/",
+    "backend/core/tests/",
+    "backend/crown_api/tests/",
+    "backend/tests/",
+    "docs/release/",
+    "scripts/execution/",
+    "tests/",
+    "tools/",
+)
+
 
 @dataclass
 class FileStat:
@@ -211,6 +227,52 @@ def is_repo_hygiene_exception(files: list[FileStat], pull_request: dict[str, obj
     return not reasons, reasons
 
 
+def is_workflow_consolidation_exception(files: list[FileStat], pull_request: dict[str, object], body: str) -> tuple[bool, list[str]]:
+    """Allow one audited, deletion-heavy workflow consolidation without weakening normal PR limits."""
+    reasons: list[str] = []
+    title = pull_request.get("title")
+    head = pull_request.get("head")
+    branch = head.get("ref") if isinstance(head, dict) else None
+
+    if WORKFLOW_CONSOLIDATION_MARKER not in body:
+        reasons.append(f"missing marker {WORKFLOW_CONSOLIDATION_MARKER}")
+    if title != WORKFLOW_CONSOLIDATION_TITLE:
+        reasons.append("pull request title does not match the approved workflow-consolidation title")
+    if branch != WORKFLOW_CONSOLIDATION_BRANCH:
+        reasons.append("pull request branch does not match the approved workflow-consolidation branch")
+    if len(files) > WORKFLOW_CONSOLIDATION_MAX_CHANGED_FILES:
+        reasons.append(
+            f"changed file count {len(files)} exceeds workflow-consolidation limit "
+            f"{WORKFLOW_CONSOLIDATION_MAX_CHANGED_FILES}"
+        )
+
+    additions = sum(file.additions for file in files)
+    deletions = sum(file.deletions for file in files)
+    if additions > WORKFLOW_CONSOLIDATION_MAX_ADDITIONS:
+        reasons.append(
+            f"added lines {additions} exceed workflow-consolidation limit "
+            f"{WORKFLOW_CONSOLIDATION_MAX_ADDITIONS}"
+        )
+    if deletions <= additions:
+        reasons.append("workflow-consolidation exception requires a deletion-heavy diff")
+
+    disallowed: list[str] = []
+    for file in files:
+        normalized = file.path.replace("\\", "/")
+        if normalized == "scripts/ci/pr_hygiene_gate.py":
+            continue
+        if normalized.startswith(WORKFLOW_CONSOLIDATION_ALLOWED_PREFIXES):
+            continue
+        disallowed.append(normalized)
+    if disallowed:
+        reasons.append(
+            "disallowed paths in workflow-consolidation exception: "
+            + ", ".join(sorted(disallowed))
+        )
+
+    return not reasons, reasons
+
+
 def main() -> int:
     base_ref = os.environ.get("CROWN_BASE_REF", "origin/main")
     pull_request = read_event_pull_request()
@@ -234,15 +296,23 @@ def main() -> int:
     body = read_event_body(pull_request)
     large_migration, large_migration_reasons = is_issue_1887_large_migration(files, pull_request, body)
     repo_hygiene, repo_hygiene_reasons = is_repo_hygiene_exception(files, pull_request, body)
+    workflow_consolidation, workflow_consolidation_reasons = is_workflow_consolidation_exception(
+        files, pull_request, body
+    )
 
-    if len(files) > MAX_CHANGED_FILES and not large_migration and not repo_hygiene:
+    if len(files) > MAX_CHANGED_FILES and not large_migration and not repo_hygiene and not workflow_consolidation:
         failures.append(f"changed file count {len(files)} exceeds limit {MAX_CHANGED_FILES}")
-    if total_additions > threshold and not large_migration and not repo_hygiene:
+    if total_additions > threshold and not large_migration and not repo_hygiene and not workflow_consolidation:
         failures.append(f"added lines {total_additions} exceed limit {threshold}")
     if LARGE_MIGRATION_MARKER in body and not large_migration:
         failures.extend(f"invalid issue #1887 large-migration waiver: {reason}" for reason in large_migration_reasons)
     if REPO_HYGIENE_MARKER in body and not repo_hygiene:
         failures.extend(f"invalid repository-hygiene exception: {reason}" for reason in repo_hygiene_reasons)
+    if WORKFLOW_CONSOLIDATION_MARKER in body and not workflow_consolidation:
+        failures.extend(
+            f"invalid workflow-consolidation exception: {reason}"
+            for reason in workflow_consolidation_reasons
+        )
 
     for f in files:
         normalized = f.path.replace("\\", "/")
@@ -279,6 +349,7 @@ def main() -> int:
     print(f"addition_limit={threshold}")
     print(f"issue_1887_large_migration={'yes' if large_migration else 'no'}")
     print(f"repository_hygiene_exception={'yes' if repo_hygiene else 'no'}")
+    print(f"workflow_consolidation_exception={'yes' if workflow_consolidation else 'no'}")
     print("")
     print("## Changed files")
     for f in files:
