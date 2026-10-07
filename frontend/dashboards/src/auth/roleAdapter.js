@@ -10,25 +10,38 @@ function parseStorageValue(raw) {
   }
 }
 
+function demoStorageEnabled() {
+  return Boolean(
+    import.meta.env.VITE_DEMO_MODE === "sandbox"
+    || import.meta.env.VITE_SANDBOX_MODE === "1"
+    || import.meta.env.VITE_WIZARD_CERTIFICATION === "1"
+  );
+}
+
 function readStorageValue(key) {
   if (typeof window === "undefined") return null;
 
   const sessionValue = parseStorageValue(sessionStorage.getItem(key));
   if (sessionValue) return sessionValue;
 
-  return parseStorageValue(localStorage.getItem(key));
+  return demoStorageEnabled() ? parseStorageValue(localStorage.getItem(key)) : null;
 }
 
 function collectSeededRoleValues() {
   if (typeof window === "undefined") return [];
 
-  return [
+  const values = [
     sessionStorage.getItem("crown.role"),
     sessionStorage.getItem("crown.active.role"),
-    localStorage.getItem("crown.role"),
-    localStorage.getItem("crown.active.role"),
-    localStorage.getItem("crown.demo.role"),
-  ].filter(Boolean);
+  ];
+  if (demoStorageEnabled()) {
+    values.push(
+      localStorage.getItem("crown.role"),
+      localStorage.getItem("crown.active.role"),
+      localStorage.getItem("crown.demo.role"),
+    );
+  }
+  return values.filter(Boolean);
 }
 
 export function getCurrentUserRoles() {
