@@ -22,6 +22,8 @@ Prepare CROWN for an independent SOC 2 examination by converting existing engine
 
 Required governance artifacts:
 
+The consolidated [Security Operating Policy](SECURITY_OPERATING_POLICY.md) supplies draft procedures for information security, risk, access, secure development/change management, vulnerability management, vendors, classification/handling, retention coordination, encryption, monitoring, privacy, workforce training, and acceptable use. Dedicated incident/support/recovery procedures remain linked below. Draft completion does not establish adoption or operation.
+
 - Information Security Policy
 - Access Control Policy
 - Secure Development / Change Management Policy
@@ -157,7 +159,7 @@ These mappings are preliminary Common Criteria family mappings for readiness pla
 | S21 | All in-scope | Type I CPA examination/report at specified date, if selected | Independent CPA | Auditor-agreed date | EXTERNAL_PENDING |
 | S22 | All in-scope | Type II recurring evidence and CPA examination/report, if selected | Independent CPA | Auditor-agreed period | EXTERNAL_PENDING |
 
-Draft operating procedures: [Incident response](INCIDENT_RESPONSE_POLICY.md), [Support access](SUPPORT_ACCESS_POLICY.md), and [Backup/restore](BACKUP_RESTORE_POLICY.md). They replace placeholders but do not establish approval or operational effectiveness.
+Draft operating procedures: [Incident response](INCIDENT_RESPONSE_POLICY.md), [Support access](SUPPORT_ACCESS_POLICY.md), and [Backup/restore](BACKUP_RESTORE_POLICY.md), together with the consolidated [Security Operating Policy](SECURITY_OPERATING_POLICY.md). They replace placeholders but do not establish approval or operational effectiveness.
 
 ### Initial risk triage
 
@@ -200,3 +202,7 @@ Do not calculate a completion percentage from draft documents alone. Report sepa
 7. Proceed to ISO/IEC 27001, FERPA, COPPA, HIPAA applicability, PCI/payment, and remaining jurisdictional obligations using shared verified evidence; each retains its own completion criteria.
 
 Official framework source: [AICPA Trust Services Criteria, 2017 with revised points of focus 2022](https://www.aicpa-cima.com/resources/download/2017-trust-services-criteria-with-revised-points-of-focus-2022).
+
+## Privacy documentation reconciliation — 2026-10-07
+
+COPPA_POSITION.md now defines applicability and authorization/consent procedures with verification criteria. DPA_TEMPLATE.md points to the reconciled substantive template. The DPA preserves CROWN's own COPPA obligations, adds FERPA direct-control support, and avoids postponing triggered incident notices until final confirmation. SUBPROCESSOR_REGISTER.md now explicitly distinguishes candidate categories from approved active vendors. These are documentation corrections; no legal approval, executed customer agreement, active-vendor approval, or runtime proof is asserted.
