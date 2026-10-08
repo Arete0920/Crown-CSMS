@@ -6,7 +6,7 @@ from rest_framework import serializers, status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
-from core.permissions import user_has_permission
+from core.permissions import permission_school_from_request, user_has_permission
 from households.models import Guardian, Student
 
 from .integrations import AftercareIntegrationError
@@ -76,7 +76,7 @@ def _has_permission(request, code: str) -> bool:
     user = getattr(request, "user", None)
     if not user or not getattr(user, "is_authenticated", False):
         return False
-    return user_has_permission(user, code, school=getattr(request, "school", None))
+    return user_has_permission(user, code, school=permission_school_from_request(request))
 
 
 def _guardian_can_view_student(request, *, school_id, student_id) -> bool:
