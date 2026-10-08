@@ -48,3 +48,7 @@ Those items remain blocked on explicit publisher authorization or a separately d
 ## Product Rule
 
 Do not describe Solomon as containing the complete BJU Press curriculum or complete BJU Press scope-and-sequence objective corpus until the authorization flag can truthfully be changed and the resulting corpus has passed provenance, coverage, and regression verification.
+
+## CI Verification Note
+
+PR validation must execute the repository's normal required checks on the exact head. A GitHub Actions attempt that terminates before any job step executes is infrastructure evidence, not application-test evidence, and must be rerun rather than bypassed.
