@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import replace
 from typing import Optional
 from uuid import UUID
 
@@ -68,13 +69,17 @@ def get_request_school_id(request, required: bool = True) -> Optional[UUID]:
     try:
         from core.models import School
 
-        if not School.objects.filter(pk=school_id).exists():
+        school = School.objects.filter(pk=school_id).first()
+        if school is None:
             raise NotFound({"detail": "Tenant not found"})
     except NotFound:
         raise
     except Exception as exc:
         raise NotFound({"detail": "Tenant not found"}) from exc
 
+    # Permission checks consume the school object, not only its identifier.
+    # Bind it only after header validation and cross-school authorization succeed.
+    bind_tenant_context(request, replace(context, school=school))
     return school_id
 
 

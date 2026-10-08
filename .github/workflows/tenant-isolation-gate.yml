@@ -2,9 +2,6 @@ name: Tenant Isolation Gate
 
 on:
   pull_request:
-    paths:
-      - backend/**
-      - .github/workflows/tenant-isolation-gate.yml
   push:
     branches:
       - main

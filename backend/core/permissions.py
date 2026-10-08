@@ -61,8 +61,18 @@ def require_permission(permission_code):
     def decorator(view_func):
         @wraps(view_func)
         def wrapper(request, *args, **kwargs):
+            user = getattr(request, "user", None)
+            if not user or not getattr(user, "is_authenticated", False) or not getattr(user, "is_active", True):
+                return JsonResponse({"detail": "Permission denied."}, status=403)
             school = getattr(request, "school", None)
             if school is None:
+                # Exempt non-API routes do not establish a tenant by borrowing
+                # a principal's role membership. Require an explicit school.
+                if not request.path.startswith("/api/") and not (
+                    request.META.get("HTTP_X_SCHOOL_ID")
+                    or request.META.get("HTTP_X_CROWN_SCHOOL_ID")
+                ):
+                    return JsonResponse({"detail": "Permission denied."}, status=403)
                 # Resolve explicit tenant context from the canonical request contract.
                 # A valid X-School-Id is authority context; absence of any resolvable
                 # school remains fail-closed and never falls back to cross-school roles.

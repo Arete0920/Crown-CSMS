@@ -103,3 +103,35 @@ class _prod_env:
 
     def __exit__(self, *_):
         os.environ.pop("ENVIRONMENT", None)
+
+
+@pytest.mark.parametrize("exception_class, expected_status", [
+    ("MissingSchoolContext", 400),
+    ("NotFound", 404),
+    ("PermissionDenied", 403),
+])
+@override_settings(DEBUG=False)
+def test_expected_api_denial_preserves_status(exception_class, expected_status):
+    from households.scoping import MissingSchoolContext
+    from rest_framework.exceptions import NotFound, PermissionDenied
+
+    exceptions = {
+        "MissingSchoolContext": MissingSchoolContext,
+        "NotFound": NotFound,
+        "PermissionDenied": PermissionDenied,
+    }
+    request = RequestFactory().get("/api/v1/admin/metrics/")
+    response = _make_middleware().process_exception(request, exceptions[exception_class]())
+    assert response.status_code == expected_status
+    assert json.loads(response.content)
+    assert response["X-Request-Id"]
+
+
+@override_settings(DEBUG=False)
+def test_server_api_exception_keeps_internal_detail_private():
+    from rest_framework.exceptions import APIException
+
+    request = RequestFactory().get("/api/v1/admin/metrics/")
+    response = _make_middleware().process_exception(request, APIException("private server detail"))
+    assert response.status_code == 500
+    assert b"private server detail" not in response.content
