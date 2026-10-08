@@ -45,7 +45,7 @@ class ApiExceptionMiddleware:
 
         # Shared tenant/permission helpers also run in ordinary Django views.
         # Preserve their intentional client denial instead of reporting a 500.
-        if isinstance(exception, APIException):
+        if isinstance(exception, APIException) and 400 <= exception.status_code < 500:
             detail = exception.detail
             payload = detail if isinstance(detail, (dict, list)) else {"detail": detail}
             response = JsonResponse(payload, safe=not isinstance(payload, list), status=exception.status_code)
