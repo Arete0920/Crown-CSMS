@@ -27,6 +27,7 @@ from applications.views_admissions_identity import (
 )
 from crown_api.admissions_runtime import admissions_summary
 from crown_api.auth_rate_limit import (
+    AuthRateLimitBackendUnavailable,
     check_auth_rate_limit,
     clear_auth_identity_failures,
     record_auth_failure,
@@ -49,6 +50,22 @@ def _optional_module_exists(module_path: str) -> bool:
         return False
 
 
+def _auth_rate_limit_unavailable_response(retry_after_seconds=60):
+    return Response(
+        {"detail": "Authentication throttling is temporarily unavailable.", "code": "auth_temporarily_unavailable"},
+        status=503,
+        headers={"Retry-After": str(retry_after_seconds)},
+    )
+
+
+def _record_auth_failure_or_response(request, *, scope, identity):
+    try:
+        record_auth_failure(request, scope=scope, identity=identity)
+    except AuthRateLimitBackendUnavailable:
+        return _auth_rate_limit_unavailable_response()
+    return None
+
+
 class RateLimitedTokenObtainPairView(TokenObtainPairView):
     """SimpleJWT login with fixed-window abuse protection."""
 
@@ -63,6 +80,8 @@ class RateLimitedTokenObtainPairView(TokenObtainPairView):
             scope="simplejwt-login",
             identity=identity,
         )
+        if not rate.backend_available:
+            return _auth_rate_limit_unavailable_response(rate.retry_after_seconds)
         if not rate.allowed:
             return Response(
                 {"detail": "Too many authentication attempts.", "code": "rate_limited"},
@@ -73,19 +92,23 @@ class RateLimitedTokenObtainPairView(TokenObtainPairView):
         try:
             response = super().post(request, *args, **kwargs)
         except APIException:
-            record_auth_failure(
+            unavailable = _record_auth_failure_or_response(
                 request,
                 scope="simplejwt-login",
                 identity=identity,
             )
+            if unavailable is not None:
+                return unavailable
             raise
 
         if response.status_code >= 400:
-            record_auth_failure(
+            unavailable = _record_auth_failure_or_response(
                 request,
                 scope="simplejwt-login",
                 identity=identity,
             )
+            if unavailable is not None:
+                return unavailable
         else:
             clear_auth_identity_failures(
                 request,
@@ -107,6 +130,8 @@ class RateLimitedTokenRefreshView(TokenRefreshView):
             identity_limit=20,
             ip_limit=100,
         )
+        if not rate.backend_available:
+            return _auth_rate_limit_unavailable_response(rate.retry_after_seconds)
         if not rate.allowed:
             return Response(
                 {"detail": "Too many refresh attempts.", "code": "rate_limited"},
@@ -117,19 +142,23 @@ class RateLimitedTokenRefreshView(TokenRefreshView):
         try:
             response = super().post(request, *args, **kwargs)
         except APIException:
-            record_auth_failure(
+            unavailable = _record_auth_failure_or_response(
                 request,
                 scope="simplejwt-refresh",
                 identity=identity,
             )
+            if unavailable is not None:
+                return unavailable
             raise
 
         if response.status_code >= 400:
-            record_auth_failure(
+            unavailable = _record_auth_failure_or_response(
                 request,
                 scope="simplejwt-refresh",
                 identity=identity,
             )
+            if unavailable is not None:
+                return unavailable
         else:
             clear_auth_identity_failures(
                 request,
