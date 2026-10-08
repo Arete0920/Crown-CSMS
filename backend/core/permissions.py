@@ -24,20 +24,17 @@ from rest_framework.permissions import BasePermission
 
 def user_has_permission(user, permission_code, school=None):
     """
-    Return True if `user` holds a role (optionally scoped to `school`) that
-    grants `permission_code`.
+    Return True only for an active user's grant in an explicit school.
 
-    `user` must be a UserAccount instance (the Crown custom auth model).
-    `school` is an optional School instance used to scope the role lookup to a
-    single tenant; when None, roles across all schools are checked.
+    Missing school context is not platform authorization. Platform controls must
+    use their own explicit authority rather than combining roles across schools.
     """
-    if not user.is_authenticated:
+    if not user or not user.is_authenticated or not getattr(user, "is_active", True) or school is None:
         return False
 
     # user.roles is the reverse FK from UserRole (role_code CharField → UserAccount).
     qs = user.roles.all()
-    if school is not None:
-        qs = qs.filter(school=school)
+    qs = qs.filter(school=school)
 
     role_codes = qs.values_list("role_code", flat=True)
     if not role_codes:
@@ -57,14 +54,25 @@ def require_permission(permission_code):
     View decorator that enforces a Crown permission gate.
 
     - Returns 403 JSON {"detail": "Permission denied."} on failure.
-    - School scope is picked up automatically from request.school (set by
-      TenantHeaderRequiredMiddleware for /api/v1/* routes).
+    - School scope is resolved from request.school or the canonical tenant
+      contract (including an explicit X-School-Id header).
     - Works with both function-based and class-based views (wrap dispatch()).
     """
     def decorator(view_func):
         @wraps(view_func)
         def wrapper(request, *args, **kwargs):
             school = getattr(request, "school", None)
+            if school is None:
+                # Resolve explicit tenant context from the canonical request contract.
+                # A valid X-School-Id is authority context; absence of any resolvable
+                # school remains fail-closed and never falls back to cross-school roles.
+                from households.scoping import get_request_school_id
+                from .models import School
+
+                school_id = get_request_school_id(request, required=True)
+                school = School.objects.filter(pk=school_id).first()
+                if school is not None:
+                    request.school = school
             if not user_has_permission(request.user, permission_code, school=school):
                 return JsonResponse({"detail": "Permission denied."}, status=403)
             return view_func(request, *args, **kwargs)
@@ -83,26 +91,31 @@ class CrownModulePermission:
     Usage:
         from core.permissions import CrownModulePermission
         class EmployeeViewSet(viewsets.ModelViewSet):
-            permission_classes = [CrownModulePermission("hr.view")]
+            permission_classes = [CrownModulePermission("hr.view", write_code="hr.edit")]
 
     For write-scoped checks (list vs mutate):
         permission_classes = [CrownModulePermission("hr.view", write_code="hr.edit")]
     - Authenticated + school context required (middleware normally enforces X-School-Id).
-    - GET/HEAD/OPTIONS -> read_code; POST/PUT/PATCH/DELETE -> write_code (falls
-      back to read_code if write_code is not supplied).
+    - GET/HEAD/OPTIONS -> read_code; mutations require an explicit write_code.
+      Omitting write_code defines a read-only permission.
     """
 
     def __new__(cls, read_code: str, write_code: str | None = None):
         _read_code = read_code
-        _write_code = write_code or read_code
+        _write_code = write_code
 
         class _CrownPerm(BasePermission):
             def has_permission(self, request, view):
-                if not request.user or not request.user.is_authenticated:
+                if not request.user or not request.user.is_authenticated or not getattr(request.user, "is_active", True):
+                    return False
+                code = _read_code if request.method in ("GET", "HEAD", "OPTIONS") else _write_code
+                if not code:
                     return False
                 school = getattr(request, "school", None)
                 if school is None:
                     school_header = request.headers.get("X-School-Id")
+                    # Selected wizard APIs deliberately require an explicit tenant
+                    # header even when the authenticated principal has a home school.
                     if not school_header and request.path.startswith((
                         "/api/v1/scheduling-wizard/",
                         "/api/v1/section-scheduler-wizard/",
@@ -112,6 +125,10 @@ class CrownModulePermission:
 
                         raise MissingSchoolContext()
 
+                    # For normal application APIs, resolve the canonical request
+                    # school through the shared scoping helper. It validates any
+                    # supplied header and otherwise derives the authenticated
+                    # principal's school without broadening cross-tenant authority.
                     from households.scoping import get_request_school_id
                     from .models import School
 
@@ -120,7 +137,6 @@ class CrownModulePermission:
                     if school is None:
                         return False
                     request.school = school
-                code = _write_code if request.method not in ("GET", "HEAD", "OPTIONS") else _read_code
                 return user_has_permission(request.user, code, school=school)
 
         _CrownPerm.__name__ = f"CrownPerm[{read_code}]"
@@ -135,14 +151,14 @@ class RoleRequired(BasePermission):
         permission_classes = [RoleRequired]
         required_roles = {"ADMIN", "STAFF"}
 
-    If required_roles is empty or not set, all authenticated users pass.
+    Missing or empty required_roles fails closed.
     """
 
     def has_permission(self, request, view):
-        if not request.user or not getattr(request.user, "is_authenticated", False):
+        if not request.user or not getattr(request.user, "is_authenticated", False) or not getattr(request.user, "is_active", False):
             return False
         roles = getattr(view, "required_roles", None) or set()
         if not roles:
-            return True
+            return False
         user_role = getattr(request.user, "role", None)
         return user_role in roles
