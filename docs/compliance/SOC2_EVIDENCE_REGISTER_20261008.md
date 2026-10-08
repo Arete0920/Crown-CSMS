@@ -2,14 +2,15 @@
 
 **Status:** SOURCE EVIDENCE RECONCILED / OPERATING EVIDENCE INCOMPLETE  
 **Prepared:** 2026-10-08  
-**Scope:** Current `main` source and repository-controlled documentation only  
+**Scope:** Source and repository-controlled documentation at `a091504ec4ce37c84037b51e15d9f909fcaf6f91`
+**Reconciled:** 2026-10-08 after fresh exact-head Actions evidence  
 **Boundary:** This register does not establish production operation, management approval, independent assurance, or a SOC 2 report.
 
 ## Evidence states
 
 - **DESIGNED** — documented policy/procedure/control design exists.
 - **IMPLEMENTED_SOURCE** — repository code/configuration implements the control objective.
-- **VERIFIED_SOURCE** — executable repository evidence has previously demonstrated the control; current hosted-runner outage prevents fresh execution where noted.
+- **VERIFIED_SOURCE** — executable repository evidence demonstrated the tested objective at an identified source SHA. The tested objective, run, job and result must be retained; this state does not prove runtime operation.
 - **OPERATING_EVIDENCE_REQUIRED** — production/runtime/people/vendor evidence remains necessary.
 - **EXTERNAL_REQUIRED** — independent or third-party evidence is required.
 
@@ -31,7 +32,7 @@
 | S12 logging/monitoring | observability requirements and incident policy | DESIGNED | Central runtime log inventory, alert routing, retention, delivery test, responder coverage |
 | S13 incident response | `INCIDENT_RESPONSE_POLICY.md` | DESIGNED | Approval, contacts, alert linkage, participant tabletop and corrective actions |
 | S14 backup/recovery | `BACKUP_RESTORE_POLICY.md`, isolated PostgreSQL restore drill, recovery decision docs | DESIGNED | Current operational-backup identity, measured restore/RTO/RPO, approval |
-| S15 change/release controls | PR discipline, release gates, repository policy; #158/#175/#176 security merges | IMPLEMENTED_SOURCE | Deployed identity evidence and fresh hosted-runner execution when service recovers |
+| S15 change/release controls | PR discipline, release gates, repository policy; #158/#175/#176 security merges | IMPLEMENTED_SOURCE | Deployed identity, actual release authorization, rollback and recurring change-control evidence; fresh exact-head CI is now available for the reviewed SHA |
 | S16 vendor/subprocessor management | `SUBPROCESSOR_REGISTER.md` and policy requirements | DESIGNED | Actual active-vendor reconciliation, contracts/DPAs, regions, annual review |
 | S17 workforce security/training | policy and training requirements | DESIGNED | Actual confidentiality/acceptable-use acknowledgments and completed training |
 | S18 privacy/terms/consent | privacy program, COPPA/FERPA/DPA documentation | DESIGNED | Qualified approval, executed terms/notices, actual consent/authorization evidence |
@@ -49,9 +50,19 @@
 
 These merges are source-control evidence. They do not substitute for runtime operating evidence.
 
-## Current CI evidence limitation
+## Reconciled exact-head CI evidence
 
-On 2026-10-08, newly launched GitHub-hosted Actions jobs on both pull-request heads and `main` repeatedly failed before execution with `runner_id=0`, an empty runner name, and `steps=[]`. This is an infrastructure/admission condition, not executable test evidence. Prior executable workflow results remain valid historical evidence for the exact commits on which they ran, but no current-run success is claimed until hosted runners execute again.
+The earlier 2026-10-08 runner-admission failures remain historical exceptions. They are no longer the latest evidence for the reviewed source head `a091504ec4ce37c84037b51e15d9f909fcaf6f91`.
+
+All 11 workflows returned by the exact-head Actions query completed successfully: Release Authority Gates (37824630123), Repository Policy (37824630041), Repository Freshness (37824630130), Schema Governance (37824629972), Dependency Audit (37824630205), Release Verify (37824630148), CodeQL (37824630050), CI Tests and Checks (37824630085), Wizard E2E (37824630092), secret-scan (37824630178), and Tests (37824630118).
+
+Tests job 113474162526 executed its test steps. Its log records **5,186 passed, 19 skipped, and 220 subtests passed**. A separate tenant-fixture step records 55 passed. Counts must not be added because suites may overlap. The Tests run completed at 2026-10-08T19:00:01Z. This is fresh source evidence, not assurance over deployment or every operational control. Workflow population is event/path dependent; 11 returned successes must not be described as every possible workflow executing.
+
+The source implementation states for S07, S08, S11 and S15 may be supported by relevant passing checks at this SHA. Control-by-control assertions still require the actual test/output mapping. Operating evidence remains open. A subsequent documentation commit needs its own applicable checks.
+
+## Reconciliation and approval package
+
+See [SOC 2 approval package](SOC2_APPROVAL_PACKAGE_20261008.md) for proposed scope language, unassigned owner/deputy fields, eight risk-treatment records, hosting evidence requirements, operating acceptance criteria, and management decisions. Approval-ready means ready for management review; it does not mean approved or operationally ready.
 
 ## Readiness conclusion
 
