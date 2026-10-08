@@ -464,7 +464,7 @@ def gift_checkout(request):
 
 @extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
-@permission_classes([IsAuthenticated])
+@permission_classes([CrownModulePermission("advancement.view", write_code="advancement.edit")])
 def gift_mark_paid(request, gift_id):
     """
     POST /advancement/gift/<gift_id>/mark-paid/
@@ -513,7 +513,7 @@ def pledge_create(request):
 
 @extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
-@permission_classes([IsAuthenticated])
+@permission_classes([CrownModulePermission("advancement.view", write_code="advancement.edit")])
 def pledge_cancel(request, pledge_id):
     """
     POST /advancement/pledges/<pledge_id>/cancel/
@@ -562,7 +562,7 @@ def sponsorship_checkout(request):
 
 @extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
-@permission_classes([IsAuthenticated])
+@permission_classes([CrownModulePermission("advancement.view", write_code="advancement.edit")])
 def sponsorship_mark_paid(request, agreement_id):
     """
     POST /advancement/sponsorship/<agreement_id>/mark-paid/
@@ -585,7 +585,7 @@ def sponsorship_mark_paid(request, agreement_id):
 
 @extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
-@permission_classes([IsAuthenticated])
+@permission_classes([CrownModulePermission("advancement.view", write_code="advancement.edit")])
 def qr_checkin(request):
     """
     POST /advancement/qr-checkin/
@@ -852,7 +852,7 @@ class SponsorImpressionViewSet(viewsets.ReadOnlyModelViewSet):
 
 @extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
-@permission_classes([IsAuthenticated])
+@permission_classes([CrownModulePermission("advancement.view", write_code="advancement.edit")])
 def moves_transition(request):
     """
     POST /advancement/moves/transition/
@@ -891,7 +891,7 @@ def moves_transition(request):
 
 @extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
-@permission_classes([IsAuthenticated])
+@permission_classes([CrownModulePermission("advancement.view", write_code="advancement.edit")])
 def seating_set_layout(request):
     """
     POST /advancement/seating/set-layout/
@@ -949,7 +949,7 @@ def seating_hold(request):
 
 @extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
-@permission_classes([IsAuthenticated])
+@permission_classes([CrownModulePermission("advancement.view", write_code="advancement.edit")])
 def seating_assign(request):
     """
     POST /advancement/seating/assign/
@@ -978,7 +978,7 @@ def seating_assign(request):
 
 @extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
-@permission_classes([IsAuthenticated])
+@permission_classes([CrownModulePermission("advancement.view", write_code="advancement.edit")])
 def sponsorship_log_impressions(request):
     """
     POST /advancement/sponsorship/impressions/log/
@@ -1031,7 +1031,7 @@ def seating_availability(request):
 
 @extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
-@permission_classes([CrownModulePermission("advancement.view")])
+@permission_classes([CrownModulePermission("advancement.view", write_code="advancement.edit")])
 def seating_hold_strict(request):
     """
     POST { event_id, seat_ids: [uuid], email, hold_minutes? }
@@ -1069,7 +1069,7 @@ def seating_hold_strict(request):
 
 @extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
-@permission_classes([CrownModulePermission("advancement.edit")])
+@permission_classes([CrownModulePermission("advancement.edit", write_code="advancement.edit")])
 def seating_purchase_held(request):
     """
     POST { event_id, email, purchaser_name, seat_ids: [uuid] }
@@ -1108,7 +1108,7 @@ def seating_purchase_held(request):
 
 @extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
-@permission_classes([CrownModulePermission("advancement.view")])
+@permission_classes([CrownModulePermission("advancement.view", write_code="advancement.edit")])
 def seating_checkout(request):
     """
     POST { event_id, purchaser_name, purchaser_email, seat_ids, amount_cents, currency? }
@@ -1177,6 +1177,7 @@ def _ticket_ids_for_order(order) -> list[str]:
 def order_status(request, order_id):
     """GET /orders/<uuid>/status/ ? poll order fulfillment status."""
     from .models_stage3_2 import PendingSeatOrder
+    school = _require_school(request)
     try:
         order = PendingSeatOrder.objects.get(pk=order_id, school_id=school.id)
     except PendingSeatOrder.DoesNotExist:
@@ -1203,7 +1204,7 @@ def order_status(request, order_id):
 
 @extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["GET", "POST"])
-@permission_classes([CrownModulePermission("advancement.view")])
+@permission_classes([CrownModulePermission("advancement.view", write_code="advancement.edit")])
 def event_section_prices(request, event_id):
     """
     GET  ? list section prices for an event.
@@ -1220,7 +1221,6 @@ def event_section_prices(request, event_id):
         return Response({"event_id": str(event_id), "prices": prices})
 
     # POST � require write permission
-    require_permission(request, "advancement.edit")
     data = request.data
     section = data.get("section", "").strip()
     price_cents_raw = data.get("price_cents", 0)
@@ -1245,7 +1245,7 @@ def event_section_prices(request, event_id):
 
 @extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
-@permission_classes([CrownModulePermission("advancement.view")])
+@permission_classes([CrownModulePermission("advancement.view", write_code="advancement.edit")])
 def seating_best_available_checkout(request):
     """
     POST { event_id, purchaser_name, purchaser_email, count, preferred_sections? }

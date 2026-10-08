@@ -60,7 +60,7 @@ class TestUserHasPermission:
         _assign_role(user, school, "HEAD_OF_SCHOOL")
         _grant("HEAD_OF_SCHOOL", "finance.view")
 
-        assert user_has_permission(user, "finance.view") is True
+        assert user_has_permission(user, "finance.view", school=school) is True
 
     def test_returns_false_when_role_not_granted(self):
         school = _school()
@@ -115,14 +115,14 @@ class TestUserHasPermissionSchoolScoping:
         # User has the role in school_a but we ask against school_b
         assert user_has_permission(user, "finance.view", school=school_b) is False
 
-    def test_unscoped_query_crosses_schools(self):
+    def test_unscoped_query_cannot_combine_school_roles(self):
         school_a = _school("School A3")
         user = _user("crossschool")
         _assign_role(user, school_a, "FINANCE_DIRECTOR")
         _grant("FINANCE_DIRECTOR", "finance.edit")
 
-        # No school filter — should still find the permission
-        assert user_has_permission(user, "finance.edit") is True
+        # Missing school context must fail closed.
+        assert user_has_permission(user, "finance.edit") is False
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -204,8 +204,7 @@ class TestRequirePermissionDecorator:
         assert body.get("detail") == "Permission denied."
 
     def test_no_request_school_attribute_does_not_crash(self):
-        """If middleware hasn't set request.school (e.g. exempt path), decorator
-        should use school=None and check roles across all schools."""
+        """An exempt route without school context cannot borrow another school's role."""
         school = _school("Decorator School E")
         user = _user("dec-user-e")
         _assign_role(user, school, "HEAD_OF_SCHOOL")
@@ -218,7 +217,7 @@ class TestRequirePermissionDecorator:
 
         view = self._make_view("metrics.view")
         response = view(request)
-        assert response.status_code == 200
+        assert response.status_code == 403
 
 
 # ──────────────────────────────────────────────────────────────────────────────
