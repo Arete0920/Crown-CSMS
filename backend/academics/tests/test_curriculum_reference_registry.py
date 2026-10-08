@@ -46,3 +46,23 @@ def test_subject_filter_can_identify_bible_worldview_sources():
     assert any(source.publisher == "Purposeful Design" for source in bible)
     assert any(source.publisher == "Positive Action for Christ" for source in bible)
     assert any(source.publisher == "Summit Ministries" for source in bible)
+
+
+def test_registry_distinguishes_true_publisher_maps_from_scope_sequences():
+    map_sources = [
+        source for source in CURRICULUM_REFERENCE_SOURCES
+        if source.mapping_resource_level == "publisher_map"
+    ]
+    assert {source.publisher for source in map_sources} >= {
+        "BJU Press",
+        "Purposeful Design",
+        "Positive Action for Christ",
+    }
+
+    abeka = get_curriculum_reference_sources(publisher="Abeka")
+    assert abeka
+    assert all(source.mapping_resource_level != "publisher_map" for source in abeka)
+
+    summit = get_curriculum_reference_sources(publisher="Summit Ministries")
+    assert summit
+    assert all(source.mapping_resource_level != "publisher_map" for source in summit)
