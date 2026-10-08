@@ -6,6 +6,7 @@ from unittest.mock import patch
 import pytest
 from django.contrib.auth import get_user_model
 from django.http import JsonResponse
+from rest_framework.exceptions import NotFound
 from rest_framework.test import APIRequestFactory, force_authenticate
 
 from core.models import CrownPermission, RolePermission, School, UserRole
@@ -95,8 +96,8 @@ def test_permission_decorator_resolves_explicit_school_header_and_preserves_scop
     )
     denied.user = user
     force_authenticate(denied, user=user)
-    response = protected(denied)
-    assert response.status_code == 403
+    with pytest.raises(NotFound):
+        protected(denied)
 
 
 def test_principal_school_resolves_without_redundant_header(principal):
