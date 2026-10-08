@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "policy": "docs/security/EXTERNAL_TOOL_INTEGRATION_SECURITY_STANDARD.md",
+  "defaults": {
+    "default_access": "deny",
+    "default_tool_mode": "read_only",
+    "registered_only": true,
+    "require_tenant_reauthorization": true,
+    "require_scoped_credentials": true,
+    "require_namespaced_tools": true,
+    "require_pinned_version": true,
+    "require_artifact_digest": true,
+    "require_egress_allowlist": true,
+    "require_durable_audit": true,
+    "require_human_approval_for_writes": true,
+    "untrusted_content_can_authorize_tools": false,
+    "fail_closed": true
+  },
+  "integrations": []
+}
