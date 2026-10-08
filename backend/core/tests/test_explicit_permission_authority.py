@@ -96,8 +96,9 @@ def test_permission_decorator_resolves_explicit_school_header_and_preserves_scop
     )
     denied.user = user
     force_authenticate(denied, user=user)
-    with pytest.raises(NotFound):
-        protected(denied)
+    denied_response = protected(denied)
+    assert denied_response.status_code == 404
+    assert not hasattr(denied, "school")
 
 
 def test_principal_school_resolves_without_redundant_header(principal):
