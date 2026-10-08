@@ -49,6 +49,36 @@ def user_has_permission(user, permission_code, school=None):
     ).exists()
 
 
+def permission_school_from_request(request):
+    """Resolve a permission's school without borrowing an unselected user role.
+
+    The enforcing middleware normally binds request.school. During isolated
+    DRF/test execution it may be absent; in that case require an explicit
+    tenant header and validate it through the canonical resolver before
+    checking the school's persisted role grants.
+    """
+    school = getattr(request, "school", None)
+    if school is not None:
+        return school
+
+    if not (
+        request.headers.get("X-School-Id")
+        or request.headers.get("X-Crown-School-Id")
+    ):
+        return None
+
+    from households.scoping import MissingSchoolContext, get_request_school_id
+    from rest_framework.exceptions import NotFound
+    from .models import School
+
+    try:
+        school_id = get_request_school_id(request, required=True)
+    except (MissingSchoolContext, NotFound):
+        return None
+
+    return School.objects.filter(pk=school_id, is_active=True).first()
+
+
 def require_permission(permission_code):
     """
     View decorator that enforces a Crown permission gate.
@@ -61,19 +91,12 @@ def require_permission(permission_code):
     def decorator(view_func):
         @wraps(view_func)
         def wrapper(request, *args, **kwargs):
-            school = getattr(request, "school", None)
-            if school is None:
-                # Resolve explicit tenant context from the canonical request contract.
-                # A valid X-School-Id is authority context; absence of any resolvable
-                # school remains fail-closed and never falls back to cross-school roles.
-                from households.scoping import get_request_school_id
-                from .models import School
+            user = getattr(request, "user", None)
+            if not user or not getattr(user, "is_authenticated", False):
+                return JsonResponse({"detail": "Permission denied."}, status=403)
 
-                school_id = get_request_school_id(request, required=True)
-                school = School.objects.filter(pk=school_id).first()
-                if school is not None:
-                    request.school = school
-            if not user_has_permission(request.user, permission_code, school=school):
+            school = permission_school_from_request(request)
+            if not user_has_permission(user, permission_code, school=school):
                 return JsonResponse({"detail": "Permission denied."}, status=403)
             return view_func(request, *args, **kwargs)
         return wrapper
