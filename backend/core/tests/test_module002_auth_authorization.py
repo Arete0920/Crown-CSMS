@@ -17,6 +17,7 @@ from django.test import RequestFactory
 
 from core.models import CrownPermission, RolePermission, School, UserRole
 from core.permissions import CrownModulePermission, require_permission, user_has_permission
+from households.scoping import MissingSchoolContext
 
 pytestmark = pytest.mark.django_db
 
@@ -127,7 +128,15 @@ class TestModule002RequestAuthorizationGuards:
 
         no_school_request = RequestFactory().get("/api/v1/admin/")
         no_school_request.user = admin
-        assert permission.has_permission(no_school_request, view=None) is False
+        assert permission.has_permission(no_school_request, view=None) is True
+        assert no_school_request.school.id == school.id
+
+        ambiguous_school = _school("Request Guard Other School")
+        _assign_role(admin, ambiguous_school, "HEAD_OF_SCHOOL")
+        ambiguous_request = RequestFactory().get("/api/v1/admin/")
+        ambiguous_request.user = admin
+        with pytest.raises(MissingSchoolContext):
+            permission.has_permission(ambiguous_request, view=None)
 
     def test_require_permission_denies_without_executing_protected_view(self):
         _seed_permissions()

@@ -12,31 +12,37 @@ echo "ENTRYPOINT_SEES: PORT=${PORT:-<unset>} WEBSITES_PORT=${WEBSITES_PORT:-<uns
 echo "== entrypoint: verify schema is current =="
 python manage.py migrate --check
 
+# Reject development-only startup actions before any data mutation in production.
+python - <<'PYGUARD'
+import os
+production = bool(os.getenv("WEBSITE_HOSTNAME")) or any(
+    os.getenv(key, "").strip().lower() in {"prod", "production", "live"}
+    for key in ("CROWN_ENV", "DJANGO_ENV", "ENVIRONMENT", "AZURE_ENVIRONMENT")
+)
+if production:
+    blocked = []
+    for key in ("SEED_DEMO", "RUN_DEV_BOOTSTRAP", "RUN_GOLDEN_PATH_BOOTSTRAP"):
+        if os.getenv(key, "").strip().lower() in {"1", "true", "yes", "on"}:
+            blocked.append(key)
+    if os.getenv("CI_SMOKE_USERNAME"):
+        blocked.append("CI_SMOKE_USERNAME")
+    if blocked:
+        raise SystemExit("Production startup rejects development bootstrap flags: " + ", ".join(blocked))
+PYGUARD
+
 # Ensure CI smoke user exists when credentials are configured (dev/CI only).
 if [ -n "${CI_SMOKE_USERNAME:-}" ]; then
-  echo "== entrypoint: ensure_ci_user =="
   python manage.py ensure_ci_user
 fi
 
-# --- Admin bootstrap (idempotent: create OR update password if exists) ---
-# Activated by BOOTSTRAP_ADMIN=true OR legacy DJANGO_SUPERUSER_USERNAME+PASSWORD pair.
-_su_user="${DJANGO_SUPERUSER_USERNAME:-admin}"
-_su_email="${DJANGO_SUPERUSER_EMAIL:-admin@crown.demo}"
-_su_pass="${DJANGO_SUPERUSER_PASSWORD:-}"
-if [ "${BOOTSTRAP_ADMIN:-false}" = "true" ] || [ -n "${_su_pass}" ]; then
-  echo "== entrypoint: bootstrap admin (user=${_su_user}) =="
-  python manage.py shell -c "
-from django.contrib.auth import get_user_model
-U = get_user_model()
-u, created = U.objects.get_or_create(username='${_su_user}', defaults={'email': '${_su_email}'})
-if created:
-    u.is_staff = True
-    u.is_superuser = True
-if '${_su_pass}':
-    u.set_password('${_su_pass}')
-u.save()
-print('bootstrap_admin: created=' + str(created))
-"
+# Read credentials inside Python; never interpolate environment values into code.
+# Credentials alone never authorize administrator creation or password rotation.
+if [ -n "${DJANGO_SUPERUSER_PASSWORD:-}" ] && [ "${BOOTSTRAP_ADMIN:-false}" != "true" ]; then
+  echo "ERROR: DJANGO_SUPERUSER_PASSWORD is set but BOOTSTRAP_ADMIN is not explicitly true." >&2
+  exit 1
+fi
+if [ "${BOOTSTRAP_ADMIN:-false}" = "true" ]; then
+  python manage.py bootstrap_runtime_admin
 fi
 
 # --- Demo seed (optional, safe to skip) ---

@@ -2,37 +2,59 @@ import uuid
 from decimal import Decimal
 
 from django.core.exceptions import ValidationError
-from django.db import models
+from django.db import models, router, transaction
 from households.models import Household
 
 
+class ImmutableMoneyQuerySet(models.QuerySet):
+    """Financial facts must use signal-aware instance/service writes."""
+
+    def update(self, **kwargs):
+        raise ValidationError("Financial facts cannot be changed through queryset update.")
+
+    def bulk_update(self, objs, fields, batch_size=None):
+        raise ValidationError("Financial facts cannot be changed through bulk update.")
+
+    def bulk_create(self, objs, *args, **kwargs):
+        raise ValidationError("Financial facts require individual posting; bulk create skips journal signals.")
+
+    def delete(self):
+        raise ValidationError("Financial facts cannot be deleted; use the controlled void/reversal service.")
+
+
+class ImmutableMoneyManager(models.Manager.from_queryset(ImmutableMoneyQuerySet)):
+    pass
+
+
 class ImmutableMoneyMixin:
-    """Prevent silent edits to money-critical fields after creation."""
+    """Preserve financial facts and their journal side effects atomically."""
 
     IMMUTABLE_FIELDS = ()
 
-    def _immutable_check(self):
-        if not getattr(self, "pk", None):
+    def _immutable_check(self, *, using):
+        if self.amount is None or self.amount <= Decimal("0.00"):
+            raise ValidationError({"amount": "Financial fact amount must be greater than zero."})
+        if self.account_id and self.account.school_id != self.school_id:
+            raise ValidationError({"account": "Financial fact and account must belong to the same school."})
+        if not self.pk:
             return
-        if getattr(self, "_state", None) is not None and self._state.adding:
+        original = self.__class__._base_manager.using(using).select_for_update().filter(pk=self.pk).first()
+        if original is None:
             return
-
-        cls = self.__class__
-        try:
-            original = cls.objects.get(pk=self.pk)
-        except Exception:
-            return
-
+        if original.is_void and not self.is_void:
+            raise ValidationError({"is_void": "Voided financial facts cannot be reactivated; create a new authorized fact."})
         for field in self.IMMUTABLE_FIELDS:
-            if field == "is_void":
-                continue
-            if hasattr(self, field) and hasattr(original, field):
-                if getattr(self, field) != getattr(original, field):
-                    raise ValidationError({field: "This field is immutable after creation."})
+            if getattr(self, field) != getattr(original, field):
+                raise ValidationError({field: "This field is immutable after creation."})
 
     def save(self, *args, **kwargs):
-        self._immutable_check()
-        return super().save(*args, **kwargs)
+        using = kwargs.get("using") or (args[2] if len(args) > 2 else None) or router.db_for_write(self.__class__, instance=self)
+        with transaction.atomic(using=using):
+            self._immutable_check(using=using)
+            return super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        raise ValidationError("Financial facts cannot be deleted; use the controlled void/reversal service.")
 
 
 class TimeStampedModel(models.Model):
@@ -63,6 +85,8 @@ class LedgerAccount(TimeStampedModel):
 
 
 class Charge(ImmutableMoneyMixin, TimeStampedModel):
+    objects = ImmutableMoneyManager()
+
     IMMUTABLE_FIELDS = ("school_id", "account_id", "amount")
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -95,6 +119,8 @@ class Credit(ImmutableMoneyMixin, TimeStampedModel):
     Payment so financial aid, adjustments, and other non-cash reductions never
     masquerade as external money movement.
     """
+
+    objects = ImmutableMoneyManager()
 
     IMMUTABLE_FIELDS = ("school_id", "account_id", "source", "reference", "amount")
 
@@ -161,6 +187,8 @@ class Credit(ImmutableMoneyMixin, TimeStampedModel):
 
 
 class Payment(ImmutableMoneyMixin, TimeStampedModel):
+    objects = ImmutableMoneyManager()
+
     IMMUTABLE_FIELDS = ("school_id", "account_id", "amount", "source", "reference")
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

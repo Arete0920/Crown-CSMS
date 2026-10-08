@@ -20,6 +20,9 @@ FAST_TEST_PATHS = [
     # Required regression proof for the repaired trust boundary
     "backend/core/tests/test_explicit_permission_authority.py",
     "backend/core/tests/test_tenant_persistence_authority.py",
+    "backend/ledger/tests/test_financial_fact_boundaries.py",
+    "backend/core/tests/test_schema_deployment_contract.py",
+    "backend/core/tests/test_runtime_admin_bootstrap.py",
     # RBAC / auth / tenant
     "backend/core/tests/test_rbac_contract.py",
     "backend/crown_api/tests/test_rbac_proof.py",
