@@ -55,6 +55,8 @@ runtime verification. Rejection cannot undo data a caller improperly submits.
 
 ## External activation requirements
 
+Any future external tool, delegated integration, connector, or provider activation is also subject to the canonical [CROWN External Tool Integration Security Standard](../security/EXTERNAL_TOOL_INTEGRATION_SECURITY_STANDARD.md). Its registry, namespacing, authorization, egress, audit, provenance, human-approval, and fail-closed requirements are additive to the privacy controls below.
+
 External content-generation providers remain unavailable in this implementation. Selecting an endpoint or
 changing the guidance flag cannot activate it. A later coherent implementation
 must establish all of the following before production use:
