@@ -6,7 +6,7 @@ from rest_framework.response import Response
 
 from academics.models import Course, Term
 from core.models import Student
-from core.permissions import user_has_permission
+from core.permissions import permission_school_from_request, user_has_permission
 from subscriptions.gates import school_has_module
 from .models import (
     FinancialAidRule,
@@ -41,10 +41,9 @@ def require_role(request, allowed_roles: set) -> bool:
     if not user or not getattr(user, "is_authenticated", False):
         return False
 
-    if getattr(user, "is_superuser", False) or getattr(user, "is_staff", False):
-        return True
-
-    school = getattr(request, "school", None)
+    school = permission_school_from_request(request)
+    if school is None:
+        return False
     normalized = {str(role).lower() for role in allowed_roles}
 
     if "admin" in normalized and user_has_permission(user, "home_academy.edit", school=school):
