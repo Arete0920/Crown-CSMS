@@ -5,7 +5,7 @@ from rest_framework import status
 from drf_spectacular.utils import extend_schema
 from drf_spectacular.types import OpenApiTypes
 
-from core.permissions import user_has_permission
+from core.permissions import permission_school_from_request, user_has_permission
 from .models import BoardPacket, BoardReportSnapshot
 from .serializers import BoardPacketSerializer, BoardReportSnapshotSerializer
 from .tenant import require_school_id
@@ -14,7 +14,7 @@ from .services import build_board_metrics_payload, build_board_dashboard_payload
 
 def _check_board_access(request):
     """Return (school_id, error_response) tuple. error_response is None if OK."""
-    school = getattr(request, "school", None)
+    school = permission_school_from_request(request)
     if not user_has_permission(request.user, "board.view", school=school):
         return None, Response({"detail": "Forbidden."}, status=status.HTTP_403_FORBIDDEN)
     school_id = require_school_id(request)
