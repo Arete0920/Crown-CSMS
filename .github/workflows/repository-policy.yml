@@ -59,7 +59,10 @@ jobs:
           CROWN_MAX_DOC_AUDIT_ADDITIONS: "3000"
           CROWN_MAX_CHANGED_FILES: "20"
         run: |
-          git fetch origin "${{ github.event.pull_request.base.sha }}" --depth=1
+          # Checkout above uses fetch-depth: 0. Do not shallow-fetch the base SHA:
+          # it can hide the merge-base needed for the hygiene gate triple-dot diff.
+          git fetch --no-tags origin "${{ github.event.pull_request.base.sha }}"
+          git merge-base "refs/remotes/origin/${{ github.event.pull_request.base.ref }}" "${{ github.event.pull_request.head.sha }}" >/dev/null
           python scripts/ci/pr_hygiene_gate.py
 
       - name: Enforce mutation authority policy
