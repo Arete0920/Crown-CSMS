@@ -39,8 +39,22 @@ class ApiExceptionMiddleware:
         Http404 → 404 JSON (not 500).
         """
         from django.http import Http404
+        from rest_framework.exceptions import APIException
 
         request_id = getattr(request, 'request_id', str(uuid.uuid4()))
+
+        # Shared tenant/permission helpers also run in ordinary Django views.
+        # Preserve their intentional client denial instead of reporting a 500.
+        if isinstance(exception, APIException):
+            detail = exception.detail
+            payload = detail if isinstance(detail, (dict, list)) else {"detail": detail}
+            response = JsonResponse(payload, safe=not isinstance(payload, list), status=exception.status_code)
+            response["X-Request-Id"] = request_id
+            if getattr(exception, "auth_header", None):
+                response["WWW-Authenticate"] = exception.auth_header
+            if getattr(exception, "wait", None):
+                response["Retry-After"] = str(exception.wait)
+            return response
 
         if isinstance(exception, Http404):
             response = JsonResponse(

@@ -82,3 +82,24 @@ class CanonicalHouseholdScopingTests(TestCase):
         request.user = self.user_a
         with self.assertRaises(MissingSchoolContext):
             get_request_school_id(request)
+
+    def test_validated_school_is_bound_for_permission_checks(self):
+        request = self._request(user=self.user_a, school_id=self.school_a.id)
+        get_request_school_id(request)
+        self.assertEqual(request.school, self.school_a)
+        self.assertEqual(request.tenant_school, self.school_a)
+        self.assertEqual(request.crown_tenant.school, self.school_a)
+
+    def test_denied_foreign_school_is_never_bound(self):
+        request = self._request(user=self.user_a, school_id=self.school_b.id)
+        with self.assertRaises(NotFound):
+            get_request_school_id(request)
+        self.assertIsNone(getattr(request, "school", None))
+        self.assertIsNone(request.crown_tenant.school)
+
+    def test_authorized_override_binds_target_school(self):
+        request = self._request(user=self.support_a, school_id=self.school_b.id)
+        get_request_school_id(request)
+        self.assertEqual(request.school, self.school_b)
+        self.assertEqual(request.crown_tenant.principal_school_id, self.school_a.id)
+        self.assertTrue(request.crown_tenant.override_authorized)
