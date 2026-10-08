@@ -295,3 +295,58 @@ class TestSeedPermissionsCommand:
         call_command("seed_permissions", dry_run=True, stdout=StringIO())
         assert CrownPermission.objects.count() == permissions_before
         assert RolePermission.objects.count() == mappings_before
+
+
+def test_decorator_uses_explicit_tenant_header_without_middleware_school():
+    school = _school("Header-scoped school")
+    user = _user("header-scoped")
+    _assign_role(user, school, "HEADER_VIEWER")
+    _grant("HEADER_VIEWER", "finance.view")
+    request = RequestFactory().get("/", HTTP_X_SCHOOL_ID=str(school.id))
+    request.user = user
+    from django.http import HttpResponse
+
+    @require_permission("finance.view")
+    def view(_request):
+        return HttpResponse("ok")
+
+    assert view(request).status_code == 200
+
+
+def test_decorator_rejects_foreign_school_even_if_role_granted_elsewhere():
+    school = _school("Granted tenant")
+    foreign = _school("Unrelated tenant")
+    user = _user("foreign-deny")
+    _assign_role(user, school, "SCOPED_VIEWER")
+    _grant("SCOPED_VIEWER", "finance.view")
+    request = RequestFactory().get("/", HTTP_X_SCHOOL_ID=str(foreign.id))
+    request.user = user
+    from django.http import HttpResponse
+
+    @require_permission("finance.view")
+    def view(_request):
+        return HttpResponse("ok")
+
+    assert view(request).status_code == 403
+
+
+def test_decorator_rejects_anonymous_and_missing_header_without_school():
+    from django.contrib.auth.models import AnonymousUser
+    from django.http import HttpResponse
+
+    school = _school("No implicit selection")
+    user = _user("no-selection")
+    _assign_role(user, school, "NO_IMPLICIT_VIEW")
+    _grant("NO_IMPLICIT_VIEW", "finance.view")
+
+    @require_permission("finance.view")
+    def view(_request):
+        return HttpResponse("ok")
+
+    missing = RequestFactory().get("/")
+    missing.user = user
+    assert view(missing).status_code == 403
+
+    anonymous = RequestFactory().get("/", HTTP_X_SCHOOL_ID=str(school.id))
+    anonymous.user = AnonymousUser()
+    assert view(anonymous).status_code == 403
