@@ -5,10 +5,11 @@ from unittest.mock import patch
 
 import pytest
 from django.contrib.auth import get_user_model
+from django.http import JsonResponse
 from rest_framework.test import APIRequestFactory, force_authenticate
 
 from core.models import CrownPermission, RolePermission, School, UserRole
-from core.permissions import CrownModulePermission, RoleRequired, user_has_permission
+from core.permissions import CrownModulePermission, RoleRequired, require_permission, user_has_permission
 
 pytestmark = pytest.mark.django_db
 
@@ -68,6 +69,34 @@ def test_missing_school_does_not_borrow_any_school_role(principal):
     other_school = School.objects.create(name="Other authority school")
     assert not user_has_permission(user, "advancement.view", school=other_school)
 
+
+
+def test_permission_decorator_resolves_explicit_school_header_and_preserves_scope(principal):
+    user, school = principal
+
+    @require_permission("advancement.view")
+    def protected(request):
+        return JsonResponse({"ok": True})
+
+    allowed = APIRequestFactory().get(
+        "/api/v1/advancement/metrics/",
+        HTTP_X_SCHOOL_ID=str(school.id),
+    )
+    allowed.user = user
+    force_authenticate(allowed, user=user)
+    response = protected(allowed)
+    assert response.status_code == 200
+    assert allowed.school.id == school.id
+
+    other_school = School.objects.create(name="Explicit authority other school")
+    denied = APIRequestFactory().get(
+        "/api/v1/advancement/metrics/",
+        HTTP_X_SCHOOL_ID=str(other_school.id),
+    )
+    denied.user = user
+    force_authenticate(denied, user=user)
+    response = protected(denied)
+    assert response.status_code == 403
 
 
 def test_principal_school_resolves_without_redundant_header(principal):
