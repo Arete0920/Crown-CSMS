@@ -74,7 +74,7 @@ def my_ticket_credential(request, ticket_id):
 
 @extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
-@permission_classes([CrownModulePermission("crownpass.scan")])
+@permission_classes([CrownModulePermission("crownpass.scan", write_code="crownpass.scan")])
 def redeem_credential(request):
     """
     Validate and redeem a CrownPass signed admission credential.
