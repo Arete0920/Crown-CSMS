@@ -5,11 +5,6 @@ permissions:
 on:
   pull_request:
     branches: [main]
-    paths:
-      - "backend/**"
-      - "requirements.txt"
-      - "pytest.ini"
-      - ".github/workflows/tests.yml"
   push:
     branches:
       - main
@@ -24,7 +19,7 @@ jobs:
   pytest-internal:
     name: pytest-internal
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     defaults:
       run:
         working-directory: backend
