@@ -54,14 +54,25 @@ def require_permission(permission_code):
     View decorator that enforces a Crown permission gate.
 
     - Returns 403 JSON {"detail": "Permission denied."} on failure.
-    - School scope is picked up automatically from request.school (set by
-      TenantHeaderRequiredMiddleware for /api/v1/* routes).
+    - School scope is resolved from request.school or the canonical tenant
+      contract (including an explicit X-School-Id header).
     - Works with both function-based and class-based views (wrap dispatch()).
     """
     def decorator(view_func):
         @wraps(view_func)
         def wrapper(request, *args, **kwargs):
             school = getattr(request, "school", None)
+            if school is None:
+                # Resolve explicit tenant context from the canonical request contract.
+                # A valid X-School-Id is authority context; absence of any resolvable
+                # school remains fail-closed and never falls back to cross-school roles.
+                from households.scoping import get_request_school_id
+                from .models import School
+
+                school_id = get_request_school_id(request, required=True)
+                school = School.objects.filter(pk=school_id).first()
+                if school is not None:
+                    request.school = school
             if not user_has_permission(request.user, permission_code, school=school):
                 return JsonResponse({"detail": "Permission denied."}, status=403)
             return view_func(request, *args, **kwargs)
