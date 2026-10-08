@@ -75,6 +75,8 @@ ops_summary = demo_ops_only(_ops_summary)
 ops_alerts = demo_ops_only(_ops_alerts)
 
 urlpatterns = [
+    # Separate grantor tenancy: explicit SGO membership, no school-tenant API shortcut.
+    path("sgo/api/v1/", include("jireh_sgo.urls")),
     path("api/solomon/guidance/", guidance_view, name="solomon-guidance"),
     path("", RedirectView.as_view(url="director/", permanent=False)),
     path("api/v1/graduation/", include("graduation.urls")),
