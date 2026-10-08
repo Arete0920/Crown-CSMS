@@ -213,11 +213,14 @@ class TestRequirePermissionDecorator:
         rf = RequestFactory()
         request = rf.get("/")
         request.user = user
-        # Intentionally NOT setting request.school
+        # The canonical scope resolver may derive a single authenticated school.
+        # Verify it never borrows an unrelated school role.
+        other_school = _school("Decorator School F")
+        request.META["HTTP_X_SCHOOL_ID"] = str(other_school.id)
 
         view = self._make_view("metrics.view")
         response = view(request)
-        assert response.status_code == 403
+        assert response.status_code in (403, 404)
 
 
 # ──────────────────────────────────────────────────────────────────────────────
