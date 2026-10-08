@@ -66,3 +66,19 @@ def test_registry_distinguishes_true_publisher_maps_from_scope_sequences():
     summit = get_curriculum_reference_sources(publisher="Summit Ministries")
     assert summit
     assert all(source.mapping_resource_level != "publisher_map" for source in summit)
+
+
+def test_curriculum_mapping_has_no_paid_runtime_dependency():
+    from academics.curriculum_reference_registry import has_paid_runtime_dependency
+    assert has_paid_runtime_dependency() is False
+
+
+def test_preferred_references_prioritize_publisher_direct_sources():
+    from academics.curriculum_reference_registry import preferred_curriculum_references
+    for publisher in supported_reference_publishers():
+        sources = preferred_curriculum_references(publisher)
+        assert sources
+        tiers = [source.authority_tier for source in sources]
+        if "publisher_direct" in tiers:
+            assert tiers[0] == "publisher_direct"
+        assert all(source.runtime_dependency != "paid_platform" for source in sources)
