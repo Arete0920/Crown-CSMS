@@ -100,3 +100,20 @@ def test_nonpastoral_viewer_cannot_create_private_prayer_request():
         format="json",
     )
     assert response.status_code == 403
+
+
+def test_view_only_user_cannot_create_school_wide_spiritual_life_record():
+    school = _school("Spiritual write denied")
+    user = _user(school)
+    _grant(user, school)
+
+    response = _client(user, school).post(
+        URL,
+        {
+            "title": "Unauthorized chapel",
+            "event_date": "2026-10-08",
+        },
+        format="json",
+    )
+
+    assert response.status_code == 403
