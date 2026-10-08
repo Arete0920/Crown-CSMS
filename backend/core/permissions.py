@@ -62,6 +62,8 @@ def require_permission(permission_code):
     def decorator(view_func):
         @wraps(view_func)
         def wrapper(request, *args, **kwargs):
+            if not getattr(getattr(request, "user", None), "is_authenticated", False):
+                return JsonResponse({"detail": "Permission denied."}, status=403)
             school = getattr(request, "school", None)
             if school is None:
                 # Resolve explicit tenant context from the canonical request contract.
