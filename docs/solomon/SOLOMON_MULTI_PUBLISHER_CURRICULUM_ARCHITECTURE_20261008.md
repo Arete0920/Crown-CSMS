@@ -100,7 +100,7 @@ The architecture must preserve the distinction between these states so administr
 
 ## Product Independence Rule
 
-Praeceptum must remain independently operable without a paid Atlas, Curriculum Trak, or other third-party curriculum-mapping subscription. Third-party map libraries may be referenced when legitimately public or licensed, but they are not runtime dependencies.
+Praeceptum must remain independently operable without a paid third-party curriculum-mapping subscription. Third-party map libraries may be referenced when legitimately public or licensed, but they are not runtime dependencies.
 
 ## Provisional Product Identity
 
