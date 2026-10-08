@@ -6,6 +6,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from core.models import School
+from core.permissions import CrownModulePermission
 from households.scoping import get_request_school_id
 from spiritual_life.formation_models import (
     BiblicalIntegrationRecord,
@@ -81,7 +82,7 @@ def _assign_owner_fields(serializer, request):
 class TenantScopedListCreateView(APIView):
     """Small generic list/create view for Spiritual Life formation records."""
 
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [CrownModulePermission("spiritual_life.view", write_code="spiritual_life.edit")]
     model = None
     serializer_class = None
     allowed_filters = []
@@ -119,7 +120,7 @@ class TenantScopedListCreateView(APIView):
 class TenantScopedDetailView(APIView):
     """Small generic retrieve/update view for Spiritual Life formation records."""
 
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [CrownModulePermission("spiritual_life.view", write_code="spiritual_life.edit")]
     model = None
     serializer_class = None
 
@@ -324,7 +325,7 @@ class SpeakerVettingRecordListCreate(TenantScopedListCreateView):
 class FormationMissionControlSummary(APIView):
     """Aggregate mission-control snapshot for the Spiritual Life dashboard."""
 
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [CrownModulePermission("spiritual_life.view", write_code="spiritual_life.edit")]
 
     def get(self, request):
         school = _get_school(request)

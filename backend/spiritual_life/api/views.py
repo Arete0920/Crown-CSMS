@@ -6,6 +6,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from core.models import School, Student
+from core.permissions import CrownModulePermission
 from households.scoping import get_request_school_id
 from spiritual_life.models import (
     StudentSpiritualProfile,
@@ -67,7 +68,7 @@ class SpiritualProfileView(APIView):
     POST spiritual-life/profiles/          â†’ create / upsert profile
     """
 
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [CrownModulePermission("spiritual_life.view", write_code="spiritual_life.edit")]
     serializer_class = StudentSpiritualProfileSerializer
 
     @extend_schema(responses=OpenApiTypes.OBJECT)
@@ -113,7 +114,7 @@ class SpiritualProfileDetailView(APIView):
     PATCH spiritual-life/profiles/<id>/   â†’ update
     """
 
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [CrownModulePermission("spiritual_life.view", write_code="spiritual_life.edit")]
     serializer_class = StudentSpiritualProfileSerializer
 
     def _get(self, profile_id, school):
@@ -154,7 +155,7 @@ class SpiritualAssessmentListCreate(APIView):
     POST spiritual-life/assessments/   â†’ create
     """
 
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [CrownModulePermission("spiritual_life.view", write_code="spiritual_life.edit")]
     serializer_class = SpiritualAssessmentSerializer
 
     @extend_schema(responses=OpenApiTypes.OBJECT)
@@ -212,7 +213,7 @@ class ChapelEventListCreate(APIView):
     POST spiritual-life/chapel-events/   â†’ create
     """
 
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [CrownModulePermission("spiritual_life.view", write_code="spiritual_life.edit")]
     serializer_class = ChapelEventSerializer
 
     @extend_schema(responses=OpenApiTypes.OBJECT)
@@ -259,7 +260,7 @@ class ChapelEventListCreate(APIView):
 class ChapelEventDetail(APIView):
     """GET / PATCH for a single ChapelEvent."""
 
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [CrownModulePermission("spiritual_life.view", write_code="spiritual_life.edit")]
     serializer_class = ChapelEventSerializer
 
     def _get(self, event_id, school):
@@ -288,7 +289,7 @@ class ChapelAttendanceListCreate(APIView):
     POST spiritual-life/chapel-events/<id>/attendance/  â†’ record attendance
     """
 
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [CrownModulePermission("spiritual_life.view", write_code="spiritual_life.edit")]
     serializer_class = ChapelAttendanceSerializer
 
     @extend_schema(responses=OpenApiTypes.OBJECT)
@@ -333,7 +334,7 @@ class SmallGroupListCreate(APIView):
     POST spiritual-life/small-groups/   â†’ create group
     """
 
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [CrownModulePermission("spiritual_life.view", write_code="spiritual_life.edit")]
     serializer_class = SmallGroupSerializer
 
     @extend_schema(responses=OpenApiTypes.OBJECT)
@@ -368,7 +369,7 @@ class SmallGroupMemberListCreate(APIView):
     POST spiritual-life/small-groups/<id>/members/   â†’ add member
     """
 
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [CrownModulePermission("spiritual_life.view", write_code="spiritual_life.edit")]
     serializer_class = SmallGroupMemberSerializer
 
     @extend_schema(responses=OpenApiTypes.OBJECT)
@@ -401,7 +402,7 @@ class SmallGroupSessionListCreate(APIView):
     POST spiritual-life/small-groups/<id>/sessions/   â†’ create session
     """
 
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [CrownModulePermission("spiritual_life.view", write_code="spiritual_life.edit")]
     serializer_class = SmallGroupSessionSerializer
 
     @extend_schema(responses=OpenApiTypes.OBJECT)
@@ -440,7 +441,7 @@ class SmallGroupSessionAttendanceView(APIView):
     POST spiritual-life/small-group-sessions/<id>/attendance/
     """
 
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [CrownModulePermission("spiritual_life.view", write_code="spiritual_life.edit")]
     serializer_class = SmallGroupAttendanceSerializer
 
     @extend_schema(responses=OpenApiTypes.OBJECT)
@@ -486,7 +487,7 @@ class PrayerRequestListCreate(APIView):
     POST spiritual-life/prayer-requests/   â†’ create
     """
 
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [CrownModulePermission("spiritual_life.view", write_code="spiritual_life.edit")]
     serializer_class = PrayerRequestSerializer
 
     @extend_schema(responses=OpenApiTypes.OBJECT)
@@ -545,7 +546,7 @@ class PrayerRequestListCreate(APIView):
 class PrayerRequestDetail(APIView):
     """GET / PATCH a single PrayerRequest."""
 
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [CrownModulePermission("spiritual_life.view", write_code="spiritual_life.edit")]
     serializer_class = PrayerRequestSerializer
 
     def _get(self, pr_id, school):
@@ -583,7 +584,7 @@ class PastoralNoteListCreate(APIView):
     Staff / HEAD_OF_SCHOOL only.
     """
 
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [CrownModulePermission("spiritual_life.view", write_code="spiritual_life.edit")]
     serializer_class = PastoralNoteSerializer
 
     @extend_schema(responses=OpenApiTypes.OBJECT)
@@ -625,7 +626,7 @@ class PastoralNoteListCreate(APIView):
 class PastoralNoteDetail(APIView):
     """GET / PATCH / DELETE a single PastoralNote. Staff only."""
 
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [CrownModulePermission("spiritual_life.view", write_code="spiritual_life.edit")]
     serializer_class = PastoralNoteSerializer
 
     def _require_pastoral(self, user):

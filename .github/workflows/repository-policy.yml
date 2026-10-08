@@ -8,10 +8,12 @@ on:
     paths:
       - ".github/workflows/**"
       - "tools/verify_workflow_policy.py"
+      - "tools/verify_mutation_authority.py"
       - "tools/ci/**"
       - "config/security/external_tool_integrations.json"
       - "docs/security/EXTERNAL_TOOL_INTEGRATION_SECURITY_STANDARD.md"
       - "scripts/ci/pr_hygiene_gate.py"
+      - "backend/**/*.py"
       - "infra/**"
       - "**/Dockerfile*"
       - "**/docker-compose*.yml"
@@ -59,6 +61,17 @@ jobs:
         run: |
           git fetch origin "${{ github.event.pull_request.base.sha }}" --depth=1
           python scripts/ci/pr_hygiene_gate.py
+
+      - name: Enforce mutation authority policy
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE_SHA="${{ github.event.pull_request.base.sha }}"
+          else
+            BASE_SHA="${{ github.event.before }}"
+          fi
+          python tools/verify_mutation_authority.py --base-ref "$BASE_SHA"
 
       - name: Resolve workflow changes
         id: workflow_changes

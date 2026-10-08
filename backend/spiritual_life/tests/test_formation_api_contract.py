@@ -83,6 +83,7 @@ def test_can_create_portrait_domain_for_school():
     role_code = "spiritual_life_contract_tester"
     assign_role(user, school, role_code)
     grant(role_code)
+    grant(role_code, "spiritual_life.edit")
 
     client = Client()
     client.force_login(user)
@@ -102,3 +103,28 @@ def test_can_create_portrait_domain_for_school():
     body = response.json()
     assert body["name"] == "Christ-centered identity"
     assert body["school_id"] == str(school.id)
+
+
+def test_view_only_user_cannot_create_school_wide_formation_record():
+    school = mk_school()
+    user = mk_user(school, "portrait_domain_view_only")
+    role_code = "spiritual_life_view_only_tester"
+    assign_role(user, school, role_code)
+    grant(role_code, "spiritual_life.view")
+
+    client = Client()
+    client.force_login(user)
+    response = client.post(
+        "/api/v1/spiritual-life/formation/portrait-domains/",
+        data={
+            "name": "Unauthorized mutation",
+            "description": "This write must be denied.",
+            "scripture_anchor": "Colossians 3:1-17",
+            "is_active": True,
+            "sort_order": 99,
+        },
+        content_type="application/json",
+        **{SCHOOL_ID_HEADER: str(school.id)},
+    )
+
+    assert response.status_code == 403
