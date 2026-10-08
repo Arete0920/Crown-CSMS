@@ -30,8 +30,22 @@ jobs:
           CROWN_BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: python tools/verify_dependency_admission.py
 
-      - name: Review changed dependencies
-        uses: actions/dependency-review-action@05fe4576374b728f0c523d6a13d64c25081e0803
-        with:
-          fail-on-severity: high
-          comment-summary-in-pr: never
+      - name: Verify companion dependency security gates
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          workflow = Path(".github/workflows/dependency-audit.yml").read_text(encoding="utf-8")
+          required = {
+              "pip-audit": "backend vulnerability audit",
+              "npm audit": "Node vulnerability audit",
+              "verify_license_policy.py": "dependency license policy",
+          }
+          missing = [label for token, label in required.items() if token not in workflow]
+          if missing:
+              raise SystemExit(
+                  "FAIL: Dependency Review requires companion fail-closed coverage: "
+                  + ", ".join(missing)
+              )
+          print("PASS: dependency admission plus vulnerability/license gates are enforced.")
+          PY

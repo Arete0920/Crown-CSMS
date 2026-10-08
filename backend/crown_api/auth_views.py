@@ -9,6 +9,7 @@ from django.contrib.auth.hashers import check_password, make_password
 from crown_api.auth_models import CrownUser
 from crown_api.auth_middleware import require_auth
 from crown_api.auth_rate_limit import (
+    AuthRateLimitBackendUnavailable,
     check_auth_rate_limit,
     clear_auth_identity_failures,
     record_auth_failure,
@@ -26,6 +27,23 @@ def _json_body(request):
     return parse_json_object(request)
 
 
+def _rate_limit_unavailable(retry_after_seconds=60):
+    response = JsonResponse(
+        {"ok": False, "error": "auth_temporarily_unavailable"},
+        status=503,
+    )
+    response["Retry-After"] = str(retry_after_seconds)
+    return response
+
+
+def _record_failure_or_unavailable(request, *, scope, identity):
+    try:
+        record_auth_failure(request, scope=scope, identity=identity)
+    except AuthRateLimitBackendUnavailable:
+        return _rate_limit_unavailable()
+    return None
+
+
 @csrf_exempt
 @require_POST
 def login(request):
@@ -40,6 +58,8 @@ def login(request):
         return JsonResponse({"ok": False, "error": "missing_credentials"}, status=400)
 
     rate = check_auth_rate_limit(request, scope="crown-login", identity=email)
+    if not rate.backend_available:
+        return _rate_limit_unavailable(rate.retry_after_seconds)
     if not rate.allowed:
         response = JsonResponse({"ok": False, "error": "rate_limited"}, status=429)
         response["Retry-After"] = str(rate.retry_after_seconds)
@@ -48,11 +68,19 @@ def login(request):
     user = CrownUser.objects.filter(email=email, is_active=True).first()
     if not user:
         check_password(password, _DUMMY_PASSWORD_HASH)
-        record_auth_failure(request, scope="crown-login", identity=email)
+        unavailable = _record_failure_or_unavailable(
+            request, scope="crown-login", identity=email,
+        )
+        if unavailable is not None:
+            return unavailable
         return JsonResponse({"ok": False, "error": "invalid_credentials"}, status=401)
 
     if not check_password(password, user.password_hash):
-        record_auth_failure(request, scope="crown-login", identity=email)
+        unavailable = _record_failure_or_unavailable(
+            request, scope="crown-login", identity=email,
+        )
+        if unavailable is not None:
+            return unavailable
         return JsonResponse({"ok": False, "error": "invalid_credentials"}, status=401)
 
     clear_auth_identity_failures(request, scope="crown-login", identity=email)
@@ -81,6 +109,8 @@ def refresh(request):
         return JsonResponse({"ok": False, "error": "missing_refresh"}, status=400)
 
     rate = check_auth_rate_limit(request, scope="crown-refresh", identity=token)
+    if not rate.backend_available:
+        return _rate_limit_unavailable(rate.retry_after_seconds)
     if not rate.allowed:
         response = JsonResponse({"ok": False, "error": "rate_limited"}, status=429)
         response["Retry-After"] = str(rate.retry_after_seconds)
@@ -88,23 +118,39 @@ def refresh(request):
 
     res = decode_refresh(token)
     if not res.ok or not res.payload:
-        record_auth_failure(request, scope="crown-refresh", identity=token)
+        unavailable = _record_failure_or_unavailable(
+            request, scope="crown-refresh", identity=token,
+        )
+        if unavailable is not None:
+            return unavailable
         return JsonResponse({"ok": False, "error": "invalid_refresh"}, status=401)
 
     if res.payload.get("typ") != "refresh":
-        record_auth_failure(request, scope="crown-refresh", identity=token)
+        unavailable = _record_failure_or_unavailable(
+            request, scope="crown-refresh", identity=token,
+        )
+        if unavailable is not None:
+            return unavailable
         return JsonResponse({"ok": False, "error": "invalid_refresh"}, status=401)
 
     user_id = res.payload.get("sub")
     try:
         user_uuid = uuid.UUID(str(user_id))
     except Exception:
-        record_auth_failure(request, scope="crown-refresh", identity=token)
+        unavailable = _record_failure_or_unavailable(
+            request, scope="crown-refresh", identity=token,
+        )
+        if unavailable is not None:
+            return unavailable
         return JsonResponse({"ok": False, "error": "invalid_refresh"}, status=401)
 
     user = CrownUser.objects.filter(pk=user_uuid, is_active=True).first()
     if not user:
-        record_auth_failure(request, scope="crown-refresh", identity=token)
+        unavailable = _record_failure_or_unavailable(
+            request, scope="crown-refresh", identity=token,
+        )
+        if unavailable is not None:
+            return unavailable
         return JsonResponse({"ok": False, "error": "invalid_refresh"}, status=401)
 
     clear_auth_identity_failures(request, scope="crown-refresh", identity=token)

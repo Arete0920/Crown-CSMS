@@ -9,11 +9,13 @@ on:
       - ".github/workflows/**"
       - "tools/verify_workflow_policy.py"
       - "tools/ci/**"
+      - "config/security/external_tool_integrations.json"
+      - "docs/security/EXTERNAL_TOOL_INTEGRATION_SECURITY_STANDARD.md"
       - "scripts/ci/pr_hygiene_gate.py"
       - "infra/**"
-      - "Dockerfile*"
-      - "docker-compose*.yml"
-      - "docker-compose*.yaml"
+      - "**/Dockerfile*"
+      - "**/docker-compose*.yml"
+      - "**/docker-compose*.yaml"
 
 permissions:
   contents: read
@@ -90,7 +92,7 @@ jobs:
             HEAD_SHA="${{ github.sha }}"
           fi
           git diff --name-only "$BASE_SHA" "$HEAD_SHA" -- \
-            'infra/**' 'Dockerfile*' 'docker-compose*.yml' 'docker-compose*.yaml' \
+            'infra/**' '**/Dockerfile*' '**/docker-compose*.yml' '**/docker-compose*.yaml' \
             '.github/workflows/*.yml' '.github/workflows/*.yaml' \
             > changed-security-config.txt || true
           if [ -s changed-security-config.txt ]; then
@@ -159,6 +161,9 @@ jobs:
           python tools/ci/check_no_pr_job_if.py
           python tools/ci/check_workflow_step_names.py
           python tools/ci/check_dependency_audit_loadtest.py
+
+      - name: Enforce external tool integration security
+        run: python tools/ci/verify_tool_integration_security.py
 
       - name: Report no workflow changes
         if: steps.workflow_changes.outputs.changed != 'true'
