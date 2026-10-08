@@ -45,6 +45,13 @@ def require_role(request, allowed_roles: set) -> bool:
         return True
 
     school = getattr(request, "school", None)
+    if school is None:
+        from core.models import School
+        from .tenant import school_id_from_request
+        school_id = school_id_from_request(request, required=True)
+        school = School.objects.filter(pk=school_id).first()
+        if school is None:
+            return False
     normalized = {str(role).lower() for role in allowed_roles}
 
     if "admin" in normalized and user_has_permission(user, "home_academy.edit", school=school):
