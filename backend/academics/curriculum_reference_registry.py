@@ -117,7 +117,7 @@ NON_BJU_REFERENCE_SOURCES: tuple[CurriculumReferenceSource, ...] = (
     ),
     CurriculumReferenceSource(
         publisher="Purposeful Design",
-        title="Curriculum Trak Starter Maps (K-4 referenced by ACSI)",
+        title="Third-party starter maps (K-4 referenced by ACSI)",
         official_url="https://www.acsi.org/purposeful-design-publications/news-update/fall-2022",
         grade_band="K-4",
         subject="Multiple",
@@ -143,8 +143,8 @@ NON_BJU_REFERENCE_SOURCES: tuple[CurriculumReferenceSource, ...] = (
     ),
     CurriculumReferenceSource(
         publisher="Positive Action for Christ",
-        title="Curriculum Trak Curriculum Maps",
-        official_url="https://positiveaction.org/blog/find-us-on-curriculum-trak/",
+        title="Third-party curriculum maps",
+        official_url="https://positiveaction.org/",
         grade_band="K4-12",
         subject="Bible",
         edition="Current",
