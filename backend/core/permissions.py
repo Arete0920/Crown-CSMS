@@ -19,6 +19,7 @@
 from functools import wraps
 
 from django.http import JsonResponse
+from rest_framework.exceptions import APIException
 from rest_framework.permissions import BasePermission
 
 
@@ -69,7 +70,10 @@ def require_permission(permission_code):
                 from households.scoping import get_request_school_id
                 from .models import School
 
-                school_id = get_request_school_id(request, required=True)
+                try:
+                    school_id = get_request_school_id(request, required=True)
+                except APIException as exc:
+                    return JsonResponse({"detail": str(exc.detail)}, status=exc.status_code)
                 school = School.objects.filter(pk=school_id).first()
                 if school is not None:
                     request.school = school
