@@ -70,12 +70,12 @@ Collection command: python scripts/ops/azure_classroom_preflight.py --subscripti
 
 ## Control accountability and adoption
 
-Use the existing solo-maintainer model honestly. John C Megahan is a proposed accountable executive based on his stated owner role, not a recorded control appointment. No retrieved evidence establishes a named technical operator, deputy, privacy reviewer, independent readiness reviewer or CPA engagement. The September payment recap mentions a developer but does not establish current responsibility or appointment; no assignment is inferred.
+John C Megahan confirmed on October 8 2026 that he personally administers CROWN's Azure environment and technical operations. This establishes the current administrator by management self-report; it does not verify Azure resources, access configuration, formal assignment of every control, or policy approval. John remains the proposed accountable executive. Deputy coverage, privacy reviewer, independent readiness reviewer and CPA engagement remain unrecorded.
 
 | Role code | Proposed responsibility | Appointment field |
 | --- | --- | --- |
 | M | Management: scope, commitments, policies, risk decisions, resources and monthly readiness review. | Proposed John C Megahan; acceptance and effective date unrecorded. |
-| O | Operations and engineering: inventories, access, runtime, releases, vulnerabilities, logs and recovery. | Named operator and deputy REQUIRED. |
+| O | Operations and engineering: inventories, access, runtime, releases, vulnerabilities, logs and recovery. | Current administrator John C Megahan, confirmed October 8. Deputy and formal control assignments REQUIRED. |
 | P | Privacy and contract review: applicability, terms, vendors, consent, retention and rights. | Named accountable reviewer and qualified adviser REQUIRED. |
 | W | Workforce and school success: roster, training, acknowledgments and school communications. | Named person and deputy REQUIRED. |
 | E | Evidence custodian: restricted repository, complete populations, retention, integrity and disclosure. | Named person and alternate REQUIRED. |
@@ -83,7 +83,7 @@ Use the existing solo-maintainer model honestly. John C Megahan is a proposed ac
 
 ### Assignment record for every control
 
-Record control ID, owner full name and role, deputy full name, appointment/acceptance date, effective date, capacity and access needs, reviewer, conflicts, cadence, escalation contact, restricted evidence location and review date. Every row in the register below uses a proposed role code, not an actual personnel assignment. Management remains accountable when duties are delegated.
+Record control ID, owner full name and role, deputy full name, appointment/acceptance date, effective date, capacity and access needs, reviewer, conflicts, cadence, escalation contact, restricted evidence location and review date. The register uses proposed control allocations. Operations administrator John C Megahan is confirmed by self-report; formal control appointments and deputies remain to be recorded. Management remains accountable when duties are delegated.
 
 ### Independent review for a solo operator
 
@@ -95,7 +95,7 @@ Existing proposals: daily backups; RPO no more than 24 hours; RTO within 8 hours
 
 ## Evidence register for governance and access
 
-D = documented design verified present. S = source implementation identified by the register and merged work, with fresh CI at the reviewed SHA. X = external requirement. Every D or S control still requires management adoption and applicable operating evidence. Passing workflows do not prove every subcontrol. Role codes are unassigned proposals; mappings remain preliminary Common Criteria families in the readiness plan.
+D = documented design verified present. S = source implementation identified by the register and merged work, with fresh CI at the reviewed SHA. X = external requirement. Every D or S control still requires management adoption and applicable operating evidence. Passing workflows do not prove every subcontrol. Role codes are proposed control allocations; John C Megahan is the confirmed current operations administrator, with formal assignments and deputies pending. Mappings remain preliminary Common Criteria families in the readiness plan.
 
 | ID and area | State | Role | Evidence required to close operating gap |
 | --- | --- | --- | --- |
@@ -254,6 +254,6 @@ https://www.aicpa-cima.com/resources/download/illustrative-soc-2-r-report-with-d
 
 ### Discrepancies resolved in this package
 
-The earlier current-CI outage statement is superseded for the reviewed SHA; all 11 returned workflows succeeded and Tests actually executed. R08 retains unresolved production-key/history/deployment requirements. The scope identifies the source of the undeployed statement and limits Render claims to a historical inspected workspace. Actual GitHub use is separated from unverified candidate hosting and integration vendors. Diadem exclusion does not remove shared dependencies; disabled processing does not exclude CROWN financial data. Every appointment, target, risk score and approval retains its correct proposed or unapproved status.
+The earlier current-CI outage statement is superseded for the reviewed SHA; all 11 returned workflows succeeded and Tests actually executed. R08 retains unresolved production-key/history/deployment requirements. The scope identifies the source of the undeployed statement and limits Render claims to a historical inspected workspace. Actual GitHub use is separated from unverified candidate hosting and integration vendors. Diadem exclusion does not remove shared dependencies; disabled processing does not exclude CROWN financial data. The current operations administrator is confirmed by management self-report. Formal control appointments, deputies, targets, risk scores and approvals retain their proposed or unapproved status.
 
 Repository revisions accompanying this package are documentation proposals until merged. Their own applicable checks must be reviewed separately. This package adds no production authorization, management signature, risk acceptance or assurance report.
