@@ -84,3 +84,7 @@ Reviewed source identity: `a091504ec4ce37c84037b51e15d9f909fcaf6f91`. Fresh sour
 Diadem product exclusion does not exclude shared infrastructure, data or controls. CROWN billing/financial records remain part of the proposed CROWN data boundary even while external payment processing is disabled.
 
 Use [SOC 2 approval package](SOC2_APPROVAL_PACKAGE_20261008.md) for precise scope decisions, accountability fields, hosting prerequisites and evidence acceptance requirements. Approve the planning boundary separately from the final deployed system description. All management approvals remain unrecorded.
+
+## Confirmed current administrator
+
+On 2026-10-08, John C Megahan stated that he personally administers CROWN's Azure environment and technical operations. This is management self-report of the current administrator, not authenticated resource/access evidence, formal adoption of each control, or scope/policy approval. Record John as the current operations administrator; deputy/alternate, independent review, after-hours coverage and formal per-control assignments remain open. Actual Azure tenant/subscription, resources, regions and runtime acceptance remain unverified.
