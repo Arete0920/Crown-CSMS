@@ -24,8 +24,13 @@ def _legacy_spiritual_life_helpers_use_persistent_authority(request, monkeypatch
             code="spiritual_life.view",
             defaults={"description": "View spiritual-life dashboard"},
         )
+        edit_permission, _ = CrownPermission.objects.get_or_create(
+            code="spiritual_life.edit",
+            defaults={"description": "Create or modify school-wide spiritual-life records"},
+        )
         role_code = "spiritual_life_test_operator"
         RolePermission.objects.get_or_create(role_code=role_code, permission=permission)
+        RolePermission.objects.get_or_create(role_code=role_code, permission=edit_permission)
         UserRole.objects.get_or_create(user=user, school=school, role_code=role_code)
 
         # Legacy tests used Django staff to represent pastoral staff. Preserve their
