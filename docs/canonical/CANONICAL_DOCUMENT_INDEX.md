@@ -33,6 +33,7 @@ This index defines the active documentation authority surface for Crown-CSMS. Ex
 | `docs/ownership/OWNER_HANDOFF.md` | Controlled ownership transfer | Current release status; successor acceptance | Each handoff-stage change |
 | `docs/KNOWN_LIMITATIONS.md` | Disclosed product/operational limits | Verified evidence; accepted risk | Each material limitation change |
 | `SECURITY.md` | Security reporting and baseline | Current security policy | Security-policy change |
+| `docs/security/EXTERNAL_TOOL_INTEGRATION_SECURITY_STANDARD.md` | External tool, connector, agent, and delegated-integration security boundary | Security policy; machine-readable integration registry | Any external tool/runtime integration or policy change |
 | `CONTRIBUTING.md` | Contribution requirements | Change-management policy | Contribution-policy change |
 
 ## Exact-identity rule

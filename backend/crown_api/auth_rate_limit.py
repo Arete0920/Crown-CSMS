@@ -4,10 +4,15 @@ from dataclasses import dataclass
 from django.core.cache import cache
 
 
+class AuthRateLimitBackendUnavailable(RuntimeError):
+    """Authentication rate-limit storage is unavailable."""
+
+
 @dataclass(frozen=True)
 class AuthRateLimitDecision:
     allowed: bool
     retry_after_seconds: int
+    backend_available: bool = True
 
 
 def _client_ip(request) -> str:
@@ -35,9 +40,10 @@ def _ip_key(scope: str, request) -> str:
 def _get_count(key: str) -> int:
     try:
         return int(cache.get(key, 0) or 0)
-    except Exception:
-        # A cache outage must not turn into an authentication outage.
-        return 0
+    except Exception as exc:
+        raise AuthRateLimitBackendUnavailable(
+            "Authentication rate-limit storage read failed."
+        ) from exc
 
 
 def _increment(key: str, window_seconds: int) -> int:
@@ -45,8 +51,10 @@ def _increment(key: str, window_seconds: int) -> int:
         if cache.add(key, 1, timeout=window_seconds):
             return 1
         return int(cache.incr(key))
-    except Exception:
-        return 0
+    except Exception as exc:
+        raise AuthRateLimitBackendUnavailable(
+            "Authentication rate-limit storage write failed."
+        ) from exc
 
 
 def check_auth_rate_limit(
@@ -58,12 +66,20 @@ def check_auth_rate_limit(
     ip_limit: int = 50,
     window_seconds: int = 60,
 ) -> AuthRateLimitDecision:
-    """Check recent authentication failures without counting successful logins."""
-    identity_count = _get_count(_identity_key(scope, request, identity))
-    ip_count = _get_count(_ip_key(scope, request))
+    """Check recent authentication failures and fail closed on cache outage."""
+    try:
+        identity_count = _get_count(_identity_key(scope, request, identity))
+        ip_count = _get_count(_ip_key(scope, request))
+    except AuthRateLimitBackendUnavailable:
+        return AuthRateLimitDecision(
+            allowed=False,
+            retry_after_seconds=window_seconds,
+            backend_available=False,
+        )
     return AuthRateLimitDecision(
         identity_count < identity_limit and ip_count < ip_limit,
         window_seconds,
+        backend_available=True,
     )
 
 
@@ -84,6 +100,9 @@ def clear_auth_identity_failures(request, *, scope: str, identity: str) -> None:
 
     The IP-wide bucket is intentionally retained so successful requests cannot
     erase evidence of credential-stuffing attempts against other identities.
+
+    Cleanup failure does not invalidate an already authenticated request. The
+    existing bucket will naturally expire according to its configured window.
     """
     try:
         cache.delete(_identity_key(scope, request, identity))
