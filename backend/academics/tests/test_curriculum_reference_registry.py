@@ -82,3 +82,31 @@ def test_preferred_references_prioritize_publisher_direct_sources():
         if "publisher_direct" in tiers:
             assert tiers[0] == "publisher_direct"
         assert all(source.runtime_dependency != "paid_platform" for source in sources)
+
+
+def test_priority_publishers_support_teacher_lesson_planning_scaffolds():
+    from academics.curriculum_reference_registry import publisher_lesson_planning_readiness
+
+    for publisher in {
+        "BJU Press",
+        "Abeka",
+        "Purposeful Design",
+        "Positive Action for Christ",
+        "Summit Ministries",
+    }:
+        readiness = publisher_lesson_planning_readiness(publisher)
+        assert readiness["public_scaffold_available"] is True
+        assert readiness["licensed_teacher_materials_available"] is True
+        assert readiness["level"] in {"public_scaffold", "licensed_full"}
+
+
+def test_unknown_publisher_lesson_planning_fails_closed():
+    from academics.curriculum_reference_registry import publisher_lesson_planning_readiness
+
+    readiness = publisher_lesson_planning_readiness("Unknown Publisher")
+    assert readiness == {
+        "publisher": "Unknown Publisher",
+        "level": "unsupported",
+        "public_scaffold_available": False,
+        "licensed_teacher_materials_available": False,
+    }
