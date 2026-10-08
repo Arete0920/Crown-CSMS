@@ -27,6 +27,7 @@ class CurriculumReferenceSource:
     rights_mode: str = "public_reference_only"
     objective_ingestion_authorized: bool = False
     lesson_content_ingestion_authorized: bool = False
+    mapping_resource_level: str = "reference"
 
 
 def _bju_sources() -> tuple[CurriculumReferenceSource, ...]:
@@ -48,6 +49,16 @@ def _bju_sources() -> tuple[CurriculumReferenceSource, ...]:
 
 NON_BJU_REFERENCE_SOURCES: tuple[CurriculumReferenceSource, ...] = (
     CurriculumReferenceSource(
+        publisher="BJU Press",
+        title="Curriculum Guides / Curriculum Maps",
+        official_url="https://www.bjupress.com/resources/curriculum-guides",
+        grade_band="K-12",
+        subject="Multiple",
+        edition="Current",
+        source_kind="curriculum_map_index",
+        mapping_resource_level="publisher_map",
+    ),
+    CurriculumReferenceSource(
         publisher="Abeka",
         title="2026 School Scope & Sequence",
         official_url="https://static.abeka.com/ABeka/InteractivePDF/ScopeSequence/SchoolSS/2026/2026Scope-and-Sequence.pdf",
@@ -55,6 +66,7 @@ NON_BJU_REFERENCE_SOURCES: tuple[CurriculumReferenceSource, ...] = (
         subject="Multiple",
         edition="2026",
         source_kind="scope_sequence",
+        mapping_resource_level="scope_sequence",
     ),
     CurriculumReferenceSource(
         publisher="Purposeful Design",
@@ -64,6 +76,17 @@ NON_BJU_REFERENCE_SOURCES: tuple[CurriculumReferenceSource, ...] = (
         subject="Bible",
         edition="Current",
         source_kind="scope_sequence",
+        mapping_resource_level="scope_sequence",
+    ),
+    CurriculumReferenceSource(
+        publisher="Purposeful Design",
+        title="Curriculum Trak Starter Maps (K-4 referenced by ACSI)",
+        official_url="https://www.acsi.org/purposeful-design-publications/news-update/fall-2022",
+        grade_band="K-4",
+        subject="Multiple",
+        edition="Current",
+        source_kind="curriculum_map_registry",
+        mapping_resource_level="publisher_map",
     ),
     CurriculumReferenceSource(
         publisher="Positive Action for Christ",
@@ -73,6 +96,17 @@ NON_BJU_REFERENCE_SOURCES: tuple[CurriculumReferenceSource, ...] = (
         subject="Bible",
         edition="Current",
         source_kind="scope_sequence",
+        mapping_resource_level="scope_sequence",
+    ),
+    CurriculumReferenceSource(
+        publisher="Positive Action for Christ",
+        title="Curriculum Trak Curriculum Maps",
+        official_url="https://positiveaction.org/blog/find-us-on-curriculum-trak/",
+        grade_band="K4-12",
+        subject="Bible",
+        edition="Current",
+        source_kind="curriculum_map_registry",
+        mapping_resource_level="publisher_map",
     ),
     CurriculumReferenceSource(
         publisher="Positive Action for Christ",
@@ -91,6 +125,7 @@ NON_BJU_REFERENCE_SOURCES: tuple[CurriculumReferenceSource, ...] = (
         subject="Bible/Biblical Worldview",
         edition="Current",
         source_kind="curriculum_overview",
+        mapping_resource_level="overview",
     ),
     CurriculumReferenceSource(
         publisher="Summit Ministries",
@@ -100,6 +135,7 @@ NON_BJU_REFERENCE_SOURCES: tuple[CurriculumReferenceSource, ...] = (
         subject="Bible/Biblical Worldview",
         edition="Current",
         source_kind="catalog",
+        mapping_resource_level="overview",
     ),
 )
 
