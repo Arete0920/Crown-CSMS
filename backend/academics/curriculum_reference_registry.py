@@ -28,6 +28,8 @@ class CurriculumReferenceSource:
     objective_ingestion_authorized: bool = False
     lesson_content_ingestion_authorized: bool = False
     mapping_resource_level: str = "reference"
+    authority_tier: str = "publisher_direct"
+    runtime_dependency: str = "none"
 
 
 def _bju_sources() -> tuple[CurriculumReferenceSource, ...]:
@@ -57,6 +59,7 @@ NON_BJU_REFERENCE_SOURCES: tuple[CurriculumReferenceSource, ...] = (
         edition="Current",
         source_kind="curriculum_map_index",
         mapping_resource_level="publisher_map",
+        authority_tier="publisher_direct",
     ),
     CurriculumReferenceSource(
         publisher="Abeka",
@@ -87,6 +90,8 @@ NON_BJU_REFERENCE_SOURCES: tuple[CurriculumReferenceSource, ...] = (
         edition="Current",
         source_kind="curriculum_map_registry",
         mapping_resource_level="publisher_map",
+        authority_tier="publisher_authorized_partner",
+        runtime_dependency="reference_only",
     ),
     CurriculumReferenceSource(
         publisher="Positive Action for Christ",
@@ -107,6 +112,8 @@ NON_BJU_REFERENCE_SOURCES: tuple[CurriculumReferenceSource, ...] = (
         edition="Current",
         source_kind="curriculum_map_registry",
         mapping_resource_level="publisher_map",
+        authority_tier="publisher_authorized_partner",
+        runtime_dependency="reference_only",
     ),
     CurriculumReferenceSource(
         publisher="Positive Action for Christ",
@@ -197,3 +204,39 @@ def structured_publisher_ingestion_ready(publisher: str) -> bool:
 
 def supported_reference_publishers() -> tuple[str, ...]:
     return tuple(sorted({source.publisher for source in CURRICULUM_REFERENCE_SOURCES}))
+
+
+AUTHORITY_TIER_PRIORITY = {
+    "publisher_direct": 0,
+    "publisher_authorized_partner": 1,
+    "association_reference": 2,
+    "school_public_map": 3,
+    "discovery_only": 4,
+}
+
+
+def preferred_curriculum_references(publisher: str) -> list[CurriculumReferenceSource]:
+    """Return publisher references ordered by source authority, without paid runtime dependencies."""
+
+    sources = get_curriculum_reference_sources(publisher=publisher)
+    eligible = [
+        source
+        for source in sources
+        if source.runtime_dependency in {"none", "reference_only"}
+    ]
+    return sorted(
+        eligible,
+        key=lambda source: (
+            AUTHORITY_TIER_PRIORITY.get(source.authority_tier, 99),
+            source.title.lower(),
+        ),
+    )
+
+
+def has_paid_runtime_dependency() -> bool:
+    """CROWN curriculum mapping must remain independently operable."""
+
+    return any(
+        source.runtime_dependency == "paid_platform"
+        for source in CURRICULUM_REFERENCE_SOURCES
+    )
