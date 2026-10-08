@@ -144,7 +144,6 @@ def _can_manage_solomon(user) -> bool:
     return bool(
         getattr(user, "is_staff", False)
         or getattr(user, "is_superuser", False)
-        or user_has_permission(user, "admin.view")
     )
 
 

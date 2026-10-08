@@ -1,11 +1,13 @@
 import random
 from datetime import date, timedelta
 
-from django.core.management.base import BaseCommand
+from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
+from django.core.exceptions import ValidationError
 from django.utils import timezone
 
 from core.models import School, Student, Staff
+from core.tenant_models import tenant_context
 from classroom.models import (
     Classroom,
     ClassroomEnrollment,
@@ -19,7 +21,7 @@ class Command(BaseCommand):
     help = "Seed deterministic classroom demo data for the selected school (requires X-School-Id when using APIs)."
 
     def add_arguments(self, parser):
-        parser.add_argument("--school-id", required=False, help="School UUID. If omitted, uses first School().")
+        parser.add_argument("--school-id", required=False, help="School UUID. Required when more than one school exists.")
         parser.add_argument("--classrooms", type=int, default=6)
         parser.add_argument("--students-per", type=int, default=18)
         parser.add_argument("--seed", type=int, default=26)
@@ -29,15 +31,20 @@ class Command(BaseCommand):
         random.seed(int(opts["seed"]))
 
         school_id = opts.get("school_id")
-        school = None
         if school_id:
-            school = School.objects.filter(pk=school_id).first()
-        if not school:
-            school = School.objects.first()
+            try:
+                school = School.objects.get(pk=school_id, is_active=True)
+            except (School.DoesNotExist, ValueError, ValidationError) as exc:
+                raise CommandError("A valid active --school-id is required.") from exc
+        else:
+            candidates = list(School.objects.filter(is_active=True)[:2])
+            if len(candidates) != 1:
+                raise CommandError("Specify --school-id; school selection is missing or ambiguous.")
+            school = candidates[0]
+        with tenant_context(school):
+            return self._seed_school(school, opts)
 
-        if not school:
-            raise SystemExit("No School found to seed against.")
-
+    def _seed_school(self, school, opts):
         # Students/Staff must exist already (heritage realism pack creates them)
         students = list(Student.objects.filter(school=school).order_by("id")[: (opts["classrooms"] * opts["students_per"])])
         staff = list(Staff.objects.filter(school=school).order_by("id")[: max(1, opts["classrooms"])])

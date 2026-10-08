@@ -9,7 +9,7 @@ from .drf_views import BillingRunCreateApiView
 
 FINANCE_WRITE_PERMISSION_CLASSES = (
     IsAuthenticated,
-    CrownModulePermission("finance.edit"),
+    CrownModulePermission("finance.edit", write_code="finance.edit"),
 )
 
 
