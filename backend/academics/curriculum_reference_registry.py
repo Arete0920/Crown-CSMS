@@ -30,6 +30,8 @@ class CurriculumReferenceSource:
     mapping_resource_level: str = "reference"
     authority_tier: str = "publisher_direct"
     runtime_dependency: str = "none"
+    lesson_planning_level: str = "reference_only"
+    licensed_teacher_materials_available: bool = False
 
 
 def _bju_sources() -> tuple[CurriculumReferenceSource, ...]:
@@ -60,6 +62,21 @@ NON_BJU_REFERENCE_SOURCES: tuple[CurriculumReferenceSource, ...] = (
         source_kind="curriculum_map_index",
         mapping_resource_level="publisher_map",
         authority_tier="publisher_direct",
+        lesson_planning_level="public_scaffold",
+        licensed_teacher_materials_available=True,
+    ),
+    CurriculumReferenceSource(
+        publisher="BJU Press",
+        title="Lesson Plan Overviews",
+        official_url="https://www.bjupress.com/resources/lesson-plan-overviews/",
+        grade_band="Preschool-12",
+        subject="Multiple",
+        edition="Current",
+        source_kind="lesson_plan_overview_index",
+        mapping_resource_level="lesson_plan_overview",
+        authority_tier="publisher_direct",
+        lesson_planning_level="public_scaffold",
+        licensed_teacher_materials_available=True,
     ),
     CurriculumReferenceSource(
         publisher="Abeka",
@@ -70,6 +87,21 @@ NON_BJU_REFERENCE_SOURCES: tuple[CurriculumReferenceSource, ...] = (
         edition="2026",
         source_kind="scope_sequence",
         mapping_resource_level="scope_sequence",
+        lesson_planning_level="public_scaffold",
+        licensed_teacher_materials_available=True,
+    ),
+    CurriculumReferenceSource(
+        publisher="Abeka",
+        title="Curriculum Lesson Plans product family",
+        official_url="https://www.abeka.com/abekaonline/bookdescription.aspx?sbn=414999",
+        grade_band="K-12",
+        subject="Multiple",
+        edition="Current",
+        source_kind="lesson_plan_product_evidence",
+        mapping_resource_level="lesson_plan_overview",
+        authority_tier="publisher_direct",
+        lesson_planning_level="licensed_full",
+        licensed_teacher_materials_available=True,
     ),
     CurriculumReferenceSource(
         publisher="Purposeful Design",
@@ -80,6 +112,8 @@ NON_BJU_REFERENCE_SOURCES: tuple[CurriculumReferenceSource, ...] = (
         edition="Current",
         source_kind="scope_sequence",
         mapping_resource_level="scope_sequence",
+        lesson_planning_level="public_scaffold",
+        licensed_teacher_materials_available=True,
     ),
     CurriculumReferenceSource(
         publisher="Purposeful Design",
@@ -92,6 +126,8 @@ NON_BJU_REFERENCE_SOURCES: tuple[CurriculumReferenceSource, ...] = (
         mapping_resource_level="publisher_map",
         authority_tier="publisher_authorized_partner",
         runtime_dependency="reference_only",
+        lesson_planning_level="public_scaffold",
+        licensed_teacher_materials_available=True,
     ),
     CurriculumReferenceSource(
         publisher="Positive Action for Christ",
@@ -102,6 +138,8 @@ NON_BJU_REFERENCE_SOURCES: tuple[CurriculumReferenceSource, ...] = (
         edition="Current",
         source_kind="scope_sequence",
         mapping_resource_level="scope_sequence",
+        lesson_planning_level="public_scaffold",
+        licensed_teacher_materials_available=True,
     ),
     CurriculumReferenceSource(
         publisher="Positive Action for Christ",
@@ -114,6 +152,8 @@ NON_BJU_REFERENCE_SOURCES: tuple[CurriculumReferenceSource, ...] = (
         mapping_resource_level="publisher_map",
         authority_tier="publisher_authorized_partner",
         runtime_dependency="reference_only",
+        lesson_planning_level="public_scaffold",
+        licensed_teacher_materials_available=True,
     ),
     CurriculumReferenceSource(
         publisher="Positive Action for Christ",
@@ -123,6 +163,21 @@ NON_BJU_REFERENCE_SOURCES: tuple[CurriculumReferenceSource, ...] = (
         subject="Bible",
         edition="Current",
         source_kind="scope_sequence_index",
+        lesson_planning_level="public_scaffold",
+        licensed_teacher_materials_available=True,
+    ),
+    CurriculumReferenceSource(
+        publisher="Positive Action for Christ",
+        title="Secondary Teacher Manual planning structure",
+        official_url="https://positiveaction.org/documents/864/Secondary_Scope_and_Sequence_2025.pdf",
+        grade_band="6-12",
+        subject="Bible",
+        edition="2025",
+        source_kind="teacher_manual_structure",
+        mapping_resource_level="lesson_plan_overview",
+        authority_tier="publisher_direct",
+        lesson_planning_level="licensed_full",
+        licensed_teacher_materials_available=True,
     ),
     CurriculumReferenceSource(
         publisher="Summit Ministries",
@@ -133,6 +188,8 @@ NON_BJU_REFERENCE_SOURCES: tuple[CurriculumReferenceSource, ...] = (
         edition="Current",
         source_kind="curriculum_overview",
         mapping_resource_level="overview",
+        lesson_planning_level="public_scaffold",
+        licensed_teacher_materials_available=True,
     ),
     CurriculumReferenceSource(
         publisher="Summit Ministries",
@@ -143,6 +200,8 @@ NON_BJU_REFERENCE_SOURCES: tuple[CurriculumReferenceSource, ...] = (
         edition="Current",
         source_kind="catalog",
         mapping_resource_level="overview",
+        lesson_planning_level="public_scaffold",
+        licensed_teacher_materials_available=True,
     ),
 )
 
@@ -240,3 +299,46 @@ def has_paid_runtime_dependency() -> bool:
         source.runtime_dependency == "paid_platform"
         for source in CURRICULUM_REFERENCE_SOURCES
     )
+
+
+LESSON_PLANNING_PRIORITY = {
+    "licensed_full": 3,
+    "public_scaffold": 2,
+    "reference_only": 1,
+}
+
+
+def publisher_lesson_planning_readiness(publisher: str) -> dict:
+    """Summarize how much publisher material can support teacher planning.
+
+    public_scaffold means Praeceptum can prefill a school-authored planning
+    structure from public factual/reference material without reproducing
+    protected lesson text. licensed_full means the publisher offers deeper
+    teacher planning materials, but those materials remain subject to the
+    school's license and are not part of the shared Solomon corpus.
+    """
+
+    sources = get_curriculum_reference_sources(publisher=publisher)
+    if not sources:
+        return {
+            "publisher": publisher,
+            "level": "unsupported",
+            "public_scaffold_available": False,
+            "licensed_teacher_materials_available": False,
+        }
+
+    best = max(
+        sources,
+        key=lambda source: LESSON_PLANNING_PRIORITY.get(source.lesson_planning_level, 0),
+    )
+    return {
+        "publisher": best.publisher,
+        "level": best.lesson_planning_level,
+        "public_scaffold_available": any(
+            source.lesson_planning_level in {"public_scaffold", "licensed_full"}
+            for source in sources
+        ),
+        "licensed_teacher_materials_available": any(
+            source.licensed_teacher_materials_available for source in sources
+        ),
+    }
