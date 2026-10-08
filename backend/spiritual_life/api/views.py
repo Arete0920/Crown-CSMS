@@ -6,6 +6,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from core.models import School, Student
+from core.permissions import CrownModulePermission
 from households.scoping import get_request_school_id
 from spiritual_life.models import (
     StudentSpiritualProfile,
