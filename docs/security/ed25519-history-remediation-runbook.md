@@ -2,7 +2,7 @@
 
 ## Status and authority
 
-This runbook implements the repository-side preparation for issue #1692. It does not revoke, rotate, generate, register, or distribute a cryptographic key. Those actions require an authorized operator in the system that trusted the exposed key.
+This runbook implements the repository-side preparation for issue #104. It does not revoke, rotate, generate, register, or distribute a cryptographic key. Those actions require an authorized operator in the system that trusted the exposed key.
 
 Production authorization remains blocked until both operational key retirement and repository-history remediation are independently verified.
 
@@ -42,8 +42,8 @@ Before rewriting refs, create one encrypted, access-controlled preservation copy
 Perform this operation from a clean maintenance clone with all intended branches and tags fetched. Coordinate a repository maintenance window before changing shared refs.
 
 ```bash
-git clone --mirror https://github.com/Arete0920/Crown-CSMS.git Crown2026-remediation.git
-cd Crown2026-remediation.git
+git clone --mirror https://github.com/Arete0920/Crown-CSMS.git Crown-CSMS-remediation.git
+cd Crown-CSMS-remediation.git
 
 git filter-repo \
   --path 'solomon_governance_c1/governance/c1/runtime/audit_pack/20260515T185051Z/crypto_attestation/ed25519_private_key_DO_NOT_SHARE.pem' \
@@ -59,7 +59,7 @@ Run the repository verifier before any force update:
 
 ```bash
 ./tools/verify_remediated_git_bundle.sh \
-  --repo Crown2026-remediation.git \
+  --repo Crown-CSMS-remediation.git \
   --forbidden-path 'solomon_governance_c1/governance/c1/runtime/audit_pack/20260515T185051Z/crypto_attestation/ed25519_private_key_DO_NOT_SHARE.pem'
 ```
 
@@ -92,11 +92,11 @@ Afterward:
 Create the second bundle only from verified remediated refs:
 
 ```bash
-git bundle create Crown2026_remediated.bundle --all
+git bundle create Crown-CSMS_remediated.bundle --all
 ./tools/verify_remediated_git_bundle.sh \
-  --bundle Crown2026_remediated.bundle \
+  --bundle Crown-CSMS_remediated.bundle \
   --forbidden-path 'solomon_governance_c1/governance/c1/runtime/audit_pack/20260515T185051Z/crypto_attestation/ed25519_private_key_DO_NOT_SHARE.pem'
-sha256sum Crown2026_remediated.bundle
+sha256sum Crown-CSMS_remediated.bundle
 ```
 
 Record:
