@@ -55,4 +55,4 @@ jobs:
           name: playwright-report-${{ github.run_id }}
           path: frontend/dashboards/playwright-report/
           retention-days: 7
-
+          if-no-files-found: error

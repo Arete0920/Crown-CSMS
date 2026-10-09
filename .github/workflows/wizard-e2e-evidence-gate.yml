@@ -67,6 +67,7 @@ jobs:
           name: wizard-e2e-evidence-classification
           if-no-files-found: error
           path: audit-artifacts/wizard-e2e-evidence/latest
+          retention-days: 14
 
   canonical-wizard-runtime:
     name: Run canonical wizard browser transactions
@@ -257,3 +258,4 @@ jobs:
             frontend/dashboards/test-results
             frontend/dashboards/playwright-wizard-report
             /tmp/crown-wizard-backend.log
+          retention-days: 14
