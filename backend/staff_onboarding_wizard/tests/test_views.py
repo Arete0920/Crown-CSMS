@@ -17,7 +17,7 @@ from django.contrib.auth import get_user_model
 from django.test import TestCase
 from rest_framework.test import APIClient
 
-from core.models import School, Staff
+from core.models import CrownPermission, RolePermission, School, Staff, UserRole
 from staff_onboarding_wizard.models import StaffOnboardingWizardSession
 
 
@@ -45,9 +45,14 @@ def _headers(school_id):
     return {"HTTP_X_SCHOOL_ID": str(school_id)}
 
 
-def _authed_client():
+def _authed_client(school):
+    user = _make_user()
+    role_code = "staff_onboarding_test_hr_editor"
+    UserRole.objects.create(user=user, school=school, role_code=role_code)
+    permission, _ = CrownPermission.objects.get_or_create(code="hr.edit")
+    RolePermission.objects.get_or_create(role_code=role_code, permission=permission)
     c = APIClient()
-    c.force_authenticate(user=_make_user())
+    c.force_authenticate(user=user)
     return c
 
 
@@ -104,7 +109,7 @@ class StaffOnboardingAuthTest(TestCase):
 
     def test_configure_requires_auth(self):
         school = _make_school()
-        client = _authed_client()
+        client = _authed_client(school)
         r = client.post(BASE_URL, **_headers(school.id))
         sid = r.data["session_id"]
         r2 = APIClient().post(
@@ -117,19 +122,75 @@ class StaffOnboardingAuthTest(TestCase):
 
 
 # ---------------------------------------------------------------------------
+# HR mutation authorization
+# ---------------------------------------------------------------------------
+
+class StaffOnboardingAuthorizationTest(TestCase):
+    def _viewer(self, school):
+        user = _make_user()
+        role_code = "staff_onboarding_test_read_only"
+        UserRole.objects.create(user=user, school=school, role_code=role_code)
+        permission, _ = CrownPermission.objects.get_or_create(code="hr.view")
+        RolePermission.objects.get_or_create(role_code=role_code, permission=permission)
+        client = APIClient()
+        client.force_authenticate(user=user)
+        return client
+
+    def test_unprivileged_user_cannot_start_onboarding(self):
+        school = _make_school()
+        user = _make_user()
+        UserRole.objects.create(user=user, school=school, role_code="staff_onboarding_test_no_grant")
+        client = APIClient()
+        client.force_authenticate(user=user)
+        self.assertEqual(client.post(BASE_URL, **_headers(school.id)).status_code, 403)
+        self.assertFalse(StaffOnboardingWizardSession.objects.exists())
+
+    def test_view_only_cannot_mutate_onboarding_including_get_steps(self):
+        school = _make_school()
+        editor = _authed_client(school)
+        sid, _ = _advance_to_configured(editor, school.id)
+        viewer = self._viewer(school)
+        self.assertEqual(viewer.post(BASE_URL, **_headers(school.id)).status_code, 403)
+        self.assertEqual(
+            viewer.get(f"{BASE_URL}{sid}/preview/", **_headers(school.id)).status_code,
+            403,
+        )
+        self.assertEqual(
+            StaffOnboardingWizardSession.objects.get(pk=sid).status,
+            StaffOnboardingWizardSession.STATUS_CONFIGURED,
+        )
+        self.assertEqual(
+            viewer.post(f"{BASE_URL}{sid}/commit/", **_headers(school.id)).status_code,
+            403,
+        )
+        self.assertEqual(
+            viewer.get(f"{BASE_URL}{sid}/verify/", **_headers(school.id)).status_code,
+            403,
+        )
+
+    def test_inactive_editor_is_rejected(self):
+        school = _make_school()
+        editor = _authed_client(school)
+        user = editor.handler._force_user
+        user.is_active = False
+        user.save(update_fields=["is_active"])
+        self.assertEqual(editor.post(BASE_URL, **_headers(school.id)).status_code, 403)
+
+
+# ---------------------------------------------------------------------------
 # Tenant isolation
 # ---------------------------------------------------------------------------
 
 class StaffOnboardingTenantTest(TestCase):
     def test_missing_school_header_returns_400(self):
-        client = _authed_client()
+        client = _authed_client(_make_school())
         r = client.post(BASE_URL)
         self.assertIn(r.status_code, (400, 403))
 
     def test_school_mismatch_returns_404(self):
         school_a = _make_school("A")
         school_b = _make_school("B")
-        client = _authed_client()
+        client = _authed_client(school_a)
         r = client.post(BASE_URL, **_headers(school_a.id))
         sid = r.data["session_id"]
         r2 = client.post(
@@ -148,14 +209,14 @@ class StaffOnboardingTenantTest(TestCase):
 class StaffOnboardingCreateTest(TestCase):
     def test_create_returns_201(self):
         school = _make_school()
-        r = _authed_client().post(BASE_URL, **_headers(school.id))
+        r = _authed_client(school).post(BASE_URL, **_headers(school.id))
         self.assertEqual(r.status_code, 201)
         self.assertIn("session_id", r.data)
         self.assertEqual(r.data["status"], StaffOnboardingWizardSession.STATUS_DRAFT)
 
     def test_create_persists_session(self):
         school = _make_school()
-        r = _authed_client().post(BASE_URL, **_headers(school.id))
+        r = _authed_client(school).post(BASE_URL, **_headers(school.id))
         sid = r.data["session_id"]
         self.assertTrue(
             StaffOnboardingWizardSession.objects.filter(pk=sid).exists()
@@ -169,7 +230,7 @@ class StaffOnboardingCreateTest(TestCase):
 class StaffOnboardingConfigureTest(TestCase):
     def test_configure_happy_path(self):
         school = _make_school()
-        client = _authed_client()
+        client = _authed_client(school)
         sid, email = _advance_to_configured(client, school.id)
         session = StaffOnboardingWizardSession.objects.get(pk=sid)
         self.assertEqual(session.status, StaffOnboardingWizardSession.STATUS_CONFIGURED)
@@ -177,7 +238,7 @@ class StaffOnboardingConfigureTest(TestCase):
 
     def test_configure_missing_first_name(self):
         school = _make_school()
-        client = _authed_client()
+        client = _authed_client(school)
         r = client.post(BASE_URL, **_headers(school.id))
         sid = r.data["session_id"]
         r2 = client.post(
@@ -191,7 +252,7 @@ class StaffOnboardingConfigureTest(TestCase):
 
     def test_configure_invalid_role(self):
         school = _make_school()
-        client = _authed_client()
+        client = _authed_client(school)
         r = client.post(BASE_URL, **_headers(school.id))
         sid = r.data["session_id"]
         r2 = client.post(
@@ -205,7 +266,7 @@ class StaffOnboardingConfigureTest(TestCase):
 
     def test_all_valid_roles_accepted(self):
         school = _make_school()
-        client = _authed_client()
+        client = _authed_client(school)
         for role in ("TEACHER", "DIRECTOR", "ADMIN", "SUPPORT"):
             r = client.post(BASE_URL, **_headers(school.id))
             sid = r.data["session_id"]
@@ -225,7 +286,7 @@ class StaffOnboardingConfigureTest(TestCase):
 class StaffOnboardingPreviewTest(TestCase):
     def test_preview_on_draft_returns_400(self):
         school = _make_school()
-        client = _authed_client()
+        client = _authed_client(school)
         r = client.post(BASE_URL, **_headers(school.id))
         sid = r.data["session_id"]
         r2 = client.get(f"{BASE_URL}{sid}/preview/", **_headers(school.id))
@@ -233,7 +294,7 @@ class StaffOnboardingPreviewTest(TestCase):
 
     def test_preview_happy_path(self):
         school = _make_school()
-        client = _authed_client()
+        client = _authed_client(school)
         sid, email = _advance_to_configured(client, school.id)
         r = client.get(f"{BASE_URL}{sid}/preview/", **_headers(school.id))
         self.assertEqual(r.status_code, 200)
@@ -249,7 +310,7 @@ class StaffOnboardingPreviewTest(TestCase):
             school=school, first_name="Existing", last_name="Staff",
             email=email, role_type="ADMIN"
         )
-        client = _authed_client()
+        client = _authed_client(school)
         sid, _ = _advance_to_configured(client, school.id, email=email)
         r = client.get(f"{BASE_URL}{sid}/preview/", **_headers(school.id))
         self.assertEqual(r.status_code, 200)
@@ -263,13 +324,13 @@ class StaffOnboardingPreviewTest(TestCase):
 class StaffOnboardingCommitTest(TestCase):
     def test_commit_creates_staff(self):
         school = _make_school()
-        client = _authed_client()
+        client = _authed_client(school)
         sid, email = _advance_to_committed(client, school.id)
         self.assertTrue(Staff.objects.filter(school=school, email=email).exists())
 
     def test_commit_returns_staff_id(self):
         school = _make_school()
-        client = _authed_client()
+        client = _authed_client(school)
         sid, email = _advance_to_previewed(client, school.id)
         r = client.post(f"{BASE_URL}{sid}/commit/", **_headers(school.id))
         self.assertEqual(r.status_code, 200)
@@ -280,7 +341,7 @@ class StaffOnboardingCommitTest(TestCase):
 
     def test_commit_on_draft_returns_400(self):
         school = _make_school()
-        client = _authed_client()
+        client = _authed_client(school)
         r = client.post(BASE_URL, **_headers(school.id))
         sid = r.data["session_id"]
         r2 = client.post(f"{BASE_URL}{sid}/commit/", **_headers(school.id))
@@ -293,7 +354,7 @@ class StaffOnboardingCommitTest(TestCase):
             school=school, first_name="First", last_name="Staff",
             email=email, role_type="TEACHER"
         )
-        client = _authed_client()
+        client = _authed_client(school)
         sid, _ = _advance_to_previewed(client, school.id, email=email)
         r = client.post(f"{BASE_URL}{sid}/commit/", **_headers(school.id))
         self.assertEqual(r.status_code, 200)
@@ -308,7 +369,7 @@ class StaffOnboardingCommitTest(TestCase):
 class StaffOnboardingVerifyTest(TestCase):
     def test_verify_confirms_staff(self):
         school = _make_school()
-        client = _authed_client()
+        client = _authed_client(school)
         sid, email = _advance_to_committed(client, school.id)
         r = client.get(f"{BASE_URL}{sid}/verify/", **_headers(school.id))
         self.assertEqual(r.status_code, 200)
@@ -318,7 +379,7 @@ class StaffOnboardingVerifyTest(TestCase):
 
     def test_verify_before_commit_returns_400(self):
         school = _make_school()
-        client = _authed_client()
+        client = _authed_client(school)
         sid, _ = _advance_to_previewed(client, school.id)
         r = client.get(f"{BASE_URL}{sid}/verify/", **_headers(school.id))
         self.assertEqual(r.status_code, 400)
