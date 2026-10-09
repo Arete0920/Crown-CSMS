@@ -11,7 +11,7 @@ WORKFLOWS = {
 }
 REQUIRED_TOKENS = (
     "workflow_dispatch:",
-    "actions/upload-artifact@v4",
+    "uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
     "if-no-files-found: error",
     "production_mutation_performed",
 )

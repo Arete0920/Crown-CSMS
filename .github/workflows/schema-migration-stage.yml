@@ -46,6 +46,11 @@ permissions:
   contents: read
   id-token: write
 
+# Keep caller runs independent; the production job retains its shared database lock.
+concurrency:
+  group: schema-migration-stage-${{ github.run_id }}
+  cancel-in-progress: false
+
 jobs:
   contract-proof:
     runs-on: ubuntu-latest
