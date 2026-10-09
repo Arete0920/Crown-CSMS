@@ -22,7 +22,7 @@ from django.shortcuts import get_object_or_404
 from rest_framework import status
 from rest_framework.authentication import SessionAuthentication
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
-from rest_framework.permissions import IsAuthenticated
+from core.permissions import CrownModulePermission
 from rest_framework.response import Response
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
@@ -35,7 +35,9 @@ from drf_spectacular.utils import extend_schema
 from drf_spectacular.types import OpenApiTypes
 
 _AUTH = [JWTAuthentication, SessionAuthentication]
-_PERM = [IsAuthenticated]
+# All wizard steps control staff onboarding state, including GET preview/verify.
+# Require explicit school-scoped HR editing authority for the whole lifecycle.
+_PERM = [CrownModulePermission("hr.edit", write_code="hr.edit")]
 logger = logging.getLogger(__name__)
 
 # Single source of truth — mirrors core.Staff.ROLE_CHOICES exactly.
