@@ -16,17 +16,25 @@ def validate(workflow):
     errors = []
     jobs = workflow.get('jobs', {})
     candidate = jobs.get('candidate-verification', {})
-    migration = jobs.get('production-migration', {})
     deployment = jobs.get('build-and-deploy', {})
-    if 'candidate-verification' not in needs(migration):
-        errors.append('production migration must depend on candidate verification')
-    if not {'candidate-verification', 'production-migration'} <= needs(deployment):
-        errors.append('deployment must depend on validated candidate and migration')
-    for name, job in [('candidate', candidate), ('migration', migration), ('deployment', deployment)]:
+    prerequisites = {
+        'candidate-verification': {'resolve-release'},
+        'production-migration': {'resolve-release', 'candidate-verification'},
+        'build-and-deploy': {'resolve-release', 'candidate-verification', 'production-migration'},
+    }
+    if not jobs.get('resolve-release'):
+        errors.append('missing release resolution job')
+    for name, required in prerequisites.items():
+        job = jobs.get(name, {})
         if not job:
             errors.append(f'missing {name} job')
+        missing = required - needs(job)
+        if missing:
+            errors.append(f'{name} missing mandatory prerequisites: {", ".join(sorted(missing))}')
         if 'if' in job:
             errors.append(f'{name} job cannot bypass default successful dependency semantics')
+        if job.get('continue-on-error', False) is not False:
+            errors.append(f'{name} job must fail closed')
     steps = candidate.get('steps', [])
     named = {s.get('name'): index for index, s in enumerate(steps)}
     required = ['Run complete governed candidate coverage', 'Verify complete candidate frontend',

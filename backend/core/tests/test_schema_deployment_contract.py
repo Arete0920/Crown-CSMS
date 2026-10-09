@@ -1,5 +1,6 @@
 from pathlib import Path
 import re
+
 import yaml
 
 
@@ -58,24 +59,35 @@ def test_production_workflows_resolve_one_immutable_sha_before_migration() -> No
 def test_validated_candidate_precedes_migration_and_web_deployment() -> None:
     for path in DEPLOY_WORKFLOWS:
         workflow = _read(path)
-        migration_job = _job_block(workflow, "production-migration")
-        deploy_job = _job_block(workflow, "build-and-deploy")
-
-        assert f"uses: {CONTROLLED_MIGRATION_WORKFLOW}" in migration_job
-        assert f"expected_sha: {RESOLVED_SHA_EXPRESSION}" in migration_job
-        assert "confirm_environment: production" in migration_job
-        assert "secrets: inherit" in migration_job
-
         jobs = yaml.safe_load(workflow)["jobs"]
-        assert {"resolve-release", "candidate-verification"} <= set(
-            jobs["production-migration"]["needs"]
-        ), "production migration must wait for the exact-SHA candidate validation"
-        assert {"resolve-release", "production-migration", "candidate-verification"} <= set(
-            jobs["build-and-deploy"]["needs"]
-        ), "web deployment must wait for validated candidate and exact-SHA migration"
-        assert "if" not in jobs["production-migration"]
-        assert "if" not in jobs["build-and-deploy"]
-        assert f"ref: {RESOLVED_SHA_EXPRESSION}" in deploy_job
+        migration_job = jobs["production-migration"]
+        deploy_job = jobs["build-and-deploy"]
+
+        assert migration_job["uses"] == CONTROLLED_MIGRATION_WORKFLOW
+        assert migration_job["with"]["expected_sha"] == RESOLVED_SHA_EXPRESSION
+        assert migration_job["with"]["confirm_environment"] == "production"
+        assert migration_job["secrets"] == "inherit"
+
+        # Compare dependency identities, not YAML formatting or ordering. GitHub's
+        # default success() semantics block failure, cancellation and skipped needs.
+        prerequisites = {
+            "candidate-verification": {"resolve-release"},
+            "production-migration": {"resolve-release", "candidate-verification"},
+            "build-and-deploy": {
+                "resolve-release", "candidate-verification", "production-migration"
+            },
+        }
+        for name, required in prerequisites.items():
+            job = jobs[name]
+            declared = job.get("needs", [])
+            dependencies = {declared} if isinstance(declared, str) else set(declared)
+            assert required <= dependencies, f"{path.name}: {name} missing {required - dependencies}"
+            assert "if" not in job, f"{name} must retain default successful dependency semantics"
+            assert job.get("continue-on-error", False) is False, f"{name} must fail closed"
+
+        checkout = next(step for step in deploy_job["steps"]
+                        if step.get("uses", "").startswith("actions/checkout@"))
+        assert checkout["with"]["ref"] == RESOLVED_SHA_EXPRESSION
 
 
 def test_deployment_artifact_uses_the_same_sha_as_migration() -> None:
