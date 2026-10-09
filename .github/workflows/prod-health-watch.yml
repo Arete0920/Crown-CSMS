@@ -40,19 +40,20 @@ jobs:
             exit 0
           fi
 
-          STATUS=$(python3 -c "import json; d=json.load(open('/tmp/health_response.json','r',encoding='utf-8')); print('healthy' if (d.get('status') == 'healthy' or d.get('ok') is True) else d.get('status','unhealthy'))" 2>/dev/null || echo "unhealthy")
+          STATUS=$(python3 tools/ci/prod_health_status.py /tmp/health_response.json)
           echo "status=$STATUS" >> "$GITHUB_OUTPUT"
           echo "http_code=$RESPONSE" >> "$GITHUB_OUTPUT"
 
-      - name: Report unhealthy or misconfigured status
-        if: >-
-          always() &&
-          (steps.health.outputs.status == 'unhealthy' || steps.health.outputs.status == 'misconfigured')
+      - name: Report any failed production health status
+        if: always() && steps.health.outputs.status != 'healthy'
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
+        env:
+          HEALTH_STATUS: ${{ steps.health.outputs.status }}
+          HEALTH_HTTP_CODE: ${{ steps.health.outputs.http_code }}
         with:
           script: |
-            const status = '${{ steps.health.outputs.status }}' || 'unknown';
-            const httpCode = '${{ steps.health.outputs.http_code }}' || '000';
+            const status = process.env.HEALTH_STATUS || 'unknown';
+            const httpCode = process.env.HEALTH_HTTP_CODE || '000';
             const now = new Date().toISOString();
             const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
             const titlePrefix = '[ALERT] Production health check failed';
@@ -107,6 +108,9 @@ jobs:
 
       - name: Fail closed when health proof is not healthy
         if: always() && steps.health.outputs.status != 'healthy'
+        env:
+          HEALTH_STATUS: ${{ steps.health.outputs.status }}
+          HEALTH_HTTP_CODE: ${{ steps.health.outputs.http_code }}
         run: |
-          echo "Production health proof failed: status=${{ steps.health.outputs.status }} http=${{ steps.health.outputs.http_code }}"
+          echo "Production health proof failed: status=${HEALTH_STATUS:-unknown} http=${HEALTH_HTTP_CODE:-000}"
           exit 1
