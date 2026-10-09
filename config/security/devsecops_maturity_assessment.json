@@ -1,0 +1,135 @@
+{
+  "schema_version": 1,
+  "document": "docs/security/DEVSECOPS_MATURITY_ASSESSMENT_20261009.md",
+  "repository": "Arete0920/Crown-CSMS",
+  "assessment_date": "2026-10-09",
+  "source_snapshot_sha": "4ba450a8c25b1cb1bf6caa5999a486e65b38ea7b",
+  "assessment_scope": "repository-and-policy-evidence-only",
+  "operational_certification": false,
+  "independent_assurance": false,
+  "domains": [
+    {
+      "id": "culture",
+      "name": "Culture and accountability",
+      "level": "UNASSESSED",
+      "source_evidence_state": "DESIGNED",
+      "owner_role": "Founder / product owner",
+      "evidence_paths": [
+        "docs/compliance/SECURITY_OPERATING_POLICY.md",
+        "docs/engineering/ENGINEERING_ACCOUNTABILITY_POLICY.md"
+      ],
+      "observed": "Written accountability requirements exist; operational owner/deputy assignment, acknowledgments and cadence are not yet evidenced.",
+      "gap": "No dated adopted security governance records or independently demonstrated alternate technical coverage.",
+      "next_proof": "Record management adoption, named primary and deputy, monthly evidence-review minutes and continuity exercise.",
+      "open_issues": [
+        173
+      ],
+      "assessment_status": "PROVISIONAL",
+      "operating_evidence_state": "NOT_VERIFIED"
+    },
+    {
+      "id": "plan_develop",
+      "name": "Plan and develop",
+      "level": "INTERMEDIATE",
+      "source_evidence_state": "DESIGNED",
+      "owner_role": "Founder / engineering lead",
+      "evidence_paths": [
+        "docs/compliance/SOC2_RISK_ASSESSMENT_20261008.md",
+        "docs/compliance/SECURITY_OPERATING_POLICY.md",
+        "docs/engineering/REPOSITORY_WORKFLOW.md"
+      ],
+      "observed": "A scored draft risk register, technical governance, and code-review processes exist; current assessment is not approved.",
+      "gap": "No repeatable approved threat-model evidence for all material new features or signed-off residual-risk decisions.",
+      "next_proof": "Approve baseline risk register, attach threat model and mitigation decision to the next high-risk feature, and review technical debt monthly.",
+      "open_issues": [
+        173
+      ],
+      "assessment_status": "PROVISIONAL",
+      "operating_evidence_state": "NOT_VERIFIED"
+    },
+    {
+      "id": "build_test",
+      "name": "Build and test",
+      "level": "INTERMEDIATE",
+      "source_evidence_state": "IMPLEMENTED_SOURCE",
+      "owner_role": "Engineering / security",
+      "evidence_paths": [
+        ".github/workflows/tests.yml",
+        ".github/workflows/codeql.yml",
+        ".github/workflows/dependency-audit.yml",
+        ".github/workflows/secret-scan.yml",
+        ".github/workflows/tenant-isolation-gate.yml"
+      ],
+      "observed": "Automated tests and security scanning run in repository workflows; historical SHA-bound tests passed on 2026-10-08.",
+      "gap": "Individual test-to-control mapping, full dynamic scan scope, supply-chain artifact provenance, and latest-head acceptance require evidence.",
+      "next_proof": "Retain current exact-head run/job receipts, map critical negative authorization tests to objectives, and verify build artifacts and signing.",
+      "open_issues": [
+        104,
+        173
+      ],
+      "assessment_status": "PROVISIONAL",
+      "operating_evidence_state": "NOT_VERIFIED"
+    },
+    {
+      "id": "release_deploy",
+      "name": "Release and deploy",
+      "level": "INTERMEDIATE",
+      "source_evidence_state": "IMPLEMENTED_SOURCE",
+      "owner_role": "Founder / release administrator",
+      "evidence_paths": [
+        "docs/CURRENT_RELEASE_STATUS.md",
+        ".github/workflows/crown-release-authority-gates.yml",
+        ".github/workflows/production-certification-evidence.yml"
+      ],
+      "observed": "Repo release authority and operational-certification workflow definitions exist; production admission requires separate evidence.",
+      "gap": "Actual deployed revision, rollback, active resource inventory, and environment security validation remain unverified.",
+      "next_proof": "For the actual selected environment, capture deployment identity, migration/rollback rehearsal, approval and exact-source run receipts.",
+      "open_issues": [
+        173
+      ],
+      "assessment_status": "PROVISIONAL",
+      "operating_evidence_state": "NOT_VERIFIED"
+    },
+    {
+      "id": "operate",
+      "name": "Operate and recover",
+      "level": "UNASSESSED",
+      "source_evidence_state": "DESIGNED",
+      "owner_role": "Founder / Azure administrator",
+      "evidence_paths": [
+        "docs/compliance/BACKUP_RESTORE_POLICY.md",
+        "docs/operations/AZURE_CLASSROOM_FIRST_RELEASE.md",
+        ".github/workflows/isolated-postgres-restore-drill.yml",
+        ".github/workflows/azure-drift-watchdog.yml"
+      ],
+      "observed": "Runbooks and infrastructure verification workflows exist, but their existence does not prove current Azure or backup operation.",
+      "gap": "No verified live hosting inventory, current operational backups, measured RTO/RPO, responder deputy, or recovery approval.",
+      "next_proof": "After Azure access is established, inventory actual assets, run a measured isolated restore from an operational backup, and sign off RTO/RPO.",
+      "open_issues": [
+        173
+      ],
+      "assessment_status": "PROVISIONAL",
+      "operating_evidence_state": "NOT_VERIFIED"
+    },
+    {
+      "id": "observe_respond",
+      "name": "Observe and respond",
+      "level": "UNASSESSED",
+      "source_evidence_state": "DESIGNED",
+      "owner_role": "Founder / incident commander",
+      "evidence_paths": [
+        "docs/compliance/INCIDENT_RESPONSE_POLICY.md",
+        "docs/operations/CROWN_OBSERVABILITY_AND_INCIDENT_READINESS_20260529.md",
+        ".github/workflows/prod-health-watch.yml"
+      ],
+      "observed": "Incident policy and manually dispatched health-watch workflow exist; alert delivery and live SLOs have not been verified.",
+      "gap": "No demonstrated production telemetry population, tested paging/alert path, measured MTTD/MTTR or completed participant tabletop.",
+      "next_proof": "Define user-journey SLOs, run end-to-end alert test and participant tabletop, retain sanitized incident and postmortem receipts.",
+      "open_issues": [
+        173
+      ],
+      "assessment_status": "PROVISIONAL",
+      "operating_evidence_state": "NOT_VERIFIED"
+    }
+  ]
+}
