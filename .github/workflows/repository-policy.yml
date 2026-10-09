@@ -178,6 +178,11 @@ jobs:
           python tools/ci/check_workflow_step_names.py
           python tools/ci/check_dependency_audit_loadtest.py
 
+      - name: Verify backend dependency lock
+        run: |
+          python tools/ci/verify_backend_lock.py
+          python -m unittest discover -s tools/ci -p 'test_verify_backend_lock.py' -v
+
       - name: Enforce external tool integration security
         run: python tools/ci/verify_tool_integration_security.py
 
