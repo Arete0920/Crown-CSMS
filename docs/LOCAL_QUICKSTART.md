@@ -1,173 +1,76 @@
-# Local Development Quick Start
+# CROWN Local Quick Start — Windows PowerShell
 
-**Purpose:** Get CROWN running locally with demo data for testing category weights and other academics features.
+**Status:** Local development and fictional Heritage demonstration only; not a production or Azure release certification.
+**Authority:** [Engineering setup](engineering/DEV_SETUP.md), [current release status](CURRENT_RELEASE_STATUS.md), and exact current GitHub `main`.
+**Last reviewed:** October 9, 2026. The documented commands have not been executed on the owner's Windows laptop by this review.
 
-## Prerequisites
+## Choose the correct local workflow
 
-- Python 3.12+ installed
-- PostgreSQL running (or use SQLite for quick demos)
-- Node.js 20 LTS for frontend
+CROWN currently runs locally. No Azure subscription, resource group, cloud database, or deployment credential is needed for the local Heritage demonstration. **Do not mistake successful GitHub CI or an older demo snapshot for proof of local Windows operation.**
 
-## Backend Setup (5 minutes)
+Two toolchain contracts coexist:
 
-### 1. Install Dependencies
-```powershell
-cd backend
-python -m venv venv
-.\venv\Scripts\Activate.ps1  # Windows PowerShell
-# OR: source venv/bin/activate  # Linux/Mac
-pip install -r requirements.txt
-```
+- **General development:** Python 3.12 and Node.js 20 LTS, as specified in `engineering/DEV_SETUP.md`.
+- **Heritage local demonstration launcher:** Python 3.11+ and Node.js **22.12+**, enforced by `scripts/demo/start_heritage_local.py`. Python 3.12 is the tested Python target. Use Node.js 22.12+ for this path; don't assume Node 20 can run the launcher.
 
-### 2. Run Migrations
-```powershell
-python manage.py migrate
-```
+Install Git, Python and Node.js using their official installers. Work from a normal writable, **trusted** local directory. PowerShell and the standard Windows command prompt are sufficient; no editor or Azure connection is required.
 
-### 3. Seed Demo Data
-Use the canonical demo school ID for consistency with Azure DEV:
+### A. Rehearse the current-checkout Heritage demo locally
+
+Open **PowerShell** in the CROWN repository root (the folder containing `backend`, `frontend` and `scripts`):
 
 ```powershell
-$SCHOOL_ID = "a5351136-98fe-4d48-add0-fa8f62d9ceff"
-
-# Bootstrap golden path (creates school, admin user, admissions funnel)
-python manage.py golden_path_bootstrap --school-id $SCHOOL_ID --force
-
-# Seed academics (courses, sections, enrollments - REQUIRED before category weights)
-python manage.py seed_academics_demo --school-id $SCHOOL_ID
-
-# Seed category weights (Homework, Tests, Projects, Exams with percentages)
-python manage.py seed_category_weights --school-id $SCHOOL_ID
+git rev-parse HEAD
+py -3.12 --version
+node --version
+npm --version
+py -3.12 scripts/demo/start_heritage_local.py --prepare-only
+py -3.12 scripts/demo/start_heritage_local.py
 ```
 
-**Seed Order Matters:**
-1. `golden_path_bootstrap` creates school, admin, and admissions data
-2. `seed_academics_demo` creates courses, sections, and enrollments (prerequisite for categories)
-3. `seed_category_weights` creates category weights for sections (requires enrollments to exist)
+The launcher creates an isolated local `.venv`, SQLite database, synthetic Heritage records, and frontend build; checks the backend; runs migrations and `sandbox_proof_gate --strict`; and starts backend `127.0.0.1:8000` and frontend `127.0.0.1:4173`. After startup, open `http://localhost:4173/sandbox`. Preserve the console and logs for any failed step. The first preparation needs internet access to download dependencies.
 
-### 4. Start Backend Server
-```powershell
-python manage.py runserver 127.0.0.1:8000
-```
+Use **fictional data only**. The passwordless sandbox is for the same computer; do not port-forward it or expose it on a public network. External payment processing is not part of this demo. Do not assume that every optional integration works offline.
 
-**Admin Credentials:**
-- Username: `admin`
-- Password: set through the `CROWN_DEMO_PASSWORD` environment variable
+If you are starting from an old copied ZIP instead of an active checkout, obtain the intended source first and record its exact SHA. The separate `Start-Heritage.cmd` downloader intentionally pins revision `5e49157f440c549b9394f3cea7259c09d409b6bd`: that historical demo is **not** current-`main` proof. Its existing README documents Linux rehearsal and explicitly states native Windows execution has not been verified.
 
-**Test Backend:**
-```powershell
-curl http://127.0.0.1:8000/api/health/
-# Should return: {"ok": true, "status": "ok", "build_sha": "local-dev"}
-```
+### B. Validate general source development without launching Azure
 
-## Frontend Setup (3 minutes)
-
-### 1. Install Dependencies
-```powershell
-cd frontend/dashboards
-npm install
-```
-
-### 2. Start Dev Server
-```powershell
-npm run dev -- --port 3000
-```
-
-**Access Frontend:**
-- URL: http://localhost:3000/
-- Login with admin credentials above
-
-## Test Category Weights Feature
-
-### Via Frontend (Recommended):
-1. Navigate to http://localhost:3000/category-weights
-2. Select a section from dropdown
-3. Edit category weights (should sum to 100%)
-4. Click "Save Weights"
-
-### Via API (For Testing):
-```powershell
-# Get token
-$creds = @{username='admin';password=$env:CROWN_DEMO_PASSWORD} | ConvertTo-Json
-$response = Invoke-RestMethod -Uri 'http://127.0.0.1:8000/api/auth/token/' `
-  -Method POST -Headers @{'Content-Type'='application/json'} -Body $creds
-$token = $response.access
-
-# List sections
-curl.exe -s 'http://127.0.0.1:8000/api/v1/gradebook/sections/' `
-  -H "Authorization: Bearer $token" | python -m json.tool
-
-# Get categories for a section (replace <section_id>)
-curl.exe -s 'http://127.0.0.1:8000/api/v1/academics/sections/<section_id>/categories/' `
-  -H "Authorization: Bearer $token" | python -m json.tool
-```
-
-## Troubleshooting
-
-### "No sections found"
-**Cause:** Bootstrap didn't create sections with enrollments.
-**Fix:** Check that golden_path_bootstrap completed successfully. Look for sections in Django admin.
-
-### "Weights don't sum to 100"
-**Cause:** seed_category_weights creates 20% + 30% + 25% + 25% = 100% by default.
-**Fix:** This is expected! It's the MVP state. Use the UI to edit weights.
-
-### "Admin login fails"
-**Cause:** Bootstrap didn't run or password is wrong.
-**Fix:**
-```powershell
-python manage.py shell
->>> from core.models import CustomUser
->>> admin = CustomUser.objects.get(username='admin')
->>> import os
->>> admin.set_password(os.environ['CROWN_DEMO_PASSWORD'])
->>> admin.save()
-```
-
-### Frontend can't connect to backend
-**Cause:** CORS or backend not running.
-**Fix:** Ensure backend is running on port 8000. Check `crown_api/settings.py` has `CORS_ALLOWED_ORIGINS` including `http://localhost:3000`.
-
-## Resetting Demo Data
-
-To wipe and re-seed:
+For the canonical Python 3.12 / Node 20 development toolchain:
 
 ```powershell
-$SCHOOL_ID = "a5351136-98fe-4d48-add0-fa8f62d9ceff"
+py -3.12 -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r backend\requirements.txt
+.\.venv\Scripts\python.exe backend\manage.py check
+.\.venv\Scripts\python.exe -m pytest backend -m "not integration and not slow"
 
-# Option 1: Wipe specific data sets (granular control)
-python manage.py seed_category_weights --school-id $SCHOOL_ID --wipe
-python manage.py seed_academics_demo --school-id $SCHOOL_ID --wipe
-
-# Option 2: Re-run full bootstrap sequence (recommended)
-python manage.py golden_path_bootstrap --school-id $SCHOOL_ID --force
-python manage.py seed_academics_demo --school-id $SCHOOL_ID
-python manage.py seed_category_weights --school-id $SCHOOL_ID
+Push-Location frontend\dashboards
+npm ci
+npm run lint
+npm run test:unit
+npm run test:contracts
+npm run build
+Pop-Location
 ```
 
-**Note:** `golden_path_bootstrap --force` wipes admissions data. `seed_academics_demo` is idempotent by default (won't duplicate on re-run).
+Run these commands from the repository root. They may take time, and database-dependent tests may require local configuration. A failure is evidence to investigate, not a reason to disable tests or tenant guards. Keep local credentials out of the repository and use `127.0.0.1` loopback for development servers.
 
-## What You Get
+The `npm run test:unit`, `test:contracts`, `lint` and `build` scripts are declared in `frontend/dashboards/package.json`. Exact current-head CI is the source verification authority until the same commands actually pass on Windows.
 
-After following this guide:
+## Local evidence checklist
 
-- ✅ **School:** Crown Demo School (deterministic UUID: a5351136-98fe-4d48-add0-fa8f62d9ceff)
-- ✅ **Admin User:** `admin` with password supplied by `CROWN_DEMO_PASSWORD`
-- ✅ **Admissions Funnel:** 100 applicants with realistic stage distribution (golden_path_bootstrap)
-- ✅ **Courses:** 2 courses (MATH-101, ENG-101) with deterministic codes (seed_academics_demo)
-- ✅ **Sections:** 2 sections with term assignments (seed_academics_demo)
-- ✅ **Students:** 25 demo students enrolled in all sections (seed_academics_demo)
-- ✅ **Enrollments:** 50 enrollments (25 students × 2 sections) (seed_academics_demo)
-- ✅ **Category Weights:** 4 categories per section (Homework 20%, Quizzes 30%, Projects 25%, Exams 25%) (seed_category_weights)
+Record these facts privately for each rehearsal:
 
-## Next Steps
+1. Full `git rev-parse HEAD` SHA and whether the tree was clean.
+2. Windows edition, Python version, Node/npm versions, start command and exit code.
+3. Backend `check`, database migration, synthetic seed and sandbox proof outcomes.
+4. Frontend build and actual `localhost` HTTP reachability.
+5. Authorized administrator/teacher/parent/student workflows, persistence after reload, and negative cross-school/role tests.
+6. Failure logs, corrective changes, repeat results and an operator/date acknowledgment.
+7. Local-only conclusion; **Azure runtime, production identity, payments, operational backup/restore and independent SOC 2 assurance remain unverified** until separately proven.
 
-1. **Test Weighted Grading:** Edit category weights and verify transcript calculations change
-2. **Test Permissions:** Create additional users with different roles (STAFF, DIRECTOR)
-3. **Add More Data:** Use Django admin to create additional courses, sections, students
+## Avoid obsolete instructions
 
-## Related Documentation
+An earlier revision of this quick-start suggested a fixed Azure development school UUID, `core.models.CustomUser`, a legacy `/api/auth/token/` route, `npm install`, and a guaranteed seeded data count. Those instructions were **not verified as a correct current local setup** and must not be followed as release authority. Use the current canonical setup, live role/tenant contracts, and verified demo commands above.
 
-- [AZURE_DEV_APP_SETTINGS.md](./AZURE_DEV_APP_SETTINGS.md) - Azure deployment config
-- [README_DIRECTOR_ACTIONS.md](ops/README_DIRECTOR_ACTIONS.md) - Director API usage
-- [INTEGRATION_GUIDE.md](ops/INTEGRATION_GUIDE.md) - Frontend integration patterns
+This guide does not delete historical module-specific seed commands; run any such command only after inspecting its current `--help` and verifying a disposable local database. Never use a `--force`/wipe switch on an unbacked-up school database.
