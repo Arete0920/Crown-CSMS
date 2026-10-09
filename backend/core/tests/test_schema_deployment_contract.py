@@ -1,5 +1,6 @@
 from pathlib import Path
 import re
+import yaml
 
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[3]
@@ -9,6 +10,7 @@ STARTUP_SCRIPTS = (
 )
 DEPLOY_WORKFLOWS = (
     REPOSITORY_ROOT / ".github" / "workflows" / "deploy-prod.yml",
+    REPOSITORY_ROOT / ".github" / "workflows" / "deploy-prod-dispatch.yml",
 )
 CONTROLLED_MIGRATION_WORKFLOW = "./.github/workflows/schema-migration-stage.yml"
 RESOLVED_SHA_EXPRESSION = "${{ needs.resolve-release.outputs.deploy_sha }}"
@@ -53,7 +55,7 @@ def test_production_workflows_resolve_one_immutable_sha_before_migration() -> No
         assert "^[0-9a-f]{40}$" in resolve_job
 
 
-def test_controlled_migration_runs_before_web_build_and_deploy() -> None:
+def test_validated_candidate_precedes_migration_and_web_deployment() -> None:
     for path in DEPLOY_WORKFLOWS:
         workflow = _read(path)
         migration_job = _job_block(workflow, "production-migration")
@@ -64,10 +66,15 @@ def test_controlled_migration_runs_before_web_build_and_deploy() -> None:
         assert "confirm_environment: production" in migration_job
         assert "secrets: inherit" in migration_job
 
-        assert re.search(
-            r"needs:\s*\[\s*resolve-release\s*,\s*production-migration\s*\]",
-            deploy_job,
-        ), "web deployment must be blocked unless exact-SHA migration succeeds"
+        jobs = yaml.safe_load(workflow)["jobs"]
+        assert {"resolve-release", "candidate-verification"} <= set(
+            jobs["production-migration"]["needs"]
+        ), "production migration must wait for the exact-SHA candidate validation"
+        assert {"resolve-release", "production-migration", "candidate-verification"} <= set(
+            jobs["build-and-deploy"]["needs"]
+        ), "web deployment must wait for validated candidate and exact-SHA migration"
+        assert "if" not in jobs["production-migration"]
+        assert "if" not in jobs["build-and-deploy"]
         assert f"ref: {RESOLVED_SHA_EXPRESSION}" in deploy_job
 
 
