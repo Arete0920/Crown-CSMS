@@ -10,6 +10,10 @@ permissions:
   contents: read
   issues: write
 
+concurrency:
+  group: prod-health-watch-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   health-check:
     name: Production Health Monitor
