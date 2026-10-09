@@ -99,7 +99,273 @@ jobs:
             local field="$2"
             local body="${raw#@Microsoft.KeyVault(}"
             body="${body%)}"
-            printf '%s' "…2637 tokens truncated… -n "${DATABASE_URL:-}" || {
+            printf '%s' "$body" |
+              tr ';' '\n' |
+              sed -n "s/^[[:space:]]*${field}=//p" |
+              head -n 1
+          }
+          expected_uri="https://example.vault.azure.net/secrets/example/version"
+          standard="@Microsoft.KeyVault(SecretUri=${expected_uri})"
+          extended="@Microsoft.KeyVault(Identity=SystemAssigned;SecretUri=${expected_uri};SlotSetting=false)"
+          named="@Microsoft.KeyVault(Identity=SystemAssigned;SecretName=example;VaultName=example-vault)"
+          test "$(extract_reference_field "$standard" SecretUri)" = "$expected_uri"
+          test "$(extract_reference_field "$extended" SecretUri)" = "$expected_uri"
+          test "$(extract_reference_field "$named" VaultName)" = "example-vault"
+          test "$(extract_reference_field "$named" SecretName)" = "example"
+
+  production-migration:
+    if: inputs.confirm_environment == 'production'
+    needs: contract-proof
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: production
+    concurrency:
+      group: crown-production-schema-migration
+      cancel-in-progress: false
+    env:
+      RESOURCE_GROUP: crown-rg
+      WEBAPP_NAME: crown-api-prod
+    steps:
+      - name: Validate production authorization inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "${{ inputs.confirm_environment }}" == "production" ]] || {
+            echo "ERROR: confirm_environment must equal production"
+            exit 1
+          }
+          [[ "${{ inputs.expected_sha }}" =~ ^[0-9a-f]{40}$ ]] || {
+            echo "ERROR: expected_sha must be a full lowercase 40-character SHA"
+            exit 1
+          }
+
+      - name: Checkout exact application SHA
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          ref: ${{ inputs.expected_sha }}
+          fetch-depth: 0
+
+      - name: Verify exact checked-out SHA
+        shell: bash
+        run: |
+          set -euo pipefail
+          actual="$(git rev-parse HEAD)"
+          test "$actual" = "${{ inputs.expected_sha }}" || {
+            echo "ERROR: checked-out SHA mismatch"
+            echo "expected=${{ inputs.expected_sha }}"
+            echo "actual=$actual"
+            exit 1
+          }
+
+      - name: Set up Python
+        uses: actions/setup-python@7f4fc3e22c37d6ff65e88745f38bd3157c663f7c # v4
+        with:
+          python-version: "3.12"
+
+      - name: Install backend requirements
+        run: pip install -r backend/requirements.txt
+
+      - name: Resolve production secret source
+        id: secret_source
+        shell: bash
+        env:
+          GITHUB_DATABASE_URL: >-
+            ${{ secrets.PROD_DATABASE_URL || secrets.DATABASE_URL }}
+          GITHUB_DJANGO_SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }}
+        run: |
+          set -euo pipefail
+          if [ -n "$GITHUB_DATABASE_URL" ] && \
+             [ -n "$GITHUB_DJANGO_SECRET_KEY" ]; then
+            [[ "$GITHUB_DATABASE_URL" == postgres://* || \
+               "$GITHUB_DATABASE_URL" == postgresql://* ]] || {
+              echo "ERROR: production migration stage requires PostgreSQL"
+              exit 1
+            }
+            echo "::add-mask::$GITHUB_DATABASE_URL"
+            echo "::add-mask::$GITHUB_DJANGO_SECRET_KEY"
+            echo "DATABASE_URL=$GITHUB_DATABASE_URL" >> "$GITHUB_ENV"
+            echo "DJANGO_SECRET_KEY=$GITHUB_DJANGO_SECRET_KEY" \
+              >> "$GITHUB_ENV"
+            echo "needs_azure=false" >> "$GITHUB_OUTPUT"
+            echo "source=github-production-secrets" >> "$GITHUB_OUTPUT"
+          else
+            echo "needs_azure=true" >> "$GITHUB_OUTPUT"
+            echo "source=azure-app-settings" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Guard Azure fallback credentials
+        if: steps.secret_source.outputs.needs_azure == 'true'
+        id: azure_auth
+        shell: bash
+        env:
+          AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+        run: |
+          set -euo pipefail
+          if [ -n "$AZURE_CREDENTIALS" ]; then
+            credentials_file="/tmp/azure-credentials.json"
+            printf '%s' "$AZURE_CREDENTIALS" > "$credentials_file"
+            jq -e '
+              type == "object"
+              and ((.clientId // "") | length > 0)
+              and ((.clientSecret // "") | length > 0)
+              and ((.tenantId // "") | length > 0)
+              and ((.subscriptionId // "") | length > 0)
+            ' "$credentials_file" > /dev/null || {
+              rm -f "$credentials_file"
+              echo "ERROR: AZURE_CREDENTIALS is incomplete"
+              exit 1
+            }
+            rm -f "$credentials_file"
+            echo "mode=sp" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          test -n "$AZURE_CLIENT_ID" || {
+            echo "ERROR: AZURE_CLIENT_ID is required for Azure fallback"
+            exit 1
+          }
+          test -n "$AZURE_TENANT_ID" || {
+            echo "ERROR: AZURE_TENANT_ID is required for Azure fallback"
+            exit 1
+          }
+          test -n "$AZURE_SUBSCRIPTION_ID" || {
+            echo "ERROR: AZURE_SUBSCRIPTION_ID is required for Azure fallback"
+            exit 1
+          }
+          echo "mode=oidc" >> "$GITHUB_OUTPUT"
+
+      - name: Azure Login (Service Principal JSON)
+        if: >-
+          steps.secret_source.outputs.needs_azure == 'true' &&
+          steps.azure_auth.outputs.mode == 'sp'
+        uses: azure/login@a457da9ea143d694b1b9c7c869ebb04ebe844ef5 # v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Azure Login (OIDC)
+        if: >-
+          steps.secret_source.outputs.needs_azure == 'true' &&
+          steps.azure_auth.outputs.mode == 'oidc'
+        uses: azure/login@a457da9ea143d694b1b9c7c869ebb04ebe844ef5 # v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Resolve masked migration settings from Azure App Service
+        if: steps.secret_source.outputs.needs_azure == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          settings_file="/tmp/crown-prod-appsettings.json"
+          az webapp config appsettings list \
+            --resource-group "$RESOURCE_GROUP" \
+            --name "$WEBAPP_NAME" \
+            --output json \
+            --only-show-errors > "$settings_file"
+
+          raw_database_url="$(
+            jq -r '
+              .[]
+              | select(.name == "DATABASE_URL")
+              | .value
+            ' "$settings_file" | head -n 1
+          )"
+          raw_django_secret_key="$(
+            jq -r '
+              [
+                .[]
+                | select(
+                    .name == "DJANGO_SECRET_KEY"
+                    or .name == "SECRET_KEY"
+                  )
+                | .value
+              ][0] // empty
+            ' "$settings_file"
+          )"
+          rm -f "$settings_file"
+
+          extract_reference_field() {
+            local raw="$1"
+            local field="$2"
+            local body="${raw#@Microsoft.KeyVault(}"
+            body="${body%)}"
+            printf '%s' "$body" |
+              tr ';' '\n' |
+              sed -n "s/^[[:space:]]*${field}=//p" |
+              head -n 1
+          }
+
+          resolve_setting() {
+            local raw="$1"
+            local secret_uri=""
+            local vault_name=""
+            local secret_name=""
+            if [[ "$raw" == @Microsoft.KeyVault\(* ]]; then
+              echo "::add-mask::$raw" >&2
+              secret_uri="$(extract_reference_field "$raw" SecretUri)"
+              if [ -n "$secret_uri" ]; then
+                az keyvault secret show \
+                  --id "$secret_uri" \
+                  --query value \
+                  --output tsv \
+                  --only-show-errors
+                return
+              fi
+              vault_name="$(extract_reference_field "$raw" VaultName)"
+              secret_name="$(extract_reference_field "$raw" SecretName)"
+              test -n "$vault_name" && test -n "$secret_name" || {
+                echo "ERROR: unsupported Azure Key Vault reference format" >&2
+                return 1
+              }
+              az keyvault secret show \
+                --vault-name "$vault_name" \
+                --name "$secret_name" \
+                --query value \
+                --output tsv \
+                --only-show-errors
+              return
+            fi
+            printf '%s' "$raw"
+          }
+
+          test -n "$raw_database_url" || {
+            echo "ERROR: Azure App Service DATABASE_URL is not configured"
+            exit 1
+          }
+          test -n "$raw_django_secret_key" || {
+            echo "ERROR: Azure App Service secret key is not configured"
+            exit 1
+          }
+
+          DATABASE_URL="$(resolve_setting "$raw_database_url")"
+          DJANGO_SECRET_KEY="$(resolve_setting "$raw_django_secret_key")"
+
+          test -n "$DATABASE_URL" || {
+            echo "ERROR: resolved production DATABASE_URL is empty"
+            exit 1
+          }
+          test -n "$DJANGO_SECRET_KEY" || {
+            echo "ERROR: resolved production Django secret is empty"
+            exit 1
+          }
+          [[ "$DATABASE_URL" == postgres://* || \
+             "$DATABASE_URL" == postgresql://* ]] || {
+            echo "ERROR: resolved Azure DATABASE_URL is not PostgreSQL"
+            exit 1
+          }
+          echo "::add-mask::$DATABASE_URL"
+          echo "::add-mask::$DJANGO_SECRET_KEY"
+          echo "DATABASE_URL=$DATABASE_URL" >> "$GITHUB_ENV"
+          echo "DJANGO_SECRET_KEY=$DJANGO_SECRET_KEY" >> "$GITHUB_ENV"
+
+      - name: Guard resolved production migration settings
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${DATABASE_URL:-}" || {
             echo "ERROR: production DATABASE_URL could not be resolved"
             exit 1
           }
