@@ -55,13 +55,18 @@ Do not push immediately. Run all verification steps first.
 
 ### 5. Verify the rewritten mirror
 
-Run the repository verifier before any force update:
+Run the repository verifier before any force update. A `--mirror` clone is a bare repository and contains no working-tree `./tools/` directory. After finishing the rewrite above, return to the parent directory and extract the verifier from the rewritten repository HEAD without exposing historical key contents:
 
 ```bash
-./tools/verify_remediated_git_bundle.sh \
+cd ..
+git -C Crown-CSMS-remediation.git show HEAD:tools/verify_remediated_git_bundle.sh > verify_remediated_git_bundle.sh
+chmod 700 verify_remediated_git_bundle.sh
+./verify_remediated_git_bundle.sh \
   --repo Crown-CSMS-remediation.git \
   --forbidden-path 'solomon_governance_c1/governance/c1/runtime/audit_pack/20260515T185051Z/crypto_attestation/ed25519_private_key_DO_NOT_SHARE.pem'
 ```
+
+Keep the temporary verifier and all mirror data within the restricted maintenance workspace. Do not copy the unremediated mirror into buyer-distributable locations.
 
 Also run the repository's configured secret scanner across all retained refs. A current-tree scan alone is insufficient.
 
@@ -92,8 +97,8 @@ Afterward:
 Create the second bundle only from verified remediated refs:
 
 ```bash
-git bundle create Crown-CSMS_remediated.bundle --all
-./tools/verify_remediated_git_bundle.sh \
+git -C Crown-CSMS-remediation.git bundle create ../Crown-CSMS_remediated.bundle --all
+./verify_remediated_git_bundle.sh \
   --bundle Crown-CSMS_remediated.bundle \
   --forbidden-path 'solomon_governance_c1/governance/c1/runtime/audit_pack/20260515T185051Z/crypto_attestation/ed25519_private_key_DO_NOT_SHARE.pem'
 sha256sum Crown-CSMS_remediated.bundle
@@ -114,4 +119,4 @@ Record:
 
 ## Closure boundary
 
-Issue #1692 must not close based only on this runbook, a redacted current-tree file, or a green pull request. Closure requires operational retirement of the key, verified rewritten refs, replacement of distributable artifacts, and a clean remediated bundle.
+Issue #104 must not close based only on this runbook, a redacted current-tree file, or a green pull request. Closure requires operational retirement of the key, verified rewritten refs, replacement of distributable artifacts, and a clean remediated bundle.
