@@ -6,6 +6,10 @@ name: Production Health Watch
 on:
   workflow_dispatch:
 
+concurrency:
+  group: production-health-watch-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
 permissions:
   contents: read
   issues: write
