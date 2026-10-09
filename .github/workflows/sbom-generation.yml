@@ -40,10 +40,10 @@ jobs:
           python-version: "3.12"
 
       - name: Install CycloneDX tool
-        run: python -m pip install --upgrade pip cyclonedx-bom
+        run: python -m pip install cyclonedx-bom==7.5.0
 
       - name: Generate backend SBOM
-        run: cyclonedx-py requirements -i requirements.txt -o backend-sbom.cdx.json
+        run: cyclonedx-py requirements requirements.txt --output-file backend-sbom.cdx.json
 
       - name: Upload backend SBOM
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
@@ -72,7 +72,7 @@ jobs:
         run: npm ci
 
       - name: Generate frontend SBOM
-        run: npx --yes @cyclonedx/cyclonedx-npm --output-file frontend-sbom.cdx.json
+        run: npx --yes @cyclonedx/cyclonedx-npm@6.0.1 --output-file frontend-sbom.cdx.json
 
       - name: Upload frontend SBOM
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
@@ -101,7 +101,7 @@ jobs:
         run: npm ci
 
       - name: Generate Wallet SBOM
-        run: npx --yes @cyclonedx/cyclonedx-npm --output-file wallet-sbom.cdx.json
+        run: npx --yes @cyclonedx/cyclonedx-npm@6.0.1 --output-file wallet-sbom.cdx.json
 
       - name: Upload Wallet SBOM
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4

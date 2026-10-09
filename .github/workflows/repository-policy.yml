@@ -43,7 +43,7 @@ jobs:
           python-version: "3.12"
 
       - name: Install policy dependencies
-        run: python -m pip install --upgrade pip pyyaml
+        run: python -m pip install pyyaml==6.0.3
 
       - name: Enforce competitor-name hygiene
         run: python scripts/ci/competitor_name_hygiene.py
@@ -157,9 +157,15 @@ jobs:
       - name: Install actionlint
         if: steps.workflow_changes.outputs.changed == 'true'
         run: |
+          set -euo pipefail
+          archive="$(mktemp)"
+          trap 'rm -f "$archive"' EXIT
           curl --fail --silent --show-error --location --connect-timeout 15 --max-time 60 \
-            https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash \
-            | bash -s -- 1.7.1
+            https://github.com/rhysd/actionlint/releases/download/v1.7.1/actionlint_1.7.1_linux_amd64.tar.gz \
+            --output "$archive"
+          printf '%s  %s\n' f53c34493657dfea83b657e4b62cc68c25fbc383dff64c8d581613b037aacaa3 "$archive" | sha256sum --check --strict
+          tar -xzf "$archive" actionlint
+          ./actionlint -version
 
       - name: Run actionlint
         if: steps.workflow_changes.outputs.changed == 'true'
@@ -177,6 +183,11 @@ jobs:
           python tools/ci/check_no_pr_job_if.py
           python tools/ci/check_workflow_step_names.py
           python tools/ci/check_dependency_audit_loadtest.py
+
+      - name: Verify reviewed CI tool pins
+        run: |
+          python tools/ci/verify_ci_tool_pins.py
+          python -m unittest discover -s tools/ci -p 'test_verify_ci_tool_pins.py' -v
 
       - name: Enforce external tool integration security
         run: python tools/ci/verify_tool_integration_security.py
