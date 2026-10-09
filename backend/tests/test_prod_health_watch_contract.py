@@ -78,3 +78,13 @@ def test_workflow_has_no_secret_logs():
     text = WORKFLOW.read_text(encoding="utf-8")
     assert 'echo "${PRODUCTION_URL}"' not in text
     assert "PRODUCTION_URL: ${{ secrets.PRODUCTION_URL }}" in text
+
+
+def test_pinned_checkout_precedes_local_parser_execution():
+    text = WORKFLOW.read_text(encoding="utf-8")
+    checkout = "uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11"
+    health = "- name: Check production health endpoint"
+    parser = "python3 tools/ci/prod_health_status.py /tmp/health_response.json"
+    assert checkout in text
+    assert text.index(checkout) < text.index(health) < text.index(parser)
+    assert "persist-credentials: false" in text[text.index(checkout):text.index(health)]
