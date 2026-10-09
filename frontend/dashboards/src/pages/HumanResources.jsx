@@ -69,47 +69,37 @@ function Pill({ color = 'gray', children }) {
   );
 }
 
-const ADMIN_KPI = [
-  {
-    label: "Staff Active",
-    value: "84",
-    trend: null,
-    trendUp: null,
-    definition: "Total full-time and part-time staff with active employment records.",
-    dataSource: "HR Module",
-    dataHref: "/human-resources",
-  },
-  {
-    label: "Open Positions",
-    value: "2",
-    trend: null,
-    trendUp: null,
-    definition: "Approved positions currently posted or in search phase.",
-    dataSource: "HR Module",
-    dataHref: "/human-resources",
-  },
-  {
-    label: "Retention Rate",
-    value: "94%",
-    trend: "+2% vs last yr",
-    trendUp: true,
-    definition: "Percentage of employees who remained employed from the start of the school year to today.",
-    dataSource: "HR Module",
-    dataHref: "/human-resources",
-  },
-  {
-    label: "Trainings Due",
-    value: "7",
-    trend: null,
-    trendUp: null,
-    definition: "Required professional development trainings due within the next 30 days.",
-    dataSource: "HR Module",
-    dataHref: "/human-resources",
-  },
-];
+// The metrics API only supplies directory counts; position, retention, and
+// training KPIs must not be presented as live until real sources exist.
+function buildHrKpis(data, live) {
+  const dataSource = live ? 'HR records' : 'Demonstration data';
+  return [
+    {
+      label: 'Total Staff',
+      value: String(data.total_employees ?? '—'),
+      definition: 'Total staff records reported by the school-scoped HR directory.',
+      dataSource,
+      dataHref: '/human-resources',
+    },
+    {
+      label: 'Staff Active',
+      value: String(data.active_employees ?? '—'),
+      definition: 'Staff records currently marked active in the HR directory.',
+      dataSource,
+      dataHref: '/human-resources',
+    },
+    {
+      label: 'Staff Inactive',
+      value: String(data.inactive_employees ?? '—'),
+      definition: 'Staff records currently marked inactive in the HR directory.',
+      dataSource,
+      dataHref: '/human-resources',
+    },
+  ];
+}
 
 export default function HumanResources() {
-  const [state, setState] = useState({ loading: true, live: false, data: DEMO });
+  const [state, setState] = useState({ loading: true, live: false, data: null });
 
   useEffect(() => {
     fetchHRData().then(({ ok, data }) => setState({ loading: false, live: ok, data }));
@@ -121,21 +111,26 @@ export default function HumanResources() {
     <CrownLayout
       title="Human Resources"
       subtitle="Staff directory &amp; workforce overview"
-      right={<Pill color={live ? 'green' : 'gray'}>{live ? 'LIVE' : 'DEMO'}</Pill>}
+      right={<Pill color={live ? 'green' : 'gray'}>{loading ? 'LOADING' : live ? 'LIVE' : 'DEMO'}</Pill>}
     >
-      <KpiStrip cards={ADMIN_KPI} />
+      {!loading && data && <KpiStrip cards={buildHrKpis(data, live)} />}
+      {!loading && !live && (
+        <p role="status" style={{ color: 'var(--crown-muted)', padding: '8px 16px' }}>
+          Demonstration data only. Live school HR records could not be loaded; these figures are not verified.
+        </p>
+      )}
       {loading && <p style={{ color: 'var(--crown-muted)', padding: 16 }}>Loading</p>}
 
       <DashboardSection title="Overview">
         <CrownGrid>
           <Col span={4}>
-            <CrownMetricCard label="Total Staff" value={data.total_employees} />
+            <CrownMetricCard label="Total Staff" value={data?.total_employees ?? '—'} />
           </Col>
           <Col span={4}>
-            <CrownMetricCard label="Active" value={data.active_employees} />
+            <CrownMetricCard label="Active" value={data?.active_employees ?? '—'} />
           </Col>
           <Col span={4}>
-            <CrownMetricCard label="Inactive" value={data.inactive_employees} />
+            <CrownMetricCard label="Inactive" value={data?.inactive_employees ?? '—'} />
           </Col>
         </CrownGrid>
       </DashboardSection>
@@ -170,7 +165,7 @@ export default function HumanResources() {
                   </tr>
                 </thead>
                 <tbody>
-                  {(data.by_department || []).map((row, i) => (
+                  {(data?.by_department || []).map((row, i) => (
                     <tr key={i} style={{ borderTop: '1px solid var(--crown-border)' }}>
                       <td style={{ padding: '6px 8px', color: 'var(--crown-ink)' }}>
                         {row.department || 'Unassigned'}
@@ -240,7 +235,7 @@ export default function HumanResources() {
                   </tr>
                 </thead>
                 <tbody>
-                  {(data.employees || []).map((employee, i) => (
+                  {(data?.employees || []).map((employee, i) => (
                     <tr
                       key={employee.id || i}
                       style={{ borderTop: '1px solid var(--crown-border)' }}
