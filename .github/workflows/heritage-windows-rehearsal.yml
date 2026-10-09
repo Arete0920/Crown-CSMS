@@ -11,6 +11,10 @@ on:
       - '.github/workflows/heritage-windows-rehearsal.yml'
   workflow_dispatch:
 
+concurrency:
+  group: heritage-windows-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
@@ -20,6 +24,8 @@ jobs:
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+        with:
+          persist-credentials: false
       - uses: actions/setup-python@7f4fc3e22c37d6ff65e88745f38bd3157c663f7c
         with:
           python-version: '3.12'
@@ -45,5 +51,5 @@ jobs:
           path: |
             .local-backups/heritage-demo/*.log
             .local-backups/heritage-demo/rehearsal-result.json
-          if-no-files-found: warn
+          if-no-files-found: error
           retention-days: 7

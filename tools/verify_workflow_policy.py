@@ -45,6 +45,7 @@ CANONICAL_WORKFLOW_FILES = {
     "deploy-prod.yml",
     "dev-smoke.yml",
     "finance-final-hardening.yml",
+    "heritage-windows-rehearsal.yml",
     "isolated-postgres-restore-drill.yml",
     "license-audit.yml",
     "migration-lock-gate.yml",
