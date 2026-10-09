@@ -23,7 +23,7 @@
 | R05 | Misleading readiness/compliance/release claims | Repository now contains explicit claim boundaries, but investor/customer pressure creates recurring risk | 2 | 5 | 10 High | Require evidence-state labels, owner review, and independent assurance before SOC 2 report claims | <=4 Low | OPEN |
 | R06 | Key-person dependency / unavailable independent approval | Current operating model relies heavily on the owner/solo maintainer; deputies and continuity access are not evidenced | 4 | 4 | 16 High | Assign deputies, document emergency access and succession/continuity procedures, obtain independent review for material decisions | <=8 Moderate | OPEN |
 | R07 | Retention/consent/deletion mismatch with customer or legal obligations | Policies and privacy documents exist; approved schedules, executed terms and lifecycle exercises remain incomplete | 3 | 4 | 12 High | Approve applicability and retention matrix; test access/export/deletion/restore behavior; reconcile contracts and jurisdictions | <=6 Moderate | OPEN |
-| R08 | Credential/key or release compromise | Strong source controls exist; current runner outage limits fresh CI, production key/secret operation needs evidence, and Ed25519 history issue #104 remains open | 3 | 5 | 15 High | Close #104, verify production secret/key custody and rotation, restore fresh exact-head CI evidence, verify deployed identity | <=6 Moderate | OPEN |
+| R08 | Credential/key or release compromise | Strong source controls exist; fresh exact-head CI now exists at a091504ec4ce37c84037b51e15d9f909fcaf6f91; production key/secret operation still needs evidence, and Ed25519 history issue #104 remains open | 3 | 5 | 15 High | Close #104, verify production secret/key custody and rotation, retain fresh exact-head CI evidence and reverify subsequent release heads, verify deployed identity | <=6 Moderate | OPEN |
 
 ## Treatment requirements
 
@@ -50,3 +50,9 @@ This document remains **DRAFT** until management records:
 - next review date.
 
 Until then, the scores above are planning values for readiness prioritization only.
+
+## October 8 reconciliation
+
+Exact-head Tests run 37824630118 executed successfully at `a091504ec4ce37c84037b51e15d9f909fcaf6f91`, recording 5,186 passed, 19 skipped and 220 subtests passed. All 11 workflows returned for that source head succeeded. The runner-outage clause in R08 is superseded for that head only; production secrets, deployed identity and issue #104 remain unresolved. Planning risk scores are unchanged because successful source CI does not establish closure of those operational threats.
+
+Hosting uncertainty is a treatment prerequisite across R01-R04 and R08. Confirm actual environment inventory before scoring residual risk. See [approval package](SOC2_APPROVAL_PACKAGE_20261008.md) for proposed owners by role, closure evidence and decision fields. No residual score has been measured or accepted.

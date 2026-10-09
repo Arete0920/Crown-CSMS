@@ -22,10 +22,10 @@ Repository authority currently states:
 
 - Azure is the selected hosted destination.
 - CROWN is currently **undeployed**; repository CI and deployment workflows do not establish hosted operation.
-- No successor production deployment, runtime identity, or operational acceptance is asserted by `docs/CURRENT_RELEASE_STATUS.md`.
+- No successor production deployment, runtime identity, or operational acceptance is asserted by `docs/CURRENT_RELEASE_STATUS.md`. That record withholds claims; the explicit undeployed statement comes from `docs/operations/AZURE_CLASSROOM_FIRST_RELEASE.md`.
 - The Azure readiness path references intended resources such as `crown-rg`, `crown-api-prod`, `crown-api-dev`, and `crownregistry`, but the repository explicitly states that actual Azure resources, subscription, region, cost, and credentials remain unverified.
 - Automatic Azure drift checks are disabled and require explicit manual execution.
-- A connected Render workspace check on 2026-10-08 returned no services and no PostgreSQL instances; Render is therefore not evidence of the current CROWN production environment.
+- The earlier connected Render check was recorded on 2026-10-08 as returning no services or PostgreSQL instances in the inspected workspace. This is historical, workspace-limited evidence, not proof that every Render workspace is empty. The current reconciliation could not repeat that inventory because no workspace is selected. Render does not establish current CROWN production hosting.
 
 **Open scope evidence:** actual Azure subscription/tenant, selected region(s), deployed services, database, broker/worker/beat services, identity, networking, storage/backups, monitoring, and exact deployed source identity.
 
@@ -76,3 +76,15 @@ No provider certification is inherited automatically by CROWN.
 ## Claim boundary
 
 This document narrows the readiness scope but does not establish production operation, management approval, SOC 2 readiness completion, or independent assurance.
+
+## October 8 reconciliation for approval
+
+Reviewed source identity: `a091504ec4ce37c84037b51e15d9f909fcaf6f91`. Fresh source CI is available, while hosting remains unverified. The candidate initial boundary must include GitHub source/change governance, actual workforce devices, privileged administration, restricted evidence storage, support processes and enabled security-relevant vendors even before customer hosting exists. GitHub is an observed repository service; a generic candidate-vendor label must not erase that actual source-control use. Its contracts, assurance scope and administration settings still need operational review.
+
+Diadem product exclusion does not exclude shared infrastructure, data or controls. CROWN billing/financial records remain part of the proposed CROWN data boundary even while external payment processing is disabled.
+
+Use [SOC 2 approval package](SOC2_APPROVAL_PACKAGE_20261008.md) for precise scope decisions, accountability fields, hosting prerequisites and evidence acceptance requirements. Approve the planning boundary separately from the final deployed system description. All management approvals remain unrecorded.
+
+## Confirmed current administrator
+
+On 2026-10-08, John C Megahan stated that he personally administers CROWN's Azure environment and technical operations. This is management self-report of the current administrator, not authenticated resource/access evidence, formal adoption of each control, or scope/policy approval. Record John as the current operations administrator; deputy/alternate, independent review, after-hours coverage and formal per-control assignments remain open. Actual Azure tenant/subscription, resources, regions and runtime acceptance remain unverified.
