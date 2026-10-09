@@ -129,6 +129,7 @@ class CrownModulePermission:
                     if not school_header and request.path.startswith((
                         "/api/v1/scheduling-wizard/",
                         "/api/v1/section-scheduler-wizard/",
+                        "/api/v1/staff-onboarding-wizard/",
                         "/api/v1/aid-wizard/",
                     )):
                         from households.scoping import MissingSchoolContext
