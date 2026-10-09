@@ -77,8 +77,8 @@ jobs:
             core/tests/test_nav_endpoint.py \
             financial_aid/tests/test_financial_aid_authz.py
 
-      - name: Run tests
-        shell: bash
+      - name: Run governed backend coverage
+        shell: pwsh
         working-directory: .
         env:
           DJANGO_SETTINGS_MODULE: crown_api.settings
@@ -86,14 +86,13 @@ jobs:
           BUILD_SHA: ${{ github.sha }}
           PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/backend
         run: |
-          set -o pipefail
-          python -m pytest -q backend 2>&1 | tee backend/pytest.log
+          ./scripts/release/run_backend_coverage.ps1 -CoverageVersion 7.16.2
 
-      - name: Upload complete pytest log
+      - name: Upload complete backend coverage evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: tests-pytest-log
-          path: backend/pytest.log
+          name: tests-backend-coverage-${{ github.sha }}-${{ github.run_attempt }}
+          path: audit-artifacts/backend-coverage/
           if-no-files-found: error
-          retention-days: 7
+          retention-days: 14
