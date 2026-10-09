@@ -114,6 +114,8 @@ def _grant_wizard_access_if_required(description, user, school):
         _grant_attendance_configuration_access(user, school)
     elif description == "financial_aid":
         _grant_financial_aid_access(user, school)
+    elif description == "staff_onboarding":
+        _grant_permission(user, school, "HR_MANAGER", "hr.edit", "Manage school staff onboarding")
 
 
 def _headers(school_id):
