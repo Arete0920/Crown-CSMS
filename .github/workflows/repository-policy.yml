@@ -88,7 +88,7 @@ jobs:
             BASE_SHA="${{ github.event.before }}"
             HEAD_SHA="${{ github.sha }}"
           fi
-          git diff --name-only "$BASE_SHA" "$HEAD_SHA" -- '.github/workflows/*.yml' '.github/workflows/*.yaml' > changed-workflows.txt || true
+          git diff --name-only "$BASE_SHA" "$HEAD_SHA" -- '.github/workflows/*.yml' '.github/workflows/*.yaml' > changed-workflows.txt
           if [ -s changed-workflows.txt ]; then
             echo "changed=true" >> "$GITHUB_OUTPUT"
           else
@@ -166,13 +166,11 @@ jobs:
         run: ./actionlint -color -shellcheck=
 
       - name: Enforce workflow policy
-        if: steps.workflow_changes.outputs.changed == 'true'
         run: |
-          mapfile -t changed_workflows < changed-workflows.txt
-          python tools/verify_workflow_policy.py "${changed_workflows[@]}"
+          python tools/verify_workflow_policy.py
+          python tools/tests/test_workflow_policy.py
 
       - name: Enforce CI authoring contracts
-        if: steps.workflow_changes.outputs.changed == 'true'
         run: |
           python tools/ci/check_no_pr_job_if.py
           python tools/ci/check_workflow_step_names.py
@@ -193,4 +191,4 @@ jobs:
 
       - name: Report no workflow changes
         if: steps.workflow_changes.outputs.changed != 'true'
-        run: echo "No workflow files changed; workflow-specific policy checks were skipped."
+        run: echo "No workflow files changed; changed-file lint checks were skipped; complete workflow policy was enforced."
