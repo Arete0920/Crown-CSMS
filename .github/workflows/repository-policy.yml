@@ -181,6 +181,11 @@ jobs:
       - name: Enforce external tool integration security
         run: python tools/ci/verify_tool_integration_security.py
 
+      - name: Verify DevSecOps maturity evidence integrity
+        run: |
+          python tools/ci/verify_devsecops_maturity.py
+          python -m unittest discover -s tools/ci -p 'test_verify_devsecops_maturity.py' -v
+
       - name: Report no workflow changes
         if: steps.workflow_changes.outputs.changed != 'true'
         run: echo "No workflow files changed; workflow-specific policy checks were skipped."
