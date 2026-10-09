@@ -1,0 +1,49 @@
+name: Heritage Windows Demo Rehearsal
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'scripts/demo/**'
+      - 'backend/sandbox_demo/**'
+      - 'backend/requirements.txt'
+      - 'frontend/dashboards/**'
+      - '.github/workflows/heritage-windows-rehearsal.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows-local-demo:
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - uses: actions/setup-python@7f4fc3e22c37d6ff65e88745f38bd3157c663f7c
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - name: Prepare isolated fictional Heritage data and frontend
+        shell: pwsh
+        run: |
+          python --version
+          node --version
+          npm --version
+          python scripts/demo/start_heritage_local.py --prepare-only
+      - name: Launch servers and verify local role-based demo
+        shell: pwsh
+        run: |
+          python scripts/demo/verify_heritage_runtime.py
+      - name: Upload local rehearsal evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: heritage-windows-rehearsal
+          path: |
+            .local-backups/heritage-demo/*.log
+            .local-backups/heritage-demo/rehearsal-result.json
+          if-no-files-found: warn
+          retention-days: 7
