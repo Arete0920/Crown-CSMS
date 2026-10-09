@@ -41,10 +41,14 @@ def require_role(request, allowed_roles: set) -> bool:
     if not user or not getattr(user, "is_authenticated", False):
         return False
 
-    if getattr(user, "is_superuser", False) or getattr(user, "is_staff", False):
+    # A selected, validated tenant is required even for platform administrators.
+    # Ordinary Django staff status is never a Home Academy permission grant.
+    school = getattr(request, "school", None)
+    if school is None:
+        return False
+    if getattr(user, "is_superuser", False):
         return True
 
-    school = getattr(request, "school", None)
     normalized = {str(role).lower() for role in allowed_roles}
 
     if "admin" in normalized and user_has_permission(user, "home_academy.edit", school=school):
