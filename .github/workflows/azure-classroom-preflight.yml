@@ -102,6 +102,33 @@ jobs:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - name: Query private Azure cost and tier inventory
+        shell: bash
+        run: |
+          set -euo pipefail
+          umask 077
+          python3 scripts/ops/crown_azure_cost_audit.py --resource-group crown-rg --output private-azure-cost.json
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          d = json.loads(Path("private-azure-cost.json").read_text())
+          if d.get("status") == "BLOCKED":
+              raise SystemExit("Azure subscription inventory blocked.")
+          inventory = d.get("inventory") or {}
+          lines = ["## Azure cost audit (redacted)", "Account identifiers and monetary amounts withheld."]
+          for key in ("app_service_plans", "container_registries", "static_web_apps", "postgresql_flexible_servers"):
+              items = inventory.get(key)
+              if items is None:
+                  lines.append(f"- {key}: unavailable")
+              else:
+                  lines.append(f"- {key}: {len(items)} resources")
+          for label, cost in (d.get("actual_cost") or {}).items():
+              lines.append(f"- {label} cost query: {cost.get('status', 'UNAVAILABLE')}")
+          lines.append("- Budget query: " + ("unavailable" if d.get("existing_budgets") is None else "received"))
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as out:
+              out.write("\n".join(lines) + "\n")
+          PY
+          rm -f private-azure-cost.json
       - name: Collect scoped Azure inventory without mutation
         shell: bash
         env:
