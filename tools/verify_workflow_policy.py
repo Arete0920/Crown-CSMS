@@ -8,7 +8,7 @@ import sys
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 WORKFLOWS = ROOT / ".github" / "workflows"
 
-USES_RE = re.compile(r"^\s*uses:\s*([^\s#]+)", re.MULTILINE)
+USES_RE = re.compile(r"^\s*(?:-\s+)?uses:\s*([^\s#]+)", re.MULTILINE)
 JOB_RE = re.compile(r"^\s{2}([A-Za-z0-9_-]+):\s*$", re.MULTILINE)
 RUNS_ON_RE = re.compile(r"^\s{4}runs-on:\s*.+$", re.MULTILINE)
 TIMEOUT_RE = re.compile(r"^\s{4}timeout-minutes:\s*\d+\s*$", re.MULTILINE)
@@ -74,8 +74,10 @@ CANONICAL_WORKFLOW_FILES = {
 
 
 def is_pinned_uses(ref: str) -> bool:
-    if ref.startswith("./") or ref.startswith("docker://"):
+    if ref.startswith("./"):
         return True
+    if ref.startswith("docker://"):
+        return bool(re.fullmatch(r"docker://[^\s@]+@sha256:[0-9a-f]{64}", ref))
     if "@" not in ref:
         return False
     action, version = ref.split("@", 1)
@@ -258,7 +260,8 @@ def main() -> int:
     targets = [pathlib.Path(p).resolve() for p in sys.argv[1:]]
     all_errors: list[str] = []
 
-    active_workflows = {path.name for path in WORKFLOWS.glob("*.yml")}
+    active_workflows = {path.name for path in WORKFLOWS.iterdir()
+                        if path.is_file() and path.suffix.lower() in {".yml", ".yaml"}}
     unexpected = sorted(active_workflows - CANONICAL_WORKFLOW_FILES)
     missing = sorted(CANONICAL_WORKFLOW_FILES - active_workflows)
     if unexpected:
@@ -280,9 +283,9 @@ def main() -> int:
     names: dict[str, pathlib.Path] = {}
     groups: dict[str, pathlib.Path] = {}
     workflow_groups: dict[pathlib.Path, str] = {}
-    files = targets if targets else sorted(WORKFLOWS.glob("*.yml"))
+    files = targets if targets else sorted(p for p in WORKFLOWS.iterdir() if p.suffix.lower() in {".yml", ".yaml"})
     for wf in files:
-        if not wf.exists() or wf.suffix.lower() != ".yml":
+        if not wf.exists() or wf.suffix.lower() not in {".yml", ".yaml"}:
             continue
         if wf.parent != WORKFLOWS:
             continue
