@@ -143,13 +143,17 @@ jobs:
             --api-app crown-api-prod \
             --expected-sha "$EXPECTED_SHA" > azure-classroom-preflight.json
       - name: Retain Azure inventory or blocked evidence
-        if: always() && hashFiles('azure-classroom-preflight.json') != ''
+        if: github.event_name == 'workflow_dispatch' && hashFiles('azure-classroom-preflight.json') != ''
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: azure-classroom-preflight-${{ github.sha }}
           path: azure-classroom-preflight.json
           retention-days: 7
           if-no-files-found: error
+      - name: Discard automatic Azure resource details
+        if: always() && github.event_name == 'push'
+        shell: bash
+        run: rm -f azure-classroom-preflight.json private-azure-cost.json
       - name: Record preflight release boundary
         if: always()
         shell: bash
