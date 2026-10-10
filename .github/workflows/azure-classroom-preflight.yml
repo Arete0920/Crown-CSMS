@@ -45,7 +45,7 @@ jobs:
         run: python -m unittest discover -s scripts/ops -p test_crown_azure_cost_audit.py -v
 
   azure-inventory:
-    if: github.ref == 'refs/heads/main' && (github.event_name == 'workflow_dispatch' || github.event_name == 'push')
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
     needs: collector-tests
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -150,8 +150,8 @@ jobs:
           path: azure-classroom-preflight.json
           retention-days: 7
           if-no-files-found: error
-      - name: Discard automatic Azure resource details
-        if: always() && github.event_name == 'push'
+      - name: Discard temporary Azure resource details
+        if: always()
         shell: bash
         run: rm -f azure-classroom-preflight.json private-azure-cost.json
       - name: Record preflight release boundary
