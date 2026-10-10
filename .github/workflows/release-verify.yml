@@ -117,6 +117,8 @@ jobs:
           name: release-verify-frontend-diagnostic
           if-no-files-found: error
           path: ${{ runner.temp }}/release-verify-frontend-tests.log
+          retention-days: 14
+
       - name: Export OpenAPI schema
         shell: bash
         run: |
@@ -136,5 +138,4 @@ jobs:
           if-no-files-found: error
           path: |
             docs/openapi/crown-openapi.yaml
-            audit-artifacts/**
-            docs/release/**
+          retention-days: 14

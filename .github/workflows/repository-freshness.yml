@@ -245,3 +245,4 @@ jobs:
             protected-branches.json
             protected-branches.txt
           if-no-files-found: ignore
+          retention-days: 14

@@ -50,6 +50,8 @@ jobs:
         with:
           name: backend-sbom-${{ github.run_id }}
           path: backend/backend-sbom.cdx.json
+          retention-days: 14
+          if-no-files-found: error
 
   frontend-sbom:
     runs-on: ubuntu-latest
@@ -79,6 +81,8 @@ jobs:
         with:
           name: frontend-sbom-${{ github.run_id }}
           path: frontend/dashboards/frontend-sbom.cdx.json
+          retention-days: 14
+          if-no-files-found: error
 
   wallet-sbom:
     runs-on: ubuntu-latest
@@ -108,3 +112,5 @@ jobs:
         with:
           name: wallet-sbom-${{ github.run_id }}
           path: services/wallet/apple-pass-service/wallet-sbom.cdx.json
+          retention-days: 14
+          if-no-files-found: error

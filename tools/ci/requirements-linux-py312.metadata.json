@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "platform": "linux",
+  "python": "3.12",
+  "compiler": "pip-tools==7.6.2",
+  "source": "backend/requirements.txt",
+  "source_sha256": "fc96e90aa8e43c05266796acf5241e88458253b7c74912a4f9249bb7a4f01b27",
+  "lock": "tools/ci/requirements-linux-py312.lock",
+  "lock_sha256": "819c2f55a7bb0bf7e45c2203de0d1a1556c03927e91bc7c66359ec4e9e9c5c96",
+  "command": "python -m piptools compile --generate-hashes --no-emit-index-url --no-emit-trusted-host --no-header --no-annotate --output-file tools/ci/requirements-linux-py312.lock backend/requirements.txt"
+}
