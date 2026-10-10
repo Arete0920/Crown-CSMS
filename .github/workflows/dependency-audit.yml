@@ -10,7 +10,7 @@ permissions:
 
 concurrency:
   group: dependency-audit-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   backend-pip-audit:
@@ -23,7 +23,7 @@ jobs:
         with:
           python-version: "3.12"
       - name: Install dependency security tooling
-        run: python -m pip install --upgrade pip pip-audit pip-licenses
+        run: python -m pip install pip-audit==2.10.1 pip-licenses==5.5.5
       - name: Enforce backend dependency license policy
         run: |
           pip install -r backend/requirements.txt
@@ -76,7 +76,7 @@ jobs:
         run: npm test
       - name: Enforce dependency license policy
         run: |
-          npx --yes license-checker --json --out license-policy-report.json
+          npx --yes license-checker@25.0.1 --json --out license-policy-report.json
           python "${{ github.workspace }}/tools/verify_license_policy.py" license-policy-report.json
 
       - name: Capture frontend dependency audit
@@ -96,6 +96,8 @@ jobs:
             ${{ matrix.directory }}/npm-audit-results.json
             ${{ matrix.directory }}/npm-audit-exit-code.txt
           if-no-files-found: error
+          retention-days: 14
+
       - name: Report and enforce frontend dependency audit
         shell: bash
         run: |

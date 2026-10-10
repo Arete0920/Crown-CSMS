@@ -62,3 +62,4 @@ jobs:
             audit-artifacts/release-manifest/**
             docs/release/SCHEMA_W002_PROGRESS.md
             docs/openapi/crown-openapi.yaml
+          retention-days: 14

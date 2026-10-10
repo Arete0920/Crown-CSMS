@@ -6,12 +6,18 @@ on:
     paths:
       - 'scripts/ops/azure_classroom_preflight.py'
       - 'scripts/ops/test_azure_classroom_preflight.py'
+      - 'scripts/ops/crown_azure_cost_audit.py'
+      - 'scripts/ops/test_crown_azure_cost_audit.py'
+      - 'docs/operations/CROWN_AZURE_FREE_FIRST_COST_CONTROL.md'
       - '.github/workflows/azure-classroom-preflight.yml'
   push:
     branches: [main]
     paths:
       - 'scripts/ops/azure_classroom_preflight.py'
       - 'scripts/ops/test_azure_classroom_preflight.py'
+      - 'scripts/ops/crown_azure_cost_audit.py'
+      - 'scripts/ops/test_crown_azure_cost_audit.py'
+      - 'docs/operations/CROWN_AZURE_FREE_FIRST_COST_CONTROL.md'
       - '.github/workflows/azure-classroom-preflight.yml'
   workflow_dispatch:
 
@@ -35,9 +41,11 @@ jobs:
           python-version: '3.12'
       - name: Verify read-only and withheld-release contracts
         run: python -m unittest discover -s scripts/ops -p test_azure_classroom_preflight.py -v
+      - name: Verify Azure cost inventory remains private and read-only
+        run: python -m unittest discover -s scripts/ops -p test_crown_azure_cost_audit.py -v
 
   azure-inventory:
-    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'workflow_dispatch' || github.event_name == 'push')
     needs: collector-tests
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -94,6 +102,33 @@ jobs:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - name: Query private Azure cost and tier inventory
+        shell: bash
+        run: |
+          set -euo pipefail
+          umask 077
+          python3 scripts/ops/crown_azure_cost_audit.py --resource-group crown-rg --output private-azure-cost.json
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          d = json.loads(Path("private-azure-cost.json").read_text())
+          if d.get("status") == "BLOCKED":
+              raise SystemExit("Azure subscription inventory blocked.")
+          inventory = d.get("inventory") or {}
+          lines = ["## Azure cost audit (redacted)", "Account identifiers and monetary amounts withheld."]
+          for key in ("app_service_plans", "container_registries", "static_web_apps", "postgresql_flexible_servers"):
+              items = inventory.get(key)
+              if items is None:
+                  lines.append(f"- {key}: unavailable")
+              else:
+                  lines.append(f"- {key}: {len(items)} resources")
+          for label, cost in (d.get("actual_cost") or {}).items():
+              lines.append(f"- {label} cost query: {cost.get('status', 'UNAVAILABLE')}")
+          lines.append("- Budget query: " + ("unavailable" if d.get("existing_budgets") is None else "received"))
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as out:
+              out.write("\n".join(lines) + "\n")
+          PY
+          rm -f private-azure-cost.json
       - name: Collect scoped Azure inventory without mutation
         shell: bash
         env:
@@ -108,13 +143,17 @@ jobs:
             --api-app crown-api-prod \
             --expected-sha "$EXPECTED_SHA" > azure-classroom-preflight.json
       - name: Retain Azure inventory or blocked evidence
-        if: always() && hashFiles('azure-classroom-preflight.json') != ''
+        if: github.event_name == 'workflow_dispatch' && hashFiles('azure-classroom-preflight.json') != ''
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: azure-classroom-preflight-${{ github.sha }}
           path: azure-classroom-preflight.json
           retention-days: 7
           if-no-files-found: error
+      - name: Discard automatic Azure resource details
+        if: always() && github.event_name == 'push'
+        shell: bash
+        run: rm -f azure-classroom-preflight.json private-azure-cost.json
       - name: Record preflight release boundary
         if: always()
         shell: bash

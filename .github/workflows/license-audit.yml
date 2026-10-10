@@ -45,8 +45,8 @@ jobs:
 
       - name: Install deps and pip-licenses
         run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt pip-licenses
+          python -m pip --version
+          pip install -r requirements.txt pip-licenses==5.5.5
 
       - name: Export Python license report
         run: pip-licenses --format=json --output-file python-licenses.json
@@ -60,6 +60,8 @@ jobs:
         with:
           name: python-license-report-${{ github.run_id }}
           path: backend/python-licenses.json
+          retention-days: 14
+          if-no-files-found: error
 
   node-licenses:
     runs-on: ubuntu-latest
@@ -82,7 +84,7 @@ jobs:
         run: npm ci
 
       - name: Export Node license report
-        run: npx --yes license-checker --json --out node-licenses.json
+        run: npx --yes license-checker@25.0.1 --json --out node-licenses.json
 
       - name: Enforce Node license policy
         working-directory: ${{ github.workspace }}
@@ -93,6 +95,8 @@ jobs:
         with:
           name: node-license-report-${{ github.run_id }}
           path: frontend/dashboards/node-licenses.json
+          retention-days: 14
+          if-no-files-found: error
 
   wallet-licenses:
     runs-on: ubuntu-latest
@@ -115,7 +119,7 @@ jobs:
         run: npm ci
 
       - name: Export Wallet license report
-        run: npx --yes license-checker --json --out wallet-licenses.json
+        run: npx --yes license-checker@25.0.1 --json --out wallet-licenses.json
 
       - name: Enforce Wallet license policy
         working-directory: ${{ github.workspace }}
@@ -126,3 +130,5 @@ jobs:
         with:
           name: wallet-license-report-${{ github.run_id }}
           path: services/wallet/apple-pass-service/wallet-licenses.json
+          retention-days: 14
+          if-no-files-found: error

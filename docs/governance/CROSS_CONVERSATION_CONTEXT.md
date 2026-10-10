@@ -1,6 +1,7 @@
 # CROWN Cross-Conversation Context and Decision Authority
 
-**Status:** Proposed governance addition pending governed review/merge
+**Status:** Canonical governance upon governed merge into `main`
+**Owner decision:** Scope approved 2026-10-09; implementation completion authorized 2026-10-10
 **Owner:** CROWN product owner / Arete Advisory Group
 **Scope:** Product development, engineering, implementation, support, internal operations, staffing, finance, partnerships, marketing, and investor/buyer materials.
 
@@ -15,6 +16,8 @@ Ensure that all work sessions apply the same approved CROWN facts, operating pri
 3. An expressly owner-approved, dated commercial or operational decision in the controlled decision register governs its domain until superseded. Confidential business records live in access-controlled storage, not this public repository.
 4. Current source code, exact-head CI evidence, deployment/runtime observations, and provider confirmations establish implementation and operational *facts*. A plan or decision is not evidence that an action happened.
 5. Supporting documents and dated meeting notes inform interpretation. Prior chats and model memory are pointers for retrieval, not binding records.
+
+Owner authorization does not bypass applicable law, contractual obligations, security/privacy controls, required checks, or the governed change-control path. Business intent and implementation evidence remain separate; CI and tooling are not independent human approval.
 
 Where authority conflicts, do not conceal the conflict. Note source, status, effective date and what approval is required to resolve it. An earlier business decision is not displaced by a newer speculative draft.
 
@@ -63,5 +66,7 @@ This governance standard guides people and repository-aware assistants. It canno
 - `docs/engineering/ENGINEERING_ACCOUNTABILITY_POLICY.md`
 - `docs/engineering/REPOSITORY_WORKFLOW.md`
 - `docs/governance/CROWN_PR_HYGIENE_GATE.md`
+- `docs/governance/CROWN_SOLO_DEVELOPER_APPROVED_WORKAROUND.md`
+- `docs/governance/SOLO_MAINTAINER_BRANCH_PROTECTION_POLICY.md`
 
 This policy supplements, and does not replace, those authorities.
