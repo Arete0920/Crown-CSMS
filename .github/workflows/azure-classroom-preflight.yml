@@ -6,12 +6,18 @@ on:
     paths:
       - 'scripts/ops/azure_classroom_preflight.py'
       - 'scripts/ops/test_azure_classroom_preflight.py'
+      - 'scripts/ops/crown_azure_cost_audit.py'
+      - 'scripts/ops/test_crown_azure_cost_audit.py'
+      - 'docs/operations/CROWN_AZURE_FREE_FIRST_COST_CONTROL.md'
       - '.github/workflows/azure-classroom-preflight.yml'
   push:
     branches: [main]
     paths:
       - 'scripts/ops/azure_classroom_preflight.py'
       - 'scripts/ops/test_azure_classroom_preflight.py'
+      - 'scripts/ops/crown_azure_cost_audit.py'
+      - 'scripts/ops/test_crown_azure_cost_audit.py'
+      - 'docs/operations/CROWN_AZURE_FREE_FIRST_COST_CONTROL.md'
       - '.github/workflows/azure-classroom-preflight.yml'
   workflow_dispatch:
 
@@ -35,6 +41,8 @@ jobs:
           python-version: '3.12'
       - name: Verify read-only and withheld-release contracts
         run: python -m unittest discover -s scripts/ops -p test_azure_classroom_preflight.py -v
+      - name: Verify Azure cost inventory remains private and read-only
+        run: python -m unittest discover -s scripts/ops -p test_crown_azure_cost_audit.py -v
 
   azure-inventory:
     if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
