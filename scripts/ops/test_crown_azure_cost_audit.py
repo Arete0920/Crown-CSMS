@@ -1,10 +1,26 @@
 """Tests for CROWN Azure cost collector; no live cloud calls."""
 import json
+from pathlib import Path
 from unittest.mock import patch
 import unittest
 import crown_azure_cost_audit as audit
 
 class AuditTests(unittest.TestCase):
+
+    def test_authenticated_azure_inventory_is_manual_only(self):
+        workflow = (
+            Path(__file__).resolve().parents[2]
+            / ".github" / "workflows" / "azure-classroom-preflight.yml"
+        ).read_text(encoding="utf-8")
+        inventory = workflow.split("\n  azure-inventory:\n", 1)[1]
+        guard = "if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'"
+        self.assertIn(guard, inventory)
+        self.assertNotIn("github.event_name == 'push'", inventory.split("\n    steps:", 1)[0])
+        self.assertIn("if: always()\n        shell: bash\n        run: rm -f azure-classroom-preflight.json private-azure-cost.json", inventory)
+        self.assertIn("  collector-tests:\n", workflow)
+        self.assertIn("  push:\n", workflow)
+        self.assertIn("  pull_request:\n", workflow)
+
     def test_no_subscription_is_blocked(self):
         with patch.object(audit, "az_json", side_effect=audit.ReadUnavailable("no access")):
             report = audit.make_report("crown-rg")
