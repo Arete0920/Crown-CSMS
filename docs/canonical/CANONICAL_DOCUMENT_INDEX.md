@@ -8,6 +8,7 @@ This index defines the active documentation authority surface for Crown-CSMS. Ex
 
 | Document | Purpose | Authority source | Review trigger |
 |---|---|---|---|
+| `docs/governance/CROSS_CONVERSATION_CONTEXT.md` | Cross-chat decision authority, precedence, continuity and update contract | Current canonical records; owner-approved controlled decisions | Material CROWN decision/governance change |
 | `README.md` | Repository orientation and engineering posture | This index; current release status | Each release-authority change |
 | `docs/INVESTOR_TECHNICAL_REVIEW_GUIDE.md` | Investor technical diligence navigation | Current release status; diligence evidence index | Each material diligence/release change |
 | `docs/README.md` | Documentation navigation | This index | Documentation-structure change |
