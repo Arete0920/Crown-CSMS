@@ -45,7 +45,7 @@ jobs:
         run: python -m unittest discover -s scripts/ops -p test_crown_azure_cost_audit.py -v
 
   azure-inventory:
-    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'workflow_dispatch' || github.event_name == 'push')
     needs: collector-tests
     runs-on: ubuntu-latest
     timeout-minutes: 15
