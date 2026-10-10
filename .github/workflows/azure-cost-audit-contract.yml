@@ -1,0 +1,32 @@
+name: Azure Cost Audit Contract
+
+on:
+  pull_request:
+    paths:
+      - 'scripts/ops/crown_azure_cost_audit.py'
+      - 'scripts/ops/test_crown_azure_cost_audit.py'
+      - 'docs/operations/CROWN_AZURE_FREE_FIRST_COST_CONTROL.md'
+      - '.github/workflows/azure-cost-audit-contract.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/ops/crown_azure_cost_audit.py'
+      - 'scripts/ops/test_crown_azure_cost_audit.py'
+      - 'docs/operations/CROWN_AZURE_FREE_FIRST_COST_CONTROL.md'
+      - '.github/workflows/azure-cost-audit-contract.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+      - uses: actions/setup-python@7f4fc3e22c37d6ff65e88745f38bd3157c663f7c # v4
+        with:
+          python-version: '3.12'
+      - name: Verify read-only cost collector behavior
+        run: python -m unittest discover -s scripts/ops -p test_crown_azure_cost_audit.py -v
