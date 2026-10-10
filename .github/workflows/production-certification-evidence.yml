@@ -254,7 +254,7 @@ jobs:
         with:
           name: production-certification-evidence-${{ github.run_number }}-${{ github.sha }}
           path: audit-artifacts/production-certification/current/
-          if-no-files-found: warn
+          if-no-files-found: error
           retention-days: 30
 
       - name: Upload raw Playwright test results
