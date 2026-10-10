@@ -181,6 +181,11 @@ jobs:
           python tools/verify_release_candidate_order.py
           python tools/tests/test_release_candidate_order.py
 
+      - name: Enforce bounded artifact evidence policy
+        run: |
+          python tools/ci/verify_artifact_policy.py
+          python -m unittest discover -s tools/ci -p 'test_verify_artifact_policy.py' -v
+
       - name: Enforce external tool integration security
         run: python tools/ci/verify_tool_integration_security.py
 

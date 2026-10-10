@@ -60,6 +60,8 @@ jobs:
         with:
           name: python-license-report-${{ github.run_id }}
           path: backend/python-licenses.json
+          retention-days: 14
+          if-no-files-found: error
 
   node-licenses:
     runs-on: ubuntu-latest
@@ -93,6 +95,8 @@ jobs:
         with:
           name: node-license-report-${{ github.run_id }}
           path: frontend/dashboards/node-licenses.json
+          retention-days: 14
+          if-no-files-found: error
 
   wallet-licenses:
     runs-on: ubuntu-latest
@@ -126,3 +130,5 @@ jobs:
         with:
           name: wallet-license-report-${{ github.run_id }}
           path: services/wallet/apple-pass-service/wallet-licenses.json
+          retention-days: 14
+          if-no-files-found: error
