@@ -174,3 +174,4 @@ jobs:
           name: crown-operational-production-certification-audit
           path: crown-audit-export/**
           if-no-files-found: error
+          retention-days: 14

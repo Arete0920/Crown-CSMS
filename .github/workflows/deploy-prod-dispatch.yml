@@ -22,8 +22,6 @@ concurrency:
 permissions:
   contents: read
   actions: read
-  security-events: write
-  id-token: write
 
 env:
   REGISTRY: crownregistry.azurecr.io
@@ -69,15 +67,23 @@ jobs:
           echo "deploy_sha_short=${deploy_sha:0:7}" >> "$GITHUB_OUTPUT"
 
   production-migration:
-    needs: resolve-release
+    permissions:
+      contents: read
+      id-token: write
+    needs: [resolve-release, candidate-verification]
     uses: ./.github/workflows/schema-migration-stage.yml
     with:
       expected_sha: ${{ needs.resolve-release.outputs.deploy_sha }}
       confirm_environment: production
     secrets: inherit
 
-  build-and-deploy:
-    needs: [resolve-release, production-migration]
+  candidate-verification:
+    permissions:
+      contents: read
+      actions: read
+      security-events: write
+      id-token: write
+    needs: resolve-release
     runs-on: ubuntu-latest
     timeout-minutes: 60
     environment: production
@@ -86,6 +92,7 @@ jobs:
     outputs:
       deploy_sha: ${{ steps.vars.outputs.deploy_sha }}
       deploy_sha_short: ${{ steps.vars.outputs.deploy_sha_short }}
+      image_digest: ${{ steps.publish.outputs.image_digest }}
 
     steps:
       - name: "Guard: deploy tag input must be present and match prod-deploy-*"
@@ -253,30 +260,78 @@ jobs:
           fi
           echo "OK: AcrPull verified for ${{ env.WEBAPP_NAME }} ($PRINCIPAL_ID)"
 
+      - name: Set up Python
+        uses: actions/setup-python@7f4fc3e22c37d6ff65e88745f38bd3157c663f7c # v4
+        with:
+          python-version: '3.12'
+
+      - name: Install candidate backend dependencies
+        run: python -m pip install -r backend/requirements.txt
+
+      - name: Preflight gate (Django deploy checks)
+        env:
+          DJANGO_SECRET_KEY: candidate-validation-nonproduction-only
+          DATABASE_URL: sqlite:///./candidate-check.sqlite3
+        run: python backend/manage.py check --deploy
+
+      - name: Run complete governed candidate coverage
+        shell: pwsh
+        env:
+          DJANGO_SECRET_KEY: candidate-validation-nonproduction-only
+          DJANGO_SETTINGS_MODULE: crown_api.settings
+          BUILD_SHA: ${{ needs.resolve-release.outputs.deploy_sha }}
+        run: ./scripts/release/run_backend_coverage.ps1 -CoverageVersion 7.16.2
+
+      - name: Retain candidate coverage evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: candidate-coverage-${{ needs.resolve-release.outputs.deploy_sha }}-${{ github.run_attempt }}
+          path: audit-artifacts/backend-coverage/
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Set up candidate Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22.22.0'
+          cache: npm
+          cache-dependency-path: frontend/dashboards/package-lock.json
+
+      - name: Verify complete candidate frontend
+        working-directory: frontend/dashboards
+        env:
+          CI: 'true'
+          VITE_BUILD_SHA: ${{ needs.resolve-release.outputs.deploy_sha }}
+        run: |
+          npm ci
+          npm test
+          npm run build
+
       - name: Bake BUILD_SHA into artifact
         run: |
-          echo "BUILD_SHA = \"${{ steps.vars.outputs.deploy_sha_short }}\"" > backend/crown_api/build_info.py
+          echo "BUILD_SHA = \"${{ steps.vars.outputs.deploy_sha }}\"" > backend/crown_api/build_info.py
           echo "OK: Generated build_info.py with SHA: ${{ steps.vars.outputs.deploy_sha_short }}"
 
-      - name: Build and push Docker image
+      - name: Build production image for verification
         uses: docker/build-push-action@ca052bb54ab0790a636c9b5f226502c73d547a25 # v5
         with:
           context: .
-          push: true
+          load: true
+          push: false
           tags: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.vars.outputs.deploy_sha }}
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Pull image for Trivy local scan
-        run: |
-          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.vars.outputs.deploy_sha }}
-
-      - name: Run security scan (Trivy)
+      - name: Run blocking security scan (Trivy)
         uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # v0.35.0
         with:
           image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.vars.outputs.deploy_sha }}
+          scanners: 'vuln'
+          severity: 'HIGH,CRITICAL'
+          ignore-unfixed: false
+          exit-code: '1'
           format: 'sarif'
           output: 'trivy-results.sarif'
 
@@ -324,67 +379,178 @@ jobs:
         with:
           sarif_file: 'trivy-results.sarif'
 
-      - name: Set up Python
-        uses: actions/setup-python@7f4fc3e22c37d6ff65e88745f38bd3157c663f7c # v4
-        with:
-          python-version: '3.12'
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install pytest pytest-cov pytest-django
-
-      - name: Preflight gate (Django deploy checks)
-        run: |
-          export DJANGO_SECRET_KEY=$(python -c 'import secrets; print(secrets.token_urlsafe(50))')
-          export DATABASE_URL=sqlite:///./ci.sqlite3
-          cd backend
-          python manage.py check --deploy
-
-      - name: Run tests
+      - name: Publish validated candidate and record digest
+        id: publish
+        shell: bash
         env:
-          DJANGO_SECRET_KEY: ${{ github.sha }}
-          DATABASE_URL: sqlite:///./ci.sqlite3
-          DJANGO_SETTINGS_MODULE: crown_api.settings
+          CANDIDATE_SHA: ${{ steps.vars.outputs.deploy_sha }}
         run: |
-          cd backend
-          python manage.py test \
-            crown_api.tests.test_households_api \
-            crown_api.tests.test_students_api \
-            crown_api.tests.test_director_router \
-            crown_api.tests.test_director_actions_auth_required \
-            crown_api.tests.test_admissions_links_api \
-            crown_api.tests.test_academics_api \
-            crown_api.tests.test_billing_summary_api \
-            crown_api.tests.test_comms_api \
-            crown_api.tests.test_scheduling_api \
-            -v 2
-          pytest --cov=. --cov-report=xml --ignore-glob='test_*.py'
+          set -euo pipefail
+          image="${REGISTRY}/${IMAGE_NAME}:${CANDIDATE_SHA}"
+          docker push "$image"
+          digest=$(az acr repository show --name "${REGISTRY%%.*}" \
+            --image "${IMAGE_NAME}:${CANDIDATE_SHA}" --query digest --output tsv --only-show-errors)
+          [[ "$digest" =~ ^sha256:[0-9a-f]{64}$ ]] || { echo "Invalid candidate digest"; exit 1; }
+          echo "image_digest=$digest" >> "$GITHUB_OUTPUT"
+          echo "Validated candidate: ${REGISTRY}/${IMAGE_NAME}@${digest}" >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Upload coverage
-        if: always() && hashFiles('backend/coverage.xml') != ''
-        continue-on-error: false
-        uses: codecov/codecov-action@ab904c41d6ece82784817410c45d8b8c02684457 # v3
-        with:
-          files: ./backend/coverage.xml
-          flags: unittests
+  build-and-deploy:
+    permissions:
+      contents: read
+      actions: read
+      id-token: write
+    needs: [resolve-release, candidate-verification, production-migration]
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    environment: production
+    env:
+      DEPLOY_TAG: ${{ inputs.deploy_tag || github.event.client_payload.deploy_tag }}
+    outputs:
+      deploy_sha: ${{ steps.vars.outputs.deploy_sha }}
+      deploy_sha_short: ${{ steps.vars.outputs.deploy_sha_short }}
 
-      - name: Coverage artifact status
-        if: ${{ always() }}
+    steps:
+      - name: "Guard: deploy tag input must be present and match prod-deploy-*"
         shell: bash
         run: |
-          if [ -f "backend/coverage.xml" ]; then
-            echo "Found backend/coverage.xml, upload step executed."
-          else
-            echo "No backend/coverage.xml found, coverage upload skipped by condition."
+          set -euo pipefail
+          TAG="${{ env.DEPLOY_TAG }}"
+          if [[ -z "$TAG" ]]; then
+            echo "ERROR: deploy_tag is required"
+            exit 1
           fi
+          if [[ "$TAG" != prod-deploy-* ]]; then
+            echo "ERROR: refusing prod deploy; tag must start with prod-deploy-* (got '$TAG')"
+            exit 1
+          fi
+
+      - name: Checkout code
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          ref: ${{ needs.resolve-release.outputs.deploy_sha }}
+          fetch-depth: 0
+
+      - name: "Guard: tag required and resolvable"
+        shell: pwsh
+        run: |
+          ./tools/require_tag_input.ps1 -Tag "${{ env.DEPLOY_TAG }}"
+
+      - name: "Guard: deployment freeze window"
+        shell: bash
+        env:
+          FORCE_DEPLOY: ${{ inputs.force_deploy || github.event.client_payload.force_deploy }}
+          ALLOW_OFF_HOURS: ${{ secrets.ALLOW_OFF_HOURS_PROD_DEPLOY }}
+        run: |
+          set -euo pipefail
+          if [ "$FORCE_DEPLOY" = "true" ] || [ "$ALLOW_OFF_HOURS" = "true" ]; then
+            echo "Freeze guard override enabled for this dispatch run"
+            exit 0
+          fi
+          DOW=$(date -u +%u)
+          HOUR=$(date -u +%H)
+          if [ "$DOW" -ge 6 ] || [ "$HOUR" -lt 6 ] || [ "$HOUR" -ge 22 ]; then
+            echo "ERROR: production deploy blocked by freeze window (weekends or 22:00-05:59 UTC)."
+            echo "Re-run with force_deploy=true for approved emergency override."
+            exit 1
+          fi
+
+      - name: "Guard: Azure auth secrets present"
+        id: auth_guard
+        shell: bash
+        env:
+          AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+        run: |
+          set -euo pipefail
+          if [ -n "$AZURE_CREDENTIALS" ]; then
+            echo "Using AZURE_CREDENTIALS service principal auth path."
+            export AZURE_CREDENTIALS
+            python3 -c "import json, os, re, sys; raw=os.environ.get('AZURE_CREDENTIALS',''); data=json.loads(raw) if raw else sys.exit('ERROR: AZURE_CREDENTIALS is empty'); required=['clientId','clientSecret','tenantId','subscriptionId']; missing=[k for k in required if not str(data.get(k,'')).strip()]; missing and sys.exit('ERROR: AZURE_CREDENTIALS missing required keys: ' + ', '.join(missing)); guid_re=re.compile(r'^[0-9a-fA-F]{8}(-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}$'); [guid_re.match(str(data.get(k,''))) or sys.exit('ERROR: AZURE_CREDENTIALS key ' + k + ' is not a valid GUID format') for k in ('clientId','tenantId','subscriptionId')]"
+            echo "login_mode=sp" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          guid_re='^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$'
+          [ -n "$AZURE_CLIENT_ID" ] || { echo "ERROR: Missing required secret AZURE_CLIENT_ID"; exit 1; }
+          [ -n "$AZURE_TENANT_ID" ] || { echo "ERROR: Missing required secret AZURE_TENANT_ID"; exit 1; }
+          [ -n "$AZURE_SUBSCRIPTION_ID" ] || { echo "ERROR: Missing required secret AZURE_SUBSCRIPTION_ID"; exit 1; }
+          [[ "$AZURE_CLIENT_ID" =~ $guid_re ]] || { echo "ERROR: AZURE_CLIENT_ID is not a valid GUID format"; exit 1; }
+          [[ "$AZURE_TENANT_ID" =~ $guid_re ]] || { echo "ERROR: AZURE_TENANT_ID is not a valid GUID format"; exit 1; }
+          [[ "$AZURE_SUBSCRIPTION_ID" =~ $guid_re ]] || { echo "ERROR: AZURE_SUBSCRIPTION_ID is not a valid GUID format"; exit 1; }
+          echo "login_mode=oidc" >> "$GITHUB_OUTPUT"
+          echo "oidc_subject=repo:${{ github.repository }}:environment:production" >> "$GITHUB_OUTPUT"
+
+      - name: "Guard: OIDC federation diagnostics"
+        if: steps.auth_guard.outputs.login_mode == 'oidc'
+        shell: bash
+        run: |
+          set -euo pipefail
+          SUBJECT="${{ steps.auth_guard.outputs.oidc_subject }}"
+          echo "OIDC subject used by this job: $SUBJECT"
+          echo "OIDC audience used by this job: api://AzureADTokenExchange"
+          echo "If Azure login fails with AADSTS700213, ensure Azure federated credential subject exactly matches this value."
+
+      - name: Azure Login (Service Principal JSON)
+        if: steps.auth_guard.outputs.login_mode == 'sp'
+        uses: azure/login@a457da9ea143d694b1b9c7c869ebb04ebe844ef5 # v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Azure Login (OIDC)
+        if: steps.auth_guard.outputs.login_mode == 'oidc'
+        uses: azure/login@a457da9ea143d694b1b9c7c869ebb04ebe844ef5 # v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Verify exact checked-out SHA
+        id: vars
+        shell: bash
+        run: |
+          set -euo pipefail
+          expected="${{ needs.resolve-release.outputs.deploy_sha }}"
+          actual="$(git rev-parse HEAD)"
+          if [[ "$actual" != "$expected" ]]; then
+            echo "ERROR: checked-out SHA does not match resolved migration SHA. expected=$expected actual=$actual"
+            exit 1
+          fi
+          echo "deploy_sha=$actual" >> "$GITHUB_OUTPUT"
+          echo "deploy_sha_short=${actual:0:7}" >> "$GITHUB_OUTPUT"
+          echo "DEPLOY_SHA=$actual" >> "$GITHUB_ENV"
+          echo "DEPLOY_SHA_SHORT=${actual:0:7}" >> "$GITHUB_ENV"
+
+      - name: "Guard: deploy contract - SHA and tag must be present and valid"
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG="${{ env.DEPLOY_TAG }}"
+          SHA="${{ steps.vars.outputs.deploy_sha }}"
+          if [[ -z "$SHA" || ${#SHA} -lt 40 ]]; then
+            echo "ERROR: DEPLOY_SHA is not a full commit SHA (got: '$SHA')"
+            exit 1
+          fi
+          if [[ -z "$TAG" ]]; then
+            echo "ERROR: deploy_tag input is empty - a tag is required for prod dispatch deploy"
+            exit 1
+          fi
+          echo "Deploy contract satisfied: TAG=$TAG SHA=${SHA:0:7}"
+
+      - name: Validate candidate digest before deployment
+        shell: bash
+        env:
+          CANDIDATE_DIGEST: ${{ needs.candidate-verification.outputs.image_digest }}
+        run: |
+          set -euo pipefail
+          [[ "$CANDIDATE_DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]] || { echo "Missing validated candidate digest"; exit 1; }
 
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@b733af8291ed8f84a5ac5b92f571c2e149f25047 # v2
         with:
           app-name: ${{ env.WEBAPP_NAME }}
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.vars.outputs.deploy_sha }}
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ needs.candidate-verification.outputs.image_digest }}
 
       - name: Build allowed appsettings JSON
         shell: pwsh
@@ -668,6 +834,7 @@ jobs:
         shell: bash
         env:
           EXPECTED_SHA: ${{ steps.vars.outputs.deploy_sha }}
+          EXPECTED_IMAGE: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ needs.candidate-verification.outputs.image_digest }}
         run: |
           set -euo pipefail
 
@@ -691,11 +858,12 @@ jobs:
 
           echo "Azure configured image: $AZURE_IMAGE"
 
-          AZURE_SHA=$(echo "$AZURE_IMAGE" | sed -E 's/^DOCKER\|.*:([0-9a-f]{40})$/\1/')
-          if [ -z "$AZURE_SHA" ]; then
-            echo "Could not extract Azure SHA from configured image."
+          configured_image="${AZURE_IMAGE#DOCKER|}"
+          if [ "$configured_image" != "$EXPECTED_IMAGE" ]; then
+            echo "Configured image does not match validated candidate digest."
             exit 1
           fi
+          AZURE_SHA="$EXPECTED_SHA"
 
           RESPONSE=""
           for i in {1..30}; do
