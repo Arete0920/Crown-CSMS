@@ -176,6 +176,11 @@ jobs:
           python tools/ci/check_workflow_step_names.py
           python tools/ci/check_dependency_audit_loadtest.py
 
+      - name: Enforce candidate validation before production mutation
+        run: |
+          python tools/verify_release_candidate_order.py
+          python tools/tests/test_release_candidate_order.py
+
       - name: Enforce bounded artifact evidence policy
         run: |
           python tools/ci/verify_artifact_policy.py

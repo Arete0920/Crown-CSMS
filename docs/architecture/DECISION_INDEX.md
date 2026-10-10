@@ -19,6 +19,8 @@ This index is the authoritative list of accepted architecture decisions. Documen
 
 ## Proposed decisions
 
+- ADR-0005 — `decisions/ADR-0005-release-candidate-validation-and-image-identity.md`: PROPOSED. Candidate validation before production mutation and deployment by validated image digest; implementation and decision acceptance remain pending governed review.
+
 - ADR-0004 — `decisions/ADR-0004-explicit-school-and-mutation-permissions.md`: explicit school scope and mutation permission defaults; acceptance pending governed merge and exact-head checks.
 
 ## Decisions still required before material boundary changes
