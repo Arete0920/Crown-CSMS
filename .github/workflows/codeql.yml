@@ -64,6 +64,8 @@ jobs:
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
       - name: Validate shell syntax
         run: bash -n tools/verify_remediated_git_bundle.sh
+      - name: Reject incomplete or masked history
+        run: python -m unittest discover -s tools/tests -p test_remediated_history_verifier.py -v
       - name: Prove forbidden history is rejected and clean history is accepted
         shell: bash
         run: |
