@@ -1,6 +1,6 @@
 # CROWN Azure Free-First Cost Controls
 
-**Decision status:** Proposed operational cost controls; no production Azure resources changed.
+**Decision status:** Owner-approved free-first, no-surprise-spend governance (October 11, 2026). Live Azure budget configuration and actual spend remain UNVERIFIED; no production Azure resources changed by this document.
 **Baseline:** October 10, 2026; repository `Arete0920/Crown-CSMS`.
 
 ## Immediate policy
@@ -36,9 +36,34 @@ Review Cost Management + Billing -> Cost Analysis separately with a **resource**
 6. **Change:** Use a single reversible infrastructure PR/runbook at a time with owner-approved execution and an auditable before/after cost and runtime comparison.
 7. **Safety:** Never put production school data, financial records, or secrets into an unsecured free demo. Preserve tenant isolation, RBAC, and operational logging.
 
-## Budget alerts
+## Budget alerts and mandatory controls
 
-In Azure Portal -> Cost Management -> Budgets, create a **$10 USD monthly initial alert budget** for the selected subscription with alerts at 50%, 80%, and 100%, addressed to the authorized subscription owner. Verify an accurate charge currency and billing scope before creation. This is a monitoring threshold rather than an instruction to stop workloads. The audit is read-only and intentionally does not create the budget without validated billing identity.
+The **$10 USD monthly budget** is a provisional *early-warning alert* for a new, nearly free demonstration subscription only, **not** an approved production spending allowance, spending cap, or asserted current run-rate. If existing services already cost more, first establish the real billing baseline and obtain the owner's actual monthly ceiling before setting an operationally meaningful subscription budget. Do not silently raise the ceiling.
+
+After validating the current subscription, billing scope, currency, owner notification address, and real run-rate, configure **actual-cost alerts at 50%, 80%, and 100%** of the owner-approved monthly budget, plus a **forecast alert**, where available. Configure subscription **cost anomaly alerts** and a **daily saved Cost Analysis email** to the owner. Test alert delivery and record configuration evidence privately. Azure Cost Management data and notifications can lag; alerts alone are **not hard caps** and must never be described as guaranteed protection against charges.
+
+Do not auto-stop, auto-delete, or auto-downsize the production API, PostgreSQL, registry, secrets, identity, or backups. A separate, reviewed resource-group-scoped nonproduction response may be authorized only after dependency classification and tested restore/recovery. Where supported, propose Azure Policy deny assignments to prevent **new** unapproved expensive SKUs/resource types, after audit-mode evaluation and review of existing resources. Deny policy is not a substitute for budget alerts or a universal hard spending cap.
+
+## Mandatory cost approval gate for all new Azure resources or changes
+
+Treat financial safety as an explicit **NO-GO gate**, including changes initiated through the portal, CLI, templates, or GitHub Actions. Before any change that could add recurring costs or increase usage, document:
+
+1. **Identity and baseline:** verified subscription/billing currency, current month to date, preceding full month, current service and resource SKU, region, and whether any account credits/free-grant eligibility actually apply.
+2. **Scope:** DEV, DEMO, or PROD; ownership and resource group; impact on current deployment, security, tenants, backups, and rollback.
+3. **Monthly estimate:** the incremental *and total expected monthly* charges for compute, database, storage/backup, registry, logging/monitoring, network egress, messaging, and dependent services; specify upper-bound assumptions for plausible traffic and full-month uptime. Mark unverifiable amounts **UNKNOWN**, never $0.
+4. **Alternatives:** test an eligible free/consumption option or reuse an existing resource before requesting a new paid resource; document feature, SLA, security, and migration limitations.
+5. **Approval:** obtain an explicit owner-approved maximum monthly total and approval of any increase in recurring charges; do **not** provision or upgrade before that approval. No approval = NO-GO, even if infrastructure checks pass.
+6. **Verification:** after an approved change, re-run a private inventory, check itemized Cost Analysis and forecasts after billing catches up, verify the app still works, and record actual-versus-estimate variance.
+
+Keep paid resources at the smallest proven safe SKU, minimum necessary replica count, region appropriate for the service and data, bounded telemetry retention, bounded log ingestion, and only the storage/backup required for security and restoration. No speculative Premium/Enterprise upgrades, redundant demo environments, persistent idle workers, unbounded scale-out, or always-on capacity merely for convenience.
+
+**Escalation:** At 50% actual-budget consumption, inspect spending; at 80% or a forecast over the monthly ceiling, freeze discretionary new paid deployments and investigate; at 100%, escalate immediately to the owner and prepare a *reviewed* cost-reduction response for nonproduction first. Never remove backups, weaken security controls, or disrupt production school service automatically. Reconcile charges, invoices, payment status, and forecast separately to reduce the risk of account suspension; an alert cannot guarantee funds or uninterrupted service.
+
+## Verification status as of October 11, 2026
+
+- **Verified in the repository:** this cost policy, the read-only cost-audit script, and the existing application deployment architecture.
+- **NOT VERIFIED in the live subscription:** actual current and historic charges, SKU inventory, free credits, budget existence, alert recipients/delivery, anomaly alerts, and monthly affordability ceiling.
+- **External step remaining:** run the approved read-only collection from an authenticated Azure session, inspect Cost Analysis at the subscription scope, and configure/verify budgets and alerts using verified billing identity. Keep detailed billing evidence outside the public GitHub repository.
 
 ## Relevant current files
 
