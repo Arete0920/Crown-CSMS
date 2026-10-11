@@ -254,6 +254,7 @@ INSTALLED_APPS = [
     'support.apps.SupportConfig',
     'analytics.apps.AnalyticsConfig',
     'crm_marketing.apps.CrmMarketingConfig',
+    'survey_sentiment.apps.SurveySentimentConfig',
 ]
 INSTALLED_APPS += WIZARD_INSTALLED_APPS  # wizard SDK: single source of truth in wizard_registry.py
 
