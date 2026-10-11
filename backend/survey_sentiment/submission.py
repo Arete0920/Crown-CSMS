@@ -63,12 +63,22 @@ def submit_anonymous_response(*, school_id, survey_id, answers):
         raise SurveyUnavailable("Survey publication questions are invalid.")
     normalized = validate_answers(questions, answers)
     existing = {q.key: q for q in survey.questions.all()}
-    if set(existing) != set(normalized) and not set(normalized).issubset(existing):
-        raise SurveyUnavailable("Instrument question mapping is invalid.")
-    for row in questions:
-        original = existing.get(row.key)
-        if original is None or original.question_type != row.question_type:
-            raise SurveyUnavailable("Published question mapping has changed.")
+    # Even optional/skipped answers must map to exactly the published question
+    # set. Reject changes to prompts, choices, required flags or display order,
+    # not only key and type. Direct ORM edits still require a separate guard.
+    published = {row.key: row for row in questions}
+    if len(existing) != len(questions) or set(existing) != set(published):
+        raise SurveyUnavailable("Published question set has changed.")
+    for key, row in published.items():
+        original = existing[key]
+        if (
+            original.prompt != row.prompt
+            or original.question_type != row.question_type
+            or original.choices != row.choices
+            or original.required != row.required
+            or original.sort_order != row.sort_order
+        ):
+            raise SurveyUnavailable("Published question content has changed.")
     response = SurveyResponse.objects.create(
         school_id=survey.school_id,
         survey=survey,
