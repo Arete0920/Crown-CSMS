@@ -55,6 +55,7 @@ class SurveyResponse(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     school = models.ForeignKey("core.School", on_delete=models.CASCADE, related_name="survey_responses")
     survey = models.ForeignKey(SurveyDefinition, on_delete=models.CASCADE, related_name="responses")
+    publication = models.ForeignKey("SurveyPublication", null=True, blank=True, on_delete=models.PROTECT, related_name="responses")
     household_id = models.UUIDField(null=True, blank=True)
     application_id = models.UUIDField(null=True, blank=True)
     student_id = models.UUIDField(null=True, blank=True)
