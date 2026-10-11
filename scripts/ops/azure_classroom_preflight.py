@@ -43,17 +43,32 @@ def collect(subscription, group, app, sha, read=azure_json):
     web = read(['webapp', 'show', *common, '--name', app, '--query',
                 '{id:id,name:name,state:state,host:defaultHostName,plan:serverFarmId}'])
     config = read(['webapp', 'config', 'show', *common, '--name', app, '--query',
-                   '{alwaysOn:alwaysOn,linuxFxVersion:linuxFxVersion}'])
+                   '{alwaysOn:alwaysOn,linuxFxVersion:linuxFxVersion,healthCheckPath:healthCheckPath,acrUseManagedIdentityCreds:acrUseManagedIdentityCreds}'])
     if not web.get('id') or not web.get('plan'):
         raise EvidenceError('Web app or service plan identity is missing.')
     plan = read(['appservice', 'plan', 'show', '--subscription', subscription,
                  '--ids', web['plan'], '--query', '{id:id,sku:sku,location:location}'])
+    configuration = {}
+    for label, command in (
+        ('app_setting_names', ['webapp', 'config', 'appsettings', 'list']),
+        ('connection_string_names', ['webapp', 'config', 'connection-string', 'list']),
+    ):
+        try:
+            # CLI projection excludes values before JSON reaches this process.
+            rows = read([*command, *common, '--name', app, '--query', '[].name'])
+            if not isinstance(rows, list) or not all(isinstance(name, str) for name in rows):
+                raise EvidenceError('Configuration names returned an unexpected shape.')
+            configuration[label] = {'status': 'COLLECTED', 'names': sorted(set(rows))}
+        except EvidenceError:
+            # Permission gaps are explicit, never misrepresented as empty settings.
+            configuration[label] = {'status': 'UNAVAILABLE', 'names': None}
     # Resource inventory is presence evidence only, not broker/worker health.
     return {
         'captured_at_utc': datetime.now(timezone.utc).isoformat(),
         'expected_sha': sha, 'subscription': account['id'], 'resource_group': group,
         'collection_status': 'COLLECTED', 'release_status': 'NOT VERIFIED',
         'resources': resources, 'api': web, 'api_config': config, 'plan': plan,
+        'configuration': configuration,
         'remaining_proofs': [
             'Immutable artifact and live API/frontend/worker/beat identity parity',
             'Controlled PostgreSQL migrations through academics 0048 with no pending migrations',
