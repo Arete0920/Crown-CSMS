@@ -5,6 +5,7 @@ ratings, and cross-year comparisons. Until immutable survey publication versions
 are present, this only returns provisional distribution counts.
 """
 from collections import Counter
+from math import isfinite
 
 from .models import SurveyAnswer, SurveyDefinition, SurveyResponse
 
@@ -59,7 +60,7 @@ def summarized_survey(*, school_id, survey_id):
             continue
         value = data["value"]
         if q.question_type == "scale":
-            if type(value) not in (int, float) or value != int(value) or not 1 <= value <= 5:
+            if type(value) not in (int, float) or not isfinite(value) or value != int(value) or not 1 <= value <= 5:
                 continue
             label = str(int(value))
         elif q.question_type == "boolean":
