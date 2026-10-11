@@ -13,6 +13,7 @@ import re
 from pathlib import Path
 import subprocess
 import sys
+from urllib.parse import quote
 
 COST_API = "2025-03-01"
 
@@ -35,6 +36,16 @@ ERROR_CATEGORIES = frozenset({
 def error_category(stderr):
     """Return fixed labels only; never retain provider text or identifiers."""
     codes = re.findall(r"\(([A-Za-z][A-Za-z0-9]*)\)", stderr or "")
+    # az rest renders HTTP failures as Forbidden({"error":{"code":...}}),
+    # unlike other commands' (AuthorizationFailed) format.
+    codes += re.findall(r'"code"\s*:\s*"([A-Za-z][A-Za-z0-9]*)"', stderr or "")
+    reasons = {"Forbidden": "Forbidden", "Unauthorized": "Unauthorized",
+               "Too Many Requests": "TooManyRequests", "Bad Request": "BadRequest",
+               "Service Unavailable": "ServiceUnavailable",
+               "Internal Server Error": "InternalServerError"}
+    for reason, code in reasons.items():
+        if re.search(r"(?:^|\n)\s*(?:ERROR:\s*)?" + re.escape(reason) + r"(?:\(|\s*$)", stderr or ""):
+            codes.append(code)
     mapping = {
         "AuthorizationFailed": "ACCESS_DENIED", "Forbidden": "ACCESS_DENIED",
         "Unauthorized": "AUTHENTICATION", "AuthenticationFailed": "AUTHENTICATION",
@@ -51,9 +62,18 @@ def error_category(stderr):
 
 def redacted_diagnostics(report):
     """Export no account IDs, resource names, amounts, or exception messages."""
-    allowed = {"cost_MonthToDate", "cost_TheLastMonth", "budgets"}
+    allowed = {"cost_MonthToDate", "cost_TheLastMonth", "budgets",
+               "group_cost_MonthToDate", "group_cost_TheLastMonth", "group_budgets"}
+    statuses = {"COLLECTED", "COLLECTED_NO_ROWS", "UNAVAILABLE"}
+    group_costs = report.get("resource_group_cost") or {}
     return {
         "cost_scope": "subscription",
+        "resource_group_probe": {
+            key: (group_costs.get(key) or {}).get("status")
+            if (group_costs.get(key) or {}).get("status") in statuses else "UNAVAILABLE"
+            for key in ("month_to_date", "last_month")
+        },
+        "resource_group_budget_status": "COLLECTED" if report.get("resource_group_budgets") is not None else "UNAVAILABLE",
         "failures": [
             {"section": item["section"], "status": "UNAVAILABLE",
              "category": item.get("category") if item.get("category") in ERROR_CATEGORIES else "UNKNOWN"}
@@ -98,7 +118,7 @@ def safe_read(label, *parts, failures):
         return None
 
 
-def billing(scope, timeframe, failures):
+def billing(scope, timeframe, failures, label_prefix="cost_"):
     """Read-only Azure Cost Management query (REST uses POST for queries)."""
     url = (
         "https://management.azure.com" + scope
@@ -116,7 +136,7 @@ def billing(scope, timeframe, failures):
         },
     }
     result = safe_read(
-        "cost_" + timeframe, "rest", "--method", "post", "--url", url,
+        label_prefix + timeframe, "rest", "--method", "post", "--url", url,
         "--body", json.dumps(query), failures=failures
     )
     if not isinstance(result, dict):
@@ -126,7 +146,7 @@ def billing(scope, timeframe, failures):
     rows = properties.get("rows")
     if not columns or not isinstance(rows, list):
         failures.append({
-            "section": "cost_" + timeframe,
+            "section": label_prefix + timeframe,
             "status": "UNAVAILABLE",
             "reason": "Cost query response had no usable columns or rows",
         })
@@ -239,6 +259,25 @@ def make_report(group):
             "status": "UNAVAILABLE",
             "reason": "Budget list response was not usable",
         })
+    # Probe the already-authorized group separately. Never present its costs
+    # as the subscription total or silently replace unavailable billing data.
+    group_scope = scope + "/resourceGroups/" + quote(group, safe="")
+    group_costs = {
+        "month_to_date": billing(group_scope, "MonthToDate", failures, "group_cost_"),
+        "last_month": billing(group_scope, "TheLastMonth", failures, "group_cost_"),
+    }
+    group_budget_raw = safe_read(
+        "group_budgets", "rest", "--method", "get", "--url",
+        "https://management.azure.com" + group_scope
+        + "/providers/Microsoft.Consumption/budgets?api-version=2023-05-01",
+        failures=failures,
+    )
+    group_budgets = None
+    if isinstance(group_budget_raw, dict) and isinstance(group_budget_raw.get("value"), list):
+        group_budgets = group_budget_raw["value"]
+    elif group_budget_raw is not None:
+        failures.append({"section": "group_budgets", "status": "UNAVAILABLE",
+                         "category": "INVALID_RESPONSE", "reason": "Budget list response was not usable"})
     return {
         "status": (
             "COLLECTED_WITH_GAPS" if failures
@@ -250,6 +289,8 @@ def make_report(group):
         "inventory": inventory,
         "actual_cost": costs,
         "existing_budgets": budgets,
+        "resource_group_cost": group_costs,
+        "resource_group_budgets": group_budgets,
         "failures": failures,
         "notes": [
             "Read-only: no resources or budgets were altered.",

@@ -7,6 +7,56 @@ import crown_azure_cost_audit as audit
 
 class AuditTests(unittest.TestCase):
 
+    def test_rest_json_and_http_reason_errors_have_safe_labels(self):
+        samples = (
+            ('ERROR: Forbidden({"error":{"code":"AuthorizationFailed","message":"PRIVATE"}})', "ACCESS_DENIED"),
+            ('ERROR: Bad Request({"error":{"code":"InvalidApiVersionParameter","message":"PRIVATE"}})', "INVALID_REQUEST"),
+            ('ERROR: Too Many Requests({"error":{"code":"UnknownCode"}})', "RATE_LIMIT"),
+            ('ERROR: Unknown({"error":{"code":"PrivateCode","message":"PRIVATE"}})', "UNKNOWN"),
+        )
+        for sample, expected in samples:
+            with self.subTest(sample=sample):
+                self.assertEqual(audit.error_category(sample), expected)
+
+    def test_arbitrary_message_mentions_are_not_http_failures(self):
+        self.assertEqual(audit.error_category('PRIVATE user said Forbidden yesterday'), "UNKNOWN")
+
+    def test_group_probe_does_not_replace_unknown_subscription_total(self):
+        calls = []
+        def fake(*cmd, timeout=60):
+            calls.append(cmd)
+            if cmd[:2] == ("account", "show"):
+                return {"id": "sub-test", "state": "Enabled"}
+            if cmd[0] != "rest":
+                return []
+            url = cmd[cmd.index("--url") + 1]
+            if "/resourceGroups/" not in url:
+                raise audit.ReadUnavailable("withheld", "ACCESS_DENIED")
+            if "budgets?" in url:
+                return {"value": []}
+            return {"properties": {"columns": [{"name": "PreTaxCost"}], "rows": [[12]]}}
+        with patch.object(audit, "az_json", side_effect=fake):
+            result = audit.make_report("group with space")
+        self.assertEqual(result["actual_cost"]["month_to_date"]["status"], "UNAVAILABLE")
+        self.assertEqual(result["resource_group_cost"]["month_to_date"]["status"], "COLLECTED")
+        self.assertIsNone(result["existing_budgets"])
+        self.assertEqual(result["resource_group_budgets"], [])
+        self.assertTrue(any("group%20with%20space" in part for cmd in calls for part in cmd))
+        diagnostics = audit.redacted_diagnostics(result)
+        self.assertEqual(diagnostics["resource_group_probe"]["month_to_date"], "COLLECTED")
+        self.assertNotIn("amount", json.dumps(diagnostics))
+        self.assertNotIn("sub-test", json.dumps(diagnostics))
+
+    def test_group_diagnostics_reject_private_statuses_and_messages(self):
+        result = audit.redacted_diagnostics({
+            "resource_group_cost": {"month_to_date": {"status": "PRIVATE"}},
+            "resource_group_budgets": [{"name": "PRIVATE", "amount": 50}],
+            "failures": [{"section": "group_budgets", "category": "ACCESS_DENIED", "reason": "PRIVATE"}],
+        })
+        self.assertEqual(result["resource_group_probe"]["month_to_date"], "UNAVAILABLE")
+        self.assertEqual(result["resource_group_budget_status"], "COLLECTED")
+        self.assertNotIn("PRIVATE", json.dumps(result))
+
     def test_provider_errors_are_classified_without_retaining_stderr(self):
         for code, expected in (("AuthorizationFailed", "ACCESS_DENIED"),
                                ("TooManyRequests", "RATE_LIMIT"),
