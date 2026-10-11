@@ -7,6 +7,44 @@ import crown_azure_cost_audit as audit
 
 class AuditTests(unittest.TestCase):
 
+    def test_provider_errors_are_classified_without_retaining_stderr(self):
+        for code, expected in (("AuthorizationFailed", "ACCESS_DENIED"),
+                               ("TooManyRequests", "RATE_LIMIT"),
+                               ("InvalidApiVersionParameter", "INVALID_REQUEST"),
+                               ("SomePrivateProviderCode", "UNKNOWN")):
+            with self.subTest(code=code), patch.object(audit.subprocess, "run") as run:
+                run.return_value.returncode = 1
+                run.return_value.stderr = f"ERROR: ({code}) PRIVATE account secret"
+                failures = []
+                self.assertIsNone(audit.safe_read("cost_MonthToDate", "rest", failures=failures))
+                self.assertEqual(failures[0]["category"], expected)
+                self.assertNotIn("PRIVATE", json.dumps(failures))
+
+    def test_redacted_diagnostics_cannot_copy_arbitrary_fields(self):
+        report = {"subscription": "PRIVATE", "actual_cost": {"amount": 12},
+                  "failures": [{"section": "cost_MonthToDate", "category": "ACCESS_DENIED",
+                                "reason": "PRIVATE", "amount": 123},
+                               {"section": "budgets", "category": "PRIVATE"},
+                               {"section": "PRIVATE", "category": "UNKNOWN"}]}
+        output = audit.redacted_diagnostics(report)
+        self.assertEqual(output["failures"][0]["category"], "ACCESS_DENIED")
+        self.assertEqual(output["failures"][1]["category"], "UNKNOWN")
+        self.assertNotIn("PRIVATE", json.dumps(output))
+        self.assertNotIn("amount", json.dumps(output))
+
+    def test_timeout_and_invalid_json_have_distinct_categories(self):
+        with patch.object(audit.subprocess, "run", side_effect=audit.subprocess.TimeoutExpired("az PRIVATE", 60)):
+            with self.assertRaises(audit.ReadUnavailable) as caught:
+                audit.az_json("account", "show")
+            self.assertEqual(caught.exception.category, "TIMEOUT")
+            self.assertNotIn("PRIVATE", str(caught.exception))
+        with patch.object(audit.subprocess, "run") as run:
+            run.return_value.returncode = 0
+            run.return_value.stdout = "PRIVATE invalid JSON"
+            with self.assertRaises(audit.ReadUnavailable) as caught:
+                audit.az_json("account", "show")
+            self.assertEqual(caught.exception.category, "INVALID_RESPONSE")
+
     def test_authenticated_azure_inventory_is_manual_only(self):
         workflow = (
             Path(__file__).resolve().parents[2]
@@ -77,3 +115,4 @@ class AuditTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
