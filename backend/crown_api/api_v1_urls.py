@@ -271,6 +271,8 @@ urlpatterns = [
     # M365 readiness/status routes (governance.urls at m365/ prefix)
     path("m365/", include("governance.urls")),
 
+    # Authenticated Survey Intelligence drafts; no respondent routes enabled.
+    path("survey-intelligence/", include("survey_sentiment.api.urls")),
     # Legacy api_urls catch-all (must come AFTER specific module includes above)
     path("", include("crown_api.api_urls")),
 ]
