@@ -84,7 +84,28 @@ if ! git -C "$repo" rev-parse --git-dir >/dev/null 2>&1; then
   exit 2
 fi
 
-mapfile -t refs < <(git -C "$repo" for-each-ref --format='%(refname)' refs/heads refs/tags refs/remotes | sort -u)
+if [ "$(git -C "$repo" rev-parse --is-shallow-repository)" != "false" ]; then
+  echo "ERROR: complete history is required; shallow repositories are not accepted" >&2
+  exit 1
+fi
+
+# Replacement objects and grafts can hide original ancestry from traversal.
+replacement_refs="$(git -C "$repo" for-each-ref --format='%(refname)' refs/replace)"
+grafts_path="$(git -C "$repo" rev-parse --path-format=absolute --git-path info/grafts)"
+if [ -n "$replacement_refs" ] || [ -s "$grafts_path" ]; then
+  echo "ERROR: replacement refs or grafts can mask retained history" >&2
+  exit 1
+fi
+
+# A failed traversal must not become an empty, apparently clean input stream.
+# Check connectivity before interpreting a missing path as proof of absence.
+git -C "$repo" fsck --full --no-reflogs --no-dangling >/dev/null
+ref_output="$(git -C "$repo" for-each-ref --format='%(refname)')"
+if [ -z "$ref_output" ]; then
+  echo "ERROR: no retained refs found" >&2
+  exit 1
+fi
+mapfile -t refs <<< "$ref_output"
 if [ "${#refs[@]}" -eq 0 ]; then
   echo "ERROR: no retained branch, tag, or remote refs found" >&2
   exit 1
@@ -98,13 +119,14 @@ for ref in "${refs[@]}"; do
   fi
 done
 
+commits="$(git -C "$repo" rev-list --all HEAD)"
 while IFS= read -r commit; do
   if git -C "$repo" cat-file -e "$commit:$forbidden_path" 2>/dev/null; then
     echo "ERROR: forbidden path is reachable from commit $commit" >&2
     found=1
     break
   fi
-done < <(git -C "$repo" rev-list --all)
+done <<< "$commits"
 
 if [ "$found" -ne 0 ]; then
   exit 1
