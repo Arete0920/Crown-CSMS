@@ -112,3 +112,37 @@ def test_tampered_publication_fingerprint_rejects_submission():
     with pytest.raises(SurveyUnavailable):
         submit_anonymous_response(school_id=school.pk, survey_id=survey.pk, answers={"satisfaction": 4})
     assert SurveyResponse.objects.count() == 0
+
+
+@pytest.mark.parametrize("field,new_value", [
+    ("prompt", "Changed live prompt"),
+    ("question_type", "boolean"),
+    ("required", False),
+    ("sort_order", 20),
+    ("choices", ["changed", "answers"]),
+])
+def test_published_question_mutation_rejects_response(field, new_value):
+    school = School.objects.create(name="Question Drift School")
+    survey = make_survey(school=school)
+    question = survey.questions.get(key="satisfaction")
+    setattr(question, field, new_value)
+    question.save(update_fields=[field])
+    with pytest.raises(SurveyUnavailable):
+        submit_anonymous_response(
+            school_id=school.id, survey_id=survey.id, answers={"satisfaction": 4},
+        )
+    assert SurveyResponse.objects.count() == 0
+
+
+def test_added_optional_question_rejects_response():
+    school = School.objects.create(name="Question Addition School")
+    survey = make_survey(school=school)
+    SurveyQuestion.objects.create(
+        survey=survey, key="new_optional", prompt="New question?",
+        question_type="text", required=False,
+    )
+    with pytest.raises(SurveyUnavailable):
+        submit_anonymous_response(
+            school_id=school.id, survey_id=survey.id, answers={"satisfaction": 4},
+        )
+    assert SurveyResponse.objects.count() == 0
