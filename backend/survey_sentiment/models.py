@@ -55,6 +55,7 @@ class SurveyResponse(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     school = models.ForeignKey("core.School", on_delete=models.CASCADE, related_name="survey_responses")
     survey = models.ForeignKey(SurveyDefinition, on_delete=models.CASCADE, related_name="responses")
+    publication = models.ForeignKey("SurveyPublication", null=True, blank=True, on_delete=models.PROTECT, related_name="responses")
     household_id = models.UUIDField(null=True, blank=True)
     application_id = models.UUIDField(null=True, blank=True)
     student_id = models.UUIDField(null=True, blank=True)
@@ -76,3 +77,25 @@ class SurveyAnswer(models.Model):
 
     class Meta:
         unique_together = ("response", "question")
+
+
+class SurveyPublication(models.Model):
+    """An independent snapshot of one approved instrument version.
+
+    Public collection and exports remain disabled until their own gates pass.
+    The service freezes published rows; direct ORM writes must be prohibited by
+    operational policy and reviewed separately before production certification.
+    """
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    survey = models.ForeignKey(SurveyDefinition, on_delete=models.PROTECT, related_name="publications")
+    version = models.PositiveIntegerField()
+    snapshot_json = models.JSONField(default=dict)
+    snapshot_sha256 = models.CharField(max_length=64)
+    respondent_notice = models.TextField()
+    collection_mode = models.CharField(max_length=20, default="anonymous")
+    published_by_user_id = models.UUIDField()
+    published_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=["survey", "version"], name="survey_pub_unique_version")]
+        ordering = ["version"]
