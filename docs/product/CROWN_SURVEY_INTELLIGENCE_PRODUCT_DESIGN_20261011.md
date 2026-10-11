@@ -153,4 +153,4 @@ Until exact-head code, functional journeys, UI, reporting, privacy and release e
 
 ## Research / third-party independence
 
-CSM is a market-learning reference only, not a partner assumption. Use independently authored questions, validated practices and legally cleared public research references; do not copy CSM proprietary survey instruments, wording, reports, logic or datasets.
+External vendor products are market-learning references only, with no partnership assumption. Use independently authored questions, original presentation and code, established public research methods where legitimately usable, and legally cleared sources. Do not copy competitors' proprietary survey instruments, question wording, reports, designs, algorithms, implementation logic, code or datasets. Record the independent origin, version, reviewer and permissions for each proposed survey instrument; conduct pre-publication intellectual-property and licensing review.
