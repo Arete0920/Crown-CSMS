@@ -9,6 +9,7 @@ import argparse
 from datetime import datetime, timezone
 import json
 import os
+import re
 from pathlib import Path
 import subprocess
 import sys
@@ -18,6 +19,48 @@ COST_API = "2025-03-01"
 
 class ReadUnavailable(Exception):
     """Azure data was not retrievable; never interpret as zero."""
+
+    def __init__(self, reason, category="UNKNOWN"):
+        super().__init__(reason)
+        self.category = category
+
+
+ERROR_CATEGORIES = frozenset({
+    "ACCESS_DENIED", "AUTHENTICATION", "RATE_LIMIT", "INVALID_REQUEST",
+    "PROVIDER_UNAVAILABLE", "CLI_UNAVAILABLE", "TIMEOUT", "INVALID_RESPONSE",
+    "UNKNOWN",
+})
+
+
+def error_category(stderr):
+    """Return fixed labels only; never retain provider text or identifiers."""
+    codes = re.findall(r"\(([A-Za-z][A-Za-z0-9]*)\)", stderr or "")
+    mapping = {
+        "AuthorizationFailed": "ACCESS_DENIED", "Forbidden": "ACCESS_DENIED",
+        "Unauthorized": "AUTHENTICATION", "AuthenticationFailed": "AUTHENTICATION",
+        "InvalidAuthenticationToken": "AUTHENTICATION",
+        "ExpiredAuthenticationToken": "AUTHENTICATION",
+        "TooManyRequests": "RATE_LIMIT", "BadRequest": "INVALID_REQUEST",
+        "InvalidApiVersionParameter": "INVALID_REQUEST",
+        "NoRegisteredProviderFound": "INVALID_REQUEST",
+        "ServiceUnavailable": "PROVIDER_UNAVAILABLE",
+        "InternalServerError": "PROVIDER_UNAVAILABLE",
+    }
+    return next((mapping[code] for code in codes if code in mapping), "UNKNOWN")
+
+
+def redacted_diagnostics(report):
+    """Export no account IDs, resource names, amounts, or exception messages."""
+    allowed = {"cost_MonthToDate", "cost_TheLastMonth", "budgets"}
+    return {
+        "cost_scope": "subscription",
+        "failures": [
+            {"section": item["section"], "status": "UNAVAILABLE",
+             "category": item.get("category") if item.get("category") in ERROR_CATEGORIES else "UNKNOWN"}
+            for item in report.get("failures", []) if item.get("section") in allowed
+        ],
+        "note": "Missing billing data is unknown, never zero. Error labels are diagnostic hints, not proof of effective permissions.",
+    }
 
 
 def az_json(*parts, timeout=60):
@@ -29,15 +72,17 @@ def az_json(*parts, timeout=60):
             cmd, capture_output=True, text=True, check=False,
             timeout=timeout, env=env
         )
-    except (OSError, subprocess.TimeoutExpired) as exc:
-        raise ReadUnavailable("Azure CLI is unavailable or timed out") from exc
+    except subprocess.TimeoutExpired as exc:
+        raise ReadUnavailable("Azure CLI read timed out", "TIMEOUT") from exc
+    except OSError as exc:
+        raise ReadUnavailable("Azure CLI is unavailable", "CLI_UNAVAILABLE") from exc
     if result.returncode:
         # Do not expose stderr; it could contain private Azure account details.
-        raise ReadUnavailable("Azure read failed or permissions were insufficient")
+        raise ReadUnavailable("Azure read failed", error_category(result.stderr))
     try:
         return json.loads(result.stdout)
     except ValueError as exc:
-        raise ReadUnavailable("Azure returned invalid JSON") from exc
+        raise ReadUnavailable("Azure returned invalid JSON", "INVALID_RESPONSE") from exc
 
 
 def safe_read(label, *parts, failures):
@@ -47,7 +92,8 @@ def safe_read(label, *parts, failures):
         failures.append({
             "section": label,
             "status": "UNAVAILABLE",
-            "reason": str(exc)
+            "reason": str(exc),
+            "category": exc.category,
         })
         return None
 
@@ -240,3 +286,4 @@ def main(argv=None):
 
 if __name__ == "__main__":
     sys.exit(main())
+
