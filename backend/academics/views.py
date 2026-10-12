@@ -14,7 +14,7 @@ from rest_framework.views import APIView
 
 from core.models import AcademicYear, GradeLevel, School, UserRole
 from core.viewsets import TenantScopedViewSet
-from households.models import Guardian, Student
+from households.models import Student
 from households.scoping import get_request_school_id
 
 from .models import (
@@ -36,6 +36,7 @@ from .models import (
     MasteryRecord,
     TranscriptEntry,
 )
+from .experience_access import accessible_enrollments, is_leader, related_students
 from .curriculum_publishers import (
     publisher_search_terms,
     SUPPORTED_CURRICULUM_PUBLISHERS,
@@ -106,15 +107,17 @@ def _is_staffish(user, roles: set[str]) -> bool:
     )
 
 
-def _guardian_household_ids_for_user(user, school_id) -> set:
-    email = (getattr(user, "email", None) or "").strip()
-    if not email:
-        return set()
-    return set(
-        Guardian.objects.filter(school_id=school_id, email__iexact=email).values_list(
-            "household_id", flat=True
-        )
-    )
+def _academic_evidence_students(user, school_id):
+    """Reuse verified classroom relationships for student evidence collections."""
+    students = Student.objects.filter(school_id=school_id, household__school_id=school_id)
+    if is_leader(user, school_id):
+        return students
+    parent_ids = related_students(user, school_id, audience="parent").values("id")
+    own_ids = related_students(user, school_id, audience="student").values("id")
+    enrolled_ids = accessible_enrollments(user, school_id).values("student_id")
+    return students.filter(
+        Q(id__in=parent_ids) | Q(id__in=own_ids) | Q(id__in=enrolled_ids)
+    ).distinct()
 
 
 def _sections_for_access(request: HttpRequest, school_id) -> QuerySet:
@@ -137,12 +140,7 @@ def _sections_for_access(request: HttpRequest, school_id) -> QuerySet:
         return qs.filter(teacher_assignments__staff=staff).distinct()
 
     if "PARENT" in roles:
-        household_ids = _guardian_household_ids_for_user(user, school_id)
-        if not household_ids:
-            return qs.none()
-        student_ids = Student.objects.filter(
-            school_id=school_id, household_id__in=household_ids
-        ).values_list("id", flat=True)
+        student_ids = related_students(user, school_id, audience="parent").values_list("id", flat=True)
         return qs.filter(enrollments__student_id__in=student_ids).distinct()
 
     if "STUDENT" in roles:
@@ -173,12 +171,7 @@ def _assert_student_in_scope_or_404(request, school_id, student_id) -> None:
         return
 
     if "PARENT" in roles:
-        household_ids = _guardian_household_ids_for_user(user, school_id)
-        if not household_ids:
-            raise Http404()
-        if not Student.objects.filter(
-            pk=student_id, school_id=school_id, household_id__in=household_ids
-        ).exists():
+        if not related_students(user, school_id, audience="parent").filter(pk=student_id).exists():
             raise Http404()
         return
 
@@ -515,13 +508,7 @@ def parent_students(request):
     if "PARENT" not in roles:
         raise PermissionDenied("Parent role required for this endpoint.")
 
-    household_ids = _guardian_household_ids_for_user(user, school_id)
-    if not household_ids:
-        return Response([])
-
-    qs = Student.objects.filter(
-        school_id=school_id, household_id__in=household_ids
-    ).order_by("last_name", "first_name")
+    qs = related_students(user, school_id, audience="parent").order_by("last_name", "first_name")
     return Response(StudentSerializer(qs, many=True).data)
 
 
@@ -847,7 +834,10 @@ class MasteryRecordViewSet(PaginatedReadOnlyViewSet):
 
     def get_queryset(self):
         school_id = get_request_school_id(self.request)
-        qs = self.queryset.filter(school_id=school_id)
+        qs = self.queryset.filter(
+            school_id=school_id,
+            student__in=_academic_evidence_students(self.request.user, school_id),
+        )
 
         # Filter by student if provided
         student_id = self.request.query_params.get("student_id")
@@ -868,7 +858,10 @@ class TranscriptEntryViewSet(PaginatedReadOnlyViewSet):
 
     def get_queryset(self):
         school_id = get_request_school_id(self.request)
-        qs = self.queryset.filter(school_id=school_id)
+        qs = self.queryset.filter(
+            school_id=school_id,
+            student__in=_academic_evidence_students(self.request.user, school_id),
+        )
 
         # Filter by student if provided
         student_id = self.request.query_params.get("student_id")
