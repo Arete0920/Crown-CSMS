@@ -27,7 +27,8 @@ def test_candidate_preflight_uses_fresh_strong_isolated_credentials(workflow):
         for key in ("DJANGO_SECRET_KEY", "SECRET_KEY", "WEBSITE_HOSTNAME", "WEBSITE_INSTANCE_ID"):
             env.pop(key, None)
         env.update(step["env"])
-        env.update(CROWN_ENV="production", DJANGO_ENV="production", DJANGO_DEBUG="false")
+        env.update(CROWN_ENV="production", DJANGO_ENV="production", DJANGO_DEBUG="false",
+                   CROWN_DEMO_MODE="false", CORS_ALLOW_ALL_ORIGINS="false")
         env["PATH"] = str(Path(sys.executable).parent) + os.pathsep + env.get("PATH", "")
         result = subprocess.run(["bash", "-c", step["run"]], cwd=ROOT, env=env,
                                 capture_output=True, text=True, timeout=120)
