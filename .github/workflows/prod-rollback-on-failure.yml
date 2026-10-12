@@ -52,15 +52,24 @@ jobs:
           fi
           echo "Trusted failed deploy context verified: run=$FAILED_RUN_ID sha=$FAILED_RUN_SHA"
 
-      - name: Azure Login
-        uses: azure/login@a457da9ea143d694b1b9c7c869ebb04ebe844ef5 # v2
+      - name: Classify upstream production mutation
+        id: upstream_evidence
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          script: |
+            const { productionMutation } = require('./scripts/ops/deployment_incident.cjs');
+            const run = context.payload.workflow_run;
+            core.setOutput('production_mutation', 'unknown');
+            const jobs = await github.paginate(github.rest.actions.listJobsForWorkflowRunAttempt, {
+              owner: context.repo.owner, repo: context.repo.repo,
+              run_id: run.id, attempt_number: run.run_attempt, per_page: 100
+            });
+            core.setOutput('production_mutation', productionMutation(jobs));
 
       - name: Recheck live health before rollback
         id: health_recheck
+        env:
+          PRODUCTION_MUTATION: ${{ steps.upstream_evidence.outputs.production_mutation }}
         shell: bash
         run: |
           set -euo pipefail
@@ -79,11 +88,32 @@ jobs:
             echo "live_sha=$LIVE_SHA" >> "$GITHUB_OUTPUT"
             echo "Runtime remains healthy; rollback is not required."
           else
-            echo "rollback_needed=true" >> "$GITHUB_OUTPUT"
-            echo "health_status=unhealthy" >> "$GITHUB_OUTPUT"
+            if [[ "$HTTP_CODE" =~ ^[1-5][0-9]{2}$ ]]; then
+              echo "health_status=unhealthy" >> "$GITHUB_OUTPUT"
+            else
+              echo "health_status=unknown" >> "$GITHUB_OUTPUT"
+            fi
             echo "live_sha=$LIVE_SHA" >> "$GITHUB_OUTPUT"
-            echo "Runtime is unhealthy or unavailable; immutable rollback is required."
+            if [[ "$PRODUCTION_MUTATION" == "possible" ]]; then
+              echo "rollback_needed=true" >> "$GITHUB_OUTPUT"
+              echo "Possible production mutation and failed health probe require immutable recovery."
+            else
+              echo "rollback_needed=unknown" >> "$GITHUB_OUTPUT"
+              echo "No candidate rollback authorized without evidence of possible production mutation."
+            fi
           fi
+          if [[ "$PRODUCTION_MUTATION" == "no" ]]; then
+            echo "rollback_needed=false" >> "$GITHUB_OUTPUT"
+            echo "Both mutation jobs skipped: candidate rollback is not applicable."
+          fi
+
+      - name: Azure Login
+        if: ${{ steps.health_recheck.outputs.rollback_needed == 'true' }}
+        uses: azure/login@a457da9ea143d694b1b9c7c869ebb04ebe844ef5 # v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
       - name: Resolve last-known-good immutable deploy SHA
         id: rollback_target
@@ -209,6 +239,9 @@ jobs:
         if: always()
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         env:
+          PRODUCTION_MUTATION: ${{ steps.upstream_evidence.outputs.production_mutation }}
+          RESTORE_OUTCOME: ${{ steps.restore.outcome }}
+          VERIFY_OUTCOME: ${{ steps.verify.outcome }}
           HEALTH_STATUS: ${{ steps.health_recheck.outputs.health_status }}
           ROLLBACK_NEEDED: ${{ steps.health_recheck.outputs.rollback_needed }}
           PRE_ROLLBACK_SHA: ${{ steps.health_recheck.outputs.live_sha }}
@@ -219,66 +252,8 @@ jobs:
           VERIFIED_SHA: ${{ steps.verify.outputs.verified_sha }}
         with:
           script: |
-            const timestamp = new Date().toISOString();
-            const rollbackNeeded = process.env.ROLLBACK_NEEDED === 'true';
-            const rollbackVerified = Boolean(process.env.VERIFIED_SHA);
-            const upstreamUrl = context.payload.workflow_run?.html_url;
-
-            let title;
-            let labels;
-            let summary;
-
-            if (!rollbackNeeded && process.env.HEALTH_STATUS === 'healthy') {
-              title = `[ADVISORY] Prod deploy failed but runtime remained healthy (${timestamp})`;
-              labels = ['production-advisory'];
-              summary = [
-                'The production deployment workflow failed, but the live runtime remained healthy.',
-                '**Rollback was skipped because production was not demonstrably unhealthy.**'
-              ];
-            } else if (rollbackVerified) {
-              title = `[INCIDENT] Prod deploy failed — immutable rollback verified (${timestamp})`;
-              labels = ['production-alert', 'incident', 'rollback-executed'];
-              summary = [
-                'The failed deployment left the runtime unhealthy or unavailable.',
-                'CROWN restored a previously successful immutable image and verified exact runtime identity.'
-              ];
-            } else {
-              title = `[INCIDENT] Prod deploy failed — rollback not verified (${timestamp})`;
-              labels = ['production-alert', 'incident', 'rollback-failed'];
-              summary = [
-                'The failed deployment left the runtime unhealthy or unavailable.',
-                '**Automated immutable rollback did not complete with verified health and build identity.**',
-                'Manual incident control is required immediately.'
-              ];
-            }
-
-            const body = [
-              `Upstream workflow: ${context.payload.workflow_run?.name}`,
-              `Upstream run: ${upstreamUrl}`,
-              `Failed candidate SHA: ${context.payload.workflow_run?.head_sha}`,
-              `Pre-rollback live SHA: ${process.env.PRE_ROLLBACK_SHA || '(unavailable)'}`,
-              '',
-              '## Summary',
-              ...summary,
-              '',
-              '## Recovery Evidence',
-              `- Rollback required: ${rollbackNeeded}`,
-              `- Last-known-good source run: ${process.env.SOURCE_RUN_URL || '(not applicable or unresolved)'}`,
-              `- Last-known-good source run ID: ${process.env.SOURCE_RUN_ID || '(not applicable or unresolved)'}`,
-              `- Immutable rollback SHA: ${process.env.ROLLBACK_SHA || '(not applicable or unresolved)'}`,
-              `- Restored image: ${process.env.RESTORED_IMAGE || '(not applicable or unresolved)'}`,
-              `- Verified live SHA: ${process.env.VERIFIED_SHA || '(not verified)'}`,
-              '',
-              '## Required Follow-up',
-              '- Review the original deployment failure before another production attempt.',
-              '- Reconcile this incident with issue #1270 and the release authority evidence.',
-              '- Do not report production recovery as proven unless the verified live SHA is present above.'
-            ].join('\n');
-
+            const { incidentReport } = require('./scripts/ops/deployment_incident.cjs');
+            const report = incidentReport(process.env, context.payload.workflow_run, new Date().toISOString());
             await github.rest.issues.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              title,
-              body,
-              labels
+              owner: context.repo.owner, repo: context.repo.repo, ...report
             });
