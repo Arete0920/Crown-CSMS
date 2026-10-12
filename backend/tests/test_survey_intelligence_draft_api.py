@@ -1,0 +1,103 @@
+"""Survey draft routes: action permissions, tenant isolation and invalid-payload proof."""
+import json
+
+import pytest
+
+from core.models import CrownPermission, RolePermission, School, UserAccount, UserRole
+from survey_sentiment.models import SurveyDefinition, SurveyQuestion
+
+pytestmark = pytest.mark.django_db
+
+
+@pytest.fixture
+def school_client(client):
+    school = School.objects.create(name="Survey Draft School")
+    user = UserAccount.objects.create_user(username="draft-admin", email="draft-admin@example.com")
+    UserRole.objects.create(user=user, school=school, role_code="survey_draft_editor_test")
+    for code in ("survey.view", "survey.edit"):
+        perm, _ = CrownPermission.objects.get_or_create(code=code)
+        RolePermission.objects.get_or_create(role_code="survey_draft_editor_test", permission=perm)
+    client.force_login(user)
+    return client, school, user
+
+
+def request(client, school, data):
+    return client.post(
+        "/api/v1/survey-intelligence/surveys/",
+        data=json.dumps(data), content_type="application/json",
+        HTTP_X_SCHOOL_ID=str(school.pk),
+    )
+
+
+def payload():
+    return {
+        "name": "Parent Communication", "purpose": "parent_pulse",
+        "questions": [
+            {"key": "clarity", "prompt": "How clear were school updates?",
+             "question_type": "scale", "required": True},
+        ],
+    }
+
+
+def test_authorized_admin_can_create_and_read_scoped_draft(school_client):
+    client, school, user = school_client
+    created = request(client, school, payload())
+    assert created.status_code == 201, created.content
+    detail = created.json()
+    assert detail["status"] == "draft"
+    assert len(detail["questions"]) == 1
+    survey = SurveyDefinition.objects.get(pk=detail["id"])
+    assert survey.school_id == school.id
+    assert not survey.public_enabled and not survey.anonymous_allowed
+    listed = client.get("/api/v1/survey-intelligence/surveys/", HTTP_X_SCHOOL_ID=str(school.pk))
+    assert listed.status_code == 200
+    assert len(listed.json()["results"]) == 1
+    read = client.get(f"/api/v1/survey-intelligence/surveys/{survey.pk}/", HTTP_X_SCHOOL_ID=str(school.pk))
+    assert read.status_code == 200
+    assert "public_token" not in read.json()
+
+
+def test_other_school_cannot_read_draft(school_client):
+    client, school, _ = school_client
+    created = request(client, school, payload())
+    survey_id = created.json()["id"]
+    another = School.objects.create(name="Other Survey School")
+    client.force_login(UserAccount.objects.create_user(username="outsider", email="outsider@example.com"))
+    forbidden = client.get(f"/api/v1/survey-intelligence/surveys/{survey_id}/", HTTP_X_SCHOOL_ID=str(another.pk))
+    assert forbidden.status_code in (403, 404)
+
+
+def test_non_editor_cannot_create(school_client):
+    client, school, user = school_client
+    RolePermission.objects.filter(role_code="survey_draft_editor_test", permission__code="survey.edit").delete()
+    forbidden = request(client, school, payload())
+    assert forbidden.status_code == 403
+    assert not SurveyDefinition.objects.exists()
+
+
+@pytest.mark.parametrize("patch", [
+    {"name": ""}, {"purpose": "unsupported"},
+    {"purpose": []}, {"purpose": {}},
+    {"questions": [{"key": "q1", "prompt": "Q?", "question_type": []}]},
+    {"questions": [{"key": "q1", "prompt": "Q?", "question_type": {}}]},
+    {"questions": []}, {"status": "active"},
+    {"public_enabled": True},
+    {"questions": [{"key": "invalid!", "prompt": "Q?", "question_type": "scale"}]},
+    {"questions": [{"key": "q1", "prompt": "Q?", "question_type": "choice", "choices": ["one"]}]},
+    {"questions": [{"key": "q1", "prompt": "Q?", "question_type": "scale", "required": "true"}]},
+])
+def test_invalid_draft_does_not_create_any_rows(school_client, patch):
+    client, school, _ = school_client
+    data = payload()
+    data.update(patch)
+    response = request(client, school, data)
+    assert response.status_code == 400, response.content
+    assert not SurveyDefinition.objects.exists()
+    assert not SurveyQuestion.objects.exists()
+
+
+def test_unauthenticated_cannot_list_or_create(client):
+    school = School.objects.create(name="Unprivileged")
+    response = client.get("/api/v1/survey-intelligence/surveys/", HTTP_X_SCHOOL_ID=str(school.pk))
+    assert response.status_code in (401, 403)
+    assert request(client, school, payload()).status_code in (401, 403)
