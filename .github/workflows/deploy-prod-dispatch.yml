@@ -315,6 +315,7 @@ jobs:
       - name: Bake BUILD_SHA into artifact
         run: |
           echo "BUILD_SHA = \"${{ steps.vars.outputs.deploy_sha }}\"" > backend/crown_api/build_info.py
+          printf 'BUILD_TIME_UTC = "%s"\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> backend/crown_api/build_info.py
           echo "OK: Generated build_info.py with SHA: ${{ steps.vars.outputs.deploy_sha_short }}"
 
       - name: Build production image for verification

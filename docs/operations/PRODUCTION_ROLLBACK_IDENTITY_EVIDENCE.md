@@ -8,7 +8,7 @@ A successful workflow and an image tag do not independently prove the deployed b
 
 After the existing production identity gate, both production workflows record a compact proof artifact
 bound to repository, run ID, attempt, source commit, production app, deployed commit and configured image digest.
-The proof requires healthy runtime and database, exact live SHA, and consistent release tag/version/run metadata.
+Schema 2 proof requires healthy runtime and database, exact reported and image-baked SHA, and consistent release tag/version/run metadata.
 Only these allowlisted health fields are retained; credentials and arbitrary health payload fields are excluded.
 Artifacts use attempt-specific names, fail if absent, and retain for 30 days.
 
@@ -23,7 +23,10 @@ The workflow policy mandates this shared group for exactly those four known imag
 Automatic recovery retains the production environment approval boundary.
 Before mutation, recovery verifies the recorded digest still exists in the configured registry.
 It restores by digest and applies the proven release metadata. Verification requires both the configured digest
-and a healthy database with the exact restored build SHA. No source-SHA fallback or mutable-tag substitution is allowed.
+and a healthy database with matching reported and image-baked restored build SHA.
+The artifact identity comes from build_info.py written into the container build; overriding a runtime BUILD_SHA cannot satisfy it.
+Older artifacts or endpoints without that independent field remain ineligible; no historical identity is inferred.
+Image creation also records BUILD_TIME_UTC. Health separates that build timestamp (unknown for unbaked source) from observed_at_utc; a current probe time is not a deployment/build time. No source-SHA fallback or mutable-tag substitution is allowed.
 
 ## Operational limits and acceptance
 
@@ -37,3 +40,36 @@ Negative acceptance cases include foreign target/repository, wrong attempt, expi
 mismatched digest or live SHA, incomplete source run and inconsistent release metadata.
 
 Rollback of this source change: revert its isolated PR. Do not move or republish production tags.
+
+## Source dependency prerequisites
+
+The compact dependency review from PR228 is preserved here as part of the source proof prerequisites. Its original standalone record remains in that PR and commit history.
+
+Owner authorized completing the repository PR backlog. This is one independently reversible
+manifest-and-lock refresh, not runtime lock adoption or production deployment.
+
+## Reviewed updates
+
+| Dependency | Manifest change | Effective lock change |
+| --- | --- | --- |
+| Django | 5.2.17 -> 5.2.18 | 5.2.17 -> 5.2.18 |
+| Django REST Framework | 3.18.1 -> 3.18.3 | 3.18.1 -> 3.18.3 |
+| Authlib | minimum 1.6.11 -> 1.8.0 | already locked at 1.8.0 |
+| Celery | minimum 5.4.0 -> 5.6.3 | already locked at 5.6.3 |
+| Sentry SDK | minimum 2.0.0 -> 2.71.0 | already locked at 2.71.0 |
+
+PRs #228–#231 contribute these compatible changes. The Django major proposal #232 is
+superseded for this repair by the official 5.2.18 security patch on the current LTS line.
+Django's October 6 announcement covers the supported 5.2 branch:
+https://www.djangoproject.com/weblog/2026/oct/06/security-releases/
+Major framework adoption would require a separately scoped compatibility decision.
+
+Compiler: pip-tools 7.6.2; target Linux/Python 3.12. Regeneration retains every other exact
+package version and changes no package membership. Source and lock hashes are updated together.
+No new direct dependencies or optional integrations are introduced. Existing tenant, authorization,
+telemetry, migration and release controls remain authoritative.
+
+Validation: lock verifier and its five rejection/acceptance tests; hash-required, binary-only
+resolution dry-run. Exact-head required CI, security scans and complete backend suite must pass
+before merge. Local/source checks do not prove deployed remediation or operational readiness.
+Rollback: revert the coherent manifest/lock/metadata change; deployment remains separately governed.

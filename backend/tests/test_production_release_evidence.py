@@ -4,6 +4,7 @@ import io
 import json
 from pathlib import Path
 import unittest
+from unittest.mock import patch
 from urllib.request import Request
 import zipfile
 
@@ -29,11 +30,11 @@ def source_run(run_id=7):
 
 
 def manifest():
-    return dict(schema=1, repository=REPO, run_id=7, run_attempt=2, workflow_source_sha=SOURCE_SHA,
+    return dict(schema=2, repository=REPO, run_id=7, run_attempt=2, workflow_source_sha=SOURCE_SHA,
                 webapp='app', registry='registry.example', image_name='image', deployed_sha=SHA,
                 image_digest=DIGEST, configured_image=IMAGE, verified_at='2026-10-01T00:09:00Z',
                 release_tag='prod-deploy-proof', app_version='crown-0.4.0', deploy_workflow='Production Deploy (Dispatch v2)',
-                health={'ok': True, 'db': 'ok', 'env': 'prod', 'build_sha': SHA,
+                health={'ok': True, 'db': 'ok', 'env': 'prod', 'build_sha': SHA, 'artifact_build_sha': SHA,
                         'prod_deploy_tag': 'prod-deploy-proof', 'version': 'crown-0.4.0',
                         'deploy_run_id': '7', 'deploy_workflow': 'Production Deploy (Dispatch v2)'})
 
@@ -94,7 +95,7 @@ class ProductionReleaseEvidenceTests(unittest.TestCase):
                        {'verified_at': '2026-10-02T00:00:00Z'}, {'schema': 0}]:
             with self.subTest(change=change), self.assertRaises(ValueError):
                 self.validate({**manifest(), **change})
-        for change in [{'ok': False}, {'db': 'failed'}, {'env': 'dev'}, {'build_sha': SOURCE_SHA}, {'deploy_run_id': '99'},
+        for change in [{'ok': False}, {'db': 'failed'}, {'env': 'dev'}, {'build_sha': SOURCE_SHA}, {'artifact_build_sha': SOURCE_SHA}, {'artifact_build_sha': None}, {'deploy_run_id': '99'},
                        {'prod_deploy_tag': 'wrong'}, {'version': 'wrong'}, {'deploy_workflow': 'wrong'}]:
             data = manifest()
             data['health'].update(change)
@@ -174,6 +175,32 @@ class ProductionReleaseEvidenceTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             evidence.record({**env, 'CONFIGURED_IMAGE': IMAGE.replace('@', ':')})
 
+    def test_runtime_environment_cannot_spoof_artifact_build_identity(self):
+        import os
+        import sys
+        sys.path.insert(0, str(ROOT / 'backend'))
+        from django.conf import settings
+        if not settings.configured:
+            settings.configure(DEFAULT_CHARSET='utf-8')
+        from crown_api import health_views
+        env = dict(BUILD_SHA=SHA, APP_VERSION='crown-0.4.0', PROD_DEPLOY_TAG='prod-deploy-proof',
+                   DEPLOY_RUN_ID='7', DEPLOY_WORKFLOW='Production Deploy (Dispatch v2)', CROWN_ENV='prod')
+        with patch.object(health_views, 'connection'), \
+             patch.object(health_views.build_info, 'BUILD_SHA', SOURCE_SHA), \
+             patch.object(health_views.build_info, 'BUILD_TIME_UTC', '2026-10-01T00:00:00Z', create=True), patch.dict(os.environ, env):
+            data = json.loads(health_views.health(None).content)
+        self.assertEqual(data['build_sha'], SHA)
+        self.assertEqual(data['artifact_build_sha'], SOURCE_SHA)
+        self.assertEqual(data['build_time_utc'], '2026-10-01T00:00:00Z')
+        self.assertNotEqual(data['observed_at_utc'], data['build_time_utc'])
+        record_env = dict(RESPONSE_JSON=json.dumps(data), EXPECTED_SHA=SHA, EXPECTED_IMAGE=IMAGE,
+                          CONFIGURED_IMAGE=IMAGE, GITHUB_REPOSITORY=REPO, GITHUB_RUN_ID='7',
+                          GITHUB_RUN_ATTEMPT='2', GITHUB_SHA=SOURCE_SHA, WEBAPP_NAME='app',
+                          DEPLOY_TAG='prod-deploy-proof', APP_VERSION='crown-0.4.0',
+                          GITHUB_WORKFLOW='Production Deploy (Dispatch v2)')
+        with self.assertRaises(ValueError):
+            evidence.record(record_env)
+
     def test_actual_identity_steps_execute_and_emit_dispatch_safe_proof(self):
         import os
         import shutil
@@ -240,6 +267,7 @@ class ProductionReleaseEvidenceTests(unittest.TestCase):
         verify = next(step for step in steps if step.get('id') == 'verify')
         self.assertIn('Restored configured digest mismatch', verify['run'])
         self.assertIn('rm -f /tmp/rollback_health.json', verify['run'])
+        self.assertIn('\"$ARTIFACT_SHA\" == \"$ROLLBACK_SHA\"', verify['run'])
         self.assertIn('"$LIVE_SHA" == "$ROLLBACK_SHA"', verify['run'])
 
 

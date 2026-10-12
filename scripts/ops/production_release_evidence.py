@@ -12,7 +12,7 @@ from urllib.parse import urlparse
 from urllib.request import HTTPRedirectHandler, Request, build_opener
 import zipfile
 
-SCHEMA = 1
+SCHEMA = 2
 WORKFLOWS = {'.github/workflows/deploy-prod.yml', '.github/workflows/deploy-prod-dispatch.yml'}
 SHA = re.compile(r'[0-9a-f]{40}')
 DIGEST = re.compile(r'sha256:[0-9a-f]{64}')
@@ -57,7 +57,7 @@ def validate_manifest(data, run, repository, app, registry, image):
     health = data.get('health', {})
     if health.get('ok') is not True or health.get('db') != 'ok' or health.get('env') != 'prod':
         raise ValueError('Database/runtime health not verified')
-    if health.get('build_sha') != sha:
+    if health.get('build_sha') != sha or health.get('artifact_build_sha') != sha:
         raise ValueError('Live SHA differs from deployed SHA')
     if health.get('prod_deploy_tag') != tag or health.get('version') != version \
             or str(health.get('deploy_run_id')) != str(run['id']) or health.get('deploy_workflow') != workflow_name:
@@ -164,7 +164,7 @@ def record(env):
             or str(health.get('deploy_run_id')) != env['GITHUB_RUN_ID'] or health.get('deploy_workflow') != workflow_name:
         raise ValueError('Live release metadata mismatch')
     if configured != image_ref or health.get('ok') is not True or health.get('db') != 'ok' \
-            or health.get('env') != 'prod' or health.get('build_sha') != sha:
+            or health.get('env') != 'prod' or health.get('build_sha') != sha or health.get('artifact_build_sha') != sha:
         raise ValueError('Release proof requires exact configured image and healthy runtime SHA')
     return {'schema': SCHEMA, 'repository': env['GITHUB_REPOSITORY'],
             'run_id': int(env['GITHUB_RUN_ID']), 'run_attempt': int(env['GITHUB_RUN_ATTEMPT']),
@@ -172,7 +172,7 @@ def record(env):
             'registry': registry, 'image_name': image, 'deployed_sha': sha, 'image_digest': digest,
             'release_tag': tag, 'app_version': version, 'deploy_workflow': workflow_name,
             'configured_image': configured, 'verified_at': datetime.now(timezone.utc).isoformat(),
-            'health': {key: health[key] for key in ('ok', 'db', 'env', 'build_sha', 'prod_deploy_tag', 'version', 'deploy_run_id', 'deploy_workflow')}}
+            'health': {key: health[key] for key in ('ok', 'db', 'env', 'build_sha', 'artifact_build_sha', 'prod_deploy_tag', 'version', 'deploy_run_id', 'deploy_workflow')}}
 
 
 def main():
