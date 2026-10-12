@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 480" role="img" aria-labelledby="title desc">
+  <title id="title">Kairos</title>
+  <desc id="desc">Gold crown above a navy clock and compass. Master Scheduling for Christian Schools.</desc>
+  <defs>
+    <linearGradient id="gold" x2="1" y2="1"><stop stop-color="#fce8a0"/><stop offset=".5" stop-color="#d5a126"/><stop offset="1" stop-color="#976810"/></linearGradient>
+  </defs>
+  <path d="M265 104 248 50 303 75 330 35 360 8 390 35 417 75 472 50 455 104Z" fill="url(#gold)" stroke="#976810" stroke-width="3"/>
+  <circle cx="360" cy="202" r="120" fill="#073367" stroke="url(#gold)" stroke-width="8"/>
+  <circle cx="360" cy="202" r="96" fill="#fffdf6" stroke="#d5a126" stroke-width="3"/>
+  <g stroke="#073367" stroke-width="5">
+    <path d="M360 116v14m0 144v14m-86-86h14m144 0h14M317 128l7 12m72 124 7 12M286 159l12 7m124 72 12 7M286 245l12-7m124-72 12-7M317 276l7-12m72-124 7-12"/>
+  </g>
+  <path d="m360 100 22 102-22 102-22-102Z" fill="#073367" stroke="#d5a126" stroke-width="2"/>
+  <path d="m360 151 0 72m-20-49h40" stroke="url(#gold)" stroke-width="7"/>
+  <path d="m303 178 57 24 73-64" fill="none" stroke="#d5a126" stroke-linecap="round" stroke-width="7"/>
+  <circle cx="360" cy="202" r="13" fill="url(#gold)" stroke="#976810" stroke-width="2"/>
+  <text x="360" y="416" text-anchor="middle" font-family="Georgia,serif" font-size="92" letter-spacing="8" fill="#073367">KAIROS</text>
+  <path d="M94 443H160m400 0h66" stroke="#d5a126" stroke-width="3"/>
+  <text x="360" y="452" text-anchor="middle" font-family="Georgia,serif" font-size="17" fill="#073367">Master Scheduling for Christian Schools</text>
+</svg>

@@ -119,7 +119,7 @@ export default function SectionSchedulerWizard() {
       title="Kairos"
       subtitle="Master Scheduling for Christian Schools"
     >
-      <img src="/brand/kairos.png" alt="Kairos — Master Scheduling for Christian Schools" style={{ width: 230, maxWidth: "100%" }} />
+      <img src="/brand/kairos.svg" alt="Kairos — Master Scheduling for Christian Schools" style={{ width: 230, maxWidth: "100%" }} />
       {phase === "configure" && (
         <form onSubmit={handleConfigure} className="crown-card" style={{ padding: 20 }}>
           <h2>Scheduling Scope</h2>

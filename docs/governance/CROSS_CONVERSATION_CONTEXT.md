@@ -55,7 +55,7 @@ A public index may point to an access-controlled register without copying privat
 
 ## Scope and limits
 
-This governance standard guides people and repository-aware assistants. It cannot force ChatGPT to automatically read other chats, synchronize memory instantly, or execute a repository check in every new thread. For highest consistency, keep CROWN work in one dedicated ChatGPT Project with stable project instructions, attach or reference the controlled decision index, and require tools to re-check current canonical documents when making consequential claims.
+This governance standard guides people and repository-aware assistants. It cannot force an assistant to automatically read other conversations, synchronize memory instantly, or execute a repository check in every new thread. For highest consistency, keep CROWN work in one dedicated project workspace with stable project instructions, attach or reference the controlled decision index, and require tools to re-check current canonical documents when making consequential claims.
 
 ## Existing controlling references
 

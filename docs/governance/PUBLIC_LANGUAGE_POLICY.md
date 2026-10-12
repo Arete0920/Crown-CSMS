@@ -8,6 +8,8 @@ Do not introduce authoring-tool names, provider identities, implementation-metho
 
 Renaming must preserve meaning. A wording change does not remove an algorithm, integration, obligation, or risk. Maintain truthful internal method records, data contracts, and review requirements. Do not claim a process is absent based only on a label change.
 
-Preserve applied migration identifiers, signed media provenance, third-party license and funding attribution, and immutable historical evidence. Record residual references as explicit audit exceptions; do not falsify historical inventories or strip provenance to create a clean keyword result.
+Preserve applied migration identifiers, required third-party license/copyright attribution, and authentic evidence. Do not falsify historical inventories or strip signed provenance from retained media. Record residual references as explicit audit exceptions.
+
+Owner extension: 2026-10-12. Obsolete generated inventories may be retired from the current tree as whole records, with their original commits and retirement reasons recorded. Signed media may be replaced by newly authored assets; retain the original in version history rather than altering its authenticity record. Optional package funding links may be removed without changing licenses, integrity hashes, versions, or dependency relationships. Reinstalls may restore upstream funding metadata; it is not an authoring-method claim.
 
 Review current content and user-facing labels for policy compliance before merging. Keep operational approvals, publication review, source attribution, and release limitations intact.
