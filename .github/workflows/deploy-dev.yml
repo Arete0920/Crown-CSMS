@@ -179,7 +179,7 @@ jobs:
               sleep 15
               continue
             fi
-            if [[ "$GOT" == "$WANT"* ]] || [[ "$WANT" == "$GOT"* ]]; then
+            if [[ "$GOT" =~ ^[0-9a-f]{40}$ ]] && [[ "$GOT" == "$WANT" ]]; then
               echo " build_sha verified: $GOT"
               exit 0
             fi
