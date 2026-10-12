@@ -8,6 +8,8 @@ on:
       - 'scripts/ops/test_azure_classroom_preflight.py'
       - 'scripts/ops/crown_azure_cost_audit.py'
       - 'scripts/ops/test_crown_azure_cost_audit.py'
+      - 'scripts/ops/azure_runtime_inventory.py'
+      - 'scripts/ops/test_azure_runtime_inventory.py'
       - 'docs/operations/CROWN_AZURE_FREE_FIRST_COST_CONTROL.md'
       - '.github/workflows/azure-classroom-preflight.yml'
   push:
@@ -17,6 +19,8 @@ on:
       - 'scripts/ops/test_azure_classroom_preflight.py'
       - 'scripts/ops/crown_azure_cost_audit.py'
       - 'scripts/ops/test_crown_azure_cost_audit.py'
+      - 'scripts/ops/azure_runtime_inventory.py'
+      - 'scripts/ops/test_azure_runtime_inventory.py'
       - 'docs/operations/CROWN_AZURE_FREE_FIRST_COST_CONTROL.md'
       - '.github/workflows/azure-classroom-preflight.yml'
   workflow_dispatch:
@@ -43,6 +47,9 @@ jobs:
         run: python -m unittest discover -s scripts/ops -p test_azure_classroom_preflight.py -v
       - name: Verify Azure cost inventory remains private and read-only
         run: python -m unittest discover -s scripts/ops -p test_crown_azure_cost_audit.py -v
+
+      - name: Verify hosted evidence privacy and failure contracts
+        run: python -m unittest discover -s scripts/ops -p test_azure_runtime_inventory.py -v
 
   azure-inventory:
     if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
@@ -109,8 +116,10 @@ jobs:
           umask 077
           python3 scripts/ops/crown_azure_cost_audit.py --resource-group crown-rg --output private-azure-cost.json
           python3 - <<'PY'
-          import json, os
+          import json, os, sys
           from pathlib import Path
+          sys.path.insert(0, "scripts/ops")
+          from crown_azure_cost_audit import redacted_diagnostics
           d = json.loads(Path("private-azure-cost.json").read_text())
           if d.get("status") == "BLOCKED":
               raise SystemExit("Azure subscription inventory blocked.")
@@ -125,6 +134,10 @@ jobs:
           for label, cost in (d.get("actual_cost") or {}).items():
               lines.append(f"- {label} cost query: {cost.get('status', 'UNAVAILABLE')}")
           lines.append("- Budget query: " + ("unavailable" if d.get("existing_budgets") is None else "received"))
+          diagnostics = redacted_diagnostics(d)
+          Path("azure-cost-diagnostics.json").write_text(json.dumps(diagnostics, indent=2) + "\n")
+          for failure in diagnostics["failures"]:
+              lines.append(f"- {failure['section']} diagnostic: {failure['category']}")
           with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as out:
               out.write("\n".join(lines) + "\n")
           PY
@@ -142,6 +155,25 @@ jobs:
             --resource-group crown-rg \
             --api-app crown-api-prod \
             --expected-sha "$EXPECTED_SHA" > azure-classroom-preflight.json
+      - name: Collect read-only hosted configuration and recovery metadata
+        shell: bash
+        run: python3 scripts/ops/azure_runtime_inventory.py > azure-runtime-inventory.json
+      - name: Retain redacted cost diagnostics
+        if: always() && github.event_name == 'workflow_dispatch' && hashFiles('azure-cost-diagnostics.json') != ''
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: azure-cost-diagnostics-${{ github.sha }}
+          path: azure-cost-diagnostics.json
+          retention-days: 7
+          if-no-files-found: error
+      - name: Retain hosted configuration and recovery metadata
+        if: always() && github.event_name == 'workflow_dispatch' && hashFiles('azure-runtime-inventory.json') != ''
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: azure-runtime-inventory-${{ github.sha }}
+          path: azure-runtime-inventory.json
+          retention-days: 7
+          if-no-files-found: error
       - name: Retain Azure inventory or blocked evidence
         if: github.event_name == 'workflow_dispatch' && hashFiles('azure-classroom-preflight.json') != ''
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
@@ -153,7 +185,7 @@ jobs:
       - name: Discard temporary Azure resource details
         if: always()
         shell: bash
-        run: rm -f azure-classroom-preflight.json private-azure-cost.json
+        run: rm -f azure-classroom-preflight.json private-azure-cost.json azure-runtime-inventory.json azure-cost-diagnostics.json
       - name: Record preflight release boundary
         if: always()
         shell: bash
@@ -166,3 +198,4 @@ jobs:
       - name: Clear Azure preflight session
         if: always()
         run: az logout
+
