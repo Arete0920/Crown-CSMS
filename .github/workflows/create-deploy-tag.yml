@@ -1,0 +1,67 @@
+name: Create Annotated Deployment Candidate Tag
+
+on:
+  workflow_dispatch:
+    inputs:
+      expected_sha:
+        description: Exact verified main SHA (40 lowercase characters)
+        required: true
+        type: string
+      tag_name:
+        description: New prod-deploy-YYYYMMDD-shortsha tag
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: crown-annotated-deploy-tag
+  cancel-in-progress: false
+
+jobs:
+  create-annotated-tag:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: production
+    permissions:
+      contents: write
+      checks: read
+    env:
+      CROWN_RELEASE_SHA: ${{ inputs.expected_sha }}
+      CROWN_RELEASE_TAG: ${{ inputs.tag_name }}
+    steps:
+      - name: Require canonical main workflow context
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$GITHUB_REF" == "refs/heads/main" ]]
+          [[ "$GITHUB_REPOSITORY" == "Arete0920/Crown-CSMS" ]]
+      - name: Checkout trusted main
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Validate selected source before API use
+        run: python scripts/release/create_annotated_deploy_tag.py --expected-sha "$CROWN_RELEASE_SHA" --tag "$CROWN_RELEASE_TAG" --source-only
+      - name: Retrieve exact-source check evidence
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api --paginate --slurp "repos/$GITHUB_REPOSITORY/commits/$CROWN_RELEASE_SHA/check-runs?filter=latest&per_page=100" > /tmp/crown-release-checks.json
+      - name: Create and verify new annotated tag
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "CROWN release workflow"
+          git config user.email "$GITHUB_ACTOR_ID+$GITHUB_ACTOR@users.noreply.github.com"
+          python scripts/release/create_annotated_deploy_tag.py \
+            --expected-sha "$CROWN_RELEASE_SHA" --tag "$CROWN_RELEASE_TAG" \
+            --checks-json /tmp/crown-release-checks.json --ignore-run-id "$GITHUB_RUN_ID" \
+            --publish --output annotated-tag-identity.json
+      - name: Retain annotated identity evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: annotated-deployment-candidate-${{ github.run_id }}
+          path: annotated-tag-identity.json
+          if-no-files-found: error
+          retention-days: 14
