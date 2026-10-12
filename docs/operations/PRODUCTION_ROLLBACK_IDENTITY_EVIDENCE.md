@@ -19,6 +19,7 @@ It validates archive shape and manifest origin/identity; missing evidence remain
 GitHub API credentials are removed when artifact downloads redirect to external storage.
 
 Production deployment, automatic recovery and the manual rollback drill share one serialization group.
+The workflow policy mandates this shared group for exactly those four known image writers; unrelated duplicate groups remain rejected.
 Automatic recovery retains the production environment approval boundary.
 Before mutation, recovery verifies the recorded digest still exists in the configured registry.
 It restores by digest and applies the proven release metadata. Verification requires both the configured digest
