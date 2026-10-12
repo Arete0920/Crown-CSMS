@@ -32,6 +32,7 @@ CANONICAL_WORKFLOW_FILES = {
     "classroom-verification.yml",
     "codeql.yml",
     "content-operations-verification.yml",
+    "create-deploy-tag.yml",
     "contract-gate.yml",
     "crown-claims-guard.yml",
     "crown-release-authority-gates.yml",
