@@ -29,6 +29,7 @@ jobs:
       REGISTRY_NAME: crownregistry
       IMAGE_NAME: crown2026
       FAILED_RUN_ID: ${{ github.event.workflow_run.id }}
+      FAILED_RUN_ATTEMPT: ${{ github.event.workflow_run.run_attempt }}
       FAILED_RUN_SHA: ${{ github.event.workflow_run.head_sha }}
       FAILED_RUN_CREATED_AT: ${{ github.event.workflow_run.created_at }}
 
@@ -93,55 +94,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          RUNS_URL="https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/runs?status=success&per_page=100"
-          curl --max-time 30 -fsSL \
-            -H "Authorization: Bearer $GH_TOKEN" \
-            -H "Accept: application/vnd.github+json" \
-            -H "X-GitHub-Api-Version: 2022-11-28" \
-            "$RUNS_URL" > /tmp/successful_runs.json
-
-          ROLLBACK_ROW=$(jq -r \
-            --arg failed_sha "$FAILED_RUN_SHA" \
-            --arg failed_created "$FAILED_RUN_CREATED_AT" \
-            '[.workflow_runs[]
-              | select(.name == "Production Deploy" or .name == "Production Deploy (Dispatch v2)")
-              | select(.conclusion == "success")
-              | select(.head_sha != $failed_sha)
-              | select(.created_at < $failed_created)
-              | select(.head_sha | test("^[0-9a-f]{40}$"))]
-             | sort_by(.created_at)
-             | reverse
-             | .[0]
-             | if . == null then empty else [.head_sha, (.id|tostring), .html_url, .created_at] | @tsv end' \
-            /tmp/successful_runs.json)
-
-          if [[ -z "$ROLLBACK_ROW" ]]; then
-            echo "ERROR: no previous successful immutable production deployment was found."
-            exit 1
-          fi
-
-          IFS=$'\t' read -r ROLLBACK_SHA SOURCE_RUN_ID SOURCE_RUN_URL SOURCE_CREATED_AT <<< "$ROLLBACK_ROW"
-          if [[ ! "$ROLLBACK_SHA" =~ ^[0-9a-f]{40}$ ]]; then
-            echo "ERROR: resolved rollback SHA is invalid: '$ROLLBACK_SHA'"
-            exit 1
-          fi
-
-          TAG_EXISTS=$(az acr repository show-tags \
-            --name "$REGISTRY_NAME" \
-            --repository "$IMAGE_NAME" \
-            --query "[?@=='$ROLLBACK_SHA'] | [0]" \
-            -o tsv \
-            --only-show-errors)
-          if [[ "$TAG_EXISTS" != "$ROLLBACK_SHA" ]]; then
-            echo "ERROR: immutable rollback image is unavailable: $REGISTRY/$IMAGE_NAME:$ROLLBACK_SHA"
-            exit 1
-          fi
-
-          echo "rollback_sha=$ROLLBACK_SHA" >> "$GITHUB_OUTPUT"
-          echo "source_run_id=$SOURCE_RUN_ID" >> "$GITHUB_OUTPUT"
-          echo "source_run_url=$SOURCE_RUN_URL" >> "$GITHUB_OUTPUT"
-          echo "source_created_at=$SOURCE_CREATED_AT" >> "$GITHUB_OUTPUT"
-          echo "Resolved immutable rollback target: sha=$ROLLBACK_SHA source_run=$SOURCE_RUN_ID"
+          python scripts/ops/production_release_evidence.py resolve
 
       - name: Restore immutable last-known-good image
         id: restore
@@ -149,9 +102,20 @@ jobs:
         shell: bash
         env:
           ROLLBACK_SHA: ${{ steps.rollback_target.outputs.rollback_sha }}
+          IMAGE_REF: ${{ steps.rollback_target.outputs.image_ref }}
+          IMAGE_DIGEST: ${{ steps.rollback_target.outputs.image_digest }}
+          RELEASE_TAG: ${{ steps.rollback_target.outputs.release_tag }}
+          APP_VERSION: ${{ steps.rollback_target.outputs.app_version }}
+          SOURCE_RUN_ID: ${{ steps.rollback_target.outputs.source_run_id }}
+          DEPLOY_WORKFLOW: ${{ steps.rollback_target.outputs.deploy_workflow }}
         run: |
           set -euo pipefail
-          IMAGE_REF="$REGISTRY/$IMAGE_NAME:$ROLLBACK_SHA"
+          [[ "$ROLLBACK_SHA" =~ ^[0-9a-f]{40}$ ]] || { echo "Missing verified rollback SHA"; exit 1; }
+          [[ "$IMAGE_DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]] || { echo "Missing verified rollback digest"; exit 1; }
+          [[ "$IMAGE_REF" == "$REGISTRY/$IMAGE_NAME@$IMAGE_DIGEST" ]] || { echo "Rollback target mismatch"; exit 1; }
+          AVAILABLE_DIGEST=$(az acr repository show --name "$REGISTRY_NAME" \
+            --image "$IMAGE_NAME@$IMAGE_DIGEST" --query digest -o tsv --only-show-errors)
+          [[ "$AVAILABLE_DIGEST" == "$IMAGE_DIGEST" ]] || { echo "Verified digest is unavailable"; exit 1; }
           echo "Restoring immutable image $IMAGE_REF"
 
           az webapp config container set \
@@ -165,7 +129,8 @@ jobs:
           az webapp config appsettings set \
             --name "$WEBAPP_NAME" \
             --resource-group "$RESOURCE_GROUP" \
-            --settings BUILD_SHA="$ROLLBACK_SHA" \
+            --settings BUILD_SHA="$ROLLBACK_SHA" PROD_DEPLOY_TAG="$RELEASE_TAG" \
+              APP_VERSION="$APP_VERSION" DEPLOY_RUN_ID="$SOURCE_RUN_ID" DEPLOY_WORKFLOW="$DEPLOY_WORKFLOW" \
             --output none \
             --only-show-errors
 
@@ -182,9 +147,19 @@ jobs:
         shell: bash
         env:
           ROLLBACK_SHA: ${{ steps.rollback_target.outputs.rollback_sha }}
+          EXPECTED_IMAGE: ${{ steps.rollback_target.outputs.image_ref }}
         run: |
           set -euo pipefail
           HEALTH_URL="https://${WEBAPP_NAME}.azurewebsites.net/api/health/"
+          [[ "$ROLLBACK_SHA" =~ ^[0-9a-f]{40}$ ]] || { echo "Missing verified rollback SHA"; exit 1; }
+          [[ "$EXPECTED_IMAGE" == "$REGISTRY/$IMAGE_NAME@sha256:"* ]] || { echo "Missing verified rollback image"; exit 1; }
+          CONFIGURED_IMAGE=$(az webapp config container show --name "$WEBAPP_NAME" \
+            --resource-group "$RESOURCE_GROUP" --query "[?name=='DOCKER_CUSTOM_IMAGE_NAME'].value | [0]" -o tsv)
+          if [[ -z "$CONFIGURED_IMAGE" ]]; then
+            CONFIGURED_IMAGE=$(az webapp config container show --name "$WEBAPP_NAME" \
+              --resource-group "$RESOURCE_GROUP" --query linuxFxVersion -o tsv)
+          fi
+          [[ "${CONFIGURED_IMAGE#DOCKER|}" == "$EXPECTED_IMAGE" ]] || { echo "Restored configured digest mismatch"; exit 1; }
 
           for attempt in $(seq 1 30); do
             HTTP_CODE=$(curl --max-time 20 -sS -o /tmp/rollback_health.json -w "%{http_code}" "$HEALTH_URL" || true)
@@ -194,6 +169,7 @@ jobs:
             if [[ "$HTTP_CODE" == "200" && "$DB_STATUS" == "ok" && "$LIVE_SHA" == "$ROLLBACK_SHA" ]]; then
               echo "Rollback verification passed: http=200 db=ok build_sha=$LIVE_SHA"
               echo "verified_sha=$LIVE_SHA" >> "$GITHUB_OUTPUT"
+              echo "verified_image=$EXPECTED_IMAGE" >> "$GITHUB_OUTPUT"
               exit 0
             fi
 

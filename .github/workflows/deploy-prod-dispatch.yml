@@ -833,6 +833,7 @@ jobs:
       - name: Verify release identity end-to-end
         shell: bash
         env:
+          DEPLOY_TAG: ${{ needs.resolve-release.outputs.deploy_tag }}
           EXPECTED_SHA: ${{ steps.vars.outputs.deploy_sha }}
           EXPECTED_IMAGE: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ needs.candidate-verification.outputs.image_digest }}
         run: |
@@ -908,6 +909,18 @@ jobs:
 
           print("Release identity verified: workflow SHA, Azure SHA, and live SHA all match.")
           PY
+          export CONFIGURED_IMAGE="$configured_image"
+          APP_VERSION="$(cat VERSION)"
+          export APP_VERSION
+          python scripts/ops/production_release_evidence.py record
+
+      - name: Retain verified production release identity
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: production-release-proof-${{ github.run_id }}-${{ github.run_attempt }}
+          path: production-release-evidence/production-release-proof.json
+          if-no-files-found: error
+          retention-days: 90
 
       - name: Notify deployment
         if: success()
