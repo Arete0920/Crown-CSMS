@@ -1,5 +1,4 @@
 """Execute recovery decisions and workflow scripts without Azure or GitHub mutations."""
-import json
 from pathlib import Path
 import subprocess
 import unittest
@@ -50,16 +49,16 @@ assert.equal(outputs.production_mutation, 'no'); })().catch(error => {console.er
         steps = yaml.safe_load(WORKFLOW.read_text())['jobs']['rollback']['steps']
         step = next(step for step in steps if step.get('id') == 'health_recheck')
         for mutation, expected in [('no', 'false'), ('unknown', 'unknown'), ('possible', 'true')]:
-            with tempfile.NamedTemporaryFile() as output:
-                env = dict(os.environ, GITHUB_OUTPUT=output.name, WEBAPP_NAME='test',
+            with tempfile.TemporaryDirectory() as directory:
+                output = Path(directory) / 'outputs'
+                env = dict(os.environ, GITHUB_OUTPUT=str(output), WEBAPP_NAME='test',
                            PRODUCTION_MUTATION=mutation)
                 # curl is mocked: no network and no Azure changes; failed network remains unknown.
                 script = 'curl() { return 1; }; export -f curl;\n' + step['run']
                 result = subprocess.run(['bash', '-c', script], cwd=ROOT, env=env,
                                         capture_output=True, text=True, timeout=30)
                 self.assertEqual(result.returncode, 0, result.stderr)
-                output.seek(0)
-                rows = dict(line.split('=', 1) for line in output.read().decode().splitlines())
+                rows = dict(line.split('=', 1) for line in output.read_text().splitlines())
                 self.assertEqual(rows['rollback_needed'], expected)
                 self.assertEqual(rows['health_status'], 'unknown')
 

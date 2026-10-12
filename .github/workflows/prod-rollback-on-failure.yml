@@ -86,7 +86,7 @@ jobs:
             echo "rollback_needed=false" >> "$GITHUB_OUTPUT"
             echo "health_status=healthy" >> "$GITHUB_OUTPUT"
             echo "live_sha=$LIVE_SHA" >> "$GITHUB_OUTPUT"
-            echo "Runtime remains healthy; rollback is not required."
+            echo "Runtime observed healthy; this probe does not establish recovery."
           else
             if [[ "$HTTP_CODE" =~ ^[1-5][0-9]{2}$ ]]; then
               echo "health_status=unhealthy" >> "$GITHUB_OUTPUT"
