@@ -31,3 +31,26 @@ external services, or proof that no automated methods were used.
 Validation: repeat tracked-tree search, review the one-paragraph diff, run
 repository identity/naming hygiene and competitor-name hygiene, and check diff
 whitespace. Governed merge remains subject to checks on the resulting PR head.
+
+## Owner-authorized extension
+
+On 2026-10-12 the owner authorized cleanup of the preserved exceptions.
+Retired the five obsolete generated inventories listed above as whole records,
+rather than editing historical paths. Originals remain at commit
+`89f293b580010e49e91951cf0cba0bf34bff4b77`. The reporting audit script can
+regenerate its JSON output from the current tree; the deleted inventory is
+not current evidence. The table above describes the initial sweep only.
+
+Replaced the signed raster scheduling logo with a newly authored SVG using
+the same crown, clock, compass, navy/gold palette, name, and tagline. Updated
+the scheduler reference. The original media and its intact provenance remain
+in version history. This replacement intentionally changes the artwork.
+
+Removed five optional sponsor links from package funding metadata. Verified
+that every non-funding package field remains identical, including licenses,
+versions, integrity hashes, and dependency relationships. Other funding and
+required attribution remain intact. The removed URL names a maintainer; it
+was not evidence of an automated authoring method.
+
+A repeat named-reference scan of the resulting tracked tree found no remaining
+named authoring-tool/provider references. This does not rewrite Git history.
