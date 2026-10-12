@@ -42,7 +42,10 @@ Historical pipeline milestone at `a1c4c42a381e03587c784bd995ec8fd6c33aeee9`.
 ### `crown-0.3.0-spine-complete` — 2026-01-27
 Historical tenant-isolation and CI foundation at `340c7e3fbb882eb4886fbfbbe8e648f3866e5178`.
 
-The immutable mapping for historical tags is `docs/RELEASE_TAGS.json`.
+### `prod-deploy-heritage-demo-20261012-61e7281` — 2026-10-12
+Candidate identity at `61e728150b4ac728de29a80239e10c355d3fcaf9`; production workflow `38285139916` failed its temporary-key preflight before migration or deployment. The initial release-form tag is lightweight and is retained as a nonconforming attempted-candidate identity. It must not be reused for production promotion; a follow-on attempt requires a new annotated tag and fresh validation.
+
+Predecessor mappings are preserved in `docs/archive/release-authority/PREDECESSOR_RELEASE_TAGS.json`. The active mapping for tags published in this successor repository is `docs/RELEASE_TAGS.json`; recording a tag identity does not certify a successful deployment.
 
 ## Authority rule
 
