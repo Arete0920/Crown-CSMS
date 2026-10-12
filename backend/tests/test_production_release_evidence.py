@@ -205,6 +205,15 @@ class ProductionReleaseEvidenceTests(unittest.TestCase):
                 self.assertEqual(data['deployed_sha'], SHA)
                 self.assertEqual(data['workflow_source_sha'], SOURCE_SHA)
                 self.assertEqual(data['image_digest'], DIGEST)
+                # A failed transfer can still produce parseable partial JSON; it is not proof.
+                proof = root / 'production-release-evidence/production-release-proof.json'
+                proof.unlink()
+                bad = 'az() { printf "%s\\n" "$MOCK_IMAGE"; }; curl() { printf "%s\\n" "$MOCK_HEALTH"; return 1; }; sleep() { :; };\n' + step['run']
+                failed = subprocess.run(['bash', '-c', bad], cwd=root, env=env,
+                                        capture_output=True, text=True, timeout=20)
+                self.assertNotEqual(failed.returncode, 0)
+                self.assertFalse(proof.exists())
+
 
     def test_actual_workflows_retain_evidence_only_after_identity_verification(self):
         for name in ['deploy-prod.yml', 'deploy-prod-dispatch.yml']:
@@ -214,6 +223,8 @@ class ProductionReleaseEvidenceTests(unittest.TestCase):
                             names.index('Retain verified production release identity'))
             verify = next(step for step in steps if step['name'] == 'Verify release identity end-to-end')
             self.assertIn('production_release_evidence.py record', verify['run'])
+            self.assertIn('HEALTH_FETCHED=true', verify['run'])
+            self.assertIn('\"$HEALTH_FETCHED\" != \"true\"', verify['run'])
             retain = next(step for step in steps if step['name'] == 'Retain verified production release identity')
             self.assertEqual(retain['with']['if-no-files-found'], 'error')
             self.assertEqual(retain['with']['retention-days'], 30)
@@ -228,6 +239,7 @@ class ProductionReleaseEvidenceTests(unittest.TestCase):
         self.assertNotIn('IMAGE_REF="$REGISTRY/$IMAGE_NAME:$ROLLBACK_SHA"', restore['run'])
         verify = next(step for step in steps if step.get('id') == 'verify')
         self.assertIn('Restored configured digest mismatch', verify['run'])
+        self.assertIn('rm -f /tmp/rollback_health.json', verify['run'])
         self.assertIn('"$LIVE_SHA" == "$ROLLBACK_SHA"', verify['run'])
 
 

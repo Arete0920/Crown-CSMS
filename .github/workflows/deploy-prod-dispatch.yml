@@ -866,15 +866,17 @@ jobs:
           AZURE_SHA="$EXPECTED_SHA"
 
           RESPONSE=""
+          HEALTH_FETCHED=false
           for i in {1..30}; do
             if RESPONSE=$(curl --max-time 30 -fsSL "$HEALTH_URL"); then
+              HEALTH_FETCHED=true
               break
             fi
             echo "Waiting for production health..."
             sleep 10
           done
 
-          if [ -z "$RESPONSE" ]; then
+          if [[ "$HEALTH_FETCHED" != "true" || -z "$RESPONSE" ]]; then
             echo "No response from /api/health/."
             exit 1
           fi

@@ -67,6 +67,7 @@ jobs:
         run: |
           set -euo pipefail
           HEALTH_URL="https://${WEBAPP_NAME}.azurewebsites.net/api/health/"
+          rm -f /tmp/pre_rollback_health.json
           HTTP_CODE=$(curl --max-time 15 -sS -o /tmp/pre_rollback_health.json -w "%{http_code}" "$HEALTH_URL" || true)
           DB_STATUS=$(jq -r '.db // ""' /tmp/pre_rollback_health.json 2>/dev/null || true)
           LIVE_SHA=$(jq -r '.build_sha // ""' /tmp/pre_rollback_health.json 2>/dev/null || true)
@@ -163,6 +164,7 @@ jobs:
           [[ "${CONFIGURED_IMAGE#DOCKER|}" == "$EXPECTED_IMAGE" ]] || { echo "Restored configured digest mismatch"; exit 1; }
 
           for attempt in $(seq 1 30); do
+            rm -f /tmp/rollback_health.json
             HTTP_CODE=$(curl --max-time 20 -sS -o /tmp/rollback_health.json -w "%{http_code}" "$HEALTH_URL" || true)
             DB_STATUS=$(jq -r '.db // ""' /tmp/rollback_health.json 2>/dev/null || true)
             LIVE_SHA=$(jq -r '.build_sha // ""' /tmp/rollback_health.json 2>/dev/null || true)
