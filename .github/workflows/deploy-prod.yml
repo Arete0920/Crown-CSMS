@@ -271,9 +271,13 @@ jobs:
 
       - name: Preflight gate (Django deploy checks)
         env:
-          DJANGO_SECRET_KEY: candidate-validation-nonproduction-only
           DATABASE_URL: sqlite:///./candidate-check.sqlite3
-        run: python backend/manage.py check --deploy
+        run: |
+          set -euo pipefail
+          DJANGO_SECRET_KEY="$(python -c 'import secrets; print(secrets.token_urlsafe(64))')"
+          echo "::add-mask::$DJANGO_SECRET_KEY"
+          export DJANGO_SECRET_KEY
+          python backend/manage.py check --deploy
 
       - name: Run complete governed candidate coverage
         shell: pwsh
@@ -312,6 +316,7 @@ jobs:
       - name: Bake BUILD_SHA into artifact
         run: |
           echo "BUILD_SHA = \"${{ steps.vars.outputs.deploy_sha }}\"" > backend/crown_api/build_info.py
+          printf 'BUILD_TIME_UTC = "%s"\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> backend/crown_api/build_info.py
           echo "OK: Generated build_info.py with SHA: ${{ steps.vars.outputs.deploy_sha_short }}"
 
       - name: Build production image for verification
@@ -766,6 +771,7 @@ jobs:
       - name: Verify release identity end-to-end
         shell: bash
         env:
+          DEPLOY_TAG: ${{ needs.resolve-release.outputs.deploy_tag }}
           EXPECTED_SHA: ${{ steps.vars.outputs.deploy_sha }}
           EXPECTED_IMAGE: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ needs.candidate-verification.outputs.image_digest }}
         run: |
@@ -799,15 +805,17 @@ jobs:
           AZURE_SHA="$EXPECTED_SHA"
 
           RESPONSE=""
+          HEALTH_FETCHED=false
           for i in {1..30}; do
             if RESPONSE=$(curl --max-time 30 -fsS "$HEALTH_URL"); then
+              HEALTH_FETCHED=true
               break
             fi
             echo "Waiting for production health..."
             sleep 10
           done
 
-          if [ -z "$RESPONSE" ]; then
+          if [[ "$HEALTH_FETCHED" != "true" || -z "$RESPONSE" ]]; then
             echo "No response from /api/health/."
             exit 1
           fi
@@ -841,6 +849,18 @@ jobs:
 
           print("Release identity verified: workflow SHA, Azure SHA, and live SHA all match.")
           PY
+          export CONFIGURED_IMAGE="$configured_image"
+          APP_VERSION="$(cat VERSION)"
+          export APP_VERSION
+          python scripts/ops/production_release_evidence.py record
+
+      - name: Retain verified production release identity
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: production-release-proof-${{ github.run_id }}-${{ github.run_attempt }}
+          path: production-release-evidence/production-release-proof.json
+          if-no-files-found: error
+          retention-days: 30
 
       - name: Notify deployment
         if: success()
