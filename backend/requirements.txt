@@ -32,7 +32,7 @@ qrcode==8.2
 # Sentry error telemetry (production only; loaded conditionally in settings.py)
 sentry-sdk>=2.0.0
 # Celery task queue (outbox drain, background jobs)
-celery>=5.4.0
+celery>=5.6.3
 redis>=5.0.0
 # SMS provider client (used by comms/sms_service.py when SMS is enabled)
 twilio>=9.11.2
