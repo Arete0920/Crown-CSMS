@@ -124,3 +124,15 @@ unchanged history verifier against the review clone returned exit 1: the
 forbidden path exists in retained refs and reachable history. That expected
 rejection confirms the blocker; it is not remediation success. These local
 checks do not replace applicable exact-head PR checks or operational evidence.
+
+## Exact scanner adjudication
+
+PR run 38313332428 reported one `generic-api-key` finding at lines 49–50
+of this review in commit `f101476a3138f02aa6ea192dd3e69df51d3fa1db`.
+The candidate is the SHA-256 digest of public SPKI DER bytes documented above,
+recomputed from the committed public PEM; it is not a credential or private
+material. The redacted SARIF identifies this exact file, rule, commit and
+start line. Only that complete history fingerprint is excluded in
+`.gitleaksignore`; no rule, directory, scan scope or private-key check changes.
+A changed commit/path/rule/line remains detectable. The failed initial run is
+preserved as evidence; the corrected PR head requires a new passing scan.
