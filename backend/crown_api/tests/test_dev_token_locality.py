@@ -7,7 +7,7 @@ from django.test import RequestFactory, override_settings
 from crown_api.dev_token_views import _is_local_request, dev_token
 
 
-HOSTS = ["localhost", "127.0.0.1", "::1", "external.example"]
+HOSTS = ["localhost", "127.0.0.1", "[::1]", "external.example"]
 
 
 @pytest.mark.parametrize(
