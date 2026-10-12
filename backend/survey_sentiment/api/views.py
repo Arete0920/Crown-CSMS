@@ -64,7 +64,7 @@ def _validated_draft_payload(request):
     questions = payload.get("questions")
     if not isinstance(name, str) or not 1 <= len(name.strip()) <= 180:
         return None, {"name": "Enter a survey name of 1 to 180 characters."}
-    if purpose not in dict(SurveyDefinition.PURPOSE_CHOICES):
+    if not isinstance(purpose, str) or purpose not in dict(SurveyDefinition.PURPOSE_CHOICES):
         return None, {"purpose": "Select a supported survey purpose."}
     if not isinstance(questions, list) or not 1 <= len(questions) <= 40:
         return None, {"questions": "Provide 1 to 40 questions."}
@@ -86,7 +86,7 @@ def _validated_draft_payload(request):
             return None, {field: "Question keys must be unique lowercase identifiers."}
         if not isinstance(prompt, str) or not 1 <= len(prompt.strip()) <= 300:
             return None, {field: "Question text must have 1 to 300 characters."}
-        if kind not in dict(SurveyQuestion.TYPE_CHOICES) or type(required) is not bool:
+        if not isinstance(kind, str) or kind not in dict(SurveyQuestion.TYPE_CHOICES) or type(required) is not bool:
             return None, {field: "Unsupported question type or required flag."}
         if not isinstance(choices, list):
             return None, {field: "Choices must be an array."}

@@ -77,6 +77,9 @@ def test_non_editor_cannot_create(school_client):
 
 @pytest.mark.parametrize("patch", [
     {"name": ""}, {"purpose": "unsupported"},
+    {"purpose": []}, {"purpose": {}},
+    {"questions": [{"key": "q1", "prompt": "Q?", "question_type": []}]},
+    {"questions": [{"key": "q1", "prompt": "Q?", "question_type": {}}]},
     {"questions": []}, {"status": "active"},
     {"public_enabled": True},
     {"questions": [{"key": "invalid!", "prompt": "Q?", "question_type": "scale"}]},
