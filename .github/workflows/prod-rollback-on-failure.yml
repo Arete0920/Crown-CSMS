@@ -168,8 +168,9 @@ jobs:
             HTTP_CODE=$(curl --max-time 20 -sS -o /tmp/rollback_health.json -w "%{http_code}" "$HEALTH_URL" || true)
             DB_STATUS=$(jq -r '.db // ""' /tmp/rollback_health.json 2>/dev/null || true)
             LIVE_SHA=$(jq -r '.build_sha // ""' /tmp/rollback_health.json 2>/dev/null || true)
+            ARTIFACT_SHA=$(jq -r '.artifact_build_sha // ""' /tmp/rollback_health.json 2>/dev/null || true)
 
-            if [[ "$HTTP_CODE" == "200" && "$DB_STATUS" == "ok" && "$LIVE_SHA" == "$ROLLBACK_SHA" ]]; then
+            if [[ "$HTTP_CODE" == "200" && "$DB_STATUS" == "ok" && "$LIVE_SHA" == "$ROLLBACK_SHA" && "$ARTIFACT_SHA" == "$ROLLBACK_SHA" ]]; then
               echo "Rollback verification passed: http=200 db=ok build_sha=$LIVE_SHA"
               echo "verified_sha=$LIVE_SHA" >> "$GITHUB_OUTPUT"
               echo "verified_image=$EXPECTED_IMAGE" >> "$GITHUB_OUTPUT"

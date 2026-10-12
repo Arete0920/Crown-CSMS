@@ -8,7 +8,7 @@ A successful workflow and an image tag do not independently prove the deployed b
 
 After the existing production identity gate, both production workflows record a compact proof artifact
 bound to repository, run ID, attempt, source commit, production app, deployed commit and configured image digest.
-The proof requires healthy runtime and database, exact live SHA, and consistent release tag/version/run metadata.
+Schema 2 proof requires healthy runtime and database, exact reported and image-baked SHA, and consistent release tag/version/run metadata.
 Only these allowlisted health fields are retained; credentials and arbitrary health payload fields are excluded.
 Artifacts use attempt-specific names, fail if absent, and retain for 30 days.
 
@@ -23,7 +23,10 @@ The workflow policy mandates this shared group for exactly those four known imag
 Automatic recovery retains the production environment approval boundary.
 Before mutation, recovery verifies the recorded digest still exists in the configured registry.
 It restores by digest and applies the proven release metadata. Verification requires both the configured digest
-and a healthy database with the exact restored build SHA. No source-SHA fallback or mutable-tag substitution is allowed.
+and a healthy database with matching reported and image-baked restored build SHA.
+The artifact identity comes from build_info.py written into the container build; overriding a runtime BUILD_SHA cannot satisfy it.
+Older artifacts or endpoints without that independent field remain ineligible; no historical identity is inferred.
+Image creation also records BUILD_TIME_UTC. Health separates that build timestamp (unknown for unbaked source) from observed_at_utc; a current probe time is not a deployment/build time. No source-SHA fallback or mutable-tag substitution is allowed.
 
 ## Operational limits and acceptance
 

@@ -6,6 +6,7 @@ import os
 import socket
 from pathlib import Path
 from datetime import datetime, timezone
+from . import build_info
 
 # --- CROWN_ENV_BOOL_HELPER ---
 
@@ -38,17 +39,18 @@ def _resolve_app_version() -> str:
 
 def health(request):
     """
-    Minimal health check with deploy determinism proof.
+    Availability plus reported and artifact release identity.
     Returns: build_sha (40-char), env, build_time_utc, version, db status
     """
     build_sha = os.getenv("BUILD_SHA") or os.getenv("GITHUB_SHA") or "local-dev"
     prod_deploy_tag = os.getenv("PROD_DEPLOY_TAG", "")
     env_name = os.getenv("CROWN_ENV", "dev")
-    build_time = datetime.now(timezone.utc).isoformat()
+    observed_at = datetime.now(timezone.utc).isoformat()
+    build_time = getattr(build_info, "BUILD_TIME_UTC", "unknown")
     version = _resolve_app_version()
     deploy_run_id = os.getenv("DEPLOY_RUN_ID", "")
     deploy_workflow = os.getenv("DEPLOY_WORKFLOW", "")
-    
+
     # Quick DB check
     db_status = "ok"
     try:
@@ -57,15 +59,17 @@ def health(request):
             cursor.fetchone()
     except Exception:
         db_status = "unreachable"
-    
+
     return JsonResponse({
         "ok": True,
         "status": "ok",
         "demo_mode": _crown_env_true('CROWN_DEMO_MODE', default=False),
         "build_sha": build_sha,
+        "artifact_build_sha": build_info.BUILD_SHA,
         "prod_deploy_tag": prod_deploy_tag,
         "env": env_name,
         "build_time_utc": build_time,
+        "observed_at_utc": observed_at,
         "version": version,
         "db": db_status,
         "deploy_run_id": deploy_run_id,
@@ -100,7 +104,7 @@ def system_health(request):
     - Uses a trivial SELECT 1 to confirm DB query execution
     """
     from django.utils import timezone
-    
+
     ts = timezone.now().isoformat()
     build_sha = os.environ.get("BUILD_SHA", "local-dev")
     hostname = socket.gethostname()
