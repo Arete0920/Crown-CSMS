@@ -37,6 +37,13 @@ def family_scope():
         Enrollment.objects.create(school_id=school.id, section=section, student=child)
         MasteryRecord.objects.create(school_id=school.id, student=child, objective=objective, mastery_level=3)
         TranscriptEntry.objects.create(school_id=school.id, student=child, course=course, final_letter_grade="A")
+    foreign_course = Course.objects.create(school_id=foreign.id, code="FOREIGN", name="Foreign Course")
+    foreign_unit = Unit.objects.create(school_id=foreign.id, course=foreign_course, title="Foreign Unit")
+    foreign_lesson = Lesson.objects.create(school_id=foreign.id, unit=foreign_unit, title="Foreign Lesson")
+    foreign_objective = PublisherObjective.objects.create(school_id=foreign.id, lesson=foreign_lesson,
+                                                         objective_code="FOREIGN", description="Foreign sample objective")
+    MasteryRecord.objects.create(school_id=foreign.id, student=outsider, objective=foreign_objective)
+    TranscriptEntry.objects.create(school_id=foreign.id, student=outsider, course=foreign_course, final_letter_grade="B")
     client = APIClient()
     client.force_authenticate(parent)
     return dict(school=school, parent=parent, home=home, guardian=guardian, visible=visible,
