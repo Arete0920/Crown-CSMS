@@ -1,6 +1,6 @@
 # CROWN Release Tag Policy
 
-**Last reconciled:** 2026-09-27
+**Last reconciled:** 2026-10-12
 
 ## Immutability
 
@@ -52,7 +52,11 @@ A historical `crown-*` or `prod-deploy-*` tag does not become current Crown-CSMS
 | `crown-0.3.0-spine-complete` | `340c7e3fbb882eb4886fbfbbe8e648f3866e5178` | Historical foundation |
 | `crown-0.3.1-prod-pipeline-fix` | `a1c4c42a381e03587c784bd995ec8fd6c33aeee9` | Historical pipeline milestone |
 
-The immutable mapping for historical tags is `docs/RELEASE_TAGS.json`; historical mappings must remain internally consistent.
+| `prod-deploy-heritage-demo-20261012-61e7281` | `61e728150b4ac728de29a80239e10c355d3fcaf9` | Failed preflight candidate; lightweight tag, not accepted for production promotion |
+
+The initial candidate is preserved without moving or recreating its tag. A follow-on deployment attempt must use a new annotated tag under the creation controls above.
+
+Predecessor mappings are retained in `docs/archive/release-authority/PREDECESSOR_RELEASE_TAGS.json`. Tags published in the successor repository are mapped in `docs/RELEASE_TAGS.json`; these identities and the corresponding historical entries must remain internally consistent. A registry entry does not confer deployment certification.
 
 ## Enforcement
 
