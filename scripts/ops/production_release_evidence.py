@@ -117,6 +117,10 @@ def resolve_target(api, failed, repository, app, registry, image):
     candidates = []
     for workflow in sorted(WORKFLOWS):
         name = workflow.rsplit('/', 1)[1]
+        latest = api.get(f'/actions/workflows/{name}/runs?per_page=100')['workflow_runs']
+        if any(run['id'] != failed['id'] and instant(run['created_at']) > instant(failed['created_at'])
+               for run in latest):
+            raise ValueError('Failed attempt has been superseded by a newer production attempt')
         for page in range(1, 4):
             runs = api.get(f'/actions/workflows/{name}/runs?status=success&per_page=100&page={page}')['workflow_runs']
             for run in runs:

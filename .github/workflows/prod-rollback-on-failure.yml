@@ -14,13 +14,14 @@ permissions:
   id-token: write
 
 concurrency:
-  group: prod-rollback-on-failure-${{ github.event.workflow_run.id }}
+  group: crown-api-prod-deploy
   cancel-in-progress: false
 
 jobs:
   rollback:
     if: ${{ github.event.workflow_run.conclusion == 'failure' }}
     runs-on: ubuntu-latest
+    environment: production
     timeout-minutes: 25
     env:
       RESOURCE_GROUP: crown-rg

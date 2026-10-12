@@ -13,10 +13,13 @@ Only these allowlisted health fields are retained; credentials and arbitrary hea
 Artifacts use attempt-specific names, fail if absent, and retain for 30 days.
 
 Recovery searches the two trusted workflow identities, with bounded pagination and at most 40 prior eligible runs.
+A newer production attempt supersedes an older failure and blocks its automated target selection.
 It accepts only terminal-success runs completed before the failed run began, with one unexpired matching artifact.
 It validates archive shape and manifest origin/identity; missing evidence remains blocked.
 GitHub API credentials are removed when artifact downloads redirect to external storage.
 
+Production deployment, automatic recovery and the manual rollback drill share one serialization group.
+Automatic recovery retains the production environment approval boundary.
 Before mutation, recovery verifies the recorded digest still exists in the configured registry.
 It restores by digest and applies the proven release metadata. Verification requires both the configured digest
 and a healthy database with the exact restored build SHA. No source-SHA fallback or mutable-tag substitution is allowed.

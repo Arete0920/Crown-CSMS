@@ -52,9 +52,12 @@ class FakeAPI:
                                workflow_run={'id': 7})] if artifacts is None else artifacts
         self.data = manifest() if data is None else data
         self.calls = []
+        self.latest = []
 
     def get(self, path, binary=False):
         self.calls.append(path)
+        if '/workflows/' in path and 'status=success' not in path:
+            return {'workflow_runs': self.latest}
         if '/workflows/deploy-prod-dispatch.yml/runs' in path:
             return {'workflow_runs': self.runs}
         if '/workflows/deploy-prod.yml/runs' in path:
@@ -115,6 +118,21 @@ class ProductionReleaseEvidenceTests(unittest.TestCase):
         for change in [{'id': 10}, {'updated_at': '2026-10-03T00:00:00Z'}]:
             with self.subTest(change=change), self.assertRaises(ValueError):
                 self.resolve(FakeAPI(runs=[{**source_run(), **change}]))
+
+    def test_superseded_failure_cannot_choose_a_rollback_target(self):
+        api = FakeAPI()
+        api.latest = [{**source_run(11), 'created_at': '2026-10-03T00:00:00Z'}]
+        with self.assertRaisesRegex(ValueError, 'superseded'):
+            self.resolve(api)
+
+    def test_production_image_mutations_share_concurrency_and_approval(self):
+        for name in ['deploy-prod.yml', 'deploy-prod-dispatch.yml',
+                     'prod-rollback-on-failure.yml', 'prod-immutable-rollback-drill.yml']:
+            workflow = yaml.safe_load((ROOT / '.github/workflows' / name).read_text())
+            self.assertEqual(workflow['concurrency']['group'], 'crown-api-prod-deploy')
+            self.assertFalse(workflow['concurrency']['cancel-in-progress'])
+        recovery = yaml.safe_load((ROOT / '.github/workflows/prod-rollback-on-failure.yml').read_text())
+        self.assertEqual(recovery['jobs']['rollback']['environment'], 'production')
 
     def test_duplicate_artifacts_and_origin_mismatch_fail_closed(self):
         api = FakeAPI()
