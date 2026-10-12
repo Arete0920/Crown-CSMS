@@ -833,7 +833,6 @@ jobs:
       - name: Verify release identity end-to-end
         shell: bash
         env:
-          DEPLOY_TAG: ${{ needs.resolve-release.outputs.deploy_tag }}
           EXPECTED_SHA: ${{ steps.vars.outputs.deploy_sha }}
           EXPECTED_IMAGE: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ needs.candidate-verification.outputs.image_digest }}
         run: |
@@ -920,7 +919,7 @@ jobs:
           name: production-release-proof-${{ github.run_id }}-${{ github.run_attempt }}
           path: production-release-evidence/production-release-proof.json
           if-no-files-found: error
-          retention-days: 90
+          retention-days: 30
 
       - name: Notify deployment
         if: success()

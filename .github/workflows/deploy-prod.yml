@@ -853,7 +853,7 @@ jobs:
           name: production-release-proof-${{ github.run_id }}-${{ github.run_attempt }}
           path: production-release-evidence/production-release-proof.json
           if-no-files-found: error
-          retention-days: 90
+          retention-days: 30
 
       - name: Notify deployment
         if: success()

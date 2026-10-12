@@ -165,7 +165,10 @@ class ProductionReleaseEvidenceTests(unittest.TestCase):
             workflow = yaml.safe_load((ROOT / '.github/workflows' / name).read_text())
             step = next(row for row in workflow['jobs']['build-and-deploy']['steps']
                         if row['name'] == 'Verify release identity end-to-end')
-            self.assertEqual(step['env']['DEPLOY_TAG'], '${{ needs.resolve-release.outputs.deploy_tag }}')
+            if name == 'deploy-prod.yml':
+                self.assertEqual(step['env']['DEPLOY_TAG'], '${{ needs.resolve-release.outputs.deploy_tag }}')
+            else:
+                self.assertIn('DEPLOY_TAG', workflow['jobs']['build-and-deploy']['env'])
             with tempfile.TemporaryDirectory() as directory:
                 root = Path(directory)
                 (root / 'scripts/ops').mkdir(parents=True)
@@ -195,6 +198,7 @@ class ProductionReleaseEvidenceTests(unittest.TestCase):
             self.assertIn('production_release_evidence.py record', verify['run'])
             retain = next(step for step in steps if step['name'] == 'Retain verified production release identity')
             self.assertEqual(retain['with']['if-no-files-found'], 'error')
+            self.assertEqual(retain['with']['retention-days'], 30)
             self.assertNotIn('always()', retain.get('if', ''))
         workflow = yaml.safe_load((ROOT / '.github/workflows/prod-rollback-on-failure.yml').read_text())
         steps = workflow['jobs']['rollback']['steps']

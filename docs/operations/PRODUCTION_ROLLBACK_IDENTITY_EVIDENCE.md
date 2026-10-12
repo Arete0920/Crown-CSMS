@@ -10,7 +10,7 @@ After the existing production identity gate, both production workflows record a 
 bound to repository, run ID, attempt, source commit, production app, deployed commit and configured image digest.
 The proof requires healthy runtime and database, exact live SHA, and consistent release tag/version/run metadata.
 Only these allowlisted health fields are retained; credentials and arbitrary health payload fields are excluded.
-Artifacts use attempt-specific names, fail if absent, and retain for 90 days.
+Artifacts use attempt-specific names, fail if absent, and retain for 30 days.
 
 Recovery searches the two trusted workflow identities, with bounded pagination and at most 40 prior eligible runs.
 It accepts only terminal-success runs completed before the failed run began, with one unexpired matching artifact.
