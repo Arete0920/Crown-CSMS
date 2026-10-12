@@ -5,6 +5,9 @@ Provides deterministic JWT tokens for local development without password typing.
 Hard guards: CROWN_DEMO_MODE=true, localhost only, X-Demo-Key header required.
 """
 import logging
+from urllib.parse import urlsplit
+
+from django.core.exceptions import DisallowedHost
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.http import JsonResponse
@@ -22,10 +25,27 @@ def _demo_fail(msg="Not Found", status=404):
 
 
 def _is_local_request(request) -> bool:
-    """Check if request originates from localhost (127.0.0.1 or ::1)."""
-    ip = request.META.get("REMOTE_ADDR", "")
-    host = request.get_host().split(":")[0]
-    return ip in ("127.0.0.1", "::1") or host in ("localhost", "127.0.0.1")
+    """Permit only direct loopback peers with a loopback Host."""
+    if request.META.get("REMOTE_ADDR") not in ("127.0.0.1", "::1"):
+        return False
+
+    # Proxied requests are not direct local development connections.
+    forwarding_headers = (
+        "HTTP_FORWARDED",
+        "HTTP_X_FORWARDED_FOR",
+        "HTTP_X_FORWARDED_HOST",
+        "HTTP_X_FORWARDED_PORT",
+        "HTTP_X_FORWARDED_PROTO",
+        "HTTP_X_REAL_IP",
+    )
+    if any(header in request.META for header in forwarding_headers):
+        return False
+
+    try:
+        host = urlsplit("//" + request.get_host()).hostname
+    except (DisallowedHost, ValueError):
+        return False
+    return host in ("localhost", "127.0.0.1", "::1")
 
 
 @csrf_exempt
