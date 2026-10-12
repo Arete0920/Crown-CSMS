@@ -55,3 +55,22 @@ In Azure Portal -> Cost Management -> Budgets, create a **$10 USD monthly initia
 - https://learn.microsoft.com/en-us/azure/container-apps/billing
 - https://learn.microsoft.com/en-us/azure/app-service/overview-hosting-plans
 - https://azure.microsoft.com/en-us/pricing/details/app-service/static/
+
+## Configuration evidence through the existing preflight
+
+Run **Azure Classroom Release Preflight** on reviewed `main` from GitHub Actions.
+The existing production environment federation authenticates this read-only job.
+Retrieve its `azure-classroom-preflight-<commit>` artifact through the GitHub connector;
+portal screenshots and new client secrets are not required.
+
+The artifact includes app-setting and connection-string **names only**, plus the
+configured health-check path and registry managed-identity flag. CLI queries
+exclude setting values; denied reads or unexpected response shapes are marked
+`UNAVAILABLE`, distinct from a successfully collected empty list. Optional
+configuration failures do not discard the core resource inventory.
+
+No application settings, infrastructure, database records, or deployment images
+are changed. Names establish configuration presence only: they do not verify
+broker connectivity, workers, scheduler execution, database connectivity, or
+release identity. The release status remains `NOT VERIFIED` until the listed
+runtime proofs are obtained. Avoid public copies of resource-identifying evidence.

@@ -9,15 +9,78 @@ import argparse
 from datetime import datetime, timezone
 import json
 import os
+import re
 from pathlib import Path
 import subprocess
 import sys
+from urllib.parse import quote
 
 COST_API = "2025-03-01"
 
 
 class ReadUnavailable(Exception):
     """Azure data was not retrievable; never interpret as zero."""
+
+    def __init__(self, reason, category="UNKNOWN"):
+        super().__init__(reason)
+        self.category = category
+
+
+ERROR_CATEGORIES = frozenset({
+    "ACCESS_DENIED", "AUTHENTICATION", "RATE_LIMIT", "INVALID_REQUEST",
+    "PROVIDER_UNAVAILABLE", "CLI_UNAVAILABLE", "TIMEOUT", "INVALID_RESPONSE",
+    "UNKNOWN",
+})
+
+
+def error_category(stderr):
+    """Return fixed labels only; never retain provider text or identifiers."""
+    codes = re.findall(r"\(([A-Za-z][A-Za-z0-9]*)\)", stderr or "")
+    # az rest renders HTTP failures as Forbidden({"error":{"code":...}}),
+    # unlike other commands' (AuthorizationFailed) format.
+    codes += re.findall(r'"code"\s*:\s*"([A-Za-z][A-Za-z0-9]*)"', stderr or "")
+    reasons = {"Forbidden": "Forbidden", "Unauthorized": "Unauthorized",
+               "Too Many Requests": "TooManyRequests", "Bad Request": "BadRequest",
+               "Service Unavailable": "ServiceUnavailable",
+               "Internal Server Error": "InternalServerError"}
+    for reason, code in reasons.items():
+        if re.search(r"(?:^|\n)\s*(?:ERROR:\s*)?" + re.escape(reason) + r"(?:\(|\s*$)", stderr or ""):
+            codes.append(code)
+    mapping = {
+        "AuthorizationFailed": "ACCESS_DENIED", "Forbidden": "ACCESS_DENIED",
+        "Unauthorized": "AUTHENTICATION", "AuthenticationFailed": "AUTHENTICATION",
+        "InvalidAuthenticationToken": "AUTHENTICATION",
+        "ExpiredAuthenticationToken": "AUTHENTICATION",
+        "TooManyRequests": "RATE_LIMIT", "BadRequest": "INVALID_REQUEST",
+        "InvalidApiVersionParameter": "INVALID_REQUEST",
+        "NoRegisteredProviderFound": "INVALID_REQUEST",
+        "ServiceUnavailable": "PROVIDER_UNAVAILABLE",
+        "InternalServerError": "PROVIDER_UNAVAILABLE",
+    }
+    return next((mapping[code] for code in codes if code in mapping), "UNKNOWN")
+
+
+def redacted_diagnostics(report):
+    """Export no account IDs, resource names, amounts, or exception messages."""
+    allowed = {"cost_MonthToDate", "cost_TheLastMonth", "budgets",
+               "group_cost_MonthToDate", "group_cost_TheLastMonth", "group_budgets"}
+    statuses = {"COLLECTED", "COLLECTED_NO_ROWS", "UNAVAILABLE"}
+    group_costs = report.get("resource_group_cost") or {}
+    return {
+        "cost_scope": "subscription",
+        "resource_group_probe": {
+            key: (group_costs.get(key) or {}).get("status")
+            if (group_costs.get(key) or {}).get("status") in statuses else "UNAVAILABLE"
+            for key in ("month_to_date", "last_month")
+        },
+        "resource_group_budget_status": "COLLECTED" if report.get("resource_group_budgets") is not None else "UNAVAILABLE",
+        "failures": [
+            {"section": item["section"], "status": "UNAVAILABLE",
+             "category": item.get("category") if item.get("category") in ERROR_CATEGORIES else "UNKNOWN"}
+            for item in report.get("failures", []) if item.get("section") in allowed
+        ],
+        "note": "Missing billing data is unknown, never zero. Error labels are diagnostic hints, not proof of effective permissions.",
+    }
 
 
 def az_json(*parts, timeout=60):
@@ -29,15 +92,17 @@ def az_json(*parts, timeout=60):
             cmd, capture_output=True, text=True, check=False,
             timeout=timeout, env=env
         )
-    except (OSError, subprocess.TimeoutExpired) as exc:
-        raise ReadUnavailable("Azure CLI is unavailable or timed out") from exc
+    except subprocess.TimeoutExpired as exc:
+        raise ReadUnavailable("Azure CLI read timed out", "TIMEOUT") from exc
+    except OSError as exc:
+        raise ReadUnavailable("Azure CLI is unavailable", "CLI_UNAVAILABLE") from exc
     if result.returncode:
         # Do not expose stderr; it could contain private Azure account details.
-        raise ReadUnavailable("Azure read failed or permissions were insufficient")
+        raise ReadUnavailable("Azure read failed", error_category(result.stderr))
     try:
         return json.loads(result.stdout)
     except ValueError as exc:
-        raise ReadUnavailable("Azure returned invalid JSON") from exc
+        raise ReadUnavailable("Azure returned invalid JSON", "INVALID_RESPONSE") from exc
 
 
 def safe_read(label, *parts, failures):
@@ -47,12 +112,13 @@ def safe_read(label, *parts, failures):
         failures.append({
             "section": label,
             "status": "UNAVAILABLE",
-            "reason": str(exc)
+            "reason": str(exc),
+            "category": exc.category,
         })
         return None
 
 
-def billing(scope, timeframe, failures):
+def billing(scope, timeframe, failures, label_prefix="cost_"):
     """Read-only Azure Cost Management query (REST uses POST for queries)."""
     url = (
         "https://management.azure.com" + scope
@@ -70,7 +136,7 @@ def billing(scope, timeframe, failures):
         },
     }
     result = safe_read(
-        "cost_" + timeframe, "rest", "--method", "post", "--url", url,
+        label_prefix + timeframe, "rest", "--method", "post", "--url", url,
         "--body", json.dumps(query), failures=failures
     )
     if not isinstance(result, dict):
@@ -80,7 +146,7 @@ def billing(scope, timeframe, failures):
     rows = properties.get("rows")
     if not columns or not isinstance(rows, list):
         failures.append({
-            "section": "cost_" + timeframe,
+            "section": label_prefix + timeframe,
             "status": "UNAVAILABLE",
             "reason": "Cost query response had no usable columns or rows",
         })
@@ -193,6 +259,25 @@ def make_report(group):
             "status": "UNAVAILABLE",
             "reason": "Budget list response was not usable",
         })
+    # Probe the already-authorized group separately. Never present its costs
+    # as the subscription total or silently replace unavailable billing data.
+    group_scope = scope + "/resourceGroups/" + quote(group, safe="")
+    group_costs = {
+        "month_to_date": billing(group_scope, "MonthToDate", failures, "group_cost_"),
+        "last_month": billing(group_scope, "TheLastMonth", failures, "group_cost_"),
+    }
+    group_budget_raw = safe_read(
+        "group_budgets", "rest", "--method", "get", "--url",
+        "https://management.azure.com" + group_scope
+        + "/providers/Microsoft.Consumption/budgets?api-version=2023-05-01",
+        failures=failures,
+    )
+    group_budgets = None
+    if isinstance(group_budget_raw, dict) and isinstance(group_budget_raw.get("value"), list):
+        group_budgets = group_budget_raw["value"]
+    elif group_budget_raw is not None:
+        failures.append({"section": "group_budgets", "status": "UNAVAILABLE",
+                         "category": "INVALID_RESPONSE", "reason": "Budget list response was not usable"})
     return {
         "status": (
             "COLLECTED_WITH_GAPS" if failures
@@ -204,6 +289,8 @@ def make_report(group):
         "inventory": inventory,
         "actual_cost": costs,
         "existing_budgets": budgets,
+        "resource_group_cost": group_costs,
+        "resource_group_budgets": group_budgets,
         "failures": failures,
         "notes": [
             "Read-only: no resources or budgets were altered.",
@@ -240,3 +327,4 @@ def main(argv=None):
 
 if __name__ == "__main__":
     sys.exit(main())
+
