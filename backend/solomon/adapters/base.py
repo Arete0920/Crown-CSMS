@@ -85,11 +85,12 @@ class BaseSolomonAdapter(ABC):
 
         try:
             return self._resolve_context(req)
-        except Exception as e:
-            # Fail-closed: any exception returns error payload, does not bubble
+        except Exception:
+            # Never expose exception text or internal diagnostic details to callers.
+            # Exception messages can contain identifiers, queries, paths, or records.
             return SolomonContextPayload(
                 status="error",
-                metadata={"error_type": type(e).__name__, "error_msg": str(e)},
+                metadata={"error_code": "context_unavailable"},
             )
 
     @abstractmethod
