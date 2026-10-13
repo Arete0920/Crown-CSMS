@@ -23,19 +23,19 @@ function ScoreBar({ label, value, invert = false }) {
     );
   }
   const v = value;
-  const displayed = invert ? 100 - v : v;
+  const favorability = invert ? 100 - v : v;
 
   let color = "primary";
-  if (displayed >= 80) color = "success";
-  else if (displayed < 50) color = "error";
+  if (favorability >= 80) color = "success";
+  else if (favorability < 50) color = "error";
 
   return (
     <Box sx={{ mb: 2 }}>
       <Box sx={{ display: "flex", justifyContent: "space-between", mb: 0.5 }}>
         <Typography variant="body2">{label}</Typography>
-        <Chip size="small" label={`${displayed}/100`} />
+        <Chip size="small" label={invert ? `${v}%` : `${v}/100`} />
       </Box>
-      <LinearProgress variant="determinate" value={displayed} color={color} />
+      <LinearProgress variant="determinate" value={v} color={color} />
     </Box>
   );
 }
@@ -52,7 +52,7 @@ export default function BoardCompassCard({ compass }) {
           <ScoreBar label="Culture Health"     value={compass.culture_health} />
           <ScoreBar label="Mission Health"     value={compass.mission_health} />
           <ScoreBar
-            label="Aftercare Retention Risk (lower = better)"
+            label="Aftercare students flagged high risk"
             value={compass.retention_risk}
             invert
           />

@@ -11,6 +11,7 @@ from academics.submission_workflow_views import _uuid
 from django.contrib.auth import get_user_model
 from rest_framework.response import Response
 from rest_framework import status
+from drf_spectacular.utils import extend_schema
 
 from .tenant import school_id_from_request
 from .models import (
@@ -48,6 +49,7 @@ def _staff_cases(request, school):
 # Board read-only endpoints
 # ---------------------------------------------------------------------------
 
+@extend_schema(responses=BoardExecutiveMetricSerializer)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def board_compass_summary(request):

@@ -13,16 +13,18 @@ describe('BoardCompassCard metric truth', () => {
     expect(screen.queryByText('100/100')).toBeNull();
   });
 
-  it('preserves assessed zero and retention inversion while rejecting invalid scores', () => {
+  it('preserves assessed zero and the actual risk percentage while rejecting invalid scores', () => {
     render(<BoardCompassCard compass={{
       as_of_date: '2026-10-13', enrollment_health: 0,
       financial_health: NaN, culture_health: -1, mission_health: 101,
       retention_risk: 25,
     }} />);
     expect(screen.getByText('0/100')).toBeTruthy();
-    expect(screen.getByText('75/100')).toBeTruthy();
+    expect(screen.getByText('25%')).toBeTruthy();
+    expect(screen.queryByText('75/100')).toBeNull();
     expect(screen.getAllByText('Not assessed')).toHaveLength(3);
     expect(screen.getAllByRole('progressbar')).toHaveLength(2);
-    expect(screen.getByText('Aftercare Retention Risk (lower = better)')).toBeTruthy();
+    expect(screen.getByText('Aftercare students flagged high risk')).toBeTruthy();
+    expect(screen.getAllByRole('progressbar')[1].getAttribute('aria-valuenow')).toBe('25');
   });
 });
