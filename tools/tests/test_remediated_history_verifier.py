@@ -1,5 +1,6 @@
 """Real Git fixtures for the security history verifier; no private keys used."""
 import pathlib
+import stat
 import importlib.util
 import subprocess
 import sys
@@ -14,6 +15,11 @@ FORBIDDEN_PATH = (
     "solomon_governance_c1/governance/c1/runtime/audit_pack/"
     "20260515T185051Z/crypto_attestation/ed25519_private_key_DO_NOT_SHARE.pem"
 )
+
+# Resolve the exact same Git Bash implementation used by the archive helper.
+_spec = importlib.util.spec_from_file_location("archive_guard", ARCHIVER)
+archive_guard = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(archive_guard)
 
 
 class HistoryVerifierTests(unittest.TestCase):
@@ -38,7 +44,8 @@ class HistoryVerifierTests(unittest.TestCase):
 
     def verify(self, repo=None, bundle=None):
         target = ["--bundle", str(bundle)] if bundle else ["--repo", str(repo or self.repo)]
-        return subprocess.run(["bash", str(VERIFIER), *target,
+        return subprocess.run([archive_guard.git_bash(), archive_guard.bash_path(VERIFIER),
+                               *([target[0], archive_guard.bash_path(pathlib.Path(target[1]))]),
                                "--forbidden-path", "secret/key.pem"],
                               capture_output=True, text=True)
 
@@ -80,7 +87,11 @@ class HistoryVerifierTests(unittest.TestCase):
 
     def test_missing_tree_is_not_path_absence(self):
         tree = self.git("rev-parse", "HEAD^{tree}")
-        (self.repo / ".git/objects" / tree[:2] / tree[2:]).unlink()
+        object_path = self.repo / ".git/objects" / tree[:2] / tree[2:]
+        # Native Git objects can be read-only on Windows; the corruption contract
+        # requires deletion, not the platform-specific permission behavior.
+        object_path.chmod(object_path.stat().st_mode | stat.S_IWRITE)
+        object_path.unlink()
         self.assert_rejected(self.verify())
 
     def test_hidden_pull_ref_is_included(self):
@@ -101,7 +112,8 @@ class HistoryVerifierTests(unittest.TestCase):
         output = self.root / "export/archive.bundle"
         self.assertEqual(self.archive(output=output).returncode, 0)
         result = subprocess.run(
-            ["bash", str(VERIFIER), "--bundle", str(output),
+            [archive_guard.git_bash(), archive_guard.bash_path(VERIFIER),
+             "--bundle", archive_guard.bash_path(output),
              "--forbidden-path", FORBIDDEN_PATH], capture_output=True, text=True,
         )
         self.assertEqual(result.returncode, 0)
@@ -129,9 +141,7 @@ class HistoryVerifierTests(unittest.TestCase):
         self.assertEqual(output.read_bytes(), b"preserve existing evidence")
 
     def test_archive_rejects_history_introduced_during_capture(self):
-        spec = importlib.util.spec_from_file_location("archive_guard", ARCHIVER)
-        module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
+        module = archive_guard
         real_run = subprocess.run
 
         def drift_before_capture(args, **kwargs):
@@ -149,7 +159,8 @@ class HistoryVerifierTests(unittest.TestCase):
             with self.assertRaises(subprocess.CalledProcessError):
                 module.create_bundle(self.repo, output)
         self.assertFalse(output.exists())
-        self.assertEqual(list(output.parent.iterdir()), [])
+        if output.parent.exists():
+            self.assertEqual(list(output.parent.iterdir()), [])
 
 
 if __name__ == "__main__":
