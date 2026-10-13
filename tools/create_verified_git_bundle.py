@@ -19,6 +19,30 @@ FORBIDDEN_PATH = (
     "20260515T185051Z/crypto_attestation/ed25519_private_key_DO_NOT_SHARE.pem"
 )
 
+def git_bash() -> str:
+    """Use Git for Windows Bash, never the unrelated WSL bash.exe shim."""
+    if os.name != "nt":
+        return "bash"
+    program_files = Path(os.environ.get("ProgramFiles", r"C:\Program Files"))
+    executable = program_files / "Git" / "bin" / "bash.exe"
+    if not executable.is_file():
+        raise FileNotFoundError("Git for Windows Bash is required for history verification")
+    return str(executable)
+
+
+def bash_path(path: Path) -> str:
+    """Convert native Windows paths for the MSYS Git Bash/Git CLI boundary."""
+    if os.name != "nt":
+        return str(path)
+    program_files = Path(os.environ.get("ProgramFiles", r"C:\Program Files"))
+    cygpath = program_files / "Git" / "usr" / "bin" / "cygpath.exe"
+    result = subprocess.run(
+        [str(cygpath), "-u", str(path.resolve())],
+        check=True, capture_output=True, text=True,
+    )
+    return result.stdout.strip()
+
+
 
 def create_bundle(repo: Path, output: Path) -> None:
     repo = repo.resolve(strict=True)
@@ -27,7 +51,7 @@ def create_bundle(repo: Path, output: Path) -> None:
         raise FileExistsError("Archive output already exists; refusing replacement")
     # Verify before creating output directories or history-bearing artifacts.
     subprocess.run(
-        ["bash", str(VERIFIER), "--repo", str(repo),
+        [git_bash(), bash_path(VERIFIER), "--repo", bash_path(repo),
          "--forbidden-path", FORBIDDEN_PATH], check=True,
     )
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -40,7 +64,7 @@ def create_bundle(repo: Path, output: Path) -> None:
         # Revalidate the exact restored artifact, including any ref drift that
         # introduced forbidden history between source verification and capture.
         subprocess.run(
-            ["bash", str(VERIFIER), "--bundle", str(staged),
+            [git_bash(), bash_path(VERIFIER), "--bundle", bash_path(staged),
              "--forbidden-path", FORBIDDEN_PATH], check=True,
         )
         # Same-volume publication without overwriting a concurrently created file.
