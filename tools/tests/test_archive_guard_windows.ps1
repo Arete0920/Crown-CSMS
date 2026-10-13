@@ -50,3 +50,5 @@ try {
     Write-Host 'Windows archive entry point rejected removed-but-reachable history before publication.'
 }
 finally { Remove-Item -LiteralPath $fixture -Recurse -Force -ErrorAction SilentlyContinue }
+# The rejected native command leaves LASTEXITCODE=1; the asserted rejection is success.
+exit 0
