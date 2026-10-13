@@ -138,7 +138,7 @@ def get_contextual_solomon_help(
     related_articles = []
     playbooks = []
 
-    qs = HELP_ARTICLE_MANAGER.filter(state=HelpArticle.STATE_PUBLISHED).filter(_visibility_qs(request))
+    qs = HELP_ARTICLE_MANAGER.filter(state=HelpArticle.STATE_PUBLISHED, published=True).filter(_visibility_qs(request))
 
     resolved_article = None
 
@@ -158,7 +158,7 @@ def get_contextual_solomon_help(
             related_qs = related_qs.exclude(pk=exclude_pk)
         related_articles = [_serialize_article(a) for a in related_qs[:5]]
 
-        pb_qs = SOLOMON_PLAYBOOK_MANAGER.filter(module=module)[:3]
+        pb_qs = SOLOMON_PLAYBOOK_MANAGER.filter(state=HelpArticle.STATE_PUBLISHED, module=module).filter(_visibility_qs(request))[:3]
         playbooks = [_serialize_playbook(p) for p in pb_qs]
 
     return {
@@ -170,7 +170,7 @@ def get_contextual_solomon_help(
 
 def search_solomon_content(request, query="", module="", audience=""):
     """Search Solomon articles by query, module, and/or audience."""
-    qs = HELP_ARTICLE_MANAGER.filter(state=HelpArticle.STATE_PUBLISHED).filter(_visibility_qs(request))
+    qs = HELP_ARTICLE_MANAGER.filter(state=HelpArticle.STATE_PUBLISHED, published=True).filter(_visibility_qs(request))
 
     if module:
         qs = qs.filter(module=module)
@@ -189,7 +189,7 @@ def search_solomon_content(request, query="", module="", audience=""):
         .distinct()
     )
 
-    playbook_qs = SOLOMON_PLAYBOOK_MANAGER.all()
+    playbook_qs = SOLOMON_PLAYBOOK_MANAGER.filter(state=HelpArticle.STATE_PUBLISHED).filter(_visibility_qs(request))
     if module:
         playbook_qs = playbook_qs.filter(module=module)
     if query:
