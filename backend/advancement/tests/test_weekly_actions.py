@@ -46,7 +46,7 @@ class WeeklyActionTests(TestCase):
 
     def get_actions(self):
         result = self.client.get(self.url, HTTP_X_SCHOOL_ID=str(self.school.id))
-        self.assertEqual(result.status_code, 200)
+        self.assertEqual(result.status_code, 200, result.content)
         return result.json()["weekly_actions"]
 
     def test_empty_queue(self):
@@ -63,6 +63,10 @@ class WeeklyActionTests(TestCase):
 
     def test_cross_school_moves_and_cross_school_donor_not_exposed(self):
         self.make_move(self.other, -1)
+        # A corrupted move tenant must not expose its foreign prospect.
+        crossed = self.make_move(self.other, -1)
+        crossed.school_id = self.school.id
+        crossed.save(update_fields=["school_id"])
         outside_donor = Donor.objects.create(school_id=self.other.id, name="Outside donor")
         mismatched = self.make_move(self.school, 1, donor=outside_donor)
         actions = self.get_actions()
