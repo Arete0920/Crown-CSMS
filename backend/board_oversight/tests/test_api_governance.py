@@ -10,6 +10,7 @@ from django.urls import reverse
 from rest_framework.test import APIRequestFactory, force_authenticate
 
 from board_oversight import api_governance
+from core.models import School, UserRole, CrownPermission, RolePermission
 
 
 class FakeQuerySet:
@@ -96,6 +97,12 @@ def user(db):
     return User.objects.create_user(password="test-password", **kwargs)
 
 
+def grant_board_access(user, school):
+    UserRole.objects.get_or_create(user=user, school=school, role_code="HEAD_OF_SCHOOL")
+    permission, _ = CrownPermission.objects.get_or_create(code="board.view")
+    RolePermission.objects.get_or_create(role_code="HEAD_OF_SCHOOL", permission=permission)
+
+
 def authenticated_get(factory, user, path, school_id=None):
     headers = {}
     if school_id is not None:
@@ -152,7 +159,9 @@ def test_protected_board_endpoints_require_valid_school_header(factory, user, vi
 
 
 def test_download_board_packet_returns_503_when_generation_unavailable(monkeypatch, factory, user):
-    school_id = uuid4()
+    school = School.objects.create(name="Packet missing generator")
+    school_id = school.id
+    grant_board_access(user, school)
     monkeypatch.setattr(api_governance, "generate_board_packet", lambda school_id: None)
     request = authenticated_get(factory, user, reverse("board-packet-download"), school_id)
 
@@ -163,7 +172,9 @@ def test_download_board_packet_returns_503_when_generation_unavailable(monkeypat
 
 
 def test_download_board_packet_streams_pdf_with_attachment_headers(monkeypatch, factory, user):
-    school_id = uuid4()
+    school = School.objects.create(name="Packet generator")
+    school_id = school.id
+    grant_board_access(user, school)
     seen = {}
 
     def generate_board_packet(*, school_id):
@@ -182,51 +193,38 @@ def test_download_board_packet_streams_pdf_with_attachment_headers(monkeypatch, 
     assert seen["school_id"] == school_id
 
 
-def test_compass_summary_empty_and_clamped_scoring(monkeypatch):
+def test_compass_summary_abstains_from_unvalidated_scores(monkeypatch):
     school_id = uuid4()
     empty_calls = []
-    empty_qs = FakeQuerySet(first_value=None, calls=empty_calls)
-    monkeypatch.setattr(api_governance.BoardKPISnapshot, "objects", FakeManager(empty_qs))
-
+    monkeypatch.setattr(api_governance.BoardKPISnapshot, "objects",
+                        FakeManager(FakeQuerySet(first_value=None, calls=empty_calls)))
     empty = api_governance._compass_summary(school_id=school_id)
-
-    assert empty == {
-        "school_id": str(school_id),
-        "enrollment_health": 0,
-        "financial_health": 0,
-        "discipline_health": 0,
-        "spiritual_life_health": 0,
-        "overall_score": 0,
-        "source": "empty",
-    }
+    assert empty["overall_score"] is None
+    assert empty["source"] == "empty"
+    assert empty["source_month"] is None
     assert ("filter", {"school_id": school_id}) in empty_calls
-    assert ("order_by", ("-month",)) in empty_calls
 
     latest = SimpleNamespace(
-        enrollment=140,
-        revenue=Decimal("125000.00"),
-        discipline_incidents=60,
-        financial_aid_awards=-5,
+        enrollment=140, revenue=Decimal("125000.00"),
+        discipline_incidents=60, financial_aid_awards=-5,
         month=date(2026, 7, 1),
     )
-    populated_qs = FakeQuerySet(first_value=latest)
-    monkeypatch.setattr(api_governance.BoardKPISnapshot, "objects", FakeManager(populated_qs))
-
+    monkeypatch.setattr(api_governance.BoardKPISnapshot, "objects",
+                        FakeManager(FakeQuerySet(first_value=latest)))
     populated = api_governance._compass_summary(school_id=school_id)
-
-    assert populated == {
-        "school_id": str(school_id),
-        "enrollment_health": 100,
-        "financial_health": 100,
-        "discipline_health": 0,
-        "spiritual_life_health": 0,
-        "overall_score": 50,
-        "source": "2026-07-01",
-    }
+    assert populated["source"] == "unscored_snapshot"
+    assert populated["source_month"] == "2026-07-01"
+    assert populated["calculation_status"] == "awaiting_validated_metric_definitions"
+    assert all(populated[k] is None for k in (
+        "enrollment_health", "financial_health", "discipline_health",
+        "spiritual_life_health", "overall_score",
+    ))
 
 
 def test_compass_endpoint_returns_tenant_scoped_summary(monkeypatch, factory, user):
-    school_id = uuid4()
+    school = School.objects.create(name="Authorized board testing")
+    school_id = school.id
+    grant_board_access(user, school)
     expected = {"school_id": str(school_id), "overall_score": 88}
     monkeypatch.setattr(api_governance, "_compass_summary", lambda school_id: expected)
     request = authenticated_get(factory, user, reverse("board-compass"), school_id)
@@ -238,7 +236,9 @@ def test_compass_endpoint_returns_tenant_scoped_summary(monkeypatch, factory, us
 
 
 def test_initiative_summary_scopes_counts_and_serializes_items(monkeypatch, factory, user):
-    school_id = uuid4()
+    school = School.objects.create(name="Authorized board testing")
+    school_id = school.id
+    grant_board_access(user, school)
     calls = []
     items = [
         {
@@ -270,7 +270,9 @@ def test_initiative_summary_scopes_counts_and_serializes_items(monkeypatch, fact
 
 
 def test_initiative_summary_uses_zero_completion_rate_for_empty_tenant(monkeypatch, factory, user):
-    school_id = uuid4()
+    school = School.objects.create(name="Authorized board testing")
+    school_id = school.id
+    grant_board_access(user, school)
     qs = InitiativeQuerySet(items=[], total=0, completed=0)
     monkeypatch.setattr(api_governance.StrategicInitiative, "objects", FakeManager(qs))
     request = authenticated_get(factory, user, reverse("board-initiatives"), school_id)
@@ -282,7 +284,9 @@ def test_initiative_summary_uses_zero_completion_rate_for_empty_tenant(monkeypat
 
 
 def test_board_trends_scopes_fields_and_orders_ascending(monkeypatch, factory, user):
-    school_id = uuid4()
+    school = School.objects.create(name="Authorized board testing")
+    school_id = school.id
+    grant_board_access(user, school)
     calls = []
     rows = [
         {
@@ -307,6 +311,25 @@ def test_board_trends_scopes_fields_and_orders_ascending(monkeypatch, factory, u
         ("month", "revenue", "enrollment", "discipline_incidents", "financial_aid_awards"),
     ) in calls
     assert ("order_by", ("month",)) in calls
+
+
+@pytest.mark.parametrize("view,path_name", [
+    (api_governance.download_board_packet, "board-packet-download"),
+    (api_governance.compass_executive, "board-compass"),
+    (api_governance.initiative_summary, "board-initiatives"),
+    (api_governance.board_trends, "board-trends"),
+])
+def test_board_endpoints_deny_ungranted_or_other_school_access(factory, user, view, path_name):
+    school_a = School.objects.create(name="Board Authority A")
+    school_b = School.objects.create(name="Board Authority B")
+    grant_board_access(user, school_a)
+    ungranted = view(authenticated_get(factory, user, reverse(path_name), school_b.id))
+    assert ungranted.status_code in (403, 404)
+    unauthorized_user = get_user_model().objects.create_user(
+        username=f"no-board-{uuid4().hex[:8]}", password="Passw0rd!"
+    )
+    no_grant = view(authenticated_get(factory, unauthorized_user, reverse(path_name), school_a.id))
+    assert no_grant.status_code in (403, 404)
 
 
 def test_public_roadmap_filters_visible_statuses_without_authentication(monkeypatch, factory):
