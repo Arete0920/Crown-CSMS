@@ -6,7 +6,7 @@ See docs/accounting/CASH_FORECAST_SOURCE_CONTRACT.md before constructing them.
 """
 from dataclasses import dataclass
 from datetime import date, timedelta
-from decimal import Decimal, localcontext
+from decimal import Context, Decimal, localcontext
 from uuid import UUID
 
 ZERO = Decimal("0.00")
@@ -153,8 +153,7 @@ def calculate_reviewed_cash(*, user, school, snapshot: Snapshot) -> Calculation:
 
 def _calculate(s):
     # Caller Decimal context must not change financial arithmetic.
-    with localcontext() as context:
-        context.prec = 40
+    with localcontext(Context(prec=40)):
         return _validate_and_roll_forward(s)
 
 

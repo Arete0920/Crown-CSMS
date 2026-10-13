@@ -1,6 +1,6 @@
 from dataclasses import replace
 from datetime import date, timedelta
-from decimal import Decimal, localcontext
+from decimal import Decimal, Inexact, localcontext
 from uuid import uuid4
 
 import pytest
@@ -267,3 +267,23 @@ def test_caller_decimal_precision_does_not_round_cash(finance):
     with localcontext() as context:
         context.prec = 2
         assert run(finance, s) == expected
+
+
+def test_caller_decimal_traps_do_not_bypass_not_ready(finance):
+    s = sample(finance[1])
+    invalid = replace(s, opening=replace(s.opening, holds=D("0.001")))
+    with localcontext() as context:
+        context.traps[Inexact] = True
+        blocked(finance, invalid, "INVALID_OPENING_AMOUNTS")
+
+
+def test_multiple_remaining_installments_share_one_net_charge(finance):
+    s = sample(finance[1])
+    first = replace(s.commitments[0], amount=D("100.01"))
+    second = replace(first, source_id="installment-2", due_on=START + timedelta(days=7), amount=D("199.99"))
+    coverage = (replace(s.coverage[0], count=2),) + s.coverage[1:]
+    result = run(finance, replace(s, commitments=(first, second) + s.commitments[1:], coverage=coverage))
+    assert result.status == "INPUTS_VALIDATED"
+    assert result.weeks[0].collections == D("100.01")
+    assert result.weeks[1].collections == D("199.99")
+    assert result.weeks[-1].closing == D("250.00")
