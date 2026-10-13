@@ -15,8 +15,8 @@ Work from one isolated branch for one coherent outcome. Do not commit directly t
 ## Supported toolchain
 
 - Python: 3.12
-- Node.js: 20 LTS
-- npm: use the version bundled with the supported Node 20 runtime unless the lockfile requires otherwise
+- Node.js: 22.23.3 (see `.nvmrc`); dashboards also support `^24.15.0 || >=26.0.0`
+- npm: use the version bundled with the supported Node runtime unless the lockfile requires otherwise
 
 Version marker files at the repository root are the local-development defaults. CI workflow configuration remains the execution authority for each job.
 
