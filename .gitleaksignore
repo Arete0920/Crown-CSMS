@@ -536,3 +536,8 @@ d13ea3472864c00ab82f52b8f6ed3e74efb08451:backend/signals/seed.py:generic-api-key
 d13ea3472864c00ab82f52b8f6ed3e74efb08451:backend/signals/seed.py:generic-api-key:47
 f608f759cefec6461c2d2af36d779cceb8763b61:crown_audit_dump.txt:generic-api-key:152109
 f608f759cefec6461c2d2af36d779cceb8763b61:crown_audit_dump.txt:generic-api-key:152116
+
+# PR #240: public SPKI DER digest, independently reproducible from public PEM.
+# Adjudication: docs/security/ED25519_TRUST_CONSUMER_REVIEW_20261012.md
+# Exact historical finding only; no rule/path/current-tree exclusion.
+f101476a3138f02aa6ea192dd3e69df51d3fa1db:docs/security/ED25519_TRUST_CONSUMER_REVIEW_20261012.md:generic-api-key:49

@@ -190,6 +190,7 @@ def test_parent_only_sees_linked_students():
     household_b = Household.objects.create(school_id=school.id, name="Household B")
 
     Guardian.objects.create(
+        account=user,
         school_id=school.id,
         household=household_a,
         first_name="Pat",
