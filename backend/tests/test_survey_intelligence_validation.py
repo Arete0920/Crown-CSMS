@@ -75,3 +75,32 @@ def test_unknown_question_type_is_denied():
 
 def test_optional_text_may_be_omitted():
     assert validate_answers([q("memo", "text", required=False)], {}) == {}
+
+
+@pytest.mark.parametrize("kind,choices,required", [
+    ("script", [], False),
+    ({"unexpected": "kind"}, [], False),
+    (["text"], [], False),
+    ("choice", [], False),
+    ("choice", ["only"], False),
+    ("choice", ["duplicate", "duplicate"], False),
+    ("choice", ["valid", 1], False),
+    ("choice", [["nested"], ["values"]], False),
+    ("choice", {"first": "one", "second": "two"}, False),
+    ("choice", "first,second", False),
+    ("multi", ["valid", " "], False),
+    ("multi", ["valid", "x" * 121], False),
+    ("multi", [str(i) for i in range(41)], False),
+    ("text", ["unexpected"], False),
+    ("boolean", [], "false"),
+    ("scale", [], 0),
+])
+def test_malformed_optional_instrument_is_rejected_even_without_answers(kind, choices, required):
+    question = SimpleNamespace(key="optional", question_type=kind, choices=choices, required=required)
+    with pytest.raises(SurveyAnswerValidationError) as exc:
+        validate_answers([question], {})
+    assert "optional" in exc.value.errors
+
+
+def test_valid_optional_choice_can_be_omitted():
+    assert validate_answers([q("optional", "choice", choices=["one", "two"], required=False)], {}) == {}

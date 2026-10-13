@@ -35,6 +35,29 @@ def validate_answers(questions, submitted):
     if len(lookup) > 100:
         raise SurveyAnswerValidationError({"instrument": "Survey exceeds the allowed question count."})
 
+    # Validate every definition before considering missing optional answers.
+    # An omitted answer must not make an invalid instrument publishable.
+    instrument_errors = {}
+    for key, question in lookup.items():
+        kind = getattr(question, "question_type", None)
+        choices = getattr(question, "choices", [])
+        required = getattr(question, "required", False)
+        if not isinstance(kind, str) or kind not in {"scale", "choice", "multi", "boolean", "text"}:
+            instrument_errors[key] = "Unsupported question type."
+        elif type(required) is not bool:
+            instrument_errors[key] = "Required must be a boolean."
+        elif not isinstance(choices, list):
+            instrument_errors[key] = "Choices must be an array."
+        elif kind in {"choice", "multi"}:
+            if (not 2 <= len(choices) <= 40
+                or any(not isinstance(option, str) or not 1 <= len(option.strip()) <= 120 for option in choices)
+                or len(set(choices)) != len(choices)):
+                instrument_errors[key] = "Provide 2 to 40 distinct text choices."
+        elif choices:
+            instrument_errors[key] = "Choices are not allowed for this question type."
+    if instrument_errors:
+        raise SurveyAnswerValidationError(instrument_errors)
+
     errors = {key: "Unknown question." for key in submitted if key not in lookup}
     normalized = {}
 
