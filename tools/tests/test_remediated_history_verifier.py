@@ -1,11 +1,19 @@
 """Real Git fixtures for the security history verifier; no private keys used."""
 import pathlib
+import importlib.util
 import subprocess
+import sys
 import tempfile
 import unittest
+from unittest import mock
 
 
 VERIFIER = pathlib.Path(__file__).resolve().parents[1] / "verify_remediated_git_bundle.sh"
+ARCHIVER = VERIFIER.with_name("create_verified_git_bundle.py")
+FORBIDDEN_PATH = (
+    "solomon_governance_c1/governance/c1/runtime/audit_pack/"
+    "20260515T185051Z/crypto_attestation/ed25519_private_key_DO_NOT_SHARE.pem"
+)
 
 
 class HistoryVerifierTests(unittest.TestCase):
@@ -81,6 +89,67 @@ class HistoryVerifierTests(unittest.TestCase):
         self.git("update-ref", "refs/pull/7/head", dirty)
         self.git("reset", "--hard", clean)
         self.assert_rejected(self.verify())
+
+    def archive(self, repo=None, output=None):
+        return subprocess.run(
+            [sys.executable, str(ARCHIVER), "--repo", str(repo or self.repo),
+             "--output", str(output or self.root / "export/archive.bundle")],
+            capture_output=True, text=True,
+        )
+
+    def test_archive_restores_clean_history(self):
+        output = self.root / "export/archive.bundle"
+        self.assertEqual(self.archive(output=output).returncode, 0)
+        result = subprocess.run(
+            ["bash", str(VERIFIER), "--bundle", str(output),
+             "--forbidden-path", FORBIDDEN_PATH], capture_output=True, text=True,
+        )
+        self.assertEqual(result.returncode, 0)
+
+    def test_archive_blocks_deleted_exposure_before_creating_output(self):
+        path = self.repo / FORBIDDEN_PATH
+        path.parent.mkdir(parents=True)
+        path.write_text("ordinary fixture text; no private material\n")
+        self.commit()
+        path.unlink()
+        self.commit()
+        self.assertNotEqual(self.archive().returncode, 0)
+        self.assertFalse((self.root / "export").exists())
+
+    def test_archive_blocks_shallow_history(self):
+        shallow = self.root / "shallow"
+        self.git("clone", "-q", "--depth", "1", self.repo.as_uri(), str(shallow))
+        self.assertNotEqual(self.archive(repo=shallow).returncode, 0)
+        self.assertFalse((self.root / "export").exists())
+
+    def test_archive_never_overwrites_existing_output(self):
+        output = self.root / "existing.bundle"
+        output.write_bytes(b"preserve existing evidence")
+        self.assertNotEqual(self.archive(output=output).returncode, 0)
+        self.assertEqual(output.read_bytes(), b"preserve existing evidence")
+
+    def test_archive_rejects_history_introduced_during_capture(self):
+        spec = importlib.util.spec_from_file_location("archive_guard", ARCHIVER)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        real_run = subprocess.run
+
+        def drift_before_capture(args, **kwargs):
+            if args[:5] == ["git", "-C", str(self.repo), "bundle", "create"]:
+                path = self.repo / FORBIDDEN_PATH
+                path.parent.mkdir(parents=True)
+                path.write_text("ordinary drift fixture; no private material\n")
+                real_run(["git", "add", "."], cwd=self.repo, check=True, capture_output=True)
+                real_run(["git", "commit", "-qm", "fixture drift"],
+                         cwd=self.repo, check=True, capture_output=True)
+            return real_run(args, **kwargs)
+
+        output = self.root / "export/archive.bundle"
+        with mock.patch.object(module.subprocess, "run", side_effect=drift_before_capture):
+            with self.assertRaises(subprocess.CalledProcessError):
+                module.create_bundle(self.repo, output)
+        self.assertFalse(output.exists())
+        self.assertEqual(list(output.parent.iterdir()), [])
 
 
 if __name__ == "__main__":

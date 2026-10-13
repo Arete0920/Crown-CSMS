@@ -270,11 +270,15 @@ function Invoke-Phase3 {
     git remote -v 2>&1 | Set-Content -Path $gitRemotePath -Encoding utf8
 
     try {
-        git bundle create "$bundlePath" --all 2>&1 | Out-Null
+        $archiveGuard = Join-Path $Paths.Root "tools\create_verified_git_bundle.py"
+        python "$archiveGuard" --repo "$($Paths.Root)" --output "$bundlePath"
+        if ($LASTEXITCODE -ne 0) { throw "History-verified archive creation failed." }
         git bundle verify "$bundlePath" 2>&1 | Set-Content -Path $bundleVerify -Encoding utf8
+        if ($LASTEXITCODE -ne 0) { throw "Git bundle structural verification failed." }
     }
     catch {
         $_ | Out-String | Set-Content -Path $bundleVerify -Encoding utf8
+        throw
     }
 
     $archiveInputs = @(

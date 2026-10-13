@@ -139,4 +139,12 @@ Record:
 
 ## Closure boundary
 
+The phase-3 archive script uses `tools/create_verified_git_bundle.py` to reject
+known forbidden history before creating an ordinary bundle and to verify the
+restored bundle before publication. Any verification or native-command failure
+stops that archive path. It is not a substitute for encrypted controlled
+preservation, key retirement, all-ref secret scanning or external-distribution
+acceptance. Do not use ordinary archive creation to preserve exposed history;
+use the separately authorized custody procedure above.
+
 Issue #104 must not close based only on this runbook, a redacted current-tree file, or a green pull request. Closure requires operational retirement of the key, verified rewritten refs, replacement of distributable artifacts, and a clean remediated bundle.
