@@ -52,17 +52,32 @@ Before rewriting refs, create one encrypted, access-controlled preservation copy
 
 ### 4. Rewrite distributable history
 
-Perform this operation from a clean maintenance clone with all intended branches and tags fetched. Coordinate a repository maintenance window before changing shared refs.
+Perform this operation from a clean, restricted maintenance clone with all intended branches, tags, and GitHub-advertised pull-request refs fetched. Coordinate a repository maintenance window before changing shared refs. Use `git-filter-repo` **2.47 or later** so `--sensitive-data-removal` can record the affected PR refs and the first changed commits required by GitHub Support.
 
 ```bash
 git clone --mirror https://github.com/Arete0920/Crown-CSMS.git Crown-CSMS-remediation.git
 cd Crown-CSMS-remediation.git
 
 git filter-repo \
+  --sensitive-data-removal \
   --path 'solomon_governance_c1/governance/c1/runtime/audit_pack/20260515T185051Z/crypto_attestation/ed25519_private_key_DO_NOT_SHARE.pem' \
   --invert-paths \
   --force
+
+# A bare mirror stores filter-repo metadata here, not under .git/.
+test -f filter-repo/changed-refs || { echo "ERROR: missing changed-ref report" >&2; exit 1; }
+python - <<'PY'
+from pathlib import Path
+changed = Path("filter-repo/changed-refs").read_text(encoding="utf-8").splitlines()
+affected = sorted(ref for ref in changed
+                  if ref.startswith("refs/pull/") and ref.endswith("/head"))
+print(f"affected_pull_request_count={len(affected)}")
+for ref in affected:
+    print(ref)
+PY
 ```
+
+Preserve **sanitized** filter-repo output containing `NOTE: First Changed Commit(s)`, the changed-ref manifest, and any orphaned-Git-LFS notice in restricted evidence. Do not attach or publish the pre-remediation Git objects or raw private-key material. The affected-PR count is the *changed* PR-head count reported by the rewrite, not the total advertised PR-ref count. Compare exact branch/tag/PR names and OIDs immediately before maintenance; re-run the complete preflight if they drift.
 
 Do not push immediately. Run all verification steps first.
 
@@ -104,6 +119,22 @@ any differs. The legacy source-locked rewrite runner is not approval for the
 current repository and its authorization checks must not be bypassed. Include
 server-controlled PR refs in the disposition plan; coordinate hosting-provider
 cleanup when ordinary branch/tag maintenance cannot remove them.
+
+### GitHub-hosted pull refs and cached-object removal
+
+GitHub-controlled `refs/pull/*` references are read-only to ordinary branch/tag pushes. A verified rewrite of `main` and owner-managed refs alone does **not** remove those server references or cached commit views. Following a successful authorized rewrite of every owner-writable affected ref (and confirmation that forks do not retain the exposed material), submit a private request through the [GitHub Support portal](https://support.github.com/) using the documented [sensitive-data removal procedure](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/removing-sensitive-data-from-a-repository).
+
+Supply only sanitized evidence:
+
+- repository `Arete0920/Crown-CSMS` and source/rewrite maintenance identities;
+- the **affected** PR-head count from `filter-repo/changed-refs`, not the number of all PR refs;
+- the `First Changed Commit(s)` emitted by `git-filter-repo --sensitive-data-removal`;
+- any orphaned-LFS-object report requested by Support, with controlled handling;
+- evidence that owner-managed refs are rewritten and that remaining PR/cached refs are the unresolved GitHub-hosted copies.
+
+Request adjudication of affected PR refs, server garbage collection, and cached views. GitHub Support determines eligibility and may decline assistance when credential rotation sufficiently mitigates the risk. The repository owner must record the Support case identifier, their disposition, and independently verify the resulting authoritative history. Do not claim deletion or completion simply from filing a support ticket.
+
+**Impact:** GitHub notes that affected closed-PR diff views may be lost and commit identities change; freeze merges and notify collaborators before the authorized maintenance window. The legacy source-locked runner is not suitable for the current refs and must not be used as current authorization. The GitHub integration's inability to read protected-branch settings is not proof protections are absent; the owner must inspect those settings independently.
 
 Afterward:
 
