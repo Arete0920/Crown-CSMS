@@ -145,7 +145,7 @@ class HistoryVerifierTests(unittest.TestCase):
         real_run = subprocess.run
 
         def drift_before_capture(args, **kwargs):
-            if args[:5] == ["git", "-C", str(self.repo), "bundle", "create"]:
+            if args[:2] == ["git", "-C"] and args[3:5] == ["bundle", "create"]:\n                # Windows resolves TEMP short-path aliases, so match the Git operation.
                 path = self.repo / FORBIDDEN_PATH
                 path.parent.mkdir(parents=True)
                 path.write_text("ordinary drift fixture; no private material\n")
