@@ -121,7 +121,7 @@ class Calculation:
 def _money(value):
     # Reject binary floats, NaN/infinity, sub-cent facts and excessive magnitudes.
     return (isinstance(value, Decimal) and value.is_finite()
-            and abs(value) < Decimal("1000000000000")
+            and value.copy_abs() < Decimal("1000000000000")
             and value == value.quantize(CENT))
 
 
@@ -162,8 +162,17 @@ def _validate_and_roll_forward(s):
     if (not isinstance(s.school_id, UUID) or s.currency != "USD"
             or not _day(s.start) or not _day(s.evaluated_on)):
         return Calculation("NOT_READY", ("INVALID_SCOPE_OR_CUTOFF",))
-    cutoff = s.start - timedelta(days=1)
-    end = s.start + timedelta(days=91)
+    try:
+        cutoff = s.start - timedelta(days=1)
+        end = s.start + timedelta(days=91)
+    except OverflowError:
+        return Calculation("NOT_READY", ("INVALID_SCOPE_OR_CUTOFF",))
+    for rows, row_type in (
+        (s.coverage, Coverage), (s.receivables, Receivable),
+        (s.commitments, Commitment), (s.payments, SettledPayment),
+    ):
+        if type(rows) is not tuple or any(not isinstance(row, row_type) for row in rows):
+            return Calculation("NOT_READY", ("INVALID_INPUT_SHAPE",))
     if not cutoff <= s.evaluated_on <= cutoff + timedelta(days=7):
         errors.add("STALE_SNAPSHOT")
 
@@ -197,6 +206,9 @@ def _validate_and_roll_forward(s):
     coverage = {}
     for c in s.coverage:
         evidence(c.evidence)
+        if not isinstance(c.kind, str):
+            errors.add("INVALID_OR_DUPLICATE_COVERAGE")
+            continue
         if c.kind not in KINDS or c.kind in coverage:
             errors.add("INVALID_OR_DUPLICATE_COVERAGE")
         coverage[c.kind] = c
@@ -210,8 +222,10 @@ def _validate_and_roll_forward(s):
     invoices = set()
     for r in s.receivables:
         evidence(r.evidence)
-        if (not _text(r.invoice_id) or not _text(r.charge_id)
-                or r.invoice_id in invoices or r.charge_id in receivables):
+        if not _text(r.invoice_id) or not _text(r.charge_id):
+            errors.add("DUPLICATE_OR_UNLINKED_RECEIVABLE")
+            continue
+        if r.invoice_id in invoices or r.charge_id in receivables:
             errors.add("DUPLICATE_OR_UNLINKED_RECEIVABLE")
         invoices.add(r.invoice_id)
         receivables[r.charge_id] = r
@@ -225,7 +239,7 @@ def _validate_and_roll_forward(s):
     obligations = set()
     for c in s.commitments:
         evidence(c.evidence)
-        if c.kind not in KINDS:
+        if not isinstance(c.kind, str) or c.kind not in KINDS:
             errors.add("NONCANONICAL_CASH_SOURCE")
             continue
         if c.source_model != SOURCE_MODELS[c.kind]:
@@ -241,6 +255,7 @@ def _validate_and_roll_forward(s):
             continue
         if not _text(c.source_id) or not _text(c.obligation_id):
             errors.add("MISSING_CANONICAL_IDENTITY")
+            continue
         identity = (c.kind, c.source_id)
         if identity in identities:
             errors.add("DUPLICATE_CASH_EVENT")
@@ -272,14 +287,16 @@ def _validate_and_roll_forward(s):
     net = ZERO
     for p in s.payments:
         evidence(p.evidence)
-        if (not _text(p.payment_id) or not _text(p.provider_identity)
-                or p.payment_id in payment_ids or p.provider_identity in provider_ids):
+        if not _text(p.payment_id) or not _text(p.provider_identity):
+            errors.add("DUPLICATE_OR_UNIDENTIFIED_SETTLEMENT")
+            continue
+        if p.payment_id in payment_ids or p.provider_identity in provider_ids:
             errors.add("DUPLICATE_OR_UNIDENTIFIED_SETTLEMENT")
         payment_ids.add(p.payment_id)
         provider_ids.add(p.provider_identity)
         if not _day(p.settled_on) or p.settled_on > cutoff:
             errors.add("UNSETTLED_OR_AFTER_CUTOFF_PAYMENT")
-        if p.state not in {"settled", "partially_refunded", "refunded"}:
+        if not isinstance(p.state, str) or p.state not in {"settled", "partially_refunded", "refunded"}:
             errors.add("UNSETTLED_OR_REVERSED_PAYMENT")
         if (not _money(p.amount) or not _money(p.refunded)
                 or p.amount <= ZERO or not ZERO <= p.refunded <= p.amount):

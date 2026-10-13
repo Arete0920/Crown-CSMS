@@ -287,3 +287,51 @@ def test_multiple_remaining_installments_share_one_net_charge(finance):
     assert result.weeks[0].collections == D("100.01")
     assert result.weeks[1].collections == D("199.99")
     assert result.weeks[-1].closing == D("250.00")
+
+
+def test_caller_decimal_exponents_and_traps_do_not_change_validation(finance):
+    from decimal import Inexact, Rounded
+
+    s = sample(finance[1])
+    expected = run(finance, s)
+    with localcontext() as context:
+        context.Emax = 2
+        context.Emin = -2
+        context.traps[Inexact] = True
+        context.traps[Rounded] = True
+        assert run(finance, s) == expected
+        invalid = replace(s, opening=replace(s.opening, holds=D("0.001")))
+        blocked(finance, invalid, "INVALID_OPENING_AMOUNTS")
+
+
+@pytest.mark.parametrize("field,value", [
+    ("coverage", None), ("coverage", (None,)),
+    ("receivables", ({},)), ("commitments", (None,)),
+    ("payments", (None,)), ("payments", []),
+])
+def test_malformed_collection_shapes_are_not_ready(finance, field, value):
+    blocked(finance, replace(sample(finance[1]), **{field: value}), "INVALID_INPUT_SHAPE")
+
+
+@pytest.mark.parametrize("field,changes,reason", [
+    ("coverage", {"kind": []}, "INVALID_OR_DUPLICATE_COVERAGE"),
+    ("receivables", {"invoice_id": []}, "DUPLICATE_OR_UNLINKED_RECEIVABLE"),
+    ("commitments", {"kind": []}, "NONCANONICAL_CASH_SOURCE"),
+    ("commitments", {"source_id": []}, "MISSING_CANONICAL_IDENTITY"),
+    ("payments", {"provider_identity": []}, "DUPLICATE_OR_UNIDENTIFIED_SETTLEMENT"),
+    ("payments", {"state": []}, "UNSETTLED_OR_REVERSED_PAYMENT"),
+])
+def test_unhashable_source_identifiers_are_not_ready(finance, field, changes, reason):
+    s = sample(finance[1])
+    rows = getattr(s, field)
+    blocked(finance, replace(s, **{field: (replace(rows[0], **changes),) + rows[1:]}), reason)
+
+
+@pytest.mark.parametrize("start", [date.min, date.max])
+def test_unrepresentable_horizon_is_not_ready(finance, start):
+    blocked(finance, replace(sample(finance[1]), start=start, evaluated_on=start), "INVALID_SCOPE_OR_CUTOFF")
+
+
+def test_excessive_decimal_exponent_is_not_ready(finance):
+    s = sample(finance[1])
+    blocked(finance, replace(s, opening=replace(s.opening, bank_cash=D("1E1000000"))), "INVALID_OPENING_AMOUNTS")
