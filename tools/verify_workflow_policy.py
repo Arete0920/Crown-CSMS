@@ -22,6 +22,11 @@ PRODUCTION_DEPLOY_WORKFLOWS = {
     pathlib.Path(".github/workflows/deploy-prod.yml"),
     pathlib.Path(".github/workflows/deploy-prod-dispatch.yml"),
 }
+# Only these known image-mutating workflows may share the production mutex.
+PRODUCTION_IMAGE_MUTATION_WORKFLOWS = PRODUCTION_DEPLOY_WORKFLOWS | {
+    pathlib.Path(".github/workflows/prod-rollback-on-failure.yml"),
+    pathlib.Path(".github/workflows/prod-immutable-rollback-drill.yml"),
+}
 
 CANONICAL_WORKFLOW_FILES = {
     "accounting-verification.yml",
@@ -309,7 +314,7 @@ def main() -> int:
                 shared_pair = {existing_rel, rel}
                 if not (
                     group == PRODUCTION_DEPLOY_GROUP
-                    and shared_pair == PRODUCTION_DEPLOY_WORKFLOWS
+                    and shared_pair <= PRODUCTION_IMAGE_MUTATION_WORKFLOWS
                 ):
                     all_errors.append(
                         f"{rel}: duplicate top-level concurrency group '{group}' also used by {existing_rel}"
@@ -318,11 +323,11 @@ def main() -> int:
                 groups[group] = wf
 
     if not targets:
-        for rel in sorted(PRODUCTION_DEPLOY_WORKFLOWS):
+        for rel in sorted(PRODUCTION_IMAGE_MUTATION_WORKFLOWS):
             actual_group = workflow_groups.get(rel)
             if actual_group != PRODUCTION_DEPLOY_GROUP:
                 all_errors.append(
-                    f"{rel}: production deployment workflow must use shared concurrency group "
+                    f"{rel}: production image mutation workflow must use shared concurrency group "
                     f"'{PRODUCTION_DEPLOY_GROUP}' (found: {actual_group!r})"
                 )
 
