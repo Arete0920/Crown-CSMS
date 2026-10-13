@@ -177,3 +177,7 @@ def test_financial_statements_and_budget_actuals_derive_from_journal():
     assert variance["budget_total"] == Decimal("120.00")
     assert variance["actual_total"] == Decimal("100.00")
     assert variance["variance"] == Decimal("20.00")
+    assert variance["rows"][0]["account_type"] == "EXPENSE"
+    assert variance["rows"][0]["deviation_amount"] == Decimal("-20.00")
+    assert variance["rows"][0]["deviation_percent"] == Decimal("-16.67")
+    assert variance["rows"][0]["favorability"] == "FAVORABLE"

@@ -4,6 +4,7 @@ from django.db.models import Sum
 from django.db.models.functions import Coalesce
 
 from apps.accounting.models.institutional import AccountingDimension, Budget
+from apps.accounting.variance_analysis import explain_variance
 from journal.models import JournalLine
 
 ZERO = Decimal("0.00")
@@ -144,6 +145,12 @@ def budget_vs_actual(*, budget: Budget):
                 "budget": line.amount,
                 "actual": actual,
                 "variance": line.amount - actual,
+                "account_type": line.account.account_type,
+                **explain_variance(
+                    account_type=line.account.account_type,
+                    budget=line.amount,
+                    actual=actual,
+                ),
             }
         )
     return {

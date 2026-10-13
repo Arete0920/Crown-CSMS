@@ -8,8 +8,10 @@ import re
 
 from django.db import transaction
 from django.http import JsonResponse
-from django.views.decorators.http import require_http_methods
+from drf_spectacular.utils import OpenApiTypes, extend_schema
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.exceptions import APIException
+from rest_framework.permissions import IsAuthenticated
 
 from core.models import School
 from core.permissions import user_has_permission
@@ -106,7 +108,9 @@ def _validated_draft_payload(request):
     return {"name": name.strip(), "purpose": purpose, "questions": validated}, None
 
 
-@require_http_methods(["GET", "POST"])
+@extend_schema(responses=OpenApiTypes.OBJECT)
+@api_view(["GET", "POST"])
+@permission_classes([IsAuthenticated])
 def survey_drafts(request):
     school, error = _authorize(request, "survey.view" if request.method == "GET" else "survey.edit")
     if error is not None:
@@ -137,7 +141,9 @@ def survey_drafts(request):
     return JsonResponse(_serialize(survey), status=201)
 
 
-@require_http_methods(["GET"])
+@extend_schema(responses=OpenApiTypes.OBJECT)
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
 def survey_draft_detail(request, survey_id):
     school, error = _authorize(request, "survey.view")
     if error is not None:

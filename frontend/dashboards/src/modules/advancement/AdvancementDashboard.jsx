@@ -75,6 +75,35 @@ export default function AdvancementDashboard() {
         ))}
       </section>
 
+      {/* Existing cultivation follow-ups; this view never sends outreach. */}
+      <section aria-label="Weekly Development Actions" style={{ marginBottom: 24 }}>
+        <h3>Development Actions: Overdue and Next 7 Days</h3>
+        {!data.weekly_actions?.length ? (
+          <p>No scheduled cultivation follow-ups due in this period.</p>
+        ) : (
+          <table aria-label="Development Follow-up Table" style={{ width: "100%", borderCollapse: "collapse" }}>
+            <thead><tr>
+              <th scope="col" style={TH}>Prospect</th>
+              <th scope="col" style={TH}>Action</th>
+              <th scope="col" style={TH}>Due Date</th>
+              <th scope="col" style={TH}>Assigned To</th>
+              <th scope="col" style={TH}>Status</th>
+            </tr></thead>
+            <tbody>
+              {data.weekly_actions.map((item) => (
+                <tr key={item.id}>
+                  <td style={TD}>{item.donor_name || "Unlinked prospect"}</td>
+                  <td style={TD}>{item.action}</td>
+                  <td style={TD}>{item.due_date}</td>
+                  <td style={TD}>{item.owner || "Unassigned"}</td>
+                  <td style={TD}>{item.overdue ? "Overdue" : "Upcoming"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </section>
+
       {/* Top 10 Donors */}
       <section aria-label="Top Donors" style={{ marginBottom: 24 }}>
         <h3>Top 10 Donors</h3>

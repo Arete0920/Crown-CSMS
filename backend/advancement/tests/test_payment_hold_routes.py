@@ -79,7 +79,8 @@ class ExternalPaymentHoldRouteTest(SimpleTestCase):
             ("post", "advancement-pledge-cancel", {"pledge_id": self.sample_id}),
             ("post", "advancement-qr-checkin", {}),
         ]
-        user = SimpleNamespace(is_authenticated=True)
+        # DRF session authentication requires the active-user attribute.
+        user = SimpleNamespace(is_authenticated=True, is_active=True)
         school = SimpleNamespace(id=self.sample_id)
 
         with patch("core.permissions.user_has_permission", return_value=False):

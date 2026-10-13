@@ -1,8 +1,8 @@
 /**
  * BoardCompassCard — Crown Compass 2.0
  *
- * Renders deterministic composite health indexes (0..100) as labeled progress
- * bars, plus highlights and watchlist narrative snippets.
+ * Renders assessed metrics and explicit unavailable states, plus highlights
+ * and watchlist narrative snippets.
  *
  * Props:
  *   compass  — BoardExecutiveMetric object from /api/v1/signals/board/compass/
@@ -12,21 +12,31 @@
 import { Box, Chip, Divider, Grid, LinearProgress, Typography } from "@mui/material";
 import BoardCard from "./BoardCard.jsx";
 
-function ScoreBar({ label, value, invert = false }) {
-  const v = typeof value === "number" ? value : 0;
-  const displayed = invert ? 100 - v : v;
-
+function ScoreBar({ label, value, percentage = false }) {
+  const assessed = typeof value === "number" && Number.isFinite(value) && value >= 0 && value <= 100;
+  if (!assessed) {
+    return (
+      <Box sx={{ mb: 2, display: "flex", justifyContent: "space-between" }}>
+        <Typography variant="body2">{label}</Typography>
+        <Chip size="small" label="Not assessed" />
+      </Box>
+    );
+  }
+  const v = value;
+  // A raw percentage is not a validated institutional health grade.
   let color = "primary";
-  if (displayed >= 80) color = "success";
-  else if (displayed < 50) color = "error";
+  if (!percentage) {
+    if (v >= 80) color = "success";
+    else if (v < 50) color = "error";
+  }
 
   return (
     <Box sx={{ mb: 2 }}>
       <Box sx={{ display: "flex", justifyContent: "space-between", mb: 0.5 }}>
         <Typography variant="body2">{label}</Typography>
-        <Chip size="small" label={`${displayed}/100`} />
+        <Chip size="small" label={percentage ? `${v}%` : `${v}/100`} />
       </Box>
-      <LinearProgress variant="determinate" value={displayed} color={color} />
+      <LinearProgress variant="determinate" value={v} color={color} />
     </Box>
   );
 }
@@ -43,9 +53,9 @@ export default function BoardCompassCard({ compass }) {
           <ScoreBar label="Culture Health"     value={compass.culture_health} />
           <ScoreBar label="Mission Health"     value={compass.mission_health} />
           <ScoreBar
-            label="Retention Risk (lower = better)"
+            label="Aftercare students flagged high risk"
             value={compass.retention_risk}
-            invert
+            percentage
           />
         </Grid>
 
