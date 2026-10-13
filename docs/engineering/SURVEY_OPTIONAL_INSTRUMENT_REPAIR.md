@@ -16,3 +16,9 @@ invitation, legal approval or operational pilot is enabled by this repair.
 Decision owner: repository owner under the configured solo-maintainer path;
 no independent human review is claimed. Rollback: revert this bounded repair.
 The root issue remains open for the collection and operational acceptance work.
+
+Segregation of duties: the product owner is the solo developer and cannot
+self-review or self-approve this work. The control path uses required GitHub
+checks, CI release gates, and the documented solo-developer workaround.
+Repository tooling is not approval authority. Engineering support and evidence
+review remain advisory; no independent human approval is claimed.
