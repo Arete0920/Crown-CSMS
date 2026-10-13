@@ -59,6 +59,15 @@ nonnegative cent amounts. Holds are disjoint from restrictions/designations and
 include encumbrances/reserves in the approved opening reconciliation. A balance
 requiring unsupported overdraft or restriction treatment is NOT_READY.
 
+This slice assumes excluded restrictions/designations/holds remain unavailable
+for the entire horizon. An encumbrance already deducted from opening available
+cash must not also appear as a future disbursement. The trusted adapter must
+prove disjoint exclusions and commitments from the reviewed source inventory;
+self-consistent scalar totals do not prove this. Hold releases, restriction
+drawdowns, overlapping commitments or uncertain release timing require a future
+fund/hold-aware extension and are NOT_READY for this contract. The offline
+validator cannot discover these relationships from opaque reference strings.
+
 Evaluation is cutoff through cutoff + 7 days inclusive; source verification must
 be cutoff through evaluation. Seven days is an offline maximum, not a production
 freshness policy approval. No implicit current-date fallback or FX conversion.
