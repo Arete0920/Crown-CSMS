@@ -39,7 +39,7 @@ Current claims must be supported by current repository evidence, exact-head CI r
 ## Supported development toolchain
 
 - Python 3.12
-- Node.js 20 LTS
+- Node.js 22.23.3 (see `.nvmrc`; Node 24.15+ is also supported by the dashboards)
 
 See [Developer Setup](docs/engineering/DEV_SETUP.md) for the reproducible local workflow.
 
