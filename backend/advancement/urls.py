@@ -82,12 +82,11 @@ router.register(r"impressions", SponsorImpressionViewSet, basename="advancement-
 # implementation intact while enforcing the same persistent tenant-scoped
 # authority at the URL boundary. This avoids broadening self-service checkout
 # routes into staff-only behavior.
-_advancement_summary_authorized = require_permission("advancement.view")(advancement_summary)
 _advancement_pledge_cancel_authorized = require_permission("advancement.edit")(pledge_cancel)
 _advancement_qr_checkin_authorized = require_permission("advancement.edit")(qr_checkin)
 
 urlpatterns = [
-    path("summary/", _advancement_summary_authorized, name="advancement-summary"),
+    path("summary/", advancement_summary, name="advancement-summary"),
     path("metrics/", advancement_metrics, name="advancement-metrics"),
     path("purchase/ticket/", authenticated_post_payment_on_hold, name="advancement-purchase-ticket"),
     path("purchase/store/", authenticated_post_payment_on_hold, name="advancement-purchase-store"),

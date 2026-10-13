@@ -319,7 +319,7 @@ def advancement_metrics(request):
 
 @extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["GET"])
-@permission_classes([IsAuthenticated])
+@permission_classes([CrownModulePermission("advancement.view")])
 def advancement_summary(request):
     """
     GET /advancement/summary/

@@ -23,9 +23,6 @@ class WeeklyActionTests(TestCase):
         permission, _ = CrownPermission.objects.get_or_create(code="advancement.view")
         RolePermission.objects.get_or_create(role_code="HEAD_OF_SCHOOL", permission=permission)
         self.client = APIClient()
-        # The URL permission decorator runs before DRF authentication.
-        # Use the session principal it actually sees; keep school/role grants explicit.
-        self.client.force_login(self.user)
         self.client.force_authenticate(self.user)
         self.url = reverse("advancement-summary")
         self.today = timezone.localdate()
@@ -81,6 +78,24 @@ class WeeklyActionTests(TestCase):
         self.assertEqual([a["id"] for a in actions], [str(outsider.id), str(staff.id)])
         self.assertIsNone(actions[0]["owner"])
         self.assertEqual(actions[1]["owner"], self.user.get_username())
+
+    def test_real_bearer_token_uses_drf_school_permission(self):
+        """The dashboard sends a Bearer token, not a Django session cookie."""
+        from rest_framework_simplejwt.tokens import RefreshToken
+
+        jwt_client = APIClient()
+        jwt_client.credentials(
+            HTTP_AUTHORIZATION=f"Bearer {RefreshToken.for_user(self.user).access_token}",
+            HTTP_X_SCHOOL_ID=str(self.school.id),
+        )
+        allowed = jwt_client.get(self.url)
+        self.assertEqual(allowed.status_code, 200)
+        self.assertEqual(allowed.json()["weekly_actions"], [])
+
+        other = jwt_client.get(
+            self.url, HTTP_X_SCHOOL_ID=str(self.other.id)
+        )
+        self.assertIn(other.status_code, (403, 404))
 
     def test_missing_grant_is_forbidden(self):
         RolePermission.objects.filter(
