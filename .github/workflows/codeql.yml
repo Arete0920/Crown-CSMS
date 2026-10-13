@@ -20,7 +20,7 @@ concurrency:
 
 jobs:
   analyze:
-    needs: remediation-contract
+    needs: [remediation-contract, archive-contract-windows]
     if: always()
     name: Analyze (${{ matrix.language }})
     runs-on: ubuntu-latest
@@ -34,7 +34,10 @@ jobs:
       - name: Require successful history-remediation contract
         env:
           CONTRACT_RESULT: ${{ needs.remediation-contract.result }}
-        run: test "$CONTRACT_RESULT" = success
+          WINDOWS_CONTRACT_RESULT: ${{ needs.archive-contract-windows.result }}
+        run: |
+          test "$CONTRACT_RESULT" = success
+          test "$WINDOWS_CONTRACT_RESULT" = success
 
       - name: Checkout repository
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
@@ -52,6 +55,23 @@ jobs:
         with:
           # Repo-level default setup is enabled; avoid duplicate SARIF upload conflict from advanced workflow runs.
           upload: false
+
+  archive-contract-windows:
+    permissions:
+      contents: read
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact archive source
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Select Git Bash for native archive verification
+        shell: pwsh
+        run: '"C:\Program Files\Git\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append'
+      - name: Verify real Git archive contracts on Windows
+        run: python -m unittest discover -s tools/tests -p test_remediated_history_verifier.py -v
+      - name: Verify the PowerShell archive entry point fails closed
+        shell: pwsh
+        run: ./tools/tests/test_archive_guard_windows.ps1
 
   remediation-contract:
     permissions:
