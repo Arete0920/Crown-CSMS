@@ -83,3 +83,21 @@ def test_short_notice_is_denied_without_state_transition():
     survey.refresh_from_db()
     assert survey.status == "draft"
     assert not SurveyPublication.objects.exists()
+
+
+@pytest.mark.parametrize("choices", [
+    ["one", 2], [["one"], ["two"]], ["one", " "], ["one", "two", "one"],
+])
+def test_invalid_optional_choices_cannot_be_published(choices):
+    school, survey = seed()
+    SurveyQuestion.objects.create(
+        survey=survey, key="optional", prompt="Optional source?",
+        question_type="choice", required=False, choices=choices,
+    )
+    with pytest.raises(PublicationRejected):
+        publish_anonymous_instrument(
+            school_id=school.pk, survey_id=survey.pk, approved_by_user_id=uuid4(), notice=NOTICE,
+        )
+    survey.refresh_from_db()
+    assert survey.status == "draft"
+    assert not SurveyPublication.objects.filter(survey=survey).exists()
