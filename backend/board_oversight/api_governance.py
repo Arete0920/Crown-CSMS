@@ -15,6 +15,10 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.exceptions import NotFound, PermissionDenied
+from core.models import School
+from core.permissions import user_has_permission
+from households.scoping import get_request_school_id
 from drf_spectacular.utils import extend_schema
 from drf_spectacular.types import OpenApiTypes
 
@@ -28,6 +32,18 @@ from board_oversight.services_pdf import generate_board_packet
 from board_oversight.tenant import require_school_id
 
 
+def _authorized_board_school_id(request):
+    """Authorize the exact tenant before returning governance/board information."""
+    header_school_id = require_school_id(request)
+    school_id = get_request_school_id(request, required=True)
+    if school_id != header_school_id:
+        raise NotFound("School not found.")
+    school = School.objects.filter(pk=school_id).first()
+    if school is None or not user_has_permission(request.user, "board.view", school=school):
+        raise PermissionDenied("Board access requires explicit school permission.")
+    return school_id
+
+
 # PDF Board Packet
 
 @extend_schema(responses=OpenApiTypes.OBJECT)
@@ -35,7 +51,7 @@ from board_oversight.tenant import require_school_id
 @permission_classes([IsAuthenticated])
 def download_board_packet(request):
     """Generate and stream a PDF board packet for the caller's school."""
-    school_id = require_school_id(request)
+    school_id = _authorized_board_school_id(request)
     pdf_buffer = generate_board_packet(school_id=school_id)
     if pdf_buffer is None:
         return Response(
@@ -49,40 +65,27 @@ def download_board_packet(request):
 
 # Crown Compass
 
-def _compass_summary(school_id=None) -> dict:
-    """Aggregate health scores across pillars from latest KPI snapshot."""
-    school_label = str(school_id) if school_id else None
+def _compass_summary(school_id) -> dict:
+    """Expose snapshot provenance, never unvalidated institutional scores.
+
+    Raw enrollment, revenue, incident, and aid-award counts do not form a
+    meaningful 0-100 health index without denominators, targets, and review.
+    """
     latest = (
-        BoardKPISnapshot.objects.filter(school_id=school_id).order_by("-month").first()
-        if school_id
-        else BoardKPISnapshot.objects.order_by("-month").first()
+        BoardKPISnapshot.objects.filter(school_id=school_id)
+        .order_by("-month")
+        .first()
     )
-
-    if latest is None:
-        return {
-            "school_id": school_label,
-            "enrollment_health": 0,
-            "financial_health": 0,
-            "discipline_health": 0,
-            "spiritual_life_health": 0,
-            "overall_score": 0,
-            "source": "empty",
-        }
-
-    enrollment_health = max(0, min(100, latest.enrollment))
-    financial_health = max(0, min(100, int(float(latest.revenue) / 1000)))
-    discipline_health = max(0, min(100, 100 - min(latest.discipline_incidents * 2, 100)))
-    spiritual_health = max(0, min(100, latest.financial_aid_awards))
-    overall = round((enrollment_health + financial_health + discipline_health + spiritual_health) / 4)
-
     return {
-        "school_id": school_label,
-        "enrollment_health": enrollment_health,
-        "financial_health": financial_health,
-        "discipline_health": discipline_health,
-        "spiritual_life_health": spiritual_health,
-        "overall_score": overall,
-        "source": str(latest.month),
+        "school_id": str(school_id),
+        "enrollment_health": None,
+        "financial_health": None,
+        "discipline_health": None,
+        "spiritual_life_health": None,
+        "overall_score": None,
+        "source": "unscored_snapshot" if latest else "empty",
+        "source_month": str(latest.month) if latest else None,
+        "calculation_status": "awaiting_validated_metric_definitions",
     }
 
 
@@ -91,7 +94,7 @@ def _compass_summary(school_id=None) -> dict:
 @permission_classes([IsAuthenticated])
 def compass_executive(request):
     """Crown Compass executive summary - overall institutional health scores."""
-    school_id = require_school_id(request)
+    school_id = _authorized_board_school_id(request)
     return Response(_compass_summary(school_id=school_id))
 
 
@@ -102,7 +105,7 @@ def compass_executive(request):
 @permission_classes([IsAuthenticated])
 def initiative_summary(request):
     """Strategic initiative completion rate for the caller's school."""
-    school_id = require_school_id(request)
+    school_id = _authorized_board_school_id(request)
     qs = StrategicInitiative.objects.filter(school_id=school_id)
     total = qs.count()
     completed = qs.filter(status="complete").count()
@@ -126,7 +129,7 @@ def initiative_summary(request):
 @permission_classes([IsAuthenticated])
 def board_trends(request):
     """Monthly KPI trend snapshots for the caller's school."""
-    school_id = require_school_id(request)
+    school_id = _authorized_board_school_id(request)
     data = list(
         BoardKPISnapshot.objects.filter(school_id=school_id)
         .values("month", "revenue", "enrollment", "discipline_incidents", "financial_aid_awards")

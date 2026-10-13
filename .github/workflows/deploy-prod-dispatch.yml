@@ -49,7 +49,7 @@ jobs:
             exit 1
           fi
       - name: Checkout release tag
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ env.DEPLOY_TAG }}
           fetch-depth: 0
@@ -110,7 +110,7 @@ jobs:
           fi
 
       - name: Checkout code
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ needs.resolve-release.outputs.deploy_sha }}
           fetch-depth: 0
@@ -379,7 +379,7 @@ jobs:
           fi
 
       - name: Upload Trivy scan results (SARIF)
-        uses: github/codeql-action/upload-sarif@0daab03d71ff584ef619d027a3fd9146679c5d84 # v3
+        uses: github/codeql-action/upload-sarif@24c54180a607b1449ed407dd24f251e4e9147c8d # v4.38.3
         if: ${{ always() && steps.sarif_gate.outputs.can_upload == 'true' }}
         with:
           sarif_file: 'trivy-results.sarif'
@@ -430,7 +430,7 @@ jobs:
           fi
 
       - name: Checkout code
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ needs.resolve-release.outputs.deploy_sha }}
           fetch-depth: 0

@@ -128,11 +128,17 @@ class SolomonAdapterBaseTests(TestCase):
             request=self.mock_request,
         )
 
-        with patch.object(adapter, "_resolve_context", side_effect=RuntimeError("boom")):
+        sensitive_message = "student@example.test school-secret financial-record"
+        with patch.object(adapter, "_resolve_context", side_effect=RuntimeError(sensitive_message)):
             payload = adapter.get_context(req)
 
         self.assertEqual(payload.status, "error")
-        self.assertEqual(payload.metadata["error_type"], "RuntimeError")
+        self.assertEqual(payload.resources, [])
+        self.assertEqual(payload.playbooks, [])
+        self.assertEqual(payload.context_rules, [])
+        self.assertEqual(payload.metadata, {"error_code": "context_unavailable"})
+        self.assertNotIn(sensitive_message, str(payload.to_dict()))
+        self.assertNotIn("RuntimeError", str(payload.to_dict()))
 
     def test_context_payload_to_dict(self):
         payload = SolomonContextPayload(

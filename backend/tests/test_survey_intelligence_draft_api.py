@@ -75,6 +75,70 @@ def test_non_editor_cannot_create(school_client):
     assert not SurveyDefinition.objects.exists()
 
 
+def bearer_client(user):
+    from rest_framework.test import APIClient
+    from rest_framework_simplejwt.tokens import RefreshToken
+
+    authenticated = APIClient(enforce_csrf_checks=True)
+    authenticated.credentials(
+        HTTP_AUTHORIZATION=f"Bearer {RefreshToken.for_user(user).access_token}"
+    )
+    return authenticated
+
+
+def test_bearer_editor_can_create_list_and_read_an_inactive_draft(school_client):
+    _, school, user = school_client
+    authenticated = bearer_client(user)
+    created = request(authenticated, school, payload())
+    assert created.status_code == 201, created.content
+    survey = SurveyDefinition.objects.get(pk=created.json()["id"])
+    assert not survey.public_enabled and not survey.anonymous_allowed
+    listed = authenticated.get("/api/v1/survey-intelligence/surveys/", HTTP_X_SCHOOL_ID=str(school.pk))
+    assert listed.status_code == 200, listed.content
+    assert [row["id"] for row in listed.json()["results"]] == [str(survey.pk)]
+    detail = authenticated.get(f"/api/v1/survey-intelligence/surveys/{survey.pk}/", HTTP_X_SCHOOL_ID=str(school.pk))
+    assert detail.status_code == 200, detail.content
+    assert detail.json()["id"] == str(survey.pk)
+
+
+def test_bearer_authority_stays_school_and_action_scoped(school_client):
+    _, school, user = school_client
+    authenticated = bearer_client(user)
+    other = School.objects.create(name="Foreign Survey School")
+    # Matching token identity is insufficient to authorize another school.
+    foreign = request(authenticated, other, payload())
+    assert foreign.status_code in (403, 404), foreign.content
+    assert not SurveyDefinition.objects.exists()
+    # Read authority cannot create drafts or enable public collection.
+    RolePermission.objects.filter(role_code="survey_draft_editor_test", permission__code="survey.edit").delete()
+    denied = request(authenticated, school, payload())
+    assert denied.status_code == 403, denied.content
+    assert not SurveyDefinition.objects.exists()
+    listed = authenticated.get("/api/v1/survey-intelligence/surveys/", HTTP_X_SCHOOL_ID=str(school.pk))
+    assert listed.status_code == 200, listed.content
+
+
+def test_bearer_editor_cannot_create_for_inactive_school(school_client):
+    _, school, user = school_client
+    school.is_active = False
+    school.save(update_fields=["is_active"])
+    denied = request(bearer_client(user), school, payload())
+    assert denied.status_code == 403, denied.content
+    assert not SurveyDefinition.objects.exists()
+
+
+def test_session_editor_still_needs_csrf_for_draft_writes(school_client):
+    from rest_framework.test import APIClient
+
+    _, school, user = school_client
+    session = APIClient(enforce_csrf_checks=True)
+    session.force_login(user)
+    denied = request(session, school, payload())
+    assert denied.status_code == 403, denied.content
+    assert b"CSRF" in denied.content
+    assert not SurveyDefinition.objects.exists()
+
+
 @pytest.mark.parametrize("patch", [
     {"name": ""}, {"purpose": "unsupported"},
     {"purpose": []}, {"purpose": {}},
