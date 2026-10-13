@@ -92,9 +92,13 @@ class WeeklyActionTests(TestCase):
         self.assertEqual(allowed.status_code, 200)
         self.assertEqual(allowed.json()["weekly_actions"], [])
 
-        other = jwt_client.get(
-            self.url, HTTP_X_SCHOOL_ID=str(self.other.id)
+        # APIClient.credentials() is applied after per-request kwargs.
+        # Replace its default tenant header rather than accidentally reusing A.
+        jwt_client.credentials(
+            HTTP_AUTHORIZATION=f"Bearer {RefreshToken.for_user(self.user).access_token}",
+            HTTP_X_SCHOOL_ID=str(self.other.id),
         )
+        other = jwt_client.get(self.url)
         self.assertIn(other.status_code, (403, 404))
 
     def test_missing_grant_is_forbidden(self):
