@@ -254,6 +254,10 @@ class BalanceSheetSerializer(serializers.Serializer):
 
 class BudgetVarianceRowSerializer(serializers.Serializer):
     budget_line_id = serializers.UUIDField()
+    account_type = serializers.CharField()
+    deviation_amount = serializers.DecimalField(max_digits=28, decimal_places=2)
+    deviation_percent = serializers.DecimalField(max_digits=28, decimal_places=2, allow_null=True)
+    favorability = serializers.ChoiceField(choices=["FAVORABLE", "UNFAVORABLE", "ON_TARGET", "NOT_ASSESSED"])
     account_code = serializers.CharField()
     account_name = serializers.CharField()
     fund_code = serializers.CharField(allow_blank=True)
