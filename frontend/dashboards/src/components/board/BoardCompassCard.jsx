@@ -1,8 +1,8 @@
 /**
  * BoardCompassCard — Crown Compass 2.0
  *
- * Renders deterministic composite health indexes (0..100) as labeled progress
- * bars, plus highlights and watchlist narrative snippets.
+ * Renders assessed metrics and explicit unavailable states, plus highlights
+ * and watchlist narrative snippets.
  *
  * Props:
  *   compass  — BoardExecutiveMetric object from /api/v1/signals/board/compass/
@@ -13,7 +13,16 @@ import { Box, Chip, Divider, Grid, LinearProgress, Typography } from "@mui/mater
 import BoardCard from "./BoardCard.jsx";
 
 function ScoreBar({ label, value, invert = false }) {
-  const v = typeof value === "number" ? value : 0;
+  const assessed = typeof value === "number" && Number.isFinite(value) && value >= 0 && value <= 100;
+  if (!assessed) {
+    return (
+      <Box sx={{ mb: 2, display: "flex", justifyContent: "space-between" }}>
+        <Typography variant="body2">{label}</Typography>
+        <Chip size="small" label="Not assessed" />
+      </Box>
+    );
+  }
+  const v = value;
   const displayed = invert ? 100 - v : v;
 
   let color = "primary";
@@ -43,7 +52,7 @@ export default function BoardCompassCard({ compass }) {
           <ScoreBar label="Culture Health"     value={compass.culture_health} />
           <ScoreBar label="Mission Health"     value={compass.mission_health} />
           <ScoreBar
-            label="Retention Risk (lower = better)"
+            label="Aftercare Retention Risk (lower = better)"
             value={compass.retention_risk}
             invert
           />

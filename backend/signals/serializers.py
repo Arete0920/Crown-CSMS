@@ -44,6 +44,15 @@ class InterventionActionSerializer(serializers.ModelSerializer):
 
 
 class BoardExecutiveMetricSerializer(serializers.ModelSerializer):
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        # The current engine stores placeholders for these unwired indexes.
+        # They are not assessed health scores, including when stored as zero.
+        for field in ("enrollment_health", "financial_health", "culture_health", "mission_health"):
+            data[field] = None
+        data["calculation_status"] = "awaiting_validated_metric_definitions"
+        return data
+
     class Meta:
         model = BoardExecutiveMetric
         fields = [

@@ -1,0 +1,28 @@
+// @vitest-environment jsdom
+import { cleanup, render, screen } from '@testing-library/react';
+import { afterEach, describe, expect, it } from 'vitest';
+import BoardCompassCard from './BoardCompassCard.jsx';
+
+afterEach(cleanup);
+
+describe('BoardCompassCard metric truth', () => {
+  it('does not turn missing scores or retention into numeric health', () => {
+    render(<BoardCompassCard compass={{ as_of_date: '2026-10-13' }} />);
+    expect(screen.getAllByText('Not assessed')).toHaveLength(5);
+    expect(screen.queryByRole('progressbar')).toBeNull();
+    expect(screen.queryByText('100/100')).toBeNull();
+  });
+
+  it('preserves assessed zero and retention inversion while rejecting invalid scores', () => {
+    render(<BoardCompassCard compass={{
+      as_of_date: '2026-10-13', enrollment_health: 0,
+      financial_health: NaN, culture_health: -1, mission_health: 101,
+      retention_risk: 25,
+    }} />);
+    expect(screen.getByText('0/100')).toBeTruthy();
+    expect(screen.getByText('75/100')).toBeTruthy();
+    expect(screen.getAllByText('Not assessed')).toHaveLength(3);
+    expect(screen.getAllByRole('progressbar')).toHaveLength(2);
+    expect(screen.getByText('Aftercare Retention Risk (lower = better)')).toBeTruthy();
+  });
+});
