@@ -210,6 +210,26 @@ class TestGetContextualSolomonHelp:
         )
         assert len(payload["playbooks"]) == 2
 
+    def test_context_playbooks_reject_unpublished_and_restricted_content(self):
+        _article("public-context", module="privacy-help")
+        _playbook("public-guide", module="privacy-help")
+        _playbook("draft-guide", module="privacy-help", state=HelpArticle.STATE_DRAFT)
+        _playbook("archived-guide", module="privacy-help", state=HelpArticle.STATE_ARCHIVED)
+        _playbook("staff-guide", module="privacy-help", visibility=HelpArticle.VISIBILITY_STAFF)
+        payload = get_contextual_solomon_help(
+            _FakeRequest(), slug="public-context", module="privacy-help"
+        )
+        assert [item["slug"] for item in payload["playbooks"]] == ["public-guide"]
+
+    def test_unpublished_article_is_not_returned_from_context_or_search(self):
+        article = _article("hidden-publication", module="privacy-help")
+        article.published = False
+        article.save(update_fields=["published"])
+        payload = get_contextual_solomon_help(_FakeRequest(), slug="hidden-publication")
+        assert payload["primary_article"] is None
+        results = search_solomon_content(_FakeRequest(), module="privacy-help")
+        assert "hidden-publication" not in [a["slug"] for a in results["results"]]
+
     def test_no_module_returns_empty_related_and_playbooks(self):
         _article("standalone-art", module="fin")
         payload = get_contextual_solomon_help(
@@ -331,6 +351,14 @@ class TestSearchSolomonContent:
         payload = search_solomon_content(_FakeRequest())
         pb_slugs = [p["slug"] for p in payload["playbooks"]]
         assert "pb-search-1" in pb_slugs
+
+    def test_search_does_not_return_draft_archived_or_restricted_playbooks(self):
+        _playbook("search-public", module="public-search")
+        _playbook("search-draft", module="public-search", state=HelpArticle.STATE_DRAFT)
+        _playbook("search-archived", module="public-search", state=HelpArticle.STATE_ARCHIVED)
+        _playbook("search-staff", module="public-search", visibility=HelpArticle.VISIBILITY_STAFF)
+        results = search_solomon_content(_FakeRequest(), module="public-search")
+        assert [item["slug"] for item in results["playbooks"]] == ["search-public"]
 
     def test_playbooks_module_filter(self):
         _playbook("pb-finance-mod", module="finance-mod")
