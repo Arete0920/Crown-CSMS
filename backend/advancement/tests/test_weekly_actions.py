@@ -18,7 +18,7 @@ class WeeklyActionTests(TestCase):
     def setUp(self):
         self.school = School.objects.create(name="Advancement A")
         self.other = School.objects.create(name="Advancement B")
-        self.user = get_user_model().objects.create_user(username=f"adv-{uuid4().hex[:8]}")
+        self.user = get_user_model().objects.create_user(username=f"adv-{uuid4().hex[:8]}", school=self.school)
         UserRole.objects.create(user=self.user, school=self.school, role_code="HEAD_OF_SCHOOL")
         permission, _ = CrownPermission.objects.get_or_create(code="advancement.view")
         RolePermission.objects.get_or_create(role_code="HEAD_OF_SCHOOL", permission=permission)
