@@ -49,7 +49,7 @@ jobs:
             exit 1
           fi
       - name: Checkout release tag
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ env.DEPLOY_TAG }}
           fetch-depth: 0
@@ -110,7 +110,7 @@ jobs:
           fi
 
       - name: Checkout code
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ needs.resolve-release.outputs.deploy_sha }}
           fetch-depth: 0
@@ -261,7 +261,7 @@ jobs:
           echo "OK: AcrPull verified for ${{ env.WEBAPP_NAME }} ($PRINCIPAL_ID)"
 
       - name: Set up Python
-        uses: actions/setup-python@7f4fc3e22c37d6ff65e88745f38bd3157c663f7c # v4
+        uses: actions/setup-python@7f4fc3e22c37d6ff65e88745f38bd3157c663f7c # v7.0.1
         with:
           python-version: '3.12'
 
@@ -288,7 +288,7 @@ jobs:
 
       - name: Retain candidate coverage evidence
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v7.0.1
         with:
           name: candidate-coverage-${{ needs.resolve-release.outputs.deploy_sha }}-${{ github.run_attempt }}
           path: audit-artifacts/backend-coverage/
@@ -296,7 +296,7 @@ jobs:
           retention-days: 14
 
       - name: Set up candidate Node
-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v7.0.1
         with:
           node-version: '22.22.0'
           cache: npm
@@ -430,7 +430,7 @@ jobs:
           fi
 
       - name: Checkout code
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ needs.resolve-release.outputs.deploy_sha }}
           fetch-depth: 0
@@ -921,7 +921,7 @@ jobs:
           python scripts/ops/production_release_evidence.py record
 
       - name: Retain verified production release identity
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v7.0.1
         with:
           name: production-release-proof-${{ github.run_id }}-${{ github.run_attempt }}
           path: production-release-evidence/production-release-proof.json
