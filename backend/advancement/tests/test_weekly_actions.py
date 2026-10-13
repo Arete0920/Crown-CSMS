@@ -23,6 +23,9 @@ class WeeklyActionTests(TestCase):
         permission, _ = CrownPermission.objects.get_or_create(code="advancement.view")
         RolePermission.objects.get_or_create(role_code="HEAD_OF_SCHOOL", permission=permission)
         self.client = APIClient()
+        # The URL permission decorator runs before DRF authentication.
+        # Use the session principal it actually sees; keep school/role grants explicit.
+        self.client.force_login(self.user)
         self.client.force_authenticate(self.user)
         self.url = reverse("advancement-summary")
         self.today = timezone.localdate()
