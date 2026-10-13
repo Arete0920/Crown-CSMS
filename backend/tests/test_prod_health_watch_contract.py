@@ -82,7 +82,7 @@ def test_workflow_has_no_secret_logs():
 
 def test_pinned_checkout_precedes_local_parser_execution():
     text = WORKFLOW.read_text(encoding="utf-8")
-    checkout = "uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11"
+    checkout = "uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1"
     health = "- name: Check production health endpoint"
     parser = "python3 tools/ci/prod_health_status.py /tmp/health_response.json"
     assert checkout in text
