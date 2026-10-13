@@ -44,6 +44,12 @@ class InterventionActionSerializer(serializers.ModelSerializer):
 
 
 class BoardExecutiveMetricSerializer(serializers.ModelSerializer):
+    enrollment_health = serializers.IntegerField(read_only=True, allow_null=True)
+    financial_health = serializers.IntegerField(read_only=True, allow_null=True)
+    culture_health = serializers.IntegerField(read_only=True, allow_null=True)
+    mission_health = serializers.IntegerField(read_only=True, allow_null=True)
+    calculation_status = serializers.CharField(read_only=True)
+
     def to_representation(self, instance):
         data = super().to_representation(instance)
         # The current engine stores placeholders for these unwired indexes.
@@ -60,4 +66,5 @@ class BoardExecutiveMetricSerializer(serializers.ModelSerializer):
             "enrollment_health", "financial_health", "culture_health",
             "mission_health", "retention_risk",
             "highlights", "watchlist",
+            "calculation_status",
         ]
