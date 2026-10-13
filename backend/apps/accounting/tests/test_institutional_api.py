@@ -341,6 +341,11 @@ def test_budget_approval_and_variance_report_use_canonical_journal_actuals():
     assert Decimal(str(variance.json()["budget_total"])) == Decimal("120.00")
     assert Decimal(str(variance.json()["actual_total"])) == Decimal("100.00")
     assert Decimal(str(variance.json()["variance"])) == Decimal("20.00")
+    line = variance.json()["rows"][0]
+    assert line["account_type"] == "EXPENSE"
+    assert Decimal(str(line["deviation_amount"])) == Decimal("-20.00")
+    assert Decimal(str(line["deviation_percent"])) == Decimal("-16.67")
+    assert line["favorability"] == "FAVORABLE"
 
 
 def test_void_posted_bill_creates_reversal_not_delete():
