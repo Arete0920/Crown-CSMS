@@ -61,6 +61,41 @@ class WorkflowPolicyTests(unittest.TestCase):
                 self.assertEqual(policy.main(), 1)
                 self.assertIn("hidden.yaml", output.getvalue())
 
+    def _production_mutex_result(self, *, extra=False, drift=False):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            workflows = root / '.github/workflows'
+            workflows.mkdir(parents=True)
+            names = {path.name for path in policy.PRODUCTION_IMAGE_MUTATION_WORKFLOWS}
+            if extra:
+                names.add('unrelated.yml')
+            for name in names:
+                group = 'wrong-group' if drift and name == 'prod-rollback-on-failure.yml' else policy.PRODUCTION_DEPLOY_GROUP
+                (workflows / name).write_text(
+                    f'name: {name}\npermissions:\n  contents: read\n'
+                    f'concurrency:\n  group: {group}\n  cancel-in-progress: false\n'
+                    'jobs:\n  proof:\n    runs-on: ubuntu-latest\n    timeout-minutes: 5\n'
+                    '    steps:\n      - run: echo synthetic proof\n')
+            with patch.object(policy, 'ROOT', root), patch.object(policy, 'WORKFLOWS', workflows), \
+                 patch.object(policy, 'CANONICAL_WORKFLOW_FILES', names), \
+                 patch.object(sys, 'argv', ['verify_workflow_policy.py']), \
+                 contextlib.redirect_stdout(io.StringIO()) as output:
+                return policy.main(), output.getvalue()
+
+    def test_only_four_known_image_writers_share_required_production_mutex(self):
+        code, text = self._production_mutex_result()
+        self.assertEqual(code, 0, text)
+
+    def test_unrelated_workflow_cannot_join_production_mutex(self):
+        code, text = self._production_mutex_result(extra=True)
+        self.assertEqual(code, 1)
+        self.assertIn('duplicate top-level concurrency group', text)
+
+    def test_recovery_cannot_drift_outside_production_mutex(self):
+        code, text = self._production_mutex_result(drift=True)
+        self.assertEqual(code, 1)
+        self.assertIn('production image mutation workflow must use shared concurrency group', text)
+
     def test_repository_policy_invokes_complete_scan_unconditionally(self):
         import yaml
         workflow = yaml.safe_load((ROOT / ".github/workflows/repository-policy.yml").read_text())

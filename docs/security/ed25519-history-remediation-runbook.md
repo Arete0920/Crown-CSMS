@@ -6,6 +6,15 @@ This runbook implements the repository-side preparation for issue #104. It does 
 
 Production authorization remains blocked until both operational key retirement and repository-history remediation are independently verified.
 
+The [2026-10-12 trust-consumer review](ED25519_TRUST_CONSUMER_REVIEW_20261012.md)
+records the bounded repository evidence, public identifiers, missing retirement
+receipts and remaining operational/maintenance requirements. Historical audit
+metadata still says `ATTESTED` and selects the affected bundle as `active`;
+those labels are not current trust authority. Treat that attestation as
+untrusted for authorization or new assurance claims pending issue #104
+acceptance. The index's simulated revocation of a different bundle is not
+retirement evidence for the exposed key.
+
 ## Confirmed repository facts
 
 - Historical commit: `efb4f846bc5a743c88be6e4914aeb89e1f4d88a3`
@@ -25,6 +34,10 @@ Production authorization remains blocked until both operational key retirement a
 ### 2. Retire the exposed key
 
 1. Identify every verifier, signer, attestation process, service, or trust store associated with the corresponding public key.
+   Record key identity and fingerprint encoding from trusted public issuance
+   records. Do not retrieve or use the exposed private key. A repository-only
+   search cannot establish that no external consumer exists; a no-consumer
+   disposition requires named operational confirmation and bounded receipts.
 2. Revoke or retire the exposed key pair in those systems.
 3. Generate a replacement key only in an approved secret-management or hardware-backed process.
 4. Update downstream trust to the replacement public key.
@@ -85,6 +98,13 @@ Only the repository owner may authorize this step. Temporarily suspend merges, c
 
 Push rewritten branches and tags deliberately. Do not use an unreviewed blanket mirror push if obsolete or preservation refs would reintroduce the object.
 
+Approval must bind the current source identities and exact old/new ref plan.
+Check every planned ref for drift immediately before promotion and abort if
+any differs. The legacy source-locked rewrite runner is not approval for the
+current repository and its authorization checks must not be bypassed. Include
+server-controlled PR refs in the disposition plan; coordinate hosting-provider
+cleanup when ordinary branch/tag maintenance cannot remove them.
+
 Afterward:
 
 - invalidate stale local clones and require a fresh clone;
@@ -118,5 +138,13 @@ Record:
 - proof that the forbidden path is absent.
 
 ## Closure boundary
+
+The phase-3 archive script uses `tools/create_verified_git_bundle.py` to reject
+known forbidden history before creating an ordinary bundle and to verify the
+restored bundle before publication. Any verification or native-command failure
+stops that archive path. It is not a substitute for encrypted controlled
+preservation, key retirement, all-ref secret scanning or external-distribution
+acceptance. Do not use ordinary archive creation to preserve exposed history;
+use the separately authorized custody procedure above.
 
 Issue #104 must not close based only on this runbook, a redacted current-tree file, or a green pull request. Closure requires operational retirement of the key, verified rewritten refs, replacement of distributable artifacts, and a clean remediated bundle.
