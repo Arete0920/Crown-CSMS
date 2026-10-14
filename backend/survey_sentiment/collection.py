@@ -113,6 +113,8 @@ def collect_response(*, token, body):
 
     Body: answers, notice_sha256 (of the exact publication), retry_key. No raw
     errors are propagated/logged. DB abuse-budget failure is fail closed.
+    Must be called with autocommit enabled, outside any enclosing transaction;
+    otherwise a caller could roll back the durable attempt budget.
     """
     try:
         if not isinstance(token, str) or not SECRET_PATTERN.fullmatch(token):
@@ -128,6 +130,11 @@ def collect_response(*, token, body):
             raise CollectionRejected("Invalid submission.")
         if not isinstance(payload["answers"], dict) or len(payload["answers"]) > 40:
             raise CollectionRejected("Invalid submission.")
+        if not transaction.get_autocommit():
+            # Collection owns the durable attempt write and atomic response.
+            # Reject ATOMIC_REQUESTS/enclosing atomic/manual transactions before
+            # any write; their rollback could otherwise erase abuse attempts.
+            raise CollectionRejected(UNAVAILABLE)
         digest = _digest("grant", token)
         # Persist a bounded budget even when answer/notice validation later fails.
         if not SurveyRespondentGrant.objects.filter(token_digest=digest, attempts__lt=MAX_ATTEMPTS).update(attempts=F("attempts") + 1):

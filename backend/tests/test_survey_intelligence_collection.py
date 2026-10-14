@@ -197,3 +197,41 @@ def test_receipt_failure_rolls_back_response(collection):
             send(collection)
     assert not SurveyResponse.objects.exists() and not SurveyCollectionReceipt.objects.exists()
     assert SurveyRespondentGrant.objects.get().attempts == 1
+
+
+@pytest.mark.parametrize("valid", [True, False])
+def test_collection_refuses_outer_transaction_before_any_writes(collection, valid):
+    from django.db import transaction
+    payload = collection[5] if valid else dict(collection[5], answers={"satisfaction": "4"})
+    with transaction.atomic():
+        with pytest.raises(CollectionRejected, match="Survey is not available"):
+            send(collection, payload)
+    assert SurveyRespondentGrant.objects.get().attempts == 0
+    assert not SurveyResponse.objects.exists() and not SurveyCollectionReceipt.objects.exists()
+
+
+def test_collection_refuses_manually_disabled_autocommit(collection):
+    from django.db import transaction
+    transaction.set_autocommit(False)
+    try:
+        with pytest.raises(CollectionRejected, match="Survey is not available"):
+            send(collection)
+    finally:
+        transaction.rollback()
+        transaction.set_autocommit(True)
+    assert SurveyRespondentGrant.objects.get().attempts == 0
+    assert not SurveyResponse.objects.exists() and not SurveyCollectionReceipt.objects.exists()
+
+
+@pytest.mark.parametrize("expiry", ["grant", "survey"])
+def test_expiration_boundary_is_exclusive(collection, expiry):
+    boundary = timezone.now()
+    if expiry == "grant":
+        SurveyRespondentGrant.objects.update(expires_at=boundary)
+    else:
+        collection[2].public_expires_at = boundary
+        collection[2].save(update_fields=["public_expires_at"])
+    with patch("survey_sentiment.collection.timezone.now", return_value=boundary):
+        with pytest.raises(CollectionRejected, match="Survey is not available"):
+            send(collection)
+    assert not SurveyResponse.objects.exists() and not SurveyCollectionReceipt.objects.exists()

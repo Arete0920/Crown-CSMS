@@ -96,3 +96,95 @@ jobs:
           path: audit-artifacts/backend-coverage/
           if-no-files-found: error
           retention-days: 14
+
+  survey-scope:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      required: ${{ steps.scope.outputs.required }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+      - name: Classify respondent PostgreSQL contract changes
+        id: scope
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          python - <<'PYTHON'
+          import os
+          import re
+          import subprocess
+          base = os.environ.get('BASE_SHA', '')
+          required = True
+          if os.environ['EVENT_NAME'] != 'workflow_dispatch' and re.fullmatch(r'[0-9a-f]{40}', base) and set(base) != {'0'}:
+              result = subprocess.run(['git', 'diff', '--name-only', '-z', base, 'HEAD'], capture_output=True)
+              if result.returncode == 0:
+                  paths = result.stdout.decode('utf-8', errors='replace').split('\0')
+                  exact = {'backend/requirements.txt', 'backend/conftest.py', 'backend/tests/conftest.py', 'pytest.ini', '.github/workflows/tests.yml'}
+                  prefixes = ('backend/survey_sentiment/', 'backend/core/', 'backend/crown_api/', 'backend/tests/test_survey_intelligence_', 'backend/tests/test_survey_collection_')
+                  required = any(path in exact or path.startswith(prefixes) for path in paths)
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              output.write('required=' + str(required).lower() + '\n')
+          print('Respondent PostgreSQL contract required:', required)
+          PYTHON
+
+  survey-postgresql:
+    needs: survey-scope
+    if: needs.survey-scope.outputs.required == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: survey_ci
+          POSTGRES_USER: survey_ci
+          POSTGRES_PASSWORD: survey-ci-only
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://survey_ci:survey-ci-only@localhost:5432/survey_ci
+      DJANGO_SECRET_KEY: survey-ci-only-secret
+      DJANGO_DEBUG: '1'
+      ALLOWED_HOSTS: localhost,127.0.0.1,testserver
+      PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/backend
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-python@7f4fc3e22c37d6ff65e88745f38bd3157c663f7c
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+      - name: Install existing backend dependencies
+        run: python -m pip install -r backend/requirements.txt
+      - name: Require real PostgreSQL and verify migration consistency
+        run: |
+          DJANGO_SETTINGS_MODULE=crown_api.test_settings python - <<'PY'
+          import django
+          django.setup()
+          from django.db import connection
+          assert connection.vendor == 'postgresql', 'PostgreSQL proof cannot use a fallback database'
+          with connection.cursor() as cursor:
+              cursor.execute('SELECT version()')
+              print(cursor.fetchone()[0])
+          PY
+          python backend/manage.py makemigrations --check --dry-run
+      - name: Verify survey contracts and real concurrent transactions
+        run: >-
+          python -m pytest -q backend/tests/test_survey_intelligence_*.py
+          backend/tests/test_survey_collection_postgresql.py
+          --junitxml=survey-postgresql-junit.xml
+      - name: Preserve PostgreSQL test evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: survey-postgresql-${{ github.sha }}
+          path: survey-postgresql-junit.xml
+          if-no-files-found: error
+          retention-days: 14
