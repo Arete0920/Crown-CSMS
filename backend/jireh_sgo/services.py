@@ -48,21 +48,16 @@ def create_program(*, user, organization_id, name, code, calendar_year, funding_
         raise ValidationError({"code": "Invalid code."})
     if not isinstance(rule_version, str) or not POLICY_REF.fullmatch(rule_version):
         raise ValidationError({"rule_version": "Opaque version reference required."})
-    existing = SGOProgram.objects.filter(
+    program, created = SGOProgram.objects.get_or_create(
         organization=member.organization, code=code, calendar_year=calendar_year,
         eligibility_rule_version=rule_version,
-    ).first()
-    if existing:
-        if existing.name != name or existing.funding_source != funding_source:
-            raise ValidationError({"code": "Version already exists with different attributes."})
-        return existing
-    program = SGOProgram.objects.create(
-        organization=member.organization, name=name, code=code,
-        calendar_year=calendar_year, funding_source=funding_source,
-        eligibility_rule_version=rule_version,
+        defaults={"name": name, "funding_source": funding_source},
     )
-    _audit(organization=member.organization, actor=user, action=SGOAuditEvent.PROGRAM_CREATED,
-           subject_key=program.id, metadata={"source": funding_source, "year": calendar_year})
+    if program.name != name or program.funding_source != funding_source:
+        raise ValidationError({"code": "Version already exists with different attributes."})
+    if created:
+        _audit(organization=member.organization, actor=user, action=SGOAuditEvent.PROGRAM_CREATED,
+               subject_key=program.id, metadata={"source": funding_source, "year": calendar_year})
     return program
 
 
@@ -73,16 +68,14 @@ def create_application(*, user, organization_id, program_id, student_key, school
     if program is None:
         raise PermissionDenied("SGO program unavailable.")
     student_key, school_key = _uuid(student_key, "student_key"), _uuid(school_key, "school_key")
-    existing = SGOApplication.objects.filter(program=program, student_key=student_key).first()
-    if existing:
-        if existing.school_key != school_key:
-            raise ValidationError({"school_key": "Conflicting school reference."})
-        return existing
-    application = SGOApplication.objects.create(
-        program=program, student_key=student_key, school_key=school_key,
+    application, created = SGOApplication.objects.get_or_create(
+        program=program, student_key=student_key, defaults={"school_key": school_key},
     )
-    _audit(organization=member.organization, actor=user,
-           action=SGOAuditEvent.APPLICATION_CREATED, subject_key=application.id)
+    if application.school_key != school_key:
+        raise ValidationError({"school_key": "Conflicting school reference."})
+    if created:
+        _audit(organization=member.organization, actor=user,
+               action=SGOAuditEvent.APPLICATION_CREATED, subject_key=application.id)
     return application
 
 
