@@ -203,6 +203,7 @@ INSTALLED_APPS = [
     'journal',
     'integrations',
     'financial_aid.apps.FinancialAidConfig',
+    'jireh_sgo.apps.JirehSGOConfig',
     'academics',
     'academics_ro',
     'curricula',
