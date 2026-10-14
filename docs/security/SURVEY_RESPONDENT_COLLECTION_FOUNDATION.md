@@ -82,3 +82,39 @@ Rollback: disable collection, revoke outstanding grants, revert the bounded sour
 commit. Preserve response/receipt evidence; do not reverse the additive migration
 on a database containing grants/receipts until retention and recovery disposition
 is authorized. This document does not claim executed runtime rollback.
+
+## Durable transaction and PostgreSQL verification continuation
+
+Continuation base: `fa348da89a95b0fe4ec79e807a33bba73bf0e6ad`.
+Bounded outcome: make the attempt budget durable under supported callers and
+prove concurrency with a real PostgreSQL service in isolated CI. Owner and
+approved solo-maintainer governance remain as above. No public route, deployment,
+invitation, schema change or new application dependency belongs to this change.
+
+A reproduced caller-boundary gap allowed an enclosing transaction to roll back
+attempt counters along with failed submissions. Collection now requires database
+autocommit and rejects enclosing atomic/manual transactions before writing.
+Future callers using `ATOMIC_REQUESTS` must use an explicitly reviewed non-atomic
+entry boundary and must not wrap collection in a larger transaction. This is an
+internal contract requirement, not approval for an HTTP route. Response/receipt
+persistence still uses the service-owned atomic transaction.
+
+The dedicated `survey-postgresql` job in the existing Tests workflow uses the
+existing PostgreSQL 16 CI service pattern and pinned actions/dependencies. A
+fail-closed scope job requires it for relevant survey/core/settings/test and
+workflow changes (or unknown ancestry/manual runs); unrelated changes can skip
+this added job without changing existing full backend gates. No new top-level
+workflow or canonical-inventory exception is introduced. It explicitly requires
+PostgreSQL rather than accepting a fallback database. It runs the survey contract
+suite, strict identical/conflicting concurrent submissions, simultaneous final
+budget attempts, and both commit orderings for revocation/closure. Tests observe
+actual PostgreSQL lock waits with bounded timeouts and preserve JUnit evidence.
+SQLite runs retain their fail-closed busy-writer behavior and cannot substitute
+for these PostgreSQL tests. Exact grant/survey expiration boundaries are also
+covered. CI database proof is separate from Azure/runtime deployment, real-school
+approvals, retention/distribution policy and operational restore acceptance.
+
+Rollback: revert this bounded service/test/workflow/documentation change; there
+is no new schema or data conversion. Retain the established collection-disabled
+and separate public acceptance gates. Record final exact-head workflow results
+and inspection findings on the controlling PR and issue #204 before acceptance.
