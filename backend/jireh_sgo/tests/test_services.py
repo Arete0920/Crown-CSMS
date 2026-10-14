@@ -83,6 +83,34 @@ class SGOFoundationTests(TestCase):
             )
         self.assertFalse(hasattr(self.app, "organization_id"))
 
+    def test_direct_application_reassignment_rejected(self):
+        second = create_program(**{**self.kwargs, "rule_version": "POLICY_2027_V2"})
+        self.app.program = second
+        with self.assertRaises(ModelValidationError):
+            self.app.save()
+        self.app.refresh_from_db()
+        self.app.school_key = uuid.uuid4()
+        with self.assertRaises(ModelValidationError):
+            self.app.save()
+        self.app.refresh_from_db()
+        self.app.student_key = uuid.uuid4()
+        with self.assertRaises(ModelValidationError):
+            self.app.save()
+
+    def test_program_and_application_concurrent_retry_contract(self):
+        self.assertEqual(create_program(**self.kwargs).pk, self.program.pk)
+        same = create_application(
+            user=self.reviewer, organization_id=self.org.id,
+            program_id=self.program.pk, student_key=self.student, school_key=self.school,
+        )
+        self.assertEqual(same.pk, self.app.pk)
+        self.assertEqual(SGOAuditEvent.objects.filter(
+            action=SGOAuditEvent.PROGRAM_CREATED,
+        ).count(), 1)
+        self.assertEqual(SGOAuditEvent.objects.filter(
+            action=SGOAuditEvent.APPLICATION_CREATED,
+        ).count(), 1)
+
     def test_rejects_string_boolean_and_personal_evidence(self):
         for value in ("false", "true", 0, 1, None):
             with self.subTest(value=value), self.assertRaises(ValidationError):
