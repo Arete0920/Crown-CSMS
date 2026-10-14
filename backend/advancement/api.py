@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from rest_framework import viewsets, status
 import logging
 from rest_framework.decorators import api_view, permission_classes, action
@@ -11,6 +13,7 @@ from django.http import JsonResponse
 from django.utils import timezone
 
 from core.audit import audit_event
+from core.models import UserRole
 from core.permissions import CrownModulePermission, require_permission
 from households.scoping import get_request_school_id
 from .models import (
@@ -316,7 +319,7 @@ def advancement_metrics(request):
 
 @extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["GET"])
-@permission_classes([IsAuthenticated])
+@permission_classes([CrownModulePermission("advancement.view")])
 def advancement_summary(request):
     """
     GET /advancement/summary/
@@ -351,6 +354,50 @@ def advancement_summary(request):
         d["id"] = str(d["id"])
         d["lifetime_giving"] = float(d["lifetime_giving"])
 
+    # Worklist uses existing cultivation moves, not inferred donor behavior or
+    # fabricated reminders. Include overdue work and the next seven days.
+    today = timezone.localdate()
+    due_through = today + timedelta(days=7)
+    due_moves = list(
+        Move.objects.filter(
+            school_id=sid,
+            prospect__school_id=sid,
+            prospect__is_active=True,
+            completed_at__isnull=True,
+            due_date__isnull=False,
+            due_date__lte=due_through,
+        )
+        .select_related("prospect", "prospect__donor", "prospect__assigned_to")
+        .order_by("due_date", "created_at", "id")[:25]
+    )
+    # A prospect assignment must be backed by membership in this school before
+    # a staff name is returned. Incorrect cross-tenant links stay invisible.
+    assignee_ids = {
+        move.prospect.assigned_to_id
+        for move in due_moves
+        if move.prospect.assigned_to_id is not None
+    }
+    school_assignees = set(
+        UserRole.objects.filter(school_id=sid, user_id__in=assignee_ids)
+        .values_list("user_id", flat=True)
+    )
+    weekly_actions = []
+    for move in due_moves:
+        donor = move.prospect.donor
+        assignee = move.prospect.assigned_to
+        weekly_actions.append({
+            "id": str(move.id),
+            "prospect_id": str(move.prospect_id),
+            "donor_name": donor.name if donor and donor.school_id == sid else None,
+            "action": move.get_action_type_display(),
+            "due_date": move.due_date.isoformat(),
+            "overdue": move.due_date < today,
+            "owner": (
+                (assignee.get_full_name() or assignee.get_username())
+                if assignee and assignee.pk in school_assignees else None
+            ),
+        })
+
     events = Event.objects.filter(school_id=sid, active=True)
     event_list = []
     for e in events:
@@ -371,6 +418,7 @@ def advancement_summary(request):
         "store_revenue": float(store_revenue),
         "total_donors": Donor.objects.filter(school_id=sid).count(),
         "active_campaigns": active_campaigns,
+        "weekly_actions": weekly_actions,
         "top_donors": top_donors,
         "active_events": event_list,
         "tickets_sold_total": Ticket.objects.filter(school_id=sid).count(),
