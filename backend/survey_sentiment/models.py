@@ -99,3 +99,26 @@ class SurveyPublication(models.Model):
     class Meta:
         constraints = [models.UniqueConstraint(fields=["survey", "version"], name="survey_pub_unique_version")]
         ordering = ["version"]
+
+
+class SurveyRespondentGrant(models.Model):
+    """One-use anonymous authority; no respondent identity or raw bearer secret."""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    publication = models.ForeignKey(SurveyPublication, on_delete=models.PROTECT)
+    token_digest = models.CharField(max_length=64, unique=True)
+    publication_sha256 = models.CharField(max_length=64)
+    expires_at = models.DateTimeField()
+    revoked_at = models.DateTimeField(null=True)
+    issued_by_user_id = models.UUIDField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    attempts = models.PositiveIntegerField(default=0)
+
+
+class SurveyCollectionReceipt(models.Model):
+    """Neutral retry receipt; never expose this row or response id to clients."""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    grant = models.OneToOneField(SurveyRespondentGrant, on_delete=models.PROTECT)
+    response = models.OneToOneField(SurveyResponse, on_delete=models.CASCADE)
+    retry_digest = models.CharField(max_length=64)
+    payload_digest = models.CharField(max_length=64)
+    created_at = models.DateTimeField(auto_now_add=True)
