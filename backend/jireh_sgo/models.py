@@ -101,6 +101,18 @@ class SGOApplication(models.Model):
             ),
         ]
 
+    def save(self, *args, **kwargs):
+        if self.pk and not self._state.adding:
+            existing = type(self).objects.filter(pk=self.pk).values(
+                "program_id", "student_key", "school_key",
+            ).first()
+            if existing and any(getattr(self, key) != value for key, value in existing.items()):
+                raise ValidationError(
+                    "SGO application program, student and school references are immutable."
+                )
+        self.full_clean()
+        return super().save(*args, **kwargs)
+
 
 class SGOAward(models.Model):
     """A commitment is NEVER a funded, cleared, allocated or paid amount."""
