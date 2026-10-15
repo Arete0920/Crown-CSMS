@@ -21,4 +21,8 @@ Both school-aid and SGO pilot CTA currently route to the existing contact page. 
 Authenticated Azure inventory, RBAC, tenant, subscription, MFA/recovery, SKU/consumption cost, quotas, budget, DNS and mail export; real-domain and TLS validation; signed-off recurring cost; asset/brand parity; accessibility and actual browser tests; rollback and lead-flow evidence; final content and legal approval. Do not change DNS, GoDaddy domain registration or email before these pass.
 
 ## Source layout
-Staging source remains at `sites/jireh-sgo` for this initial PR, with full Jireh content. Rename to `sites/jireh` only in a separately tested file-move with deployment path and CI updated, before a first Azure deploy. A non-indexed staging page is not a release.
+Staging source lives at `sites/jireh` with shared design tokens from `sites/shared/product-theme.css`. The build produces `sites/jireh/dist` for a future Azure staging deployment. A non-indexed staging page is not a release.
+
+## Design-system decision (2026-10-15)
+
+All portfolio sites share one light, warm, education-centered palette, accessible navigation, typography, footer and clear primary/secondary hero CTA. Source `sites/shared/product-theme.css`; see `sites/shared/BRAND_SYSTEM.md`. The existing Arete domain is unchanged until Jireh cutover is verified.
