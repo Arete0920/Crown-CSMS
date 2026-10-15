@@ -12,8 +12,6 @@ on:
       - 'scripts/ops/test_azure_runtime_inventory.py'
       - 'scripts/ops/jireh_azure_site_preflight.py'
       - 'scripts/ops/test_jireh_azure_site_preflight.py'
-      - 'scripts/ops/jireh_free_staging_gate.py'
-      - 'scripts/ops/test_jireh_free_staging_gate.py'
       - 'docs/operations/CROWN_AZURE_FREE_FIRST_COST_CONTROL.md'
       - '.github/workflows/azure-classroom-preflight.yml'
   push:
@@ -27,8 +25,6 @@ on:
       - 'scripts/ops/test_azure_runtime_inventory.py'
       - 'scripts/ops/jireh_azure_site_preflight.py'
       - 'scripts/ops/test_jireh_azure_site_preflight.py'
-      - 'scripts/ops/jireh_free_staging_gate.py'
-      - 'scripts/ops/test_jireh_free_staging_gate.py'
       - 'docs/operations/CROWN_AZURE_FREE_FIRST_COST_CONTROL.md'
       - '.github/workflows/azure-classroom-preflight.yml'
   workflow_dispatch:
@@ -83,7 +79,7 @@ jobs:
       - name: Verify source and required owned media before Azure mutation
         run: |
           set -euo pipefail
-          python3 -m unittest discover -s scripts/ops -p test_jireh_free_staging_gate.py -v
+          python3 -m unittest discover -s scripts/ops -p test_jireh_azure_site_preflight.py -v
           node --test sites/jireh/tests/site.test.mjs
           node sites/jireh/build.mjs
           for f in index.html resources/jireh-sgo-overview.pdf images/jireh-sgo/logo.png images/crown/family-billing.webp; do
@@ -103,7 +99,7 @@ jobs:
           umask 077
           az account show --query state --output tsv --only-show-errors | grep -qx Enabled
           az staticwebapp list --output json --only-show-errors > /tmp/jireh-swa-list.json
-          verdict="$(python3 scripts/ops/jireh_free_staging_gate.py --inventory /tmp/jireh-swa-list.json)"
+          verdict="$(python3 scripts/ops/jireh_azure_site_preflight.py --inventory /tmp/jireh-swa-list.json)"
           rm -f /tmp/jireh-swa-list.json
           if [[ "$verdict" == "CREATE_FREE" ]]; then
             az staticwebapp create --name jireh-site --resource-group crown-rg --location eastus2 --sku Free --output none --only-show-errors
@@ -112,7 +108,7 @@ jobs:
             exit 1
           fi
           az staticwebapp show --name jireh-site --resource-group crown-rg --output json --only-show-errors > /tmp/jireh-swa-result.json
-          python3 scripts/ops/jireh_free_staging_gate.py --verify-resource /tmp/jireh-swa-result.json
+          python3 scripts/ops/jireh_azure_site_preflight.py --verify-resource /tmp/jireh-swa-result.json
           rm -f /tmp/jireh-swa-result.json
           host="$(az staticwebapp show --name jireh-site --resource-group crown-rg --query defaultHostname --output tsv --only-show-errors)"
           if [[ ! "$host" =~ ^[A-Za-z0-9.-]+[.]azurestaticapps[.]net$ ]]; then
