@@ -157,6 +157,6 @@ def test_protected_overlap_does_not_count_as_available_preparation():
     values["teacher_rules"]["t1"] = replace(
         values["teacher_rules"]["t1"],
         unavailable_period_ids=frozenset(),
-        minimum_preparation_minutes_per_cycle=121,
+        minimum_preparation_minutes_per_cycle=90,
     )
     assert "INSUFFICIENT_PREPARATION" in codes(**values)
