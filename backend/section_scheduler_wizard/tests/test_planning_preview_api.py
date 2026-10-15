@@ -242,3 +242,19 @@ class KairosIntegratedPreviewTests(TestCase):
         )
         self.assertEqual(undone.status_code, 200, undone.data)
         self.assertEqual(SectionPlacement.objects.filter(is_active=True).count(), 0)
+
+    def test_source_changes_during_search_return_stale_not_feasible(self):
+        from dataclasses import replace
+        from unittest.mock import patch
+        original = self.snapshot()
+        changed = replace(original, source_fingerprint="b" * 64)
+        data = self.body()
+        with patch(
+            "section_scheduler_wizard.planning_preview_api.build_canonical_planning_snapshot",
+            side_effect=[original, changed],
+        ):
+            result = self.post(data)
+        self.assertEqual(result.status_code, 409, result.data)
+        self.assertEqual(result.data["error"], "SOURCE_CHANGED_DURING_PREVIEW")
+        self.assertFalse(result.data["publication_allowed"])
+        self.assertEqual(SectionPlacement.objects.count(), 0)
