@@ -88,17 +88,17 @@ def validate_candidate_placements(
         period = periods.get(placement.period_id)
         room = rooms.get(placement.room_id) if placement.room_id is not None else None
         invalid = False
-        if section is None or (section.school_id, section.academic_year_id, section.term_code) != (school_id, academic_year_id, term_code):
+        if section is None or section.section_id != placement.section_id or (section.school_id, section.academic_year_id, section.term_code) != (school_id, academic_year_id, term_code):
             findings.append(Finding("INVALID_SECTION_SCOPE", index, "Section is missing or outside the selected school, year or term."))
             invalid = True
-        if period is None or (period.school_id, period.academic_year_id) != (school_id, academic_year_id):
+        if period is None or period.period_id != placement.period_id or (period.school_id, period.academic_year_id) != (school_id, academic_year_id):
             findings.append(Finding("INVALID_PERIOD_SCOPE", index, "Period is missing or outside the selected school or year."))
             invalid = True
         elif not (isinstance(period.start_minute, int) and isinstance(period.end_minute, int)
                   and 0 <= period.start_minute < period.end_minute <= 1440):
             findings.append(Finding("INVALID_PERIOD_TIME", index, "Period must have a valid nonempty same-day time range."))
             invalid = True
-        if placement.room_id is not None and (room is None or room.school_id != school_id):
+        if placement.room_id is not None and (room is None or room.room_id != placement.room_id or room.school_id != school_id):
             findings.append(Finding("INVALID_ROOM_SCOPE", index, "Room is missing or belongs to another school."))
             invalid = True
         if invalid:
