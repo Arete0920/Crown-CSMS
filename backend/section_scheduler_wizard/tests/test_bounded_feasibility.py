@@ -127,3 +127,33 @@ def test_pure_no_mutation():
     result = solve_section_meetings(**data)
     assert result.status == FEASIBLE
     assert prior == {key: tuple(value) for key, value in data["candidate_domains"].items()}
+
+
+def test_missing_teacher_policy_is_invalid_model_not_infeasibility():
+    x = scenario()
+    x["teacher_rules"] = {}
+    result = solve(**x)
+    assert result.status == MODEL_INVALID
+    assert "MISSING_TEACHER_POLICY" in result.diagnostics
+
+
+def test_invalid_cycle_count_is_invalid_model_not_unknown():
+    x = scenario()
+    x["template_occurrences"] = {"A": True}
+    result = solve(**x)
+    assert result.status == MODEL_INVALID
+    assert "INVALID_CYCLE_CONTRACT" in result.diagnostics
+
+
+def test_foreign_teacher_policy_cannot_produce_infeasibility_claim():
+    from dataclasses import replace
+    x = scenario()
+    x["teacher_rules"]["t1"] = replace(x["teacher_rules"]["t1"], school_id="foreign")
+    assert solve(**x).status == MODEL_INVALID
+
+
+def test_spoofed_period_mapping_is_invalid_model():
+    from dataclasses import replace
+    x = scenario()
+    x["periods"]["p1"] = replace(x["periods"]["p1"], period_id="forged")
+    assert solve(**x).status == MODEL_INVALID
