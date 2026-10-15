@@ -6,7 +6,7 @@ from core.models import Staff
 from room_setup_wizard.models import Room
 from section_scheduler_wizard.canonical_snapshot import build_canonical_planning_snapshot
 from section_scheduler_wizard.models import SectionPlacement
-from .test_views import BASE, _client_for, _fixtures, _headers
+from .test_views import BASE, _client_for, _configured_session, _fixtures, _headers
 
 ENDPOINT = BASE + "preview/"
 
@@ -202,3 +202,43 @@ class KairosIntegratedPreviewTests(TestCase):
             **_headers(self.school),
         )
         self.assertEqual(response.status_code, 400)
+
+    def test_generated_preview_requires_explicit_manual_publication_and_supports_undo(self):
+        # This exercises the complete existing governed write/verify/undo path.
+        # The preview endpoint itself must remain entirely read-only.
+        proposal = self.post(self.body())
+        self.assertEqual(proposal.status_code, 200, proposal.data)
+        self.assertEqual(proposal.data["status"], "FEASIBLE")
+        self.assertFalse(proposal.data["publication_allowed"])
+        self.assertEqual(SectionPlacement.objects.filter(is_active=True).count(), 0)
+
+        session_id = _configured_session(self.client, self.school, self.year)
+        rows = [{
+            "section_id": p["section_id"],
+            "day_template_id": str(self.template.id),
+            "period_block_id": p["period_id"],
+            "room_id": p["room_id"],
+        } for p in proposal.data["placements"]]
+        stage = self.client.post(
+            f"{BASE}{session_id}/sections/",
+            {"sections": rows}, format="json", **_headers(self.school),
+        )
+        self.assertEqual(stage.status_code, 200, stage.data)
+        self.assertEqual(SectionPlacement.objects.filter(is_active=True).count(), 0)
+
+        publish = self.client.post(
+            f"{BASE}{session_id}/commit/", {"confirm": True},
+            format="json", **_headers(self.school),
+        )
+        self.assertEqual(publish.status_code, 200, publish.data)
+        self.assertEqual(SectionPlacement.objects.filter(is_active=True).count(), 1)
+        verified = self.client.get(
+            f"{BASE}{session_id}/verify/", **_headers(self.school),
+        )
+        self.assertEqual(verified.status_code, 200, verified.data)
+        undone = self.client.post(
+            f"{BASE}{session_id}/undo/", {"confirm": True},
+            format="json", **_headers(self.school),
+        )
+        self.assertEqual(undone.status_code, 200, undone.data)
+        self.assertEqual(SectionPlacement.objects.filter(is_active=True).count(), 0)
