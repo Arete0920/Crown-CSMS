@@ -74,6 +74,7 @@ import SummerCampSetupWizard from "../pages/wizards/SummerCampSetupWizard.jsx";
 import FinanceSetupWizard from "../pages/wizards/FinanceSetupWizard.jsx";
 import NotAuthorized from "../pages/NotAuthorized.jsx";
 import RoleRouteGuard from "../components/routing/RoleRouteGuard.jsx";
+import AuthenticatedSchoolRouteGuard from "../components/routing/AuthenticatedSchoolRouteGuard.jsx";
 import ParentJourneyRouteGuard from "../components/routing/ParentJourneyRouteGuard.jsx";
 import RoleGuard from "./RoleGuard.jsx";
 import RequirePermission from "../components/auth/RequirePermission.jsx";
@@ -747,7 +748,7 @@ export const router = createBrowserRouter([
   },
   {
     path: PATHS.BOARD,
-    element: <BoardDashboard />,
+    element: <AuthenticatedSchoolRouteGuard><RoleRouteGuard allowedRoles={["super_admin", "school_admin", "head_of_school", "board", "board_member"]}><BoardDashboard /></RoleRouteGuard></AuthenticatedSchoolRouteGuard>,
   },
   {
     path: PATHS.FINANCE,
@@ -771,39 +772,39 @@ export const router = createBrowserRouter([
   },
   {
     path: PATHS.IT,
-    element: <ITDashboard />,
+    element: <AuthenticatedSchoolRouteGuard><ITDashboard /></AuthenticatedSchoolRouteGuard>,
   },
   {
     path: PATHS.MARKETING,
-    element: <MarketingDashboard />,
+    element: <AuthenticatedSchoolRouteGuard><MarketingDashboard /></AuthenticatedSchoolRouteGuard>,
   },
   {
     path: PATHS.SPIRITUAL_LIFE,
-    element: <SpiritualLifeDashboard />,
+    element: <AuthenticatedSchoolRouteGuard><SpiritualLifeDashboard /></AuthenticatedSchoolRouteGuard>,
   },
   {
     path: PATHS.MASTER_CONTROL,
-    element: <AdminDashboard />,
+    element: <AuthenticatedSchoolRouteGuard><AdminDashboard /></AuthenticatedSchoolRouteGuard>,
   },
   {
     path: PATHS.OFFICE,
-    element: <OfficeDashboard />,
+    element: <AuthenticatedSchoolRouteGuard><OfficeDashboard /></AuthenticatedSchoolRouteGuard>,
   },
   {
     path: PATHS.HEALTH,
-    element: <HealthDashboard />,
+    element: <AuthenticatedSchoolRouteGuard><HealthDashboard /></AuthenticatedSchoolRouteGuard>,
   },
   {
     path: PATHS.COUNSELING,
-    element: <CounselingDashboard />,
+    element: <AuthenticatedSchoolRouteGuard><CounselingDashboard /></AuthenticatedSchoolRouteGuard>,
   },
   {
     path: PATHS.FOOD,
-    element: <FoodDashboard />,
+    element: <AuthenticatedSchoolRouteGuard><FoodDashboard /></AuthenticatedSchoolRouteGuard>,
   },
   {
     path: PATHS.ATHLETICS,
-    element: <AthleticsDashboard />,
+    element: <AuthenticatedSchoolRouteGuard><AthleticsDashboard /></AuthenticatedSchoolRouteGuard>,
   },
   {
     path: PATHS.SYSTEM_STATUS,
@@ -831,35 +832,35 @@ export const router = createBrowserRouter([
   },
   {
     path: PATHS.ADVANCEMENT,
-    element: <AdvancementDashboard />,
+    element: <AuthenticatedSchoolRouteGuard><AdvancementDashboard /></AuthenticatedSchoolRouteGuard>,
   },
   {
     path: PATHS.TRANSPORTATION,
-    element: <TransportationDashboard />,
+    element: <AuthenticatedSchoolRouteGuard><TransportationDashboard /></AuthenticatedSchoolRouteGuard>,
   },
   {
     path: PATHS.FACILITIES,
-    element: <FacilitiesDashboard />,
+    element: <AuthenticatedSchoolRouteGuard><FacilitiesDashboard /></AuthenticatedSchoolRouteGuard>,
   },
   {
     path: PATHS.SECURITY,
-    element: <SecurityDashboard />,
+    element: <AuthenticatedSchoolRouteGuard><SecurityDashboard /></AuthenticatedSchoolRouteGuard>,
   },
   {
     path: PATHS.ACADEMIC_SUPPORT,
-    element: <AcademicSupportDashboard />,
+    element: <AuthenticatedSchoolRouteGuard><AcademicSupportDashboard /></AuthenticatedSchoolRouteGuard>,
   },
   {
     path: PATHS.FINE_ARTS,
-    element: <FineArtsDashboard />,
+    element: <AuthenticatedSchoolRouteGuard><FineArtsDashboard /></AuthenticatedSchoolRouteGuard>,
   },
   {
     path: PATHS.LIBRARY,
-    element: <LibraryDashboard />,
+    element: <AuthenticatedSchoolRouteGuard><LibraryDashboard /></AuthenticatedSchoolRouteGuard>,
   },
   {
     path: PATHS.EXTENDED_CARE,
-    element: <ExtendedCareDashboard />,
+    element: <AuthenticatedSchoolRouteGuard><ExtendedCareDashboard /></AuthenticatedSchoolRouteGuard>,
   },
   {
     path: PATHS.SUMMER_CAMP_ROSTER,
@@ -879,19 +880,19 @@ export const router = createBrowserRouter([
   },
   {
     path: PATHS.REGISTRAR,
-    element: <RegistrarDashboard />,
+    element: <AuthenticatedSchoolRouteGuard><RegistrarDashboard /></AuthenticatedSchoolRouteGuard>,
   },
   {
     path: PATHS.COMMUNICATIONS_DIRECTOR,
-    element: <CommunicationsDirectorDashboard />,
+    element: <AuthenticatedSchoolRouteGuard><CommunicationsDirectorDashboard /></AuthenticatedSchoolRouteGuard>,
   },
   {
     path: PATHS.PD,
-    element: <PDDashboard />,
+    element: <AuthenticatedSchoolRouteGuard><PDDashboard /></AuthenticatedSchoolRouteGuard>,
   },
   {
     path: PATHS.STUDENT_SERVICES,
-    element: <StudentServicesDashboard />,
+    element: <AuthenticatedSchoolRouteGuard><StudentServicesDashboard /></AuthenticatedSchoolRouteGuard>,
   },
   {
     path: PATHS.HR,
@@ -899,11 +900,11 @@ export const router = createBrowserRouter([
   },
   {
     path: PATHS.SAFETY,
-    element: <SafetyDashboard />,
+    element: <AuthenticatedSchoolRouteGuard><SafetyDashboard /></AuthenticatedSchoolRouteGuard>,
   },
   {
     path: PATHS.BOARD_EXECUTIVE,
-    element: <BoardExecutiveDashboard />,
+    element: <AuthenticatedSchoolRouteGuard><BoardExecutiveDashboard /></AuthenticatedSchoolRouteGuard>,
   },
   {
     path: PATHS.AFTERCARE_ROSTER,
