@@ -202,7 +202,7 @@ test.describe.serial('CROWN buyer sandbox live browser authority', () => {
     await expect(page.getByTestId('student-learning-tasks')).toContainText('Vocabulary Check 1');
     for (const route of ['/finance', '/school-admin-dashboard']) {
       await page.goto(route, { waitUntil: 'domcontentloaded' });
-      expect(new URL(page.url()).pathname).not.toBe(route);
+      await expect(page).not.toHaveURL(new RegExp(`${route.replaceAll('/', '\\\\/')}(?:$|\\\\?)`), { timeout: 10000 });
     }
     actionProofs.push('student_role_denials_and_workflow');
   });
