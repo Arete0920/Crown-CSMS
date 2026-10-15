@@ -1,12 +1,12 @@
 # Production Surface Inventory
 
-**Controlling issue:** #1453  
-**Release authority:** #1374  
+**Controlling issue:** #273  
+**Release authority:** `docs/CURRENT_RELEASE_STATUS.md`  
 **Production authorization:** Not implied
 
 ## Purpose
 
-`scripts/release/production_surface_inventory.py` creates deterministic JSON and Markdown inventories from the current repository source at one exact commit SHA. It maps each discovered surface to one supported proof method or approved exclusion and fails when a required domain is absent, an identifier is duplicated, a classification is unsupported, or any surface remains `UNMAPPED`.
+`scripts/release/production_surface_inventory_runner.py` creates deterministic JSON and Markdown inventories from the current repository source at one exact commit SHA. It maps each discovered surface to one supported proof method or approved exclusion and fails when a required domain is absent, an identifier is duplicated, a classification is unsupported, or any surface remains `UNMAPPED`.
 
 ## Canonical sources
 
@@ -15,10 +15,12 @@ The collector uses current source rather than historical scorecards:
 - frontend routes: `frontend/dashboards/src/routes/paths.js`;
 - dashboards: `frontend/dashboards/src/config/dashboardRegistry.js`, with `PATHS.*` resolution;
 - wizards: `frontend/dashboards/src/routes/wizard-manifest.js`;
-- wizard steps: named step arrays in current wizard source files;
+- wizard steps: named step arrays and concrete Step component files in current wizard source;
 - modules: Django `AppConfig` declarations in `backend/*/apps.py`;
 - APIs and integration routes: Django's initialized URL resolver, recursively composing every include and dynamic wizard registration;
-- background tasks: current `backend/**/tasks.py` functions and task decorators;
+- background tasks: decorated jobs in current `backend/**/tasks.py` files;
+- management commands: current Django `management/commands` source;
+- workflows: current `.github/workflows/*.yml` definitions;
 - integrations: composed integration, Microsoft identity, and IAM route entry points.
 
 ## Classification rules
@@ -49,10 +51,14 @@ The workflow uploads:
 
 Both contain the exact repository SHA, a deterministic inventory digest, counts by domain and classification, source locations, stable identifiers, proof assignments, and explicit non-claims.
 
+## Collector entry point
+
+Use the runner below. It applies the accepted dashboard-factory, wizard-step, task, command and workflow discovery repairs to the base collector. Direct invocation of the older base collector can report a false dashboard row and omit wizard steps; it is not the complete census entry point.
+
 ## Reproduction
 
 ```bash
-python scripts/release/production_surface_inventory.py \
+python scripts/release/production_surface_inventory_runner.py \
   --root . \
   --output-dir audit-artifacts/production-surface/current \
   --fail-on-unmapped
