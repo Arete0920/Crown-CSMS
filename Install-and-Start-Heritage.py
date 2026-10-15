@@ -8,7 +8,7 @@ import tempfile
 import urllib.request
 import zipfile
 
-SOURCE_SHA = "e226734d768ed50b405c3acf328db09ced5c1f5c"
+SOURCE_SHA = "16a32adff2ccb5af18bf2482feaab40122903017"
 SOURCE_URL = f"https://github.com/Arete0920/Crown-CSMS/archive/{SOURCE_SHA}.zip"
 ROOT = Path(__file__).resolve().parent
 DESTINATION = ROOT / f"Heritage-{SOURCE_SHA[:12]}"
