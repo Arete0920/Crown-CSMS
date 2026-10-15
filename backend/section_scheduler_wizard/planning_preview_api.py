@@ -119,7 +119,7 @@ def preview_options(request):
     )
     if not 1 <= len(snapshot.section_inputs) <= MAX_SECTIONS:
         _invalid("The school exceeds this bounded planning preview scope.")
-    return Response({
+    response = Response({
         "status": "READY_FOR_PROVISIONAL_PREVIEW",
         "publication_allowed": False,
         "source_fingerprint": snapshot.source_fingerprint,
@@ -142,6 +142,8 @@ def preview_options(request):
         ],
         "missing_policy_authority": "Teacher availability, cycle rotation and preparation rules are provisional caller assumptions.",
     })
+    response["Cache-Control"] = "private, no-store"
+    return response
 
 
 @extend_schema(responses=OpenApiTypes.OBJECT)
