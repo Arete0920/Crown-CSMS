@@ -1,7 +1,7 @@
 # Production Surface Inventory
 
-**Controlling issue:** #273  
-**Release authority:** `docs/CURRENT_RELEASE_STATUS.md`  
+**Controlling issue:** #273
+**Release authority:** `docs/CURRENT_RELEASE_STATUS.md`
 **Production authorization:** Not implied
 
 ## Purpose
