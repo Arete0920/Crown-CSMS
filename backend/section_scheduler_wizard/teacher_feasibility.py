@@ -148,7 +148,7 @@ def validate_teacher_feasibility(
         # An instructional candidate must never occupy another overlapping
         # protected block, even if the bell schedule is internally inconsistent.
         if any(
-            not p.is_instructional and _overlap(interval, (p.start_minute, p.end_minute))
+            not p.instructional and _overlap(interval, (p.start_minute, p.end_minute))
             for p in by_template_period[period.template_id]
         ):
             findings.append(TeacherFeasibilityFinding(
@@ -185,7 +185,7 @@ def validate_teacher_feasibility(
             protected = [
                 (p.start_minute, p.end_minute)
                 for p in by_template_period[template_id]
-                if not p.is_instructional
+                if not p.instructional
             ]
             work += repeat * _minutes(teaching)
             prep += repeat * _free_minutes(
