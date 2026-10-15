@@ -149,8 +149,18 @@ def solve_section_meetings(
     total = 0
     for section_id in sorted(sections):
         candidates = candidate_domains[section_id]
-        if not candidates or len(candidates) > MAX_CHOICES_PER_SECTION:
+        # Reject malformed and unhashable values BEFORE deduplication. A
+        # malformed input is not an infeasible scheduling problem.
+        if not isinstance(candidates, (tuple, list)) or not candidates or len(candidates) > MAX_CHOICES_PER_SECTION:
             return _result(MODEL_INVALID, 0, "INVALID_CANDIDATE_COUNT")
+        if any(
+            not isinstance(p, CandidatePlacement)
+            or not isinstance(p.section_id, str)
+            or not isinstance(p.period_id, str)
+            or (p.room_id is not None and not isinstance(p.room_id, str))
+            for p in candidates
+        ):
+            return _result(MODEL_INVALID, 0, "INVALID_CANDIDATE_TYPE")
         unique = tuple(sorted(set(candidates), key=_sort_key))
         total += len(unique)
         if total > MAX_TOTAL_CHOICES:
