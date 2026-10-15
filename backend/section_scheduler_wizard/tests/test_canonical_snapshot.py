@@ -140,6 +140,25 @@ class CanonicalSnapshotTests(TestCase):
         with self.assertRaises(TypeError):
             snap.section_inputs["forged"] = "new section"
 
+    def test_historical_same_term_code_does_not_block_current_year(self):
+        from academics.models import Term
+        from core.models import AcademicYear
+        from datetime import date
+        prior_year = AcademicYear.objects.create(
+            school=self.school, name="2025-2026",
+            start_date=date(2025, 8, 20), end_date=date(2026, 6, 10))
+        prior_term = Term.objects.create(
+            school_id=self.school.id, academic_year=prior_year, code="S1",
+            name="Prior fall", active=True)
+        Section.objects.create(school_id=self.school.id, course=self.section.course,
+                               term="S1", term_ref=prior_term)
+        self.assertIn(str(self.section.id), self.snapshot().section_inputs)
+
+    def test_empty_selected_term_denied(self):
+        Section.objects.filter(pk=self.section.pk).delete()
+        with self.assertRaises(ValidationError):
+            self.snapshot()
+
     def test_missing_tenant_permission_denied(self):
         actor = _client_for(self.school, role=None).handler._force_user
         with self.assertRaises(PermissionDenied):
