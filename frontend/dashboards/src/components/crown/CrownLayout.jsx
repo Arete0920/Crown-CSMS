@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { authenticatedFetch } from "../../utils/authClient.js";
+import { authenticatedFetch, getAccessToken, getSelectedSchoolId } from "../../utils/authClient.js";
 import "../../styles/operational-dashboard-canonical.css";
 
 /**
@@ -102,10 +102,21 @@ const DEPLOY_TAG = import.meta?.env?.VITE_DEPLOY_TAG || "";
 export default function CrownLayout({ title, subtitle, right, children, mainClassName = "" }) {
   const [nav, setNav] = useState(null);
   const [navError, setNavError] = useState(false);
+  const [navAuthRequired, setNavAuthRequired] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     let mounted = true;
+    // The public home shell is not a school session. Do not call a tenant-
+    // protected navigation endpoint without both the bearer and school context.
+    // Never infer a permissioned menu from a remembered role or local storage.
+    if (!getAccessToken() || !getSelectedSchoolId()) {
+      setNav(EMPTY_ROLE_SCOPED_NAV);
+      setNavAuthRequired(true);
+      setNavError(false);
+      return () => { mounted = false; };
+    }
+    setNavAuthRequired(false);
     fetchNav()
       .then((data) => {
         if (mounted) {
@@ -172,7 +183,7 @@ export default function CrownLayout({ title, subtitle, right, children, mainClas
         </div>
 
         <div className="crown-badge">
-          {navError ? "Navigation Unavailable" : "Live / Role Scoped"}
+          {navAuthRequired ? "Sign In Required" : navError ? "Navigation Unavailable" : "Live / Role Scoped"}
         </div>
 
         <nav style={{ marginTop: 24, display: "flex", flexDirection: "column", gap: 0 }}>
@@ -189,9 +200,11 @@ export default function CrownLayout({ title, subtitle, right, children, mainClas
 
           {activeNav && !hasNavItems ? (
             <div style={{ fontSize: 12, opacity: 0.7, padding: "8px 10px" }}>
-              {navError
-                ? "Role-scoped navigation is temporarily unavailable."
-                : "No navigation items are available for this role."}
+              {navAuthRequired
+                ? "Sign in to view your school\u0027s authorized navigation."
+                : navError
+                  ? "Role-scoped navigation is temporarily unavailable."
+                  : "No navigation items are available for this role."}
             </div>
           ) : null}
 
