@@ -1,8 +1,8 @@
 CROWN HERITAGE LOCAL DEMO
-Prepared October 3, 2026
+Revised October 15, 2026
 
 START ON A DEMO COMPUTER
-1. Install Python 3.11+ and Node.js 22.12+ with npm if missing.
+1. Install Python 3.12 and Node.js 24 with npm if missing.
    Tested runtime: Python 3.12 and Node.js 24.
    Python downloads: https://www.python.org/downloads/
    Node downloads: https://nodejs.org/en/download
@@ -16,8 +16,10 @@ START ON A DEMO COMPUTER
 
 This is a laptop/desktop demo. localhost refers to the computer running it;
 opening that address on a phone will not reach the demo laptop.
-The starter downloads the pinned, rehearsed CROWN revision:
-5e49157f440c549b9394f3cea7259c09d409b6bd
+The starter downloads the immutable source revision declared in
+HERITAGE-SALES-MANIFEST.json. Use only the released ZIP whose manifest
+revision matches the final certified source revision. Never change the
+revision locally or redistribute an outdated starter.
 Azure, Microsoft sign-in, and cloud database credentials are unnecessary.
 Payments in the demonstrated flow are local manual demo entries; no external
 payment is processed. Internet is required for initial installation.
@@ -79,4 +81,20 @@ LIMITS
 Native Windows/macOS execution still needs a check on the actual demo computer.
 Azure remains unresolved. Wider modules, board/Jireh journeys, external services,
 and full-product release certification were not established by this rehearsal.
-Source changes are in draft PRs 65 and 66; CI remains a merge gate.
+The sales ZIP is a local demonstration starter, not an Azure deployment.
+Prior historical proof does not certify the final shipped revision.
+Use the matching final Windows CI artifact and the owner laptop rehearsal
+before authorizing independent sales demonstrations.
+
+SALES HANDOFF CONTROL
+1. Inspect HERITAGE-SALES-MANIFEST.json; confirm its source_sha matches the
+   released certification/approval record before distributing the package.
+2. Extract the ZIP and run Start-Heritage.cmd on the actual Windows laptop.
+3. Demonstrate all six personas and at least one saved/reloaded school workflow.
+4. Keep the laptop local; do not share localhost via port-forwarding or expose
+   the open-session local sandbox on the public internet.
+5. Give sales staff this README and the canonical buyer walkthrough script:
+   docs/sandbox/CROWN_BUYER_DEMO_PRESENTER_SCRIPT_20260818.md.
+6. If startup, a protected route, seed integrity, or role denial fails: NO-GO.
+   Record the build SHA and failure; never bypass authorization to present.
+7. The Windows runner proves CI execution, not the physical sales laptops.
