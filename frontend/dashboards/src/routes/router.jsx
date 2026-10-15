@@ -240,7 +240,7 @@ export const router = createBrowserRouter([
   {
     // Unified role dashboard � /dash/admin, /dash/teacher, /dash/parent, etc.
     path: PATHS.ROLE_DASHBOARD,
-    element: <RoleDashboardPage />,
+    element: <AuthenticatedSchoolRouteGuard><RoleDashboardPage /></AuthenticatedSchoolRouteGuard>,
   },
   {
     path: '/teacher/attendance',
@@ -627,12 +627,12 @@ export const router = createBrowserRouter([
   },
   {
     path: PATHS.ADMISSIONS_PIPELINE,
-    element: <AdmissionsPipelineList />,
+    element: <AuthenticatedSchoolRouteGuard><RoleRouteGuard allowedRoles={["super_admin", "school_admin", "head_of_school", "admin", "registrar", "admissions_manager", "admissions_director"]}><AdmissionsPipelineList /></RoleRouteGuard></AuthenticatedSchoolRouteGuard>,
   },
   // Wizard Hub � lists all registered wizards from /api/v1/wizards/
   {
     path: PATHS.WIZARDS,
-    element: <WizardHub />,
+    element: <AuthenticatedSchoolRouteGuard><WizardHub /></AuthenticatedSchoolRouteGuard>,
   },
   // Wizard routes are owned by routes/wizards.js.
   ...wizardRoutes(),
@@ -694,7 +694,7 @@ export const router = createBrowserRouter([
   },
   {
     path: '/students/:id',
-    element: <Student360Page />,
+    element: <AuthenticatedSchoolRouteGuard><Student360Page /></AuthenticatedSchoolRouteGuard>,
   },
   {
     path: '/parent/students/:id',
@@ -896,7 +896,7 @@ export const router = createBrowserRouter([
   },
   {
     path: PATHS.HR,
-    element: <HumanResources />,
+    element: <AuthenticatedSchoolRouteGuard><RoleRouteGuard allowedRoles={["super_admin", "school_admin", "head_of_school", "admin", "hr", "hr_manager"]}><HumanResources /></RoleRouteGuard></AuthenticatedSchoolRouteGuard>,
   },
   {
     path: PATHS.SAFETY,
@@ -908,11 +908,11 @@ export const router = createBrowserRouter([
   },
   {
     path: PATHS.AFTERCARE_ROSTER,
-    element: <AftercareRosterPage />,
+    element: <AuthenticatedSchoolRouteGuard><RoleRouteGuard allowedRoles={ROLE_GROUPS.AFTERCARE_STAFF}><AftercareRosterPage /></RoleRouteGuard></AuthenticatedSchoolRouteGuard>,
   },
   {
     path: PATHS.WIZARD_AFTERCARE_SETUP,
-    element: <AftercareSetupWizard />,
+    element: <AuthenticatedSchoolRouteGuard><RoleRouteGuard allowedRoles={ROLE_GROUPS.AFTERCARE_STAFF}><AftercareSetupWizard /></RoleRouteGuard></AuthenticatedSchoolRouteGuard>,
   },
   {
     path: PATHS.WIZARD_FINANCE_SETUP,
@@ -977,15 +977,13 @@ export const router = createBrowserRouter([
   // ── CROWN sidebar navigation routes ──────────────────────────────────
   {
     path: PATHS.STUDENT_LIFE,
-    element: IS_LAUNCH_PREVIEW
-      ? <StudentDashboard />
-      : <SpiritualLifeDashboard />,
+    element: <AuthenticatedSchoolRouteGuard>{IS_LAUNCH_PREVIEW
+      ? <StudentDashboard />      : <SpiritualLifeDashboard />}</AuthenticatedSchoolRouteGuard>,
   },
   {
     path: PATHS.SETTINGS,
-    element: IS_LAUNCH_PREVIEW
-      ? <SchoolSettingsPage />
-      : <AdminDashboard />,
+    element: <AuthenticatedSchoolRouteGuard><RoleRouteGuard allowedRoles={ROLE_GROUPS.ADMIN_ONLY}>{IS_LAUNCH_PREVIEW
+      ? <SchoolSettingsPage />      : <AdminDashboard />}</RoleRouteGuard></AuthenticatedSchoolRouteGuard>,
   },
   // ── Common inbound path aliases (no-backend fallback redirects) ──────────
   { path: '/students', element: <Navigate to={PATHS.ADMISSIONS} replace /> },
