@@ -2,6 +2,7 @@
 
 from section_scheduler_wizard.preflight import (
     MAX_CANDIDATE_PLACEMENTS,
+    MAX_REPORTED_FINDINGS,
     CandidatePlacement,
     PeriodInput,
     RoomInput,
@@ -108,3 +109,9 @@ def test_does_not_modify_input_collections():
 
 def test_empty_candidate_set_is_not_mistaken_for_valid_schedule():
     assert codes(check([])) == {"NO_PLACEMENTS"}
+
+def test_high_conflict_input_returns_bounded_findings():
+    proposals = [CandidatePlacement("english", "p1", "one")] * 60
+    result = check(proposals)
+    assert len(result) == MAX_REPORTED_FINDINGS + 1
+    assert result[-1].code == "FINDINGS_TRUNCATED"
