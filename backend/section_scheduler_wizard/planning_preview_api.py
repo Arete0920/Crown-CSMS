@@ -8,6 +8,9 @@ confers publication authorization.
 """
 from __future__ import annotations
 
+from hashlib import sha256
+from json import dumps
+
 from rest_framework import status
 from rest_framework.authentication import SessionAuthentication
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
@@ -191,6 +194,21 @@ def preview(request):
     if type(node_limit) is not int or not 1 <= node_limit <= DEFAULT_NODE_LIMIT:
         _invalid("Synchronous node limit must be an integer from 1 to 2500.")
 
+    # Assumptions are not canonical policy. Bind them to a separate digest so
+    # changing workload, availability or rotation cannot masquerade as the
+    # same scenario merely because the placements remain unchanged.
+    assumption_payload = {
+        "teacher_rules": [
+            [key, sorted(rule.unavailable_period_ids),
+             rule.max_instructional_minutes_per_cycle,
+             rule.minimum_preparation_minutes_per_cycle]
+            for key, rule in sorted(rules.items())
+        ],
+        "template_occurrences": sorted(occurrences.items()),
+    }
+    assumptions_digest = sha256(dumps(
+        assumption_payload, separators=(",", ":"), sort_keys=True
+    ).encode("utf-8")).hexdigest()
     result = solve_section_meetings(
         school_id=snapshot.school_id,
         academic_year_id=snapshot.academic_year_id,
@@ -219,6 +237,8 @@ def preview(request):
         "diagnostics": list(result.diagnostics),
         "source_fingerprint": snapshot.source_fingerprint,
         "authority": "PROVISIONAL_INPUT_ASSUMPTIONS",
+        "assumptions_verified": False,
+        "assumptions_digest": assumptions_digest,
         "publication_allowed": False,
         "placements": [],
         "preview_digest": None,
