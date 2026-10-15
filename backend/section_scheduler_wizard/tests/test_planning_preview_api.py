@@ -271,3 +271,10 @@ class KairosIntegratedPreviewTests(TestCase):
         )
         self.assertEqual(options.status_code, 403)
         self.assertEqual(SectionPlacement.objects.count(), 0)
+
+    def test_excessive_synchronous_search_budget_is_denied(self):
+        data = self.body()
+        data["node_limit"] = 2501
+        response = self.post(data)
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(SectionPlacement.objects.count(), 0)
