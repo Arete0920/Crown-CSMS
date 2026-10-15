@@ -20,6 +20,11 @@ from .preflight import (
 from .teacher_feasibility import MAX_CYCLE_OCCURRENCES, validate_teacher_feasibility
 
 MAX_SECTIONS = 64
+MAX_PERIODS = 1000
+MAX_ROOMS = 1000
+MAX_TEACHER_RULES = 1000
+MAX_STAFF_PER_SECTION = 16
+MAX_STUDENTS_PER_SECTION = 1000
 MAX_CHOICES_PER_SECTION = 32
 MAX_TOTAL_CHOICES = 512
 MAX_NODE_LIMIT = 20000
@@ -73,12 +78,22 @@ def solve_section_meetings(
         return _result(MODEL_INVALID, 0, "INVALID_SCOPE_OR_BUDGET")
     if not sections or len(sections) > MAX_SECTIONS or set(candidate_domains) != set(sections):
         return _result(MODEL_INVALID, 0, "INVALID_SECTION_DOMAIN")
+    # Bound every solver input collection before doing pairwise collision checks.
+    # Data that exceeds limits is invalid; do not report it as infeasible.
+    if (
+        len(periods) > MAX_PERIODS
+        or len(rooms) > MAX_ROOMS
+        or len(teacher_rules) > MAX_TEACHER_RULES
+    ):
+        return _result(MODEL_INVALID, 0, "INPUT_COLLECTION_LIMIT")
     if any(
         key != section.section_id
         or (section.school_id, section.academic_year_id, section.term_code)
            != (school_id, academic_year_id, term_code)
-        or not section.roster_verified
+        or section.roster_verified is not True
         or not section.teacher_ids
+        or len(section.teacher_ids) > MAX_STAFF_PER_SECTION
+        or len(section.student_ids) > MAX_STUDENTS_PER_SECTION
         for key, section in sections.items()
     ):
         return _result(MODEL_INVALID, 0, "UNVERIFIED_SECTION_SCOPE")
