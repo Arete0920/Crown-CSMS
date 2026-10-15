@@ -167,6 +167,46 @@ test.describe.serial('CROWN buyer sandbox live browser authority', () => {
   }
 
 
+  test('admissions converts an accepted fictional applicant and persists the student handoff', async ({ page }) => {
+    await launchPersona(page, 'Admissions Director');
+    await page.goto('/admissions/pipeline', { waitUntil: 'networkidle' });
+    const targetFamily = 'Mercer Enrollment Conversion Demo Family';
+    const row = page.getByRole('row').filter({ hasText: targetFamily }).filter({ hasText: 'Accepted' }).first();
+    await expect(row).toBeVisible();
+    await row.getByRole('button', { name: 'Open' }).click();
+    await expect(page.getByText('Household Admissions Review')).toBeVisible();
+    await page.getByRole('button', { name: 'Show details' }).first().click();
+    const conversion = page.waitForResponse((response) =>
+      response.url().includes('/api/admissions/enroll/') &&
+      response.request().method() === 'POST',
+    );
+    await page.getByRole('button', { name: 'Enroll Child' }).first().click();
+    const response = await conversion;
+    expect(response.ok()).toBe(true);
+    const enrolled = await response.json();
+    expect(enrolled.ok).toBe(true);
+    expect(enrolled.student_id).toBeTruthy();
+    expect(enrolled.canonical_gate).toBe('contract_countersigned_and_deposit_paid_or_waived');
+    await page.reload({ waitUntil: 'networkidle' });
+    await expect(page.getByRole('row').filter({ hasText: targetFamily }).filter({ hasText: 'Enrolled' }).first()).toBeVisible();
+    actionProofs.push('admissions_conversion_persists');
+  });
+
+  test('student workspace shows school data and denies finance and administrative routes', async ({ page }) => {
+    await launchPersona(page, 'Student');
+    await page.goto('/student', { waitUntil: 'networkidle' });
+    await expect(page.getByTestId('sandbox-student-self-service')).toBeVisible();
+    await expect(page.getByTestId('student-self-service-name')).toHaveText('Avery Reed');
+    await expect(page.getByTestId('student-schedule')).toContainText('Grade 7 English Language Arts');
+    await page.reload({ waitUntil: 'networkidle' });
+    await expect(page.getByTestId('student-learning-tasks')).toContainText('Vocabulary Check 1');
+    for (const route of ['/finance', '/school-admin-dashboard']) {
+      await page.goto(route, { waitUntil: 'domcontentloaded' });
+      expect(new URL(page.url()).pathname).not.toBe(route);
+    }
+    actionProofs.push('student_role_denials_and_workflow');
+  });
+
   test('finance manual demonstration payment persists after reload', async ({ page }) => {
     await launchPersona(page, 'Finance Director');
     await page.goto('/finance', { waitUntil: 'networkidle' });
