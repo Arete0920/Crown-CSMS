@@ -197,6 +197,18 @@ def preview(request):
         candidate_domains=domains, teacher_rules=rules,
         template_occurrences=occurrences, node_limit=node_limit,
     )
+    # The underlying roster, terms, staff and bell schedule may change while
+    # a bounded search executes. Never return a stale plan as even provisional.
+    refreshed = build_canonical_planning_snapshot(
+        actor=request.user, school_id=school_id,
+        academic_year_id=ay, term_code=term,
+    )
+    if refreshed.source_fingerprint != snapshot.source_fingerprint:
+        return Response(
+            {"error": "SOURCE_CHANGED_DURING_PREVIEW",
+             "status": "STALE", "publication_allowed": False},
+            status=status.HTTP_409_CONFLICT,
+        )
     payload = {
         "status": result.status,
         "nodes_visited": result.nodes_visited,
