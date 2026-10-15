@@ -39,6 +39,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Verify crawler inventory and dashboard authorization contracts
+        run: npx vitest run tests/certification/crawler-coverage-contract.test.ts tests/certification/anonymous-specialist-routes.test.ts --reporter=verbose
+
       - name: Install Playwright browsers
         run: npx playwright install chromium --with-deps
 
@@ -63,6 +66,14 @@ jobs:
           VITE_DEV_BASE_URL: "http://localhost:4173"
           CROWN_DEMO_SCHOOL_ID: "19801b59-8c05-4c84-9312-5d792e4e839d"
           CROWN_DEMO_TOKEN: "playwright-demo-token"
+          VITE_SANDBOX_MODE: "1"
+          VITE_DEMO_MODE: "sandbox"
+
+      - name: Browser-check navigation and anonymous school-route denial
+        run: npx playwright test tests/ui/nav-permissions.spec.ts tests/ui/anonymous-specialist-route-access.spec.ts --grep "anonymous public home|missing authority|anonymous CROWN school route denial" --reporter=line
+        env:
+          CI: "1"
+          VITE_DEV_BASE_URL: "http://localhost:4173"
           VITE_SANDBOX_MODE: "1"
           VITE_DEMO_MODE: "sandbox"
 
