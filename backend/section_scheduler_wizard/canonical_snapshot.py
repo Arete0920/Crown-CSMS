@@ -79,14 +79,22 @@ def build_canonical_planning_snapshot(*, actor, school_id, academic_year_id, ter
         raise ValidationError("Exactly one active bell schedule is required.")
     schedule = schedules[0]
 
-    # Rows with no academic-year authority cannot be assigned to the requested year.
-    if Section.objects.filter(school_id=school_id, term=term_code).exclude(term_ref_id=terms[0].id).exists():
-        raise ValidationError("Sections with missing, stale or foreign-year term links require reconciliation.")
+    # A legacy section without a term FK has no defensible academic-year scope.
+    # Do not reject valid sections with the same term code in *other* school years.
+    if Section.objects.filter(school_id=school_id, term=term_code, term_ref__isnull=True).exists():
+        raise ValidationError("Unlinked legacy sections require reconciliation.")
+    if Section.objects.filter(
+        school_id=school_id, term=term_code,
+        term_ref__academic_year_id=academic_year_id
+    ).exclude(term_ref_id=terms[0].id).exists():
+        raise ValidationError("Ambiguous or foreign-school term association requires reconciliation.")
     sections_raw = list(Section.objects.filter(
         school_id=school_id, term_ref_id=terms[0].id, term=term_code
     ).select_related("course").order_by("id")[:MAX_SECTIONS + 1])
     if len(sections_raw) > MAX_SECTIONS:
         raise ValidationError("Too many sections for a single snapshot.")
+    if not sections_raw:
+        raise ValidationError("No canonical sections exist for the selected term.")
     if any(s.course.school_id != school_id for s in sections_raw):
         raise ValidationError("Section references a foreign course.")
     section_ids = [s.id for s in sections_raw]
