@@ -103,6 +103,48 @@ def _candidate_inputs(raw, snapshot):
 
 
 @extend_schema(responses=OpenApiTypes.OBJECT)
+@api_view(["GET"])
+@authentication_classes(_AUTH)
+@permission_classes([CrownModulePermission("scheduling.view")])
+def preview_options(request):
+    """Expose an authorized opaque-ID planning contract, without student PII."""
+    school_id = get_request_school_id(request, required=True)
+    year_id = request.query_params.get("academic_year_id")
+    term_code = request.query_params.get("term_code")
+    if not year_id or not term_code:
+        _invalid("Academic year and term required.")
+    snapshot = build_canonical_planning_snapshot(
+        actor=request.user, school_id=school_id,
+        academic_year_id=year_id, term_code=term_code,
+    )
+    if not 1 <= len(snapshot.section_inputs) <= MAX_SECTIONS:
+        _invalid("The school exceeds this bounded planning preview scope.")
+    return Response({
+        "status": "READY_FOR_PROVISIONAL_PREVIEW",
+        "publication_allowed": False,
+        "source_fingerprint": snapshot.source_fingerprint,
+        "scope": {
+            "school_id": snapshot.school_id,
+            "academic_year_id": snapshot.academic_year_id,
+            "term_code": snapshot.term_code,
+        },
+        "section_ids": sorted(snapshot.section_inputs),
+        "assigned_staff_ids": sorted(snapshot.assigned_staff_ids),
+        "periods": [
+            {"period_id": key, "day_template_id": p.template_id,
+             "start_minute": p.start_minute, "end_minute": p.end_minute,
+             "instructional": p.instructional}
+            for key, p in sorted(snapshot.period_inputs.items())
+        ],
+        "rooms": [
+            {"room_id": key, "capacity": room.capacity}
+            for key, room in sorted(snapshot.room_inputs.items())
+        ],
+        "missing_policy_authority": "Teacher availability, cycle rotation and preparation rules are provisional caller assumptions.",
+    })
+
+
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 @authentication_classes(_AUTH)
 @permission_classes(_PERMISSION)
