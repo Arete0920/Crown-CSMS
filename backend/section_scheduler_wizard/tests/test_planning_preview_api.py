@@ -83,6 +83,7 @@ class KairosIntegratedPreviewTests(TestCase):
         res = self.post(data)
         self.assertEqual(res.status_code, 200, res.data)
         self.assertEqual(res.data["status"], "FEASIBLE")
+        self.assertIn("no-store", res["Cache-Control"])
         self.assertFalse(res.data["publication_allowed"])
         self.assertEqual(res.data["authority"], "PROVISIONAL_INPUT_ASSUMPTIONS")
         self.assertEqual(len(res.data["preview_digest"]), 64)
