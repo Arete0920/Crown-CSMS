@@ -184,8 +184,10 @@ def preview(request):
     ):
         _invalid("Explicit bounded day-template recurrence assumptions required.")
     node_limit = data.get("node_limit", DEFAULT_NODE_LIMIT)
-    if type(node_limit) is not int or not 1 <= node_limit <= 20000:
-        _invalid("Node limit must be a bounded integer.")
+    # An authenticated web request must never monopolize application workers.
+    # Larger research searches belong in an independently governed worker.
+    if type(node_limit) is not int or not 1 <= node_limit <= DEFAULT_NODE_LIMIT:
+        _invalid("Synchronous node limit must be an integer from 1 to 2500.")
 
     result = solve_section_meetings(
         school_id=snapshot.school_id,
