@@ -18,7 +18,7 @@ Keep the visual story consistent throughout the demo. Call attention to the same
 
 **Say:**
 
-“CROWN is a production-ready Christian School Management Solution built as one connected operating platform. This demonstration uses Heritage Christian Academy, a protected synthetic-data school. You will not need a username or password. We will enter through the buyer sandbox, choose a role, and then move through the same role-aware workspace and workflows a school uses.”
+“CROWN is being developed as a connected Christian School Management Solution that links leadership, admissions, finance, classroom, and family operations. This is a local demonstration of selected working journeys, not evidence that production deployment has been certified. This demonstration uses Heritage Christian Academy, a protected synthetic-data school. You will not need a username or password. We will enter through the buyer sandbox, choose a role, and then move through the same role-aware workspace and workflows a school uses.”
 
 **Show:**
 

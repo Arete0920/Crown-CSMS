@@ -8,7 +8,7 @@ import tempfile
 import urllib.request
 import zipfile
 
-SOURCE_SHA = "5e49157f440c549b9394f3cea7259c09d409b6bd"
+SOURCE_SHA = "16a32adff2ccb5af18bf2482feaab40122903017"
 SOURCE_URL = f"https://github.com/Arete0920/Crown-CSMS/archive/{SOURCE_SHA}.zip"
 ROOT = Path(__file__).resolve().parent
 DESTINATION = ROOT / f"Heritage-{SOURCE_SHA[:12]}"
@@ -43,10 +43,10 @@ def install_source(destination=DESTINATION, source_url=SOURCE_URL):
 
 
 def main():
-    if sys.version_info < (3, 11):
-        raise RuntimeError("Install Python 3.11 or newer. Python 3.12 was used for this rehearsal.")
+    if sys.version_info < (3, 12):
+        raise RuntimeError("Install Python 3.12 or newer; Python 3.12 is the Windows-certified runtime.")
     if not shutil.which("node"):
-        raise RuntimeError("Install Node.js 22.12+ with npm, then double-click the starter again.")
+        raise RuntimeError("Install Node.js 24 with npm, then double-click the starter again.")
     source = install_source()
     return subprocess.call([sys.executable, str(source / "scripts/demo/start_heritage_local.py")], cwd=source)
 
