@@ -179,3 +179,42 @@ def test_unverified_truthy_roster_flag_rejected():
     x = scenario()
     x["sections"]["english"] = replace(x["sections"]["english"], roster_verified=1)
     assert solve(**x).status == MODEL_INVALID
+
+
+def test_student_conflict_cannot_be_returned_as_feasible():
+    from dataclasses import replace
+    x = scenario()
+    x["sections"]["math"] = replace(
+        x["sections"]["math"], student_ids=frozenset({"s1"})
+    )
+    x["candidate_domains"] = {
+        "english": (CandidatePlacement("english", "p1", "r"),),
+        "math": (CandidatePlacement("math", "p1", "r"),),
+    }
+    assert solve(**x).status == INFEASIBLE
+
+
+def test_room_capacity_violation_is_invalid_candidate_input():
+    x = scenario()
+    x["rooms"]["r"] = RoomInput("r", "school", 0)
+    assert solve(**x).status == MODEL_INVALID
+
+
+def test_separate_day_templates_are_independent_if_cycles_valid():
+    from dataclasses import replace
+    x = scenario()
+    x["periods"]["bp1"] = PeriodInput("bp1", "school", "year", "B", 480, 540, True)
+    x["candidate_domains"] = {
+        "english": (CandidatePlacement("english", "p1", "r"),),
+        "math": (CandidatePlacement("math", "bp1", "r"),),
+    }
+    x["template_occurrences"] = {"A": 1, "B": 1}
+    assert solve(**x).status == FEASIBLE
+
+
+def test_overlapping_chapel_blocks_disallow_candidate():
+    x = scenario()
+    x["periods"]["chapel"] = PeriodInput(
+        "chapel", "school", "year", "A", 510, 570, False
+    )
+    assert solve(**x).status == INFEASIBLE
