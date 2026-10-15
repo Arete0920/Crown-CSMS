@@ -115,3 +115,11 @@ def test_high_conflict_input_returns_bounded_findings():
     result = check(proposals)
     assert len(result) == MAX_REPORTED_FINDINGS + 1
     assert result[-1].code == "FINDINGS_TRUNCATED"
+
+def test_mismatched_mapping_keys_cannot_impersonate_canonical_records():
+    sections, periods, rooms = sample()
+    sections["english"] = SectionInput("other-section", "school-a", "year-a", "S1", frozenset({"teacher-1"}), frozenset(), True)
+    periods["p1"] = PeriodInput("other-period", "school-a", "year-a", "day-a", 480, 540, True)
+    rooms["one"] = RoomInput("other-room", "school-a", 20)
+    result = check([CandidatePlacement("english", "p1", "one")], sections, periods, rooms)
+    assert codes(result) == {"INVALID_SECTION_SCOPE", "INVALID_PERIOD_SCOPE", "INVALID_ROOM_SCOPE"}
