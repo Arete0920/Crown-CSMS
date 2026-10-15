@@ -166,3 +166,39 @@ class KairosIntegratedPreviewTests(TestCase):
         self.assertEqual(res.data["status"], "INFEASIBLE")
         self.assertEqual(res.data["placements"], [])
         self.assertEqual(SectionPlacement.objects.count(), 0)
+
+    def test_authorized_options_supply_only_opaque_canonical_ids(self):
+        result = self.client.get(
+            ENDPOINT + "options/",
+            {"academic_year_id": str(self.year.id), "term_code": "S1"},
+            **_headers(self.school),
+        )
+        self.assertEqual(result.status_code, 200, result.data)
+        self.assertEqual(result.data["source_fingerprint"], self.body()["expected_source_fingerprint"])
+        self.assertEqual(result.data["section_ids"], [str(self.section.id)])
+        self.assertEqual(result.data["assigned_staff_ids"], [str(self.staff.id)])
+        self.assertFalse(result.data["publication_allowed"])
+        self.assertNotIn("student_ids", result.data)
+        self.assertNotIn("student_name", str(result.data).lower())
+        self.assertEqual(SectionPlacement.objects.count(), 0)
+
+    def test_options_cannot_access_without_school_grant(self):
+        unauth = _client_for(self.school, role=None)
+        result = unauth.get(
+            ENDPOINT + "options/",
+            {"academic_year_id": str(self.year.id), "term_code": "S1"},
+            **_headers(self.school),
+        )
+        self.assertEqual(result.status_code, 403)
+
+    def test_options_reject_foreign_year(self):
+        from core.models import AcademicYear
+        from datetime import date
+        foreign_school, *_ = _fixtures()
+        foreign_year = AcademicYear.objects.filter(school=foreign_school).first()
+        response = self.client.get(
+            ENDPOINT + "options/",
+            {"academic_year_id": str(foreign_year.id), "term_code": "S1"},
+            **_headers(self.school),
+        )
+        self.assertEqual(response.status_code, 400)
