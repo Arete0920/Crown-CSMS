@@ -12,6 +12,7 @@ from typing import Mapping, Sequence
 
 
 MAX_CANDIDATE_PLACEMENTS = 2000
+MAX_REPORTED_FINDINGS = 1000
 
 
 @dataclass(frozen=True)
@@ -110,6 +111,8 @@ def validate_candidate_placements(
             findings.append(Finding("PROTECTED_PERIOD", index, "Instruction may not occupy a protected period."))
         if room is not None and (room.capacity < 1 or len(section.student_ids) > room.capacity):
             findings.append(Finding("ROOM_CAPACITY", index, "Room capacity is invalid or smaller than the verified roster."))
+        if len(findings) >= MAX_REPORTED_FINDINGS:
+            return tuple(findings[:MAX_REPORTED_FINDINGS]) + (Finding("FINDINGS_TRUNCATED", -1, "Additional findings were omitted; correct and retry."),)
         valid.append((index, placement, section, period))
 
     # Different day templates are independent recurring days. Time overlap is
@@ -127,4 +130,6 @@ def validate_candidate_placements(
             findings.append(Finding("TEACHER_OVERLAP", ri, f"Teacher overlaps another placement at index {li}."))
         if ls.student_ids & rs.student_ids:
             findings.append(Finding("STUDENT_OVERLAP", ri, f"Student overlaps another placement at index {li}."))
+        if len(findings) >= MAX_REPORTED_FINDINGS:
+            return tuple(findings[:MAX_REPORTED_FINDINGS]) + (Finding("FINDINGS_TRUNCATED", -1, "Additional findings were omitted; correct and retry."),)
     return tuple(findings)
