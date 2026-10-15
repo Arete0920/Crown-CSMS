@@ -39,6 +39,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Verify crawler inventory contracts (source only)
+        run: npx vitest run tests/certification/crawler-coverage-contract.test.ts --reporter=verbose
+
       - name: Install Playwright browsers
         run: npx playwright install chromium --with-deps
 
