@@ -281,3 +281,16 @@ class KairosIntegratedPreviewTests(TestCase):
         response = self.post(data)
         self.assertEqual(response.status_code, 400)
         self.assertEqual(SectionPlacement.objects.count(), 0)
+
+    def test_assumption_policy_changes_have_distinct_digests(self):
+        first = self.body()
+        a = self.post(first)
+        self.assertEqual(a.status_code, 200, a.data)
+        self.assertFalse(a.data["assumptions_verified"])
+        second = self.body()
+        second["teacher_rules"][0]["max_instructional_minutes_per_cycle"] += 60
+        b = self.post(second)
+        self.assertEqual(b.status_code, 200, b.data)
+        self.assertEqual(a.data["preview_digest"], b.data["preview_digest"])
+        self.assertNotEqual(a.data["assumptions_digest"], b.data["assumptions_digest"])
+        self.assertEqual(SectionPlacement.objects.count(), 0)
