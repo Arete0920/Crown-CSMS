@@ -45,6 +45,20 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install chromium --with-deps
 
+      - name: Browser-verify Jireh marketing-site desktop and mobile presentation
+        run: npx playwright test --config playwright.jireh.config.ts --reporter=line
+
+      - name: Upload Jireh visual evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: jireh-visual-proof-${{ github.run_id }}
+          path: |
+            frontend/dashboards/jireh-proof/
+            frontend/dashboards/jireh-playwright-report/
+          retention-days: 7
+          if-no-files-found: warn
+
       - name: Run proof smoke suite
         run: npm run test:e2e:smoke
         env:
