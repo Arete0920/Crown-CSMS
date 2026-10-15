@@ -294,3 +294,22 @@ class KairosIntegratedPreviewTests(TestCase):
         self.assertEqual(a.data["preview_digest"], b.data["preview_digest"])
         self.assertNotEqual(a.data["assumptions_digest"], b.data["assumptions_digest"])
         self.assertEqual(SectionPlacement.objects.count(), 0)
+
+    def test_protected_chapel_cannot_be_proposed_through_api(self):
+        from datetime import time
+        from bell_schedule_wizard.models import PeriodBlock
+        chapel = PeriodBlock.objects.create(
+            template=self.template, code="CHAPEL", label="Chapel",
+            start_time=time(9, 0), end_time=time(10, 0),
+            ordering=2, is_instructional=False,
+        )
+        data = self.body()
+        data["candidate_domains"][str(self.section.id)] = [
+            {"period_id": str(chapel.id), "room_id": str(self.room.id)}
+        ]
+        response = self.post(data)
+        self.assertEqual(response.status_code, 200, response.data)
+        self.assertEqual(response.data["status"], "MODEL_INVALID")
+        self.assertEqual(response.data["placements"], [])
+        self.assertFalse(response.data["publication_allowed"])
+        self.assertEqual(SectionPlacement.objects.count(), 0)
