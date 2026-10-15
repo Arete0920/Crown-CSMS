@@ -14,25 +14,33 @@ const namedRoutes = [...new Set(Object.values(PATHS).filter(
 const matrixRoutes = certificationMatrix.map((surface) => surface.route);
 const explicitWizardPaths = WIZARD_MANIFEST.map((wizard) => wizard.path);
 
+function routeMatchesDeclaredPattern(pattern: string, actualRoute: string): boolean {
+  const template = pattern.split("/");
+  const actual = actualRoute.split("/");
+  return template.length === actual.length
+    && template.every((part, index) => part.startsWith(":")
+      ? actual[index].length > 0
+      : part === actual[index]);
+}
+
 function isNamedRoute(route: string): boolean {
-  if (namedRoutes.includes(route)) return true;
-  // A route such as /dash/admin is an instance of /dash/:role, not a
-  // separate PATHS entry. Match whole segments; do not accept arbitrary URLs.
-  return namedRoutes.some((pattern) => {
-    if (!pattern.includes(":")) return false;
-    const template = pattern.split("/");
-    const actual = route.split("/");
-    return template.length === actual.length
-      && template.every((part, index) => part.startsWith(":")
-        ? actual[index].length > 0
-        : part === actual[index]);
-  });
+  // Dynamic /dash/:role can cover /dash/admin, but it cannot cover an
+  // unrelated two-segment path such as /students/:id.
+  return namedRoutes.some((pattern) => routeMatchesDeclaredPattern(pattern, route));
 }
 
 describe("crawler coverage inventory contract (not live certification)", () => {
   it("keeps every crawler target linked to a declared frontend path", () => {
     const notDeclared = matrixRoutes.filter((route) => !isNamedRoute(route));
     expect(notDeclared).toEqual([]);
+  });
+
+  it("does not count unrelated routes as covered by dynamic path patterns", () => {
+    expect(routeMatchesDeclaredPattern("/dash/:role", "/dash/admin")).toBe(true);
+    expect(routeMatchesDeclaredPattern("/students/:id", "/students/synthetic-id")).toBe(true);
+    expect(routeMatchesDeclaredPattern("/students/:id", "/dash/admin")).toBe(false);
+    expect(routeMatchesDeclaredPattern("/dash/:role", "/other/admin")).toBe(false);
+    expect(routeMatchesDeclaredPattern("/dash/:role", "/dash/admin/extra")).toBe(false);
   });
 
   it("keeps unique surface identifiers and route/persona/tenant combinations", () => {
@@ -60,9 +68,7 @@ describe("crawler coverage inventory contract (not live certification)", () => {
   it("reports explicitly uncovered paths and wizard journeys without claiming a PASS", () => {
     const covered = new Set(matrixRoutes);
     const uncoveredNamedPaths = namedRoutes.filter((path) =>
-      !covered.has(path) && !matrixRoutes.some((actual) =>
-        actual !== path && path.includes(":") && isNamedRoute(actual)
-        && path.split("/").length === actual.split("/").length));
+      !matrixRoutes.some((actual) => routeMatchesDeclaredPattern(path, actual)));
     const uncoveredWizards = explicitWizardPaths.filter((path) => !covered.has(path));
 
     const snapshot = {
