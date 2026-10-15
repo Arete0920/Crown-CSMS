@@ -258,3 +258,16 @@ class KairosIntegratedPreviewTests(TestCase):
         self.assertEqual(result.data["error"], "SOURCE_CHANGED_DURING_PREVIEW")
         self.assertFalse(result.data["publication_allowed"])
         self.assertEqual(SectionPlacement.objects.count(), 0)
+
+    def test_cross_school_principal_cannot_read_or_execute_preview(self):
+        foreign_school, *_ = _fixtures()
+        foreign_client = _client_for(foreign_school)
+        response = self.post(self.body(), client=foreign_client)
+        self.assertEqual(response.status_code, 403)
+        options = foreign_client.get(
+            ENDPOINT + "options/",
+            {"academic_year_id": str(self.year.id), "term_code": "S1"},
+            **_headers(self.school),
+        )
+        self.assertEqual(options.status_code, 403)
+        self.assertEqual(SectionPlacement.objects.count(), 0)
