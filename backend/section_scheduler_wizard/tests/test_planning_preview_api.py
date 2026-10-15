@@ -263,13 +263,14 @@ class KairosIntegratedPreviewTests(TestCase):
         foreign_school, *_ = _fixtures()
         foreign_client = _client_for(foreign_school)
         response = self.post(self.body(), client=foreign_client)
-        self.assertEqual(response.status_code, 403)
+        # Canonical tenant resolver deliberately conceals foreign schools (404).
+        self.assertEqual(response.status_code, 404)
         options = foreign_client.get(
             ENDPOINT + "options/",
             {"academic_year_id": str(self.year.id), "term_code": "S1"},
             **_headers(self.school),
         )
-        self.assertEqual(options.status_code, 403)
+        self.assertEqual(options.status_code, 404)
         self.assertEqual(SectionPlacement.objects.count(), 0)
 
     def test_excessive_synchronous_search_budget_is_denied(self):
