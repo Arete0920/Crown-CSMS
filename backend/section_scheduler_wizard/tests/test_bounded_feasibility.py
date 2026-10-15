@@ -218,3 +218,17 @@ def test_overlapping_chapel_blocks_disallow_candidate():
         "chapel", "school", "year", "A", 510, 570, False
     )
     assert solve(**x).status == INFEASIBLE
+
+
+def test_malformed_candidate_is_invalid_not_server_error():
+    x = scenario()
+    x["candidate_domains"]["english"] = ({"section_id": "english"},)
+    assert solve(**x).status == MODEL_INVALID
+
+
+def test_unhashable_candidate_field_is_denied():
+    x = scenario()
+    x["candidate_domains"]["english"] = (
+        CandidatePlacement("english", ["p1"], "r"),
+    )
+    assert solve(**x).status == MODEL_INVALID
