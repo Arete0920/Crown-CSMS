@@ -21,7 +21,7 @@ permissions:
 jobs:
   windows-local-demo:
     runs-on: windows-latest
-    timeout-minutes: 45
+    timeout-minutes: 65
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -39,10 +39,14 @@ jobs:
           node --version
           npm --version
           python scripts/demo/start_heritage_local.py --prepare-only
+      - name: Install Playwright Chromium for full buyer browser certification
+        shell: pwsh
+        working-directory: frontend/dashboards
+        run: npx playwright install --with-deps chromium
       - name: Launch servers and verify local role-based demo
         shell: pwsh
         run: |
-          python scripts/demo/verify_heritage_runtime.py
+          python scripts/demo/verify_heritage_runtime.py --browser
       - name: Upload local rehearsal evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
@@ -51,5 +55,6 @@ jobs:
           path: |
             .local-backups/heritage-demo/*.log
             .local-backups/heritage-demo/rehearsal-result.json
+            .local-backups/heritage-demo/buyer-browser-authority.json
           if-no-files-found: error
           retention-days: 7

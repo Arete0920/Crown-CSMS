@@ -14,6 +14,7 @@ type RouteResult = {
 };
 
 const results: RouteResult[] = [];
+const actionProofs: string[] = [];
 const outputPath = resolve(
   process.cwd(),
   process.env.CROWN_BROWSER_AUTHORITY_OUTPUT || 'test-results/buyer-sandbox-browser-authority.json',
@@ -94,6 +95,7 @@ test.describe.serial('CROWN buyer sandbox live browser authority', () => {
           school: BUYER_WALKTHROUGH.school,
           routeCount: results.length,
           results,
+          actionProofs,
         },
         null,
         2,
@@ -163,6 +165,116 @@ test.describe.serial('CROWN buyer sandbox live browser authority', () => {
       expect(consoleErrors, `console errors for ${journey.label}`).toEqual([]);
     });
   }
+
+
+  test('admissions converts an accepted fictional applicant and persists the student handoff', async ({ page }) => {
+    await launchPersona(page, 'Admissions Director');
+    await page.goto('/admissions/pipeline', { waitUntil: 'networkidle' });
+    const targetFamily = 'Mercer Enrollment Conversion Demo Family';
+    const row = page.getByRole('row').filter({ hasText: targetFamily }).filter({ hasText: 'Accepted' }).first();
+    await expect(row).toBeVisible();
+    await row.getByRole('button', { name: 'Open' }).click();
+    await expect(page.getByText('Household Admissions Review')).toBeVisible();
+    await page.getByRole('button', { name: 'Show details' }).first().click();
+    const conversion = page.waitForResponse((response) =>
+      response.url().includes('/api/admissions/enroll/') &&
+      response.request().method() === 'POST',
+    );
+    await page.getByRole('button', { name: 'Enroll Child' }).first().click();
+    const response = await conversion;
+    expect(response.ok()).toBe(true);
+    const enrolled = await response.json();
+    expect(enrolled.ok).toBe(true);
+    expect(enrolled.student_id).toBeTruthy();
+    expect(enrolled.canonical_gate).toBe('contract_countersigned_and_deposit_paid_or_waived');
+    await page.reload({ waitUntil: 'networkidle' });
+    await expect(page.getByRole('row').filter({ hasText: targetFamily }).filter({ hasText: 'Enrolled' }).first()).toBeVisible();
+    actionProofs.push('admissions_conversion_persists');
+  });
+
+  test('student workspace shows school data and denies finance and administrative routes', async ({ page }) => {
+    await launchPersona(page, 'Student');
+    await page.goto('/student', { waitUntil: 'networkidle' });
+    await expect(page.getByTestId('sandbox-student-self-service')).toBeVisible();
+    await expect(page.getByTestId('student-self-service-name')).toHaveText('Avery Reed');
+    await expect(page.getByTestId('student-schedule')).toContainText('Grade 7 English Language Arts');
+    await page.reload({ waitUntil: 'networkidle' });
+    await expect(page.getByTestId('student-learning-tasks')).toContainText('Vocabulary Check 1');
+    for (const route of ['/finance', '/school-admin-dashboard']) {
+      await page.goto(route, { waitUntil: 'domcontentloaded' });
+      await expect(page).not.toHaveURL(new RegExp(`${route}(?:$|[?#])`), { timeout: 10000 });
+    }
+    actionProofs.push('student_role_denials_and_workflow');
+  });
+
+  test('finance manual demonstration payment persists after reload', async ({ page }) => {
+    await launchPersona(page, 'Finance Director');
+    await page.goto('/finance', { waitUntil: 'networkidle' });
+    const panel = page.getByTestId('sandbox-finance-transaction');
+    await expect(panel).toBeVisible();
+    const payment = page.waitForResponse((response) =>
+      response.url().includes('/api/v1/sandbox/finance/apply-payment/') &&
+      response.request().method() === 'POST',
+    );
+    await panel.getByRole('button', { name: 'Apply Demo Payment' }).click();
+    const response = await payment;
+    expect(response.status()).toBe(200);
+    const payload = await response.json();
+    expect(payload.reconciliation_status).toBe('reconciled');
+    expect(payload.external_payment_processed).toBe(false);
+    expect(payload.over_refund_blocked).toBe(true);
+    await page.reload({ waitUntil: 'networkidle' });
+    await expect(page.getByTestId('finance-reconciliation')).toHaveText('reconciled');
+    await expect(page.getByTestId('finance-remaining')).toHaveText('$0.00');
+    actionProofs.push('finance_manual_payment_persists');
+  });
+
+  test('teacher lesson plan persists with fictional classroom data', async ({ page }) => {
+    await launchPersona(page, 'Teacher / Staff');
+    await page.goto('/teacher/lesson-plans/today', { waitUntil: 'networkidle' });
+    await expect(page.getByTestId('teacher-lesson-plan-editor')).toBeVisible();
+    const select = page.getByLabel('Lesson plan section');
+    await expect(select.locator('option')).toHaveCount(2);
+    await select.selectOption({ index: 1 });
+    const proof = 'Heritage sales rehearsal lesson proof';
+    await page.getByLabel('Learning objectives').fill(proof);
+    await page.getByLabel('Materials and curriculum resources').fill('Fictional curriculum resource');
+    await page.getByLabel('Instructional activities').fill('Read, discuss and respond');
+    await page.getByLabel('Homework').fill('Write a paragraph');
+    await page.getByLabel('Private teacher notes').fill('Local sales readiness proof');
+    const save = page.waitForResponse((response) =>
+      response.url().includes('/lesson-plans/') && response.request().method() !== 'GET',
+    );
+    await page.getByRole('button', { name: /save lesson plan/i }).click();
+    expect((await save).ok()).toBe(true);
+    await expect(page.getByRole('status')).toContainText(/lesson plan saved/i);
+    await page.reload({ waitUntil: 'networkidle' });
+    await expect(page.getByLabel('Learning objectives')).toHaveValue(proof);
+    await expect(page.getByLabel('Private teacher notes')).toHaveValue('Local sales readiness proof');
+    actionProofs.push('teacher_lesson_plan_persists');
+  });
+
+  test('parent enrollment agreement completes the fictional student handoff', async ({ page }) => {
+    await launchPersona(page, 'Parent / Guardian');
+    await page.goto('/parent/admissions/status', { waitUntil: 'networkidle' });
+    const panel = page.getByTestId('sandbox-parent-enrollment-panel');
+    await expect(panel).toBeVisible();
+    await expect(panel).toContainText('Jordan Reed');
+    await page.getByLabel('Accept sandbox enrollment agreement').check();
+    const completion = page.waitForResponse((response) =>
+      response.url().includes('/api/v1/sandbox/parent/enrollment/') &&
+      response.request().method() === 'POST',
+    );
+    await page.getByRole('button', { name: /accept enrollment and complete demo handoff/i }).click();
+    const response = await completion;
+    expect(response.ok()).toBe(true);
+    const payload = await response.json();
+    expect(payload.lifecycle_stage).toBe('enrolled');
+    expect(payload.applicant_to_student_status).toBe('completed');
+    expect(payload.demo_payment_processed).toBe(false);
+    await expect(page.getByTestId('sandbox-parent-enrollment-complete')).toContainText('Jordan Reed');
+    actionProofs.push('parent_enrollment_handoff_completed');
+  });
 
   test('buyer entry remains usable at mobile width', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
