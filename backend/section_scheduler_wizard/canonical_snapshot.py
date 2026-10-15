@@ -80,8 +80,8 @@ def build_canonical_planning_snapshot(*, actor, school_id, academic_year_id, ter
     schedule = schedules[0]
 
     # Rows with no academic-year authority cannot be assigned to the requested year.
-    if Section.objects.filter(school_id=school_id, term=term_code, term_ref__isnull=True).exists():
-        raise ValidationError("Unlinked legacy sections require reconciliation.")
+    if Section.objects.filter(school_id=school_id, term=term_code).exclude(term_ref_id=terms[0].id).exists():
+        raise ValidationError("Sections with missing, stale or foreign-year term links require reconciliation.")
     sections_raw = list(Section.objects.filter(
         school_id=school_id, term_ref_id=terms[0].id, term=term_code
     ).select_related("course").order_by("id")[:MAX_SECTIONS + 1])
@@ -176,10 +176,11 @@ def build_canonical_planning_snapshot(*, actor, school_id, academic_year_id, ter
     catalog = frozenset(str(c) for c in course_rows)
 
     # Fingerprint only opaque IDs and scheduling-relevant values, never names or PII.
+    course_by_section = {str(section.id): str(section.course_id) for section in sections_raw}
     payload = {
         "scope": [str(school_id), str(academic_year_id), term_code, str(schedule.id)],
         "sections": [
-            [key, str(next(s.course_id for s in sections_raw if str(s.id) == key)),
+            [key, course_by_section[key],
              sorted(value.teacher_ids), sorted(value.student_ids)]
             for key, value in sorted(sections.items())
         ],
