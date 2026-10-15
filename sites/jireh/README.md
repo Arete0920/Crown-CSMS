@@ -38,3 +38,7 @@ The original imagery and downloadable PDF have NOT been fully exported or parity
 The first-party lead/demo registration service is NOT implemented or certified; existing contact CTA is a transitional handoff, not a guaranteed booking. Confirm end-to-end persistence, acknowledgment, sales routing, calendar booking, consent, abuse prevention and fault recovery before claiming instant scheduling.
 
 Required gates: read-only authenticated Azure subscription/RBAC/spend/alerts/quotas/resource inventory, GoDaddy authoritative DNS and email record export, security and audit review, source-asset ownership, functional QA, accessible desktop/mobile/browser verification, staging TLS, cost approval, and tested reversible single-hostname cutover. Do not conflate production-ready marketing with production-ready financial-aid processing.
+
+## Exported source assets
+
+The SGO PDF, the official SGO logo, and the CROWN family billing concept image are vendored in the site source and copied into the staging output by `build.mjs`. Confirm owner rights and visual parity in browser QA; `https://areteadvisorygroup.com/contact`, privacy and terms remain live links for the transition.
