@@ -54,12 +54,6 @@ def _free_minutes(
 ) -> int:
     """Find instructional minutes not blocked by teaching or unavailability."""
     covered = _minutes(instructional)
-    overlaps = [
-        (max(a, x), min(b, y))
-        for a, b in instructional
-        for x, y in blocked
-        if max(a, x) < min(b, y)
-    ]
     # Intersect blocked union with instructional union by splitting at endpoints.
     endpoints = sorted({v for a, b in instructional for v in (a, b)} |
                        {v for a, b in blocked for v in (a, b)})
@@ -151,6 +145,16 @@ def validate_teacher_feasibility(
     for index, placement in enumerate(placements):
         section, period = sections[placement.section_id], periods[placement.period_id]
         interval = (period.start_minute, period.end_minute)
+        # An instructional candidate must never occupy another overlapping
+        # protected block, even if the bell schedule is internally inconsistent.
+        if any(
+            not p.is_instructional and _overlap(interval, (p.start_minute, p.end_minute))
+            for p in by_template_period[period.template_id]
+        ):
+            findings.append(TeacherFeasibilityFinding(
+                "PROTECTED_PERIOD_OVERLAP", index,
+                "A proposed class overlaps a protected block.",
+            ))
         for staff in section.teacher_ids:
             rule = teacher_rules[staff]
             unavailable = [
@@ -178,8 +182,15 @@ def validate_teacher_feasibility(
                 for p in by_template_period[template_id]
                 if p.period_id in rule.unavailable_period_ids
             ]
+            protected = [
+                (p.start_minute, p.end_minute)
+                for p in by_template_period[template_id]
+                if not p.is_instructional
+            ]
             work += repeat * _minutes(teaching)
-            prep += repeat * _free_minutes(instructional[template_id], teaching + unavailable)
+            prep += repeat * _free_minutes(
+                instructional[template_id], teaching + unavailable + protected
+            )
         if work > rule.max_instructional_minutes_per_cycle:
             findings.append(TeacherFeasibilityFinding(
                 "TEACHER_OVERLOAD", -1, "Proposed teaching exceeds an authorized cycle limit."))
