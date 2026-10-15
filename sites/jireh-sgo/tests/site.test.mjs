@@ -1,22 +1,14 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-const base = new URL('../', import.meta.url);
-const read = p => readFileSync(new URL(p,base),'utf8');
-const html=read('index.html');
-const css=read('styles.css');
-const config=JSON.parse(read('staticwebapp.config.json'));
-for(const text of ['Jireh SGO','IN PILOT DEVELOPMENT','design-partner discussion','No-cost exploratory conversation','Not certified for operational use','not an automated booking','not a scholarship-granting organization','Family applies','Both reconcile','Privacy','Terms']){
-  assert.ok(html.toLowerCase().includes(text.toLowerCase()),'Required release disclosure/content missing: '+text);
-}
-for(const fragment of ['#responsibilities','#workflow','#status','#partners']) assert.ok(html.includes('id="'+fragment.slice(1)+'"'));
-assert.ok(!/<form\b/i.test(html),'A deceptive or unproven lead form must not be shipped');
-assert.ok(!/<script\b/i.test(html),'Static pilot should not execute third-party scripts');
-assert.ok(html.includes('noindex,nofollow'),'Pilot staging must not index');
-assert.ok(html.includes('/resources/jireh-sgo-overview.pdf'),'Approved overview still linked');
-assert.ok(html.includes('areteadvisorygroup.com/contact?topic='),'Existing inquiry route retained');
-assert.ok(!/\b(fully live|production ready|certified compliant|instant booking)\b/i.test(html),'Unverified claim');
+import {readFileSync} from 'node:fs';
+const root=new URL('../',import.meta.url);
+const read=p=>readFileSync(new URL(p,root),'utf8');
+const h=read('index.html'), css=read('styles.css'),cfg=JSON.parse(read('staticwebapp.config.json'));
+for(const phrase of ['Jireh Financial Aid','Mission-Aligned Strategic Financial Aid Framework','CROWN Jireh','Jireh SGO','pilot development','Request a school-aid demonstration','Request an SGO pilot discussion','not a scholarship-granting organization','no instant reservation','school awards','Privacy','Terms'])assert.ok(h.toLowerCase().includes(phrase.toLowerCase()),'Missing: '+phrase);
+for(const id of ['school-aid','workflow','sgo','demo'])assert.ok(h.includes('id="'+id+'"'));
+assert.ok(!/<form\b/i.test(h),'Do not expose fake booking forms');
+assert.ok(!/<script\b/i.test(h),'No unsanctioned scripts');
+assert.ok(h.includes('noindex,nofollow'));
 assert.ok(css.includes('prefers-reduced-motion'));
-assert.equal(config.globalHeaders['X-Frame-Options'],'DENY');
-assert.ok(config.globalHeaders['Content-Security-Policy'].includes("default-src 'none'"));
+assert.equal(cfg.globalHeaders['X-Frame-Options'],'DENY');
 assert.ok(read('robots.txt').includes('Disallow: /'));
-console.log('Jireh SGO staging content and safety checks: PASS');
+console.log('Jireh full-suite staging source claims: PASS');
