@@ -244,4 +244,6 @@ def preview(request):
             {"section_id": p.section_id, "period_id": p.period_id, "room_id": p.room_id}
             for p in frozen.placements
         ]
-    return Response(payload)
+    response = Response(payload)
+    response["Cache-Control"] = "private, no-store"
+    return response
