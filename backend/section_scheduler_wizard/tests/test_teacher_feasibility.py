@@ -143,3 +143,20 @@ def test_co_teacher_requires_policy_for_each_member():
     assert findings(**values) == ()
     values["teacher_rules"].pop("t2")
     assert codes(**values) == {"MISSING_TEACHER_RULE"}
+
+
+def test_protected_overlapping_block_rejected_even_when_selected_period_is_instructional():
+    values = fixture()
+    values["periods"]["chapel"] = PeriodInput("chapel", "school", "year", "A", 510, 570, False)
+    assert "PROTECTED_PERIOD_OVERLAP" in codes(**values)
+
+
+def test_protected_overlap_does_not_count_as_available_preparation():
+    values = fixture()
+    values["periods"]["chapel"] = PeriodInput("chapel", "school", "year", "A", 540, 600, False)
+    values["teacher_rules"]["t1"] = replace(
+        values["teacher_rules"]["t1"],
+        unavailable_period_ids=frozenset(),
+        minimum_preparation_minutes_per_cycle=121,
+    )
+    assert "INSUFFICIENT_PREPARATION" in codes(**values)
