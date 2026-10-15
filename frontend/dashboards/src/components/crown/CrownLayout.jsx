@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { authenticatedFetch, getAccessToken, getSelectedSchoolId } from "../../utils/authClient.js";
+import { authenticatedFetch } from "../../utils/authClient.js";
+import { getAccessToken, getSelectedSchoolId } from "../../utils/authClient.js";
 import "../../styles/operational-dashboard-canonical.css";
 
 /**
