@@ -4,7 +4,7 @@ import { test, expect } from "@playwright/test";
 // authorizes real API calls or that any token in sessionStorage is genuine.
 const deniedPaths = [
   "/board", "/hr", "/settings", "/wizards", "/aftercare/roster",
-  "/students/synthetic-nonexistent", "/board-executive",
+  "/students/synthetic-nonexistent", "/board/executive",
 ];
 
 test.describe("anonymous CROWN school route denial", () => {
