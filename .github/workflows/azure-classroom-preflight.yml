@@ -11,6 +11,8 @@ on:
       - 'scripts/ops/azure_runtime_inventory.py'
       - 'scripts/ops/test_azure_runtime_inventory.py'
       - 'docs/operations/CROWN_AZURE_FREE_FIRST_COST_CONTROL.md'
+      - 'scripts/ops/jireh_free_staging_gate.py'
+      - 'scripts/ops/test_jireh_free_staging_gate.py'
       - '.github/workflows/azure-classroom-preflight.yml'
   push:
     branches: [main]
@@ -22,6 +24,8 @@ on:
       - 'scripts/ops/azure_runtime_inventory.py'
       - 'scripts/ops/test_azure_runtime_inventory.py'
       - 'docs/operations/CROWN_AZURE_FREE_FIRST_COST_CONTROL.md'
+      - 'scripts/ops/jireh_free_staging_gate.py'
+      - 'scripts/ops/test_jireh_free_staging_gate.py'
       - '.github/workflows/azure-classroom-preflight.yml'
   workflow_dispatch:
 
@@ -50,6 +54,103 @@ jobs:
 
       - name: Verify hosted evidence privacy and failure contracts
         run: python -m unittest discover -s scripts/ops -p test_azure_runtime_inventory.py -v
+
+  jireh-free-staging-once:
+    # Explicit commit marker makes this a one-shot staging action, never a recurring deploy.
+    if: >-
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/main' &&
+      contains(github.event.head_commit.message, '[jireh-staging-free-once]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: production
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout exact committed source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.sha }}
+      - name: Verify source and required owned media before Azure mutation
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s scripts/ops -p test_jireh_free_staging_gate.py -v
+          node --test sites/jireh/tests/site.test.mjs
+          node sites/jireh/build.mjs
+          for f in index.html resources/jireh-sgo-overview.pdf images/jireh-sgo/logo.png images/crown/family-billing.webp; do
+            test -s "sites/jireh/dist/$f"
+          done
+      - name: Azure login via existing federation
+        uses: azure/login@a457da9ea143d694b1b9c7c869ebb04ebe844ef5
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - name: Verify free-only quota, then provision only isolated Jireh host
+        id: azure_site
+        shell: bash
+        run: |
+          set -euo pipefail
+          umask 077
+          az account show --query state --output tsv --only-show-errors | grep -qx Enabled
+          az staticwebapp list --output json --only-show-errors > /tmp/jireh-swa-list.json
+          verdict="$(python3 scripts/ops/jireh_free_staging_gate.py --inventory /tmp/jireh-swa-list.json)"
+          rm -f /tmp/jireh-swa-list.json
+          if [[ "$verdict" == "CREATE_FREE" ]]; then
+            az staticwebapp create --name jireh-site --resource-group crown-rg --location eastus2 --sku Free --output none --only-show-errors
+          elif [[ "$verdict" != "REUSE_VERIFIED_FREE" ]]; then
+            echo 'Jireh Static Web App Free validation failed' >&2
+            exit 1
+          fi
+          az staticwebapp show --name jireh-site --resource-group crown-rg --output json --only-show-errors > /tmp/jireh-swa-result.json
+          python3 scripts/ops/jireh_free_staging_gate.py --verify-resource /tmp/jireh-swa-result.json
+          rm -f /tmp/jireh-swa-result.json
+          host="$(az staticwebapp show --name jireh-site --resource-group crown-rg --query defaultHostname --output tsv --only-show-errors)"
+          if [[ ! "$host" =~ ^[A-Za-z0-9.-]+[.]azurestaticapps[.]net$ ]]; then
+            echo 'Unexpected Jireh staging host' >&2
+            exit 1
+          fi
+          echo "host=$host" >> "$GITHUB_OUTPUT"
+          echo "Jireh separate free-tier staging hostname: https://$host" >> "$GITHUB_STEP_SUMMARY"
+      - name: Set up Node deployment runtime
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: '22.23.3'
+      - name: Publish static artifacts without exposing deployment token
+        shell: bash
+        run: |
+          set -euo pipefail
+          token="$(az staticwebapp secrets list --name jireh-site --resource-group crown-rg --query properties.apiKey --output tsv --only-show-errors)"
+          if [[ ${#token} -lt 40 ]]; then
+            echo 'Jireh deployment token missing; refusing deployment' >&2
+            exit 1
+          fi
+          echo "::add-mask::$token"
+          SWA_CLI_DEPLOYMENT_TOKEN="$token" npx --yes @azure/static-web-apps-cli@2.0.2 deploy sites/jireh/dist --env production
+          unset token
+      - name: Verify deployed HTML, TLS, robots and binary asset integrity
+        shell: bash
+        env:
+          HOST: ${{ steps.azure_site.outputs.host }}
+        run: |
+          set -euo pipefail
+          for attempt in 1 2 3 4 5; do
+            if curl -fsSL --max-time 30 "https://$HOST/" -o /tmp/jireh-staging.html; then break; fi
+            sleep 5
+          done
+          grep -q 'Provision with Purpose' /tmp/jireh-staging.html
+          grep -q 'noindex,nofollow' /tmp/jireh-staging.html
+          grep -q 'Jireh SGO' /tmp/jireh-staging.html
+          for f in resources/jireh-sgo-overview.pdf images/jireh-sgo/logo.png images/crown/family-billing.webp; do
+            curl -fsSL --max-time 30 "https://$HOST/$f" -o /tmp/jireh-downloaded-asset
+            cmp -s /tmp/jireh-downloaded-asset "sites/jireh/dist/$f"
+          done
+          echo "Jireh staging validated for $GITHUB_SHA at https://$HOST" >> "$GITHUB_STEP_SUMMARY"
+          echo 'No domain DNS, MX/SPF/DKIM/DMARC, payment processing or existing CROWN dashboard was changed.' >> "$GITHUB_STEP_SUMMARY"
+      - name: Logout Azure federation
+        if: always()
+        run: az logout
 
   azure-inventory:
     if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
