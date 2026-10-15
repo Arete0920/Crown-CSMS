@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 
-const router = readFileSync(new URL("../../src/routes/router.jsx", import.meta.url), "utf8");
-const guard = readFileSync(new URL("../../src/components/routing/AuthenticatedSchoolRouteGuard.jsx", import.meta.url), "utf8");
+// Vitest may transform import.meta.url to a non-file virtual URL. CI runs
+// with frontend/dashboards as cwd; explicit repo-relative paths are stable.
+const router = readFileSync("src/routes/router.jsx", "utf8");
+const guard = readFileSync("src/components/routing/AuthenticatedSchoolRouteGuard.jsx", "utf8");
 
 const specialistRoutes = [
   "BOARD", "IT", "MARKETING", "SPIRITUAL_LIFE", "MASTER_CONTROL",
