@@ -177,6 +177,7 @@ class KairosIntegratedPreviewTests(TestCase):
         self.assertEqual(result.data["source_fingerprint"], self.body()["expected_source_fingerprint"])
         self.assertEqual(result.data["section_ids"], [str(self.section.id)])
         self.assertEqual(result.data["assigned_staff_ids"], [str(self.staff.id)])
+        self.assertIn("no-store", result["Cache-Control"])
         self.assertFalse(result.data["publication_allowed"])
         self.assertNotIn("student_ids", result.data)
         self.assertNotIn("student_name", str(result.data).lower())
