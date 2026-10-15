@@ -25,6 +25,20 @@ async function seedSession(page, role: string) {
 }
 
 test.describe("Nav is permission-derived — sidebar reflects role, not all links", () => {
+  test("anonymous public home does not request school-scoped navigation or claim an outage", async ({ page }) => {
+    let navCalls = 0;
+    await page.route("**/api/v1/nav/**", (route) => {
+      navCalls += 1;
+      return route.fulfill({ status: 400, contentType: "application/json", body: "{}" });
+    });
+    await page.goto(`${BASE}/`);
+    await expect(page.getByText("Sign in to view your school's authorized navigation.", { exact: true })).toBeVisible();
+    await expect(page.getByText("Navigation service unavailable.", { exact: false })).toHaveCount(0);
+    await expect(page.locator("aside.crown-sidebar a")).toHaveCount(0);
+    expect(navCalls).toBe(0);
+  });
+
+
   test("parent does NOT see Finance, Admissions, Billing, or System Integrity", async ({ page }) => {
     await seedSession(page, "parent");
     await page.goto(`${BASE}/parent`);
