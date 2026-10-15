@@ -23,6 +23,28 @@ describe("anonymous specialist route denial contract", () => {
     expect(block, name).toContain("</AuthenticatedSchoolRouteGuard>");
   });
 
+  it.each([
+    "PATHS.ROLE_DASHBOARD", "PATHS.WIZARDS", "PATHS.HR",
+    "PATHS.AFTERCARE_ROSTER", "PATHS.WIZARD_AFTERCARE_SETUP",
+    "PATHS.ADMISSIONS_PIPELINE", "PATHS.STUDENT_LIFE", "PATHS.SETTINGS",
+    "'/students/:id'",
+  ])("guards sensitive route %s", (name) => {
+    const start = router.indexOf(`path: ${name},`);
+    expect(start, name).toBeGreaterThanOrEqual(0);
+    const next = router.indexOf("\n  },", start);
+    const block = router.slice(start, next);
+    expect(block, name).toContain("<AuthenticatedSchoolRouteGuard>");
+    expect(block, name).toContain("</AuthenticatedSchoolRouteGuard>");
+  });
+
+  it("restricts HR, settings, admissions pipeline and aftercare to assigned roles", () => {
+    for (const name of ["PATHS.HR", "PATHS.SETTINGS", "PATHS.ADMISSIONS_PIPELINE", "PATHS.AFTERCARE_ROSTER"]) {
+      const start = router.indexOf(`path: ${name},`);
+      const block = router.slice(start, router.indexOf("\n  },", start));
+      expect(block, name).toContain("<RoleRouteGuard allowedRoles=");
+    }
+  });
+
   it("protects the board route with an explicit role policy", () => {
     const start = router.indexOf("path: PATHS.BOARD,");
     const block = router.slice(start, router.indexOf("},", start) + 2);
