@@ -157,3 +157,25 @@ def test_spoofed_period_mapping_is_invalid_model():
     x = scenario()
     x["periods"]["p1"] = replace(x["periods"]["p1"], period_id="forged")
     assert solve(**x).status == MODEL_INVALID
+
+
+def test_oversized_room_catalog_rejected_before_search():
+    x = scenario()
+    x["rooms"] = {str(i): RoomInput(str(i), "school", 20) for i in range(1001)}
+    assert solve(**x).status == MODEL_INVALID
+
+
+def test_oversized_roster_rejected_before_search():
+    from dataclasses import replace
+    x = scenario()
+    x["sections"]["english"] = replace(
+        x["sections"]["english"], student_ids=frozenset(str(i) for i in range(1001))
+    )
+    assert solve(**x).status == MODEL_INVALID
+
+
+def test_unverified_truthy_roster_flag_rejected():
+    from dataclasses import replace
+    x = scenario()
+    x["sections"]["english"] = replace(x["sections"]["english"], roster_verified=1)
+    assert solve(**x).status == MODEL_INVALID
