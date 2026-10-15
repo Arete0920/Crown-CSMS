@@ -12,12 +12,12 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Mapping, Sequence
 
-from .planning_inputs import TeacherPlanningRule
+from .planning_inputs import TeacherPlanningRule, validate_planning_inputs
 from .preflight import (
     CandidatePlacement, PeriodInput, RoomInput, SectionInput,
     validate_candidate_placements,
 )
-from .teacher_feasibility import validate_teacher_feasibility
+from .teacher_feasibility import MAX_CYCLE_OCCURRENCES, validate_teacher_feasibility
 
 MAX_SECTIONS = 64
 MAX_CHOICES_PER_SECTION = 32
@@ -88,6 +88,47 @@ def solve_section_meetings(
         for key, room in rooms.items()
     ):
         return _result(MODEL_INVALID, 0, "INVALID_ROOM_SCOPE")
+
+    # Structural/policy errors cannot be reported as proven infeasibility.
+    # Validate before node search, while keeping conflicts in complete proposals
+    # as INFEASIBLE rather than mistaking them for malformed source input.
+    if (
+        not periods
+        or any(
+            key != period.period_id
+            or (period.school_id, period.academic_year_id)
+               != (school_id, academic_year_id)
+            or type(period.instructional) is not bool
+            or type(period.start_minute) is not int
+            or type(period.end_minute) is not int
+            or not 0 <= period.start_minute < period.end_minute <= 1440
+            or not period.template_id
+            for key, period in periods.items()
+        )
+    ):
+        return _result(MODEL_INVALID, 0, "INVALID_PERIOD_AUTHORITY")
+    templates = {period.template_id for period in periods.values()}
+    if (
+        set(template_occurrences) != templates
+        or any(
+            type(count) is not int or not 1 <= count <= MAX_CYCLE_OCCURRENCES
+            for count in template_occurrences.values()
+        )
+        or sum(template_occurrences.values()) > MAX_CYCLE_OCCURRENCES
+    ):
+        return _result(MODEL_INVALID, 0, "INVALID_CYCLE_CONTRACT")
+    required_staff = frozenset(staff for section in sections.values() for staff in section.teacher_ids)
+    if not required_staff <= set(teacher_rules):
+        return _result(MODEL_INVALID, 0, "MISSING_TEACHER_POLICY")
+    rules_bad = validate_planning_inputs(
+        school_id=school_id, academic_year_id=academic_year_id,
+        term_code=term_code, known_staff_ids=required_staff,
+        known_student_ids=frozenset(), known_course_ids=frozenset(),
+        known_period_ids=frozenset(periods), teacher_rules=teacher_rules,
+        student_requests=(),
+    )
+    if rules_bad:
+        return _result(MODEL_INVALID, 0, "INVALID_TEACHER_POLICY")
 
     domains: dict[str, tuple[CandidatePlacement, ...]] = {}
     total = 0
