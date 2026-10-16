@@ -83,6 +83,7 @@ jobs:
             "BUILD_SHA"       = "${{ env.DEPLOY_SHA }}"
             "DEPLOY_RUN_ID"   = "${{ github.run_id }}"
             "DEPLOY_WORKFLOW" = "${{ github.workflow }}"
+            "WEBSITES_PORT"   = "8000"
           }
           $settings | ConvertTo-Json -Depth 5 | Out-File -Encoding utf8 appsettings.dev.json
           Get-Content appsettings.dev.json
