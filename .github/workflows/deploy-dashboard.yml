@@ -540,3 +540,23 @@ jobs:
             frontend/dashboards/playwright-report/
           if-no-files-found: warn
           retention-days: 30
+
+      - name: Execute existing buyer persistence journeys on DEV
+        if: always() && steps.preview.outcome == 'success'
+        working-directory: frontend/dashboards
+        env:
+          CI: '1'
+          CROWN_LIVE_FRONTEND_URL: ${{ steps.preview.outputs.static_web_app_url }}
+          CROWN_LIVE_API_BASE_URL: https://crown-api-dev.azurewebsites.net
+          CROWN_BROWSER_AUTHORITY_OUTPUT: test-results/buyer-sandbox-browser-authority.json
+        run: npm run certify:buyer-sandbox-browser
+      - name: Upload DEV buyer persistence evidence
+        if: always() && steps.preview.outcome == 'success'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: dev-buyer-persistence-${{ inputs.dev_source_sha }}-${{ github.run_id }}
+          path: |
+            frontend/dashboards/test-results/
+            frontend/dashboards/playwright-report/
+          if-no-files-found: error
+          retention-days: 30
