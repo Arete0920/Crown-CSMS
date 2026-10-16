@@ -49,7 +49,10 @@ jobs:
           assert dev["name"]=="crown-api-dev" and prod["name"]=="crown-api-prod"
           assert target["sku"]["name"]=="B1" and target["sku"]["capacity"]==1, "Existing plan changed"
           assert normalized(dev["location"])==normalized(target["location"]), "Region mismatch"
-          assert "linux" in dev["kind"].lower() and target.get("reserved") is True, "OS mismatch"
+          print("DEV_kind="+str(dev.get("kind"))+"; TARGET_kind="+str(target.get("kind"))+"; TARGET_reserved="+str(target.get("reserved"))+"; TARGET_isLinux="+str(target.get("isLinux")))
+          rawplan=az("rest","--method","get","--url","https://management.azure.com"+target["id"]+"?api-version=2025-03-01")
+          print("TARGET_ARM_reserved="+str(rawplan.get("properties",{}).get("reserved")))
+          assert "linux" in dev["kind"].lower() and rawplan.get("properties",{}).get("reserved") is True, "OS mismatch"
           assert original.lower().split("/serverfarms/")[0]==target["id"].lower().split("/serverfarms/")[0], "Resource scope mismatch"
           assert prod["serverFarmId"].lower()==target["id"].lower(), "Unexpected production plan"
           assert not dev.get("virtualNetworkSubnetId"), "VNET migration needs separate review"
