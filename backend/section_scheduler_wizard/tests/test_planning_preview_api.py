@@ -92,8 +92,10 @@ class KairosIntegratedPreviewTests(TestCase):
         self.assertEqual(self.post(data).data["preview_digest"], res.data["preview_digest"])
 
     def test_unauthorized_role_cannot_preview(self):
-        unauth = _client_for(self.school, role=None)
-        self.assertEqual(self.post(self.body(), client=unauth).status_code, 403)
+        from core.models import UserRole
+        body = self.body()
+        UserRole.objects.filter(user=self.actor, school=self.school).delete()
+        self.assertEqual(self.post(body).status_code, 403)
 
     def test_missing_or_outdated_snapshot_proof_denied(self):
         body = self.body()
@@ -186,8 +188,9 @@ class KairosIntegratedPreviewTests(TestCase):
         self.assertEqual(SectionPlacement.objects.count(), 0)
 
     def test_options_cannot_access_without_school_grant(self):
-        unauth = _client_for(self.school, role=None)
-        result = unauth.get(
+        from core.models import UserRole
+        UserRole.objects.filter(user=self.actor, school=self.school).delete()
+        result = self.client.get(
             ENDPOINT + "options/",
             {"academic_year_id": str(self.year.id), "term_code": "S1"},
             **_headers(self.school),
