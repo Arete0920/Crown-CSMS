@@ -83,6 +83,9 @@ def main():
             print("QUOTA=UNAVAILABLE")
     try:
         p=subprocess.run(["az","webapp","log","startup","show","-g","crown-rg","-n","crown-api-dev","--only-show-errors"],capture_output=True,text=True,timeout=60)
+        if p.returncode and isinstance(appid,str):
+            # ARM read operation uses POST; no resource/configuration mutation.
+            p=subprocess.run(["az","rest","--method","post","--url","https://management.azure.com"+appid+"/containerlogs?api-version=2025-03-01","--only-show-errors"],capture_output=True,text=True,timeout=60)
         if p.returncode:
             print("STARTUP_LOG=UNAVAILABLE")
             err=p.stderr.lower()
