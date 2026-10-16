@@ -91,4 +91,4 @@ def test_csv_formula_ids_are_rejected_even_when_supplied_in_snapshot():
         "s2":s.section_inputs["s2"],
     })
     with pytest.raises(StandaloneInterchangeError,match="UNSAFE_CSV_CELL"):
-        check("section_id,period_id,room_id\\n=IMPORT,p1,r1\\ns2,p2,r1\\n",unsafe)
+        check("section_id,period_id,room_id\n=IMPORT,p1,r1\ns2,p2,r1\n",unsafe)
