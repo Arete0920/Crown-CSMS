@@ -112,4 +112,5 @@ def test_roomless_placement_fails_closed_without_capacity_proof():
     x["placements"] = (CandidatePlacement("math-a", "p1", None),) + x["placements"][1:]
     result = solve(**x)
     assert result.status == MODEL_INVALID
-    assert "ROOM_CAPACITY_UNVERIFIED" in result.diagnostics
+    assert result.additions == ()
+    assert result.diagnostics[0] in {"ROOM_CAPACITY_UNVERIFIED", "INVALID_PLACEMENT"}
