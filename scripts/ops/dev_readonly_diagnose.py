@@ -48,7 +48,11 @@ def main():
     appid=app.get("id")
     if isinstance(appid,str) and appid.startswith("/"):
         refs=az("rest","--method","get","--url","https://management.azure.com"+appid+"/config/configreferences/appsettings?api-version=2024-11-01","-o","json")
-        props=refs.get("properties",{}) if isinstance(refs,dict) else {}
+        props={}
+        if isinstance(refs,dict):
+            props=refs.get("properties",{})
+            if isinstance(refs.get("value"),list):
+                props={str(x.get("id","")).rsplit("/",1)[-1]:x.get("properties",{}) for x in refs["value"] if isinstance(x,dict)}
         for key in ("DATABASE_URL","SECRET_KEY"):
             ref=props.get(key,{})
             status=ref.get("status","UNKNOWN") if isinstance(ref,dict) else "UNKNOWN"
