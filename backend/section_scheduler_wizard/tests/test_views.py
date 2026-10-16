@@ -25,8 +25,10 @@ def _uid():
 
 
 def _client_for(school, role="HEAD_OF_SCHOOL"):
+    identity = _uid()
     user = User.objects.create_user(
-        username=f"u{_uid()}",
+        username=f"u{identity}",
+        email=f"scheduler-{identity}@example.invalid",
         password=TEST_AUTH_SECRET,
         school=school,
     )
