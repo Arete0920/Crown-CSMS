@@ -165,3 +165,28 @@ def test_unauthenticated_cannot_list_or_create(client):
     response = client.get("/api/v1/survey-intelligence/surveys/", HTTP_X_SCHOOL_ID=str(school.pk))
     assert response.status_code in (401, 403)
     assert request(client, school, payload()).status_code in (401, 403)
+
+
+@pytest.mark.parametrize("duplicate_field", ["name", "key"])
+def test_duplicate_json_members_fail_closed(school_client, duplicate_field):
+    client, school, _ = school_client
+    body = json.dumps(payload())
+    if duplicate_field == "name":
+        body = body.replace(
+            '"name": "Parent Communication"',
+            '"name": "Parent Communication", "name": "Ambiguous override"',
+        )
+    else:
+        body = body.replace(
+            '"key": "clarity"',
+            '"key": "clarity", "key": "ambiguous_override"',
+        )
+    response = client.post(
+        "/api/v1/survey-intelligence/surveys/",
+        data=body,
+        content_type="application/json",
+        HTTP_X_SCHOOL_ID=str(school.pk),
+    )
+    assert response.status_code == 400, response.content
+    assert not SurveyDefinition.objects.exists()
+    assert not SurveyQuestion.objects.exists()
