@@ -491,6 +491,7 @@ jobs:
           PYCODE
           if [ -f appsettings.dev-preview.json ]; then
             git show "$WORKFLOW_SHA:tools/appsettings_allowlist.keys.json" > appsettings.preview.allowlist.json
+            git show "$WORKFLOW_SHA:tools/appsettings_allowlist.keys.json.sha256" > appsettings.preview.allowlist.json.sha256
             pwsh -NoProfile -File tools/appsettings_allowlist_gate.ps1 -AppSettingsJsonPath appsettings.dev-preview.json -AllowedKeysFile appsettings.preview.allowlist.json -AllowedKeySet dev
             az webapp config appsettings set --resource-group crown-rg --name crown-api-dev --settings @appsettings.dev-preview.json --output none --only-show-errors
           fi
