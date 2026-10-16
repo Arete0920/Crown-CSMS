@@ -3,6 +3,8 @@
 import json
 import re
 import subprocess
+from urllib.parse import urlparse, unquote
+from pathlib import Path
 
 def az(*args, timeout=45):
     try:
@@ -117,6 +119,41 @@ def main():
                             value=row.get(stat)
                             if isinstance(value,(float,int)):
                                 print("EXISTING_PLAN_"+name+"_"+stat+"="+str(round(value,2)))
+    # Read schema metadata only; never log values, endpoints, errors or credentials.
+    try:
+        raw=d.get("DATABASE_URL","")
+        if raw.startswith("@Microsoft.KeyVault(") and raw.endswith(")"):
+            fields=dict(part.strip().split("=",1) for part in raw[20:-1].split(";") if "=" in part)
+            if fields.get("SecretUri"):
+                uri=fields["SecretUri"]
+                parsed=urlparse(uri)
+                if parsed.scheme!="https" or not (parsed.hostname or "").endswith(".vault.azure.net") or not parsed.path.startswith("/secrets/"):
+                    raise ValueError("Invalid reference")
+                resolved=az("keyvault","secret","show","--id",uri,"-o","json")
+            else:
+                resolved=az("keyvault","secret","show","--vault-name",fields["VaultName"],"--name",fields["SecretName"],"-o","json")
+            raw=resolved.get("value","") if isinstance(resolved,dict) else ""
+        parsed=urlparse(raw)
+        if parsed.scheme not in ("postgres","postgresql") or parsed.hostname!="crown-pg-dev.postgres.database.azure.com":
+            raise ValueError("DEV database identity not verified")
+        install=subprocess.run(["python3","-m","pip","install","--quiet","psycopg[binary]==3.3.6"],capture_output=True,text=True,timeout=90)
+        if install.returncode: raise RuntimeError("Driver unavailable")
+        import psycopg
+        with psycopg.connect(raw,connect_timeout=8,sslmode="require",options="-c default_transaction_read_only=on") as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT app, name FROM django_migrations")
+                applied=set(cur.fetchall())
+                pending=[]
+                for path in sorted(Path("backend").glob("*/migrations/[0-9]*.py")):
+                    key=(path.parents[1].name,path.stem)
+                    if key not in applied: pending.append(key)
+                print("READ_DB=DEV_SCHEMA_METADATA_ONLY")
+                print("PENDING_MIGRATION_COUNT="+str(len(pending)))
+                for appname,name in pending:
+                    if re.fullmatch(r"[a-zA-Z0-9_]+",appname+name):
+                        print("PENDING_MIGRATION="+appname+"."+name)
+    except Exception:
+        print("READ_DB=UNAVAILABLE_OR_DEV_IDENTITY_NOT_VERIFIED")
     print("DIAGNOSTIC_COMPLETE")
 
 if __name__=="__main__":
