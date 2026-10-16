@@ -38,6 +38,6 @@ assert.ok(security.globalHeaders['Content-Security-Policy'].includes("default-sr
 });
 test('source files assemble into deployable static output',()=>{
 execFileSync(process.execPath,[new URL('../build.mjs',import.meta.url).pathname],{stdio:'pipe'});
-for(const file of ['index.html','styles.css','robots.txt','staticwebapp.config.json'])assert.ok(existsSync(new URL('../dist/'+file,import.meta.url)));
+for(const file of ['index.html','styles.css','robots.txt','staticwebapp.config.json','resources/jireh-sgo-overview.pdf','images/jireh-sgo/logo.png','images/crown/family-billing.webp'])assert.ok(existsSync(new URL('../dist/'+file,import.meta.url)));
 assert.ok(read('dist/styles.css').includes('--brand-navy:#173746'));
 });
