@@ -42,9 +42,21 @@ jobs:
           print("DEV_DB_SERVER_STATE="+str(db.get("state","UNKNOWN") if isinstance(db,dict) else "UNAVAILABLE"))
           if isinstance(db,dict):
               print("DEV_DB_NETWORK="+str((db.get("network") or {}).get("publicNetworkAccess","UNKNOWN")))
-          rules=az("postgres","flexible-server","firewall-rule","list","-g","crown-rg","-n","crown-pg-dev")
+          rules=az("postgres","flexible-server","firewall-rule","list","-g","crown-rg","--server-name","crown-pg-dev")
           if isinstance(rules,list):
               print("EXISTING_AZURE_SERVICES_FIREWALL_RULE="+str(any(x.get("startIpAddress")=="0.0.0.0" and x.get("endIpAddress")=="0.0.0.0" for x in rules)))
+          if isinstance(rules,list):
+              import ipaddress
+              app=az("webapp","show","-g","crown-rg","-n","crown-api-dev") or {}
+              addresses=[x.strip() for x in app.get("outboundIpAddresses","").split(",") if x.strip()]
+              azure=any(x.get("startIpAddress")=="0.0.0.0" and x.get("endIpAddress")=="0.0.0.0" for x in rules)
+              missing=[]
+              for value in addresses:
+                  addr=ipaddress.ip_address(value)
+                  if not azure and not any(ipaddress.ip_address(x["startIpAddress"])<=addr<=ipaddress.ip_address(x["endIpAddress"]) for x in rules):
+                      missing.append(value)
+              print("DEV_EGRESS_ADDRESS_COUNT="+str(len(addresses)))
+              print("DEV_EGRESS_NOT_COVERED_BY_EXISTING_DB_FIREWALL="+str(len(missing)))
           print("READ_ONLY_COMPLETE")
       - if: always()
         run: az logout
