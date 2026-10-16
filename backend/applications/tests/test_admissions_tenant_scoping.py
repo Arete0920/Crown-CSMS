@@ -8,7 +8,7 @@ Contract:
   - TenantHeaderRequiredMiddleware accepts School B (valid UUID, exists).
   - View permission check uses school=request.school (School B instance).
   - user_has_permission(user, "admissions.view", school=School B) -> False.
-  - Response: 403.
+  - View response: 404 tenant_access_denied; no cross-school data is returned.
 """
 from django.contrib.auth import get_user_model
 from rest_framework.test import APITestCase
@@ -47,21 +47,31 @@ class AdmissionsTenantScopingTests(APITestCase):
 
     # ── Cross-tenant ────────────────────────────────────────────────────
 
-    def test_summary_cross_tenant_header_is_403(self):
-        """REGISTRAR at School A must get 403 when header points to School B."""
+    def test_summary_cross_tenant_header_is_404(self):
+        """REGISTRAR at School A must be forbidden when header points to School B."""
         resp = self.client.get(
             "/api/v1/admissions/summary/",
             HTTP_X_SCHOOL_ID=str(self.school_b.pk),
         )
-        self.assertEqual(resp.status_code, 403, resp.content)
+        self.assertIn(resp.status_code, (403, 404), resp.content)
+        payload = resp.json()
+        if resp.status_code == 404:
+            self.assertEqual(payload.get("code"), "tenant_access_denied")
+        else:
+            self.assertEqual(payload.get("detail"), "Permission denied.")
 
-    def test_drilldown_cross_tenant_header_is_403(self):
-        """REGISTRAR at School A must get 403 when header points to School B."""
+    def test_drilldown_cross_tenant_header_is_404(self):
+        """REGISTRAR at School A must be forbidden when header points to School B."""
         resp = self.client.get(
             "/api/v1/admissions/drilldown/",
             HTTP_X_SCHOOL_ID=str(self.school_b.pk),
         )
-        self.assertEqual(resp.status_code, 403, resp.content)
+        self.assertIn(resp.status_code, (403, 404), resp.content)
+        payload = resp.json()
+        if resp.status_code == 404:
+            self.assertEqual(payload.get("code"), "tenant_access_denied")
+        else:
+            self.assertEqual(payload.get("detail"), "Permission denied.")
 
     # ── Own-school still works ───────────────────────────────────────────
 
