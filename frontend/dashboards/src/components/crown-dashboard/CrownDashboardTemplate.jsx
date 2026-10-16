@@ -151,13 +151,18 @@ function buildLiveDashboardConfig(config, payload, endpointConfig, loading, erro
   }
 
   const dataState = getDashboardDataState(source, payload, error, loading);
+  const isLiveParent = dataState === 'live' && config.key === 'parent';
   const sourceLabel = getDashboardSourceLabel(dataState, endpointConfig?.endpoint, payload);
   const fallbackMetrics = Array.isArray(config.metrics) ? config.metrics : [];
   const payloadMetrics = Array.isArray(payload?.metrics) ? payload.metrics : [];
-  const metrics = (payloadMetrics.length > 0 ? payloadMetrics : fallbackMetrics).map((item, index) => ({
+  // A live response with no metrics must not turn configured example figures into live records.
+  const metricInputs = dataState === 'live'
+    ? payloadMetrics
+    : (payloadMetrics.length > 0 ? payloadMetrics : fallbackMetrics);
+  const metrics = metricInputs.map((item, index) => ({
     label: item.label,
     value: item.value,
-    detail: item.secondary || fallbackMetrics[index]?.detail || sourceLabel,
+    detail: item.secondary || (dataState === 'live' ? sourceLabel : fallbackMetrics[index]?.detail || sourceLabel),
     accent: fallbackMetrics[index]?.accent || item.accent || 'blue',
     dataState,
     sourceLabel,
@@ -165,6 +170,26 @@ function buildLiveDashboardConfig(config, payload, endpointConfig, loading, erro
 
   return {
     ...config,
+    // The summary API owns metrics, queue and alerts only. The remaining
+    // template identity, activity, trends and notices are illustrative too.
+    ...(isLiveParent ? {
+      title: 'Parent Dashboard',
+      heroMessage: null,
+      user: { initials: 'PG', name: 'Parent / Guardian', role: 'Parent / Guardian' },
+      updatesCount: null,
+      activities: [],
+      insight: {},
+      trendPanels: [],
+      operations: [],
+      decisionPanel: null,
+      rightRailSections: [],
+      communications: false,
+      faithCommunity: false,
+      quickActions: (Array.isArray(config.quickActions) ? config.quickActions : []).map((action) => ({
+        ...action,
+        description: 'Open this area for current records.',
+      })),
+    } : {}),
     dataState,
     sourceLabel,
     lastSyncLabel: config.lastSyncLabel || getDefaultLastSyncLabel(dataState),
@@ -175,9 +200,18 @@ function buildLiveDashboardConfig(config, payload, endpointConfig, loading, erro
     statuses: [
       { label: 'Dashboard Data State', state: dataState },
       { label: 'Dashboard Data Source', state: sourceLabel },
-      ...(Array.isArray(config.statuses) ? config.statuses : []),
+      ...(!isLiveParent && Array.isArray(config.statuses) ? config.statuses : []),
     ],
-    commandModules: applyDataTruth(config.commandModules, dataState, sourceLabel),
+    // Parent examples name specific children and balances. Never juxtapose them with
+    // live household records, especially when there are no linked students.
+    // Other configured flip cards remain visibly illustrative, never "Live".
+    commandModules: isLiveParent
+      ? []
+      : applyDataTruth(
+          config.commandModules,
+          dataState === 'live' ? 'sample' : dataState,
+          dataState === 'live' ? 'Configured illustrative content, not live API records' : sourceLabel,
+        ),
     errorState: (dataState === 'error' || dataState === 'unavailable') && metrics.length === 0
       ? {
           title: 'Dashboard data unavailable',
@@ -423,7 +457,8 @@ export default function CrownDashboardTemplate({ config, roleKey }) {
   // Admin command center: SchoolAdministrator gets admin metric grid + right rail.
   // Rich layout: any dashboard with commandModules gets priorities/alerts/flip-cards/trends.
   const isSchoolAdminCommandCenter = effectiveConfig.key === 'schoolAdministrator';
-  const isRichLayout = isSchoolAdminCommandCenter || commandModules.length > 0;
+  const isRichLayout = isSchoolAdminCommandCenter || commandModules.length > 0
+    || (effectiveConfig.key === 'parent' && dataState === 'live');
 
   return (
     <CrownDashboardShell
@@ -444,9 +479,9 @@ export default function CrownDashboardTemplate({ config, roleKey }) {
       }
     >
 
-      <CrownFaithCommunityStrip faithCommunity={effectiveConfig.faithCommunity ?? BASE_FAITH_COMMUNITY} />
+      {effectiveConfig.faithCommunity !== false && <CrownFaithCommunityStrip faithCommunity={effectiveConfig.faithCommunity ?? BASE_FAITH_COMMUNITY} />}
 
-      <CrownDashboardCommunicationsStrip communications={communications} />
+      {communications !== false && <CrownDashboardCommunicationsStrip communications={communications} />}
 
       <CrownDashboardDataTruthStatus
         dataState={dataState}
