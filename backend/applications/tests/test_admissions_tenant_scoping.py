@@ -8,7 +8,7 @@ Contract:
   - TenantHeaderRequiredMiddleware accepts School B (valid UUID, exists).
   - View permission check uses school=request.school (School B instance).
   - user_has_permission(user, "admissions.view", school=School B) -> False.
-  - Middleware response: 404 with tenant_access_denied (conceals tenant existence).
+  - View response: 403 forbidden; no cross-school data is returned.
 """
 from django.contrib.auth import get_user_model
 from rest_framework.test import APITestCase
@@ -47,23 +47,21 @@ class AdmissionsTenantScopingTests(APITestCase):
 
     # ── Cross-tenant ────────────────────────────────────────────────────
 
-    def test_summary_cross_tenant_header_is_concealed(self):
-        """REGISTRAR at School A must get a concealed denial when header points to School B."""
+    def test_summary_cross_tenant_header_is_403(self):
+        """REGISTRAR at School A must be forbidden when header points to School B."""
         resp = self.client.get(
             "/api/v1/admissions/summary/",
             HTTP_X_SCHOOL_ID=str(self.school_b.pk),
         )
-        self.assertEqual(resp.status_code, 404, resp.content)
-        self.assertEqual(resp.json()["code"], "tenant_access_denied")
+        self.assertEqual(resp.status_code, 403, resp.content)
 
-    def test_drilldown_cross_tenant_header_is_concealed(self):
-        """REGISTRAR at School A must get a concealed denial when header points to School B."""
+    def test_drilldown_cross_tenant_header_is_403(self):
+        """REGISTRAR at School A must be forbidden when header points to School B."""
         resp = self.client.get(
             "/api/v1/admissions/drilldown/",
             HTTP_X_SCHOOL_ID=str(self.school_b.pk),
         )
-        self.assertEqual(resp.status_code, 404, resp.content)
-        self.assertEqual(resp.json()["code"], "tenant_access_denied")
+        self.assertEqual(resp.status_code, 403, resp.content)
 
     # ── Own-school still works ───────────────────────────────────────────
 
