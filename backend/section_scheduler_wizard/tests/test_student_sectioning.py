@@ -89,3 +89,10 @@ def test_read_only_no_roster_mutation():
     before={k:v.student_ids for k,v in x["sections"].items()}
     solve(**x)
     assert before=={k:v.student_ids for k,v in x["sections"].items()}
+
+def test_roomless_placement_fails_closed_without_capacity_proof():
+    x = scenario()
+    x["placements"] = (CandidatePlacement("math-a", "p1", None),) + x["placements"][1:]
+    result = solve(**x)
+    assert result.status == MODEL_INVALID
+    assert "ROOM_CAPACITY_UNVERIFIED" in result.diagnostics
