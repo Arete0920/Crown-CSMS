@@ -13,6 +13,18 @@ class KairosStandaloneApiTests(TestCase):
         self.school, self.year, self.section, self.template, self.block, self.room = _fixtures()
         self.client = _client_for(self.school)
         self.actor = self.client.handler._force_user
+        # Standalone export is intentionally fail-closed for sections with no
+        # verified teacher. Mirror the canonical assignment used in preview.
+        from academics.models import TeacherAssignment
+        from core.models import Staff
+        self.staff = Staff.objects.create(
+            school=self.school, first_name="Synthetic", last_name="Teacher",
+            email="kairos-standalone@example.invalid",
+            role_type="TEACHER", status="ACTIVE",
+        )
+        TeacherAssignment.objects.create(
+            school_id=self.school.id, section=self.section, staff=self.staff,
+        )
 
     def base(self):
         snapshot = build_canonical_planning_snapshot(
