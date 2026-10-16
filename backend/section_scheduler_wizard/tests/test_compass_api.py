@@ -50,3 +50,32 @@ class CompassPublishedApiTests(TestCase):
         other=_client_for(foreign)
         res=self.get(client=other)
         self.assertEqual(res.status_code,404)
+
+    def test_concurrent_published_record_change_returns_409(self):
+        from unittest.mock import patch
+        from section_scheduler_wizard.models import SectionPlacement
+        session=_configured_session(self.client,self.school,self.year)
+        stage=self.client.post(
+            f"{BASE}{session}/sections/",
+            {"sections":[{"section_id":str(self.section.id),"day_template_id":str(self.template.id),
+                          "period_block_id":str(self.block.id),"room_id":str(self.room.id)}]},
+            format="json",**_headers(self.school))
+        self.assertEqual(stage.status_code,200,stage.data)
+        commit=self.client.post(f"{BASE}{session}/commit/",{"confirm":True},
+                                format="json",**_headers(self.school))
+        self.assertEqual(commit.status_code,200,commit.data)
+        original=SectionPlacement.objects.filter(is_active=True).count()
+        self.assertEqual(original,1)
+        # After the first read, make the later verification query observe
+        # a change. This simulates concurrent publication/undo safely.
+        from section_scheduler_wizard import compass_api
+        actual=compass_api.summarize_published_kairos
+        def side_effect(snapshot, cards):
+            SectionPlacement.objects.filter(is_active=True).update(is_active=False)
+            return actual(snapshot,cards)
+        with patch("section_scheduler_wizard.compass_api.summarize_published_kairos",
+                   side_effect=side_effect):
+            response=self.get()
+        self.assertEqual(response.status_code,409,response.data)
+        self.assertEqual(response.data["status"],"PUBLISHED_SCHEDULE_CHANGED")
+        self.assertFalse(response.data["publication_allowed"])
