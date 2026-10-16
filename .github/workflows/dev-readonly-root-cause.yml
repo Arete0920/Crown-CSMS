@@ -1,0 +1,27 @@
+name: DEV Azure Read-Only Root Cause
+on:
+  push:
+    branches:
+      - diagnostic/azure-dev-root-cause-20261016
+permissions:
+  contents: read
+  id-token: write
+jobs:
+  inspect-existing-dev:
+    environment: dev
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout diagnostic source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: Log in using existing DEV federation
+        uses: azure/login@a457da9ea143d694b1b9c7c869ebb04ebe844ef5
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - name: Inspect existing DEV resource, quota and startup categories
+        run: python3 scripts/ops/dev_readonly_diagnose.py
+      - name: Clear Azure session
+        if: always()
+        run: az logout
