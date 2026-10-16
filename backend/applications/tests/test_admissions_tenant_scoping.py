@@ -54,7 +54,7 @@ class AdmissionsTenantScopingTests(APITestCase):
             HTTP_X_SCHOOL_ID=str(self.school_b.pk),
         )
         self.assertEqual(resp.status_code, 404, resp.content)
-        self.assertEqual(resp.data.get("code"), "tenant_access_denied")
+        self.assertEqual(resp.json().get("code"), "tenant_access_denied")
 
     def test_drilldown_cross_tenant_header_is_404(self):
         """REGISTRAR at School A must be forbidden when header points to School B."""
@@ -63,7 +63,7 @@ class AdmissionsTenantScopingTests(APITestCase):
             HTTP_X_SCHOOL_ID=str(self.school_b.pk),
         )
         self.assertEqual(resp.status_code, 404, resp.content)
-        self.assertEqual(resp.data.get("code"), "tenant_access_denied")
+        self.assertEqual(resp.json().get("code"), "tenant_access_denied")
 
     # ── Own-school still works ───────────────────────────────────────────
 
