@@ -87,6 +87,28 @@ def published_scheduling_metrics(request):
         response["Cache-Control"] = "private, no-store"
         return response
 
+    # The canonical input fingerprint does not include published placements.
+    # Detect publication or undo occurring during this read, rather than
+    # returning a stale "current published" metrics result.
+    current_ids = list(SectionPlacement.objects.filter(
+        section_id__in=section_ids, is_active=True,
+    ).order_by("id").values_list(
+        "id", "school_id", "academic_year_id", "section_id",
+        "period_block_id", "day_template_id", "room_id",
+    )[:MAX_MEETINGS + 1])
+    earlier = [
+        (row.id, row.school_id, row.academic_year_id, row.section_id,
+         row.period_block_id, row.day_template_id, row.room_id)
+        for row in raw
+    ]
+    if len(current_ids) > MAX_MEETINGS or current_ids != earlier:
+        response = Response(
+            {"status": "PUBLISHED_SCHEDULE_CHANGED", "publication_allowed": False},
+            status=409,
+        )
+        response["Cache-Control"] = "private, no-store"
+        return response
+
     body = asdict(summary)
     body["status"] = "READ_ONLY_PUBLISHED_SUMMARY"
     body["publication_allowed"] = False
