@@ -92,3 +92,17 @@ def test_csv_formula_ids_are_rejected_even_when_supplied_in_snapshot():
     })
     with pytest.raises(StandaloneInterchangeError,match="UNSAFE_CSV_CELL"):
         check("section_id,period_id,room_id\n=IMPORT,p1,r1\ns2,p2,r1\n",unsafe)
+
+
+def test_protected_overlap_distinct_period_identifier_refused_on_import_and_export():
+    snap,rows=sample()
+    snap=replace(snap,period_inputs={
+        **snap.period_inputs,
+        "chapel":PeriodInput("chapel","school","year","A",510,570,False),
+    })
+    imported=check("section_id,period_id,room_id\ns1,p1,r1\ns2,p2,r1\n",snap)
+    assert imported.status=="INVALID_CONSTRAINTS"
+    assert "PROTECTED_PERIOD_OVERLAP" in imported.error_codes
+    assert not imported.publication_allowed
+    with pytest.raises(StandaloneInterchangeError,match="EXPORT_PROTECTED_PERIOD_OVERLAP"):
+        export_standalone_csv(snapshot=snap,expected_source_fingerprint=snap.source_fingerprint,placements=rows)
