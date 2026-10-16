@@ -152,6 +152,7 @@ class KairosIntegratedPreviewTests(TestCase):
             {"period_id": str(later.id), "room_id": str(self.room.id)},
         ]
         body["node_limit"] = 1
+        body["expected_source_fingerprint"] = self.snapshot().source_fingerprint
         res = self.post(body)
         self.assertEqual(res.status_code, 200, res.data)
         self.assertEqual(res.data["status"], "UNKNOWN")
