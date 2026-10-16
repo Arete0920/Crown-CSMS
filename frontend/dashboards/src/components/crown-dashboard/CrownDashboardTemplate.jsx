@@ -151,6 +151,7 @@ function buildLiveDashboardConfig(config, payload, endpointConfig, loading, erro
   }
 
   const dataState = getDashboardDataState(source, payload, error, loading);
+  const isLiveParent = dataState === 'live' && config.key === 'parent';
   const sourceLabel = getDashboardSourceLabel(dataState, endpointConfig?.endpoint, payload);
   const fallbackMetrics = Array.isArray(config.metrics) ? config.metrics : [];
   const payloadMetrics = Array.isArray(payload?.metrics) ? payload.metrics : [];
@@ -169,6 +170,26 @@ function buildLiveDashboardConfig(config, payload, endpointConfig, loading, erro
 
   return {
     ...config,
+    // The summary API owns metrics, queue and alerts only. The remaining
+    // template identity, activity, trends and notices are illustrative too.
+    ...(isLiveParent ? {
+      title: 'Parent Dashboard',
+      heroMessage: null,
+      user: { initials: 'PG', name: 'Parent / Guardian', role: 'Parent / Guardian' },
+      updatesCount: null,
+      activities: [],
+      insight: {},
+      trendPanels: [],
+      operations: [],
+      decisionPanel: null,
+      rightRailSections: [],
+      communications: false,
+      faithCommunity: false,
+      quickActions: (Array.isArray(config.quickActions) ? config.quickActions : []).map((action) => ({
+        ...action,
+        description: 'Open this area for current records.',
+      })),
+    } : {}),
     dataState,
     sourceLabel,
     lastSyncLabel: config.lastSyncLabel || getDefaultLastSyncLabel(dataState),
@@ -179,12 +200,12 @@ function buildLiveDashboardConfig(config, payload, endpointConfig, loading, erro
     statuses: [
       { label: 'Dashboard Data State', state: dataState },
       { label: 'Dashboard Data Source', state: sourceLabel },
-      ...(Array.isArray(config.statuses) ? config.statuses : []),
+      ...(!isLiveParent && Array.isArray(config.statuses) ? config.statuses : []),
     ],
     // Parent examples name specific children and balances. Never juxtapose them with
     // live household records, especially when there are no linked students.
     // Other configured flip cards remain visibly illustrative, never "Live".
-    commandModules: dataState === 'live' && config.key === 'parent'
+    commandModules: isLiveParent
       ? []
       : applyDataTruth(
           config.commandModules,
@@ -457,9 +478,9 @@ export default function CrownDashboardTemplate({ config, roleKey }) {
       }
     >
 
-      <CrownFaithCommunityStrip faithCommunity={effectiveConfig.faithCommunity ?? BASE_FAITH_COMMUNITY} />
+      {effectiveConfig.faithCommunity !== false && <CrownFaithCommunityStrip faithCommunity={effectiveConfig.faithCommunity ?? BASE_FAITH_COMMUNITY} />}
 
-      <CrownDashboardCommunicationsStrip communications={communications} />
+      {communications !== false && <CrownDashboardCommunicationsStrip communications={communications} />}
 
       <CrownDashboardDataTruthStatus
         dataState={dataState}
