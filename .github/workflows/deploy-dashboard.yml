@@ -498,14 +498,18 @@ jobs:
       - name: Wait for pinned DEV API after configuration
         env:
           SOURCE_SHA: ${{ inputs.dev_source_sha }}
+          PREVIEW_URL: ${{ steps.preview.outputs.static_web_app_url }}
         run: |
           python3 - <<'PYCODE'
           import json, os, time, urllib.request
-          for attempt in range(24):
+          for attempt in range(36):
               try:
                   with urllib.request.urlopen('https://crown-api-dev.azurewebsites.net/api/health/', timeout=15) as response:
                       payload = json.load(response)
-                  if payload.get('build_sha') == os.environ['SOURCE_SHA'] and payload.get('artifact_build_sha') == os.environ['SOURCE_SHA'] and payload.get('db') == 'ok':
+                  preflight = urllib.request.Request('https://crown-api-dev.azurewebsites.net/api/v1/nav/', method='OPTIONS', headers={'Origin': os.environ['PREVIEW_URL'].rstrip('/'), 'Access-Control-Request-Method': 'GET', 'Access-Control-Request-Headers': 'authorization,x-school-id'})
+                  with urllib.request.urlopen(preflight, timeout=15) as response:
+                      cors_ready = response.headers.get('Access-Control-Allow-Origin') == os.environ['PREVIEW_URL'].rstrip('/') and response.headers.get('Access-Control-Allow-Credentials') == 'true'
+                  if cors_ready and payload.get('build_sha') == os.environ['SOURCE_SHA'] and payload.get('artifact_build_sha') == os.environ['SOURCE_SHA'] and payload.get('db') == 'ok':
                       break
               except Exception:
                   pass
@@ -561,3 +565,85 @@ jobs:
             frontend/dashboards/playwright-report/
           if-no-files-found: error
           retention-days: 30
+
+      - name: Set up existing backend fixture runtime
+        if: always() && steps.preview.outcome == 'success'
+        uses: actions/setup-python@7f4fc3e22c37d6ff65e88745f38bd3157c663f7c
+        with:
+          python-version: '3.12'
+      - name: Install accepted backend dependencies for synthetic fixtures
+        if: always() && steps.preview.outcome == 'success'
+        run: python -m pip install -r backend/requirements.txt
+      - name: Prepare two synthetic DEV tenants using existing models
+        if: always() && steps.preview.outcome == 'success'
+        env:
+          WORKFLOW_SHA: ${{ github.sha }}
+          SOURCE_SHA: ${{ inputs.dev_source_sha }}
+          CROWN_DEV_TENANT_FIXTURE: ${{ runner.temp }}/crown-dev-tenant-fixtures.json
+        run: |
+          git show "$WORKFLOW_SHA:scripts/release/prepare_dev_certification_tenants.py" > /tmp/prepare-dev-tenants.py
+          git show "$WORKFLOW_SHA:scripts/release/test_prepare_dev_certification_tenants.py" > /tmp/test_prepare_dev_certification_tenants.py
+          cp /tmp/prepare-dev-tenants.py /tmp/prepare_dev_certification_tenants.py
+          python -m unittest discover -s /tmp -p test_prepare_dev_certification_tenants.py -v
+          git show "$WORKFLOW_SHA:frontend/dashboards/tests/certification/production-tenant-isolation.spec.ts" > frontend/dashboards/tests/certification/production-tenant-isolation.spec.ts
+          python - <<'PYCODE'
+          import contextlib, io, json, os, runpy, subprocess, sys, urllib.request
+          from urllib.parse import urlsplit
+          def az(*args):
+              result = subprocess.run(['az', *args, '--only-show-errors', '--output', 'json'], capture_output=True, text=True, timeout=90)
+              if result.returncode: raise RuntimeError('Authorized DEV Azure read failed')
+              return json.loads(result.stdout)
+          def resolve(value):
+              if value.startswith('@Microsoft.KeyVault(') and value.endswith(')'):
+                  fields = dict(part.strip().split('=', 1) for part in value[20:-1].split(';') if '=' in part)
+                  if fields.get('SecretUri'):
+                      uri = urlsplit(fields['SecretUri'])
+                      assert uri.scheme == 'https' and uri.hostname.endswith('.vault.azure.net') and uri.path.startswith('/secrets/')
+                      return az('keyvault', 'secret', 'show', '--id', fields['SecretUri'])['value']
+                  return az('keyvault', 'secret', 'show', '--vault-name', fields['VaultName'], '--name', fields['SecretName'])['value']
+              return value
+          try:
+              with urllib.request.urlopen('https://crown-api-dev.azurewebsites.net/api/health/', timeout=20) as response:
+                  health = json.load(response)
+              assert health['build_sha'] == health['artifact_build_sha'] == os.environ['SOURCE_SHA'] and health['db'] == 'ok'
+              rows = az('webapp', 'config', 'appsettings', 'list', '--resource-group', 'crown-rg', '--name', 'crown-api-dev')
+              settings = {row['name']: row.get('value', '') for row in rows}
+              database = resolve(settings['DATABASE_URL'])
+              secret = resolve(settings.get('DJANGO_SECRET_KEY') or settings['SECRET_KEY'])
+              assert urlsplit(database).hostname == 'crown-pg-dev.postgres.database.azure.com'
+              for value in (database, secret): print('::add-mask::' + value)
+              os.environ.update(DATABASE_URL=database, DJANGO_SECRET_KEY=secret, DJANGO_SETTINGS_MODULE='crown_api.settings', CROWN_ENV='dev', DJANGO_ENV='development', DJANGO_DEBUG='false', BUILD_SHA=os.environ['SOURCE_SHA'])
+              sys.path.insert(0, os.path.abspath('backend'))
+              import django
+              with contextlib.redirect_stderr(io.StringIO()): django.setup()
+              module = runpy.run_path('/tmp/prepare-dev-tenants.py')
+              with contextlib.redirect_stderr(io.StringIO()): module['prepare'](os.environ['CROWN_DEV_TENANT_FIXTURE'])
+          except Exception as exc:
+              print('DEV_FIXTURE_PREPARATION=FAIL; exception_type=' + type(exc).__name__)
+              raise SystemExit(1)
+          PYCODE
+      - name: Execute existing Playwright framework for two-tenant HTTP isolation
+        if: always() && steps.preview.outcome == 'success'
+        working-directory: frontend/dashboards
+        env:
+          CI: '1'
+          CROWN_CERTIFICATION_LIVE_RUNTIME: '1'
+          CROWN_LIVE_FRONTEND_URL: ${{ steps.preview.outputs.static_web_app_url }}
+          CROWN_LIVE_API_BASE_URL: https://crown-api-dev.azurewebsites.net
+          CROWN_DEV_TENANT_FIXTURE: ${{ runner.temp }}/crown-dev-tenant-fixtures.json
+        run: npx playwright test tests/certification/production-tenant-isolation.spec.ts --workers=1 --reporter=line
+      - name: Upload two-tenant execution results
+        if: always() && steps.preview.outcome == 'success'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: dev-two-tenant-isolation-${{ inputs.dev_source_sha }}-${{ github.run_id }}
+          path: |
+            frontend/dashboards/test-results/
+            frontend/dashboards/playwright-report/
+          if-no-files-found: error
+          retention-days: 30
+      - name: Remove ephemeral synthetic actor tokens
+        if: always()
+        env:
+          FIXTURE_PATH: ${{ runner.temp }}/crown-dev-tenant-fixtures.json
+        run: rm -f -- "$FIXTURE_PATH"
