@@ -111,6 +111,11 @@ def construct_student_sectioning(
     placement_by_section = {p.section_id: p for p in placements}
     if len(placement_by_section) != len(sections):
         return _invalid("DUPLICATE_OR_MISSING_PLACEMENT")
+    # The generic placement preflight intentionally permits a roomless meeting,
+    # but student sectioning must prove occupancy against an actual room limit.
+    # Never index rooms[None] or assume unlimited capacity for roomless cards.
+    if any(placement.room_id is None for placement in placements):
+        return _invalid("ROOM_CAPACITY_UNVERIFIED")
     if validate_candidate_placements(
         school_id=school_id, academic_year_id=academic_year_id,
         term_code=term_code, sections=sections, periods=periods,
