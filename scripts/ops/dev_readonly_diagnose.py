@@ -127,7 +127,7 @@ def main():
         print("DEV_DB_SERVER_STATE="+str(dbserver.get("state","UNKNOWN")))
         network=dbserver.get("network") or {}
         print("DEV_DB_PUBLIC_NETWORK="+str(network.get("publicNetworkAccess","UNKNOWN")))
-        rules=az("postgres","flexible-server","firewall-rule","list","-g","crown-rg","-n","crown-pg-dev","-o","json")
+        rules=az("postgres","flexible-server","firewall-rule","list","-g","crown-rg","--server-name","crown-pg-dev","-o","json")
         if isinstance(rules,list):
             print("DEV_DB_EXISTING_AZURE_SERVICES_RULE="+str(any(x.get("startIpAddress")=="0.0.0.0" and x.get("endIpAddress")=="0.0.0.0" for x in rules)))
     else:
@@ -151,8 +151,10 @@ def main():
         print("DEV_DB_REFERENCE_MATCHES_EXPECTED_HOST="+str(parsed.hostname=="crown-pg-dev.postgres.database.azure.com"))
         if parsed.scheme not in ("postgres","postgresql") or parsed.hostname!="crown-pg-dev.postgres.database.azure.com":
             raise ValueError("DEV database identity not verified")
-        install=subprocess.run(["python3","-m","pip","install","--quiet","psycopg[binary]==3.3.6"],capture_output=True,text=True,timeout=90)
+        install=subprocess.run(["python3","-m","pip","install","--quiet","--target","/tmp/crown-dev-diag-deps","psycopg[binary]==3.3.6"],capture_output=True,text=True,timeout=90)
         if install.returncode: raise RuntimeError("Driver unavailable")
+        import sys
+        sys.path.insert(0,"/tmp/crown-dev-diag-deps")
         import psycopg
         with psycopg.connect(raw,connect_timeout=8,sslmode="require",options="-c default_transaction_read_only=on") as conn:
             with conn.cursor() as cur:
@@ -167,8 +169,11 @@ def main():
                 for appname,name in pending:
                     if re.fullmatch(r"[a-zA-Z0-9_]+",appname+name):
                         print("PENDING_MIGRATION="+appname+"."+name)
-    except Exception:
+    except Exception as exc:
         print("READ_DB=UNAVAILABLE_OR_DEV_IDENTITY_NOT_VERIFIED")
+        message=str(exc).lower()
+        for label,pattern in {"DRIVER":r"driver unavailable|no module named", "AUTHENTICATION":r"password authentication failed|no password supplied", "NETWORK":r"timeout|connection refused|could not translate", "FIREWALL":r"no pg_hba.conf entry|not allowed"}.items():
+            print("READ_DB_FAILURE_"+label+"="+str(bool(re.search(pattern,message))))
     print("DIAGNOSTIC_COMPLETE")
 
 if __name__=="__main__":
