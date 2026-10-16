@@ -276,8 +276,8 @@ describe('CrownDashboardTemplate data truth defaults', () => {
           { label: 'Linked Active Students', value: '0', secondary: 'No active students linked.' },
           { label: 'Outstanding Family Balance', value: '$0.00' },
         ],
-        queue: [],
-        alerts: [],
+        queue: ['Review authenticated family record'],
+        alerts: [{ title: 'Authenticated family alert', level: 'info' }],
         meta: { served_from: 'database' },
       },
       error: null,
@@ -294,7 +294,9 @@ describe('CrownDashboardTemplate data truth defaults', () => {
     expect(captured.metrics[1].detail).not.toContain('November');
     expect(captured.modules).toHaveLength(0);
     expect(captured.activities[0].items).toEqual([]);
-    expect(captured.insights[0].trend).toBeUndefined();
+    expect(captured.insights).toHaveLength(0);
+    expect(screen.getByText('Review authenticated family record')).toBeTruthy();
+    expect(screen.getByText('Authenticated family alert')).toBeTruthy();
     expect(captured.headers[0].title).toBe('Parent Dashboard');
     expect(captured.headers[0].userInitials).toBe('PG');
     expect(captured.headers[0].updatesCount).toBeNull();

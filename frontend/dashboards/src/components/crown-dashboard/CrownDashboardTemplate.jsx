@@ -457,7 +457,8 @@ export default function CrownDashboardTemplate({ config, roleKey }) {
   // Admin command center: SchoolAdministrator gets admin metric grid + right rail.
   // Rich layout: any dashboard with commandModules gets priorities/alerts/flip-cards/trends.
   const isSchoolAdminCommandCenter = effectiveConfig.key === 'schoolAdministrator';
-  const isRichLayout = isSchoolAdminCommandCenter || commandModules.length > 0;
+  const isRichLayout = isSchoolAdminCommandCenter || commandModules.length > 0
+    || (effectiveConfig.key === 'parent' && dataState === 'live');
 
   return (
     <CrownDashboardShell
