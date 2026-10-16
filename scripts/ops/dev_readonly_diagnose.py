@@ -97,6 +97,22 @@ def main():
                 print("STARTUP_"+name+"="+str(bool(re.search(pat,body))))
     except (OSError,subprocess.TimeoutExpired):
         print("STARTUP_LOG=UNAVAILABLE")
+    shared=az("appservice","plan","show","-g","crown-rg","-n","crown-api-plan","-o","json")
+    if isinstance(shared,dict):
+        sku=shared.get("sku",{})
+        print("EXISTING_PLAN_SKU="+str(sku.get("name","UNKNOWN")))
+        print("EXISTING_PLAN_APPS="+str(shared.get("numberOfSites","UNKNOWN")))
+        metrics=az("monitor","metrics","list","--resource",shared["id"],"--metric","CpuPercentage","MemoryPercentage","--interval","PT1H","--aggregation","Average","Maximum","-o","json")
+        if isinstance(metrics,dict):
+            for metric in metrics.get("value",[]):
+                name=(metric.get("name") or {}).get("value","")
+                if name not in ("CpuPercentage","MemoryPercentage"): continue
+                for series in metric.get("timeseries",[]):
+                    for row in series.get("data",[])[-2:]:
+                        for stat in ("average","maximum"):
+                            value=row.get(stat)
+                            if isinstance(value,(float,int)):
+                                print("EXISTING_PLAN_"+name+"_"+stat+"="+str(round(value,2)))
     print("DIAGNOSTIC_COMPLETE")
 
 if __name__=="__main__":
