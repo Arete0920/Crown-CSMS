@@ -1,0 +1,50 @@
+name: DEV Fast Read-Only Startup Metadata
+on:
+  push:
+    branches: [ops/heritage-dev-existing-paid-plan-20261016]
+    paths: [.github/workflows/dev-fast-readonly.yml]
+permissions:
+  contents: read
+  id-token: write
+jobs:
+  metadata:
+    environment: dev
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: azure/login@a457da9ea143d694b1b9c7c869ebb04ebe844ef5
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - name: Read startup configuration and DEV database state without secrets
+        shell: python -u {0}
+        run: |
+          import subprocess,json,re
+          def az(*args):
+              p=subprocess.run(["az",*args,"--only-show-errors","-o","json"],capture_output=True,text=True,timeout=35)
+              if p.returncode: return None
+              return json.loads(p.stdout)
+          settings=az("webapp","config","appsettings","list","-g","crown-rg","-n","crown-api-dev")
+          d={x["name"]:x.get("value") for x in settings} if isinstance(settings,list) else {}
+          for key in ("WEBSITES_PORT","PORT","BOOTSTRAP_ADMIN","SEED_DEMO","RUN_DEV_BOOTSTRAP","RUN_GOLDEN_PATH_BOOTSTRAP"):
+              value=d.get(key)
+              print(key+"="+(value if value in ("8000","80","1","0","true","false","True","False") else "ABSENT" if value is None else "PRESENT_OTHER"))
+          for key in ("DJANGO_SUPERUSER_PASSWORD","CI_SMOKE_USERNAME","DATABASE_URL","SECRET_KEY"):
+              print(key+"_PRESENCE="+("SET" if d.get(key) else "ABSENT"))
+          cfg=az("webapp","config","show","-g","crown-rg","-n","crown-api-dev") or {}
+          print("MANAGED_IDENTITY_PULL="+str(cfg.get("acrUseManagedIdentityCreds")))
+          print("CUSTOM_STARTUP_COMMAND_PRESENT="+str(bool(cfg.get("appCommandLine"))))
+          image=cfg.get("linuxFxVersion","")
+          match=re.fullmatch(r"(?i)DOCKER\|crownregistry.azurecr.io/crown2026:dev-([a-f0-9]{40})",image)
+          print("DEV_IMAGE_SHA="+(match.group(1) if match else "UNEXPECTED_IMAGE"))
+          db=az("postgres","flexible-server","show","-g","crown-rg","-n","crown-pg-dev")
+          print("DEV_DB_SERVER_STATE="+str(db.get("state","UNKNOWN") if isinstance(db,dict) else "UNAVAILABLE"))
+          if isinstance(db,dict):
+              print("DEV_DB_NETWORK="+str((db.get("network") or {}).get("publicNetworkAccess","UNKNOWN")))
+          rules=az("postgres","flexible-server","firewall-rule","list","-g","crown-rg","-n","crown-pg-dev")
+          if isinstance(rules,list):
+              print("EXISTING_AZURE_SERVICES_FIREWALL_RULE="+str(any(x.get("startIpAddress")=="0.0.0.0" and x.get("endIpAddress")=="0.0.0.0" for x in rules)))
+          print("READ_ONLY_COMPLETE")
+      - if: always()
+        run: az logout
