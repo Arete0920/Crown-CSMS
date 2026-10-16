@@ -1,0 +1,89 @@
+name: Move DEV to Existing Paid Capacity
+on:
+  push:
+    branches:
+      - ops/heritage-dev-existing-paid-plan-20261016
+    paths:
+      - .github/workflows/dev-existing-paid-capacity.yml
+permissions:
+  contents: read
+  id-token: write
+concurrency:
+  group: crown-api-dev-deploy
+  cancel-in-progress: false
+jobs:
+  move-existing-dev:
+    environment: dev
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Existing DEV federation
+        uses: azure/login@a457da9ea143d694b1b9c7c869ebb04ebe844ef5
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - name: Move only DEV to existing B1 with production safeguards
+        shell: python
+        run: |
+          import json, subprocess, time, urllib.request, re
+          def az(*args):
+              p=subprocess.run(["az",*args,"--only-show-errors","-o","json"],capture_output=True,text=True,timeout=120)
+              if p.returncode:
+                  # No raw provider errors, appsettings or credentials in public logs.
+                  raise RuntimeError("Azure operation failed; sensitive provider details suppressed")
+              return json.loads(p.stdout) if p.stdout.strip() else {}
+          def health():
+              with urllib.request.urlopen("https://crown-api-prod.azurewebsites.net/api/health/",timeout=20) as r:
+                  d=json.load(r)
+                  assert r.status==200 and d.get("ok") and d.get("db")=="ok", "Production health not verified"
+                  assert re.fullmatch("[0-9a-f]{40}",d.get("build_sha","")), "Production identity unavailable"
+                  return d["build_sha"]
+          def normalized(x): return x.lower().replace(" ","")
+          account=az("account","show")
+          assert account["id"]=="4ef0ba4b-4810-48d4-b3fe-953a9708953a", "Wrong subscription"
+          dev=az("webapp","show","-g","crown-rg","-n","crown-api-dev")
+          prod=az("webapp","show","-g","crown-rg","-n","crown-api-prod")
+          target=az("appservice","plan","show","-g","crown-rg","-n","crown-api-plan")
+          original=dev["serverFarmId"]
+          assert dev["name"]=="crown-api-dev" and prod["name"]=="crown-api-prod"
+          assert target["sku"]["name"]=="B1" and target["sku"]["capacity"]==1, "Existing plan changed"
+          assert normalized(dev["location"])==normalized(target["location"]), "Region mismatch"
+          assert "linux" in dev["kind"].lower() and target.get("reserved") is True, "OS mismatch"
+          assert original.lower().split("/serverfarms/")[0]==target["id"].lower().split("/serverfarms/")[0], "Resource scope mismatch"
+          assert prod["serverFarmId"].lower()==target["id"].lower(), "Unexpected production plan"
+          assert not dev.get("virtualNetworkSubnetId"), "VNET migration needs separate review"
+          metrics=az("monitor","metrics","list","--resource",target["id"],"--metric","MemoryPercentage","--interval","PT1H","--aggregation","Maximum")
+          peaks=[p["maximum"] for m in metrics.get("value",[]) for s in m.get("timeseries",[]) for p in s.get("data",[]) if isinstance(p.get("maximum"),(int,float))]
+          assert peaks and max(peaks)<85, "Existing paid plan lacks verified memory headroom"
+          before=health()
+          print("PRECHECK=PASS; existing B1 one instance; memory peak="+str(max(peaks)))
+          print("CONTROL_PATH=explicit owner operational authorization; existing DEV environment federation; runtime safeguards")
+          url="https://management.azure.com"+dev["id"]+"?api-version=2025-03-01"
+          moved=False
+          try:
+              if original.lower()!=target["id"].lower():
+                  az("rest","--method","patch","--url",url,"--body",json.dumps({"properties":{"serverFarmId":target["id"]}}))
+                  moved=True
+              for i in range(24):
+                  current=az("webapp","show","-g","crown-rg","-n","crown-api-dev")
+                  if current["serverFarmId"].lower()==target["id"].lower(): break
+                  time.sleep(5)
+              assert current["serverFarmId"].lower()==target["id"].lower(), "Plan move not confirmed"
+              for i in range(4):
+                  assert health()==before, "Production identity changed"
+                  time.sleep(15)
+              unchanged=az("appservice","plan","show","-g","crown-rg","-n","crown-api-plan")
+              assert unchanged["sku"]==target["sku"], "Paid plan capacity changed unexpectedly"
+              print("DEV_PLAN=crown-api-plan; SKU=B1; instances=1; PLAN_MOVE=VERIFIED")
+              print("PRODUCTION_HEALTH=HTTP200_DB_OK; PRODUCTION_SHA_UNCHANGED="+before)
+              print("NO_PLAN_CREATED=True; NO_PLAN_RESIZED=True")
+              print("DEV_RUNTIME_ACCEPTANCE=SEPARATE_PENDING_CHECK")
+          except Exception:
+              if moved:
+                  az("rest","--method","patch","--url",url,"--body",json.dumps({"properties":{"serverFarmId":original}}))
+                  print("ROLLBACK_TO_ORIGINAL_PLAN=REQUESTED")
+              raise
+      - name: Clear Azure session
+        if: always()
+        run: az logout
