@@ -1,0 +1,90 @@
+#!/usr/bin/env python3
+"""Read-only Azure DEV root-cause metadata. Never print secret values or raw startup logs."""
+import json
+import re
+import subprocess
+
+def az(*args, timeout=45):
+    try:
+        p = subprocess.run(["az", *args, "--only-show-errors"], capture_output=True, text=True, timeout=timeout)
+        if p.returncode: return None
+        return json.loads(p.stdout)
+    except (ValueError, OSError, subprocess.TimeoutExpired):
+        return None
+
+def main():
+    print("DIAGNOSTIC=READ_ONLY")
+    app=az("webapp","show","-g","crown-rg","-n","crown-api-dev","-o","json")
+    if not isinstance(app,dict):
+        print("APP=UNAVAILABLE")
+        raise SystemExit(1)
+    for key in ("state","enabled","usageState","availabilityState"):
+        print("APP_"+key+"="+str(app.get(key,"UNKNOWN")))
+    planid=app.get("serverFarmId")
+    plan=az("appservice","plan","show","--ids",planid,"-o","json") if isinstance(planid,str) else None
+    sku=plan.get("sku",{}) if isinstance(plan,dict) else {}
+    for key in ("name","tier","capacity"):
+        print("PLAN_"+key+"="+str(sku.get(key,"UNKNOWN")))
+    cfg=az("webapp","config","show","-g","crown-rg","-n","crown-api-dev","-o","json")
+    if isinstance(cfg,dict):
+        for key in ("alwaysOn","healthCheckPath","acrUseManagedIdentityCreds"):
+            print("CONFIG_"+key+"="+str(cfg.get(key,"UNKNOWN"))[:100])
+    settings=az("webapp","config","appsettings","list","-g","crown-rg","-n","crown-api-dev","-o","json")
+    if isinstance(settings,list):
+        d={x.get("name"):x.get("value") for x in settings if isinstance(x,dict)}
+        for key in ("WEBSITES_PORT","PORT"):
+            v=d.get(key)
+            print("SETTING_"+key+"="+(v if isinstance(v,str) and re.fullmatch(r"\d{1,5}",v) else "ABSENT" if v is None else "HIDDEN_OR_INVALID"))
+        for key in ("DATABASE_URL","SECRET_KEY","DJANGO_SECRET_KEY","CI_SMOKE_USERNAME","RUN_MIGRATE","RUN_MIGRATIONS","RUN_DEV_BOOTSTRAP"):
+            v=d.get(key)
+            status="ABSENT" if v is None else "KEY_VAULT_REFERENCE" if isinstance(v,str) and v.startswith("@Microsoft.KeyVault(") else "SET" if v else "EMPTY"
+            print("SETTING_"+key+"="+status)
+    else:
+        print("SETTINGS=UNAVAILABLE")
+    appid=app.get("id")
+    if isinstance(appid,str) and appid.startswith("/"):
+        activity=az("monitor","activity-log","list","--resource-id",appid,"--offset","2d","--max-events","150","-o","json",timeout=55)
+        if isinstance(activity,list):
+            print("ACTIVITY_COUNT="+str(len(activity)))
+            for x in sorted(activity,key=lambda d:d.get("eventTimestamp",""))[-50:]:
+                op=x.get("operationName") or {}
+                st=x.get("status") or {}
+                op=op.get("value","") if isinstance(op,dict) else op
+                st=st.get("value","") if isinstance(st,dict) else st
+                if isinstance(op,str) and re.search("start|stop|restart|write|quota",op,re.I) and re.fullmatch(r"[A-Za-z0-9/._-]{1,120}",op):
+                    print("ACTIVITY="+str(x.get("eventTimestamp",""))[:20]+"|"+op+"|"+str(st)[:30])
+        else:
+            print("ACTIVITY=UNAVAILABLE")
+        usage=az("rest","--method","get","--url","https://management.azure.com"+appid+"/usages?api-version=2024-04-01","-o","json")
+        if isinstance(usage,dict) and isinstance(usage.get("value"),list):
+            print("QUOTA_COUNT="+str(len(usage["value"])))
+            for x in usage["value"][:20]:
+                name=x.get("name") or {}
+                name=name.get("value","") if isinstance(name,dict) else name
+                if isinstance(name,str) and re.fullmatch(r"[A-Za-z0-9_ .-]{1,80}",name):
+                    print("QUOTA="+name+"|"+str(x.get("currentValue","?"))[:20]+"|"+str(x.get("limit","?"))[:20])
+        else:
+            print("QUOTA=UNAVAILABLE")
+    try:
+        p=subprocess.run(["az","webapp","log","startup","show","-g","crown-rg","-n","crown-api-dev","--only-show-errors"],capture_output=True,text=True,timeout=60)
+        if p.returncode:
+            print("STARTUP_LOG=UNAVAILABLE")
+        else:
+            print("STARTUP_LOG=COLLECTED")
+            body=p.stdout.lower()
+            patterns={
+                "MIGRATIONS":r"migrate --check|unapplied migration|inconsistentmigrationhistory",
+                "DATABASE":r"operationalerror|could not connect|connection refused|timeout expired",
+                "PORT_STARTUP":r"startup time limit|failed to respond to http pings|container did not start",
+                "IMAGE_PULL":r"manifest unknown|pull access denied|failed to pull image",
+                "MISSING_SECRET":r"missing required environment variable",
+                "GUNICORN_8000":r"listening at:.*8000|binding to 0.0.0.0:8000",
+            }
+            for name,pat in patterns.items():
+                print("STARTUP_"+name+"="+str(bool(re.search(pat,body))))
+    except (OSError,subprocess.TimeoutExpired):
+        print("STARTUP_LOG=UNAVAILABLE")
+    print("DIAGNOSTIC_COMPLETE")
+
+if __name__=="__main__":
+    main()
