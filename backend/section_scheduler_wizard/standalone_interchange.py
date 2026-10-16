@@ -69,6 +69,24 @@ def _validated_scope(snapshot: CanonicalPlanningSnapshot, expected_fingerprint: 
         raise StandaloneInterchangeError("SECTION_IDENTITY_NOT_VERIFIED")
 
 
+def _overlaps_protected(snapshot: CanonicalPlanningSnapshot, placements: Sequence[CandidatePlacement]) -> bool:
+    """Reject chapel/protected blocks even when stored under another period ID."""
+    periods = snapshot.period_inputs
+    for placement in placements:
+        chosen = periods.get(placement.period_id)
+        if chosen is None:
+            continue  # The canonical placement validator reports missing periods.
+        for protected in periods.values():
+            if (
+                protected.template_id == chosen.template_id
+                and not protected.instructional
+                and max(chosen.start_minute, protected.start_minute)
+                    < min(chosen.end_minute, protected.end_minute)
+            ):
+                return True
+    return False
+
+
 def validate_standalone_csv(
     *, snapshot: CanonicalPlanningSnapshot, expected_source_fingerprint: str,
     content: str | bytes,
@@ -140,7 +158,10 @@ def validate_standalone_csv(
         periods=snapshot.period_inputs, rooms=snapshot.room_inputs,
         placements=placements,
     )
-    codes = tuple(sorted({v.code for v in validation}))[:MAX_DIAGNOSTICS]
+    finding_codes = {v.code for v in validation}
+    if _overlaps_protected(snapshot, placements):
+        finding_codes.add("PROTECTED_PERIOD_OVERLAP")
+    codes = tuple(sorted(finding_codes))[:MAX_DIAGNOSTICS]
     data = source.encode("utf-8")
     return StandalonePreflight(
         status="VALID_PREVIEW_ONLY" if not codes else "INVALID_CONSTRAINTS",
@@ -174,6 +195,8 @@ def export_standalone_csv(
         placements=placements,
     ):
         raise StandaloneInterchangeError("EXPORT_HARD_CONSTRAINT_FAILED")
+    if _overlaps_protected(snapshot, placements):
+        raise StandaloneInterchangeError("EXPORT_PROTECTED_PERIOD_OVERLAP")
     text = StringIO(newline="")
     writer = csv.writer(text, lineterminator="\n")
     writer.writerow(CSV_COLUMNS)
