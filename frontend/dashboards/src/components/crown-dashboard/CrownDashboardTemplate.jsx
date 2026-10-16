@@ -154,10 +154,14 @@ function buildLiveDashboardConfig(config, payload, endpointConfig, loading, erro
   const sourceLabel = getDashboardSourceLabel(dataState, endpointConfig?.endpoint, payload);
   const fallbackMetrics = Array.isArray(config.metrics) ? config.metrics : [];
   const payloadMetrics = Array.isArray(payload?.metrics) ? payload.metrics : [];
-  const metrics = (payloadMetrics.length > 0 ? payloadMetrics : fallbackMetrics).map((item, index) => ({
+  // A live response with no metrics must not turn configured example figures into live records.
+  const metricInputs = dataState === 'live'
+    ? payloadMetrics
+    : (payloadMetrics.length > 0 ? payloadMetrics : fallbackMetrics);
+  const metrics = metricInputs.map((item, index) => ({
     label: item.label,
     value: item.value,
-    detail: item.secondary || fallbackMetrics[index]?.detail || sourceLabel,
+    detail: item.secondary || (dataState === 'live' ? sourceLabel : fallbackMetrics[index]?.detail || sourceLabel),
     accent: fallbackMetrics[index]?.accent || item.accent || 'blue',
     dataState,
     sourceLabel,
@@ -177,7 +181,16 @@ function buildLiveDashboardConfig(config, payload, endpointConfig, loading, erro
       { label: 'Dashboard Data Source', state: sourceLabel },
       ...(Array.isArray(config.statuses) ? config.statuses : []),
     ],
-    commandModules: applyDataTruth(config.commandModules, dataState, sourceLabel),
+    // Parent examples name specific children and balances. Never juxtapose them with
+    // live household records, especially when there are no linked students.
+    // Other configured flip cards remain visibly illustrative, never "Live".
+    commandModules: dataState === 'live' && config.key === 'parent'
+      ? []
+      : applyDataTruth(
+          config.commandModules,
+          dataState === 'live' ? 'sample' : dataState,
+          dataState === 'live' ? 'Configured illustrative content, not live API records' : sourceLabel,
+        ),
     errorState: (dataState === 'error' || dataState === 'unavailable') && metrics.length === 0
       ? {
           title: 'Dashboard data unavailable',
