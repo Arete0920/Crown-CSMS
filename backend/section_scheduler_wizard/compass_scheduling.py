@@ -99,6 +99,20 @@ def build_compass_scheduling_summary(
     ):
         raise ValueError("A proposed placement violates a hard scheduling constraint.")
 
+    # Preflight rejects explicitly protected period IDs, but a separate chapel
+    # or other protected block may overlap an instructional period by minutes.
+    # Never project a provisional timetable as safe across that overlap.
+    for placement in placements:
+        selected = periods[placement.period_id]
+        for protected in periods.values():
+            if (
+                protected.template_id == selected.template_id
+                and not protected.instructional
+                and max(protected.start_minute, selected.start_minute)
+                   < min(protected.end_minute, selected.end_minute)
+            ):
+                raise ValueError("Proposed class overlaps a protected scheduling block.")
+
     ordered = tuple(sorted(placements, key=lambda p: (p.section_id, p.period_id, p.room_id or "")))
     digest = sha256(dumps(
         {

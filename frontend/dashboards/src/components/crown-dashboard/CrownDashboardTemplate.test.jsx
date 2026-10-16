@@ -10,6 +10,12 @@ const captured = {
   modules: [],
   communications: [],
   truthStatus: [],
+  headers: [],
+  activities: [],
+  insights: [],
+  actions: [],
+  statuses: [],
+  faith: [],
 };
 const mockUseDashboardData = vi.fn(() => ({
   data: null,
@@ -24,19 +30,19 @@ vi.mock('../launch/CrownCard.jsx', () => ({
 }));
 
 vi.mock('./CrownDashboardShell.jsx', () => ({
-  default: ({ children }) => <div>{children}</div>,
+  default: ({ children, topbarSlot }) => <div>{topbarSlot}{children}</div>,
 }));
 
-vi.mock('./CrownHeroHeader.jsx', () => ({ default: () => null }));
+vi.mock('./CrownHeroHeader.jsx', () => ({ default: (props) => { captured.headers.push(props); return null; } }));
 vi.mock('./CrownDashboardMetricGrid.jsx', () => ({ default: ({ children }) => <div>{children}</div> }));
-vi.mock('./CrownInsightPanel.jsx', () => ({ default: () => null }));
-vi.mock('./CrownQuickActions.jsx', () => ({ default: () => null }));
-vi.mock('./CrownDashboardActivityFeed.jsx', () => ({ default: () => null }));
-vi.mock('./CrownDashboardStatusPanel.jsx', () => ({ default: () => null }));
+vi.mock('./CrownInsightPanel.jsx', () => ({ default: (props) => { captured.insights.push(props); return null; } }));
+vi.mock('./CrownQuickActions.jsx', () => ({ default: (props) => { captured.actions.push(props); return null; } }));
+vi.mock('./CrownDashboardActivityFeed.jsx', () => ({ default: (props) => { captured.activities.push(props); return null; } }));
+vi.mock('./CrownDashboardStatusPanel.jsx', () => ({ default: (props) => { captured.statuses.push(props); return null; } }));
 vi.mock('./CrownModuleSection.jsx', () => ({ default: () => null }));
 vi.mock('./CrownDashboardErrorState.jsx', () => ({ default: () => null }));
 vi.mock('./CrownDashboardRightRail.jsx', () => ({ default: () => null }));
-vi.mock('./CrownFaithCommunityStrip.jsx', () => ({ default: () => null }));
+vi.mock('./CrownFaithCommunityStrip.jsx', () => ({ default: (props) => { captured.faith.push(props); return null; } }));
 vi.mock('./CrownDashboardCommunicationsStrip.jsx', () => ({
   default: (props) => {
     captured.communications.push(props);
@@ -79,6 +85,12 @@ describe('CrownDashboardTemplate data truth defaults', () => {
     captured.modules = [];
     captured.communications = [];
     captured.truthStatus = [];
+    captured.headers = [];
+    captured.activities = [];
+    captured.insights = [];
+    captured.actions = [];
+    captured.statuses = [];
+    captured.faith = [];
     mockUseDashboardData.mockReset();
     mockUseDashboardData.mockReturnValue({
       data: null,
@@ -255,6 +267,67 @@ describe('CrownDashboardTemplate data truth defaults', () => {
     expect(captured.metrics[0].sourceLabel).toContain('Dashboard summary service sample');
     expect(captured.modules[0].dataState).toBe('sample');
     expect(captured.modules[0].sourceLabel).toContain('Dashboard summary service sample');
+  });
+
+  it('withholds configured parent example cards when authenticated household metrics are live', () => {
+    mockUseDashboardData.mockReturnValue({
+      data: {
+        metrics: [
+          { label: 'Linked Active Students', value: '0', secondary: 'No active students linked.' },
+          { label: 'Outstanding Family Balance', value: '$0.00' },
+        ],
+        queue: ['Review authenticated family record'],
+        alerts: [{ title: 'Authenticated family alert', level: 'info' }],
+        meta: { served_from: 'database' },
+      },
+      error: null,
+      loading: false,
+      source: 'live',
+      config: { endpoint: '/api/v1/dashboards/parent/summary/' },
+    });
+
+    render(<CrownDashboardTemplate roleKey="parent" config={getDashboardTemplate('parent')} />);
+
+    expect(captured.metrics.map((metric) => metric.value)).toEqual(['0', '$0.00']);
+    expect(captured.metrics.every((metric) => metric.dataState === 'live')).toBe(true);
+    expect(captured.metrics[1].detail).toContain('Dashboard summary service');
+    expect(captured.metrics[1].detail).not.toContain('November');
+    expect(captured.modules).toHaveLength(0);
+    expect(captured.activities[0].items).toEqual([]);
+    expect(captured.insights).toHaveLength(0);
+    expect(screen.getByText('Review authenticated family record')).toBeTruthy();
+    expect(screen.getByText('Authenticated family alert')).toBeTruthy();
+    expect(captured.headers[0].title).toBe('Parent Dashboard');
+    expect(captured.headers[0].userInitials).toBe('PG');
+    expect(captured.headers[0].updatesCount).toBeNull();
+    expect(captured.communications).toHaveLength(0);
+    expect(captured.faith).toHaveLength(0);
+    expect(captured.statuses[0].statuses).toHaveLength(2);
+    expect(captured.actions[0].actions).toHaveLength(4);
+    expect(JSON.stringify(captured)).not.toMatch(/Aiden|Sophie|Parker|\$425|both students|Attendance Sync/);
+  });
+
+  it('never labels configured example cards or missing metric fallbacks as live', () => {
+    mockUseDashboardData.mockReturnValue({
+      data: { metrics: [], queue: [], alerts: [], meta: { served_from: 'database' } },
+      error: null,
+      loading: false,
+      source: 'live',
+      config: { endpoint: '/api/v1/dashboards/advancement/summary/' },
+    });
+    render(
+      <CrownDashboardTemplate roleKey="advancement" config={{
+        key: 'advancement',
+        liveDataKey: 'advancement',
+        metrics: [{ label: 'Donors YTD', value: '152', detail: 'Example donors.' }],
+        commandModules: [{ key: 'donors', title: 'Donor Management', mainKpi: '152' }],
+      }} />,
+    );
+    expect(captured.metrics).toHaveLength(0);
+    expect(captured.modules).toHaveLength(1);
+    expect(captured.modules[0].dataState).toBe('sample');
+    expect(captured.modules[0].sourceLabel).toContain('illustrative');
+    expect(captured.truthStatus[0].dataState).toBe('live');
   });
 
   it('skips live data loading when disableLiveData is set', () => {
