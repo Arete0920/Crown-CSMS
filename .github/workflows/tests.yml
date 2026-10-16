@@ -75,7 +75,10 @@ jobs:
           python -m pytest -q \
             advancement/tests/test_advancement_stage3_4.py \
             core/tests/test_nav_endpoint.py \
-            financial_aid/tests/test_financial_aid_authz.py
+            financial_aid/tests/test_financial_aid_authz.py \
+            applications/tests/test_admissions_tenant_scoping.py \
+            households/tests/test_tenant_isolation.py \
+            sandbox_demo/test_finance_transaction.py
 
       - name: Run governed backend coverage
         shell: pwsh
