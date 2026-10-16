@@ -412,7 +412,7 @@ jobs:
         working-directory: frontend/dashboards
         env:
           VITE_API_BASE_URL: https://crown-api-dev.azurewebsites.net
-          GITHUB_SHA: ${{ inputs.dev_source_sha }}
+          SOURCE_SHA: ${{ inputs.dev_source_sha }}
           VITE_BUILD_SHA: ${{ inputs.dev_source_sha }}
           CROWN_DEPLOY_TAG: dev-certification-preview
           VITE_DEPLOY_TAG: dev-certification-preview
@@ -420,8 +420,15 @@ jobs:
           VITE_DEMO_MODE: sandbox
           VITE_LAUNCH_UI_TAKEOVER: '1'
         run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
           npm ci
-          npm run build
+          GITHUB_SHA="$(git rev-parse HEAD)" npm run build
+          python3 - <<'PYCODE'
+          import json, os
+          with open('dist/build.json') as source:
+              assert json.load(source)['build_sha'] == os.environ['SOURCE_SHA'], 'Frontend build identity mismatch'
+          PYCODE
       - name: Authenticate existing Azure DEV deployment identity
         uses: azure/login@a457da9ea143d694b1b9c7c869ebb04ebe844ef5
         with:
