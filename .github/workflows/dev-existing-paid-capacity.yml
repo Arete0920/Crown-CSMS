@@ -87,6 +87,50 @@ jobs:
                   az("rest","--method","patch","--url",url,"--body",json.dumps({"properties":{"serverFarmId":original}}))
                   print("ROLLBACK_TO_ORIGINAL_PLAN=REQUESTED")
               raise
+      - name: Repair port and start the already deployed approved DEV revision
+        shell: python
+        run: |
+          import json, subprocess, time, urllib.request
+          WANT="9ac77ffcfe107197c06372dde7b7b47825243d7a"
+          def az(*args):
+              p=subprocess.run(["az",*args,"--only-show-errors","-o","json"],capture_output=True,text=True,timeout=120)
+              if p.returncode: raise RuntimeError("Azure DEV operation failed; provider details suppressed")
+              return json.loads(p.stdout) if p.stdout.strip() else {}
+          def health(app):
+              try:
+                  with urllib.request.urlopen("https://"+app+".azurewebsites.net/api/health/",timeout=15) as r:
+                      return r.status,json.load(r)
+              except Exception as e: return getattr(e,"code",0),{}
+          dev=az("webapp","show","-g","crown-rg","-n","crown-api-dev")
+          assert dev["serverFarmId"].lower().endswith("/serverfarms/crown-api-plan"), "DEV is not on approved existing paid plan"
+          cfg=az("webapp","config","show","-g","crown-rg","-n","crown-api-dev")
+          assert cfg.get("linuxFxVersion","").lower()=="docker|crownregistry.azurecr.io/crown2026:dev-"+WANT, "Deployed image changed; refusing stale runtime repair"
+          settings=az("webapp","config","appsettings","list","-g","crown-rg","-n","crown-api-dev")
+          settings={x["name"]:x.get("value") for x in settings}
+          assert settings.get("BUILD_SHA")==WANT, "DEV identity differs from approved image"
+          assert settings.get("WEBSITES_PORT") in (None,"8000"), "Unexpected port requires investigation"
+          code,prod=health("crown-api-prod")
+          assert code==200 and prod.get("db")=="ok", "Production baseline unhealthy"
+          prod_sha=prod["build_sha"]
+          # Runtime-only repair of an already deployed revision with green source checks.
+          # No new application revision or bypass of pending PR294 release checks.
+          az("webapp","config","appsettings","set","-g","crown-rg","-n","crown-api-dev","--settings","WEBSITES_PORT=8000")
+          current=az("webapp","show","-g","crown-rg","-n","crown-api-dev")
+          az("webapp","restart" if current.get("state")=="Running" else "start","-g","crown-rg","-n","crown-api-dev")
+          print("DEV_RUNTIME_PORT=8000; EXPECTED_APPROVED_SHA="+WANT)
+          for attempt in range(24):
+              code,body=health("crown-api-dev")
+              pcode,pbody=health("crown-api-prod")
+              if pcode!=200 or pbody.get("db")!="ok" or pbody.get("build_sha")!=prod_sha:
+                  az("webapp","stop","-g","crown-rg","-n","crown-api-dev")
+                  raise RuntimeError("DEV stopped to protect production after failed health guard")
+              if code==200 and body.get("db")=="ok" and body.get("build_sha")==WANT:
+                  print("DEV_HEALTH=HTTP200_DB_OK; EXACT_BUILD_SHA="+WANT)
+                  break
+              print("DEV_STARTUP_ATTEMPT="+str(attempt+1)+"; HTTP="+str(code))
+              time.sleep(10)
+          else:
+              raise RuntimeError("DEV exact-revision runtime acceptance failed; inspect startup evidence")
       - name: Clear Azure session
         if: always()
         run: az logout
