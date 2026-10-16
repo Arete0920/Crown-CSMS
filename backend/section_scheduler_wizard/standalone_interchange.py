@@ -125,6 +125,14 @@ def validate_standalone_csv(
 
     if not placements or set(sections_seen) != set(snapshot.section_inputs):
         raise StandaloneInterchangeError("INCOMPLETE_CANONICAL_SECTION_SET")
+    if any(
+        identifier and identifier[0] in "=+@-\\t\\r"
+        for placement in placements
+        for identifier in (
+            placement.section_id, placement.period_id, placement.room_id or ""
+        )
+    ):
+        raise StandaloneInterchangeError("UNSAFE_CSV_CELL")
 
     validation = validate_candidate_placements(
         school_id=snapshot.school_id, academic_year_id=snapshot.academic_year_id,
