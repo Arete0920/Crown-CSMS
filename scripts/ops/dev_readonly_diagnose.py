@@ -14,6 +14,10 @@ def az(*args, timeout=45):
 
 def main():
     print("DIAGNOSTIC=READ_ONLY")
+    version=az("version")
+    if isinstance(version,dict):
+        v=version.get("azure-cli","UNKNOWN")
+        print("AZURE_CLI_VERSION="+(v if re.fullmatch(r"[0-9.]+",v) else "UNKNOWN"))
     app=az("webapp","show","-g","crown-rg","-n","crown-api-dev","-o","json")
     if not isinstance(app,dict):
         print("APP=UNAVAILABLE")
@@ -43,6 +47,12 @@ def main():
         print("SETTINGS=UNAVAILABLE")
     appid=app.get("id")
     if isinstance(appid,str) and appid.startswith("/"):
+        refs=az("rest","--method","get","--url","https://management.azure.com"+appid+"/config/configreferences/appsettings?api-version=2024-11-01","-o","json")
+        props=refs.get("properties",{}) if isinstance(refs,dict) else {}
+        for key in ("DATABASE_URL","SECRET_KEY"):
+            ref=props.get(key,{})
+            status=ref.get("status","UNKNOWN") if isinstance(ref,dict) else "UNKNOWN"
+            print("KEYVAULT_"+key+"="+(status if isinstance(status,str) and re.fullmatch(r"[A-Za-z0-9_]{1,80}",status) else "UNKNOWN"))
         activity=az("monitor","activity-log","list","--resource-id",appid,"--offset","2d","--max-events","150","-o","json",timeout=55)
         if isinstance(activity,list):
             print("ACTIVITY_COUNT="+str(len(activity)))
@@ -69,6 +79,9 @@ def main():
         p=subprocess.run(["az","webapp","log","startup","show","-g","crown-rg","-n","crown-api-dev","--only-show-errors"],capture_output=True,text=True,timeout=60)
         if p.returncode:
             print("STARTUP_LOG=UNAVAILABLE")
+            err=p.stderr.lower()
+            for label,pat in {"CLI_UNSUPPORTED":r"misspelled|not recognized|unrecognized|invalid choice", "ACCESS_DENIED":r"forbidden|authorizationfailed|unauthorized|403", "NO_LOGS":r"no .*logs|not found|404"}.items():
+                print("STARTUP_FETCH_"+label+"="+str(bool(re.search(pat,err))))
         else:
             print("STARTUP_LOG=COLLECTED")
             body=p.stdout.lower()
