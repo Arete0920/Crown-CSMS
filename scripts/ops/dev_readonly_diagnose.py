@@ -122,6 +122,16 @@ def main():
                             value=row.get(stat)
                             if isinstance(value,(float,int)):
                                 print("EXISTING_PLAN_"+name+"_"+stat+"="+str(round(value,2)))
+    dbserver=az("postgres","flexible-server","show","-g","crown-rg","-n","crown-pg-dev","-o","json")
+    if isinstance(dbserver,dict):
+        print("DEV_DB_SERVER_STATE="+str(dbserver.get("state","UNKNOWN")))
+        network=dbserver.get("network") or {}
+        print("DEV_DB_PUBLIC_NETWORK="+str(network.get("publicNetworkAccess","UNKNOWN")))
+        rules=az("postgres","flexible-server","firewall-rule","list","-g","crown-rg","-n","crown-pg-dev","-o","json")
+        if isinstance(rules,list):
+            print("DEV_DB_EXISTING_AZURE_SERVICES_RULE="+str(any(x.get("startIpAddress")=="0.0.0.0" and x.get("endIpAddress")=="0.0.0.0" for x in rules)))
+    else:
+        print("DEV_DB_SERVER=UNAVAILABLE")
     # Read schema metadata only; never log values, endpoints, errors or credentials.
     try:
         raw=d.get("DATABASE_URL","")
@@ -136,7 +146,9 @@ def main():
             else:
                 resolved=az("keyvault","secret","show","--vault-name",fields["VaultName"],"--name",fields["SecretName"],"-o","json")
             raw=resolved.get("value","") if isinstance(resolved,dict) else ""
+        print("DEV_DB_REFERENCE_RESOLVED_BY_RUNNER="+str(bool(raw) and not raw.startswith("@Microsoft.KeyVault(")))
         parsed=urlparse(raw)
+        print("DEV_DB_REFERENCE_MATCHES_EXPECTED_HOST="+str(parsed.hostname=="crown-pg-dev.postgres.database.azure.com"))
         if parsed.scheme not in ("postgres","postgresql") or parsed.hostname!="crown-pg-dev.postgres.database.azure.com":
             raise ValueError("DEV database identity not verified")
         install=subprocess.run(["python3","-m","pip","install","--quiet","psycopg[binary]==3.3.6"],capture_output=True,text=True,timeout=90)
