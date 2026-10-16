@@ -257,6 +257,55 @@ describe('CrownDashboardTemplate data truth defaults', () => {
     expect(captured.modules[0].sourceLabel).toContain('Dashboard summary service sample');
   });
 
+  it('withholds configured parent example cards when authenticated household metrics are live', () => {
+    mockUseDashboardData.mockReturnValue({
+      data: {
+        metrics: [
+          { label: 'Linked Active Students', value: '0', secondary: 'No active students linked.' },
+          { label: 'Outstanding Family Balance', value: '$0.00' },
+        ],
+        queue: [],
+        alerts: [],
+        meta: { served_from: 'database' },
+      },
+      error: null,
+      loading: false,
+      source: 'live',
+      config: { endpoint: '/api/v1/dashboards/parent/summary/' },
+    });
+
+    render(<CrownDashboardTemplate roleKey="parent" config={getDashboardTemplate('parent')} />);
+
+    expect(captured.metrics.map((metric) => metric.value)).toEqual(['0', '$0.00']);
+    expect(captured.metrics.every((metric) => metric.dataState === 'live')).toBe(true);
+    expect(captured.metrics[1].detail).toContain('Dashboard summary service');
+    expect(captured.metrics[1].detail).not.toContain('November');
+    expect(captured.modules).toHaveLength(0);
+  });
+
+  it('never labels configured example cards or missing metric fallbacks as live', () => {
+    mockUseDashboardData.mockReturnValue({
+      data: { metrics: [], queue: [], alerts: [], meta: { served_from: 'database' } },
+      error: null,
+      loading: false,
+      source: 'live',
+      config: { endpoint: '/api/v1/dashboards/advancement/summary/' },
+    });
+    render(
+      <CrownDashboardTemplate roleKey="advancement" config={{
+        key: 'advancement',
+        liveDataKey: 'advancement',
+        metrics: [{ label: 'Donors YTD', value: '152', detail: 'Example donors.' }],
+        commandModules: [{ key: 'donors', title: 'Donor Management', mainKpi: '152' }],
+      }} />,
+    );
+    expect(captured.metrics).toHaveLength(0);
+    expect(captured.modules).toHaveLength(1);
+    expect(captured.modules[0].dataState).toBe('sample');
+    expect(captured.modules[0].sourceLabel).toContain('illustrative');
+    expect(captured.truthStatus[0].dataState).toBe('live');
+  });
+
   it('skips live data loading when disableLiveData is set', () => {
     render(
       <CrownDashboardTemplate
