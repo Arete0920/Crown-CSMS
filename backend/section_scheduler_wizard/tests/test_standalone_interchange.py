@@ -81,3 +81,14 @@ def test_export_requires_complete_valid_canonical_set():
     with pytest.raises(StandaloneInterchangeError):
         export_standalone_csv(snapshot=s,expected_source_fingerprint=s.source_fingerprint,
                               placements=(p[0],CandidatePlacement("s2","chapel","r1")))
+
+def test_csv_formula_ids_are_rejected_even_when_supplied_in_snapshot():
+    s,_=sample()
+    # This intentionally models an unsafe external identifier previously
+    # admitted to an authorized mapping; escaping it is not sufficient.
+    unsafe=replace(s,section_inputs={
+        "=IMPORT":replace(s.section_inputs["s1"],section_id="=IMPORT"),
+        "s2":s.section_inputs["s2"],
+    })
+    with pytest.raises(StandaloneInterchangeError,match="UNSAFE_CSV_CELL"):
+        check("section_id,period_id,room_id\\n=IMPORT,p1,r1\\ns2,p2,r1\\n",unsafe)
