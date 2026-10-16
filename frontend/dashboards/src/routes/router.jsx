@@ -530,7 +530,9 @@ export const router = createBrowserRouter([
       </RoleRouteGuard>
     ),
   },
-  ...dashboardRoutes,
+  // Billing is owned by the explicit finance-guarded route above.
+  // Keep its registry metadata for navigation without registering a second route.
+  ...dashboardRoutes.filter((route) => route.path !== PATHS.BILLING_DASHBOARD),
   {
     path: PATHS.ACADEMICS,
     element: (
@@ -721,14 +723,6 @@ export const router = createBrowserRouter([
   {
     path: '/admin/dashboard',
     element: <Navigate to="/school-admin-dashboard" replace />,
-  },
-  {
-    path: '/school-admin-dashboard',
-    element: (
-      <RoleRouteGuard allowedRoles={ROLE_GROUPS.ADMIN_ONLY}>
-        <SchoolAdministratorDashboard />
-      </RoleRouteGuard>
-    ),
   },
   {
     path: '/school-admin',
