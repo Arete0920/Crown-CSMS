@@ -72,3 +72,17 @@ def test_same_inputs_yield_stable_digest_and_no_mutation():
     two=build_compass_scheduling_summary(snapshot=s,placements=p,expected_source_fingerprint=s.source_fingerprint)
     assert one==two
     assert s.section_inputs["english"].student_ids==original
+
+
+def test_provisional_metric_rejects_chapel_overlap_on_distinct_period_ids():
+    s, placements = fixture()
+    from section_scheduler_wizard.preflight import PeriodInput
+    s = replace(s, period_inputs={
+        **s.period_inputs,
+        "chapel": PeriodInput("chapel", "school", "year", "A", 510, 570, False),
+    })
+    with pytest.raises(ValueError, match="protected scheduling block"):
+        build_compass_scheduling_summary(
+            snapshot=s, placements=placements,
+            expected_source_fingerprint=s.source_fingerprint,
+        )

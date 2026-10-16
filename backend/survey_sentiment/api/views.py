@@ -52,12 +52,24 @@ def _serialize(survey):
     }
 
 
+def _unique_json_object(pairs):
+    # Draft APIs reject ambiguous JSON even in nested question definitions.
+    result = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError("Duplicate JSON member.")
+        result[key] = value
+    return result
+
+
 def _validated_draft_payload(request):
     if len(request.body) > MAX_BODY_BYTES:
         return None, {"body": "Survey request is too large."}
     try:
-        payload = json.loads(request.body.decode("utf-8"))
-    except (UnicodeDecodeError, json.JSONDecodeError):
+        payload = json.loads(
+            request.body.decode("utf-8"), object_pairs_hook=_unique_json_object,
+        )
+    except (UnicodeDecodeError, json.JSONDecodeError, ValueError):
         return None, {"body": "Invalid JSON body."}
     if not isinstance(payload, dict) or set(payload) - {"name", "purpose", "questions"}:
         return None, {"body": "Only name, purpose and questions can be supplied."}
