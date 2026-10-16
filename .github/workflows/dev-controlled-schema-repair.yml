@@ -1,0 +1,119 @@
+name: Controlled DEV Schema Repair
+on:
+  push:
+    branches: [ops/heritage-dev-existing-paid-plan-20261016]
+    paths: [.github/workflows/dev-controlled-schema-repair.yml]
+permissions:
+  contents: read
+  id-token: write
+concurrency:
+  group: crown-api-dev-deploy
+  cancel-in-progress: false
+jobs:
+  migrate-existing-dev:
+    environment: dev
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout exact deployed source with successful source checks
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: 9ac77ffcfe107197c06372dde7b7b47825243d7a
+      - uses: actions/setup-python@7f4fc3e22c37d6ff65e88745f38bd3157c663f7c
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+      - name: Install exact source requirements
+        run: python -m pip install -r backend/requirements.txt
+      - name: Existing DEV federation
+        uses: azure/login@a457da9ea143d694b1b9c7c869ebb04ebe844ef5
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - name: Verify target and execute the existing PostgreSQL locked migration command
+        shell: python -u {0}
+        run: |
+          import os,sys,json,subprocess,re,io,contextlib,time,urllib.request
+          from urllib.parse import urlparse
+          WANT="9ac77ffcfe107197c06372dde7b7b47825243d7a"
+          def az(*args):
+              p=subprocess.run(["az",*args,"--only-show-errors","-o","json"],capture_output=True,text=True,timeout=90)
+              if p.returncode: raise RuntimeError("Azure DEV read or operation unavailable")
+              return json.loads(p.stdout) if p.stdout.strip() else {}
+          def health(app):
+              try:
+                  with urllib.request.urlopen("https://"+app+".azurewebsites.net/api/health/",timeout=20) as r:
+                      return r.status,json.load(r)
+              except Exception as e: return getattr(e,"code",0),{}
+          def resolve(raw):
+              if raw.startswith("@Microsoft.KeyVault(") and raw.endswith(")"):
+                  f=dict(part.strip().split("=",1) for part in raw[20:-1].split(";") if "=" in part)
+                  if f.get("SecretUri"):
+                      parsed=urlparse(f["SecretUri"])
+                      assert parsed.scheme=="https" and (parsed.hostname or "").endswith(".vault.azure.net") and parsed.path.startswith("/secrets/")
+                      return az("keyvault","secret","show","--id",f["SecretUri"])["value"]
+                  return az("keyvault","secret","show","--vault-name",f["VaultName"],"--name",f["SecretName"])["value"]
+              return raw
+          try:
+              assert subprocess.check_output(["git","rev-parse","HEAD"],text=True).strip()==WANT
+              app=az("webapp","show","-g","crown-rg","-n","crown-api-dev")
+              assert app["serverFarmId"].lower().endswith("/serverfarms/crown-api-plan")
+              cfg=az("webapp","config","show","-g","crown-rg","-n","crown-api-dev")
+              assert cfg["linuxFxVersion"].lower()=="docker|crownregistry.azurecr.io/crown2026:dev-"+WANT
+              server=az("postgres","flexible-server","show","-g","crown-rg","-n","crown-pg-dev")
+              assert server["state"]=="Ready"
+              backup=server.get("backup") or {}
+              assert backup.get("backupRetentionDays",0)>=7, "DEV backup retention not verified"
+              code,prod=health("crown-api-prod")
+              assert code==200 and prod.get("db")=="ok"
+              prod_sha=prod["build_sha"]
+              settings=az("webapp","config","appsettings","list","-g","crown-rg","-n","crown-api-dev")
+              d={x["name"]:x.get("value","") for x in settings}
+              database=resolve(d["DATABASE_URL"])
+              secret=resolve(d.get("DJANGO_SECRET_KEY") or d["SECRET_KEY"])
+              parsed=urlparse(database)
+              assert parsed.scheme in ("postgres","postgresql") and parsed.hostname=="crown-pg-dev.postgres.database.azure.com"
+              assert database and secret
+              os.environ.update(DATABASE_URL=database,DJANGO_SECRET_KEY=secret,DJANGO_SETTINGS_MODULE="crown_api.settings",BUILD_SHA=WANT,CROWN_ENV="dev",DJANGO_ENV="development",DJANGO_DEBUG="false")
+              os.chdir("backend")
+              sys.path.insert(0,os.getcwd())
+              captured=io.StringIO()
+              with contextlib.redirect_stdout(captured),contextlib.redirect_stderr(captured):
+                  import django
+                  django.setup()
+                  from django.db import connection,migrations
+                  from django.db.migrations.executor import MigrationExecutor
+                  from django.core.management import call_command
+                  assert connection.vendor=="postgresql"
+                  executor=MigrationExecutor(connection)
+                  plan=executor.migration_plan(executor.loader.graph.leaf_nodes())
+                  expected={("jireh_sgo","0001_initial"),("survey_sentiment","0005_surveyrespondentgrant_surveycollectionreceipt")}
+                  actual={(m.app_label,m.name) for m,backwards in plan}
+                  assert actual.issubset(expected) and all(not backwards for m,backwards in plan), "Unexpected migration plan"
+                  assert all(isinstance(op,migrations.CreateModel) for m,backwards in plan for op in m.operations), "Unexpected schema operation"
+                  call_command("migrate_with_lock",lock_timeout_seconds=300,verbosity=1)
+                  call_command("migrate",check=True,verbosity=0)
+              print("DEV_SCHEMA=PASS; PostgreSQL advisory lock used; pending migrations=0")
+              print("MIGRATION_SOURCE_SHA="+WANT+"; TARGET=DEV_ONLY; OPERATIONS=CreateModel")
+              assert health("crown-api-prod")[1].get("build_sha")==prod_sha
+              az("webapp","restart","-g","crown-rg","-n","crown-api-dev")
+              for i in range(24):
+                  code,body=health("crown-api-dev")
+                  pcode,pbody=health("crown-api-prod")
+                  assert pcode==200 and pbody.get("db")=="ok" and pbody.get("build_sha")==prod_sha, "Production guard failed"
+                  print("DEV_HEALTH_ATTEMPT="+str(i+1)+"; HTTP="+str(code))
+                  if code==200 and body.get("db")=="ok" and body.get("build_sha")==WANT:
+                      print("DEV_HEALTH=HTTP200_DB_OK; EXACT_BUILD_SHA="+WANT)
+                      break
+                  time.sleep(10)
+              else: raise RuntimeError("DEV runtime health acceptance failed")
+              print("PRODUCTION_HEALTH=HTTP200_DB_OK; PRODUCTION_SHA_UNCHANGED="+prod_sha)
+          except Exception as exc:
+              # Never emit raw connection exceptions or captured output.
+              print("CONTROLLED_DEV_SCHEMA_OR_RUNTIME=FAIL; exception_type="+type(exc).__name__)
+              raise SystemExit(1)
+      - name: Clear Azure session
+        if: always()
+        run: az logout
