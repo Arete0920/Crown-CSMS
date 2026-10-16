@@ -17,7 +17,7 @@ from .standalone_interchange import (
 )
 
 _AUTH = [JWTAuthentication, SessionAuthentication]
-_PERM = [CrownModulePermission("scheduling.view")]
+_PERM = [CrownModulePermission("scheduling.view", write_code="scheduling.configure")]
 
 
 def _snapshot(request):
