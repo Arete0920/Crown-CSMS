@@ -1,4 +1,4 @@
-import {mkdirSync,copyFileSync,writeFileSync,rmSync,readFileSync} from 'node:fs';
+import {mkdirSync,copyFileSync,writeFileSync,rmSync,readFileSync,cpSync} from 'node:fs';
 import {fileURLToPath} from 'node:url';
 import {join,resolve} from 'node:path';
 const root=fileURLToPath(new URL('.',import.meta.url));
@@ -8,4 +8,5 @@ rmSync(dist,{recursive:true,force:true});
 mkdirSync(dist,{recursive:true});
 for (const f of ['index.html','robots.txt','staticwebapp.config.json']) copyFileSync(join(root,f),join(dist,f));
 writeFileSync(join(dist,'styles.css'),readFileSync(shared,'utf8'));
+for(const d of ['resources','images']) cpSync(join(root,d),join(dist,d),{recursive:true});
 console.log('Prepared non-indexed Jireh staging site in sites/jireh/dist');
