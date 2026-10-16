@@ -141,12 +141,33 @@ jobs:
             --only-show-errors
           echo " Container image set: dev-${{ env.DEPLOY_SHA_SHORT }} (managed identity pull)"
 
-          # Restart the app so it picks up the new image immediately
-          az webapp restart \
+          # A stopped App Service returns HTTP 403 and `az webapp restart` cannot
+          # transition it to Running. For an explicitly requested DEV release,
+          # start an existing stopped app; never provision or resize resources.
+          APP_STATE="$(az webapp show \
             --name ${{ env.WEBAPP_NAME }} \
             --resource-group ${{ env.RESOURCE_GROUP }} \
-            --only-show-errors
-          echo " App restarted"
+            --query state --output tsv --only-show-errors)"
+          case "$APP_STATE" in
+            Stopped)
+              az webapp start \
+                --name ${{ env.WEBAPP_NAME }} \
+                --resource-group ${{ env.RESOURCE_GROUP }} \
+                --only-show-errors
+              echo "Existing DEV App Service started for deployment"
+              ;;
+            Running)
+              az webapp restart \
+                --name ${{ env.WEBAPP_NAME }} \
+                --resource-group ${{ env.RESOURCE_GROUP }} \
+                --only-show-errors
+              echo "Running DEV App Service restarted for deployment"
+              ;;
+            *)
+              echo "ERROR: unexpected DEV App Service state '$APP_STATE'; refusing mutation" >&2
+              exit 1
+              ;;
+          esac
 
       - name: Health check (waits for startup + migrations + ensure_ci_user)
         run: |
