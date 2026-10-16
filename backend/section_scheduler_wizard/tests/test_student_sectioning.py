@@ -72,7 +72,24 @@ def test_existing_enrollment_satisfies_request_without_duplicate_addition():
 def test_conflicting_required_sections_cannot_overlap():
     x=scenario()
     x["periods"]["p2"]=PeriodInput("p2","school","year","A",510,570,True)
-    assert solve(**x).status==MODEL_INVALID
+    result = solve(**x)
+    # The empty input rosters are valid. The heuristic must leave one
+    # conflicting request unmet rather than propose an overlapping enrollment.
+    assert result.status == PARTIAL
+    assert result.required_fulfilled == 1
+    assert result.required_unfulfilled == 1
+    assert "REQUIRED_UNFILLED" in result.diagnostics
+    required = [a for a in result.additions if a.required]
+    assert len(required) == 1
+
+def test_existing_conflicting_enrollments_are_invalid():
+    x = scenario()
+    x["periods"]["p2"] = PeriodInput("p2", "school", "year", "A", 510, 570, True)
+    for key in ("math-a", "science-a"):
+        x["sections"][key] = replace(x["sections"][key], student_ids=frozenset({"s1"}))
+    result = solve(**x)
+    assert result.status == MODEL_INVALID
+    assert result.additions == ()
 
 def test_elective_slots_must_be_bounded():
     x=scenario()

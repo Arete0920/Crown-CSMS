@@ -104,7 +104,7 @@ def construct_student_sectioning(
         not isinstance(placement, CandidatePlacement)
         or placement.section_id not in sections
         or placement.period_id not in periods
-        or placement.room_id not in rooms
+        or (placement.room_id is not None and placement.room_id not in rooms)
         for placement in placements
     ):
         return _invalid("INVALID_PLACEMENT")
