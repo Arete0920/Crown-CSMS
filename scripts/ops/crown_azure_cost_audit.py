@@ -161,8 +161,19 @@ def billing(scope, timeframe, failures, label_prefix="cost_"):
             "amount": data.get("Cost", data.get("PreTaxCost")),
             "currency": data.get("Currency", ""),
         })
+    # Cost Management can paginate. Never describe the first page as complete.
+    # Preserve the observed rows for private diagnosis, but make partial totals
+    # unusable as evidence of actual spending or budget compliance.
+    partial = bool(properties.get("nextLink"))
+    if partial:
+        failures.append({
+            "section": label_prefix + timeframe,
+            "status": "UNAVAILABLE",
+            "reason": "Cost Management result has additional uncollected pages",
+            "category": "INVALID_RESPONSE",
+        })
     return {
-        "status": "COLLECTED" if rows else "COLLECTED_NO_ROWS",
+        "status": "UNAVAILABLE" if partial else ("COLLECTED" if rows else "COLLECTED_NO_ROWS"),
         "timeframe": timeframe,
         "grouped_by": "ResourceGroup",
         "rows": extracted,
