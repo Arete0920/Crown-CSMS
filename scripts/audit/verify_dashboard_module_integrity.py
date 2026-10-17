@@ -54,7 +54,7 @@ CANONICAL_MODULES = [
     ("extended-care", "Extended Care"),
     ("summer-camp", "Summer Camp"),
     ("safety-security", "Safety / Security"),
-    ("curriculum-pd", "Curriculum / PD Hub"),
+    ("curriculum-pd", "Scribe Curriculum / PD Hub"),
     ("chaplain-spiritual-life", "Chaplain / Spiritual Life"),
     ("advancement-operations", "Advancement Operations"),
     ("volunteer-management", "Volunteer Management"),
