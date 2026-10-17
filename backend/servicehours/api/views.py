@@ -181,9 +181,11 @@ class ServiceApproveReject(APIView):
         ser.is_valid(raise_exception=True)
         new_status = ser.validated_data["status"]
 
-        entry.status = new_status
-        entry.approved_by = request.user
-        entry.approved_at = timezone.now()
-        entry.save(update_fields=["status","approved_by","approved_at"])
-
+        # An approved/rejected record is final; prevent replay and concurrent double decisions.
+        changed = ServiceEntry.objects.filter(
+            pk=entry.pk, school=school, status="pending"
+        ).update(status=new_status, approved_by=request.user, approved_at=timezone.now())
+        if changed != 1:
+            return Response({"detail": "Only pending service entries may be decided."}, status=409)
+        entry.refresh_from_db()
         return Response(ServiceEntrySerializer(entry).data, status=200)
