@@ -489,6 +489,44 @@ class TestReportStudentProgress:
 # Serializer validation
 # ---------------------------------------------------------------------------
 
+class TestStudentProgressSchoolScope:
+    def setup_method(self):
+        self.school = _mk_school()
+        self.client = _staff_client(_mk_staff(self.school), self.school)
+
+    def test_grade_lookup_is_school_scoped(self, monkeypatch):
+        from core.models import Student as CoreStudent
+        seen = []
+        class Lookup:
+            def get(self, **kwargs):
+                seen.append(kwargs)
+                raise CoreStudent.DoesNotExist
+        monkeypatch.setattr(CoreStudent.objects, "select_related", lambda *args: Lookup())
+        student_id = str(uuid.uuid4())
+        response = self.client.get(f"/api/outreach/service-logs/report/student-progress/?student_id={student_id}")
+        assert response.status_code == 200
+        assert response.json()["grade_level"] is None
+        assert seen == [{"id": student_id, "school_id": self.school.id}]
+
+    def test_same_school_grade_goal(self, monkeypatch):
+        from core.models import Student as CoreStudent
+        from types import SimpleNamespace
+        seen = []
+        class Lookup:
+            def get(self, **kwargs):
+                seen.append(kwargs)
+                return SimpleNamespace(current_grade_level=SimpleNamespace(code="10"))
+        monkeypatch.setattr(CoreStudent.objects, "select_related", lambda *args: Lookup())
+        ServiceGoal.objects.create(school_id=self.school.id, name="Grade 10", school_year="2026-2027",
+                                   required_hours=Decimal("20"), active=True, grade=10)
+        student_id = str(uuid.uuid4())
+        response = self.client.get(f"/api/outreach/service-logs/report/student-progress/?student_id={student_id}")
+        assert response.status_code == 200
+        assert response.json()["grade_level"] == 10
+        assert Decimal(response.json()["required_hours"]) == Decimal("20")
+        assert seen == [{"id": student_id, "school_id": self.school.id}]
+
+
 class TestSerializerValidation:
     def setup_method(self):
         self.school = _mk_school()
