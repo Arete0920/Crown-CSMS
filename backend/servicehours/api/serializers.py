@@ -1,3 +1,4 @@
+from decimal import Decimal
 from __future__ import annotations
 from rest_framework import serializers
 from servicehours.models import ServiceEntry
@@ -24,3 +25,19 @@ class ServiceEntrySerializer(serializers.ModelSerializer):
 class ServiceApprovalSerializer(serializers.Serializer):
     status = serializers.ChoiceField(choices=["approved","rejected"])
     note = serializers.CharField(required=False, allow_blank=True)
+
+
+class ServiceEntrySubmissionSerializer(serializers.Serializer):
+    """Validate accounting inputs before creating a pending service entry.
+
+    Student ownership and school assignment are enforced by the view.
+    Decision fields and school are never accepted from the client.
+    """
+    student = serializers.UUIDField()
+    date = serializers.DateField()
+    hours = serializers.DecimalField(max_digits=5, decimal_places=2, min_value=Decimal("0.01"))
+    category = serializers.CharField(max_length=80, required=False, allow_blank=True, default="Community Service")
+    organization = serializers.CharField(max_length=120, required=False, allow_blank=True, default="Local Partner")
+    supervisor_name = serializers.CharField(max_length=120, required=False, allow_blank=True, default="")
+    supervisor_contact = serializers.CharField(max_length=120, required=False, allow_blank=True, default="")
+    notes = serializers.CharField(required=False, allow_blank=True, default="")
