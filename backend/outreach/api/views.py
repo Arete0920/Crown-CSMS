@@ -312,7 +312,7 @@ class ServiceLogViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
         try:
             from core.models import Student as CoreStudent
             student_obj = CoreStudent.objects.select_related("current_grade_level").get(
-                id=student_id
+                id=student_id, school_id=sid
             )
             if student_obj.current_grade_level:
                 code = student_obj.current_grade_level.code
