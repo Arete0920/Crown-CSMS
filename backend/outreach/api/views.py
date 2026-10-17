@@ -286,6 +286,9 @@ class ServiceLogViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
         student_id = request.query_params.get("student_id")
         if not student_id:
             return Response({"detail": "student_id is required."}, status=400)
+        if not _is_coordinator(request) and str(student_id) != str(self._own_student_id()):
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied("Verified student ownership required.")
 
         approved = ServiceLog.objects.filter(
             school_id=sid, student_id=student_id, status=STATUS_APPROVED
