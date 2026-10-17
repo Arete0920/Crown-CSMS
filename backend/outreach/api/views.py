@@ -148,7 +148,10 @@ class ServiceLogViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
         return qs
 
     def perform_create(self, serializer):
+        from rest_framework.exceptions import PermissionDenied
         school_id = _school_id(self.request)
+        if serializer.validated_data.get('status', STATUS_DRAFT) != STATUS_DRAFT:
+            raise PermissionDenied('New logs must begin as drafts.')
         if _is_coordinator(self.request):
             student = serializer.validated_data.get('student')
             if student is not None and str(student.school_id) != str(school_id):
@@ -159,7 +162,11 @@ class ServiceLogViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
             if student_id is None or str(serializer.validated_data.get('student_id', getattr(serializer.validated_data.get('student'), 'id', ''))) != str(student_id):
                 from rest_framework.exceptions import PermissionDenied
                 raise PermissionDenied('Verified student ownership required.')
-        serializer.save(school_id=school_id)
+        for relation in ('opportunity', 'partner'):
+            linked = serializer.validated_data.get(relation)
+            if linked is not None and str(linked.school_id) != str(school_id):
+                raise PermissionDenied('Related record is outside the active school.')
+        serializer.save(school_id=school_id, status=STATUS_DRAFT)
 
     def perform_update(self, serializer):
         if 'status' in serializer.validated_data:
@@ -175,6 +182,11 @@ class ServiceLogViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
         if not _is_coordinator(self.request) and str(getattr(student, 'id', '')) != str(self._own_student_id()):
             from rest_framework.exceptions import PermissionDenied
             raise PermissionDenied('Student ownership cannot change.')
+        for relation in ('opportunity', 'partner'):
+            linked = serializer.validated_data.get(relation)
+            if linked is not None and str(linked.school_id) != str(_school_id(self.request)):
+                from rest_framework.exceptions import PermissionDenied
+                raise PermissionDenied('Related record is outside the active school.')
         serializer.save()
 
     def perform_destroy(self, instance):
