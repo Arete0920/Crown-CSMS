@@ -1,35 +1,44 @@
+"""School-scoped Outreach permissions; request headers never grant authority."""
+
 from rest_framework.permissions import BasePermission, SAFE_METHODS
 
+from core.models import School
+from core.permissions import user_has_permission
+from households.scoping import get_request_school_id
 
-def _is_coordinator(request) -> bool:
-    """
-    Returns True if the request comes from a staff/coordinator/admin.
-    Requires the user to be authenticated. Checks is_staff / is_superuser
-    first; then falls back to the X-Role header for authenticated users.
-    """
-    user = getattr(request, "user", None)
-    if not (user and getattr(user, "is_authenticated", False)):
-        return False
-    if getattr(user, "is_staff", False) or getattr(user, "is_superuser", False):
-        return True
-    role = (request.headers.get("X-Role") or "").lower()
-    return role in ("staff", "admin", "coordinator")
+
+def _school(request):
+    school = getattr(request, "school", None)
+    if school is not None:
+        return school
+    school_id = get_request_school_id(request, required=True)
+    return School.objects.filter(pk=school_id).first()
+
+
+def _allowed(request, code):
+    return user_has_permission(getattr(request, "user", None), code, school=_school(request))
+
+
+def _is_coordinator(request):
+    return _allowed(request, "service.manage")
 
 
 class IsStudentOrStaff(BasePermission):
-    """Allow anyone authenticated; writes restricted to recognised roles."""
+    """Authorize school managers or students with an explicit self-service grant."""
 
     def has_permission(self, request, view):
-        if not getattr(request, "user", None):
-            return False
-        if request.method in SAFE_METHODS:
-            return True
-        role = (request.headers.get("X-Role") or "").lower()
-        return role in ("student", "staff", "admin", "coordinator") or _is_coordinator(request)
+        return _is_coordinator(request) or _allowed(request, "service.self")
 
 
 class IsStaffOnly(BasePermission):
-    """Restrict all methods to staff/coordinator/admin."""
+    """School-scoped manager authority, independent of client-supplied role headers."""
 
     def has_permission(self, request, view):
         return _is_coordinator(request)
+
+
+class IsServiceApprover(BasePermission):
+    """Approval authority is separate from general record management."""
+
+    def has_permission(self, request, view):
+        return _allowed(request, "service.approve")
