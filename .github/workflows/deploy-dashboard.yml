@@ -631,7 +631,7 @@ jobs:
           CROWN_LIVE_FRONTEND_URL: ${{ steps.preview.outputs.static_web_app_url }}
           CROWN_LIVE_API_BASE_URL: https://crown-api-dev.azurewebsites.net
           CROWN_DEV_TENANT_FIXTURE: ${{ runner.temp }}/crown-dev-tenant-fixtures.json
-        run: npx playwright test tests/certification/production-tenant-isolation.spec.ts --workers=1 --reporter=line
+        run: npx playwright test tests/certification/production-tenant-isolation.spec.ts --workers=1 --reporter=line,html
       - name: Upload two-tenant execution results
         if: always() && steps.preview.outcome == 'success'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
