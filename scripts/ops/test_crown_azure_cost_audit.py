@@ -155,6 +155,33 @@ class AuditTests(unittest.TestCase):
         self.assertEqual(report["actual_cost"]["month_to_date"]["status"], "UNAVAILABLE")
         self.assertIsNone(report["existing_budgets"])
 
+    def test_paginated_cost_is_not_misreported_as_complete(self):
+        payload = {"properties": {
+            "columns": [{"name": "PreTaxCost"}, {"name": "ResourceGroup"}],
+            "rows": [[12.5, "crown-rg"]],
+            "nextLink": "https://management.azure.com/PRIVATE-next-page",
+        }}
+        failures = []
+        with patch.object(audit, "az_json", return_value=payload):
+            result = audit.billing("/subscriptions/example", "MonthToDate", failures)
+        self.assertEqual(result["status"], "UNAVAILABLE")
+        self.assertTrue(result["has_more_pages"])
+        self.assertEqual(result["rows"][0]["amount"], 12.5)
+        self.assertEqual(failures[0]["category"], "INVALID_RESPONSE")
+        self.assertNotIn("PRIVATE-next-page", json.dumps(result) + json.dumps(failures))
+
+    def test_unpaginated_cost_remains_collected(self):
+        payload = {"properties": {
+            "columns": [{"name": "PreTaxCost"}],
+            "rows": [[12.5]],
+        }}
+        failures = []
+        with patch.object(audit, "az_json", return_value=payload):
+            result = audit.billing("/subscriptions/example", "MonthToDate", failures)
+        self.assertEqual(result["status"], "COLLECTED")
+        self.assertFalse(result["has_more_pages"])
+        self.assertEqual(failures, [])
+
     def test_empty_cost_rows_are_not_claimed_free(self):
         with patch.object(audit, "az_json", return_value={
             "properties": {"columns": [{"name": "PreTaxCost"}], "rows": []}
