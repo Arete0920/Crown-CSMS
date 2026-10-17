@@ -212,17 +212,21 @@ test.describe.serial('CROWN buyer sandbox live browser authority', () => {
     await page.goto('/finance', { waitUntil: 'networkidle' });
     const panel = page.getByTestId('sandbox-finance-transaction');
     await expect(panel).toBeVisible();
-    const payment = page.waitForResponse((response) =>
-      response.url().includes('/api/v1/sandbox/finance/apply-payment/') &&
-      response.request().method() === 'POST',
-    );
-    await panel.getByRole('button', { name: 'Apply Demo Payment' }).click();
-    const response = await payment;
-    expect(response.status()).toBe(200);
-    const payload = await response.json();
-    expect(payload.reconciliation_status).toBe('reconciled');
-    expect(payload.external_payment_processed).toBe(false);
-    expect(payload.over_refund_blocked).toBe(true);
+    const alreadyReconciled = await panel.getByRole('button', { name: 'Payment Reconciled' }).isVisible();
+    if (!alreadyReconciled) {
+      const payment = page.waitForResponse((response) =>
+        response.url().includes('/api/v1/sandbox/finance/apply-payment/') &&
+        response.request().method() === 'POST',
+      );
+      await panel.getByRole('button', { name: 'Apply Demo Payment' }).click();
+      const response = await payment;
+      expect(response.status()).toBe(200);
+      const payload = await response.json();
+      expect(payload.reconciliation_status).toBe('reconciled');
+      expect(payload.external_payment_processed).toBe(false);
+      expect(payload.over_refund_blocked).toBe(true);
+    }
+    await expect(panel.getByRole('button', { name: 'Payment Reconciled' })).toBeDisabled();
     await page.reload({ waitUntil: 'networkidle' });
     await expect(page.getByTestId('finance-reconciliation')).toHaveText('reconciled');
     await expect(page.getByTestId('finance-remaining')).toHaveText('$0.00');
