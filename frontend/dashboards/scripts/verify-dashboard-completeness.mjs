@@ -49,7 +49,7 @@ const requiredDashboardLabels = [
   'Extended Care',
   'Summer Camp',
   'Safety / Security',
-  'Curriculum / PD Hub',
+  'Scribe Curriculum / PD Hub',
   'Chaplain / Spiritual Life',
   'Advancement Operations',
   'Volunteer Management',
