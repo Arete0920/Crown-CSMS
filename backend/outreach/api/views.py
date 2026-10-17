@@ -162,6 +162,9 @@ class ServiceLogViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
         serializer.save(school_id=school_id)
 
     def perform_update(self, serializer):
+        if 'status' in serializer.validated_data:
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied('Use the authorized workflow transition actions.')
         if not _is_coordinator(self.request) and serializer.instance.status not in (STATUS_DRAFT, STATUS_NEEDS_INFO):
             from rest_framework.exceptions import PermissionDenied
             raise PermissionDenied('Only editable drafts may be changed.')
@@ -173,6 +176,10 @@ class ServiceLogViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
             from rest_framework.exceptions import PermissionDenied
             raise PermissionDenied('Student ownership cannot change.')
         serializer.save()
+
+    def perform_destroy(self, instance):
+        from rest_framework.exceptions import PermissionDenied
+        raise PermissionDenied('Service-log history must be retained.')
 
     # ------------------------------------------------------------------
     # Workflow transitions
