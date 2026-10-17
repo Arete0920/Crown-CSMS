@@ -1,4 +1,4 @@
-﻿const PD_TREND = [
+const PD_TREND = [
   { month: 'Aug', value: 12 }, { month: 'Sep', value: 18 }, { month: 'Oct', value: 22 },
   { month: 'Nov', value: 21 }, { month: 'Dec', value: 19 }, { month: 'Jan', value: 24 },
   { month: 'Feb', value: 26 }, { month: 'Mar', value: 28 },
@@ -14,9 +14,9 @@ export default {
   activePath: '/curriculum-pd-dashboard',
   schoolName: 'Heritage Christian Academy',
   updatesCount: 3,
-  user: { initials: 'CP', name: 'Curriculum & PD', role: 'Academics â€” Curriculum Development & Professional Development' },
+  user: { initials: 'CP', name: 'Scribe Curriculum & PD', role: 'Academics â€” Curriculum Development & Professional Development' },
   eyebrow: 'CROWN Launch Preview',
-  title: 'Good morning, Curriculum Team!',
+  title: 'Scribe Curriculum & PD',
   subtitle: 'Heritage Christian Academy',
   dataState: 'fallback',
   sourceLabel: 'Curriculum and professional development widgets currently use template snapshots pending live service integration.',
@@ -57,11 +57,11 @@ export default {
       details: ['34 of 42 required observations complete', '8 remaining â€” all need scheduling', 'Semester observation cycle closes May 30', 'Post-observation conferences required within 5 days'],
       primaryActionLabel: 'Schedule Observations', backActionLabel: 'View Log',
       primaryActionHref: '/curriculum-pd-dashboard', backActionHref: '/curriculum-pd-dashboard', lastUpdated: '8:05 AM' },
-    { key: 'curriculum', icon: 'CM', title: 'Curriculum Maps', status: 'Watch', statusTone: 'warn',
+    { key: 'curriculum', icon: 'CM', title: 'Scribe Curriculum Maps', status: 'Watch', statusTone: 'warn',
       mainKpi: '3 subject maps need Q4 update', summary: 'Math, Science, Language Arts maps need updates by May 1.',
       kpis: [{ label: 'Maps Published', value: '24' }, { label: 'Needs Update', value: '3' }, { label: 'Grade Levels', value: 'Kâ€“12' }, { label: 'Subjects', value: '8' }],
       details: ['24 curriculum maps published to hub', 'Math: Q4 unit progression update needed', 'Science: Lab unit revisions required', 'Language Arts: Reading list additions pending'],
-      primaryActionLabel: 'View Curriculum Maps', backActionLabel: 'Resource Hub',
+      primaryActionLabel: 'View Scribe Curriculum Maps', backActionLabel: 'Resource Hub',
       primaryActionHref: '/curriculum-pd-dashboard', backActionHref: '/curriculum-pd-dashboard', lastUpdated: '8:10 AM' },
     { key: 'resources', icon: 'RS', title: 'Resource Hub', status: 'Current', statusTone: 'good',
       mainKpi: '124 resources published', summary: 'Shared hub current â€” new materials added this week.',
@@ -106,7 +106,7 @@ export default {
   statuses: [
     { label: 'PD Participation', state: '100% enrolled' },
     { label: 'Observations', state: '8 remaining' },
-    { label: 'Curriculum Maps', state: '3 need updates' },
+    { label: 'Scribe Curriculum Maps', state: '3 need updates' },
     { label: 'Summer PD', state: 'Planning' },
   ],
 };

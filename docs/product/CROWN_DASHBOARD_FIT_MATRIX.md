@@ -119,7 +119,7 @@ Every production-visible dashboard payload must declare:
 | extended-care | Extended Care | extended-care | Scaffold | extended_care_manager, school_admin, finance limited | Live care session summary service | Confidential | Verify check-in/out, custody, and billing link. |
 | summer-camp | Summer Camp | summer-camp | Scaffold | summer_camp_coordinator, extended_care_manager | Live camp roster/session summary service | Confidential | Verify API route and seasonal data source. |
 | safety-security | Safety / Security | safety-security | Scaffold | safety_manager, security_officer, school_admin restricted | Live incident/drill/security summary service | Highly Sensitive | Define incident redaction and audit. |
-| curriculum-pd | Curriculum / PD | curriculum-pd | Scaffold | curriculum_director, pd_coordinator, school_admin | Live curriculum/PD summary service | Restricted | Verify curriculum versioning and PD approvals. |
+| curriculum-pd | Scribe Curriculum / PD | curriculum-pd | Scaffold | curriculum_director, pd_coordinator, school_admin | Live curriculum/PD summary service | Restricted | Verify curriculum versioning and PD approvals. |
 
 ## Tier 6 Dashboards
 
