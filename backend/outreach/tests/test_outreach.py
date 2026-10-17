@@ -28,25 +28,36 @@ def _mk_school(name="Crown Academy"):
     return School.objects.create(name=name)
 
 
+def _grant(user, school, role_code, codes):
+    UserRole.objects.get_or_create(user=user, school=school, role_code=role_code)
+    for code in codes:
+        permission, _ = CrownPermission.objects.get_or_create(code=code)
+        RolePermission.objects.get_or_create(role_code=role_code, permission=permission)
+
+
 def _mk_staff(school, username=None):
     resolved = username or f"staff-{uuid.uuid4()}"
-    return User.objects.create_user(
+    user = User.objects.create_user(
         username=resolved,
         email=f"{resolved}@outreach.test",
         password=TEST_AUTH_SECRET,
         is_staff=True,
         school=school,
     )
+    _grant(user, school, "service_learning_coordinator", ("service.manage", "service.approve"))
+    return user
 
 
 def _mk_user(school, username=None):
     resolved = username or f"user-{uuid.uuid4()}"
-    return User.objects.create_user(
+    user = User.objects.create_user(
         username=resolved,
         email=f"{resolved}@outreach.test",
         password=TEST_AUTH_SECRET,
         school=school,
     )
+    _grant(user, school, "STUDENT", ("service.self",))
+    return user
 
 
 def _staff_client(user, school):
