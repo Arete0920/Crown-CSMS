@@ -32,7 +32,8 @@ from outreach.api.serializers import (
     BadgeSerializer,
     BadgeAwardSerializer,
 )
-from outreach.api.permissions import IsStudentOrStaff, IsStaffOnly, _is_coordinator
+from outreach.api.permissions import IsStudentOrStaff, IsStaffOnly, IsServiceApprover, _is_coordinator
+from core.models import StudentIdentityLink
 
 
 def _school_id(request):
@@ -119,12 +120,22 @@ class ServiceLogViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
     serializer_class = ServiceLogSerializer
     permission_classes = [IsStudentOrStaff]
 
+    def _own_student_id(self):
+        school_id = _school_id(self.request)
+        links = list(StudentIdentityLink.objects.filter(
+            school_id=school_id,
+            verification_status=StudentIdentityLink.STATUS_VERIFIED,
+            core_student__school_id=school_id,
+            compatibility_student__school_id=school_id,
+            compatibility_student__account=self.request.user,
+        ).values_list('core_student_id', flat=True)[:2])
+        return links[0] if len(links) == 1 else None
+
     def get_queryset(self):
         qs = super().get_queryset()
         if not _is_coordinator(self.request):
-            # Non-staff see only their own student's logs and must supply student_id
-            student_id = self.request.query_params.get("student_id")
-            if not student_id:
+            student_id = self._own_student_id()
+            if student_id is None:
                 return qs.none()
             return qs.filter(student_id=student_id)
         # Coordinator: optional filters
@@ -135,6 +146,33 @@ class ServiceLogViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
         if student_id:
             qs = qs.filter(student_id=student_id)
         return qs
+
+    def perform_create(self, serializer):
+        school_id = _school_id(self.request)
+        if _is_coordinator(self.request):
+            student = serializer.validated_data.get('student')
+            if student is not None and str(student.school_id) != str(school_id):
+                from rest_framework.exceptions import PermissionDenied
+                raise PermissionDenied('Student is outside the active school.')
+        else:
+            student_id = self._own_student_id()
+            if student_id is None or str(serializer.validated_data.get('student_id', getattr(serializer.validated_data.get('student'), 'id', ''))) != str(student_id):
+                from rest_framework.exceptions import PermissionDenied
+                raise PermissionDenied('Verified student ownership required.')
+        serializer.save(school_id=school_id)
+
+    def perform_update(self, serializer):
+        if not _is_coordinator(self.request) and serializer.instance.status not in (STATUS_DRAFT, STATUS_NEEDS_INFO):
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied('Only editable drafts may be changed.')
+        student = serializer.validated_data.get('student', serializer.instance.student)
+        if student is not None and str(student.school_id) != str(_school_id(self.request)):
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied('Student is outside the active school.')
+        if not _is_coordinator(self.request) and str(getattr(student, 'id', '')) != str(self._own_student_id()):
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied('Student ownership cannot change.')
+        serializer.save()
 
     # ------------------------------------------------------------------
     # Workflow transitions
@@ -153,7 +191,7 @@ class ServiceLogViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
 
     @action(
         detail=True, methods=["post"], url_path="approve",
-        permission_classes=[IsStaffOnly]
+        permission_classes=[IsServiceApprover]
     )
     def approve(self, request, pk=None):
         log = self.get_object()
