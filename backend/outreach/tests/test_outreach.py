@@ -4,7 +4,7 @@ from decimal import Decimal
 import pytest
 from django.contrib.auth import get_user_model
 from rest_framework.test import APIClient
-from core.models import School
+from core.models import School, UserRole, CrownPermission, RolePermission
 from outreach.models import (
     Badge,
     Opportunity,
@@ -496,3 +496,51 @@ class TestSerializerValidation:
         assert r.status_code == 400
 
 
+
+
+class TestOutreachRoleHeaderHardening:
+    def test_forged_coordinator_header_cannot_create_partner(self):
+        school = _mk_school()
+        user = _mk_user(school)
+        client = APIClient()
+        client.force_authenticate(user=user)
+        client.credentials(HTTP_X_SCHOOL_ID=str(school.id), HTTP_X_ROLE='admin')
+        response = client.post('/api/outreach/partners/', {'name': 'Unauthorized'}, format='json')
+        assert response.status_code == 403
+
+    def test_forged_coordinator_header_cannot_list_school_logs(self):
+        school = _mk_school()
+        user = _mk_user(school)
+        log = _log(school)
+        client = APIClient()
+        client.force_authenticate(user=user)
+        client.credentials(HTTP_X_SCHOOL_ID=str(school.id), HTTP_X_ROLE='coordinator')
+        response = client.get(f'/api/outreach/service-logs/?student_id={log.student_id}')
+        assert response.status_code == 200
+        assert response.json() == []
+
+    def test_unapproved_role_cannot_approve_log(self):
+        school = _mk_school()
+        user = _mk_user(school)
+        log = _log(school, status=STATUS_SUBMITTED)
+        client = APIClient()
+        client.force_authenticate(user=user)
+        client.credentials(HTTP_X_SCHOOL_ID=str(school.id), HTTP_X_ROLE='admin')
+        response = client.post(f'/api/outreach/service-logs/{log.id}/approve/')
+        assert response.status_code == 403
+
+    def test_approval_status_cannot_be_patched_directly(self):
+        school = _mk_school()
+        user = _mk_staff(school)
+        log = _log(school, status=STATUS_SUBMITTED)
+        response = _staff_client(user, school).patch(
+            f'/api/outreach/service-logs/{log.id}/', {'status': STATUS_APPROVED}, format='json'
+        )
+        assert response.status_code == 403
+
+    def test_logs_cannot_be_deleted(self):
+        school = _mk_school()
+        user = _mk_staff(school)
+        log = _log(school)
+        response = _staff_client(user, school).delete(f'/api/outreach/service-logs/{log.id}/')
+        assert response.status_code == 403
