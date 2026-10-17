@@ -1,6 +1,7 @@
 """Regression checks for read-only service-ledger inventory."""
 import json
 from io import StringIO
+from decimal import Decimal
 
 import pytest
 from django.core.management import call_command
@@ -25,7 +26,7 @@ def test_service_reconciliation_reports_independent_ledger_totals():
     assert report["candidate_matching"] == "disabled"
     assert row["service_entries"] == 0
     assert row["outreach_logs"] == 1
-    assert row["outreach_approved_hours_separate_not_credit"] == "2.50"
+    assert Decimal(row["outreach_approved_hours_separate_not_credit"]) == Decimal("2.50")
     assert row["outreach_approved_nonstudent_or_unassigned_logs"] == 1
     log.refresh_from_db()
     assert log.status == STATUS_APPROVED
