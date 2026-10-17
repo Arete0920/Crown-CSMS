@@ -61,8 +61,8 @@ def health(request):
         db_status = "unreachable"
 
     return JsonResponse({
-        "ok": True,
-        "status": "ok",
+        "ok": db_status == "ok",
+        "status": "ok" if db_status == "ok" else "unhealthy",
         "demo_mode": _crown_env_true('CROWN_DEMO_MODE', default=False),
         "build_sha": build_sha,
         "artifact_build_sha": build_info.BUILD_SHA,
@@ -74,7 +74,7 @@ def health(request):
         "db": db_status,
         "deploy_run_id": deploy_run_id,
         "deploy_workflow": deploy_workflow,
-    })
+    }, status=200 if db_status == "ok" else 503)
 
 
 def health_version(request):
