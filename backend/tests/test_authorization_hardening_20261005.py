@@ -217,7 +217,7 @@ def test_service_approval_is_final_and_school_scoped():
     coordinator = _user(school=school, prefix="service-decision-coordinator")
     other_coordinator = _user(school=other_school, prefix="service-other-coordinator")
     _grant(user=coordinator, school=school, role_code="service_decision_coordinator",
-           permissions=["service.approve"])
+           permissions=["service.approve", "service.manage"])
     _grant(user=other_coordinator, school=other_school,
            role_code="service_decision_other_coordinator", permissions=["service.approve"])
     student = _student_identity(school=school, account=student_user, number="DECISION-1")
