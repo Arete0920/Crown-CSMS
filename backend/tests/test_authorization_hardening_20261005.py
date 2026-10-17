@@ -209,6 +209,67 @@ def test_service_approval_requires_explicit_approval_permission():
     assert entry.approved_by_id == coordinator.id
 
 
+
+def test_service_approval_is_final_and_school_scoped():
+    school = School.objects.create(name="Service Decisions School")
+    other_school = School.objects.create(name="Service Decisions Other School")
+    student_user = _user(school=school, prefix="service-decision-student")
+    coordinator = _user(school=school, prefix="service-decision-coordinator")
+    other_coordinator = _user(school=other_school, prefix="service-other-coordinator")
+    _grant(user=coordinator, school=school, role_code="service_decision_coordinator",
+           permissions=["service.approve", "service.manage"])
+    _grant(user=other_coordinator, school=other_school,
+           role_code="service_decision_other_coordinator", permissions=["service.approve"])
+    student = _student_identity(school=school, account=student_user, number="DECISION-1")
+    entry = ServiceEntry.objects.create(school=school, student=student,
+                                        date=date.today(), hours="2.00", status="pending")
+    url = f"/api/service/approvals/{entry.id}/"
+    cross_school = _client(other_coordinator).post(
+        url, {"status": "approved"}, format="json",
+        HTTP_X_SCHOOL_ID=str(other_school.id))
+    assert cross_school.status_code == 404
+    accepted = _client(coordinator).post(
+        url, {"status": "approved"}, format="json", HTTP_X_SCHOOL_ID=str(school.id))
+    assert accepted.status_code == 200
+    first_approved_at = ServiceEntry.objects.get(pk=entry.pk).approved_at
+    replay = _client(coordinator).post(
+        url, {"status": "rejected"}, format="json", HTTP_X_SCHOOL_ID=str(school.id))
+    assert replay.status_code == 409
+    entry.refresh_from_db()
+    assert entry.status == "approved"
+    assert entry.approved_at == first_approved_at
+    summary = _client(coordinator).get(
+        f"/api/service/students/{student.id}/summary/",
+        HTTP_X_SCHOOL_ID=str(school.id))
+    assert summary.status_code == 200
+    assert summary.json()["approved_hours"] == 2.0
+
+
+def test_rejected_service_entry_cannot_be_approved_later():
+    school = School.objects.create(name="Service Rejection School")
+    student_user = _user(school=school, prefix="service-rejected-student")
+    coordinator = _user(school=school, prefix="service-rejected-coordinator")
+    _grant(user=coordinator, school=school, role_code="service_rejected_coordinator",
+           permissions=["service.approve", "service.manage"])
+    student = _student_identity(school=school, account=student_user, number="REJECT-1")
+    entry = ServiceEntry.objects.create(school=school, student=student,
+                                        date=date.today(), hours="5.00", status="pending")
+    url = f"/api/service/approvals/{entry.id}/"
+    rejected = _client(coordinator).post(
+        url, {"status": "rejected"}, format="json", HTTP_X_SCHOOL_ID=str(school.id))
+    assert rejected.status_code == 200
+    replay = _client(coordinator).post(
+        url, {"status": "approved"}, format="json", HTTP_X_SCHOOL_ID=str(school.id))
+    assert replay.status_code == 409
+    entry.refresh_from_db()
+    assert entry.status == "rejected"
+    summary = _client(coordinator).get(
+        f"/api/service/students/{student.id}/summary/",
+        HTTP_X_SCHOOL_ID=str(school.id))
+    assert summary.status_code == 200
+    assert summary.json()["approved_hours"] == 0.0
+
+
 def test_integration_preview_requires_integrations_run():
     school = School.objects.create(name="Integration Permission School")
     user = _user(school=school, prefix="integration-user")
