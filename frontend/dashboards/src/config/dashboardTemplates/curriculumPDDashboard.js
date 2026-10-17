@@ -99,7 +99,7 @@ export default {
   quickActions: [
     { label: 'PD Tracks', href: '/curriculum-pd-dashboard' },
     { label: 'Schedule Observations', href: '/curriculum-pd-dashboard' },
-    { label: 'Curriculum Maps', href: '/curriculum-pd-dashboard' },
+    { label: 'Scribe Curriculum Maps', href: '/curriculum-pd-dashboard' },
     { label: 'Resource Hub', href: '/curriculum-pd-dashboard' },
   ],
 
