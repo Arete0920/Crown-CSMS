@@ -196,7 +196,7 @@ jobs:
           echo "Verifying deployed SHA matches $WANT ..."
           for i in $(seq 1 12); do
             BODY=$(curl --max-time 30 -fsS https://${{ env.WEBAPP_NAME }}.azurewebsites.net/api/health/ 2>/dev/null || true)
-            GOT=$(echo "$BODY" | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('build_sha',''))" 2>/dev/null || true)
+            GOT=$(echo "$BODY" | python3 -c "import json,sys; d=json.load(sys.stdin); sha=d.get('build_sha',''); artifact=d.get('artifact_build_sha',''); print(sha if sha == artifact else '<artifact-mismatch>')" 2>/dev/null || true)
             if [ -z "$GOT" ] || [ "$GOT" = "local-dev" ] || [ "$GOT" = "unknown" ]; then
               echo "  attempt $i: SHA not ready yet (got: ${GOT:-empty})  waiting 15s..."
               sleep 15
