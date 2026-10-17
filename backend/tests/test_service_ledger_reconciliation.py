@@ -1,5 +1,6 @@
 """Regression checks for read-only service-ledger inventory."""
 import json
+from decimal import Decimal
 from io import StringIO
 from decimal import Decimal
 
