@@ -72,6 +72,7 @@ def health(request):
         "observed_at_utc": observed_at,
         "version": version,
         "db": db_status,
+        "db_backend": connection.vendor,
         "deploy_run_id": deploy_run_id,
         "deploy_workflow": deploy_workflow,
     }, status=200 if db_status == "ok" else 503)
