@@ -2,7 +2,6 @@
 import json
 from decimal import Decimal
 from io import StringIO
-from decimal import Decimal
 
 import pytest
 from django.core.management import call_command
