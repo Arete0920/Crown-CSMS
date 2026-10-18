@@ -90,6 +90,7 @@ test.describe.serial('CROWN buyer sandbox live browser authority', () => {
       JSON.stringify(
         {
           generatedAt: new Date().toISOString(),
+          testSourceSha: process.env.CROWN_REHEARSAL_TEST_SHA || process.env.GITHUB_SHA || null,
           liveFrontendUrl: process.env.CROWN_LIVE_FRONTEND_URL || null,
           entryRoute: BUYER_WALKTHROUGH.entryRoute,
           school: BUYER_WALKTHROUGH.school,
@@ -167,15 +168,37 @@ test.describe.serial('CROWN buyer sandbox live browser authority', () => {
   }
 
 
-  test('admissions converts an accepted fictional applicant and persists the student handoff', async ({ page }) => {
+  test('admissions enrollment completes or preserves the same fictional student handoff', async ({ page }) => {
     await launchPersona(page, 'Admissions Director');
     await page.goto('/admissions/pipeline', { waitUntil: 'networkidle' });
     const targetFamily = 'Mercer Enrollment Conversion Demo Family';
-    const row = page.getByRole('row').filter({ hasText: targetFamily }).filter({ hasText: 'Accepted' }).first();
+    const row = page.getByRole('row').filter({
+      has: page.getByRole('cell', { name: targetFamily, exact: true }),
+    });
     await expect(row).toBeVisible();
+    const alreadyEnrolled = await row.getByRole('cell', { name: 'Enrolled', exact: true }).isVisible();
+    if (!alreadyEnrolled) {
+      await expect(row.getByRole('cell', { name: 'Accepted', exact: true })).toBeVisible();
+    }
     await row.getByRole('button', { name: 'Open' }).click();
     await expect(page.getByText('Household Admissions Review')).toBeVisible();
     await page.getByRole('button', { name: 'Show details' }).first().click();
+    const application = page.getByTestId('admissions-household-review').locator('[data-application-id]').filter({
+      has: page.getByText(targetFamily, { exact: true }),
+    });
+    const applicationId = await application.getAttribute('data-application-id');
+    expect(applicationId).toBeTruthy();
+    if (alreadyEnrolled) {
+      await expect(application.getByRole('button', { name: 'Enrolled', exact: true })).toBeDisabled();
+      await page.reload({ waitUntil: 'networkidle' });
+      await expect(row.getByRole('cell', { name: 'Enrolled', exact: true })).toBeVisible();
+      await row.getByRole('button', { name: 'Open' }).click();
+      await expect(application).toHaveAttribute('data-application-id', applicationId!);
+      await application.getByRole('button', { name: 'Show details' }).click();
+      await expect(application.getByRole('button', { name: 'Enrolled', exact: true })).toBeDisabled();
+      actionProofs.push('admissions_existing_enrollment_persists');
+      return;
+    }
     const conversion = page.waitForResponse((response) =>
       response.url().includes('/api/admissions/enroll/') &&
       response.request().method() === 'POST',
@@ -188,7 +211,7 @@ test.describe.serial('CROWN buyer sandbox live browser authority', () => {
     expect(enrolled.student_id).toBeTruthy();
     expect(enrolled.canonical_gate).toBe('contract_countersigned_and_deposit_paid_or_waived');
     await page.reload({ waitUntil: 'networkidle' });
-    await expect(page.getByRole('row').filter({ hasText: targetFamily }).filter({ hasText: 'Enrolled' }).first()).toBeVisible();
+    await expect(row.getByRole('cell', { name: 'Enrolled', exact: true })).toBeVisible();
     actionProofs.push('admissions_conversion_persists');
   });
 
@@ -258,26 +281,73 @@ test.describe.serial('CROWN buyer sandbox live browser authority', () => {
     actionProofs.push('teacher_lesson_plan_persists');
   });
 
-  test('parent enrollment agreement completes the fictional student handoff', async ({ page }) => {
+  test('parent enrollment completes or retains the same fictional student handoff', async ({ page }) => {
     await launchPersona(page, 'Parent / Guardian');
+    const enrollmentState = page.waitForResponse((response) =>
+      response.url().includes('/api/v1/sandbox/parent/enrollment/') &&
+      response.request().method() === 'GET',
+    );
     await page.goto('/parent/admissions/status', { waitUntil: 'networkidle' });
+    const beforeResponse = await enrollmentState;
+    expect(beforeResponse.ok()).toBe(true);
+    const before = await beforeResponse.json();
+    expect(before.application_id).toBeTruthy();
+    expect(before.demo_payment_processed).toBe(false);
+    expect(['accepted', 'enrolled']).toContain(before.lifecycle_stage);
+
     const panel = page.getByTestId('sandbox-parent-enrollment-panel');
     await expect(panel).toBeVisible();
     await expect(panel).toContainText('Jordan Reed');
-    await page.getByLabel('Accept sandbox enrollment agreement').check();
-    const completion = page.waitForResponse((response) =>
-      response.url().includes('/api/v1/sandbox/parent/enrollment/') &&
-      response.request().method() === 'POST',
-    );
-    await page.getByRole('button', { name: /accept enrollment and complete demo handoff/i }).click();
-    const response = await completion;
-    expect(response.ok()).toBe(true);
-    const payload = await response.json();
-    expect(payload.lifecycle_stage).toBe('enrolled');
-    expect(payload.applicant_to_student_status).toBe('completed');
-    expect(payload.demo_payment_processed).toBe(false);
+    let completed = before;
+    if (before.lifecycle_stage === 'accepted') {
+      await page.getByLabel('Accept sandbox enrollment agreement').check();
+      const completion = page.waitForResponse((response) =>
+        response.url().includes('/api/v1/sandbox/parent/enrollment/') &&
+        response.request().method() === 'POST',
+      );
+      await page.getByRole('button', { name: /accept enrollment and complete demo handoff/i }).click();
+      const response = await completion;
+      expect(response.ok()).toBe(true);
+      completed = await response.json();
+    }
+    expect(String(completed.application_id)).toBe(String(before.application_id));
+    expect(completed.lifecycle_stage).toBe('enrolled');
+    expect(completed.contract_status).toBe('countersigned');
+    expect(completed.deposit_status).toBe('paid');
+    expect(completed.applicant_to_student_status).toBe('completed');
+    expect(completed.child_id).toBeTruthy();
+    expect(completed.demo_payment_processed).toBe(false);
     await expect(page.getByTestId('sandbox-parent-enrollment-complete')).toContainText('Jordan Reed');
-    actionProofs.push('parent_enrollment_handoff_completed');
+
+    const reloadedState = page.waitForResponse((response) =>
+      response.url().includes('/api/v1/sandbox/parent/enrollment/') &&
+      response.request().method() === 'GET',
+    );
+    const reloadedOverview = page.waitForResponse((response) =>
+      response.url().includes('/api/v1/parent360/me/overview/') &&
+      response.request().method() === 'GET',
+    );
+    await page.reload({ waitUntil: 'networkidle' });
+    const stateResponse = await reloadedState;
+    const overviewResponse = await reloadedOverview;
+    expect(stateResponse.ok()).toBe(true);
+    expect(overviewResponse.ok()).toBe(true);
+    const after = await stateResponse.json();
+    expect(String(after.application_id)).toBe(String(completed.application_id));
+    expect(String(after.child_id)).toBe(String(completed.child_id));
+    expect(after.lifecycle_stage).toBe('enrolled');
+    expect(after.applicant_to_student_status).toBe('completed');
+    expect(after.demo_payment_processed).toBe(false);
+    const overview = await overviewResponse.json();
+    const sameApplication = (overview?.admissions_continuity?.applications || []).find(
+      (application: { application_id: unknown }) =>
+        String(application.application_id) === String(completed.application_id),
+    );
+    expect(sameApplication?.lifecycle_stage).toBe('enrolled');
+    await expect(page.getByTestId('sandbox-parent-enrollment-complete')).toContainText('Jordan Reed');
+    actionProofs.push(before.lifecycle_stage === 'enrolled'
+      ? 'parent_existing_enrollment_handoff_persists'
+      : 'parent_enrollment_handoff_completed');
   });
 
   test('buyer entry remains usable at mobile width', async ({ page }) => {
