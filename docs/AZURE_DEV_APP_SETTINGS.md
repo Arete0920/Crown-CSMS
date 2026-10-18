@@ -129,3 +129,18 @@ git log --oneline -1 main
 - **`backend/crown_api/version_views.py`** - /api/health/ endpoint implementation
 - **`.github/workflows/stabilization-20260116-spine_crown-api-dev.yml`** - DEV deployment + BUILD_SHA verification
 - **`.github/workflows/deploy-prod.yml`** - PROD deployment + BUILD_SHA verification
+
+
+## Reviewed inquiry migration prerequisite (2026-10-18)
+
+The existing `deploy-dev.yml` workflow now verifies the selected full source SHA against freshly fetched accepted `main` before loading checked-out dependencies or Azure configuration. Its existing DEV runner and federation execute `scripts/ops/run_dev_inquiry_migration.py` before any application-setting or image mutation. The `rc/**` and manual triggers are unchanged; no separate service or startup migration flag is introduced.
+
+The helper reads only `crown-rg/crown-api-dev` and its existing Key Vault references. It requires the current DEV environment markers, the exact `crown-pg-dev.postgres.database.azure.com` PostgreSQL host and port, an explicit non-system database from that app's configuration, matching effective/connected database identity, the public schema, a primary connection, and hostname-verified TLS. Credentials stay in the runner process and are excluded from evidence.
+
+The reviewed change is only `crm_marketing.0002_inquiry_capture`; its file digest is pinned in the helper. Planning, identity verification, the existing `migrate_with_lock` command, and the final currency check share the existing PostgreSQL advisory lock. An empty plan performs checks only. Any other pending migration, missing predecessor, reverse plan, modified migration file, target mismatch, or unavailable access stops the job before deployment. DDL authority must already exist; the helper creates no role, secret, network rule, or Azure resource and sends no messages.
+
+The final JSON evidence records source SHA, DEV app, verified database-identity fingerprint, applied migration names and zero remaining migrations, or a sanitized BLOCKED reason. Rejected pending plans include up to 20 validated migration identifiers and directions, the total count and a truncation flag, with source SHA and DEV app context; they never include SQL or raw provider errors. A green unit test proves these controls, not hosted DDL privileges or network availability. Actual DEV connection, permissions, migration execution and subsequent health/SHA checks must succeed before this deployment is reported as complete.
+
+If blocked, retain the current API image and inspect the sanitized failure stage. Do not toggle the obsolete `RUN_MIGRATE` setting, weaken startup `migrate --check`, use the production migration workflow for DEV, or widen the permitted plan. Unexpected migration or permission requirements need their own reviewed disposition. The additive inquiry migration remains compatible with the previous API; a later deployment failure is not permission to reverse it and delete captured data.
+
+Local boundary proof (no database or Azure execution): `python -m unittest discover -s scripts/ops -p test_run_dev_inquiry_migration.py -v`.
