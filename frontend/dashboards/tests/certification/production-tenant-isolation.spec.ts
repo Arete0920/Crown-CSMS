@@ -73,6 +73,12 @@ test('Heritage Board renewal preserves least privilege and tenant isolation', as
     for (const session of sessions) {
       const headers = { Authorization: `Bearer ${session.access}`, 'X-School-Id': session.school_id };
       for (let read = 0; read < 2; read++) {
+        const navigation = await context.get(`${api}/api/v1/nav/`, { headers });
+        expect(navigation.status()).toBe(200);
+        const menu = await navigation.json();
+        const links = menu.groups.flatMap((group: { items: { href: string }[] }) => group.items.map(item => item.href));
+        expect(links).toContain('/board');
+        for (const forbidden of ['/admin', '/finance', '/billing']) expect(links).not.toContain(forbidden);
         const board = await context.get(`${api}/api/v1/academics/classroom/workspace/?audience=board`, { headers });
         expect(board.status()).toBe(200);
         const aggregate = await board.json();
@@ -83,6 +89,8 @@ test('Heritage Board renewal preserves least privilege and tenant isolation', as
         expect(signals.status()).toBe(200);
         for (const route of [
           '/api/v1/academics/classroom/workspace/?audience=admin',
+          '/api/v1/admin/metrics/',
+          '/api/v1/finance/metrics/',
           '/api/v1/sandbox/admin/state/',
           '/api/v1/sandbox/finance/state/',
         ]) {
