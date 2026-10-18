@@ -99,5 +99,8 @@ def test_dev_heritage_sandbox_parent_continuity_prefers_enrollment_household(set
     # Production runtime must never activate this DEV-only household override.
     settings.ENVIRONMENT = "production"
     monkeypatch.setenv("ENVIRONMENT", "production")
-    from parent360.identity import resolve_household_for_account
+    from parent360.identity import Parent360IdentityError, resolve_household_for_account
     assert resolve_household_for_account(parent).id != application.household_id
+    Guardian.objects.filter(account=parent).delete()
+    with pytest.raises(Parent360IdentityError, match="guardian_account_link_required"):
+        resolve_household_for_account(parent)
