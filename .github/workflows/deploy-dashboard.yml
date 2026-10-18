@@ -554,7 +554,10 @@ jobs:
           CROWN_LIVE_FRONTEND_URL: ${{ steps.preview.outputs.static_web_app_url }}
           CROWN_LIVE_API_BASE_URL: https://crown-api-dev.azurewebsites.net
           CROWN_BROWSER_AUTHORITY_OUTPUT: test-results/buyer-sandbox-browser-authority.json
-        run: npm run certify:buyer-sandbox-browser
+          CROWN_REHEARSAL_TEST_SHA: ${{ github.sha }}
+        run: |
+          git show "$CROWN_REHEARSAL_TEST_SHA:frontend/dashboards/tests/certification/buyer-sandbox-browser-authority.spec.ts" > tests/certification/buyer-sandbox-browser-authority.spec.ts
+          npm run certify:buyer-sandbox-browser
       - name: Upload DEV buyer persistence evidence
         if: always() && steps.preview.outcome == 'success'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
