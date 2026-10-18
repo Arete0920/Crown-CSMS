@@ -66,6 +66,19 @@ afterEach(() => {
 });
 
 describe('persona dashboard certification', () => {
+  it('renders Scribe branding while preserving curriculum integration identity', () => {
+    const config = DASHBOARD_TEMPLATE_MAP.curriculumPD;
+    const { getByRole, container } = renderPersonaDashboard('curriculumPD');
+    expect(getByRole('heading', { name: 'Scribe Curriculum & PD' })).toBeTruthy();
+    expect(normalizedText(container)).toContain('Scribe Curriculum Maps');
+    expect(config.key).toBe('curriculumPD');
+    expect(config.activePath).toBe('/curriculum-pd-dashboard');
+    expect(config.apiEndpoint).toBe('/api/v1/dashboards/curriculumPD/summary/');
+    expect(config.liveDataKey).toBe('curriculumPD');
+    expect(config.quickActions.find(({ label }) => label === 'Scribe Curriculum Maps').href)
+      .toBe('/curriculum-pd-dashboard');
+  });
+
   it('certifies all required production persona templates exist', () => {
     const missing = PRODUCTION_PERSONA_KEYS.filter((key) => !DASHBOARD_TEMPLATE_MAP[key]);
     expect(missing).toEqual([]);

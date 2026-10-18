@@ -13,7 +13,7 @@ export default function CurriculumPDQueueCard() {
     <Card sx={{ height: '100%' }}>
       <CardContent>
         <Typography variant="h6" gutterBottom>
-          Curriculum / PD Queue
+          Scribe Curriculum / PD Queue
         </Typography>
 
         <List dense disablePadding>
