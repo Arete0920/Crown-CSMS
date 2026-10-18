@@ -14,9 +14,11 @@ export default function TeacherAttendancePage() {
   const [sectionId, setSectionId] = useState("");
   const [roster, setRoster] = useState([]);
   const [statusMap, setStatusMap] = useState({});
+  const [loadedSectionId, setLoadedSectionId] = useState("");
   const [msg, setMsg] = useState("");
 
   const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
+  const attendanceReady = Boolean(sectionId) && loadedSectionId === sectionId;
 
   useEffect(() => {
     (async () => {
@@ -31,28 +33,56 @@ export default function TeacherAttendancePage() {
   }, []);
 
   useEffect(() => {
+    let active = true;
+    const controller = new AbortController();
+    setMsg("");
+    setRoster([]);
+    setStatusMap({});
+    setLoadedSectionId("");
     if (!sectionId) return;
     (async () => {
-      setMsg("");
-      setRoster([]);
-      setStatusMap({});
       try {
-        const r = await fetchJson(`/api/v1/academics/sections/${sectionId}/roster/`);
+        const [r, saved] = await Promise.all([
+          fetchJson(`/api/v1/academics/sections/${sectionId}/roster/`, { signal: controller.signal }),
+          fetchJson("/api/v1/academics/classroom/operations/", {
+            signal: controller.signal,
+            query: { section_id: sectionId, date: today },
+          }),
+        ]);
         const items = r?.students || r?.results || r?.items || r || [];
-        setRoster(items);
+        if (!Array.isArray(items) || saved?.source !== "live"
+            || saved.section_id !== sectionId || saved.date !== today || !Array.isArray(saved.roster)) {
+          throw new Error("Invalid saved attendance response.");
+        }
+        // Both APIs identify roster members by households.Student IDs. The
+        // operations endpoint resolves their verified canonical attendance.
+        const savedByStudent = new Map(saved.roster.map((student) => [student.id, student]));
         const nextMap = {};
         for (const s of items) {
           const sid = s.student_id || s.id || s.student?.id;
-          if (sid) nextMap[sid] = "present";
+          const savedStudent = savedByStudent.get(sid);
+          if (!sid || savedStudent?.identity_verified !== true) throw new Error("Attendance roster could not be verified.");
+          const mark = savedStudent.attendance;
+          const status = mark == null ? "present" : String(mark).toLowerCase();
+          if (!["present", "absent", "tardy", "excused"].includes(status)) {
+            throw new Error("Unrecognized saved attendance status.");
+          }
+          nextMap[sid] = status;
         }
-        setStatusMap(nextMap);
+        if (active) {
+          setRoster(items);
+          setStatusMap(nextMap);
+          setLoadedSectionId(sectionId);
+        }
       } catch {
-        setMsg("Failed to load roster.");
+        if (active) setMsg("Failed to load saved attendance. Reload the page to retry.");
       }
     })();
-  }, [sectionId]);
+    return () => { active = false; controller.abort(); };
+  }, [sectionId, today]);
 
   const submit = async () => {
+    if (!attendanceReady) return;
     setMsg("");
     try {
       const items = Object.entries(statusMap).map(([student_id, status]) => ({
@@ -91,7 +121,7 @@ export default function TeacherAttendancePage() {
         <button
           className="crown-btn crown-btn-primary"
           style={{ marginLeft: 12 }}
-          disabled={!sectionId || roster.length === 0}
+          disabled={!attendanceReady || roster.length === 0}
           onClick={submit}
         >
           Submit Attendance
@@ -103,7 +133,8 @@ export default function TeacherAttendancePage() {
       ) : (
         <ErrorBanner title="Attendance error" message={msg} />
       )}
-      {sectionId && !msg && roster.length === 0 && (
+      {sectionId && !attendanceReady && !msg && <div role="status">Loading saved attendance...</div>}
+      {attendanceReady && !msg && roster.length === 0 && (
         <EmptyState
           title="No students in this section"
           message="If this is unexpected, check that the section has enrolled students."
@@ -129,6 +160,7 @@ export default function TeacherAttendancePage() {
                 <td>{name}</td>
                 <td>
                   <select
+                    disabled={!attendanceReady}
                     value={statusMap[sid] || "present"}
                     onChange={(e) =>
                       setStatusMap((prev) => ({ ...prev, [sid]: e.target.value }))
@@ -137,6 +169,7 @@ export default function TeacherAttendancePage() {
                     <option value="present">present</option>
                     <option value="absent">absent</option>
                     <option value="tardy">tardy</option>
+                    <option value="excused">excused</option>
                   </select>
                 </td>
               </tr>
