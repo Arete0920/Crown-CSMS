@@ -6,7 +6,7 @@ from households.models import Guardian, Student
 from .models import Enrollment, Section, TeacherAssignment
 
 LEADER_ROLES = {"ADMIN", "DIRECTOR", "HEAD_OF_SCHOOL", "head_of_school", "school_admin", "REGISTRAR"}
-BOARD_ROLES = {"BOARD", "BOARD_MEMBER", "board", "school_board"}
+BOARD_ROLES = {"BOARD", "BOARD_MEMBER", "board", "board_member", "school_board"}
 
 
 def role_codes(user, school_id):
