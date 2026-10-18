@@ -9,7 +9,7 @@ Auth: JWTAuthentication (same guardrail as every wizard session endpoint).
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.authentication import SessionAuthentication
-from crown_api.tenant_authentication import TenantJWTAuthentication as JWTAuthentication
+from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.response import Response
 
 from crown_api.wizard_registry import list_wizards

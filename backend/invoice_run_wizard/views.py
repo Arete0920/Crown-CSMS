@@ -7,7 +7,7 @@ from rest_framework.authentication import SessionAuthentication
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from crown_api.tenant_authentication import TenantJWTAuthentication as JWTAuthentication
+from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from finance.models import FinanceInvoice, FinanceInvoiceLine, FinanceObligation, MoneyStatus
 from households.scoping import get_request_school_id
