@@ -1,7 +1,7 @@
 from __future__ import annotations
 from django.db.models import Sum
 from django.utils import timezone
-from rest_framework import permissions
+from rest_framework import permissions, serializers
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -101,16 +101,29 @@ class ServiceEntriesListCreate(APIView):
         if scope == "self" and student.id != own_student.id:
             return _forbidden()
 
+        class SubmissionSerializer(serializers.Serializer):
+            date = serializers.DateField(required=True)
+            hours = serializers.DecimalField(max_digits=5, decimal_places=2, min_value=0.01)
+            category = serializers.CharField(max_length=80, required=False, allow_blank=True)
+            organization = serializers.CharField(max_length=120, required=False, allow_blank=True)
+            supervisor_name = serializers.CharField(max_length=120, required=False, allow_blank=True)
+            supervisor_contact = serializers.CharField(max_length=120, required=False, allow_blank=True)
+            notes = serializers.CharField(required=False, allow_blank=True)
+
+        submission = SubmissionSerializer(data=payload)
+        submission.is_valid(raise_exception=True)
+        valid = submission.validated_data
+
         entry = ServiceEntry.objects.create(
             school=school,
             student=student,
-            date=payload.get("date"),
-            hours=payload.get("hours", 1.0),
-            category=payload.get("category","Community Service"),
-            organization=payload.get("organization","Local Partner"),
-            supervisor_name=payload.get("supervisor_name",""),
-            supervisor_contact=payload.get("supervisor_contact",""),
-            notes=payload.get("notes",""),
+            date=valid["date"],
+            hours=valid["hours"],
+            category=valid.get("category","Community Service"),
+            organization=valid.get("organization","Local Partner"),
+            supervisor_name=valid.get("supervisor_name",""),
+            supervisor_contact=valid.get("supervisor_contact",""),
+            notes=valid.get("notes",""),
             status="pending",
         )
         return Response(ServiceEntrySerializer(entry).data, status=201)
@@ -181,9 +194,11 @@ class ServiceApproveReject(APIView):
         ser.is_valid(raise_exception=True)
         new_status = ser.validated_data["status"]
 
-        entry.status = new_status
-        entry.approved_by = request.user
-        entry.approved_at = timezone.now()
-        entry.save(update_fields=["status","approved_by","approved_at"])
-
+        # An approved/rejected record is final; prevent replay and concurrent double decisions.
+        changed = ServiceEntry.objects.filter(
+            pk=entry.pk, school=school, status="pending"
+        ).update(status=new_status, approved_by=request.user, approved_at=timezone.now())
+        if changed != 1:
+            return Response({"detail": "Only pending service entries may be decided."}, status=409)
+        entry.refresh_from_db()
         return Response(ServiceEntrySerializer(entry).data, status=200)
