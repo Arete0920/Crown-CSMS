@@ -12,7 +12,7 @@ export default function CurriculumPDAlertsPanel() {
     <Card sx={{ height: '100%' }}>
       <CardContent>
         <Typography variant="h6" gutterBottom>
-          Curriculum / PD Alerts
+          Scribe Curriculum / PD Alerts
         </Typography>
 
         <List disablePadding>

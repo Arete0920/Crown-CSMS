@@ -93,7 +93,7 @@ For each row, promotion requires evidence for: domain ownership; models/schema; 
 | 35 | `advancement-operations` | Advancement Operations | Inventory | Dashboard surfaces exist | Donor privacy, gift/finance boundary and runtime proof NOT VERIFIED |
 | 36 | `alumni-relations` | Alumni Relations | Inventory | Dashboard surface exists | Alumni conversion, contact rules and access proof NOT VERIFIED |
 | 37 | `board-governance` | Board Governance | Inventory | Board/dashboard surfaces exist | Board access boundary, exports and governance-record lifecycle proof NOT VERIFIED |
-| 38 | `curriculum-pd` | Curriculum / PD | Inventory | Dashboard surface exists | Curriculum ownership/versioning, PD approval and runtime proof NOT VERIFIED |
+| 38 | `curriculum-pd` | Scribe Curriculum / PD | Inventory | Dashboard surface exists | Curriculum ownership/versioning, PD approval and runtime proof NOT VERIFIED |
 | 39 | `network-benchmarking` | Network Benchmarking / Analytics | Inventory | Dashboard surface exists | Anonymization, small-cell suppression and multi-school isolation proof NOT VERIFIED |
 
 ## Phase 5 — Platform operations

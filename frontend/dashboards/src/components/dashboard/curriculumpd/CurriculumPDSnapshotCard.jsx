@@ -14,7 +14,7 @@ export default function CurriculumPDSnapshotCard() {
     <Card sx={{ height: '100%' }}>
       <CardContent>
         <Typography variant="h6" gutterBottom>
-          Curriculum / PD Snapshot
+          Scribe Curriculum / PD Snapshot
         </Typography>
 
         <Stack spacing={1.5}>

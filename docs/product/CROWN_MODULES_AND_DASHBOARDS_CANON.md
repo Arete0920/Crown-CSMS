@@ -342,7 +342,7 @@ The matrices are not optional. They are the row-level controls for applying this
 | 35 | Advancement Operations | Manage development, donor, and campaign operations. |
 | 36 | Alumni Relations | Manage alumni identity, engagement, and advancement links. |
 | 37 | Board Governance | Manage board packet, governance, and leadership workflows. |
-| 38 | Curriculum / PD | Manage curriculum maps, professional development, and faculty growth. |
+| 38 | Scribe — Curriculum / PD | Manage curriculum maps, scope and sequence, instructional alignment, professional development, and faculty growth. |
 | 39 | Network Benchmarking / Analytics | Manage anonymized/network analytics and school benchmarking. |
 
 ### Phase 5: Platform Operations

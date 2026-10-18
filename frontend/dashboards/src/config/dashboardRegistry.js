@@ -409,7 +409,7 @@ export const DASHBOARD_REGISTRY = [
   }),
   createDashboard({
     key: 'curriculum-pd',
-    label: 'Curriculum / PD Hub',
+    label: 'Scribe Curriculum / PD Hub',
     path: PATHS.CURRICULUM_PD_DASHBOARD,
     tier: 5,
     section: 'Enrichment & Support',
