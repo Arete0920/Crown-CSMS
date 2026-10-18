@@ -30,6 +30,13 @@ jobs:
           for key in ("WEBSITES_PORT","PORT","BOOTSTRAP_ADMIN","SEED_DEMO","RUN_DEV_BOOTSTRAP","RUN_GOLDEN_PATH_BOOTSTRAP"):
               value=d.get(key)
               print(key+"="+(value if value in ("8000","80","1","0","true","false","True","False") else "ABSENT" if value is None else "PRESENT_OTHER"))
+          # Authorized read-only diagnosis: print only enumerated non-secret DEV markers.
+          for key in ("CROWN_ENV","DJANGO_ENV","ENVIRONMENT","CROWN_SANDBOX_ALLOW_OPEN_SESSION"):
+              value=d.get(key)
+              permitted={"dev","development","local","test","testing","prod","production","live","sandbox","staging","1","0","true","false","True","False"}
+              print(key+"="+(value if value in permitted else "ABSENT" if value is None else "PRESENT_OTHER"))
+          app_identity=az("webapp","show","-g","crown-rg","-n","crown-api-dev") or {}
+          print("DEV_DEFAULT_HOSTNAME="+str(app_identity.get("defaultHostName","UNKNOWN")))
           for key in ("DJANGO_SUPERUSER_PASSWORD","CI_SMOKE_USERNAME","DATABASE_URL","SECRET_KEY"):
               print(key+"_PRESENCE="+("SET" if d.get(key) else "ABSENT"))
           cfg=az("webapp","config","show","-g","crown-rg","-n","crown-api-dev") or {}
