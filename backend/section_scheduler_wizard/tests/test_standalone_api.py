@@ -1,4 +1,6 @@
 """School-authorized Kairos standalone CSV preview/export Django tests."""
+import json
+
 from django.test import TestCase
 from section_scheduler_wizard.models import SectionPlacement
 from section_scheduler_wizard.canonical_snapshot import build_canonical_planning_snapshot
@@ -72,6 +74,18 @@ class KairosStandaloneApiTests(TestCase):
         data["csv_text"] = "section_id,period_id,room_id\nforeign,p1,r1\n"
         res = self.client.post(IMPORT, data, format="json", **_headers(self.school))
         self.assertEqual(res.status_code, 400)
+        self.assertEqual(SectionPlacement.objects.count(), 0)
+
+    def test_json_escaped_surrogate_returns_validation_error_without_publication(self):
+        data = self.base()
+        data["csv_text"] = "section_id,period_id,room_id\n\ud800,p1,r1\n"
+        # Escaped JSON transports the malformed scalar to the actual API boundary.
+        res = self.client.post(
+            IMPORT, json.dumps(data), content_type="application/json",
+            **_headers(self.school),
+        )
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(str(res.data[0]), "Standalone CSV or canonical identifiers invalid.")
         self.assertEqual(SectionPlacement.objects.count(), 0)
 
     def test_role_revocation_blocks_both_endpoints(self):
