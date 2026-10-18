@@ -31,7 +31,7 @@ from .serializers import (
 
 
 def _board_access(request, school):
-    if not request.user.is_active or not (is_leader(request.user, school) or role_codes(request.user, school) & {'BOARD', 'BOARD_MEMBER', 'board', 'school_board'}):
+    if not request.user.is_active or not (is_leader(request.user, school) or role_codes(request.user, school) & {'BOARD', 'BOARD_MEMBER', 'board', 'board_member', 'school_board'}):
         raise PermissionDenied('Explicit school leadership or board authority required.')
 
 
