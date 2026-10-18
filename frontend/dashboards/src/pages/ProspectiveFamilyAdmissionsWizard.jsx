@@ -75,8 +75,6 @@ const INTERVIEW_MODE_OPTIONS = [
 const DEFAULT_APPLICATION_FEE_AMOUNT = Number(import.meta.env.VITE_ADMISSIONS_APPLICATION_FEE_USD || "85");
 const DEFAULT_FINANCIAL_AID_FEE_AMOUNT = Number(import.meta.env.VITE_ADMISSIONS_FINANCIAL_AID_FEE_USD || "35");
 const DEFAULT_ENROLLMENT_FEE_AMOUNT = Number(import.meta.env.VITE_ADMISSIONS_ENROLLMENT_FEE_USD || "250");
-const DEMO_SCHOOL_NAME = (import.meta.env.VITE_DEMO_SCHOOL_NAME || "Heritage Christian Academy").trim();
-const DEMO_AID_YEAR = (import.meta.env.VITE_DEMO_AID_YEAR || "2026-2027").trim();
 const FALLBACK_FEE_CONFIG = {
   required: Number.isFinite(DEFAULT_APPLICATION_FEE_AMOUNT) && DEFAULT_APPLICATION_FEE_AMOUNT > 0,
   amount: Number.isFinite(DEFAULT_APPLICATION_FEE_AMOUNT) ? DEFAULT_APPLICATION_FEE_AMOUNT : 0,
@@ -2260,8 +2258,7 @@ export default function ProspectiveFamilyAdmissionsWizard() {
       )}
       helpNotice={(
         <>
-          Need help? Call Admissions at <strong>(555) 010-1000</strong> or email <strong>admissions@crown.edu</strong>.
-          {" "}Sandbox school: <strong>{DEMO_SCHOOL_NAME}</strong> ({DEMO_AID_YEAR}).
+          For help with your application, contact the school's admissions team using the contact details on its official website.
           {" "}Your progress is saved automatically on this device.
           {lastSavedAt ? ` Last saved: ${new Date(lastSavedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}.` : ""}
         </>
