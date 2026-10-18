@@ -52,7 +52,8 @@ def test_parent_self_overview_rejects_inactive_linked_account():
 def test_dev_heritage_sandbox_parent_continuity_prefers_enrollment_household(settings, monkeypatch):
     from sandbox_demo.catalog import SANDBOX_PERSONAS, SANDBOX_SCHOOLS
     from sandbox_demo.parent_enrollment import seed_parent_enrollment_scenario
-    from sandbox_demo.services import seed_heritage_flagship, seed_local_heritage_relationships
+    from sandbox_demo.services import seed_heritage_flagship
+    from households.models import Guardian, Household
     from applications.models import Application
     from core.models import UserAccount
 
@@ -68,8 +69,21 @@ def test_dev_heritage_sandbox_parent_continuity_prefers_enrollment_household(set
     monkeypatch.delenv("WEBSITE_HOSTNAME", raising=False)
     seed_heritage_flagship(reset=True)
     seed_parent_enrollment_scenario()
-    seed_local_heritage_relationships()
     parent = UserAccount.objects.get(username=SANDBOX_PERSONAS["parent"].email)
+    classroom_household = Household.objects.create(
+        school_id=parent.school_id,
+        name="Different Classroom Household",
+        is_active=True,
+    )
+    Guardian.objects.create(
+        school_id=parent.school_id,
+        household=classroom_household,
+        account=parent,
+        first_name="Demo",
+        last_name="Parent",
+        email=parent.email,
+        is_primary=True,
+    )
     application = Application.objects.filter(
         school_id=SANDBOX_SCHOOLS["heritage-core"].id,
         household__name="Reed Family",
