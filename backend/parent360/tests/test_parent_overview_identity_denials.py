@@ -46,3 +46,44 @@ def test_parent_self_overview_rejects_inactive_linked_account():
     assert response.json() == {
         "detail": "No active household access is configured for the current account."
     }
+
+
+
+def test_dev_heritage_sandbox_parent_continuity_prefers_enrollment_household(settings, monkeypatch):
+    from sandbox_demo.catalog import SANDBOX_PERSONAS, SANDBOX_SCHOOLS
+    from sandbox_demo.parent_enrollment import seed_parent_enrollment_scenario
+    from sandbox_demo.services import seed_heritage_flagship, seed_local_heritage_relationships
+    from applications.models import Application
+    from core.models import UserAccount
+
+    settings.DEBUG = False
+    settings.ENVIRONMENT = "dev"
+    settings.CROWN_ENV = "dev"
+    settings.DJANGO_ENV = ""
+    settings.CROWN_SANDBOX_ALLOW_OPEN_SESSION = True
+    monkeypatch.setenv("CROWN_SANDBOX_ALLOW_OPEN_SESSION", "true")
+    monkeypatch.setenv("ENVIRONMENT", "dev")
+    monkeypatch.setenv("CROWN_ENV", "dev")
+    monkeypatch.setenv("DJANGO_ENV", "")
+    monkeypatch.delenv("WEBSITE_HOSTNAME", raising=False)
+    seed_heritage_flagship(reset=True)
+    seed_parent_enrollment_scenario()
+    seed_local_heritage_relationships()
+    parent = UserAccount.objects.get(username=SANDBOX_PERSONAS["parent"].email)
+    application = Application.objects.filter(
+        school_id=SANDBOX_SCHOOLS["heritage-core"].id,
+        household__name="Reed Family",
+    ).latest("created_at")
+
+    client = APIClient()
+    client.force_authenticate(user=parent)
+    response = client.get("/api/v1/parent360/me/overview/")
+    assert response.status_code == 200
+    continuity = response.json()["admissions_continuity"]
+    assert any(str(app["application_id"]) == str(application.id) for app in continuity["applications"])
+
+    # Production runtime must never activate this DEV-only household override.
+    settings.ENVIRONMENT = "production"
+    monkeypatch.setenv("ENVIRONMENT", "production")
+    from parent360.identity import resolve_household_for_account
+    assert resolve_household_for_account(parent).id != application.household_id
