@@ -56,6 +56,8 @@ function mapCertificationRoleToSandboxRole(role: string): string {
       return "student";
     case "board":
       return "board";
+    case "admissions":
+      return "admissions_director";
     default:
       throw new Error(`Unsupported certification role: ${role}`);
   }

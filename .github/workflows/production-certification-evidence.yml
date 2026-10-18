@@ -165,6 +165,7 @@ jobs:
         shell: bash
         env:
           API_URL: ${{ inputs.live_api_base_url || vars.CROWN_LIVE_API_BASE_URL || 'https://crown-api-prod.azurewebsites.net' }}
+          SANDBOX_INVITE_ID: ${{ secrets.CROWN_LIVE_SANDBOX_INVITE_ID }}
         run: |
           set -euo pipefail
           python3 - <<'PY'
@@ -175,12 +176,15 @@ jobs:
 
           api_url = os.environ["API_URL"].rstrip("/")
           session_url = f"{api_url}/api/v1/sandbox/session/"
-          payload = json.dumps({
+          payload_data = {
               "role": "school_admin",
               "school": "heritage-core",
               "guidance": "guided",
               "track": "school",
-          }).encode("utf-8")
+          }
+          if os.getenv("SANDBOX_INVITE_ID", "").strip():
+              payload_data["invite_id"] = os.environ["SANDBOX_INVITE_ID"].strip()
+          payload = json.dumps(payload_data).encode("utf-8")
           request = urllib.request.Request(
               session_url,
               data=payload,
@@ -210,7 +214,7 @@ jobs:
           school_key = result.get("school_key") or result.get("school", {}).get("key")
           if school_key and school_key != "heritage-core":
               raise SystemExit(f"Unexpected demo school returned: {school_key}")
-          print("Passwordless Heritage demo session is available without invitation or password.")
+          print("Passwordless Heritage demo session validated under configured invite/open-session policy.")
           PY
 
       - name: Set up Node
@@ -240,6 +244,7 @@ jobs:
           CROWN_LIVE_SCHOOL_ID: ${{ vars.CROWN_LIVE_SCHOOL_ID || '' }}
           CROWN_LIVE_SCHOOL_LABEL: ${{ vars.CROWN_LIVE_SCHOOL_LABEL || 'Heritage Christian Academy' }}
           CROWN_LIVE_USE_SANDBOX_CREDENTIALS: "1"
+          CROWN_LIVE_SANDBOX_INVITE_ID: ${{ secrets.CROWN_LIVE_SANDBOX_INVITE_ID }}
 
       - name: Confirm evidence summary exists
         if: always()
