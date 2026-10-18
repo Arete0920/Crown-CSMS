@@ -3,7 +3,8 @@ export type CertificationPersona =
   | "sandbox-teacher"
   | "sandbox-parent"
   | "sandbox-student"
-  | "sandbox-board";
+  | "sandbox-board"
+  | "sandbox-admissions";
 
 export type CertificationSurface = {
   id: string;
@@ -31,6 +32,7 @@ const dashboardSurface = (config: {
   persona: CertificationPersona;
   slug?: string;
   summaryApi?: string;
+  additionalPersonas?: CertificationPersona[];
 }): CertificationSurface => {
   const summaryApi = config.summaryApi
     || (config.slug ? `/api/v1/dashboards/${config.slug}/summary` : "");
@@ -43,7 +45,7 @@ const dashboardSurface = (config: {
     label: config.label,
     route: config.route,
     kind: "dashboard",
-    personas: [config.persona],
+    personas: [config.persona, ...(config.additionalPersonas || [])],
     tenants: ["heritage"],
     expectedApiFragments: [...AUTH_API, summaryApi],
     requireLiveProvenance: true,
@@ -167,6 +169,7 @@ export const certificationMatrix: CertificationSurface[] = [
     label: "Admissions dashboard",
     route: "/admissions-dashboard",
     persona: "sandbox-admin",
+    additionalPersonas: ["sandbox-admissions"],
     summaryApi: ADMISSIONS_SUMMARY_API,
   }),
   {
