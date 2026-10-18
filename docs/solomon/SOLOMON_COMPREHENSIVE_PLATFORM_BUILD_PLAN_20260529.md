@@ -31,7 +31,7 @@ SOLOMON is:
 - spiritual-life resource framework.
 
 SOLOMON is not:
-- a chatbot,
+- an unreviewed source of answers,
 - an unmanaged content dump,
 - an automation-branded product,
 - a replacement for human governance,
@@ -101,7 +101,7 @@ Primary resource delivery targets:
 - finance and aid teams,
 - board leaders.
 
-Each audience receives role-aware contextual guidance rather than generic chatbot responses.
+Each audience receives reviewed guidance appropriate to its role and task.
 
 ## Content Priority Model
 

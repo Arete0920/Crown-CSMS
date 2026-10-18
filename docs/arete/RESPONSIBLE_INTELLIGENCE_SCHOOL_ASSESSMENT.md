@@ -19,7 +19,7 @@ Record **0** absent/unsafe; **1** informal/partially operating; **2** documented
 | RIT-07 | Vendor and external-tool registration, contractual controls and no unapproved disclosure | Vendor register, terms, processors, subprocessor review |
 | RIT-08 | Tenant, role, authentication and audit restrictions | Positive and negative test evidence; unresolved defects |
 | RIT-09 | Source provenance, factual accuracy, IP and licensing rights | Dated sources and rights approvals |
-| RIT-10 | Unsupported claims, ambiguity, hallucinations and human verification | Curated/synthetic quality evaluation with defects and abstention cases |
+| RIT-10 | Unsupported claims, ambiguity, fabricated outputs and human verification | Curated/synthetic quality evaluation with defects and abstention cases |
 | RIT-11 | Final consequential decisions belong to authorized people | Decision matrix, appeal route, audit record |
 | RIT-12 | Child-facing protection, age suitability and misuse reporting | Safeguarding policy and qualified review |
 | RIT-13 | Accessibility, translation and discrimination/bias risk | Accessibility/fairness review and remediation |
