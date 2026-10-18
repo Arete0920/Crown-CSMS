@@ -262,3 +262,25 @@ class EnsureCiUserRuntimeBoundaryTestCase(TestCase):
                     HTTP_X_ADMIN_OPS_SECRET="synthetic-ci-secret",
                 )
                 self.assertEqual(response.status_code, 404)
+
+    def test_reset_and_db_diagnostics_reject_conflicting_production_runtime(self):
+        with override_settings(
+            ENVIRONMENT="dev", CROWN_ENV="dev", DJANGO_ENV="",
+            CROWN_OPS_SECRET="synthetic-ops-secret",
+        ):
+            with patch.dict(os.environ, {
+                "ENVIRONMENT": "dev", "CROWN_ENV": "production",
+                "DJANGO_ENV": "", "WEBSITE_HOSTNAME": "crown-api-prod.azurewebsites.net",
+            }, clear=False):
+                response = self.client.post(
+                    "/api/v1/system/demo-reset/",
+                    data="{}", content_type="application/json",
+                    HTTP_X_ADMIN_OPS_SECRET="synthetic-ops-secret",
+                    HTTP_X_SCHOOL_ID="00000000-0000-0000-0000-000000000001",
+                )
+                self.assertEqual(response.status_code, 403)
+                diagnostic = self.client.get(
+                    "/api/v1/system/diagnose-db-tables/",
+                    HTTP_X_OPS_SECRET="synthetic-ops-secret",
+                )
+                self.assertIn(diagnostic.status_code, (403, 404))
