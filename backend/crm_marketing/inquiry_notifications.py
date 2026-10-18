@@ -43,6 +43,17 @@ class InquiryNotificationSuppressed(Exception):
     """The underlying permission or business reason for this notice no longer holds."""
 
 
+def inquiry_notifications_enabled():
+    return getattr(settings, "CROWN_INQUIRY_NOTIFICATIONS_ENABLED", False) is True
+
+
+def _disabled_outcome():
+    return {
+        "status": "disabled", "new_event": False, "queued": 0,
+        "notifications": [], "delivery_confirmed": None,
+    }
+
+
 def _iso(value):
     return value.isoformat() if value else None
 
@@ -249,6 +260,8 @@ def queue_inquiry_notifications(lead, *, event="created"):
     if event not in {"created", "owner_changed"}:
         raise ValueError("Unsupported inquiry notification event.")
     lead = _locked_lead(lead)
+    if not inquiry_notifications_enabled():
+        return _disabled_outcome()
     if not lead.school.is_active or lead.stage in {LeadStage.LOST, LeadStage.ENROLLED}:
         return {"status": "suppressed", "notifications": [], "delivery_confirmed": None}
     if event == "created" and lead.inquiry_received_at and lead.inquiry_received_at < timezone.now() - timedelta(days=1):
@@ -275,6 +288,8 @@ def _due_step(lead, now):
 def queue_due_inquiry_followup(lead, *, now=None):
     """Queue the latest due cadence step once; preserve the staff's overdue obligation."""
     lead = _locked_lead(lead)
+    if not inquiry_notifications_enabled():
+        return _disabled_outcome()
     step = _due_step(lead, now or timezone.now())
     if not lead.school.is_active or step is None or _converted_or_closed(lead):
         return {"new_event": False, "queued": 0, "notifications": []}
@@ -333,13 +348,18 @@ def inquiry_notification_status(lead):
                 notice.update(status="unavailable", reason="A durable outbox record is required to establish delivery status.")
             notifications.append(notice)
             counts[notice["status"]] = counts.get(notice["status"], 0) + 1
-    return {"notifications": notifications, "counts": counts, "delivery_confirmed": None}
+    return {
+        "enabled": inquiry_notifications_enabled(), "notifications": notifications,
+        "counts": counts, "delivery_confirmed": None,
+    }
 
 
 def inquiry_notification_guard(message):
     """Recheck contact consent, workflow and owner authority immediately before delivery."""
     if not message.idempotency_key.startswith(OUTBOX_PREFIX):
         return
+    if not inquiry_notifications_enabled():
+        raise InquiryNotificationSuppressed("Inquiry notifications are disabled by deployment configuration.")
     parts = message.idempotency_key.split(":")
     if len(parts) != 6 or parts[3] not in {"created", "owner_changed", "followup-1", "followup-3", "followup-7"} or parts[4] not in {"family", "owner"}:
         raise InquiryNotificationSuppressed("Unrecognized inquiry notification purpose.")

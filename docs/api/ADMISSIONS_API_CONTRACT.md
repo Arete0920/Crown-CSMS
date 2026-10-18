@@ -101,7 +101,12 @@ school. Application decisions and enrollment remain controlled by admissions.
 ### Inquiry follow-up
 
 Inquiry acknowledgments and owner notices use the shared communications outbox.
-The existing Celery schedule invokes
+`CROWN_INQUIRY_NOTIFICATIONS_ENABLED` defaults to `false`. While disabled, inquiry
+capture, staff assignment, consent history, and overdue staff work remain available,
+but inquiry enqueue helpers and direct processor invocations return `status: disabled`
+with zero queued work. Staff responses expose `notification_status.enabled: false`;
+existing delivery history retains its recorded outcome. Other communications are
+unaffected. When explicitly enabled, the Celery schedule invokes
 `crm_marketing.tasks.process_inquiry_followups` every 15 minutes. It records
 due staff work and the latest due day-1/day-3/day-7 reminder without sending a
 backlog burst. Family reminders require recorded optional follow-up consent;
@@ -110,6 +115,17 @@ ownership, and inquiry progression. Submitted or closed inquiries stop the
 inquiry reminder sequence. Restored provider configuration can recover an
 unqueued acknowledgment for an active inquiry no older than 24 hours; later
 family reminders wait at least 24 hours after that acknowledgment is queued.
+
+Activation requires a separate operator decision for the intended environment and
+recipients, followed by configuration and restart of API, worker, and Beat processes
+at the accepted source revision. Merging or deploying this code is not permission
+to send messages. The delivery worker rechecks the inquiry switch immediately
+before provider dispatch, including for items queued before disablement. Disabled
+inquiry items become terminally suppressed with retained outbox evidence; enabling
+later does not automatically replay those items. A configuration change does not
+stop an already running old worker or retract a provider-accepted message. Stop or
+replace stale workers before relying on the gate, and retain the gate until any
+pending work has an explicit disposition during rollback.
 Queuing or provider acceptance is not confirmed
 delivery and does not mark a staff task complete.
 
