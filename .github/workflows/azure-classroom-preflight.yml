@@ -27,6 +27,7 @@ on:
       - 'scripts/ops/test_jireh_azure_site_preflight.py'
       - 'docs/operations/CROWN_AZURE_FREE_FIRST_COST_CONTROL.md'
       - '.github/workflows/azure-classroom-preflight.yml'
+      - 'sites/jireh/README.md'
   workflow_dispatch:
 
 permissions:
