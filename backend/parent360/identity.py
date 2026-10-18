@@ -33,7 +33,7 @@ def _sandbox_parent_household(user: Any, school_id: Any) -> Household | None:
         "yes",
         "on",
     }
-    if not sandbox_open or str(school_id) != HERITAGE_SANDBOX_SCHOOL_ID:
+    if not sandbox_open or not demo_ops_runtime_allowed() or str(school_id) != HERITAGE_SANDBOX_SCHOOL_ID:
         return None
 
     email = str(getattr(user, "email", "") or "").strip().lower()
