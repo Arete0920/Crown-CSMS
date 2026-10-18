@@ -15,7 +15,7 @@ Ensure that all work sessions apply the same approved CROWN facts, operating pri
 2. Current accepted repository canonical documents and indexed ADRs govern engineering, release, security, and technical change.
 3. An expressly owner-approved, dated commercial or operational decision in the controlled decision register governs its domain until superseded. Confidential business records live in access-controlled storage, not this public repository.
 4. Current source code, exact-head CI evidence, deployment/runtime observations, and provider confirmations establish implementation and operational *facts*. A plan or decision is not evidence that an action happened.
-5. Supporting documents and dated meeting notes inform interpretation. Prior chats and model memory are pointers for retrieval, not binding records.
+5. Supporting documents and dated meeting notes inform interpretation. Prior chats and session summaries are pointers for retrieval, not binding records.
 
 Owner authorization does not bypass applicable law, contractual obligations, security/privacy controls, required checks, or the governed change-control path. Business intent and implementation evidence remain separate; CI and tooling are not independent human approval.
 
@@ -55,7 +55,7 @@ A public index may point to an access-controlled register without copying privat
 
 ## Scope and limits
 
-This governance standard guides people and repository-aware assistants. It cannot force an assistant to automatically read other conversations, synchronize memory instantly, or execute a repository check in every new thread. For highest consistency, keep CROWN work in one dedicated project workspace with stable project instructions, attach or reference the controlled decision index, and require tools to re-check current canonical documents when making consequential claims.
+This governance standard guides people and repository-integrated tools. It cannot itself guarantee access to other conversations, instant synchronization of session context, or a repository check in every new thread. For highest consistency, keep CROWN work in one dedicated project workspace with stable project instructions, attach or reference the controlled decision index, and require tools to re-check current canonical documents when making consequential claims.
 
 ## Existing controlling references
 
