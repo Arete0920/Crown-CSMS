@@ -5,7 +5,7 @@ import pytest
 from django.utils import timezone
 from rest_framework.test import APIClient
 from core.models import UserAccount, UserRole
-from academics.tests.test_classroom_experience import classroom
+from academics.tests.test_classroom_experience import _grant_board_read, classroom
 from academics.models import Submission, TeacherAssignment
 from academics.collaboration_models import ClassroomRecord
 from academics.support_models import ClassroomInterventionLink
@@ -18,6 +18,8 @@ URL = '/api/v1/academics/classroom/leadership/'
 def reader(c, role='ADMIN'):
     account = UserAccount.objects.create_user(username='leader-'+role, email=role.lower()+'@leaders.example.com', school=c[0])
     UserRole.objects.create(user=account, school=c[0], role_code=role)
+    if role == 'BOARD':
+        _grant_board_read(role)
     client = APIClient(); client.force_authenticate(account)
     return client
 

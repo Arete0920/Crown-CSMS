@@ -36,3 +36,77 @@ for (const school of schools) {
     }
   });
 }
+
+
+test('Heritage Board renewal preserves least privilege and tenant isolation', async ({ playwright }) => {
+  // A separate context prevents cookies from another persona masking authorization.
+  const context = await playwright.request.newContext();
+  try {
+    const healthResponse = await context.get(`${api}/api/health/`);
+    expect(healthResponse.status()).toBe(200);
+    const health = await healthResponse.json();
+    expect(health.env).toBe('dev');
+    expect(health.build_sha).toBe(health.artifact_build_sha);
+    expect(health.db).toBe('ok');
+    let schoolId: string | undefined;
+    const sessions: { access: string; school_id: string }[] = [];
+    for (let renewal = 0; renewal < 2; renewal++) {
+      const issuer = await playwright.request.newContext();
+      let session;
+      try {
+        const response = await issuer.post(`${api}/api/v1/sandbox/session/`, {
+          data: { role: 'board', school: 'heritage-core', track: 'school' },
+        });
+        expect(response.status(), 'authorized Heritage Board session').toBe(201);
+        session = await response.json();
+      } finally {
+        await issuer.dispose();
+      }
+      expect(session.role_code).toBe('board_member');
+      expect(session.role).toBe('board');
+      expect(typeof session.access === 'string' && session.access.length > 0).toBe(true);
+      if (schoolId) expect(session.school_id).toBe(schoolId);
+      schoolId = session.school_id;
+      sessions.push({ access: session.access, school_id: session.school_id });
+    }
+    // Exercise both issued tokens after renewal, then repeat independent reads.
+    for (const session of sessions) {
+      const headers = { Authorization: `Bearer ${session.access}`, 'X-School-Id': session.school_id };
+      for (let read = 0; read < 2; read++) {
+        const navigation = await context.get(`${api}/api/v1/nav/`, { headers });
+        expect(navigation.status()).toBe(200);
+        const menu = await navigation.json();
+        const links = menu.groups.flatMap((group: { items: { href: string }[] }) => group.items.map(item => item.href));
+        expect(links).toContain('/board');
+        for (const forbidden of ['/admin', '/finance', '/billing']) expect(links).not.toContain(forbidden);
+        const board = await context.get(`${api}/api/v1/academics/classroom/workspace/?audience=board`, { headers });
+        expect(board.status()).toBe(200);
+        const aggregate = await board.json();
+        for (const key of ['students', 'assignments', 'lesson_plans', 'categories', 'sections']) {
+          expect(Object.hasOwn(aggregate, key)).toBe(false);
+        }
+        const signals = await context.get(`${api}/api/signals/board/risk-counts/`, { headers });
+        expect(signals.status()).toBe(200);
+        for (const route of [
+          '/api/v1/academics/classroom/workspace/?audience=admin',
+          '/api/v1/admin/metrics/',
+          '/api/v1/finance/metrics/',
+          '/api/v1/sandbox/admin/state/',
+          '/api/v1/sandbox/finance/state/',
+        ]) {
+          const denied = await context.get(`${api}${route}`, { headers });
+          expect(denied.status(), route).toBe(403);
+        }
+        for (const foreign of schools) {
+          const cross = await context.get(`${api}/api/signals/board/risk-counts/`, {
+            headers: { ...headers, 'X-School-Id': foreign.school_id },
+          });
+          expect(cross.status()).toBe(404);
+          expect((await cross.json()).code).toBe('tenant_access_denied');
+        }
+      }
+    }
+  } finally {
+    await context.dispose();
+  }
+});

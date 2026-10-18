@@ -143,6 +143,17 @@ def ensure_persona_user(school: School, persona: SandboxPersona) -> UserAccount:
         user.set_unusable_password()
     user.save(update_fields=["password"])
 
+    # The historical synthetic Board actor was mistakenly given Head of School.
+    # Retire only that exact actor's stale grant; never change real-school roles.
+    if (
+        persona.key == "board"
+        and str(school.id) == SANDBOX_SCHOOLS["heritage-core"].id
+        and user.username == SANDBOX_PERSONAS["board"].email
+    ):
+        UserRole.objects.filter(
+            school=school, user=user, role_code="HEAD_OF_SCHOOL"
+        ).delete()
+
     UserRole.objects.update_or_create(
         school=school,
         user=user,
