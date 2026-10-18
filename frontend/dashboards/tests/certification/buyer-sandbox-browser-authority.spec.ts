@@ -15,6 +15,10 @@ type RouteResult = {
 
 const results: RouteResult[] = [];
 const actionProofs: string[] = [];
+const requestDiagnostics = new Map<Page, {
+  session: import('@playwright/test').CDPSession;
+  failures: object[];
+}>();
 const outputPath = resolve(
   process.cwd(),
   process.env.CROWN_BROWSER_AUTHORITY_OUTPUT || 'test-results/buyer-sandbox-browser-authority.json',
@@ -78,9 +82,52 @@ async function launchPersona(page: Page, label: string) {
   await expect(page).not.toHaveURL(/\/forbidden(?:[/?#]|$)/i);
 }
 
-test.describe.serial('CROWN buyer sandbox live browser authority', () => {
+test.describe('CROWN buyer sandbox live browser authority', () => {
   test.beforeEach(async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 1000 });
+  });
+
+  // Keep independent role/action tests running after a failure. The runner
+  // uses one worker; every failed assertion still fails the certification.
+  test.afterEach(async ({ page }, testInfo) => {
+    const diagnostics = requestDiagnostics.get(page);
+    if (diagnostics) {
+      await testInfo.attach('api-network-diagnostics.json', {
+        body: Buffer.from(JSON.stringify(diagnostics.failures, null, 2)),
+        contentType: 'application/json',
+      });
+      await diagnostics.session.detach();
+      requestDiagnostics.delete(page);
+    }
+  });
+
+  test.beforeEach(async ({ page }) => {
+    const session = await page.context().newCDPSession(page);
+    const requests = new Map<string, { path: string; status?: number; corsHeaderPresent?: boolean }>();
+    const failures: object[] = [];
+    requestDiagnostics.set(page, { session, failures });
+    session.on('Network.requestWillBeSent', (event) => {
+      const url = new URL(event.request.url);
+      if (url.pathname.startsWith('/api/')) requests.set(event.requestId, { path: url.pathname });
+    });
+    session.on('Network.responseReceivedExtraInfo', (event) => {
+      const request = requests.get(event.requestId);
+      if (!request) return;
+      request.status = event.statusCode;
+      request.corsHeaderPresent = Object.keys(event.headers).some(
+        (name) => name.toLowerCase() === 'access-control-allow-origin',
+      );
+    });
+    session.on('Network.loadingFailed', (event) => {
+      const request = requests.get(event.requestId);
+      if (request) failures.push({
+        ...request,
+        error: event.errorText,
+        canceled: event.canceled || false,
+        corsError: event.corsErrorStatus?.corsError || null,
+      });
+    });
+    await session.send('Network.enable');
   });
 
   test.afterAll(() => {
