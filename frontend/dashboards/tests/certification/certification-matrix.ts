@@ -3,7 +3,8 @@ export type CertificationPersona =
   | "sandbox-teacher"
   | "sandbox-parent"
   | "sandbox-student"
-  | "sandbox-board";
+  | "sandbox-board"
+  | "sandbox-admissions";
 
 export type CertificationSurface = {
   id: string;
@@ -167,6 +168,13 @@ export const certificationMatrix: CertificationSurface[] = [
     label: "Admissions dashboard",
     route: "/admissions-dashboard",
     persona: "sandbox-admin",
+    summaryApi: ADMISSIONS_SUMMARY_API,
+  }),
+  dashboardSurface({
+    id: "admissions-specialist-dashboard",
+    label: "Admissions specialist dashboard",
+    route: "/admissions-dashboard",
+    persona: "sandbox-admissions",
     summaryApi: ADMISSIONS_SUMMARY_API,
   }),
   {
