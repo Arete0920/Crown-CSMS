@@ -5,6 +5,7 @@ from django.conf import settings
 from typing import Any
 
 from households.models import Guardian, Household
+from crown_api.ops_route_guard import demo_ops_runtime_allowed
 
 
 HERITAGE_SANDBOX_SCHOOL_ID = "19801b59-8c05-4c84-9312-5d792e4e839d"
@@ -32,7 +33,7 @@ def _sandbox_parent_household(user: Any, school_id: Any) -> Household | None:
         "yes",
         "on",
     }
-    if not sandbox_open or str(school_id) != HERITAGE_SANDBOX_SCHOOL_ID:
+    if not sandbox_open or not demo_ops_runtime_allowed() or str(school_id) != HERITAGE_SANDBOX_SCHOOL_ID:
         return None
 
     email = str(getattr(user, "email", "") or "").strip().lower()
@@ -83,7 +84,24 @@ def resolve_household_for_account(user: Any) -> Household:
     # Local demo classroom and admissions fixtures use separate households.
     # Keep the established sandbox admissions continuation on its newest
     # application while the explicit classroom guardian supplies academic scope.
-    if settings.DEBUG and settings.CROWN_ENV == "local" and settings.DATABASES["default"]["ENGINE"].endswith("sqlite3"):
+    # The explicit DEV certification preview also contains a classroom
+    # Guardian.account relationship for this synthetic parent. Prefer only the
+    # fixed Heritage enrollment scenario there; its parent-facing enrollment
+    # state must agree with Parent360 after reload. Never bypass the canonical
+    # Guardian.account authority in a live or unknown environment.
+    local_fixture = (
+        settings.DEBUG
+        and settings.CROWN_ENV == "local"
+        and settings.DATABASES["default"]["ENGINE"].endswith("sqlite3")
+    )
+    runtime = str(
+        getattr(settings, "ENVIRONMENT", "")
+        or getattr(settings, "CROWN_ENV", "")
+        or getattr(settings, "DJANGO_ENV", "")
+        or ""
+    ).strip().lower()
+    explicit_dev_preview = runtime in {"dev", "development"} and demo_ops_runtime_allowed()
+    if local_fixture or explicit_dev_preview:
         sandbox_household = _sandbox_parent_household(user, school_id)
         if sandbox_household is not None:
             return sandbox_household

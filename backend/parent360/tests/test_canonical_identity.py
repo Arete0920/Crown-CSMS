@@ -76,7 +76,9 @@ def test_resolver_does_not_fall_back_to_matching_email():
         resolve_household_for_account(user)
 
 
-def test_sandbox_heritage_parent_resolves_latest_reed_application_household(monkeypatch):
+def test_sandbox_heritage_parent_resolves_latest_reed_application_household(monkeypatch, settings):
+    settings.ENVIRONMENT = "test"
+    monkeypatch.setenv("ENVIRONMENT", "test")
     monkeypatch.setenv("CROWN_SANDBOX_ALLOW_OPEN_SESSION", "1")
     school = _heritage_school()
     user = _make_user(school, email=HERITAGE_SANDBOX_PARENT_EMAIL)
