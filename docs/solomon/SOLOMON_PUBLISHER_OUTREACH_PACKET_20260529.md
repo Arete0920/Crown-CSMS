@@ -73,7 +73,7 @@ SOLOMON Governance Team
 
 ## Internal Review Checklist
 
-- Does the packet avoid chatbot language?
+- Does the packet describe reviewed resource discovery and contextual guidance?
 - Does it clearly state metadata-only scope by default?
 - Does it exclude scraping and redistribution language?
 - Does it preserve publisher ownership and licensing controls?

@@ -1,4 +1,4 @@
-# CROWN Agent Execution Instructions
+# CROWN Repository Execution Instructions
 
 Scope: the entire Crown-CSMS repository. These instructions support, and do not replace, `CONTRIBUTING.md`, `docs/governance/CHANGE_MANAGEMENT.md`, `docs/engineering/ENGINEERING_ACCOUNTABILITY_POLICY.md`, and `docs/engineering/REPOSITORY_WORKFLOW.md`. Where a conflict exists, preserve the stronger governance, security, privacy, and human-approval control.
 
@@ -6,7 +6,7 @@ Scope: the entire Crown-CSMS repository. These instructions support, and do not 
 Deliver the largest safely verifiable increment of authorized work in each execution session. Prefer completed engineering outcomes to status narratives. Never equate a plan, a code edit, a green unit test, a queued run, or a proposed PR with a deployed and accepted result.
 
 ## Mandatory execution loop
-1. Read current authoritative repository state and task-specific evidence. Record exact base/head SHAs for non-trivial changes. Treat previous assistant reports and stale workflow runs as leads, not proof.
+1. Read current authoritative repository state and task-specific evidence. Record exact base/head SHAs for non-trivial changes. Treat previous session reports and stale workflow runs as leads, not proof.
 2. Define the smallest coherent reversible outcome, required acceptance conditions, relevant paths, risk boundary, human owner, and rollback. Respect the repository's one-PR-per-coherent-outcome rule.
 3. Perform available authorized actions now: investigate, modify, test, diagnose failures, correct, retest, prepare a governed PR, and merge or deploy only when the required checks and approvals permit.
 4. If an action fails, inspect the real error and change the approach. Do not run the same failing action repeatedly without a reason. Differentiate a transient error from missing tool capability, missing permission, or an actual technical defect.
@@ -24,7 +24,7 @@ Deliver the largest safely verifiable increment of authorized work in each execu
 ## Tool and session limits
 - Use supported connectors, source control, test runners, and deployment systems where available. Never claim a tool operation succeeded unless its result confirms it.
 - Authorization does not create capabilities the connected tool lacks. Diagnose alternatives; disclose the precise unavailable operation if no approved path exists.
-- An assistant reply does not imply background execution. Recurring monitoring and continuous integration require explicitly configured automations/workflows; never promise indefinite unattended work.
+- A session reply does not imply background execution. Recurring monitoring and continuous integration require explicitly configured automations/workflows; never promise indefinite unattended work.
 - Honor existing repository policies and user-authorized cost constraints; get explicit approval for new recurring spend, live financial transactions, destructive operations, or actions exceeding granted authority.
 
 ## Communication
