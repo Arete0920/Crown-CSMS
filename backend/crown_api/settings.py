@@ -602,6 +602,10 @@ try:
             "task": "comms.tasks.drain_outbox",
             "schedule": 10.0,
         },
+        "admissions-inquiry-followups-every-15-minutes": {
+            "task": "crm_marketing.tasks.process_inquiry_followups",
+            "schedule": crontab(minute="*/15"),
+        },
         # Stage 2 ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Revenue Integrity automation
         "dunning-cycle-every-30-minutes": {
             "task": "ledger.tasks.run_dunning_cycle",

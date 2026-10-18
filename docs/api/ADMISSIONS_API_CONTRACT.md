@@ -92,8 +92,32 @@ reports matching inquiries; up to 100 are returned per request.
 `PATCH /api/v1/crm/inquiries/<uuid:inquiry_id>/` requires `admissions.edit` and
 supports owner, follow-up time, pre-application stage, contact-history entries,
 and enabling/disabling family reminders where the family has consented.
+Staff can record a family withdrawal with `follow_up_consent: false`; this also
+disables family reminders. This endpoint cannot grant or restore family consent,
+and a simultaneous request to withdraw consent and enable reminders is rejected.
 Ownership is restricted to active staff with admissions authority in that
 school. Application decisions and enrollment remain controlled by admissions.
+
+### Inquiry follow-up
+
+Inquiry acknowledgments and owner notices use the shared communications outbox.
+The existing Celery schedule invokes
+`crm_marketing.tasks.process_inquiry_followups` every 15 minutes. It records
+due staff work and the latest due day-1/day-3/day-7 reminder without sending a
+backlog burst. Family reminders require recorded optional follow-up consent;
+personal phone requests remain staff work. Delivery rechecks current consent,
+ownership, and inquiry progression. Submitted or closed inquiries stop the
+inquiry reminder sequence. Restored provider configuration can recover an
+unqueued acknowledgment for an active inquiry no older than 24 hours; later
+family reminders wait at least 24 hours after that acknowledgment is queued.
+Queuing or provider acceptance is not confirmed
+delivery and does not mark a staff task complete.
+
+Email requires the existing verified Graph sender/credentials; SMS requires
+the existing enabled provider. Missing configuration and unassigned owners
+remain visible in the queue. A school-specific Teams destination is not
+configured by this feature. Runtime acceptance must verify worker/Beat
+execution and provider delivery in the intended school environment.
 
 ### Summary
 

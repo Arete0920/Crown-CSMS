@@ -151,6 +151,8 @@ def capture_inquiry(*, school, payload, request_key):
             occurred_at=now,
             metadata_json={"response_consent": True, "follow_up_consent": lead.follow_up_consent, "consent_version": "inquiry-v1"},
         )
+        from .inquiry_notifications import queue_inquiry_notifications
+        queue_inquiry_notifications(lead, event="created")
     return lead, created
 
 

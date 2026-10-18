@@ -55,12 +55,14 @@ def _send(msg: OutboxMessage) -> None:
         if not team_id or not channel_id:
             raise ValueError("TEAMS payload must include team_id and channel_id")
 
-        post_to_teams_channel(
+        receipt = post_to_teams_channel(
             sender=None,
             team_id=team_id,
             channel_id=channel_id,
             message=msg.body,
         )
+        if getattr(receipt, "delivery_status", None) != "sent":
+            raise RuntimeError("Teams provider did not accept the message; inspect its communication log.")
     elif msg.channel == "SMS":
         from comms.sms_service import send_sms_to_number  # noqa: PLC0415
 
@@ -78,6 +80,9 @@ def _send_in_tenant(msg: OutboxMessage) -> None:
         raise ValueError(f"OutboxMessage references unknown or inactive school: {msg.school_id}")
 
     with tenant_context(school):
+        from crm_marketing.inquiry_notifications import inquiry_notification_guard
+
+        inquiry_notification_guard(msg)
         _send(msg)
 
 
@@ -90,6 +95,7 @@ def drain_outbox(self, batch_size: int = 25) -> dict:
     context manager restores or clears task-local state after success or error.
     """
     from .release_services import activate_due_releases
+    from crm_marketing.inquiry_notifications import InquiryNotificationSuppressed, SUPPRESSED_PREFIX
 
     activate_due_releases()
     now = timezone.now()
@@ -110,6 +116,10 @@ def drain_outbox(self, batch_size: int = 25) -> dict:
                 msg.sent_at = timezone.now()
                 msg.last_error = ""
                 sent += 1
+            except InquiryNotificationSuppressed as exc:
+                msg.status = OutboxMessage.STATUS_DEAD
+                msg.last_error = f"{SUPPRESSED_PREFIX} {exc}"[:1000]
+                dead += 1
             except Exception as exc:  # noqa: BLE001
                 msg.last_error = str(exc)[:1000]
                 if msg.attempts >= MAX_ATTEMPTS:

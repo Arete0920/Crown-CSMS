@@ -1,4 +1,5 @@
 import json
+from types import SimpleNamespace
 
 import pytest
 from rest_framework.test import APIClient
@@ -67,6 +68,7 @@ def test_send_supports_teams_channel_payload(monkeypatch):
                 "message": message,
             }
         )
+        return SimpleNamespace(delivery_status="sent")
 
     monkeypatch.setattr("comms.teams_service.post_to_teams_channel", fake_post_to_teams_channel)
 
@@ -84,6 +86,14 @@ def test_send_supports_teams_channel_payload(monkeypatch):
     assert sent["team_id"] == "team-42"
     assert sent["channel_id"] == "channel-7"
     assert sent["message"] == "<p>Heads up</p>"
+
+
+@pytest.mark.parametrize("receipt", [None, SimpleNamespace(delivery_status="failed")])
+def test_failed_teams_transport_is_not_marked_successful(monkeypatch, receipt):
+    monkeypatch.setattr("comms.teams_service.post_to_teams_channel", lambda **kwargs: receipt)
+    msg = OutboxMessage(channel="TEAMS", to=json.dumps({"team_id": "team", "channel_id": "channel"}), body="Notice")
+    with pytest.raises(RuntimeError, match="did not accept"):
+        _send(msg)
 
 
 def test_m365_services_status_route_exists_and_fails_closed_without_config(monkeypatch):
