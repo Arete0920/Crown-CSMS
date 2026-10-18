@@ -13,7 +13,9 @@ on:
 
 concurrency:
   group: tests-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  # Preserve in-flight governed coverage evidence across overlapping runs on the same PR ref.
+  # Queued successors may run after the current suite completes; no test or coverage gates change.
+  cancel-in-progress: false
 
 jobs:
   pytest-internal:
