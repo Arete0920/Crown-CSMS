@@ -163,3 +163,22 @@ class LauncherTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+@pytest.mark.django_db
+def test_heritage_board_session_retires_only_synthetic_leadership_grant(settings):
+    from core.models import UserRole
+    from sandbox_demo.services import ensure_demo_school, ensure_persona_user
+    settings.CROWN_SANDBOX_ALLOW_OPEN_SESSION = True
+    school = ensure_demo_school(SANDBOX_SCHOOLS["heritage-core"])
+    persona = SANDBOX_PERSONAS["board"]
+    user = ensure_persona_user(school, persona)
+    UserRole.objects.get_or_create(school=school, user=user, role_code="HEAD_OF_SCHOOL")
+    assert UserRole.objects.filter(school=school, user=user, role_code="HEAD_OF_SCHOOL").exists()
+    renewed = ensure_persona_user(school, persona)
+    assert renewed.pk == user.pk
+    assert set(UserRole.objects.filter(school=school, user=user).values_list("role_code", flat=True)) == {"board_member"}
+    other = UserAccount.objects.create_user(username="real-board-independent@example.invalid", school=school)
+    UserRole.objects.create(school=school, user=other, role_code="HEAD_OF_SCHOOL")
+    ensure_persona_user(school, persona)
+    assert UserRole.objects.filter(school=school, user=other, role_code="HEAD_OF_SCHOOL").exists()

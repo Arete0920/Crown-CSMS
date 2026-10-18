@@ -174,7 +174,7 @@ SANDBOX_PERSONAS = {
     "board": SandboxPersona(
         key="board",
         label="School Board",
-        role_code="HEAD_OF_SCHOOL",
+        role_code="board_member",
         route="/board",
         email="board@heritage.example.org",
         first_name="Evelyn",
