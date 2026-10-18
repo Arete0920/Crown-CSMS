@@ -195,6 +195,11 @@ SOURCES = [
     "direct_mail_qr",
     "website",
     "word_of_mouth",
+    "current_family",
+    "friend_or_colleague",
+    "social_media",
+    "search_engine",
+    "community_event",
     "other",
 ]
 
@@ -543,18 +548,7 @@ def _assessment_interview_config() -> dict[str, Any]:
 
 def _normalize_source(value: str | None) -> str:
     raw = (value or "").strip().lower().replace("-", "_").replace(" ", "_")
-    mapping = {
-        "church_referral": "church_referral",
-        "church": "church_referral",
-        "current_family": "word_of_mouth",
-        "friend_or_colleague": "word_of_mouth",
-        "word_of_mouth": "word_of_mouth",
-        "social_media": "facebook",
-        "search_engine": "google",
-        "community_event": "website",
-        "website": "website",
-    }
-    normalized = mapping.get(raw, "other")
+    normalized = "church_referral" if raw == "church" else raw
     return normalized if normalized in SOURCES else "other"
 
 
@@ -832,8 +826,10 @@ def _validate_submit_data(data: AdmissionsSubmitData) -> str | None:
     return _validate_application_fee(data)
 
 
-def _create_admissions_submission_records(school_id: Any, data: AdmissionsSubmitData):
-    source = _normalize_source(data.inquiry.get("heardAbout"))
+def _create_admissions_submission_records(school_id: Any, data: AdmissionsSubmitData, *, inquiry_lead=None):
+    source = _normalize_source(
+        inquiry_lead.primary_source if inquiry_lead else data.inquiry.get("heardAbout")
+    )
     primary_guardian = next(
         (guardian for guardian in data.guardians if guardian.get("isPrimary")),
         data.guardians[0],
@@ -884,6 +880,9 @@ def _create_admissions_submission_records(school_id: Any, data: AdmissionsSubmit
                     "waiver_requested": bool(data.application_fee.get("waiverRequested")),
                 },
             }
+            if inquiry_lead:
+                applicant_flags["inquiry_id"] = str(inquiry_lead.id)
+                applicant_flags["source_attribution"] = inquiry_lead.attribution_json
 
             applicant = Applicant.objects.create(
                 school_id=school_id,
@@ -895,7 +894,7 @@ def _create_admissions_submission_records(school_id: Any, data: AdmissionsSubmit
                 flags=applicant_flags,
             )
 
-            ApplicationEvent.objects.create(
+            inquiry_event = ApplicationEvent.objects.create(
                 school_id=school_id,
                 application=application,
                 event_type="inquiry_created",
@@ -903,30 +902,41 @@ def _create_admissions_submission_records(school_id: Any, data: AdmissionsSubmit
                     "source": source,
                     "campus": data.campus,
                     "start_term": data.start_term,
+                    **({"inquiry_id": str(inquiry_lead.id)} if inquiry_lead else {}),
                 },
             )
-            ApplicationEvent.objects.create(
+            start_event = ApplicationEvent.objects.create(
                 school_id=school_id,
                 application=application,
                 event_type="application_started",
                 payload={"via": "prospective_family_wizard_household_v2"},
             )
+            if inquiry_lead:
+                # Project the recorded prospect events with their actual capture
+                # times; submission is not retrospectively treated as first contact.
+                ApplicationEvent.objects.filter(id=inquiry_event.id).update(created_at=inquiry_lead.inquiry_received_at)
+                ApplicationEvent.objects.filter(id=start_event.id).update(created_at=inquiry_lead.application_started_at)
             ApplicationEvent.objects.create(
                 school_id=school_id,
                 application=application,
                 event_type="application_submitted",
                 payload={"via": "prospective_family_wizard_household_v2", "applicant_id": str(applicant.id)},
             )
-            _safe_register_crm_submit(
-                application=application,
-                source=source,
-                start_term=data.start_term,
-                school_id=school_id,
-            )
+            if inquiry_lead is None:
+                _safe_register_crm_submit(
+                    application=application,
+                    source=source,
+                    start_term=data.start_term,
+                    school_id=school_id,
+                )
             _ensure_application_checklist_items(application, data.documents)
 
             applications.append(application)
             applicants.append(applicant)
+
+        if inquiry_lead:
+            from crm_marketing.inquiry_services import link_applications
+            link_applications(inquiry_lead, applications)
 
     return applications, applicants
 
@@ -3417,6 +3427,7 @@ def admissions_summary(request):
     )
 
 
+@transaction.atomic
 def _admissions_submit_impl(request):
     """POST /api/v1/admissions/submit/ - Persist public admissions wizard submission."""
     correlation_id = _request_correlation_id(request)
@@ -3427,12 +3438,29 @@ def _admissions_submit_impl(request):
     if tenant_error is not None:
         return _attach_correlation(tenant_error, correlation_id)
 
+    inquiry_lead = None
+    if "inquiry_id" in payload or "continuation_token" in payload:
+        from crm_marketing.inquiry_services import lock_inquiry
+        inquiry_lead = lock_inquiry(
+            school_id=school.pk, inquiry_id=payload.get("inquiry_id"),
+            token=payload.get("continuation_token"),
+        )
+        if inquiry_lead is None:
+            return _attach_correlation(Response({"detail": "Inquiry continuation is unavailable."}, status=404), correlation_id)
+        if inquiry_lead.submission_receipt:
+            replay = Response(inquiry_lead.submission_receipt, status=200)
+            replay["X-Idempotent-Replay"] = "true"
+            replay["Cache-Control"] = "no-store"
+            return _attach_correlation(replay, correlation_id)
+        if inquiry_lead.application_id:
+            return _attach_correlation(Response({"detail": "This inquiry already has an application. Contact admissions for assistance."}, status=409), correlation_id)
+
     abuse_error = _enforce_submit_abuse_controls(request, school.pk, payload, correlation_id)
     if abuse_error is not None:
         return abuse_error
 
     idempotency_key = _idempotency_key(request)
-    if idempotency_key:
+    if idempotency_key and inquiry_lead is None:
         cached_response = cache.get(_cache_key_for_submit(school.pk, idempotency_key))
         if cached_response:
             replay = Response(cached_response, status=200)
@@ -3447,7 +3475,10 @@ def _admissions_submit_impl(request):
             correlation_id,
         )
 
-    applications, applicants = _create_admissions_submission_records(school.pk, submit_data)
+    if inquiry_lead:
+        from crm_marketing.inquiry_services import mark_application_started
+        mark_application_started(inquiry_lead)
+    applications, applicants = _create_admissions_submission_records(school.pk, submit_data, inquiry_lead=inquiry_lead)
     communications_dispatch = _queue_family_communications(
         school_id=school.pk,
         guardians=submit_data.guardians,
@@ -3531,7 +3562,12 @@ def _admissions_submit_impl(request):
         "enrollment_contract_automation": _build_contract_m365_handoff(application_ids=application_ids),
     }
 
-    if idempotency_key:
+    if inquiry_lead:
+        from crm_marketing.inquiry_services import save_submission_receipt
+        response_payload["inquiry_id"] = str(inquiry_lead.id)
+        save_submission_receipt(inquiry_lead, response_payload)
+
+    if idempotency_key and inquiry_lead is None:
         # Keep replay window short but long enough for user retries and browser retransmits.
         cache.set(
             _cache_key_for_submit(school.pk, idempotency_key),
@@ -3539,7 +3575,9 @@ def _admissions_submit_impl(request):
             timeout=10 * 60,
         )
 
-    return _attach_correlation(Response(response_payload, status=201), correlation_id)
+    response = _attach_correlation(Response(response_payload, status=201), correlation_id)
+    response["Cache-Control"] = "no-store"
+    return response
 
 
 @api_view(["POST"])
