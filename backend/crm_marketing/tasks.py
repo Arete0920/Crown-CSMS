@@ -9,7 +9,9 @@ from django.utils import timezone
 from core.models import School
 from core.tenant_models import tenant_context
 
-from .inquiry_notifications import STOPPED_STAGES, queue_due_inquiry_followup, queue_inquiry_notifications
+from .inquiry_notifications import (
+    STOPPED_STAGES, inquiry_notifications_enabled, queue_due_inquiry_followup, queue_inquiry_notifications,
+)
 from .models import MarketingLead
 
 
@@ -20,6 +22,8 @@ def process_inquiry_followups(*, school_id=None, batch_size=100):
 Old overdue leads remain visible to staff. They do not consume the batch budget
 again on every tick and cannot starve later leads after their reminder is recorded.
 """
+    if not inquiry_notifications_enabled():
+        return {"status": "disabled", "checked": 0, "events": 0, "queued": 0, "intake_notices_queued": 0}
     now = timezone.now()
     budget = max(1, min(int(batch_size), 500))
     schools = School.objects.filter(is_active=True).order_by("id")

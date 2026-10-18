@@ -161,9 +161,14 @@ def test_capability_start_is_idempotent_and_rejects_other_school_nonce_and_expir
     other = School.objects.create(name="Other continuation school")
     assert client.post(url, {**body, "school_id": str(other.id)}, format="json").status_code == 404
     assert client.post(url, {**body, "continuation_token": "invalid"}, format="json").status_code == 404
+    original_nonce = lead.continuation_nonce
     lead.continuation_nonce = uuid.uuid4()
     lead.save(update_fields=["continuation_nonce"])
     assert client.post(url, body, format="json").status_code == 404
+    # Prove the original capability is valid again before checking expiry alone.
+    lead.continuation_nonce = original_nonce
+    lead.save(update_fields=["continuation_nonce"])
+    assert client.post(url, body, format="json").status_code == 200
     lead.continuation_expires_at = timezone.now() - timedelta(seconds=1)
     lead.save(update_fields=["continuation_expires_at"])
     assert client.post(url, body, format="json").status_code == 404

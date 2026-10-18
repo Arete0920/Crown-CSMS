@@ -1,4 +1,9 @@
 from datetime import timedelta
+import json
+import os
+from pathlib import Path
+import subprocess
+import sys
 from unittest.mock import Mock
 import uuid
 
@@ -26,6 +31,7 @@ pytestmark = pytest.mark.django_db
 
 @pytest.fixture
 def inquiry(monkeypatch, settings):
+    settings.CROWN_INQUIRY_NOTIFICATIONS_ENABLED = True
     settings.GRAPH_FROM_USER = "sender@example.com"
     for suffix in ("TENANT_ID", "CLIENT_ID", "CLIENT_SECRET"):
         monkeypatch.setenv(f"GRAPH_{suffix}", "synthetic-test-value")
@@ -53,6 +59,127 @@ def _due(lead, days=0):
 
 def _family_message(lead):
     return OutboxMessage.objects.get(school_id=str(lead.school_id), to=lead.email)
+
+
+@pytest.mark.parametrize("value,enabled", [(None, False), ("false", False), ("true", True)])
+def test_inquiry_configuration_defaults_off_and_only_gates_its_schedule(value, enabled):
+    env = os.environ.copy()
+    env.pop("CROWN_INQUIRY_NOTIFICATIONS_ENABLED", None)
+    if value is not None:
+        env["CROWN_INQUIRY_NOTIFICATIONS_ENABLED"] = value
+    probe = (
+        "import json; from django.conf import settings; "
+        "print(json.dumps({'enabled': getattr(settings, 'CROWN_INQUIRY_NOTIFICATIONS_ENABLED', None), "
+        "'tasks': sorted(settings.CELERY_BEAT_SCHEDULE)}))"
+    )
+    result = subprocess.run(
+        [sys.executable, "-c", probe], cwd=Path(__file__).resolve().parents[2],
+        env=env, capture_output=True, text=True, check=True,
+    )
+    config = json.loads(result.stdout.strip().splitlines()[-1])
+    assert config["enabled"] is enabled
+    assert ("admissions-inquiry-followups-every-15-minutes" in config["tasks"]) is enabled
+    assert "drain-outbox-every-10-seconds" in config["tasks"]
+    assert "classroom-family-notices-every-15-minutes" in config["tasks"]
+
+
+def test_deployment_disabled_capture_preserves_inquiry_without_outbox_or_provider(inquiry, settings, monkeypatch):
+    settings.CROWN_INQUIRY_NOTIFICATIONS_ENABLED = False
+    send = Mock()
+    monkeypatch.setattr("integrations.graph_client.send_mail", send)
+    response = APIClient().post("/api/v1/crm/inquiries/", {
+        "school_id": str(inquiry.school_id), "parent_name": "Another Prospective Parent",
+        "email": "new-family@example.com", "grade_interest": "4", "entry_year": "2027",
+        "response_consent": True, "follow_up_consent": True,
+    }, format="json", HTTP_IDEMPOTENCY_KEY=uuid.uuid4().hex)
+    assert response.status_code == 201
+    captured = MarketingLead.objects.get(id=response.data["inquiry_id"])
+    assert captured.assigned_to_user_id == inquiry.assigned_to_user_id
+    assert captured.response_consent and captured.follow_up_consent
+    assert CampaignTouchpoint.objects.filter(lead=captured, summary="Family inquiry received").exists()
+    assert not OutboxMessage.objects.exists()
+    assert inquiry_notification_status(captured)["enabled"] is False
+    assert drain_outbox.run() == {"sent": 0, "failed": 0, "dead": 0}
+    send.assert_not_called()
+
+
+@pytest.mark.parametrize("event", ["created", "owner_changed", "followup"])
+def test_deployment_disabled_enqueue_reports_no_delivery_work(inquiry, settings, event):
+    settings.CROWN_INQUIRY_NOTIFICATIONS_ENABLED = False
+    if event == "followup":
+        outcome = queue_due_inquiry_followup(_due(inquiry))
+    else:
+        outcome = queue_inquiry_notifications(inquiry, event=event)
+    assert outcome == {
+        "status": "disabled", "new_event": False, "queued": 0,
+        "notifications": [], "delivery_confirmed": None,
+    }
+    assert not OutboxMessage.objects.exists()
+    assert not CampaignTouchpoint.objects.filter(lead=inquiry).exists()
+    assert get_current_school() is None
+
+
+def test_deployment_disabled_direct_task_does_not_queue_or_complete_staff_work(inquiry, settings, monkeypatch):
+    _due(inquiry)
+    due = inquiry.next_follow_up_at
+    settings.CROWN_INQUIRY_NOTIFICATIONS_ENABLED = False
+    send = Mock()
+    monkeypatch.setattr("integrations.graph_client.send_mail", send)
+    assert process_inquiry_followups.run(school_id=str(inquiry.school_id)) == {
+        "status": "disabled", "checked": 0, "events": 0, "queued": 0, "intake_notices_queued": 0,
+    }
+    assert not OutboxMessage.objects.exists()
+    assert not CampaignTouchpoint.objects.filter(lead=inquiry).exists()
+    inquiry.refresh_from_db()
+    assert inquiry.next_follow_up_at == due and inquiry.last_touch_at is None
+    assert drain_outbox.run() == {"sent": 0, "failed": 0, "dead": 0}
+    send.assert_not_called()
+    assert get_current_school() is None
+
+
+@pytest.mark.parametrize("event", ["created", "followup"])
+def test_disabling_terminally_suppresses_queued_family_and_staff_without_replay(inquiry, settings, monkeypatch, event):
+    enqueue = queue_inquiry_notifications if event == "created" else queue_due_inquiry_followup
+    if event == "followup":
+        _due(inquiry)
+    assert enqueue(inquiry)["queued"] == 2
+    message_ids = set(OutboxMessage.objects.values_list("id", flat=True))
+    assert set(OutboxMessage.objects.values_list("to", flat=True)) == {inquiry.email, "owner@example.com"}
+    settings.CROWN_INQUIRY_NOTIFICATIONS_ENABLED = False
+    send = Mock()
+    monkeypatch.setattr("integrations.graph_client.send_mail", send)
+    assert drain_outbox.run() == {"sent": 0, "failed": 0, "dead": 2}
+    send.assert_not_called()
+    for message in OutboxMessage.objects.filter(id__in=message_ids):
+        assert message.status == "DEAD" and message.sent_at is None
+        assert message.last_error == "suppressed: Inquiry notifications are disabled by deployment configuration."
+    status = inquiry_notification_status(inquiry)
+    assert status["enabled"] is False and status["counts"]["suppressed"] == 2
+    assert status["delivery_confirmed"] is None
+    settings.CROWN_INQUIRY_NOTIFICATIONS_ENABLED = True
+    assert enqueue(inquiry)["queued"] == 0
+    assert set(OutboxMessage.objects.values_list("id", flat=True)) == message_ids
+    assert drain_outbox.run() == {"sent": 0, "failed": 0, "dead": 0}
+    send.assert_not_called()
+    assert get_current_school() is None
+
+
+def test_deployment_disabled_inquiry_gate_preserves_unrelated_outbox_delivery(inquiry, settings, monkeypatch):
+    settings.CROWN_INQUIRY_NOTIFICATIONS_ENABLED = False
+    message = OutboxMessage.objects.create(
+        school_id=str(inquiry.school_id), channel="EMAIL", to="existing-recipient@example.com",
+        subject="Existing school notice", body="Synthetic unrelated communication",
+        idempotency_key="existing-school-notice:test",
+    )
+    send = Mock()
+    monkeypatch.setattr("integrations.graph_client.send_mail", send)
+    assert drain_outbox.run() == {"sent": 1, "failed": 0, "dead": 0}
+    send.assert_called_once_with(
+        from_user="sender@example.com", to=message.to, subject=message.subject, body_html=message.body,
+    )
+    message.refresh_from_db()
+    assert message.status == "SENT" and message.sent_at is not None
+    assert get_current_school() is None
 
 
 def test_capture_queues_once_atomically_and_never_contacts_provider(inquiry, monkeypatch):
