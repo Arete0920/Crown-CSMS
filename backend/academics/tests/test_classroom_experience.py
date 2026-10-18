@@ -100,6 +100,33 @@ def test_board_returns_aggregate_evidence_without_individual_records(classroom):
         assert key not in result
 
 
+
+def test_canonical_board_member_can_read_board_summaries_but_not_admin_or_other_tenants(classroom):
+    school = classroom[0]
+    board = UserAccount.objects.create_user(
+        username="least-privilege-board", email="least-board@example.invalid", school=school,
+    )
+    UserRole.objects.create(user=board, school=school, role_code="board_member")
+
+    classroom_board = get(board, school, audience="board")
+    assert classroom_board.status_code == 200
+    assert "students" not in classroom_board.data
+    assert get(board, school, audience="admin").status_code == 403
+
+    client = APIClient()
+    client.force_authenticate(user=board)
+    board_counts = client.get(
+        "/api/signals/board/risk-counts/", HTTP_X_SCHOOL_ID=str(school.id),
+    )
+    assert board_counts.status_code == 200, board_counts.content
+    other_school = School.objects.create(name="Unrelated Board Tenant")
+    denied = client.get(
+        "/api/signals/board/risk-counts/", HTTP_X_SCHOOL_ID=str(other_school.id),
+    )
+    assert denied.status_code in (403, 404)
+    assert get(board, other_school, audience="board").status_code == 404
+
+
 @pytest.mark.parametrize('params', [{'audience': 'unknown'}, {'section_id': 'bad'}, {'student_id': 'bad'},
                                    {'from': '2026-99-99'}, {'from': 'bad'}, {'from': '2026-01-01', 'to': '2026-12-01'}])
 def test_invalid_filters_fail_cleanly(classroom, params):
