@@ -26,6 +26,7 @@ const SANDBOX_ROLE_KEYS: Record<string, string> = {
   parent: "parent",
   student: "student",
   board: "board",
+  admissions: "admissions_director",
 };
 
 const CERTIFICATION_TENANT_MODE = (process.env.CROWN_CERTIFICATION_TENANT_MODE || "sandbox").trim().toLowerCase();
@@ -52,6 +53,7 @@ const roleValues: Record<string, string[]> = {
   parent: ["parent"],
   student: ["student"],
   board: ["board", "head_of_school"],
+  admissions: ["admissions_director", "registrar"],
 };
 
 function requireLiveUrl(name: string): string {

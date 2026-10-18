@@ -2,7 +2,7 @@
 
 **Status:** offline source test; not an independent certification or runtime activation.
 
-**Scope:** existing repository-owned adult-facing Solomon curated guidance and the strict optional external-payload boundary. This is not a generative model evaluation, theological authority or production-release approval.
+**Scope:** existing repository-owned adult-facing Solomon curated guidance and the strict optional external-payload boundary. This evaluation does not validate response-generation methods, confer theological authority or grant production-release approval.
 
 ## Run and interpret
 

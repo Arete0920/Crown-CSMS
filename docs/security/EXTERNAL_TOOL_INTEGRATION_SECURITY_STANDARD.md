@@ -2,7 +2,7 @@
 
 **Status:** Active security policy  
 **Owner:** Founder/Product Owner with engineering security review  
-**Applies to:** Any external tool server, connector, automated assistant, orchestration runtime, plugin, gateway, or delegated integration that can read CROWN context or invoke CROWN capabilities.
+**Applies to:** Any external tool server, connector, automated client, orchestration runtime, plugin, gateway, or delegated integration that can read CROWN context or invoke CROWN capabilities.
 
 ## Security objective
 

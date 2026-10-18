@@ -33,7 +33,7 @@ Original site sources:
 - https://areteadvisorygroup.com/resources/jireh-sgo-overview.pdf
 - https://areteadvisorygroup.com/images/jireh-sgo/logo.png
 
-The original imagery and downloadable PDF have NOT been fully exported or parity-verified. This site uses self-contained conceptual CSS/HTML hero artwork intentionally instead of a misleading screenshot. In the staged build, overview PDF, legal links and contact requests still point to the existing Arete website. Independently test the link targets and migrate/secure the original assets prior to main-site retirement.
+The staged build serves the overview PDF and product imagery from the committed local assets described below. Legal links and contact requests still point to the existing Arete website. Independently test those link targets and the deployed asset bytes before main-site retirement.
 
 The first-party lead/demo registration service is NOT implemented or certified; existing contact CTA is a transitional handoff, not a guaranteed booking. Confirm end-to-end persistence, acknowledgment, sales routing, calendar booking, consent, abuse prevention and fault recovery before claiming instant scheduling.
 
@@ -41,7 +41,9 @@ Required gates: read-only authenticated Azure subscription/RBAC/spend/alerts/quo
 
 ## Exported source assets
 
-The SGO PDF, the official SGO logo, and the CROWN family billing concept image are vendored in the site source and copied into the staging output by `build.mjs`. Confirm owner rights and visual parity in browser QA; `https://areteadvisorygroup.com/contact`, privacy and terms remain live links for the transition.
+The SGO PDF, the official SGO logo, and the CROWN family billing concept image are in the site source and copied into the staging output by `build.mjs`. Confirm owner rights and visual parity in browser QA; `https://areteadvisorygroup.com/contact`, privacy and terms remain live links for the transition.
+
+The October 18 pilot overview is a newly authored typographic document built by `python sites/jireh/build-overview.py` using the locked backend ReportLab dependency. It replaces the imported October 8 brochure; the original and its intact authenticity records remain at commit `b5ccf6102a1bdc786e2348d58d2844d70256a810`. The builder does not modify the original or use its embedded media. Pilot status, grantor responsibilities, and operational acceptance requirements remain explicit. Review all rendered pages and update the exact binary admission in `scripts/ci/repository_identity_hygiene.py` after an intentional rebuild.
 
 
 ## Jireh hosting: execution gates and accepted Azure facts (15 Oct 2026)

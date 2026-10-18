@@ -10,4 +10,5 @@ export const certificationPersonas: CertificationPersona[] = [
   { id: "sandbox-parent", label: "Sandbox Parent", role: "parent" },
   { id: "sandbox-student", label: "Sandbox Student", role: "student" },
   { id: "sandbox-board", label: "Sandbox Board", role: "board" },
+  { id: "sandbox-admissions", label: "Sandbox Admissions Specialist", role: "admissions" },
 ];

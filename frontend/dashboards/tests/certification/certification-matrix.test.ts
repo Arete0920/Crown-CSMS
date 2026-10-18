@@ -50,6 +50,7 @@ const REQUIRED_AUTHENTICATED_DASHBOARD_ROUTES = [
   {
     route: "/admissions-dashboard",
     persona: "sandbox-admin",
+    additionalPersona: "sandbox-admissions",
     expectedApi: "/api/v1/admissions/summary/",
   },
   {
@@ -62,12 +63,12 @@ const REQUIRED_AUTHENTICATED_DASHBOARD_ROUTES = [
 describe("authenticated dashboard proof matrix", () => {
   it.each(REQUIRED_AUTHENTICATED_DASHBOARD_ROUTES)(
     "retains $route for $persona with its active owning API contract",
-    ({ route, persona, expectedApi }) => {
+    ({ route, persona, expectedApi, additionalPersona }) => {
       const surface = certificationMatrix.find((candidate) => candidate.route === route);
 
       expect(surface).toBeDefined();
       expect(surface?.kind).toBe("dashboard");
-      expect(surface?.personas).toEqual([persona]);
+      expect(surface?.personas).toEqual(additionalPersona ? [persona, additionalPersona] : [persona]);
       expect(surface?.requireLiveProvenance).toBe(true);
       expect(surface?.provenanceRequiredApiFragments).toEqual([expectedApi]);
       expect(surface?.expectedApiFragments).toContain(expectedApi);
