@@ -1,7 +1,7 @@
 from rest_framework.authentication import SessionAuthentication
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.response import Response
-from rest_framework_simplejwt.authentication import JWTAuthentication
+from crown_api.tenant_authentication import TenantJWTAuthentication as JWTAuthentication
 
 from academics.models import Term
 from core.models import AcademicYear

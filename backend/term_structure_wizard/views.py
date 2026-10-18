@@ -45,7 +45,7 @@ from rest_framework.decorators import (
 )
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from rest_framework_simplejwt.authentication import JWTAuthentication
+from crown_api.tenant_authentication import TenantJWTAuthentication as JWTAuthentication
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema
 
