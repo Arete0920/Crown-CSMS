@@ -23,11 +23,13 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 from core.models import School, UserRole
 from core.seed_helpers import ensure_deterministic_school
+from crown_api.ops_route_guard import demo_ops_runtime_allowed
 
 
 def _dev_ops_enabled() -> bool:
-    # Only allow in DEV; keep this strict.
-    return bool(getattr(settings, "DEV_OPS_SECRET", "")) and getattr(settings, "ENVIRONMENT", "dev") == "dev"
+    # A configured credential alone must never activate a token-issuing endpoint.
+    # Reuse the fail-closed public DEV route boundary (including verified DEV host).
+    return bool(getattr(settings, "DEV_OPS_SECRET", "")) and demo_ops_runtime_allowed()
 
 
 def _dev_only():
