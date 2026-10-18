@@ -478,6 +478,8 @@ jobs:
           target = ['--resource-group', 'crown-rg', '--name', 'crown-api-dev', '--only-show-errors']
           settings = json.loads(subprocess.check_output(command + ['list', *target, '--output', 'json'], text=True))
           current = {row['name']: row['value'] for row in settings}
+          safe_names = ('ENVIRONMENT', 'CROWN_ENV', 'DJANGO_ENV', 'CROWN_SANDBOX_ALLOW_OPEN_SESSION')
+          print('DEV runtime markers: ' + json.dumps({name: current.get(name, '<unset>') for name in safe_names}, sort_keys=True))
           cors = [value.strip() for value in current.get('CORS_ALLOWED_ORIGINS', '').split(',') if value.strip()]
           raw = current.get('CSRF_TRUSTED_ORIGINS', '')
           csrf = json.loads(raw) if raw.startswith('[') else ([raw] if raw else [])
