@@ -236,3 +236,29 @@ class EnsureCiUserRuntimeBoundaryTestCase(TestCase):
                     HTTP_X_ADMIN_OPS_SECRET="invalid",
                 )
                 self.assertEqual(response.status_code, 403)
+
+    def test_conflicting_prod_marker_denies_ci_jwt(self):
+        with override_settings(ENVIRONMENT="dev", CROWN_ENV="production", DJANGO_ENV="", DEV_OPS_SECRET="synthetic-ci-secret"):
+            with patch.dict(os.environ, {
+                "ENVIRONMENT": "dev", "CROWN_ENV": "production", "DJANGO_ENV": "",
+                "WEBSITE_HOSTNAME": "crown-api-dev.azurewebsites.net",
+            }, clear=False):
+                response = self.client.post(
+                    "/api/v1/system/ensure-ci-user/",
+                    data="{}", content_type="application/json",
+                    HTTP_X_ADMIN_OPS_SECRET="synthetic-ci-secret",
+                )
+                self.assertEqual(response.status_code, 404)
+
+    def test_production_azure_host_denies_mislabelled_dev_ci_jwt(self):
+        with override_settings(ENVIRONMENT="dev", CROWN_ENV="", DJANGO_ENV="", DEV_OPS_SECRET="synthetic-ci-secret"):
+            with patch.dict(os.environ, {
+                "ENVIRONMENT": "dev", "CROWN_ENV": "", "DJANGO_ENV": "",
+                "WEBSITE_HOSTNAME": "crown-api-prod.azurewebsites.net",
+            }, clear=False):
+                response = self.client.post(
+                    "/api/v1/system/ensure-ci-user/",
+                    data="{}", content_type="application/json",
+                    HTTP_X_ADMIN_OPS_SECRET="synthetic-ci-secret",
+                )
+                self.assertEqual(response.status_code, 404)
