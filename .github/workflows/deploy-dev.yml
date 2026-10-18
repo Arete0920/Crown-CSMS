@@ -85,6 +85,8 @@ jobs:
             "DEPLOY_WORKFLOW" = "${{ github.workflow }}"
             "WEBSITES_PORT"   = "8000"
             "CROWN_ENV"      = "dev"
+            "DJANGO_ENV"     = "development"
+            "ENVIRONMENT"    = "dev"
           }
           $settings | ConvertTo-Json -Depth 5 | Out-File -Encoding utf8 appsettings.dev.json
           Get-Content appsettings.dev.json
