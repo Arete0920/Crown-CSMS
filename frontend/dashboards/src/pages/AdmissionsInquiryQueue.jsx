@@ -67,6 +67,9 @@ function InquiryDetails({ inquiry, owners, canEdit, onSaved }) {
       {inquiry.referral_detail ? <p><strong>Referral:</strong> {inquiry.referral_detail}</p> : null}
       {inquiry.utm?.utm_campaign ? <p><strong>Campaign attribution:</strong> {[inquiry.utm.utm_source, inquiry.utm.utm_medium, inquiry.utm.utm_campaign].filter(Boolean).join(' / ')}</p> : null}
       <p><strong>Last contact:</strong> {dateText(inquiry.last_touch_at)} · <strong>Received:</strong> {dateText(inquiry.created_at)}</p>
+      {inquiry.notification_status?.enabled === false ? <p className="crown-muted" role="note">
+        Automatic inquiry messages are off. Review communication history before contacting this family.
+      </p> : null}
       {inquiry.notification_status?.notifications?.length ? <details>
         <summary>Communication status</summary>
         <ul>{inquiry.notification_status.notifications.slice(0, 8).map((notice, index) => <li key={`${notice.event}-${notice.channel}-${index}`}>

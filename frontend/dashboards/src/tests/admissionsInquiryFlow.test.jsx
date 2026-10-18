@@ -155,6 +155,25 @@ describe('prospective-family inquiry capture', () => {
 });
 
 describe('staff inquiry follow-up queue', () => {
+  it.each([false, true, undefined])('shows the off notice only for explicit false while retaining communication history (%s)', async (enabled) => {
+    const notificationStatus = {
+      notifications: [{ audience: 'family', channel: 'email', event: 'created', status: 'provider_accepted' }],
+      ...(enabled === undefined ? {} : { enabled }),
+    };
+    const inquiry = { id: INQUIRY, parent_name: 'Jordan Reed', email: 'jordan@example.org', stage: 'inquiry', notification_status: notificationStatus };
+    api.list.mockResolvedValue({ results: [inquiry], owners: [], can_edit: false });
+    render(<AdmissionsInquiryQueue />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Open Jordan Reed' }));
+    const note = screen.queryByText('Automatic inquiry messages are off. Review communication history before contacting this family.');
+    if (enabled === false) expect(note).toBeTruthy();
+    else expect(note).toBeNull();
+    const history = screen.getByText('Communication status');
+    fireEvent.click(history);
+    expect(history.closest('details').open).toBe(true);
+    expect(screen.getByText('Family · email · Accepted by provider')).toBeTruthy();
+    expect(api.update).not.toHaveBeenCalled();
+  });
+
   it('shows family source conversion, actionable ownership, and explicit legacy attribution fallback', () => {
     const data = { inquiry_capture: { captured: 4, active: 1, unassigned: 1, followups_due: 0 }, inquiry_source_attribution: [{ source: 'Church referral', inquiries: 4, families_applied: 2, families_enrolled: 1, applications: 3, confirmed_applications: 2, inquiry_to_application_pct: 50, inquiry_to_enrollment_pct: 25 }], source_attribution: [{ source: 'Legacy source', applications: 8, enrolled: 2, conversion_pct: 25 }] };
     api.dashboard.mockImplementation(() => ({ data, source: 'live' }));
