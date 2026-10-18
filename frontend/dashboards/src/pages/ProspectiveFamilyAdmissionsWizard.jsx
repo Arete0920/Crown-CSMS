@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import CrownPublicLayout from "../components/crown/CrownPublicLayout.jsx";
 import CrownWizard from "../components/crown/CrownWizard.jsx";
 import CrownWizardStepHeader from "../components/crown/CrownWizardStepHeader.jsx";
@@ -6,6 +6,8 @@ import { useWizardDraft } from "../hooks/useWizardDraft";
 import { fetchAdmissionsPublicConfig, submitAdmissionsIntake } from "../api/admissions";
 import { clearAdmissionsStartIntake, loadAdmissionsStartIntake } from "../lib/admissionsStartIntake.js";
 import { markAdmissionsLifecycleStarted, markAdmissionsLifecycleSubmitted } from "../lib/admissionsLifecycleState.js";
+import { createInquiryRequestKey, startInquiryApplication } from "../api/admissionsInquiries.js";
+import { clearAdmissionsInquiry, inquiryEntryPath, inquirySourceLabel, inquiryWizardIntake, loadAdmissionsInquiry, saveAdmissionsInquiry } from "../lib/admissionsInquiryState.js";
 import "../styles/crown-wizard.css";
 
 const STEPS = [
@@ -754,7 +756,7 @@ function StepInterest(props) {
   );
 }
 
-function StepInquiry({ context, setContext, goNext, ...props }) {
+function StepInquiry({ context, setContext, goNext, inquiryReceipt, ...props }) {
   const inquiry = context.inquiry;
   const [attemptedContinue, setAttemptedContinue] = useState(false);
 
@@ -793,9 +795,11 @@ function StepInquiry({ context, setContext, goNext, ...props }) {
           <select
             className="crown-input"
             value={inquiry.campus}
+            disabled={Boolean(inquiryReceipt)}
             onChange={(e) => update("campus", e.target.value)}
           >
             <option value="">Select campus</option>
+            {inquiry.campus && !CAMPUS_OPTIONS.includes(inquiry.campus) ? <option value={inquiry.campus}>{inquiry.campus}</option> : null}
             {CAMPUS_OPTIONS.map((option) => (
               <option key={option} value={option}>{option}</option>
             ))}
@@ -809,6 +813,7 @@ function StepInquiry({ context, setContext, goNext, ...props }) {
             onChange={(e) => update("startTerm", e.target.value)}
           >
             <option value="">Select start term</option>
+            {inquiry.startTerm && !START_TERM_OPTIONS.includes(inquiry.startTerm) ? <option value={inquiry.startTerm}>{inquiry.startTerm}</option> : null}
             {START_TERM_OPTIONS.map((option) => (
               <option key={option} value={option}>{option}</option>
             ))}
@@ -822,6 +827,7 @@ function StepInquiry({ context, setContext, goNext, ...props }) {
             onChange={(e) => update("heardAbout", e.target.value)}
           >
             <option value="">Select one (optional)</option>
+            {inquiry.heardAbout && !HEARD_ABOUT_OPTIONS.includes(inquiry.heardAbout) ? <option value={inquiry.heardAbout}>{inquirySourceLabel(inquiry.heardAbout)}</option> : null}
             {HEARD_ABOUT_OPTIONS.map((option) => (
               <option key={option} value={option}>{option}</option>
             ))}
@@ -1954,6 +1960,8 @@ function StepSubmit({
   steps,
   onFinalizeSubmit,
   admissionsPublicConfig,
+  inquiryReceipt,
+  inquiryStartStatus,
 }) {
   const [submittedNow, setSubmittedNow] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -1961,6 +1969,7 @@ function StepSubmit({
   const [submitCorrelationId, setSubmitCorrelationId] = useState("");
   const [receipt, setReceipt] = useState(null);
   const [preflight, setPreflight] = useState({ status: "checking", message: "Checking submission service..." });
+  const requestIdentity = useRef(null);
 
   const attestations = context.attestations || {};
   const feeConfig = normalizeFeeConfig(admissionsPublicConfig?.application_fee || FALLBACK_FEE_CONFIG);
@@ -2013,6 +2022,10 @@ function StepSubmit({
   }
 
   async function handleFinalize() {
+    if (inquiryReceipt && inquiryStartStatus !== 'ready') {
+      setSubmitError('Your saved inquiry must be connected before submitting. Retry the connection above.');
+      return;
+    }
     const blockReason = getSubmitBlockReason({
       submitting,
       preflightStatus: preflight.status,
@@ -2031,8 +2044,15 @@ function StepSubmit({
       const submitPayload = {
         ...context,
         demoChecklistAutoComplete: IS_SANDBOX_FLOW,
+        ...(inquiryReceipt ? { inquiry_id: inquiryReceipt.inquiry_id, continuation_token: inquiryReceipt.continuation_token } : {}),
       };
-      const response = await submitAdmissionsIntake(submitPayload);
+      const fingerprint = JSON.stringify(submitPayload);
+      if (requestIdentity.current?.fingerprint !== fingerprint) requestIdentity.current = { fingerprint, key: createInquiryRequestKey() };
+      const response = await submitAdmissionsIntake(submitPayload, {
+        idempotencyKey: requestIdentity.current.key,
+        schoolId: inquiryReceipt?.school_id || new URLSearchParams(globalThis.location?.search || '').get('school_id') || '',
+      });
+      if (inquiryReceipt) clearAdmissionsInquiry(inquiryReceipt.school_id);
       const checklistHub = response?.checklist_hub;
       markAdmissionsLifecycleSubmitted({
         applicationId: checklistHub?.application_id,
@@ -2118,11 +2138,20 @@ const STEP_COMPONENTS = [
 ];
 
 export default function ProspectiveFamilyAdmissionsWizard() {
-  const draftKey = IS_DEMO_PREFILL_MODE ? "admissions-apply-demo" : "admissions-apply";
+  const querySchool = new URLSearchParams(globalThis.location?.search || '').get('school_id') || '';
+  const [inquiryReceipt, setInquiryReceipt] = useState(() => loadAdmissionsInquiry(querySchool));
+  const [inquiryStartStatus, setInquiryStartStatus] = useState(inquiryReceipt?.stage === 'application_started' ? 'ready' : 'pending');
+  const [inquiryStartError, setInquiryStartError] = useState('');
+  const inquiryStartPromise = useRef(null);
+  const draftScope = inquiryReceipt ? `:${inquiryReceipt.school_id}:${inquiryReceipt.inquiry_id}` : querySchool ? `:${querySchool}` : '';
+  const draftKey = `${IS_DEMO_PREFILL_MODE ? 'admissions-apply-demo' : 'admissions-apply'}${draftScope}`;
 
   const initialDraftContext = useMemo(
-    () => (IS_DEMO_PREFILL_MODE ? DEMO_INITIAL_CONTEXT : INITIAL_CONTEXT),
-    [],
+    () => {
+      const initial = IS_DEMO_PREFILL_MODE ? DEMO_INITIAL_CONTEXT : INITIAL_CONTEXT;
+      return inquiryReceipt ? mergeStartIntakeIntoContext(initial, inquiryWizardIntake(inquiryReceipt)) : initial;
+    },
+    [inquiryReceipt],
   );
 
   const {
@@ -2136,6 +2165,28 @@ export default function ProspectiveFamilyAdmissionsWizard() {
   const [admissionsPublicConfig, setAdmissionsPublicConfig] = useState({
     application_fee: FALLBACK_FEE_CONFIG,
   });
+
+  async function connectInquiry() {
+    if (!inquiryReceipt || inquiryStartStatus === 'ready') return;
+    setInquiryStartError('');
+    setInquiryStartStatus('pending');
+    try {
+      if (!inquiryStartPromise.current) inquiryStartPromise.current = startInquiryApplication(inquiryReceipt);
+      const result = await inquiryStartPromise.current;
+      setInquiryReceipt(saveAdmissionsInquiry({ ...inquiryReceipt, ...result }, inquiryReceipt.intake));
+      setInquiryStartStatus('ready');
+    } catch (error) {
+      inquiryStartPromise.current = null;
+      setInquiryStartStatus('failed');
+      setInquiryStartError(error?.message || 'Your saved inquiry could not be connected. Please retry.');
+    }
+  }
+
+  useEffect(() => {
+    if (inquiryReceipt && inquiryStartStatus === 'pending') connectInquiry();
+    // A single idempotent request links this saved inquiry to the application journey.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -2202,9 +2253,10 @@ export default function ProspectiveFamilyAdmissionsWizard() {
       title="Admissions Application"
       subtitle="Prospective Family Intake"
       right={(
-        <button className="crown-btn" onClick={handleStartOver}>
-          Start over
-        </button>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <a className="crown-btn" href={inquiryEntryPath()}>Request information or a visit</a>
+          <button className="crown-btn" onClick={handleStartOver}>Start over</button>
+        </div>
       )}
       helpNotice={(
         <>
@@ -2215,13 +2267,17 @@ export default function ProspectiveFamilyAdmissionsWizard() {
         </>
       )}
     >
+      {inquiryReceipt ? <div className="crown-card" style={{ padding: '12px 16px', marginBottom: 14 }}>
+        {inquiryStartStatus === 'ready' ? <p role="status">Your saved inquiry and original referral stay linked to this application. Review your contact details below.</p> : <p role="status">Connecting your saved inquiry…</p>}
+        {inquiryStartError ? <div role="alert">{inquiryStartError} <button type="button" className="crown-btn" onClick={connectInquiry}>Retry inquiry connection</button></div> : null}
+      </div> : null}
       <div className="crown-card" style={{ padding: "22px 24px" }}>
         <CrownWizard
           stepComponents={STEP_COMPONENTS}
           stepLabels={STEPS}
           initialContext={draftContext}
           onContextChange={saveDraft}
-          stepProps={{ onFinalizeSubmit: clearDraft, admissionsPublicConfig }}
+          stepProps={{ onFinalizeSubmit: clearDraft, admissionsPublicConfig, inquiryReceipt, inquiryStartStatus }}
         />
       </div>
     </CrownPublicLayout>

@@ -217,7 +217,7 @@ def build_campaign_snapshot(campaign):
             "unverified_enrollment_leads": stage_counts.get("enrollment_unverified", 0),
             "by_stage": dict(stage_counts),
             "followups_due": due_followups,
-            "touchpoints": campaign.touchpoints.count(),
+            "touchpoints": campaign.touchpoints.filter(school_id=campaign.school_id).count(),
         },
         "economics": {
             "budget_cents": int(campaign.budget_cents or 0),

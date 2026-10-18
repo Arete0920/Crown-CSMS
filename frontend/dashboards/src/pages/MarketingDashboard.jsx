@@ -1,6 +1,7 @@
 import CrownDashboardTemplate from '../components/crown-dashboard/CrownDashboardTemplate.jsx';
 import { getDashboardTemplate } from '../config/dashboardTemplates/index.js';
 import useDashboardData from '../hooks/useDashboardData.js';
+import { getSelectedSchoolId } from '../utils/authClient.js';
 
 function cloneConfig(template) {
   if (typeof globalThis.structuredClone === 'function') {
@@ -28,14 +29,17 @@ export default function MarketingDashboard() {
         ? 'Marketing data unavailable'
         : 'Marketing configuration fallback';
 
-  const inquiries = Number(payload.inquiries || 0);
+  const capture = payload.inquiry_capture;
+  const inquiries = Number(capture?.captured ?? payload.inquiries ?? 0);
   const tours = Number(payload.tours_scheduled || 0);
   const applications = Number(payload.applications || 0);
   const enrolled = Number(payload.enrolled || 0);
   const stalled = Number(payload.stalled_leads || 0);
   const conversion = isLive ? Number(payload.overall_application_to_enrollment_pct) : NaN;
   const countLabel = (value) => isLive ? String(value) : '--';
-  const sources = Array.isArray(payload.source_attribution) ? payload.source_attribution : [];
+  const familySources = Array.isArray(payload.inquiry_source_attribution);
+  const sources = familySources ? payload.inquiry_source_attribution : Array.isArray(payload.source_attribution) ? payload.source_attribution : [];
+  const inquiryActionRequired = Number(capture?.unassigned || 0) > 0 || Number(capture?.followups_due || 0) > 0;
   const actions = Array.isArray(payload.action_queue) ? payload.action_queue : [];
   const campaigns = Array.isArray(payload.campaigns) ? payload.campaigns : [];
   const primaryCampaign = campaigns[0] || null;
@@ -56,7 +60,7 @@ export default function MarketingDashboard() {
     : 'Marketing Command is waiting for verified live data.';
 
   config.metrics = [
-    { label: 'Inquiries', value: countLabel(inquiries), detail: 'Prospective-family inquiry records.', accent: 'blue', dataState, sourceLabel },
+    { label: capture ? 'Captured Inquiries' : 'Inquiry Milestones', value: countLabel(inquiries), detail: capture ? 'Families who submitted a request for information or a visit.' : 'Applications with a recorded inquiry milestone.', accent: 'blue', dataState, sourceLabel },
     { label: 'Tours Scheduled', value: countLabel(tours), detail: 'Families with a scheduled tour event.', accent: 'gold', dataState, sourceLabel },
     { label: 'Applications', value: countLabel(applications), detail: 'Non-draft applications in the active tenant.', accent: 'navy', dataState, sourceLabel },
     { label: 'Stalled Prospects', value: countLabel(stalled), detail: 'Open records with no movement for more than seven days.', accent: !isLive || stalled > 0 ? 'gold' : 'emerald', dataState, sourceLabel },
@@ -97,20 +101,38 @@ export default function MarketingDashboard() {
 
   config.commandModules = [
     {
+      key: 'inquiry-follow-up', icon: 'IF', title: 'Inquiry Follow-up',
+      status: !isLive || !capture ? 'Unavailable' : inquiryActionRequired ? 'Action Required' : 'Ready',
+      statusTone: !isLive || !capture || inquiryActionRequired ? 'warn' : 'good',
+      mainKpi: capture && isLive ? `${capture.active} active family inquiries` : 'Capture data unavailable',
+      summary: 'Assign a counselor, record contact, and set the next follow-up before a family applies.',
+      kpis: [
+        { label: 'Captured families', value: capture ? countLabel(capture.captured) : '--' },
+        { label: 'Unassigned', value: capture ? countLabel(capture.unassigned) : '--' },
+        { label: 'Follow-ups due', value: capture ? countLabel(capture.followups_due) : '--' },
+      ],
+      details: ['Each captured inquiry remains connected to later child applications.', 'Admissions permissions govern access to family contact details.'],
+      dataState: capture ? dataState : 'unavailable', sourceLabel,
+      primaryActionLabel: 'Open Inquiry Queue', primaryActionHref: '/admissions/inquiries',
+      backActionLabel: 'Public Inquiry Form', backActionHref: `/admissions/inquire${getSelectedSchoolId() ? `?school_id=${encodeURIComponent(getSelectedSchoolId())}` : ''}`,
+      lastUpdated: capture && isLive ? 'Live' : 'Unavailable',
+    },
+    {
       key: 'funnel',
       icon: 'FN',
       title: 'Enrollment Funnel',
       status: !isLive ? 'Unavailable' : stalled > 0 ? 'Watch' : 'Stable',
       statusTone: !isLive || stalled > 0 ? 'warn' : 'good',
-      mainKpi: `${countLabel(inquiries)} → ${countLabel(tours)} → ${countLabel(applications)} → ${countLabel(enrolled)}`,
+      mainKpi: `${countLabel(applications)} applications · ${countLabel(enrolled)} confirmed`,
       summary: `Application-to-enrollment conversion: ${percent(conversion)}`,
       kpis: [
-        { label: 'Inquiries', value: countLabel(inquiries) },
+        { label: 'Captured families', value: capture ? countLabel(inquiries) : '--' },
         { label: 'Tours', value: countLabel(tours) },
         { label: 'Applications', value: countLabel(applications) },
-        { label: 'Enrolled', value: countLabel(enrolled) },
+        { label: 'Confirmed applications', value: countLabel(enrolled) },
       ],
       details: [
+        'Family inquiries and child applications use separate counts.',
         `Stalled prospects: ${countLabel(stalled)}`,
         `Application-to-enrollment: ${percent(conversion)}`,
         'Admissions remains the canonical enrollment workflow.',
@@ -129,22 +151,24 @@ export default function MarketingDashboard() {
       title: 'Source Attribution',
       status: sources.length > 0 ? 'Stable' : 'Watch',
       statusTone: sources.length > 0 ? 'good' : 'warn',
-      mainKpi: sources.length > 0 ? `${sources.length} tracked source(s)` : 'No source attribution yet',
-      summary: sources[0]
-        ? `${sources[0].source}: ${sources[0].applications} applications / ${sources[0].enrolled} enrolled`
-        : 'Capture source consistently at inquiry/application intake.',
+      mainKpi: sources.length > 0 ? `${sources.length} ${familySources ? 'family inquiry' : 'legacy application'} source(s)` : 'No source attribution yet',
+      summary: familySources
+        ? 'Captured family inquiries by first source. Both conversion rates use inquiring families; enrollment requires at least one confirmed child application.'
+        : 'Legacy application attribution: child applications and confirmed applications by intake source.',
       kpis: sources.slice(0, 4).map((row) => ({
-        label: row.source,
-        value: String(row.applications),
+        label: `${row.source} · ${familySources ? 'family inquiries' : 'child applications'}`,
+        value: countLabel(familySources ? row.inquiries : row.applications),
       })),
       details: sources.slice(0, 5).map(
-        (row) => `${row.source}: ${row.applications} applications · ${row.enrolled} enrolled · ${percent(row.conversion_pct)} conversion`
+        (row) => familySources
+          ? `${row.source} · Family inquiries: ${row.inquiries} · Families applied: ${row.families_applied} (${percent(row.inquiry_to_application_pct)}) · Families enrolled: ${row.families_enrolled} (${percent(row.inquiry_to_enrollment_pct)})`
+          : `${row.source}: ${row.applications} child applications · ${row.enrolled} confirmed applications · ${percent(row.conversion_pct)} application-to-enrollment`
       ),
       dataState,
       sourceLabel,
       primaryActionLabel: 'Review Admissions Sources',
       backActionLabel: 'Marketing Command',
-      primaryActionHref: '/admissions/pipeline',
+      primaryActionHref: familySources ? '/admissions/inquiries' : '/admissions/pipeline',
       backActionHref: '/marketing',
       lastUpdated: isLive ? 'Live' : 'Unavailable',
     },
@@ -246,6 +270,10 @@ export default function MarketingDashboard() {
   ];
 
   config.trendPanels = [];
+  config.quickActions = [
+    { title: 'Inquiry follow-up', eyebrow: 'Admissions', description: 'Assign and follow up with prospective families.', actionLabel: 'Open Inquiry Queue', href: '/admissions/inquiries' },
+    { title: 'Applications', eyebrow: 'Admissions', description: 'Review the submitted application pipeline.', actionLabel: 'Open Applications', href: '/admissions/pipeline' },
+  ];
   config.activities = [
     `Tracked sources: ${sources.length}`,
     `Open stalled prospect records: ${stalled}`,
