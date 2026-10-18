@@ -282,10 +282,13 @@ jobs:
       - name: Run complete governed candidate coverage
         shell: pwsh
         env:
-          DJANGO_SECRET_KEY: candidate-validation-nonproduction-only
           DJANGO_SETTINGS_MODULE: crown_api.settings
           BUILD_SHA: ${{ needs.resolve-release.outputs.deploy_sha }}
-        run: ./scripts/release/run_backend_coverage.ps1 -CoverageVersion 7.16.2
+        run: |
+          $env:DJANGO_SECRET_KEY = python -c 'import secrets; print(secrets.token_urlsafe(64))'
+          if ($LASTEXITCODE -ne 0 -or -not $env:DJANGO_SECRET_KEY) { throw 'Unable to generate isolated candidate validation secret' }
+          Write-Output "::add-mask::$env:DJANGO_SECRET_KEY"
+          ./scripts/release/run_backend_coverage.ps1 -CoverageVersion 7.16.2
 
       - name: Retain candidate coverage evidence
         if: always()
