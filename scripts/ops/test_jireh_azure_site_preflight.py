@@ -72,5 +72,15 @@ class JirehAdmissionTests(unittest.TestCase):
             with self.subTest(value=value), self.assertRaises(AdmissionDenied):
                 plan([], name=value)
 
+
+class JirehOneShotDispatchContractTests(unittest.TestCase):
+    def test_authorization_merge_triggers_existing_push_workflow(self):
+        from pathlib import Path
+        workflow = (Path(__file__).resolve().parents[2] / ".github/workflows/azure-classroom-preflight.yml").read_text(encoding="utf-8")
+        push = workflow.split("\n  push:\n", 1)[1].split("\n  workflow_dispatch:", 1)[0]
+        self.assertIn("- 'sites/jireh/README.md'", push)
+        self.assertIn("contains(github.event.head_commit.message, '[jireh-staging-free-once]')", workflow)
+        self.assertIn("az staticwebapp create --name jireh-site --resource-group crown-rg --location eastus2 --sku Free", workflow)
+
 if __name__ == "__main__":
     unittest.main()
