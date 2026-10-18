@@ -13,6 +13,7 @@ from rest_framework.permissions import IsAdminUser
 
 from core.models_seed import SeedRun
 from crown_api.tenant import CANONICAL_TENANT_ATTR
+from crown_api.ops_route_guard import demo_ops_runtime_allowed
 
 
 logger = logging.getLogger(__name__)
@@ -53,8 +54,10 @@ def _get_ops_secret() -> str:
 
 
 def _is_dev_env() -> bool:
-    env = (getattr(settings, "CROWN_ENV", "") or getattr(settings, "DJANGO_ENV", "") or "").lower()
-    return env in ("dev", "development")
+    # Preserve explicit CROWN/DJANGO DEV gate, and reject conflicting production
+    # markers or a production Azure host before running destructive reset commands.
+    env = (getattr(settings, "CROWN_ENV", "") or getattr(settings, "DJANGO_ENV", "") or "").strip().lower()
+    return env in ("dev", "development") and demo_ops_runtime_allowed()
 
 
 def _ops_request_is_authorized(request) -> bool:

@@ -190,3 +190,97 @@ class OpsEndpointsRuntimeBoundaryTestCase(TestCase):
                     self.client.get("/api/ops/alerts/?strict=1").status_code,
                     [200, 500],
                 )
+
+
+class EnsureCiUserRuntimeBoundaryTestCase(TestCase):
+    """A configured DEV secret must not enable JWT issuance in an unknown runtime."""
+
+    def setUp(self):
+        self.client = Client()
+
+    def test_unlabelled_runtime_denies_even_matching_ops_secret(self):
+        with override_settings(ENVIRONMENT="", CROWN_ENV="", DJANGO_ENV="", DEV_OPS_SECRET="synthetic-ci-secret"):
+            with patch.dict(os.environ, {
+                "ENVIRONMENT": "", "CROWN_ENV": "", "DJANGO_ENV": "",
+                "WEBSITE_HOSTNAME": "",
+            }, clear=False):
+                response = self.client.post(
+                    "/api/v1/system/ensure-ci-user/",
+                    data="{}", content_type="application/json",
+                    HTTP_X_ADMIN_OPS_SECRET="synthetic-ci-secret",
+                )
+                self.assertEqual(response.status_code, 404)
+
+    def test_production_runtime_denies_even_matching_ops_secret(self):
+        with override_settings(ENVIRONMENT="production", CROWN_ENV="", DJANGO_ENV="", DEV_OPS_SECRET="synthetic-ci-secret"):
+            with patch.dict(os.environ, {
+                "ENVIRONMENT": "production", "CROWN_ENV": "", "DJANGO_ENV": "",
+                "WEBSITE_HOSTNAME": "crown-api-prod.azurewebsites.net",
+            }, clear=False):
+                response = self.client.post(
+                    "/api/v1/system/ensure-ci-user/",
+                    data="{}", content_type="application/json",
+                    HTTP_X_ADMIN_OPS_SECRET="synthetic-ci-secret",
+                )
+                self.assertEqual(response.status_code, 404)
+
+    def test_explicit_dev_without_matching_secret_is_forbidden(self):
+        with override_settings(ENVIRONMENT="dev", CROWN_ENV="", DJANGO_ENV="", DEV_OPS_SECRET="synthetic-ci-secret"):
+            with patch.dict(os.environ, {
+                "ENVIRONMENT": "dev", "CROWN_ENV": "", "DJANGO_ENV": "",
+                "WEBSITE_HOSTNAME": "",
+            }, clear=False):
+                response = self.client.post(
+                    "/api/v1/system/ensure-ci-user/",
+                    data="{}", content_type="application/json",
+                    HTTP_X_ADMIN_OPS_SECRET="invalid",
+                )
+                self.assertEqual(response.status_code, 403)
+
+    def test_conflicting_prod_marker_denies_ci_jwt(self):
+        with override_settings(ENVIRONMENT="dev", CROWN_ENV="production", DJANGO_ENV="", DEV_OPS_SECRET="synthetic-ci-secret"):
+            with patch.dict(os.environ, {
+                "ENVIRONMENT": "dev", "CROWN_ENV": "production", "DJANGO_ENV": "",
+                "WEBSITE_HOSTNAME": "crown-api-dev.azurewebsites.net",
+            }, clear=False):
+                response = self.client.post(
+                    "/api/v1/system/ensure-ci-user/",
+                    data="{}", content_type="application/json",
+                    HTTP_X_ADMIN_OPS_SECRET="synthetic-ci-secret",
+                )
+                self.assertEqual(response.status_code, 404)
+
+    def test_production_azure_host_denies_mislabelled_dev_ci_jwt(self):
+        with override_settings(ENVIRONMENT="dev", CROWN_ENV="", DJANGO_ENV="", DEV_OPS_SECRET="synthetic-ci-secret"):
+            with patch.dict(os.environ, {
+                "ENVIRONMENT": "dev", "CROWN_ENV": "", "DJANGO_ENV": "",
+                "WEBSITE_HOSTNAME": "crown-api-prod.azurewebsites.net",
+            }, clear=False):
+                response = self.client.post(
+                    "/api/v1/system/ensure-ci-user/",
+                    data="{}", content_type="application/json",
+                    HTTP_X_ADMIN_OPS_SECRET="synthetic-ci-secret",
+                )
+                self.assertEqual(response.status_code, 404)
+
+    def test_reset_and_db_diagnostics_reject_conflicting_production_runtime(self):
+        with override_settings(
+            ENVIRONMENT="dev", CROWN_ENV="dev", DJANGO_ENV="",
+            CROWN_OPS_SECRET="synthetic-ops-secret",
+        ):
+            with patch.dict(os.environ, {
+                "ENVIRONMENT": "dev", "CROWN_ENV": "production",
+                "DJANGO_ENV": "", "WEBSITE_HOSTNAME": "crown-api-prod.azurewebsites.net",
+            }, clear=False):
+                response = self.client.post(
+                    "/api/v1/system/demo-reset/",
+                    data="{}", content_type="application/json",
+                    HTTP_X_ADMIN_OPS_SECRET="synthetic-ops-secret",
+                    HTTP_X_SCHOOL_ID="00000000-0000-0000-0000-000000000001",
+                )
+                self.assertEqual(response.status_code, 403)
+                diagnostic = self.client.get(
+                    "/api/v1/system/diagnose-db-tables/",
+                    HTTP_X_OPS_SECRET="synthetic-ops-secret",
+                )
+                self.assertIn(diagnostic.status_code, (403, 404))
