@@ -85,3 +85,7 @@ This adds a deliberately bounded deployment job to the existing governed Azure p
 GitHub branch protection controls merging. A single authorized squash merge with that marker triggers the one-time free staging action. If Azure RBAC, quota, resource creation or deploy permission is missing, the job fails closed with a check result instead of guessing.
 
 Official reference: https://learn.microsoft.com/en-us/azure/static-web-apps/quotas and https://learn.microsoft.com/en-us/azure/static-web-apps/static-web-apps-cli-deploy
+
+## October 18 staging execution authorization
+
+The owner has expressly requested immediate execution of the existing isolated Free-only Azure staging route. This change records the authorization to attempt the source-controlled one-shot staging job, **not** a claim of Azure deployment. After exact-head CI acceptance, merge this PR with a merge commit message containing `[jireh-staging-free-once]`. The job must fail closed if quota, RBAC, environment protection, Free SKU, or deployment verification fails. Do not change custom domains, Arete DNS or email, enable payments, or authorize a paid SKU. Confirm successful workflow execution and live site integrity before declaring Azure staging complete. Independent full migration/cutover approval remains separate.
