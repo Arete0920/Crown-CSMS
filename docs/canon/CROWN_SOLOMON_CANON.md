@@ -67,7 +67,7 @@ Solomon content should appear as:
 - governance and policy templates
 
 Solomon should not be presented as:
-- a chatbot oracle
+- an unrestricted source of answers
 - an autonomous recommender
 - a source of hidden algorithmic judgment
 
