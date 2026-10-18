@@ -263,11 +263,11 @@ INSTALLED_APPS += WIZARD_INSTALLED_APPS  # wizard SDK: single source of truth in
 AUTH_USER_MODEL = 'core.UserAccount'
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',  # outermost: preserve allowlisted CORS on early denials
     'core.middleware.DemoWriteBlockMiddleware',
     'crown_api.middleware.api_exceptions.ApiExceptionMiddleware',  # Exception envelope (outermost)
     'crown_api.middleware.performance.PerformanceMiddleware',  # Performance timing
     'crown_api.middleware.api_version.APIVersionMiddleware',   # API deprecation headers
-    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
