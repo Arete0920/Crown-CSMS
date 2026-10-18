@@ -51,11 +51,17 @@ test('Heritage Board renewal preserves least privilege and tenant isolation', as
     let schoolId: string | undefined;
     const sessions: { access: string; school_id: string }[] = [];
     for (let renewal = 0; renewal < 2; renewal++) {
-      const response = await context.post(`${api}/api/v1/sandbox/session/`, {
-        data: { role: 'board', school: 'heritage-core', track: 'school' },
-      });
-      expect(response.status(), 'authorized Heritage Board session').toBe(201);
-      const session = await response.json();
+      const issuer = await playwright.request.newContext();
+      let session;
+      try {
+        const response = await issuer.post(`${api}/api/v1/sandbox/session/`, {
+          data: { role: 'board', school: 'heritage-core', track: 'school' },
+        });
+        expect(response.status(), 'authorized Heritage Board session').toBe(201);
+        session = await response.json();
+      } finally {
+        await issuer.dispose();
+      }
       expect(session.role_code).toBe('board_member');
       expect(session.role).toBe('board');
       expect(typeof session.access === 'string' && session.access.length > 0).toBe(true);
