@@ -13,7 +13,7 @@ async function openTeacherSandbox(page: Page) {
   await expect(page).not.toHaveURL(/\/login(?:\?.*)?$/i, { timeout: 30000 });
 }
 
-test("sandbox teacher records attendance and creates persistent classwork", async ({ page }) => {
+test("sandbox teacher records attendance and creates persistent classwork", async ({ page }, testInfo) => {
   await openTeacherSandbox(page);
 
   await page.goto(`${frontendUrl}/teacher/attendance`, { waitUntil: "networkidle" });
@@ -27,6 +27,8 @@ test("sandbox teacher records attendance and creates persistent classwork", asyn
   const statusSelects = page.locator("tbody select");
   await expect(statusSelects.first()).toBeVisible();
   expect(await statusSelects.count()).toBeGreaterThanOrEqual(2);
+  const markedStudentName = (await page.locator("tbody tr").first().getByRole("cell").first().innerText()).trim();
+  expect(markedStudentName, "attendance proof must identify the marked student").not.toBe("");
   await statusSelects.first().selectOption("absent");
 
   const attendancePost = page.waitForResponse(
@@ -39,6 +41,17 @@ test("sandbox teacher records attendance and creates persistent classwork", asyn
   const attendancePayload = await attendanceResponse.json();
   expect(Number(attendancePayload.created) + Number(attendancePayload.updated)).toBeGreaterThanOrEqual(2);
   await expect(page.getByText(/Saved: created=/i)).toBeVisible();
+
+  await page.reload({ waitUntil: "networkidle" });
+  const reloadedSectionSelect = page.getByLabel("Section:").or(page.locator("#teacher-attendance-section"));
+  await expect(reloadedSectionSelect).toBeVisible();
+  await reloadedSectionSelect.selectOption(section!.value);
+  await expect(reloadedSectionSelect).toHaveValue(section!.value);
+  const reloadedAttendanceRow = page.locator("tbody tr").filter({
+    has: page.getByRole("cell", { name: markedStudentName, exact: true }),
+  });
+  await expect(reloadedAttendanceRow).toHaveCount(1);
+  await expect(reloadedAttendanceRow.locator("select")).toHaveValue("absent");
 
   await page.goto(`${frontendUrl}/teacher/classes`, { waitUntil: "networkidle" });
   const panel = page.getByTestId("teacher-classwork-panel");
@@ -62,4 +75,23 @@ test("sandbox teacher records attendance and creates persistent classwork", asyn
   await page.reload({ waitUntil: "networkidle" });
   const reloadedPanel = page.getByTestId("teacher-classwork-panel");
   await expect(reloadedPanel.getByText(assignmentName, { exact: true })).toBeVisible({ timeout: 30000 });
+
+  const assignmentSectionId = new URL(assignmentResponse.url()).pathname.match(/\/sections\/([^/]+)\/assignments\//)?.[1];
+  expect(assignmentSectionId, "saved classwork must identify its canonical section").toBeTruthy();
+  expect(created.id, "saved classwork must identify its canonical assignment").toBeTruthy();
+  expect(Number(created.points_possible)).toBe(15);
+  await testInfo.attach("saved-classroom-actions", {
+    body: Buffer.from(JSON.stringify({
+      source_sha: process.env.CROWN_EXPECTED_FRONTEND_SHA || null,
+      school_id: await assignmentResponse.request().headerValue("x-school-id"),
+      section_id: assignmentSectionId,
+      assignment_id: created.id,
+      assignment_name: created.name,
+      points_possible: Number(created.points_possible),
+      created_response_status: assignmentResponse.status(),
+      attendance_reload_verified: true,
+      classwork_reload_verified: true,
+    })),
+    contentType: "application/json",
+  });
 });
