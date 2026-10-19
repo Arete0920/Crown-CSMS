@@ -4,6 +4,37 @@ This is a reusable internal contract, NOT a public submission endpoint.
 It does not establish tenant authorization, respondent anonymity, or publication
 immutability; those are separate mandatory release gates.
 """
+import re
+from unicodedata import normalize
+
+
+KEY_PATTERN = re.compile(r"^[a-z][a-z0-9_]{0,63}$")
+
+
+def valid_storage_text(value):
+    """Reject text PostgreSQL JSONB cannot represent safely."""
+    if not isinstance(value, str) or "\x00" in value:
+        return False
+    try:
+        value.encode("utf-8")
+    except UnicodeEncodeError:
+        return False
+    return True
+
+
+def valid_choices(choices):
+    """Reject invalid or visually indistinguishable option labels."""
+    if not isinstance(choices, list) or not 2 <= len(choices) <= 40:
+        return False
+    seen = set()
+    for option in choices:
+        if not valid_storage_text(option) or not 1 <= len(option.strip()) <= 120:
+            return False
+        comparable = normalize("NFC", option.strip()).casefold()
+        if comparable in seen:
+            return False
+        seen.add(comparable)
+    return True
 
 
 class SurveyAnswerValidationError(ValueError):
@@ -25,7 +56,7 @@ def validate_answers(questions, submitted):
     lookup = {}
     for q in questions:
         key = getattr(q, "key", None)
-        if not isinstance(key, str) or not key or key in lookup:
+        if not isinstance(key, str) or not KEY_PATTERN.fullmatch(key) or key in lookup:
             raise SurveyAnswerValidationError({"instrument": "Question keys must be nonempty and unique."})
         lookup[key] = q
 
@@ -48,9 +79,7 @@ def validate_answers(questions, submitted):
         elif not isinstance(choices, list):
             instrument_errors[key] = "Choices must be an array."
         elif kind in {"choice", "multi"}:
-            if (not 2 <= len(choices) <= 40
-                or any(not isinstance(option, str) or not 1 <= len(option.strip()) <= 120 for option in choices)
-                or len(set(choices)) != len(choices)):
+            if not valid_choices(choices):
                 instrument_errors[key] = "Provide 2 to 40 distinct text choices."
         elif choices:
             instrument_errors[key] = "Choices are not allowed for this question type."
@@ -95,7 +124,7 @@ def validate_answers(questions, submitted):
             else:
                 normalized[key] = raw
         elif kind == "text":
-            if not isinstance(raw, str) or not raw.strip() or len(raw) > 4000:
+            if not valid_storage_text(raw) or not raw.strip() or len(raw) > 4000:
                 errors[key] = "Provide text of 1 to 4000 characters."
             else:
                 normalized[key] = raw
