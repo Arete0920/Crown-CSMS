@@ -195,8 +195,12 @@ def test_family_stage_does_not_inherit_foreign_school_enrollment_evidence():
     from django.core.exceptions import ValidationError
 
     lead.applications.add(application)
+    # Isolate the rejected insert in a savepoint so the outer pytest database
+    # transaction remains usable for the subsequent cross-school assertions.
+    from django.db import transaction
     with pytest.raises(ValidationError, match="Implicit M2M records must belong to the same tenant"):
-        lead.applications.add(foreign_application)
+        with transaction.atomic():
+            lead.applications.add(foreign_application)
     assert not lead.applications.filter(pk=foreign_application.pk).exists()
 
     ApplicationEvent.objects.create(
