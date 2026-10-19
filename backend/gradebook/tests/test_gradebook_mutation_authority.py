@@ -331,3 +331,85 @@ def test_patch_denies_unassigned_teacher_even_for_existing_entry():
     assert response.status_code == 404, response.content
     entry.refresh_from_db()
     assert entry.points_earned == 75
+
+
+def test_negative_grade_writes_are_rejected_without_changing_existing_grade():
+    """PATCH and batch writes must reject negative grade points atomically."""
+    school, section, assignment, enrolled, _ = _graph()
+    teacher = _teacher(school=school, section=section, assigned=True)
+    client = _client(teacher)
+    entry = GradeEntry.objects.create(
+        school_id=school.id,
+        section=section,
+        student=enrolled,
+        assignment=assignment,
+        assignment_name=assignment.name,
+        points_earned=75,
+        points_possible=assignment.points_possible,
+    )
+
+    patched = client.patch(
+        _patch_url(entry),
+        {"points_earned": "-1.00"},
+        format="json",
+        HTTP_X_SCHOOL_ID=str(school.id),
+    )
+    assert patched.status_code == 400, patched.content
+    entry.refresh_from_db()
+    assert entry.points_earned == 75
+
+    bulk = client.post(
+        _upsert_url(section, assignment),
+        {"grades": [{"student_id": str(enrolled.id), "points_earned": "-1.00"}]},
+        format="json",
+        HTTP_X_SCHOOL_ID=str(school.id),
+    )
+    assert bulk.status_code == 400, bulk.content
+    entry.refresh_from_db()
+    assert entry.points_earned == 75
+
+
+def test_gradebook_extra_credit_remains_allowed():
+    school, section, assignment, enrolled, _ = _graph()
+    teacher = _teacher(school=school, section=section, assigned=True)
+    client = _client(teacher)
+
+    response = client.post(
+        _upsert_url(section, assignment),
+        {"grades": [{"student_id": str(enrolled.id), "points_earned": "110.00"}]},
+        format="json",
+        HTTP_X_SCHOOL_ID=str(school.id),
+    )
+    assert response.status_code == 200, response.content
+    entry = GradeEntry.objects.get(school_id=school.id, section=section)
+    assert entry.points_earned == 110
+
+
+def test_authorized_teacher_can_clear_and_restore_grade():
+    """Missing work can retain its entry identity and be graded later."""
+    school, section, assignment, student, _ = _graph()
+    teacher = _teacher(school=school, section=section, assigned=True)
+    client = _client(teacher)
+    entry = GradeEntry.objects.create(
+        school_id=school.id, section=section, student=student,
+        assignment=assignment, assignment_name=assignment.name,
+        points_earned=75, points_possible=assignment.points_possible,
+    )
+    original_id = entry.pk
+    cleared = client.patch(
+        _patch_url(entry), {"points_earned": None}, format="json",
+        HTTP_X_SCHOOL_ID=str(school.id),
+    )
+    assert cleared.status_code == 200, cleared.content
+    entry.refresh_from_db()
+    assert entry.pk == original_id
+    assert entry.points_earned is None
+
+    graded = client.patch(
+        _patch_url(entry), {"points_earned": "95.00"}, format="json",
+        HTTP_X_SCHOOL_ID=str(school.id),
+    )
+    assert graded.status_code == 200, graded.content
+    entry.refresh_from_db()
+    assert entry.pk == original_id
+    assert entry.points_earned == 95
