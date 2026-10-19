@@ -235,3 +235,18 @@ def test_expiration_boundary_is_exclusive(collection, expiry):
         with pytest.raises(CollectionRejected, match="Survey is not available"):
             send(collection)
     assert not SurveyResponse.objects.exists() and not SurveyCollectionReceipt.objects.exists()
+
+@pytest.mark.parametrize("expiry", [None, "tomorrow", 17, [], {}])
+def test_grant_issue_rejects_malformed_expiration(collection, expiry):
+    school, user, _, pub, _, _ = collection
+    with pytest.raises(CollectionRejected):
+        issue_respondent_grant(school_id=school.pk, publication_id=pub.pk, issuer=user, expires_at=expiry)
+    assert SurveyRespondentGrant.objects.count() == 1
+
+
+def test_nul_answer_rejected_without_response_or_receipt(collection):
+    payload = dict(collection[5], answers={"satisfaction": 4, "unexpected": "a\\u0000b"})
+    with pytest.raises(CollectionRejected):
+        send(collection, payload)
+    assert not SurveyResponse.objects.exists()
+    assert not SurveyCollectionReceipt.objects.exists()
