@@ -100,3 +100,59 @@ def test_marketing_metrics_are_tenant_scoped_and_admissions_derived():
     assert payload["advertising"]["status"] == "not_configured"
     assert payload["_meta"]["source"] == "live"
     assert payload["_meta"]["scope"] == "tenant"
+
+
+def test_captured_inquiries_preserve_family_denominator_and_tenant_scope():
+    from datetime import timedelta
+    from django.utils import timezone
+    from crm_marketing.models import MarketingLead
+
+    school = School.objects.create(name="Inquiry Metrics School")
+    other = School.objects.create(name="Other Inquiry Metrics School")
+    user = UserAccount.objects.create_user(username="inquiry-metrics", email="metrics@example.com")
+    _grant_marketing_view(user, school)
+    now = timezone.now()
+    open_inquiry = MarketingLead.objects.create(
+        school=school, inquiry_received_at=now, first_source="Church referral",
+        next_follow_up_at=now - timedelta(hours=1),
+    )
+    MarketingLead.objects.create(
+        school=other, inquiry_received_at=now, first_source="Other school only",
+    )
+    household = Household.objects.create(school_id=school.id, name="Two children")
+    draft = Application.objects.create(school_id=school.id, household=household, status="DRAFT")
+    open_inquiry.application = draft
+    open_inquiry.save(update_fields=["application"])
+    open_inquiry.applications.add(draft)
+    children = [Application.objects.create(school_id=school.id, household=household, status="SUBMITTED") for _ in range(2)]
+    submitted = MarketingLead.objects.create(
+        school=school, inquiry_received_at=now, application_started_at=now,
+        first_source="Church referral", stage="application_submitted", application=children[0],
+    )
+    submitted.applications.add(*children)
+    for app in children:
+        ApplicationEvent.objects.create(school_id=school.id, application=app, event_type="inquiry_created")
+        ApplicationEvent.objects.create(school_id=school.id, application=app, event_type="enrollment_confirmed")
+    legacy = Application.objects.create(school_id=school.id, household=household, status="SUBMITTED")
+    ApplicationEvent.objects.create(school_id=school.id, application=legacy, event_type="inquiry_created")
+
+    client = Client()
+    client.force_login(user)
+    response = client.get("/api/v1/marketing/metrics/", HTTP_X_SCHOOL_ID=str(school.id))
+    assert response.status_code == 200
+    data = response.json()
+    assert data["inquiry_capture"] == {
+        "captured": 2, "active": 1, "unassigned": 1, "followups_due": 1,
+        "application_started": 1, "application_submitted": 1, "enrolled": 1,
+        "unit": "family_inquiry", "enrollment_basis": "at_least_one_confirmed_application",
+        "legacy_inquiry_applications": 1,
+    }
+    assert data["inquiry_source_attribution"] == [{
+        "source": "Church referral", "inquiries": 2, "families_applied": 1,
+        "families_enrolled": 1, "applications": 2, "confirmed_applications": 2,
+        "inquiry_to_application_pct": 50.0, "inquiry_to_enrollment_pct": 50.0,
+    }]
+    assert data["applications"] == 3
+    assert data["enrolled"] == 2
+    assert data["action_queue"][0]["href"] == "/admissions/inquiries"
+    assert "Other school only" not in response.content.decode()

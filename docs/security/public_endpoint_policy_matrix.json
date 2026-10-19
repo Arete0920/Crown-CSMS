@@ -1,5 +1,5 @@
 {
-  "version": "2026-05-26",
+  "version": "2026-10-18",
   "purpose": "Policy authority for backend AllowAny endpoints. New AllowAny usage must be explicitly reviewed and documented here.",
   "entries": [
     {"type":"allow_any","path":"backend/analytics/api_health.py","symbol":"public_status","status":"approved","owner":"Platform Security","rationale":"Public health endpoint needed for uptime probes.","controls":["Read-only response","No tenant data","Rate-limit at edge"]},
@@ -11,6 +11,53 @@
     {"type":"allow_any","path":"backend/board_oversight/api_governance.py","symbol":"release_notes","status":"approved","owner":"Governance Platform","rationale":"Public release notes endpoint.","controls":["Read-only output","No internal-only fields","Versioned payload contract"]},
     {"type":"allow_any","path":"backend/crown_api/director_views.py","symbol":"force_seed_user","status":"temporary","owner":"Platform Engineering","rationale":"Utility endpoint for controlled non-prod seed/test flows.","controls":["Non-production use only","Audit log required","Sunset candidate for release hardening"]},
     {"type":"allow_any","path":"backend/crown_api/ops_views.py","symbol":"ensure_ci_user","status":"temporary","owner":"Platform Engineering","rationale":"CI bootstrap helper endpoint.","controls":["CI/dev-only workflow dependency","No sensitive data exposure","Sunset candidate post hardening"]},
+    {
+      "type": "allow_any",
+      "path": "backend/crm_marketing/api/inquiries.py",
+      "symbol": "inquiry_collection",
+      "status": "approved",
+      "owner": "Admissions Platform",
+      "rationale": "Permit a prospective family to submit a short inquiry before authentication or creation of an application. Only POST is public; GET requires authentication and admissions.view in the requested school.",
+      "public_methods": ["POST"],
+      "routes": ["/api/v1/crm/inquiries/", "/api/crm/inquiries/"],
+      "controls": [
+        "Resolve one active school by UUID or an exact unambiguous campus name; reject conflicting or invalid school headers; tenant middleware exemption is POST-only for these exact paths.",
+        "Require explicit response_consent; record separate optional follow_up_consent and consent timestamp; bound request body and text fields; reject honeypot submissions and invalid contact formats.",
+        "Apply school-scoped IP and email rate limits with HMAC cache keys and fail closed on unavailable rate protection.",
+        "Persist school-scoped random-request-key idempotency and a payload digest; reject changed-payload replays; never reuse or disclose an existing family based on an unverified email match.",
+        "Return a no-store minimal receipt and a signed school/inquiry/nonce-bound continuation capability with a 30-day maximum lifetime and stored expiry; no public contact lookup or duplicate suggestions."
+      ],
+      "proof": [
+        "backend/crm_marketing/tests/test_inquiry_capture.py::test_public_capture_creates_owned_inquiry_before_application",
+        "backend/crm_marketing/tests/test_inquiry_capture.py::test_retries_are_persistent_and_contact_matches_do_not_grant_access",
+        "backend/crm_marketing/tests/test_inquiry_capture.py::test_invalid_or_unconsented_capture_creates_no_records",
+        "backend/crm_marketing/tests/test_inquiry_capture.py::test_public_school_resolution_is_exact_and_header_cannot_conflict",
+        "backend/crm_marketing/tests/test_inquiry_capture.py::test_campaign_scope_and_submission_throttles",
+        "backend/crm_marketing/tests/test_inquiry_capture.py::test_staff_queue_requires_scope_and_records_real_follow_up"
+      ]
+    },
+    {
+      "type": "allow_any",
+      "path": "backend/crm_marketing/api/inquiries.py",
+      "symbol": "inquiry_start",
+      "status": "approved",
+      "owner": "Admissions Platform",
+      "rationale": "Allow the holder of a captured inquiry's capability to record the actual start of an application before account creation; this does not provide public access by inquiry ID alone.",
+      "public_methods": ["POST"],
+      "routes": ["/api/v1/crm/inquiries/<uuid:inquiry_id>/start/", "/api/crm/inquiries/<uuid:inquiry_id>/start/"],
+      "controls": [
+        "Resolve one active school and reject invalid or conflicting school scope; the tenant middleware exemption applies only to POST on the exact continuation path.",
+        "Require a timestamp-signed school/inquiry/nonce-bound capability in the request body, verify its signature and 30-day age, and verify the stored nonce and unexpired school-scoped inquiry under a row lock.",
+        "Apply the request-body limit and school-scoped IP rate protection; return a generic unavailable response for a missing, invalid, expired, revoked, or wrong-school capability.",
+        "Record the start timestamp and touchpoint once; return only no-store school/inquiry/stage/expiry metadata, without family contact details, application data, or lookup by email.",
+        "Continuation references the consent-bearing capture record and does not grant or change contact consent; subsequent application submission must revalidate the same capability and replay its restricted stored receipt without creating duplicate household or child applications."
+      ],
+      "proof": [
+        "backend/crm_marketing/tests/test_inquiry_capture.py::test_capability_start_is_idempotent_and_rejects_other_school_nonce_and_expiry",
+        "backend/crm_marketing/tests/test_inquiry_capture.py::test_inquiry_to_multichild_application_preserves_source_and_real_times",
+        "backend/crm_marketing/tests/test_inquiry_capture.py::test_bad_application_capability_never_falls_back_to_new_household"
+      ]
+    },
     {"type":"allow_any","path":"backend/onboarding/api_onboarding.py","symbol":"solomon_articles","status":"approved","owner":"Onboarding Team","rationale":"Public onboarding knowledge feed.","controls":["Read-only list endpoint","No privileged attributes","Payload contract tests"]},
     {"type":"allow_any","path":"backend/onboarding/api_onboarding.py","symbol":"solomon_article_detail","status":"approved","owner":"Onboarding Team","rationale":"Public article detail endpoint.","controls":["Read-only response","No user-specific context","Input validation"]},
     {"type":"allow_any","path":"backend/onboarding/api_onboarding.py","symbol":"solomon_context","status":"approved","owner":"Onboarding Team","rationale":"Public onboarding context helper.","controls":["Contract-limited fields","No auth tokens in response","Input validation"]},

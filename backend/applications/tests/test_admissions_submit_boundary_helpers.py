@@ -17,11 +17,11 @@ def _request(*, headers=None, meta=None):
     [
         (None, "other"),
         (" church ", "church_referral"),
-        ("Current Family", "word_of_mouth"),
-        ("friend-or-colleague", "word_of_mouth"),
-        ("social media", "facebook"),
-        ("search-engine", "google"),
-        ("community event", "website"),
+        ("Current Family", "current_family"),
+        ("friend-or-colleague", "friend_or_colleague"),
+        ("social media", "social_media"),
+        ("search-engine", "search_engine"),
+        ("community event", "community_event"),
         ("unrecognized", "other"),
     ],
 )

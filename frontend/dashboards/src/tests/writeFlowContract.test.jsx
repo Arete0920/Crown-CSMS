@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { clearAdmissionsInquiry, loadAdmissionsInquiry, saveAdmissionsInquiry } from '../lib/admissionsInquiryState.js';
 
 const DRAFT_KEY = 'crown_wizard_draft:test-write-wizard';
 const draftStore = new Map();
@@ -149,6 +150,7 @@ const mockCreate = vi.fn();
 describe('write flow contract', () => {
   afterEach(() => {
     cleanup();
+    clearAdmissionsInquiry();
     draftStore.clear();
     vi.unstubAllGlobals();
   });
@@ -247,6 +249,8 @@ describe('write flow contract', () => {
   });
 
   it('renders admissions wizard and surfaces submit failure', async () => {
+    const schoolId = 'cc000000-0000-4000-8000-000000000001';
+    saveAdmissionsInquiry({ inquiry_id: 'dd000000-0000-4000-8000-000000000001', school_id: schoolId, continuation_token: 'synthetic-continuation', stage: 'application_started' }, {});
     mockSubmitAdmissionsIntake.mockRejectedValueOnce({
       message: 'Validation failed from smoke test.',
       correlationId: 'smoke-correlation-id',
@@ -276,5 +280,13 @@ describe('write flow contract', () => {
     expect(await screen.findByText('Validation failed from smoke test.')).toBeTruthy();
     expect(screen.getByText(/support reference:/i)).toBeTruthy();
     expect(mockSubmitAdmissionsIntake).toHaveBeenCalledTimes(1);
+    expect(mockSubmitAdmissionsIntake.mock.calls[0][0]).toMatchObject({ inquiry_id: 'dd000000-0000-4000-8000-000000000001', continuation_token: 'synthetic-continuation' });
+    expect(mockSubmitAdmissionsIntake.mock.calls[0][1].schoolId).toBe(schoolId);
+    expect(loadAdmissionsInquiry(schoolId)).not.toBeNull();
+    mockSubmitAdmissionsIntake.mockResolvedValueOnce({ ok: true, stage: 'application_submitted' });
+    fireEvent.click(submitButton);
+    await waitFor(() => expect(mockSubmitAdmissionsIntake).toHaveBeenCalledTimes(2));
+    expect(mockSubmitAdmissionsIntake.mock.calls[1][1].idempotencyKey).toBe(mockSubmitAdmissionsIntake.mock.calls[0][1].idempotencyKey);
+    await waitFor(() => expect(loadAdmissionsInquiry(schoolId)).toBeNull());
   }, 20000);
 });

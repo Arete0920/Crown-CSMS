@@ -32,6 +32,8 @@ import RoleHomeRedirect from "../pages/RoleHomeRedirect.jsx";
 import TeacherAttendancePage from "../pages/TeacherAttendancePage.jsx";
 import ParentAttendancePage from "../pages/ParentAttendancePage.jsx";
 import AdmissionsStartPage from "../pages/AdmissionsStartPage.jsx";
+import AdmissionsInquiryPage from "../pages/AdmissionsInquiryPage.jsx";
+import AdmissionsInquiryQueue from "../pages/AdmissionsInquiryQueue.jsx";
 import ProspectiveFamilyAdmissionsWizard from "../pages/ProspectiveFamilyAdmissionsWizard.jsx";
 import AdmissionsChecklistHubPage from "../pages/AdmissionsChecklistHubPage.jsx";
 import LoginPage from "../pages/LoginPage.jsx";
@@ -208,6 +210,14 @@ export const router = createBrowserRouter([
   {
     path: '/login',
     element: <LoginPage />,
+  },
+  {
+    path: PATHS.ADMISSIONS_INQUIRE,
+    element: <AdmissionsInquiryPage />,
+  },
+  {
+    path: PATHS.ADMISSIONS_INQUIRIES,
+    element: <AuthenticatedSchoolRouteGuard><AdmissionsInquiryQueue /></AuthenticatedSchoolRouteGuard>,
   },
   {
     path: PATHS.ADMISSIONS_START,

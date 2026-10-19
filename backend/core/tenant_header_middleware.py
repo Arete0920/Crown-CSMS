@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 from dataclasses import replace
+import re
 
 from django.conf import settings
 from django.http import JsonResponse
@@ -36,6 +37,14 @@ def _dev_open_dashboard_bypass_enabled() -> bool:
 
 def _is_dashboard_api_path(path: str) -> bool:
     return path.startswith(("/api/dashboards", "/api/v1/dashboards"))
+
+
+def _is_public_inquiry_post(request, path: str) -> bool:
+    # Only capture and capability-based continuation resolve their school from
+    # a public payload. Reads and staff updates retain normal tenant enforcement.
+    return request.method == "POST" and re.fullmatch(
+        r"/api/(?:v1/)?crm/inquiries(?:/[0-9a-fA-F-]{36}/start)?", path,
+    ) is not None
 
 
 def _record_tenant_decision(request, *, outcome: str, reason: str, required: bool = False) -> bool:
@@ -111,7 +120,6 @@ class TenantContextError(APIException):
         self.status_code = status
         super().__init__(detail=detail)
 
-
 def _tenant_context_error(request, detail, *, status):
     context = getattr(request, "crown_tenant", None)
     if context is not None:
@@ -139,25 +147,27 @@ def enforce_tenant_context(request) -> None:
     if not normalized_path.startswith("/api/"):
         return
 
-    for prefix in TenantHeaderRequiredMiddleware.EXEMPT_PREFIXES:
-        if normalized_path.startswith(prefix):
-            context = build_tenant_context(request)
-            bind_tenant_context(request, context)
-            if context.source == "header_invalid":
-                _record_tenant_decision(
-                    request,
-                    outcome="denied",
-                    reason="invalid_tenant_header_exempt_route",
-                )
-                raise _tenant_context_error(
-                    request,
-                    {
-                        "detail": "Invalid X-School-Id (must be UUID).",
-                        "code": "invalid_tenant_header",
-                    },
-                    status=400,
-                )
-            return
+    if _is_public_inquiry_post(request, normalized_path) or any(
+        normalized_path.startswith(prefix)
+        for prefix in TenantHeaderRequiredMiddleware.EXEMPT_PREFIXES
+    ):
+        context = build_tenant_context(request)
+        bind_tenant_context(request, context)
+        if context.source == "header_invalid":
+            _record_tenant_decision(
+                request,
+                outcome="denied",
+                reason="invalid_tenant_header_exempt_route",
+            )
+            raise _tenant_context_error(
+                request,
+                {
+                    "detail": "Invalid X-School-Id (must be UUID).",
+                    "code": "invalid_tenant_header",
+                },
+                status=400,
+            )
+        return
 
     if _dev_open_dashboard_bypass_enabled() and _is_dashboard_api_path(normalized_path):
         return

@@ -101,7 +101,11 @@ def validate_standalone_csv(
         except UnicodeDecodeError as exc:
             raise StandaloneInterchangeError("IMPORT_UTF8_REQUIRED") from exc
     elif isinstance(content, str):
-        if len(content.encode("utf-8")) > MAX_BYTES:
+        try:
+            encoded = content.encode("utf-8", errors="strict")
+        except UnicodeEncodeError as exc:
+            raise StandaloneInterchangeError("IMPORT_UTF8_REQUIRED") from exc
+        if len(encoded) > MAX_BYTES:
             raise StandaloneInterchangeError("IMPORT_BYTES_LIMIT")
         source = content.removeprefix("\ufeff")
     else:

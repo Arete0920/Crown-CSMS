@@ -403,7 +403,7 @@ function AdmissionsPipelineContent() {
   }
 
   return (
-    <CrownLayout title="Admissions Pipeline" subtitle="Applicant review, decision, and enrollment">
+    <CrownLayout title="Admissions Pipeline" subtitle="Applicant review, decision, and enrollment" right={<a className="crown-btn" href="/admissions/inquiries">Inquiry follow-up queue</a>}>
       <CrownDataTable
         title="Applications"
         subtitle="Pipeline view with standardized sorting and pagination"
