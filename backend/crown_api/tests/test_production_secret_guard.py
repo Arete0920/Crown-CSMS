@@ -4,6 +4,7 @@ from django.core.exceptions import ImproperlyConfigured
 from crown_api.production_secret_guard import (
     enforce_production_secret,
     validate_database_runtime,
+    validate_debug_runtime,
 )
 
 
@@ -100,3 +101,15 @@ def test_deploy_check_without_host_allows_explicit_ci_database():
         hardened=True,
         hosted=False,
     )
+
+
+
+@pytest.mark.parametrize("hardened", [False, True])
+def test_debug_false_remains_valid_in_any_context(hardened):
+    validate_debug_runtime(False, hardened=hardened)
+
+
+def test_debug_true_is_allowed_only_for_local_development():
+    validate_debug_runtime(True, hardened=False)
+    with pytest.raises(ImproperlyConfigured, match="DEBUG=True"):
+        validate_debug_runtime(True, hardened=True)
