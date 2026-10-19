@@ -1,7 +1,10 @@
 import pytest
 from django.core.exceptions import ImproperlyConfigured
 
-from crown_api.production_secret_guard import enforce_production_secret
+from crown_api.production_secret_guard import (
+    enforce_production_secret,
+    validate_database_runtime,
+)
 
 
 @pytest.mark.parametrize(
@@ -60,3 +63,35 @@ def test_local_development_allows_missing_secret(monkeypatch):
         monkeypatch.delenv(key, raising=False)
 
     enforce_production_secret(["manage.py", "runserver"])
+
+
+@pytest.mark.parametrize("hosted", [False, True])
+def test_hardened_runtime_rejects_missing_database(hosted):
+    with pytest.raises(ImproperlyConfigured, match="DATABASE_URL"):
+        validate_database_runtime("", hardened=True, hosted=hosted)
+
+
+@pytest.mark.parametrize("scheme", ["sqlite:///./db.sqlite3", "sqlite3:///tmp/data.db"])
+def test_hosted_runtime_rejects_explicit_sqlite(scheme):
+    with pytest.raises(ImproperlyConfigured, match="SQLite"):
+        validate_database_runtime(scheme, hardened=True, hosted=True)
+
+
+def test_local_and_ci_keep_explicit_sqlite_available():
+    validate_database_runtime("sqlite:///./ci.sqlite3", hardened=False, hosted=False)
+
+
+def test_hardened_runtime_accepts_external_database_url():
+    validate_database_runtime(
+        "postgresql://db.example.invalid/crown",
+        hardened=True,
+        hosted=True,
+    )
+
+
+def test_deploy_check_without_host_allows_explicit_ci_database():
+    validate_database_runtime(
+        "sqlite:///./ci.sqlite3",
+        hardened=True,
+        hosted=False,
+    )
