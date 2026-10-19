@@ -14,6 +14,33 @@ from core.models import School, UserAccount
 STRONG_DEMO_PASSWORD = "Fixture-only--Crown--2026-strong"
 
 
+@pytest.fixture(autouse=True)
+def local_demo_test_runtime(monkeypatch):
+    """Supply explicit local isolation to positive demo command test cases."""
+    monkeypatch.setenv("CROWN_ENV", "test")
+    for key in ("WEBSITE_HOSTNAME", "WEBSITE_INSTANCE_ID", "AZURE_ENVIRONMENT"):
+        monkeypatch.delenv(key, raising=False)
+
+
+def test_demo_seed_requires_explicit_local_environment(monkeypatch):
+    from core.demo_seed_safety import require_local_demo_seed
+
+    monkeypatch.delenv("CROWN_ENV", raising=False)
+    with pytest.raises(CommandError, match="CROWN_ENV=local or test"):
+        require_local_demo_seed(operation="school seeding")
+
+
+def test_demo_password_reset_requires_sqlite_before_writes(monkeypatch, settings):
+    from core.demo_seed_safety import require_local_demo_seed
+
+    current = settings.DATABASES["default"]
+    settings.DATABASES = {
+        "default": {**current, "ENGINE": "django.db.backends.postgresql"}
+    }
+    with pytest.raises(CommandError, match="SQLite"):
+        require_local_demo_seed(operation="password reset")
+
+
 def test_missing_demo_password_disables_password_login(monkeypatch):
     monkeypatch.delenv("CROWN_DEMO_PASSWORD", raising=False)
     assert configured_demo_password() is None

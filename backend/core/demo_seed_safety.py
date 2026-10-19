@@ -33,6 +33,12 @@ def require_local_demo_seed(*, operation: str) -> None:
     ):
         raise CommandError(f"{operation}: prohibited in hosted environments")
 
+    # A missing or incorrectly labeled environment is not proof of isolation.
+    if os.getenv("CROWN_ENV", "").strip().lower() not in {"local", "test"}:
+        raise CommandError(f"{operation}: CROWN_ENV=local or test is required")
+    if settings.DATABASES["default"]["ENGINE"] != "django.db.backends.sqlite3":
+        raise CommandError(f"{operation}: isolated local SQLite is required")
+
 
 def require_local_demo_wipe(*, school_name: str, confirmed: bool) -> None:
     """Allow destructive resets only with positive local-demo evidence."""

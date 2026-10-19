@@ -22,13 +22,17 @@ updating any accounts. It never picks the first school in the database.
 Example local-only reset:
 
 ```powershell
+$env:CROWN_ENV = "local"
 $env:CROWN_DEMO_PASSWORD = "<strong-secret-from-a-secret-manager>"
 python backend/manage.py reset_demo_passwords --school-id "<Heritage-demo-UUID>"
 ```
 
-Both legacy management commands now reject explicit production environment
-labels and hosted/Azure runtime markers. This is intentionally stricter than
-the separately governed evaluator-facing Heritage sandbox bootstrap.
+Both legacy management commands now require an explicit `CROWN_ENV=local`
+(or `test`) designation and a configured SQLite database. Unset or
+unrecognized environments, PostgreSQL, explicit production labels, and
+hosted/Azure runtime markers are rejected before any data mutation. This is
+intentionally stricter than the separately governed evaluator-facing Heritage
+sandbox bootstrap.
 
 Destructive `seed_demo_school --wipe` additionally requires the exact Heritage
 school name, `--confirm-demo-wipe`, `CROWN_ALLOW_DEMO_WIPE=true`,
