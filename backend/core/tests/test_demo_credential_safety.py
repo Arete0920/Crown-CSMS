@@ -127,7 +127,7 @@ def test_seed_strong_password_is_explicit_and_roles_remain_scoped(monkeypatch):
         user.refresh_from_db()
         assert user.check_password(_test_password(user.username))
         assert not user.is_superuser
-    monkeypatch.delenv("CROWN_DEMO_PASSWORD", raising=False)
+    _clear_account_passwords(monkeypatch)
     SeedDemoSchool()._ensure_directors(school)
     for user in users.values():
         user.refresh_from_db()
@@ -154,7 +154,7 @@ def test_seed_does_not_claim_a_username_owned_by_another_school(monkeypatch):
 
 @pytest.mark.django_db
 def test_explicit_reset_does_not_select_an_arbitrary_school(monkeypatch):
-    monkeypatch.setenv("CROWN_DEMO_PASSWORD", STRONG_DEMO_PASSWORD)
+    _set_distinct_test_passwords(monkeypatch)
     monkeypatch.delenv("CROWN_DEMO_SCHOOL_ID", raising=False)
     School.objects.create(name="Customer Academy")
     with pytest.raises(CommandError, match="school-id"):
@@ -163,7 +163,7 @@ def test_explicit_reset_does_not_select_an_arbitrary_school(monkeypatch):
 
 @pytest.mark.django_db
 def test_explicit_reset_rejects_nonheritage_tenant(monkeypatch):
-    monkeypatch.setenv("CROWN_DEMO_PASSWORD", STRONG_DEMO_PASSWORD)
+    _set_distinct_test_passwords(monkeypatch)
     customer = School.objects.create(name="Customer Academy")
     with pytest.raises(CommandError, match="Heritage Christian Academy"):
         call_command("reset_demo_passwords", school_id=str(customer.pk))
@@ -171,7 +171,7 @@ def test_explicit_reset_rejects_nonheritage_tenant(monkeypatch):
 
 @pytest.mark.django_db
 def test_explicit_reset_rejects_cross_school_user_before_any_write(monkeypatch):
-    monkeypatch.setenv("CROWN_DEMO_PASSWORD", STRONG_DEMO_PASSWORD)
+    _set_distinct_test_passwords(monkeypatch)
     demo = School.objects.create(name="Heritage Christian Academy")
     customer = School.objects.create(name="Customer Academy")
     owner = UserAccount.objects.create_user(
@@ -189,7 +189,7 @@ def test_explicit_reset_rejects_cross_school_user_before_any_write(monkeypatch):
 
 @pytest.mark.django_db
 def test_explicit_reset_scopes_accounts_and_removes_superuser_grant(monkeypatch):
-    monkeypatch.setenv("CROWN_DEMO_PASSWORD", STRONG_DEMO_PASSWORD)
+    _set_distinct_test_passwords(monkeypatch)
     school = School.objects.create(name="Heritage Christian Academy")
     head = UserAccount.objects.create_user(
         username="head@crown-demo.local",
