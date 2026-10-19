@@ -18,6 +18,7 @@ import datetime
 from django.contrib.auth import get_user_model
 from unittest.mock import patch
 from django.test import TestCase
+from django.db import DatabaseError
 from rest_framework.test import APIClient
 
 from core.models import CrownPermission, RolePermission, School, UserRole
@@ -588,9 +589,9 @@ class FeeScheduleIntegrityTest(TestCase):
         client = _authed_client()
         sid, name = _advance_to_lines_set(client, school.id)
         with patch("fee_schedule_wizard.views.AuditLog.objects.create",
-                   side_effect=RuntimeError("audit unavailable")):
-            with self.assertRaises(RuntimeError):
-                client.post(f"{BASE_URL}{sid}/commit/", **_headers(school.id))
+                   side_effect=DatabaseError("audit unavailable")):
+            response = client.post(f"{BASE_URL}{sid}/commit/", **_headers(school.id))
+        self.assertEqual(response.status_code, 503)
         self.assertFalse(FeeSchedule.objects.filter(school=school, name=name).exists())
         self.assertFalse(FeeLine.objects.filter(fee_schedule__school=school).exists())
         self.assertEqual(
