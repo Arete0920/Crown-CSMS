@@ -178,6 +178,8 @@ def migrate_on_dev(database_url, secret, database_name, source_sha):
     from django.core.management import call_command
     from django.db.migrations.executor import MigrationExecutor
     from core.management.commands.migrate_with_lock import Command
+    from django.apps import apps
+    from reviewed_blacklist_migrations import preflight as validate_blacklist_preflight, BlacklistBoundaryError
 
     config = connection.settings_dict
     if (connection.vendor != "postgresql" or config.get("HOST") != DEV_HOST
@@ -208,6 +210,14 @@ def migrate_on_dev(database_url, secret, database_name, source_sha):
     def read_plan():
         executor = MigrationExecutor(connection)
         executor.loader.check_consistent_history(connection)
+        try:
+            validate_blacklist_preflight(
+                connection,
+                executor.loader,
+                installed=apps.is_installed('rest_framework_simplejwt.token_blacklist'),
+            )
+        except BlacklistBoundaryError as exc:
+            raise Blocked(str(exc)) from exc
         if executor.loader.detect_conflicts():
             raise Blocked("migration_graph_conflict")
         return executor.migration_plan(executor.loader.graph.leaf_nodes())
