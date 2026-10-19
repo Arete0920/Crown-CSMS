@@ -63,6 +63,7 @@ def test_production_marked_sqlite_preflight_is_rejected():
         DATABASE_URL="sqlite:///./candidate-check.sqlite3",
         DJANGO_SECRET_KEY="StrongProductionOnlyFixtureKey-WithEntropy-123456789-Aa!",
         DJANGO_DEBUG="false",
+        CROWN_DEMO_MODE="false",
     )
     result = subprocess.run(
         [sys.executable, "backend/manage.py", "check", "--deploy"],
