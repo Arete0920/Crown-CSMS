@@ -388,7 +388,7 @@ REST_FRAMEWORK = {
         "crown_api.auth_middleware.CrownAccessTokenAuthentication",
         # JWT first ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â its authenticate_header() returns 'Bearer realm="api"'
         # which causes DRF to emit 401 (not 403) for unauthenticated requests.
-        "rest_framework_simplejwt.authentication.JWTAuthentication",
+        "crown_api.tenant_authentication.TenantJWTAuthentication",
         # Microsoft Entra ID bearer tokens (MSAL frontend)
         "core.auth.authentication.AADBearerAuthentication",
         # Django session (server-side OAuth2 / msauth flow)
