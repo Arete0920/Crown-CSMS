@@ -105,7 +105,7 @@ export default function TeacherAttendancePage() {
       const res = await fetchJson(`/api/v1/academics/sections/${sectionId}/attendance/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ date: today, items }),
+        body: JSON.stringify({ date: today, expected_school_today: today, items }),
       });
       setMsg(`Saved: created=${res.created} updated=${res.updated} (${res.date})`);
     } catch (error) {
