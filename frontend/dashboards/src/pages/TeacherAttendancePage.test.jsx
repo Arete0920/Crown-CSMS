@@ -170,3 +170,24 @@ it("rejects an overnight date rollover before writing attendance", async () => {
   expect(writes).toEqual([]);
   expect(screen.getByRole("button", { name: "Submit Attendance" }).disabled).toBe(true);
 });
+
+
+it("surfaces a server-side rollover 409 and prevents stale retry", async () => {
+  render(<TeacherAttendancePage />);
+  await selectSection();
+  await screen.findByText("Caleb Demo");
+  const normalFetch = authenticatedFetch.getMockImplementation();
+  authenticatedFetch.mockImplementation(async (path, options = {}) => {
+    if (options.method === "POST" && path.endsWith("/attendance/")) {
+      const error = new Error("HTTP 409 Conflict");
+      error.status = 409;
+      error.response = { data: { detail: "The school day changed. Reload attendance before saving." } };
+      throw error;
+    }
+    return normalFetch(path, options);
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Submit Attendance" }));
+  await screen.findByText("The school day changed. Reload attendance before saving.");
+  expect(screen.getByRole("button", { name: "Submit Attendance" }).disabled).toBe(true);
+  expect(writes).toEqual([]);
+});
