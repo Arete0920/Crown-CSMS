@@ -314,10 +314,10 @@ describe('staff inquiry pagination', () => {
   it('navigates to older inquiries without leaking details from the previous page', async () => {
     const first = { id: 'first-inquiry', parent_name: 'First Family', stage: 'inquiry' };
     const older = { id: 'older-inquiry', parent_name: 'Older Family', stage: 'inquiry' };
-    api.list.mockImplementation(async ({ page }) => ({
-      results: page === 2 ? [older] : [first],
-      count: 101, page, page_size: 100, total_pages: 2,
-      can_edit: false, owners: [],
+    api.list.mockImplementation(async ({ cursor }) => ({
+      results: cursor === 'signed-next' ? [older] : [first],
+      count: 101, next_cursor: cursor ? null : 'signed-next',
+      page_size: 100, can_edit: false, owners: [],
     }));
     api.detail.mockImplementation(async (id) => id === first.id ? first : older);
     render(<AdmissionsInquiryQueue />);
@@ -327,8 +327,8 @@ describe('staff inquiry pagination', () => {
     expect(await screen.findByRole('button', { name: 'Open Older Family' })).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Open First Family' })).toBeNull();
     expect(screen.queryByText('You have read-only access to this queue.')).toBeNull();
-    expect(api.list).toHaveBeenLastCalledWith({ stage: '', unassigned: '', overdue: '', page: 2 });
+    expect(api.list).toHaveBeenLastCalledWith({ stage: '', unassigned: '', overdue: '', cursor: 'signed-next' });
     fireEvent.click(screen.getByLabelText('Unassigned'));
-    await waitFor(() => expect(api.list).toHaveBeenLastCalledWith({ stage: '', unassigned: 1, overdue: '', page: 1 }));
+    await waitFor(() => expect(api.list).toHaveBeenLastCalledWith({ stage: '', unassigned: 1, overdue: '' }));
   });
 });

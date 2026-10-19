@@ -141,7 +141,8 @@ function InquiryDetails({ inquiry, owners, canEdit, notificationsEnabled, onSave
 
 export default function AdmissionsInquiryQueue() {
   const [filters, setFilters] = useState({ stage: '', unassigned: false, overdue: false });
-  const [page, setPage] = useState(1);
+  const [cursor, setCursor] = useState('');
+  const [cursorStack, setCursorStack] = useState([]);
   const [payload, setPayload] = useState(null);
   const [selectedId, setSelectedId] = useState('');
   const [details, setDetails] = useState(null);
@@ -157,7 +158,7 @@ export default function AdmissionsInquiryQueue() {
     setLoading(true);
     setError('');
     try {
-      const result = await fetchAdmissionsInquiries({ stage: filters.stage, unassigned: filters.unassigned ? 1 : '', overdue: filters.overdue ? 1 : '', page });
+      const result = await fetchAdmissionsInquiries({ stage: filters.stage, unassigned: filters.unassigned ? 1 : '', overdue: filters.overdue ? 1 : '', ...(cursor ? { cursor } : {}) });
       if (version === loadVersion.current) setPayload(result);
     } catch (failure) {
       if (version === loadVersion.current) {
@@ -167,7 +168,7 @@ export default function AdmissionsInquiryQueue() {
     } finally {
       if (version === loadVersion.current) setLoading(false);
     }
-  }, [filters, page]);
+  }, [filters, cursor]);
 
   useEffect(() => { reload(); }, [reload]);
   const inquiries = Array.isArray(payload?.results) ? payload.results : [];
@@ -198,18 +199,26 @@ export default function AdmissionsInquiryQueue() {
     return () => { active = false; };
   }, [selectedId, payload, loading, error]);
   const ownerName = (id) => owners.find((owner) => owner.id === id)?.name || (id ? 'Assigned counselor' : 'Unassigned');
-  const currentPage = Number(payload?.page) || page;
-  const totalPages = Math.max(1, Number(payload?.total_pages) || 1);
-  function changePage(nextPage) {
-    if (loading || nextPage < 1 || nextPage > totalPages || nextPage === currentPage) return;
+  const currentPage = cursorStack.length + 1;
+  function nextPage() {
+    if (loading || !payload?.next_cursor) return;
     setSelectedId('');
     setSavedMessage('');
-    setPage(nextPage);
+    setCursorStack((previous) => [...previous, cursor]);
+    setCursor(payload.next_cursor);
+  }
+  function previousPage() {
+    if (loading || cursorStack.length === 0) return;
+    setSelectedId('');
+    setSavedMessage('');
+    setCursor(cursorStack[cursorStack.length - 1]);
+    setCursorStack((previous) => previous.slice(0, -1));
   }
   function changeFilters(changes) {
     setSelectedId('');
     setSavedMessage('');
-    setPage(1);
+    setCursor('');
+    setCursorStack([]);
     setFilters((previous) => ({ ...previous, ...changes }));
   }
 
@@ -243,7 +252,7 @@ export default function AdmissionsInquiryQueue() {
         {!loading && !error && inquiries.length > 0 ? (
           <div style={{ overflowX: 'auto' }}>
             <table className="crown-table">
-              <caption style={{ textAlign: 'left', paddingBottom: 10 }}>Showing {inquiries.length} of {payload.count ?? inquiries.length} matching inquiries. Page {currentPage} of {totalPages}; 100 records maximum per page.</caption>
+              <caption style={{ textAlign: 'left', paddingBottom: 10 }}>Page {currentPage}: {inquiries.length} of {payload.count ?? inquiries.length} matching inquiries shown; at most {payload.page_size || 100} per page.</caption>
               <thead><tr>{['Family contact', 'Interest', 'Source', 'Stage', 'Owner', 'Next follow-up', 'Action'].map((heading) => <th scope="col" key={heading}>{heading}</th>)}</tr></thead>
               <tbody>{inquiries.map((inquiry) => (
                 <tr key={inquiry.id}>
@@ -258,9 +267,9 @@ export default function AdmissionsInquiryQueue() {
               ))}</tbody>
             </table>
             <nav aria-label="Inquiry queue pages" style={{ ...ROW, justifyContent: 'flex-end', paddingTop: 12 }}>
-              <button className="crown-btn" type="button" onClick={() => changePage(currentPage - 1)} disabled={loading || currentPage <= 1}>Previous page</button>
-              <span>Page {currentPage} of {totalPages}</span>
-              <button className="crown-btn" type="button" onClick={() => changePage(currentPage + 1)} disabled={loading || currentPage >= totalPages}>Next page</button>
+              <button className="crown-btn" type="button" onClick={previousPage} disabled={loading || cursorStack.length === 0}>Previous page</button>
+              <span>Page {currentPage}</span>
+              <button className="crown-btn" type="button" onClick={nextPage} disabled={loading || !payload?.next_cursor}>Next page</button>
             </nav>
           </div>
         ) : null}

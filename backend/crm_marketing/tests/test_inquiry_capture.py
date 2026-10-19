@@ -377,35 +377,62 @@ def test_staff_inquiry_list_database_queries_do_not_scale_per_family(school):
     assert len(large_queries) <= len(small_queries) + 2
 
 
-def test_staff_inquiry_pages_reach_older_records_and_validate_bounds(school):
+def test_staff_inquiry_cursor_pages_reach_older_records_and_scope_school(school):
     client = APIClient()
     client.force_authenticate(user=_staff(school, edit=False))
     other = School.objects.create(name="Unrelated paging school")
     MarketingLead.objects.bulk_create([
-        MarketingLead(
-            school=school, parent_name=f"Inquiry Family {i:03d}",
-            email=f"page-{i}@example.invalid", inquiry_received_at=timezone.now(),
-            stage="inquiry",
-        )
+        MarketingLead(school=school, parent_name=f"Inquiry Family {i:03d}",
+                      email=f"page-{i}@example.invalid",
+                      inquiry_received_at=timezone.now(), stage="inquiry")
         for i in range(102)
     ])
-    MarketingLead.objects.create(
-        school=other, parent_name="Private inquiry", email="private@example.invalid",
-        inquiry_received_at=timezone.now(), stage="inquiry",
-    )
-    first = client.get(URL, {"page": "1", "stage": "all"}, HTTP_X_SCHOOL_ID=str(school.id))
-    second = client.get(URL, {"page": "2", "stage": "all"}, HTTP_X_SCHOOL_ID=str(school.id))
-    assert first.status_code == second.status_code == 200
-    assert first.data["page"] == 1 and first.data["page_size"] == 100
-    assert first.data["total_pages"] == second.data["total_pages"] == 2
-    assert first.data["count"] == second.data["count"] == 102
-    assert len(first.data["results"]) == 100 and len(second.data["results"]) == 2
-    ids = [row["id"] for row in first.data["results"] + second.data["results"]]
-    assert len(set(ids)) == 102
-    assert all(row["parent_name"] != "Private inquiry" for row in first.data["results"] + second.data["results"])
-    beyond = client.get(URL, {"page": "999", "stage": "all"}, HTTP_X_SCHOOL_ID=str(school.id))
-    assert beyond.status_code == 200 and beyond.data["page"] == 2
-    assert [row["id"] for row in beyond.data["results"]] == [row["id"] for row in second.data["results"]]
-    for value in ("0", "-1", "1.5", "abc", "1" * 40):
-        invalid = client.get(URL, {"page": value}, HTTP_X_SCHOOL_ID=str(school.id))
-        assert invalid.status_code == 400
+    MarketingLead.objects.create(school=other, parent_name="Private inquiry",
+                                 email="private@example.invalid",
+                                 inquiry_received_at=timezone.now(), stage="inquiry")
+    first = client.get(URL, {"stage": "all"}, HTTP_X_SCHOOL_ID=str(school.id))
+    assert first.status_code == 200 and len(first.data["results"]) == 100
+    assert first.data["page_size"] == 100 and first.data["count"] == 102
+    token = first.data["next_cursor"]
+    assert token
+    second = client.get(URL, {"stage": "all", "cursor": token},
+                        HTTP_X_SCHOOL_ID=str(school.id))
+    assert second.status_code == 200 and len(second.data["results"]) == 2
+    assert second.data["next_cursor"] is None
+    rows = first.data["results"] + second.data["results"]
+    assert len({row["id"] for row in rows}) == 102
+    assert all(row["parent_name"] != "Private inquiry" for row in rows)
+    for params in (
+        {"stage": "all", "cursor": token + "forged"},
+        {"stage": "inquiry", "cursor": token},
+        {"stage": "all", "limit": "0"},
+        {"stage": "all", "limit": "101"},
+        {"stage": "all", "limit": "not-a-number"},
+    ):
+        assert client.get(URL, params, HTTP_X_SCHOOL_ID=str(school.id)).status_code == 400
+    foreign = APIClient()
+    foreign.force_authenticate(user=_staff(other, edit=False))
+    assert foreign.get(URL, {"stage": "all", "cursor": token},
+                       HTTP_X_SCHOOL_ID=str(other.id)).status_code == 400
+
+
+def test_staff_cursor_paging_is_deterministic_on_tied_due_dates(school):
+    client = APIClient()
+    client.force_authenticate(user=_staff(school, edit=False))
+    for i in range(7):
+        MarketingLead.objects.create(school=school, parent_name=f"Family {i}",
+                                     email=f"family-{i}@example.invalid",
+                                     inquiry_received_at=timezone.now(), stage="inquiry")
+    seen = []
+    token = None
+    for _ in range(4):
+        params = {"stage": "all", "limit": "2"}
+        if token:
+            params["cursor"] = token
+        response = client.get(URL, params, HTTP_X_SCHOOL_ID=str(school.id))
+        assert response.status_code == 200
+        seen.extend(row["id"] for row in response.data["results"])
+        token = response.data["next_cursor"]
+        if not token:
+            break
+    assert len(seen) == len(set(seen)) == 7
