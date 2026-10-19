@@ -69,3 +69,12 @@ def validate_database_runtime(
         raise ImproperlyConfigured(
             "Hosted and staging/production database must not use SQLite."
         )
+
+
+
+def validate_debug_runtime(debug: bool, *, hardened: bool) -> None:
+    """Do not permit DEBUG even if an explicit env override is supplied."""
+    if hardened and debug:
+        raise ImproperlyConfigured(
+            "DEBUG=True is forbidden in hardened environments."
+        )
