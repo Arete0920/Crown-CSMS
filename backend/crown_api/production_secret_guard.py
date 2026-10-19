@@ -45,3 +45,25 @@ def enforce_production_secret(argv: list[str] | None = None) -> None:
             "staging, sandbox hardening, Azure runtime, and django --deploy checks. "
             "CROWN will not generate an ephemeral replacement."
         )
+
+
+def validate_database_runtime(
+    database_url: str,
+    *,
+    hardened: bool,
+    hosted: bool,
+) -> None:
+    """Fail closed before Django can select its local SQLite fallback.
+
+    A deploy-check or explicitly hardened process must specify a database.
+    Hosted, sandbox, staging, and production processes must not use SQLite;
+    local and CI SQLite continue to be supported.
+    """
+    if hardened and not database_url:
+        raise ImproperlyConfigured(
+            "DATABASE_URL is required in hardened environments."
+        )
+    if hosted and database_url.lower().startswith(("sqlite:", "sqlite3:")):
+        raise ImproperlyConfigured(
+            "Hosted and staging/production database must not use SQLite."
+        )
