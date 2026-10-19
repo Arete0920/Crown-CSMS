@@ -392,7 +392,7 @@ class GradeCreateSerializer(serializers.Serializer):
     """Create or update grade for submission."""
 
     submission_id = serializers.UUIDField()
-    numeric_score = serializers.DecimalField(max_digits=7, decimal_places=2)
+    numeric_score = serializers.DecimalField(max_digits=7, decimal_places=2, min_value=0)
     teacher_feedback = serializers.CharField(
         required=False, allow_blank=True, default=""
     )
