@@ -37,6 +37,10 @@ def test_valid_typed_response_round_trip():
     ({"rating": 6}, "rating"),
     ({"rating": "4"}, "rating"),
     ({"rating": float("nan")}, "rating"),
+    ({"rating": float("inf")}, "rating"),
+    ({"rating": float("-inf")}, "rating"),
+    ({"rating": 10 ** 309}, "rating"),
+    ({"rating": -(10 ** 309)}, "rating"),
     ({"rating": 3, "source": "not-an-option"}, "source"),
     ({"rating": 3, "source": "family", "topics": ["teaching", "teaching"]}, "topics"),
     ({"rating": 3, "source": "family", "topics": ["outside"]}, "topics"),
@@ -49,6 +53,10 @@ def test_invalid_question_answer_fails_closed(answers, key):
     with pytest.raises(SurveyAnswerValidationError) as exc:
         validate_answers(QUESTIONS, answers)
     assert key in exc.value.errors
+
+
+def test_scale_integer_valued_float_remains_accepted():
+    assert validate_answers([q("rating", "scale")], {"rating": 5.0}) == {"rating": 5}
 
 
 def test_invalid_container_is_rejected():
