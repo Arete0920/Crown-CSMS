@@ -309,22 +309,22 @@ def commit_session(request, session_id):
         session.save()
 
         # Audit creation is part of the same transaction. Failure rolls back fees.
-    AuditLog.objects.create(
-        user_id=getattr(request.user, "id", None),
-        action="fee_schedule.commit",
-        model="FeeSchedule",
-        object_id=result["schedule_id"],
-        metadata={
-            "schedule_name": result["schedule_name"],
-            "term":          result["term"],
-            "created":       result["created"],
-            "lines_created":    result["lines_created"],
-            "lines_updated":    result["lines_updated"],
-            "deactivated_count": result["deactivated_count"],
-            "school_id":        str(school_id),
-            "session_id":       str(session.id),
-        },
-    )
+        AuditLog.objects.create(
+            user_id=getattr(request.user, "id", None),
+            action="fee_schedule.commit",
+            model="FeeSchedule",
+            object_id=result["schedule_id"],
+            metadata={
+                "schedule_name": result["schedule_name"],
+                "term":          result["term"],
+                "created":       result["created"],
+                "lines_created":    result["lines_created"],
+                "lines_updated":    result["lines_updated"],
+                "deactivated_count": result["deactivated_count"],
+                "school_id":        str(school_id),
+                "session_id":       str(session.id),
+            },
+        )
     return Response({"session_id": str(session.id), "status": session.status, "result": result})
 
 
