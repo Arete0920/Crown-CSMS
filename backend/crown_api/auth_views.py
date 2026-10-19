@@ -174,7 +174,9 @@ def refresh(request):
 
     try:
         with transaction.atomic():
-            # The DB's unique key arbitrates races across workers/hosts.
+            # Lock the user so deactivation, role and school changes cannot
+            # race credential issuance. The unique digest arbitrates replay.
+            user = CrownUser.objects.select_for_update().get(pk=user_uuid, is_active=True)
             # Store only the digest, never the bearer token itself.
             LegacyRefreshConsumption.objects.create(
                 user=user,
@@ -189,6 +191,13 @@ def refresh(request):
                 ttl_seconds=900,
             )
             replacement = build_refresh_token(user_id=str(user.id))
+    except CrownUser.DoesNotExist:
+        unavailable = _record_failure_or_unavailable(
+            request, scope="crown-refresh", identity=token,
+        )
+        if unavailable is not None:
+            return unavailable
+        return JsonResponse({"ok": False, "error": "invalid_refresh"}, status=401)
     except IntegrityError:
         unavailable = _record_failure_or_unavailable(
             request, scope="crown-refresh", identity=token,
