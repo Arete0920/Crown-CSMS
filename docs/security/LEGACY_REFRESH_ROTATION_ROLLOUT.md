@@ -47,3 +47,13 @@ admin and Windows-demo clients before activating the behavior.
   expired digest records, and production migration/rollback authority.
 - Record redacted environment/source/schema/test evidence, never credentials.
 - Keep #372 open until deployed runtime evidence is complete.
+
+### Expired-digest retention
+
+The `purge_expired_legacy_refresh` management command defaults to a bounded,
+read-only inspection. With separately authorized `--apply`, it removes only
+rows whose signed token expiry has already passed, in bounded batches.
+For example, `python manage.py purge_expired_legacy_refresh --apply
+--batch-size 500 --max-batches 20` removes at most 10,000 records per run.
+The command never prints JWTs or stored digests. Schedule and monitor it only
+after the legacy schema and production operation are explicitly accepted.
