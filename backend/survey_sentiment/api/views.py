@@ -67,7 +67,7 @@ def _validated_draft_payload(request):
         payload = json.loads(
             request.body.decode("utf-8"), object_pairs_hook=_unique_json_object,
         )
-    except (UnicodeDecodeError, json.JSONDecodeError, ValueError):
+    except (UnicodeError, json.JSONDecodeError, ValueError, RecursionError):
         return None, {"body": "Invalid JSON body."}
     if not isinstance(payload, dict) or set(payload) - {"name", "purpose", "questions"}:
         return None, {"body": "Only name, purpose and questions can be supplied."}
