@@ -20,6 +20,11 @@ from pathlib import Path
 from django.core.exceptions import ImproperlyConfigured
 from corsheaders.defaults import default_headers
 from crown_api.wizard_registry import WIZARD_INSTALLED_APPS  # single source of truth
+from crown_api.production_secret_guard import (
+    _is_hardened_context,
+    validate_database_runtime,
+    validate_debug_runtime,
+)
 
 
 def _env_bool(name: str, default: bool = False) -> bool:
@@ -48,6 +53,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Dev API open toggle (development only). Default closed unless explicitly enabled.
 _is_azure = bool(os.getenv("WEBSITE_HOSTNAME") or os.getenv("WEBSITE_INSTANCE_ID"))
+_CROWN_HARDENED_RUNTIME = _is_hardened_context()
+_CROWN_HOSTED_RUNTIME = _is_azure or any(
+    os.getenv(name, "").strip().lower() in {"sandbox", "staging", "prod", "production", "live"}
+    for name in ("CROWN_ENV", "DJANGO_ENV", "ENVIRONMENT", "AZURE_ENVIRONMENT")
+)
 CROWN_DEV_OPEN_API = _env_bool("CROWN_DEV_OPEN_API", default=False)
 
 # Production API documentation is closed by default. It may be explicitly
@@ -72,7 +82,7 @@ _secret_key_env = os.getenv("DJANGO_SECRET_KEY") or os.getenv("SECRET_KEY")
 if not _secret_key_env:
     # In any non-debug / Azure context, refuse to start with the insecure fallback.
     _would_be_debug = _env_bool("DJANGO_DEBUG", default=(False if _is_azure else True)) or _env_bool("DEBUG", default=False)
-    if _is_azure or not _would_be_debug:
+    if _CROWN_HARDENED_RUNTIME or not _would_be_debug:
         raise ImproperlyConfigured(
             "Missing required environment variable: DJANGO_SECRET_KEY. "
             "Set DJANGO_SECRET_KEY in your environment before starting the server."
@@ -307,6 +317,11 @@ WSGI_APPLICATION = 'crown_api.wsgi.application'
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
 DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
+validate_database_runtime(
+    DATABASE_URL,
+    hardened=_CROWN_HARDENED_RUNTIME,
+    hosted=_CROWN_HOSTED_RUNTIME,
+)
 
 if DATABASE_URL:
     import dj_database_url
@@ -692,7 +707,7 @@ _CROWN_ENV = _crown_os.getenv("CROWN_ENV", "").strip().lower()
 _CROWN_IS_DEPLOY_CHECK = "--deploy" in sys.argv
 _CROWN_DEPLOY_SECURITY = (
     _crown_os.getenv("CROWN_DEPLOY_SECURITY", "").strip().lower() in _CROWN_TRUE_VALUES
-    or _CROWN_ENV in {"sandbox", "staging", "production", "prod"}
+    or _CROWN_HARDENED_RUNTIME
     or _CROWN_IS_DEPLOY_CHECK
 )
 
@@ -720,7 +735,9 @@ if _CROWN_DEPLOY_SECURITY:
         or len(SECRET_KEY) < 50
         or len(set(SECRET_KEY)) < 5
     ):
-        SECRET_KEY = secrets.token_urlsafe(64)
+        raise ImproperlyConfigured(
+            "A strong DJANGO_SECRET_KEY or SECRET_KEY is required for hardened runs."
+        )
 
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
@@ -758,7 +775,7 @@ _CROWN_ENV = (
 
 _CROWN_IS_PROD = _CROWN_ENV in {"prod", "production"} or bool(_crown_os.getenv("WEBSITE_HOSTNAME"))
 _CROWN_IS_DEPLOY_CHECK = "--deploy" in _crown_sys.argv
-_CROWN_HARDENED_CONTEXT = _CROWN_IS_PROD or _CROWN_IS_DEPLOY_CHECK
+_CROWN_HARDENED_CONTEXT = _CROWN_HARDENED_RUNTIME or _CROWN_IS_DEPLOY_CHECK
 
 
 def _crown_bool_env(name: str, default: bool = False) -> bool:
@@ -777,20 +794,23 @@ def _crown_csv_env(name: str) -> list[str]:
 _SECRET_FROM_ENV = (
     _crown_os.getenv("DJANGO_SECRET_KEY")
     or _crown_os.getenv("SECRET_KEY")
-    or globals().get("SECRET_KEY")
+    or (None if _CROWN_HARDENED_RUNTIME else globals().get("SECRET_KEY"))
 )
-if _CROWN_IS_PROD:
-    if not _SECRET_FROM_ENV or str(_SECRET_FROM_ENV).startswith("django-insecure-"):
-        raise RuntimeError(
-            "Production SECRET_KEY is missing or insecure. "
-            "Set DJANGO_SECRET_KEY or SECRET_KEY in Azure App Settings."
+if _CROWN_HARDENED_RUNTIME:
+    if (
+        not _SECRET_FROM_ENV
+        or str(_SECRET_FROM_ENV).startswith("django-insecure-")
+        or len(_SECRET_FROM_ENV) < 50
+        or len(set(_SECRET_FROM_ENV)) < 5
+    ):
+        raise ImproperlyConfigured(
+            "A strong configured secret is required in hardened environments."
         )
 SECRET_KEY = _SECRET_FROM_ENV
 
 # DEBUG must be false in production.
 DEBUG = _crown_bool_env("DJANGO_DEBUG", _crown_bool_env("DEBUG", False))
-if _CROWN_IS_PROD and DEBUG:
-    raise RuntimeError("DEBUG=True is forbidden in production.")
+validate_debug_runtime(DEBUG, hardened=_CROWN_HARDENED_CONTEXT)
 
 # Host and CSRF configuration.
 _ALLOWED_HOSTS_ENV = _crown_csv_env("DJANGO_ALLOWED_HOSTS") or _crown_csv_env("ALLOWED_HOSTS")
