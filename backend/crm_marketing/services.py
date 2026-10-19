@@ -1,13 +1,16 @@
 from __future__ import annotations
 
 from collections import Counter
+from django.db.models import Q, Prefetch
 from django.utils import timezone
 
 from .models import CampaignTouchpoint, LeadStage, MarketingLead
 
 
 def register_admissions_submit(application, *, source: str = "", start_term: str = ""):
-    leads = list(MarketingLead.objects.filter(school_id=application.school_id, application=application))
+    leads = list(MarketingLead.objects.filter(
+        Q(application=application) | Q(applications=application), school_id=application.school_id,
+    ).distinct())
     if not leads:
         leads = [
             MarketingLead.objects.create(
@@ -29,7 +32,9 @@ def register_admissions_submit(application, *, source: str = "", start_term: str
 
 
 def register_workflow_update(application, *, stage: str, summary: str, payload=None, created_by=None):
-    leads = list(MarketingLead.objects.filter(school_id=application.school_id, application=application))
+    leads = list(MarketingLead.objects.filter(
+        Q(application=application) | Q(applications=application), school_id=application.school_id,
+    ).distinct())
     if not leads:
         leads = [MarketingLead.objects.create(school_id=application.school_id, application=application, stage=stage)]
     now = timezone.now()
@@ -103,7 +108,7 @@ def build_follow_up_playbook(stage: str):
 
 def build_campaign_snapshot(campaign):
     from aid.models import AidAward
-    from applications.models import ApplicationEvent
+    from applications.models import Application, ApplicationEvent
     from core.models import Enrollment
     from enrollment_period_wizard.models import GradeCapacity
     from spiritual_life.formation_models import PortraitDomain
@@ -143,22 +148,35 @@ def build_campaign_snapshot(campaign):
             ).values_list("awarded_cents", flat=True)
         )
 
-    leads = campaign.leads.filter(school=campaign.school)
-    lead_rows = list(leads.values_list("stage", "application_id"))
+    leads = campaign.leads.filter(school=campaign.school).prefetch_related(Prefetch(
+        "applications", queryset=Application.objects.filter(school_id=campaign.school_id).only("id"),
+        to_attr="scoped_applications",
+    ))
+    lead_rows = []
+    for lead in leads:
+        app_ids = {app.id for app in lead.scoped_applications}
+        if lead.application_id:
+            app_ids.add(lead.application_id)
+        lead_rows.append((lead, app_ids))
     confirmed_ids = set(ApplicationEvent.objects.filter(
         school_id=campaign.school_id, application__school_id=campaign.school_id,
-        application_id__in=[app_id for _, app_id in lead_rows if app_id],
+        application_id__in={app_id for _, app_ids in lead_rows for app_id in app_ids},
         event_type="enrollment_confirmed",
     ).values_list("application_id", flat=True))
     stage_counts = Counter(
-        LeadStage.ENROLLED if app_id in confirmed_ids else
-        "enrollment_unverified" if stage == LeadStage.ENROLLED else stage
-        for stage, app_id in lead_rows
+        LeadStage.ENROLLED if app_ids & confirmed_ids else
+        "enrollment_unverified" if lead.stage == LeadStage.ENROLLED else lead.stage
+        for lead, app_ids in lead_rows
     )
     enrolled = len(confirmed_ids)
     inquiry_count = int(stage_counts.get(LeadStage.INQUIRY, 0))
     application_count = int(stage_counts.get(LeadStage.APPLICATION_SUBMITTED, 0)) + int(stage_counts.get(LeadStage.APPLICATION_STARTED, 0))
-    due_followups = leads.filter(next_follow_up_at__lte=timezone.now()).exclude(stage=LeadStage.LOST).exclude(application_id__in=confirmed_ids).count()
+    now = timezone.now()
+    due_followups = sum(
+        lead.stage != LeadStage.LOST and not app_ids & confirmed_ids
+        and lead.next_follow_up_at is not None and lead.next_follow_up_at <= now
+        for lead, app_ids in lead_rows
+    )
 
     tuition = int(campaign.tuition_per_student_cents or 0)
     goal = int(campaign.enrollment_goal or 0)
@@ -199,7 +217,7 @@ def build_campaign_snapshot(campaign):
             "unverified_enrollment_leads": stage_counts.get("enrollment_unverified", 0),
             "by_stage": dict(stage_counts),
             "followups_due": due_followups,
-            "touchpoints": campaign.touchpoints.count(),
+            "touchpoints": campaign.touchpoints.filter(school_id=campaign.school_id).count(),
         },
         "economics": {
             "budget_cents": int(campaign.budget_cents or 0),

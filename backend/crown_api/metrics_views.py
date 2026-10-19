@@ -333,6 +333,64 @@ def financial_aid_metrics(request):
     })
 
 
+def _inquiry_capture_metrics(school_id, *, submitted_app_ids, enrolled_ids, legacy_inquiry_ids):
+    """Count captured families separately from historical per-application events."""
+    from django.db.models import Prefetch
+    from applications.models import Application
+    from crm_marketing.models import MarketingLead
+
+    leads = MarketingLead.objects.filter(
+        school_id=school_id, inquiry_received_at__isnull=False,
+    ).prefetch_related(Prefetch(
+        "applications", queryset=Application.objects.filter(school_id=school_id).only("id", "status"),
+        to_attr="scoped_applications",
+    ))
+    summary = {
+        "captured": 0, "active": 0, "unassigned": 0, "followups_due": 0,
+        "application_started": 0, "application_submitted": 0, "enrolled": 0,
+        "unit": "family_inquiry", "enrollment_basis": "at_least_one_confirmed_application",
+    }
+    now = timezone.now()
+    valid_app_ids = set(submitted_app_ids)
+    linked_app_ids = set()
+    sources = {}
+    for lead in leads:
+        linked = {app.id for app in lead.scoped_applications if app.id in valid_app_ids}
+        if lead.application_id in valid_app_ids:
+            linked.add(lead.application_id)
+        linked_app_ids.update(linked)
+        confirmed = linked & enrolled_ids
+        started = lead.application_started_at is not None
+        active = lead.stage in {"inquiry", "tour_scheduled", "tour_completed", "application_started"} and not linked
+        summary["captured"] += 1
+        summary["active"] += int(active)
+        summary["unassigned"] += int(active and lead.assigned_to_user_id is None)
+        summary["followups_due"] += int(active and lead.next_follow_up_at is not None and lead.next_follow_up_at <= now)
+        summary["application_started"] += int(started)
+        summary["application_submitted"] += int(bool(linked))
+        summary["enrolled"] += int(bool(confirmed))
+        source = lead.first_source.strip() or "Unspecified"
+        row = sources.setdefault(source, {
+            "source": source, "inquiries": 0, "families_applied": 0,
+            "families_enrolled": 0, "applications": set(), "confirmed_applications": set(),
+        })
+        row["inquiries"] += 1
+        row["families_applied"] += int(bool(linked))
+        row["families_enrolled"] += int(bool(confirmed))
+        row["applications"].update(linked)
+        row["confirmed_applications"].update(confirmed)
+    summary["legacy_inquiry_applications"] = len(legacy_inquiry_ids - linked_app_ids)
+    attribution = []
+    for row in sources.values():
+        row["applications"] = len(row["applications"])
+        row["confirmed_applications"] = len(row["confirmed_applications"])
+        row["inquiry_to_application_pct"] = round(100 * row["families_applied"] / row["inquiries"], 1)
+        row["inquiry_to_enrollment_pct"] = round(100 * row["families_enrolled"] / row["inquiries"], 1)
+        attribution.append(row)
+    attribution.sort(key=lambda row: (-row["inquiries"], row["source"].lower()))
+    return summary, attribution
+
+
 @require_http_methods(["GET"])
 @require_permission("marketing.view")
 def marketing_metrics(request):
@@ -406,6 +464,9 @@ def marketing_metrics(request):
     total_applications = len(application_ids)
     total_enrolled = len(enrolled_ids)
     overall_conversion_pct = round((total_enrolled / total_applications) * 100, 1) if total_applications else 0.0
+    inquiry_capture, inquiry_source_attribution = _inquiry_capture_metrics(
+        school_id, submitted_app_ids=application_ids, enrolled_ids=enrolled_ids, legacy_inquiry_ids=inquiry_ids,
+    )
 
     from crm_marketing.models import MarketingCampaign
     from crm_marketing.services import build_campaign_snapshot
@@ -416,6 +477,12 @@ def marketing_metrics(request):
     ]
 
     action_queue = []
+    if inquiry_capture["unassigned"] or inquiry_capture["followups_due"]:
+        action_queue.append({
+            "title": "Review captured family inquiries",
+            "detail": f"{inquiry_capture['unassigned']} unassigned; {inquiry_capture['followups_due']} follow-ups due.",
+            "state": "Action Required", "priority": "high", "href": "/admissions/inquiries",
+        })
     if stalled_leads:
         action_queue.append(
             {
@@ -455,6 +522,8 @@ def marketing_metrics(request):
             "stalled_leads": stalled_leads,
             "overall_application_to_enrollment_pct": overall_conversion_pct,
             "source_attribution": inquiry_sources[:10],
+            "inquiry_capture": inquiry_capture,
+            "inquiry_source_attribution": inquiry_source_attribution[:10],
             "action_queue": action_queue[:6],
             "campaigns": campaign_snapshots,
             "market_intelligence": {

@@ -8,6 +8,8 @@ export const PATHS = {
 
   ADMISSIONS: '/admissions',
   ADMISSIONS_START: '/admissions/start',
+  ADMISSIONS_INQUIRE: '/admissions/inquire',
+  ADMISSIONS_INQUIRIES: '/admissions/inquiries',
   ADMISSIONS_PIPELINE: '/admissions/pipeline',
   ADMISSIONS_DASHBOARD: '/admissions-dashboard',
   ADMISSIONS_APPLY: '/admissions/apply',
