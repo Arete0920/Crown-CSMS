@@ -4,7 +4,6 @@ This is a reusable internal contract, NOT a public submission endpoint.
 It does not establish tenant authorization, respondent anonymity, or publication
 immutability; those are separate mandatory release gates.
 """
-from math import isfinite
 
 
 class SurveyAnswerValidationError(ValueError):
@@ -75,7 +74,8 @@ def validate_answers(questions, submitted):
             continue
 
         if kind == "scale":
-            if type(raw) not in (int, float) or not isfinite(raw) or raw != int(raw) or not 1 <= raw <= 5:
+            # Comparing against the bounded allowed ratings avoids OverflowError for huge ints.
+            if type(raw) not in (int, float) or raw not in (1, 2, 3, 4, 5):
                 errors[key] = "Select an integer rating from 1 to 5."
             else:
                 normalized[key] = int(raw)
