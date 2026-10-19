@@ -366,26 +366,29 @@ test.describe('CROWN buyer sandbox live browser authority', () => {
     expect(completed.demo_payment_processed).toBe(false);
     await expect(page.getByTestId('sandbox-parent-enrollment-complete')).toContainText('Jordan Reed');
 
+    // Consume response bodies as each network response arrives. Waiting to call
+    // response.json() until after reload can lose the body if the SPA navigates.
     const reloadedState = page.waitForResponse((response) =>
       response.url().includes('/api/v1/sandbox/parent/enrollment/') &&
       response.request().method() === 'GET',
-    );
+    ).then(async (response) => {
+      expect(response.ok()).toBe(true);
+      return response.json();
+    });
     const reloadedOverview = page.waitForResponse((response) =>
       response.url().includes('/api/v1/parent360/me/overview/') &&
       response.request().method() === 'GET',
-    );
+    ).then(async (response) => {
+      expect(response.ok()).toBe(true);
+      return response.json();
+    });
     await page.reload({ waitUntil: 'networkidle' });
-    const stateResponse = await reloadedState;
-    const overviewResponse = await reloadedOverview;
-    expect(stateResponse.ok()).toBe(true);
-    expect(overviewResponse.ok()).toBe(true);
-    const after = await stateResponse.json();
+    const [after, overview] = await Promise.all([reloadedState, reloadedOverview]);
     expect(String(after.application_id)).toBe(String(completed.application_id));
     expect(String(after.child_id)).toBe(String(completed.child_id));
     expect(after.lifecycle_stage).toBe('enrolled');
     expect(after.applicant_to_student_status).toBe('completed');
     expect(after.demo_payment_processed).toBe(false);
-    const overview = await overviewResponse.json();
     const sameApplication = (overview?.admissions_continuity?.applications || []).find(
       (application: { application_id: unknown }) =>
         String(application.application_id) === String(completed.application_id),
