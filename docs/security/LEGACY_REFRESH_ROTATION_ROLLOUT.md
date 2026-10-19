@@ -57,3 +57,8 @@ For example, `python manage.py purge_expired_legacy_refresh --apply
 --batch-size 500 --max-batches 20` removes at most 10,000 records per run.
 The command never prints JWTs or stored digests. Schedule and monitor it only
 after the legacy schema and production operation are explicitly accepted.
+
+The existing canonical `Tests` workflow's `survey-postgresql` job runs these
+legacy refresh tests against its isolated PostgreSQL 16 service. No additional
+workflow or paid service is created. CI reports are retained under the
+existing PostgreSQL test artifact.
