@@ -128,6 +128,10 @@ def inquiry_collection(request):
         school = _staff_school(request, "admissions.view")
         if school is None:
             return _response({"detail": "Permission denied."}, 403)
+        raw_page = request.query_params.get("page", "1")
+        if not raw_page.isascii() or not raw_page.isdecimal() or len(raw_page) > 8 or int(raw_page) < 1:
+            return _response({"detail": "Page must be a positive integer."}, 400)
+        requested_page = int(raw_page)
         leads = MarketingLead.objects.filter(school=school, inquiry_received_at__isnull=False)
         stage = request.query_params.get("stage")
         if stage and stage != "all":
@@ -141,9 +145,18 @@ def inquiry_collection(request):
         if request.query_params.get("overdue") == "1":
             leads = leads.filter(next_follow_up_at__lte=timezone.now(), stage__in=ACTIVE_INQUIRY_STAGES, application__isnull=True)
         from crm_marketing.inquiry_notifications import inquiry_notifications_enabled
+        page_size = 100
+        total = leads.count()
+        total_pages = max(1, (total + page_size - 1) // page_size)
+        page = min(requested_page, total_pages)
+        offset = (page - 1) * page_size
+        page_leads = leads.order_by("next_follow_up_at", "created_at", "id")[offset:offset + page_size]
         return _response({
-            "results": [_serialize(lead, include_related=False) for lead in leads.order_by("next_follow_up_at", "created_at", "id")[:100]],
-            "count": leads.count(),
+            "results": [_serialize(lead, include_related=False) for lead in page_leads],
+            "count": total,
+            "page": page,
+            "page_size": page_size,
+            "total_pages": total_pages,
             "notifications_enabled": inquiry_notifications_enabled(),
             "can_edit": user_has_permission(request.user, "admissions.edit", school=school),
             "owners": [{"id": str(user.id), "name": user.get_full_name() or user.username, "email": user.email} for user in eligible_owners(school)],
