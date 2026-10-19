@@ -1,12 +1,12 @@
 """Pytest-only settings that add an independent database alias for routing proof."""
 
 from copy import deepcopy
-import os
-
-# Synthetic migrated test databases exercise opt-in one-time refresh.
-os.environ["CROWN_LEGACY_REFRESH_ONE_USE_ENABLED"] = "true"
 
 from .settings import *  # noqa: F401,F403
+
+# Exercise one-use refresh against migrated synthetic test databases only.
+# Do not mutate process-wide environment configuration during settings import.
+CROWN_LEGACY_REFRESH_ONE_USE_ENABLED = True
 
 
 _section_alias = deepcopy(DATABASES["default"])
