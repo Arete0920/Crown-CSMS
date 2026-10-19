@@ -70,6 +70,7 @@ jobs:
         shell: bash
         env:
           DJANGO_SETTINGS_MODULE: crown_api.settings
+          CROWN_SIMPLEJWT_BLACKLIST_ENABLED: 'true'
           DJANGO_SECRET_KEY: ci-test-secret-key
           BUILD_SHA: ${{ github.sha }}
           PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/backend
@@ -87,6 +88,7 @@ jobs:
         working-directory: .
         env:
           DJANGO_SETTINGS_MODULE: crown_api.settings
+          CROWN_SIMPLEJWT_BLACKLIST_ENABLED: 'true'
           DJANGO_SECRET_KEY: ci-test-secret-key
           BUILD_SHA: ${{ github.sha }}
           PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/backend
