@@ -62,3 +62,45 @@ def test_old_refresh_cannot_be_reused_after_successful_rotation():
     assert second.status_code == 200
     assert second.data.get("refresh")
     assert BlacklistedToken.objects.filter(token__user=user).count() >= 2
+
+
+@pytest.mark.django_db(transaction=True)
+def test_concurrent_refresh_consumes_token_only_once():
+    """Real PostgreSQL workers cannot both rotate one refresh token."""
+    from concurrent.futures import ThreadPoolExecutor
+    from threading import Barrier
+
+    from django.db import connections
+
+    if connection.vendor != "postgresql":
+        pytest.skip("PostgreSQL row-locking contract")
+
+    user = get_user_model().objects.create_user(
+        username="fictional-parallel-refresh",
+        email="fictional-parallel-refresh@example.invalid",
+        password=None,
+        is_active=True,
+    )
+    original = str(RefreshToken.for_user(user))
+    barrier = Barrier(2)
+
+    def call_refresh(_):
+        connections.close_all()
+        try:
+            client = APIClient()
+            barrier.wait(timeout=15)
+            result = client.post(
+                "/api/v1/auth/token/refresh/",
+                {"refresh": original},
+                format="json",
+                REMOTE_ADDR="203.0.113.78",
+            )
+            return result.status_code
+        finally:
+            connections.close_all()
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        statuses = sorted(pool.map(call_refresh, range(2)))
+
+    assert statuses == [200, 401]
+    assert BlacklistedToken.objects.filter(token__user=user).count() == 1
