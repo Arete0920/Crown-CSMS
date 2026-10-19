@@ -1,7 +1,9 @@
-# GitHub Actions Version Audit
+# GitHub Actions Version Audit (Historical)
 
-**Date**: January 27, 2026
-**Status**: 3 deprecations found in deploy-prod.yml
+**Date:** January 27, 2026
+**Status:** Historical assessment of the January 2026 workflow baseline; not current upgrade guidance.
+
+The versions, workflow names, and remediation recommendations below are retained as an earlier assessment. Do not apply them to the current deployment workflows without a fresh source and action-version review. Current verification and change controls are documented in [CI Architecture](engineering/CI_ARCHITECTURE.md) and [Current Release Status](CURRENT_RELEASE_STATUS.md).
 
 ---
 

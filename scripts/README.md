@@ -20,9 +20,9 @@ Provides redaction helpers for passwords, tokens, connection strings, authorizat
 
 Runs commands while redacting sensitive output. Raw-output bypasses are prohibited unless the output is independently verified as non-sensitive.
 
-### `ops/root_legacy/`
+### `ops/`
 
-Contains retained legacy helper scripts moved from the repository root. These helpers are not current release authority and must be used only when their behavior and dependencies are verified.
+Contains operational probes and maintenance scripts. Before running one, review its required environment and intended target. These scripts are not substitutes for the governed deployment and recovery procedures in `docs/operations/`.
 
 ## Sharing command evidence
 
