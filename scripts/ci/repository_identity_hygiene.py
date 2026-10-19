@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import argparse
 import ast
 import codecs
 import hashlib
@@ -72,8 +73,55 @@ EXACT_REFERENCE_EXCEPTIONS = {
         "- a chatbot oracle",
 }
 
+# Advisory source-language patterns. String literals are masked from the
+# mandatory tracked-tree branding scan; the review output is not authorship proof.
+STYLE_REVIEW_RULES = (
+    ("assistant-disclosure", "high",
+     r"\b(?:as an? (?:ai|artificial intelligence) (?:language )?model|"
+     r"i(?:'|\u2019)?m an? (?:ai|language) model)\b", None),
+    ("prompt-role-marker", "high",
+     r"<\|(?:im_start|im_end|assistant|system|user)\|>|"
+     r"^\s*(?:System|Assistant):\s*(?:You are|Certainly|Of course)\b", None),
+    ("provider-attribution", "high",
+     r"\b(?:generated|written|created)\s+by\s+"
+     r"(?:chatgpt|openai|claude|github copilot|gemini|gpt-\d[\w.-]*)\b", None),
+    ("real-logic-todo", "high",
+     r"\bTODO\s*:\s*(?:implement|replace|add)\s+(?:(?:the|with)\s+)?"
+     r"(?:real|actual|production|business)\s+(?:logic|implementation|code)\b", None),
+    ("generic-code-introduction", "medium",
+     r"\b(?:here(?:'|\u2019)s|here is)\s+(?:the|some|a)\s+"
+     r"(?:code|implementation|script|solution)\b", None),
+    ("stock-assistant-opening", "medium",
+     r"\b(?:certainly|absolutely|of course)[!,:.]?\s+"
+     r"(?:here(?:'|\u2019)s|here is|let(?:'|\u2019)s)\b", None),
+    ("implementation-placeholder", "medium",
+     r"\b(?:placeholder\s+(?:logic|implementation|code|data)|"
+     r"mock\s+(?:implementation|logic)\s+(?:goes\s+)?here)\b", None),
+    ("assistant-signoff", "medium",
+     r"\b(?:i hope (?:this|that) helps|"
+     r"feel free to (?:ask|reach out|let me know))\b", None),
+    ("robotic-transition", "low",
+     r"\b(?:let(?:'|\u2019)s (?:dive|delve) (?:right )?in|"
+     r"without further ado|in today(?:'|\u2019)s fast-paced|"
+     r"in conclusion|this comprehensive guide will)\b", None),
+    ("generic-markdown-heading", "low",
+     r"^\s{0,3}#{1,6}\s+(?:Key Takeaways|Final Thoughts|Quick Recap|"
+     r"In Conclusion|Why It Matters|Let(?:'|\u2019)s Get Started)"
+     r"\s*[:.!?]?\s*$", ".md"),
+    ("emoji-markdown-heading", "low",
+     r"^\s{0,3}#{1,6}\s+[\U0001f680\u2728\U0001f525\u2705"
+     r"\U0001f4a1\U0001f3af\U0001f4cc\U0001f4da\U0001f389\u26a1]\ufe0f?\s+", ".md"),
+)
+STYLE_REVIEW_COMPILED = tuple(
+    (name, confidence, re.compile(expression, re.IGNORECASE), extension)
+    for name, confidence, expression, extension in STYLE_REVIEW_RULES
+)
+STYLE_REVIEW_EXTENSIONS = {".py", ".md", ".yml", ".yaml"}
+STYLE_CONFIDENCE_ORDER = {"low": 1, "medium": 2, "high": 3}
+
+
 GUARD_PATH = "scripts/ci/repository_identity_hygiene.py"
-CONTROL_ASSIGNMENTS = {"REFERENCE_WORDS", "EXACT_REFERENCE_EXCEPTIONS", "VERSIONED_MODEL_RE"}
+CONTROL_ASSIGNMENTS = {"REFERENCE_WORDS", "EXACT_REFERENCE_EXCEPTIONS", "VERSIONED_MODEL_RE", "STYLE_REVIEW_RULES"}
 # Admission requires metadata/text extraction and rendered-content review recorded
 # in the current sweep evidence. A changed file or a new path requires new review.
 REVIEWED_BINARY_SHA256 = {
@@ -246,6 +294,47 @@ def scan_references(root: Path) -> tuple[list[tuple[str, int, str]], dict[str, i
     return findings, counts
 
 
+def scan_style_signatures(root: Path) -> tuple[list[tuple[str, int, int, str, str, str]], list[str]]:
+    """Report source-language review candidates without changing tracked files."""
+    matches: list[tuple[str, int, int, str, str, str]] = []
+    errors: list[str] = []
+    try:
+        result = subprocess.run(
+            ["git", "-C", str(root), "ls-files", "-z"],
+            check=True, capture_output=True,
+        )
+        paths = [part for part in result.stdout.decode("utf-8").split("\0") if part]
+    except (OSError, UnicodeError, subprocess.CalledProcessError) as exc:
+        return matches, [f"cannot enumerate Git-tracked files: {exc}"]
+    if not paths:
+        return matches, ["Git index contains no tracked files"]
+    for relative in paths:
+        if Path(relative).suffix.lower() not in STYLE_REVIEW_EXTENSIONS:
+            continue
+        path = root / relative
+        try:
+            if path.is_symlink():
+                raise OSError("tracked symlink requires explicit review")
+            content = _decode_text(path.read_bytes())
+            if content is None:
+                raise ValueError("not decodable source text")
+        except (OSError, ValueError) as exc:
+            errors.append(f"{relative}: {exc}")
+            continue
+        content = _mask_control_literals(relative, content)
+        for lineno, line in enumerate(content.splitlines(), 1):
+            extension = path.suffix.lower()
+            for name, confidence, expression, scope in STYLE_REVIEW_COMPILED:
+                if scope is not None and scope != extension:
+                    continue
+                for match in expression.finditer(line):
+                    matches.append((
+                        relative, lineno, match.start() + 1,
+                        name, confidence, match.group(0),
+                    ))
+    return matches, errors
+
+
 def first_party_text_files():
     for path in ROOT.rglob("*"):
         if not path.is_file():
@@ -264,6 +353,20 @@ def first_party_text_files():
 
 
 def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--review-style", action="store_true",
+        help="Print read-only source-language review candidates",
+    )
+    parser.add_argument(
+        "--style-min-confidence", choices=("low", "medium", "high"), default="low",
+        help="Lowest reported source-language confidence",
+    )
+    parser.add_argument(
+        "--fail-style-high", action="store_true",
+        help="Fail if a high-confidence style marker is found",
+    )
+    options = parser.parse_args()
     findings, counts = scan_references(ROOT)
     self_rel = Path(__file__).resolve().relative_to(ROOT)
 
@@ -280,12 +383,30 @@ def main() -> int:
                     findings.append((rel.as_posix(), lineno, reason))
 
     print("Tracked reference coverage: " + ", ".join(f"{key}={value}" for key, value in counts.items()))
+    style_errors: list[str] = []
+    strong_style = False
+    if options.review_style or options.fail_style_high:
+        candidates, style_errors = scan_style_signatures(ROOT)
+        print(f"Source-language review candidates: {len(candidates)} (review only; not authorship proof)")
+        for relative, lineno, column, name, confidence, phrase in candidates:
+            if confidence == "high":
+                strong_style = True
+            if (options.review_style and STYLE_CONFIDENCE_ORDER[confidence] >=
+                    STYLE_CONFIDENCE_ORDER[options.style_min_confidence]):
+                print(f"- {relative}:{lineno}:{column} [{confidence}] {name}: {phrase!r}")
+        for problem in style_errors:
+            print(f"- source-language scan error: {problem}")
     if findings:
         print("Repository identity/naming hygiene violations:")
         for rel, lineno, reason in findings:
             print(f"- {rel}:{lineno} ({reason})")
         return 1
 
+    if style_errors:
+        return 1
+    if options.fail_style_high and strong_style:
+        print("High-confidence source-language patterns require review")
+        return 1
     print("Repository identity/naming hygiene: PASS")
     return 0
 
