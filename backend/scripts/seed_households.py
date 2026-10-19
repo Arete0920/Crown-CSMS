@@ -1,38 +1,24 @@
-"""Deterministic local seed for Households module.
+"""Explicitly local, fictional household seed for legacy proof only.
 
-Safe-by-default:
-- Refuses to run on Azure (WEBSITE_HOSTNAME/WEBSITE_INSTANCE_ID present)
-- Uses get_or_create so it can be re-run without duplicating
-
-Usage (PowerShell):
-  cd backend
-    .\\venv\\Scripts\\python.exe ..\\backend\\scripts\\seed_households.py
-
-NOTE: This now creates household/guardian records only.
-Student linking is handled by seed_demo_school (core.Student) and admissions bridge.
+The legacy crown_api models have no canonical school tenant key. This script
+therefore rejects hosted and non-isolated databases and never imports live data.
 """
 
-import os
-import logging
+from __future__ import annotations
 
+import logging
+import os
 
 logger = logging.getLogger(__name__)
 
 
-def _refuse_if_azure() -> None:
-    if os.getenv("WEBSITE_HOSTNAME") or os.getenv("WEBSITE_INSTANCE_ID"):
-        raise SystemExit("Refusing to run seed_households on Azure/production.")
-
-
 def run() -> None:
-    _refuse_if_azure()
-
     os.environ.setdefault("DJANGO_SETTINGS_MODULE", "crown_api.settings")
-
     import django
-
     django.setup()
 
+    from django.core.management.base import CommandError
+    from django.db import transaction
     from crown_api.models import Household, HouseholdMember, Person
     from crown_api.models_households import (
         ROLE_AUTHORIZED_PICKUP,
@@ -41,123 +27,71 @@ def run() -> None:
         ROLE_GUARDIAN,
         ROLE_PRIMARY_GUARDIAN,
     )
-
-    def person(first_name: str, last_name: str, email: str, phone: str | None = None) -> Person:
-        obj, _ = Person.objects.get_or_create(
-            email=email,
-            defaults={
-                "first_name": first_name,
-                "last_name": last_name,
-                "phone": phone,
-            },
-        )
-        # Keep deterministic values stable if re-run.
-        changed = False
-        for field, value in {
-            "first_name": first_name,
-            "last_name": last_name,
-            "phone": phone,
-        }.items():
-            if getattr(obj, field) != value:
-                setattr(obj, field, value)
-                changed = True
-        if changed:
-            obj.save(update_fields=["first_name", "last_name", "phone", "updated_at"])
-        return obj
-
-    def household(name: str, city: str, state: str) -> Household:
-        obj, _ = Household.objects.get_or_create(
-            household_name=name,
-            defaults={"primary_city": city, "primary_state": state},
-        )
-        return obj
-
-    h1 = household("The Megahan Family", city="Buffalo", state="NY")
-    h2 = household("The Carter Family", city="Raleigh", state="NC")
-
-    # Household 1 guardians
-    p1 = person("John", "Megahan", "john.megahan@example.com", phone="555-0001")
-    p2 = person("Jane", "Megahan", "jane.megahan@example.com", phone="555-0002")
-
-    HouseholdMember.objects.get_or_create(
-        household=h1,
-        person=p1,
-        role=ROLE_PRIMARY_GUARDIAN,
-        defaults={"is_primary": True},
-    )
-    HouseholdMember.objects.get_or_create(
-        household=h1,
-        person=p1,
-        role=ROLE_FINANCIALLY_RESPONSIBLE,
-        defaults={"is_primary": False},
-    )
-    HouseholdMember.objects.get_or_create(
-        household=h1,
-        person=p2,
-        role=ROLE_GUARDIAN,
-        defaults={"is_primary": False},
-    )
-    HouseholdMember.objects.get_or_create(
-        household=h1,
-        person=p2,
-        role=ROLE_EMERGENCY_CONTACT,
-        defaults={"is_primary": False},
-    )
-    HouseholdMember.objects.get_or_create(
-        household=h1,
-        person=p2,
-        role=ROLE_AUTHORIZED_PICKUP,
-        defaults={"is_primary": False},
+    from core.legacy_demo_seed_safety import (
+        LEGACY_HOUSEHOLDS,
+        require_isolated_fixture_directory,
+        require_local_legacy_fixture_seed,
     )
 
-    # Household 1 students (NOTE: core.Student objects created by seed_demo_school)
-    # StudentProfile linking will happen via scoping bridge in admissions
-    # This section intentionally removed - Student/StudentProfile now
-    # use core.models.Student with family-based relationships.
+    require_local_legacy_fixture_seed("seed_households")
+    with transaction.atomic():
+        require_isolated_fixture_directory(Household, Person)
 
-    # Household 2 guardians
-    p3 = person("Mark", "Carter", "mark.carter@example.com", phone="555-1001")
-    p4 = person("Mary", "Carter", "mary.carter@example.com", phone="555-1002")
+        for scenario in LEGACY_HOUSEHOLDS:
+            household, created = Household.objects.get_or_create(
+                household_name=scenario.name,
+                defaults={
+                    "primary_city": scenario.city,
+                    "primary_state": scenario.state,
+                },
+            )
+            if not created and (
+                household.primary_city != scenario.city
+                or household.primary_state != scenario.state
+            ):
+                raise CommandError(
+                    "Existing legacy demo household does not match the fictional scenario"
+                )
 
-    HouseholdMember.objects.get_or_create(
-        household=h2,
-        person=p3,
-        role=ROLE_PRIMARY_GUARDIAN,
-        defaults={"is_primary": True},
-    )
-    HouseholdMember.objects.get_or_create(
-        household=h2,
-        person=p3,
-        role=ROLE_FINANCIALLY_RESPONSIBLE,
-        defaults={"is_primary": False},
-    )
-    HouseholdMember.objects.get_or_create(
-        household=h2,
-        person=p4,
-        role=ROLE_GUARDIAN,
-        defaults={"is_primary": False},
-    )
-    HouseholdMember.objects.get_or_create(
-        household=h2,
-        person=p4,
-        role=ROLE_EMERGENCY_CONTACT,
-        defaults={"is_primary": False},
-    )
-    HouseholdMember.objects.get_or_create(
-        household=h2,
-        person=p4,
-        role=ROLE_AUTHORIZED_PICKUP,
-        defaults={"is_primary": False},
-    )
+            for guardian, roles in (
+                (
+                    scenario.primary,
+                    (ROLE_PRIMARY_GUARDIAN, ROLE_FINANCIALLY_RESPONSIBLE),
+                ),
+                (
+                    scenario.secondary,
+                    (
+                        ROLE_GUARDIAN,
+                        ROLE_EMERGENCY_CONTACT,
+                        ROLE_AUTHORIZED_PICKUP,
+                    ),
+                ),
+            ):
+                person, person_created = Person.objects.get_or_create(
+                    email=guardian.email,
+                    defaults={
+                        "first_name": guardian.first_name,
+                        "last_name": guardian.last_name,
+                        "phone": guardian.phone,
+                    },
+                )
+                if not person_created and (
+                    person.first_name != guardian.first_name
+                    or person.last_name != guardian.last_name
+                    or person.phone != guardian.phone
+                ):
+                    raise CommandError(
+                        "Existing legacy demo contact does not match the fictional scenario"
+                    )
+                for role in roles:
+                    HouseholdMember.objects.get_or_create(
+                        household=household,
+                        person=person,
+                        role=role,
+                        defaults={"is_primary": role == ROLE_PRIMARY_GUARDIAN},
+                    )
 
-    # Household 2 students (NOTE: core.Student objects created by seed_demo_school)
-    # StudentProfile linking will happen via scoping bridge in admissions.
-    # This section intentionally removed - Student/StudentProfile now use
-    # core.models.Student with family-based relationships.
-
-    logger.info("Seeded households:")
-    logger.info("- %s", h1.household_name)
-    logger.info("- %s", h2.household_name)
+            logger.info("Seeded fictional household %s", scenario.name)
 
 
 if __name__ == "__main__":
