@@ -142,6 +142,8 @@ function InquiryDetails({ inquiry, owners, canEdit, notificationsEnabled, onSave
 export default function AdmissionsInquiryQueue() {
   const [filters, setFilters] = useState({ stage: '', unassigned: false, overdue: false });
   const [payload, setPayload] = useState(null);
+  const [cursorStack, setCursorStack] = useState([]);
+  const [cursor, setCursor] = useState('');
   const [selectedId, setSelectedId] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -153,7 +155,7 @@ export default function AdmissionsInquiryQueue() {
     setLoading(true);
     setError('');
     try {
-      const result = await fetchAdmissionsInquiries({ stage: filters.stage, unassigned: filters.unassigned ? 1 : '', overdue: filters.overdue ? 1 : '' });
+      const result = await fetchAdmissionsInquiries({ stage: filters.stage, unassigned: filters.unassigned ? 1 : '', overdue: filters.overdue ? 1 : '', cursor });
       if (version === loadVersion.current) setPayload(result);
     } catch (failure) {
       if (version === loadVersion.current) {
@@ -163,7 +165,26 @@ export default function AdmissionsInquiryQueue() {
     } finally {
       if (version === loadVersion.current) setLoading(false);
     }
-  }, [filters]);
+  }, [filters, cursor]);
+
+  const changeFilters = (nextFilters) => {
+    setCursor('');
+    setCursorStack([]);
+    setSelectedId('');
+    setFilters(nextFilters);
+  };
+  const nextPage = () => {
+    if (!payload?.next_cursor) return;
+    setCursorStack((previous) => [...previous, cursor]);
+    setCursor(payload.next_cursor);
+    setSelectedId('');
+  };
+  const previousPage = () => {
+    if (!cursorStack.length) return;
+    setCursor(cursorStack[cursorStack.length - 1]);
+    setCursorStack((previous) => previous.slice(0, -1));
+    setSelectedId('');
+  };
 
   useEffect(() => { reload(); }, [reload]);
   const inquiries = Array.isArray(payload?.results) ? payload.results : [];
@@ -182,12 +203,12 @@ export default function AdmissionsInquiryQueue() {
         <div style={{ ...ROW, justifyContent: 'space-between', marginBottom: 18 }}>
           <div style={ROW}>
             <label style={{ display: 'grid', gap: 5 }}>Stage
-              <select style={INPUT} value={filters.stage} onChange={(event) => setFilters((previous) => ({ ...previous, stage: event.target.value }))}>
+              <select style={INPUT} value={filters.stage} onChange={(event) => changeFilters({ ...filters, stage: event.target.value })}>
                 <option value="">Active inquiries</option><option value="all">All stages and history</option>{Object.entries(STAGES).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
               </select>
             </label>
-            <label><input type="checkbox" checked={filters.unassigned} onChange={(event) => setFilters((previous) => ({ ...previous, unassigned: event.target.checked }))} /> Unassigned</label>
-            <label><input type="checkbox" checked={filters.overdue} onChange={(event) => setFilters((previous) => ({ ...previous, overdue: event.target.checked }))} /> Follow-up due</label>
+            <label><input type="checkbox" checked={filters.unassigned} onChange={(event) => changeFilters({ ...filters, unassigned: event.target.checked })} /> Unassigned</label>
+            <label><input type="checkbox" checked={filters.overdue} onChange={(event) => changeFilters({ ...filters, overdue: event.target.checked })} /> Follow-up due</label>
           </div>
           <button className="crown-btn" type="button" onClick={reload} disabled={loading}>Refresh queue</button>
         </div>
@@ -201,7 +222,7 @@ export default function AdmissionsInquiryQueue() {
         {!loading && !error && inquiries.length > 0 ? (
           <div style={{ overflowX: 'auto' }}>
             <table className="crown-table">
-              <caption style={{ textAlign: 'left', paddingBottom: 10 }}>{inquiries.length} of {payload.count ?? inquiries.length} matching inquiry record(s) shown. The queue displays up to 100 records.</caption>
+              <caption style={{ textAlign: 'left', paddingBottom: 10 }}>Page {cursorStack.length + 1}: {inquiries.length} inquiry record(s) shown; {payload.count ?? inquiries.length} matching across all pages.</caption>
               <thead><tr>{['Family contact', 'Interest', 'Source', 'Stage', 'Owner', 'Next follow-up', 'Action'].map((heading) => <th scope="col" key={heading}>{heading}</th>)}</tr></thead>
               <tbody>{inquiries.map((inquiry) => (
                 <tr key={inquiry.id}>
@@ -216,6 +237,13 @@ export default function AdmissionsInquiryQueue() {
               ))}</tbody>
             </table>
           </div>
+        ) : null}
+        {!loading && !error && (cursorStack.length > 0 || payload?.next_cursor) ? (
+          <nav aria-label="Inquiry pages" style={{ display: 'flex', gap: 12, marginTop: 16 }}>
+            <button className="crown-btn" type="button" onClick={previousPage} disabled={!cursorStack.length}>Previous page</button>
+            <span>Page {cursorStack.length + 1}</span>
+            <button className="crown-btn" type="button" onClick={nextPage} disabled={!payload?.next_cursor}>Next page</button>
+          </nav>
         ) : null}
       </div>
       {selected && !loading && !error ? <InquiryDetails key={`${selected.id}-${selected.updated_at || selected.next_follow_up_at || ''}`} inquiry={selected} owners={owners} canEdit={payload?.can_edit === true} notificationsEnabled={payload?.notifications_enabled} onSaved={afterSave} /> : null}
