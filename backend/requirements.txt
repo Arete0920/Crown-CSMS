@@ -39,7 +39,7 @@ twilio>=9.11.2
 # Board Packet PDF generation (Stage 4)
 reportlab>=5.0.1
 # Analytics runtime dependencies
-numpy>=1.26.4
+numpy>=2.5.4
 pandas>=3.0.6
 scikit-learn>=1.5.2
 tzlocal==5.4.4
