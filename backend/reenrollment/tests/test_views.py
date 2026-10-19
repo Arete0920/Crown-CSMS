@@ -18,6 +18,8 @@ import uuid
 
 import pytest
 from django.contrib.auth import get_user_model
+from django.db import connection
+from django.test.utils import CaptureQueriesContext
 from rest_framework.test import APIClient
 from rest_framework_simplejwt.tokens import RefreshToken
 
@@ -73,7 +75,9 @@ def client_b(user, school_b):
 
 @pytest.fixture
 def client_unprivileged(school_a):
-    plain_user = User.objects.create_user(username=f"plain_{uuid.uuid4().hex[:6]}", password="pass")
+    plain_user = User.objects.create_user(
+        username=f"plain_{uuid.uuid4().hex[:6]}", password="pass", school=school_a
+    )
     return _authed_client(plain_user, school_a)
 
 
@@ -528,6 +532,54 @@ class TestRoleGuard:
         session = self._committed_session(school_a)
         res = client_unprivileged.get(f"{BASE}{session.id}/verify/")
         assert res.status_code == 403
+
+    @pytest.mark.parametrize(
+        ("endpoint", "method", "payload"),
+        [
+            ("configure", "post", {"target_year_label": "2026-2027", "enrollment_fee": "100"}),
+            ("candidates", "get", None),
+            ("select", "post", {"excluded_ids": []}),
+            ("commit", "post", {"confirm": True}),
+            ("verify", "get", None),
+        ],
+    )
+    def test_unaffiliated_user_denied_before_session_action(
+        self, school_a, endpoint, method, payload, settings
+    ):
+        settings.TENANT_HEADER_REQUIRED = True
+        unaffiliated = User.objects.create_user(
+            username=f"unaffiliated_{uuid.uuid4().hex[:6]}", password="pass"
+        )
+        assert unaffiliated.school_id is None
+        assert not unaffiliated.roles.exists()
+        assert not unaffiliated.is_staff and not unaffiliated.is_superuser
+        assert unaffiliated.staff_id is None
+        client = _authed_client(unaffiliated, school_a)
+        session = (
+            self._committed_session(school_a)
+            if endpoint == "verify"
+            else self._configured_session_with_snapshot(school_a)
+        )
+        before_session = ReenrollmentSession.objects.filter(pk=session.pk).values().get()
+        billing_models = (BillingRun, Invoice, InvoiceLine)
+        before_counts = {model: model.objects.count() for model in billing_models}
+
+        # Use the normal issued JWT and request pipeline. No endpoint business
+        # table should be queried before this unaffiliated tenant is denied.
+        with CaptureQueriesContext(connection) as queries:
+            url = f"{BASE}{session.id}/{endpoint}/"
+            res = client.get(url) if method == "get" else client.post(url, payload, format="json")
+
+        assert res.status_code == 404
+        assert res.json() == {"detail": "Not found.", "code": "tenant_access_denied"}
+        business_tables = {
+            model._meta.db_table for model in (ReenrollmentSession, *billing_models)
+        }
+        assert not any(
+            table in query["sql"] for query in queries for table in business_tables
+        )
+        assert ReenrollmentSession.objects.filter(pk=session.pk).values().get() == before_session
+        assert {model: model.objects.count() for model in billing_models} == before_counts
 
     def test_configure_allowed_with_role_permission(self, school_a):
         client_allowed = self._allowed_client(school_a)
