@@ -257,11 +257,11 @@ def check_file(path: pathlib.Path) -> tuple[list[str], str | None, str | None]:
         errors.extend(_check_dispatch_input_descriptions(text, rel))
 
     if rel in DEV_RESET_WORKFLOWS:
-        if not re.search(r"(?m)^  cancel-in-progress:\\s*false\\s*$", text):
+        if not re.search(r"(?m)^  cancel-in-progress:\s*false\s*$", text):
             errors.append(f"{rel}: DEV reset workflow must not cancel an active reset")
-        if re.search(r"(?m)^\\s*[^#\\n]*\\|\\s*tee\\s+|^\\s*cat\\s+/tmp/[^\\n]*reset[^\\n]*\\.json", text):
+        if re.search(r"(?m)^\s*[^#\n]*\|\s*tee\s+|^\s*cat\s+/tmp/[^\n]*reset[^\n]*\.json", text):
             errors.append(f"{rel}: DEV reset workflow must not publish reset response bodies")
-        if re.search(r"(?m)^\\s*echo\\s+[^\\n]*\\$(?:\\{)?response\\b", text):
+        if re.search(r"(?m)^\s*echo\s+[^\n]*\$(?:\{)?response\b", text):
             errors.append(f"{rel}: DEV reset workflow must not echo reset response bodies")
 
     errors.extend(_check_curl_safety(text, rel))
