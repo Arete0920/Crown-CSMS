@@ -60,3 +60,25 @@ to `CROWN_LEGACY_SCHEDULING_SCHOOL_ID` while invoking the scheduling
 script and restores the previous environment afterward. A conflicting
 preselected UUID is rejected. Standalone legacy scheduling still requires
 the operator to supply its explicit school UUID.
+
+## Additional operational restrictions
+
+The legacy school seed command is Heritage-only even without `--wipe` and refuses
+mixed-school and duplicate-Heritage databases. This is stronger than requiring
+SQLite alone, which does not establish an isolated dataset. Destructive
+`--wipe` additionally requires `--school-id <existing Heritage UUID>`;
+name-only targeting is not sufficient. A cross-school financial-aid audit
+reference blocks the wipe rather than deleting the other school's history.
+
+The local `scripts/ops/runseed.ps1` ceremony now requires explicit
+`-HeritageSchoolId` and `-ConfirmDemoWipe`; the local smoke tool also
+requires `-HeritageSchoolId`. Seeded directors are not Django staff users or
+superusers. These are source restrictions and must pass new-head CI plus an
+isolated end-to-end demonstration before operational acceptance.
+
+**Limitation:** Explicit `CROWN_DEMO_PASSWORD` still sets one credential for
+multiple legacy users. It must not be distributed as a public/shared evaluator
+password. Passwordless evaluator sandbox sessions remain distinct. Prefer
+unusable passwords when individual legacy logins are unnecessary; a separate
+per-account credential design is required before approving shared-credential
+elimination for all optional password-login workflows.
