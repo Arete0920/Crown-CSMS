@@ -1,4 +1,4 @@
-"""Apply the reviewed inquiry migration on the existing DEV database only.
+"""Apply reviewed inquiry and SimpleJWT blacklist migrations on DEV only.
 
 Called by deploy-dev after accepted-source verification and existing DEV login.
 No provider messages, resource creation, configuration writes or startup flags.
@@ -23,6 +23,25 @@ DEV_APP = "crown-api-dev"
 DEV_HOST = "crown-pg-dev.postgres.database.azure.com"
 REVIEWED = ("crm_marketing", "0002_inquiry_capture")
 MIGRATION_SHA256 = "b4224adf8e10c05e836a164200ff6c0552067491006c8dc2fc3a3095cc7743eb"
+# Exact shipped migration names for djangorestframework-simplejwt 5.5.1.
+# The historical locally-generated 0013_blacklist is NOT an accepted migration.
+BLACKLIST_APP = "rest_framework_simplejwt.token_blacklist"
+BLACKLIST_LABEL = "token_blacklist"
+BLACKLIST_VERSION = "5.5.1"
+BLACKLIST_MIGRATIONS = (
+    "0001_initial",
+    "0002_outstandingtoken_jti_hex",
+    "0003_auto_20171017_2007",
+    "0004_auto_20171017_2013",
+    "0005_remove_outstandingtoken_jti",
+    "0006_auto_20171017_2113",
+    "0007_auto_20171017_2214",
+    "0008_migrate_to_bigautofield",
+    "0010_fix_migrate_to_bigautofield",
+    "0011_linearizes_history",
+    "0012_alter_outstandingtoken_user",
+    "0013_alter_blacklistedtoken_options_and_more",
+)
 
 
 class Blocked(RuntimeError):
@@ -46,6 +65,21 @@ class UnreviewedPlan(Blocked):
             "pending_migrations_truncated": len(plan) > 20,
         }
 
+
+def validate_blacklist_schema_state(applied, *, outstanding_exists, blacklisted_exists,
+                                    require_complete=False):
+    """Require a pristine or fully migrated vendor schema; block partial/unknown history."""
+    applied = set(applied)
+    expected = set(BLACKLIST_MIGRATIONS)
+    if not applied and not outstanding_exists and not blacklisted_exists and not require_complete:
+        return
+    if applied == expected and outstanding_exists and blacklisted_exists:
+        return
+    if applied - expected or "0013_blacklist" in applied:
+        raise Blocked("unrecognized_blacklist_migration_history")
+    if require_complete:
+        raise Blocked("blacklist_schema_not_ready")
+    raise Blocked("partial_or_inconsistent_blacklist_schema")
 
 def read_azure(*arguments):
     result = subprocess.run(
@@ -134,25 +168,31 @@ def load_dev_settings(*, read=read_azure):
     return database_url, secret, database_name
 
 
-def validate_plan(plan):
+def validate_plan(plan, *, allow_token_blacklist=False):
     identities = [(item.app_label, item.name) for item, backwards in plan if not backwards]
-    if any(backwards for _, backwards in plan) or identities not in ([], [REVIEWED]):
+    approved = {REVIEWED}
+    if allow_token_blacklist:
+        approved.update((BLACKLIST_LABEL, name) for name in BLACKLIST_MIGRATIONS)
+    if any(backwards for _, backwards in plan) or any(item not in approved for item in identities):
         raise UnreviewedPlan(plan)
     return identities
 
 
-def apply_reviewed_plan(*, acquire_lock, verify_identity, verify_ddl, read_plan, invoke):
+def apply_reviewed_plan(*, acquire_lock, verify_identity, verify_ddl, read_plan, invoke,
+                        allow_token_blacklist=False, verify_complete=None):
     # Hold the existing advisory lock across planning, its reentrant command,
     # and verification so another governed migration cannot race this allowlist.
     with acquire_lock():
         verify_identity()
-        pending = validate_plan(read_plan())
+        pending = validate_plan(read_plan(), allow_token_blacklist=allow_token_blacklist)
         if pending:
             verify_ddl()
         invoke("migrate_with_lock", lock_timeout_seconds=300, check=not bool(pending))
         invoke("migrate", check=True, interactive=False)
         if read_plan():
             raise Blocked("pending_migrations_after_verification")
+        if verify_complete is not None:
+            verify_complete()
     return [".".join(item) for item in pending]
 
 
@@ -174,6 +214,11 @@ def migrate_on_dev(database_url, secret, database_name, source_sha):
     sys.path.insert(0, str(ROOT / "backend"))
     import django
     django.setup()
+    from importlib.metadata import version as package_version
+    from django.apps import apps
+    blacklist_enabled = apps.is_installed(BLACKLIST_APP)
+    if blacklist_enabled and package_version("djangorestframework-simplejwt") != BLACKLIST_VERSION:
+        raise Blocked("unreviewed_simplejwt_version")
     from django.db import connection
     from django.core.management import call_command
     from django.db.migrations.executor import MigrationExecutor
@@ -186,6 +231,22 @@ def migrate_on_dev(database_url, secret, database_name, source_sha):
     config["OPTIONS"] = options
     connection.close()
 
+    def inspect_blacklist_state(*, require_complete):
+        if not blacklist_enabled:
+            return
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT name FROM django_migrations WHERE app = %s", [BLACKLIST_LABEL])
+            applied = {row[0] for row in cursor.fetchall()}
+            cursor.execute(
+                "SELECT to_regclass('public.token_blacklist_outstandingtoken'), "
+                "to_regclass('public.token_blacklist_blacklistedtoken')"
+            )
+            outstanding, blacklisted = cursor.fetchone()
+        validate_blacklist_schema_state(
+            applied, outstanding_exists=outstanding is not None,
+            blacklisted_exists=blacklisted is not None, require_complete=require_complete,
+        )
+
     def verify_identity():
         with connection.cursor() as cursor:
             cursor.execute("SELECT current_database(), current_schema(), pg_is_in_recovery()")
@@ -196,6 +257,7 @@ def migrate_on_dev(database_url, secret, database_name, source_sha):
                 raise Blocked("database_tls_not_verified")
             cursor.execute("SET lock_timeout = '15s'")
             cursor.execute("SET statement_timeout = '300s'")
+        inspect_blacklist_state(require_complete=False)
 
     def verify_ddl():
         with connection.cursor() as cursor:
@@ -210,12 +272,19 @@ def migrate_on_dev(database_url, secret, database_name, source_sha):
         executor.loader.check_consistent_history(connection)
         if executor.loader.detect_conflicts():
             raise Blocked("migration_graph_conflict")
+        if blacklist_enabled:
+            names = {name for label, name in executor.loader.disk_migrations
+                     if label == BLACKLIST_LABEL}
+            if names != set(BLACKLIST_MIGRATIONS):
+                raise Blocked("unreviewed_simplejwt_migration_graph")
         return executor.migration_plan(executor.loader.graph.leaf_nodes())
 
     try:
         return apply_reviewed_plan(
             acquire_lock=lambda: Command()._migration_lock(timeout_seconds=300, allow_non_postgresql=False),
             verify_identity=verify_identity, verify_ddl=verify_ddl, read_plan=read_plan, invoke=call_command,
+            allow_token_blacklist=blacklist_enabled,
+            verify_complete=lambda: inspect_blacklist_state(require_complete=True) if blacklist_enabled else None,
         )
     finally:
         connection.close()
