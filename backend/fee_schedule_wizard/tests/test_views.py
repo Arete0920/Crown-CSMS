@@ -19,7 +19,7 @@ from django.contrib.auth import get_user_model
 from django.test import TestCase
 from rest_framework.test import APIClient
 
-from core.models import School
+from core.models import CrownPermission, RolePermission, School, UserRole
 from fee_schedule_wizard.models import FeeSchedule, FeeLine, FeeScheduleWizardSession
 
 
@@ -48,8 +48,22 @@ def _headers(school_id):
 
 
 def _authed_client():
+    # Existing happy-path tests model a multi-school financial operator.
+    # Security-denial tests below use real sessions, not DRF force-auth bypasses.
+    user = _make_user()
+    permission, _ = CrownPermission.objects.get_or_create(
+        code="finance.edit",
+        defaults={"description": "Manage school tuition and fee schedules"},
+    )
+    RolePermission.objects.get_or_create(
+        role_code="FINANCE_DIRECTOR", permission=permission,
+    )
+    for school in School.objects.all():
+        UserRole.objects.get_or_create(
+            school=school, user=user, role_code="FINANCE_DIRECTOR",
+        )
     c = APIClient()
-    c.force_authenticate(user=_make_user())
+    c.force_authenticate(user=user)
     return c
 
 
@@ -431,3 +445,107 @@ class FeeScheduleSingleActiveTest(TestCase):
         # school_a schedule remains active (different tenant)
         sched_a.refresh_from_db()
         self.assertTrue(sched_a.is_active, "Cross-tenant schedule must not be deactivated")
+
+
+# ---------------------------------------------------------------------------
+# Finance authorization and tenant-revalidation regression tests
+# ---------------------------------------------------------------------------
+
+class FeeScheduleFinanceAuthorityTest(TestCase):
+    def _session_client(self, user):
+        client = APIClient()
+        client.force_login(user)
+        return client
+
+    def _grant_finance(self, user, school):
+        permission, _ = CrownPermission.objects.get_or_create(
+            code="finance.edit",
+            defaults={"description": "Manage school tuition and fee schedules"},
+        )
+        RolePermission.objects.get_or_create(
+            role_code="FINANCE_DIRECTOR", permission=permission,
+        )
+        UserRole.objects.create(
+            school=school, user=user, role_code="FINANCE_DIRECTOR",
+        )
+
+    def test_authenticated_teacher_cannot_create_fee_schedule(self):
+        school = _make_school()
+        user = _make_user()
+        UserRole.objects.create(school=school, user=user, role_code="TEACHER")
+
+        response = self._session_client(user).post(BASE_URL, **_headers(school.id))
+
+        self.assertEqual(response.status_code, 403)
+        self.assertFalse(FeeScheduleWizardSession.objects.exists())
+
+    def test_finance_director_without_edit_grant_is_denied(self):
+        school = _make_school()
+        user = _make_user()
+        UserRole.objects.create(
+            school=school, user=user, role_code="FINANCE_DIRECTOR",
+        )
+
+        response = self._session_client(user).post(BASE_URL, **_headers(school.id))
+
+        self.assertEqual(response.status_code, 403)
+        self.assertFalse(FeeScheduleWizardSession.objects.exists())
+
+    def test_finance_director_with_edit_grant_can_create(self):
+        school = _make_school()
+        user = _make_user()
+        self._grant_finance(user, school)
+
+        response = self._session_client(user).post(BASE_URL, **_headers(school.id))
+
+        self.assertEqual(response.status_code, 201)
+
+    def test_finance_director_cannot_select_unassigned_school(self):
+        own_school = _make_school("owned")
+        other_school = _make_school("foreign")
+        user = _make_user()
+        self._grant_finance(user, own_school)
+
+        response = self._session_client(user).post(
+            BASE_URL, **_headers(other_school.id),
+        )
+
+        self.assertEqual(response.status_code, 404)
+        self.assertFalse(FeeScheduleWizardSession.objects.exists())
+
+    def test_bearer_auth_revalidates_selected_tenant(self):
+        from rest_framework_simplejwt.tokens import AccessToken
+
+        own_school = _make_school("jwt-owned")
+        other_school = _make_school("jwt-foreign")
+        user = _make_user()
+        self._grant_finance(user, own_school)
+
+        token = str(AccessToken.for_user(user))
+        client = APIClient()
+        response = client.post(
+            BASE_URL,
+            HTTP_AUTHORIZATION=f"Bearer {token}",
+            **_headers(other_school.id),
+        )
+
+        self.assertEqual(response.status_code, 404)
+        self.assertFalse(FeeScheduleWizardSession.objects.exists())
+
+    def test_verify_requires_finance_edit_because_it_changes_state(self):
+        school = _make_school()
+        authorized = _authed_client()
+        session_id, _ = _advance_to_committed(
+            authorized, school.id, name="Protected fees",
+        )
+        teacher = _make_user()
+        UserRole.objects.create(school=school, user=teacher, role_code="TEACHER")
+
+        response = self._session_client(teacher).get(
+            f"{BASE_URL}{session_id}/verify/",
+            **_headers(school.id),
+        )
+
+        self.assertEqual(response.status_code, 403)
+        session = FeeScheduleWizardSession.objects.get(pk=session_id)
+        self.assertEqual(session.status, FeeScheduleWizardSession.STATUS_COMMITTED)
