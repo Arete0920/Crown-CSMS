@@ -4,11 +4,13 @@ The Heritage evaluator sandbox is passwordless. Its role-scoped sessions are
 not created by `reset_demo_passwords`, and no public demo credential list is
 permitted.
 
-The legacy `seed_demo_school` and `reset_demo_passwords` management commands
-use `CROWN_DEMO_PASSWORD` only when it is explicitly configured and meets
-minimum length and formatting rules (16-256 characters, no control characters
-or surrounding whitespace). The value must be supplied through a protected
-environment or secret store, not committed to Git.
+The legacy management commands use six distinct per-account secrets:
+`CROWN_DEMO_HEAD_PASSWORD`, `CROWN_DEMO_FINANCE_PASSWORD`,
+`CROWN_DEMO_AID_PASSWORD`, `CROWN_DEMO_REGISTRAR_PASSWORD`,
+`CROWN_DEMO_TEACHER_PASSWORD`, and `CROWN_DEMO_PARENT_PASSWORD`.
+Each supplied secret must be 16-256 characters, properly formatted and distinct.
+Do not commit these values to Git. `CROWN_DEMO_PASSWORD` is a retired shared
+credential and is not accepted for these legacy school accounts.
 
 When the setting is absent, `seed_demo_school` creates accounts with **unusable
 passwords**. On a repeat run it disables previously usable passwords for the
@@ -23,7 +25,7 @@ Example local-only reset:
 
 ```powershell
 $env:CROWN_ENV = "local"
-$env:CROWN_DEMO_PASSWORD = "<strong-secret-from-a-secret-manager>"
+\# Set all six distinct CROWN_DEMO_*_PASSWORD variables from a protected secret manager
 python backend/manage.py reset_demo_passwords --school-id "<Heritage-demo-UUID>"
 ```
 
@@ -76,9 +78,9 @@ requires `-HeritageSchoolId`. Seeded directors are not Django staff users or
 superusers. These are source restrictions and must pass new-head CI plus an
 isolated end-to-end demonstration before operational acceptance.
 
-**Limitation:** Explicit `CROWN_DEMO_PASSWORD` still sets one credential for
-multiple legacy users. It must not be distributed as a public/shared evaluator
-password. Passwordless evaluator sandbox sessions remain distinct. Prefer
-unusable passwords when individual legacy logins are unnecessary; a separate
-per-account credential design is required before approving shared-credential
-elimination for all optional password-login workflows.
+**Credential migration:** The legacy shared variable `CROWN_DEMO_PASSWORD` no
+longer provisions these accounts. The explicit reset requires all six distinct
+account secrets and refuses incomplete, weak, malformed, or repeated values
+before database writes. Where credentials are absent, seeding disables password
+login. This change requires exact-head test acceptance and a disposable Heritage
+rehearsal before being treated as operationally certified.
