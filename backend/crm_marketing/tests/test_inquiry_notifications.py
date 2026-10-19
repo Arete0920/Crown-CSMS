@@ -61,6 +61,60 @@ def _family_message(lead):
     return OutboxMessage.objects.get(school_id=str(lead.school_id), to=lead.email)
 
 
+@pytest.fixture
+def inquiry_queue_reader(settings):
+    settings.TENANT_HEADER_REQUIRED = True
+    school = School.objects.create(name="Empty inquiry queue school")
+    reader = UserAccount.objects.create_user(username=f"queue-reader-{uuid.uuid4().hex}")
+    role = f"inquiry_queue_reader_{uuid.uuid4().hex[:12]}"
+    UserRole.objects.create(user=reader, school=school, role_code=role)
+    permission, _ = CrownPermission.objects.get_or_create(code="admissions.view")
+    RolePermission.objects.create(role_code=role, permission=permission)
+    return school, reader
+
+
+@pytest.mark.parametrize("enabled", [False, True])
+@pytest.mark.parametrize("query", [{}, {"unassigned": "1", "overdue": "1"}])
+def test_empty_staff_queue_reports_configured_notification_switch(
+    inquiry_queue_reader, settings, monkeypatch, enabled, query,
+):
+    school, reader = inquiry_queue_reader
+    settings.CROWN_INQUIRY_NOTIFICATIONS_ENABLED = enabled
+    send = Mock(side_effect=AssertionError("Reading the queue must not contact a provider"))
+    monkeypatch.setattr("integrations.graph_client.send_mail", send)
+    client = APIClient()
+    client.force_authenticate(user=reader)
+
+    response = client.get("/api/v1/crm/inquiries/", query, HTTP_X_SCHOOL_ID=str(school.id))
+
+    assert response.status_code == 200, response.data
+    assert response["Cache-Control"] == "no-store"
+    assert response.data["results"] == [] and response.data["count"] == 0
+    assert response.data["can_edit"] is False and response.data["owners"] == []
+    assert response.data["notifications_enabled"] is enabled
+    assert not MarketingLead.objects.exists()
+    assert not CampaignTouchpoint.objects.exists()
+    assert not OutboxMessage.objects.exists()
+    send.assert_not_called()
+
+
+@pytest.mark.parametrize("authenticated", [False, True])
+def test_inquiry_switch_is_not_exposed_without_staff_permission(inquiry_queue_reader, authenticated):
+    school, _ = inquiry_queue_reader
+    client = APIClient()
+    if authenticated:
+        user = UserAccount.objects.create_user(username=f"no-inquiry-permission-{uuid.uuid4().hex}")
+        client.force_authenticate(user=user)
+
+    response = client.get("/api/v1/crm/inquiries/", HTTP_X_SCHOOL_ID=str(school.id))
+
+    assert response.status_code == 403
+    assert response.data == {"detail": "Permission denied."}
+    assert "notifications_enabled" not in response.data
+    assert not MarketingLead.objects.exists()
+    assert not OutboxMessage.objects.exists()
+
+
 @pytest.mark.parametrize("value,enabled", [(None, False), ("false", False), ("true", True)])
 def test_inquiry_configuration_defaults_off_and_only_gates_its_schedule(value, enabled):
     env = os.environ.copy()

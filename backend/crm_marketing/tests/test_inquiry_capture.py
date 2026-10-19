@@ -1,3 +1,4 @@
+import json
 import uuid
 from datetime import timedelta
 
@@ -5,6 +6,7 @@ import pytest
 from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.db import connection, transaction
+from django.db.migrations.loader import MigrationLoader
 from django.utils import timezone
 from rest_framework.test import APIClient
 
@@ -69,6 +71,35 @@ def _application_payload(school, receipt):
     }
 
 
+def test_pre_inquiry_model_can_insert_after_inquiry_migration(school):
+    historical_apps = MigrationLoader(connection).project_state([
+        ("crm_marketing", "0001_initial"),
+    ]).apps
+    historical_lead = historical_apps.get_model("crm_marketing", "MarketingLead")
+    expected_defaults = {
+        "attribution_json": {}, "submission_receipt": {},
+        "family_follow_up_enabled": False, "follow_up_consent": False,
+        "response_consent": False,
+        "campus": "", "contact_preference": "", "email": "", "entry_year": "",
+        "grade_interest": "", "intake_payload_digest": "", "parent_name": "",
+        "phone": "", "request_type": "",
+    }
+    assert set(expected_defaults).isdisjoint(
+        field.name for field in historical_lead._meta.concrete_fields
+    )
+
+    # The previous API does not know these columns and cannot supply their defaults.
+    legacy = historical_lead.objects.create(
+        school_id=school.id, stage="application_submitted", first_source="legacy",
+    )
+    current = MarketingLead.objects.get(pk=legacy.pk)
+    assert {name: getattr(current, name) for name in expected_defaults} == expected_defaults
+    assert current.school_id == school.id
+    assert current.stage == "application_submitted" and current.first_source == "legacy"
+    assert current.inquiry_received_at is None
+    assert not current.applications.exists()
+
+
 def test_public_capture_creates_owned_inquiry_before_application(school):
     owner = _staff(school)
     response = _capture(school)
@@ -114,6 +145,38 @@ def test_retries_are_persistent_and_contact_matches_do_not_grant_access(school):
 def test_invalid_or_unconsented_capture_creates_no_records(school, changes):
     assert _capture(school, **changes).status_code == 400
     assert MarketingLead.objects.count() == 0
+
+
+@pytest.mark.parametrize("surrogate", ["\ud800", "\udfff"], ids=["high-surrogate", "low-surrogate"])
+def test_public_capture_rejects_escaped_surrogate_utm_before_persistence(school, surrogate):
+    response = APIClient().post(
+        URL, json.dumps(_payload(school, utm={"utm_campaign": surrogate}), ensure_ascii=True),
+        content_type="application/json", HTTP_IDEMPOTENCY_KEY=str(uuid.uuid4()),
+    )
+    assert response.status_code == 400, response.content
+    assert response.json()["detail"] == "utm_campaign contains unsupported Unicode characters."
+    assert not MarketingLead.objects.exists()
+    assert not CampaignTouchpoint.objects.exists()
+
+
+def test_public_capture_preserves_unicode_through_staff_queue_serialization(school):
+    parent_name = "Zoë 李 🌱"
+    attribution = {"utm_campaign": "École 🏫"}
+    client = APIClient()
+    response = client.post(
+        URL, json.dumps(_payload(school, parent_name=parent_name, utm=attribution), ensure_ascii=True),
+        content_type="application/json", HTTP_IDEMPOTENCY_KEY=str(uuid.uuid4()),
+    )
+    assert response.status_code == 201, response.content
+    lead = MarketingLead.objects.get(id=response.json()["inquiry_id"])
+    assert lead.parent_name == parent_name
+    assert lead.attribution_json == attribution
+    client.force_authenticate(user=_staff(school, edit=False))
+    queue = client.get(URL, HTTP_X_SCHOOL_ID=str(school.id))
+    assert queue.status_code == 200, queue.content
+    row = queue.json()["results"][0]
+    assert row["parent_name"] == parent_name
+    assert row["utm"] == attribution
 
 
 def test_public_school_resolution_is_exact_and_header_cannot_conflict(school):

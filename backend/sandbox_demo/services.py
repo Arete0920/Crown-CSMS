@@ -108,7 +108,8 @@ def ensure_persona_user(school: School, persona: SandboxPersona) -> UserAccount:
                 "custody_flag": False,
             },
         )
-    else:
+    # Board membership uses UserRole and must not acquire staff support authority.
+    elif persona.key != "board":
         staff, _ = Staff.objects.update_or_create(
             school=school,
             email=persona.email,

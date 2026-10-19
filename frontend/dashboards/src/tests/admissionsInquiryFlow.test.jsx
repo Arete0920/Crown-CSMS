@@ -155,6 +155,56 @@ describe('prospective-family inquiry capture', () => {
 });
 
 describe('staff inquiry follow-up queue', () => {
+  it.each([false, true, undefined])('reports the collection switch only after loading an empty queue (%s)', async (enabled) => {
+    api.list.mockResolvedValue({ results: [], count: 0, owners: [], can_edit: false, ...(enabled === undefined ? {} : { notifications_enabled: enabled }) });
+    render(<AdmissionsInquiryQueue />);
+    expect(screen.getByText('Loading school inquiries…')).toBeTruthy();
+    expect(screen.queryByText(/Automatic inquiry messages are off\./)).toBeNull();
+    await screen.findByText('No inquiries match these filters.');
+    const note = screen.queryByText(/Automatic inquiry messages are off\./);
+    if (enabled === false) expect(note).toBeTruthy();
+    else expect(note).toBeNull();
+    expect(screen.queryByRole('form', { name: 'Update inquiry follow-up' })).toBeNull();
+    expect(api.update).not.toHaveBeenCalled();
+  });
+
+  it('retains the off notice for a read-only filtered-empty queue and clears it on a failed refresh', async () => {
+    api.list.mockResolvedValue({ results: [], count: 0, owners: [], can_edit: false, notifications_enabled: false });
+    render(<AdmissionsInquiryQueue />);
+    await screen.findByText('No inquiries match these filters.');
+    fireEvent.click(screen.getByLabelText('Unassigned'));
+    await waitFor(() => expect(api.list).toHaveBeenLastCalledWith({ stage: '', unassigned: 1, overdue: '' }));
+    await screen.findByText('No inquiries match these filters.');
+    fireEvent.click(screen.getByLabelText('Follow-up due'));
+    await waitFor(() => expect(api.list).toHaveBeenLastCalledWith({ stage: '', unassigned: 1, overdue: 1 }));
+    await screen.findByText('No inquiries match these filters.');
+    expect(screen.getAllByText(/Automatic inquiry messages are off\./)).toHaveLength(1);
+    expect(screen.queryByRole('form', { name: 'Update inquiry follow-up' })).toBeNull();
+    expect(api.update).not.toHaveBeenCalled();
+
+    api.list.mockRejectedValueOnce({ message: 'Permission denied.' });
+    fireEvent.click(screen.getByRole('button', { name: 'Refresh queue' }));
+    await screen.findByText('Permission denied.');
+    expect(screen.queryByText(/Automatic inquiry messages are off\./)).toBeNull();
+  });
+
+  it.each([false, true])('prefers the collection switch over row fallback without hiding history (%s)', async (enabled) => {
+    const inquiry = { id: INQUIRY, parent_name: 'Jordan Reed', email: 'jordan@example.org', stage: 'inquiry', notification_status: {
+      enabled: false, notifications: [{ audience: 'family', channel: 'email', event: 'created', status: 'provider_accepted' }],
+    } };
+    api.list.mockResolvedValue({ results: [inquiry], owners: [], can_edit: false, notifications_enabled: enabled });
+    render(<AdmissionsInquiryQueue />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Open Jordan Reed' }));
+    expect(screen.queryAllByText(/Automatic inquiry messages are off\./)).toHaveLength(enabled === false ? 1 : 0);
+    const history = screen.getByText('Communication status');
+    fireEvent.click(history);
+    expect(history.closest('details').open).toBe(true);
+    expect(screen.getByText('Family · email · Accepted by provider')).toBeTruthy();
+    expect(screen.getByText('You have read-only access to this queue.')).toBeTruthy();
+    expect(screen.queryByRole('form', { name: 'Update inquiry follow-up' })).toBeNull();
+    expect(api.update).not.toHaveBeenCalled();
+  });
+
   it.each([false, true, undefined])('shows the off notice only for explicit false while retaining communication history (%s)', async (enabled) => {
     const notificationStatus = {
       notifications: [{ audience: 'family', channel: 'email', event: 'created', status: 'provider_accepted' }],

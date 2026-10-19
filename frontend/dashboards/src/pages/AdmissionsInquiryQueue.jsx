@@ -21,7 +21,7 @@ function localDateInput(value) {
   return new Date(date.getTime() - date.getTimezoneOffset() * 60_000).toISOString().slice(0, 16);
 }
 
-function InquiryDetails({ inquiry, owners, canEdit, onSaved }) {
+function InquiryDetails({ inquiry, owners, canEdit, notificationsEnabled, onSaved }) {
   const [owner, setOwner] = useState(inquiry.assigned_to_user_id || '');
   const [nextDate, setNextDate] = useState(localDateInput(inquiry.next_follow_up_at));
   const [stage, setStage] = useState(inquiry.stage);
@@ -67,7 +67,7 @@ function InquiryDetails({ inquiry, owners, canEdit, onSaved }) {
       {inquiry.referral_detail ? <p><strong>Referral:</strong> {inquiry.referral_detail}</p> : null}
       {inquiry.utm?.utm_campaign ? <p><strong>Campaign attribution:</strong> {[inquiry.utm.utm_source, inquiry.utm.utm_medium, inquiry.utm.utm_campaign].filter(Boolean).join(' / ')}</p> : null}
       <p><strong>Last contact:</strong> {dateText(inquiry.last_touch_at)} · <strong>Received:</strong> {dateText(inquiry.created_at)}</p>
-      {inquiry.notification_status?.enabled === false ? <p className="crown-muted" role="note">
+      {notificationsEnabled === undefined && inquiry.notification_status?.enabled === false ? <p className="crown-muted" role="note">
         Automatic inquiry messages are off. Review communication history before contacting this family.
       </p> : null}
       {inquiry.notification_status?.notifications?.length ? <details>
@@ -194,6 +194,9 @@ export default function AdmissionsInquiryQueue() {
         {savedMessage ? <p role="status">{savedMessage}</p> : null}
         {error ? <div className="crown-alert" role="alert">{error}<button className="crown-btn" type="button" onClick={reload}>Try again</button></div> : null}
         {loading ? <p role="status">Loading school inquiries…</p> : null}
+        {!loading && !error && payload?.notifications_enabled === false ? <p className="crown-muted" role="note">
+          Automatic inquiry messages are off. Review communication history before contacting families.
+        </p> : null}
         {!loading && !error && inquiries.length === 0 ? <p>No inquiries match these filters.</p> : null}
         {!loading && !error && inquiries.length > 0 ? (
           <div style={{ overflowX: 'auto' }}>
@@ -215,7 +218,7 @@ export default function AdmissionsInquiryQueue() {
           </div>
         ) : null}
       </div>
-      {selected && !loading && !error ? <InquiryDetails key={`${selected.id}-${selected.updated_at || selected.next_follow_up_at || ''}`} inquiry={selected} owners={owners} canEdit={payload?.can_edit === true} onSaved={afterSave} /> : null}
+      {selected && !loading && !error ? <InquiryDetails key={`${selected.id}-${selected.updated_at || selected.next_follow_up_at || ''}`} inquiry={selected} owners={owners} canEdit={payload?.can_edit === true} notificationsEnabled={payload?.notifications_enabled} onSaved={afterSave} /> : null}
     </CrownLayout>
   );
 }
