@@ -328,13 +328,50 @@ def test_staff_duplicates_are_school_scoped_and_malformed_links_are_hidden(schoo
     client.force_authenticate(user=_staff(school))
     response = client.get(URL, HTTP_X_SCHOOL_ID=str(school.id))
     row = next(row for row in response.data["results"] if row["id"] == str(lead.id))
-    assert {str(item["id"]) for item in row["duplicate_candidates"]} == {second["inquiry_id"]}
-    assert foreign["inquiry_id"] not in str(row)
-    assert row["application_ids"] == []
-    assert all(item["summary"] != "Other school private note" for item in row["touchpoints"])
+    assert "duplicate_candidates" not in row
+    assert "application_ids" not in row
+    assert "notification_status" not in row
+    assert "touchpoints" not in row
+    detail = client.get(f"{URL}{lead.id}/", HTTP_X_SCHOOL_ID=str(school.id))
+    assert detail.status_code == 200
+    detail_row = detail.data
+    assert {str(item["id"]) for item in detail_row["duplicate_candidates"]} == {second["inquiry_id"]}
+    assert foreign["inquiry_id"] not in str(detail_row)
+    assert detail_row["application_ids"] == []
+    assert all(item["summary"] != "Other school private note" for item in detail_row["touchpoints"])
+    other_detail = client.get(f"{URL}{foreign['inquiry_id']}/", HTTP_X_SCHOOL_ID=str(school.id))
+    assert other_detail.status_code == 404
 
 
 @pytest.mark.parametrize("source", ["social_media", "search_engine", "community_event", "instagram", "direct_mail_qr", "current_family", "friend_or_colleague"])
 def test_source_category_does_not_invent_a_specific_channel(source):
     from applications.views_admissions import _normalize_source
     assert _normalize_source(source) == source
+
+
+def test_staff_inquiry_list_database_queries_do_not_scale_per_family(school):
+    from django.test.utils import CaptureQueriesContext
+
+    reader = _staff(school, edit=False)
+    client = APIClient()
+    client.force_authenticate(user=reader)
+    MarketingLead.objects.create(
+        school=school, parent_name="Initial Family", email="initial@example.invalid",
+        inquiry_received_at=timezone.now(),
+    )
+    with CaptureQueriesContext(connection) as small_queries:
+        small = client.get(URL, HTTP_X_SCHOOL_ID=str(school.id))
+    assert small.status_code == 200 and small.data["count"] == 1
+
+    MarketingLead.objects.bulk_create([
+        MarketingLead(school=school, parent_name=f"Additional Family {i}",
+                      email=f"family-{i}@example.invalid", inquiry_received_at=timezone.now())
+        for i in range(15)
+    ])
+    with CaptureQueriesContext(connection) as large_queries:
+        large = client.get(URL, HTTP_X_SCHOOL_ID=str(school.id))
+    assert large.status_code == 200 and large.data["count"] == 16
+    assert len(large.data["results"]) == 16
+    assert all("notification_status" not in lead and "touchpoints" not in lead
+               and "duplicate_candidates" not in lead for lead in large.data["results"])
+    assert len(large_queries) <= len(small_queries) + 2
