@@ -78,6 +78,7 @@ class WorkflowPolicyTests(unittest.TestCase):
                     '    steps:\n      - run: echo synthetic proof\n')
             with patch.object(policy, 'ROOT', root), patch.object(policy, 'WORKFLOWS', workflows), \
                  patch.object(policy, 'CANONICAL_WORKFLOW_FILES', names), \
+                 patch.object(policy, 'DEV_RESET_WORKFLOWS', set()), \
                  patch.object(sys, 'argv', ['verify_workflow_policy.py']), \
                  contextlib.redirect_stdout(io.StringIO()) as output:
                 return policy.main(), output.getvalue()
@@ -95,6 +96,66 @@ class WorkflowPolicyTests(unittest.TestCase):
         code, text = self._production_mutex_result(drift=True)
         self.assertEqual(code, 1)
         self.assertIn('production image mutation workflow must use shared concurrency group', text)
+
+    def _dev_mutex_result(self, *, extra=False, drift=False, cancel=False, sink=None):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            workflows = root / ".github/workflows"
+            workflows.mkdir(parents=True)
+            names = {path.name for path in policy.DEV_RESET_WORKFLOWS}
+            if extra:
+                names.add("unrelated.yml")
+            for name in sorted(names):
+                group = "wrong-group" if drift and name == "demo-reset.yml" else policy.DEV_RESET_GROUP
+                cancellation = "true" if cancel and name == "demo-reset.yml" else "false"
+                step = "echo synthetic proof"
+                if sink and name == "demo-reset.yml":
+                    step = {
+                        "tee": "curl --max-time 30 -f -sS https://example.test | tee /tmp/reset.json",
+                        "echo": 'echo "$response"',
+                    }[sink]
+                (workflows / name).write_text(
+                    f"name: {name}\npermissions:\n  contents: read\n"
+                    f"concurrency:\n  group: {group}\n  cancel-in-progress: {cancellation}\n"
+                    "jobs:\n  proof:\n    runs-on: ubuntu-latest\n    timeout-minutes: 5\n"
+                    f"    steps:\n      - run: {step}\n",
+                    encoding="utf-8",
+                )
+            with patch.object(policy, "ROOT", root), patch.object(policy, "WORKFLOWS", workflows), \
+                 patch.object(policy, "CANONICAL_WORKFLOW_FILES", names), \
+                 patch.object(policy, "PRODUCTION_IMAGE_MUTATION_WORKFLOWS", set()), \
+                 patch.object(sys, "argv", ["verify_workflow_policy.py"]), \
+                 contextlib.redirect_stdout(io.StringIO()) as output:
+                return policy.main(), output.getvalue()
+
+    def test_only_two_dev_reset_entry_points_share_required_mutex(self):
+        code, output = self._dev_mutex_result()
+        self.assertEqual(code, 0, output)
+
+    def test_unrelated_workflow_cannot_join_dev_reset_mutex(self):
+        code, output = self._dev_mutex_result(extra=True)
+        self.assertEqual(code, 1)
+        self.assertIn("duplicate top-level concurrency group", output)
+
+    def test_dev_reset_entry_point_cannot_escape_mutex(self):
+        code, output = self._dev_mutex_result(drift=True)
+        self.assertEqual(code, 1)
+        self.assertIn("DEV reset workflow must use shared concurrency group", output)
+
+    def test_dev_reset_cannot_cancel_active_reset(self):
+        code, output = self._dev_mutex_result(cancel=True)
+        self.assertEqual(code, 1)
+        self.assertIn("must not cancel an active reset", output)
+
+    def test_dev_reset_cannot_print_response_via_tee(self):
+        code, output = self._dev_mutex_result(sink="tee")
+        self.assertEqual(code, 1)
+        self.assertIn("must not publish reset response bodies", output)
+
+    def test_dev_reset_cannot_echo_response(self):
+        code, output = self._dev_mutex_result(sink="echo")
+        self.assertEqual(code, 1)
+        self.assertIn("must not echo reset response bodies", output)
 
     def test_repository_policy_invokes_complete_scan_unconditionally(self):
         import yaml
