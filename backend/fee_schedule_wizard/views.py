@@ -19,9 +19,9 @@ from django.shortcuts import get_object_or_404
 from rest_framework import status
 from rest_framework.authentication import SessionAuthentication
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
-from rest_framework.permissions import IsAuthenticated
+from core.permissions import CrownModulePermission
+from crown_api.tenant_authentication import TenantJWTAuthentication
 from rest_framework.response import Response
-from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from audit.models import AuditLog
 from core.models import School
@@ -31,8 +31,10 @@ from .models import FeeSchedule, FeeScheduleWizardSession, FeeLine
 from drf_spectacular.utils import extend_schema
 from drf_spectacular.types import OpenApiTypes
 
-_AUTH = [JWTAuthentication, SessionAuthentication]
-_PERM = [IsAuthenticated]
+_AUTH = [TenantJWTAuthentication, SessionAuthentication]
+# Every wizard endpoint changes persisted configuration or session state.
+# Even the legacy GET /verify/ marks a session verified, so it requires edit.
+_PERM = [CrownModulePermission("finance.edit", write_code="finance.edit")]
 logger = logging.getLogger(__name__)
 
 VALID_KINDS  = {c[0] for c in FeeLine.KIND_CHOICES}
