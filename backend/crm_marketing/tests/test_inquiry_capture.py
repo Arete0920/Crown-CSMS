@@ -375,3 +375,37 @@ def test_staff_inquiry_list_database_queries_do_not_scale_per_family(school):
     assert all("notification_status" not in lead and "touchpoints" not in lead
                and "duplicate_candidates" not in lead for lead in large.data["results"])
     assert len(large_queries) <= len(small_queries) + 2
+
+
+def test_staff_inquiry_pages_reach_older_records_and_validate_bounds(school):
+    client = APIClient()
+    client.force_authenticate(user=_staff(school, edit=False))
+    other = School.objects.create(name="Unrelated paging school")
+    MarketingLead.objects.bulk_create([
+        MarketingLead(
+            school=school, parent_name=f"Inquiry Family {i:03d}",
+            email=f"page-{i}@example.invalid", inquiry_received_at=timezone.now(),
+            stage="inquiry",
+        )
+        for i in range(102)
+    ])
+    MarketingLead.objects.create(
+        school=other, parent_name="Private inquiry", email="private@example.invalid",
+        inquiry_received_at=timezone.now(), stage="inquiry",
+    )
+    first = client.get(URL, {"page": "1", "stage": "all"}, HTTP_X_SCHOOL_ID=str(school.id))
+    second = client.get(URL, {"page": "2", "stage": "all"}, HTTP_X_SCHOOL_ID=str(school.id))
+    assert first.status_code == second.status_code == 200
+    assert first.data["page"] == 1 and first.data["page_size"] == 100
+    assert first.data["total_pages"] == second.data["total_pages"] == 2
+    assert first.data["count"] == second.data["count"] == 102
+    assert len(first.data["results"]) == 100 and len(second.data["results"]) == 2
+    ids = [row["id"] for row in first.data["results"] + second.data["results"]]
+    assert len(set(ids)) == 102
+    assert all(row["parent_name"] != "Private inquiry" for row in first.data["results"] + second.data["results"])
+    beyond = client.get(URL, {"page": "999", "stage": "all"}, HTTP_X_SCHOOL_ID=str(school.id))
+    assert beyond.status_code == 200 and beyond.data["page"] == 2
+    assert [row["id"] for row in beyond.data["results"]] == [row["id"] for row in second.data["results"]]
+    for value in ("0", "-1", "1.5", "abc", "1" * 40):
+        invalid = client.get(URL, {"page": value}, HTTP_X_SCHOOL_ID=str(school.id))
+        assert invalid.status_code == 400
