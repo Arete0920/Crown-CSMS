@@ -26,6 +26,7 @@ from applications.views_admissions_identity import (
     admissions_lifecycle_chain_update,
 )
 from crown_api.admissions_runtime import admissions_summary
+from crown_api.refresh_rotation import SerializedTokenRefreshSerializer
 from crown_api.auth_rate_limit import (
     AuthRateLimitBackendUnavailable,
     check_auth_rate_limit,
@@ -120,6 +121,8 @@ class RateLimitedTokenObtainPairView(TokenObtainPairView):
 
 class RateLimitedTokenRefreshView(TokenRefreshView):
     """SimpleJWT refresh with abuse protection for invalid token attempts."""
+
+    serializer_class = SerializedTokenRefreshSerializer
 
     def post(self, request, *args, **kwargs):
         identity = str(request.data.get("refresh") or "missing").strip()
