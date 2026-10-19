@@ -7,37 +7,36 @@ from datetime import date, datetime, timezone
 from decimal import Decimal
 
 from django.conf import settings
-from django.core.management.base import BaseCommand
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError
+from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 
 from applications.models import Application, Applicant, ApplicationEvent
 from core.models_seed import SeedRun
+from core.golden_path_fixture_profiles import (
+    GOLDEN_PATH_FUNNEL_SIZE,
+    applicant_identity,
+    fixture_uuid,
+)
+from crown_api.ops_route_guard import demo_ops_runtime_allowed
 
 
 def seed_admissions_funnel(*, school_id, academic_year_name=None, force=False):
-    """
-    Deterministic admissions funnel seed with realistic distribution.
-    - 100 applicants with demo-ready stage progression
-    - Distribution: 40% inquiry → 30% application_started → 20% submitted → 8% accepted → 2% enrolled
-    - Events emitted for inquiry/tour/decision/enrollment where relevant
-    """
+    """Create a fictional 94-applicant DEV funnel without deleting user records."""
     from households.models import Household
 
-    # Avoid duplicates if rerun unless force
+    # A forced proof rerun may refresh financial fixture records, but may not
+    # erase canonical applications. Existing admissions remain authoritative.
     if Applicant.objects.filter(school_id=school_id).exists():
-        if not force:
-            return {"skipped": True, "reason": "already_seeded"}
-        # Force reseed: wipe admissions data for this school
-        ApplicationEvent.objects.filter(school_id=school_id).delete()
-        Applicant.objects.filter(school_id=school_id).delete()
-        Application.objects.filter(school_id=school_id).delete()
+        return {"skipped": True, "reason": "existing_applicants_preserved"}
 
     sources = [
         "church_referral", "facebook", "instagram", "google",
         "direct_mail_qr", "website", "word_of_mouth", "other",
     ]
 
-    # Realistic funnel distribution (94 total)
+    # Fixed stage counts make dashboard contract tests reproducible.
     stage_plan = (
         ["inquiry"] * 18 +
         ["tour_scheduled"] * 12 +
@@ -50,14 +49,15 @@ def seed_admissions_funnel(*, school_id, academic_year_name=None, force=False):
         ["declined"] * 1 +
         ["enrolled"] * 1
     )
+    assert len(stage_plan) == GOLDEN_PATH_FUNNEL_SIZE
 
-    # Minimal “flags” pattern
+    # Deliberate duplicate/bot scenarios; every record remains fictional.
     def flags_for(i):
         if i == 7:
-            return {"duplicate_suspected": True, "bot_suspected": False}
+            return {"fixture_origin": "golden_path", "duplicate_suspected": True, "bot_suspected": False}
         if i == 13:
-            return {"duplicate_suspected": False, "bot_suspected": True}
-        return {"duplicate_suspected": False, "bot_suspected": False}
+            return {"fixture_origin": "golden_path", "duplicate_suspected": False, "bot_suspected": True}
+        return {"fixture_origin": "golden_path", "duplicate_suspected": False, "bot_suspected": False}
 
     # Application.status mapping baseline
     def app_status_for(stage):
@@ -82,11 +82,19 @@ def seed_admissions_funnel(*, school_id, academic_year_name=None, force=False):
         return None
 
     for i, stage in enumerate(stage_plan):
-        source = sources[i % len(sources)]
+        source = sources[(i * 5 + i // len(sources)) % len(sources)]
+        first_name, last_name = applicant_identity(i)
+        household_id = fixture_uuid(school_id, "admissions-household", i)
+        household, _ = Household.objects.get_or_create(
+            id=household_id,
+            defaults={"school_id": school_id, "name": f"{last_name} Family"},
+        )
+        if str(household.school_id) != str(school_id):
+            raise CommandError("Golden Path fixture household belongs to another tenant.")
 
         app = Application.objects.create(
             school_id=school_id,
-            household=Household.objects.filter(school_id=school_id).first(),
+            household=household,
             status=app_status_for(stage),
         )
 
@@ -94,8 +102,8 @@ def seed_admissions_funnel(*, school_id, academic_year_name=None, force=False):
             school_id=school_id,
             application=app,
             student=None,
-            first_name=f"Student{i+1}",
-            last_name="Applicant",
+            first_name=first_name,
+            last_name=last_name,
             grade_applying_for=str((i % 12) + 1),
             dob=None,
             source=source,
@@ -215,49 +223,29 @@ class Command(BaseCommand):
         ts_2025 = datetime(2025, 8, 15, 12, 0, 0, tzinfo=timezone.utc)
         ts_2024 = datetime(2024, 8, 15, 12, 0, 0, tzinfo=timezone.utc)
 
-        # Deterministic UUIDs for applications and awards
+        # Tenant-scoped, stable UUIDs; no shared sequential IDs across schools.
         app_ids_2025 = [
-            uuid.UUID("11111111-1111-1111-1111-000000000001"),
-            uuid.UUID("11111111-1111-1111-1111-000000000002"),
-            uuid.UUID("11111111-1111-1111-1111-000000000003"),
-            uuid.UUID("11111111-1111-1111-1111-000000000004"),
-            uuid.UUID("11111111-1111-1111-1111-000000000005"),
+            fixture_uuid(school.id, "aid-application-2025", i) for i in range(1, 6)
         ]
         app_ids_2024 = [
-            uuid.UUID("22222222-2222-2222-2222-000000000001"),
-            uuid.UUID("22222222-2222-2222-2222-000000000002"),
-            uuid.UUID("22222222-2222-2222-2222-000000000003"),
-            uuid.UUID("22222222-2222-2222-2222-000000000004"),
-            uuid.UUID("22222222-2222-2222-2222-000000000005"),
+            fixture_uuid(school.id, "aid-application-2024", i) for i in range(1, 6)
         ]
-
         award_ids = [
-            uuid.UUID("33333333-3333-3333-3333-000000000001"),
-            uuid.UUID("33333333-3333-3333-3333-000000000002"),
-            uuid.UUID("33333333-3333-3333-3333-000000000003"),
-            uuid.UUID("33333333-3333-3333-3333-000000000004"),
-            uuid.UUID("33333333-3333-3333-3333-000000000005"),
-            uuid.UUID("33333333-3333-3333-3333-000000000006"),
-            uuid.UUID("33333333-3333-3333-3333-000000000007"),
-            uuid.UUID("33333333-3333-3333-3333-000000000008"),
-            uuid.UUID("33333333-3333-3333-3333-000000000009"),
-            uuid.UUID("33333333-3333-3333-3333-000000000010"),
-            uuid.UUID("33333333-3333-3333-3333-000000000011"),
-            uuid.UUID("33333333-3333-3333-3333-000000000012"),
+            fixture_uuid(school.id, "aid-award", i) for i in range(1, 13)
+        ]
+        event_ids = [
+            fixture_uuid(school.id, "aid-event", i) for i in range(1, 11)
         ]
 
-        event_ids = [
-            uuid.UUID("44444444-4444-4444-4444-000000000001"),
-            uuid.UUID("44444444-4444-4444-4444-000000000002"),
-            uuid.UUID("44444444-4444-4444-4444-000000000003"),
-            uuid.UUID("44444444-4444-4444-4444-000000000004"),
-            uuid.UUID("44444444-4444-4444-4444-000000000005"),
-            uuid.UUID("44444444-4444-4444-4444-000000000006"),
-            uuid.UUID("44444444-4444-4444-4444-000000000007"),
-            uuid.UUID("44444444-4444-4444-4444-000000000008"),
-            uuid.UUID("44444444-4444-4444-4444-000000000009"),
-            uuid.UUID("44444444-4444-4444-4444-000000000010"),
-        ]
+        # Never reassign an existing deterministic fixture record from another
+        # tenant. This guard is retained even though v2 IDs are school-scoped.
+        for model, ids in (
+            (FinancialAidApplication, app_ids_2025 + app_ids_2024),
+            (AidAward, award_ids),
+            (AidAuditEvent, event_ids),
+        ):
+            if model.objects.filter(id__in=ids).exclude(school_id=school.id).exists():
+                raise CommandError("Golden Path financial fixture ID is already assigned to another tenant.")
 
         # Create applications
         apps_2025 = []
@@ -266,7 +254,7 @@ class Command(BaseCommand):
                 id=app_id,
                 defaults={
                     "school_id": school.id,
-                    "household_id": uuid.UUID(f"55555555-5555-5555-5555-{i:012d}"),
+                    "household_id": fixture_uuid(school.id, "aid-household-2025", i),
                     "academic_year": "2025-2026",
                     "submitted_at": ts_2025,
                     "household_income": Decimal("60000.00"),
@@ -282,7 +270,7 @@ class Command(BaseCommand):
                 id=app_id,
                 defaults={
                     "school_id": school.id,
-                    "household_id": uuid.UUID(f"66666666-6666-6666-6666-{i:012d}"),
+                    "household_id": fixture_uuid(school.id, "aid-household-2024", i),
                     "academic_year": "2024-2025",
                     "submitted_at": ts_2024,
                     "household_income": Decimal("55000.00"),
@@ -322,7 +310,7 @@ class Command(BaseCommand):
                     "application": app,
                     "bucket": bucket,
                     "amount": amount,
-                    "rationale": f"Seed award for {bucket}",
+                    "rationale": f"Fictional Golden Path financial-aid scenario: {bucket}",
                     "approved_by_user_id": None,
                     "created_at": created_at,
                 },
@@ -357,7 +345,7 @@ class Command(BaseCommand):
                     "entity_type": entity_type,
                     "entity_id": entity_id,
                     "actor_user_id": None,
-                    "message": f"Seed {entity_type} created",
+                    "message": f"Fictional Golden Path {entity_type} proof event",
                     "created_at": created_at,
                 },
             )
@@ -462,13 +450,40 @@ class Command(BaseCommand):
         return stage_counts, len(app_ids)
 
     def handle(self, *args, **options):
-        self.stdout.write("=== GOLDEN_PATH_BOOTSTRAP_BEGIN ===")
+        # The management command is not a production administrator bootstrap.
+        # DEV Azure remains supported only under its explicit DEV guard.
+        labels = [
+            str(value or "").strip().lower()
+            for value in (
+                os.getenv("CROWN_ENV"), os.getenv("DJANGO_ENV"),
+                os.getenv("ENVIRONMENT"), os.getenv("APP_ENV"),
+                os.getenv("AZURE_ENVIRONMENT"),
+                getattr(settings, "CROWN_ENV", ""),
+                getattr(settings, "ENVIRONMENT", ""),
+            )
+            if str(value or "").strip()
+        ]
+        if any(label in {"production", "prod", "live"} for label in labels):
+            raise CommandError("Golden Path is prohibited in production.")
+        sqlite_local = (
+            settings.DATABASES["default"]["ENGINE"] == "django.db.backends.sqlite3"
+            and not (os.getenv("WEBSITE_HOSTNAME") or os.getenv("WEBSITE_INSTANCE_ID"))
+        )
+        if not (demo_ops_runtime_allowed() or sqlite_local):
+            raise CommandError("Golden Path requires a verified DEV or isolated local runtime.")
 
         force = bool(options.get("force", False))
-        school_id_str = options.get("school_id")
+        school_id_str = options.get("school_id") or os.getenv("CROWN_GOLDEN_PATH_SCHOOL_ID")
         school_id = None
         if school_id_str:
-            school_id = uuid.UUID(school_id_str)
+            try:
+                school_id = uuid.UUID(str(school_id_str))
+            except (TypeError, ValueError) as exc:
+                raise CommandError("Golden Path requires a valid school UUID.") from exc
+        elif not sqlite_local:
+            raise CommandError("Golden Path DEV bootstraps require --school-id.")
+
+        self.stdout.write("=== GOLDEN_PATH_BOOTSTRAP_BEGIN ===")
 
         env_name = (
             os.getenv("CROWN_ENV")
@@ -504,38 +519,47 @@ class Command(BaseCommand):
 
         try:
             with transaction.atomic():
-                school = School.objects.order_by("created_at", "id").first()
                 if school_id:
-                    # Use canonical helper for deterministic school creation
+                    # Do not seed an existing customer school under an arbitrary
+                    # supplied ID; the canonical DEV school is named distinctly.
+                    existing_school = School.objects.filter(pk=school_id).first()
+                    if existing_school and existing_school.name != "Crown Demo School":
+                        raise CommandError("Golden Path refuses non-demo school identities.")
                     school, created = ensure_deterministic_school(school_id)
                     if created:
                         self.stdout.write(f"BOOTSTRAP_OK school_created=1 id={school_id}")
-
-                if not school:
-                    school = School.objects.create(
-                        name=str(options["school_name"])[:255],
-                        timezone="America/New_York",
-                        is_active=True,
+                else:
+                    # Local SQLite can create/reuse only this named fixture school;
+                    # never silently select the database's first tenant.
+                    school, created = School.objects.get_or_create(
+                        name="GP School",
+                        defaults={"timezone": "America/New_York", "is_active": True},
                     )
+                if school.name not in {"Crown Demo School", "GP School"}:
+                    raise CommandError("Golden Path may seed only a dedicated demo school.")
 
                 User = get_user_model()
-                admin, _ = User.objects.get_or_create(
+                admin, created_admin = User.objects.get_or_create(
                     username="admin",
                     defaults={"email": "admin@local.test", "school": school},
                 )
-                if not admin.school:
-                    admin.school = school
-                admin.is_active = True
-                admin.is_staff = True
-                admin.is_superuser = True
-                
-                # Require password from environment (never hard-code in repo)
+                if not created_admin:
+                    if admin.school_id != school.id or admin.email != "admin@local.test":
+                        raise CommandError("Golden Path refuses an unrelated administrator account.")
+                    if not (admin.is_active and admin.is_staff and admin.is_superuser):
+                        raise CommandError("Golden Path may not elevate an existing non-administrator.")
+                else:
+                    admin.is_active = True
+                    admin.is_staff = True
+                    admin.is_superuser = True
+
                 demo_password = os.environ.get("CROWN_DEMO_PASSWORD")
                 if not demo_password:
-                    raise SystemExit(
-                        "CROWN_DEMO_PASSWORD environment variable is required for bootstrap. "
-                        "Set in Azure App Settings or local .env"
-                    )
+                    raise CommandError("CROWN_DEMO_PASSWORD must be set for DEV Golden Path proof.")
+                try:
+                    validate_password(demo_password, user=admin)
+                except ValidationError as exc:
+                    raise CommandError("Golden Path proof password does not satisfy security policy.") from exc
                 admin.set_password(demo_password)
                 admin.save()
                 self.stdout.write("BOOTSTRAP_OK admin=admin active=1 staff=1 superuser=1")
