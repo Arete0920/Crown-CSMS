@@ -155,7 +155,7 @@ export default function AdmissionsInquiryQueue() {
     setLoading(true);
     setError('');
     try {
-      const result = await fetchAdmissionsInquiries({ stage: filters.stage, unassigned: filters.unassigned ? 1 : '', overdue: filters.overdue ? 1 : '', cursor });
+      const result = await fetchAdmissionsInquiries({ stage: filters.stage, unassigned: filters.unassigned ? 1 : '', overdue: filters.overdue ? 1 : '', ...(cursor ? { cursor } : {}) });
       if (version === loadVersion.current) setPayload(result);
     } catch (failure) {
       if (version === loadVersion.current) {
