@@ -27,7 +27,7 @@ EXTRA_DEMO_USERS = (
 
 
 class Command(BaseCommand):
-    help = "Reset the selected Heritage demo school's legacy accounts from CROWN_DEMO_PASSWORD."
+    help = "Reset selected Heritage demo accounts using distinct per-account secrets."
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -81,7 +81,8 @@ class Command(BaseCommand):
                 continue
             user.set_password(passwords[username])
             user.is_superuser = False
-            user.save(update_fields=["password", "is_superuser"])
+            user.is_staff = False
+            user.save(update_fields=["password", "is_superuser", "is_staff"])
             changed += 1
 
         for spec in EXTRA_DEMO_USERS:
