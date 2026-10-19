@@ -159,7 +159,7 @@ class WorkflowPolicyTests(unittest.TestCase):
 
     def test_golden_path_smoke_never_publishes_ci_user_jwt(self):
         script = (ROOT / "tools/dev_scripts/golden_path.ps1").read_text(encoding="utf-8")
-        self.assertNotIn('Write-Host "✅ CI user ensured. Response:', script)
+        self.assertNotIn("CI user ensured. Response:", script)
         self.assertNotIn("$resp | ConvertTo-Json", script)
         self.assertIn('return $resp', script)
 
