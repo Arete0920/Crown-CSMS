@@ -141,6 +141,7 @@ function InquiryDetails({ inquiry, owners, canEdit, notificationsEnabled, onSave
 
 export default function AdmissionsInquiryQueue() {
   const [filters, setFilters] = useState({ stage: '', unassigned: false, overdue: false });
+  const [page, setPage] = useState(1);
   const [payload, setPayload] = useState(null);
   const [selectedId, setSelectedId] = useState('');
   const [details, setDetails] = useState(null);
@@ -156,7 +157,7 @@ export default function AdmissionsInquiryQueue() {
     setLoading(true);
     setError('');
     try {
-      const result = await fetchAdmissionsInquiries({ stage: filters.stage, unassigned: filters.unassigned ? 1 : '', overdue: filters.overdue ? 1 : '' });
+      const result = await fetchAdmissionsInquiries({ stage: filters.stage, unassigned: filters.unassigned ? 1 : '', overdue: filters.overdue ? 1 : '', page });
       if (version === loadVersion.current) setPayload(result);
     } catch (failure) {
       if (version === loadVersion.current) {
@@ -166,7 +167,7 @@ export default function AdmissionsInquiryQueue() {
     } finally {
       if (version === loadVersion.current) setLoading(false);
     }
-  }, [filters]);
+  }, [filters, page]);
 
   useEffect(() => { reload(); }, [reload]);
   const inquiries = Array.isArray(payload?.results) ? payload.results : [];
@@ -197,6 +198,20 @@ export default function AdmissionsInquiryQueue() {
     return () => { active = false; };
   }, [selectedId, payload, loading, error]);
   const ownerName = (id) => owners.find((owner) => owner.id === id)?.name || (id ? 'Assigned counselor' : 'Unassigned');
+  const currentPage = Number(payload?.page) || page;
+  const totalPages = Math.max(1, Number(payload?.total_pages) || 1);
+  function changePage(nextPage) {
+    if (loading || nextPage < 1 || nextPage > totalPages || nextPage === currentPage) return;
+    setSelectedId('');
+    setSavedMessage('');
+    setPage(nextPage);
+  }
+  function changeFilters(changes) {
+    setSelectedId('');
+    setSavedMessage('');
+    setPage(1);
+    setFilters((previous) => ({ ...previous, ...changes }));
+  }
 
   async function afterSave() {
     await reload();
@@ -209,12 +224,12 @@ export default function AdmissionsInquiryQueue() {
         <div style={{ ...ROW, justifyContent: 'space-between', marginBottom: 18 }}>
           <div style={ROW}>
             <label style={{ display: 'grid', gap: 5 }}>Stage
-              <select style={INPUT} value={filters.stage} onChange={(event) => setFilters((previous) => ({ ...previous, stage: event.target.value }))}>
+              <select style={INPUT} value={filters.stage} onChange={(event) => changeFilters({ stage: event.target.value })}>
                 <option value="">Active inquiries</option><option value="all">All stages and history</option>{Object.entries(STAGES).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
               </select>
             </label>
-            <label><input type="checkbox" checked={filters.unassigned} onChange={(event) => setFilters((previous) => ({ ...previous, unassigned: event.target.checked }))} /> Unassigned</label>
-            <label><input type="checkbox" checked={filters.overdue} onChange={(event) => setFilters((previous) => ({ ...previous, overdue: event.target.checked }))} /> Follow-up due</label>
+            <label><input type="checkbox" checked={filters.unassigned} onChange={(event) => changeFilters({ unassigned: event.target.checked })} /> Unassigned</label>
+            <label><input type="checkbox" checked={filters.overdue} onChange={(event) => changeFilters({ overdue: event.target.checked })} /> Follow-up due</label>
           </div>
           <button className="crown-btn" type="button" onClick={reload} disabled={loading}>Refresh queue</button>
         </div>
@@ -228,7 +243,7 @@ export default function AdmissionsInquiryQueue() {
         {!loading && !error && inquiries.length > 0 ? (
           <div style={{ overflowX: 'auto' }}>
             <table className="crown-table">
-              <caption style={{ textAlign: 'left', paddingBottom: 10 }}>{inquiries.length} of {payload.count ?? inquiries.length} matching inquiry record(s) shown. The queue displays up to 100 records.</caption>
+              <caption style={{ textAlign: 'left', paddingBottom: 10 }}>Showing {inquiries.length} of {payload.count ?? inquiries.length} matching inquiries. Page {currentPage} of {totalPages}; 100 records maximum per page.</caption>
               <thead><tr>{['Family contact', 'Interest', 'Source', 'Stage', 'Owner', 'Next follow-up', 'Action'].map((heading) => <th scope="col" key={heading}>{heading}</th>)}</tr></thead>
               <tbody>{inquiries.map((inquiry) => (
                 <tr key={inquiry.id}>
@@ -242,6 +257,11 @@ export default function AdmissionsInquiryQueue() {
                 </tr>
               ))}</tbody>
             </table>
+            <nav aria-label="Inquiry queue pages" style={{ ...ROW, justifyContent: 'flex-end', paddingTop: 12 }}>
+              <button className="crown-btn" type="button" onClick={() => changePage(currentPage - 1)} disabled={loading || currentPage <= 1}>Previous page</button>
+              <span>Page {currentPage} of {totalPages}</span>
+              <button className="crown-btn" type="button" onClick={() => changePage(currentPage + 1)} disabled={loading || currentPage >= totalPages}>Next page</button>
+            </nav>
           </div>
         ) : null}
       </div>

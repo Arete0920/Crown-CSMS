@@ -173,10 +173,10 @@ describe('staff inquiry follow-up queue', () => {
     render(<AdmissionsInquiryQueue />);
     await screen.findByText('No inquiries match these filters.');
     fireEvent.click(screen.getByLabelText('Unassigned'));
-    await waitFor(() => expect(api.list).toHaveBeenLastCalledWith({ stage: '', unassigned: 1, overdue: '' }));
+    await waitFor(() => expect(api.list).toHaveBeenLastCalledWith({ stage: '', unassigned: 1, overdue: '', page: 1 }));
     await screen.findByText('No inquiries match these filters.');
     fireEvent.click(screen.getByLabelText('Follow-up due'));
-    await waitFor(() => expect(api.list).toHaveBeenLastCalledWith({ stage: '', unassigned: 1, overdue: 1 }));
+    await waitFor(() => expect(api.list).toHaveBeenLastCalledWith({ stage: '', unassigned: 1, overdue: 1, page: 1 }));
     await screen.findByText('No inquiries match these filters.');
     expect(screen.getAllByText(/Automatic inquiry messages are off\./)).toHaveLength(1);
     expect(screen.queryByRole('form', { name: 'Update inquiry follow-up' })).toBeNull();
@@ -307,5 +307,28 @@ describe('on-demand staff inquiry details', () => {
     expect(await screen.findByText('Permission denied.')).toBeTruthy();
     expect(screen.queryByRole('form', { name: 'Update inquiry follow-up' })).toBeNull();
     expect(api.detail).toHaveBeenCalledWith(INQUIRY);
+  });
+});
+
+describe('staff inquiry pagination', () => {
+  it('navigates to older inquiries without leaking details from the previous page', async () => {
+    const first = { id: 'first-inquiry', parent_name: 'First Family', stage: 'inquiry' };
+    const older = { id: 'older-inquiry', parent_name: 'Older Family', stage: 'inquiry' };
+    api.list.mockImplementation(async ({ page }) => ({
+      results: page === 2 ? [older] : [first],
+      count: 101, page, page_size: 100, total_pages: 2,
+      can_edit: false, owners: [],
+    }));
+    api.detail.mockImplementation(async (id) => id === first.id ? first : older);
+    render(<AdmissionsInquiryQueue />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Open First Family' }));
+    await screen.findByText('You have read-only access to this queue.');
+    fireEvent.click(screen.getByRole('button', { name: 'Next page' }));
+    expect(await screen.findByRole('button', { name: 'Open Older Family' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Open First Family' })).toBeNull();
+    expect(screen.queryByText('You have read-only access to this queue.')).toBeNull();
+    expect(api.list).toHaveBeenLastCalledWith({ stage: '', unassigned: '', overdue: '', page: 2 });
+    fireEvent.click(screen.getByLabelText('Unassigned'));
+    await waitFor(() => expect(api.list).toHaveBeenLastCalledWith({ stage: '', unassigned: 1, overdue: '', page: 1 }));
   });
 });
