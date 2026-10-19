@@ -1,15 +1,21 @@
 from __future__ import annotations
 
 import os
+from dataclasses import replace
 import re
 
 from django.conf import settings
 from django.http import JsonResponse
+from rest_framework.exceptions import APIException
 
 from core.models import School
 from core.tenant_models import clear_current_school, set_current_school
 from crown_api.audit import audit_tenant_decision
-from crown_api.tenant import bind_tenant_context, build_tenant_context
+from crown_api.tenant import (
+    bind_tenant_context,
+    build_tenant_context,
+    clear_tenant_school_binding,
+)
 
 
 def _is_production_runtime() -> bool:
@@ -98,114 +104,146 @@ class TenantHeaderRequiredMiddleware:
 
     def __call__(self, request):
         try:
-            if request.method == "OPTIONS":
-                return self.get_response(request)
-
-            if not getattr(settings, "TENANT_HEADER_REQUIRED", True):
-                return self.get_response(request)
-
-            path = getattr(request, "path", "") or ""
-            normalized_path = path.rstrip("/") or "/"
-
-            if not normalized_path.startswith("/api/"):
-                return self.get_response(request)
-
-            if (
-                _is_public_inquiry_post(request, normalized_path)
-                or any(normalized_path.startswith(prefix) for prefix in self.EXEMPT_PREFIXES)
-            ):
-                context = build_tenant_context(request)
-                bind_tenant_context(request, context)
-                if context.source == "header_invalid":
-                    _record_tenant_decision(
-                        request,
-                        outcome="denied",
-                        reason="invalid_tenant_header_exempt_route",
-                    )
-                    return JsonResponse(
-                        {
-                            "detail": "Invalid X-School-Id (must be UUID).",
-                            "code": "invalid_tenant_header",
-                        },
-                        status=400,
-                    )
-                return self.get_response(request)
-
-            if _dev_open_dashboard_bypass_enabled() and _is_dashboard_api_path(normalized_path):
-                return self.get_response(request)
-
-            if _is_dashboard_api_path(normalized_path) and _is_production_runtime():
-                user = getattr(request, "user", None)
-                if not user or not getattr(user, "is_authenticated", False):
-                    return JsonResponse(
-                        {"detail": "Authentication credentials were not provided."},
-                        status=401,
-                    )
-
-            context = build_tenant_context(request)
-            bind_tenant_context(request, context)
-
-            if context.source == "header_invalid":
-                _record_tenant_decision(request, outcome="denied", reason="invalid_tenant_header")
-                return JsonResponse(
-                    {
-                        "detail": "Invalid X-School-Id (must be UUID).",
-                        "code": "invalid_tenant_header",
-                    },
-                    status=400,
-                )
-
-            if not context.school_id:
-                _record_tenant_decision(request, outcome="denied", reason="missing_tenant")
-                return JsonResponse(
-                    {
-                        "detail": "Missing required header: X-School-Id.",
-                        "code": "missing_tenant",
-                    },
-                    status=400,
-                )
-
-            if context.override_requested and not context.override_authorized:
-                _record_tenant_decision(request, outcome="denied", reason="override_not_authorized")
-                return JsonResponse(
-                    {"detail": "Not found.", "code": "tenant_access_denied"},
-                    status=404,
-                )
-
-            school = (
-                School.objects.filter(pk=context.school_id, is_active=True)
-                .only("id", "name", "is_active")
-                .first()
-            )
-            if school is None:
-                _record_tenant_decision(request, outcome="denied", reason="tenant_inactive_or_unknown")
-                return JsonResponse(
-                    {
-                        "detail": "Unknown X-School-Id.",
-                        "code": "invalid_tenant",
-                    },
-                    status=404,
-                )
-
-            context = build_tenant_context(request, school=school)
-            bind_tenant_context(request, context)
-
-            if context.override_authorized and not _record_tenant_decision(
-                request,
-                outcome="authorized",
-                reason="explicit_cross_school_override",
-                required=True,
-            ):
-                return JsonResponse(
-                    {
-                        "detail": "Tenant authorization evidence could not be persisted.",
-                        "code": "tenant_audit_unavailable",
-                    },
-                    status=503,
-                )
-
-            set_current_school(school)
+            try:
+                enforce_tenant_context(request)
+            except TenantContextError as exc:
+                return JsonResponse(exc.detail, status=exc.status_code)
             return self.get_response(request)
-
         finally:
             clear_current_school()
+
+
+class TenantContextError(APIException):
+    """Preserve tenant middleware denial payloads when DRF authenticates later."""
+
+    def __init__(self, detail, *, status):
+        self.status_code = status
+        super().__init__(detail=detail)
+
+def _tenant_context_error(request, detail, *, status):
+    context = getattr(request, "crown_tenant", None)
+    if context is not None:
+        bind_tenant_context(request, replace(context, school=None))
+    clear_tenant_school_binding(request)
+    clear_current_school()
+    return TenantContextError(detail, status=status)
+
+
+def enforce_tenant_context(request) -> None:
+    """Apply the same tenant contract before views and after late bearer auth.
+
+    Authentication policy belongs to the existing middleware/authenticator chain.
+    This guard neither authenticates requests nor relaxes its early denials.
+    """
+    if request.method == "OPTIONS":
+        return
+
+    if not getattr(settings, "TENANT_HEADER_REQUIRED", True):
+        return
+
+    path = getattr(request, "path", "") or ""
+    normalized_path = path.rstrip("/") or "/"
+
+    if not normalized_path.startswith("/api/"):
+        return
+
+    if _is_public_inquiry_post(request, normalized_path) or any(
+        normalized_path.startswith(prefix)
+        for prefix in TenantHeaderRequiredMiddleware.EXEMPT_PREFIXES
+    ):
+        context = build_tenant_context(request)
+        bind_tenant_context(request, context)
+        if context.source == "header_invalid":
+            _record_tenant_decision(
+                request,
+                outcome="denied",
+                reason="invalid_tenant_header_exempt_route",
+            )
+            raise _tenant_context_error(
+                request,
+                {
+                    "detail": "Invalid X-School-Id (must be UUID).",
+                    "code": "invalid_tenant_header",
+                },
+                status=400,
+            )
+        return
+
+    if _dev_open_dashboard_bypass_enabled() and _is_dashboard_api_path(normalized_path):
+        return
+
+    if _is_dashboard_api_path(normalized_path) and _is_production_runtime():
+        user = getattr(request, "user", None)
+        if not user or not getattr(user, "is_authenticated", False):
+            raise _tenant_context_error(
+                request,
+                {"detail": "Authentication credentials were not provided."},
+                status=401,
+            )
+
+    context = build_tenant_context(request)
+    bind_tenant_context(request, context)
+
+    if context.source == "header_invalid":
+        _record_tenant_decision(request, outcome="denied", reason="invalid_tenant_header")
+        raise _tenant_context_error(
+            request,
+            {
+                "detail": "Invalid X-School-Id (must be UUID).",
+                "code": "invalid_tenant_header",
+            },
+            status=400,
+        )
+
+    if not context.school_id:
+        _record_tenant_decision(request, outcome="denied", reason="missing_tenant")
+        raise _tenant_context_error(
+            request,
+            {
+                "detail": "Missing required header: X-School-Id.",
+                "code": "missing_tenant",
+            },
+            status=400,
+        )
+
+    if context.override_requested and not context.override_authorized:
+        _record_tenant_decision(request, outcome="denied", reason="override_not_authorized")
+        raise _tenant_context_error(
+            request,
+            {"detail": "Not found.", "code": "tenant_access_denied"},
+            status=404,
+        )
+
+    school = (
+        School.objects.filter(pk=context.school_id, is_active=True)
+        .only("id", "name", "is_active")
+        .first()
+    )
+    if school is None:
+        _record_tenant_decision(request, outcome="denied", reason="tenant_inactive_or_unknown")
+        raise _tenant_context_error(
+            request,
+            {
+                "detail": "Unknown X-School-Id.",
+                "code": "invalid_tenant",
+            },
+            status=404,
+        )
+
+    if context.override_authorized and not _record_tenant_decision(
+        request,
+        outcome="authorized",
+        reason="explicit_cross_school_override",
+        required=True,
+    ):
+        raise _tenant_context_error(
+            request,
+            {
+                "detail": "Tenant authorization evidence could not be persisted.",
+                "code": "tenant_audit_unavailable",
+            },
+            status=503,
+        )
+
+    bind_tenant_context(request, replace(context, school=school))
+    set_current_school(school)
