@@ -1,22 +1,69 @@
+"""Verify environment-specific renderer policy without mutating process-global settings."""
+
+import json
 import os
-import importlib
+from pathlib import Path
+import subprocess
+import sys
 
-def _reload_settings_module():
-    # Crown settings are typically imported as crown_api.settings
-    # Reloading lets us test env-driven settings deterministically.
-    import crown_api.settings as settings
-    return importlib.reload(settings)
 
-def test_prod_uses_json_only_renderers(monkeypatch):
-    monkeypatch.setenv("CROWN_ENV", "prod")
-    settings = _reload_settings_module()
-    renderers = settings.REST_FRAMEWORK.get("DEFAULT_RENDERER_CLASSES")
-    assert renderers == ("rest_framework.renderers.JSONRenderer",)
+BACKEND_ROOT = Path(__file__).resolve().parents[2]
+STRONG_TEST_SECRET = "renderer-fixture-strong-nonproduction-value-" + ("Ab7!" * 16)
 
-def test_dev_allows_browsable_renderer(monkeypatch):
-    monkeypatch.delenv("CROWN_ENV", raising=False)
-    monkeypatch.setenv("CROWN_ENV", "dev")
-    settings = _reload_settings_module()
-    renderers = settings.REST_FRAMEWORK.get("DEFAULT_RENDERER_CLASSES")
+
+def _renderer_classes(environment: str) -> tuple[str, ...]:
+    """Import real Django settings in a clean process without a database connection."""
+    env = os.environ.copy()
+    for name in (
+        "CROWN_ENV",
+        "DJANGO_ENV",
+        "ENVIRONMENT",
+        "AZURE_ENVIRONMENT",
+        "WEBSITE_HOSTNAME",
+        "WEBSITE_INSTANCE_ID",
+        "CROWN_DEPLOY_SECURITY",
+        "DATABASE_URL",
+        "DJANGO_DEBUG",
+        "DEBUG",
+        "DJANGO_SECRET_KEY",
+        "SECRET_KEY",
+    ):
+        env.pop(name, None)
+    hosted = environment == "prod"
+    env.update(
+        DJANGO_SETTINGS_MODULE="crown_api.settings",
+        CROWN_ENV=environment,
+        DJANGO_ENV="production" if hosted else "dev",
+        DJANGO_DEBUG="false",
+        DJANGO_SECRET_KEY=STRONG_TEST_SECRET,
+        DATABASE_URL=(
+            "postgresql://db.example.invalid/crown"
+            if hosted
+            else "sqlite:///./renderer-test.sqlite3"
+        ),
+    )
+    code = (
+        "import json; import crown_api.settings as settings; "
+        "print(json.dumps(settings.REST_FRAMEWORK['DEFAULT_RENDERER_CLASSES']))"
+    )
+    result = subprocess.run(
+        [sys.executable, "-c", code],
+        cwd=BACKEND_ROOT,
+        env=env,
+        capture_output=True,
+        text=True,
+        timeout=30,
+        check=False,
+    )
+    assert result.returncode == 0, result.stderr
+    return tuple(json.loads(result.stdout.strip().splitlines()[-1]))
+
+
+def test_prod_uses_json_only_renderers():
+    assert _renderer_classes("prod") == ("rest_framework.renderers.JSONRenderer",)
+
+
+def test_dev_allows_browsable_renderer():
+    renderers = _renderer_classes("dev")
     assert "rest_framework.renderers.JSONRenderer" in renderers
     assert "rest_framework.renderers.BrowsableAPIRenderer" in renderers

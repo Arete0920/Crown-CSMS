@@ -58,6 +58,13 @@ _CROWN_HOSTED_RUNTIME = _is_azure or any(
     os.getenv(name, "").strip().lower() in {"sandbox", "staging", "prod", "production", "live"}
     for name in ("CROWN_ENV", "DJANGO_ENV", "ENVIRONMENT", "AZURE_ENVIRONMENT")
 )
+# Determine the effective early DEBUG flag before any CORS/demo safety checks.
+# Hardened deployment markers must not inherit the local DEBUG=True default.
+_CROWN_INITIAL_DEBUG = _env_bool(
+    "DJANGO_DEBUG", default=not _CROWN_HARDENED_RUNTIME
+) or _env_bool("DEBUG", default=False)
+validate_debug_runtime(_CROWN_INITIAL_DEBUG, hardened=_CROWN_HARDENED_RUNTIME)
+
 CROWN_DEV_OPEN_API = _env_bool("CROWN_DEV_OPEN_API", default=False)
 
 # Production API documentation is closed by default. It may be explicitly
@@ -81,7 +88,7 @@ CROWN_SOLOMON_CONTEXT_ENABLED = _env_bool("CROWN_SOLOMON_CONTEXT_ENABLED", defau
 _secret_key_env = os.getenv("DJANGO_SECRET_KEY") or os.getenv("SECRET_KEY")
 if not _secret_key_env:
     # In any non-debug / Azure context, refuse to start with the insecure fallback.
-    _would_be_debug = _env_bool("DJANGO_DEBUG", default=(False if _is_azure else True)) or _env_bool("DEBUG", default=False)
+    _would_be_debug = _CROWN_INITIAL_DEBUG
     if _CROWN_HARDENED_RUNTIME or not _would_be_debug:
         raise ImproperlyConfigured(
             "Missing required environment variable: DJANGO_SECRET_KEY. "
@@ -92,9 +99,7 @@ if not _secret_key_env:
 SECRET_KEY = _secret_key_env
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = _env_bool("DJANGO_DEBUG", default=(False if _is_azure else True)) or _env_bool(
-    "DEBUG", default=False
-)
+DEBUG = _CROWN_INITIAL_DEBUG
 
 # ALLOWED_HOSTS configuration
 _django_env = os.getenv("DJANGO_ENV", "").lower()
