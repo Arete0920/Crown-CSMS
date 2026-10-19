@@ -91,8 +91,8 @@ def _throttle(request, school, *, email="", action="capture"):
     return None
 
 
-def _serialize(lead):
-    from crm_marketing.inquiry_notifications import inquiry_notification_status
+def _serialize(lead, *, include_related=True):
+    """Provide lightweight queue rows; load expensive histories only on detail GET."""
     data = {field: getattr(lead, field) for field in (
         "parent_name", "email", "phone", "grade_interest", "entry_year", "campus",
         "request_type", "contact_preference", "response_consent", "follow_up_consent",
@@ -102,13 +102,18 @@ def _serialize(lead):
     data.update({
         "id": str(lead.id), "utm": lead.attribution_json,
         "assigned_to_user_id": str(lead.assigned_to_user_id) if lead.assigned_to_user_id else None,
-        "application_ids": [str(app.id) for app in lead.applications.filter(school_id=lead.school_id)],
-        "notification_status": inquiry_notification_status(lead),
-        "duplicate_candidates": list(MarketingLead.objects.filter(
-            school_id=lead.school_id, email=lead.email, inquiry_received_at__isnull=False,
-        ).exclude(id=lead.id).values("id", "parent_name", "email", "stage")[:5]),
-        "touchpoints": list(lead.touchpoints.filter(school_id=lead.school_id).values("id", "channel", "summary", "outcome", "occurred_at")[:10]),
     })
+    if include_related:
+        from crm_marketing.inquiry_notifications import inquiry_notification_status
+
+        data.update({
+            "application_ids": [str(app.id) for app in lead.applications.filter(school_id=lead.school_id)],
+            "notification_status": inquiry_notification_status(lead),
+            "duplicate_candidates": list(MarketingLead.objects.filter(
+                school_id=lead.school_id, email=lead.email, inquiry_received_at__isnull=False,
+            ).exclude(id=lead.id).values("id", "parent_name", "email", "stage")[:5]),
+            "touchpoints": list(lead.touchpoints.filter(school_id=lead.school_id).values("id", "channel", "summary", "outcome", "occurred_at")[:10]),
+        })
     for field in ("next_follow_up_at", "last_touch_at", "created_at", "inquiry_received_at", "application_started_at", "consent_at"):
         value = getattr(lead, field)
         data[field] = value.isoformat() if value else None
@@ -123,7 +128,7 @@ def inquiry_collection(request):
         school = _staff_school(request, "admissions.view")
         if school is None:
             return _response({"detail": "Permission denied."}, 403)
-        leads = MarketingLead.objects.filter(school=school, inquiry_received_at__isnull=False).prefetch_related("applications", "touchpoints")
+        leads = MarketingLead.objects.filter(school=school, inquiry_received_at__isnull=False)
         stage = request.query_params.get("stage")
         if stage and stage != "all":
             if stage not in LeadStage.values:
@@ -137,7 +142,7 @@ def inquiry_collection(request):
             leads = leads.filter(next_follow_up_at__lte=timezone.now(), stage__in=ACTIVE_INQUIRY_STAGES, application__isnull=True)
         from crm_marketing.inquiry_notifications import inquiry_notifications_enabled
         return _response({
-            "results": [_serialize(lead) for lead in leads.order_by("next_follow_up_at", "created_at")[:100]],
+            "results": [_serialize(lead, include_related=False) for lead in leads.order_by("next_follow_up_at", "created_at", "id")[:100]],
             "count": leads.count(),
             "notifications_enabled": inquiry_notifications_enabled(),
             "can_edit": user_has_permission(request.user, "admissions.edit", school=school),
@@ -186,14 +191,22 @@ def inquiry_start(request, inquiry_id):
 
 
 @extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
-@api_view(["PATCH"])
+@api_view(["GET", "PATCH"])
 @permission_classes([IsAuthenticated])
 @transaction.atomic
 def inquiry_update(request, inquiry_id):
-    school = _staff_school(request, "admissions.edit")
+    """Detail reads and staff updates use the same explicit school authority."""
+    permission = "admissions.view" if request.method == "GET" else "admissions.edit"
+    school = _staff_school(request, permission)
     if school is None:
         return _response({"detail": "Permission denied."}, 403)
-    lead = MarketingLead.objects.select_for_update().filter(id=inquiry_id, school=school, inquiry_received_at__isnull=False).first()
+    queryset = MarketingLead.objects.filter(
+        id=inquiry_id, school=school, inquiry_received_at__isnull=False,
+    )
+    if request.method == "GET":
+        lead = queryset.first()
+        return _response(_serialize(lead)) if lead else _response({"detail": "Inquiry not found."}, 404)
+    lead = queryset.select_for_update().first()
     if lead is None:
         return _response({"detail": "Inquiry not found."}, 404)
     try:
