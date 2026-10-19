@@ -26,7 +26,7 @@ def _confirmed_family_leads(leads, school_id):
     from applications.models import ApplicationEvent
 
     linked = {
-        lead.id: ({app.id for app in lead.scoped_applications}
+        lead.id: ({app.id for app in getattr(lead, 'scoped_applications', ())}
                   | ({lead.application_id} if lead.application_id else set()))
         for lead in leads
     }
