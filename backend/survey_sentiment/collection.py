@@ -144,7 +144,7 @@ def collect_response(*, token, body):
         return _collect(digest, payload)
     except CollectionRejected:
         raise
-    except (ValueError, TypeError, RecursionError, DatabaseError, SurveyUnavailable, SurveyAnswerValidationError):
+    except (ValueError, TypeError, UnicodeError, OverflowError, RecursionError, DatabaseError, SurveyUnavailable, SurveyAnswerValidationError):
         raise CollectionRejected("Invalid or unavailable submission.") from None
 
 
