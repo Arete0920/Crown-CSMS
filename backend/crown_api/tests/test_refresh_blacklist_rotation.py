@@ -15,8 +15,25 @@ from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, Ou
 
 
 pytestmark = pytest.mark.django_db
+requires_revocation = pytest.mark.skipif(
+    not settings.CROWN_SIMPLEJWT_BLACKLIST_ENABLED,
+    reason="Blacklist integration requires the explicitly enabled migrated test environment.",
+)
 
 
+@pytest.mark.skipif(
+    settings.CROWN_SIMPLEJWT_BLACKLIST_ENABLED,
+    reason="Default-disabled runtime contract applies only before activation.",
+)
+def test_default_disabled_mode_retains_stock_refresh_serializer():
+    from crown_api.api_v1_urls import RateLimitedTokenRefreshView
+    from rest_framework_simplejwt.serializers import TokenRefreshSerializer
+
+    assert not apps.is_installed("rest_framework_simplejwt.token_blacklist")
+    assert RateLimitedTokenRefreshView.serializer_class is TokenRefreshSerializer
+
+
+@requires_revocation
 def test_blacklist_registration_and_test_database_schema():
     assert apps.is_installed("rest_framework_simplejwt.token_blacklist")
     assert settings.SIMPLE_JWT["ROTATE_REFRESH_TOKENS"] is True
@@ -26,6 +43,7 @@ def test_blacklist_registration_and_test_database_schema():
     assert BlacklistedToken._meta.db_table in tables
 
 
+@requires_revocation
 def test_old_refresh_cannot_be_reused_after_successful_rotation():
     cache.clear()
     user = get_user_model().objects.create_user(
@@ -64,6 +82,7 @@ def test_old_refresh_cannot_be_reused_after_successful_rotation():
     assert BlacklistedToken.objects.filter(token__user=user).count() >= 2
 
 
+@requires_revocation
 @pytest.mark.django_db(transaction=True)
 def test_concurrent_refresh_consumes_token_only_once():
     """Real PostgreSQL workers cannot both rotate one refresh token."""
@@ -106,6 +125,7 @@ def test_concurrent_refresh_consumes_token_only_once():
     assert BlacklistedToken.objects.filter(token__user=user).count() == 1
 
 
+@requires_revocation
 def test_blacklist_database_failure_fails_closed():
     """A failed blacklist DB operation must not mint an access token."""
     from unittest.mock import patch
