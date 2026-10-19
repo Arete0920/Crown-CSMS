@@ -69,9 +69,12 @@ class GradeEntryQuerySet(models.QuerySet):
         return super().bulk_create(records, *args, **kwargs)
 
     def bulk_update(self, objs, fields, *args, **kwargs):
-        protected = _GRADE_PROTECTED_FIELDS.intersection(
+        # Django implements bulk_update via QuerySet.update(CASE ...).
+        # Reject protected writes before entering that internal path.
+        normalized_fields = {
             getattr(field, "name", field) for field in fields
-        )
+        }
+        protected = _GRADE_PROTECTED_FIELDS.intersection(normalized_fields)
         if protected:
             raise ValidationError(
                 "GradeEntry protected fields require validated instance save(): "
