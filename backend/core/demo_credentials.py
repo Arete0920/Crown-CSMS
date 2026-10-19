@@ -58,9 +58,9 @@ def configured_demo_passwords(*, require_complete: bool = False) -> dict[str, st
         used.add(password)
         found[username] = password
 
-    if require_complete and len(found) != len(DEMO_ACCOUNT_PASSWORD_VARIABLES):
+    if (require_complete or found) and len(found) != len(DEMO_ACCOUNT_PASSWORD_VARIABLES):
         raise CommandError(
-            "Explicit reset requires all six distinct CROWN_DEMO_*_PASSWORD "
+            "Account password configuration requires all six distinct CROWN_DEMO_*_PASSWORD "
             "account secrets; CROWN_DEMO_PASSWORD is not supported."
         )
     return found
