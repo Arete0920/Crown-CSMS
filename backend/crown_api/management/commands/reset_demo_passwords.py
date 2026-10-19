@@ -9,7 +9,7 @@ from django.core.exceptions import ValidationError
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 
-from core.demo_credentials import configured_demo_password
+from core.demo_credentials import configured_demo_passwords
 from core.demo_seed_safety import require_local_demo_seed
 from core.models import School, UserRole
 
@@ -39,9 +39,7 @@ class Command(BaseCommand):
     @transaction.atomic
     def handle(self, *args, **options):
         require_local_demo_seed(operation="password reset")
-        password = configured_demo_password()
-        if password is None:
-            raise CommandError("CROWN_DEMO_PASSWORD is required for explicit password resets.")
+        passwords = configured_demo_passwords(require_complete=True)
 
         school_id = options.get("school_id") or os.environ.get("CROWN_DEMO_SCHOOL_ID")
         if not school_id:
@@ -81,7 +79,7 @@ class Command(BaseCommand):
             if user is None:
                 missing.append(username)
                 continue
-            user.set_password(password)
+            user.set_password(passwords[username])
             user.is_superuser = False
             user.save(update_fields=["password", "is_superuser"])
             changed += 1
@@ -99,7 +97,7 @@ class Command(BaseCommand):
                 )
                 created += 1
 
-            user.set_password(password)
+            user.set_password(passwords[spec['username']])
             user.is_superuser = False
             user.is_staff = False
             user.is_active = True
