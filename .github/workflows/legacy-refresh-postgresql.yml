@@ -11,6 +11,7 @@ on:
       - "backend/crown_api/jwt_utils.py"
       - "backend/crown_api/migrations/0014_legacy_refresh_consumption.py"
       - "backend/crown_api/tests/test_auth_jwt.py"
+      - "backend/crown_api/tests/test_legacy_refresh_cleanup.py"
       - ".github/workflows/legacy-refresh-postgresql.yml"
 
 jobs:
@@ -53,4 +54,7 @@ jobs:
           assert connection.vendor == "postgresql"
           PY
       - name: Prove legacy refresh and real concurrency
-        run: python -m pytest -q backend/crown_api/tests/test_auth_jwt.py backend/crown_api/tests/test_auth_rate_limit.py
+        run: >-
+          python -m pytest -q backend/crown_api/tests/test_auth_jwt.py
+          backend/crown_api/tests/test_auth_rate_limit.py
+          backend/crown_api/tests/test_legacy_refresh_cleanup.py
