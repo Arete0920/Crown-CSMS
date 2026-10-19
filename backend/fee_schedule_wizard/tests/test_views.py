@@ -610,3 +610,46 @@ class FeeScheduleIntegrityTest(TestCase):
         response = client.post(f"{BASE_URL}{sid}/commit/", **_headers(school.id))
         self.assertEqual(response.status_code, 400)
         self.assertFalse(FeeSchedule.objects.filter(school=school, name=name).exists())
+
+
+    def test_committed_session_cannot_be_reconfigured_or_reset_to_lines(self):
+        school = _make_school()
+        client = _authed_client()
+        sid, name = _advance_to_committed(client, school.id)
+        attempted_config = client.post(
+            f"{BASE_URL}{sid}/configure/",
+            _configure_payload(name="Unauthorized revision"),
+            format="json", **_headers(school.id),
+        )
+        attempted_lines = client.post(
+            f"{BASE_URL}{sid}/lines/",
+            {"lines": GOOD_LINES},
+            format="json", **_headers(school.id),
+        )
+        self.assertEqual(attempted_config.status_code, 400)
+        self.assertEqual(attempted_lines.status_code, 400)
+        current = FeeScheduleWizardSession.objects.get(pk=sid)
+        self.assertEqual(current.status, FeeScheduleWizardSession.STATUS_COMMITTED)
+        self.assertEqual(current.schedule_name, name)
+
+    def test_committed_schedule_rejects_duplicate_stored_fee_codes(self):
+        school = _make_school()
+        client = _authed_client()
+        sid, name = _advance_to_lines_set(client, school.id)
+        current = FeeScheduleWizardSession.objects.get(pk=sid)
+        current.lines_config = [GOOD_LINES[0], GOOD_LINES[0]]
+        current.save(update_fields=["lines_config"])
+        response = client.post(f"{BASE_URL}{sid}/commit/", **_headers(school.id))
+        self.assertEqual(response.status_code, 400)
+        self.assertFalse(FeeSchedule.objects.filter(school=school, name=name).exists())
+
+    def test_configure_rejects_nonstring_fields(self):
+        school = _make_school()
+        client = _authed_client()
+        sid = client.post(BASE_URL, **_headers(school.id)).data["session_id"]
+        response = client.post(
+            f"{BASE_URL}{sid}/configure/",
+            _configure_payload(name={"bad": "type"}),
+            format="json", **_headers(school.id),
+        )
+        self.assertEqual(response.status_code, 400)
