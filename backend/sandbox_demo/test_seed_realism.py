@@ -5,9 +5,15 @@ from pathlib import Path
 import pytest
 from rest_framework.test import APIClient
 
-from core.models import AcademicYear, Student, UserAccount
+from core.models import AcademicYear, Family, Guardian, Student, UserAccount
 from finance.models import FinanceObligation
 from sandbox_demo.catalog import SANDBOX_PERSONAS, SANDBOX_SCHOOLS
+from sandbox_demo.fictional_identities import (
+    FAMILY_RECORD_COUNT,
+    STUDENT_RECORD_COUNT,
+    family_identity,
+    student_given_name,
+)
 from sandbox_demo.services import seed_heritage_flagship, seed_local_heritage_relationships
 
 
@@ -20,13 +26,41 @@ def test_heritage_manifest_matches_backend_school_and_personas():
         assert persona["route"] == SANDBOX_PERSONAS[persona["key"]].route
 
 
+def test_heritage_fictional_identity_catalog_has_no_generic_roster_names():
+    families = [family_identity(index) for index in range(1, FAMILY_RECORD_COUNT + 1)]
+    learners = [student_given_name(index) for index in range(1, STUDENT_RECORD_COUNT + 1)]
+    assert len(families) == 286
+    assert len({family.family_name for family in families}) == len(families)
+    assert len({family.guardian_email for family in families}) == len(families)
+    assert len({family.phone for family in families}) == len(families)
+    assert all(family.guardian_email.endswith("@heritage.example.org") for family in families)
+    assert all("Demo" not in family.family_name for family in families)
+    assert all("Demo" not in family.surname for family in families)
+    assert all(family.phone[4:10] == "555-01" for family in families)
+    assert not any(given_name.startswith("Student") for given_name in learners)
+    assert family_identity(1) == family_identity(1)
+    assert student_given_name(1) == student_given_name(1)
+    with pytest.raises(ValueError):
+        family_identity(0)
+    with pytest.raises(ValueError):
+        student_given_name(STUDENT_RECORD_COUNT + 1)
+
+
 @pytest.mark.django_db
 def test_seeded_students_have_grade_appropriate_ages_and_school_year_installments():
     seed_heritage_flagship(reset=True)
     school_id = SANDBOX_SCHOOLS["heritage-core"].id
     year = AcademicYear.objects.get(school_id=school_id, name="2026-2027")
     students = Student.objects.filter(school_id=school_id).select_related("current_grade_level")
-    assert students.count() == 700
+    assert students.count() == STUDENT_RECORD_COUNT
+    assert not students.filter(first_name__startswith="Student").exists()
+    assert not students.filter(last_name="Demo").exists()
+    assert not Family.objects.filter(
+        school_id=school_id, family_name__startswith="Demo Family "
+    ).exists()
+    assert not Guardian.objects.filter(
+        school_id=school_id, first_name__startswith="Guardian"
+    ).exists()
     for student in students:
         code = student.current_grade_level.code
         expected_age = 4 if code == "PK" else 5 if code == "K" else int(code) + 5

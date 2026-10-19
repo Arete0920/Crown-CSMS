@@ -40,6 +40,7 @@ from .catalog import (
     get_persona,
     get_school,
 )
+from .fictional_identities import FAMILY_RECORD_COUNT, family_identity, student_given_name
 
 
 PROHIBITED_FEEDBACK_PATTERNS = [
@@ -335,27 +336,48 @@ def seed_heritage_flagship(*, reset: bool = False) -> dict:
         tuition_plans[code] = plan
 
     families = []
-    for idx in range(1, 287):
+    for idx in range(1, FAMILY_RECORD_COUNT + 1):
+        fixture = family_identity(idx)
+        # Preserve primary keys when refreshing an older Heritage sandbox.
+        # This is a sandbox-only rename; no production family records are read.
+        legacy_family_name = f"Demo Family {idx:03d}"
+        existing = Family.objects.filter(
+            school=school, family_name=legacy_family_name
+        ).first()
+        if existing is not None:
+            if Family.objects.filter(
+                school=school, family_name=fixture.family_name
+            ).exclude(pk=existing.pk).exists():
+                raise RuntimeError(
+                    "Conflicting Heritage fictional family records; reset the sandbox"
+                )
+            existing.family_name = fixture.family_name
+            existing.save(update_fields=["family_name"])
         family, _ = Family.objects.update_or_create(
             school=school,
-            family_name=f"Demo Family {idx:03d}",
+            family_name=fixture.family_name,
             defaults={
-                "address_line1": f"{1000 + idx} Covenant Way",
-                "city": "Fairview",
-                "state": "PA",
-                "zip_code": f"19{idx % 1000:03d}",
+                "address_line1": fixture.address_line1,
+                "city": fixture.city,
+                "state": fixture.state,
+                "zip_code": fixture.zip_code,
                 "status": "ACTIVE",
             },
         )
         families.append(family)
-        Guardian.objects.update_or_create(
+        # Preserve the original guardian association across a non-reset reseed.
+        Guardian.objects.filter(
             school=school,
             email=f"guardian{idx:03d}@heritage.example.org",
+        ).update(email=fixture.guardian_email)
+        Guardian.objects.update_or_create(
+            school=school,
+            email=fixture.guardian_email,
             defaults={
                 "family": family,
-                "first_name": f"Guardian{idx:03d}",
-                "last_name": "Demo",
-                "phone": f"555-01{idx % 100:02d}",
+                "first_name": fixture.guardian_first_name,
+                "last_name": fixture.surname,
+                "phone": fixture.phone,
                 "relationship": "GUARDIAN",
                 "portal_access": True,
                 "custody_flag": False,
@@ -368,14 +390,15 @@ def seed_heritage_flagship(*, reset: bool = False) -> dict:
         plan = tuition_plans[code]
         for _ in range(target):
             family = families[(student_index - 1) % len(families)]
+            fixture = family_identity((student_index - 1) % len(families) + 1)
             student_number = f"HCA-{student_index:04d}"
             student, _ = Student.objects.update_or_create(
                 school=school,
                 student_number=student_number,
                 defaults={
                     "family": family,
-                    "first_name": f"Student{student_index:04d}",
-                    "last_name": "Demo",
+                    "first_name": student_given_name(student_index),
+                    "last_name": fixture.surname,
                     "dob": date(
                         academic_year.start_date.year - (4 if code == "PK" else 5 if code == "K" else int(code) + 5),
                         3 + student_index % 4,
