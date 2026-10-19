@@ -9,7 +9,7 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: crown-api-dev-deploy
+  group: crown-dev-blacklist-db-readonly
   cancel-in-progress: false
 jobs:
   inspect:
@@ -33,10 +33,12 @@ jobs:
           [[ "$SHA" =~ ^[0-9a-f]{40}$ ]]
           test "$(git rev-parse HEAD)" = "$SHA"
           git fetch --no-tags origin refs/heads/main:refs/remotes/origin/main
-          git merge-base --is-ancestor "$SHA" origin/main
+          test "$(git rev-parse origin/main)" = "$SHA"
       - uses: actions/setup-python@7f4fc3e22c37d6ff65e88745f38bd3157c663f7c # v4
         with:
           python-version: '3.12'
+      - name: Verify collector boundary (offline)
+        run: python -m unittest discover -s scripts/ops -p test_read_dev_blacklist_state.py -v
       - name: Authenticate to existing DEV Azure
         uses: azure/login@a457da9ea143d694b1b9c7c869ebb04ebe844ef5 # v2
         with:
