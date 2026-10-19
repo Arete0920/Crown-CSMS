@@ -22,6 +22,7 @@ def _renderer_classes(environment: str) -> tuple[str, ...]:
         "WEBSITE_HOSTNAME",
         "WEBSITE_INSTANCE_ID",
         "CROWN_DEPLOY_SECURITY",
+        "CROWN_DEMO_MODE",
         "DATABASE_URL",
         "DJANGO_DEBUG",
         "DEBUG",
@@ -35,6 +36,7 @@ def _renderer_classes(environment: str) -> tuple[str, ...]:
         CROWN_ENV=environment,
         DJANGO_ENV="production" if hosted else "dev",
         DJANGO_DEBUG="false",
+        CROWN_DEMO_MODE="false",
         DJANGO_SECRET_KEY=STRONG_TEST_SECRET,
         DATABASE_URL=(
             "postgresql://db.example.invalid/crown"
