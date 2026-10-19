@@ -312,47 +312,77 @@ def _message_state(message):
     return "retrying" if message.attempts else "queued"
 
 
-def inquiry_notification_status(lead):
-    """Read truthful channel outcomes from their tenant-scoped durable outbox records."""
-    rows = list(CampaignTouchpoint.objects.filter(
-        school_id=lead.school_id, lead=lead, metadata_json__kind=AUDIT_KIND,
-    ).order_by("-occurred_at", "-id")[:100])
-    ids = []
+def inquiry_notification_statuses(leads):
+    """Fetch notification audit and outbox state in bounded, tenant-scoped batches."""
+    from collections import defaultdict
+    from django.db.models import F, Window
+    from django.db.models.functions import RowNumber
+
+    leads = list(leads)
+    if not leads:
+        return {}
+    school_id = leads[0].school_id
+    if any(lead.school_id != school_id for lead in leads):
+        raise ValueError("Notification status batch must be restricted to one school.")
+    lead_ids = [lead.id for lead in leads]
+    rows = list(
+        CampaignTouchpoint.objects.filter(
+            school_id=school_id, lead_id__in=lead_ids, metadata_json__kind=AUDIT_KIND,
+        ).annotate(_status_rank=Window(
+            expression=RowNumber(), partition_by=[F("lead_id")],
+            order_by=[F("occurred_at").desc(), F("id").desc()],
+        )).filter(_status_rank__lte=100).order_by("lead_id", "-occurred_at", "-id")
+    )
+    by_lead = defaultdict(list)
+    ids = set()
     for row in rows:
+        by_lead[row.lead_id].append(row)
         for item in _notification_items(row.metadata_json):
             try:
-                ids.append(UUID(str(item.get("outbox_id"))))
-            except ValueError:
+                ids.add(UUID(str(item.get("outbox_id"))))
+            except (ValueError, TypeError, AttributeError):
                 continue
-    messages = {str(item.pk): item for item in OutboxMessage.objects.filter(school_id=str(lead.school_id), pk__in=ids)}
-    notifications = []
-    counts = {}
-    for row in rows:
-        for item in _notification_items(row.metadata_json):
-            notice = {**item, "event": row.metadata_json.get("event"), "recorded_at": _iso(row.occurred_at)}
-            if item.get("outbox_id"):
-                message = messages.get(str(item["outbox_id"]))
-                prefix = f"{OUTBOX_PREFIX}{lead.id}:{_purpose(row.metadata_json.get('event'), row.metadata_json.get('cadence_day'))}:{item.get('audience')}:"
-                if (message is None or not message.idempotency_key.startswith(prefix)
-                        or item.get("channel") != message.channel.lower()):
-                    notice.update(status="unavailable", reason="The linked delivery record is unavailable.")
-                else:
-                    state = _message_state(message)
-                    notice.update(status=state, attempts=message.attempts,
-                                  provider_accepted_at=_iso(message.sent_at), delivery_confirmed=None)
-                    if state == "suppressed":
-                        notice["reason"] = message.last_error[len(SUPPRESSED_PREFIX):].strip()
-                    elif state in {"retrying", "failed"}:
-                        notice["reason"] = "Provider delivery has not succeeded; review communications delivery status."
-            elif notice.get("status") not in {"not_configured", "not_enabled", "consent_missing", "owner_unassigned", "manual_follow_up", "invalid_recipient", "waiting", "suppressed"}:
-                notice.update(status="unavailable", reason="A durable outbox record is required to establish delivery status.")
-            notifications.append(notice)
-            counts[notice["status"]] = counts.get(notice["status"], 0) + 1
-    return {
-        "enabled": inquiry_notifications_enabled(), "notifications": notifications,
-        "counts": counts, "delivery_confirmed": None,
+    messages = {
+        str(item.pk): item for item in OutboxMessage.objects.filter(
+            school_id=str(school_id), pk__in=ids,
+        )
     }
+    enabled = inquiry_notifications_enabled()
+    result = {}
+    for lead in leads:
+        notices = []
+        counts = {}
+        for row in by_lead[lead.id]:
+            for item in _notification_items(row.metadata_json):
+                notice = {**item, "event": row.metadata_json.get("event"), "recorded_at": _iso(row.occurred_at)}
+                if item.get("outbox_id"):
+                    message = messages.get(str(item["outbox_id"]))
+                    prefix = f"{OUTBOX_PREFIX}{lead.id}:{_purpose(row.metadata_json.get('event'), row.metadata_json.get('cadence_day'))}:{item.get('audience')}:"
+                    if (message is None or not message.idempotency_key.startswith(prefix)
+                            or item.get("channel") != message.channel.lower()):
+                        notice.update(status="unavailable", reason="The linked delivery record is unavailable.")
+                    else:
+                        state = _message_state(message)
+                        notice.update(status=state, attempts=message.attempts,
+                                      provider_accepted_at=_iso(message.sent_at), delivery_confirmed=None)
+                        if state == "suppressed":
+                            notice["reason"] = message.last_error[len(SUPPRESSED_PREFIX):].strip()
+                        elif state in {"retrying", "failed"}:
+                            notice["reason"] = "Provider delivery has not succeeded; review communications delivery status."
+                elif notice.get("status") not in {"not_configured", "not_enabled", "consent_missing", "owner_unassigned", "manual_follow_up", "invalid_recipient", "waiting", "suppressed"}:
+                    notice.update(status="unavailable", reason="A durable outbox record is required to establish delivery status.")
+                notices.append(notice)
+                counts[notice["status"]] = counts.get(notice["status"], 0) + 1
+        result[lead.id] = {
+            "enabled": enabled, "notifications": notices,
+            "counts": counts, "delivery_confirmed": None,
+        }
+    return result
 
+
+def inquiry_notification_status(lead):
+    """Keep single-record callers on the same verified batch implementation."""
+    return inquiry_notification_statuses([lead])[lead.id]
 
 def inquiry_notification_guard(message):
     """Recheck contact consent, workflow and owner authority immediately before delivery."""
