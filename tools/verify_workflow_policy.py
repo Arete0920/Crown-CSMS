@@ -17,6 +17,12 @@ MOJIBAKE_RE = re.compile(r"[âΓœ†œ©]")
 NAME_RE = re.compile(r"(?m)^name:\s*(.+?)\s*$")
 GROUP_RE = re.compile(r"(?m)^\s{2}group:\s*(.+?)\s*$")
 
+DEV_RESET_GROUP = "ops-reset-dev"
+DEV_RESET_WORKFLOWS = {
+    pathlib.Path(".github/workflows/demo-reset.yml"),
+    pathlib.Path(".github/workflows/ops-reset-dev.yml"),
+}
+
 PRODUCTION_DEPLOY_GROUP = "crown-api-prod-deploy"
 PRODUCTION_DEPLOY_WORKFLOWS = {
     pathlib.Path(".github/workflows/deploy-prod.yml"),
@@ -251,6 +257,14 @@ def check_file(path: pathlib.Path) -> tuple[list[str], str | None, str | None]:
     if "workflow_dispatch:" in text and "inputs:" in text:
         errors.extend(_check_dispatch_input_descriptions(text, rel))
 
+    if rel in DEV_RESET_WORKFLOWS:
+        if not re.search(r"(?m)^  cancel-in-progress:\s*false\s*$", text):
+            errors.append(f"{rel}: DEV reset workflow must not cancel an active reset")
+        if re.search(r"(?m)^\s*[^#\n]*\|\s*tee\s+|^\s*cat\s+/tmp/[^\n]*reset[^\n]*\.json", text):
+            errors.append(f"{rel}: DEV reset workflow must not publish reset response bodies")
+        if re.search(r"(?m)^\s*(?:-\s+run:\s+)?echo\s+[^\n]*\$(?:\{)?response\b", text):
+            errors.append(f"{rel}: DEV reset workflow must not echo reset response bodies")
+
     errors.extend(_check_curl_safety(text, rel))
 
     if "deploy-prod" in path.name and re.search(r"(?m)^\s{2}pull_request:\s*$", text):
@@ -314,8 +328,10 @@ def main() -> int:
                 existing_rel = groups[group].relative_to(ROOT)
                 shared_pair = {existing_rel, rel}
                 if not (
-                    group == PRODUCTION_DEPLOY_GROUP
-                    and shared_pair <= PRODUCTION_IMAGE_MUTATION_WORKFLOWS
+                    (group == PRODUCTION_DEPLOY_GROUP
+                     and shared_pair <= PRODUCTION_IMAGE_MUTATION_WORKFLOWS)
+                    or (group == DEV_RESET_GROUP
+                        and shared_pair == DEV_RESET_WORKFLOWS)
                 ):
                     all_errors.append(
                         f"{rel}: duplicate top-level concurrency group '{group}' also used by {existing_rel}"
@@ -324,6 +340,13 @@ def main() -> int:
                 groups[group] = wf
 
     if not targets:
+        for rel in sorted(DEV_RESET_WORKFLOWS):
+            actual_group = workflow_groups.get(rel)
+            if actual_group != DEV_RESET_GROUP:
+                all_errors.append(
+                    f"{rel}: DEV reset workflow must use shared concurrency group "
+                    f"'{DEV_RESET_GROUP}' (found: {actual_group!r})"
+                )
         for rel in sorted(PRODUCTION_IMAGE_MUTATION_WORKFLOWS):
             actual_group = workflow_groups.get(rel)
             if actual_group != PRODUCTION_DEPLOY_GROUP:
