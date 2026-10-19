@@ -165,13 +165,10 @@ jobs:
           payments/tests/test_option_a_finance_runtime_chain.py
           payments/tests/test_option_a_compatibility_audit.py
 
-      - name: Build Heritage target demo dataset
-        run: |
-          python manage.py migrate --noinput
-          python manage.py seed_heritage_realism_pack --no-comms
-
-      - name: Audit Heritage finance data strictly
-        run: python manage.py audit_finance_hardening --school-name "Heritage Christian Academy"
+      # The PostgreSQL canonical payment test above provisions an isolated
+      # tenant-keyed school, settles/refunds a real manual payment, and runs the
+      # non-vacuous finance audit. Do not call legacy local-SQLite-only seeds
+      # or claim that this verifies a hosted Heritage database.
 
   finance-postgresql-concurrency:
     name: finance-postgresql-concurrency
