@@ -196,11 +196,13 @@ def test_explicit_reset_scopes_accounts_and_removes_superuser_grant(monkeypatch)
         email="head@crown-demo.local",
         school=school,
         password="demo1234",
+        is_staff=True,
         is_superuser=True,
     )
     call_command("reset_demo_passwords", school_id=str(school.pk))
     head.refresh_from_db()
     assert head.is_superuser is False
+    assert head.is_staff is False
     assert head.check_password(_test_password(head.username))
     teacher = UserAccount.objects.get(username="teacher")
     assert teacher.school_id == school.pk
