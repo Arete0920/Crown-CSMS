@@ -4,7 +4,7 @@ from rest_framework.exceptions import PermissionDenied, ValidationError
 from django.shortcuts import get_object_or_404
 from django.db import transaction
 from django.utils import timezone
-from academics.experience_access import is_leader, role_codes, taught_sections
+from academics.experience_access import BOARD_ROLES, is_leader, role_codes, taught_sections
 from academics.models import Enrollment
 from academics.family_views import text, timestamp
 from academics.submission_workflow_views import _uuid
@@ -12,6 +12,7 @@ from django.contrib.auth import get_user_model
 from rest_framework.response import Response
 from rest_framework import status
 from drf_spectacular.utils import extend_schema
+from core.permissions import user_has_permission
 
 from .tenant import school_id_from_request
 from .models import (
@@ -31,7 +32,13 @@ from .serializers import (
 
 
 def _board_access(request, school):
-    if not request.user.is_active or not (is_leader(request.user, school) or role_codes(request.user, school) & {'BOARD', 'BOARD_MEMBER', 'board', 'school_board'}):
+    if not request.user.is_active or not (
+        is_leader(request.user, school)
+        or (
+            role_codes(request.user, school) & BOARD_ROLES
+            and user_has_permission(request.user, "board.view", school=school)
+        )
+    ):
         raise PermissionDenied('Explicit school leadership or board authority required.')
 
 

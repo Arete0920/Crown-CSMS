@@ -56,6 +56,32 @@ class MarketingLead(models.Model):
     school = models.ForeignKey("core.School", on_delete=models.CASCADE, related_name="marketing_leads")
     campaign = models.ForeignKey(MarketingCampaign, null=True, blank=True, on_delete=models.SET_NULL, related_name="leads")
     application = models.ForeignKey("applications.Application", null=True, blank=True, on_delete=models.SET_NULL, related_name="marketing_leads")
+    # One family inquiry can produce an application for each child. The existing
+    # single FK remains the first-child compatibility projection.
+    applications = models.ManyToManyField("applications.Application", blank=True, related_name="inquiry_marketing_leads")
+    # Keep legacy API inserts valid while this additive schema precedes its image.
+    parent_name = models.CharField(max_length=160, blank=True, default="", db_default="")
+    email = models.EmailField(blank=True, default="", db_default="")
+    phone = models.CharField(max_length=32, blank=True, default="", db_default="")
+    grade_interest = models.CharField(max_length=16, blank=True, default="", db_default="")
+    entry_year = models.CharField(max_length=32, blank=True, default="", db_default="")
+    campus = models.CharField(max_length=120, blank=True, default="", db_default="")
+    request_type = models.CharField(max_length=20, blank=True, default="", db_default="")
+    contact_preference = models.CharField(max_length=8, blank=True, default="", db_default="")
+    response_consent = models.BooleanField(default=False, db_default=False)
+    follow_up_consent = models.BooleanField(default=False, db_default=False)
+    family_follow_up_enabled = models.BooleanField(default=False, db_default=False)
+    consent_at = models.DateTimeField(null=True, blank=True)
+    inquiry_received_at = models.DateTimeField(null=True, blank=True, db_index=True)
+    application_started_at = models.DateTimeField(null=True, blank=True)
+    attribution_json = models.JSONField(default=dict, db_default={}, blank=True)
+    # Public retries are keyed by school + random request key, never by email.
+    intake_request_key = models.CharField(max_length=64, null=True, blank=True, unique=True, editable=False)
+    intake_payload_digest = models.CharField(max_length=64, blank=True, default="", db_default="", editable=False)
+    continuation_nonce = models.UUIDField(null=True, blank=True, editable=False)
+    continuation_expires_at = models.DateTimeField(null=True, blank=True, editable=False)
+    # Restricted response allowlist for the capability holder's submission retry.
+    submission_receipt = models.JSONField(default=dict, db_default={}, blank=True, editable=False)
     stage = models.CharField(max_length=32, choices=LeadStage.choices, default=LeadStage.INQUIRY, db_index=True)
     first_source = models.CharField(max_length=80, blank=True, default="")
     primary_source = models.CharField(max_length=80, blank=True, default="")

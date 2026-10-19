@@ -132,6 +132,26 @@ def test_admissions_submit_preserves_existing_campaign_attribution():
     assert MarketingLead.objects.filter(application=application).count() == 1
 
 
+def test_sibling_workflow_reuses_inquiry_and_counts_confirmed_applications():
+    from crm_marketing.services import register_workflow_update
+
+    school = School.objects.create(name="Sibling Inquiry School")
+    household = Household.objects.create(school_id=school.id, name="Sibling Household")
+    children = [Application.objects.create(school_id=school.id, household=household, status="SUBMITTED") for _ in range(2)]
+    campaign = MarketingCampaign.objects.create(school=school, name="Sibling Campaign")
+    lead = MarketingLead.objects.create(school=school, campaign=campaign, application=children[0], first_source="church")
+    lead.applications.add(*children)
+    register_admissions_submit(children[1], source="church")
+    register_workflow_update(children[1], stage=LeadStage.ENROLLED, summary="Enrollment confirmed")
+    assert MarketingLead.objects.filter(school=school).count() == 1
+    for child in children:
+        ApplicationEvent.objects.create(school_id=school.id, application=child, event_type="enrollment_confirmed")
+    snapshot = build_campaign_snapshot(campaign)
+    assert snapshot["funnel"]["total_leads"] == 1
+    assert snapshot["funnel"]["enrolled"] == 2
+    assert snapshot["funnel"]["enrollment_unit"] == "confirmed_application"
+
+
 def test_campaign_enrollment_requires_canonical_confirmation_and_counts_families_once():
     school = School.objects.create(name="Confirmed Campaign School")
     household = Household.objects.create(school_id=school.id, name="Confirmed Household")

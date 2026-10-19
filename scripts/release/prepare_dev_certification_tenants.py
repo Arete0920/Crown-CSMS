@@ -45,6 +45,12 @@ def prepare(output):
                 if created:
                     user.set_unusable_password()
                     user.save(update_fields=["password"])
+                # Only the deterministic .invalid DEV certification Board actor
+                # can lose the previous incorrect Head-of-School assignment.
+                if role == "board":
+                    UserRole.objects.filter(
+                        school=school, user=user, role_code="HEAD_OF_SCHOOL"
+                    ).delete()
                 UserRole.objects.get_or_create(school=school, user=user, role_code=persona.role_code)
                 ensure_sandbox_role_permissions(persona.role_code)
                 token = build_access_token(user_id=str(user.id), email=email, role=role, school_id=str(school_id), ttl_seconds=1800)

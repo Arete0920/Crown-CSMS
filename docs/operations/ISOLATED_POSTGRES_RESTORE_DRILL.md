@@ -24,10 +24,16 @@ The repository workflow/mechanics may:
 3. create or receive a custom-format `pg_dump` archive;
 4. record timestamp, size, SHA-256 digest, source identity, and run identity;
 5. execute `verify_backup_restore` against a new isolated database;
-6. verify required tables, migration state, structural checks, and cleanup;
-7. retain an evidence packet.
+6. verify required tables, migration state, structural checks, and restore-database cleanup;
+7. run the historical `MarketingLead` INSERT/read regression once against a separate pytest database with normal migrations on the same isolated PostgreSQL 16 service;
+8. verify that the pytest database was dropped and the generated source database still exists;
+9. retain an evidence packet requiring both restore and regression success.
 
-A generated-fixture run proves restore mechanics. It does **not** prove the existence, freshness, ownership, retention, or recoverability of an operational production backup.
+The workflow pins the generated source database to `crown_source` on the local PostgreSQL 16 service and verifies Django will use the distinct `test_crown_source` database. It runs `backend/crm_marketing/tests/test_inquiry_capture.py::test_pre_inquiry_model_can_insert_after_inquiry_migration` with `--ds=crown_api.settings --migrations --create-db`. The historical `0001_initial` model omits all new inquiry columns; the current model must read the expected persistent defaults. No live database, operational backup, new credential, or provider is used.
+
+The retained packet requires the exact named JUnit case to pass without a skip, failure, or error, successful normal-migration execution on PostgreSQL 16, and test-database cleanup. A missing or failing regression cannot be replaced by a successful restore result.
+
+A generated-fixture run proves the recorded restore mechanics and this legacy INSERT/read boundary. It does **not** prove the existence, freshness, ownership, retention, or recoverability of an operational production backup.
 
 ## Historical mechanics evidence
 
@@ -47,6 +53,8 @@ A current evidence packet should include, with secrets excluded:
 - restore start/end timestamps and elapsed duration;
 - archive-preflight result;
 - migration and required-table results;
+- `inquiry-legacy-insert.xml` with the single named, unskipped compatibility case and `inquiry-legacy-insert-execution.json` recording PostgreSQL version, distinct source/test database names, normal migrations, exit status, and cleanup;
+- a schema-version-2 `retained-recovery-evidence.json` whose overall result requires both restore and inquiry legacy INSERT/read results to pass;
 - tenant-isolation, critical-record, relationship, and financial-integrity results required by the selected scope;
 - application compatibility/connectivity result against the restored copy where applicable;
 - cleanup result;
@@ -84,7 +92,7 @@ Stop the exercise and escalate when:
 
 ## Acceptance boundary
 
-A passing repository mechanics run establishes only the checks actually recorded, such as archive preflight, isolated database creation, structural validation, elapsed restore duration, cleanup, and no production mutation.
+A passing repository mechanics run establishes only the checks actually recorded, including archive preflight, isolated database creation, structural validation, elapsed restore duration, cleanup, no production mutation, and the legacy `MarketingLead` INSERT/read boundary against the current inquiry schema. The compatibility test does not certify every previous-image endpoint against new inquiry data. If a later image deployment fails after migration, retain the additive schema/data and have the operator verify the chosen rollback image separately.
 
 It does **not** by itself prove a current operational backup, application rollback completion, accepted RTO/RPO, production cutover, resilience certification, production authorization, legal/compliance approval, or completed owner turnover.
 

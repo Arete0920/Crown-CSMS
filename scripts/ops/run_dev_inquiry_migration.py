@@ -22,7 +22,7 @@ ROOT = Path(__file__).resolve().parents[2]
 DEV_APP = "crown-api-dev"
 DEV_HOST = "crown-pg-dev.postgres.database.azure.com"
 REVIEWED = ("crm_marketing", "0002_inquiry_capture")
-MIGRATION_SHA256 = "4e8cd025435a0bb347f162fc38662bc33f6e57bf8c45a059d57fb375ad8e4f1a"
+MIGRATION_SHA256 = "b4224adf8e10c05e836a164200ff6c0552067491006c8dc2fc3a3095cc7743eb"
 
 
 class Blocked(RuntimeError):

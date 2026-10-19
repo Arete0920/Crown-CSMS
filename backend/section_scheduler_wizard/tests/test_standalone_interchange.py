@@ -67,6 +67,11 @@ def test_oversized_input_fails_closed():
     with pytest.raises(StandaloneInterchangeError):
         check("x"*(256*1024+1))
 
+@pytest.mark.parametrize("body", [b"\xff", "\ud800", "\udfff"])
+def test_invalid_utf8_input_returns_validation_error(body):
+    with pytest.raises(StandaloneInterchangeError, match="IMPORT_UTF8_REQUIRED"):
+        check(body)
+
 def test_verified_roster_required():
     s,_=sample()
     s=replace(s,section_inputs={**s.section_inputs,

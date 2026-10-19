@@ -97,21 +97,22 @@ class DevMigrationBoundaryTests(unittest.TestCase):
         self.assertEqual(read.call_count, 1)
 
     def test_source_requires_full_accepted_sha_and_exact_reviewed_migration_bytes(self):
+        reviewed_bytes = (migration.ROOT / "backend/crm_marketing/migrations/0002_inquiry_capture.py").read_bytes()
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             file = root / "backend/crm_marketing/migrations/0002_inquiry_capture.py"
             file.parent.mkdir(parents=True)
-            file.write_text("approved bytes")
-            digest = hashlib.sha256(file.read_bytes()).hexdigest()
+            file.write_bytes(reviewed_bytes)
             run = Mock(side_effect=[SimpleNamespace(returncode=0, stdout=SHA), SimpleNamespace(returncode=0)])
-            with patch.object(migration, "MIGRATION_SHA256", digest):
-                migration.validate_source(SHA, root=root, run=run)
+            migration.validate_source(SHA, root=root, run=run)
+            self.assertEqual(hashlib.sha256(reviewed_bytes).hexdigest(), migration.MIGRATION_SHA256)
             self.assertEqual(run.call_args_list[1].args[0], ["git", "merge-base", "--is-ancestor", SHA, "origin/main"])
             for head, ancestry, expected in [("b" * 40, 0, SHA), (SHA, 1, SHA), (SHA, 0, "main")]:
                 with self.subTest(head=head, ancestry=ancestry, expected=expected), self.assertRaises(migration.Blocked):
                     migration.validate_source(expected, root=root, run=Mock(side_effect=[
                         SimpleNamespace(returncode=0, stdout=head), SimpleNamespace(returncode=ancestry),
                     ]))
+            file.write_bytes(reviewed_bytes + b"\n# unreviewed change\n")
             with self.assertRaisesRegex(migration.Blocked, "digest_mismatch"):
                 migration.validate_source(SHA, root=root, run=Mock(side_effect=[
                     SimpleNamespace(returncode=0, stdout=SHA), SimpleNamespace(returncode=0),

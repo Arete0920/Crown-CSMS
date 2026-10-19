@@ -2,11 +2,12 @@
 from django.db.models import Q
 from rest_framework.exceptions import PermissionDenied
 from core.models import UserRole
+from core.permissions import user_has_permission
 from households.models import Guardian, Student
 from .models import Enrollment, Section, TeacherAssignment
 
 LEADER_ROLES = {"ADMIN", "DIRECTOR", "HEAD_OF_SCHOOL", "head_of_school", "school_admin", "REGISTRAR"}
-BOARD_ROLES = {"BOARD", "BOARD_MEMBER", "board", "school_board"}
+BOARD_ROLES = {"BOARD", "BOARD_MEMBER", "board", "board_member", "school_board"}
 
 
 def role_codes(user, school_id):
@@ -58,7 +59,13 @@ def classroom_scope(user, school_id, audience):
             ids = Enrollment.objects.filter(school_id=school_id, student__in=students,
                                              section__school_id=school_id).values("section_id")
             return all_sections.filter(id__in=ids), students
-    if audience == "board" and (is_leader(user, school_id) or role_codes(user, school_id) & BOARD_ROLES):
+    if audience == "board" and (
+        is_leader(user, school_id)
+        or (
+            role_codes(user, school_id) & BOARD_ROLES
+            and user_has_permission(user, "board.view", school=school_id)
+        )
+    ):
         return all_sections, Student.objects.none()
     raise PermissionDenied("No classroom relationship for this view.")
 
