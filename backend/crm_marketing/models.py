@@ -166,6 +166,10 @@ class ProspectContact(_CRMProspectScopeGuard):
         self.email = (self.email or "").strip().lower()
         self.phone = (self.phone or "").strip()
         super().clean()
+        if not self.display_name:
+            from django.core.exceptions import ValidationError
+
+            raise ValidationError({"display_name": "A contact display name is required."})
 
     class Meta:
         indexes = [models.Index(fields=["school", "email"], name="crm_pc_school_email_idx")]
@@ -192,6 +196,10 @@ class ProspectGroup(_CRMProspectScopeGuard):
     def clean(self):
         self.label = (self.label or "").strip()
         super().clean()
+        if not self.label:
+            from django.core.exceptions import ValidationError
+
+            raise ValidationError({"label": "A prospect group label is required."})
 
     class Meta:
         indexes = [models.Index(fields=["school", "created_at"], name="crm_pg_school_created_idx")]
@@ -267,13 +275,20 @@ class EnrollmentInterest(_CRMProspectScopeGuard):
     updated_at = models.DateTimeField(auto_now=True)
 
     def clean(self):
+        from django.core.exceptions import ValidationError
+
         self.grade_interest = (self.grade_interest or "").strip()
         self.entry_year = (self.entry_year or "").strip()
         super().clean()
+        errors = {}
+        if not self.grade_interest:
+            errors["grade_interest"] = "The grade of interest is required."
+        if not self.entry_year:
+            errors["entry_year"] = "The entry year is required."
         if self.learner_number is not None and self.learner_number < 1:
-            from django.core.exceptions import ValidationError
-
-            raise ValidationError({"learner_number": "Learner number must be positive."})
+            errors["learner_number"] = "Learner number must be positive."
+        if errors:
+            raise ValidationError(errors)
 
     class Meta:
         indexes = [
