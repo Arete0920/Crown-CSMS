@@ -172,6 +172,19 @@ def refresh(request):
     if expires_at <= datetime.now(timezone.utc):
         return JsonResponse({"ok": False, "error": "invalid_refresh"}, status=401)
 
+    # Preserve the existing stateless refresh contract until schema and clients
+    # have independently passed the reviewed activation process.
+    from django.conf import settings
+    if not settings.CROWN_LEGACY_REFRESH_ONE_USE_ENABLED:
+        access = build_access_token(
+            user_id=str(user.id), email=user.email,
+            role=str(user.role).strip().lower(),
+            school_id=str(user.school_id) if user.school_id else None,
+            ttl_seconds=900,
+        )
+        clear_auth_identity_failures(request, scope="crown-refresh", identity=token)
+        return JsonResponse({"ok": True, "access": access})
+
     try:
         with transaction.atomic():
             # Lock the user so deactivation, role and school changes cannot
