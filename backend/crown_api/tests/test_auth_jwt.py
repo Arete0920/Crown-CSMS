@@ -221,3 +221,25 @@ def test_concurrent_legacy_refresh_allows_exactly_one_redemption():
         results = sorted(pool.map(redeem, range(2)))
     assert results == [200, 401]
     assert LegacyRefreshConsumption.objects.filter(user=user).count() == 1
+
+
+def test_legacy_refresh_rechecks_current_user_under_database_lock():
+    from unittest.mock import patch
+    from crown_api.jwt_utils import build_refresh_token
+
+    user = CrownUser.objects.create(
+        email="locked-refresh@example.invalid",
+        password_hash=make_password("Valid-Passphrase!"),
+        role="staff", school_id=uuid.uuid4(), is_active=True,
+    )
+    token = build_refresh_token(user_id=str(user.pk))
+    with patch("crown_api.auth_views.CrownUser.objects.select_for_update") as selected, \
+            patch("crown_api.auth_views.LegacyRefreshConsumption.objects.create") as consumed:
+        selected.return_value.get.side_effect = CrownUser.DoesNotExist
+        result = Client().post(
+            "/api/auth/refresh/", data={"refresh": token},
+            content_type="application/json", REMOTE_ADDR="203.0.113.84",
+        )
+    assert result.status_code == 401
+    assert result.json()["error"] == "invalid_refresh"
+    consumed.assert_not_called()
