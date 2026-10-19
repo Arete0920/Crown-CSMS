@@ -6,6 +6,9 @@ from pathlib import Path
 
 from django.core.management import BaseCommand, call_command
 
+from core.demo_seed_safety import require_local_demo_seed
+from core.legacy_demo_seed_safety import require_local_legacy_fixture_seed
+
 
 HERITAGE_NAME = "Heritage Christian Academy"
 
@@ -26,6 +29,12 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **opts):
+        # Fail before creating any school, family, ledger, or attendance records.
+        # The later legacy household/finance scripts require this authorization;
+        # discovering it after seed_demo_school would leave partial fixture data.
+        require_local_demo_seed(operation="Heritage realism pack")
+        require_local_legacy_fixture_seed("Heritage realism pack")
+
         def run_script_module(module_name: str):
             """Import and run a script module from backend/scripts/."""
             repo_root = Path(__file__).resolve().parents[4]

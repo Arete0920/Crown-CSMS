@@ -42,3 +42,10 @@ set both confirmations explicitly.
 
 The credential and tenant-safety regressions live in
 `backend/core/tests/test_demo_credential_safety.py`.
+
+The legacy `seed_heritage_realism_pack` orchestrator additionally requires
+`CROWN_ALLOW_LEGACY_FIXTURE_SEED=true` on isolated local/test SQLite.
+Its preflight checks the same hosted/database prohibition and this explicit
+fixture authorization **before** calling `seed_demo_school`. Denial must not
+leave partially seeded school records. Legacy scheduling has its own explicit
+school-binding authorization; the fixture flag does not override it.

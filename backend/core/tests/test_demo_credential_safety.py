@@ -238,3 +238,27 @@ def test_active_demo_diagnostics_have_no_default_secret_or_token_excerpt():
         assert "demo1234" not in content, relative
         assert "token[:30]" not in content, relative
     assert not (root / "frontend/dashboards/login_test.json").exists()
+
+def test_realism_pack_rejects_missing_fixture_approval_before_school_creation(
+    monkeypatch, settings
+):
+    """No school seeding may precede the legacy fixture safety preflight."""
+    from unittest.mock import patch
+
+    from core.management.commands.seed_heritage_realism_pack import (
+        Command as HeritageRealismPack,
+    )
+
+    original = settings.DATABASES["default"]
+    settings.DATABASES = {
+        "default": {**original, "ENGINE": "django.db.backends.sqlite3"}
+    }
+    monkeypatch.delenv("CROWN_ALLOW_LEGACY_FIXTURE_SEED", raising=False)
+    with patch(
+        "core.management.commands.seed_heritage_realism_pack.call_command"
+    ) as seed_school:
+        with pytest.raises(
+            CommandError, match="CROWN_ALLOW_LEGACY_FIXTURE_SEED=true is required"
+        ):
+            HeritageRealismPack().handle(no_comms=True, no_finance_scripts=True)
+    seed_school.assert_not_called()
