@@ -89,3 +89,19 @@ def test_invalid_root_and_limits_rejected(tmp_path: Path) -> None:
         scan_root(tmp_path, max_file_bytes=0)
     with pytest.raises(ValueError, match="negative"):
         main([str(tmp_path), "--limit", "-1"])
+def test_symlinked_file_is_not_read(tmp_path: Path) -> None:
+    """Never follow checkout symlinks into an external private source file."""
+    outside = tmp_path.parent / "outside-audit-target.py"
+    outside.write_text("def outside(secret):\n    return secret\n")
+    link = tmp_path / "linked.py"
+    try:
+        link.symlink_to(outside)
+    except (NotImplementedError, OSError):
+        pytest.skip("file symlink creation unavailable on this platform")
+    try:
+        report = scan_root(tmp_path)
+        assert report.scanned_files == 0
+        assert report.skipped_files == 1
+        assert report.findings == ()
+    finally:
+        outside.unlink()

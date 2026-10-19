@@ -178,6 +178,10 @@ def scan_root(root: Path, max_file_bytes: int = 1_000_000) -> Inventory:
     for path in sorted(root.rglob("*.py")):
         if EXCLUDED_DIRECTORIES.intersection(path.relative_to(root).parts):
             continue
+        # Never inspect linked files outside the checkout, including secrets.
+        if path.is_symlink() or not path.resolve().is_relative_to(root):
+            skipped += 1
+            continue
         if not path.is_file():
             continue
         relative = path.relative_to(root).as_posix()
