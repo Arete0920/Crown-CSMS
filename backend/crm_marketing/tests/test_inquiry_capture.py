@@ -6,6 +6,7 @@ import pytest
 from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.db import connection, transaction
+from django.db.migrations.loader import MigrationLoader
 from django.utils import timezone
 from rest_framework.test import APIClient
 
@@ -68,6 +69,35 @@ def _application_payload(school, receipt):
         "students": [{"firstName": name, "lastName": "Example", "gradeApplyingFor": "5", "currentSchool": "Homeschool"} for name in ["Alex", "Casey"]],
         "applicationFee": {"waiverRequested": True},
     }
+
+
+def test_pre_inquiry_model_can_insert_after_inquiry_migration(school):
+    historical_apps = MigrationLoader(connection).project_state([
+        ("crm_marketing", "0001_initial"),
+    ]).apps
+    historical_lead = historical_apps.get_model("crm_marketing", "MarketingLead")
+    expected_defaults = {
+        "attribution_json": {}, "submission_receipt": {},
+        "family_follow_up_enabled": False, "follow_up_consent": False,
+        "response_consent": False,
+        "campus": "", "contact_preference": "", "email": "", "entry_year": "",
+        "grade_interest": "", "intake_payload_digest": "", "parent_name": "",
+        "phone": "", "request_type": "",
+    }
+    assert set(expected_defaults).isdisjoint(
+        field.name for field in historical_lead._meta.concrete_fields
+    )
+
+    # The previous API does not know these columns and cannot supply their defaults.
+    legacy = historical_lead.objects.create(
+        school_id=school.id, stage="application_submitted", first_source="legacy",
+    )
+    current = MarketingLead.objects.get(pk=legacy.pk)
+    assert {name: getattr(current, name) for name in expected_defaults} == expected_defaults
+    assert current.school_id == school.id
+    assert current.stage == "application_submitted" and current.first_source == "legacy"
+    assert current.inquiry_received_at is None
+    assert not current.applications.exists()
 
 
 def test_public_capture_creates_owned_inquiry_before_application(school):
