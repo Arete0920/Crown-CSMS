@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import CrownLayout from '../components/crown/CrownLayout.jsx';
-import { fetchAdmissionsInquiries, updateAdmissionsInquiry } from '../api/admissionsInquiries.js';
+import { fetchAdmissionsInquiry, fetchAdmissionsInquiries, updateAdmissionsInquiry } from '../api/admissionsInquiries.js';
 import { inquirySourceLabel } from '../lib/admissionsInquiryState.js';
 import '../styles/crown-wizard.css';
 
@@ -143,6 +143,9 @@ export default function AdmissionsInquiryQueue() {
   const [filters, setFilters] = useState({ stage: '', unassigned: false, overdue: false });
   const [payload, setPayload] = useState(null);
   const [selectedId, setSelectedId] = useState('');
+  const [details, setDetails] = useState(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [detailError, setDetailError] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [savedMessage, setSavedMessage] = useState('');
@@ -169,6 +172,30 @@ export default function AdmissionsInquiryQueue() {
   const inquiries = Array.isArray(payload?.results) ? payload.results : [];
   const owners = Array.isArray(payload?.owners) ? payload.owners : [];
   const selected = inquiries.find((item) => item.id === selectedId);
+  useEffect(() => {
+    if (!selected || loading || error) {
+      setDetails(null);
+      setDetailLoading(false);
+      setDetailError('');
+      return undefined;
+    }
+    let active = true;
+    setDetails(null);
+    setDetailLoading(true);
+    setDetailError('');
+    fetchAdmissionsInquiry(selected.id)
+      .then((result) => {
+        if (!active) return;
+        if (result?.id !== selected.id) {
+          setDetailError('The inquiry detail did not match the selected family.');
+          return;
+        }
+        setDetails(result);
+      })
+      .catch((failure) => { if (active) setDetailError(failure?.message || 'Could not load inquiry details.'); })
+      .finally(() => { if (active) setDetailLoading(false); });
+    return () => { active = false; };
+  }, [selectedId, payload, loading, error]);
   const ownerName = (id) => owners.find((owner) => owner.id === id)?.name || (id ? 'Assigned counselor' : 'Unassigned');
 
   async function afterSave() {
@@ -218,7 +245,15 @@ export default function AdmissionsInquiryQueue() {
           </div>
         ) : null}
       </div>
-      {selected && !loading && !error ? <InquiryDetails key={`${selected.id}-${selected.updated_at || selected.next_follow_up_at || ''}`} inquiry={selected} owners={owners} canEdit={payload?.can_edit === true} notificationsEnabled={payload?.notifications_enabled} onSaved={afterSave} /> : null}
+      {selected && !loading && !error ? (
+        <>
+          {detailLoading ? <p role="status">Loading inquiry details…</p> : null}
+          {detailError ? <div className="crown-alert" role="alert">{detailError}</div> : null}
+          {details?.id === selected.id && !detailLoading && !detailError
+            ? <InquiryDetails key={`${selected.id}-${selected.updated_at || selected.next_follow_up_at || ''}`} inquiry={details} owners={owners} canEdit={payload?.can_edit === true} notificationsEnabled={payload?.notifications_enabled} onSaved={afterSave} />
+            : null}
+        </>
+      ) : null}
     </CrownLayout>
   );
 }
