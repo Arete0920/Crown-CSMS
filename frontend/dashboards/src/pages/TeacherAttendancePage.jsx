@@ -109,7 +109,11 @@ export default function TeacherAttendancePage() {
       });
       setMsg(`Saved: created=${res.created} updated=${res.updated} (${res.date})`);
     } catch (error) {
-      setMsg(error?.message?.startsWith("The school day changed.")
+      const serverDetail = error?.response?.data?.detail;
+      const dayChanged = error?.status === 409 && typeof serverDetail === "string"
+        && serverDetail.startsWith("The school day changed.");
+      if (dayChanged) setLoadedSectionId("");
+      setMsg(dayChanged ? serverDetail : error?.message?.startsWith("The school day changed.")
         ? error.message : "Submit failed. Check API + permissions.");
     }
   };
