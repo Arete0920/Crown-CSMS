@@ -19,7 +19,7 @@ This repository contains application code, tests, and operational documentation.
 
 ## Local development
 
-Use Python **3.12** and Node.js **22.23.3** (the version in `.nvmrc`). PostgreSQL is the production-oriented database; Django defaults to SQLite for local development when `DATABASE_URL` is unset. Review [the development environment example](.env.example) before configuring optional services. Keep local credentials and school data out of version control.
+Use Python **3.12** and Node.js **22.23.3** (the version in `.nvmrc`). PostgreSQL is the production-oriented database; Django defaults to SQLite for local development when `DATABASE_URL` is unset. Review [the development environment example](.env.example) before configuring optional services, and confirm that any configured database points to a local development instance. Keep credentials and school data out of version control.
 
 From the repository root, set up and start the API:
 
@@ -28,10 +28,11 @@ python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install -r backend/requirements.txt
 python backend/manage.py check
+python backend/manage.py migrate
 python backend/manage.py runserver 127.0.0.1:8000 --noreload
 ```
 
-On Windows, activate the environment with `.venv\Scripts\Activate.ps1`. A new local database needs the applicable migrations before data-backed workflows can be used. Check the database target before applying migrations; do not use production credentials for local work.
+On Windows, activate the environment with `.venv\Scripts\Activate.ps1`. Do not use production credentials or databases for local work.
 
 In a separate terminal, start the dashboard:
 
