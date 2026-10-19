@@ -1,7 +1,7 @@
 import random
 from datetime import date
 
-from django.core.management.base import BaseCommand
+from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 from django.utils import timezone
 
@@ -22,6 +22,7 @@ from core.models import (
 )
 from aid.models import AidApplication, AidAward
 from finance.models import ChartAccount, JournalBatch
+from core.demo_credentials import configured_demo_password
 
 
 FIRST_NAMES = [
@@ -362,6 +363,10 @@ class Command(BaseCommand):
         return out
 
     def _ensure_directors(self, school: School):
+        # Do not create or preserve usable default credentials for public demos.
+        # This also retires passwords and superuser grants from legacy seed runs.
+        password = configured_demo_password()
+
         def ensure_staff(first, last, email, role_type):
             st, _ = Staff.objects.get_or_create(
                 school=school,
@@ -371,17 +376,42 @@ class Command(BaseCommand):
             return st
 
         def ensure_user(email, staff=None):
+            # Django usernames are global, even when email uniqueness is scoped.
+            # Never hijack an existing principal from another school.
+            existing = UserAccount.objects.filter(username=email).first()
+            if existing is not None and existing.school_id != school.pk:
+                raise CommandError(f"Refusing cross-school demo account: {email}")
+
             ua, created = UserAccount.objects.get_or_create(
                 school=school,
                 email=email,
-                defaults={"username": email, "is_active": True, "is_staff": True, "is_superuser": True, "staff": staff},
+                defaults={
+                    "username": email,
+                    "is_active": True,
+                    "is_staff": True,
+                    "is_superuser": False,
+                    "staff": staff,
+                },
             )
-            if created:
-                ua.set_password("demo1234")
-                ua.save(update_fields=["password"])
+            if ua.username != email:
+                raise CommandError(f"Demo account identity mismatch: {email}")
+
+            changed = []
+            if ua.is_superuser:
+                ua.is_superuser = False
+                changed.append("is_superuser")
+            if password is None:
+                if ua.has_usable_password():
+                    ua.set_unusable_password()
+                    changed.append("password")
+            elif not ua.check_password(password):
+                ua.set_password(password)
+                changed.append("password")
             if staff and ua.staff_id != staff.id:
                 ua.staff = staff
-                ua.save(update_fields=["staff"])
+                changed.append("staff")
+            if changed:
+                ua.save(update_fields=changed)
             return ua
 
         def ensure_role(user, role_code):

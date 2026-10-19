@@ -110,7 +110,7 @@ class Command(BaseCommand):
         # 10) Deterministic demo logins when configured.
         demo_pw = os.environ.get("CROWN_DEMO_PASSWORD")
         if demo_pw:
-            call_command("reset_demo_passwords")
+            call_command("reset_demo_passwords", school_id=str(school.id))
         else:
             self.stdout.write(
                 self.style.WARNING(
