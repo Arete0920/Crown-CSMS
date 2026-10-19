@@ -6,12 +6,48 @@ import pytest
 from django.core.management import call_command
 from django.core.management.base import CommandError
 
-from core.demo_credentials import configured_demo_password
+from core.demo_credentials import DEMO_ACCOUNT_PASSWORD_VARIABLES, configured_demo_passwords
 from core.management.commands.seed_demo_school import Command as SeedDemoSchool
 from core.models import School, UserAccount
 
 
 STRONG_DEMO_PASSWORD = "Fixture-only--Crown--2026-strong"
+
+
+def _test_password(username):
+    return "Fixture-only-" + username.replace("@", "-").replace(".", "-") + "-2026-strong"
+
+
+def _set_distinct_test_passwords(monkeypatch):
+    for username, key in DEMO_ACCOUNT_PASSWORD_VARIABLES.items():
+        monkeypatch.setenv(key, _test_password(username))
+
+
+def _clear_account_passwords(monkeypatch):
+    for key in DEMO_ACCOUNT_PASSWORD_VARIABLES.values():
+        monkeypatch.delenv(key, raising=False)
+
+
+def test_shared_password_is_not_used_for_fixture_account_login(monkeypatch):
+    _clear_account_passwords(monkeypatch)
+    monkeypatch.setenv("CROWN_DEMO_PASSWORD", STRONG_DEMO_PASSWORD)
+    assert configured_demo_passwords() == {}
+
+
+def test_duplicate_account_secrets_are_rejected(monkeypatch):
+    _set_distinct_test_passwords(monkeypatch)
+    monkeypatch.setenv("CROWN_DEMO_PARENT_PASSWORD", _test_password("teacher"))
+    with pytest.raises(CommandError, match="distinct"):
+        configured_demo_passwords(require_complete=True)
+
+
+def test_explicit_reset_requires_complete_account_secrets(monkeypatch):
+    _clear_account_passwords(monkeypatch)
+    monkeypatch.setenv("CROWN_DEMO_HEAD_PASSWORD", _test_password("head@crown-demo.local"))
+    with pytest.raises(CommandError, match="all six"):
+        configured_demo_passwords(require_complete=True)
+
+
 
 
 @pytest.fixture(autouse=True)
@@ -42,22 +78,23 @@ def test_demo_password_reset_requires_sqlite_before_writes(monkeypatch, settings
 
 
 def test_missing_demo_password_disables_password_login(monkeypatch):
-    monkeypatch.delenv("CROWN_DEMO_PASSWORD", raising=False)
-    assert configured_demo_password() is None
+    for name in DEMO_ACCOUNT_PASSWORD_VARIABLES.values():
+        monkeypatch.delenv(name, raising=False)
+    assert configured_demo_passwords() == {}
 
 
 @pytest.mark.parametrize("candidate", [
     "demo1234", "short", " password-that-is-long ", "long-password-with-newline\n",
 ])
 def test_demo_password_rejects_known_weak_or_malformed_values(monkeypatch, candidate):
-    monkeypatch.setenv("CROWN_DEMO_PASSWORD", candidate)
+    monkeypatch.setenv("CROWN_DEMO_HEAD_PASSWORD", candidate)
     with pytest.raises(CommandError):
-        configured_demo_password()
+        configured_demo_passwords()
 
 
 @pytest.mark.django_db
 def test_seed_creates_least_privilege_accounts_without_shared_password(monkeypatch):
-    monkeypatch.delenv("CROWN_DEMO_PASSWORD", raising=False)
+    _clear_account_passwords(monkeypatch)
     school = School.objects.create(name="Heritage Christian Academy")
     users = SeedDemoSchool()._ensure_directors(school)
     assert len(users) == 4
@@ -83,12 +120,12 @@ def test_seed_creates_least_privilege_accounts_without_shared_password(monkeypat
 
 @pytest.mark.django_db
 def test_seed_strong_password_is_explicit_and_roles_remain_scoped(monkeypatch):
-    monkeypatch.setenv("CROWN_DEMO_PASSWORD", STRONG_DEMO_PASSWORD)
+    _set_distinct_test_passwords(monkeypatch)
     school = School.objects.create(name="Heritage Christian Academy")
     users = SeedDemoSchool()._ensure_directors(school)
     for user in users.values():
         user.refresh_from_db()
-        assert user.check_password(STRONG_DEMO_PASSWORD)
+        assert user.check_password(_test_password(user.username))
         assert not user.is_superuser
     monkeypatch.delenv("CROWN_DEMO_PASSWORD", raising=False)
     SeedDemoSchool()._ensure_directors(school)
@@ -164,11 +201,11 @@ def test_explicit_reset_scopes_accounts_and_removes_superuser_grant(monkeypatch)
     call_command("reset_demo_passwords", school_id=str(school.pk))
     head.refresh_from_db()
     assert head.is_superuser is False
-    assert head.check_password(STRONG_DEMO_PASSWORD)
+    assert head.check_password(_test_password(head.username))
     teacher = UserAccount.objects.get(username="teacher")
     assert teacher.school_id == school.pk
     assert teacher.is_superuser is False
-    assert teacher.check_password(STRONG_DEMO_PASSWORD)
+    assert teacher.check_password(_test_password("teacher"))
 
 
 def test_local_demo_seed_safety_rejects_production_environment(monkeypatch):
