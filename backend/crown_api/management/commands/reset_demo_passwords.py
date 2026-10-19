@@ -10,6 +10,7 @@ from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 
 from core.demo_credentials import configured_demo_password
+from core.demo_seed_safety import require_local_demo_seed
 from core.models import School, UserRole
 
 
@@ -37,6 +38,7 @@ class Command(BaseCommand):
 
     @transaction.atomic
     def handle(self, *args, **options):
+        require_local_demo_seed(operation="password reset")
         password = configured_demo_password()
         if password is None:
             raise CommandError("CROWN_DEMO_PASSWORD is required for explicit password resets.")
@@ -99,6 +101,7 @@ class Command(BaseCommand):
 
             user.set_password(password)
             user.is_superuser = False
+            user.is_staff = False
             user.is_active = True
             user.save()
             UserRole.objects.get_or_create(

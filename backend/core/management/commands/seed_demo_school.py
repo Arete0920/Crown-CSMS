@@ -23,6 +23,7 @@ from core.models import (
 from aid.models import AidApplication, AidAward
 from finance.models import ChartAccount, JournalBatch
 from core.demo_credentials import configured_demo_password
+from core.demo_seed_safety import require_local_demo_seed, require_local_demo_wipe
 
 
 FIRST_NAMES = [
@@ -55,7 +56,8 @@ class Command(BaseCommand):
         parser.add_argument("--aid_pct", type=int, default=35)
         parser.add_argument("--school_name", type=str, default="Heritage Christian Academy")
         parser.add_argument("--year_name", type=str, default="2026–2027")
-        parser.add_argument("--wipe", action="store_true", help="DANGER: wipe demo data for this school name before seeding")
+        parser.add_argument("--wipe", action="store_true", help="DANGER: wipe fictional Heritage demo records only")
+        parser.add_argument("--confirm-demo-wipe", action="store_true", help="Explicitly confirm destructive local Heritage reset")
 
     @transaction.atomic
     def handle(self, *args, **options):
@@ -65,6 +67,12 @@ class Command(BaseCommand):
         school_name = options["school_name"].strip()
         year_name = options["year_name"].strip()
         wipe = bool(options["wipe"])
+        require_local_demo_seed(operation="school seeding")
+        if wipe:
+            require_local_demo_wipe(
+                school_name=school_name,
+                confirmed=bool(options["confirm_demo_wipe"]),
+            )
 
         self.stdout.write(self.style.WARNING(
             f"Seeding: {school_name} | {year_name} | students={students_target} | tuition=${tuition_dollars} | aid={aid_pct}%"
@@ -381,6 +389,8 @@ class Command(BaseCommand):
             existing = UserAccount.objects.filter(username=email).first()
             if existing is not None and existing.school_id != school.pk:
                 raise CommandError(f"Refusing cross-school demo account: {email}")
+            if existing is not None and existing.email != email:
+                raise CommandError(f"Refusing mismatched demo account identity: {email}")
 
             ua, created = UserAccount.objects.get_or_create(
                 school=school,

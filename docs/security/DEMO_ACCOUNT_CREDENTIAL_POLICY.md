@@ -26,9 +26,15 @@ $env:CROWN_DEMO_PASSWORD = "<strong-secret-from-a-secret-manager>"
 python backend/manage.py reset_demo_passwords --school-id "<Heritage-demo-UUID>"
 ```
 
-This is not permission to use either command on a production customer
-database. Destructive seed/reset entrypoints require additional isolation
-controls and must be reviewed separately.
+Both legacy management commands now reject explicit production environment
+labels and hosted/Azure runtime markers. This is intentionally stricter than
+the separately governed evaluator-facing Heritage sandbox bootstrap.
+
+Destructive `seed_demo_school --wipe` additionally requires the exact Heritage
+school name, `--confirm-demo-wipe`, `CROWN_ALLOW_DEMO_WIPE=true`,
+`CROWN_ENV=local` (or `test`), and a configured SQLite database. Do not
+enable these flags against a customer database. The local reset ceremony must
+set both confirmations explicitly.
 
 The credential and tenant-safety regressions live in
 `backend/core/tests/test_demo_credential_safety.py`.

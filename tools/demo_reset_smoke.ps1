@@ -47,6 +47,8 @@ if (!(Test-Path $py)) {
 
 # Required: demo mode so CROWN_DEMO_KEY is populated from settings defaults.
 $env:CROWN_DEMO_MODE = "true"
+$env:CROWN_ENV = "local"
+$env:CROWN_ALLOW_DEMO_WIPE = "true"
 
 Push-Location $backend
 
@@ -58,7 +60,7 @@ try {
 
     # ---------------------------------------------------------------
     Write-Step "Seed demo school (--wipe)"
-    & $py manage.py seed_demo_school --wipe
+    & $py manage.py seed_demo_school --wipe --confirm-demo-wipe
     if ($LASTEXITCODE -ne 0) { Fail "seed_demo_school failed" }
 
     # ---------------------------------------------------------------

@@ -139,3 +139,59 @@ def test_explicit_reset_scopes_accounts_and_removes_superuser_grant(monkeypatch)
     assert teacher.school_id == school.pk
     assert teacher.is_superuser is False
     assert teacher.check_password(STRONG_DEMO_PASSWORD)
+
+
+def test_local_demo_seed_safety_rejects_production_environment(monkeypatch):
+    from core.demo_seed_safety import require_local_demo_seed
+
+    monkeypatch.setenv("CROWN_ENV", "production")
+    with pytest.raises(CommandError, match="production"):
+        require_local_demo_seed(operation="school seeding")
+
+
+def test_local_demo_seed_safety_rejects_any_hosted_runtime(monkeypatch):
+    from core.demo_seed_safety import require_local_demo_seed
+
+    monkeypatch.setenv("CROWN_ENV", "development")
+    monkeypatch.setenv("WEBSITE_HOSTNAME", "dev.example.invalid")
+    with pytest.raises(CommandError, match="hosted"):
+        require_local_demo_seed(operation="password reset")
+
+
+def test_wipe_requires_local_confirmation_and_sqlite(monkeypatch, settings):
+    from core.demo_seed_safety import require_local_demo_wipe
+
+    monkeypatch.setenv("CROWN_ENV", "local")
+    monkeypatch.delenv("WEBSITE_HOSTNAME", raising=False)
+    monkeypatch.delenv("WEBSITE_INSTANCE_ID", raising=False)
+    monkeypatch.delenv("AZURE_ENVIRONMENT", raising=False)
+    monkeypatch.setenv("CROWN_ALLOW_DEMO_WIPE", "true")
+    with pytest.raises(CommandError, match="--confirm-demo-wipe"):
+        require_local_demo_wipe(school_name="Heritage Christian Academy", confirmed=False)
+    with pytest.raises(CommandError, match="limited"):
+        require_local_demo_wipe(school_name="Customer School", confirmed=True)
+    previous = settings.DATABASES["default"]
+    settings.DATABASES = {"default": {**previous, "ENGINE": "django.db.backends.postgresql"}}
+    with pytest.raises(CommandError, match="SQLite"):
+        require_local_demo_wipe(school_name="Heritage Christian Academy", confirmed=True)
+
+
+@pytest.mark.django_db
+def test_demo_wipe_denies_before_creating_a_school(monkeypatch):
+    from core.models import School
+
+    monkeypatch.setenv("CROWN_ENV", "local")
+    monkeypatch.delenv("CROWN_ALLOW_DEMO_WIPE", raising=False)
+    with pytest.raises(CommandError, match="--confirm-demo-wipe"):
+        call_command("seed_demo_school", wipe=True)
+    assert not School.objects.filter(name="Heritage Christian Academy").exists()
+
+
+@pytest.mark.django_db
+def test_reset_refuses_hosted_tenant_even_with_valid_secret(monkeypatch):
+    monkeypatch.setenv("CROWN_ENV", "production")
+    monkeypatch.setenv("CROWN_DEMO_PASSWORD", STRONG_DEMO_PASSWORD)
+    school = School.objects.create(name="Heritage Christian Academy")
+    with pytest.raises(CommandError, match="production"):
+        call_command("reset_demo_passwords", school_id=str(school.pk))
+    assert not UserAccount.objects.filter(school=school).exists()
