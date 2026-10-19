@@ -65,16 +65,19 @@ def test_seed_creates_least_privilege_accounts_without_shared_password(monkeypat
         user.refresh_from_db()
         assert user.school_id == school.pk
         assert user.is_superuser is False
+        assert user.is_staff is False
         assert user.has_usable_password() is False
 
     # Reseeding retires legacy overprivileged accounts and known shared passwords.
     head = users["head_user"]
     head.is_superuser = True
+    head.is_staff = True
     head.set_password("demo1234")
-    head.save(update_fields=["is_superuser", "password"])
+    head.save(update_fields=["is_superuser", "is_staff", "password"])
     SeedDemoSchool()._ensure_directors(school)
     head.refresh_from_db()
     assert head.is_superuser is False
+    assert head.is_staff is False
     assert head.has_usable_password() is False
 
 
