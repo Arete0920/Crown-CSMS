@@ -13,7 +13,7 @@ Auth: JWT or Session. All endpoints tenant-scoped via X-School-Id.
 """
 import re
 
-from django.db import transaction
+from django.db import DatabaseError, transaction
 from django.shortcuts import get_object_or_404
 from rest_framework import status
 from rest_framework.authentication import SessionAuthentication
@@ -232,101 +232,108 @@ def commit_session(request, session_id):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    with transaction.atomic():
-        # Serialize same-school commits before touching any schedule rows.
-        School.objects.select_for_update().get(pk=school_id)
-        session = FeeScheduleWizardSession.objects.select_for_update().get(
-            pk=session_id, school_id=school_id,
-        )
-        if session.status != FeeScheduleWizardSession.STATUS_LINES_SET:
-            return Response(
-                {"error": "session must be in lines_set state before commit"},
-                status=status.HTTP_400_BAD_REQUEST,
+    try:
+        with transaction.atomic():
+            # Serialize same-school commits before touching any schedule rows.
+            School.objects.select_for_update().get(pk=school_id)
+            session = FeeScheduleWizardSession.objects.select_for_update().get(
+                pk=session_id, school_id=school_id,
             )
-        for idx, line in enumerate(session.lines_config):
-            invalid = _validate_line(line, idx)
-            if invalid:
-                return Response({"errors": invalid}, status=status.HTTP_400_BAD_REQUEST)
-        schedule, sched_created = FeeSchedule.objects.get_or_create(
-            school_id=school_id,
-            name=session.schedule_name,
-            defaults={
-                "term":           session.term,
-                "effective_date": session.effective_date,
-                "is_active":      True,
-            },
-        )
+            if session.status != FeeScheduleWizardSession.STATUS_LINES_SET:
+                return Response(
+                    {"error": "session must be in lines_set state before commit"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            for idx, line in enumerate(session.lines_config):
+                invalid = _validate_line(line, idx)
+                if invalid:
+                    return Response({"errors": invalid}, status=status.HTTP_400_BAD_REQUEST)
+            schedule, sched_created = FeeSchedule.objects.get_or_create(
+                school_id=school_id,
+                name=session.schedule_name,
+                defaults={
+                    "term":           session.term,
+                    "effective_date": session.effective_date,
+                    "is_active":      True,
+                },
+            )
 
-        # Ensure this schedule is active (covers idempotent re-commit)
-        if not schedule.is_active:
-            schedule.is_active = True
-            schedule.save(update_fields=["is_active"])
+            # Ensure this schedule is active (covers idempotent re-commit)
+            if not schedule.is_active:
+                schedule.is_active = True
+                schedule.save(update_fields=["is_active"])
 
-        # Single-active enforcement: exactly one active FeeSchedule per school
-        deactivated_count = (
-            FeeSchedule.objects
-            .filter(school_id=school_id)
-            .exclude(pk=schedule.pk)
-            .update(is_active=False)
-        )
+            # Single-active enforcement: exactly one active FeeSchedule per school
+            deactivated_count = (
+                FeeSchedule.objects
+                .filter(school_id=school_id)
+                .exclude(pk=schedule.pk)
+                .update(is_active=False)
+            )
 
-        lines_created = 0
-        lines_updated = 0
-        for idx, lc in enumerate(session.lines_config):
-            code     = lc.get("code", "").strip()
-            defaults = {
-                "label":       (lc.get("label") or "").strip(),
-                "amount_cents": int(lc.get("amount_cents", 0)),
-                "kind":         (lc.get("kind")      or FeeLine.KIND_FEE).strip(),
-                "frequency":    (lc.get("frequency") or FeeLine.FREQ_ANNUAL).strip(),
-                "is_required":  bool(lc.get("is_required", True)),
-                "sort_order":   int(lc.get("sort_order", idx)),
+            lines_created = 0
+            lines_updated = 0
+            for idx, lc in enumerate(session.lines_config):
+                code     = lc.get("code", "").strip()
+                defaults = {
+                    "label":       (lc.get("label") or "").strip(),
+                    "amount_cents": int(lc.get("amount_cents", 0)),
+                    "kind":         (lc.get("kind")      or FeeLine.KIND_FEE).strip(),
+                    "frequency":    (lc.get("frequency") or FeeLine.FREQ_ANNUAL).strip(),
+                    "is_required":  bool(lc.get("is_required", True)),
+                    "sort_order":   int(lc.get("sort_order", idx)),
+                }
+                _, line_created = FeeLine.objects.update_or_create(
+                    fee_schedule=schedule,
+                    code=code,
+                    defaults=defaults,
+                )
+                if line_created:
+                    lines_created += 1
+                else:
+                    lines_updated += 1
+
+            result = {
+                "schedule_id":   str(schedule.id),
+                "schedule_name": schedule.name,
+                "term":          schedule.term,
+                "created":       sched_created,
+                "lines_created": lines_created,
+                "lines_updated": lines_updated,
+                "deactivated_count": deactivated_count,
+                "message": (
+                    "Fee schedule created with {} line(s).".format(lines_created + lines_updated)
+                    if sched_created
+                    else "Fee schedule already existed; {} line(s) updated, {} new.".format(lines_updated, lines_created)
+                ),
             }
-            _, line_created = FeeLine.objects.update_or_create(
-                fee_schedule=schedule,
-                code=code,
-                defaults=defaults,
+            session.commit_result = result
+            session.status        = FeeScheduleWizardSession.STATUS_COMMITTED
+            session.save()
+
+            # Audit creation is part of the same transaction. Failure rolls back fees.
+            AuditLog.objects.create(
+                user_id=getattr(request.user, "id", None),
+                action="fee_schedule.commit",
+                model="FeeSchedule",
+                object_id=result["schedule_id"],
+                metadata={
+                    "schedule_name": result["schedule_name"],
+                    "term":          result["term"],
+                    "created":       result["created"],
+                    "lines_created":    result["lines_created"],
+                    "lines_updated":    result["lines_updated"],
+                    "deactivated_count": result["deactivated_count"],
+                    "school_id":        str(school_id),
+                    "session_id":       str(session.id),
+                },
             )
-            if line_created:
-                lines_created += 1
-            else:
-                lines_updated += 1
-
-        result = {
-            "schedule_id":   str(schedule.id),
-            "schedule_name": schedule.name,
-            "term":          schedule.term,
-            "created":       sched_created,
-            "lines_created": lines_created,
-            "lines_updated": lines_updated,
-            "deactivated_count": deactivated_count,
-            "message": (
-                "Fee schedule created with {} line(s).".format(lines_created + lines_updated)
-                if sched_created
-                else "Fee schedule already existed; {} line(s) updated, {} new.".format(lines_updated, lines_created)
-            ),
-        }
-        session.commit_result = result
-        session.status        = FeeScheduleWizardSession.STATUS_COMMITTED
-        session.save()
-
-        # Audit creation is part of the same transaction. Failure rolls back fees.
-        AuditLog.objects.create(
-            user_id=getattr(request.user, "id", None),
-            action="fee_schedule.commit",
-            model="FeeSchedule",
-            object_id=result["schedule_id"],
-            metadata={
-                "schedule_name": result["schedule_name"],
-                "term":          result["term"],
-                "created":       result["created"],
-                "lines_created":    result["lines_created"],
-                "lines_updated":    result["lines_updated"],
-                "deactivated_count": result["deactivated_count"],
-                "school_id":        str(school_id),
-                "session_id":       str(session.id),
-            },
+    except DatabaseError:
+        return Response(
+            {"error": "Fee schedule commit temporarily unavailable"},
+            status=status.HTTP_503_SERVICE_UNAVAILABLE,
         )
+
     return Response({"session_id": str(session.id), "status": session.status, "result": result})
 
 
