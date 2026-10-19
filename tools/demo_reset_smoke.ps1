@@ -24,7 +24,8 @@
 #>
 param(
     [int]$HealthTimeoutSeconds = 30,
-    [string]$HostUrl = "http://127.0.0.1:8000"
+    [string]$HostUrl = "http://127.0.0.1:8000",
+    [string]$HeritageSchoolId = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -46,6 +47,7 @@ if (!(Test-Path $py)) {
 }
 
 # Required: demo mode so CROWN_DEMO_KEY is populated from settings defaults.
+if ([string]::IsNullOrWhiteSpace($HeritageSchoolId)) { Fail "Explicit -HeritageSchoolId UUID required for destructive reset" }
 $env:CROWN_DEMO_MODE = "true"
 $env:CROWN_ENV = "local"
 $env:CROWN_ALLOW_DEMO_WIPE = "true"
@@ -60,7 +62,7 @@ try {
 
     # ---------------------------------------------------------------
     Write-Step "Seed demo school (--wipe)"
-    & $py manage.py seed_demo_school --wipe --confirm-demo-wipe
+    & $py manage.py seed_demo_school --wipe --confirm-demo-wipe --school-id $HeritageSchoolId
     if ($LASTEXITCODE -ne 0) { Fail "seed_demo_school failed" }
 
     # ---------------------------------------------------------------
