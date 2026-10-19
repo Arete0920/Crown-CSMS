@@ -39,9 +39,11 @@ jobs:
       - name: Guard manual ref input
         if: github.event_name == 'workflow_dispatch' && github.event.inputs.ref != ''
         shell: bash
+        env:
+          INPUT_REF: ${{ github.event.inputs.ref }}
         run: |
           set -euo pipefail
-          REF="${{ github.event.inputs.ref }}"
+          REF="$INPUT_REF"
           if [[ "$REF" =~ ^refs/heads/rc/.+ ]] || [[ "$REF" =~ ^rc/.+ ]] || [[ "$REF" =~ ^[0-9a-f]{40}$ ]]; then
             echo "Manual ref accepted: $REF"
           else
@@ -55,6 +57,24 @@ jobs:
           ref: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.ref || github.sha }}
           fetch-depth: 0
 
+      - name: Verify accepted DEV source
+        id: vars
+        env:
+          REQUESTED_REF: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.ref || github.sha }}
+        run: |
+          set -euo pipefail
+          SOURCE_SHA="$(git rev-parse HEAD)"
+          [[ "$SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]]
+          if [[ "$REQUESTED_REF" =~ ^[0-9a-f]{40}$ ]]; then
+            test "$SOURCE_SHA" = "$REQUESTED_REF"
+          fi
+          git fetch --no-tags origin refs/heads/main:refs/remotes/origin/main
+          git merge-base --is-ancestor "$SOURCE_SHA" origin/main
+          echo "deploy_sha=$SOURCE_SHA" >> "$GITHUB_OUTPUT"
+          echo "deploy_sha_short=${SOURCE_SHA:0:7}" >> "$GITHUB_OUTPUT"
+          echo "DEPLOY_SHA=$SOURCE_SHA" >> "$GITHUB_ENV"
+          echo "DEPLOY_SHA_SHORT=${SOURCE_SHA:0:7}" >> "$GITHUB_ENV"
+
       - name: Azure Login
         uses: azure/login@a457da9ea143d694b1b9c7c869ebb04ebe844ef5 # v2
         with:
@@ -62,13 +82,21 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      - name: Determine deploy SHA
-        id: vars
-        run: |
-          echo "deploy_sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
-          echo "deploy_sha_short=$(git rev-parse --short=7 HEAD)" >> $GITHUB_OUTPUT
-          echo "DEPLOY_SHA=$(git rev-parse HEAD)" >> $GITHUB_ENV
-          echo "DEPLOY_SHA_SHORT=$(git rev-parse --short=7 HEAD)" >> $GITHUB_ENV
+      - name: Set up existing runner for DEV schema verification
+        uses: actions/setup-python@7f4fc3e22c37d6ff65e88745f38bd3157c663f7c # v4
+        with:
+          python-version: '3.12'
+
+      - name: Install accepted backend dependencies
+        run: python -m pip install -r backend/requirements.txt
+
+      - name: Verify DEV migration boundary without database execution
+        run: python -m unittest discover -s scripts/ops -p test_run_dev_inquiry_migration.py -v
+
+      - name: Apply only reviewed DEV inquiry migration before deployment
+        env:
+          EXPECTED_SOURCE_SHA: ${{ steps.vars.outputs.deploy_sha }}
+        run: python scripts/ops/run_dev_inquiry_migration.py --expected-sha "$EXPECTED_SOURCE_SHA"
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
@@ -173,7 +201,7 @@ jobs:
               ;;
           esac
 
-      - name: Health check (waits for startup + migrations + ensure_ci_user)
+      - name: Health check after verified schema and application startup
         run: |
           set -euo pipefail
           echo "Waiting for app to come up (up to 6 minutes)..."
