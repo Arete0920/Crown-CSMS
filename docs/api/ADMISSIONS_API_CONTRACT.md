@@ -103,7 +103,13 @@ and a simultaneous request to withdraw consent and enable reminders is rejected.
 Ownership is restricted to active staff with admissions authority in that
 school. Application decisions and enrollment remain controlled by admissions.
 
-### Inquiry follow-up
+The family entry is `/admissions/inquire`; the staff queue is
+`/admissions/inquiries`. A visit request is not a confirmed appointment.
+The application remains available at `/admissions/apply`. The same browser
+retains a school-scoped capability until the server expiry; contact drafts stay
+in the current session. Successful application submission clears the capability.
+
+### Inquiry follow-up and reporting
 
 Inquiry acknowledgments and owner notices use the shared communications outbox.
 `CROWN_INQUIRY_NOTIFICATIONS_ENABLED` defaults to `false`. While disabled, inquiry
@@ -139,6 +145,14 @@ the existing enabled provider. Missing configuration and unassigned owners
 remain visible in the queue. A school-specific Teams destination is not
 configured by this feature. Runtime acceptance must verify worker/Beat
 execution and provider delivery in the intended school environment.
+
+Marketing metrics expose `inquiry_capture` and `inquiry_source_attribution`.
+Their denominator is captured family inquiries, with linked child applications
+reported separately. A family enrollment means at least one linked application
+has canonical enrollment confirmation. Historical application-based inquiry
+events remain separately identified; they are not evidence of early capture.
+Actual campaign tuition receipts and aid attribution retain their existing
+financial-evidence requirements.
 
 ### Summary
 

@@ -187,6 +187,19 @@ def test_campaign_estimates_preserve_losses_instead_of_reporting_zero():
     assert economics["actual_net_before_aid_cents"] is None
 
 
+def test_campaign_touchpoint_total_ignores_malformed_foreign_school_rows():
+    from crm_marketing.models import CampaignTouchpoint
+
+    school = School.objects.create(name="Scoped Campaign Touchpoints")
+    other = School.objects.create(name="Other Campaign Touchpoints")
+    campaign = MarketingCampaign.objects.create(school=school, name="Scoped campaign")
+    lead = MarketingLead.objects.create(school=school, campaign=campaign)
+    for summary in ["Valid contact", "Corrupt historical contact"]:
+        CampaignTouchpoint.objects.create(school=school, campaign=campaign, lead=lead, channel="phone", summary=summary, occurred_at=timezone.now())
+    CampaignTouchpoint.objects.filter(campaign=campaign, summary="Corrupt historical contact").update(school_id=other.id)
+    assert build_campaign_snapshot(campaign)["funnel"]["touchpoints"] == 1
+
+
 @pytest.fixture
 def campaign_client(client):
     school = School.objects.create(name="Campaign API School")

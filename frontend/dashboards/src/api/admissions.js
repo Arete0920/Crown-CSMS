@@ -77,12 +77,13 @@ export function fetchAdmissionsTimeline(params = {}) {
   return fetchAdmissionsEndpoint("/api/admissions/timeline/", params);
 }
 
-export function submitAdmissionsIntake(payload = {}) {
+export function submitAdmissionsIntake(payload = {}, options = {}) {
   const identity = createRequestIdentity();
   return apiPost("/api/v1/admissions/submit/", payload, {
     headers: {
       'X-Request-Id': identity.requestId,
-      'Idempotency-Key': identity.idempotencyKey,
+      'Idempotency-Key': options.idempotencyKey || identity.idempotencyKey,
+      ...(options.schoolId ? { 'X-School-Id': options.schoolId } : {}),
     },
   });
 }
