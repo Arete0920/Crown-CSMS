@@ -104,3 +104,25 @@ def test_concurrent_refresh_consumes_token_only_once():
 
     assert statuses == [200, 401]
     assert BlacklistedToken.objects.filter(token__user=user).count() == 1
+
+
+def test_blacklist_database_failure_fails_closed():
+    """A failed blacklist DB operation must not mint an access token."""
+    from unittest.mock import patch
+    from django.db import DatabaseError
+
+    cache.clear()
+    with patch(
+        "crown_api.refresh_rotation.SerializedTokenRefreshSerializer.validate",
+        side_effect=DatabaseError("synthetic unavailable database"),
+    ):
+        response = APIClient().post(
+            "/api/v1/auth/token/refresh/",
+            {"refresh": "invalid-synthetic-token"},
+            format="json",
+            REMOTE_ADDR="203.0.113.79",
+        )
+    assert response.status_code == 503
+    assert response.data["code"] == "auth_temporarily_unavailable"
+    assert response["Retry-After"] == "60"
+    assert "access" not in response.data

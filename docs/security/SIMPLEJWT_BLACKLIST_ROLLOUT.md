@@ -15,7 +15,7 @@ References:
 
 1. Identify the exact deployed CROWN source SHA and currently installed SimpleJWT version. Check which Django settings module, database alias, and tenant/auth routes are active. No credentials or token values in evidence.
 2. Make an approved, tested recovery point. Verify database restore can be completed; record the custodian, environment, UTC time, and restricted evidence location.
-3. **Read** the `django_migrations` rows for `app='token_blacklist'` and inspect SimpleJWT 5.5.1's migration graph, especially `0013_blacklist`. Confirm whether a locally generated `0013` predates the vendor release and whether downstream migrations depend on it. Stop and obtain a reviewed specific remediation if the graph conflicts: never blindly fake, delete, or roll back rows.
+3. **Read** the `django_migrations` rows for `app='token_blacklist'` and inspect SimpleJWT 5.5.1's migration graph, especially `0013_alter_blacklistedtoken_options_and_more`. Confirm whether a locally generated `0013` predates the vendor release and whether downstream migrations depend on it. Stop and obtain a reviewed specific remediation if the graph conflicts: never blindly fake, delete, or roll back rows.
 4. On a disposable database copy matching the actual starting schema, run Django's migration plan and migrations with the **candidate code**. Confirm both token tables and token indexes, then rehearse rollback and recovery. No school data or credentials in public CI.
 5. Require the controlled deployment sequence to apply approved database migrations **before serving traffic with the new code**. Ensure only the intended environment is targeted and maintenance/runbook authority is recorded. Avoid adding manual production shell commands in public issue comments.
 6. Run an isolated, synthetic token proof: issue a refresh, rotate once, verify old token rejected (401), and replacement token usable. Test invalid/expired tokens and rate limit behavior, exercise tenant context, inspect logs for token absence. Preserve only redacted status/case counts. Distinguish staging from production.
@@ -70,3 +70,34 @@ blacklist-enabled application image. Keep DEV application traffic on the
 previous accepted revision until schema application and independent testing
 are complete. The ordinary `deploy-dev.yml` migration allowlist remains
 unchanged; a failed or incomplete separate schema stage must not be bypassed.
+
+## Safe two-stage application activation
+
+The new `CROWN_SIMPLEJWT_BLACKLIST_ENABLED` application setting defaults to
+`false`. Merging a reviewed source revision alone must not load the blacklist
+app, create schema tables, or require blacklist tables during login/refresh.
+Until the actual deployment's schema is verified and this setting is `true`,
+the ordinary SimpleJWT serializer retains the pre-rollout rotation behavior;
+**a returned rotated token is not yet proof of revocation**.
+
+1. Accept reviewed source through the existing protected CI without activating
+   the setting in any hosted environment.
+2. Use the accepted-main SHA in the read-only DEV preflight. The preflight
+   temporarily enables the blacklist app **inside the isolated migration
+   process only**; it never changes App Service settings.
+3. Reconcile the recorded migration history and actual tables; verify an
+   approved, tested DEV database recovery point before any schema action.
+4. Run the separate DEV-only reviewed migration job with explicit authorization.
+   The temporary app enablement is confined to that migration runner.
+5. Verify the full vendor migration chain, required tables/constraints and
+   actual PostgreSQL concurrent 200/401 replay behavior against the target
+   database. Independently record exact accepted/deployed source identity.
+6. Only after these checks may the designated operator set
+   `CROWN_SIMPLEJWT_BLACKLIST_ENABLED=true` on the intended DEV runtime and
+   execute the hosted acceptance suite. Activation is a separate operational
+   step, not an automatic side effect of this PR. Confirm that production
+   remains disabled until its own migration/recovery evidence and approval.
+
+If any step fails, leave the setting disabled and do not claim the security
+finding resolved. The legacy Crown-signed refresh endpoint is separately
+tracked in #372 and remains outside the SimpleJWT blacklist.

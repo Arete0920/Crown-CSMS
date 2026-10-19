@@ -184,9 +184,6 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'corsheaders',
     'rest_framework',
-    # Required for BLACKLIST_AFTER_ROTATION to revoke consumed refresh tokens.
-    # Deploy only after verifying and applying the token_blacklist migrations.
-    'rest_framework_simplejwt.token_blacklist',
     'drf_spectacular',
     'drf_spectacular_sidecar',
     'crown_api',
@@ -261,6 +258,13 @@ INSTALLED_APPS = [
     'survey_sentiment.apps.SurveySentimentConfig',
 ]
 INSTALLED_APPS += WIZARD_INSTALLED_APPS  # wizard SDK: single source of truth in wizard_registry.py
+
+# Two-stage rollout: accept source with existing runtime behavior, migrate the
+# existing database through the separately authorized schema stage, and only
+# then enable revocation. This flag MUST NOT default to on before migrations.
+CROWN_SIMPLEJWT_BLACKLIST_ENABLED = _env_bool("CROWN_SIMPLEJWT_BLACKLIST_ENABLED", False)
+if CROWN_SIMPLEJWT_BLACKLIST_ENABLED:
+    INSTALLED_APPS.append("rest_framework_simplejwt.token_blacklist")
 
 # Use the project custom user model everywhere to avoid dual auth model registration.
 AUTH_USER_MODEL = 'core.UserAccount'

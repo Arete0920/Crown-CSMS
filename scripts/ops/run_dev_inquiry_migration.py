@@ -190,7 +190,10 @@ def migrate_on_dev(database_url, secret, database_name, source_sha, *,
     os.environ.update(DATABASE_URL=runner_url, DJANGO_SECRET_KEY=secret,
                       DJANGO_SETTINGS_MODULE="crown_api.settings", CROWN_ENV="dev",
                       DJANGO_ENV="development", ENVIRONMENT="dev", DJANGO_DEBUG="false",
-                      DEBUG="false", BUILD_SHA=source_sha)
+                      DEBUG="false", BUILD_SHA=source_sha,
+                      CROWN_SIMPLEJWT_BLACKLIST_ENABLED=(
+                          "true" if check_only or apply_blacklist else "false"
+                      ))
     sys.path.insert(0, str(ROOT / "backend"))
     import django
     django.setup()

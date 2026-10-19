@@ -1,6 +1,11 @@
 """Pytest-only settings that add an independent database alias for routing proof."""
 
 from copy import deepcopy
+import os
+
+# Exercise the guarded revocation path and vendor migrations under pytest.
+# Hosted environments continue to default to the disabled state.
+os.environ["CROWN_SIMPLEJWT_BLACKLIST_ENABLED"] = "true"
 
 from .settings import *  # noqa: F401,F403
 

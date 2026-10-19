@@ -82,6 +82,25 @@ class DevMigrationBoundaryTests(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError, "stop before database access"):
                 migration.migrate_on_dev(URL, "synthetic-secret", "crown", SHA)
 
+    def test_blacklist_app_enabled_only_in_read_only_or_authorized_schema_stage(self):
+        # Stop before opening a database and inspect exactly what Django sees.
+        for kwargs, enabled in (
+            ({}, "false"),
+            ({"check_only": True}, "true"),
+            ({"apply_blacklist": True}, "true"),
+        ):
+            with self.subTest(kwargs=kwargs):
+                def setup():
+                    self.assertEqual(
+                        os.environ["CROWN_SIMPLEJWT_BLACKLIST_ENABLED"], enabled
+                    )
+                    raise RuntimeError("halt before touching database")
+                with patch.dict(os.environ, {}, clear=True), patch.dict(
+                    "sys.modules", {"django": SimpleNamespace(setup=setup)}
+                ), patch.object(migration.Path, "is_file", return_value=True):
+                    with self.assertRaisesRegex(RuntimeError, "halt before"):
+                        migration.migrate_on_dev(URL, "synthetic-secret", "crown", SHA, **kwargs)
+
     def test_key_vault_reference_is_parsed_as_data_and_rejects_external_hosts(self):
         read = Mock(return_value={"value": "resolved-private-value"})
         uri = "https://existing-vault.vault.azure.net/secrets/existing-secret/version"
