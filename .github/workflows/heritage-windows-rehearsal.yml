@@ -5,6 +5,11 @@ on:
     branches: [main]
     paths:
       - 'scripts/demo/**'
+      - 'Install-and-Start-Heritage.py'
+      - 'Start-Heritage.cmd'
+      - 'HERITAGE-LOCAL-DEMO-README.txt'
+      - 'backend/tests/test_heritage_sales_package.py'
+      - 'docs/LOCAL_QUICKSTART.md'
       - 'backend/sandbox_demo/**'
       - 'backend/requirements.txt'
       - 'frontend/dashboards/**'
@@ -39,6 +44,9 @@ jobs:
           node --version
           npm --version
           python scripts/demo/start_heritage_local.py --prepare-only
+      - name: Verify immutable sales-starter ZIP contract
+        shell: pwsh
+        run: .\\.venv\\Scripts\\python.exe -m pytest -q backend/tests/test_heritage_sales_package.py
       - name: Install Playwright Chromium for full buyer browser certification
         shell: pwsh
         working-directory: frontend/dashboards
