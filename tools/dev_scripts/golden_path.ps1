@@ -106,7 +106,8 @@ function Ensure-CiUser {
   $payload = @{} | ConvertTo-Json
 
   $resp = Invoke-RestMethod -Method Post -Uri "$ApiBase/api/v1/system/ensure-ci-user/" -Headers $headers -Body $payload -TimeoutSec 12
-  Write-Host "✅ CI user ensured. Response: $($resp | ConvertTo-Json -Depth 2)"
+  # The response includes a JWT access token; never write it into Actions logs.
+  Write-Host "CI user ensured; access token and response details withheld."
   return $resp
 }
 
