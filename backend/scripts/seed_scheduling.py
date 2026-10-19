@@ -107,13 +107,48 @@ def run() -> None:
     from academics.models import Course, Section, Term
     from core.models import AcademicYear
 
+    from django.conf import settings
+    from django.core.management.base import CommandError
+
+    # Legacy scripting has no operator-level tenant authorization. Never loop
+    # through all active academic years or accept a production database.
+    labels = {
+        os.getenv(key, "").strip().lower()
+        for key in ("CROWN_ENV", "DJANGO_ENV", "ENVIRONMENT", "APP_ENV", "AZURE_ENVIRONMENT")
+        if os.getenv(key, "").strip()
+    }
+    if labels.intersection({"prod", "production", "live"}):
+        raise CommandError("Legacy scheduling seed is prohibited in production")
+    if any(os.getenv(key) for key in ("WEBSITE_HOSTNAME", "WEBSITE_INSTANCE_ID", "AZURE_ENVIRONMENT")):
+        raise CommandError("Legacy scheduling seed is prohibited on hosted runtimes")
+    if os.getenv("CROWN_ENV", "").strip().lower() not in {"local", "test"}:
+        raise CommandError("Legacy scheduling seed requires CROWN_ENV=local or test")
+    if os.getenv("CROWN_ALLOW_LEGACY_SCHEDULING_SEED", "").strip().lower() != "true":
+        raise CommandError("CROWN_ALLOW_LEGACY_SCHEDULING_SEED=true is required")
+    if settings.DATABASES["default"]["ENGINE"] != "django.db.backends.sqlite3":
+        raise CommandError("Legacy scheduling seed requires isolated SQLite")
+    school_id = os.getenv("CROWN_LEGACY_SCHEDULING_SCHOOL_ID", "").strip()
+    if not school_id:
+        raise CommandError("CROWN_LEGACY_SCHEDULING_SCHOOL_ID is required")
+    try:
+        selected_id = uuid.UUID(school_id)
+    except ValueError as exc:
+        raise CommandError("CROWN_LEGACY_SCHEDULING_SCHOOL_ID must be a UUID") from exc
+
+    from core.models import School
+    school = School.objects.filter(pk=selected_id).first()
+    if school is None or school.name != "Heritage Christian Academy":
+        raise CommandError("Scheduling seed requires the explicit Heritage demo school")
+    if School.objects.exclude(pk=school.pk).exists():
+        raise CommandError("Scheduling seed requires isolated single-school database")
+
     years = list(
-        AcademicYear.objects.filter(is_current=True)
+        AcademicYear.objects.filter(is_current=True, school_id=school.id)
         .select_related("school")
         .order_by("school_id", "start_date")
     )
-    if not years:
-        raise SystemExit("No current AcademicYear found. Seed school/year data first.")
+    if len(years) != 1:
+        raise CommandError("Exactly one current Heritage academic year is required")
 
     for year in years:
         school_id = year.school_id
