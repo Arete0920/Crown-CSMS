@@ -58,6 +58,7 @@ class Command(BaseCommand):
         parser.add_argument("--year_name", type=str, default="2026–2027")
         parser.add_argument("--wipe", action="store_true", help="DANGER: wipe fictional Heritage demo records only")
         parser.add_argument("--confirm-demo-wipe", action="store_true", help="Explicitly confirm destructive local Heritage reset")
+        parser.add_argument("--school-id", default=None, help="Existing Heritage UUID required for destructive --wipe")
 
     @transaction.atomic
     def handle(self, *args, **options):
@@ -68,11 +69,29 @@ class Command(BaseCommand):
         year_name = options["year_name"].strip()
         wipe = bool(options["wipe"])
         require_local_demo_seed(operation="school seeding")
+        if school_name != "Heritage Christian Academy":
+            raise CommandError("Legacy demo seeding is restricted to Heritage Christian Academy")
+        # A label and SQLite alone do not prove that existing data is fictional.
+        # Reject any non-Heritage school before writing grades, fees, or accounts.
+        if School.objects.exclude(name=school_name).exists():
+            raise CommandError("Heritage demo seeding requires an isolated single-school database")
+        matching_ids = list(School.objects.filter(name=school_name).values_list("id", flat=True))
+        if len(matching_ids) > 1:
+            raise CommandError("Multiple Heritage schools found; refusing ambiguous demo seeding")
+        selected_id = options.get("school_id")
         if wipe:
             require_local_demo_wipe(
                 school_name=school_name,
                 confirmed=bool(options["confirm_demo_wipe"]),
             )
+            if not selected_id:
+                raise CommandError("--school-id is required for destructive --wipe")
+            if len(matching_ids) != 1 or str(matching_ids[0]) != str(selected_id):
+                raise CommandError("Destructive --wipe requires the exact existing Heritage school UUID")
+        elif selected_id and (
+            len(matching_ids) != 1 or str(matching_ids[0]) != str(selected_id)
+        ):
+            raise CommandError("--school-id does not match the selected Heritage school")
 
         self.stdout.write(self.style.WARNING(
             f"Seeding: {school_name} | {year_name} | students={students_target} | tuition=${tuition_dollars} | aid={aid_pct}%"
@@ -546,11 +565,15 @@ class Command(BaseCommand):
         # Import here to avoid circular dependency
         from financial_aid.models import AidAuditEvent
         
-        # Delete audit events for this school AND any that reference user accounts we're about to delete
-        user_ids = list(UserAccount.objects.filter(school=school).values_list('id', flat=True))
+        # Audit events are globally keyed by actor_user_id, not a tenant-scoped FK.
+        # A demo user referenced in another school's audit must fail the wipe.
+        # Never erase another school's audit trail by actor ID alone.
+        user_ids = list(UserAccount.objects.filter(school=school).values_list("id", flat=True))
+        if user_ids and AidAuditEvent.objects.filter(
+            actor_user_id__in=user_ids
+        ).exclude(school_id=school.id).exists():
+            raise CommandError("Refusing wipe: demo actors appear in cross-school audit events")
         AidAuditEvent.objects.filter(school_id=school.id).delete()
-        if user_ids:
-            AidAuditEvent.objects.filter(actor_user_id__in=user_ids).delete()
         
         # Continue with original deletions
         AidAward.objects.filter(school=school).delete()
