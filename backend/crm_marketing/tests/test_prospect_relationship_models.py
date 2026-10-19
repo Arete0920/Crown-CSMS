@@ -125,3 +125,35 @@ def test_database_uniqueness_still_guards_bulk_create_bypassing_model_save():
                 ),
             ])
     assert EnrollmentInterest.objects.count() == 1
+
+@pytest.mark.parametrize("field,value", [
+    ("display_name", "   "),
+    ("display_name", "\t"),
+])
+def test_contact_name_requires_non_whitespace(field, value):
+    school = School.objects.create(name="Contact name validation school")
+    with pytest.raises(ValidationError):
+        ProspectContact.objects.create(school=school, **{field: value})
+    assert ProspectContact.objects.filter(school=school).count() == 0
+
+
+def test_group_label_requires_non_whitespace():
+    school = School.objects.create(name="Group label validation school")
+    with pytest.raises(ValidationError):
+        ProspectGroup.objects.create(school=school, label="   ")
+    assert ProspectGroup.objects.filter(school=school).count() == 0
+
+
+@pytest.mark.parametrize("grade,year", [
+    ("   ", "2027-2028"),
+    ("6", "   "),
+])
+def test_opportunity_rejects_whitespace_only_required_fields(grade, year):
+    school = School.objects.create(name="Interest validation school")
+    group = ProspectGroup.objects.create(school=school, label="Prospect group")
+    with pytest.raises(ValidationError):
+        EnrollmentInterest.objects.create(
+            school=school, group=group, learner_number=1,
+            grade_interest=grade, entry_year=year,
+        )
+    assert EnrollmentInterest.objects.filter(school=school).count() == 0
