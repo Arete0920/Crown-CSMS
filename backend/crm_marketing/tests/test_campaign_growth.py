@@ -152,6 +152,53 @@ def test_sibling_workflow_reuses_inquiry_and_counts_confirmed_applications():
     assert snapshot["funnel"]["enrollment_unit"] == "confirmed_application"
 
 
+def test_enrolled_sibling_prevents_family_stage_regression_from_later_submissions():
+    from crm_marketing.services import register_workflow_update
+
+    school = School.objects.create(name="Family stage stability school")
+    household = Household.objects.create(school_id=school.id, name="Two sibling applicants")
+    child_a, child_b = [
+        Application.objects.create(school_id=school.id, household=household, status="SUBMITTED")
+        for _ in range(2)
+    ]
+    lead = MarketingLead.objects.create(
+        school=school, application=child_a, stage=LeadStage.APPLICATION_SUBMITTED,
+        first_source="church",
+    )
+    lead.applications.add(child_a, child_b)
+    ApplicationEvent.objects.create(
+        school_id=school.id, application=child_a, event_type="enrollment_confirmed",
+    )
+    register_workflow_update(
+        child_b, stage=LeadStage.ACCEPTED, summary="Sibling awaiting acceptance",
+    )
+    lead.refresh_from_db()
+    assert lead.stage == LeadStage.ENROLLED
+    register_admissions_submit(child_b, source="church")
+    lead.refresh_from_db()
+    assert lead.stage == LeadStage.ENROLLED
+    assert MarketingLead.objects.filter(school_id=school.id).count() == 1
+
+
+def test_family_stage_does_not_inherit_foreign_school_enrollment_evidence():
+    from crm_marketing.services import register_workflow_update
+
+    school = School.objects.create(name="Scoped lead school")
+    other = School.objects.create(name="Other lead school")
+    household = Household.objects.create(school_id=school.id, name="Scoped household")
+    foreign_household = Household.objects.create(school_id=other.id, name="Foreign household")
+    application = Application.objects.create(school_id=school.id, household=household, status="SUBMITTED")
+    foreign_application = Application.objects.create(school_id=other.id, household=foreign_household, status="SUBMITTED")
+    lead = MarketingLead.objects.create(school=school, application=application, stage=LeadStage.APPLICATION_SUBMITTED)
+    lead.applications.add(application, foreign_application)
+    ApplicationEvent.objects.create(
+        school_id=other.id, application=foreign_application, event_type="enrollment_confirmed",
+    )
+    register_workflow_update(application, stage=LeadStage.ACCEPTED, summary="Own application accepted")
+    lead.refresh_from_db()
+    assert lead.stage == LeadStage.ACCEPTED
+
+
 def test_campaign_enrollment_requires_canonical_confirmation_and_counts_families_once():
     school = School.objects.create(name="Confirmed Campaign School")
     household = Household.objects.create(school_id=school.id, name="Confirmed Household")
