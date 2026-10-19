@@ -192,6 +192,124 @@ def test_heritage_board_session_provisions_canonical_permission_and_obeys_revoca
         assert response.status_code == 403, response.content
 
 
+def _issue_heritage_board_session(settings):
+    settings.TENANT_HEADER_REQUIRED = True
+    settings.CROWN_SANDBOX_ALLOW_OPEN_SESSION = True
+    response = APIClient().post(
+        "/api/v1/sandbox/session/",
+        {"role": "board", "school": "heritage-core", "track": "school"},
+        format="json",
+    )
+    assert response.status_code == 201
+    assert response.data["role_code"] == "board_member"
+    return response.data
+
+
+def test_heritage_board_bearer_renewal_preserves_foreign_tenant_denials(settings):
+    from sandbox_demo.catalog import SANDBOX_PERSONAS
+
+    first = _issue_heritage_board_session(settings)
+    school = School.objects.get(pk=first["school_id"])
+    board = UserAccount.objects.get(username=SANDBOX_PERSONAS["board"].email, school=school)
+    foreign_schools = [School.objects.create(name=f"Unrelated Board Tenant {index}") for index in range(2)]
+    board_routes = (
+        "/api/signals/board/risk-counts/",
+        "/api/v1/nav/",
+        "/api/v1/academics/classroom/workspace/?audience=board",
+    )
+
+    def verify_session(session):
+        client = APIClient()
+        client.credentials(HTTP_AUTHORIZATION=f"Bearer {session['access']}")
+        for route in board_routes:
+            own = client.get(route, HTTP_X_SCHOOL_ID=str(school.id))
+            assert own.status_code == 200, own.content
+        for route in (
+            "/api/v1/academics/classroom/workspace/?audience=admin",
+            "/api/v1/admin/metrics/",
+            "/api/v1/finance/metrics/",
+            "/api/v1/sandbox/admin/state/",
+            "/api/v1/sandbox/finance/state/",
+        ):
+            denied = client.get(route, HTTP_X_SCHOOL_ID=str(school.id))
+            assert denied.status_code == 403, denied.content
+        for foreign in foreign_schools:
+            for route in board_routes:
+                denied = client.get(route, HTTP_X_SCHOOL_ID=str(foreign.id))
+                assert denied.status_code == 404, denied.content
+                assert denied.json()["code"] == "tenant_access_denied"
+
+    verify_session(first)
+    assert board.staff_id is None
+    stale_staff, _ = Staff.objects.update_or_create(
+        school=school, email=board.email,
+        defaults={"first_name": "Historical", "last_name": "Board", "role_type": "SUPPORT", "status": "ACTIVE"},
+    )
+    board.staff = stale_staff
+    board.save(update_fields=["staff"])
+    UserRole.objects.create(school=school, user=board, role_code="HEAD_OF_SCHOOL")
+
+    second = _issue_heritage_board_session(settings)
+    assert second["school_id"] == first["school_id"]
+    board.refresh_from_db()
+    assert board.staff_id is None
+    assert set(board.roles.values_list("role_code", flat=True)) == {"board_member"}
+    assert Staff.objects.filter(pk=stale_staff.pk).exists()
+    for session in (first, second):
+        for _read in range(2):
+            verify_session(session)
+
+
+def test_board_bearer_cannot_read_foreign_household_while_genuine_support_can(settings):
+    from crown_api.jwt_utils import build_access_token
+
+    session = _issue_heritage_board_session(settings)
+    school = School.objects.get(pk=session["school_id"])
+    foreign = School.objects.create(name="Foreign household tenant")
+    household = Household.objects.create(school_id=foreign.id, name="Synthetic foreign household")
+    route = f"/api/v1/households/{household.id}/"
+    client = APIClient()
+    client.credentials(HTTP_AUTHORIZATION=f"Bearer {session['access']}")
+    denied = client.get(route, HTTP_X_SCHOOL_ID=str(foreign.id))
+    assert denied.status_code == 404, denied.content
+    assert denied.json()["code"] == "tenant_access_denied"
+
+    staff = Staff.objects.create(
+        school=school, email="authorized-support@example.invalid", first_name="Authorized",
+        last_name="Support", role_type="SUPPORT", status="ACTIVE",
+    )
+    support = UserAccount.objects.create_user(
+        username="authorized-support", email=staff.email, school=school, staff=staff,
+    )
+    token = build_access_token(
+        user_id=str(support.id), email=support.email, role="SUPPORT", school_id=str(school.id),
+    )
+    _issue_heritage_board_session(settings)
+    support.refresh_from_db()
+    assert support.staff_id == staff.id
+    client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
+    allowed = client.get(route, HTTP_X_SCHOOL_ID=str(foreign.id))
+    assert allowed.status_code == 200, allowed.content
+    assert allowed.json()["id"] == str(household.id)
+
+
+@pytest.mark.parametrize("persona_key,staff_role", [("teacher", "TEACHER"), ("school_admin", "ADMIN")])
+def test_board_renewal_preserves_other_staff_personas(settings, persona_key, staff_role):
+    from sandbox_demo.catalog import SANDBOX_PERSONAS
+    from sandbox_demo.services import ensure_persona_user
+
+    session = _issue_heritage_board_session(settings)
+    school = School.objects.get(pk=session["school_id"])
+    other = ensure_persona_user(school, SANDBOX_PERSONAS[persona_key])
+    staff_id = other.staff_id
+    assert staff_id is not None
+    assert other.staff.role_type == staff_role
+    _issue_heritage_board_session(settings)
+    other.refresh_from_db()
+    assert other.staff_id == staff_id
+    assert other.staff.role_type == staff_role
+
+
 @pytest.mark.parametrize("role_code", ["board_member", "BOARD_MEMBER", "BOARD", "board", "school_board"])
 def test_board_reads_require_current_permission_and_reject_revocation(board_school, role_code):
     board = UserAccount.objects.create_user(
