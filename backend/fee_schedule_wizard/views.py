@@ -12,7 +12,6 @@ fee_schedule_wizard/views.py
 Auth: JWT or Session. All endpoints tenant-scoped via X-School-Id.
 """
 import re
-import logging
 
 from django.db import transaction
 from django.shortcuts import get_object_or_404
@@ -35,7 +34,6 @@ _AUTH = [TenantJWTAuthentication, SessionAuthentication]
 # Every wizard endpoint changes persisted configuration or session state.
 # Even the legacy GET /verify/ marks a session verified, so it requires edit.
 _PERM = [CrownModulePermission("finance.edit", write_code="finance.edit")]
-logger = logging.getLogger(__name__)
 
 VALID_KINDS  = {c[0] for c in FeeLine.KIND_CHOICES}
 VALID_FREQS  = {c[0] for c in FeeLine.FREQ_CHOICES}
@@ -51,35 +49,40 @@ def _get_session(session_id, school_id):
 
 
 def _validate_line(line, idx):
+    """Validate the exact stored representation of a fee line.
+
+    Avoid lossy conversion of fractional cents or truthy string booleans.
+    Database field widths are enforced before any state transition.
+    """
     errors = []
-    code  = (line.get("code")  or "").strip()
-    label = (line.get("label") or "").strip()
+    if not isinstance(line, dict):
+        return [f"lines[{idx}] must be an object"]
 
-    if not code:
-        errors.append(f"lines[{idx}].code is required")
-    elif not _CODE_RE.match(code):
+    code = line.get("code")
+    label = line.get("label")
+    if not isinstance(code, str) or not _CODE_RE.fullmatch(code.strip()):
         errors.append(f"lines[{idx}].code must be alphanumeric/underscore/hyphen, max 32 chars")
+    if not isinstance(label, str) or not 1 <= len(label.strip()) <= 120:
+        errors.append(f"lines[{idx}].label must be a non-empty string, max 120 chars")
 
-    if not label:
-        errors.append(f"lines[{idx}].label is required")
+    amount = line.get("amount_cents")
+    if type(amount) is not int or not 0 <= amount <= 2147483647:
+        errors.append(f"lines[{idx}].amount_cents must be an integer between 0 and 2147483647")
 
-    try:
-        amount = int(line.get("amount_cents", -1))
-        if amount < 0:
-            errors.append(f"lines[{idx}].amount_cents must be a non-negative integer")
-    except (TypeError, ValueError):
-        errors.append(f"lines[{idx}].amount_cents must be an integer (cents)")
-
-    kind = (line.get("kind") or "").strip()
-    if kind and kind not in VALID_KINDS:
+    kind = line.get("kind", FeeLine.KIND_FEE)
+    if not isinstance(kind, str) or kind not in VALID_KINDS:
         errors.append(f"lines[{idx}].kind must be one of: {sorted(VALID_KINDS)}")
 
-    freq = (line.get("frequency") or "").strip()
-    if freq and freq not in VALID_FREQS:
+    frequency = line.get("frequency", FeeLine.FREQ_ANNUAL)
+    if not isinstance(frequency, str) or frequency not in VALID_FREQS:
         errors.append(f"lines[{idx}].frequency must be one of: {sorted(VALID_FREQS)}")
 
+    if type(line.get("is_required", True)) is not bool:
+        errors.append(f"lines[{idx}].is_required must be a boolean")
+    order = line.get("sort_order", idx)
+    if type(order) is not int or not 0 <= order <= 32767:
+        errors.append(f"lines[{idx}].sort_order must be an integer between 0 and 32767")
     return errors
-
 
 # ---------------------------------------------------------------------------
 # 1. Create session
@@ -164,9 +167,9 @@ def set_lines(request, session_id):
         )
 
     lines = request.data.get("lines")
-    if not isinstance(lines, list) or len(lines) == 0:
+    if not isinstance(lines, list) or not 1 <= len(lines) <= 500:
         return Response(
-            {"error": "lines must be a non-empty list"},
+            {"error": "lines must contain between 1 and 500 entries"},
             status=status.HTTP_400_BAD_REQUEST,
         )
 
@@ -179,14 +182,25 @@ def set_lines(request, session_id):
         return Response({"errors": all_errors}, status=status.HTTP_400_BAD_REQUEST)
 
     # Dedup check on code within the submitted batch
-    codes = [l.get("code", "").strip() for l in lines]
+    codes = [l["code"].strip() for l in lines]
     if len(codes) != len(set(codes)):
         return Response(
             {"error": "duplicate codes in lines — each code must be unique within a schedule"},
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    session.lines_config = lines
+    session.lines_config = [
+        {
+            "code": line["code"].strip(),
+            "label": line["label"].strip(),
+            "amount_cents": line["amount_cents"],
+            "kind": line.get("kind", FeeLine.KIND_FEE),
+            "frequency": line.get("frequency", FeeLine.FREQ_ANNUAL),
+            "is_required": line.get("is_required", True),
+            "sort_order": line.get("sort_order", idx),
+        }
+        for idx, line in enumerate(lines)
+    ]
     session.status       = FeeScheduleWizardSession.STATUS_LINES_SET
     session.save()
 
@@ -219,6 +233,20 @@ def commit_session(request, session_id):
         )
 
     with transaction.atomic():
+        # Serialize same-school commits before touching any schedule rows.
+        School.objects.select_for_update().get(pk=school_id)
+        session = FeeScheduleWizardSession.objects.select_for_update().get(
+            pk=session_id, school_id=school_id,
+        )
+        if session.status != FeeScheduleWizardSession.STATUS_LINES_SET:
+            return Response(
+                {"error": "session must be in lines_set state before commit"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        for idx, line in enumerate(session.lines_config):
+            invalid = _validate_line(line, idx)
+            if invalid:
+                return Response({"errors": invalid}, status=status.HTTP_400_BAD_REQUEST)
         schedule, sched_created = FeeSchedule.objects.get_or_create(
             school_id=school_id,
             name=session.schedule_name,
@@ -282,8 +310,7 @@ def commit_session(request, session_id):
         session.status        = FeeScheduleWizardSession.STATUS_COMMITTED
         session.save()
 
-    # Audit log — non-fatal
-    try:
+        # Audit creation is part of the same transaction. Failure rolls back fees.
         AuditLog.objects.create(
             user_id=getattr(request.user, "id", None),
             action="fee_schedule.commit",
@@ -300,9 +327,6 @@ def commit_session(request, session_id):
                 "session_id":       str(session.id),
             },
         )
-    except Exception as exc:
-        logger.warning("fee_schedule.commit audit log skipped: %s", exc)
-
     return Response({"session_id": str(session.id), "status": session.status, "result": result})
 
 
