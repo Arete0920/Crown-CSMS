@@ -22,7 +22,7 @@ from core.models import (
 )
 from aid.models import AidApplication, AidAward
 from finance.models import ChartAccount, JournalBatch
-from core.demo_credentials import configured_demo_password
+from core.demo_credentials import configured_demo_passwords
 from core.demo_seed_safety import require_local_demo_seed, require_local_demo_wipe
 
 
@@ -392,7 +392,7 @@ class Command(BaseCommand):
     def _ensure_directors(self, school: School):
         # Do not create or preserve usable default credentials for public demos.
         # This also retires passwords and superuser grants from legacy seed runs.
-        password = configured_demo_password()
+        passwords = configured_demo_passwords()
 
         def ensure_staff(first, last, email, role_type):
             st, _ = Staff.objects.get_or_create(
@@ -432,6 +432,7 @@ class Command(BaseCommand):
             if ua.is_superuser:
                 ua.is_superuser = False
                 changed.append("is_superuser")
+            password = passwords.get(email)
             if password is None:
                 if ua.has_usable_password():
                     ua.set_unusable_password()
