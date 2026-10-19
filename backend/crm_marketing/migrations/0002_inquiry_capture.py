@@ -24,12 +24,12 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='marketinglead',
             name='attribution_json',
-            field=models.JSONField(blank=True, default=dict),
+            field=models.JSONField(blank=True, db_default={}, default=dict),
         ),
         migrations.AddField(
             model_name='marketinglead',
             name='campus',
-            field=models.CharField(blank=True, default='', max_length=120),
+            field=models.CharField(blank=True, db_default='', default='', max_length=120),
         ),
         migrations.AddField(
             model_name='marketinglead',
@@ -39,7 +39,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='marketinglead',
             name='contact_preference',
-            field=models.CharField(blank=True, default='', max_length=8),
+            field=models.CharField(blank=True, db_default='', default='', max_length=8),
         ),
         migrations.AddField(
             model_name='marketinglead',
@@ -54,27 +54,27 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='marketinglead',
             name='email',
-            field=models.EmailField(blank=True, default='', max_length=254),
+            field=models.EmailField(blank=True, db_default='', default='', max_length=254),
         ),
         migrations.AddField(
             model_name='marketinglead',
             name='entry_year',
-            field=models.CharField(blank=True, default='', max_length=32),
+            field=models.CharField(blank=True, db_default='', default='', max_length=32),
         ),
         migrations.AddField(
             model_name='marketinglead',
             name='family_follow_up_enabled',
-            field=models.BooleanField(default=False),
+            field=models.BooleanField(db_default=False, default=False),
         ),
         migrations.AddField(
             model_name='marketinglead',
             name='follow_up_consent',
-            field=models.BooleanField(default=False),
+            field=models.BooleanField(db_default=False, default=False),
         ),
         migrations.AddField(
             model_name='marketinglead',
             name='grade_interest',
-            field=models.CharField(blank=True, default='', max_length=16),
+            field=models.CharField(blank=True, db_default='', default='', max_length=16),
         ),
         migrations.AddField(
             model_name='marketinglead',
@@ -84,7 +84,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='marketinglead',
             name='intake_payload_digest',
-            field=models.CharField(blank=True, default='', editable=False, max_length=64),
+            field=models.CharField(blank=True, db_default='', default='', editable=False, max_length=64),
         ),
         migrations.AddField(
             model_name='marketinglead',
@@ -94,26 +94,26 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='marketinglead',
             name='parent_name',
-            field=models.CharField(blank=True, default='', max_length=160),
+            field=models.CharField(blank=True, db_default='', default='', max_length=160),
         ),
         migrations.AddField(
             model_name='marketinglead',
             name='phone',
-            field=models.CharField(blank=True, default='', max_length=32),
+            field=models.CharField(blank=True, db_default='', default='', max_length=32),
         ),
         migrations.AddField(
             model_name='marketinglead',
             name='request_type',
-            field=models.CharField(blank=True, default='', max_length=20),
+            field=models.CharField(blank=True, db_default='', default='', max_length=20),
         ),
         migrations.AddField(
             model_name='marketinglead',
             name='response_consent',
-            field=models.BooleanField(default=False),
+            field=models.BooleanField(db_default=False, default=False),
         ),
         migrations.AddField(
             model_name='marketinglead',
             name='submission_receipt',
-            field=models.JSONField(blank=True, default=dict, editable=False),
+            field=models.JSONField(blank=True, db_default={}, default=dict, editable=False),
         ),
     ]

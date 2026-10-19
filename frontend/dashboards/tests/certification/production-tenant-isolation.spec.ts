@@ -98,11 +98,17 @@ test('Heritage Board renewal preserves least privilege and tenant isolation', as
           expect(denied.status(), route).toBe(403);
         }
         for (const foreign of schools) {
-          const cross = await context.get(`${api}/api/signals/board/risk-counts/`, {
-            headers: { ...headers, 'X-School-Id': foreign.school_id },
-          });
-          expect(cross.status()).toBe(404);
-          expect((await cross.json()).code).toBe('tenant_access_denied');
+          for (const route of [
+            '/api/signals/board/risk-counts/',
+            '/api/v1/nav/',
+            '/api/v1/academics/classroom/workspace/?audience=board',
+          ]) {
+            const cross = await context.get(`${api}${route}`, {
+              headers: { ...headers, 'X-School-Id': foreign.school_id },
+            });
+            expect(cross.status(), route).toBe(404);
+            expect((await cross.json()).code).toBe('tenant_access_denied');
+          }
         }
       }
     }
