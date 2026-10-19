@@ -3,7 +3,7 @@ Academic services: grade calculation, mastery tracking, transcript generation.
 """
 from __future__ import annotations
 
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from django.utils import timezone
 from django.db import transaction
 
@@ -26,9 +26,19 @@ def percentage_to_letter(pct: Decimal) -> str:
 
 def compute_percentage(numeric_score: Decimal, points_possible: Decimal) -> Decimal:
     """Calculate percentage score."""
-    if points_possible <= 0:
-        return Decimal("0.00")
-    return (numeric_score / points_possible) * Decimal("100.00")
+    try:
+        score = Decimal(str(numeric_score))
+        possible = Decimal(str(points_possible))
+    except (InvalidOperation, TypeError, ValueError) as exc:
+        raise ValueError("Grades must contain finite numeric values.") from exc
+    if not score.is_finite() or score < 0:
+        raise ValueError("Grade scores must be finite and non-negative.")
+    if not possible.is_finite() or possible <= 0:
+        raise ValueError("Assignment points_possible must be finite and positive.")
+    percentage = score / possible * Decimal("100.00")
+    if percentage > Decimal("9999.99"):
+        raise ValueError("Grade percentage exceeds the supported range.")
+    return percentage
 
 
 @transaction.atomic
