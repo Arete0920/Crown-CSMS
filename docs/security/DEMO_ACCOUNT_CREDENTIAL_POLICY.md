@@ -84,3 +84,17 @@ account secrets and refuses incomplete, weak, malformed, or repeated values
 before database writes. Where credentials are absent, seeding disables password
 login. This change requires exact-head test acceptance and a disposable Heritage
 rehearsal before being treated as operationally certified.
+
+## Retired full-database reset wrapper
+
+`scripts/ops/PRE_DEMO_RESET_AND_SEED.ps1` is intentionally disabled.
+Its historical `manage.py flush --noinput` could erase all records from an
+operator-selected database; host-name checks alone were not sufficient.
+
+`tools/demo_reset_smoke.ps1` now requires explicit operator-provided
+`CROWN_ENV=local`, `CROWN_ALLOW_DEMO_WIPE=true`, an isolated SQLite
+`DATABASE_URL`, an exact `-HeritageSchoolId` UUID, and the
+`-ConfirmDemoWipe` switch. It refuses hosted/production environment markers.
+It does not manufacture its own wipe authorization. The backend still checks
+single-school ownership and rejects cross-school activity independently.
+No customer or production database should ever be used for this procedure.
