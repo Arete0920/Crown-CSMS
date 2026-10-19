@@ -55,6 +55,7 @@ CANONICAL_WORKFLOW_FILES = {
     "deploy-dev.yml",
     "deploy-prod-dispatch.yml",
     "deploy-prod.yml",
+    "dev-blacklist-database-inventory.yml",
     "dev-smoke.yml",
     "finance-final-hardening.yml",
     "heritage-windows-rehearsal.yml",
