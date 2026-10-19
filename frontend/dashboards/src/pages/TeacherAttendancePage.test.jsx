@@ -66,6 +66,7 @@ beforeEach(() => {
     if (action === "roster") return response({ students: ROSTERS[sectionId] });
     expect(options.method).toBe("POST");
     const payload = JSON.parse(options.body);
+    expect(payload.expected_school_today).toBe(TODAY);
     writes.push({ sectionId, ...payload });
     saved[sectionId] = Object.fromEntries(payload.items.map((item) => [item.student_id, item.status.toUpperCase()]));
     return response({ created: 1, updated: 0, date: payload.date });
@@ -82,7 +83,7 @@ it("restores saved attendance after the page is recreated", async () => {
   fireEvent.change(statusControl(), { target: { value: "absent" } });
   fireEvent.click(screen.getByRole("button", { name: "Submit Attendance" }));
   await screen.findByText(/Saved: created=1/);
-  expect(writes).toEqual([{ sectionId: "section-a", date: TODAY, items: [{ student_id: "student-a", status: "absent" }] }]);
+  expect(writes).toEqual([{ sectionId: "section-a", date: TODAY, expected_school_today: TODAY, items: [{ student_id: "student-a", status: "absent" }] }]);
   first.unmount();
 
   render(<TeacherAttendancePage />);
