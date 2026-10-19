@@ -197,7 +197,7 @@ def test_authority_conflict_rolls_back_all_partial_writes(heritage_year):
     assert not Term.objects.exists()
     assert Course.objects.count() == 1
     assert Section.objects.count() == 1
-    assert Section.objects.get(id=conflict_id).term == "UNRELATED"
+    assert Section.objects.get(id=conflict_id, school_id=school.id).term == "UNRELATED"
 
 
 @pytest.mark.parametrize(
