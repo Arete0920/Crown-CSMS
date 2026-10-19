@@ -26,3 +26,8 @@ class CrownUser(models.Model):
 
     def __str__(self) -> str:
         return f"{self.email} ({self.role})"
+
+
+class ConsumedCrownRefreshToken(models.Model):
+    token_id = models.CharField(max_length=128, primary_key=True)
+    consumed_at = models.DateTimeField(auto_now_add=True)

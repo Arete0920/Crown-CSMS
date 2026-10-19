@@ -3,6 +3,7 @@ import base64
 import hashlib
 import hmac
 import json
+import secrets
 import time
 from dataclasses import dataclass
 from typing import Any, Dict, Optional
@@ -89,19 +90,35 @@ def build_access_token(*, user_id: str, email: str, role: str, school_id: Option
 
 
 def build_refresh_token(*, user_id: str, ttl_seconds: int = 60 * 60 * 24 * 7) -> str:
-    """
-    Stateless refresh token (phase 1). No server-side revocation yet.
-    """
     iat = _now()
     payload = {
         "typ": "refresh",
         "sub": user_id,
+        "jti": secrets.token_urlsafe(32),
         "iat": iat,
         "exp": iat + int(ttl_seconds),
     }
     # refresh secret derived from SECRET_KEY (separate signing key)
     secret = settings.SECRET_KEY + "|refresh"
     return encode_jwt(payload, secret=secret)
+
+
+def refresh_token_identifier(token: str, payload: Dict[str, Any]) -> Optional[str]:
+    """Return a unique token ID, or a keyed fingerprint for pre-jti tokens."""
+    if "jti" in payload:
+        token_id = payload["jti"]
+        if (
+            not isinstance(token_id, str)
+            or not token_id
+            or token_id != token_id.strip()
+            or len(token_id) > 128
+        ):
+            return None
+        return token_id
+
+    secret = (settings.SECRET_KEY + "|refresh").encode("utf-8")
+    fingerprint = hmac.new(secret, token.encode("utf-8"), hashlib.sha256).hexdigest()
+    return f"legacy:{fingerprint}"
 
 
 def decode_access(token: str) -> JwtDecodeResult:

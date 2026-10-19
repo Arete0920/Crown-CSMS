@@ -1,12 +1,14 @@
 # backend/crown_api/auth_views.py
+import time
 import uuid
 
 from django.http import JsonResponse
 from django.views.decorators.http import require_GET, require_POST
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.hashers import check_password, make_password
+from django.db import DatabaseError, IntegrityError, transaction
 
-from crown_api.auth_models import CrownUser
+from crown_api.auth_models import ConsumedCrownRefreshToken, CrownUser
 from crown_api.auth_middleware import require_auth
 from crown_api.auth_rate_limit import (
     AuthRateLimitBackendUnavailable,
@@ -14,7 +16,12 @@ from crown_api.auth_rate_limit import (
     clear_auth_identity_failures,
     record_auth_failure,
 )
-from crown_api.jwt_utils import build_access_token, build_refresh_token, decode_refresh
+from crown_api.jwt_utils import (
+    build_access_token,
+    build_refresh_token,
+    decode_refresh,
+    refresh_token_identifier,
+)
 from crown_api.request_parsing import parse_json_object
 
 
@@ -42,6 +49,15 @@ def _record_failure_or_unavailable(request, *, scope, identity):
     except AuthRateLimitBackendUnavailable:
         return _rate_limit_unavailable()
     return None
+
+
+def _consume_refresh_token(token_id):
+    try:
+        with transaction.atomic():
+            ConsumedCrownRefreshToken.objects.create(token_id=token_id)
+    except IntegrityError:
+        return False
+    return True
 
 
 @csrf_exempt
@@ -125,7 +141,12 @@ def refresh(request):
             return unavailable
         return JsonResponse({"ok": False, "error": "invalid_refresh"}, status=401)
 
-    if res.payload.get("typ") != "refresh":
+    if (
+        res.payload.get("typ") != "refresh"
+        or not isinstance(res.payload.get("exp"), int)
+        or isinstance(res.payload.get("exp"), bool)
+        or res.payload["exp"] <= int(time.time())
+    ):
         unavailable = _record_failure_or_unavailable(
             request, scope="crown-refresh", identity=token,
         )
@@ -136,7 +157,7 @@ def refresh(request):
     user_id = res.payload.get("sub")
     try:
         user_uuid = uuid.UUID(str(user_id))
-    except Exception:
+    except (TypeError, ValueError):
         unavailable = _record_failure_or_unavailable(
             request, scope="crown-refresh", identity=token,
         )
@@ -144,7 +165,10 @@ def refresh(request):
             return unavailable
         return JsonResponse({"ok": False, "error": "invalid_refresh"}, status=401)
 
-    user = CrownUser.objects.filter(pk=user_uuid, is_active=True).first()
+    try:
+        user = CrownUser.objects.filter(pk=user_uuid, is_active=True).first()
+    except DatabaseError:
+        return _rate_limit_unavailable()
     if not user:
         unavailable = _record_failure_or_unavailable(
             request, scope="crown-refresh", identity=token,
@@ -152,6 +176,26 @@ def refresh(request):
         if unavailable is not None:
             return unavailable
         return JsonResponse({"ok": False, "error": "invalid_refresh"}, status=401)
+
+    token_id = refresh_token_identifier(token, res.payload)
+    if token_id is None:
+        unavailable = _record_failure_or_unavailable(
+            request, scope="crown-refresh", identity=token,
+        )
+        if unavailable is not None:
+            return unavailable
+        return JsonResponse({"ok": False, "error": "invalid_refresh"}, status=401)
+
+    try:
+        if not _consume_refresh_token(token_id):
+            unavailable = _record_failure_or_unavailable(
+                request, scope="crown-refresh", identity=token,
+            )
+            if unavailable is not None:
+                return unavailable
+            return JsonResponse({"ok": False, "error": "invalid_refresh"}, status=401)
+    except DatabaseError:
+        return _rate_limit_unavailable()
 
     clear_auth_identity_failures(request, scope="crown-refresh", identity=token)
     access = build_access_token(
@@ -161,7 +205,8 @@ def refresh(request):
         school_id=str(user.school_id) if user.school_id else None,
         ttl_seconds=900,
     )
-    return JsonResponse({"ok": True, "access": access})
+    refresh = build_refresh_token(user_id=str(user.id), ttl_seconds=60 * 60 * 24 * 7)
+    return JsonResponse({"ok": True, "access": access, "refresh": refresh})
 
 
 @require_GET
