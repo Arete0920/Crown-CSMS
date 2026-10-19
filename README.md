@@ -1,6 +1,6 @@
 # CROWN
 
-**Christian School Management Solution**
+Christian School Management Solution
 
 CROWN is a multi-tenant school management platform for Christian schools. The codebase covers admissions and enrollment, family and student records, academics and gradebook, billing and financial aid, communications, and school operations. School-scoped data and role-based permissions are core design requirements.
 
@@ -32,7 +32,7 @@ python backend/manage.py migrate
 python backend/manage.py runserver 127.0.0.1:8000 --noreload
 ```
 
-On Windows, activate the environment with `.venv\Scripts\Activate.ps1`. Do not use production credentials or databases for local work.
+On Windows, activate the environment with `.\.venv\Scripts\Activate.ps1`. Do not use production credentials or databases for local work.
 
 In a separate terminal, start the dashboard:
 
