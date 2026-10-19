@@ -1,14 +1,15 @@
 # ADR-0006: CROWN CRM Relationship Center Domain Boundaries
 
-**Status:** PROPOSED — design review required; not accepted architecture authority
+**Status:** ACCEPTED BY PRODUCT-OWNER DIRECTION; EFFECTIVE ON GOVERNED INDEXED MERGE
 **Date:** 2026-10-19
 **Repository:** Arete0920/Crown-CSMS
 **Inspected accepted-main baseline:** 433aa0b6cb54c3b5a86f50f5f3137c46ebb12940
 **Product owner:** CROWN Product Owner
+**Approval record:** Owner's October 19, 2026 direction to proceed with the documented CRM architecture and sequenced implementation; formal code, deployment, privacy and operational approvals remain separate. The accepted ADR takes effect only if this exact indexed PR passes applicable checks and is merged.
 **Implementation status:** DESIGN ONLY; no schema, application, worker, provider, or deployment change
 **Supersedes:** None
 
-> This proposal is deliberately absent from the accepted ADR index. It becomes authoritative only through the repository's existing ADR acceptance, review, and index-update process. Source inspection is not deployed-runtime certification.
+> This ADR is submitted for canonical admission in the same governed pull request that adds its accepted-index entry. Until merged, the accepted main index remains unchanged and this branch is only proposed authority. Source inspection is not deployed-runtime certification.
 
 ## Context and problem
 
@@ -147,7 +148,7 @@ Costs: temporary compatibility adapters; provenance-aware linking; careful tenan
 
 ## Decision and acceptance dependencies
 
-1. Approve this proposed ADR using governed review; add ADR-0006 to DECISION_INDEX.md only at acceptance.
+1. Admit this owner-directed ADR through the governed PR and same-commit accepted-index update. Before merge it is not canonical main authority.
 2. Complete the detailed [Phase-0 gap and delivery specification](../../product/CROWN_CRM_RELATIONSHIP_CENTER_PHASE0_20261019.md).
 3. Validate or disposition draft PR #353 independently; do not conflate correction with new CRM feature PRs.
 4. Approve contact/group identity linkage and consent purposes before any additive migration or live send.
@@ -155,4 +156,4 @@ Costs: temporary compatibility adapters; provenance-aware linking; careful tenan
 
 ## Verification and rollback rule
 
-This is a documentation proposal only. No migrations, queues, notifications, integrations, production resources or tenant data have changed. If rejected, close/revert the design PR without operational rollback. No accepted architecture authority or completion can be inferred until review and the corresponding index update are merged.
+This is a documentation-only architecture decision; no migrations, queues, notifications, integrations, production resources or tenant data have changed. If rejected, close/revert the design PR without operational rollback. Acceptance of these domain boundaries is not approval of any unverified code, migration, outbound communication, paid service, deployment, or live operating posture. ADR authority begins only after the reviewed, indexed PR merges with the applicable protected checks passing.
