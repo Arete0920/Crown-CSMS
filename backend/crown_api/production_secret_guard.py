@@ -7,7 +7,7 @@ import sys
 from django.core.exceptions import ImproperlyConfigured
 
 _TRUE_VALUES = {"1", "true", "yes", "on"}
-_HARDENED_ENVS = {"sandbox", "staging", "production", "prod"}
+_HARDENED_ENVS = {"sandbox", "staging", "production", "prod", "live"}
 
 
 def _is_hardened_context(argv: list[str] | None = None) -> bool:
@@ -15,6 +15,7 @@ def _is_hardened_context(argv: list[str] | None = None) -> bool:
     crown_env = os.getenv("CROWN_ENV", "").strip().lower()
     django_env = os.getenv("DJANGO_ENV", "").strip().lower()
     environment = os.getenv("ENVIRONMENT", "").strip().lower()
+    azure_environment = os.getenv("AZURE_ENVIRONMENT", "").strip().lower()
     deploy_security = os.getenv("CROWN_DEPLOY_SECURITY", "").strip().lower() in _TRUE_VALUES
     azure_runtime = bool(os.getenv("WEBSITE_HOSTNAME") or os.getenv("WEBSITE_INSTANCE_ID"))
     deploy_check = "--deploy" in args
@@ -23,6 +24,7 @@ def _is_hardened_context(argv: list[str] | None = None) -> bool:
         or crown_env in _HARDENED_ENVS
         or django_env in _HARDENED_ENVS
         or environment in _HARDENED_ENVS
+        or azure_environment in _HARDENED_ENVS
         or azure_runtime
         or deploy_check
     )
