@@ -184,6 +184,7 @@ jobs:
         run: >-
           python -m pytest -q backend/tests/test_survey_intelligence_*.py
           backend/tests/test_survey_collection_postgresql.py
+          backend/crown_api/tests/test_refresh_blacklist_rotation.py
           --junitxml=survey-postgresql-junit.xml
       - name: Preserve PostgreSQL test evidence
         if: always()
