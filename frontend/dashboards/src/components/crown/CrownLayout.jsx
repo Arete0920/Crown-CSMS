@@ -150,7 +150,7 @@ export default function CrownLayout({ title, subtitle, right, children, mainClas
         type="button"
         className="crown-sidebar-toggle"
         onClick={() => setSidebarOpen((v) => !v)}
-        aria-label="Toggle navigation"
+        aria-label="Menu — toggle navigation"
       >
         Menu
       </button>
