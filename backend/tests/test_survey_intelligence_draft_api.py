@@ -202,3 +202,16 @@ def test_ambiguous_and_unsafe_draft_choices_denied(school_client, bad_choice):
     result = request(client, school, data)
     assert result.status_code == 400
     assert not SurveyDefinition.objects.exists()
+
+
+def test_excessively_nested_json_returns_validation_error(school_client):
+    client, school, _ = school_client
+    body = '{"name":"Parent Communication","purpose":"parent_pulse","questions":' + "[" * 1500 + "0" + "]" * 1500 + "}"
+    response = client.post(
+        "/api/v1/survey-intelligence/surveys/",
+        data=body, content_type="application/json",
+        HTTP_X_SCHOOL_ID=str(school.pk),
+    )
+    assert response.status_code == 400
+    assert not SurveyDefinition.objects.exists()
+    assert not SurveyQuestion.objects.exists()
