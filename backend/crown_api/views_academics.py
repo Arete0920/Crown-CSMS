@@ -159,6 +159,21 @@ def section_attendance_submit(request, section_id):
     else:
         day = timezone.localdate()
 
+    # Opt-in school-day compare-and-swap for the teacher UI. Historical callers
+    # retain their current payload contract until they adopt this safeguard.
+    expected_school_today = payload.get("expected_school_today")
+    if expected_school_today is not None:
+        from academics.operations_views import school_local_date
+
+        actual_school_today = school_local_date(school_id).isoformat()
+        if (not isinstance(expected_school_today, str)
+                or expected_school_today != actual_school_today
+                or str(day) != actual_school_today):
+            return Response(
+                {"detail": "The school day changed. Reload attendance before saving."},
+                status=409,
+            )
+
     valid_statuses = {"PRESENT", "ABSENT", "TARDY", "EXCUSED"}
     prepared = []
 
