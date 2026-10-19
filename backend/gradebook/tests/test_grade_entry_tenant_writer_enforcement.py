@@ -287,3 +287,17 @@ def test_grade_entry_bulk_upsert_cannot_bypass_clean():
             unique_fields=["id"],
         )
     assert GradeEntry.objects.count() == 0
+
+
+def test_grade_entry_bulk_update_allows_non_authority_timestamp():
+    """Unprotected maintenance fields remain available to Django bulk_update."""
+    from django.utils import timezone
+
+    school, section, assignment, student = _school_graph("Alpha")
+    grade = GradeEntry.objects.create(
+        school_id=school.id, section=section, student=student,
+        assignment=assignment, assignment_name="Exam",
+        points_earned=95, points_possible=100,
+    )
+    grade.updated_at = timezone.now()
+    assert GradeEntry.objects.bulk_update([grade], ["updated_at"]) == 1
