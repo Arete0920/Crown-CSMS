@@ -1,58 +1,85 @@
 # CROWN
 
-Christian School Management Solution
+**Christian School Management Solution**
 
-## Current posture
+CROWN is a multi-tenant school management platform for Christian schools. The codebase covers admissions and enrollment, family and student records, academics and gradebook, billing and financial aid, communications, and school operations. School-scoped data and role-based permissions are core design requirements.
 
-CROWN is maintained under controlled software-engineering and release-management practices. The exact current release posture is governed by [docs/CURRENT_RELEASE_STATUS.md](docs/CURRENT_RELEASE_STATUS.md) and the exact repository head being evaluated.
+This repository contains application code, tests, and operational documentation. A module's presence in source does not establish that it is deployed or available to schools. For current release and operational status, see [Current Release Status](docs/CURRENT_RELEASE_STATUS.md).
 
-- Product and repository engineering baseline: established
-- Security and dependency controls: enforced through CI and review gates
-- Current release identity: exact Git/GitHub source at the decision point
-- Production deployment/runtime identity: environment-specific and separately verified
-- Payment processing: disabled until provider selection, contracting, implementation, and provider-specific certification are complete
+## Repository layout
 
-## Start here
+| Path | Responsibility |
+| --- | --- |
+| `backend/` | Django and Django REST Framework API, domain services, and data models |
+| `frontend/dashboards/` | React and Vite interfaces for school and family workflows |
+| `tests/` | Cross-cutting automated tests |
+| `docs/` | Architecture, developer guidance, release controls, and operations |
+| `.github/workflows/` | Continuous integration, security checks, and governed release workflows |
+| `infra/`, `scripts/` | Infrastructure definitions and supporting utilities |
 
-1. [Investor Technical Review Guide](docs/INVESTOR_TECHNICAL_REVIEW_GUIDE.md)
-2. [Current Release Status](docs/CURRENT_RELEASE_STATUS.md)
-3. [Canonical Document Index](docs/canonical/CANONICAL_DOCUMENT_INDEX.md)
-4. [Diligence and Evidence Index](docs/canonical/DILIGENCE_EVIDENCE_INDEX.md)
-5. [Architecture Map](docs/architecture/ARCHITECTURE_MAP.md)
-6. [Developer Setup](docs/engineering/DEV_SETUP.md)
-7. [Engineering Accountability Policy](docs/engineering/ENGINEERING_ACCOUNTABILITY_POLICY.md)
-8. [Code Quality Standard](docs/engineering/CODE_QUALITY_AND_REPOSITORY_HYGIENE_STANDARD.md)
-9. [Operations](docs/operations/README.md)
-10. [Owner Handoff](docs/ownership/OWNER_HANDOFF.md)
-11. [Known Limitations](docs/KNOWN_LIMITATIONS.md)
-12. [Security Policy](SECURITY.md)
-13. [Repository Administration Baseline](docs/governance/GITHUB_REPOSITORY_ADMINISTRATION_BASELINE.md)
-14. [Versioning and Release Policy](docs/engineering/VERSIONING_AND_RELEASE_POLICY.md)
-15. [CI Architecture](docs/engineering/CI_ARCHITECTURE.md)
-16. [Public Repository Licensing Decision](docs/governance/PUBLIC_REPOSITORY_LICENSING_DECISION.md)
-17. [School Implementation Runbook](docs/operations/SCHOOL_IMPLEMENTATION_RUNBOOK.md)
+## Local development
 
-## Authority and claim boundary
+Use Python **3.12** and Node.js **22.23.3** (the version in `.nvmrc`). PostgreSQL is the production-oriented database; Django defaults to SQLite for local development when `DATABASE_URL` is unset. Review [the development environment example](.env.example) before configuring optional services. Keep local credentials and school data out of version control.
 
-Current claims must be supported by current repository evidence, exact-head CI results, retained artifacts, and environment-specific runtime evidence where applicable. Historical commits, tags, workflow runs, pull requests, issues, and predecessor documents remain provenance rather than current operating authority.
+From the repository root, set up and start the API:
 
-## Supported development toolchain
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r backend/requirements.txt
+python backend/manage.py check
+python backend/manage.py runserver 127.0.0.1:8000 --noreload
+```
 
-- Python 3.12
-- Node.js 22.23.3 (see `.nvmrc`; Node 24.15+ is also supported by the dashboards)
+On Windows, activate the environment with `.venv\Scripts\Activate.ps1`. A new local database needs the applicable migrations before data-backed workflows can be used. Check the database target before applying migrations; do not use production credentials for local work.
 
-See [Developer Setup](docs/engineering/DEV_SETUP.md) for the reproducible local workflow.
+In a separate terminal, start the dashboard:
 
-## Repository standards
+```bash
+cd frontend/dashboards
+npm ci
+npm run dev
+```
 
-Use one pull request per coherent, independently reversible outcome. Record the exact base and head, scope, validation, limitations, decision owner, and rollback action. Review changed lines against current repository truth and trace failures to their source before changing code or documentation.
+The dashboard runs on port **3000** and proxies `/api` requests to the local API on port **8000** by default. Authenticated workflows also require synthetic school, user, and role data. See [Developer Setup](docs/engineering/DEV_SETUP.md) for the supported workflow and additional checks.
 
-Automated tests, static analysis, security scans, dependency audits, and other CI checks are engineering evidence. Human owners remain responsible for architectural decisions, business rules, acceptance decisions, and release authority.
+## Validation
 
-Never commit secrets, production data, private certificates, confidential communications, payment credentials, copied conversations, or generated proof dumps. Sandbox data must be synthetic and clearly labeled.
+Run focused checks before opening a pull request. The standard local baseline is:
 
-## Ownership and contribution records
+```bash
+pytest backend -m "not integration and not slow"
+```
 
-CROWN was created and directed by TC Megahan. Contributor and collaborator attribution must follow durable repository evidence and the current contribution ledger; general early involvement must not be converted into unsupported claims about specific work.
+From `frontend/dashboards/`:
 
-Detailed engineering-accountability and attribution records are governed by the [Engineering Accountability Policy](docs/engineering/ENGINEERING_ACCOUNTABILITY_POLICY.md) and the [Contribution Evidence Ledger](docs/engineering/CONTRIBUTION_EVIDENCE_LEDGER.md).
+```bash
+npm run lint
+npm run test:unit
+npm run test:contracts
+npm run build
+```
+
+These commands do not replace the full CI, security, schema, tenant-isolation, and release checks. A change is reviewed and merged against its exact commit; deployment and runtime acceptance are verified separately.
+
+## Engineering and operating standards
+
+CROWN uses a single application platform with explicit school isolation, domain ownership, and authorization boundaries. Changes are made in scoped branches and reviewed through pull requests. Use synthetic records in development and testing. Never commit credentials, private school records, database dumps, or production configuration.
+
+External integrations require their own configuration and verification. Payment processing is disabled pending the applicable contracting, integration, and operational authorization.
+
+Key references:
+
+- [Architecture Map](docs/architecture/ARCHITECTURE_MAP.md)
+- [Current Release Status](docs/CURRENT_RELEASE_STATUS.md)
+- [Known Limitations](docs/KNOWN_LIMITATIONS.md)
+- [Contributing](CONTRIBUTING.md)
+- [Security Policy](SECURITY.md)
+- [Operations Documentation](docs/operations/README.md)
+- [Canonical Document Index](docs/canonical/CANONICAL_DOCUMENT_INDEX.md)
+
+## Ownership and license
+
+CROWN was created and is directed by TC Megahan. Specific contributor attribution follows the repository's [engineering accountability policy](docs/engineering/ENGINEERING_ACCOUNTABILITY_POLICY.md).
+
+This repository is publicly accessible but is **not distributed under an open-source license**. See the [Public Repository Licensing Decision](docs/governance/PUBLIC_REPOSITORY_LICENSING_DECISION.md). Public visibility does not grant additional use, modification, or redistribution rights.
