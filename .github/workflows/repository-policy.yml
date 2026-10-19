@@ -51,7 +51,7 @@ jobs:
       - name: Enforce repository identity and naming hygiene
         run: |
           python tools/tests/test_repository_identity_hygiene.py
-          python scripts/ci/repository_identity_hygiene.py
+          python scripts/ci/repository_identity_hygiene.py --review-style
 
       - name: Run pull-request hygiene
         if: github.event_name == 'pull_request'
