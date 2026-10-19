@@ -190,7 +190,15 @@ def test_family_stage_does_not_inherit_foreign_school_enrollment_evidence():
     application = Application.objects.create(school_id=school.id, household=household, status="SUBMITTED")
     foreign_application = Application.objects.create(school_id=other.id, household=foreign_household, status="SUBMITTED")
     lead = MarketingLead.objects.create(school=school, application=application, stage=LeadStage.APPLICATION_SUBMITTED)
-    lead.applications.add(application, foreign_application)
+    # The canonical M2M tenant guard must reject the foreign-school relation.
+    # Do not bypass it merely to construct a fixture for CRM isolation tests.
+    from django.core.exceptions import ValidationError
+
+    lead.applications.add(application)
+    with pytest.raises(ValidationError, match="Implicit M2M records must belong to the same tenant"):
+        lead.applications.add(foreign_application)
+    assert not lead.applications.filter(pk=foreign_application.pk).exists()
+
     ApplicationEvent.objects.create(
         school_id=other.id, application=foreign_application, event_type="enrollment_confirmed",
     )
