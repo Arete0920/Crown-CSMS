@@ -44,8 +44,11 @@ _CODE_RE     = re.compile(r'^[A-Za-z0-9_-]{1,32}$')
 # Helpers
 # ---------------------------------------------------------------------------
 
-def _get_session(session_id, school_id):
-    return get_object_or_404(FeeScheduleWizardSession, id=session_id, school_id=school_id)
+def _get_session(session_id, school_id, *, for_update=False):
+    queryset = FeeScheduleWizardSession.objects
+    if for_update:
+        queryset = queryset.select_for_update()
+    return get_object_or_404(queryset, id=session_id, school_id=school_id)
 
 
 def _validate_line(line, idx):
@@ -113,9 +116,12 @@ def create_session(request):
 @api_view(["POST"])
 @authentication_classes(_AUTH)
 @permission_classes(_PERM)
+@transaction.atomic
 def configure_session(request, session_id):
     school_id = get_request_school_id(request)
-    session   = _get_session(session_id, school_id)
+    # Match the commit lock order to prevent stale edits and state rollback.
+    School.objects.select_for_update().get(pk=school_id)
+    session = _get_session(session_id, school_id, for_update=True)
 
     if session.status in {
         FeeScheduleWizardSession.STATUS_COMMITTED,
@@ -175,9 +181,12 @@ def configure_session(request, session_id):
 @api_view(["POST"])
 @authentication_classes(_AUTH)
 @permission_classes(_PERM)
+@transaction.atomic
 def set_lines(request, session_id):
     school_id = get_request_school_id(request)
-    session   = _get_session(session_id, school_id)
+    # Match the commit lock order to prevent stale edits and state rollback.
+    School.objects.select_for_update().get(pk=school_id)
+    session = _get_session(session_id, school_id, for_update=True)
 
     if session.status not in {
         FeeScheduleWizardSession.STATUS_CONFIGURED,
@@ -373,9 +382,12 @@ def commit_session(request, session_id):
 @api_view(["GET"])
 @authentication_classes(_AUTH)
 @permission_classes(_PERM)
+@transaction.atomic
 def verify_session(request, session_id):
     school_id = get_request_school_id(request)
-    session   = _get_session(session_id, school_id)
+    # Match the commit lock order to prevent stale edits and state rollback.
+    School.objects.select_for_update().get(pk=school_id)
+    session = _get_session(session_id, school_id, for_update=True)
 
     if session.status != FeeScheduleWizardSession.STATUS_COMMITTED:
         return Response(
