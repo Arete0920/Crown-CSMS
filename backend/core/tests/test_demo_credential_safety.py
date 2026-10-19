@@ -312,3 +312,54 @@ def test_realism_pack_temporarily_binds_only_verified_heritage_school(monkeypatc
         with _bound_scheduling_school_id(school_id):
             pass
     assert os.environ["CROWN_LEGACY_SCHEDULING_SCHOOL_ID"] != school_id
+
+
+@pytest.mark.django_db
+def test_seed_refuses_customer_school_before_writes(monkeypatch):
+    School.objects.create(name="Customer Academy")
+    with pytest.raises(CommandError, match="isolated single-school"):
+        call_command("seed_demo_school", students=1)
+    assert not School.objects.filter(name="Heritage Christian Academy").exists()
+
+
+@pytest.mark.django_db
+def test_seed_refuses_arbitrary_named_school(monkeypatch):
+    with pytest.raises(CommandError, match="restricted to Heritage"):
+        call_command("seed_demo_school", school_name="Customer Academy", students=1)
+    assert not School.objects.exists()
+
+
+@pytest.mark.django_db
+def test_demo_wipe_requires_exact_existing_school_uuid(monkeypatch):
+    monkeypatch.setenv("CROWN_ALLOW_DEMO_WIPE", "true")
+    school = School.objects.create(name="Heritage Christian Academy")
+    with pytest.raises(CommandError, match="--school-id"):
+        call_command("seed_demo_school", wipe=True, confirm_demo_wipe=True)
+    with pytest.raises(CommandError, match="exact existing Heritage"):
+        call_command(
+            "seed_demo_school", wipe=True, confirm_demo_wipe=True,
+            school_id="00000000-0000-4000-8000-000000000000",
+        )
+    assert School.objects.filter(pk=school.pk).exists()
+
+
+@pytest.mark.django_db
+def test_demo_wipe_preserves_foreign_school_audit_events(monkeypatch):
+    from financial_aid.models import AidAuditEvent
+
+    monkeypatch.setenv("CROWN_ALLOW_DEMO_WIPE", "true")
+    heritage = School.objects.create(name="Heritage Christian Academy")
+    foreign = School.objects.create(name="Customer Academy")
+    demo_user = UserAccount.objects.create_user(
+        username="demo-only", email="demo-only@example.invalid",
+        school=heritage, password="fixture-only-password",
+    )
+    event = AidAuditEvent.objects.create(
+        school_id=foreign.pk, event_type="TEST", entity_type="TEST",
+        entity_id=heritage.pk, actor_user_id=demo_user.pk,
+    )
+    from core.management.commands.seed_demo_school import Command as Seed
+    with pytest.raises(CommandError, match="cross-school audit"):
+        Seed()._wipe_school(heritage)
+    assert AidAuditEvent.objects.filter(pk=event.pk).exists()
+    assert UserAccount.objects.filter(pk=demo_user.pk).exists()
