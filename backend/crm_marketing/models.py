@@ -116,3 +116,179 @@ class CampaignTouchpoint(models.Model):
     class Meta:
         indexes = [models.Index(fields=["school", "occurred_at"]), models.Index(fields=["campaign", "occurred_at"])]
         ordering = ["-occurred_at"]
+
+
+# Prospective relationship records are intentionally separate from Core household,
+# guardian and student identities. These models do not grant portal access.
+class _CRMProspectScopeGuard(models.Model):
+    """Fail closed on cross-school relations in normal ORM writes.
+
+    All application services must also scope reads/writes; bulk operations and
+    raw SQL bypass Django model validation and require separate controls.
+    """
+
+    school_relations = ()
+
+    class Meta:
+        abstract = True
+
+    def clean(self):
+        super().clean()
+        for field in self.school_relations:
+            if getattr(self, f"{field}_id", None) is None:
+                continue
+            related = getattr(self, field)
+            if related.school_id != self.school_id:
+                from django.core.exceptions import ValidationError
+
+                raise ValidationError({field: "Related record must belong to this school."})
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        return super().save(*args, **kwargs)
+
+
+class ProspectContact(_CRMProspectScopeGuard):
+    """An unverified adult contact; not a Core guardian or account."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    school = models.ForeignKey(
+        "core.School", on_delete=models.CASCADE, related_name="crm_prospect_contacts",
+    )
+    display_name = models.CharField(max_length=160)
+    email = models.EmailField(blank=True, default="")
+    phone = models.CharField(max_length=32, blank=True, default="")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def clean(self):
+        self.display_name = (self.display_name or "").strip()
+        self.email = (self.email or "").strip().lower()
+        self.phone = (self.phone or "").strip()
+        super().clean()
+
+    class Meta:
+        indexes = [models.Index(fields=["school", "email"], name="crm_pc_school_email_idx")]
+        ordering = ["-created_at", "id"]
+
+
+class ProspectGroup(_CRMProspectScopeGuard):
+    """School-owned prospect grouping; never a canonical Core family."""
+
+    school_relations = ("lead",)
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    school = models.ForeignKey(
+        "core.School", on_delete=models.CASCADE, related_name="crm_prospect_groups",
+    )
+    label = models.CharField(max_length=160)
+    lead = models.ForeignKey(
+        MarketingLead, null=True, blank=True, on_delete=models.SET_NULL,
+        related_name="prospect_groups",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def clean(self):
+        self.label = (self.label or "").strip()
+        super().clean()
+
+    class Meta:
+        indexes = [models.Index(fields=["school", "created_at"], name="crm_pg_school_created_idx")]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["school", "lead"],
+                condition=models.Q(lead__isnull=False),
+                name="crm_pg_unique_school_lead",
+            ),
+        ]
+        ordering = ["-created_at", "id"]
+
+
+class ProspectGroupMember(_CRMProspectScopeGuard):
+    """CRM participation only; role is not custody or parent-portal authority."""
+
+    school_relations = ("group", "contact")
+
+    class Role(models.TextChoices):
+        PROSPECTIVE_PARENT = "prospective_parent", "Prospective parent"
+        OTHER_ADULT = "other_adult", "Other adult"
+        CONTACT = "contact", "Contact"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    school = models.ForeignKey(
+        "core.School", on_delete=models.CASCADE, related_name="crm_prospect_group_members",
+    )
+    group = models.ForeignKey(
+        ProspectGroup, on_delete=models.PROTECT, related_name="members",
+    )
+    contact = models.ForeignKey(
+        ProspectContact, on_delete=models.PROTECT, related_name="group_memberships",
+    )
+    role = models.CharField(
+        max_length=24, choices=Role.choices, default=Role.CONTACT,
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        indexes = [models.Index(fields=["school", "group"], name="crm_pgm_school_group_idx")]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["group", "contact"], name="crm_pgm_unique_group_contact",
+            ),
+        ]
+        ordering = ["created_at", "id"]
+
+
+class EnrollmentInterest(_CRMProspectScopeGuard):
+    """One prospective learner and entry year, not an admissions decision.
+
+    learner_number disambiguates siblings without requiring minor PII. It stays
+    stable across different entry years within the same prospect group.
+    """
+
+    school_relations = ("group", "application")
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    school = models.ForeignKey(
+        "core.School", on_delete=models.CASCADE, related_name="crm_enrollment_interests",
+    )
+    group = models.ForeignKey(
+        ProspectGroup, on_delete=models.PROTECT, related_name="enrollment_interests",
+    )
+    learner_number = models.PositiveSmallIntegerField(default=1)
+    grade_interest = models.CharField(max_length=16)
+    entry_year = models.CharField(max_length=32)
+    application = models.ForeignKey(
+        "applications.Application", null=True, blank=True, on_delete=models.SET_NULL,
+        related_name="crm_enrollment_interests",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def clean(self):
+        self.grade_interest = (self.grade_interest or "").strip()
+        self.entry_year = (self.entry_year or "").strip()
+        super().clean()
+        if self.learner_number is not None and self.learner_number < 1:
+            from django.core.exceptions import ValidationError
+
+            raise ValidationError({"learner_number": "Learner number must be positive."})
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["school", "entry_year"], name="crm_ei_school_year_idx"),
+            models.Index(fields=["school", "group"], name="crm_ei_school_group_idx"),
+        ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["group", "learner_number", "entry_year"],
+                name="crm_ei_unique_learner_year",
+            ),
+            models.UniqueConstraint(
+                fields=["school", "application"],
+                condition=models.Q(application__isnull=False),
+                name="crm_ei_unique_application",
+            ),
+        ]
+        ordering = ["entry_year", "learner_number", "id"]
