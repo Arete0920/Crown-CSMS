@@ -262,3 +262,53 @@ def test_realism_pack_rejects_missing_fixture_approval_before_school_creation(
         ):
             HeritageRealismPack().handle(no_comms=True, no_finance_scripts=True)
     seed_school.assert_not_called()
+
+
+def test_realism_pack_refuses_scheduling_without_opt_in_before_school_creation(
+    monkeypatch, settings
+):
+    """The orchestrator must not partially seed if scheduling is unauthorized."""
+    from unittest.mock import patch
+
+    from core.management.commands.seed_heritage_realism_pack import (
+        Command as HeritageRealismPack,
+    )
+
+    original = settings.DATABASES["default"]
+    settings.DATABASES = {
+        "default": {**original, "ENGINE": "django.db.backends.sqlite3"}
+    }
+    monkeypatch.setenv("CROWN_ALLOW_LEGACY_FIXTURE_SEED", "true")
+    monkeypatch.delenv("CROWN_ALLOW_LEGACY_SCHEDULING_SEED", raising=False)
+    with patch(
+        "core.management.commands.seed_heritage_realism_pack.call_command"
+    ) as seed_school:
+        with pytest.raises(
+            CommandError, match="CROWN_ALLOW_LEGACY_SCHEDULING_SEED=true"
+        ):
+            HeritageRealismPack().handle(no_comms=True, no_finance_scripts=True)
+    seed_school.assert_not_called()
+
+
+def test_realism_pack_temporarily_binds_only_verified_heritage_school(monkeypatch):
+    """The script's required explicit tenant selection must be restored."""
+    import os
+
+    from core.management.commands.seed_heritage_realism_pack import (
+        _bound_scheduling_school_id,
+    )
+
+    school_id = "3a234a31-0a63-4e8a-8f0a-8128f7b2e2fa"
+    monkeypatch.delenv("CROWN_LEGACY_SCHEDULING_SCHOOL_ID", raising=False)
+    with _bound_scheduling_school_id(school_id):
+        assert os.getenv("CROWN_LEGACY_SCHEDULING_SCHOOL_ID") == school_id
+    assert "CROWN_LEGACY_SCHEDULING_SCHOOL_ID" not in os.environ
+
+    monkeypatch.setenv(
+        "CROWN_LEGACY_SCHEDULING_SCHOOL_ID",
+        "26399875-730d-49af-8264-65e3c72f6c23",
+    )
+    with pytest.raises(CommandError, match="conflicts"):
+        with _bound_scheduling_school_id(school_id):
+            pass
+    assert os.environ["CROWN_LEGACY_SCHEDULING_SCHOOL_ID"] != school_id

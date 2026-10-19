@@ -49,3 +49,14 @@ Its preflight checks the same hosted/database prohibition and this explicit
 fixture authorization **before** calling `seed_demo_school`. Denial must not
 leave partially seeded school records. Legacy scheduling has its own explicit
 school-binding authorization; the fixture flag does not override it.
+
+For the **full local-only realism pack**, explicitly set
+`CROWN_ALLOW_LEGACY_FIXTURE_SEED=true` and
+`CROWN_ALLOW_LEGACY_SCHEDULING_SEED=true`, in addition to the
+local/test SQLite environment. The orchestrator checks these opt-ins, the
+legacy household/person directory, and the absence of unrelated schools
+**before seeding**. It temporarily binds the verified sole Heritage UUID
+to `CROWN_LEGACY_SCHEDULING_SCHOOL_ID` while invoking the scheduling
+script and restores the previous environment afterward. A conflicting
+preselected UUID is rejected. Standalone legacy scheduling still requires
+the operator to supply its explicit school UUID.
