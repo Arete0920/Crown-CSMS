@@ -653,3 +653,22 @@ class FeeScheduleIntegrityTest(TestCase):
             format="json", **_headers(school.id),
         )
         self.assertEqual(response.status_code, 400)
+
+
+    def test_verified_session_cannot_accept_new_fee_lines(self):
+        school = _make_school()
+        client = _authed_client()
+        sid, _ = _advance_to_committed(client, school.id)
+        verified = client.get(f"{BASE_URL}{sid}/verify/", **_headers(school.id))
+        self.assertEqual(verified.status_code, 200)
+        response = client.post(
+            f"{BASE_URL}{sid}/lines/",
+            {"lines": GOOD_LINES},
+            format="json",
+            **_headers(school.id),
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(
+            FeeScheduleWizardSession.objects.get(pk=sid).status,
+            FeeScheduleWizardSession.STATUS_VERIFIED,
+        )
