@@ -1,4 +1,5 @@
-import { apiGet, apiPatch, apiPost } from './request';
+import { crownApiClient } from './client';
+import { apiPatch, apiPost } from './request';
 
 const INQUIRIES_PATH = '/api/v1/crm/inquiries/';
 
@@ -29,12 +30,13 @@ export function startInquiryApplication(receipt) {
   }, { headers: { 'X-School-Id': receipt.school_id } });
 }
 
-export function fetchAdmissionsInquiries(filters = {}) {
+export async function fetchAdmissionsInquiries(filters = {}) {
   const params = new URLSearchParams();
   Object.entries(filters).forEach(([key, value]) => {
     if (value !== '' && value != null && value !== false) params.set(key, String(value));
   });
-  return apiGet(`${INQUIRIES_PATH}${params.size ? `?${params}` : ''}`);
+  const response = await crownApiClient.get(`${INQUIRIES_PATH}${params.size ? `?${params}` : ''}`);
+  return response.data;
 }
 
 export function updateAdmissionsInquiry(inquiryId, changes) {
