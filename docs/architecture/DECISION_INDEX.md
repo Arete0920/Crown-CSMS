@@ -2,7 +2,7 @@
 
 **Status:** CANONICAL  
 **Owner:** CROWN Engineering  
-**Last verified:** 2026-08-18
+**Last verified:** 2026-10-19 (ADR-0006 proposal indexed on governed PR; canonical only after merge)
 
 ## Purpose
 
@@ -16,6 +16,7 @@ This index is the authoritative list of accepted architecture decisions. Documen
 | ADR-0002 | `decisions/ADR-0002-canonical-frontend-api-transport.md` | ACCEPTED | `authClient.js` is the protected first-party transport authority. Shared wrappers converge on it; public/bootstrap/external/dev/test exceptions remain explicit and must not receive protected CROWN context. |
 | ADR-0003 | `decisions/ADR-0003-tenant-aware-background-jobs.md` | ACCEPTED | Tenant-owned asynchronous mutation must execute under explicit school context. Provider-dependent payment jobs remain fail closed while payment processing is disabled. |
 | ADR-001 | `ADR-001-CANONICAL-HOUSEHOLD-GUARDIAN-STUDENT.md` | ACCEPTED FOR OPERATIONAL WRITES | `core.Family`, `core.Guardian`, and `core.Student` own canonical operational writes; compatibility-domain reconciliation remains controlled convergence work. |
+| ADR-0006 | `decisions/ADR-0006-crm-relationship-domain-boundaries.md` | ACCEPTED ON GOVERNED MERGE | crm_marketing is the provisional school-scoped prospect/relationship owner; Core retains operational identity, admissions retains enrollment decisions, advancement retains donors, and comms retains send authority. This is an accepted design boundary, **not** proof that new CRM models, APIs, consent ledger, migrations or runtime are completed. |
 
 ## Proposed decisions
 
