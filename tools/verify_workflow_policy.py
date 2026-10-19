@@ -261,7 +261,7 @@ def check_file(path: pathlib.Path) -> tuple[list[str], str | None, str | None]:
             errors.append(f"{rel}: DEV reset workflow must not cancel an active reset")
         if re.search(r"(?m)^\s*[^#\n]*\|\s*tee\s+|^\s*cat\s+/tmp/[^\n]*reset[^\n]*\.json", text):
             errors.append(f"{rel}: DEV reset workflow must not publish reset response bodies")
-        if re.search(r"(?m)^\s*echo\s+[^\n]*\$(?:\{)?response\b", text):
+        if re.search(r"(?m)^\s*(?:-\s+run:\s+)?echo\s+[^\n]*\$(?:\{)?response\b", text):
             errors.append(f"{rel}: DEV reset workflow must not echo reset response bodies")
 
     errors.extend(_check_curl_safety(text, rel))
