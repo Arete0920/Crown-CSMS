@@ -51,6 +51,10 @@ def _authed_client():
     # Existing happy-path tests model a multi-school financial operator.
     # Security-denial tests below use real sessions, not DRF force-auth bypasses.
     user = _make_user()
+    # Legacy integration fixtures require explicit access to multiple schools.
+    # Denial tests below use ordinary users without platform override authority.
+    user.is_superuser = True
+    user.save(update_fields=["is_superuser"])
     permission, _ = CrownPermission.objects.get_or_create(
         code="finance.edit",
         defaults={"description": "Manage school tuition and fee schedules"},
