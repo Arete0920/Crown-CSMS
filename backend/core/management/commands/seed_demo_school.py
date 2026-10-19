@@ -417,7 +417,7 @@ class Command(BaseCommand):
                 defaults={
                     "username": email,
                     "is_active": True,
-                    "is_staff": True,
+                    "is_staff": False,
                     "is_superuser": False,
                     "staff": staff,
                 },
@@ -426,6 +426,9 @@ class Command(BaseCommand):
                 raise CommandError(f"Demo account identity mismatch: {email}")
 
             changed = []
+            if ua.is_staff:
+                ua.is_staff = False
+                changed.append("is_staff")
             if ua.is_superuser:
                 ua.is_superuser = False
                 changed.append("is_superuser")
