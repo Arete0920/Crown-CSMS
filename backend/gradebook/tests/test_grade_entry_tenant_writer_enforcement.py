@@ -1,3 +1,5 @@
+import uuid
+
 import pytest
 from django.core.exceptions import ValidationError
 
@@ -301,3 +303,82 @@ def test_grade_entry_bulk_update_allows_non_authority_timestamp():
     )
     grade.updated_at = timezone.now()
     assert GradeEntry.objects.bulk_update([grade], ["updated_at"]) == 1
+
+
+def test_gradeentry_primary_key_update_is_forbidden():
+    school, section, assignment, student = _school_graph("Alpha")
+    entry = GradeEntry.objects.create(
+        school_id=school.id, section=section, student=student,
+        assignment=assignment, assignment_name="Exam",
+        points_earned=90, points_possible=100,
+    )
+    with pytest.raises(ValidationError, match="protected fields"):
+        GradeEntry.objects.using("default").filter(pk=entry.pk).update(
+            id=uuid.uuid4()
+        )
+    assert GradeEntry.objects.filter(pk=entry.pk).exists()
+
+
+def test_cached_student_school_cannot_override_persisted_tenant_authority():
+    _, _, _, student_a = _school_graph("Alpha")
+    school_b, section_b, assignment_b, _ = _school_graph("Beta")
+    student_a.school_id = school_b.id
+    entry = GradeEntry(
+        school_id=school_b.id, section=section_b, student=student_a,
+        assignment=assignment_b, assignment_name="Exam",
+        points_earned=90, points_possible=100,
+    )
+    with pytest.raises(ValidationError, match="same school"):
+        entry.save()
+    with pytest.raises(ValidationError, match="same school"):
+        GradeEntry.objects.using("default").bulk_create([entry])
+    assert GradeEntry.objects.count() == 0
+
+
+def test_cached_assignment_section_cannot_override_persisted_section():
+    school, section_a, assignment, student = _school_graph("Alpha")
+    section_b = Section.objects.create(
+        school_id=school.id, course=section_a.course, term="2027-SPRING"
+    )
+    assignment.section_id = section_b.id
+    with pytest.raises(ValidationError, match="selected section"):
+        GradeEntry.objects.create(
+            school_id=school.id, section=section_b, student=student,
+            assignment=assignment, assignment_name="Exam",
+            points_earned=90, points_possible=100,
+        )
+    assert GradeEntry.objects.count() == 0
+
+
+def test_null_grade_and_generator_fields_bulk_update_remain_supported():
+    from django.utils import timezone
+
+    school, section, assignment, student = _school_graph("Alpha")
+    (entry,) = GradeEntry.objects.using("default").bulk_create([
+        GradeEntry(
+            school_id=school.id, section=section, student=student,
+            assignment=assignment, assignment_name="Missing",
+            points_earned=None, points_possible=100,
+        )
+    ])
+    assert GradeEntry.objects.get(pk=entry.pk).points_earned is None
+    entry.updated_at = timezone.now()
+    field_names = (field for field in ("updated_at",))
+    assert GradeEntry.objects.bulk_update([entry], field_names) == 1
+    entry.refresh_from_db()
+    assert entry.points_earned is None
+
+
+def test_bulk_update_rejects_unsafe_score_via_database_alias():
+    school, section, assignment, student = _school_graph("Alpha")
+    entry = GradeEntry.objects.create(
+        school_id=school.id, section=section, student=student,
+        assignment=assignment, assignment_name="Exam",
+        points_earned=90, points_possible=100,
+    )
+    entry.points_earned = -1
+    with pytest.raises(ValidationError, match="protected fields"):
+        GradeEntry.objects.using("default").bulk_update(
+            [entry], ["points_earned"]
+        )
+    assert GradeEntry.objects.get(pk=entry.pk).points_earned == 90
