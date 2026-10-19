@@ -137,3 +137,24 @@ def test_school_day_rejects_invalid_configured_timezone(classroom):
     response = client.get(URL, {'section_id': str(classroom[5].id)}, HTTP_X_SCHOOL_ID=str(school.id))
     assert response.status_code == 400
     assert not AttendanceRecord.objects.exists()
+
+
+def test_legacy_attendance_writer_rejects_stale_expected_school_day(classroom):
+    from academics.operations_views import school_local_date
+
+    identity(classroom)
+    client = APIClient()
+    client.force_authenticate(classroom[1])
+    today = school_local_date(classroom[0].id)
+    response = client.post(
+        f'/api/v1/academics/sections/{classroom[5].id}/attendance/',
+        {
+            'date': (today - timedelta(days=1)).isoformat(),
+            'expected_school_today': (today - timedelta(days=1)).isoformat(),
+            'items': [{'student_id': str(classroom[4].id), 'status': 'ABSENT'}],
+        },
+        format='json', HTTP_X_SCHOOL_ID=str(classroom[0].id),
+    )
+    assert response.status_code == 409
+    assert 'school day changed' in response.data['detail'].lower()
+    assert not AttendanceRecord.objects.exists()
