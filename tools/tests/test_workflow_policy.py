@@ -161,6 +161,8 @@ class WorkflowPolicyTests(unittest.TestCase):
         script = (ROOT / "tools/dev_scripts/golden_path.ps1").read_text(encoding="utf-8")
         self.assertNotIn("CI user ensured. Response:", script)
         self.assertNotIn("$resp | ConvertTo-Json", script)
+        for secret_bearing_body in ("$r.Content", "$r2.Content", "$r3.Content"):
+            self.assertNotIn(f"Write-Host {secret_bearing_body}", script)
         self.assertIn('return $resp', script)
 
     def test_repository_policy_invokes_complete_scan_unconditionally(self):
