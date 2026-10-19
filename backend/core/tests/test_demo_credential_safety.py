@@ -405,3 +405,35 @@ def test_demo_wipe_preserves_foreign_school_audit_events(monkeypatch):
         Seed()._wipe_school(heritage)
     assert AidAuditEvent.objects.filter(pk=event.pk).exists()
     assert UserAccount.objects.filter(pk=demo_user.pk).exists()
+
+
+def test_historical_unsafe_full_database_reset_wrapper_is_retired():
+    """Unscoped full DB flush must not be revived by an old PowerShell entrypoint."""
+    from pathlib import Path
+
+    repo_root = Path(__file__).resolve().parents[3]
+    old = (repo_root / "scripts/ops/PRE_DEMO_RESET_AND_SEED.ps1").read_text(
+        encoding="utf-8"
+    )
+    # The retired script may document 'flush' but cannot invoke manage.py.
+    assert not any(
+        line.lstrip().startswith(("python manage.py", "& $py manage.py", "pwsh "))
+        for line in old.splitlines()
+        if not line.lstrip().startswith("#")
+    )
+    assert 'throw "PRE_DEMO_RESET_AND_SEED is retired:' in old
+
+
+def test_local_reset_smoke_requires_operator_supplied_wipe_authorization():
+    """No demo-reset wrapper may silently grant itself destructive permission."""
+    from pathlib import Path
+
+    repo_root = Path(__file__).resolve().parents[3]
+    smoke = (repo_root / "tools/demo_reset_smoke.ps1").read_text(
+        encoding="utf-8"
+    )
+    assert '$env:CROWN_ENV = "local"' not in smoke
+    assert '$env:CROWN_ALLOW_DEMO_WIPE = "true"' not in smoke
+    assert "ConfirmDemoWipe" in smoke
+    assert "HeritageSchoolId" in smoke
+    assert "sqlite(3)?:///" in smoke
