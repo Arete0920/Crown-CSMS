@@ -17,6 +17,7 @@ import datetime
 
 from django.contrib.auth import get_user_model
 from django.test import TestCase
+from unittest.mock import patch
 from rest_framework.test import APIClient
 
 from core.models import School
@@ -431,3 +432,63 @@ class FeeScheduleSingleActiveTest(TestCase):
         # school_a schedule remains active (different tenant)
         sched_a.refresh_from_db()
         self.assertTrue(sched_a.is_active, "Cross-tenant schedule must not be deactivated")
+
+
+# ---------------------------------------------------------------------------
+# Strict monetary parsing, transactional audit and state integrity
+# ---------------------------------------------------------------------------
+
+class FeeScheduleIntegrityTest(TestCase):
+    def test_rejects_invalid_line_types_without_server_error(self):
+        school = _make_school()
+        client = _authed_client()
+        sid, _ = _advance_to_configured(client, school.id)
+        invalid = [
+            {"code": ["INVALID"], "label": "Fee", "amount_cents": 100},
+            {"code": "FEE", "label": {"text": "bad"}, "amount_cents": 100},
+            {"code": "FEE", "label": "Valid", "amount_cents": 1.9},
+            {"code": "FEE", "label": "Valid", "amount_cents": True},
+            {"code": "FEE", "label": "Valid", "amount_cents": 10, "is_required": "false"},
+            {"code": "FEE", "label": "Valid", "amount_cents": 10, "sort_order": -1},
+            {"code": "FEE", "label": "Valid", "amount_cents": 10, "kind": []},
+        ]
+        for line in invalid:
+            with self.subTest(line=line):
+                response = client.post(
+                    f"{BASE_URL}{sid}/lines/",
+                    {"lines": [line]},
+                    format="json",
+                    **_headers(school.id),
+                )
+                self.assertEqual(response.status_code, 400)
+        self.assertEqual(
+            FeeScheduleWizardSession.objects.get(pk=sid).status,
+            FeeScheduleWizardSession.STATUS_CONFIGURED,
+        )
+
+    def test_commit_rolls_back_when_financial_audit_write_fails(self):
+        school = _make_school()
+        client = _authed_client()
+        sid, name = _advance_to_lines_set(client, school.id)
+        with patch("fee_schedule_wizard.views.AuditLog.objects.create",
+                   side_effect=RuntimeError("audit unavailable")):
+            with self.assertRaises(RuntimeError):
+                client.post(f"{BASE_URL}{sid}/commit/", **_headers(school.id))
+        self.assertFalse(FeeSchedule.objects.filter(school=school, name=name).exists())
+        self.assertFalse(FeeLine.objects.filter(fee_schedule__school=school).exists())
+        self.assertEqual(
+            FeeScheduleWizardSession.objects.get(pk=sid).status,
+            FeeScheduleWizardSession.STATUS_LINES_SET,
+        )
+
+    def test_commit_rechecks_untrusted_stored_line_configuration(self):
+        school = _make_school()
+        client = _authed_client()
+        sid, name = _advance_to_lines_set(client, school.id)
+        session = FeeScheduleWizardSession.objects.get(pk=sid)
+        session.lines_config = [{"code": "TUITION", "label": "Tuition",
+                                 "amount_cents": "1.9"}]
+        session.save(update_fields=["lines_config"])
+        response = client.post(f"{BASE_URL}{sid}/commit/", **_headers(school.id))
+        self.assertEqual(response.status_code, 400)
+        self.assertFalse(FeeSchedule.objects.filter(school=school, name=name).exists())
