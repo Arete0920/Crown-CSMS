@@ -383,3 +383,33 @@ def test_gradebook_extra_credit_remains_allowed():
     assert response.status_code == 200, response.content
     entry = GradeEntry.objects.get(school_id=school.id, section=section)
     assert entry.points_earned == 110
+
+
+def test_authorized_teacher_can_clear_and_restore_grade():
+    """Missing work can retain its entry identity and be graded later."""
+    school, section, assignment, student, _ = _graph()
+    teacher = _teacher(school=school, section=section, assigned=True)
+    client = _client(teacher)
+    entry = GradeEntry.objects.create(
+        school_id=school.id, section=section, student=student,
+        assignment=assignment, assignment_name=assignment.name,
+        points_earned=75, points_possible=assignment.points_possible,
+    )
+    original_id = entry.pk
+    cleared = client.patch(
+        _patch_url(entry), {"points_earned": None}, format="json",
+        HTTP_X_SCHOOL_ID=str(school.id),
+    )
+    assert cleared.status_code == 200, cleared.content
+    entry.refresh_from_db()
+    assert entry.pk == original_id
+    assert entry.points_earned is None
+
+    graded = client.patch(
+        _patch_url(entry), {"points_earned": "95.00"}, format="json",
+        HTTP_X_SCHOOL_ID=str(school.id),
+    )
+    assert graded.status_code == 200, graded.content
+    entry.refresh_from_db()
+    assert entry.pk == original_id
+    assert entry.points_earned == 95
