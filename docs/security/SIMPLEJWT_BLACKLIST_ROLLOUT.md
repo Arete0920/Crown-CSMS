@@ -44,3 +44,29 @@ is not a migration authorization and does not prove backup/restore readiness.
 After a sanitized preflight, reconcile the actual DEV migration graph and
 necessary recovery point before authorizing any schema mutation. Do not
 activate the blacklist app on a running deployment while tables are absent.
+
+## Explicit reviewed DEV schema stage (separate from deployment)
+
+The migration application stage is **manual only**. After a release candidate
+has been accepted into protected main, the owner/operator must verify the actual
+DEV migration history, current vendor distribution and schema, and record an
+independently tested DEV recovery point. Do not infer recovery readiness from
+an attestation string or a passing unit test.
+
+Use the `Controlled DEV Blacklist Schema Migration` workflow with an exact
+accepted-main SHA, the confirmation value `migrate-dev-blacklist`, and a
+restricted recovery evidence reference. It reuses the existing verified Azure
+DEV environment/hostname, Key Vault resolution, PostgreSQL identity/TLS,
+advisory migration lock and transaction-capable Django migration command.
+The runner allows **only a contiguous forward suffix** of the reviewed
+SimpleJWT 5.5.1 `token_blacklist` migrations; unrelated, reverse and
+unrecorded historical migration states block. It verifies the completed tables,
+columns and unique constraints before reporting success. The GitHub manual
+confirmation is an execution authorization, **not** independent proof that a
+backup was completed or restored.
+
+This workflow never modifies production and does not build/deploy the
+blacklist-enabled application image. Keep DEV application traffic on the
+previous accepted revision until schema application and independent testing
+are complete. The ordinary `deploy-dev.yml` migration allowlist remains
+unchanged; a failed or incomplete separate schema stage must not be bypassed.

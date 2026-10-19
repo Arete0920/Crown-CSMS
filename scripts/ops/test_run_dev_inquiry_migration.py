@@ -118,7 +118,8 @@ class DevMigrationBoundaryTests(unittest.TestCase):
                     SimpleNamespace(returncode=0, stdout=SHA), SimpleNamespace(returncode=0),
                 ]))
 
-    def _execute(self, plans, *, identity_error=False, ddl_error=False, check_only=False):
+    def _execute(self, plans, *, identity_error=False, ddl_error=False, check_only=False,
+                 plan_validator=migration.validate_plan, post_verify=None):
         events = []
 
         @contextlib.contextmanager
@@ -148,7 +149,8 @@ class DevMigrationBoundaryTests(unittest.TestCase):
 
         self.events = events
         return migration.apply_reviewed_plan(acquire_lock=acquire, verify_identity=verify_identity,
-            verify_ddl=verify_ddl, read_plan=read_plan, invoke=invoke, check_only=check_only)
+            verify_ddl=verify_ddl, read_plan=read_plan, invoke=invoke,
+            check_only=check_only, plan_validator=plan_validator, post_verify=post_verify)
 
     def test_reviewed_plan_is_checked_and_verified_under_same_lock(self):
         item = SimpleNamespace(app_label="crm_marketing", name="0002_inquiry_capture")
@@ -244,6 +246,73 @@ class DevMigrationBoundaryTests(unittest.TestCase):
         self.assertEqual(evidence["status"], "PASS")
         self.assertEqual(evidence["mode"], "read_only")
         self.assertEqual(evidence["reviewed_pending_migrations"], [])
+
+    def test_explicit_blacklist_stage_accepts_only_exact_upstream_suffix(self):
+        from reviewed_blacklist_migrations import APP_LABEL, MIGRATION_NAMES
+        suffix = [(SimpleNamespace(app_label=APP_LABEL, name=name), False)
+                  for name in MIGRATION_NAMES[9:]]
+        self.assertEqual(migration.validate_blacklist_plan(suffix),
+                         [(APP_LABEL, name) for name in MIGRATION_NAMES[9:]])
+        self.assertEqual(migration.validate_blacklist_plan([]), [])
+        foreign = (SimpleNamespace(app_label="crm_marketing", name="0002_inquiry_capture"), False)
+        for bad in [
+            [foreign],
+            suffix + [foreign],
+            [foreign] + suffix,
+            list(reversed(suffix)),
+            [(suffix[0][0], True)],
+        ]:
+            with self.subTest(plan=bad), self.assertRaises(migration.UnreviewedPlan):
+                migration.validate_blacklist_plan(bad)
+
+    def test_schema_postverification_precedes_unlock_and_is_required(self):
+        from reviewed_blacklist_migrations import APP_LABEL, MIGRATION_NAMES
+        initial = SimpleNamespace(app_label=APP_LABEL, name=MIGRATION_NAMES[0])
+        def verified():
+            self.events.append("schema_verified")
+        self.assertEqual(
+            self._execute(
+                [[(initial, False)], []],
+                plan_validator=migration.validate_blacklist_plan,
+                post_verify=verified,
+            ), [APP_LABEL + "." + MIGRATION_NAMES[0]]
+        )
+        self.assertEqual(self.events[-3:], ["plan", "schema_verified", "unlock"])
+        with self.assertRaisesRegex(migration.Blocked, "schema_invalid"):
+            self._execute(
+                [[], []],
+                plan_validator=migration.validate_blacklist_plan,
+                post_verify=lambda: (_ for _ in ()).throw(migration.Blocked("schema_invalid")),
+            )
+        self.assertEqual(self.events[-1], "unlock")
+
+    def test_blacklist_schema_authority_is_explicit_and_conflict_safe(self):
+        output = io.StringIO()
+        with patch.object(migration, "validate_source"), patch.object(
+            migration, "load_dev_settings",
+            return_value=(URL, "synthetic-secret", "crown")
+        ), patch.object(migration, "migrate_on_dev", return_value=[]) as called, contextlib.redirect_stdout(output):
+            self.assertEqual(
+                migration.main(["--expected-sha", SHA, "--apply-reviewed-blacklist",
+                                "--confirm-dev-blacklist", "migrate-dev-blacklist"]), 0
+            )
+        called.assert_called_once_with(URL, "synthetic-secret", "crown", SHA,
+                                       apply_blacklist=True)
+        self.assertEqual(json.loads(output.getvalue().splitlines()[-1])["mode"],
+                         "reviewed_dev_blacklist")
+        for args in [
+            ["--apply-reviewed-blacklist"],
+            ["--confirm-dev-blacklist", "migrate-dev-blacklist"],
+            ["--apply-reviewed-blacklist", "--confirm-dev-blacklist", "wrong"],
+            ["--apply-reviewed-blacklist", "--confirm-dev-blacklist", "migrate-dev-blacklist",
+             "--check-only"],
+        ]:
+            with self.subTest(args=args), patch.object(migration, "validate_source") as source, patch.object(
+                migration, "load_dev_settings"
+            ) as read, contextlib.redirect_stdout(io.StringIO()):
+                self.assertEqual(migration.main(["--expected-sha", SHA, *args]), 1)
+                source.assert_not_called()
+                read.assert_not_called()
 
     def test_workflow_checks_source_then_schema_before_any_runtime_mutation(self):
         import yaml

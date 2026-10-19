@@ -141,12 +141,24 @@ def validate_plan(plan):
     return identities
 
 
-def apply_reviewed_plan(*, acquire_lock, verify_identity, verify_ddl, read_plan, invoke, check_only=False):
+def validate_blacklist_plan(plan):
+    # The explicit DEV schema stage accepts *only* a contiguous upstream
+    # SimpleJWT 5.5.1 migration suffix; no unrelated or backwards migrations.
+    from reviewed_blacklist_migrations import is_reviewed_plan
+
+    if not is_reviewed_plan(plan, allow_blacklist=True):
+        raise UnreviewedPlan(plan)
+    return [(item.app_label, item.name) for item, _ in plan]
+
+
+def apply_reviewed_plan(*, acquire_lock, verify_identity, verify_ddl, read_plan,
+                        invoke, check_only=False, plan_validator=validate_plan,
+                        post_verify=None):
     # Hold the existing advisory lock across planning, its reentrant command,
     # and verification so another governed migration cannot race this allowlist.
     with acquire_lock():
         verify_identity()
-        pending = validate_plan(read_plan())
+        pending = plan_validator(read_plan())
         if check_only:
             # Read the verified migration plan; never invoke schema-changing commands.
             return [".".join(item) for item in pending]
@@ -156,10 +168,15 @@ def apply_reviewed_plan(*, acquire_lock, verify_identity, verify_ddl, read_plan,
         invoke("migrate", check=True, interactive=False)
         if read_plan():
             raise Blocked("pending_migrations_after_verification")
+        if post_verify is not None:
+            post_verify()
     return [".".join(item) for item in pending]
 
 
-def migrate_on_dev(database_url, secret, database_name, source_sha, *, check_only=False):
+def migrate_on_dev(database_url, secret, database_name, source_sha, *,
+                   check_only=False, apply_blacklist=False):
+    if check_only and apply_blacklist:
+        raise Blocked("conflicting_dev_migration_modes")
     if validate_database_url(database_url) != database_name:
         raise Blocked("effective_database_target_mismatch")
     ca_bundle = Path("/etc/ssl/certs/ca-certificates.crt")
@@ -182,7 +199,11 @@ def migrate_on_dev(database_url, secret, database_name, source_sha, *, check_onl
     from django.db.migrations.executor import MigrationExecutor
     from core.management.commands.migrate_with_lock import Command
     from django.apps import apps
-    from reviewed_blacklist_migrations import preflight as validate_blacklist_preflight, BlacklistBoundaryError
+    from reviewed_blacklist_migrations import (
+        preflight as validate_blacklist_preflight,
+        verify_applied_schema,
+        BlacklistBoundaryError,
+    )
 
     config = connection.settings_dict
     if (connection.vendor != "postgresql" or config.get("HOST") != DEV_HOST
@@ -204,6 +225,15 @@ def migrate_on_dev(database_url, secret, database_name, source_sha, *, check_onl
 
     def verify_ddl():
         with connection.cursor() as cursor:
+            if apply_blacklist:
+                cursor.execute(
+                    "SELECT has_schema_privilege(current_user, 'public', 'CREATE'), "
+                    "has_table_privilege(current_user, "
+                    "'public.core_useraccount', 'REFERENCES')"
+                )
+                if cursor.fetchone() != (True, True):
+                    raise Blocked("blacklist_database_ddl_authority_unavailable")
+                return
             cursor.execute("SELECT has_schema_privilege(current_user, 'public', 'CREATE'), "
                            "pg_has_role(current_user, relowner, 'USAGE') FROM pg_class "
                            "WHERE oid = to_regclass('public.crm_marketing_marketinglead')")
@@ -230,6 +260,8 @@ def migrate_on_dev(database_url, secret, database_name, source_sha, *, check_onl
             acquire_lock=lambda: Command()._migration_lock(timeout_seconds=300, allow_non_postgresql=False),
             verify_identity=verify_identity, verify_ddl=verify_ddl, read_plan=read_plan,
             invoke=call_command, check_only=check_only,
+            plan_validator=validate_blacklist_plan if apply_blacklist else validate_plan,
+            post_verify=(lambda: verify_applied_schema(connection)) if apply_blacklist else None,
         )
     finally:
         connection.close()
@@ -240,9 +272,19 @@ def main(argv=None):
     parser.add_argument("--expected-sha", required=True)
     parser.add_argument("--check-only", action="store_true",
                         help="Read-only DEV migration preflight; never apply migrations")
+    parser.add_argument("--apply-reviewed-blacklist", action="store_true",
+                        help="Explicit guarded DEV-only SimpleJWT schema stage")
+    parser.add_argument("--confirm-dev-blacklist", default="",
+                        help="Must equal migrate-dev-blacklist for explicit DEV schema stage")
     args = parser.parse_args(argv)
     stage = "source"
     try:
+        if args.check_only and args.apply_reviewed_blacklist:
+            raise Blocked("conflicting_dev_migration_modes")
+        if args.apply_reviewed_blacklist != (args.confirm_dev_blacklist == "migrate-dev-blacklist"):
+            raise Blocked("explicit_dev_blacklist_authority_required")
+        if args.confirm_dev_blacklist and not args.apply_reviewed_blacklist:
+            raise Blocked("explicit_dev_blacklist_authority_required")
         validate_source(args.expected_sha)
         stage = "dev_configuration"
         database_url, secret, database_name = load_dev_settings()
@@ -254,10 +296,14 @@ def main(argv=None):
             if args.check_only:
                 applied = migrate_on_dev(database_url, secret, database_name,
                                          args.expected_sha, check_only=True)
+            elif args.apply_reviewed_blacklist:
+                applied = migrate_on_dev(database_url, secret, database_name,
+                                         args.expected_sha, apply_blacklist=True)
             else:
                 applied = migrate_on_dev(database_url, secret, database_name, args.expected_sha)
         result = {"status": "PASS", "source_sha": args.expected_sha, "target_app": DEV_APP,
-                  "mode": "read_only" if args.check_only else "migrate",
+                  "mode": ("read_only" if args.check_only else
+                           "reviewed_dev_blacklist" if args.apply_reviewed_blacklist else "migrate"),
                   "database_identity_verified": True,
                   "database_identity_sha256": hashlib.sha256((DEV_HOST + "/" + database_name).encode()).hexdigest()}
         if args.check_only:
@@ -265,7 +311,9 @@ def main(argv=None):
         else:
             result.update(applied_migrations=applied, remaining_pending=0)
     except (Exception, SystemExit) as exc:
-        result = {"status": "BLOCKED", "mode": "read_only" if args.check_only else "migrate",
+        result = {"status": "BLOCKED",
+                  "mode": ("read_only" if args.check_only else
+                           "reviewed_dev_blacklist" if args.apply_reviewed_blacklist else "migrate"),
                   "stage": stage,
                   "source_sha": args.expected_sha if re.fullmatch(r"[0-9a-f]{40}", args.expected_sha) else None,
                   "target_app": DEV_APP,
