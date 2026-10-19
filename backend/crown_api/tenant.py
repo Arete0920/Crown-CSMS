@@ -182,8 +182,18 @@ def build_tenant_context(request, *, school=None) -> TenantContext:
     )
 
 
+def clear_tenant_school_binding(request) -> None:
+    """Remove usable school aliases without losing tenant-decision metadata."""
+    for attr in ("school_id", "school", "tenant_school", "_crown_school_override_id"):
+        try:
+            delattr(request, attr)
+        except AttributeError:
+            pass
+
+
 def bind_tenant_context(request, context: TenantContext) -> TenantContext:
     """Stamp canonical and legacy request attributes from one context object."""
+    clear_tenant_school_binding(request)
     setattr(request, CANONICAL_TENANT_ATTR, context)
     setattr(request, TENANT_ATTR, context.school_id)
     setattr(request, "_tenant_resolution_source", context.source)

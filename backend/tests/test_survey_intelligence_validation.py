@@ -37,6 +37,10 @@ def test_valid_typed_response_round_trip():
     ({"rating": 6}, "rating"),
     ({"rating": "4"}, "rating"),
     ({"rating": float("nan")}, "rating"),
+    ({"rating": float("inf")}, "rating"),
+    ({"rating": float("-inf")}, "rating"),
+    ({"rating": 10 ** 309}, "rating"),
+    ({"rating": -(10 ** 309)}, "rating"),
     ({"rating": 3, "source": "not-an-option"}, "source"),
     ({"rating": 3, "source": "family", "topics": ["teaching", "teaching"]}, "topics"),
     ({"rating": 3, "source": "family", "topics": ["outside"]}, "topics"),
@@ -49,6 +53,10 @@ def test_invalid_question_answer_fails_closed(answers, key):
     with pytest.raises(SurveyAnswerValidationError) as exc:
         validate_answers(QUESTIONS, answers)
     assert key in exc.value.errors
+
+
+def test_scale_integer_valued_float_remains_accepted():
+    assert validate_answers([q("rating", "scale")], {"rating": 5.0}) == {"rating": 5}
 
 
 def test_invalid_container_is_rejected():
@@ -104,3 +112,30 @@ def test_malformed_optional_instrument_is_rejected_even_without_answers(kind, ch
 
 def test_valid_optional_choice_can_be_omitted():
     assert validate_answers([q("optional", "choice", choices=["one", "two"], required=False)], {}) == {}
+
+@pytest.mark.parametrize("key", ["UPPER", "bad key", "a" * 65, "1leading", ""])
+def test_invalid_question_keys_fail_closed(key):
+    with pytest.raises(SurveyAnswerValidationError) as exc:
+        validate_answers([q(key, "text", required=False)], {})
+    assert "instrument" in exc.value.errors
+
+
+@pytest.mark.parametrize("choices", [
+    ["First", " first "], ["café", "cafe\u0301"], ["yes", "YES"],
+    ["safe", "bad\x00option"], ["safe", "\ud800"],
+])
+def test_ambiguous_or_unsafe_choices_fail_closed(choices):
+    with pytest.raises(SurveyAnswerValidationError) as exc:
+        validate_answers([q("source", "choice", choices=choices, required=False)], {})
+    assert "source" in exc.value.errors
+
+
+@pytest.mark.parametrize("value", ["a\x00b", "\ud800", "\udfff"])
+def test_text_not_serializable_to_postgresql_fails_validation(value):
+    with pytest.raises(SurveyAnswerValidationError) as exc:
+        validate_answers([q("memo", "text")], {"memo": value})
+    assert "memo" in exc.value.errors
+
+
+def test_text_exact_character_limit():
+    assert validate_answers([q("memo", "text")], {"memo": "x" * 4000}) == {"memo": "x" * 4000}
