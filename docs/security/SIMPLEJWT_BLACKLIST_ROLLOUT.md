@@ -37,9 +37,9 @@ commands, create tables, or deploy application code**. It reports only fixed
 reason codes and bounded migration identifiers. An unreviewed blacklist plan
 is an expected `BLOCKED` result and must not be overridden.
 
-For a controlled GitHub Actions invocation, use the dedicated
-`DEV Blacklist Migration Preflight (read-only)` workflow once that workflow
-exists on accepted main. It must receive the exact accepted SHA. The workflow
+Run the existing `scripts/ops/run_dev_inquiry_migration.py` with `--check-only`
+from an approved, credentialed operator environment and the exact accepted
+source SHA. Do not create a new GitHub Actions workflow. The workflow
 is not a migration authorization and does not prove backup/restore readiness.
 After a sanitized preflight, reconcile the actual DEV migration graph and
 necessary recovery point before authorizing any schema mutation. Do not
@@ -53,8 +53,9 @@ DEV migration history, current vendor distribution and schema, and record an
 independently tested DEV recovery point. Do not infer recovery readiness from
 an attestation string or a passing unit test.
 
-Use the `Controlled DEV Blacklist Schema Migration` workflow with an exact
-accepted-main SHA, the confirmation value `migrate-dev-blacklist`, and a
+Use the existing `scripts/ops/run_dev_inquiry_migration.py` runner
+with `--apply-reviewed-blacklist --confirm-dev-blacklist migrate-dev-blacklist`,
+the exact accepted-main SHA, and a
 restricted recovery evidence reference. It reuses the existing verified Azure
 DEV environment/hostname, Key Vault resolution, PostgreSQL identity/TLS,
 advisory migration lock and transaction-capable Django migration command.
@@ -101,3 +102,6 @@ the ordinary SimpleJWT serializer retains the pre-rollout rotation behavior;
 If any step fails, leave the setting disabled and do not claim the security
 finding resolved. The legacy Crown-signed refresh endpoint is separately
 tracked in #372 and remains outside the SimpleJWT blacklist.
+
+No additional workflow is permitted by CROWN's canonical workflow inventory.
+The reviewed runner is an operator-controlled tool, not an automatic deploy.
