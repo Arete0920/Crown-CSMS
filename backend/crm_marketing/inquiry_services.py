@@ -27,6 +27,10 @@ def bounded_text(payload, key, limit, *, required=False):
     value = payload.get(key, "")
     if not isinstance(value, str) or len(value) > limit:
         raise ValueError(f"{key} must be text no longer than {limit} characters.")
+    try:
+        value.encode("utf-8")
+    except UnicodeEncodeError as exc:
+        raise ValueError(f"{key} contains unsupported Unicode characters.") from exc
     value = value.strip()
     if required and not value:
         raise ValueError(f"{key} is required.")

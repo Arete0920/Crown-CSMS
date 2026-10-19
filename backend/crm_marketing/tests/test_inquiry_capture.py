@@ -1,3 +1,4 @@
+import json
 import uuid
 from datetime import timedelta
 
@@ -114,6 +115,38 @@ def test_retries_are_persistent_and_contact_matches_do_not_grant_access(school):
 def test_invalid_or_unconsented_capture_creates_no_records(school, changes):
     assert _capture(school, **changes).status_code == 400
     assert MarketingLead.objects.count() == 0
+
+
+@pytest.mark.parametrize("surrogate", ["\ud800", "\udfff"], ids=["high-surrogate", "low-surrogate"])
+def test_public_capture_rejects_escaped_surrogate_utm_before_persistence(school, surrogate):
+    response = APIClient().post(
+        URL, json.dumps(_payload(school, utm={"utm_campaign": surrogate}), ensure_ascii=True),
+        content_type="application/json", HTTP_IDEMPOTENCY_KEY=str(uuid.uuid4()),
+    )
+    assert response.status_code == 400, response.content
+    assert response.json()["detail"] == "utm_campaign contains unsupported Unicode characters."
+    assert not MarketingLead.objects.exists()
+    assert not CampaignTouchpoint.objects.exists()
+
+
+def test_public_capture_preserves_unicode_through_staff_queue_serialization(school):
+    parent_name = "Zoë 李 🌱"
+    attribution = {"utm_campaign": "École 🏫"}
+    client = APIClient()
+    response = client.post(
+        URL, json.dumps(_payload(school, parent_name=parent_name, utm=attribution), ensure_ascii=True),
+        content_type="application/json", HTTP_IDEMPOTENCY_KEY=str(uuid.uuid4()),
+    )
+    assert response.status_code == 201, response.content
+    lead = MarketingLead.objects.get(id=response.json()["inquiry_id"])
+    assert lead.parent_name == parent_name
+    assert lead.attribution_json == attribution
+    client.force_authenticate(user=_staff(school, edit=False))
+    queue = client.get(URL, HTTP_X_SCHOOL_ID=str(school.id))
+    assert queue.status_code == 200, queue.content
+    row = queue.json()["results"][0]
+    assert row["parent_name"] == parent_name
+    assert row["utm"] == attribution
 
 
 def test_public_school_resolution_is_exact_and_header_cannot_conflict(school):
