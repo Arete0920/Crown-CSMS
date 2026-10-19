@@ -222,3 +222,19 @@ def test_reset_refuses_hosted_tenant_even_with_valid_secret(monkeypatch):
     with pytest.raises(CommandError, match="production"):
         call_command("reset_demo_passwords", school_id=str(school.pk))
     assert not UserAccount.objects.filter(school=school).exists()
+
+
+def test_active_demo_diagnostics_have_no_default_secret_or_token_excerpt():
+    """Prevent retired shared credentials and token excerpts in diagnostic files."""
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[3]
+    for relative in (
+        "scripts/demo-status.ps1",
+        "scripts/manual_proof_check.py",
+        "scripts/manual_batch_sanity.py",
+    ):
+        content = (root / relative).read_text(encoding="utf-8")
+        assert "demo1234" not in content, relative
+        assert "token[:30]" not in content, relative
+    assert not (root / "frontend/dashboards/login_test.json").exists()
