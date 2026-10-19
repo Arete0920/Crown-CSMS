@@ -8,7 +8,7 @@ import hmac
 import json
 import re
 import secrets
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 from django.conf import settings
 from django.db import DatabaseError, transaction
@@ -69,7 +69,9 @@ def issue_respondent_grant(*, school_id, publication_id, issuer, expires_at):
     preparatory operation, not a production rollout.
     """
     now = timezone.now()
-    if not timezone.is_aware(expires_at) or not now < expires_at <= now + timedelta(days=30):
+    if (not isinstance(expires_at, datetime)
+        or not timezone.is_aware(expires_at)
+        or not now < expires_at <= now + timedelta(days=30)):
         raise CollectionRejected(UNAVAILABLE)
     school = School.objects.select_for_update().filter(pk=school_id, is_active=True).first()
     if school is None or not user_has_permission(issuer, "survey.edit", school=school):
