@@ -163,13 +163,14 @@ class Command(BaseCommand):
             run_script_module("seed_comms.py")
 
         # 10) Deterministic demo logins when configured.
-        demo_pw = os.environ.get("CROWN_DEMO_PASSWORD")
-        if demo_pw:
+        from core.demo_credentials import configured_demo_passwords
+        demo_passwords = configured_demo_passwords()
+        if demo_passwords:
             call_command("reset_demo_passwords", school_id=str(school.id))
         else:
             self.stdout.write(
                 self.style.WARNING(
-                    "CROWN_DEMO_PASSWORD not set; skipping reset_demo_passwords (demo logins unchanged)."
+                    "No per-account secrets configured; password reset skipped (fixture accounts remain unusable)."
                 )
             )
 
