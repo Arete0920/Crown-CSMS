@@ -92,6 +92,7 @@ def _throttle(request, school, *, email="", action="capture"):
 
 
 def _serialize(lead):
+    from crm_marketing.inquiry_notifications import inquiry_notification_status
     data = {field: getattr(lead, field) for field in (
         "parent_name", "email", "phone", "grade_interest", "entry_year", "campus",
         "request_type", "contact_preference", "response_consent", "follow_up_consent",
@@ -102,6 +103,7 @@ def _serialize(lead):
         "id": str(lead.id), "utm": lead.attribution_json,
         "assigned_to_user_id": str(lead.assigned_to_user_id) if lead.assigned_to_user_id else None,
         "application_ids": [str(app.id) for app in lead.applications.filter(school_id=lead.school_id)],
+        "notification_status": inquiry_notification_status(lead),
         "duplicate_candidates": list(MarketingLead.objects.filter(
             school_id=lead.school_id, email=lead.email, inquiry_received_at__isnull=False,
         ).exclude(id=lead.id).values("id", "parent_name", "email", "stage")[:5]),
@@ -133,9 +135,11 @@ def inquiry_collection(request):
             leads = leads.filter(assigned_to_user_id__isnull=True)
         if request.query_params.get("overdue") == "1":
             leads = leads.filter(next_follow_up_at__lte=timezone.now(), stage__in=ACTIVE_INQUIRY_STAGES, application__isnull=True)
+        from crm_marketing.inquiry_notifications import inquiry_notifications_enabled
         return _response({
             "results": [_serialize(lead) for lead in leads.order_by("next_follow_up_at", "created_at")[:100]],
             "count": leads.count(),
+            "notifications_enabled": inquiry_notifications_enabled(),
             "can_edit": user_has_permission(request.user, "admissions.edit", school=school),
             "owners": [{"id": str(user.id), "name": user.get_full_name() or user.username, "email": user.email} for user in eligible_owners(school)],
         })
@@ -194,9 +198,10 @@ def inquiry_update(request, inquiry_id):
         return _response({"detail": "Inquiry not found."}, 404)
     try:
         payload = _body(request)
-        allowed = {"assigned_to_user_id", "next_follow_up_at", "stage", "touchpoint", "family_follow_up_enabled"}
+        allowed = {"assigned_to_user_id", "next_follow_up_at", "stage", "touchpoint", "family_follow_up_enabled", "follow_up_consent"}
         if not payload or set(payload) - allowed:
             raise ValueError("Provide supported inquiry update fields.")
+        previous_owner = lead.assigned_to_user_id
         before = {key: str(getattr(lead, key)) for key in payload if key != "touchpoint"}
         if "assigned_to_user_id" in payload:
             value = payload["assigned_to_user_id"]
@@ -217,6 +222,12 @@ def inquiry_update(request, inquiry_id):
             if stage == LeadStage.APPLICATION_STARTED:
                 mark_application_started(lead)
             lead.stage = stage
+        if "follow_up_consent" in payload:
+            if payload["follow_up_consent"] is not False:
+                raise ValueError("Staff may withdraw family reminder consent, but cannot grant it.")
+            before["family_follow_up_enabled"] = str(lead.family_follow_up_enabled)
+            lead.follow_up_consent = False
+            lead.family_follow_up_enabled = False
         if "family_follow_up_enabled" in payload:
             enabled = payload["family_follow_up_enabled"]
             if not isinstance(enabled, bool) or (enabled and not lead.follow_up_consent):
@@ -237,6 +248,9 @@ def inquiry_update(request, inquiry_id):
             created_by_user_id=request.user.id,
             metadata_json={"before": before, "after": {key: str(getattr(lead, key)) for key in before}},
         )
+        if previous_owner != lead.assigned_to_user_id:
+            from crm_marketing.inquiry_notifications import queue_inquiry_notifications
+            queue_inquiry_notifications(lead, event="owner_changed")
     except (ValueError, TypeError) as exc:
         transaction.set_rollback(True)
         return _response({"detail": str(exc)}, 400)

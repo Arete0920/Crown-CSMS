@@ -582,6 +582,8 @@ if _CROWN_CACHE_URL:
 # ---------------------------------------------------------------------------
 # Celery (background tasks / outbox drain)
 # ---------------------------------------------------------------------------
+# Inquiry delivery requires separate operator activation; other comms are unchanged.
+CROWN_INQUIRY_NOTIFICATIONS_ENABLED = _env_bool("CROWN_INQUIRY_NOTIFICATIONS_ENABLED", default=False)
 CELERY_BROKER_URL              = os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/0")
 CELERY_RESULT_BACKEND          = os.getenv("CELERY_RESULT_BACKEND", "redis://localhost:6379/0")
 CELERY_TASK_ACKS_LATE          = True
@@ -636,6 +638,11 @@ try:
             "schedule": crontab(hour=3, minute=30),
         },
     }
+    if CROWN_INQUIRY_NOTIFICATIONS_ENABLED:
+        CELERY_BEAT_SCHEDULE["admissions-inquiry-followups-every-15-minutes"] = {
+            "task": "crm_marketing.tasks.process_inquiry_followups",
+            "schedule": crontab(minute="*/15"),
+        }
 except ImportError:
     logging.getLogger(__name__).debug("Celery not installed; beat schedule omitted")
 

@@ -89,11 +89,56 @@ authority. The queue defaults to active pre-application inquiries. `stage=all`
 includes history; exact `stage`, `unassigned=1`, and `overdue=1` filters are
 supported. `overdue=1` always excludes submitted/closed inquiries. `count`
 reports matching inquiries; up to 100 are returned per request.
+Every successful listing includes the top-level boolean `notifications_enabled`,
+including empty or filtered queues. It reports the API process's current
+`CROWN_INQUIRY_NOTIFICATIONS_ENABLED` switch, which defaults to `false`.
+It does not establish provider readiness, worker/Beat state, consent, or delivery.
+Per-inquiry `notification_status` retains the existing recorded outcomes.
 `PATCH /api/v1/crm/inquiries/<uuid:inquiry_id>/` requires `admissions.edit` and
 supports owner, follow-up time, pre-application stage, contact-history entries,
 and enabling/disabling family reminders where the family has consented.
+Staff can record a family withdrawal with `follow_up_consent: false`; this also
+disables family reminders. This endpoint cannot grant or restore family consent,
+and a simultaneous request to withdraw consent and enable reminders is rejected.
 Ownership is restricted to active staff with admissions authority in that
 school. Application decisions and enrollment remain controlled by admissions.
+
+### Inquiry follow-up
+
+Inquiry acknowledgments and owner notices use the shared communications outbox.
+`CROWN_INQUIRY_NOTIFICATIONS_ENABLED` defaults to `false`. While disabled, inquiry
+capture, staff assignment, consent history, and overdue staff work remain available,
+but inquiry enqueue helpers and direct processor invocations return `status: disabled`
+with zero queued work. Staff responses expose `notification_status.enabled: false`;
+existing delivery history retains its recorded outcome. Other communications are
+unaffected. When explicitly enabled, the Celery schedule invokes
+`crm_marketing.tasks.process_inquiry_followups` every 15 minutes. It records
+due staff work and the latest due day-1/day-3/day-7 reminder without sending a
+backlog burst. Family reminders require recorded optional follow-up consent;
+personal phone requests remain staff work. Delivery rechecks current consent,
+ownership, and inquiry progression. Submitted or closed inquiries stop the
+inquiry reminder sequence. Restored provider configuration can recover an
+unqueued acknowledgment for an active inquiry no older than 24 hours; later
+family reminders wait at least 24 hours after that acknowledgment is queued.
+
+Activation requires a separate operator decision for the intended environment and
+recipients, followed by configuration and restart of API, worker, and Beat processes
+at the accepted source revision. Merging or deploying this code is not permission
+to send messages. The delivery worker rechecks the inquiry switch immediately
+before provider dispatch, including for items queued before disablement. Disabled
+inquiry items become terminally suppressed with retained outbox evidence; enabling
+later does not automatically replay those items. A configuration change does not
+stop an already running old worker or retract a provider-accepted message. Stop or
+replace stale workers before relying on the gate, and retain the gate until any
+pending work has an explicit disposition during rollback.
+Queuing or provider acceptance is not confirmed
+delivery and does not mark a staff task complete.
+
+Email requires the existing verified Graph sender/credentials; SMS requires
+the existing enabled provider. Missing configuration and unassigned owners
+remain visible in the queue. A school-specific Teams destination is not
+configured by this feature. Runtime acceptance must verify worker/Beat
+execution and provider delivery in the intended school environment.
 
 ### Summary
 
