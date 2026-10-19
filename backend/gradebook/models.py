@@ -1,8 +1,8 @@
 import uuid
 from decimal import Decimal, InvalidOperation
 
-from django.core.exceptions import ObjectDoesNotExist, ValidationError
-from django.db import models
+from django.core.exceptions import ValidationError
+from django.db import models, router
 
 from academics.models import Assignment, Section
 from households.models import Student
@@ -17,28 +17,36 @@ def _normalized_uuid(value):
         return value
 
 
-def _require_same_school(instance, relation_name: str) -> None:
+def _require_same_school(instance, relation_name: str, *, using=None):
+    """Validate relation ownership against persisted database values."""
     relation_id = getattr(instance, f"{relation_name}_id", None)
     if relation_id is None:
-        return
-    try:
-        related = getattr(instance, relation_name)
-    except ObjectDoesNotExist as exc:
-        raise ValidationError(
-            {relation_name: "Related record does not exist."}
-        ) from exc
-    if _normalized_uuid(instance.school_id) != _normalized_uuid(related.school_id):
+        return None
+    model = instance._meta.get_field(relation_name).remote_field.model
+    db_alias = using or instance._state.db or router.db_for_write(
+        type(instance), instance=instance
+    )
+    fields = ("school_id", "section_id") if relation_name == "assignment" else ("school_id",)
+    related = (
+        model._base_manager.db_manager(using=db_alias)
+        .filter(pk=relation_id)
+        .values(*fields)
+        .first()
+    )
+    if related is None:
+        raise ValidationError({relation_name: "Related record does not exist."})
+    if _normalized_uuid(instance.school_id) != _normalized_uuid(related["school_id"]):
         raise ValidationError(
             {relation_name: "Related record must belong to the same school."}
         )
-
+    return related
 
 
 # GradeEntry carries both student records and tenant authority. Instance.save()
 # already runs clean(), but Django QuerySet.update()/bulk_create()/bulk_update()
 # skip that check unless the manager explicitly guards these paths.
 _GRADE_PROTECTED_FIELDS = frozenset({
-    "school_id", "section", "section_id", "student", "student_id",
+    "id", "pk", "school_id", "section", "section_id", "student", "student_id",
     "assignment", "assignment_id", "assignment_name",
     "points_earned", "points_possible",
 })
@@ -65,12 +73,13 @@ class GradeEntryQuerySet(models.QuerySet):
         for record in records:
             if not isinstance(record, self.model):
                 raise TypeError("bulk_create expects GradeEntry model instances.")
-            record.clean()
+            record.clean(using=self.db)
         return super().bulk_create(records, *args, **kwargs)
 
     def bulk_update(self, objs, fields, *args, **kwargs):
         # Django implements bulk_update via QuerySet.update(CASE ...).
         # Reject protected writes before entering that internal path.
+        fields = tuple(fields)
         normalized_fields = {
             getattr(field, "name", field) for field in fields
         }
@@ -136,13 +145,13 @@ class GradeEntry(models.Model):
             models.Index(fields=["school_id", "student"]),
         ]
 
-    def clean(self):
+    def clean(self, *, using=None):
         super().clean()
-        _require_same_school(self, "section")
-        _require_same_school(self, "student")
-        _require_same_school(self, "assignment")
-        if self.assignment_id and _normalized_uuid(
-            self.assignment.section_id
+        _require_same_school(self, "section", using=using)
+        _require_same_school(self, "student", using=using)
+        assignment_row = _require_same_school(self, "assignment", using=using)
+        if assignment_row and _normalized_uuid(
+            assignment_row["section_id"]
         ) != _normalized_uuid(self.section_id):
             raise ValidationError(
                 {"assignment": "Assignment must belong to the selected section."}
@@ -163,7 +172,7 @@ class GradeEntry(models.Model):
                 )
 
     def save(self, *args, **kwargs):
-        self.clean()
+        self.clean(using=kwargs.get("using"))
         return super().save(*args, **kwargs)
 
     def __str__(self) -> str:
