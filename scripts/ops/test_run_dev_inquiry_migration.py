@@ -11,6 +11,7 @@ import unittest
 from unittest.mock import Mock, patch
 
 import run_dev_inquiry_migration as migration
+migration_module = migration
 
 
 URL = "postgresql://synthetic:private-password@crown-pg-dev.postgres.database.azure.com/crown?sslmode=require"
@@ -219,6 +220,47 @@ class DevMigrationBoundaryTests(unittest.TestCase):
         for sensitive in ("private-password", "SELECT", URL, "synthetic-secret"):
             self.assertNotIn(sensitive, evidence_line)
         self.assertFalse(any(isinstance(item, tuple) for item in self.events))
+
+
+    def test_blacklist_migrations_are_allowlisted_only_after_explicit_enablement(self):
+        from types import SimpleNamespace
+        def migration(name, *, app="token_blacklist", backward=False):
+            return (SimpleNamespace(app_label=app, name=name), backward)
+
+        valid = [migration(name) for name in migration_module.BLACKLIST_MIGRATIONS]
+        with self.assertRaises(migration_module.UnreviewedPlan):
+            migration_module.validate_plan(valid)
+        self.assertEqual(
+            len(migration_module.validate_plan(valid, allow_token_blacklist=True)),
+            len(migration_module.BLACKLIST_MIGRATIONS),
+        )
+        for bad in (
+            [migration("0013_blacklist")],
+            [migration("0014_unreviewed")],
+            [migration("0001_initial", app="other")],
+            [migration("0001_initial", backward=True)],
+        ):
+            with self.subTest(bad=bad), self.assertRaises(migration_module.UnreviewedPlan):
+                migration_module.validate_plan(bad, allow_token_blacklist=True)
+
+    def test_blacklist_schema_must_be_pristine_or_complete(self):
+        validate = migration_module.validate_blacklist_schema_state
+        complete = set(migration_module.BLACKLIST_MIGRATIONS)
+        validate(set(), outstanding_exists=False, blacklisted_exists=False)
+        validate(complete, outstanding_exists=True, blacklisted_exists=True)
+        validate(complete, outstanding_exists=True, blacklisted_exists=True, require_complete=True)
+        for applied, existing, require_complete in (
+            (set(), (False, False), True),
+            (set(), (True, False), False),
+            (set(), (True, True), False),
+            ({"0001_initial"}, (True, True), False),
+            (complete, (True, False), True),
+            (complete | {"0013_blacklist"}, (True, True), False),
+        ):
+            with self.subTest(applied=applied, tables=existing, post=require_complete):
+                with self.assertRaises(migration_module.Blocked):
+                    validate(applied, outstanding_exists=existing[0],
+                             blacklisted_exists=existing[1], require_complete=require_complete)
 
     def test_workflow_checks_source_then_schema_before_any_runtime_mutation(self):
         import yaml
