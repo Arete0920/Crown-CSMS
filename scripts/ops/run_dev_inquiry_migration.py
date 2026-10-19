@@ -185,7 +185,7 @@ def apply_reviewed_plan(*, acquire_lock, verify_identity, verify_ddl, read_plan,
     with acquire_lock():
         verify_identity()
         pending = validate_plan(read_plan(), allow_token_blacklist=allow_token_blacklist)
-        if pending:
+        if REVIEWED in pending:
             verify_ddl()
         invoke("migrate_with_lock", lock_timeout_seconds=300, check=not bool(pending))
         invoke("migrate", check=True, interactive=False)
