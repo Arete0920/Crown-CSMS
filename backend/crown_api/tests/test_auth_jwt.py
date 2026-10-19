@@ -243,3 +243,26 @@ def test_legacy_refresh_rechecks_current_user_under_database_lock():
     assert result.status_code == 401
     assert result.json()["error"] == "invalid_refresh"
     consumed.assert_not_called()
+
+
+def test_legacy_default_disabled_mode_does_not_require_consumption_table():
+    from django.test import override_settings
+    from unittest.mock import patch
+    from crown_api.jwt_utils import build_refresh_token
+
+    user = CrownUser.objects.create(
+        email="disabled-ledger@example.invalid", password_hash=make_password("Valid-Passphrase!"),
+        role="staff", school_id=uuid.uuid4(), is_active=True,
+    )
+    signed = build_refresh_token(user_id=str(user.pk))
+    with override_settings(CROWN_LEGACY_REFRESH_ONE_USE_ENABLED=False), patch(
+        "crown_api.auth_views.LegacyRefreshConsumption.objects.create",
+        side_effect=AssertionError("disabled mode must not touch consumption schema"),
+    ):
+        first = Client().post("/api/auth/refresh/", data={"refresh": signed},
+                              content_type="application/json")
+        second = Client().post("/api/auth/refresh/", data={"refresh": signed},
+                               content_type="application/json")
+    assert first.status_code == second.status_code == 200
+    assert "access" in first.json()
+    assert "refresh" not in first.json()
