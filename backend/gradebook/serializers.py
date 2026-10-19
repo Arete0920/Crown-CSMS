@@ -28,4 +28,6 @@ class GradeEntryUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = GradeEntry
         fields = ["points_earned"]
+        # Keep nullable/missing grades and teacher-authorized extra credit.
+        extra_kwargs = {"points_earned": {"min_value": Decimal("0.00")}}
 
