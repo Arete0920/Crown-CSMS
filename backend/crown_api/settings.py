@@ -184,6 +184,9 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'corsheaders',
     'rest_framework',
+    # Required for BLACKLIST_AFTER_ROTATION to revoke consumed refresh tokens.
+    # Deploy only after verifying and applying the token_blacklist migrations.
+    'rest_framework_simplejwt.token_blacklist',
     'drf_spectacular',
     'drf_spectacular_sidecar',
     'crown_api',
