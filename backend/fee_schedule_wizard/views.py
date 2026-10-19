@@ -117,6 +117,21 @@ def configure_session(request, session_id):
     school_id = get_request_school_id(request)
     session   = _get_session(session_id, school_id)
 
+    if session.status in {
+        FeeScheduleWizardSession.STATUS_COMMITTED,
+        FeeScheduleWizardSession.STATUS_VERIFIED,
+    }:
+        return Response(
+            {"error": "Committed sessions cannot be reconfigured"},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    for field in ("name", "term", "effective_date"):
+        raw = request.data.get(field)
+        if raw is not None and not isinstance(raw, str):
+            return Response(
+                {"errors": [f"{field} must be a string"]},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
     name           = (request.data.get("name")           or "").strip()
     term           = (request.data.get("term")           or "").strip()
     effective_date = (request.data.get("effective_date") or "").strip()
@@ -124,8 +139,12 @@ def configure_session(request, session_id):
     errors = []
     if not name:
         errors.append("name is required")
+    if len(name) > 120:
+        errors.append("name must be at most 120 characters")
     if not term:
         errors.append("term is required")
+    if len(term) > 24:
+        errors.append("term must be at most 24 characters")
     if not effective_date:
         errors.append("effective_date is required (YYYY-MM-DD)")
     else:
@@ -160,7 +179,10 @@ def set_lines(request, session_id):
     school_id = get_request_school_id(request)
     session   = _get_session(session_id, school_id)
 
-    if session.status == FeeScheduleWizardSession.STATUS_DRAFT:
+    if session.status not in {
+        FeeScheduleWizardSession.STATUS_CONFIGURED,
+        FeeScheduleWizardSession.STATUS_LINES_SET,
+    }:
         return Response(
             {"error": "Session must be configured before setting lines"},
             status=status.HTTP_400_BAD_REQUEST,
@@ -244,10 +266,16 @@ def commit_session(request, session_id):
                     {"error": "session must be in lines_set state before commit"},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
+            if not isinstance(session.lines_config, list) or not 1 <= len(session.lines_config) <= 500:
+                return Response({"error": "Invalid stored fee lines"}, status=400)
+            errors = []
             for idx, line in enumerate(session.lines_config):
-                invalid = _validate_line(line, idx)
-                if invalid:
-                    return Response({"errors": invalid}, status=status.HTTP_400_BAD_REQUEST)
+                errors.extend(_validate_line(line, idx))
+            if errors:
+                return Response({"errors": errors}, status=status.HTTP_400_BAD_REQUEST)
+            codes = [line["code"].strip() for line in session.lines_config]
+            if len(codes) != len(set(codes)):
+                return Response({"error": "Duplicate stored fee codes"}, status=400)
             schedule, sched_created = FeeSchedule.objects.get_or_create(
                 school_id=school_id,
                 name=session.schedule_name,
