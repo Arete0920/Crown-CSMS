@@ -1,0 +1,68 @@
+name: DEV Blacklist Migration Preflight (read-only)
+
+on:
+  workflow_dispatch:
+    inputs:
+      expected_sha:
+        description: "Full 40-character accepted main SHA to inspect"
+        type: string
+        required: true
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: crown-api-dev-schema-read-only
+  cancel-in-progress: false
+
+jobs:
+  inspect:
+    name: Inspect accepted DEV migration plan
+    environment: dev
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout exact accepted source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.expected_sha }}
+          fetch-depth: 0
+
+      - name: Verify accepted source identity
+        shell: bash
+        env:
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+        run: |
+          set -euo pipefail
+          [[ "$EXPECTED_SHA" =~ ^[0-9a-f]{40}$ ]]
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+          git fetch --no-tags origin refs/heads/main:refs/remotes/origin/main
+          git merge-base --is-ancestor "$EXPECTED_SHA" origin/main
+
+      - name: Login to existing DEV Azure subscription
+        uses: azure/login@a457da9ea143d694b1b9c7c869ebb04ebe844ef5 # v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Configure Python 3.12
+        uses: actions/setup-python@7f4fc3e22c37d6ff65e88745f38bd3157c663f7c # v4
+        with:
+          python-version: "3.12"
+
+      - name: Install source dependencies
+        run: python -m pip install -r backend/requirements.txt
+
+      - name: Run immutable non-database contract tests
+        run: |
+          python -m unittest discover -s scripts/ops -p test_reviewed_blacklist_migrations.py -v
+          python -m unittest discover -s scripts/ops -p test_run_dev_inquiry_migration.py -v
+
+      - name: Read verified DEV migration plan without applying
+        env:
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+        run: |
+          set -euo pipefail
+          python scripts/ops/run_dev_inquiry_migration.py --expected-sha "$EXPECTED_SHA" --check-only

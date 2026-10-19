@@ -26,3 +26,21 @@ References:
 ## Source acceptance
 
 The source PR must pass exact-head Django and PostgreSQL migration/test suites, static/security CI, and protected main governance. This checklist does **not** authorize making CI fail open, deploying without migrations, or asserting CROWN is SOC 2 compliant. Keep unrelated authentication rollout #330–#333 independently governed.
+
+## Read-only DEV migration discovery
+
+An accepted-source checkout can run `python scripts/ops/run_dev_inquiry_migration.py
+--expected-sha FULL_ACCEPTED_SHA --check-only`. The checker reuses the existing
+DEV Azure/Key Vault identity validation, TLS verification, advisory lock, vendor
+graph verification, and pending-plan allowlist, but **does not execute migration
+commands, create tables, or deploy application code**. It reports only fixed
+reason codes and bounded migration identifiers. An unreviewed blacklist plan
+is an expected `BLOCKED` result and must not be overridden.
+
+For a controlled GitHub Actions invocation, use the dedicated
+`DEV Blacklist Migration Preflight (read-only)` workflow once that workflow
+exists on accepted main. It must receive the exact accepted SHA. The workflow
+is not a migration authorization and does not prove backup/restore readiness.
+After a sanitized preflight, reconcile the actual DEV migration graph and
+necessary recovery point before authorizing any schema mutation. Do not
+activate the blacklist app on a running deployment while tables are absent.

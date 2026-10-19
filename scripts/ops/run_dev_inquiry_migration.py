@@ -141,12 +141,15 @@ def validate_plan(plan):
     return identities
 
 
-def apply_reviewed_plan(*, acquire_lock, verify_identity, verify_ddl, read_plan, invoke):
+def apply_reviewed_plan(*, acquire_lock, verify_identity, verify_ddl, read_plan, invoke, check_only=False):
     # Hold the existing advisory lock across planning, its reentrant command,
     # and verification so another governed migration cannot race this allowlist.
     with acquire_lock():
         verify_identity()
         pending = validate_plan(read_plan())
+        if check_only:
+            # Read the verified migration plan; never invoke schema-changing commands.
+            return [".".join(item) for item in pending]
         if pending:
             verify_ddl()
         invoke("migrate_with_lock", lock_timeout_seconds=300, check=not bool(pending))
@@ -156,7 +159,7 @@ def apply_reviewed_plan(*, acquire_lock, verify_identity, verify_ddl, read_plan,
     return [".".join(item) for item in pending]
 
 
-def migrate_on_dev(database_url, secret, database_name, source_sha):
+def migrate_on_dev(database_url, secret, database_name, source_sha, *, check_only=False):
     if validate_database_url(database_url) != database_name:
         raise Blocked("effective_database_target_mismatch")
     ca_bundle = Path("/etc/ssl/certs/ca-certificates.crt")
@@ -225,7 +228,8 @@ def migrate_on_dev(database_url, secret, database_name, source_sha):
     try:
         return apply_reviewed_plan(
             acquire_lock=lambda: Command()._migration_lock(timeout_seconds=300, allow_non_postgresql=False),
-            verify_identity=verify_identity, verify_ddl=verify_ddl, read_plan=read_plan, invoke=call_command,
+            verify_identity=verify_identity, verify_ddl=verify_ddl, read_plan=read_plan,
+            invoke=call_command, check_only=check_only,
         )
     finally:
         connection.close()
@@ -234,6 +238,8 @@ def migrate_on_dev(database_url, secret, database_name, source_sha):
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--expected-sha", required=True)
+    parser.add_argument("--check-only", action="store_true",
+                        help="Read-only DEV migration preflight; never apply migrations")
     args = parser.parse_args(argv)
     stage = "source"
     try:
@@ -245,13 +251,22 @@ def main(argv=None):
             print("::add-mask::" + value.replace("%", "%25"), flush=True)
         stage = "database_plan_and_migration"
         with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
-            applied = migrate_on_dev(database_url, secret, database_name, args.expected_sha)
+            if args.check_only:
+                applied = migrate_on_dev(database_url, secret, database_name,
+                                         args.expected_sha, check_only=True)
+            else:
+                applied = migrate_on_dev(database_url, secret, database_name, args.expected_sha)
         result = {"status": "PASS", "source_sha": args.expected_sha, "target_app": DEV_APP,
+                  "mode": "read_only" if args.check_only else "migrate",
                   "database_identity_verified": True,
-                  "database_identity_sha256": hashlib.sha256((DEV_HOST + "/" + database_name).encode()).hexdigest(),
-                  "applied_migrations": applied, "remaining_pending": 0}
+                  "database_identity_sha256": hashlib.sha256((DEV_HOST + "/" + database_name).encode()).hexdigest()}
+        if args.check_only:
+            result.update(reviewed_pending_migrations=applied, remaining_pending=len(applied))
+        else:
+            result.update(applied_migrations=applied, remaining_pending=0)
     except (Exception, SystemExit) as exc:
-        result = {"status": "BLOCKED", "stage": stage,
+        result = {"status": "BLOCKED", "mode": "read_only" if args.check_only else "migrate",
+                  "stage": stage,
                   "source_sha": args.expected_sha if re.fullmatch(r"[0-9a-f]{40}", args.expected_sha) else None,
                   "target_app": DEV_APP,
                   "reason": str(exc) if isinstance(exc, Blocked) else "dependency_or_execution_failed"}

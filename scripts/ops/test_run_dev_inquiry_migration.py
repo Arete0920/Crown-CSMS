@@ -118,7 +118,7 @@ class DevMigrationBoundaryTests(unittest.TestCase):
                     SimpleNamespace(returncode=0, stdout=SHA), SimpleNamespace(returncode=0),
                 ]))
 
-    def _execute(self, plans, *, identity_error=False, ddl_error=False):
+    def _execute(self, plans, *, identity_error=False, ddl_error=False, check_only=False):
         events = []
 
         @contextlib.contextmanager
@@ -148,7 +148,7 @@ class DevMigrationBoundaryTests(unittest.TestCase):
 
         self.events = events
         return migration.apply_reviewed_plan(acquire_lock=acquire, verify_identity=verify_identity,
-            verify_ddl=verify_ddl, read_plan=read_plan, invoke=invoke)
+            verify_ddl=verify_ddl, read_plan=read_plan, invoke=invoke, check_only=check_only)
 
     def test_reviewed_plan_is_checked_and_verified_under_same_lock(self):
         item = SimpleNamespace(app_label="crm_marketing", name="0002_inquiry_capture")
@@ -219,6 +219,31 @@ class DevMigrationBoundaryTests(unittest.TestCase):
         for sensitive in ("private-password", "SELECT", URL, "synthetic-secret"):
             self.assertNotIn(sensitive, evidence_line)
         self.assertFalse(any(isinstance(item, tuple) for item in self.events))
+
+    def test_read_only_preflight_never_invokes_migration_or_ddl(self):
+        item = SimpleNamespace(app_label="crm_marketing", name="0002_inquiry_capture")
+        self.assertEqual(
+            self._execute([[(item, False)]], check_only=True),
+            ["crm_marketing.0002_inquiry_capture"],
+        )
+        self.assertEqual(self.events, ["lock", "identity", "plan", "unlock"])
+        other = SimpleNamespace(app_label="token_blacklist", name="0001_initial")
+        with self.assertRaisesRegex(migration.Blocked, "unreviewed"):
+            self._execute([[(other, False)]], check_only=True)
+        self.assertEqual(self.events, ["lock", "identity", "plan", "unlock"])
+
+    def test_read_only_cli_emits_mode_and_invokes_no_write_path(self):
+        output = io.StringIO()
+        with patch.object(migration, "validate_source"), patch.object(
+            migration, "load_dev_settings",
+            return_value=(URL, "synthetic-secret", "crown")
+        ), patch.object(migration, "migrate_on_dev", return_value=[]) as called, contextlib.redirect_stdout(output):
+            self.assertEqual(migration.main(["--expected-sha", SHA, "--check-only"]), 0)
+        called.assert_called_once_with(URL, "synthetic-secret", "crown", SHA, check_only=True)
+        evidence = json.loads(output.getvalue().splitlines()[-1])
+        self.assertEqual(evidence["status"], "PASS")
+        self.assertEqual(evidence["mode"], "read_only")
+        self.assertEqual(evidence["reviewed_pending_migrations"], [])
 
     def test_workflow_checks_source_then_schema_before_any_runtime_mutation(self):
         import yaml
