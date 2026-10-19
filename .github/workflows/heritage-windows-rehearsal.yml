@@ -57,11 +57,14 @@ jobs:
           python scripts/demo/start_heritage_local.py --prepare-only
       - name: Verify immutable sales-starter ZIP contract
         shell: pwsh
-        run: .\\.venv\\Scripts\\python.exe -m pytest -q backend/tests/test_heritage_sales_package.py
+        run: .\.venv\Scripts\python.exe -m pytest -q backend/tests/test_heritage_sales_package.py
+      - name: Verify synthetic Heritage fixture and launcher integrity
+        shell: pwsh
+        run: .\.venv\Scripts\python.exe -m pytest -q backend/sandbox_demo/test_seed_realism.py
       - name: Verify Heritage Board cross-tenant bearer regressions
         shell: pwsh
         run: >
-          .\\.venv\\Scripts\\python.exe -m pytest -q
+          .\.venv\Scripts\python.exe -m pytest -q
           backend/academics/tests/test_classroom_experience.py
           -k "heritage_board_bearer_renewal or board_bearer_cannot_read_foreign_household"
       - name: Install Playwright Chromium for full buyer browser certification

@@ -114,6 +114,13 @@ def main() -> int:
             with opener.open(Request("http://127.0.0.1:8000" + route, headers=board_headers), timeout=20) as response:
                 if response.status != 200:
                     raise RuntimeError(f"Board permitted read failed: {route} returned {response.status}")
+                if route.endswith("audience=board"):
+                    aggregate = json.load(response)
+                    if any(
+                        key in aggregate
+                        for key in ("students", "assignments", "lesson_plans", "categories", "sections")
+                    ):
+                        raise RuntimeError("Board classroom aggregate exposed protected individual records")
                 if route == "/api/v1/nav/":
                     nav = json.load(response)
                     links = {
