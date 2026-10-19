@@ -169,6 +169,10 @@ def main() -> int:
             # Reuse the existing real-browser attendance/classwork regression.
             # A saved response alone cannot certify that reload restored the mark.
             browser_env["CERT_FRONTEND_URL"] = "http://127.0.0.1:4173"
+            # This stack already has a Vite preview on :4173. Without live
+            # certification mode, Playwright's CI webServer attempts to start
+            # another preview on the occupied port and fails before testing.
+            browser_env["CROWN_CERTIFICATION_LIVE_RUNTIME"] = "1"
             browser_env["CROWN_EXPECTED_FRONTEND_SHA"] = evidence["source_sha"]
             subprocess.run(
                 launcher.npm_command() + [
