@@ -307,3 +307,143 @@ class EnrollmentInterest(_CRMProspectScopeGuard):
             ),
         ]
         ordering = ["entry_year", "learner_number", "id"]
+
+
+class CRMTask(_CRMProspectScopeGuard):
+    """Durable internal relationship work, not a message dispatch or SIS record."""
+
+    school_relations = ("lead", "group")
+
+    class Kind(models.TextChoices):
+        CALL = "call", "Phone call"
+        TOUR = "tour", "Tour follow-up"
+        APPLICATION = "application", "Application assistance"
+        OTHER = "other", "Other staff follow-up"
+
+    class State(models.TextChoices):
+        OPEN = "open", "Open"
+        IN_PROGRESS = "in_progress", "In progress"
+        DONE = "done", "Completed"
+        CANCELLED = "cancelled", "Cancelled"
+
+    class Priority(models.TextChoices):
+        NORMAL = "normal", "Normal"
+        HIGH = "high", "High"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    school = models.ForeignKey(
+        "core.School", on_delete=models.CASCADE, related_name="crm_tasks",
+    )
+    lead = models.ForeignKey(
+        MarketingLead, null=True, blank=True, on_delete=models.PROTECT,
+        related_name="crm_tasks",
+    )
+    group = models.ForeignKey(
+        ProspectGroup, null=True, blank=True, on_delete=models.PROTECT,
+        related_name="crm_tasks",
+    )
+    title = models.CharField(max_length=160)
+    kind = models.CharField(max_length=24, choices=Kind.choices, default=Kind.OTHER)
+    state = models.CharField(max_length=20, choices=State.choices, default=State.OPEN)
+    priority = models.CharField(max_length=12, choices=Priority.choices, default=Priority.NORMAL)
+    assigned_to_user_id = models.UUIDField(null=True, blank=True)
+    due_at = models.DateTimeField(null=True, blank=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    completed_by_user_id = models.UUIDField(null=True, blank=True)
+    created_by_user_id = models.UUIDField()
+    # A stable key for retryable actions; no cross-tenant deduplication by email.
+    idempotency_key = models.CharField(max_length=128, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def clean(self):
+        from django.core.exceptions import ValidationError
+        from django.utils import timezone
+
+        self.title = (self.title or "").strip()
+        super().clean()
+        errors = {}
+        if not self.title:
+            errors["title"] = "A staff task title is required."
+        if not self.lead_id and not self.group_id:
+            errors["lead"] = "An inquiry or prospective relationship is required."
+        if self.group_id and self.lead_id and self.group.lead_id not in (None, self.lead_id):
+            errors["lead"] = "The task inquiry must match the prospective group."
+        if self.due_at is not None and timezone.is_naive(self.due_at):
+            errors["due_at"] = "A timezone-aware due date is required."
+        done = self.state == self.State.DONE
+        if done != (self.completed_at is not None and self.completed_by_user_id is not None):
+            errors["state"] = "A completed task must have completion time and actor; other tasks must not."
+        if errors:
+            raise ValidationError(errors)
+
+    class Meta:
+        ordering = ["due_at", "created_at", "id"]
+        indexes = [
+            models.Index(fields=["school", "state", "due_at"], name="crm_task_state_due_idx"),
+            models.Index(fields=["school", "assigned_to_user_id", "state"], name="crm_task_owner_state_idx"),
+        ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["school", "idempotency_key"],
+                condition=models.Q(idempotency_key__isnull=False),
+                name="crm_task_school_retry_uniq",
+            ),
+            models.CheckConstraint(
+                condition=(
+                    models.Q(
+                        state="done", completed_at__isnull=False,
+                        completed_by_user_id__isnull=False,
+                    ) |
+                    (
+                        ~models.Q(state="done") &
+                        models.Q(
+                            completed_at__isnull=True,
+                            completed_by_user_id__isnull=True,
+                        )
+                    )
+                ),
+                name="crm_task_completion_consistent",
+            ),
+        ]
+
+
+class CRMTaskEvent(_CRMProspectScopeGuard):
+    """Append-only staff action audit. Delivery receipts belong to comms."""
+
+    school_relations = ("task",)
+
+    class Kind(models.TextChoices):
+        CREATED = "created", "Created"
+        ASSIGNED = "assigned", "Assigned"
+        COMPLETED = "completed", "Completed"
+        REOPENED = "reopened", "Reopened"
+        CANCELLED = "cancelled", "Cancelled"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    school = models.ForeignKey(
+        "core.School", on_delete=models.CASCADE, related_name="crm_task_events",
+    )
+    task = models.ForeignKey(
+        CRMTask, on_delete=models.PROTECT, related_name="events",
+    )
+    kind = models.CharField(max_length=24, choices=Kind.choices)
+    actor_user_id = models.UUIDField()
+    from_state = models.CharField(max_length=20, blank=True, default="")
+    to_state = models.CharField(max_length=20, blank=True, default="")
+    from_assignee_id = models.UUIDField(null=True, blank=True)
+    to_assignee_id = models.UUIDField(null=True, blank=True)
+    occurred_at = models.DateTimeField(auto_now_add=True)
+
+    def save(self, *args, **kwargs):
+        from django.core.exceptions import ValidationError
+
+        if not self._state.adding:
+            raise ValidationError("CRM task events cannot be amended.")
+        return super().save(*args, **kwargs)
+
+    class Meta:
+        ordering = ["occurred_at", "id"]
+        indexes = [
+            models.Index(fields=["school", "task", "occurred_at"], name="crm_te_school_task_time_idx"),
+        ]
