@@ -23,6 +23,7 @@ from crown_api.wizard_registry import WIZARD_INSTALLED_APPS  # single source of 
 from crown_api.production_secret_guard import (
     _is_hardened_context,
     validate_database_runtime,
+    validate_debug_runtime,
 )
 
 
@@ -706,7 +707,7 @@ _CROWN_ENV = _crown_os.getenv("CROWN_ENV", "").strip().lower()
 _CROWN_IS_DEPLOY_CHECK = "--deploy" in sys.argv
 _CROWN_DEPLOY_SECURITY = (
     _crown_os.getenv("CROWN_DEPLOY_SECURITY", "").strip().lower() in _CROWN_TRUE_VALUES
-    or _CROWN_ENV in {"sandbox", "staging", "production", "prod"}
+    or _CROWN_HARDENED_RUNTIME
     or _CROWN_IS_DEPLOY_CHECK
 )
 
@@ -774,7 +775,7 @@ _CROWN_ENV = (
 
 _CROWN_IS_PROD = _CROWN_ENV in {"prod", "production"} or bool(_crown_os.getenv("WEBSITE_HOSTNAME"))
 _CROWN_IS_DEPLOY_CHECK = "--deploy" in _crown_sys.argv
-_CROWN_HARDENED_CONTEXT = _CROWN_IS_PROD or _CROWN_IS_DEPLOY_CHECK
+_CROWN_HARDENED_CONTEXT = _CROWN_HARDENED_RUNTIME or _CROWN_IS_DEPLOY_CHECK
 
 
 def _crown_bool_env(name: str, default: bool = False) -> bool:
@@ -809,8 +810,7 @@ SECRET_KEY = _SECRET_FROM_ENV
 
 # DEBUG must be false in production.
 DEBUG = _crown_bool_env("DJANGO_DEBUG", _crown_bool_env("DEBUG", False))
-if _CROWN_IS_PROD and DEBUG:
-    raise RuntimeError("DEBUG=True is forbidden in production.")
+validate_debug_runtime(DEBUG, hardened=_CROWN_HARDENED_CONTEXT)
 
 # Host and CSRF configuration.
 _ALLOWED_HOSTS_ENV = _crown_csv_env("DJANGO_ALLOWED_HOSTS") or _crown_csv_env("ALLOWED_HOSTS")
