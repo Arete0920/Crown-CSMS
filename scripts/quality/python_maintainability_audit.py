@@ -147,6 +147,8 @@ class _DefinitionVisitor(ast.NodeVisitor):
 
 def scan_text(path: str, text: str) -> list[Finding]:
     """Inventory one Python source file without importing or executing it."""
+    # A UTF-8 BOM is an encoding marker, not a Python syntax error.
+    text = text.removeprefix("\ufeff")
     findings = [
         Finding(path, index, "line_over_79", str(len(line)))
         for index, line in enumerate(text.splitlines(), start=1)

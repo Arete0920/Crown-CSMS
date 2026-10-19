@@ -89,6 +89,8 @@ def test_invalid_root_and_limits_rejected(tmp_path: Path) -> None:
         scan_root(tmp_path, max_file_bytes=0)
     with pytest.raises(ValueError, match="negative"):
         main([str(tmp_path), "--limit", "-1"])
+
+
 def test_symlinked_file_is_not_read(tmp_path: Path) -> None:
     """Never follow checkout symlinks into an external private source file."""
     outside = tmp_path.parent / "outside-audit-target.py"
@@ -105,3 +107,19 @@ def test_symlinked_file_is_not_read(tmp_path: Path) -> None:
         assert report.findings == ()
     finally:
         outside.unlink()
+
+
+def test_utf8_bom_source_has_no_false_syntax_error(
+    tmp_path: Path,
+) -> None:
+    """Treat a UTF-8 signature as source encoding, not invalid syntax."""
+    source = (
+        "\ufeffdef documented() -> int:\n"
+        '    """Return a constant."""\n'
+        "    return 1\n"
+    )
+    assert scan_text("signed.py", source) == []
+    (tmp_path / "signed.py").write_text(source, encoding="utf-8")
+    report = scan_root(tmp_path)
+    assert report.scanned_files == 1
+    assert report.findings == ()
