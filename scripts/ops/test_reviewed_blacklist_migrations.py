@@ -1,6 +1,7 @@
 """No-database tests for the reviewed SimpleJWT migration allowlist."""
 import unittest
 from types import SimpleNamespace
+from unittest.mock import patch
 
 import reviewed_blacklist_migrations as subject
 
@@ -73,6 +74,40 @@ class BlacklistMigrationBoundaryTests(unittest.TestCase):
                 applied_names=(),
                 table_names={subject.OUTSTANDING_TABLE, subject.BLACKLISTED_TABLE},
             )
+
+    def test_reject_other_apps_and_backward_operations_in_migration_plan(self):
+        def item(app, name, backwards=False):
+            return (SimpleNamespace(app_label=app, name=name), backwards)
+        first = item(subject.APP_LABEL, subject.MIGRATION_NAMES[0])
+        foreign = item("crm_marketing", "0002_inquiry_capture")
+        self.assertFalse(subject.is_reviewed_plan([foreign], allow_blacklist=True))
+        self.assertFalse(subject.is_reviewed_plan([foreign, first], allow_blacklist=True))
+        self.assertFalse(subject.is_reviewed_plan([first, foreign], allow_blacklist=True))
+        self.assertFalse(subject.is_reviewed_plan([item(subject.APP_LABEL, subject.MIGRATION_NAMES[0], True)], allow_blacklist=True))
+        self.assertFalse(subject.is_reviewed_plan([foreign], allow_blacklist=False))
+        self.assertTrue(subject.is_reviewed_plan([], allow_blacklist=False))
+
+    def test_completed_preflight_verifies_schema_constraints(self):
+        conn = SimpleNamespace(introspection=SimpleNamespace(
+            table_names=lambda: [subject.OUTSTANDING_TABLE, subject.BLACKLISTED_TABLE]
+        ))
+        loader = SimpleNamespace(
+            disk_migrations={(subject.APP_LABEL, name): object()
+                             for name in subject.MIGRATION_NAMES},
+            applied_migrations={(subject.APP_LABEL, name)
+                                for name in subject.MIGRATION_NAMES},
+        )
+        with patch.object(subject, "version", return_value="5.5.1"), patch.object(
+            subject, "verify_applied_schema"
+        ) as verify:
+            self.assertTrue(subject.preflight(conn, loader, installed=True))
+            verify.assert_called_once_with(conn)
+        with patch.object(subject, "version", return_value="5.5.1"), patch.object(
+            subject, "verify_applied_schema",
+            side_effect=subject.BlacklistBoundaryError("blacklist_unique_constraint_missing")
+        ):
+            with self.assertRaisesRegex(subject.BlacklistBoundaryError, "unique_constraint"):
+                subject.preflight(conn, loader, installed=True)
 
     def test_forward_plan_only_exact_suffix(self):
         def plan(names):

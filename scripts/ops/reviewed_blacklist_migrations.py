@@ -56,11 +56,12 @@ def validate_source_state(*, runtime_version, disk_names, applied_names, table_n
 
 
 def is_reviewed_plan(plan, *, allow_blacklist=False):
-    """Only permit the exact vendor forward suffix (if explicitly enabled)."""
+    """Require an all-forward exact vendor suffix, with no unrelated changes."""
+    if any(backwards for _, backwards in plan):
+        return False
+    listed = tuple((node.app_label, node.name) for node, _ in plan)
     if not allow_blacklist:
-        return not any(node.app_label == APP_LABEL for node, _ in plan)
-    listed = tuple((node.app_label, node.name) for node, backwards in plan
-                   if node.app_label == APP_LABEL and not backwards)
+        return listed == ()
     expected = tuple((APP_LABEL, name) for name in MIGRATION_NAMES)
     return listed == () or any(listed == expected[index:]
                                for index in range(len(expected)))
@@ -82,6 +83,9 @@ def preflight(connection, loader, *, installed):
         applied_names=applied,
         table_names=set(connection.introspection.table_names()),
     )
+    if applied == set(MIGRATION_NAMES):
+        # Completed history alone is not proof of the live database schema.
+        verify_applied_schema(connection)
     return True
 
 
