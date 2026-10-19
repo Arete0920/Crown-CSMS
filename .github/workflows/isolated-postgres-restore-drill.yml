@@ -7,6 +7,9 @@ on:
       - ".github/workflows/isolated-postgres-restore-drill.yml"
       - "backend/crown_api/management/commands/verify_backup_restore.py"
       - "backend/tests/test_verify_backup_restore_command.py"
+      - "backend/crm_marketing/models.py"
+      - "backend/crm_marketing/migrations/0002_inquiry_capture.py"
+      - "backend/crm_marketing/tests/test_inquiry_capture.py"
       - "docs/operations/ISOLATED_POSTGRES_RESTORE_DRILL.md"
   push:
     branches: [main]
@@ -14,6 +17,9 @@ on:
       - ".github/workflows/isolated-postgres-restore-drill.yml"
       - "backend/crown_api/management/commands/verify_backup_restore.py"
       - "backend/tests/test_verify_backup_restore_command.py"
+      - "backend/crm_marketing/models.py"
+      - "backend/crm_marketing/migrations/0002_inquiry_capture.py"
+      - "backend/crm_marketing/tests/test_inquiry_capture.py"
       - "docs/operations/ISOLATED_POSTGRES_RESTORE_DRILL.md"
   workflow_dispatch: {}
 
@@ -113,22 +119,99 @@ jobs:
             --required-table core_useraccount \
             --evidence-path "../${EVIDENCE_DIR}/restore-evidence.json"
 
+      - name: Validate legacy inquiry insert on isolated PostgreSQL
+        id: inquiry_compatibility
+        shell: bash
+        run: |
+          set -euo pipefail
+          export DATABASE_URL="postgresql://${PGUSER}:${PGPASSWORD}@${PGHOST}:${PGPORT}/${SOURCE_DATABASE}"
+          export PYTHONPATH="${GITHUB_WORKSPACE}/backend"
+          mkdir -p "${EVIDENCE_DIR}"
+          python - <<'PY'
+          import json
+          import os
+          import subprocess
+          import sys
+          from pathlib import Path
+
+          import django
+          django.setup()
+          from django.db import connection
+
+          source_database = "crown_source"
+          test_database = "test_crown_source"
+          config = connection.settings_dict
+          if (
+              os.environ["SOURCE_DATABASE"] != source_database
+              or connection.vendor != "postgresql"
+              or config["HOST"] != "127.0.0.1"
+              or str(config["PORT"]) != "5432"
+              or config["NAME"] != source_database
+              or connection.creation._get_test_db_name() != test_database
+              or config["TEST"].get("MIGRATE", True) is not True
+          ):
+              raise SystemExit("Unexpected isolated PostgreSQL test database configuration")
+          try:
+              with connection.cursor() as cursor:
+                  cursor.execute("SELECT current_database(), current_setting('server_version_num')::integer")
+                  connected_database, version_num = cursor.fetchone()
+          finally:
+              connection.close()
+          if connected_database != source_database or not 160000 <= version_num < 170000:
+              raise SystemExit("Expected the generated source database on isolated PostgreSQL 16")
+
+          root = Path(os.environ["EVIDENCE_DIR"])
+          result = subprocess.run([
+              sys.executable, "-m", "pytest", "--ds=crown_api.settings",
+              "--migrations", "--create-db", "-q", "--tb=short",
+              "backend/crm_marketing/tests/test_inquiry_capture.py::test_pre_inquiry_model_can_insert_after_inquiry_migration",
+              "--junitxml", str(root / "inquiry-legacy-insert.xml"),
+          ], check=False)
+          try:
+              with connection.cursor() as cursor:
+                  cursor.execute("SELECT datname FROM pg_database WHERE datname IN (%s, %s)", [source_database, test_database])
+                  remaining_databases = {row[0] for row in cursor.fetchall()}
+          finally:
+              connection.close()
+          execution = {
+              "database_engine": "postgresql",
+              "postgresql_version_num": version_num,
+              "source_database": source_database,
+              "test_database": test_database,
+              "normal_migrations": True,
+              "pytest_exit_code": result.returncode,
+              "test_database_dropped": test_database not in remaining_databases,
+              "source_database_still_present": source_database in remaining_databases,
+          }
+          passed = (
+              result.returncode == 0
+              and execution["test_database_dropped"]
+              and execution["source_database_still_present"]
+          )
+          execution["result"] = "PASS" if passed else "FAIL"
+          (root / "inquiry-legacy-insert-execution.json").write_text(json.dumps(execution, indent=2) + "\n")
+          raise SystemExit(0 if passed else 1)
+          PY
+
       - name: Assemble evidence packet
         if: always()
         shell: bash
+        env:
+          INQUIRY_COMPATIBILITY_OUTCOME: ${{ steps.inquiry_compatibility.outcome }}
         run: |
           set -euo pipefail
           mkdir -p "${EVIDENCE_DIR}"
           python - <<'PY'
           import json
           import os
+          import xml.etree.ElementTree as ET
           from datetime import datetime, timezone
           from pathlib import Path
 
           root = Path(os.environ["EVIDENCE_DIR"])
           restore_path = root / "restore-evidence.json"
           restore = json.loads(restore_path.read_text()) if restore_path.exists() else None
-          passed = bool(
+          restore_passed = bool(
               restore
               and restore.get("result") == "PASS"
               and restore.get("archive_preflight_passed") is True
@@ -136,8 +219,47 @@ jobs:
               and restore.get("temporary_database_dropped") is True
               and restore.get("production_database_mutated") is False
           )
+          execution_path = root / "inquiry-legacy-insert-execution.json"
+          execution = json.loads(execution_path.read_text()) if execution_path.exists() else None
+          junit_path = root / "inquiry-legacy-insert.xml"
+          junit = {"result": "FAIL", "path": junit_path.name, "case_count": 0}
+          try:
+              document = ET.parse(junit_path).getroot()
+              cases = list(document.iter("testcase"))
+              suites = list(document.iter("testsuite"))
+              junit["case_count"] = len(cases)
+              expected_case = (
+                  len(cases) == 1
+                  and cases[0].get("classname") == "backend.crm_marketing.tests.test_inquiry_capture"
+                  and cases[0].get("name") == "test_pre_inquiry_model_can_insert_after_inquiry_migration"
+              )
+              clean_result = (
+                  len(suites) == 1
+                  and suites[0].get("tests") == "1"
+                  and all(suites[0].get(key) == "0" for key in ("errors", "failures", "skipped"))
+                  and all(not list(document.iter(tag)) for tag in ("failure", "error", "skipped"))
+              )
+              if expected_case and clean_result:
+                  junit["result"] = "PASS"
+          except (OSError, ET.ParseError):
+              pass
+          compatibility_passed = bool(
+              execution
+              and execution.get("result") == "PASS"
+              and execution.get("database_engine") == "postgresql"
+              and 160000 <= execution.get("postgresql_version_num", 0) < 170000
+              and execution.get("source_database") == "crown_source"
+              and execution.get("test_database") == "test_crown_source"
+              and execution.get("normal_migrations") is True
+              and execution.get("pytest_exit_code") == 0
+              and execution.get("test_database_dropped") is True
+              and execution.get("source_database_still_present") is True
+              and os.environ.get("INQUIRY_COMPATIBILITY_OUTCOME") == "success"
+              and junit["result"] == "PASS"
+          )
+          passed = restore_passed and compatibility_passed
           packet = {
-              "schema_version": 1,
+              "schema_version": 2,
               "result": "PASS" if passed else "FAIL",
               "assembled_at_utc": datetime.now(timezone.utc).isoformat(),
               "repository": os.environ.get("GITHUB_REPOSITORY"),
@@ -145,8 +267,13 @@ jobs:
               "workflow_sha": os.environ.get("GITHUB_SHA"),
               "source": "generated PostgreSQL fixture",
               "restore": restore,
+              "inquiry_legacy_insert": {
+                  "result": "PASS" if compatibility_passed else "FAIL",
+                  "execution": execution,
+                  "junit": junit,
+              },
               "production_mutation_performed": False,
-              "scope_boundary": "Proves real PostgreSQL dump and isolated restore mechanics only; not a current operational backup, Azure rollback, accepted RTO/RPO, production cutover, or production authorization.",
+              "scope_boundary": "Proves generated-fixture PostgreSQL dump/restore mechanics and legacy MarketingLead INSERT/read compatibility with the current inquiry schema. It does not certify every old-image endpoint, a current operational backup, Azure rollback, accepted RTO/RPO, production cutover, or production authorization.",
           }
           (root / "retained-recovery-evidence.json").write_text(
               json.dumps(packet, indent=2, sort_keys=True) + "\n"
@@ -158,7 +285,15 @@ jobs:
               f"- Workflow SHA: {packet['workflow_sha']}",
               "- Source: generated PostgreSQL fixture",
               "- Production mutation performed: false",
+              f"- Legacy inquiry INSERT/read: {packet['inquiry_legacy_insert']['result']}",
+              f"- Legacy regression JUnit result: {junit['result']} ({junit['case_count']} case)",
           ]
+          if execution:
+              lines += [
+                  f"- PostgreSQL version number: {execution.get('postgresql_version_num')}",
+                  f"- Separate regression database: {execution.get('test_database')}",
+                  f"- Regression database dropped: {execution.get('test_database_dropped')}",
+              ]
           if restore:
               lines += [
                   f"- Restore elapsed time: {restore.get('elapsed_seconds')} seconds",

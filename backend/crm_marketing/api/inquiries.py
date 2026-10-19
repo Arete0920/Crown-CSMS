@@ -135,9 +135,11 @@ def inquiry_collection(request):
             leads = leads.filter(assigned_to_user_id__isnull=True)
         if request.query_params.get("overdue") == "1":
             leads = leads.filter(next_follow_up_at__lte=timezone.now(), stage__in=ACTIVE_INQUIRY_STAGES, application__isnull=True)
+        from crm_marketing.inquiry_notifications import inquiry_notifications_enabled
         return _response({
             "results": [_serialize(lead) for lead in leads.order_by("next_follow_up_at", "created_at")[:100]],
             "count": leads.count(),
+            "notifications_enabled": inquiry_notifications_enabled(),
             "can_edit": user_has_permission(request.user, "admissions.edit", school=school),
             "owners": [{"id": str(user.id), "name": user.get_full_name() or user.username, "email": user.email} for user in eligible_owners(school)],
         })

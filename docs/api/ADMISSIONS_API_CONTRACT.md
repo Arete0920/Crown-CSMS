@@ -89,6 +89,11 @@ authority. The queue defaults to active pre-application inquiries. `stage=all`
 includes history; exact `stage`, `unassigned=1`, and `overdue=1` filters are
 supported. `overdue=1` always excludes submitted/closed inquiries. `count`
 reports matching inquiries; up to 100 are returned per request.
+Every successful listing includes the top-level boolean `notifications_enabled`,
+including empty or filtered queues. It reports the API process's current
+`CROWN_INQUIRY_NOTIFICATIONS_ENABLED` switch, which defaults to `false`.
+It does not establish provider readiness, worker/Beat state, consent, or delivery.
+Per-inquiry `notification_status` retains the existing recorded outcomes.
 `PATCH /api/v1/crm/inquiries/<uuid:inquiry_id>/` requires `admissions.edit` and
 supports owner, follow-up time, pre-application stage, contact-history entries,
 and enabling/disabling family reminders where the family has consented.
