@@ -1,6 +1,6 @@
 # backend/crown_api/tests/test_auth_jwt.py
-import uuid
 import time
+import uuid
 from concurrent.futures import ThreadPoolExecutor
 from threading import Barrier
 
@@ -176,6 +176,7 @@ def test_refresh_accepts_and_retires_pre_jti_signed_tokens():
         {"typ": "access"},
         {"sub": "not-a-uuid"},
         {"exp": None},
+        {"iat": None},
         {"jti": None},
         {"jti": " "},
     ],

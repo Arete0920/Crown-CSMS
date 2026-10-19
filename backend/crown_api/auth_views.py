@@ -146,6 +146,8 @@ def refresh(request):
         or not isinstance(res.payload.get("exp"), int)
         or isinstance(res.payload.get("exp"), bool)
         or res.payload["exp"] <= int(time.time())
+        or not isinstance(res.payload.get("iat"), int)
+        or isinstance(res.payload.get("iat"), bool)
     ):
         unavailable = _record_failure_or_unavailable(
             request, scope="crown-refresh", identity=token,
@@ -155,6 +157,14 @@ def refresh(request):
         return JsonResponse({"ok": False, "error": "invalid_refresh"}, status=401)
 
     user_id = res.payload.get("sub")
+    if not isinstance(user_id, str):
+        unavailable = _record_failure_or_unavailable(
+            request, scope="crown-refresh", identity=token,
+        )
+        if unavailable is not None:
+            return unavailable
+        return JsonResponse({"ok": False, "error": "invalid_refresh"}, status=401)
+
     try:
         user_uuid = uuid.UUID(str(user_id))
     except (TypeError, ValueError):
