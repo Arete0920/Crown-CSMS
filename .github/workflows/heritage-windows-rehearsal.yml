@@ -14,6 +14,17 @@ on:
       - 'backend/requirements.txt'
       - 'frontend/dashboards/**'
       - '.github/workflows/heritage-windows-rehearsal.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/demo/**'
+      - 'Install-and-Start-Heritage.py'
+      - 'Start-Heritage.cmd'
+      - 'HERITAGE-LOCAL-DEMO-README.txt'
+      - 'backend/tests/test_heritage_sales_package.py'
+      - 'backend/sandbox_demo/**'
+      - 'frontend/dashboards/**'
+      - '.github/workflows/heritage-windows-rehearsal.yml'
   workflow_dispatch:
 
 concurrency:
@@ -47,6 +58,12 @@ jobs:
       - name: Verify immutable sales-starter ZIP contract
         shell: pwsh
         run: .\\.venv\\Scripts\\python.exe -m pytest -q backend/tests/test_heritage_sales_package.py
+      - name: Verify Heritage Board cross-tenant bearer regressions
+        shell: pwsh
+        run: >
+          .\\.venv\\Scripts\\python.exe -m pytest -q
+          backend/academics/tests/test_classroom_experience.py
+          -k "heritage_board_bearer_renewal or board_bearer_cannot_read_foreign_household"
       - name: Install Playwright Chromium for full buyer browser certification
         shell: pwsh
         working-directory: frontend/dashboards
