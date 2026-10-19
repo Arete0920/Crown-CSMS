@@ -62,3 +62,17 @@ The existing canonical `Tests` workflow's `survey-postgresql` job runs these
 legacy refresh tests against its isolated PostgreSQL 16 service. No additional
 workflow or paid service is created. CI reports are retained under the
 existing PostgreSQL test artifact.
+
+## Explicit activation state
+
+The source rollout uses `CROWN_LEGACY_REFRESH_ONE_USE_ENABLED`, which defaults to
+`false`. A protected source merge must not turn on ledger-backed consumption
+or require the new table in hosted applications. Test settings enable the
+feature only for migrated synthetic test databases. Until the operator
+verifies `crown_api.0014_legacy_refresh_consumption`, schema constraints,
+client replacement-token handling, and deployed replay behavior, keep the
+hosted setting disabled. The legacy refresh route retains its existing
+stateless behavior while disabled; this is not revocation certification.
+After governed schema-first migration and client acceptance, activation on
+the intended environment is a separate operator-controlled configuration
+change. Never enable the feature on production merely because CI passed.
