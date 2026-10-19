@@ -1,12 +1,16 @@
 # backend/crown_api/auth_views.py
 import uuid
+from datetime import datetime, timezone
+from hashlib import sha256
+
+from django.db import DatabaseError, IntegrityError, transaction
 
 from django.http import JsonResponse
 from django.views.decorators.http import require_GET, require_POST
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.hashers import check_password, make_password
 
-from crown_api.auth_models import CrownUser
+from crown_api.auth_models import CrownUser, LegacyRefreshConsumption
 from crown_api.auth_middleware import require_auth
 from crown_api.auth_rate_limit import (
     AuthRateLimitBackendUnavailable,
@@ -125,6 +129,9 @@ def refresh(request):
             return unavailable
         return JsonResponse({"ok": False, "error": "invalid_refresh"}, status=401)
 
+    if not isinstance(res.payload, dict):
+        return JsonResponse({"ok": False, "error": "invalid_refresh"}, status=401)
+
     if res.payload.get("typ") != "refresh":
         unavailable = _record_failure_or_unavailable(
             request, scope="crown-refresh", identity=token,
@@ -153,15 +160,48 @@ def refresh(request):
             return unavailable
         return JsonResponse({"ok": False, "error": "invalid_refresh"}, status=401)
 
+    # The signed legacy refresh must have a bounded expiry. Older issued
+    # tokens have no jti; the SHA-256 digest still gives them replay identity.
+    exp = res.payload.get("exp")
+    if isinstance(exp, bool) or not isinstance(exp, int):
+        return JsonResponse({"ok": False, "error": "invalid_refresh"}, status=401)
+    try:
+        expires_at = datetime.fromtimestamp(exp, tz=timezone.utc)
+    except (OverflowError, OSError, ValueError):
+        return JsonResponse({"ok": False, "error": "invalid_refresh"}, status=401)
+    if expires_at <= datetime.now(timezone.utc):
+        return JsonResponse({"ok": False, "error": "invalid_refresh"}, status=401)
+
+    try:
+        with transaction.atomic():
+            # The DB's unique key arbitrates races across workers/hosts.
+            # Store only the digest, never the bearer token itself.
+            LegacyRefreshConsumption.objects.create(
+                user=user,
+                token_digest=sha256(token.encode("utf-8")).hexdigest(),
+                expires_at=expires_at,
+            )
+            access = build_access_token(
+                user_id=str(user.id),
+                email=user.email,
+                role=str(user.role).strip().lower(),
+                school_id=str(user.school_id) if user.school_id else None,
+                ttl_seconds=900,
+            )
+            replacement = build_refresh_token(user_id=str(user.id))
+    except IntegrityError:
+        unavailable = _record_failure_or_unavailable(
+            request, scope="crown-refresh", identity=token,
+        )
+        if unavailable is not None:
+            return unavailable
+        return JsonResponse({"ok": False, "error": "invalid_refresh"}, status=401)
+    except DatabaseError:
+        # Never issue an access credential when replay persistence fails.
+        return _rate_limit_unavailable()
+
     clear_auth_identity_failures(request, scope="crown-refresh", identity=token)
-    access = build_access_token(
-        user_id=str(user.id),
-        email=user.email,
-        role=str(user.role).strip().lower(),
-        school_id=str(user.school_id) if user.school_id else None,
-        ttl_seconds=900,
-    )
-    return JsonResponse({"ok": True, "access": access})
+    return JsonResponse({"ok": True, "access": access, "refresh": replacement})
 
 
 @require_GET

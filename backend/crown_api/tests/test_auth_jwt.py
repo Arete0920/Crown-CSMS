@@ -99,6 +99,18 @@ def test_refresh_issues_new_access():
     body2 = r.json()
     assert body2["ok"] is True
     assert "access" in body2 and len(body2["access"]) > 20
+    assert "refresh" in body2 and len(body2["refresh"]) > 20
+    assert body2["refresh"] != refresh
+    replay = c.post(
+        "/api/auth/refresh/", data={"refresh": refresh},
+        content_type="application/json",
+    )
+    assert replay.status_code == 401
+    rotated = c.post(
+        "/api/auth/refresh/", data={"refresh": body2["refresh"]},
+        content_type="application/json",
+    )
+    assert rotated.status_code == 200
 
     # new access works on /me
     r = c.get("/api/auth/me/", HTTP_AUTHORIZATION=f"Bearer {body2['access']}")
@@ -126,3 +138,86 @@ def test_me_rejects_empty_bearer_token():
 
     assert r.status_code == 401
     assert r.json()["error"] == "Unauthorized"
+
+
+def test_refresh_tokens_issued_in_same_second_are_distinct():
+    from crown_api.jwt_utils import build_refresh_token
+
+    user_id = str(uuid.uuid4())
+    assert build_refresh_token(user_id=user_id) != build_refresh_token(user_id=user_id)
+
+
+def test_signed_legacy_refresh_without_expiry_is_rejected():
+    from django.conf import settings
+    from crown_api.jwt_utils import encode_jwt
+
+    user = CrownUser.objects.create(
+        email="no-expiry@example.invalid", password_hash=make_password("Valid-Passphrase!"),
+        role="teacher", school_id=uuid.uuid4(), is_active=True,
+    )
+    malformed = encode_jwt(
+        {"typ": "refresh", "sub": str(user.pk)},
+        secret=settings.SECRET_KEY + "|refresh",
+    )
+    result = Client().post(
+        "/api/auth/refresh/", data={"refresh": malformed},
+        content_type="application/json", REMOTE_ADDR="203.0.113.81",
+    )
+    assert result.status_code == 401
+
+
+def test_legacy_refresh_database_outage_never_issues_access():
+    from unittest.mock import patch
+    from django.db import DatabaseError
+    from crown_api.jwt_utils import build_refresh_token
+
+    user = CrownUser.objects.create(
+        email="db-outage@example.invalid", password_hash=make_password("Valid-Passphrase!"),
+        role="staff", school_id=uuid.uuid4(), is_active=True,
+    )
+    token = build_refresh_token(user_id=str(user.pk))
+    with patch(
+        "crown_api.auth_views.LegacyRefreshConsumption.objects.create",
+        side_effect=DatabaseError("synthetic read-only database outage"),
+    ):
+        result = Client().post(
+            "/api/auth/refresh/", data={"refresh": token},
+            content_type="application/json", REMOTE_ADDR="203.0.113.82",
+        )
+    assert result.status_code == 503
+    assert result.json()["error"] == "auth_temporarily_unavailable"
+
+
+@pytest.mark.django_db(transaction=True)
+def test_concurrent_legacy_refresh_allows_exactly_one_redemption():
+    from concurrent.futures import ThreadPoolExecutor
+    from threading import Barrier
+    from django.db import connection, connections
+    from crown_api.auth_models import LegacyRefreshConsumption
+    from crown_api.jwt_utils import build_refresh_token
+
+    if connection.vendor != "postgresql":
+        pytest.skip("PostgreSQL unique-key concurrency contract")
+    user = CrownUser.objects.create(
+        email="parallel-refresh@example.invalid",
+        password_hash=make_password("Valid-Passphrase!"),
+        role="staff", school_id=uuid.uuid4(), is_active=True,
+    )
+    token = build_refresh_token(user_id=str(user.pk))
+    barrier = Barrier(2)
+
+    def redeem(_):
+        connections.close_all()
+        try:
+            barrier.wait(timeout=15)
+            return Client().post(
+                "/api/auth/refresh/", data={"refresh": token},
+                content_type="application/json", REMOTE_ADDR="203.0.113.83",
+            ).status_code
+        finally:
+            connections.close_all()
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        results = sorted(pool.map(redeem, range(2)))
+    assert results == [200, 401]
+    assert LegacyRefreshConsumption.objects.filter(user=user).count() == 1
