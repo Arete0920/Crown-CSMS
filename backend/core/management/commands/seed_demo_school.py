@@ -448,7 +448,15 @@ class Command(BaseCommand):
             return ua
 
         def ensure_role(user, role_code):
-            UserRole.objects.get_or_create(school=school, user=user, role_code=role_code)
+            # Retire stale same-school permissions when upgrading a named
+            # fictional demo account. Django staff flags alone do not remove
+            # application-level grants carried by UserRole.
+            UserRole.objects.filter(school=school, user=user).exclude(
+                role_code=role_code
+            ).delete()
+            UserRole.objects.get_or_create(
+                school=school, user=user, role_code=role_code
+            )
 
         head_staff = ensure_staff("Jordan", "Shepherd", "head@crown-demo.local", "DIRECTOR")
         fin_staff = ensure_staff("Morgan", "Ledger", "finance@crown-demo.local", "DIRECTOR")

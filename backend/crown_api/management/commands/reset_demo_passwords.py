@@ -20,6 +20,12 @@ DEMO_USERNAMES = (
     "aid@crown-demo.local",
     "registrar@crown-demo.local",
 )
+DEMO_DIRECTOR_ROLES = {
+    "head@crown-demo.local": "HEAD_OF_SCHOOL",
+    "finance@crown-demo.local": "FINANCE_DIRECTOR",
+    "aid@crown-demo.local": "AID_DIRECTOR",
+    "registrar@crown-demo.local": "REGISTRAR",
+}
 EXTRA_DEMO_USERS = (
     {"username": "teacher", "email": "teacher@crown-demo.local", "role_code": "TEACHER"},
     {"username": "parent", "email": "parent@crown-demo.local", "role_code": "PARENT"},
@@ -91,6 +97,16 @@ class Command(BaseCommand):
             user.is_superuser = False
             user.is_staff = False
             user.save(update_fields=["password", "is_superuser", "is_staff"])
+            # A previous role assignment may still confer app privileges
+            # after Django staff/superuser is cleared. Keep exactly the
+            # intended demo persona grant.
+            role_code = DEMO_DIRECTOR_ROLES[username]
+            UserRole.objects.filter(school=school, user=user).exclude(
+                role_code=role_code
+            ).delete()
+            UserRole.objects.get_or_create(
+                school=school, user=user, role_code=role_code
+            )
             changed += 1
 
         for spec in EXTRA_DEMO_USERS:
@@ -111,6 +127,9 @@ class Command(BaseCommand):
             user.is_staff = False
             user.is_active = True
             user.save()
+            UserRole.objects.filter(school=school, user=user).exclude(
+                role_code=spec["role_code"]
+            ).delete()
             UserRole.objects.get_or_create(
                 school=school,
                 user=user,

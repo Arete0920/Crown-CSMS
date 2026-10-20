@@ -8,7 +8,7 @@ from django.core.management.base import CommandError
 
 from core.demo_credentials import DEMO_ACCOUNT_PASSWORD_VARIABLES, configured_demo_passwords
 from core.management.commands.seed_demo_school import Command as SeedDemoSchool
-from core.models import School, UserAccount
+from core.models import School, UserAccount, UserRole
 
 
 STRONG_DEMO_PASSWORD = "Fixture-only--Crown--2026-strong"
@@ -111,11 +111,17 @@ def test_seed_creates_least_privilege_accounts_without_shared_password(monkeypat
     head.is_staff = True
     head.set_password("demo1234")
     head.save(update_fields=["is_superuser", "is_staff", "password"])
+    UserRole.objects.get_or_create(
+        school=school, user=head, role_code="FINANCE_DIRECTOR"
+    )
     SeedDemoSchool()._ensure_directors(school)
     head.refresh_from_db()
     assert head.is_superuser is False
     assert head.is_staff is False
     assert head.has_usable_password() is False
+    assert list(UserRole.objects.filter(school=school, user=head).values_list(
+        "role_code", flat=True
+    )) == ["HEAD_OF_SCHOOL"]
 
 
 @pytest.mark.django_db
@@ -230,6 +236,45 @@ def test_explicit_reset_scopes_accounts_and_removes_superuser_grant(monkeypatch)
     assert teacher.school_id == school.pk
     assert teacher.is_superuser is False
     assert teacher.check_password(_test_password("teacher"))
+
+
+@pytest.mark.django_db
+def test_demo_password_reset_retires_stale_application_roles(monkeypatch):
+    _set_distinct_test_passwords(monkeypatch)
+    school = School.objects.create(name="Heritage Christian Academy")
+    head = UserAccount.objects.create_user(
+        username="head@crown-demo.local",
+        email="head@crown-demo.local",
+        school=school,
+        password="prior-head-password-2026",
+        is_staff=True,
+    )
+    teacher = UserAccount.objects.create_user(
+        username="teacher",
+        email="teacher@crown-demo.local",
+        school=school,
+        password="prior-teacher-password-2026",
+    )
+    UserRole.objects.create(
+        school=school, user=head, role_code="FINANCE_DIRECTOR"
+    )
+    UserRole.objects.create(
+        school=school, user=teacher, role_code="HEAD_OF_SCHOOL"
+    )
+
+    call_command("reset_demo_passwords", school_id=str(school.pk))
+
+    head.refresh_from_db()
+    teacher.refresh_from_db()
+    assert head.is_staff is False
+    assert head.check_password(_test_password(head.username))
+    assert teacher.check_password(_test_password("teacher"))
+    assert set(UserRole.objects.filter(
+        school=school, user=head
+    ).values_list("role_code", flat=True)) == {"HEAD_OF_SCHOOL"}
+    assert set(UserRole.objects.filter(
+        school=school, user=teacher
+    ).values_list("role_code", flat=True)) == {"TEACHER"}
 
 
 def test_local_demo_seed_safety_rejects_production_environment(monkeypatch):
