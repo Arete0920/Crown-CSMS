@@ -218,6 +218,28 @@ def test_local_demo_seed_safety_rejects_production_environment(monkeypatch):
         require_local_demo_seed(operation="school seeding")
 
 
+@pytest.mark.parametrize("environment_key", ("DJANGO_ENV", "ENVIRONMENT", "APP_ENV"))
+@pytest.mark.parametrize("environment_value", ("staging", "sandbox"))
+def test_local_demo_seed_refuses_conflicting_runtime_label(
+    monkeypatch, environment_key, environment_value
+):
+    from core.demo_seed_safety import require_local_demo_seed
+
+    monkeypatch.setenv("CROWN_ENV", "local")
+    monkeypatch.setenv(environment_key, environment_value)
+    with pytest.raises(CommandError, match="non-local"):
+        require_local_demo_seed(operation="password reset")
+
+
+def test_local_demo_seed_refuses_hardened_django_settings(monkeypatch, settings):
+    from core.demo_seed_safety import require_local_demo_seed
+
+    monkeypatch.setenv("CROWN_ENV", "local")
+    settings.CROWN_ENV = "production"
+    with pytest.raises(CommandError, match="production"):
+        require_local_demo_seed(operation="school seeding")
+
+
 def test_local_demo_seed_safety_rejects_any_hosted_runtime(monkeypatch):
     from core.demo_seed_safety import require_local_demo_seed
 

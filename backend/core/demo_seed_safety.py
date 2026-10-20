@@ -13,6 +13,7 @@ from django.core.management.base import CommandError
 
 
 _PRODUCTION_LABELS = frozenset({"prod", "production", "live"})
+_LOCAL_CONTEXT_LABELS = frozenset({"local", "test", "testing", "dev", "development", "ci", "pytest"})
 _ENVIRONMENT_KEYS = (
     "CROWN_ENV",
     "DJANGO_ENV",
@@ -24,12 +25,21 @@ _ENVIRONMENT_KEYS = (
 
 def require_local_demo_seed(*, operation: str) -> None:
     """Reject legacy demo writes on production-tagged or hosted environments."""
-    labels = {os.getenv(key, "").strip().lower() for key in _ENVIRONMENT_KEYS}
+    # Local labeling does not override a conflicting hosted, staging, or
+    # production environment. Honor both process and resolved settings.
+    labels = {
+        str(value).strip().lower()
+        for key in _ENVIRONMENT_KEYS
+        for value in (os.getenv(key), getattr(settings, key, None))
+        if value is not None and str(value).strip()
+    }
     if labels & _PRODUCTION_LABELS:
         raise CommandError(f"{operation}: prohibited in a production environment")
+    if labels - _LOCAL_CONTEXT_LABELS:
+        raise CommandError(f"{operation}: prohibited with a non-local environment marker")
     if any(
-        os.getenv(key)
-        for key in ("WEBSITE_HOSTNAME", "WEBSITE_INSTANCE_ID", "AZURE_ENVIRONMENT")
+        os.getenv(key) or getattr(settings, key, None)
+        for key in ("WEBSITE_HOSTNAME", "WEBSITE_INSTANCE_ID", "WEBSITE_SITE_NAME", "AZURE_ENVIRONMENT")
     ):
         raise CommandError(f"{operation}: prohibited in hosted environments")
 
