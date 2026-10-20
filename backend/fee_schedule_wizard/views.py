@@ -295,15 +295,24 @@ def commit_session(request, session_id):
                 },
             )
 
-            # Ensure this schedule is active (covers idempotent re-commit)
-            if not schedule.is_active:
-                schedule.is_active = True
-                schedule.save(update_fields=["is_active"])
+            # Reusing an existing named schedule must not preserve stale term,
+            # effective date, or active state from a previous financial plan.
+            schedule_updates = []
+            for field, value in (
+                ("term", session.term),
+                ("effective_date", session.effective_date),
+                ("is_active", True),
+            ):
+                if getattr(schedule, field) != value:
+                    setattr(schedule, field, value)
+                    schedule_updates.append(field)
+            if schedule_updates:
+                schedule.save(update_fields=[*schedule_updates, "updated_at"])
 
             # Single-active enforcement: exactly one active FeeSchedule per school
             deactivated_count = (
                 FeeSchedule.objects
-                .filter(school_id=school_id)
+                .filter(school_id=school_id, is_active=True)
                 .exclude(pk=schedule.pk)
                 .update(is_active=False)
             )
@@ -330,6 +339,14 @@ def commit_session(request, session_id):
                 else:
                     lines_updated += 1
 
+            # A submitted fee schedule replaces its previous line set. A
+            # removed code must not remain billable after re-commit.
+            lines_removed, _ = (
+                FeeLine.objects.filter(fee_schedule=schedule)
+                .exclude(code__in=codes)
+                .delete()
+            )
+
             result = {
                 "schedule_id":   str(schedule.id),
                 "schedule_name": schedule.name,
@@ -337,6 +354,7 @@ def commit_session(request, session_id):
                 "created":       sched_created,
                 "lines_created": lines_created,
                 "lines_updated": lines_updated,
+                "lines_removed": lines_removed,
                 "deactivated_count": deactivated_count,
                 "message": (
                     "Fee schedule created with {} line(s).".format(lines_created + lines_updated)
@@ -360,6 +378,7 @@ def commit_session(request, session_id):
                     "created":       result["created"],
                     "lines_created":    result["lines_created"],
                     "lines_updated":    result["lines_updated"],
+                    "lines_removed":    result["lines_removed"],
                     "deactivated_count": result["deactivated_count"],
                     "school_id":        str(school_id),
                     "session_id":       str(session.id),
@@ -395,15 +414,55 @@ def verify_session(request, session_id):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    schedule_exists = FeeSchedule.objects.filter(
-        school_id=school_id, name=session.schedule_name
-    ).exists()
+    schedule = FeeSchedule.objects.filter(
+        school_id=school_id, name=session.schedule_name,
+    ).first()
+    actual_lines = list(
+        schedule.lines.values(
+            "code", "label", "amount_cents", "kind", "frequency",
+            "is_required", "sort_order",
+        )
+    ) if schedule is not None else []
+    expected_lines = session.lines_config
+    valid_config = isinstance(expected_lines, list) and all(
+        not _validate_line(line, idx)
+        for idx, line in enumerate(expected_lines)
+    )
 
-    line_count = 0
-    if schedule_exists:
-        schedule   = FeeSchedule.objects.get(school_id=school_id, name=session.schedule_name)
-        line_count = schedule.lines.count()
+    # Verification must fail closed when records have been deleted, modified,
+    # replaced, or deactivated after commit. Merely counting a surviving
+    # schedule is not adequate financial integrity evidence.
+    if (
+        schedule is None
+        or not schedule.is_active
+        or schedule.term != session.term
+        or schedule.effective_date != session.effective_date
+        or not valid_config
+        or len(actual_lines) != len(expected_lines)
+        or {
+            line["code"]: line for line in actual_lines
+        } != {
+            line["code"]: {
+                field: line[field]
+                for field in (
+                    "code", "label", "amount_cents", "kind",
+                    "frequency", "is_required", "sort_order",
+                )
+            }
+            for line in expected_lines
+        }
+    ):
+        return Response(
+            {
+                "error": "Committed fee schedule is missing or inconsistent",
+                "schedule_exists": schedule is not None,
+                "line_count": len(actual_lines),
+            },
+            status=status.HTTP_409_CONFLICT,
+        )
 
+    line_count = len(actual_lines)
+    schedule_exists = True
     session.status = FeeScheduleWizardSession.STATUS_VERIFIED
     session.save(update_fields=["status", "updated_at"])
 
