@@ -1,13 +1,15 @@
 """Pytest-only settings that add an independent database alias for routing proof."""
 
 from copy import deepcopy
-import os
-
-# Exercise the guarded revocation path and vendor migrations under pytest.
-# Hosted environments continue to default to the disabled state.
-os.environ["CROWN_SIMPLEJWT_BLACKLIST_ENABLED"] = "true"
 
 from .settings import *  # noqa: F401,F403
+
+# Exercise the guarded revocation path with migrated synthetic test databases.
+# Never modify process-wide environment state during Django settings import;
+# preserve independently configurable hosted feature activation.
+CROWN_SIMPLEJWT_BLACKLIST_ENABLED = True
+if "rest_framework_simplejwt.token_blacklist" not in INSTALLED_APPS:
+    INSTALLED_APPS = [*INSTALLED_APPS, "rest_framework_simplejwt.token_blacklist"]
 
 
 _section_alias = deepcopy(DATABASES["default"])
