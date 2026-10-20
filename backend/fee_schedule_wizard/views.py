@@ -31,8 +31,8 @@ from drf_spectacular.utils import extend_schema
 from drf_spectacular.types import OpenApiTypes
 
 _AUTH = [TenantJWTAuthentication, SessionAuthentication]
-# Every wizard endpoint changes persisted configuration or session state.
-# Even the legacy GET /verify/ marks a session verified, so it requires edit.
+# Finance editing rights remain required for every wizard route. GET /verify/ is
+# inspection-only; POST /verify/ performs the verified-state transition.
 _PERM = [CrownModulePermission("finance.edit", write_code="finance.edit")]
 
 VALID_KINDS  = {c[0] for c in FeeLine.KIND_CHOICES}
@@ -398,17 +398,23 @@ def commit_session(request, session_id):
 # ---------------------------------------------------------------------------
 
 @extend_schema(responses=OpenApiTypes.OBJECT)
-@api_view(["GET"])
+@api_view(["GET", "POST"])
 @authentication_classes(_AUTH)
 @permission_classes(_PERM)
 @transaction.atomic
 def verify_session(request, session_id):
     school_id = get_request_school_id(request)
-    # Match the commit lock order to prevent stale edits and state rollback.
-    School.objects.select_for_update().get(pk=school_id)
-    session = _get_session(session_id, school_id, for_update=True)
+    # Only a POST may transition state. Preserve commit lock ordering for writes.
+    if request.method == "POST":
+        School.objects.select_for_update().get(pk=school_id)
+    session = _get_session(
+        session_id, school_id, for_update=request.method == "POST",
+    )
 
-    if session.status != FeeScheduleWizardSession.STATUS_COMMITTED:
+    if session.status not in (
+        FeeScheduleWizardSession.STATUS_COMMITTED,
+        FeeScheduleWizardSession.STATUS_VERIFIED,
+    ):
         return Response(
             {"error": "session must be committed before verify"},
             status=status.HTTP_400_BAD_REQUEST,
@@ -477,8 +483,9 @@ def verify_session(request, session_id):
 
     line_count = len(actual_lines)
     schedule_exists = True
-    session.status = FeeScheduleWizardSession.STATUS_VERIFIED
-    session.save(update_fields=["status", "updated_at"])
+    if request.method == "POST" and session.status == FeeScheduleWizardSession.STATUS_COMMITTED:
+        session.status = FeeScheduleWizardSession.STATUS_VERIFIED
+        session.save(update_fields=["status", "updated_at"])
 
     return Response({
         "session_id":      str(session.id),
