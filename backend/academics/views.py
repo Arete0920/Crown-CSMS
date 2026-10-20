@@ -811,12 +811,17 @@ class GradeViewSet(viewsets.ReadOnlyModelViewSet):
         if not (is_leader(request.user, school_id) or taught_sections(request.user, school_id).filter(id=submission.assignment.section_id).exists()):
             raise PermissionDenied("Only a school leader or assigned teacher may grade work.")
 
-        grade = upsert_grade_for_submission(
-            submission=submission,
-            numeric_score=numeric_score,
-            graded_by=request.user,
-            feedback=feedback,
-        )
+        try:
+            grade = upsert_grade_for_submission(
+                submission=submission,
+                numeric_score=numeric_score,
+                graded_by=request.user,
+                feedback=feedback,
+            )
+        except ValueError as exc:
+            # Invalid historical assignment denominators must not produce
+            # an HTTP 500 or mutate an existing grade.
+            raise ValidationError({"numeric_score": str(exc)}) from exc
 
         return Response(GradeSerializer(grade).data)
 

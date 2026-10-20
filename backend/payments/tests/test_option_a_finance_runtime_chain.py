@@ -26,6 +26,7 @@ from payments.authority_services import (
     settle_refund,
 )
 from payments.models import CanonicalPaymentStatus, CanonicalRefundStatus
+from payments.final_hardening_audit import audit_finance_hardening
 
 
 pytestmark = pytest.mark.django_db
@@ -180,3 +181,14 @@ def test_canonical_payment_and_refund_cross_student_accounts_and_gl_without_mock
         reference_type="charge",
         reference_id=refund_charge.id,
     ).exists()
+
+    # The PostgreSQL finance gate must not certify an empty data set. Verify
+    # the read-only audit examines the actual payment -> Finance -> ledger ->
+    # journal lineage created and refunded above.
+    audited = audit_finance_hardening(school_id=school.id)
+    assert audited.ok, audited.findings
+    assert audited.checked_payments >= 1
+    assert audited.checked_finance_allocations >= 1
+    assert audited.checked_ledger_allocations >= 1
+    assert audited.checked_journal_entries >= 3
+    assert audited.checked_trace_links >= 5
