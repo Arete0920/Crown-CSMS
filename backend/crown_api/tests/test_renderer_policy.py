@@ -19,6 +19,7 @@ def _renderer_classes(environment: str) -> tuple[str, ...]:
         "DJANGO_ENV",
         "ENVIRONMENT",
         "AZURE_ENVIRONMENT",
+        "APP_ENV",
         "WEBSITE_HOSTNAME",
         "WEBSITE_INSTANCE_ID",
         "CROWN_DEPLOY_SECURITY",

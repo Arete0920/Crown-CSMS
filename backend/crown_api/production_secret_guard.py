@@ -16,6 +16,7 @@ def _is_hardened_context(argv: list[str] | None = None) -> bool:
     django_env = os.getenv("DJANGO_ENV", "").strip().lower()
     environment = os.getenv("ENVIRONMENT", "").strip().lower()
     azure_environment = os.getenv("AZURE_ENVIRONMENT", "").strip().lower()
+    app_environment = os.getenv("APP_ENV", "").strip().lower()
     deploy_security = os.getenv("CROWN_DEPLOY_SECURITY", "").strip().lower() in _TRUE_VALUES
     azure_runtime = bool(os.getenv("WEBSITE_HOSTNAME") or os.getenv("WEBSITE_INSTANCE_ID"))
     deploy_check = "--deploy" in args
@@ -25,6 +26,7 @@ def _is_hardened_context(argv: list[str] | None = None) -> bool:
         or django_env in _HARDENED_ENVS
         or environment in _HARDENED_ENVS
         or azure_environment in _HARDENED_ENVS
+        or app_environment in _HARDENED_ENVS
         or azure_runtime
         or deploy_check
     )

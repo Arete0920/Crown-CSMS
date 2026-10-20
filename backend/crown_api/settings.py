@@ -56,7 +56,7 @@ _is_azure = bool(os.getenv("WEBSITE_HOSTNAME") or os.getenv("WEBSITE_INSTANCE_ID
 _CROWN_HARDENED_RUNTIME = _is_hardened_context()
 _CROWN_HOSTED_RUNTIME = _is_azure or any(
     os.getenv(name, "").strip().lower() in {"sandbox", "staging", "prod", "production", "live"}
-    for name in ("CROWN_ENV", "DJANGO_ENV", "ENVIRONMENT", "AZURE_ENVIRONMENT")
+    for name in ("CROWN_ENV", "DJANGO_ENV", "ENVIRONMENT", "APP_ENV", "AZURE_ENVIRONMENT")
 )
 # Determine the effective early DEBUG flag before any CORS/demo safety checks.
 # Hardened deployment markers must not inherit the local DEBUG=True default.
@@ -774,6 +774,7 @@ _CROWN_ENV = (
     _crown_os.getenv("CROWN_ENV")
     or _crown_os.getenv("DJANGO_ENV")
     or _crown_os.getenv("ENVIRONMENT")
+    or _crown_os.getenv("APP_ENV")
     or _crown_os.getenv("AZURE_ENVIRONMENT")
     or ""
 ).strip().lower()
