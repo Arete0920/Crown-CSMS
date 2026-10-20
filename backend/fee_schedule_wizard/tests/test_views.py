@@ -361,7 +361,10 @@ class FeeScheduleCommitTest(TestCase):
         updated_lines = [
             {"code": "TUITION-BASE", "label": "Base Tuition UPDATED", "amount_cents": 800000, "kind": "tuition", "frequency": "annual"},
         ]
-        sid2, _ = _advance_to_lines_set(client, school.id, lines=updated_lines, name=shared_name)
+        sid2, _ = _advance_to_lines_set(
+            client, school.id, lines=updated_lines, name=shared_name,
+            term="2027-SPRING", effective_date="2027-01-01",
+        )
         r2 = client.post(f"{BASE_URL}{sid2}/commit/", **_headers(school.id))
         self.assertEqual(r2.status_code, 200)
         self.assertFalse(r2.data["result"]["created"])  # schedule existed
@@ -369,6 +372,13 @@ class FeeScheduleCommitTest(TestCase):
         # Line updated
         line = FeeLine.objects.get(fee_schedule__school=school, code="TUITION-BASE")
         self.assertEqual(line.amount_cents, 800000)
+        self.assertFalse(
+            FeeLine.objects.filter(fee_schedule=line.fee_schedule, code="TECH-FEE").exists()
+        )
+        self.assertEqual(r2.data["result"]["lines_removed"], 1)
+        schedule = FeeSchedule.objects.get(school=school, name=shared_name)
+        self.assertEqual(schedule.term, "2027-SPRING")
+        self.assertEqual(schedule.effective_date, datetime.date(2027, 1, 1))
 
     def test_commit_all_frequency_values_accepted(self):
         school = _make_school()
@@ -407,6 +417,77 @@ class FeeScheduleVerifyTest(TestCase):
 # ---------------------------------------------------------------------------
 # Single-active enforcement
 # ---------------------------------------------------------------------------
+
+class FeeScheduleVerificationIntegrityTest(TestCase):
+    def test_missing_committed_schedule_does_not_become_verified(self):
+        school = _make_school()
+        client = _authed_client()
+        sid, name = _advance_to_committed(client, school.id)
+        FeeSchedule.objects.get(school=school, name=name).delete()
+
+        result = client.get(f"{BASE_URL}{sid}/verify/", **_headers(school.id))
+        self.assertEqual(result.status_code, 409)
+        self.assertFalse(result.data["schedule_exists"])
+        self.assertEqual(
+            FeeScheduleWizardSession.objects.get(pk=sid).status,
+            FeeScheduleWizardSession.STATUS_COMMITTED,
+        )
+
+    def test_same_count_but_modified_fee_amount_fails_verification(self):
+        school = _make_school()
+        client = _authed_client()
+        sid, name = _advance_to_committed(client, school.id)
+        schedule = FeeSchedule.objects.get(school=school, name=name)
+        line = schedule.lines.get(code="TUITION-BASE")
+        line.amount_cents += 1
+        line.save(update_fields=["amount_cents"])
+
+        result = client.get(f"{BASE_URL}{sid}/verify/", **_headers(school.id))
+        self.assertEqual(result.status_code, 409)
+        self.assertEqual(
+            FeeScheduleWizardSession.objects.get(pk=sid).status,
+            FeeScheduleWizardSession.STATUS_COMMITTED,
+        )
+
+    def test_commit_snapshot_identity_must_match_schedule(self):
+        school = _make_school()
+        client = _authed_client()
+        sid, _ = _advance_to_committed(client, school.id)
+        session = FeeScheduleWizardSession.objects.get(pk=sid)
+        session.commit_result["schedule_id"] = str(uuid.uuid4())
+        session.save(update_fields=["commit_result"])
+
+        result = client.get(f"{BASE_URL}{sid}/verify/", **_headers(school.id))
+        self.assertEqual(result.status_code, 409)
+        session.refresh_from_db()
+        self.assertEqual(session.status, FeeScheduleWizardSession.STATUS_COMMITTED)
+
+    def test_empty_stored_snapshot_cannot_be_verified(self):
+        school = _make_school()
+        client = _authed_client()
+        sid, _ = _advance_to_committed(client, school.id)
+        session = FeeScheduleWizardSession.objects.get(pk=sid)
+        session.lines_config = []
+        session.save(update_fields=["lines_config"])
+
+        result = client.get(f"{BASE_URL}{sid}/verify/", **_headers(school.id))
+        self.assertEqual(result.status_code, 409)
+        session.refresh_from_db()
+        self.assertEqual(session.status, FeeScheduleWizardSession.STATUS_COMMITTED)
+
+    def test_inactive_committed_schedule_cannot_be_verified(self):
+        school = _make_school()
+        client = _authed_client()
+        sid, _ = _advance_to_committed(client, school.id, name="Older schedule")
+        _advance_to_committed(client, school.id, name="Replacement schedule")
+
+        result = client.get(f"{BASE_URL}{sid}/verify/", **_headers(school.id))
+        self.assertEqual(result.status_code, 409)
+        self.assertEqual(
+            FeeScheduleWizardSession.objects.get(pk=sid).status,
+            FeeScheduleWizardSession.STATUS_COMMITTED,
+        )
+
 
 class FeeScheduleSingleActiveTest(TestCase):
     def test_activating_schedule_deactivates_others(self):
