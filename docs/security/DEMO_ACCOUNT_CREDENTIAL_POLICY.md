@@ -25,7 +25,7 @@ Example local-only reset:
 
 ```powershell
 $env:CROWN_ENV = "local"
-\# Set all six distinct CROWN_DEMO_*_PASSWORD variables from a protected secret manager
+# Set all six distinct CROWN_DEMO_*_PASSWORD variables from a protected secret manager
 python backend/manage.py reset_demo_passwords --school-id "<Heritage-demo-UUID>"
 ```
 
