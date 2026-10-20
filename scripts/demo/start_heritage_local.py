@@ -64,15 +64,30 @@ def local_environment() -> dict[str, str]:
     return env
 
 
+def supported_node_runtime(version_text: str) -> bool:
+    """Match the Node.js engines declared by frontend/dashboards/package.json."""
+    match = re.fullmatch(r"v?(\d+)\.(\d+)\.(\d+)", version_text.strip())
+    if not match:
+        return False
+    major, minor, patch = (int(part) for part in match.groups())
+    return (
+        (major == 22 and (minor, patch) >= (22, 2))
+        or (major == 24 and (minor, patch) >= (15, 0))
+        or major >= 26
+    )
+
+
 def npm_command() -> list[str]:
     node = shutil.which("node")
     npm = shutil.which("npm") or shutil.which("npm.cmd")
     if not node or not npm:
-        raise RuntimeError("Install Node.js 22.12+ (or 24+) with npm, then start again.")
-    version = subprocess.check_output([node, "--version"], text=True).strip().lstrip("v")
-    major, minor = map(int, version.split(".")[:2])
-    if major < 22 or (major == 22 and minor < 12):
-        raise RuntimeError("Node.js 22.12+ (or 24+) is required.")
+        raise RuntimeError("Install Node.js 22.23.3 with npm (or a dashboard-supported alternative).")
+    version = subprocess.check_output([node, "--version"], text=True).strip()
+    if not supported_node_runtime(version):
+        raise RuntimeError(
+            f"Unsupported Node.js {version!r}. "
+            "Use 22.22.2+ on Node 22, 24.15.0+ on Node 24, or Node 26.0.0+."
+        )
     npm_path = Path(npm).resolve()
     if npm_path.suffix == ".js":
         return [node, str(npm_path)]
