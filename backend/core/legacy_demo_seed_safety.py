@@ -63,8 +63,14 @@ LEGACY_HOUSEHOLDS = (
 )
 
 
-def require_local_legacy_fixture_seed(operation: str) -> None:
-    """Reject operations unless the operator explicitly selected local SQLite."""
+def require_local_legacy_fixture_seed(
+    operation: str, *, opt_in_env: str = "CROWN_ALLOW_LEGACY_FIXTURE_SEED"
+) -> None:
+    """Reject unsafe legacy seeding; allow a script-specific operator opt-in.
+
+    The default preserves the existing household/finance authorization contract.
+    Scheduling uses a separate opt-in but shares all hosted/production/DB checks.
+    """
     labels = {
         str(os.getenv(name, "")).strip().lower()
         for name in (
@@ -80,10 +86,13 @@ def require_local_legacy_fixture_seed(operation: str) -> None:
         raise CommandError(f"{operation}: hosted environments are prohibited")
     if os.getenv("CROWN_ENV", "").strip().lower() not in {"local", "test"}:
         raise CommandError(f"{operation}: CROWN_ENV must be local or test")
-    if os.getenv("CROWN_ALLOW_LEGACY_FIXTURE_SEED", "").strip().lower() != "true":
-        raise CommandError(
-            f"{operation}: CROWN_ALLOW_LEGACY_FIXTURE_SEED=true is required"
-        )
+    if opt_in_env not in {
+        "CROWN_ALLOW_LEGACY_FIXTURE_SEED",
+        "CROWN_ALLOW_LEGACY_SCHEDULING_SEED",
+    }:
+        raise ValueError("Unsupported legacy fixture opt-in")
+    if os.getenv(opt_in_env, "").strip().lower() != "true":
+        raise CommandError(f"{operation}: {opt_in_env}=true is required")
     if settings.DATABASES["default"]["ENGINE"] != "django.db.backends.sqlite3":
         raise CommandError(f"{operation}: only isolated SQLite is permitted")
 
