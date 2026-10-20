@@ -95,8 +95,9 @@ export default function TeacherAttendancePage() {
       });
       if (current?.source !== "live" || current.section_id !== sectionId
           || current.date !== today || current.school_today !== today) {
-        setLoadedSectionId("");
-        throw new Error("The school day changed. Reload attendance before saving.");
+        const error = new Error("The school day changed. Reload attendance before saving.");
+        error.code = "school_day_changed";
+        throw error;
       }
       const items = Object.entries(statusMap).map(([student_id, status]) => ({
         student_id,
@@ -110,11 +111,12 @@ export default function TeacherAttendancePage() {
       setMsg(`Saved: created=${res.created} updated=${res.updated} (${res.date})`);
     } catch (error) {
       const serverDetail = error?.response?.data?.detail;
-      const dayChanged = error?.status === 409 && typeof serverDetail === "string"
-        && serverDetail.startsWith("The school day changed.");
+      const dayChanged = error?.code === "school_day_changed"
+        || (error?.status === 409 && error?.response?.data?.code === "school_day_changed");
       if (dayChanged) setLoadedSectionId("");
-      setMsg(dayChanged ? serverDetail : error?.message?.startsWith("The school day changed.")
-        ? error.message : "Submit failed. Check API + permissions.");
+      setMsg(dayChanged
+        ? (typeof serverDetail === "string" ? serverDetail : error?.message || "Reload attendance before saving.")
+        : "Submit failed. Check API + permissions.");
     }
   };
 

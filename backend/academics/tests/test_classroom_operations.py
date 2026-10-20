@@ -156,5 +156,6 @@ def test_legacy_attendance_writer_rejects_stale_expected_school_day(classroom):
         format='json', HTTP_X_SCHOOL_ID=str(classroom[0].id),
     )
     assert response.status_code == 409
+    assert response.data['code'] == 'school_day_changed'
     assert 'school day changed' in response.data['detail'].lower()
     assert not AttendanceRecord.objects.exists()

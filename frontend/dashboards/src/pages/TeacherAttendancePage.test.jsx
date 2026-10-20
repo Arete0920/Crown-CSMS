@@ -181,13 +181,13 @@ it("surfaces a server-side rollover 409 and prevents stale retry", async () => {
     if (options.method === "POST" && path.endsWith("/attendance/")) {
       const error = new Error("HTTP 409 Conflict");
       error.status = 409;
-      error.response = { data: { detail: "The school day changed. Reload attendance before saving." } };
+      error.response = { data: { code: "school_day_changed", detail: "Attendance requires reload: the school calendar has advanced." } };
       throw error;
     }
     return normalFetch(path, options);
   });
   fireEvent.click(screen.getByRole("button", { name: "Submit Attendance" }));
-  await screen.findByText("The school day changed. Reload attendance before saving.");
+  await screen.findByText("Attendance requires reload: the school calendar has advanced.");
   expect(screen.getByRole("button", { name: "Submit Attendance" }).disabled).toBe(true);
   expect(writes).toEqual([]);
 });

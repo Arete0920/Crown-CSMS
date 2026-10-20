@@ -43,10 +43,13 @@ def operational_sections(user, school):
 def school_local_date(school_id):
     """Use the enrolled school's calendar, not the server's UTC calendar."""
     tz_name = School.objects.filter(pk=school_id, is_active=True).values_list('timezone', flat=True).first()
+    if not tz_name:
+        raise ValidationError('An active school with a configured timezone is required for attendance.')
     try:
-        return timezone.now().astimezone(ZoneInfo(tz_name)).date()
+        school_timezone = ZoneInfo(tz_name)
     except (ZoneInfoNotFoundError, ValueError, TypeError) as exc:
-        raise ValidationError('A valid school timezone is required for attendance.') from exc
+        raise ValidationError('The configured school timezone is invalid for attendance.') from exc
+    return timezone.now().astimezone(school_timezone).date()
 
 
 def day_for(value, *, today=None):
@@ -124,10 +127,11 @@ def classroom_operations(request):
         previous = ClassroomOperationEvent.objects.filter(school_id=school, actor=request.user, request_key=key).first()
         if previous:
             return Response(previous.result) if previous.fingerprint == fingerprint else Response({'detail': 'Retry key conflict.'}, status=409)
+        school_day = school_local_date(school) if operation in {'review_absence', 'attendance'} else None
         if operation == 'review_absence':
             if not (is_leader(request.user, school) or taught_sections(request.user, school).filter(id=section.id).exists()):
                 raise PermissionDenied('Assigned teacher or school leader authority required.')
-            result = review_explanation(school=school, section=section, day=day_for(data.get('date'), today=school_local_date(school)),
+            result = review_explanation(school=school, section=section, day=day_for(data.get('date'), today=school_day),
                 actor=request.user, data=data, key=key, fingerprint=fingerprint)
         elif operation == 'attendance':
             day = day_for(data.get('date'), today=school_local_date(school))

@@ -170,7 +170,7 @@ def section_attendance_submit(request, section_id):
                 or expected_school_today != actual_school_today
                 or str(day) != actual_school_today):
             return Response(
-                {"detail": "The school day changed. Reload attendance before saving."},
+                {"code": "school_day_changed", "detail": "The school day changed. Reload attendance before saving."},
                 status=409,
             )
 
