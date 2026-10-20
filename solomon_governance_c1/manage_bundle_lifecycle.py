@@ -80,10 +80,15 @@ def mark_certified(bundle_id: str, reason: str = "bundle certified") -> int:
         entry.get("bundle_id") == bundle_id
         for entry in index.get("revoked_bundles", [])
     ) or any(
-        entry.get("bundle_id") == bundle_id and entry.get("status") == "revoked"
+        entry.get("bundle_id") == bundle_id and entry.get("status") in {"revoked", "quarantined"}
         for entry in index.get("certified_bundles", [])
     ):
         print(f"ERROR: revoked bundle {bundle_id} cannot be recertified")
+        return 1
+
+    # A signed security hold blocks promotion until independently resolved.
+    if index.get("security_hold", {}).get("bundle_id") == bundle_id:
+        print(f"ERROR: security-held bundle {bundle_id} cannot be certified")
         return 1
 
     # Check if already certified
