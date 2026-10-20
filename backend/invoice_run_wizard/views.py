@@ -5,7 +5,7 @@ from django.shortcuts import get_object_or_404
 from rest_framework import status
 from rest_framework.authentication import SessionAuthentication
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
-from rest_framework.permissions import IsAuthenticated
+from core.permissions import CrownModulePermission
 from rest_framework.response import Response
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
@@ -17,7 +17,7 @@ from drf_spectacular.utils import extend_schema
 from drf_spectacular.types import OpenApiTypes
 
 _AUTH = [JWTAuthentication, SessionAuthentication]
-_PERM = [IsAuthenticated]
+_PERM = [CrownModulePermission("finance.edit", write_code="finance.edit")]
 
 
 def _get_session(session_id, school_id):
@@ -157,7 +157,14 @@ def commit_session(request, session_id):
     from core.models import School
     school = get_object_or_404(School, id=school_id)
 
-    obligations = list(FinanceObligation.objects.filter(id__in=session.obligation_ids))
+    obligations = list(FinanceObligation.objects.filter(
+        id__in=session.obligation_ids, school_id=school_id,
+    ))
+    if len(obligations) != len(session.obligation_ids):
+        return Response(
+            {"error": "Selected obligations no longer belong to this school"},
+            status=status.HTTP_409_CONFLICT,
+        )
 
     # Group by payer_user_id
     by_payer: dict = {}
@@ -214,12 +221,17 @@ def commit_session(request, session_id):
 # ---------------------------------------------------------------------------
 
 @extend_schema(responses=OpenApiTypes.OBJECT)
-@api_view(["GET"])
+@api_view(["GET", "POST"])
 @authentication_classes(_AUTH)
 @permission_classes(_PERM)
+@transaction.atomic
 def verify_session(request, session_id):
     school_id = get_request_school_id(request)
-    session = _get_session(session_id, school_id)
+    session = (
+        get_object_or_404(
+            InvoiceRunWizardSession.objects.select_for_update(), id=session_id, school_id=school_id,
+        ) if request.method == "POST" else _get_session(session_id, school_id)
+    )
 
     if session.status not in (
         InvoiceRunWizardSession.STATUS_COMMITTED,
@@ -236,8 +248,9 @@ def verify_session(request, session_id):
         period_end=session.period_end,
     ).count()
 
-    session.status = InvoiceRunWizardSession.STATUS_VERIFIED
-    session.save()
+    if request.method == "POST" and session.status == InvoiceRunWizardSession.STATUS_COMMITTED:
+        session.status = InvoiceRunWizardSession.STATUS_VERIFIED
+        session.save(update_fields=["status", "updated_at"])
 
     return Response({
         "status": session.status,

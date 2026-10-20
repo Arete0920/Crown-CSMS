@@ -68,5 +68,8 @@ export async function commitBillingSetup(sessionId) {
 
 /** Step 6: verify committed setup */
 export async function verifyBillingSetup(sessionId) {
-  return requestJson(`${API_BASE}/api/v1/billing-wizard/sessions/${sessionId}/verify/`);
+  return requestJson(`${API_BASE}/api/v1/billing-wizard/sessions/${sessionId}/verify/`, {
+    method: "POST",
+    data: {},
+  });
 }

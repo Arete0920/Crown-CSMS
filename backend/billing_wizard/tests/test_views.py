@@ -3,7 +3,7 @@ from django.contrib.auth import get_user_model
 from django.test import TestCase
 from rest_framework.test import APIClient
 
-from core.models import School
+from core.models import CrownPermission, RolePermission, School, UserRole
 from billing.models import InstallmentPlan
 from billing_wizard.models import BillingWizardSession
 
@@ -52,6 +52,11 @@ def _headers(school_id):
 
 def _client_for(school):
     user = _make_user(school)
+    permission, _ = CrownPermission.objects.get_or_create(
+        code="finance.edit", defaults={"description": "Edit school finances"},
+    )
+    RolePermission.objects.get_or_create(role_code="FINANCE_DIRECTOR", permission=permission)
+    UserRole.objects.get_or_create(user=user, school=school, role_code="FINANCE_DIRECTOR")
     c = APIClient()
     c.force_authenticate(user=user)
     c._school_id = school.id
@@ -70,6 +75,13 @@ class TestAuth(TestCase):
         c = APIClient()
         r = c.post(BASE_URL, **_headers(self.school.id))
         self.assertEqual(r.status_code, 401)
+
+    def test_authenticated_user_without_finance_role_cannot_open_billing_wizard(self):
+        reader = APIClient()
+        reader.force_authenticate(user=_make_user(self.school))
+        denied = reader.post(BASE_URL, **_headers(self.school.id))
+        self.assertEqual(denied.status_code, 403)
+        self.assertFalse(BillingWizardSession.objects.filter(school=self.school).exists())
 
     def test_configure_requires_auth(self):
         c = APIClient()
@@ -376,7 +388,7 @@ class TestVerify(TestCase):
         self.client.post(f"{BASE_URL}{sid}/commit/", {"confirm": True}, format="json", **h)
 
     def _verify(self):
-        return self.client.get(
+        return self.client.post(
             f"{BASE_URL}{self.session_id}/verify/",
             **_headers(self.school.id),
         )
@@ -391,6 +403,28 @@ class TestVerify(TestCase):
         r2 = self._verify()
         self.assertEqual(r2.status_code, 200)
         self.assertEqual(r2.data["status"], "verified")
+
+    def test_get_verify_is_read_only_before_and_after_post(self):
+        session = BillingWizardSession.objects.get(pk=self.session_id)
+        previous_updated_at = session.updated_at
+        url = f"{BASE_URL}{self.session_id}/verify/"
+
+        inspection = self.client.get(url, **_headers(self.school.id))
+        self.assertEqual(inspection.status_code, 200)
+        self.assertEqual(inspection.data["status"], BillingWizardSession.STATUS_COMMITTED)
+        session.refresh_from_db()
+        self.assertEqual(session.updated_at, previous_updated_at)
+        self.assertEqual(session.status, BillingWizardSession.STATUS_COMMITTED)
+
+        verified = self._verify()
+        self.assertEqual(verified.status_code, 200)
+        session.refresh_from_db()
+        verified_updated_at = session.updated_at
+        self.assertEqual(session.status, BillingWizardSession.STATUS_VERIFIED)
+        self.assertEqual(self.client.get(url, **_headers(self.school.id)).status_code, 200)
+        self.assertEqual(self._verify().status_code, 200)
+        session.refresh_from_db()
+        self.assertEqual(session.updated_at, verified_updated_at)
 
     def test_verify_requires_committed_status(self):
         # New session still in draft → 409

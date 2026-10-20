@@ -5,7 +5,7 @@ import json
 from django.db import transaction
 from django.shortcuts import get_object_or_404
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
-from rest_framework.permissions import IsAuthenticated
+from core.permissions import CrownModulePermission
 from rest_framework.authentication import SessionAuthentication
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.response import Response
@@ -19,7 +19,7 @@ from drf_spectacular.utils import extend_schema
 from drf_spectacular.types import OpenApiTypes
 
 _AUTH = [JWTAuthentication, SessionAuthentication]
-_PERM = [IsAuthenticated]
+_PERM = [CrownModulePermission("finance.edit", write_code="finance.edit")]
 
 FEE_TYPES = {"REGISTRATION", "TECH", "BOOKS", "ATHLETICS", "OTHER"}
 
@@ -281,12 +281,17 @@ def commit_session(request, session_id):
 
 
 @extend_schema(responses=OpenApiTypes.OBJECT)
-@api_view(["GET"])
+@api_view(["GET", "POST"])
 @authentication_classes(_AUTH)
 @permission_classes(_PERM)
+@transaction.atomic
 def verify_session(request, session_id):
     school_id = get_request_school_id(request)
-    session = _get_session(session_id, school_id)
+    session = (
+        get_object_or_404(
+            BillingWizardSession.objects.select_for_update(), id=session_id, school_id=school_id,
+        ) if request.method == "POST" else _get_session(session_id, school_id)
+    )
 
     if session.status == BillingWizardSession.STATUS_VERIFIED:
         return Response({"session_id": str(session.id), "status": session.status, "result": session.commit_result})
@@ -297,6 +302,7 @@ def verify_session(request, session_id):
             status=status.HTTP_409_CONFLICT,
         )
 
-    session.status = BillingWizardSession.STATUS_VERIFIED
-    session.save(update_fields=["status", "updated_at"])
+    if request.method == "POST":
+        session.status = BillingWizardSession.STATUS_VERIFIED
+        session.save(update_fields=["status", "updated_at"])
     return Response({"session_id": str(session.id), "status": session.status, "result": session.commit_result})
