@@ -38,6 +38,7 @@ def build(output_directory: Path | None = None) -> Path:
         "product": "CROWN Heritage Christian Academy local sales demo",
         "repository": "Arete0920/Crown-CSMS",
         "source_sha": sha,
+        "source_url": f"https://github.com/Arete0920/Crown-CSMS/archive/{sha}.zip",
         "launch": "Start-Heritage.cmd",
         "entry": "http://localhost:4173/sandbox",
         "type": "isolated fictional-data local demo",
