@@ -16,10 +16,12 @@ import uuid
 import datetime
 
 from django.contrib.auth import get_user_model
+from unittest.mock import patch
 from django.test import TestCase
+from django.db import DatabaseError
 from rest_framework.test import APIClient
 
-from core.models import School
+from core.models import CrownPermission, RolePermission, School, UserRole
 from fee_schedule_wizard.models import FeeSchedule, FeeLine, FeeScheduleWizardSession
 
 
@@ -48,8 +50,22 @@ def _headers(school_id):
 
 
 def _authed_client():
+    # Existing happy-path tests model a multi-school financial operator.
+    # Security-denial tests below use real sessions, not DRF force-auth bypasses.
+    user = _make_user()
+    permission, _ = CrownPermission.objects.get_or_create(
+        code="finance.edit",
+        defaults={"description": "Manage school tuition and fee schedules"},
+    )
+    RolePermission.objects.get_or_create(
+        role_code="FINANCE_DIRECTOR", permission=permission,
+    )
+    for school in School.objects.all():
+        UserRole.objects.get_or_create(
+            school=school, user=user, role_code="FINANCE_DIRECTOR",
+        )
     c = APIClient()
-    c.force_authenticate(user=_make_user())
+    c.force_authenticate(user=user)
     return c
 
 
@@ -345,7 +361,10 @@ class FeeScheduleCommitTest(TestCase):
         updated_lines = [
             {"code": "TUITION-BASE", "label": "Base Tuition UPDATED", "amount_cents": 800000, "kind": "tuition", "frequency": "annual"},
         ]
-        sid2, _ = _advance_to_lines_set(client, school.id, lines=updated_lines, name=shared_name)
+        sid2, _ = _advance_to_lines_set(
+            client, school.id, lines=updated_lines, name=shared_name,
+            term="2027-SPRING", effective_date="2027-01-01",
+        )
         r2 = client.post(f"{BASE_URL}{sid2}/commit/", **_headers(school.id))
         self.assertEqual(r2.status_code, 200)
         self.assertFalse(r2.data["result"]["created"])  # schedule existed
@@ -353,6 +372,13 @@ class FeeScheduleCommitTest(TestCase):
         # Line updated
         line = FeeLine.objects.get(fee_schedule__school=school, code="TUITION-BASE")
         self.assertEqual(line.amount_cents, 800000)
+        self.assertFalse(
+            FeeLine.objects.filter(fee_schedule=line.fee_schedule, code="TECH-FEE").exists()
+        )
+        self.assertEqual(r2.data["result"]["lines_removed"], 1)
+        schedule = FeeSchedule.objects.get(school=school, name=shared_name)
+        self.assertEqual(schedule.term, "2027-SPRING")
+        self.assertEqual(schedule.effective_date, datetime.date(2027, 1, 1))
 
     def test_commit_all_frequency_values_accepted(self):
         school = _make_school()
@@ -391,6 +417,77 @@ class FeeScheduleVerifyTest(TestCase):
 # ---------------------------------------------------------------------------
 # Single-active enforcement
 # ---------------------------------------------------------------------------
+
+class FeeScheduleVerificationIntegrityTest(TestCase):
+    def test_missing_committed_schedule_does_not_become_verified(self):
+        school = _make_school()
+        client = _authed_client()
+        sid, name = _advance_to_committed(client, school.id)
+        FeeSchedule.objects.get(school=school, name=name).delete()
+
+        result = client.get(f"{BASE_URL}{sid}/verify/", **_headers(school.id))
+        self.assertEqual(result.status_code, 409)
+        self.assertFalse(result.data["schedule_exists"])
+        self.assertEqual(
+            FeeScheduleWizardSession.objects.get(pk=sid).status,
+            FeeScheduleWizardSession.STATUS_COMMITTED,
+        )
+
+    def test_same_count_but_modified_fee_amount_fails_verification(self):
+        school = _make_school()
+        client = _authed_client()
+        sid, name = _advance_to_committed(client, school.id)
+        schedule = FeeSchedule.objects.get(school=school, name=name)
+        line = schedule.lines.get(code="TUITION-BASE")
+        line.amount_cents += 1
+        line.save(update_fields=["amount_cents"])
+
+        result = client.get(f"{BASE_URL}{sid}/verify/", **_headers(school.id))
+        self.assertEqual(result.status_code, 409)
+        self.assertEqual(
+            FeeScheduleWizardSession.objects.get(pk=sid).status,
+            FeeScheduleWizardSession.STATUS_COMMITTED,
+        )
+
+    def test_commit_snapshot_identity_must_match_schedule(self):
+        school = _make_school()
+        client = _authed_client()
+        sid, _ = _advance_to_committed(client, school.id)
+        session = FeeScheduleWizardSession.objects.get(pk=sid)
+        session.commit_result["schedule_id"] = str(uuid.uuid4())
+        session.save(update_fields=["commit_result"])
+
+        result = client.get(f"{BASE_URL}{sid}/verify/", **_headers(school.id))
+        self.assertEqual(result.status_code, 409)
+        session.refresh_from_db()
+        self.assertEqual(session.status, FeeScheduleWizardSession.STATUS_COMMITTED)
+
+    def test_empty_stored_snapshot_cannot_be_verified(self):
+        school = _make_school()
+        client = _authed_client()
+        sid, _ = _advance_to_committed(client, school.id)
+        session = FeeScheduleWizardSession.objects.get(pk=sid)
+        session.lines_config = []
+        session.save(update_fields=["lines_config"])
+
+        result = client.get(f"{BASE_URL}{sid}/verify/", **_headers(school.id))
+        self.assertEqual(result.status_code, 409)
+        session.refresh_from_db()
+        self.assertEqual(session.status, FeeScheduleWizardSession.STATUS_COMMITTED)
+
+    def test_inactive_committed_schedule_cannot_be_verified(self):
+        school = _make_school()
+        client = _authed_client()
+        sid, _ = _advance_to_committed(client, school.id, name="Older schedule")
+        _advance_to_committed(client, school.id, name="Replacement schedule")
+
+        result = client.get(f"{BASE_URL}{sid}/verify/", **_headers(school.id))
+        self.assertEqual(result.status_code, 409)
+        self.assertEqual(
+            FeeScheduleWizardSession.objects.get(pk=sid).status,
+            FeeScheduleWizardSession.STATUS_COMMITTED,
+        )
+
 
 class FeeScheduleSingleActiveTest(TestCase):
     def test_activating_schedule_deactivates_others(self):
@@ -431,3 +528,228 @@ class FeeScheduleSingleActiveTest(TestCase):
         # school_a schedule remains active (different tenant)
         sched_a.refresh_from_db()
         self.assertTrue(sched_a.is_active, "Cross-tenant schedule must not be deactivated")
+
+
+# ---------------------------------------------------------------------------
+# Finance authorization and tenant-revalidation regression tests
+# ---------------------------------------------------------------------------
+
+class FeeScheduleFinanceAuthorityTest(TestCase):
+    def _session_client(self, user):
+        client = APIClient()
+        client.force_login(user)
+        return client
+
+    def _grant_finance(self, user, school):
+        permission, _ = CrownPermission.objects.get_or_create(
+            code="finance.edit",
+            defaults={"description": "Manage school tuition and fee schedules"},
+        )
+        RolePermission.objects.get_or_create(
+            role_code="FINANCE_DIRECTOR", permission=permission,
+        )
+        UserRole.objects.create(
+            school=school, user=user, role_code="FINANCE_DIRECTOR",
+        )
+
+    def test_authenticated_teacher_cannot_create_fee_schedule(self):
+        school = _make_school()
+        user = _make_user()
+        UserRole.objects.create(school=school, user=user, role_code="TEACHER")
+
+        response = self._session_client(user).post(BASE_URL, **_headers(school.id))
+
+        self.assertEqual(response.status_code, 403)
+        self.assertFalse(FeeScheduleWizardSession.objects.exists())
+
+    def test_finance_director_without_edit_grant_is_denied(self):
+        school = _make_school()
+        user = _make_user()
+        UserRole.objects.create(
+            school=school, user=user, role_code="FINANCE_DIRECTOR",
+        )
+
+        response = self._session_client(user).post(BASE_URL, **_headers(school.id))
+
+        self.assertEqual(response.status_code, 403)
+        self.assertFalse(FeeScheduleWizardSession.objects.exists())
+
+    def test_finance_director_with_edit_grant_can_create(self):
+        school = _make_school()
+        user = _make_user()
+        self._grant_finance(user, school)
+
+        response = self._session_client(user).post(BASE_URL, **_headers(school.id))
+
+        self.assertEqual(response.status_code, 201)
+
+    def test_finance_director_cannot_select_unassigned_school(self):
+        own_school = _make_school("owned")
+        other_school = _make_school("foreign")
+        user = _make_user()
+        self._grant_finance(user, own_school)
+
+        response = self._session_client(user).post(
+            BASE_URL, **_headers(other_school.id),
+        )
+
+        self.assertEqual(response.status_code, 404)
+        self.assertFalse(FeeScheduleWizardSession.objects.exists())
+
+    def test_bearer_auth_revalidates_selected_tenant(self):
+        from rest_framework_simplejwt.tokens import AccessToken
+
+        own_school = _make_school("jwt-owned")
+        other_school = _make_school("jwt-foreign")
+        user = _make_user()
+        self._grant_finance(user, own_school)
+
+        token = str(AccessToken.for_user(user))
+        client = APIClient()
+        response = client.post(
+            BASE_URL,
+            HTTP_AUTHORIZATION=f"Bearer {token}",
+            **_headers(other_school.id),
+        )
+
+        self.assertEqual(response.status_code, 404)
+        self.assertFalse(FeeScheduleWizardSession.objects.exists())
+
+    def test_verify_requires_finance_edit_because_it_changes_state(self):
+        school = _make_school()
+        authorized = _authed_client()
+        session_id, _ = _advance_to_committed(
+            authorized, school.id, name="Protected fees",
+        )
+        teacher = _make_user()
+        UserRole.objects.create(school=school, user=teacher, role_code="TEACHER")
+
+        response = self._session_client(teacher).get(
+            f"{BASE_URL}{session_id}/verify/",
+            **_headers(school.id),
+        )
+
+        self.assertEqual(response.status_code, 403)
+        session = FeeScheduleWizardSession.objects.get(pk=session_id)
+        self.assertEqual(session.status, FeeScheduleWizardSession.STATUS_COMMITTED)
+
+# ---------------------------------------------------------------------------
+# Strict monetary parsing, transactional audit and state integrity
+# ---------------------------------------------------------------------------
+
+class FeeScheduleIntegrityTest(TestCase):
+    def test_rejects_invalid_line_types_without_server_error(self):
+        school = _make_school()
+        client = _authed_client()
+        sid, _ = _advance_to_configured(client, school.id)
+        invalid = [
+            {"code": ["INVALID"], "label": "Fee", "amount_cents": 100},
+            {"code": "FEE", "label": {"text": "bad"}, "amount_cents": 100},
+            {"code": "FEE", "label": "Valid", "amount_cents": 1.9},
+            {"code": "FEE", "label": "Valid", "amount_cents": True},
+            {"code": "FEE", "label": "Valid", "amount_cents": 10, "is_required": "false"},
+            {"code": "FEE", "label": "Valid", "amount_cents": 10, "sort_order": -1},
+            {"code": "FEE", "label": "Valid", "amount_cents": 10, "kind": []},
+        ]
+        for line in invalid:
+            with self.subTest(line=line):
+                response = client.post(
+                    f"{BASE_URL}{sid}/lines/",
+                    {"lines": [line]},
+                    format="json",
+                    **_headers(school.id),
+                )
+                self.assertEqual(response.status_code, 400)
+        self.assertEqual(
+            FeeScheduleWizardSession.objects.get(pk=sid).status,
+            FeeScheduleWizardSession.STATUS_CONFIGURED,
+        )
+
+    def test_commit_rolls_back_when_financial_audit_write_fails(self):
+        school = _make_school()
+        client = _authed_client()
+        sid, name = _advance_to_lines_set(client, school.id)
+        with patch("fee_schedule_wizard.views.AuditLog.objects.create",
+                   side_effect=DatabaseError("audit unavailable")):
+            response = client.post(f"{BASE_URL}{sid}/commit/", **_headers(school.id))
+        self.assertEqual(response.status_code, 503)
+        self.assertFalse(FeeSchedule.objects.filter(school=school, name=name).exists())
+        self.assertFalse(FeeLine.objects.filter(fee_schedule__school=school).exists())
+        self.assertEqual(
+            FeeScheduleWizardSession.objects.get(pk=sid).status,
+            FeeScheduleWizardSession.STATUS_LINES_SET,
+        )
+
+    def test_commit_rechecks_untrusted_stored_line_configuration(self):
+        school = _make_school()
+        client = _authed_client()
+        sid, name = _advance_to_lines_set(client, school.id)
+        session = FeeScheduleWizardSession.objects.get(pk=sid)
+        session.lines_config = [{"code": "TUITION", "label": "Tuition",
+                                 "amount_cents": "1.9"}]
+        session.save(update_fields=["lines_config"])
+        response = client.post(f"{BASE_URL}{sid}/commit/", **_headers(school.id))
+        self.assertEqual(response.status_code, 400)
+        self.assertFalse(FeeSchedule.objects.filter(school=school, name=name).exists())
+
+
+    def test_committed_session_cannot_be_reconfigured_or_reset_to_lines(self):
+        school = _make_school()
+        client = _authed_client()
+        sid, name = _advance_to_committed(client, school.id)
+        attempted_config = client.post(
+            f"{BASE_URL}{sid}/configure/",
+            _configure_payload(name="Unauthorized revision"),
+            format="json", **_headers(school.id),
+        )
+        attempted_lines = client.post(
+            f"{BASE_URL}{sid}/lines/",
+            {"lines": GOOD_LINES},
+            format="json", **_headers(school.id),
+        )
+        self.assertEqual(attempted_config.status_code, 400)
+        self.assertEqual(attempted_lines.status_code, 400)
+        current = FeeScheduleWizardSession.objects.get(pk=sid)
+        self.assertEqual(current.status, FeeScheduleWizardSession.STATUS_COMMITTED)
+        self.assertEqual(current.schedule_name, name)
+
+    def test_committed_schedule_rejects_duplicate_stored_fee_codes(self):
+        school = _make_school()
+        client = _authed_client()
+        sid, name = _advance_to_lines_set(client, school.id)
+        current = FeeScheduleWizardSession.objects.get(pk=sid)
+        current.lines_config = [GOOD_LINES[0], GOOD_LINES[0]]
+        current.save(update_fields=["lines_config"])
+        response = client.post(f"{BASE_URL}{sid}/commit/", **_headers(school.id))
+        self.assertEqual(response.status_code, 400)
+        self.assertFalse(FeeSchedule.objects.filter(school=school, name=name).exists())
+
+    def test_configure_rejects_nonstring_fields(self):
+        school = _make_school()
+        client = _authed_client()
+        sid = client.post(BASE_URL, **_headers(school.id)).data["session_id"]
+        response = client.post(
+            f"{BASE_URL}{sid}/configure/",
+            _configure_payload(name={"bad": "type"}),
+            format="json", **_headers(school.id),
+        )
+        self.assertEqual(response.status_code, 400)
+
+
+    def test_verified_session_cannot_accept_new_fee_lines(self):
+        school = _make_school()
+        client = _authed_client()
+        sid, _ = _advance_to_committed(client, school.id)
+        verified = client.get(f"{BASE_URL}{sid}/verify/", **_headers(school.id))
+        self.assertEqual(verified.status_code, 200)
+        response = client.post(
+            f"{BASE_URL}{sid}/lines/",
+            {"lines": GOOD_LINES},
+            format="json",
+            **_headers(school.id),
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(
+            FeeScheduleWizardSession.objects.get(pk=sid).status,
+            FeeScheduleWizardSession.STATUS_VERIFIED,
+        )
