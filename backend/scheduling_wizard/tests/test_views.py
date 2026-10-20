@@ -72,7 +72,10 @@ def _grant_scheduling_role(user, school):
 
 def _make_user(school, username=None, grant_permissions=True):
     username = username or f"user_{uuid.uuid4().hex[:8]}"
-    user = User.objects.create_user(username=username, password=TEST_AUTH_SECRET, school=school)
+    user = User.objects.create_user(
+        username=username, email=f"{username}@example.invalid",
+        password=TEST_AUTH_SECRET, school=school,
+    )
     if grant_permissions:
         _grant_scheduling_role(user, school)
     return user

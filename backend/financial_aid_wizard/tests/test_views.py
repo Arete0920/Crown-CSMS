@@ -31,7 +31,10 @@ def _make_year(school, name="2026-2027", start_year=2026):
 
 def _make_user(school, username=None, grant_aid=True):
     username = username or f"user_{uuid.uuid4().hex[:8]}"
-    user = User.objects.create_user(username=username, password=TEST_AUTH_SECRET, school=school)
+    user = User.objects.create_user(
+        username=username, email=f"{username}@example.invalid",
+        password=TEST_AUTH_SECRET, school=school,
+    )
     if grant_aid:
         UserRole.objects.create(user=user, school=school, role_code="AID_DIRECTOR")
         for code in ("financial_aid.view", "financial_aid.edit"):
