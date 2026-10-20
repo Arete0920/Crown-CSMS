@@ -270,8 +270,10 @@ def test_bootstrap_rejects_unlabelled_sqlite_before_writes(
 
 
 def test_bootstrap_rejects_nonlocal_db_without_verified_dev_host(
-    local_golden_path_environment, settings,
+    local_golden_path_environment, monkeypatch, settings,
 ):
-    settings.DATABASES["default"]["ENGINE"] = "django.db.backends.postgresql"
+    monkeypatch.setitem(
+        settings.DATABASES["default"], "ENGINE", "django.db.backends.postgresql"
+    )
     with pytest.raises(CommandError, match="verified DEV or isolated local runtime"):
         _verify_golden_path_runtime()
