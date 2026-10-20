@@ -3,6 +3,7 @@ import ast
 import importlib.util
 import json
 from pathlib import Path
+import runpy
 import tempfile
 import zipfile
 
@@ -24,6 +25,15 @@ def test_starter_is_version_pinned_to_a_git_commit():
     assert len(packager.pinned_revision()) == 40
 
 
+def test_installer_download_url_and_destination_match_immutable_source_pin():
+    packager = loader()
+    installer = runpy.run_path(str(ROOT / "Install-and-Start-Heritage.py"))
+    source_sha = packager.pinned_revision()
+    assert installer["SOURCE_SHA"] == source_sha
+    assert installer["SOURCE_URL"] == f"https://github.com/Arete0920/Crown-CSMS/archive/{source_sha}.zip"
+    assert installer["DESTINATION"].name == f"Heritage-{source_sha[:12]}"
+
+
 def test_starter_package_contains_no_database_secret_or_credential_file():
     packager = loader()
     with tempfile.TemporaryDirectory() as d:
@@ -34,6 +44,7 @@ def test_starter_package_contains_no_database_secret_or_credential_file():
             assert archive.testzip() is None
             manifest = json.loads(archive.read("HERITAGE-SALES-MANIFEST.json"))
             assert manifest["source_sha"] == packager.pinned_revision()
+            assert manifest["source_url"] == f"https://github.com/Arete0920/Crown-CSMS/archive/{manifest['source_sha']}.zip"
             assert manifest["external_payments"] is False
             assert manifest["production_certified"] is False
             assert "Crown-CSMS" in archive.read("Install-and-Start-Heritage.py").decode("utf-8")
