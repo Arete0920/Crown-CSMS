@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 import re
 import uuid
 from dataclasses import asdict
@@ -59,6 +58,9 @@ def note_has_prohibited_data(note: str) -> bool:
 @transaction.atomic
 def ensure_demo_school(school_spec: SandboxSchool) -> School:
     school_id = uuid.UUID(school_spec.id)
+    existing_school = School.objects.filter(pk=school_id).first()
+    if existing_school is not None and existing_school.name != school_spec.name:
+        raise RuntimeError("Sandbox school identity belongs to a different institution.")
     school, _ = School.objects.update_or_create(
         id=school_id,
         defaults={
@@ -122,6 +124,12 @@ def ensure_persona_user(school: School, persona: SandboxPersona) -> UserAccount:
             },
         )
 
+    existing_user = UserAccount.objects.filter(username=persona.email).first()
+    if existing_user is not None and (
+        existing_user.school_id != school.pk or existing_user.email != persona.email
+    ):
+        raise RuntimeError("Sandbox persona username belongs to another identity.")
+
     user, _ = UserAccount.objects.update_or_create(
         username=persona.email,
         defaults={
@@ -132,30 +140,21 @@ def ensure_persona_user(school: School, persona: SandboxPersona) -> UserAccount:
             "staff": staff,
             "guardian": guardian if persona.key == "parent" else None,
             "is_active": True,
+            "is_staff": False,
+            "is_superuser": False,
         },
     )
 
-    # Keep sandbox logins deterministic for local/demo proof runs when explicitly configured.
-    fallback_password = getattr(
-        settings, "CROWN_SANDBOX_FALLBACK_PASSWORD", ""
-    ) or os.getenv("CROWN_DEMO_PASSWORD", "")
-    if fallback_password:
-        user.set_password(fallback_password)
-    else:
-        user.set_unusable_password()
+    # Sandbox sessions authenticate by scoped one-click credentials, not
+    # password login. Never reuse global or shared demo password settings.
+    user.set_unusable_password()
     user.save(update_fields=["password"])
 
-    # The historical synthetic Board actor was mistakenly given Head of School.
-    # Retire only that exact actor's stale grant; never change real-school roles.
-    if (
-        persona.key == "board"
-        and str(school.id) == SANDBOX_SCHOOLS["heritage-core"].id
-        and user.username == SANDBOX_PERSONAS["board"].email
-    ):
-        UserRole.objects.filter(
-            school=school, user=user, role_code="HEAD_OF_SCHOOL"
-        ).delete()
-
+    # Persistent application roles can authorize actions even after Django
+    # staff flags are lowered. Keep only this fictional persona's school role.
+    UserRole.objects.filter(school=school, user=user).exclude(
+        role_code=persona.role_code
+    ).delete()
     UserRole.objects.update_or_create(
         school=school,
         user=user,
@@ -213,8 +212,6 @@ def create_sandbox_session(
 
 
 def _clear_flagship_data(school: School) -> None:
-    from django.db.models import Q
-
     from admissions.models import (
         AdmissionsAuditEvent,
         AdmissionsDecision,
@@ -233,24 +230,35 @@ def _clear_flagship_data(school: School) -> None:
         UserAccount.objects.filter(school=school).values_list("id", flat=True)
     )
 
+    # Never delete another school's admissions or aid evidence merely because
+    # its actor points to one of the fictional sandbox accounts. Those FKs
+    # are PROTECT references; abort before destructive writes if cross-school
+    # relationships exist, rather than erasing records to unblock a reset.
+    if user_ids:
+        actor_references = (
+            (AidReview, "reviewer_user_id"),
+            (AidAward, "decided_by_id"),
+            (AidAuditEvent, "actor_user_id"),
+            (AdmissionsReview, "reviewer_user_id"),
+            (AdmissionsDecision, "decided_by_id"),
+            (AdmissionsAuditEvent, "actor_user_id"),
+        )
+        for model, field in actor_references:
+            if model.objects.filter(**{f"{field}__in": user_ids}).exclude(
+                school_id=school.id
+            ).exists():
+                raise RuntimeError(
+                    "Sandbox reset refused: actor is referenced by another school's records."
+                )
+
     AidDocument.objects.filter(school=school).delete()
-    AidReview.objects.filter(
-        Q(school=school) | Q(reviewer_user_id__in=user_ids)
-    ).delete()
-    AidAward.objects.filter(Q(school=school) | Q(decided_by_id__in=user_ids)).delete()
-    AidAuditEvent.objects.filter(
-        Q(school=school) | Q(actor_user_id__in=user_ids)
-    ).delete()
+    AidReview.objects.filter(school=school).delete()
+    AidAward.objects.filter(school=school).delete()
+    AidAuditEvent.objects.filter(school=school).delete()
     AidApplication.objects.filter(school=school).delete()
-    AdmissionsReview.objects.filter(
-        Q(school=school) | Q(reviewer_user_id__in=user_ids)
-    ).delete()
-    AdmissionsDecision.objects.filter(
-        Q(school=school) | Q(decided_by_id__in=user_ids)
-    ).delete()
-    AdmissionsAuditEvent.objects.filter(
-        Q(school=school) | Q(actor_user_id__in=user_ids)
-    ).delete()
+    AdmissionsReview.objects.filter(school=school).delete()
+    AdmissionsDecision.objects.filter(school=school).delete()
+    AdmissionsAuditEvent.objects.filter(school=school).delete()
     FinanceAllocation.objects.filter(school=school).delete()
     FinanceInvoiceLine.objects.filter(invoice__school=school).delete()
     FinanceInvoice.objects.filter(school=school).delete()
