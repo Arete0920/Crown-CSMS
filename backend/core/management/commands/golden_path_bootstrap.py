@@ -22,6 +22,59 @@ from core.golden_path_fixture_profiles import (
 from crown_api.ops_route_guard import demo_ops_runtime_allowed
 
 
+_LOCAL_GOLDEN_PATH_ENVIRONMENTS = frozenset({"local", "test", "testing"})
+_DEV_GOLDEN_PATH_ENVIRONMENTS = frozenset({"dev", "development"})
+_PRODUCTION_GOLDEN_PATH_ENVIRONMENTS = frozenset({"prod", "production", "live"})
+_GOLDEN_PATH_ENVIRONMENT_KEYS = (
+    "CROWN_ENV", "DJANGO_ENV", "ENVIRONMENT", "APP_ENV", "AZURE_ENVIRONMENT",
+)
+
+
+def _verify_golden_path_runtime() -> bool:
+    """Reject unsafe runtimes before any fixture or administrator writes.
+
+    Return True only for isolated local SQLite; False for verified hosted DEV.
+    Neither a local database engine nor a DEV-looking hostname can override an
+    unsupported, production, or contradictory environment configuration.
+    """
+    labels = {
+        str(value).strip().lower()
+        for key in _GOLDEN_PATH_ENVIRONMENT_KEYS
+        for value in (os.getenv(key, ""), getattr(settings, key, ""))
+        if str(value or "").strip()
+    }
+    if labels & _PRODUCTION_GOLDEN_PATH_ENVIRONMENTS:
+        raise CommandError("Golden Path is prohibited in production.")
+
+    allowed = _LOCAL_GOLDEN_PATH_ENVIRONMENTS | _DEV_GOLDEN_PATH_ENVIRONMENTS
+    if labels - allowed:
+        raise CommandError("Golden Path has an unsupported environment label.")
+    if labels & _LOCAL_GOLDEN_PATH_ENVIRONMENTS and labels & _DEV_GOLDEN_PATH_ENVIRONMENTS:
+        raise CommandError("Golden Path has conflicting local and DEV environment labels.")
+
+    hostname = str(os.getenv("WEBSITE_HOSTNAME", "") or "").strip().lower()
+    hosted = bool(
+        hostname
+        or os.getenv("WEBSITE_INSTANCE_ID")
+        or os.getenv("AZURE_ENVIRONMENT")
+        or getattr(settings, "AZURE_ENVIRONMENT", "")
+    )
+    if hosted:
+        # An instance marker without a verifiable DEV hostname is not enough.
+        # The shared ops guard also checks the environment and host identity.
+        if labels & _LOCAL_GOLDEN_PATH_ENVIRONMENTS:
+            raise CommandError("Golden Path local fixtures are prohibited on hosted runtimes.")
+        if not hostname or not demo_ops_runtime_allowed():
+            raise CommandError("Golden Path requires a verified DEV host.")
+        return False
+
+    if settings.DATABASES["default"]["ENGINE"] == "django.db.backends.sqlite3":
+        return True
+
+    # A DEV label alone does not authorize writes to an unverified remote DB.
+    raise CommandError("Golden Path requires a verified DEV or isolated local runtime.")
+
+
 def seed_admissions_funnel(*, school_id, academic_year_name=None, force=False):
     """Create a fictional 94-applicant DEV funnel without deleting user records."""
     from households.models import Household
@@ -450,27 +503,8 @@ class Command(BaseCommand):
         return stage_counts, len(app_ids)
 
     def handle(self, *args, **options):
-        # The management command is not a production administrator bootstrap.
-        # DEV Azure remains supported only under its explicit DEV guard.
-        labels = [
-            str(value or "").strip().lower()
-            for value in (
-                os.getenv("CROWN_ENV"), os.getenv("DJANGO_ENV"),
-                os.getenv("ENVIRONMENT"), os.getenv("APP_ENV"),
-                os.getenv("AZURE_ENVIRONMENT"),
-                getattr(settings, "CROWN_ENV", ""),
-                getattr(settings, "ENVIRONMENT", ""),
-            )
-            if str(value or "").strip()
-        ]
-        if any(label in {"production", "prod", "live"} for label in labels):
-            raise CommandError("Golden Path is prohibited in production.")
-        sqlite_local = (
-            settings.DATABASES["default"]["ENGINE"] == "django.db.backends.sqlite3"
-            and not (os.getenv("WEBSITE_HOSTNAME") or os.getenv("WEBSITE_INSTANCE_ID"))
-        )
-        if not (demo_ops_runtime_allowed() or sqlite_local):
-            raise CommandError("Golden Path requires a verified DEV or isolated local runtime.")
+        # Runtime validation must precede SeedRun, admin, and fixture writes.
+        sqlite_local = _verify_golden_path_runtime()
 
         force = bool(options.get("force", False))
         school_id_str = options.get("school_id") or os.getenv("CROWN_GOLDEN_PATH_SCHOOL_ID")
@@ -522,8 +556,13 @@ class Command(BaseCommand):
                 if school_id:
                     # Do not seed an existing customer school under an arbitrary
                     # supplied ID; the canonical DEV school is named distinctly.
+                    allowed_names = {"Crown Demo School"}
+                    if sqlite_local:
+                        # A local run without an ID creates GP School. The same
+                        # fixture must be selectable by its UUID on a later run.
+                        allowed_names.add("GP School")
                     existing_school = School.objects.filter(pk=school_id).first()
-                    if existing_school and existing_school.name != "Crown Demo School":
+                    if existing_school and existing_school.name not in allowed_names:
                         raise CommandError("Golden Path refuses non-demo school identities.")
                     school, created = ensure_deterministic_school(school_id)
                     if created:
@@ -535,7 +574,10 @@ class Command(BaseCommand):
                         name="GP School",
                         defaults={"timezone": "America/New_York", "is_active": True},
                     )
-                if school.name not in {"Crown Demo School", "GP School"}:
+                allowed_names = {"Crown Demo School"}
+                if sqlite_local:
+                    allowed_names.add("GP School")
+                if school.name not in allowed_names:
                     raise CommandError("Golden Path may seed only a dedicated demo school.")
 
                 User = get_user_model()

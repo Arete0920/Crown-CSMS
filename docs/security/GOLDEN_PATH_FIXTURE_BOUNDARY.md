@@ -7,9 +7,16 @@ customer onboarding tool or an administrator recovery operation.
 
 - In hosted DEV, supply an explicit school UUID. An existing school must match
   the named canonical demo-school identity `Crown Demo School`.
-- In local SQLite without a UUID, the command uses only `GP School` and never
-  selects the database's first school.
-- Production environment labels and non-DEV hosting contexts are rejected.
+- In isolated local SQLite without a UUID, the command uses only `GP School`
+  and never selects the database's first school. An explicit UUID may select
+  that same `GP School` for local refreshes, but never in hosted DEV.
+- All environment labels are checked across process variables and Django
+  settings, including `DJANGO_ENV`, `APP_ENV`, and `AZURE_ENVIRONMENT`.
+  Production, staging, sandbox, unknown, and conflicting local/DEV
+  classifications fail before any SeedRun, administrator, or fixture write.
+- Hosted DEV requires a recognizable DEV hostname and the shared runtime
+  authorization guard. A lone Azure instance marker or an unverified remote
+  database does not authorize a bootstrap, even if DEV labels are present.
 - The legacy demonstration administrator username may not be reassigned from a
   different tenant, and an existing non-administrator may not be elevated.
   Administrator credential provision remains governed separately.

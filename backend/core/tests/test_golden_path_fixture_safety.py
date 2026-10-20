@@ -14,7 +14,10 @@ from core.golden_path_fixture_profiles import (
     applicant_identity,
     fixture_uuid,
 )
-from core.management.commands.golden_path_bootstrap import seed_admissions_funnel
+from core.management.commands.golden_path_bootstrap import (
+    _verify_golden_path_runtime,
+    seed_admissions_funnel,
+)
 from core.models import School, UserAccount
 from households.models import Household
 
@@ -84,9 +87,9 @@ def test_seed_preserves_applications_in_another_tenant():
 
 
 @pytest.mark.django_db
-def test_bootstrap_rejects_existing_foreign_admin_without_escalation(monkeypatch):
-    monkeypatch.setenv("CROWN_ENV", "local")
-    monkeypatch.setenv("CROWN_DEMO_PASSWORD", "A-very-long-only-local-2026-secret")
+def test_bootstrap_rejects_existing_foreign_admin_without_escalation(
+    local_golden_path_environment,
+):
     target = School.objects.create(name="Crown Demo School")
     other = School.objects.create(name="Customer Academy")
     original = UserAccount.objects.create_user(
@@ -102,9 +105,9 @@ def test_bootstrap_rejects_existing_foreign_admin_without_escalation(monkeypatch
 
 
 @pytest.mark.django_db
-def test_bootstrap_rejects_non_demo_school_before_account_changes(monkeypatch):
-    monkeypatch.setenv("CROWN_ENV", "local")
-    monkeypatch.setenv("CROWN_DEMO_PASSWORD", "A-very-long-only-local-2026-secret")
+def test_bootstrap_rejects_non_demo_school_before_account_changes(
+    local_golden_path_environment,
+):
     other = School.objects.create(name="Actual Customer School")
     with pytest.raises(CommandError, match="non-demo school"):
         call_command("golden_path_bootstrap", school_id=str(other.id), force=True)
@@ -112,10 +115,137 @@ def test_bootstrap_rejects_non_demo_school_before_account_changes(monkeypatch):
 
 
 @pytest.mark.django_db
-def test_bootstrap_rejects_production_even_with_demo_password(monkeypatch):
+def test_bootstrap_rejects_production_even_with_demo_password(
+    local_golden_path_environment, monkeypatch,
+):
     monkeypatch.setenv("CROWN_ENV", "production")
-    monkeypatch.setenv("CROWN_DEMO_PASSWORD", "A-very-long-only-local-2026-secret")
     school = School.objects.create(name="Crown Demo School")
     with pytest.raises(CommandError, match="prohibited in production"):
         call_command("golden_path_bootstrap", school_id=str(school.pk))
     assert not UserAccount.objects.filter(username="admin").exists()
+
+
+
+@pytest.fixture
+def local_golden_path_environment(monkeypatch, settings):
+    """Isolate safety tests from the test runner's ambient environment."""
+    for key in (
+        "CROWN_ENV", "DJANGO_ENV", "ENVIRONMENT", "APP_ENV",
+        "AZURE_ENVIRONMENT", "WEBSITE_HOSTNAME", "WEBSITE_INSTANCE_ID",
+        "CROWN_GOLDEN_PATH_SCHOOL_ID",
+    ):
+        monkeypatch.delenv(key, raising=False)
+    for key in ("CROWN_ENV", "DJANGO_ENV", "ENVIRONMENT", "APP_ENV", "AZURE_ENVIRONMENT"):
+        setattr(settings, key, "")
+    monkeypatch.setenv("CROWN_ENV", "local")
+    monkeypatch.setenv("CROWN_DEMO_PASSWORD", "A-very-long-only-local-2026-secret")
+
+
+@pytest.mark.parametrize("label", ["staging", "sandbox", "ci"])
+@pytest.mark.parametrize(
+    "source,key",
+    [
+        ("env", "CROWN_ENV"),
+        ("env", "DJANGO_ENV"),
+        ("env", "APP_ENV"),
+        ("env", "AZURE_ENVIRONMENT"),
+        ("settings", "DJANGO_ENV"),
+        ("settings", "APP_ENV"),
+    ],
+)
+@pytest.mark.django_db
+def test_bootstrap_rejects_unsupported_labels_before_any_writes(
+    local_golden_path_environment, monkeypatch, settings, source, key, label,
+):
+    if source == "env":
+        monkeypatch.setenv(key, label)
+    else:
+        setattr(settings, key, label)
+    with pytest.raises(CommandError, match="unsupported environment label"):
+        call_command("golden_path_bootstrap", school_id=str(uuid.uuid4()))
+    assert not UserAccount.objects.filter(username="admin").exists()
+    assert not School.objects.exists()
+    from core.models_seed import SeedRun
+    assert not SeedRun.objects.exists()
+
+
+@pytest.mark.parametrize("production_source", ["DJANGO_ENV", "settings.DJANGO_ENV"])
+@pytest.mark.django_db
+def test_bootstrap_rejects_production_marker_from_all_sources(
+    local_golden_path_environment, monkeypatch, settings, production_source,
+):
+    if production_source.startswith("settings."):
+        settings.DJANGO_ENV = "production"
+    else:
+        monkeypatch.setenv("DJANGO_ENV", "production")
+    with pytest.raises(CommandError, match="prohibited in production"):
+        call_command("golden_path_bootstrap", school_id=str(uuid.uuid4()))
+    assert not UserAccount.objects.filter(username="admin").exists()
+    from core.models_seed import SeedRun
+    assert not SeedRun.objects.exists()
+
+
+def test_bootstrap_rejects_conflicting_local_and_dev_labels(
+    local_golden_path_environment, monkeypatch,
+):
+    monkeypatch.setenv("DJANGO_ENV", "development")
+    with pytest.raises(CommandError, match="conflicting local and DEV"):
+        _verify_golden_path_runtime()
+
+
+@pytest.mark.parametrize(
+    "marker,value",
+    [
+        ("WEBSITE_INSTANCE_ID", "azure-instance-without-host"),
+        ("AZURE_ENVIRONMENT", "dev"),
+        ("WEBSITE_HOSTNAME", "crown-api-prod.azurewebsites.net"),
+    ],
+)
+def test_bootstrap_requires_verified_host_for_hosted_runtimes(
+    local_golden_path_environment, monkeypatch, marker, value,
+):
+    monkeypatch.setenv("CROWN_ENV", "dev")
+    monkeypatch.setenv(marker, value)
+    with pytest.raises(CommandError, match="verified DEV host"):
+        _verify_golden_path_runtime()
+
+
+def test_bootstrap_accepts_verified_hosted_dev_classifier(
+    local_golden_path_environment, monkeypatch,
+):
+    monkeypatch.setenv("CROWN_ENV", "dev")
+    monkeypatch.setenv("DJANGO_ENV", "development")
+    monkeypatch.setenv("WEBSITE_HOSTNAME", "crown2026-api-dev.azurewebsites.net")
+    monkeypatch.setenv("WEBSITE_INSTANCE_ID", "fictional-test-instance")
+    assert _verify_golden_path_runtime() is False
+
+
+@pytest.mark.django_db
+def test_bootstrap_rejects_gp_school_uuid_on_hosted_dev(
+    local_golden_path_environment, monkeypatch,
+):
+    # Only exercise this check against the ephemeral Django test database.
+    school = School.objects.create(name="GP School")
+    monkeypatch.setenv("CROWN_ENV", "dev")
+    monkeypatch.setenv("WEBSITE_HOSTNAME", "crown2026-api-dev.azurewebsites.net")
+    with pytest.raises(CommandError, match="non-demo school"):
+        call_command("golden_path_bootstrap", school_id=str(school.id), verbosity=0)
+    assert not UserAccount.objects.filter(username="admin").exists()
+
+
+@pytest.mark.parametrize("school_selection", ["option", "environment"])
+@pytest.mark.django_db
+def test_local_gp_school_can_be_selected_for_subsequent_run(
+    local_golden_path_environment, monkeypatch, settings, school_selection,
+):
+    if settings.DATABASES["default"]["ENGINE"] != "django.db.backends.sqlite3":
+        pytest.skip("Golden Path local bootstraps require an isolated SQLite test DB")
+    call_command("golden_path_bootstrap", verbosity=0)
+    school = School.objects.get(name="GP School")
+    if school_selection == "environment":
+        monkeypatch.setenv("CROWN_GOLDEN_PATH_SCHOOL_ID", str(school.id))
+        call_command("golden_path_bootstrap", verbosity=0)
+    else:
+        call_command("golden_path_bootstrap", school_id=str(school.id), verbosity=0)
+    assert School.objects.filter(pk=school.id, name="GP School").count() == 1
+    assert UserAccount.objects.filter(username="admin", school_id=school.id).count() == 1
