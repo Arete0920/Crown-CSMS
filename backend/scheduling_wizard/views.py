@@ -7,7 +7,7 @@ from rest_framework import status
 from rest_framework.authentication import SessionAuthentication
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.response import Response
-from rest_framework_simplejwt.authentication import JWTAuthentication
+from crown_api.tenant_authentication import TenantJWTAuthentication
 
 from academics.models import Course, Section, Term
 from core.models import AcademicYear
@@ -18,7 +18,7 @@ from .models import SchedulingWizardSession
 from drf_spectacular.utils import extend_schema
 from drf_spectacular.types import OpenApiTypes
 
-_AUTH = [JWTAuthentication, SessionAuthentication]
+_AUTH = [TenantJWTAuthentication, SessionAuthentication]
 _VIEW_PERM = [CrownModulePermission("scheduling.view")]
 _CONFIGURE_PERM = [CrownModulePermission("scheduling.view", "scheduling.configure")]
 _EDIT_PERM = [CrownModulePermission("scheduling.view", "scheduling.edit")]

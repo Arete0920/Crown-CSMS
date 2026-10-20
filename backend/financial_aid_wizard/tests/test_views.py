@@ -526,3 +526,30 @@ class TestVerify(WizardConfiguredMixin, TestCase):
             **_headers(self.school.id),
         )
         self.assertEqual(blocked.status_code, 409)
+
+
+class TestAuthenticatedBearerTenantBinding(TestCase):
+    def test_jwt_bearer_cannot_select_different_school(self):
+        """JWT school selection must be rechecked after bearer authentication."""
+        from rest_framework_simplejwt.tokens import AccessToken
+
+        owned = _make_school("Bearer Owned")
+        other = _make_school("Bearer Foreign")
+        user = _make_user(owned)
+        token = str(AccessToken.for_user(user))
+        client = APIClient()
+
+        denied = client.post(
+            BASE_URL,
+            HTTP_AUTHORIZATION=f"Bearer {token}",
+            **_headers(other.id),
+        )
+        self.assertEqual(denied.status_code, 404)
+        self.assertFalse(FinancialAidWizardSession.objects.filter(school=other).exists())
+
+        allowed = client.post(
+            BASE_URL,
+            HTTP_AUTHORIZATION=f"Bearer {token}",
+            **_headers(owned.id),
+        )
+        self.assertEqual(allowed.status_code, 201)

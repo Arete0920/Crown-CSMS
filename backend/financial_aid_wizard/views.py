@@ -7,7 +7,7 @@ from rest_framework import status
 from rest_framework.authentication import SessionAuthentication
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.response import Response
-from rest_framework_simplejwt.authentication import JWTAuthentication
+from crown_api.tenant_authentication import TenantJWTAuthentication
 
 from aid.models import AidApplication, AidAuditEvent, AidAward
 from core.models import AcademicYear, School, Student
@@ -18,7 +18,7 @@ from .models import FinancialAidWizardSession
 from drf_spectacular.utils import extend_schema
 from drf_spectacular.types import OpenApiTypes
 
-_AUTH = [JWTAuthentication, SessionAuthentication]
+_AUTH = [TenantJWTAuthentication, SessionAuthentication]
 _VIEW_PERM = [CrownModulePermission("financial_aid.view")]
 _EDIT_PERM = [CrownModulePermission("financial_aid.view", write_code="financial_aid.edit")]
 BUCKET_MAP = {value.lower(): value for value, _label in AidAward.TYPE_CHOICES}
