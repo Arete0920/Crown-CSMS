@@ -162,9 +162,25 @@ jobs:
           rm -rf node_modules
           ln -s frontend/dashboards/node_modules node_modules
 
-      - name: Install Chromium
+      - name: Install Chromium and verify browser runtime
         working-directory: frontend/dashboards
-        run: npx playwright install --with-deps chromium
+        shell: bash
+        run: |
+          set -euo pipefail
+          # ubuntu-latest already ships browser shared libraries. Avoid an
+          # unrelated third-party apt feed blocking every wizard E2E run.
+          # Do not skip browser execution: launch must succeed before 28/28 specs.
+          npx playwright install chromium
+          node <<'NODE'
+          const { chromium } = require('@playwright/test');
+          (async () => {
+            const browser = await chromium.launch({ headless: true });
+            await browser.close();
+          })().catch((error) => {
+            console.error('Chromium runtime preflight failed:', error);
+            process.exitCode = 1;
+          });
+          NODE
 
       - name: Assert complete canonical spec registry
         shell: bash
