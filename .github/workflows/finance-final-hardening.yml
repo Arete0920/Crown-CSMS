@@ -280,7 +280,19 @@ jobs:
 
       - name: Install Chromium
         working-directory: frontend/dashboards
-        run: npx playwright install --with-deps chromium
+        shell: bash
+        run: |
+          set -euo pipefail
+          # An unrelated third-party Microsoft APT feed intermittently returns
+          # HTTP 403 on disposable Ubuntu runners. Preserve Playwright's full
+          # browser and OS-library installation while isolating only that feed.
+          for source in /etc/apt/sources.list.d/*; do
+            if [ -f "$source" ] && sudo grep -q "packages.microsoft.com" "$source"; then
+              echo "Excluding unrelated Microsoft APT feed: $source"
+              sudo mv "$source" "$source.crown-disabled"
+            fi
+          done
+          npx playwright install --with-deps chromium
 
       - name: Run Heritage Finance Director process journey
         working-directory: frontend/dashboards
