@@ -424,9 +424,21 @@ def verify_session(request, session_id):
         )
     ) if schedule is not None else []
     expected_lines = session.lines_config
-    valid_config = isinstance(expected_lines, list) and all(
-        not _validate_line(line, idx)
-        for idx, line in enumerate(expected_lines)
+    fields = (
+        "code", "label", "amount_cents", "kind", "frequency",
+        "is_required", "sort_order",
+    )
+    valid_config = (
+        isinstance(expected_lines, list)
+        and 1 <= len(expected_lines) <= 500
+        and all(
+            isinstance(line, dict)
+            and all(field in line for field in fields)
+            and not _validate_line(line, idx)
+            for idx, line in enumerate(expected_lines)
+        )
+        and len({line["code"] for line in expected_lines})
+        == len(expected_lines)
     )
 
     # Verification must fail closed when records have been deleted, modified,
@@ -437,6 +449,8 @@ def verify_session(request, session_id):
         or not schedule.is_active
         or schedule.term != session.term
         or schedule.effective_date != session.effective_date
+        or not isinstance(session.commit_result, dict)
+        or session.commit_result.get("schedule_id") != str(schedule.id)
         or not valid_config
         or len(actual_lines) != len(expected_lines)
         or {
