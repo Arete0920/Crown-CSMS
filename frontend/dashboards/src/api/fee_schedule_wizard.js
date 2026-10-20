@@ -57,5 +57,8 @@ export async function commitFeeScheduleWizard(sessionId) {
 }
 
 export async function verifyFeeScheduleWizard(sessionId) {
-  return requestJson(`${SESSION_URL}${sessionId}/verify/`);
+  return requestJson(`${SESSION_URL}${sessionId}/verify/`, {
+    method: "POST",
+    data: {},
+  });
 }
