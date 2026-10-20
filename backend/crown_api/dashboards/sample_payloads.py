@@ -1,7 +1,10 @@
+from typing import Any
+
 from .payload_contract import alert, build_dashboard_payload, metric, queue_item
 
 
-def attendance_sample_payload(school_id):
+def attendance_sample_payload(school_id: object) -> dict[str, Any]:
+    """Return the school-labeled, non-live attendance demonstration contract."""
     return build_dashboard_payload(
         dashboard_key='attendance',
         metrics=[
@@ -41,7 +44,8 @@ def attendance_sample_payload(school_id):
     )
 
 
-def release_reliability_sample_payload(_school_id):
+def release_reliability_sample_payload(_school_id: object) -> dict[str, Any]:
+    """Return non-live platform reliability values; ignore the school ID."""
     return build_dashboard_payload(
         dashboard_key='release-reliability',
         metrics=[
