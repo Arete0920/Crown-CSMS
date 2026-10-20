@@ -14,6 +14,8 @@ customer onboarding tool or an administrator recovery operation.
   settings, including `DJANGO_ENV`, `APP_ENV`, and `AZURE_ENVIRONMENT`.
   Production, staging, sandbox, unknown, and conflicting local/DEV
   classifications fail before any SeedRun, administrator, or fixture write.
+  Isolated local SQLite also requires an explicit local/test or DEV label;
+  an unlabelled SQLite database alone never authorizes fixture mutation.
 - Hosted DEV requires a recognizable DEV hostname and the shared runtime
   authorization guard. A lone Azure instance marker or an unverified remote
   database does not authorize a bootstrap, even if DEV labels are present.

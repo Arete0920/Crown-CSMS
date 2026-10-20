@@ -69,6 +69,8 @@ def _verify_golden_path_runtime() -> bool:
         return False
 
     if settings.DATABASES["default"]["ENGINE"] == "django.db.backends.sqlite3":
+        if not labels:
+            raise CommandError("Golden Path local SQLite requires an explicit local or DEV label.")
         return True
 
     # A DEV label alone does not authorize writes to an unverified remote DB.

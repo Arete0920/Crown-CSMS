@@ -249,3 +249,29 @@ def test_local_gp_school_can_be_selected_for_subsequent_run(
         call_command("golden_path_bootstrap", school_id=str(school.id), verbosity=0)
     assert School.objects.filter(pk=school.id, name="GP School").count() == 1
     assert UserAccount.objects.filter(username="admin", school_id=school.id).count() == 1
+
+
+
+@pytest.mark.django_db
+def test_bootstrap_rejects_unlabelled_sqlite_before_writes(
+    local_golden_path_environment, monkeypatch, settings,
+):
+    monkeypatch.delenv("CROWN_ENV", raising=False)
+    assert not any(
+        getattr(settings, key, "") for key in (
+            "CROWN_ENV", "DJANGO_ENV", "ENVIRONMENT", "APP_ENV", "AZURE_ENVIRONMENT"
+        )
+    )
+    with pytest.raises(CommandError, match="explicit local or DEV label"):
+        call_command("golden_path_bootstrap", school_id=str(uuid.uuid4()))
+    assert not UserAccount.objects.filter(username="admin").exists()
+    from core.models_seed import SeedRun
+    assert not SeedRun.objects.exists()
+
+
+def test_bootstrap_rejects_nonlocal_db_without_verified_dev_host(
+    local_golden_path_environment, settings,
+):
+    settings.DATABASES["default"]["ENGINE"] = "django.db.backends.postgresql"
+    with pytest.raises(CommandError, match="verified DEV or isolated local runtime"):
+        _verify_golden_path_runtime()
