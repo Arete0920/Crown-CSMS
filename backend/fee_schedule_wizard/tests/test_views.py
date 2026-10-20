@@ -449,6 +449,32 @@ class FeeScheduleVerificationIntegrityTest(TestCase):
             FeeScheduleWizardSession.STATUS_COMMITTED,
         )
 
+    def test_commit_snapshot_identity_must_match_schedule(self):
+        school = _make_school()
+        client = _authed_client()
+        sid, _ = _advance_to_committed(client, school.id)
+        session = FeeScheduleWizardSession.objects.get(pk=sid)
+        session.commit_result["schedule_id"] = str(uuid.uuid4())
+        session.save(update_fields=["commit_result"])
+
+        result = client.get(f"{BASE_URL}{sid}/verify/", **_headers(school.id))
+        self.assertEqual(result.status_code, 409)
+        session.refresh_from_db()
+        self.assertEqual(session.status, FeeScheduleWizardSession.STATUS_COMMITTED)
+
+    def test_empty_stored_snapshot_cannot_be_verified(self):
+        school = _make_school()
+        client = _authed_client()
+        sid, _ = _advance_to_committed(client, school.id)
+        session = FeeScheduleWizardSession.objects.get(pk=sid)
+        session.lines_config = []
+        session.save(update_fields=["lines_config"])
+
+        result = client.get(f"{BASE_URL}{sid}/verify/", **_headers(school.id))
+        self.assertEqual(result.status_code, 409)
+        session.refresh_from_db()
+        self.assertEqual(session.status, FeeScheduleWizardSession.STATUS_COMMITTED)
+
     def test_inactive_committed_schedule_cannot_be_verified(self):
         school = _make_school()
         client = _authed_client()
