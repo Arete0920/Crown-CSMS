@@ -137,7 +137,7 @@ export default function FeeScheduleWizard() {
       });
 
       const committed = await apiJson(`${BASE}${sessionId}/commit/`, { method: "POST" });
-      const verified = await apiJson(`${BASE}${sessionId}/verify/`);
+      const verified = await apiJson(`${BASE}${sessionId}/verify/`, { method: "POST" });
 
       setResult({ ...(committed.result || committed), ...verified });
       setPhase("done");
