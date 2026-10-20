@@ -435,3 +435,39 @@ class TestVerify(TestCase):
             **_headers(self.school.id),
         )
         self.assertEqual(r2.status_code, 409)
+
+
+class AuthenticatedTenantRegressionTest(TestCase):
+    def test_bearer_cannot_use_finance_role_to_override_home_school(self):
+        from rest_framework_simplejwt.tokens import AccessToken
+
+        owned, other = _make_school(), _make_school()
+        user = _make_user(owned)
+        user.school = owned
+        user.save(update_fields=["school"])
+        permission, _ = CrownPermission.objects.get_or_create(code="finance.edit")
+        RolePermission.objects.get_or_create(role_code="FINANCE_DIRECTOR", permission=permission)
+        for school in (owned, other):
+            UserRole.objects.create(user=user, school=school, role_code="FINANCE_DIRECTOR")
+        client = APIClient()
+        client.credentials(HTTP_AUTHORIZATION=f"Bearer {AccessToken.for_user(user)}")
+        denied = client.post(BASE_URL, **_headers(other.id))
+        self.assertEqual(denied.status_code, 404)
+        self.assertFalse(BillingWizardSession.objects.filter(school=other).exists())
+        self.assertEqual(client.post(BASE_URL, **_headers(owned.id)).status_code, 201)
+
+
+class BillingCertificationAuthorizationTest(TestCase):
+    def test_user_without_finance_authority_cannot_certify(self):
+        school = _make_school()
+        session = BillingWizardSession.objects.create(
+            school=school, status=BillingWizardSession.STATUS_COMMITTED,
+        )
+        before = session.updated_at
+        reader = APIClient()
+        reader.force_authenticate(user=_make_user(school))
+        response = reader.post(f"{BASE_URL}{session.id}/verify/", **_headers(school.id))
+        self.assertEqual(response.status_code, 403)
+        session.refresh_from_db()
+        self.assertEqual(session.status, BillingWizardSession.STATUS_COMMITTED)
+        self.assertEqual(session.updated_at, before)

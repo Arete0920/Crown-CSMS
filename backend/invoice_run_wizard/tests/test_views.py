@@ -198,8 +198,7 @@ class InvoiceRunLoadTest(TestCase):
         user = _make_user()
         _make_obligation(school, user)
         _make_obligation(school, user)
-        c = APIClient()
-        c.force_authenticate(user=user)
+        c = _client_for(school)
         sid = _advance_to_configured(c, school.id)
         r = c.post(f"{BASE_URL}{sid}/load/", {}, format="json", **_headers(school.id))
         self.assertEqual(r.status_code, 200)
@@ -344,3 +343,91 @@ class InvoiceRunVerifyTest(TestCase):
         r2 = c.post(f"{BASE_URL}{sid}/verify/", **_headers(school.id))
         self.assertEqual(r2.status_code, 200)
         self.assertEqual(r2.data["status"], InvoiceRunWizardSession.STATUS_VERIFIED)
+
+
+class InvoiceRunSecurityRegressionTest(TestCase):
+    def test_mixed_and_unknown_snapshots_reject_before_any_financial_write(self):
+        from finance.models import FinanceInvoiceLine
+        from unittest.mock import patch
+
+        school, other = _make_school(), _make_school()
+        payer = _make_user()
+        own = _make_obligation(school, payer)
+        foreign = _make_obligation(other, payer)
+        client = _client_for(school)
+        sid = _advance_to_loaded(client, school.id)
+        session = InvoiceRunWizardSession.objects.get(pk=sid)
+        for invalid in (str(foreign.id), str(foreign.id + 1000000)):
+            with self.subTest(invalid=invalid):
+                session.obligation_ids = [str(own.id), invalid]
+                session.save(update_fields=["obligation_ids"])
+                before = (session.status, session.commit_result, session.updated_at)
+                with patch("invoice_run_wizard.views.FinanceInvoice.objects.get_or_create") as write:
+                    response = client.post(
+                        f"{BASE_URL}{sid}/commit/", {"confirm": True},
+                        format="json", **_headers(school.id),
+                    )
+                self.assertEqual(response.status_code, 409)
+                write.assert_not_called()
+                self.assertFalse(FinanceInvoice.objects.exists())
+                self.assertFalse(FinanceInvoiceLine.objects.exists())
+                session.refresh_from_db()
+                self.assertEqual((session.status, session.commit_result, session.updated_at), before)
+
+    def test_line_write_failure_rolls_back_invoice_and_session(self):
+        from django.db import IntegrityError
+        from finance.models import FinanceInvoiceLine
+        from unittest.mock import patch
+
+        school = _make_school()
+        _make_obligation(school, _make_user())
+        client = _client_for(school)
+        sid = _advance_to_loaded(client, school.id)
+        session = InvoiceRunWizardSession.objects.get(pk=sid)
+        before = (session.status, session.commit_result, session.updated_at)
+        with patch(
+            "invoice_run_wizard.views.FinanceInvoiceLine.objects.get_or_create",
+            side_effect=IntegrityError("synthetic line failure"),
+        ):
+            response = client.post(
+                f"{BASE_URL}{sid}/commit/", {"confirm": True},
+                format="json", **_headers(school.id),
+            )
+        self.assertEqual(response.status_code, 500)
+        self.assertFalse(FinanceInvoice.objects.exists())
+        self.assertFalse(FinanceInvoiceLine.objects.exists())
+        session.refresh_from_db()
+        self.assertEqual((session.status, session.commit_result, session.updated_at), before)
+
+    def test_user_without_finance_authority_cannot_certify(self):
+        school = _make_school()
+        sid = _advance_to_committed(_client_for(school), school.id)
+        session = InvoiceRunWizardSession.objects.get(pk=sid)
+        before = session.updated_at
+        reader = APIClient()
+        reader.force_authenticate(user=_make_user())
+        response = reader.post(f"{BASE_URL}{sid}/verify/", **_headers(school.id))
+        self.assertEqual(response.status_code, 403)
+        session.refresh_from_db()
+        self.assertEqual(session.status, InvoiceRunWizardSession.STATUS_COMMITTED)
+        self.assertEqual(session.updated_at, before)
+
+
+class AuthenticatedTenantRegressionTest(TestCase):
+    def test_bearer_cannot_use_finance_role_to_override_home_school(self):
+        from rest_framework_simplejwt.tokens import AccessToken
+
+        owned, other = _make_school(), _make_school()
+        user = _make_user()
+        user.school = owned
+        user.save(update_fields=["school"])
+        permission, _ = CrownPermission.objects.get_or_create(code="finance.edit")
+        RolePermission.objects.get_or_create(role_code="FINANCE_DIRECTOR", permission=permission)
+        for school in (owned, other):
+            UserRole.objects.create(user=user, school=school, role_code="FINANCE_DIRECTOR")
+        client = APIClient()
+        client.credentials(HTTP_AUTHORIZATION=f"Bearer {AccessToken.for_user(user)}")
+        denied = client.post(BASE_URL, **_headers(other.id))
+        self.assertEqual(denied.status_code, 404)
+        self.assertFalse(InvoiceRunWizardSession.objects.filter(school=other).exists())
+        self.assertEqual(client.post(BASE_URL, **_headers(owned.id)).status_code, 201)

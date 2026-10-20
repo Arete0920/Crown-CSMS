@@ -7,7 +7,7 @@ from django.shortcuts import get_object_or_404
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from core.permissions import CrownModulePermission
 from rest_framework.authentication import SessionAuthentication
-from rest_framework_simplejwt.authentication import JWTAuthentication
+from crown_api.tenant_authentication import TenantJWTAuthentication
 from rest_framework.response import Response
 from rest_framework import status
 
@@ -18,7 +18,7 @@ from .models import BillingWizardSession
 from drf_spectacular.utils import extend_schema
 from drf_spectacular.types import OpenApiTypes
 
-_AUTH = [JWTAuthentication, SessionAuthentication]
+_AUTH = [TenantJWTAuthentication, SessionAuthentication]
 _PERM = [CrownModulePermission("finance.edit", write_code="finance.edit")]
 
 FEE_TYPES = {"REGISTRATION", "TECH", "BOOKS", "ATHLETICS", "OTHER"}
