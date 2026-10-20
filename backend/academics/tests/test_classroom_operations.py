@@ -3,6 +3,7 @@ from datetime import timedelta
 import pytest
 from django.utils import timezone
 from rest_framework.test import APIClient
+from rest_framework.exceptions import ValidationError
 from academics.tests.test_classroom_experience import classroom
 from core.models import Family, Student as CoreStudent, StudentIdentityLink, UserAccount, UserRole
 from academics.operations_models import ClassroomAttendanceSession, ClassroomAttendanceAudit, ClassroomSubstituteGrant, ClassroomEmergencySession
@@ -136,6 +137,28 @@ def test_school_day_rejects_invalid_configured_timezone(classroom):
     client.force_authenticate(classroom[1])
     response = client.get(URL, {'section_id': str(classroom[5].id)}, HTTP_X_SCHOOL_ID=str(school.id))
     assert response.status_code == 400
+    assert not AttendanceRecord.objects.exists()
+
+
+@pytest.mark.parametrize(
+    ('active', 'configured_timezone', 'message'),
+    [
+        (False, 'UTC', 'An active school is required'),
+        (True, '', 'Configure the school timezone'),
+    ],
+)
+def test_school_day_distinguishes_inactive_school_from_missing_timezone(
+    classroom, active, configured_timezone, message
+):
+    from academics.operations_views import school_local_date
+
+    school = classroom[0]
+    school.is_active = active
+    school.timezone = configured_timezone
+    school.save(update_fields=['is_active', 'timezone'])
+
+    with pytest.raises(ValidationError, match=message):
+        school_local_date(school.id)
     assert not AttendanceRecord.objects.exists()
 
 

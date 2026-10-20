@@ -42,9 +42,12 @@ def operational_sections(user, school):
 
 def school_local_date(school_id):
     """Use the enrolled school's calendar, not the server's UTC calendar."""
-    tz_name = School.objects.filter(pk=school_id, is_active=True).values_list('timezone', flat=True).first()
+    config = School.objects.filter(pk=school_id).values_list('is_active', 'timezone').first()
+    if not config or not config[0]:
+        raise ValidationError('An active school is required for attendance.')
+    tz_name = config[1]
     if not tz_name:
-        raise ValidationError('An active school with a configured timezone is required for attendance.')
+        raise ValidationError('Configure the school timezone before recording attendance.')
     try:
         school_timezone = ZoneInfo(tz_name)
     except (ZoneInfoNotFoundError, ValueError, TypeError) as exc:
@@ -134,7 +137,7 @@ def classroom_operations(request):
             result = review_explanation(school=school, section=section, day=day_for(data.get('date'), today=school_day),
                 actor=request.user, data=data, key=key, fingerprint=fingerprint)
         elif operation == 'attendance':
-            day = day_for(data.get('date'), today=school_local_date(school))
+            day = day_for(data.get('date'), today=school_day)
             session = ClassroomAttendanceSession.objects.filter(school_id=school, section=section, date=day).first()
             expected = data.get('version')
             if isinstance(expected, bool) or not isinstance(expected, int) or expected != (session.version if session else 0):
