@@ -70,6 +70,14 @@ class Command(BaseCommand):
                     f"Refusing demo password reset: identity mismatch for {username}."
                 )
 
+        # Do not add demo identities to a SQLite database that contains
+        # unrelated schools. Per-username validation alone is insufficient:
+        # previously absent usernames could otherwise be created in-place.
+        if School.objects.exclude(pk=school.pk).exists():
+            raise CommandError(
+                "Demo password reset requires an isolated single-school Heritage database."
+            )
+
         changed = 0
         missing = []
         created = 0

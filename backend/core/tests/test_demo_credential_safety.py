@@ -188,6 +188,28 @@ def test_explicit_reset_rejects_cross_school_user_before_any_write(monkeypatch):
 
 
 @pytest.mark.django_db
+def test_explicit_reset_rejects_mixed_school_database_without_writes(monkeypatch):
+    _set_distinct_test_passwords(monkeypatch)
+    demo = School.objects.create(name="Heritage Christian Academy")
+    School.objects.create(name="Unrelated Customer School")
+    original = UserAccount.objects.create_user(
+        username="head@crown-demo.local",
+        email="head@crown-demo.local",
+        school=demo,
+        password="customer-owned-password--2026",
+        is_staff=True,
+        is_superuser=True,
+    )
+    with pytest.raises(CommandError, match="isolated single-school"):
+        call_command("reset_demo_passwords", school_id=str(demo.pk))
+    original.refresh_from_db()
+    assert original.check_password("customer-owned-password--2026")
+    assert original.is_staff is True
+    assert original.is_superuser is True
+    assert not UserAccount.objects.filter(username__in=["teacher", "parent"]).exists()
+
+
+@pytest.mark.django_db
 def test_explicit_reset_scopes_accounts_and_removes_superuser_grant(monkeypatch):
     _set_distinct_test_passwords(monkeypatch)
     school = School.objects.create(name="Heritage Christian Academy")
