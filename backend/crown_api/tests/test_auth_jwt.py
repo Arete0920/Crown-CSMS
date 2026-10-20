@@ -276,3 +276,53 @@ def test_legacy_default_disabled_mode_does_not_require_consumption_table():
     assert first.status_code == second.status_code == 200
     assert "access" in first.json()
     assert "refresh" not in first.json()
+def test_legacy_refresh_uses_current_school_role_and_deactivation():
+    """Old tokens must not restore a prior school or privilege after account changes."""
+    from django.core.cache import cache
+    from crown_api.jwt_utils import build_refresh_token, decode_access
+
+    cache.clear()
+    old_school = uuid.uuid4()
+    new_school = uuid.uuid4()
+    user = CrownUser.objects.create(
+        email="reassigned-refresh@example.invalid",
+        password_hash=make_password("Synthetic-Only-Password!"),
+        role="admin",
+        school_id=old_school,
+        is_active=True,
+    )
+    old_refresh = build_refresh_token(user_id=str(user.pk))
+    # Simulate an authorized administrator reducing privileges and reassignment.
+    CrownUser.objects.filter(pk=user.pk).update(role="teacher", school_id=new_school)
+    client = Client()
+    request_args = {
+        "content_type": "application/json",
+        "REMOTE_ADDR": "203.0.113.85",
+    }
+    rotated = client.post(
+        "/api/auth/refresh/",
+        data={"refresh": old_refresh},
+        **request_args,
+    )
+    assert rotated.status_code == 200
+    rotated_body = rotated.json()
+    access = decode_access(rotated_body["access"])
+    assert access.ok
+    assert access.payload["school_id"] == str(new_school)
+    assert access.payload["school_id"] != str(old_school)
+    assert access.payload["role"] == "teacher"
+    replacement = rotated_body["refresh"]
+
+    replay = client.post(
+        "/api/auth/refresh/", data={"refresh": old_refresh}, **request_args
+    )
+    assert replay.status_code == 401
+    assert "access" not in replay.json()
+
+    # Even an unused replacement cannot revive a subsequently deactivated user.
+    CrownUser.objects.filter(pk=user.pk).update(is_active=False)
+    deactivated = client.post(
+        "/api/auth/refresh/", data={"refresh": replacement}, **request_args
+    )
+    assert deactivated.status_code == 401
+    assert "access" not in deactivated.json()
