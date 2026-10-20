@@ -334,12 +334,49 @@ class TestVerify(SchedulingWizardCase):
     def test_verify_checks_persisted_canonical_sections(self):
         session_id, _ = self.prepare([{"course_code": "MATH101"}])
         self.assertEqual(self.commit(session_id).status_code, 200)
-        response = self.client.get(
+        response = self.client.post(
             f"{BASE_URL}{session_id}/verify/",
             **_headers(self.school.id),
         )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data["status"], "verified")
+
+    def test_get_is_read_only_and_view_only_cannot_certify_sections(self):
+        session_id, _ = self.prepare([{"course_code": "MATH101"}])
+        self.assertEqual(self.commit(session_id).status_code, 200)
+        session = SchedulingWizardSession.objects.get(pk=session_id)
+        previous_updated_at = session.updated_at
+        url = f"{BASE_URL}{session_id}/verify/"
+        headers = _headers(self.school.id)
+
+        inspection = self.client.get(url, **headers)
+        self.assertEqual(inspection.status_code, 200)
+        self.assertEqual(inspection.data["status"], "committed")
+        session.refresh_from_db()
+        self.assertEqual(session.status, SchedulingWizardSession.STATUS_COMMITTED)
+        self.assertEqual(session.updated_at, previous_updated_at)
+
+        role = "SCHEDULING_VERIFY_VIEW_ONLY"
+        viewer = _make_user(self.school, grant_permissions=False)
+        UserRole.objects.create(user=viewer, school=self.school, role_code=role)
+        permission, _ = CrownPermission.objects.get_or_create(
+            code="scheduling.view", defaults={"description": "View scheduling"},
+        )
+        RolePermission.objects.get_or_create(role_code=role, permission=permission)
+        reader = APIClient()
+        reader.force_authenticate(user=viewer)
+        self.assertEqual(reader.get(url, **headers).status_code, 200)
+        self.assertEqual(reader.post(url, **headers).status_code, 403)
+        session.refresh_from_db()
+        self.assertEqual(session.status, SchedulingWizardSession.STATUS_COMMITTED)
+
+        self.assertEqual(self.client.post(url, **headers).status_code, 200)
+        session.refresh_from_db()
+        verified_updated_at = session.updated_at
+        self.assertEqual(session.status, SchedulingWizardSession.STATUS_VERIFIED)
+        self.assertEqual(self.client.post(url, **headers).status_code, 200)
+        session.refresh_from_db()
+        self.assertEqual(session.updated_at, verified_updated_at)
 
     def test_verify_fails_if_committed_section_is_missing(self):
         session_id, staged = self.prepare([{"course_code": "MATH101"}])
