@@ -471,7 +471,7 @@ class TestVerify(WizardConfiguredMixin, TestCase):
         )
 
     def _verify(self):
-        return self.client.get(
+        return self.client.post(
             f"{BASE_URL}{self.session_id}/verify/",
             **_headers(self.school.id),
         )
@@ -484,6 +484,39 @@ class TestVerify(WizardConfiguredMixin, TestCase):
         self.assertEqual(second.status_code, 200)
         self.assertEqual(second.data["status"], "verified")
         self.assertIn("awards_created", second.data)
+
+    def test_get_is_read_only_and_view_only_cannot_certify_aid(self):
+        session = FinancialAidWizardSession.objects.get(pk=self.session_id)
+        updated_at = session.updated_at
+        url = f"{BASE_URL}{self.session_id}/verify/"
+        headers = _headers(self.school.id)
+
+        # Ordinary GET must not silently certify financial aid awards.
+        response = self.client.get(url, **headers)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["status"], "committed")
+        session.refresh_from_db()
+        self.assertEqual(session.status, FinancialAidWizardSession.STATUS_COMMITTED)
+        self.assertEqual(session.updated_at, updated_at)
+
+        # A user with financial_aid.view but not .edit can inspect, never certify.
+        role = "AID_VERIFY_VIEW_ONLY"
+        user = _make_user(self.school, grant_aid=False)
+        UserRole.objects.create(user=user, school=self.school, role_code=role)
+        permission, _ = CrownPermission.objects.get_or_create(
+            code="financial_aid.view", defaults={"description": "View financial aid"},
+        )
+        RolePermission.objects.get_or_create(role_code=role, permission=permission)
+        reader = APIClient()
+        reader.force_authenticate(user=user)
+        self.assertEqual(reader.get(url, **headers).status_code, 200)
+        self.assertEqual(reader.post(url, **headers).status_code, 403)
+        session.refresh_from_db()
+        self.assertEqual(session.status, FinancialAidWizardSession.STATUS_COMMITTED)
+
+        self.assertEqual(self._verify().status_code, 200)
+        session.refresh_from_db()
+        self.assertEqual(session.status, FinancialAidWizardSession.STATUS_VERIFIED)
 
     def test_verify_requires_committed_status(self):
         response = self.client.post(BASE_URL, **_headers(self.school.id))
