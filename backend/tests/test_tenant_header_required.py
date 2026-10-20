@@ -1,4 +1,6 @@
 import json
+import secrets
+from unittest.mock import patch
 from dataclasses import FrozenInstanceError
 
 from django.contrib.auth import get_user_model
@@ -47,6 +49,66 @@ class TenantHeaderRequiredTests(TestCase):
         c = APIClient()
         r = c.post("/api/v1/auth/token/", {})
         self.assertNotIn(b"X-School-Id", r.content)
+
+    @override_settings(
+        TENANT_HEADER_REQUIRED=True,
+        CROWN_ENV="dev",
+        DJANGO_ENV="dev",
+        ENVIRONMENT="dev",
+        CROWN_DEMO_MODE=False,
+    )
+    @patch("crown_api.system_views.call_command")
+    @patch("crown_api.system_views.demo_ops_runtime_allowed", return_value=True)
+    def test_demo_reset_schoolless_credential_preflight(self, _dev_guard, commands):
+        # Generated solely in the test process; never use a live credential.
+        credential = secrets.token_urlsafe(32)
+        with override_settings(CROWN_OPS_SECRET=credential, OPS_SECRET=""):
+            client = APIClient()
+            denied = client.post(
+                "/api/v1/system/demo-reset/",
+                {},
+                format="json",
+                HTTP_X_ADMIN_OPS_SECRET="intentionally-invalid",
+            )
+            self.assertEqual(denied.status_code, 403)
+            self.assertEqual(self._json(denied)["detail"], "Forbidden")
+
+            accepted = client.post(
+                "/api/v1/system/demo-reset/",
+                {},
+                format="json",
+                HTTP_X_ADMIN_OPS_SECRET=credential,
+            )
+            self.assertEqual(accepted.status_code, 400)
+            self.assertIn("Missing school_id", self._json(accepted)["detail"])
+            commands.assert_not_called()
+
+    @override_settings(TENANT_HEADER_REQUIRED=True)
+    def test_demo_reset_preflight_never_bypasses_selected_school(self):
+        client = APIClient()
+        # An invalid header must still be handled by the canonical tenant guard.
+        bad_header = client.post(
+            "/api/v1/system/demo-reset/",
+            {},
+            format="json",
+            HTTP_X_SCHOOL_ID="not-a-uuid",
+        )
+        self.assertEqual(bad_header.status_code, 400)
+        self.assertEqual(self._json(bad_header)["code"], "invalid_tenant_header")
+
+        # Query-parameter school selection must also stay in the tenant guard.
+        query_selector = client.post(
+            "/api/v1/system/demo-reset/?school_id=synthetic",
+            {},
+            format="json",
+        )
+        self.assertEqual(query_selector.status_code, 400)
+        self.assertEqual(self._json(query_selector)["code"], "missing_tenant")
+
+        # Non-POST methods do not receive the credential-preflight exception.
+        wrong_method = client.get("/api/v1/system/demo-reset/")
+        self.assertEqual(wrong_method.status_code, 400)
+        self.assertEqual(self._json(wrong_method)["code"], "missing_tenant")
 
     @override_settings(TENANT_HEADER_REQUIRED=True)
     def test_other_api_requires_header(self):
