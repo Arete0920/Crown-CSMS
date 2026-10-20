@@ -86,6 +86,8 @@ jobs:
         run: bash -n tools/verify_remediated_git_bundle.sh
       - name: Reject incomplete or masked history
         run: python -m unittest discover -s tools/tests -p test_remediated_history_verifier.py -v
+      - name: Verify security-held audit bundle cannot be reactivated
+        run: python -m unittest discover -s tools/tests -p test_solomon_bundle_revocation.py -v
       - name: Prove forbidden history is rejected and clean history is accepted
         shell: bash
         run: |
