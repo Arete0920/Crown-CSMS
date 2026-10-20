@@ -87,3 +87,18 @@ def test_revoking_unselected_bundle_preserves_other_active_selection():
         assert lifecycle.mark_revoked("synthetic-old") == 0
     assert data["active_bundle"] == "synthetic-new"
     save.assert_called_once()
+
+
+def test_security_held_bundle_cannot_be_promoted():
+    lifecycle = _lifecycle_module()
+    data = _index(active=None)
+    data["certified_bundles"][0]["status"] = "quarantined"
+    data["security_hold"] = {
+        "bundle_id": "synthetic-old",
+        "state": "quarantined_pending_operational_retirement",
+    }
+    with mock.patch.object(lifecycle, "load_index", return_value=data), mock.patch.object(
+        lifecycle, "save_index"
+    ) as save:
+        assert lifecycle.mark_certified("synthetic-old") == 1
+    save.assert_not_called()
