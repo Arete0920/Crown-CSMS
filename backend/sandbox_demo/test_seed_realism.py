@@ -60,15 +60,8 @@ def test_heritage_school_admin_has_only_scoped_wizard_demonstration_roles():
     ) == {"HEAD_OF_SCHOOL", "AID_DIRECTOR"}
 
     other = School.objects.create(name="Another Fictional Sandbox School")
-    other_admin = ensure_persona_user(other, persona)
-    assert set(
-        UserRole.objects.filter(school=other, user=other_admin).values_list(
-            "role_code", flat=True
-        )
-    ) == {"HEAD_OF_SCHOOL"}
-    assert not UserRole.objects.filter(
-        school=heritage, user=other_admin
-    ).exists()
+    assert not UserRole.objects.filter(school=other, user=admin).exists()
+    assert not UserRole.objects.filter(user=admin).exclude(school=heritage).exists()
 
 
 @pytest.mark.django_db
