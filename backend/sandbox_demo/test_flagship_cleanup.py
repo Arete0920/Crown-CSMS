@@ -8,7 +8,7 @@ from sandbox_demo.services import _clear_flagship_data
 
 
 class FlagshipResetCleanupTests(TestCase):
-    def test_clear_flagship_data_deletes_user_linked_aid_awards(self):
+    def test_clear_flagship_data_refuses_foreign_school_aid_award_deletion(self):
         heritage_school = School.objects.create(name="Heritage Test School")
         other_school = School.objects.create(name="Other Test School")
         academic_year = AcademicYear.objects.create(
@@ -44,7 +44,8 @@ class FlagshipResetCleanupTests(TestCase):
             decided_by=decider,
         )
 
-        _clear_flagship_data(heritage_school)
+        with self.assertRaisesRegex(RuntimeError, "another school's records"):
+            _clear_flagship_data(heritage_school)
 
-        self.assertFalse(AidAward.objects.filter(pk=award.pk).exists())
-        self.assertFalse(UserAccount.objects.filter(pk=decider.pk).exists())
+        self.assertTrue(AidAward.objects.filter(pk=award.pk, school=other_school).exists())
+        self.assertTrue(UserAccount.objects.filter(pk=decider.pk, school=heritage_school).exists())

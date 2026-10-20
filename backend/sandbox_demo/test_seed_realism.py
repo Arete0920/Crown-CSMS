@@ -49,6 +49,29 @@ def test_one_click_personas_never_inherit_shared_password_or_stale_privilege(set
 
 
 @pytest.mark.django_db
+def test_heritage_school_admin_has_only_scoped_wizard_demonstration_roles():
+    heritage = ensure_demo_school(SANDBOX_SCHOOLS["heritage-core"])
+    persona = SANDBOX_PERSONAS["school_admin"]
+    admin = ensure_persona_user(heritage, persona)
+    assert set(
+        UserRole.objects.filter(school=heritage, user=admin).values_list(
+            "role_code", flat=True
+        )
+    ) == {"HEAD_OF_SCHOOL", "AID_DIRECTOR"}
+
+    other = School.objects.create(name="Another Fictional Sandbox School")
+    other_admin = ensure_persona_user(other, persona)
+    assert set(
+        UserRole.objects.filter(school=other, user=other_admin).values_list(
+            "role_code", flat=True
+        )
+    ) == {"HEAD_OF_SCHOOL"}
+    assert not UserRole.objects.filter(
+        school=heritage, user=other_admin
+    ).exists()
+
+
+@pytest.mark.django_db
 def test_persona_creation_refuses_foreign_school_username():
     school = ensure_demo_school(SANDBOX_SCHOOLS["heritage-core"])
     other = School.objects.create(name="Unrelated Customer Academy")

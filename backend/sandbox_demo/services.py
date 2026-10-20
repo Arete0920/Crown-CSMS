@@ -150,17 +150,25 @@ def ensure_persona_user(school: School, persona: SandboxPersona) -> UserAccount:
     user.set_unusable_password()
     user.save(update_fields=["password"])
 
-    # Persistent application roles can authorize actions even after Django
-    # staff flags are lowered. Keep only this fictional persona's school role.
+    # Persistent application roles authorize sensitive writes even after Django
+    # staff privileges are lowered. Retain only the explicit sandbox roles.
+    # The fictional Heritage head demonstrates Aid Setup using AID_DIRECTOR;
+    # real-school HEAD_OF_SCHOOL grants are not broadened.
+    allowed_roles = {persona.role_code}
+    if (
+        persona.key == "school_admin"
+        and str(school.pk) == SANDBOX_SCHOOLS["heritage-core"].id
+    ):
+        allowed_roles.add("AID_DIRECTOR")
     UserRole.objects.filter(school=school, user=user).exclude(
-        role_code=persona.role_code
+        role_code__in=allowed_roles
     ).delete()
-    UserRole.objects.update_or_create(
-        school=school,
-        user=user,
-        role_code=persona.role_code,
-        defaults={},
-    )
+    for code in sorted(allowed_roles):
+        UserRole.objects.get_or_create(
+            school=school,
+            user=user,
+            role_code=code,
+        )
 
     return user
 
