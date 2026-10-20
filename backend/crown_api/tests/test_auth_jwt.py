@@ -10,6 +10,16 @@ from crown_api.auth_models import CrownUser
 pytestmark = pytest.mark.django_db
 
 
+@pytest.fixture(autouse=True)
+def _enable_one_use_legacy_refresh_in_auth_tests(settings):
+    """Test staged one-use behavior without changing runtime activation.
+
+    The hosted rollout remains disabled until the audited schema migration,
+    restore plan, and client rotation contract are accepted.
+    """
+    settings.CROWN_LEGACY_REFRESH_ONE_USE_ENABLED = True
+
+
 def test_login_success_and_me_requires_token():
     school_id = uuid.uuid4()
     user = CrownUser.objects.create(
