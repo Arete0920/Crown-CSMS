@@ -147,6 +147,17 @@ def enforce_tenant_context(request) -> None:
     if not normalized_path.startswith("/api/"):
         return
 
+    # School-less DEV demo-reset credential probes must reach the ops guard.
+    # The view rejects them before migrations or seeding. A school selector
+    # always retains normal tenant header enforcement.
+    if (
+        request.method == "POST"
+        and normalized_path == "/api/v1/system/demo-reset"
+        and "X-School-Id" not in request.headers
+        and "school_id" not in request.GET
+    ):
+        return
+
     if _is_public_inquiry_post(request, normalized_path) or any(
         normalized_path.startswith(prefix)
         for prefix in TenantHeaderRequiredMiddleware.EXEMPT_PREFIXES
