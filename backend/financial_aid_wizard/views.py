@@ -312,16 +312,23 @@ def commit_session(request, session_id):
 
 
 @extend_schema(responses=OpenApiTypes.OBJECT)
-@api_view(["GET"])
+@api_view(["GET", "POST"])
 @authentication_classes(_AUTH)
-@permission_classes(_VIEW_PERM)
+@permission_classes(_EDIT_PERM)
+@transaction.atomic
 def verify_session(request, session_id):
     school_id = get_request_school_id(request)
-    session = _get_session(session_id, school_id)
+    session = (
+        get_object_or_404(
+            FinancialAidWizardSession.objects.select_for_update(),
+            id=session_id, school_id=school_id,
+        ) if request.method == "POST" else _get_session(session_id, school_id)
+    )
     if session.status == FinancialAidWizardSession.STATUS_VERIFIED:
         return Response({"session_id": str(session.id), "status": session.status, **(session.commit_result or {})})
     if session.status != FinancialAidWizardSession.STATUS_COMMITTED:
         return Response({"error": f"Cannot verify from status '{session.status}'"}, status=status.HTTP_409_CONFLICT)
-    session.status = FinancialAidWizardSession.STATUS_VERIFIED
-    session.save()
+    if request.method == "POST":
+        session.status = FinancialAidWizardSession.STATUS_VERIFIED
+        session.save(update_fields=["status", "updated_at"])
     return Response({"session_id": str(session.id), "status": session.status, **(session.commit_result or {})})
