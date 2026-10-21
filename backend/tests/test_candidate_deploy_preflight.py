@@ -24,11 +24,19 @@ def test_candidate_preflight_uses_fresh_strong_isolated_credentials(workflow):
     observed = set()
     for _ in range(2):
         env = os.environ.copy()
-        for key in ("DJANGO_SECRET_KEY", "SECRET_KEY", "WEBSITE_HOSTNAME", "WEBSITE_INSTANCE_ID"):
+        # This preflight runs locally on an isolated runner, not on a hosted
+        # production database. Django's --deploy flag still enforces hardened
+        # secret and deployment checks without falsely classifying SQLite as
+        # a hosted production database.
+        for key in (
+            "DJANGO_SECRET_KEY", "SECRET_KEY", "CROWN_ENV", "DJANGO_ENV",
+            "ENVIRONMENT", "AZURE_ENVIRONMENT", "WEBSITE_HOSTNAME",
+            "WEBSITE_INSTANCE_ID", "CROWN_DEPLOY_SECURITY",
+        ):
             env.pop(key, None)
         env.update(step["env"])
-        env.update(CROWN_ENV="production", DJANGO_ENV="production", DJANGO_DEBUG="false",
-                   CROWN_DEMO_MODE="false", CORS_ALLOW_ALL_ORIGINS="false")
+        env.update(DJANGO_DEBUG="false", CROWN_DEMO_MODE="false",
+                   CORS_ALLOW_ALL_ORIGINS="false")
         env["PATH"] = str(Path(sys.executable).parent) + os.pathsep + env.get("PATH", "")
         result = subprocess.run(["bash", "-c", step["run"]], cwd=ROOT, env=env,
                                 capture_output=True, text=True, timeout=120)
@@ -40,6 +48,35 @@ def test_candidate_preflight_uses_fresh_strong_isolated_credentials(workflow):
         observed.add(masked[0])
     assert len(observed) == 2
 
+
+
+def test_production_marked_sqlite_preflight_is_rejected():
+    """Production markers cannot reuse the isolated CI SQLite exception."""
+    env = os.environ.copy()
+    for key in (
+        "DJANGO_ENV", "ENVIRONMENT", "AZURE_ENVIRONMENT",
+        "WEBSITE_HOSTNAME", "WEBSITE_INSTANCE_ID", "CROWN_DEPLOY_SECURITY",
+    ):
+        env.pop(key, None)
+    env.update(
+        CROWN_ENV="production",
+        DATABASE_URL="sqlite:///./candidate-check.sqlite3",
+        DJANGO_SECRET_KEY="StrongProductionOnlyFixtureKey-WithEntropy-123456789-Aa!",
+        DJANGO_DEBUG="false",
+        CROWN_DEMO_MODE="false",
+    )
+    result = subprocess.run(
+        [sys.executable, "backend/manage.py", "check", "--deploy"],
+        cwd=ROOT,
+        env=env,
+        capture_output=True,
+        text=True,
+        timeout=120,
+    )
+    assert result.returncode != 0
+    assert "Hosted and staging/production database must not use SQLite." in (
+        result.stdout + result.stderr
+    )
 
 def test_short_candidate_fixture_remains_rejected(monkeypatch):
     monkeypatch.setenv("CROWN_ENV", "production")
