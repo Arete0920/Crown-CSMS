@@ -244,6 +244,44 @@ def test_gateway_intent_lookup_does_not_cross_school_boundary():
     ).exists()
 
 
+def test_gateway_intent_shared_between_schools_is_rejected_even_with_local_match():
+    school, _ = _school_user()
+    other_school = School.objects.create(name="Other provider intent owner")
+    own_intent = _intent(school, client_reference_id="local-intent-reference")
+    foreign_intent = _intent(other_school, client_reference_id="other-school-intent-reference")
+    assert own_intent.provider_intent_id == foreign_intent.provider_intent_id
+
+    event = _event_with_payload(
+        school, "payment.updated", "ambiguous-cross-school-intent",
+        {"intent_id": own_intent.provider_intent_id, "payment_id": "pay_123", "status": "authorized"},
+    )
+    with pytest.raises(UnmatchedPaymentError, match="another school"):
+        process_gateway_event_safely(event)
+    own_intent.refresh_from_db()
+    foreign_intent.refresh_from_db()
+    event.refresh_from_db()
+    assert own_intent.status == "created"
+    assert foreign_intent.status == "created"
+    assert event.status == GatewayEventStatus.FAILED
+
+
+def test_unrecognized_payment_status_cannot_downgrade_an_intent():
+    school, _ = _school_user()
+    intent = _intent(school, client_reference_id="unrecognized-status-intent")
+    intent.status = "authorized"
+    intent.save(update_fields=["status"])
+    event = _event_with_payload(
+        school, "payment.updated", "unknown-status-event",
+        {"intent_id": intent.provider_intent_id, "payment_id": "pay_123", "status": "provider_new_unsupported"},
+    )
+    with pytest.raises(UnmatchedPaymentError, match="unrecognized payment status"):
+        process_gateway_event_safely(event)
+    intent.refresh_from_db()
+    event.refresh_from_db()
+    assert intent.status == "authorized"
+    assert event.status == GatewayEventStatus.FAILED
+
+
 def test_gateway_event_rejects_ambiguous_same_school_provider_intents():
     school, _ = _school_user()
     first = _intent(school, client_reference_id="duplicate-intent-first")

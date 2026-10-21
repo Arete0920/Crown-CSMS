@@ -97,11 +97,17 @@ def process_gateway_event(event: GatewayEvent) -> None:
         or payload.get("data", {}).get("payment_id")
         or event.provider_payment_id
     )
-    status = normalize_gateway_status(
+    raw_status = (
         payload.get("status")
         or payload.get("data", {}).get("status")
         or ""
     )
+    # An unrecognized provider status must never silently reset a settled or
+    # authorized intent to PENDING. The gateway remains quarantined until its
+    # documented status contract has been accepted.
+    if not isinstance(raw_status, str) or raw_status.lower() not in STATUS_MAP:
+        raise UnmatchedPaymentError("Gateway event has an unrecognized payment status.")
+    status = normalize_gateway_status(raw_status)
 
     if not provider_intent_id:
         raise UnmatchedPaymentError("Gateway event requires a provider intent reference.")
@@ -120,15 +126,16 @@ def process_gateway_event(event: GatewayEvent) -> None:
         raise UnmatchedPaymentError("Ambiguous provider intent reference for this school.")
     intent = matching_intents[0] if matching_intents else None
 
+    # Provider references must not resolve to a second tenant even when this
+    # school also has a locally matching intent. Until a global unique schema
+    # is approved, ambiguity across schools is a hard ownership failure.
+    if PaymentIntentRecord.objects.filter(
+        provider=event.provider,
+        provider_intent_id=provider_intent_id,
+    ).exclude(school_id=event.school_id).exists():
+        raise UnmatchedPaymentError("Gateway intent reference belongs to another school.")
+
     if not intent:
-        # A reference belonging to another school is an ownership failure,
-        # not an innocuous unknown event. Preserve a reviewable FAILED receipt
-        # rather than masking a cross-tenant delivery as an ignored webhook.
-        if PaymentIntentRecord.objects.filter(
-            provider=event.provider,
-            provider_intent_id=provider_intent_id,
-        ).exclude(school_id=event.school_id).exists():
-            raise UnmatchedPaymentError("Gateway intent reference belongs to another school.")
         event.status = GatewayEventStatus.IGNORED
         event.error_message = "No matching PaymentIntentRecord found."
         event.processed_at = timezone.now()
