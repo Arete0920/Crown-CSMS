@@ -5,10 +5,107 @@ from pathlib import Path
 import pytest
 from rest_framework.test import APIClient
 
-from core.models import AcademicYear, Student, UserAccount
+from core.models import AcademicYear, Family, Guardian, School, Student, UserAccount, UserRole
+from aid.models import AidAuditEvent
 from finance.models import FinanceObligation
 from sandbox_demo.catalog import SANDBOX_PERSONAS, SANDBOX_SCHOOLS
-from sandbox_demo.services import seed_heritage_flagship, seed_local_heritage_relationships
+from sandbox_demo.fictional_identities import (
+    FAMILY_RECORD_COUNT,
+    STUDENT_RECORD_COUNT,
+    family_identity,
+    student_given_name,
+)
+from sandbox_demo.services import (
+    ensure_demo_school,
+    ensure_persona_user,
+    seed_heritage_flagship,
+    seed_local_heritage_relationships,
+)
+
+
+@pytest.mark.django_db
+def test_one_click_personas_never_inherit_shared_password_or_stale_privilege(settings, monkeypatch):
+    monkeypatch.setenv("CROWN_DEMO_PASSWORD", "retired-demo-password-example")
+    settings.CROWN_SANDBOX_FALLBACK_PASSWORD = "retired-sandbox-password-example"
+    school = ensure_demo_school(SANDBOX_SCHOOLS["heritage-core"])
+    persona = SANDBOX_PERSONAS["teacher"]
+    user = ensure_persona_user(school, persona)
+    user.is_staff = True
+    user.is_superuser = True
+    user.set_password("previous-demo-password-example")
+    user.save(update_fields=["is_staff", "is_superuser", "password"])
+    UserRole.objects.get_or_create(
+        school=school, user=user, role_code="HEAD_OF_SCHOOL"
+    )
+
+    refreshed = ensure_persona_user(school, persona)
+    refreshed.refresh_from_db()
+    assert not refreshed.has_usable_password()
+    assert not refreshed.is_staff
+    assert not refreshed.is_superuser
+    assert set(UserRole.objects.filter(
+        school=school, user=refreshed
+    ).values_list("role_code", flat=True)) == {"TEACHER"}
+
+
+@pytest.mark.django_db
+def test_heritage_school_admin_has_only_scoped_wizard_demonstration_roles():
+    heritage = ensure_demo_school(SANDBOX_SCHOOLS["heritage-core"])
+    persona = SANDBOX_PERSONAS["school_admin"]
+    admin = ensure_persona_user(heritage, persona)
+    assert set(
+        UserRole.objects.filter(school=heritage, user=admin).values_list(
+            "role_code", flat=True
+        )
+    ) == {"HEAD_OF_SCHOOL", "AID_DIRECTOR"}
+
+    other = School.objects.create(name="Another Fictional Sandbox School")
+    assert not UserRole.objects.filter(school=other, user=admin).exists()
+    assert not UserRole.objects.filter(user=admin).exclude(school=heritage).exists()
+
+
+@pytest.mark.django_db
+def test_persona_creation_refuses_foreign_school_username():
+    school = ensure_demo_school(SANDBOX_SCHOOLS["heritage-core"])
+    other = School.objects.create(name="Unrelated Customer Academy")
+    persona = SANDBOX_PERSONAS["teacher"]
+    owner = UserAccount.objects.create_user(
+        school=other, username=persona.email,
+        email=persona.email, password="customer-owned-example-password",
+    )
+    with pytest.raises(RuntimeError, match="another identity"):
+        ensure_persona_user(school, persona)
+    owner.refresh_from_db()
+    assert owner.school_id == other.id
+    assert owner.check_password("customer-owned-example-password")
+
+
+@pytest.mark.django_db
+def test_sandbox_id_cannot_rebrand_foreign_school():
+    school_spec = SANDBOX_SCHOOLS["heritage-core"]
+    original = School.objects.create(id=school_spec.id, name="Customer School")
+    with pytest.raises(RuntimeError, match="different institution"):
+        ensure_demo_school(school_spec)
+    original.refresh_from_db()
+    assert original.name == "Customer School"
+
+
+@pytest.mark.django_db
+def test_flagship_reset_preserves_foreign_school_audit_evidence():
+    school = ensure_demo_school(SANDBOX_SCHOOLS["heritage-core"])
+    foreign = School.objects.create(name="Foreign Customer Academy")
+    user = ensure_persona_user(school, SANDBOX_PERSONAS["teacher"])
+    event = AidAuditEvent.objects.create(
+        school=foreign,
+        actor_user=user,
+        entity_type=AidAuditEvent.ENTITY_APPLICATION,
+        entity_id="foreign-record",
+        action="REVIEWED",
+    )
+    with pytest.raises(RuntimeError, match="another school's records"):
+        seed_heritage_flagship(reset=True)
+    assert AidAuditEvent.objects.filter(pk=event.pk, school=foreign).exists()
+    assert UserAccount.objects.filter(pk=user.pk, school=school).exists()
 
 
 def test_heritage_manifest_matches_backend_school_and_personas():
@@ -20,13 +117,41 @@ def test_heritage_manifest_matches_backend_school_and_personas():
         assert persona["route"] == SANDBOX_PERSONAS[persona["key"]].route
 
 
+def test_heritage_fictional_identity_catalog_has_no_generic_roster_names():
+    families = [family_identity(index) for index in range(1, FAMILY_RECORD_COUNT + 1)]
+    learners = [student_given_name(index) for index in range(1, STUDENT_RECORD_COUNT + 1)]
+    assert len(families) == 286
+    assert len({family.family_name for family in families}) == len(families)
+    assert len({family.guardian_email for family in families}) == len(families)
+    assert len({family.phone for family in families}) == len(families)
+    assert all(family.guardian_email.endswith("@heritage.example.org") for family in families)
+    assert all("Demo" not in family.family_name for family in families)
+    assert all("Demo" not in family.surname for family in families)
+    assert all(family.phone[4:10] == "555-01" for family in families)
+    assert not any(given_name.startswith("Student") for given_name in learners)
+    assert family_identity(1) == family_identity(1)
+    assert student_given_name(1) == student_given_name(1)
+    with pytest.raises(ValueError):
+        family_identity(0)
+    with pytest.raises(ValueError):
+        student_given_name(STUDENT_RECORD_COUNT + 1)
+
+
 @pytest.mark.django_db
 def test_seeded_students_have_grade_appropriate_ages_and_school_year_installments():
     seed_heritage_flagship(reset=True)
     school_id = SANDBOX_SCHOOLS["heritage-core"].id
     year = AcademicYear.objects.get(school_id=school_id, name="2026-2027")
     students = Student.objects.filter(school_id=school_id).select_related("current_grade_level")
-    assert students.count() == 700
+    assert students.count() == STUDENT_RECORD_COUNT
+    assert not students.filter(first_name__startswith="Student").exists()
+    assert not students.filter(last_name="Demo").exists()
+    assert not Family.objects.filter(
+        school_id=school_id, family_name__startswith="Demo Family "
+    ).exists()
+    assert not Guardian.objects.filter(
+        school_id=school_id, first_name__startswith="Guardian"
+    ).exists()
     for student in students:
         code = student.current_grade_level.code
         expected_age = 4 if code == "PK" else 5 if code == "K" else int(code) + 5

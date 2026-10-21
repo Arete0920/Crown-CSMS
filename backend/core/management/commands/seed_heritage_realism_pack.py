@@ -2,12 +2,36 @@ from __future__ import annotations
 import importlib
 import os
 import sys
+from contextlib import contextmanager
 from pathlib import Path
 
 from django.core.management import BaseCommand, call_command
+from django.core.management.base import CommandError
+
+from core.demo_seed_safety import require_local_demo_seed
+from core.legacy_demo_seed_safety import require_local_legacy_fixture_seed
 
 
 HERITAGE_NAME = "Heritage Christian Academy"
+_SCHEDULING_ID_ENV = "CROWN_LEGACY_SCHEDULING_SCHOOL_ID"
+
+
+@contextmanager
+def _bound_scheduling_school_id(school_id: str):
+    """Bind only the verified Heritage ID for the standalone legacy script."""
+    existing = os.environ.get(_SCHEDULING_ID_ENV)
+    if existing and existing != school_id:
+        raise CommandError(
+            "CROWN_LEGACY_SCHEDULING_SCHOOL_ID conflicts with Heritage demo school."
+        )
+    os.environ[_SCHEDULING_ID_ENV] = school_id
+    try:
+        yield
+    finally:
+        if existing is None:
+            os.environ.pop(_SCHEDULING_ID_ENV, None)
+        else:
+            os.environ[_SCHEDULING_ID_ENV] = existing
 
 
 class Command(BaseCommand):
@@ -26,6 +50,37 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **opts):
+        # Fail before creating any school, family, ledger, or attendance records.
+        # The later legacy household/finance scripts require this authorization;
+        # discovering it after seed_demo_school would leave partial fixture data.
+        require_local_demo_seed(operation="Heritage realism pack")
+        require_local_legacy_fixture_seed("Heritage realism pack")
+
+        # Both legacy scripts are intentionally local-only. Explicit opt-in is
+        # required before any school or finance fixture can be created.
+        if os.getenv("CROWN_ALLOW_LEGACY_SCHEDULING_SEED", "").strip().lower() != "true":
+            raise CommandError(
+                "CROWN_ALLOW_LEGACY_SCHEDULING_SEED=true is required."
+            )
+
+        from core.models import AcademicYear, School
+        from crown_api.models import Household, Person
+        from core.legacy_demo_seed_safety import require_isolated_fixture_directory
+
+        # Do not create Heritage school records and only later discover that
+        # existing customer schools/households make the fixtures unsafe.
+        require_isolated_fixture_directory(Household, Person)
+        if School.objects.exclude(name=HERITAGE_NAME).exists():
+            raise CommandError("Heritage realism pack requires a single-school database.")
+        current = list(School.objects.filter(name=HERITAGE_NAME).values_list("id", flat=True))
+        if len(current) > 1:
+            raise CommandError("Multiple Heritage schools found; refusing legacy fixture pack.")
+        supplied = os.environ.get(_SCHEDULING_ID_ENV, "").strip()
+        if supplied and (not current or supplied != str(current[0])):
+            raise CommandError(
+                "CROWN_LEGACY_SCHEDULING_SCHOOL_ID conflicts with the existing Heritage school."
+            )
+
         def run_script_module(module_name: str):
             """Import and run a script module from backend/scripts/."""
             repo_root = Path(__file__).resolve().parents[4]
@@ -46,8 +101,6 @@ class Command(BaseCommand):
 
         # 1) Core school + baseline objects. Heritage is the only demo school.
         call_command("seed_demo_school", school_name=HERITAGE_NAME)
-
-        from core.models import AcademicYear, School
 
         schools = School.objects.filter(name=HERITAGE_NAME).order_by("-created_at", "id")
         school = schools.first()
@@ -76,8 +129,10 @@ class Command(BaseCommand):
         # 3) Real households + guardians.
         run_script_module("seed_households.py")
 
-        # 4) Scheduling/sections first so academics and gradebook attach cleanly.
-        run_script_module("seed_scheduling.py")
+        # 4) Scheduling requires explicit opt-in. The only selected tenant
+        # is the verified sole Heritage school, bound for this one call.
+        with _bound_scheduling_school_id(str(school.id)):
+            run_script_module("seed_scheduling.py")
 
         # 5) Academics + curricula.
         call_command("seed_academics_demo", school_id=str(school.id))
@@ -108,13 +163,14 @@ class Command(BaseCommand):
             run_script_module("seed_comms.py")
 
         # 10) Deterministic demo logins when configured.
-        demo_pw = os.environ.get("CROWN_DEMO_PASSWORD")
-        if demo_pw:
-            call_command("reset_demo_passwords")
+        from core.demo_credentials import configured_demo_passwords
+        demo_passwords = configured_demo_passwords()
+        if demo_passwords:
+            call_command("reset_demo_passwords", school_id=str(school.id))
         else:
             self.stdout.write(
                 self.style.WARNING(
-                    "CROWN_DEMO_PASSWORD not set; skipping reset_demo_passwords (demo logins unchanged)."
+                    "No per-account secrets configured; password reset skipped (fixture accounts remain unusable)."
                 )
             )
 

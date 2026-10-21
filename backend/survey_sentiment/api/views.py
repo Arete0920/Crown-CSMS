@@ -4,7 +4,6 @@ This deliberately cannot publish questionnaires, distribute tokens, accept
 responses, or reveal raw response/identity data.
 """
 import json
-import re
 
 from django.db import transaction
 from django.http import JsonResponse
@@ -17,8 +16,7 @@ from core.models import School
 from core.permissions import user_has_permission
 from households.scoping import get_request_school_id
 from survey_sentiment.models import SurveyDefinition, SurveyQuestion
-
-KEY_PATTERN = re.compile(r"^[a-z][a-z0-9_]{0,63}$")
+from survey_sentiment.validation import KEY_PATTERN, valid_choices, valid_storage_text
 MAX_BODY_BYTES = 65536
 
 
@@ -69,14 +67,14 @@ def _validated_draft_payload(request):
         payload = json.loads(
             request.body.decode("utf-8"), object_pairs_hook=_unique_json_object,
         )
-    except (UnicodeDecodeError, json.JSONDecodeError, ValueError):
+    except (UnicodeError, json.JSONDecodeError, ValueError, RecursionError):
         return None, {"body": "Invalid JSON body."}
     if not isinstance(payload, dict) or set(payload) - {"name", "purpose", "questions"}:
         return None, {"body": "Only name, purpose and questions can be supplied."}
     name = payload.get("name")
     purpose = payload.get("purpose")
     questions = payload.get("questions")
-    if not isinstance(name, str) or not 1 <= len(name.strip()) <= 180:
+    if not valid_storage_text(name) or not 1 <= len(name.strip()) <= 180:
         return None, {"name": "Enter a survey name of 1 to 180 characters."}
     if not isinstance(purpose, str) or purpose not in dict(SurveyDefinition.PURPOSE_CHOICES):
         return None, {"purpose": "Select a supported survey purpose."}
@@ -98,17 +96,14 @@ def _validated_draft_payload(request):
         required = row.get("required", False)
         if not isinstance(key, str) or not KEY_PATTERN.fullmatch(key) or key in used_keys:
             return None, {field: "Question keys must be unique lowercase identifiers."}
-        if not isinstance(prompt, str) or not 1 <= len(prompt.strip()) <= 300:
+        if not valid_storage_text(prompt) or not 1 <= len(prompt.strip()) <= 300:
             return None, {field: "Question text must have 1 to 300 characters."}
         if not isinstance(kind, str) or kind not in dict(SurveyQuestion.TYPE_CHOICES) or type(required) is not bool:
             return None, {field: "Unsupported question type or required flag."}
         if not isinstance(choices, list):
             return None, {field: "Choices must be an array."}
         if kind in {"choice", "multi"}:
-            if not 2 <= len(choices) <= 40 or any(
-                not isinstance(option, str) or not 1 <= len(option.strip()) <= 120
-                for option in choices
-            ) or len(set(choices)) != len(choices):
+            if not valid_choices(choices):
                 return None, {field: "Provide 2 to 40 distinct choices."}
         elif choices:
             return None, {field: "Choices are not allowed for this question type."}

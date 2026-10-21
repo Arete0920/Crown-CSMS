@@ -31,6 +31,7 @@ class ParentEnrollmentGuidanceSurfaceTests(TestCase):
         self.user = User.objects.create_user(
             username=f"guidance_user_{uuid.uuid4().hex[:6]}",
             password="pass",
+            school=self.school_a,
         )
 
     def _authed_client(self, school):

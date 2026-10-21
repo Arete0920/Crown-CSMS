@@ -1,10 +1,12 @@
 # DEV Reset + Proof SOP
 
+> **Historical operating procedure — not current authorization.** This February 2026 runbook contains obsolete workflow, environment and credential assumptions. Validate the current DEV environment, approved migration stage, exact source identity and school scope before any reset. Do not manually delete migration records or databases to resolve drift. The DEV reset workflow now suppresses the full command-output response in public Actions logs; inspect errors through authorized private operational channels.
+
 ## Purpose
 Standard operating procedure for resetting DEV environment and verifying gradebook data is populated.
 
 **Owner**: Operations / DevOps
-**Last Updated**: 2026-02-10
+**Original date**: 2026-02-10; **security annotation**: 2026-10-19
 **Canon Tag**: `proof-dev-gradebook-v1`
 
 ---

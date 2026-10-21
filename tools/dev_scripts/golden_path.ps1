@@ -106,7 +106,8 @@ function Ensure-CiUser {
   $payload = @{} | ConvertTo-Json
 
   $resp = Invoke-RestMethod -Method Post -Uri "$ApiBase/api/v1/system/ensure-ci-user/" -Headers $headers -Body $payload -TimeoutSec 12
-  Write-Host "✅ CI user ensured. Response: $($resp | ConvertTo-Json -Depth 2)"
+  # The response includes a JWT access token; never write it into Actions logs.
+  Write-Host "CI user ensured; access token and response details withheld."
   return $resp
 }
 
@@ -256,7 +257,7 @@ $payload = @{
 }
 $r = Invoke-JsonPost "$ApiBase/api/director/actions/" $headers $payload 25
 Write-Host "HTTP $($r.StatusCode)"
-Write-Host $r.Content
+Write-Host "Director action response details withheld from Actions logs."
 
 # ------------------------------------------------------------
 # F) Director Actions - AID_GENERATE_NEEDS_INFO_EMAILS (optional)
@@ -272,7 +273,7 @@ if ($seed.aid_application_id) {
   }
   $r2 = Invoke-JsonPost "$ApiBase/api/director/actions/" $headers $payload 25
   Write-Host "HTTP $($r2.StatusCode)"
-  Write-Host $r2.Content
+  Write-Host "Financial aid action response details withheld from Actions logs."
 } else {
   Write-Host ""
   Write-Host "=== F) AID_GENERATE_NEEDS_INFO_EMAILS skipped (no GP_AID_APP_ID) ==="
@@ -295,7 +296,7 @@ $pay = @{
 }
 $r3 = Invoke-JsonPost "$ApiBase/api/billing/payments/record/" $headers $pay 25
 Write-Host "HTTP $($r3.StatusCode)"
-Write-Host $r3.Content
+Write-Host "Payment receipt response details withheld from Actions logs."
 
 # ------------------------------------------------------------
 # H) Financial Aid Drilldown

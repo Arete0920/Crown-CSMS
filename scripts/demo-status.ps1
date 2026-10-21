@@ -4,8 +4,8 @@ $SCHOOL_ID="a5351136-98fe-4d48-add0-fa8f62d9ceff"
 $USER="head@crown-demo.local"
 
 # Password must be set in this session BEFORE running this script:
-#   $env:CROWN_PASSWORD = 'demo1234'
-if (-not $env:CROWN_PASSWORD) { throw "CROWN_PASSWORD environment variable is not set. Set it with: `$env:CROWN_PASSWORD = 'demo1234'" }
+#   $env:CROWN_PASSWORD = '<approved-DEV-secret>'
+if (-not $env:CROWN_PASSWORD) { throw "CROWN_PASSWORD environment variable is not set. Load an approved DEV account secret privately without printing it." }
 $PASS=$env:CROWN_PASSWORD
 
 $body = @{ username=$USER; password=$PASS } | ConvertTo-Json -Compress
