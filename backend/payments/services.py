@@ -53,6 +53,13 @@ def normalize_gateway_status(raw_status: str) -> str:
 
 @transaction.atomic
 def process_gateway_event(event: GatewayEvent) -> None:
+    # A replay can carry a stale in-memory GatewayEvent. Serialize on the
+    # persisted provider event row and respect terminal processing state before
+    # performing any payment, refund or dispute operation.
+    event = GatewayEvent.objects.select_for_update().get(pk=event.pk)
+    if event.status in (GatewayEventStatus.PROCESSED, GatewayEventStatus.IGNORED):
+        return
+
     payload = event.payload or {}
     if not isinstance(payload, dict):
         raise UnmatchedPaymentError("Gateway payload must be an object.")

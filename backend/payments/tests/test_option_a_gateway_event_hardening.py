@@ -152,6 +152,29 @@ def test_settlement_event_creates_canonical_payment_and_routes_to_authority():
     assert event.status == GatewayEventStatus.PROCESSED
 
 
+def test_processed_gateway_event_replay_does_not_settle_twice():
+    school, user = _school_user()
+    legacy = _payment(school, user)
+    _intent(school, metadata={
+        "finance_payment_id": legacy.id,
+        "allocations": [{"obligation_id": 41, "amount_cents": 10_000}],
+    })
+    event = _event(school)
+    # The second worker may have fetched the event before it was processed.
+    stale_event = GatewayEvent.objects.get(pk=event.pk)
+
+    with patch("payments.services.settle_payment") as settle:
+        process_gateway_event_safely(event)
+        process_gateway_event_safely(stale_event)
+
+    assert settle.call_count == 1
+    assert Payment.objects.filter(
+        school_id=school.id, finance_payment_id=legacy.id,
+    ).count() == 1
+    event.refresh_from_db()
+    assert event.status == GatewayEventStatus.PROCESSED
+
+
 def test_refund_requires_prior_canonical_settlement_reconciliation():
     school, user = _school_user()
     legacy_payment = _payment(school, user, status=PaymentStatus.SETTLED)
