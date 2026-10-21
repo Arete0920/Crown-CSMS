@@ -4,7 +4,9 @@ import uuid
 from django.db import transaction
 from django.utils import timezone
 
+from billing.models import Invoice as BillingInvoice
 from finance.models import FinancePayment
+from households.models import Household
 from payments.authority_services import (
     create_payment,
     request_refund,
@@ -24,7 +26,7 @@ from payments.models import (
 
 
 class UnmatchedPaymentError(ValueError):
-    """Gateway event resolved an intent but no authoritative payment record."""
+    """Gateway event cannot be mapped safely to an owned local record."""
 
 
 class SettlementAllocationRequired(ValueError):
@@ -52,6 +54,17 @@ def normalize_gateway_status(raw_status: str) -> str:
 @transaction.atomic
 def process_gateway_event(event: GatewayEvent) -> None:
     payload = event.payload or {}
+    if not isinstance(payload, dict):
+        raise UnmatchedPaymentError("Gateway payload must be an object.")
+    if event.school_id is None:
+        raise UnmatchedPaymentError("Gateway event requires verified school ownership.")
+    metadata = payload.get("metadata") or {}
+    if not isinstance(metadata, dict):
+        raise UnmatchedPaymentError("Gateway metadata must be an object.")
+    claimed_school = metadata.get("school_id")
+    if claimed_school not in (None, "") and _to_uuid_or_none(claimed_school) != event.school_id:
+        raise UnmatchedPaymentError("Gateway metadata conflicts with verified school ownership.")
+
     event_type = (event.event_type or "").lower()
 
     if event_type == "payment_method.saved":
@@ -90,7 +103,11 @@ def process_gateway_event(event: GatewayEvent) -> None:
         or ""
     )
 
+    if not provider_intent_id:
+        raise UnmatchedPaymentError("Gateway event requires a provider intent reference.")
+
     intent = PaymentIntentRecord.objects.filter(
+        school_id=event.school_id,
         provider=event.provider,
         provider_intent_id=provider_intent_id,
     ).first()
@@ -101,6 +118,9 @@ def process_gateway_event(event: GatewayEvent) -> None:
         event.processed_at = timezone.now()
         event.save(update_fields=["status", "error_message", "processed_at"])
         return
+
+    if provider_payment_id and intent.provider_payment_id and provider_payment_id != intent.provider_payment_id:
+        raise UnmatchedPaymentError("Gateway payment reference conflicts with the owned intent.")
 
     intent.provider_payment_id = provider_payment_id or intent.provider_payment_id
     intent.status = status
@@ -290,17 +310,30 @@ def _apply_refund(
 
 def _handle_saved_payment_method(event: GatewayEvent, payload: dict) -> None:
     metadata = payload.get("metadata") or {}
-    school_id = _to_uuid_or_none(metadata.get("school_id") or event.school_id)
     household_id = _to_uuid_or_none(metadata.get("household_id"))
     provider_method_id = payload.get("payment_method_id") or payload.get("method_id")
 
-    if not school_id or not household_id or not provider_method_id:
-        raise ValueError("Saved payment method event missing school_id, household_id, or provider method id.")
+    if not household_id or not provider_method_id:
+        raise UnmatchedPaymentError("Saved payment method event requires household and method references.")
+    if not Household.objects.filter(pk=household_id, school_id=event.school_id).exists():
+        raise UnmatchedPaymentError("Saved payment method household is not owned by event school.")
+
+    # The provider method identifier is globally unique in the retained schema.
+    # Never overwrite another school's or provider's method on an event replay.
+    existing = SavedPaymentMethod.objects.select_for_update().filter(
+        provider_method_id=provider_method_id,
+    ).first()
+    if existing and (
+        existing.school_id != event.school_id
+        or existing.household_id != household_id
+        or existing.provider != event.provider
+    ):
+        raise UnmatchedPaymentError("Saved payment method identifier conflicts with existing ownership.")
 
     SavedPaymentMethod.objects.update_or_create(
         provider_method_id=provider_method_id,
         defaults={
-            "school_id": school_id,
+            "school_id": event.school_id,
             "household_id": household_id,
             "provider": event.provider,
             "provider_customer_id": payload.get("customer_id", ""),
@@ -317,7 +350,10 @@ def _handle_saved_payment_method(event: GatewayEvent, payload: dict) -> None:
 
 def _handle_detached_payment_method(event: GatewayEvent, payload: dict) -> None:
     provider_method_id = payload.get("payment_method_id") or payload.get("method_id")
+    if not provider_method_id:
+        raise UnmatchedPaymentError("Payment method detach event has no provider method reference.")
     method = SavedPaymentMethod.objects.filter(
+        school_id=event.school_id,
         provider_method_id=provider_method_id,
         provider=event.provider,
     ).first()
@@ -330,15 +366,36 @@ def _handle_detached_payment_method(event: GatewayEvent, payload: dict) -> None:
 
 def _handle_dispute_opened(event: GatewayEvent, payload: dict) -> None:
     metadata = payload.get("metadata") or {}
+    dispute_id = payload.get("dispute_id") or payload.get("id")
+    if not dispute_id:
+        raise UnmatchedPaymentError("Dispute event has no provider dispute reference.")
+
+    household_id = _to_uuid_or_none(metadata.get("household_id"))
+    invoice_id = _to_uuid_or_none(metadata.get("invoice_id"))
+    if metadata.get("household_id") and (
+        not household_id
+        or not Household.objects.filter(pk=household_id, school_id=event.school_id).exists()
+    ):
+        raise UnmatchedPaymentError("Dispute household is not owned by event school.")
+    if metadata.get("invoice_id") and (
+        not invoice_id
+        or not BillingInvoice.objects.filter(pk=invoice_id, school_id=event.school_id).exists()
+    ):
+        raise UnmatchedPaymentError("Dispute invoice is not owned by event school.")
+
+    existing = ProviderDispute.objects.select_for_update().filter(dispute_id=dispute_id).first()
+    if existing and (existing.school_id != event.school_id or existing.provider != event.provider):
+        raise UnmatchedPaymentError("Provider dispute identifier conflicts with existing ownership.")
+
     ProviderDispute.objects.update_or_create(
-        dispute_id=payload.get("dispute_id") or payload.get("id"),
+        dispute_id=dispute_id,
         defaults={
-            "school_id": _to_uuid_or_none(metadata.get("school_id") or event.school_id),
+            "school_id": event.school_id,
             "provider": event.provider,
             "provider_payment_id": payload.get("payment_id", ""),
             "provider_intent_id": payload.get("intent_id", ""),
-            "invoice_id": _to_uuid_or_none(metadata.get("invoice_id")),
-            "household_id": _to_uuid_or_none(metadata.get("household_id")),
+            "invoice_id": invoice_id,
+            "household_id": household_id,
             "amount": _amount(payload.get("amount")),
             "currency": payload.get("currency") or "USD",
             "reason": payload.get("reason") or "",
@@ -350,8 +407,13 @@ def _handle_dispute_opened(event: GatewayEvent, payload: dict) -> None:
 
 
 def _handle_dispute_status_update(event: GatewayEvent, payload: dict) -> None:
+    dispute_id = payload.get("dispute_id") or payload.get("id")
+    if not dispute_id:
+        raise UnmatchedPaymentError("Dispute update has no provider dispute reference.")
     dispute = ProviderDispute.objects.filter(
-        dispute_id=payload.get("dispute_id") or payload.get("id")
+        school_id=event.school_id,
+        provider=event.provider,
+        dispute_id=dispute_id,
     ).first()
     if not dispute:
         return
@@ -371,12 +433,15 @@ def process_gateway_event_safely(event: GatewayEvent) -> None:
         event.error_message = str(exc)
         event.save(update_fields=["status", "error_message"])
 
-        record_payment_exception(
-            school_id=event.school_id,
-            provider=event.provider,
-            category="gateway_event_processing",
-            message=str(exc),
-            payload=event.payload or {},
-            gateway_event_id=event.id,
-        )
+        # Unowned events cannot be written to the tenant-required exception ledger.
+        # The GatewayEvent itself remains FAILED for investigation.
+        if event.school_id is not None:
+            record_payment_exception(
+                school_id=event.school_id,
+                provider=event.provider,
+                category="gateway_event_processing",
+                message=str(exc),
+                payload=event.payload or {},
+                gateway_event_id=event.id,
+            )
         raise
