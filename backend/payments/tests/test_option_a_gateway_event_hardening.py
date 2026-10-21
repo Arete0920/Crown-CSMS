@@ -398,10 +398,17 @@ def test_dispute_status_event_does_not_change_another_school():
         {"dispute_id": "foreign-dispute-status", "status": "lost"},
     )
 
-    process_gateway_event_safely(event)
+    with pytest.raises(UnmatchedPaymentError, match="conflicts with verified ownership"):
+        process_gateway_event_safely(event)
 
     existing.refresh_from_db()
+    event.refresh_from_db()
     assert existing.status == "open"
+    assert event.status == GatewayEventStatus.FAILED
+    assert PaymentSupportException.objects.filter(
+        school_id=school.id, gateway_event_id=event.id,
+        category="gateway_event_processing",
+    ).exists()
 
 
 def test_dispute_event_rejects_foreign_household_metadata():

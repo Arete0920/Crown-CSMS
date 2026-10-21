@@ -435,13 +435,15 @@ def _handle_dispute_status_update(event: GatewayEvent, payload: dict) -> None:
     dispute_id = payload.get("dispute_id") or payload.get("id")
     if not dispute_id:
         raise UnmatchedPaymentError("Dispute update has no provider dispute reference.")
+    # The retained dispute ID is globally unique. Do not silently mark a
+    # foreign-school or foreign-provider event as processed.
     dispute = ProviderDispute.objects.select_for_update().filter(
-        school_id=event.school_id,
-        provider=event.provider,
         dispute_id=dispute_id,
     ).first()
     if not dispute:
         return
+    if dispute.school_id != event.school_id or dispute.provider != event.provider:
+        raise UnmatchedPaymentError("Dispute reference conflicts with verified ownership.")
 
     dispute.status = payload.get("status") or dispute.status
     dispute.payload = payload
