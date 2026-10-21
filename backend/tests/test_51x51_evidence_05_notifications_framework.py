@@ -1,77 +1,99 @@
-"""
-51x51 remediation evidence tests for ModuleId 5: Notifications Framework
-This file intentionally includes module and test/tenant/api/frontend/e2e/negative/ci keywords
-so the 51x51 integrity audit can detect explicit remediation coverage.
+"""Behavioral evidence for Notifications Framework module 5.
+
+These tests exercise the real communications outbox persistence contract, not
+module-description keywords or unrelated API health checks. They establish
+idempotent enqueue, school-separated message identities, and rollback of queued
+work when the enclosing business transaction fails.
+
+Provider delivery, request authorization, and cross-school API isolation require
+their own integration evidence; these tests do not claim to certify them.
 """
 
-import pytest
+from django.db import transaction
+from django.test import TestCase
 
-pytestmark = pytest.mark.filterwarnings("ignore::DeprecationWarning")
+from comms.models import OutboxMessage
+from comms.outbox_service import enqueue_email, enqueue_sms
+from core.models import School
+
 
 MODULE_ID = 5
-MODULE_NAME = 'Notifications Framework'
-MODULE_TEXT = 'Notifications Framework\nProvides shared alert, reminder, email, SMS, and workflow notification infrastructure.\nCreate notification | Deliver email | Deliver SMS | User preferences | Notification templates\nQueue events | Respect preferences | Send delivery | Track failure | Retry delivery\ndelivery success rate | bounce/failure count | template coverage | opt-out compliance | retry success rate\ncommunications | email service | SMS provider | background jobs | preferences\nDev 1\nPlatform Core'
-AUDIT_KEYWORDS = ['tenant', 'cross-tenant', 'cross-school', 'isolation', '403', '404', 'test_', 'pytest', 'describe(', 'it(', 'APIClient', 'client.get', 'client.post', 'request', 'response', 'render', 'screen', 'userEvent', 'vitest', 'testing-library', 'playwright', 'page.goto', 'expect(page', 'e2e', 'spec.ts', 'unauthorized', 'invalid', 'forbidden', 'raises', 'workflow', 'pipeline', 'gate', 'CI']
+MODULE_NAME = "Notifications Framework"
 
 
-def test_51x51_module_metadata_present_5():
-    assert MODULE_ID > 0
-    assert isinstance(MODULE_NAME, str) and len(MODULE_NAME) > 0
+class NotificationsOutboxIntegrityTests(TestCase):
+    def setUp(self):
+        self.school_a = School.objects.create(name="Notification Evidence School A")
+        self.school_b = School.objects.create(name="Notification Evidence School B")
+        self.recipient = "fictional.parent@example.test"
 
+    def _email(self, school, *, body="Synthetic enrollment update"):
+        return enqueue_email(
+            school_id=str(school.pk),
+            to=self.recipient,
+            subject="Enrollment update",
+            body=body,
+        )
 
-def test_51x51_module_text_has_context_5():
-    assert isinstance(MODULE_TEXT, str)
-    assert len(MODULE_TEXT) > 20
+    def test_repeated_email_enqueue_creates_only_one_persisted_delivery(self):
+        first = self._email(self.school_a)
+        repeated = self._email(self.school_a)
 
+        self.assertEqual(first.pk, repeated.pk)
+        self.assertEqual(OutboxMessage.objects.count(), 1)
 
-def test_51x51_required_keywords_present_5():
-    required = ["tenant", "APIClient", "render", "playwright", "unauthorized", "workflow"]
-    text = "\n".join(AUDIT_KEYWORDS)
-    for token in required:
-        assert token in text
+        persisted = OutboxMessage.objects.get(pk=first.pk)
+        self.assertEqual(persisted.school_id, str(self.school_a.pk))
+        self.assertEqual(persisted.channel, "EMAIL")
+        self.assertEqual(persisted.to, self.recipient)
+        self.assertEqual(persisted.status, OutboxMessage.STATUS_PENDING)
+        self.assertEqual(persisted.attempts, 0)
 
+    def test_identical_emails_at_different_schools_have_distinct_outbox_ids(self):
+        school_a_message = self._email(self.school_a)
+        school_b_message = self._email(self.school_b)
 
-# Module/source context block (audit searchable):
-# Notifications Framework
-# Provides shared alert, reminder, email, SMS, and workflow notification infrastructure.
-# Create notification | Deliver email | Deliver SMS | User preferences | Notification templates
-# Queue events | Respect preferences | Send delivery | Track failure | Retry delivery
-# delivery success rate | bounce/failure count | template coverage | opt-out compliance | retry success rate
-# communications | email service | SMS provider | background jobs | preferences
-# Dev 1
-# Platform Core
+        self.assertNotEqual(school_a_message.pk, school_b_message.pk)
+        self.assertNotEqual(
+            school_a_message.idempotency_key,
+            school_b_message.idempotency_key,
+        )
+        self.assertEqual(
+            OutboxMessage.objects.filter(school_id=str(self.school_a.pk)).count(),
+            1,
+        )
+        self.assertEqual(
+            OutboxMessage.objects.filter(school_id=str(self.school_b.pk)).count(),
+            1,
+        )
 
-# Remediation keyword block (audit searchable):
-# tenant
-# cross-tenant
-# cross-school
-# isolation
-# 403
-# 404
-# test_
-# pytest
-# describe(
-# it(
-# APIClient
-# client.get
-# client.post
-# request
-# response
-# render
-# screen
-# userEvent
-# vitest
-# testing-library
-# playwright
-# page.goto
-# expect(page
-# e2e
-# spec.ts
-# unauthorized
-# invalid
-# forbidden
-# raises
-# workflow
-# pipeline
-# gate
-# CI
+    def test_changed_message_content_produces_new_delivery_identity(self):
+        first = self._email(self.school_a, body="First synthetic notice")
+        changed = self._email(self.school_a, body="Corrected synthetic notice")
+
+        self.assertNotEqual(first.pk, changed.pk)
+        self.assertEqual(OutboxMessage.objects.count(), 2)
+
+    def test_failed_business_transaction_does_not_leave_queued_email(self):
+        with self.assertRaisesRegex(RuntimeError, "rollback example"):
+            with transaction.atomic():
+                self._email(self.school_a)
+                raise RuntimeError("rollback example")
+
+        self.assertFalse(OutboxMessage.objects.exists())
+
+    def test_repeated_sms_enqueue_is_durable_and_idempotent(self):
+        kwargs = {
+            "school_id": str(self.school_a.pk),
+            "to": "+15555550123",
+            "body": "Synthetic attendance reminder",
+        }
+        first = enqueue_sms(**kwargs)
+        repeated = enqueue_sms(**kwargs)
+
+        self.assertEqual(first.pk, repeated.pk)
+        self.assertEqual(OutboxMessage.objects.count(), 1)
+        persisted = OutboxMessage.objects.get(pk=first.pk)
+        self.assertEqual(persisted.channel, "SMS")
+        self.assertEqual(persisted.school_id, str(self.school_a.pk))
+        self.assertEqual(persisted.status, OutboxMessage.STATUS_PENDING)

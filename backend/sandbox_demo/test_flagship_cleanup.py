@@ -1,14 +1,62 @@
 from datetime import date
+from unittest.mock import patch
 
+from django.core.management import call_command
 from django.test import TestCase
 
-from aid.models import AidAward
+from aid.models import AidAuditEvent, AidAward
 from core.models import AcademicYear, Family, School, Student, UserAccount
-from sandbox_demo.services import _clear_flagship_data
+from sandbox_demo.admissions_seed import FAMILY_NAME
+from sandbox_demo.catalog import SANDBOX_SCHOOLS
+from sandbox_demo.services import _clear_flagship_data, ensure_demo_school
 
 
 class FlagshipResetCleanupTests(TestCase):
-    def test_clear_flagship_data_deletes_user_linked_aid_awards(self):
+    def test_command_rolls_back_earlier_cleanup_on_foreign_actor_refusal(self):
+        school = ensure_demo_school(SANDBOX_SCHOOLS["heritage-core"])
+        family = Family.objects.create(school=school, family_name=FAMILY_NAME)
+        actor = UserAccount.objects.create_user(
+            username="reset-actor@example.org", school=school,
+        )
+        foreign = School.objects.create(name="Unrelated Customer Academy")
+        event = AidAuditEvent.objects.create(
+            school=foreign, actor_user=actor,
+            entity_type=AidAuditEvent.ENTITY_APPLICATION,
+            entity_id="foreign-record", action="REVIEWED",
+        )
+
+        with self.assertRaisesRegex(RuntimeError, "another school's records"):
+            call_command("sandbox_seed_flagship", reset=True)
+
+        # admissions cleanup runs before the flagship guard and deletes this
+        # family. The outer transaction must restore it when the guard refuses.
+        self.assertTrue(Family.objects.filter(pk=family.pk, school=school).exists())
+        self.assertTrue(UserAccount.objects.filter(pk=actor.pk, school=school).exists())
+        self.assertTrue(AidAuditEvent.objects.filter(pk=event.pk, school=foreign).exists())
+
+    def test_command_rolls_back_cleanup_on_school_identity_refusal(self):
+        spec = SANDBOX_SCHOOLS["heritage-core"]
+        school = School.objects.create(id=spec.id, name="Customer School")
+        family = Family.objects.create(school=school, family_name=FAMILY_NAME)
+
+        with self.assertRaisesRegex(RuntimeError, "different institution"):
+            call_command("sandbox_seed_flagship", reset=True)
+
+        self.assertTrue(Family.objects.filter(pk=family.pk, school=school).exists())
+        school.refresh_from_db()
+        self.assertEqual(school.name, "Customer School")
+
+    def test_command_rolls_back_cleanup_when_rebuild_fails(self):
+        school = ensure_demo_school(SANDBOX_SCHOOLS["heritage-core"])
+        family = Family.objects.create(school=school, family_name=FAMILY_NAME)
+        target = "sandbox_demo.management.commands.sandbox_seed_flagship.seed_heritage_flagship"
+        with patch(target, side_effect=RuntimeError("rebuild failed")):
+            with self.assertRaisesRegex(RuntimeError, "rebuild failed"):
+                call_command("sandbox_seed_flagship", reset=True)
+
+        self.assertTrue(Family.objects.filter(pk=family.pk, school=school).exists())
+
+    def test_clear_flagship_data_refuses_foreign_school_aid_award_deletion(self):
         heritage_school = School.objects.create(name="Heritage Test School")
         other_school = School.objects.create(name="Other Test School")
         academic_year = AcademicYear.objects.create(
@@ -44,7 +92,8 @@ class FlagshipResetCleanupTests(TestCase):
             decided_by=decider,
         )
 
-        _clear_flagship_data(heritage_school)
+        with self.assertRaisesRegex(RuntimeError, "another school's records"):
+            _clear_flagship_data(heritage_school)
 
-        self.assertFalse(AidAward.objects.filter(pk=award.pk).exists())
-        self.assertFalse(UserAccount.objects.filter(pk=decider.pk).exists())
+        self.assertTrue(AidAward.objects.filter(pk=award.pk, school=other_school).exists())
+        self.assertTrue(UserAccount.objects.filter(pk=decider.pk, school=heritage_school).exists())
