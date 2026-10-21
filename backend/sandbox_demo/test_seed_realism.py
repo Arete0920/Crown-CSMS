@@ -5,7 +5,8 @@ from pathlib import Path
 import pytest
 from rest_framework.test import APIClient
 
-from core.models import AcademicYear, Family, Guardian, Student, UserAccount
+from core.models import AcademicYear, Family, Guardian, School, Student, UserAccount, UserRole
+from aid.models import AidAuditEvent
 from finance.models import FinanceObligation
 from sandbox_demo.catalog import SANDBOX_PERSONAS, SANDBOX_SCHOOLS
 from sandbox_demo.fictional_identities import (
@@ -14,7 +15,97 @@ from sandbox_demo.fictional_identities import (
     family_identity,
     student_given_name,
 )
-from sandbox_demo.services import seed_heritage_flagship, seed_local_heritage_relationships
+from sandbox_demo.services import (
+    ensure_demo_school,
+    ensure_persona_user,
+    seed_heritage_flagship,
+    seed_local_heritage_relationships,
+)
+
+
+@pytest.mark.django_db
+def test_one_click_personas_never_inherit_shared_password_or_stale_privilege(settings, monkeypatch):
+    monkeypatch.setenv("CROWN_DEMO_PASSWORD", "retired-demo-password-example")
+    settings.CROWN_SANDBOX_FALLBACK_PASSWORD = "retired-sandbox-password-example"
+    school = ensure_demo_school(SANDBOX_SCHOOLS["heritage-core"])
+    persona = SANDBOX_PERSONAS["teacher"]
+    user = ensure_persona_user(school, persona)
+    user.is_staff = True
+    user.is_superuser = True
+    user.set_password("previous-demo-password-example")
+    user.save(update_fields=["is_staff", "is_superuser", "password"])
+    UserRole.objects.get_or_create(
+        school=school, user=user, role_code="HEAD_OF_SCHOOL"
+    )
+
+    refreshed = ensure_persona_user(school, persona)
+    refreshed.refresh_from_db()
+    assert not refreshed.has_usable_password()
+    assert not refreshed.is_staff
+    assert not refreshed.is_superuser
+    assert set(UserRole.objects.filter(
+        school=school, user=refreshed
+    ).values_list("role_code", flat=True)) == {"TEACHER"}
+
+
+@pytest.mark.django_db
+def test_heritage_school_admin_has_only_scoped_wizard_demonstration_roles():
+    heritage = ensure_demo_school(SANDBOX_SCHOOLS["heritage-core"])
+    persona = SANDBOX_PERSONAS["school_admin"]
+    admin = ensure_persona_user(heritage, persona)
+    assert set(
+        UserRole.objects.filter(school=heritage, user=admin).values_list(
+            "role_code", flat=True
+        )
+    ) == {"HEAD_OF_SCHOOL", "AID_DIRECTOR"}
+
+    other = School.objects.create(name="Another Fictional Sandbox School")
+    assert not UserRole.objects.filter(school=other, user=admin).exists()
+    assert not UserRole.objects.filter(user=admin).exclude(school=heritage).exists()
+
+
+@pytest.mark.django_db
+def test_persona_creation_refuses_foreign_school_username():
+    school = ensure_demo_school(SANDBOX_SCHOOLS["heritage-core"])
+    other = School.objects.create(name="Unrelated Customer Academy")
+    persona = SANDBOX_PERSONAS["teacher"]
+    owner = UserAccount.objects.create_user(
+        school=other, username=persona.email,
+        email=persona.email, password="customer-owned-example-password",
+    )
+    with pytest.raises(RuntimeError, match="another identity"):
+        ensure_persona_user(school, persona)
+    owner.refresh_from_db()
+    assert owner.school_id == other.id
+    assert owner.check_password("customer-owned-example-password")
+
+
+@pytest.mark.django_db
+def test_sandbox_id_cannot_rebrand_foreign_school():
+    school_spec = SANDBOX_SCHOOLS["heritage-core"]
+    original = School.objects.create(id=school_spec.id, name="Customer School")
+    with pytest.raises(RuntimeError, match="different institution"):
+        ensure_demo_school(school_spec)
+    original.refresh_from_db()
+    assert original.name == "Customer School"
+
+
+@pytest.mark.django_db
+def test_flagship_reset_preserves_foreign_school_audit_evidence():
+    school = ensure_demo_school(SANDBOX_SCHOOLS["heritage-core"])
+    foreign = School.objects.create(name="Foreign Customer Academy")
+    user = ensure_persona_user(school, SANDBOX_PERSONAS["teacher"])
+    event = AidAuditEvent.objects.create(
+        school=foreign,
+        actor_user=user,
+        entity_type=AidAuditEvent.ENTITY_APPLICATION,
+        entity_id="foreign-record",
+        action="REVIEWED",
+    )
+    with pytest.raises(RuntimeError, match="another school's records"):
+        seed_heritage_flagship(reset=True)
+    assert AidAuditEvent.objects.filter(pk=event.pk, school=foreign).exists()
+    assert UserAccount.objects.filter(pk=user.pk, school=school).exists()
 
 
 def test_heritage_manifest_matches_backend_school_and_personas():

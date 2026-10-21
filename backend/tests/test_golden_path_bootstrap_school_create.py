@@ -6,8 +6,17 @@ from core.models import School
 
 
 @pytest.fixture(autouse=True)
-def _set_required_demo_password_env(monkeypatch):
-    """Provide a dummy demo password required by golden_path_bootstrap."""
+def _set_required_demo_password_env(monkeypatch, settings):
+    """Explicitly authorize an isolated local fixture test database."""
+    for name in (
+        "DJANGO_ENV", "ENVIRONMENT", "APP_ENV", "AZURE_ENVIRONMENT",
+        "WEBSITE_HOSTNAME", "WEBSITE_INSTANCE_ID",
+    ):
+        monkeypatch.delenv(name, raising=False)
+    for name in ("DJANGO_ENV", "ENVIRONMENT", "APP_ENV", "AZURE_ENVIRONMENT"):
+        setattr(settings, name, "")
+    settings.CROWN_ENV = "local"
+    monkeypatch.setenv("CROWN_ENV", "local")
     monkeypatch.setenv("CROWN_DEMO_PASSWORD", "dummy-test-password")
 
 
