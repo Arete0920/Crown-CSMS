@@ -498,4 +498,3 @@ def test_inquiry_cursor_preserves_due_date_and_null_last_order(school):
         if not cursor:
             break
     assert seen == [str(leads[name].id) for name in ("first", "second", "third", "no_due")]
-
