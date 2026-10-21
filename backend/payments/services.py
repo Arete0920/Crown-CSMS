@@ -319,33 +319,35 @@ def _handle_saved_payment_method(event: GatewayEvent, payload: dict) -> None:
         raise UnmatchedPaymentError("Saved payment method household is not owned by event school.")
 
     # The provider method identifier is globally unique in the retained schema.
-    # Never overwrite another school's or provider's method on an event replay.
-    existing = SavedPaymentMethod.objects.select_for_update().filter(
+    # A locked get_or_create closes the check/update race with another tenant.
+    defaults = {
+        "school_id": event.school_id,
+        "household_id": household_id,
+        "provider": event.provider,
+        "provider_customer_id": payload.get("customer_id", ""),
+        "method_type": payload.get("method_type", "card"),
+        "brand": payload.get("brand", ""),
+        "last4": payload.get("last4", ""),
+        "exp_month": payload.get("exp_month"),
+        "exp_year": payload.get("exp_year"),
+        "is_default": bool(payload.get("is_default", False)),
+        "payload": payload,
+    }
+    method, created = SavedPaymentMethod.objects.select_for_update().get_or_create(
         provider_method_id=provider_method_id,
-    ).first()
-    if existing and (
-        existing.school_id != event.school_id
-        or existing.household_id != household_id
-        or existing.provider != event.provider
+        defaults=defaults,
+    )
+    if (
+        method.school_id != event.school_id
+        or method.household_id != household_id
+        or method.provider != event.provider
     ):
         raise UnmatchedPaymentError("Saved payment method identifier conflicts with existing ownership.")
-
-    SavedPaymentMethod.objects.update_or_create(
-        provider_method_id=provider_method_id,
-        defaults={
-            "school_id": event.school_id,
-            "household_id": household_id,
-            "provider": event.provider,
-            "provider_customer_id": payload.get("customer_id", ""),
-            "method_type": payload.get("method_type", "card"),
-            "brand": payload.get("brand", ""),
-            "last4": payload.get("last4", ""),
-            "exp_month": payload.get("exp_month"),
-            "exp_year": payload.get("exp_year"),
-            "is_default": bool(payload.get("is_default", False)),
-            "payload": payload,
-        },
-    )
+    if not created:
+        mutable_fields = [key for key in defaults if key not in ("school_id", "household_id", "provider")]
+        for field_name in mutable_fields:
+            setattr(method, field_name, defaults[field_name])
+        method.save(update_fields=[*mutable_fields, "updated_at"])
 
 
 def _handle_detached_payment_method(event: GatewayEvent, payload: dict) -> None:
@@ -383,27 +385,31 @@ def _handle_dispute_opened(event: GatewayEvent, payload: dict) -> None:
     ):
         raise UnmatchedPaymentError("Dispute invoice is not owned by event school.")
 
-    existing = ProviderDispute.objects.select_for_update().filter(dispute_id=dispute_id).first()
-    if existing and (existing.school_id != event.school_id or existing.provider != event.provider):
-        raise UnmatchedPaymentError("Provider dispute identifier conflicts with existing ownership.")
-
-    ProviderDispute.objects.update_or_create(
+    defaults = {
+        "school_id": event.school_id,
+        "provider": event.provider,
+        "provider_payment_id": payload.get("payment_id", ""),
+        "provider_intent_id": payload.get("intent_id", ""),
+        "invoice_id": invoice_id,
+        "household_id": household_id,
+        "amount": _amount(payload.get("amount")),
+        "currency": payload.get("currency") or "USD",
+        "reason": payload.get("reason") or "",
+        "status": payload.get("status") or "open",
+        "payload": payload,
+        "opened_at": timezone.now(),
+    }
+    dispute, created = ProviderDispute.objects.select_for_update().get_or_create(
         dispute_id=dispute_id,
-        defaults={
-            "school_id": event.school_id,
-            "provider": event.provider,
-            "provider_payment_id": payload.get("payment_id", ""),
-            "provider_intent_id": payload.get("intent_id", ""),
-            "invoice_id": invoice_id,
-            "household_id": household_id,
-            "amount": _amount(payload.get("amount")),
-            "currency": payload.get("currency") or "USD",
-            "reason": payload.get("reason") or "",
-            "status": payload.get("status") or "open",
-            "payload": payload,
-            "opened_at": timezone.now(),
-        },
+        defaults=defaults,
     )
+    if dispute.school_id != event.school_id or dispute.provider != event.provider:
+        raise UnmatchedPaymentError("Provider dispute identifier conflicts with existing ownership.")
+    if not created:
+        mutable_fields = [key for key in defaults if key not in ("school_id", "provider")]
+        for field_name in mutable_fields:
+            setattr(dispute, field_name, defaults[field_name])
+        dispute.save(update_fields=[*mutable_fields, "updated_at"])
 
 
 def _handle_dispute_status_update(event: GatewayEvent, payload: dict) -> None:
