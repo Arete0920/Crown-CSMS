@@ -470,6 +470,52 @@ class InvoiceRunVerifyTest(TestCase):
 
 
 class InvoiceRunSecurityRegressionTest(TestCase):
+    def test_non_usd_obligation_is_rejected_before_any_invoice_write(self):
+        school = _make_school()
+        obligation = _make_obligation(school, _make_user())
+        obligation.currency = "EUR"
+        obligation.save(update_fields=["currency"])
+        client = _client_for(school)
+        sid = _advance_to_loaded(client, school.id)
+
+        response = client.post(
+            f"{BASE_URL}{sid}/commit/", {"confirm": True},
+            format="json", **_headers(school.id),
+        )
+        self.assertEqual(response.status_code, 409)
+        self.assertFalse(FinanceInvoice.objects.filter(school=school).exists())
+        self.assertFalse(FinanceInvoiceLine.objects.filter(invoice__school=school).exists())
+        self.assertEqual(
+            InvoiceRunWizardSession.objects.get(pk=sid).status,
+            InvoiceRunWizardSession.STATUS_OBLIGATIONS_LOADED,
+        )
+
+    def test_existing_non_usd_invoice_does_not_accept_usd_lines(self):
+        school = _make_school()
+        payer = _make_user()
+        _make_obligation(school, payer, amount_cents=100000)
+        client = _client_for(school)
+        _advance_to_committed(client, school.id)
+        invoice = FinanceInvoice.objects.get(school=school, payer_user=payer)
+        invoice.currency = "EUR"
+        invoice.save(update_fields=["currency"])
+        _make_obligation(school, payer, amount_cents=50000)
+        sid = _advance_to_loaded(client, school.id)
+
+        response = client.post(
+            f"{BASE_URL}{sid}/commit/", {"confirm": True},
+            format="json", **_headers(school.id),
+        )
+        self.assertEqual(response.status_code, 409)
+        invoice.refresh_from_db()
+        self.assertEqual(invoice.total_cents, 100000)
+        self.assertEqual(invoice.currency, "EUR")
+        self.assertEqual(FinanceInvoiceLine.objects.filter(invoice=invoice).count(), 1)
+        self.assertEqual(
+            InvoiceRunWizardSession.objects.get(pk=sid).status,
+            InvoiceRunWizardSession.STATUS_OBLIGATIONS_LOADED,
+        )
+
     def test_mixed_and_unknown_snapshots_reject_before_any_financial_write(self):
         from finance.models import FinanceInvoiceLine
         from unittest.mock import patch

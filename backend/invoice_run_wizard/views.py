@@ -197,6 +197,14 @@ def commit_session(request, session_id):
             status=status.HTTP_409_CONFLICT,
         )
 
+    # InvoiceRunWizard creates USD-denominated invoices without FX conversion.
+    # Reject mismatched obligations before writing any invoice or line.
+    if any(obligation.currency != "USD" for obligation in obligations):
+        return Response(
+            {"error": "Invoice run requires USD-denominated obligations"},
+            status=status.HTTP_409_CONFLICT,
+        )
+
     # Group by payer_user_id
     by_payer: dict = {}
     for obl in obligations:
@@ -228,7 +236,8 @@ def commit_session(request, session_id):
     matched_payers = set()
     for existing in previously:
         if (existing.payer_user_id in matched_payers
-            or existing.status not in (MoneyStatus.OPEN, MoneyStatus.DRAFT)):
+            or existing.status not in (MoneyStatus.OPEN, MoneyStatus.DRAFT)
+            or existing.currency != "USD"):
             return Response(
                 {"error": "Existing invoice cannot be safely updated"},
                 status=status.HTTP_409_CONFLICT,
