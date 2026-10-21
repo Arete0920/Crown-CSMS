@@ -7,7 +7,7 @@ from rest_framework import status
 from rest_framework.authentication import SessionAuthentication
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.response import Response
-from rest_framework_simplejwt.authentication import JWTAuthentication
+from crown_api.tenant_authentication import TenantJWTAuthentication
 
 from aid.models import AidApplication, AidAuditEvent, AidAward
 from core.models import AcademicYear, School, Student
@@ -18,7 +18,7 @@ from .models import FinancialAidWizardSession
 from drf_spectacular.utils import extend_schema
 from drf_spectacular.types import OpenApiTypes
 
-_AUTH = [JWTAuthentication, SessionAuthentication]
+_AUTH = [TenantJWTAuthentication, SessionAuthentication]
 _VIEW_PERM = [CrownModulePermission("financial_aid.view")]
 _EDIT_PERM = [CrownModulePermission("financial_aid.view", write_code="financial_aid.edit")]
 BUCKET_MAP = {value.lower(): value for value, _label in AidAward.TYPE_CHOICES}
@@ -312,16 +312,23 @@ def commit_session(request, session_id):
 
 
 @extend_schema(responses=OpenApiTypes.OBJECT)
-@api_view(["GET"])
+@api_view(["GET", "POST"])
 @authentication_classes(_AUTH)
-@permission_classes(_VIEW_PERM)
+@permission_classes(_EDIT_PERM)
+@transaction.atomic
 def verify_session(request, session_id):
     school_id = get_request_school_id(request)
-    session = _get_session(session_id, school_id)
+    session = (
+        get_object_or_404(
+            FinancialAidWizardSession.objects.select_for_update(),
+            id=session_id, school_id=school_id,
+        ) if request.method == "POST" else _get_session(session_id, school_id)
+    )
     if session.status == FinancialAidWizardSession.STATUS_VERIFIED:
         return Response({"session_id": str(session.id), "status": session.status, **(session.commit_result or {})})
     if session.status != FinancialAidWizardSession.STATUS_COMMITTED:
         return Response({"error": f"Cannot verify from status '{session.status}'"}, status=status.HTTP_409_CONFLICT)
-    session.status = FinancialAidWizardSession.STATUS_VERIFIED
-    session.save()
+    if request.method == "POST":
+        session.status = FinancialAidWizardSession.STATUS_VERIFIED
+        session.save(update_fields=["status", "updated_at"])
     return Response({"session_id": str(session.id), "status": session.status, **(session.commit_result or {})})

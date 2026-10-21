@@ -366,26 +366,30 @@ test.describe('CROWN buyer sandbox live browser authority', () => {
     expect(completed.demo_payment_processed).toBe(false);
     await expect(page.getByTestId('sandbox-parent-enrollment-complete')).toContainText('Jordan Reed');
 
+    // Read each response body as soon as it arrives. Later browser navigation
+    // can evict a Playwright response body even when the response was successful.
+    // Preserve all existing API status, identity and persistence assertions.
     const reloadedState = page.waitForResponse((response) =>
       response.url().includes('/api/v1/sandbox/parent/enrollment/') &&
       response.request().method() === 'GET',
-    );
+    ).then(async (response) => {
+      expect(response.ok()).toBe(true);
+      return response.json();
+    });
     const reloadedOverview = page.waitForResponse((response) =>
       response.url().includes('/api/v1/parent360/me/overview/') &&
       response.request().method() === 'GET',
-    );
+    ).then(async (response) => {
+      expect(response.ok()).toBe(true);
+      return response.json();
+    });
     await page.reload({ waitUntil: 'networkidle' });
-    const stateResponse = await reloadedState;
-    const overviewResponse = await reloadedOverview;
-    expect(stateResponse.ok()).toBe(true);
-    expect(overviewResponse.ok()).toBe(true);
-    const after = await stateResponse.json();
+    const [after, overview] = await Promise.all([reloadedState, reloadedOverview]);
     expect(String(after.application_id)).toBe(String(completed.application_id));
     expect(String(after.child_id)).toBe(String(completed.child_id));
     expect(after.lifecycle_stage).toBe('enrolled');
     expect(after.applicant_to_student_status).toBe('completed');
     expect(after.demo_payment_processed).toBe(false);
-    const overview = await overviewResponse.json();
     const sameApplication = (overview?.admissions_continuity?.applications || []).find(
       (application: { application_id: unknown }) =>
         String(application.application_id) === String(completed.application_id),

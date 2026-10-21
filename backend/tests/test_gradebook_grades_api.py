@@ -354,6 +354,41 @@ class TestGradeSubmissionAuthorization:
         )
         assert response.status_code == 200, response.content
 
+    def test_invalid_assignment_denominator_returns_400_without_grade_change(self):
+        """Legacy invalid assignment data must reject rather than overwrite a grade."""
+        from academics.models import Grade, SubmissionRevision
+
+        self.client.force_authenticate(user=self.assigned_teacher_user)
+        first = self.client.post(
+            f"{GRADES_URL}grade/",
+            data=self._grade_payload(),
+            format="json",
+        )
+        assert first.status_code == 200, first.content
+        grade = Grade.objects.get(submission=self.submission)
+        previous_score = grade.numeric_score
+        previous_revisions = SubmissionRevision.objects.filter(
+            submission=self.submission
+        ).count()
+
+        # Simulate an existing invalid legacy denominator without changing
+        # grade history or weakening assignment authoring validations.
+        Assignment.objects.filter(pk=self.submission.assignment_id).update(
+            points_possible=0
+        )
+        payload = self._grade_payload()
+        payload["numeric_score"] = "89.00"
+        response = self.client.post(
+            f"{GRADES_URL}grade/", data=payload, format="json"
+        )
+        assert response.status_code == 400, response.content
+        assert "points_possible" in str(response.data)
+        grade.refresh_from_db()
+        assert grade.numeric_score == previous_score
+        assert SubmissionRevision.objects.filter(
+            submission=self.submission
+        ).count() == previous_revisions
+
     def test_primary_teacher_fk_can_grade_without_staff_link(self):
         teacher_user = _make_user(self.school, "gb-primary-fk-teacher")
         _assign_role(teacher_user, self.school, "TEACHER")

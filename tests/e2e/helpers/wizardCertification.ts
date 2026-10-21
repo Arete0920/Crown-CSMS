@@ -123,7 +123,7 @@ export async function createSchedulingFixture(page: Page, suffix: string) {
     method: 'POST',
     body: { confirm: true },
   });
-  const verified = await authenticatedApiJson(page, `/api/v1/scheduling-wizard/sessions/${sessionId}/verify/`);
+  const verified = await authenticatedApiJson(page, `/api/v1/scheduling-wizard/sessions/${sessionId}/verify/`, { method: 'POST' });
   const sectionId = committed?.section_ids?.[0] || staged?.sections?.[0]?.section_id || verified?.section_ids?.[0];
   if (!sectionId) throw new Error(`Scheduling fixture did not return section id: ${JSON.stringify({ staged, committed, verified })}`);
   return { academicYearId, termId: String(term.term_id), termCode: String(term.code || term.term_code || ''), sectionId: String(sectionId), sessionId };
