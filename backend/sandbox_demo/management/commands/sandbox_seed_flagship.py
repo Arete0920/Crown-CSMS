@@ -1,4 +1,5 @@
 from django.core.management.base import BaseCommand
+from django.db import transaction
 
 from sandbox_demo.academic_seed import (
     reset_heritage_teacher_academics,
@@ -27,7 +28,10 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument("--reset", action="store_true", help="Clear and rebuild Heritage demo data.")
 
+    @transaction.atomic
     def handle(self, *args, **opts):
+        # Every cleanup and rebuild participates in one transaction. A later
+        # identity/cross-school refusal must roll back earlier scenario deletes.
         reset = bool(opts.get("reset"))
         if reset:
             reset_parent_enrollment_scenario()
