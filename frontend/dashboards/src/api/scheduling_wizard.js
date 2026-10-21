@@ -66,5 +66,5 @@ export async function commitSchedulingSetup(sessionId) {
 
 export async function verifySchedulingSetup(sessionId) {
   const url = `${API_BASE}/api/v1/scheduling-wizard/sessions/${sessionId}/verify/`;
-  return jsonRequest(url, { method: "GET" });
+  return jsonRequest(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({}) });
 }
