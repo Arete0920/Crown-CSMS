@@ -73,7 +73,7 @@
     "@playwright/test": "^1.64.0",
     "@testing-library/dom": "^10.4.2",
     "@testing-library/react": "^16.3.3",
-    "@types/node": "^25.6.0",
+    "@types/node": "^26.6.5",
     "@vitejs/plugin-react": "6.0.2",
     "esbuild": "0.28.1",
     "eslint": "10.12.0",
