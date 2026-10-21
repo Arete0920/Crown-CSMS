@@ -8,7 +8,7 @@ vi.mock("../components/crown/CrownLayout.jsx", () => ({
   default: ({ children }) => <main>{children}</main>,
 }));
 
-const TODAY = new Date().toISOString().slice(0, 10);
+const TODAY = "2026-10-19";
 const SECTIONS = [
   { section_id: "section-a", course_name: "English" },
   { section_id: "section-b", course_name: "Science" },
@@ -30,6 +30,7 @@ function attendance(sectionId, overrides = {}) {
     source: "live",
     section_id: sectionId,
     date: TODAY,
+    school_today: TODAY,
     roster: ROSTERS[sectionId].map((student) => ({
       id: student.student_id,
       identity_verified: true,
@@ -56,7 +57,7 @@ beforeEach(() => {
     if (path === "/api/v1/academics/sections/") return response({ results: SECTIONS });
     if (path === "/api/v1/academics/classroom/operations/") {
       const sectionId = options.query.section_id;
-      expect(options.query.date).toBe(TODAY);
+      expect(options.query.date).toBeUndefined();
       return reads[sectionId] ? reads[sectionId]() : response(attendance(sectionId));
     }
     const match = path.match(/^\/api\/v1\/academics\/sections\/([^/]+)\/(roster|attendance)\/$/);
@@ -65,6 +66,7 @@ beforeEach(() => {
     if (action === "roster") return response({ students: ROSTERS[sectionId] });
     expect(options.method).toBe("POST");
     const payload = JSON.parse(options.body);
+    expect(payload.expected_school_today).toBe(TODAY);
     writes.push({ sectionId, ...payload });
     saved[sectionId] = Object.fromEntries(payload.items.map((item) => [item.student_id, item.status.toUpperCase()]));
     return response({ created: 1, updated: 0, date: payload.date });
@@ -81,7 +83,7 @@ it("restores saved attendance after the page is recreated", async () => {
   fireEvent.change(statusControl(), { target: { value: "absent" } });
   fireEvent.click(screen.getByRole("button", { name: "Submit Attendance" }));
   await screen.findByText(/Saved: created=1/);
-  expect(writes).toEqual([{ sectionId: "section-a", date: TODAY, items: [{ student_id: "student-a", status: "absent" }] }]);
+  expect(writes).toEqual([{ sectionId: "section-a", date: TODAY, expected_school_today: TODAY, items: [{ student_id: "student-a", status: "absent" }] }]);
   first.unmount();
 
   render(<TeacherAttendancePage />);
@@ -142,5 +144,50 @@ it("ignores an older section response while waiting for the current section", as
   await screen.findByText("Naomi Demo");
   expect(statusControl().value).toBe("tardy");
   expect(screen.getByRole("button", { name: "Submit Attendance" }).disabled).toBe(false);
+  expect(writes).toEqual([]);
+});
+
+
+it("uses the school's date rather than the browser UTC date", async () => {
+  render(<TeacherAttendancePage />);
+  await selectSection();
+  await screen.findByText("Caleb Demo");
+  expect(screen.getByText(`Date: ${TODAY}`)).toBeTruthy();
+  fireEvent.click(screen.getByRole("button", { name: "Submit Attendance" }));
+  await screen.findByText(/Saved: created=1/);
+  expect(writes[0].date).toBe(TODAY);
+});
+
+it("rejects an overnight date rollover before writing attendance", async () => {
+  let schoolDay = TODAY;
+  reads["section-a"] = () => response(attendance("section-a", { date: schoolDay, school_today: schoolDay }));
+  render(<TeacherAttendancePage />);
+  await selectSection();
+  await screen.findByText("Caleb Demo");
+  schoolDay = "2026-10-20";
+  fireEvent.click(screen.getByRole("button", { name: "Submit Attendance" }));
+  await screen.findByText(/school day changed/i);
+  expect(writes).toEqual([]);
+  expect(screen.getByRole("button", { name: "Submit Attendance" }).disabled).toBe(true);
+});
+
+
+it("surfaces a server-side rollover 409 and prevents stale retry", async () => {
+  render(<TeacherAttendancePage />);
+  await selectSection();
+  await screen.findByText("Caleb Demo");
+  const normalFetch = authenticatedFetch.getMockImplementation();
+  authenticatedFetch.mockImplementation(async (path, options = {}) => {
+    if (options.method === "POST" && path.endsWith("/attendance/")) {
+      const error = new Error("HTTP 409 Conflict");
+      error.status = 409;
+      error.response = { data: { code: "school_day_changed", detail: "Attendance requires reload: the school calendar has advanced." } };
+      throw error;
+    }
+    return normalFetch(path, options);
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Submit Attendance" }));
+  await screen.findByText("Attendance requires reload: the school calendar has advanced.");
+  expect(screen.getByRole("button", { name: "Submit Attendance" }).disabled).toBe(true);
   expect(writes).toEqual([]);
 });
