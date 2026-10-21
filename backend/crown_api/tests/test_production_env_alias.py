@@ -18,6 +18,7 @@ def test_crown_env_production_reaches_final_hardening_guard():
             "DJANGO_DEBUG": "true",
             "DEBUG": "false",
             "DJANGO_SECRET_KEY": "production-test-secret-" + ("x" * 64),
+            "DATABASE_URL": "postgresql://db.example.invalid/crown",
             "CORS_ALLOW_ALL_ORIGINS": "0",
             "CROWN_DEMO_MODE": "0",
         }
@@ -34,4 +35,4 @@ def test_crown_env_production_reaches_final_hardening_guard():
 
     output = (result.stdout or "") + (result.stderr or "")
     assert result.returncode != 0
-    assert "DEBUG=True is forbidden in production." in output
+    assert "DEBUG=True is forbidden in hardened environments." in output
