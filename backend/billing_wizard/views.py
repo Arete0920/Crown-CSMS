@@ -44,8 +44,14 @@ def _parse_date(value, field_name):
 def _parse_decimal(value, field_name, min_val=None):
     try:
         d = Decimal(str(value))
-    except (InvalidOperation, TypeError):
-        return None, f"{field_name} must be a valid number"
+        # JSON accepts strings that Decimal parses as NaN or infinity.
+        # Reject non-finite and unrepresentable monetary values before storing
+        # a wizard configuration or attempting a later quantize().
+        if not d.is_finite():
+            return None, f"{field_name} must be a finite monetary amount"
+        d = d.quantize(Decimal("0.01"))
+    except (InvalidOperation, TypeError, ValueError):
+        return None, f"{field_name} must be a valid monetary amount"
     if min_val is not None and d < Decimal(str(min_val)):
         return None, f"{field_name} must be >= {min_val}"
     return d, None
@@ -53,8 +59,10 @@ def _parse_decimal(value, field_name, min_val=None):
 
 def _validate_plan(plan, idx):
     errors = []
-    name = (plan.get("name") or "").strip()
-    if not name:
+    if not isinstance(plan, dict):
+        return [f"plans[{idx}] must be an object"]
+    name = plan.get("name")
+    if not isinstance(name, str) or not name.strip():
         errors.append(f"plans[{idx}].name is required")
     try:
         count = int(plan.get("installment_count", 0))
@@ -84,12 +92,18 @@ def _validate_plan(plan, idx):
 
 def _validate_fee(fee, idx):
     errors = []
-    name = (fee.get("name") or "").strip()
-    if not name:
+    if not isinstance(fee, dict):
+        return [f"fees[{idx}] must be an object"]
+    name = fee.get("name")
+    if not isinstance(name, str) or not name.strip():
         errors.append(f"fees[{idx}].name is required")
-    fee_type = (fee.get("fee_type") or "").upper()
+    raw_type = fee.get("fee_type")
+    fee_type = raw_type.upper() if isinstance(raw_type, str) else ""
     if fee_type not in FEE_TYPES:
         errors.append(f"fees[{idx}].fee_type must be one of {sorted(FEE_TYPES)}")
+    grade_level = fee.get("grade_level")
+    if grade_level is not None and not isinstance(grade_level, str):
+        errors.append(f"fees[{idx}].grade_level must be a string")
     _, amt_err = _parse_decimal(fee.get("amount"), f"fees[{idx}].amount", min_val=0)
     if amt_err:
         errors.append(amt_err)
@@ -134,13 +148,15 @@ def configure_session(request, session_id):
             status=status.HTTP_409_CONFLICT,
         )
 
-    term = (request.data.get("term") or "").strip()
+    raw_term = request.data.get("term")
+    term = raw_term.strip() if isinstance(raw_term, str) else ""
     if not term:
         return Response({"error": "term is required"}, status=status.HTTP_400_BAD_REQUEST)
     if len(term) > 24:
         return Response({"error": "term must be <= 24 characters"}, status=status.HTTP_400_BAD_REQUEST)
 
-    billing_mode = (request.data.get("billing_mode") or "").lower()
+    raw_mode = request.data.get("billing_mode")
+    billing_mode = raw_mode.lower() if isinstance(raw_mode, str) else ""
     valid_modes = {c[0] for c in BillingWizardSession.BILLING_MODE_CHOICES}
     if billing_mode not in valid_modes:
         return Response(

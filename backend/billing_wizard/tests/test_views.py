@@ -181,6 +181,12 @@ class TestConfigure(TestCase):
         r = self._configure({"term": "2026-FALL", "billing_mode": "turbo"})
         self.assertEqual(r.status_code, 400)
 
+    def test_configure_non_string_fields_rejected(self):
+        for payload in ({"term": 123, "billing_mode": "simple"},
+                        {"term": "2026-FALL", "billing_mode": []}):
+            with self.subTest(payload=payload):
+                self.assertEqual(self._configure(payload).status_code, 400)
+
     def test_configure_reconfigure_allowed(self):
         self._configure({"term": "2026-FALL", "billing_mode": "simple"})
         r = self._configure({"term": "2026-SPRING", "billing_mode": "advanced"})
@@ -251,6 +257,21 @@ class TestSavePlans(TestCase):
         r = self._plans({"plans": bad})
         self.assertEqual(r.status_code, 400)
 
+    def test_non_finite_and_huge_plan_amounts_reject_without_mutation(self):
+        for amount in ("NaN", "Infinity", "-Infinity", "1e1000"):
+            with self.subTest(amount=amount):
+                record = dict(VALID_PLANS[0], total_amount=amount)
+                denied = self._plans({"plans": [record]})
+                self.assertEqual(denied.status_code, 400)
+                session = BillingWizardSession.objects.get(pk=self.session_id)
+                self.assertEqual(session.status, BillingWizardSession.STATUS_CONFIGURED)
+                self.assertFalse(session.plans_config)
+
+    def test_plan_must_be_an_object_with_string_name(self):
+        for record in (None, "invalid", dict(VALID_PLANS[0], name=123)):
+            with self.subTest(record=record):
+                self.assertEqual(self._plans({"plans": [record]}).status_code, 400)
+
 
 # ---------------------------------------------------------------------------
 # TestSaveFees
@@ -298,6 +319,22 @@ class TestSaveFees(TestCase):
         bad = [{"fee_type": "TECH", "amount": "50.00", "is_recurring": False}]
         r = self._fees({"fees": bad})
         self.assertEqual(r.status_code, 400)
+
+    def test_non_finite_and_huge_fees_reject_without_mutation(self):
+        for amount in ("NaN", "Infinity", "-Infinity", "1e1000"):
+            with self.subTest(amount=amount):
+                record = dict(VALID_FEES[0], amount=amount)
+                self.assertEqual(self._fees({"fees": [record]}).status_code, 400)
+                session = BillingWizardSession.objects.get(pk=self.session_id)
+                self.assertEqual(session.status, BillingWizardSession.STATUS_CONFIGURED)
+                self.assertFalse(session.fees_config)
+
+    def test_fee_payload_types_are_validated(self):
+        for record in (None, "invalid", dict(VALID_FEES[0], name=8),
+                       dict(VALID_FEES[0], fee_type=7),
+                       dict(VALID_FEES[0], grade_level=5)):
+            with self.subTest(record=record):
+                self.assertEqual(self._fees({"fees": [record]}).status_code, 400)
 
 
 # ---------------------------------------------------------------------------
