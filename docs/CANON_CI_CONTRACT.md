@@ -11,7 +11,7 @@
 - UI:  http://127.0.0.1:3000
 
 ## Required Secrets
-- CROWN_DEMO_PASSWORD
+- CROWN_DEMO_PASSWORD — isolated Golden Path bootstrap admin only, not legacy Heritage fixture accounts
 
 ## Proof Definition
 - proof-gradebook is green only if:
@@ -43,7 +43,7 @@ Every CI workflow MUST:
   - Admin user (username="admin", password=$CROWN_DEMO_PASSWORD)
   - Financial aid sample data
 - `seed_demo_school --students <N>` creates:
-  - Director users (head@crown-demo.local, finance@crown-demo.local, etc., password="demo1234")
+  - Legacy Heritage director/teacher/parent users have unusable passwords unless all six distinct CROWN_DEMO_*_PASSWORD account secrets are supplied on an authorized isolated local/test SQLite environment; CROWN_DEMO_PASSWORD is not used for these accounts
   - Sections with deterministic UUIDs
   - Students and enrollments
 
