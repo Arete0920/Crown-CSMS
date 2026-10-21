@@ -240,6 +240,28 @@ def test_gateway_intent_lookup_does_not_cross_school_boundary():
     assert event.status == GatewayEventStatus.IGNORED
 
 
+def test_gateway_event_rejects_ambiguous_same_school_provider_intents():
+    school, _ = _school_user()
+    first = _intent(school, client_reference_id="duplicate-intent-first")
+    second = _intent(school, client_reference_id="duplicate-intent-second")
+    assert first.provider_intent_id == second.provider_intent_id
+
+    event = _event_with_payload(
+        school, "payment.updated", "ambiguous-owned-intents",
+        {"intent_id": first.provider_intent_id, "payment_id": "pay_123", "status": "authorized"},
+    )
+    with pytest.raises(UnmatchedPaymentError, match="Ambiguous provider intent"):
+        process_gateway_event_safely(event)
+
+    first.refresh_from_db()
+    second.refresh_from_db()
+    event.refresh_from_db()
+    assert first.status == "created"
+    assert second.status == "created"
+    assert event.status == GatewayEventStatus.FAILED
+    assert not Payment.objects.filter(school_id=school.id).exists()
+
+
 def test_gateway_event_rejects_claimed_school_different_from_verified_ownership():
     school, user = _school_user()
     another_school = School.objects.create(name="Another school")

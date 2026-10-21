@@ -106,11 +106,19 @@ def process_gateway_event(event: GatewayEvent) -> None:
     if not provider_intent_id:
         raise UnmatchedPaymentError("Gateway event requires a provider intent reference.")
 
-    intent = PaymentIntentRecord.objects.select_for_update().filter(
-        school_id=event.school_id,
-        provider=event.provider,
-        provider_intent_id=provider_intent_id,
-    ).first()
+    # The current schema indexes provider_intent_id but does not enforce
+    # uniqueness. Never choose an arbitrary school-owned match: settling the
+    # wrong record could attribute receivables to another household.
+    matching_intents = list(
+        PaymentIntentRecord.objects.select_for_update().filter(
+            school_id=event.school_id,
+            provider=event.provider,
+            provider_intent_id=provider_intent_id,
+        ).order_by("pk")[:2]
+    )
+    if len(matching_intents) > 1:
+        raise UnmatchedPaymentError("Ambiguous provider intent reference for this school.")
+    intent = matching_intents[0] if matching_intents else None
 
     if not intent:
         event.status = GatewayEventStatus.IGNORED
