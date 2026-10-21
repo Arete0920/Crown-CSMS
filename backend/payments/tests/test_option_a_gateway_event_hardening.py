@@ -229,7 +229,8 @@ def test_gateway_intent_lookup_does_not_cross_school_boundary():
         {"intent_id": intent.provider_intent_id, "payment_id": "pay_123", "status": "settled"},
     )
 
-    process_gateway_event_safely(event)
+    with pytest.raises(UnmatchedPaymentError, match="another school"):
+        process_gateway_event_safely(event)
 
     intent.refresh_from_db()
     payment.refresh_from_db()
@@ -237,7 +238,10 @@ def test_gateway_intent_lookup_does_not_cross_school_boundary():
     assert intent.status == "created"
     assert payment.status == PaymentStatus.PENDING
     assert not Payment.objects.filter(school_id=school.id, finance_payment_id=payment.id).exists()
-    assert event.status == GatewayEventStatus.IGNORED
+    assert event.status == GatewayEventStatus.FAILED
+    assert PaymentSupportException.objects.filter(
+        school_id=other_school.id, gateway_event_id=event.id,
+    ).exists()
 
 
 def test_gateway_event_rejects_ambiguous_same_school_provider_intents():

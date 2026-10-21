@@ -121,6 +121,14 @@ def process_gateway_event(event: GatewayEvent) -> None:
     intent = matching_intents[0] if matching_intents else None
 
     if not intent:
+        # A reference belonging to another school is an ownership failure,
+        # not an innocuous unknown event. Preserve a reviewable FAILED receipt
+        # rather than masking a cross-tenant delivery as an ignored webhook.
+        if PaymentIntentRecord.objects.filter(
+            provider=event.provider,
+            provider_intent_id=provider_intent_id,
+        ).exclude(school_id=event.school_id).exists():
+            raise UnmatchedPaymentError("Gateway intent reference belongs to another school.")
         event.status = GatewayEventStatus.IGNORED
         event.error_message = "No matching PaymentIntentRecord found."
         event.processed_at = timezone.now()
