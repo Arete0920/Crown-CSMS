@@ -13,9 +13,10 @@ on:
 
 concurrency:
   group: tests-${{ github.workflow }}-${{ github.ref }}
-  # Preserve in-flight governed coverage evidence across overlapping runs on the same PR ref.
-  # Queued successors may run after the current suite completes; no test or coverage gates change.
-  cancel-in-progress: false
+  # Cancel only superseded PR-head coverage runs; the newest head must still pass
+  # the entire backend suite, governed 75% coverage, and artifact upload.
+  # Preserve in-flight protected-main, spine, and manual-dispatch evidence.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   pytest-internal:
