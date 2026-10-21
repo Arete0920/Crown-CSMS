@@ -385,6 +385,25 @@ def _handle_dispute_opened(event: GatewayEvent, payload: dict) -> None:
     ):
         raise UnmatchedPaymentError("Dispute invoice is not owned by event school.")
 
+    # Reject a trusted provider identifier already bound to another tenant.
+    for field, reference in (
+        ("provider_intent_id", payload.get("intent_id")),
+        ("provider_payment_id", payload.get("payment_id")),
+    ):
+        if reference and (
+            PaymentIntentRecord.objects.filter(
+                provider=event.provider, **{field: reference},
+            ).exclude(school_id=event.school_id).exists()
+            or Payment.objects.filter(
+                provider=event.provider, **{field: reference},
+            ).exclude(school_id=event.school_id).exists()
+        ):
+            raise UnmatchedPaymentError("Dispute provider reference belongs to another school.")
+    if payload.get("payment_id") and FinancePayment.objects.filter(
+        processor=event.provider, processor_payment_id=payload["payment_id"],
+    ).exclude(school_id=event.school_id).exists():
+        raise UnmatchedPaymentError("Dispute payment reference belongs to another school.")
+
     defaults = {
         "school_id": event.school_id,
         "provider": event.provider,
