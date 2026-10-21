@@ -437,6 +437,38 @@ class TestVerify(TestCase):
         self.assertEqual(r2.status_code, 409)
 
 
+    def test_committed_and_verified_billing_records_cannot_be_reopened(self):
+        session = BillingWizardSession.objects.get(pk=self.session_id)
+        original_count = InstallmentPlan.objects.filter(school=self.school).count()
+        edits = (
+            ("configure/", {"term": "2027-FALL", "billing_mode": "simple"}),
+            ("plans/", {"plans": [{"name": "Unauthorized Reopen", "installment_count": 1,
+                                   "first_due_on": "2027-08-01", "cadence_days": 0,
+                                   "total_amount": "400.00"}]}),
+            ("fees/", {"fees": [{"name": "Late fee", "fee_type": "TECH", "amount": "90.00"}]}),
+        )
+        for state in (BillingWizardSession.STATUS_COMMITTED, BillingWizardSession.STATUS_VERIFIED):
+            if state == BillingWizardSession.STATUS_VERIFIED:
+                self.assertEqual(self._verify().status_code, 200)
+            session.refresh_from_db()
+            before = (session.status, session.updated_at, session.commit_result,
+                      session.term, session.plans_config, session.fees_config)
+            self.assertEqual(session.status, state)
+            for suffix, payload in edits:
+                with self.subTest(state=state, endpoint=suffix):
+                    denied = self.client.post(
+                        f"{BASE_URL}{self.session_id}/{suffix}", payload,
+                        format="json", **_headers(self.school.id),
+                    )
+                    self.assertEqual(denied.status_code, 409)
+                    session.refresh_from_db()
+                    self.assertEqual(
+                        (session.status, session.updated_at, session.commit_result,
+                         session.term, session.plans_config, session.fees_config),
+                        before,
+                    )
+                    self.assertEqual(InstallmentPlan.objects.filter(school=self.school).count(), original_count)
+
 class AuthenticatedTenantRegressionTest(TestCase):
     def test_bearer_cannot_use_finance_role_to_override_home_school(self):
         from rest_framework_simplejwt.tokens import AccessToken

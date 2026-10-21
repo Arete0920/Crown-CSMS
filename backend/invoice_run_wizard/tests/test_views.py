@@ -437,6 +437,39 @@ class InvoiceRunSecurityRegressionTest(TestCase):
         self.assertEqual(session.updated_at, before)
 
 
+    def test_committed_and_verified_invoice_run_cannot_be_reconfigured(self):
+        school = _make_school()
+        payer = _make_user()
+        _make_obligation(school, payer)
+        client = _client_for(school)
+        sid = _advance_to_committed(client, school.id)
+        url = f"{BASE_URL}{sid}/configure/"
+        before_invoices = FinanceInvoice.objects.filter(school=school).count()
+        before_lines = FinanceInvoiceLine.objects.filter(invoice__school=school).count()
+        self.assertEqual((before_invoices, before_lines), (1, 1))
+
+        for state in (InvoiceRunWizardSession.STATUS_COMMITTED, InvoiceRunWizardSession.STATUS_VERIFIED):
+            if state == InvoiceRunWizardSession.STATUS_VERIFIED:
+                self.assertEqual(client.post(f"{BASE_URL}{sid}/verify/", **_headers(school.id)).status_code, 200)
+            session = InvoiceRunWizardSession.objects.get(pk=sid)
+            self.assertEqual(session.status, state)
+            original = (session.status, session.updated_at, session.commit_result,
+                        session.period_start, session.period_end, session.due_date, session.obligation_ids)
+            denied = client.post(
+                url,
+                {"period_start": "2027-01-01", "period_end": "2027-03-31", "due_date": "2027-04-01"},
+                format="json", **_headers(school.id),
+            )
+            self.assertEqual(denied.status_code, 409)
+            session.refresh_from_db()
+            self.assertEqual(
+                (session.status, session.updated_at, session.commit_result,
+                 session.period_start, session.period_end, session.due_date, session.obligation_ids),
+                original,
+            )
+            self.assertEqual(FinanceInvoice.objects.filter(school=school).count(), before_invoices)
+            self.assertEqual(FinanceInvoiceLine.objects.filter(invoice__school=school).count(), before_lines)
+
 class AuthenticatedTenantRegressionTest(TestCase):
     def test_bearer_cannot_use_finance_role_to_override_home_school(self):
         from rest_framework_simplejwt.tokens import AccessToken

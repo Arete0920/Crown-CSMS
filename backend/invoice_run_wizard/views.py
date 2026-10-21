@@ -60,9 +60,17 @@ def create_session(request):
 @api_view(["POST"])
 @authentication_classes(_AUTH)
 @permission_classes(_PERM)
+@transaction.atomic
 def configure_session(request, session_id):
     school_id = get_request_school_id(request)
-    session = _get_session(session_id, school_id)
+    session = get_object_or_404(
+        InvoiceRunWizardSession.objects.select_for_update(), id=session_id, school_id=school_id,
+    )
+    if session.status in (InvoiceRunWizardSession.STATUS_COMMITTED, InvoiceRunWizardSession.STATUS_VERIFIED):
+        return Response(
+            {"error": "Committed or verified invoice run sessions are immutable"},
+            status=status.HTTP_409_CONFLICT,
+        )
 
     errors = []
     period_start, e = _parse_date(request.data.get("period_start"), "period_start")
@@ -102,9 +110,12 @@ def configure_session(request, session_id):
 @api_view(["POST"])
 @authentication_classes(_AUTH)
 @permission_classes(_PERM)
+@transaction.atomic
 def load_obligations(request, session_id):
     school_id = get_request_school_id(request)
-    session = _get_session(session_id, school_id)
+    session = get_object_or_404(
+        InvoiceRunWizardSession.objects.select_for_update(), id=session_id, school_id=school_id,
+    )
 
     if session.status not in (
         InvoiceRunWizardSession.STATUS_CONFIGURED,

@@ -122,9 +122,17 @@ def create_session(request):
 @api_view(["POST"])
 @authentication_classes(_AUTH)
 @permission_classes(_PERM)
+@transaction.atomic
 def configure_session(request, session_id):
     school_id = get_request_school_id(request)
-    session = _get_session(session_id, school_id)
+    session = get_object_or_404(
+        BillingWizardSession.objects.select_for_update(), id=session_id, school_id=school_id,
+    )
+    if session.status in (BillingWizardSession.STATUS_COMMITTED, BillingWizardSession.STATUS_VERIFIED):
+        return Response(
+            {"error": "Committed or verified billing wizard sessions are immutable"},
+            status=status.HTTP_409_CONFLICT,
+        )
 
     term = (request.data.get("term") or "").strip()
     if not term:
@@ -151,9 +159,17 @@ def configure_session(request, session_id):
 @api_view(["POST"])
 @authentication_classes(_AUTH)
 @permission_classes(_PERM)
+@transaction.atomic
 def save_plans(request, session_id):
     school_id = get_request_school_id(request)
-    session = _get_session(session_id, school_id)
+    session = get_object_or_404(
+        BillingWizardSession.objects.select_for_update(), id=session_id, school_id=school_id,
+    )
+    if session.status in (BillingWizardSession.STATUS_COMMITTED, BillingWizardSession.STATUS_VERIFIED):
+        return Response(
+            {"error": "Committed or verified billing wizard sessions are immutable"},
+            status=status.HTTP_409_CONFLICT,
+        )
 
     plans = request.data.get("plans")
     if not isinstance(plans, list) or len(plans) == 0:
@@ -186,9 +202,17 @@ def save_plans(request, session_id):
 @api_view(["POST"])
 @authentication_classes(_AUTH)
 @permission_classes(_PERM)
+@transaction.atomic
 def save_fees(request, session_id):
     school_id = get_request_school_id(request)
-    session = _get_session(session_id, school_id)
+    session = get_object_or_404(
+        BillingWizardSession.objects.select_for_update(), id=session_id, school_id=school_id,
+    )
+    if session.status in (BillingWizardSession.STATUS_COMMITTED, BillingWizardSession.STATUS_VERIFIED):
+        return Response(
+            {"error": "Committed or verified billing wizard sessions are immutable"},
+            status=status.HTTP_409_CONFLICT,
+        )
 
     fees = request.data.get("fees")
     if not isinstance(fees, list):
@@ -220,9 +244,12 @@ def save_fees(request, session_id):
 @api_view(["POST"])
 @authentication_classes(_AUTH)
 @permission_classes(_PERM)
+@transaction.atomic
 def commit_session(request, session_id):
     school_id = get_request_school_id(request)
-    session = _get_session(session_id, school_id)
+    session = get_object_or_404(
+        BillingWizardSession.objects.select_for_update(), id=session_id, school_id=school_id,
+    )
 
     # Idempotency guard: already committed
     if session.status == BillingWizardSession.STATUS_COMMITTED:
