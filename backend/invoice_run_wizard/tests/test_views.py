@@ -269,6 +269,26 @@ class InvoiceRunCommitTest(TestCase):
         r = c.post(f"{BASE_URL}{sid}/commit/", {}, format="json", **_headers(school.id))
         self.assertEqual(r.status_code, 400)
 
+    def test_commit_rejects_truthy_non_boolean_confirmation_without_financial_writes(self):
+        school = _make_school()
+        payer = _make_user()
+        _make_obligation(school, payer, amount_cents=75000)
+        client = _client_for(school)
+        sid = _advance_to_loaded(client, school.id)
+        url = f"{BASE_URL}{sid}/commit/"
+        for confirmation in ("false", "true", "yes", 1, [], {"approved": True}):
+            with self.subTest(confirmation=confirmation):
+                denied = client.post(
+                    url, {"confirm": confirmation}, format="json", **_headers(school.id),
+                )
+                self.assertEqual(denied.status_code, 400)
+                self.assertFalse(FinanceInvoice.objects.filter(school=school).exists())
+                self.assertFalse(FinanceInvoiceLine.objects.filter(invoice__school=school).exists())
+                self.assertEqual(
+                    InvoiceRunWizardSession.objects.get(pk=sid).status,
+                    InvoiceRunWizardSession.STATUS_OBLIGATIONS_LOADED,
+                )
+
     def test_commit_is_idempotent(self):
         school = _make_school()
         c = _client_for(school)

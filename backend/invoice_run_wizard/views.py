@@ -174,7 +174,7 @@ def commit_session(request, session_id):
             {"error": f"Cannot commit from status '{session.status}'"},
             status=status.HTTP_400_BAD_REQUEST,
         )
-    if not request.data.get("confirm"):
+    if request.data.get("confirm") is not True:
         return Response({"error": "confirm is required"}, status=status.HTTP_400_BAD_REQUEST)
 
     # A confirmed retry must preserve the original result and not rewrite the
