@@ -58,6 +58,11 @@ const REQUIRED_AUTHENTICATED_DASHBOARD_ROUTES = [
     persona: "sandbox-admin",
     expectedApi: "/api/v1/dashboards/billing/summary",
   },
+  ...["/billing", "/billing-dashboard", "/billing/dashboard"].map((route) => ({
+    route,
+    persona: "sandbox-admin",
+    expectedApi: "/api/v1/dashboards/billing/summary",
+  })),
 ];
 
 describe("authenticated dashboard proof matrix", () => {
