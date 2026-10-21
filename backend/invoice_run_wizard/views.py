@@ -128,8 +128,10 @@ def load_obligations(request, session_id):
         )
 
     qs = FinanceObligation.objects.filter(
-        school__id=school_id,
+        school_id=school_id,
         status=MoneyStatus.OPEN,
+        due_date__gte=session.period_start,
+        due_date__lte=session.period_end,
     )
     obligation_ids = [str(o.id) for o in qs]
 
@@ -180,8 +182,14 @@ def commit_session(request, session_id):
     if session.status == InvoiceRunWizardSession.STATUS_COMMITTED:
         return Response({"status": session.status, **(session.commit_result or {})})
 
-    obligations = list(FinanceObligation.objects.filter(
-        id__in=session.obligation_ids, school_id=school_id,
+    # Revalidate the loaded snapshot under row locks at commit. An obligation
+    # cannot be billed after payment or after changing out of this period.
+    obligations = list(FinanceObligation.objects.select_for_update().filter(
+        id__in=session.obligation_ids,
+        school_id=school_id,
+        status=MoneyStatus.OPEN,
+        due_date__gte=session.period_start,
+        due_date__lte=session.period_end,
     ))
     if len(obligations) != len(session.obligation_ids):
         return Response(
@@ -193,6 +201,23 @@ def commit_session(request, session_id):
     by_payer: dict = {}
     for obl in obligations:
         by_payer.setdefault(obl.payer_user_id, []).append(obl)
+
+    # An obligation already associated with another invoice/period cannot
+    # be billed again through an overlapping wizard run.
+    from django.db.models import F
+    conflicting_lines = FinanceInvoiceLine.objects.select_for_update().filter(
+        obligation_id__in=session.obligation_ids,
+    ).exclude(
+        invoice__school_id=school_id,
+        invoice__payer_user_id=F("obligation__payer_user_id"),
+        invoice__period_start=session.period_start,
+        invoice__period_end=session.period_end,
+    )
+    if conflicting_lines.exists():
+        return Response(
+            {"error": "An obligation is already billed to another invoice or period"},
+            status=status.HTTP_409_CONFLICT,
+        )
 
     # Lock existing payer/period invoices and fail before modifying finalized
     # records or ambiguous duplicate invoices.

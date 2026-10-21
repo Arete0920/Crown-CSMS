@@ -222,6 +222,19 @@ class InvoiceRunLoadTest(TestCase):
         self.assertEqual(r.data["obligation_count"], 0)
 
 
+    def test_load_restricts_obligations_to_configured_due_date_period(self):
+        school = _make_school()
+        payer = _make_user()
+        _make_obligation(school, payer, amount_cents=100000)
+        outside = _make_obligation(school, payer, amount_cents=50000)
+        outside.due_date = date(2027, 1, 1)
+        outside.save(update_fields=["due_date"])
+        client = _client_for(school)
+        sid = _advance_to_loaded(client, school.id)
+        session = InvoiceRunWizardSession.objects.get(pk=sid)
+        self.assertEqual(len(session.obligation_ids), 1)
+        self.assertNotIn(str(outside.id), session.obligation_ids)
+
 # ---------------------------------------------------------------------------
 # Commit
 # ---------------------------------------------------------------------------
@@ -339,6 +352,47 @@ class InvoiceRunCommitTest(TestCase):
             InvoiceRunWizardSession.objects.get(pk=sid).status,
             InvoiceRunWizardSession.STATUS_OBLIGATIONS_LOADED,
         )
+
+    def test_commit_rejects_obligation_paid_after_load(self):
+        school = _make_school()
+        payer = _make_user()
+        obligation = _make_obligation(school, payer)
+        client = _client_for(school)
+        sid = _advance_to_loaded(client, school.id)
+        obligation.status = MoneyStatus.PAID
+        obligation.save(update_fields=["status"])
+        response = client.post(
+            f"{BASE_URL}{sid}/commit/", {"confirm": True},
+            format="json", **_headers(school.id),
+        )
+        self.assertEqual(response.status_code, 409)
+        self.assertFalse(FinanceInvoice.objects.filter(school=school).exists())
+        self.assertEqual(InvoiceRunWizardSession.objects.get(pk=sid).status,
+                         InvoiceRunWizardSession.STATUS_OBLIGATIONS_LOADED)
+
+    def test_overlapping_run_cannot_reinvoice_same_obligation(self):
+        school = _make_school()
+        payer = _make_user()
+        _make_obligation(school, payer)
+        client = _client_for(school)
+        _advance_to_committed(client, school.id)
+        sid = client.post(BASE_URL, **_headers(school.id)).data["session_id"]
+        configured = client.post(
+            f"{BASE_URL}{sid}/configure/",
+            {"period_start": "2026-09-01", "period_end": "2026-11-30",
+             "due_date": "2026-10-01"},
+            format="json", **_headers(school.id),
+        )
+        self.assertEqual(configured.status_code, 200)
+        loaded = client.post(f"{BASE_URL}{sid}/load/", {}, format="json",
+                             **_headers(school.id))
+        self.assertEqual(loaded.data["obligation_count"], 1)
+        response = client.post(f"{BASE_URL}{sid}/commit/",
+                               {"confirm": True}, format="json",
+                               **_headers(school.id))
+        self.assertEqual(response.status_code, 409)
+        self.assertEqual(FinanceInvoice.objects.filter(school=school).count(), 1)
+        self.assertEqual(FinanceInvoiceLine.objects.filter(invoice__school=school).count(), 1)
 
 # ---------------------------------------------------------------------------
 # Verify
