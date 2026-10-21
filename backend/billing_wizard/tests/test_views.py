@@ -258,7 +258,7 @@ class TestSavePlans(TestCase):
         self.assertEqual(r.status_code, 400)
 
     def test_non_finite_and_huge_plan_amounts_reject_without_mutation(self):
-        for amount in ("NaN", "Infinity", "-Infinity", "1e1000"):
+        for amount in ("NaN", "Infinity", "-Infinity", "1e1000", "-0.001", "0.001", "10.125"):
             with self.subTest(amount=amount):
                 record = dict(VALID_PLANS[0], total_amount=amount)
                 denied = self._plans({"plans": [record]})
@@ -321,7 +321,7 @@ class TestSaveFees(TestCase):
         self.assertEqual(r.status_code, 400)
 
     def test_non_finite_and_huge_fees_reject_without_mutation(self):
-        for amount in ("NaN", "Infinity", "-Infinity", "1e1000"):
+        for amount in ("NaN", "Infinity", "-Infinity", "1e1000", "-0.001", "0.001", "10.125"):
             with self.subTest(amount=amount):
                 record = dict(VALID_FEES[0], amount=amount)
                 self.assertEqual(self._fees({"fees": [record]}).status_code, 400)

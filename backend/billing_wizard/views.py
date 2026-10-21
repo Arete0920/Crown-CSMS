@@ -49,12 +49,17 @@ def _parse_decimal(value, field_name, min_val=None):
         # a wizard configuration or attempting a later quantize().
         if not d.is_finite():
             return None, f"{field_name} must be a finite monetary amount"
-        d = d.quantize(Decimal("0.01"))
+        # Check sign on the original value: quantizing -0.001 to -0.00
+        # before comparison would incorrectly admit a negative charge.
+        if min_val is not None and d < Decimal(str(min_val)):
+            return None, f"{field_name} must be >= {min_val}"
+        cents = d.quantize(Decimal("0.01"))
+        # Never silently round a submitted fee or tuition installment.
+        if d != cents:
+            return None, f"{field_name} must be denominated in whole cents"
     except (InvalidOperation, TypeError, ValueError):
         return None, f"{field_name} must be a valid monetary amount"
-    if min_val is not None and d < Decimal(str(min_val)):
-        return None, f"{field_name} must be >= {min_val}"
-    return d, None
+    return cents, None
 
 
 def _validate_plan(plan, idx):
