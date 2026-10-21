@@ -11,13 +11,17 @@ from typing import Any
 from django.db import transaction
 from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 from rest_framework_simplejwt.settings import api_settings
-from rest_framework_simplejwt.token_blacklist.models import OutstandingToken
+
 
 
 class SerializedTokenRefreshSerializer(TokenRefreshSerializer):
     """Recheck revocation under a row lock before rotating the refresh token."""
 
     def validate(self, attrs: dict[str, Any]) -> dict[str, str]:
+        # Django cannot load blacklist models before the app is installed.
+        # This serializer is selected only after schema-first activation.
+        from rest_framework_simplejwt.token_blacklist.models import OutstandingToken
+
         # Decode and verify signature, expiry, token type, and current blacklist.
         current = self.token_class(attrs["refresh"])
 

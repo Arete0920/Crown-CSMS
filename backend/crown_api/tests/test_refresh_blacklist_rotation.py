@@ -11,7 +11,7 @@ from django.core.cache import cache
 from django.db import connection
 from rest_framework.test import APIClient
 from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, OutstandingToken
+
 
 
 pytestmark = pytest.mark.django_db
@@ -35,6 +35,8 @@ def test_default_disabled_mode_retains_stock_refresh_serializer():
 
 @requires_revocation
 def test_blacklist_registration_and_test_database_schema():
+    from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, OutstandingToken
+
     assert apps.is_installed("rest_framework_simplejwt.token_blacklist")
     assert settings.SIMPLE_JWT["ROTATE_REFRESH_TOKENS"] is True
     assert settings.SIMPLE_JWT["BLACKLIST_AFTER_ROTATION"] is True
@@ -45,6 +47,8 @@ def test_blacklist_registration_and_test_database_schema():
 
 @requires_revocation
 def test_old_refresh_cannot_be_reused_after_successful_rotation():
+    from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken
+
     cache.clear()
     user = get_user_model().objects.create_user(
         username="fictional-refresh-rotation-user",
@@ -86,6 +90,7 @@ def test_old_refresh_cannot_be_reused_after_successful_rotation():
 @pytest.mark.django_db(transaction=True)
 def test_concurrent_refresh_consumes_token_only_once():
     """Real PostgreSQL workers cannot both rotate one refresh token."""
+    from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken
     from concurrent.futures import ThreadPoolExecutor
     from threading import Barrier
 
