@@ -421,3 +421,40 @@ def test_dispute_event_rejects_foreign_household_metadata():
         process_gateway_event_safely(event)
 
     assert not ProviderDispute.objects.filter(dispute_id="fresh-dispute").exists()
+
+
+@pytest.mark.parametrize("field,reference", [
+    ("intent_id", "foreign-intent-ref"),
+    ("payment_id", "foreign-payment-ref"),
+])
+def test_dispute_rejects_provider_reference_owned_by_another_school(field, reference):
+    school, _ = _school_user()
+    other = School.objects.create(name="Other gateway owner")
+    PaymentIntentRecord.objects.create(
+        school_id=other.id,
+        provider=GatewayProvider.COMPUWERX,
+        client_reference_id="other-gateway-client",
+        provider_intent_id="foreign-intent-ref",
+        provider_payment_id="foreign-payment-ref",
+        amount=Decimal("10.00"),
+    )
+    event = _event_with_payload(
+        school, "dispute.opened", f"foreign-dispute-{field}",
+        {"dispute_id": f"dispute-{field}", field: reference},
+    )
+    with pytest.raises(UnmatchedPaymentError, match="another school"):
+        process_gateway_event_safely(event)
+    assert not ProviderDispute.objects.filter(dispute_id=f"dispute-{field}").exists()
+
+
+def test_dispute_accepts_owned_provider_references():
+    school, _ = _school_user()
+    _intent(school, client_reference_id="owned-dispute-client")
+    event = _event_with_payload(
+        school, "dispute.opened", "owned-gateway-dispute",
+        {"dispute_id": "owned-dispute", "intent_id": "intent_123",
+         "payment_id": "pay_123", "amount": "10.00"},
+    )
+    process_gateway_event_safely(event)
+    dispute = ProviderDispute.objects.get(dispute_id="owned-dispute")
+    assert dispute.school_id == school.id
