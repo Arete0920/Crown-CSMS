@@ -6,7 +6,7 @@ from django.test import TestCase
 from rest_framework.test import APIClient
 
 from core.models import CrownPermission, RolePermission, School, UserRole
-from finance.models import FinanceInvoice, FinanceObligation, MoneyStatus
+from finance.models import FinanceInvoice, FinanceInvoiceLine, FinanceObligation, MoneyStatus
 from invoice_run_wizard.models import InvoiceRunWizardSession
 
 
@@ -269,6 +269,30 @@ class InvoiceRunCommitTest(TestCase):
         self.assertEqual(r2.status_code, 200)
         self.assertEqual(r2.data["status"], InvoiceRunWizardSession.STATUS_COMMITTED)
 
+
+    def test_recommit_preserves_original_result_and_does_not_rewrite_finances(self):
+        school = _make_school()
+        payer = _make_user()
+        _make_obligation(school, payer, amount_cents=95000)
+        client = _client_for(school)
+        sid = _advance_to_loaded(client, school.id)
+        url = f"{BASE_URL}{sid}/commit/"
+        first = client.post(url, {"confirm": True}, format="json", **_headers(school.id))
+        self.assertEqual(first.status_code, 200)
+        self.assertEqual(first.data["invoices_created"], 1)
+        self.assertEqual(first.data["lines_created"], 1)
+        session = InvoiceRunWizardSession.objects.get(pk=sid)
+        first_updated_at = session.updated_at
+        first_result = session.commit_result.copy()
+
+        retried = client.post(url, {"confirm": True}, format="json", **_headers(school.id))
+        self.assertEqual(retried.status_code, 200)
+        self.assertEqual(retried.data, first.data)
+        session.refresh_from_db()
+        self.assertEqual(session.updated_at, first_updated_at)
+        self.assertEqual(session.commit_result, first_result)
+        self.assertEqual(FinanceInvoice.objects.filter(school=school).count(), 1)
+        self.assertEqual(FinanceInvoiceLine.objects.filter(invoice__school=school).count(), 1)
 
 # ---------------------------------------------------------------------------
 # Verify

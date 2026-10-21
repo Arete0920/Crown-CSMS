@@ -139,9 +139,18 @@ def load_obligations(request, session_id):
 @api_view(["POST"])
 @authentication_classes(_AUTH)
 @permission_classes(_PERM)
+@transaction.atomic
 def commit_session(request, session_id):
     school_id = get_request_school_id(request)
-    session = _get_session(session_id, school_id)
+    from core.models import School
+    # Serialize invoice runs for this school even when two distinct wizard
+    # sessions target the same payer and period. FinanceInvoice has no
+    # uniqueness constraint for that tuple, so get_or_create alone is unsafe.
+    school = get_object_or_404(School.objects.select_for_update(), id=school_id)
+    session = get_object_or_404(
+        InvoiceRunWizardSession.objects.select_for_update(),
+        id=session_id, school_id=school_id,
+    )
 
     if session.status not in (
         InvoiceRunWizardSession.STATUS_OBLIGATIONS_LOADED,
@@ -154,8 +163,10 @@ def commit_session(request, session_id):
     if not request.data.get("confirm"):
         return Response({"error": "confirm is required"}, status=status.HTTP_400_BAD_REQUEST)
 
-    from core.models import School
-    school = get_object_or_404(School, id=school_id)
+    # A confirmed retry must preserve the original result and not rewrite the
+    # session or attempt to create additional invoice lines.
+    if session.status == InvoiceRunWizardSession.STATUS_COMMITTED:
+        return Response({"status": session.status, **(session.commit_result or {})})
 
     obligations = list(FinanceObligation.objects.filter(
         id__in=session.obligation_ids, school_id=school_id,
