@@ -1,20 +1,61 @@
-# CompuWerx Integration Status
+# CompuWerx integration — vendor contract, quarantine, and acceptance
 
-Status: quarantined pending vendor coordination.
+**Decision owner:** CROWN Product Owner / Arete Advisory Group LLC  
+**Last assessment:** 2026-10-20  
+**Vendor choice:** CompuWerx is the *intended* payment gateway, not an activated processor.  
+**Runtime state:** QUARANTINED. External payments remain DISABLED / FAIL CLOSED.  
+**Controlling release authority:** [CURRENT_RELEASE_STATUS.md](../CURRENT_RELEASE_STATUS.md).  
+**Implementation baseline:** GitHub `main` at the exact head of each subsequent certification; no historical module inventory or passing source tests alone authorize payment activation.
 
-CROWN is not currently claiming CompuWerx production readiness, payment-provider readiness, webhook readiness, dispute workflow readiness, payout reconciliation readiness, or sandbox readiness.
+## Evidence and claim boundaries
 
-Reason for quarantine:
-- Prior repo state contained multiple CompuWerx-related runtime and documentation surfaces.
-- Current work should avoid exposing or certifying CompuWerx behavior until implementation details are coordinated with CompuWerx developers.
-- The intended future integration contract, webhook verification model, tenant behavior, payment-state mutation rules, and reconciliation workflow must be confirmed before restoration.
+- Owner has identified CompuWerx and indicated a favorable initial response. This is **not** evidence of executed merchant/partner agreements or operational acceptance.
+- As of this assessment, accessible repository and linked vendor correspondence do **not** establish vendor-approved developer API specifications, sandbox credentials, live credentials, contract execution, accepted sandbox money flows, production merchant accounts, or certified provider event schemas. CompuWerx developer coordination request sent 2026-10-20; receipt and response unverified.
+- `backend/payments/api_views.py`, `methods_api.py`, `disputes_api.py`, and `exceptions_api.py` preserve fail-closed provider write operations. The provider factory `backend/payments/providers/__init__.py` returns only `DeferredPaymentGateway` — not a functioning vendor client. `backend/integrations/urls.py` has no CompuWerx webhook route.
+- Implemented **vendor-neutral foundations**, not certified CompuWerx runtime: `payments.Payment`/`Refund` canonical records; `PaymentIntentRecord`, `GatewayEvent`, saved payment method, dispute and payout models; controlled finance compatibility bridge; idempotency/allocation authority services; bank statement upload and matching; and local tests.
+- Existing `backend/payments/services.py` maps generic, hypothetical gateway event fields into local models. Those field names, statuses and event names have **not** been validated as CompuWerx's API contract. This module must remain unreachable from live external inputs until trust/normalization and operational acceptance are complete.
+- Older `docs/release/MODULE_INVENTORY.md` calls CompuWerx an evidence-backed release candidate; it explicitly disclaims current controlling authority and must not be used as readiness sign-off.
+- `docs/release/OPTION_A_FINANCE_COMPATIBILITY_INVENTORY_20260812.md` correctly distinguishes canonical money-movement authority from legacy finance compatibility projections. A strict target-database compatibility audit, with no waived orphans, is still required before deleting any compatibility tables.
 
-Restoration criteria:
-1. Vendor implementation requirements documented.
-2. Webhook trust model confirmed.
-3. Signed request verification proven.
-4. Unsigned and invalid signature requests denied.
-5. Payment-state mutation rules proven by tests.
-6. Tenant and permission boundaries proven.
-7. Frontend surfaces restored only after backend contract is validated.
-8. Release evidence updated without production-readiness overstatement.
+## Vendor requirements and acceptance matrix
+
+**Status vocabulary:** `FOUNDATION` = code or tests present, not provider-certified; `QUARANTINED` = source exists but live operation disabled; `PENDING VENDOR` = unavailable/unconfirmed contract; `PENDING OPERATIONAL PROOF` = cannot claim acceptance without environment-specific evidence. A matrix row passes only when every criterion below has independently recorded evidence with an exact source revision, date, reviewer and environment.
+
+| Area | Present CROWN implementation | Vendor specification needed | Mandatory acceptance proof | Current disposition |
+|---|---|---|---|---|
+| 1. Merchant, legal and funds flow | Intended gateway documented; finance records and payout models | Executed commercial agreement, school vs platform merchant-of-record model, KYB/underwriting, banking custody, subprocessor terms, termination/data exit, PCI responsibility, exact card/ACH fee and revenue-share schedule | Agreements executed; named accountable merchant and settlement account for each test school; legal/accounting approval | PENDING VENDOR |
+| 2. API authentication and transport | Provider-neutral interface in `providers/base.py`; factory always deferred | Supported integration pattern, versioned API/OpenAPI, sandbox/production base URLs, OAuth/API-key model, merchant scopes, mTLS/TLS expectations, key rotation and permission lifecycle, supported errors, rate limits | Vendor-approved secret vault provisioning; least-privilege scoped calls, expiry/rotation and denial of invalid credentials; no keys in code, logs or CI artifacts | PENDING VENDOR |
+| 3. PCI boundaries and checkout | Intent record and deferred checkout; no active vendor checkout | Hosted payment fields/redirect/tokenization pattern, card data responsibilities, SAQ/PCI AOC, accessibility and card-network mandates | No PAN/CVV or bank-account credentials enter CROWN app, repository or telemetry; accessibility and secure redirects verified in sandbox | PENDING VENDOR |
+| 4. Requests, deduplication and event ordering | Canonical payment idempotency checks and unique provider event identifiers; no certified vendor requests | Vendor idempotency header/key scope and retention, timeouts, retry/backoff, API version changes, event ordering, dedupe semantics | Duplicate/reordered/concurrent success/failure/reversal events never double-allocate, double-refund or regress a terminal state; persistent replay ledger | FOUNDATION; PENDING VENDOR |
+| 5. Webhook trust and ingress | `GatewayEvent` store and generic local processor; **no active CompuWerx webhook endpoint** | Vendor event names/payload schemas; raw-body signed bytes, signature algorithm, required headers, timestamp window, key IDs, rotation overlap, replay policy, retries, delivery destinations and test vectors | Valid signed request accepted only with verified tenant ownership; missing/invalid/expired/replayed signatures fail closed **before** any record mutation; no unsigned fallback; redacted webhook logging | QUARANTINED; PENDING VENDOR |
+| 6. Tenant and household isolation | School-scoped canonical ledger and partial gateway event safeguards; local isolation regression tests on source candidate | Per-school merchant identity, event-to-merchant binding, customer mapping and whether provider IDs are global or merchant-scoped | School A's intent, saved method, dispute, refund or payout cannot read/mutate school B even with reused provider IDs, malicious metadata or unsigned requests; live webhook ownership derived from trusted credentials/merchant identity, never self-asserted event data | FOUNDATION; PENDING OPERATIONAL PROOF |
+| 7. Card payment lifecycle | Intent, canonical payment/allocations and controlled finance bridge | Authorize/capture/void/settle/refuse semantics; partial captures, asynchronous settlement, refunds, currencies, error taxonomy | Verified sandbox card payment and unsuccessful/card-declined paths; invoice allocation and ledger match; no settlement on merely authorized/pending state | FOUNDATION; PENDING VENDOR |
+| 8. ACH/eCheck lifecycle | Finance payments and compatibility records; no certified ACH vendor adapter | Bank verification, payment mandate and consent, authorization date/cutoffs, NACHA/processor rules, settlement windows, return/reversal codes, fees and notification requirements | Sandbox ACH success, pending, failed, return and reversal cases; late returns restore receivable/accounting balances without duplicate postings | PENDING VENDOR |
+| 9. Recurring tuition and saved methods | Billing cadence/finance models and `SavedPaymentMethod`; provider create/detach disabled | Tokenized saved methods, mandate retention, recurring engine (vendor vs CROWN), installment schedules, payment change/cancel rules, retry/dunning, notifications and proration | Parent authorization and cancellation tested; first/renewal/failed/retried installments do not duplicate charges or reuse cross-school mandates; no raw payment credentials | FOUNDATION; PENDING VENDOR |
+| 10. Settlement, fees and payout batches | `ProviderPayoutBatch`/`Entry`, school-scoped bank reconciliation and settlement-date requirements | File/report formats and API endpoints, gross/fee/net breakdown, clearing delays, batch IDs, card/ACH processing fees, funding/negative balance/hold semantics | Sandbox or vendor-provided signed test payout files reconcile to canonical payments and actual bank deposits with explained adjustments | FOUNDATION; PENDING VENDOR |
+| 11. Refunds, voids and reversals | Canonical `Refund`, duplicate/over-refund protection, finance compatibility posting; provider call disabled | Refund endpoints, idempotency, partial refund limits, settlement-vs-authorization window, ACH return vs refund rules, refund state events | Full/partial refund, failed/refused refund, replay and simultaneous requests tested; no over-refund and complete accounting offsets | FOUNDATION; PENDING VENDOR |
+| 12. Disputes and chargebacks | `ProviderDispute` and actions/history; externally mutating actions held | Dispute webhooks, evidence upload API, representment deadlines, ACH return vs card dispute distinction, fee handling, status outcomes | Open/evidence-submission/won/lost/timeout test flows, school/household ownership, audit trail and accounting updates | FOUNDATION; PENDING VENDOR |
+| 13. Reconciliation and operator controls | Bank CSV import and conservative auto/manual matching, handoff export, support exceptions | Provider transaction export, payout lifecycle events, reporting access, support escalation, reconciliation ID formats, reversal/fee adjustments | Same-day and month-end ledger/bank/gateway reconciliation; unmatched, duplicate, partially funded, and ambiguous matches fail to explicit queue; no silent write-off | FOUNDATION; PENDING OPERATIONAL PROOF |
+| 14. Monitoring, data handling and support | Exception records, finance-role/household read access, generic test suite | Vendor SLA/status channels, sandbox support, webhook retry/maintenance windows, DR/incident notifications, retention and log-redaction policy | End-to-end alert from failed money movement to named support owner; reconciled incident replay, backup/restore and failover drills | PENDING VENDOR |
+| 15. Frontend and deployment | Payment and saved-method routes remain held; historical frontend must not be independently restored | Confirm approved hosted checkout UX, return/cancel URL contract, iframe/redirect requirements and legally required disclosures | Parent/admin UX tests, authorization and school isolation, accessible receipts and error surfaces; staged canary/rollback | QUARANTINED |
+| 16. Source CI and operational release authority | Existing tests; `CURRENT_RELEASE_STATUS.md` fail-closed policy | Vendor sign-off and test transaction samples; certification program or equivalent | Exact-head CodeQL/security/tests/tenant isolation, target-schema migration and strict compatibility audit, sandbox signed-webhook proof, finance/settlement/dispute reconciliation, environment secrets and operational sign-offs; signed GO decision | PENDING OPERATIONAL PROOF |
+
+## Hard acceptance gates — do not waive
+
+1. Do not route any real money through CROWN or change `get_gateway()`'s deferred behavior until engineering and vendor contracts are validated and owner has explicitly approved a separately evidenced activation.
+2. The webhook ingress must authenticate on the **raw HTTP body** according to CompuWerx's *actual, verified* signing specification before parsing/dispatch. A syntactically present `GatewayEvent.signature` field alone proves nothing.
+3. The trusted school or merchant mapping must originate from authenticated processor identity and CROWN's own stored contract. Payload-provided school identifiers may be asserted only as consistency checks, never used to assign ownership.
+4. Persist and deduplicate events before any ledger or invoice mutation. Verify genuine provider payment/intent IDs, immutable amount/currency/ownership and lifecycle monotonicity. Reject conflicts and log redacted exception records.
+5. Canonical payment/refund/settlement services remain the only money-movement authority. Legacy finance tables are compatibility projections, not an independent provider write path. No manual status flag or web UI may bypass this authority.
+6. Maintain provider shutdown/kill switch, operator audit trail, secure secret storage, per-school settlement accountability, strict schema and CI gates, and restore/rollback ability.
+7. Historical source assertions, prior mock tests and vendor marketing statements are context only. Production sign-off requires accepted transactions, signed webhook evidence, reconciliation, commercial/legal authorization and exact environment SHA.
+
+## Next controlled sequence
+
+1. **Vendor coordination:** receive approved developer specification, supported payment pattern, secure sandbox provisioning, merchant contract and price/fee rules. Validate explicit API samples and webhook signature test vectors; do not infer from generic processor behavior.
+2. **Source hardening:** retain the disabled adapter while completing vendor-neutral ownership, idempotency, terminal-state and error tests; publish under one governed narrow PR when needed. Preserve prior canonical finance tests.
+3. **Adapter contract:** implement vendor-specific HTTP/authentication and provider-to-canonical translation against signed specs only. Test with mocked API fixtures first, then isolated sandbox requests. No live secrets in GitHub code or fixtures.
+4. **Sandbox certification:** signed/invalid/duplicate webhook requests; card and ACH state transitions; recurring tuition; partial refund/dispute; school A/B isolation; daily payout/bank/revenue reconciliation; event and API replay, failure and timeout cases.
+5. **Operational certification:** collect immutable exact-SHA CI records, vault credential custody, merchant terms, PCI/financial review, rollback plan, support escalation and owner GO sign-off; then separately authorize production enablement.
+
+**Evidence disposition:** All requirements above are either existing local foundation or outstanding. **No row currently certifies CompuWerx production processing, signed webhook ingress, vendor sandbox acceptance or operational settlement.**
