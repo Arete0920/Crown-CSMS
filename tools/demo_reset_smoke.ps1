@@ -19,12 +19,14 @@
     Seconds to wait for the server to become healthy.  Default: 30.
 
 .EXAMPLE
-    .\tools\demo_reset_smoke.ps1
-    .\tools\demo_reset_smoke.ps1 -HealthTimeoutSeconds 60
+    .\tools\demo_reset_smoke.ps1 -HeritageSchoolId "<UUID>" -ConfirmDemoWipe
+    .\tools\demo_reset_smoke.ps1 -HeritageSchoolId "<UUID>" -ConfirmDemoWipe -HealthTimeoutSeconds 60
 #>
 param(
     [int]$HealthTimeoutSeconds = 30,
-    [string]$HostUrl = "http://127.0.0.1:8000"
+    [string]$HostUrl = "http://127.0.0.1:8000",
+    [string]$HeritageSchoolId = "",
+    [switch]$ConfirmDemoWipe
 )
 
 $ErrorActionPreference = "Stop"
@@ -46,6 +48,33 @@ if (!(Test-Path $py)) {
 }
 
 # Required: demo mode so CROWN_DEMO_KEY is populated from settings defaults.
+if ([string]::IsNullOrWhiteSpace($HeritageSchoolId)) { Fail "Explicit -HeritageSchoolId UUID required for destructive reset" }
+if (-not $ConfirmDemoWipe) { Fail "Explicit -ConfirmDemoWipe switch required" }
+$parsedHeritageId = [guid]::Empty
+if (-not [guid]::TryParse($HeritageSchoolId, [ref]$parsedHeritageId)) {
+    Fail "HeritageSchoolId must be a valid UUID"
+}
+if ($env:CROWN_ENV -ne "local") { Fail "Operator must explicitly set CROWN_ENV=local" }
+if ($env:CROWN_ALLOW_DEMO_WIPE -ne "true") {
+    Fail "Operator must explicitly set CROWN_ALLOW_DEMO_WIPE=true"
+}
+if ($env:WEBSITE_HOSTNAME -or $env:WEBSITE_INSTANCE_ID -or $env:AZURE_ENVIRONMENT) {
+    Fail "Hosted/Azure runtime is prohibited for local Heritage resets"
+}
+if ($env:DJANGO_ENV -in @("prod", "production", "live", "sandbox", "staging") -or
+    $env:ENVIRONMENT -in @("prod", "production", "live", "sandbox", "staging") -or
+    $env:APP_ENV -in @("prod", "production", "live", "sandbox", "staging")) {
+    Fail "Hosted or production environment markers are prohibited"
+}
+if ([string]::IsNullOrWhiteSpace($env:DATABASE_URL) -or
+    $env:DATABASE_URL -notmatch '^sqlite(3)?:///') {
+    Fail "Explicit isolated local SQLite DATABASE_URL is required before migration or wipe"
+}
+$healthUri = $null
+try { $healthUri = [uri]$HostUrl } catch { Fail "Invalid health-check URL" }
+if ($healthUri.Scheme -ne "http" -or $healthUri.Host -notin @("127.0.0.1", "localhost", "::1")) {
+    Fail "Health-check URL must use loopback HTTP only"
+}
 $env:CROWN_DEMO_MODE = "true"
 
 Push-Location $backend
@@ -58,7 +87,7 @@ try {
 
     # ---------------------------------------------------------------
     Write-Step "Seed demo school (--wipe)"
-    & $py manage.py seed_demo_school --wipe
+    & $py manage.py seed_demo_school --wipe --confirm-demo-wipe --school-id $HeritageSchoolId
     if ($LASTEXITCODE -ne 0) { Fail "seed_demo_school failed" }
 
     # ---------------------------------------------------------------

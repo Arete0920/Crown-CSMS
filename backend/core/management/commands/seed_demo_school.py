@@ -1,7 +1,7 @@
 import random
 from datetime import date
 
-from django.core.management.base import BaseCommand
+from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 from django.utils import timezone
 
@@ -22,6 +22,8 @@ from core.models import (
 )
 from aid.models import AidApplication, AidAward
 from finance.models import ChartAccount, JournalBatch
+from core.demo_credentials import configured_demo_passwords
+from core.demo_seed_safety import require_local_demo_seed, require_local_demo_wipe
 
 
 FIRST_NAMES = [
@@ -54,7 +56,9 @@ class Command(BaseCommand):
         parser.add_argument("--aid_pct", type=int, default=35)
         parser.add_argument("--school_name", type=str, default="Heritage Christian Academy")
         parser.add_argument("--year_name", type=str, default="2026–2027")
-        parser.add_argument("--wipe", action="store_true", help="DANGER: wipe demo data for this school name before seeding")
+        parser.add_argument("--wipe", action="store_true", help="DANGER: wipe fictional Heritage demo records only")
+        parser.add_argument("--confirm-demo-wipe", action="store_true", help="Explicitly confirm destructive local Heritage reset")
+        parser.add_argument("--school-id", default=None, help="Existing Heritage UUID required for destructive --wipe")
 
     @transaction.atomic
     def handle(self, *args, **options):
@@ -64,6 +68,30 @@ class Command(BaseCommand):
         school_name = options["school_name"].strip()
         year_name = options["year_name"].strip()
         wipe = bool(options["wipe"])
+        require_local_demo_seed(operation="school seeding")
+        if school_name != "Heritage Christian Academy":
+            raise CommandError("Legacy demo seeding is restricted to Heritage Christian Academy")
+        # A label and SQLite alone do not prove that existing data is fictional.
+        # Reject any non-Heritage school before writing grades, fees, or accounts.
+        if School.objects.exclude(name=school_name).exists():
+            raise CommandError("Heritage demo seeding requires an isolated single-school database")
+        matching_ids = list(School.objects.filter(name=school_name).values_list("id", flat=True))
+        if len(matching_ids) > 1:
+            raise CommandError("Multiple Heritage schools found; refusing ambiguous demo seeding")
+        selected_id = options.get("school_id")
+        if wipe:
+            require_local_demo_wipe(
+                school_name=school_name,
+                confirmed=bool(options["confirm_demo_wipe"]),
+            )
+            if not selected_id:
+                raise CommandError("--school-id is required for destructive --wipe")
+            if len(matching_ids) != 1 or str(matching_ids[0]) != str(selected_id):
+                raise CommandError("Destructive --wipe requires the exact existing Heritage school UUID")
+        elif selected_id and (
+            len(matching_ids) != 1 or str(matching_ids[0]) != str(selected_id)
+        ):
+            raise CommandError("--school-id does not match the selected Heritage school")
 
         self.stdout.write(self.style.WARNING(
             f"Seeding: {school_name} | {year_name} | students={students_target} | tuition=${tuition_dollars} | aid={aid_pct}%"
@@ -362,6 +390,10 @@ class Command(BaseCommand):
         return out
 
     def _ensure_directors(self, school: School):
+        # Do not create or preserve usable default credentials for public demos.
+        # This also retires passwords and superuser grants from legacy seed runs.
+        passwords = configured_demo_passwords()
+
         def ensure_staff(first, last, email, role_type):
             st, _ = Staff.objects.get_or_create(
                 school=school,
@@ -371,21 +403,60 @@ class Command(BaseCommand):
             return st
 
         def ensure_user(email, staff=None):
+            # Django usernames are global, even when email uniqueness is scoped.
+            # Never hijack an existing principal from another school.
+            existing = UserAccount.objects.filter(username=email).first()
+            if existing is not None and existing.school_id != school.pk:
+                raise CommandError(f"Refusing cross-school demo account: {email}")
+            if existing is not None and existing.email != email:
+                raise CommandError(f"Refusing mismatched demo account identity: {email}")
+
             ua, created = UserAccount.objects.get_or_create(
                 school=school,
                 email=email,
-                defaults={"username": email, "is_active": True, "is_staff": True, "is_superuser": True, "staff": staff},
+                defaults={
+                    "username": email,
+                    "is_active": True,
+                    "is_staff": False,
+                    "is_superuser": False,
+                    "staff": staff,
+                },
             )
-            if created:
-                ua.set_password("demo1234")
-                ua.save(update_fields=["password"])
+            if ua.username != email:
+                raise CommandError(f"Demo account identity mismatch: {email}")
+
+            changed = []
+            if ua.is_staff:
+                ua.is_staff = False
+                changed.append("is_staff")
+            if ua.is_superuser:
+                ua.is_superuser = False
+                changed.append("is_superuser")
+            password = passwords.get(email)
+            if password is None:
+                if ua.has_usable_password():
+                    ua.set_unusable_password()
+                    changed.append("password")
+            elif not ua.check_password(password):
+                ua.set_password(password)
+                changed.append("password")
             if staff and ua.staff_id != staff.id:
                 ua.staff = staff
-                ua.save(update_fields=["staff"])
+                changed.append("staff")
+            if changed:
+                ua.save(update_fields=changed)
             return ua
 
         def ensure_role(user, role_code):
-            UserRole.objects.get_or_create(school=school, user=user, role_code=role_code)
+            # Retire stale same-school permissions when upgrading a named
+            # fictional demo account. Django staff flags alone do not remove
+            # application-level grants carried by UserRole.
+            UserRole.objects.filter(school=school, user=user).exclude(
+                role_code=role_code
+            ).delete()
+            UserRole.objects.get_or_create(
+                school=school, user=user, role_code=role_code
+            )
 
         head_staff = ensure_staff("Jordan", "Shepherd", "head@crown-demo.local", "DIRECTOR")
         fin_staff = ensure_staff("Morgan", "Ledger", "finance@crown-demo.local", "DIRECTOR")
@@ -506,11 +577,15 @@ class Command(BaseCommand):
         # Import here to avoid circular dependency
         from financial_aid.models import AidAuditEvent
         
-        # Delete audit events for this school AND any that reference user accounts we're about to delete
-        user_ids = list(UserAccount.objects.filter(school=school).values_list('id', flat=True))
+        # Audit events are globally keyed by actor_user_id, not a tenant-scoped FK.
+        # A demo user referenced in another school's audit must fail the wipe.
+        # Never erase another school's audit trail by actor ID alone.
+        user_ids = list(UserAccount.objects.filter(school=school).values_list("id", flat=True))
+        if user_ids and AidAuditEvent.objects.filter(
+            actor_user_id__in=user_ids
+        ).exclude(school_id=school.id).exists():
+            raise CommandError("Refusing wipe: demo actors appear in cross-school audit events")
         AidAuditEvent.objects.filter(school_id=school.id).delete()
-        if user_ids:
-            AidAuditEvent.objects.filter(actor_user_id__in=user_ids).delete()
         
         # Continue with original deletions
         AidAward.objects.filter(school=school).delete()
