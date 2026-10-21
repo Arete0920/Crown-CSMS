@@ -362,16 +362,19 @@ def _handle_detached_payment_method(event: GatewayEvent, payload: dict) -> None:
     provider_method_id = payload.get("payment_method_id") or payload.get("method_id")
     if not provider_method_id:
         raise UnmatchedPaymentError("Payment method detach event has no provider method reference.")
+    # A provider method ID is globally unique in the retained schema.
+    # Reject foreign ownership instead of silently marking it processed.
     method = SavedPaymentMethod.objects.select_for_update().filter(
-        school_id=event.school_id,
         provider_method_id=provider_method_id,
-        provider=event.provider,
     ).first()
-    if method:
-        method.is_active = False
-        method.is_default = False
-        method.payload = payload
-        method.save(update_fields=["is_active", "is_default", "payload", "updated_at"])
+    if not method:
+        return
+    if method.school_id != event.school_id or method.provider != event.provider:
+        raise UnmatchedPaymentError("Payment method reference conflicts with verified ownership.")
+    method.is_active = False
+    method.is_default = False
+    method.payload = payload
+    method.save(update_fields=["is_active", "is_default", "payload", "updated_at"])
 
 
 def _handle_dispute_opened(event: GatewayEvent, payload: dict) -> None:
