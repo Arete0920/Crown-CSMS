@@ -4,16 +4,20 @@ Quick sanity checks for batch weight endpoint.
 Tests: happy path, bad sum, foreign ID.
 """
 import requests
-import json
+import os
 
 BASE = "http://127.0.0.1:8000"
-SCHOOL = "b45b8c5a-6708-4597-aad9-a226627b2962"
-SECTION = "044882e0-3405-4542-a237-32f1adf4f047"
+SCHOOL = os.getenv("CROWN_SANITY_SCHOOL_ID", "").strip()
+SECTION = os.getenv("CROWN_SANITY_SECTION_ID", "").strip()
+USERNAME = os.getenv("CROWN_SANITY_USERNAME", "").strip()
+PASSWORD = os.getenv("CROWN_SANITY_PASSWORD", "")
+if not all((SCHOOL, SECTION, USERNAME, PASSWORD)):
+    raise SystemExit("Explicit local CROWN_SANITY_SCHOOL_ID, CROWN_SANITY_SECTION_ID, CROWN_SANITY_USERNAME, and CROWN_SANITY_PASSWORD required.")
 
 # Get token
 auth_resp = requests.post(f"{BASE}/api/v1/auth/token/", json={
-    "username": "head@crown-demo.local",
-    "password": "demo1234"
+    "username": USERNAME,
+    "password": PASSWORD
 })
 TOKEN = auth_resp.json()["access"]
 HEADERS = {
