@@ -152,6 +152,16 @@ def process_gateway_event(event: GatewayEvent) -> None:
     if provider_payment_id and intent.provider_payment_id and provider_payment_id != intent.provider_payment_id:
         raise UnmatchedPaymentError("Gateway payment reference conflicts with the owned intent.")
 
+    # A delayed, otherwise valid provider event must not reverse a final
+    # settlement or refund. Preserve the persisted intent and require review.
+    if (
+        (intent.status == GatewayIntentStatus.SETTLED
+         and status not in (GatewayIntentStatus.SETTLED, GatewayIntentStatus.REFUNDED))
+        or (intent.status == GatewayIntentStatus.REFUNDED
+            and status != GatewayIntentStatus.REFUNDED)
+    ):
+        raise UnmatchedPaymentError("Gateway event cannot regress a finalized payment intent.")
+
     intent.provider_payment_id = provider_payment_id or intent.provider_payment_id
     intent.status = status
     intent.response_payload = payload

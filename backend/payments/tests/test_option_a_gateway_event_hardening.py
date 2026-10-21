@@ -305,6 +305,36 @@ def test_unrecognized_payment_status_cannot_downgrade_an_intent():
     assert event.status == GatewayEventStatus.FAILED
 
 
+@pytest.mark.parametrize(("persisted", "incoming"), [
+    ("settled", "authorized"),
+    ("settled", "pending"),
+    ("refunded", "settled"),
+    ("refunded", "authorized"),
+])
+def test_late_gateway_event_cannot_regress_finalized_intent(persisted, incoming):
+    school, _ = _school_user()
+    intent = _intent(school, client_reference_id="late-provider-status")
+    intent.status = persisted
+    intent.save(update_fields=["status"])
+    event = _event_with_payload(
+        school, "payment.updated", f"late-{persisted}-{incoming}",
+        {"intent_id": intent.provider_intent_id,
+         "payment_id": intent.provider_payment_id, "status": incoming},
+    )
+
+    with pytest.raises(UnmatchedPaymentError, match="cannot regress"):
+        process_gateway_event_safely(event)
+
+    intent.refresh_from_db()
+    event.refresh_from_db()
+    assert intent.status == persisted
+    assert event.status == GatewayEventStatus.FAILED
+    assert PaymentSupportException.objects.filter(
+        school_id=school.id, gateway_event_id=event.id,
+        category="gateway_event_processing",
+    ).exists()
+
+
 def test_gateway_event_rejects_ambiguous_same_school_provider_intents():
     school, _ = _school_user()
     first = _intent(school, client_reference_id="duplicate-intent-first")
