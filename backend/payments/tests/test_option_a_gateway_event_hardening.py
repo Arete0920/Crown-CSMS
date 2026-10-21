@@ -610,3 +610,44 @@ def test_dispute_accepts_owned_provider_references():
     process_gateway_event_safely(event)
     dispute = ProviderDispute.objects.get(dispute_id="owned-dispute")
     assert dispute.school_id == school.id
+
+def test_failure_ledger_uses_persisted_event_school_not_stale_caller():
+    school, _ = _school_user()
+    other = School.objects.create(name="Other Payment Exception School")
+    event = _event(school, status="unknown_provider_status")
+    # Simulate a stale or incorrectly scoped caller object. The durable event
+    # still belongs to the first school and must remain authoritative.
+    event.school_id = other.pk
+
+    with pytest.raises(UnmatchedPaymentError, match="unrecognized payment status"):
+        process_gateway_event_safely(event)
+
+    event.refresh_from_db()
+    assert event.status == GatewayEventStatus.FAILED
+    assert PaymentSupportException.objects.filter(
+        school_id=school.id, gateway_event_id=event.id,
+        category="gateway_event_processing",
+    ).exists()
+    assert not PaymentSupportException.objects.filter(
+        school_id=other.id, gateway_event_id=event.id,
+    ).exists()
+
+
+@pytest.mark.parametrize(
+    "terminal_status", [GatewayEventStatus.PROCESSED, GatewayEventStatus.IGNORED],
+)
+def test_failed_worker_does_not_overwrite_another_workers_terminal_event(terminal_status):
+    school, _ = _school_user()
+    event = _event(school, status="settled", payment_id="stale_worker")
+
+    def completed_by_other_worker(_event):
+        GatewayEvent.objects.filter(pk=event.pk).update(status=terminal_status)
+        raise UnmatchedPaymentError("stale worker failed after another worker completed")
+
+    with patch("payments.services.process_gateway_event", side_effect=completed_by_other_worker):
+        with pytest.raises(UnmatchedPaymentError, match="stale worker"):
+            process_gateway_event_safely(event)
+
+    event.refresh_from_db()
+    assert event.status == terminal_status
+    assert not PaymentSupportException.objects.filter(gateway_event_id=event.id).exists()

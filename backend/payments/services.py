@@ -499,19 +499,28 @@ def process_gateway_event_safely(event: GatewayEvent) -> None:
     try:
         process_gateway_event(event)
     except Exception as exc:
-        event.status = GatewayEventStatus.FAILED
-        event.error_message = str(exc)
-        event.save(update_fields=["status", "error_message"])
+        # The caller may hold an old, or incorrectly scoped, event instance.
+        # Re-read and lock the durable event before recording a failure so the
+        # exception ledger cannot inherit unverified in-memory tenant fields.
+        with transaction.atomic():
+            persisted = GatewayEvent.objects.select_for_update().get(pk=event.pk)
+            if persisted.status not in (
+                GatewayEventStatus.PROCESSED,
+                GatewayEventStatus.IGNORED,
+            ):
+                # Another worker could have completed the event while the
+                # failed worker was unwinding. Never overwrite terminal proof.
+                persisted.status = GatewayEventStatus.FAILED
+                persisted.error_message = str(exc)
+                persisted.save(update_fields=["status", "error_message"])
 
-        # Unowned events cannot be written to the tenant-required exception ledger.
-        # The GatewayEvent itself remains FAILED for investigation.
-        if event.school_id is not None:
-            record_payment_exception(
-                school_id=event.school_id,
-                provider=event.provider,
-                category="gateway_event_processing",
-                message=str(exc),
-                payload=event.payload or {},
-                gateway_event_id=event.id,
-            )
+                if persisted.school_id is not None:
+                    record_payment_exception(
+                        school_id=persisted.school_id,
+                        provider=persisted.provider,
+                        category="gateway_event_processing",
+                        message=str(exc),
+                        payload=persisted.payload or {},
+                        gateway_event_id=persisted.id,
+                    )
         raise
