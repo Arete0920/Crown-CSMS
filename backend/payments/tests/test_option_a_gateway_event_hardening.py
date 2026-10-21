@@ -378,10 +378,38 @@ def test_detach_event_does_not_change_method_owned_by_another_school():
         {"payment_method_id": "method-to-protect"},
     )
 
-    process_gateway_event_safely(event)
+    with pytest.raises(UnmatchedPaymentError, match="conflicts with verified ownership"):
+        process_gateway_event_safely(event)
 
     method.refresh_from_db()
+    event.refresh_from_db()
     assert method.is_active
+    assert event.status == GatewayEventStatus.FAILED
+    assert PaymentSupportException.objects.filter(
+        school_id=school.id, gateway_event_id=event.id,
+        category="gateway_event_processing",
+    ).exists()
+
+
+def test_detach_event_deactivates_locally_owned_method():
+    school, _ = _school_user()
+    household = Household.objects.create(school_id=school.id, name="Owned detach family")
+    method = SavedPaymentMethod.objects.create(
+        school_id=school.id, household_id=household.id,
+        provider=GatewayProvider.COMPUWERX,
+        provider_method_id="owned-method-to-detach",
+        is_active=True, is_default=True,
+    )
+    event = _event_with_payload(
+        school, "payment_method.detached", "valid-owned-method-detach",
+        {"payment_method_id": method.provider_method_id},
+    )
+    process_gateway_event_safely(event)
+    method.refresh_from_db()
+    event.refresh_from_db()
+    assert not method.is_active
+    assert not method.is_default
+    assert event.status == GatewayEventStatus.PROCESSED
 
 
 def test_dispute_event_does_not_overwrite_another_school_dispute():
