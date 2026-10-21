@@ -106,7 +106,7 @@ def process_gateway_event(event: GatewayEvent) -> None:
     if not provider_intent_id:
         raise UnmatchedPaymentError("Gateway event requires a provider intent reference.")
 
-    intent = PaymentIntentRecord.objects.filter(
+    intent = PaymentIntentRecord.objects.select_for_update().filter(
         school_id=event.school_id,
         provider=event.provider,
         provider_intent_id=provider_intent_id,
@@ -354,7 +354,7 @@ def _handle_detached_payment_method(event: GatewayEvent, payload: dict) -> None:
     provider_method_id = payload.get("payment_method_id") or payload.get("method_id")
     if not provider_method_id:
         raise UnmatchedPaymentError("Payment method detach event has no provider method reference.")
-    method = SavedPaymentMethod.objects.filter(
+    method = SavedPaymentMethod.objects.select_for_update().filter(
         school_id=event.school_id,
         provider_method_id=provider_method_id,
         provider=event.provider,
@@ -435,7 +435,7 @@ def _handle_dispute_status_update(event: GatewayEvent, payload: dict) -> None:
     dispute_id = payload.get("dispute_id") or payload.get("id")
     if not dispute_id:
         raise UnmatchedPaymentError("Dispute update has no provider dispute reference.")
-    dispute = ProviderDispute.objects.filter(
+    dispute = ProviderDispute.objects.select_for_update().filter(
         school_id=event.school_id,
         provider=event.provider,
         dispute_id=dispute_id,
