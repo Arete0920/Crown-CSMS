@@ -476,7 +476,7 @@ class TestVerify(TestCase):
 
     def test_committed_and_verified_billing_records_cannot_be_reopened(self):
         session = BillingWizardSession.objects.get(pk=self.session_id)
-        original_count = InstallmentPlan.objects.filter(school=self.school).count()
+        original_count = InstallmentPlan.objects.filter(school_id=self.school.id).count()
         edits = (
             ("configure/", {"term": "2027-FALL", "billing_mode": "simple"}),
             ("plans/", {"plans": [{"name": "Unauthorized Reopen", "installment_count": 1,
@@ -504,7 +504,7 @@ class TestVerify(TestCase):
                          session.term, session.plans_config, session.fees_config),
                         before,
                     )
-                    self.assertEqual(InstallmentPlan.objects.filter(school=self.school).count(), original_count)
+                    self.assertEqual(InstallmentPlan.objects.filter(school_id=self.school.id).count(), original_count)
 
 class AuthenticatedTenantRegressionTest(TestCase):
     def test_bearer_cannot_use_finance_role_to_override_home_school(self):
