@@ -1,10 +1,10 @@
 # CompuWerx integration — vendor contract, quarantine, and acceptance
 
-**Decision owner:** CROWN Product Owner / Arete Advisory Group LLC  
-**Last assessment:** 2026-10-20  
-**Vendor choice:** CompuWerx is the *intended* payment gateway, not an activated processor.  
-**Runtime state:** QUARANTINED. External payments remain DISABLED / FAIL CLOSED.  
-**Controlling release authority:** [CURRENT_RELEASE_STATUS.md](../CURRENT_RELEASE_STATUS.md).  
+**Decision owner:** CROWN Product Owner / Arete Advisory Group LLC
+**Last assessment:** 2026-10-20
+**Vendor choice:** CompuWerx is the *intended* payment gateway, not an activated processor.
+**Runtime state:** QUARANTINED. External payments remain DISABLED / FAIL CLOSED.
+**Controlling release authority:** [CURRENT_RELEASE_STATUS.md](../CURRENT_RELEASE_STATUS.md).
 **Implementation baseline:** GitHub `main` at the exact head of each subsequent certification; no historical module inventory or passing source tests alone authorize payment activation.
 
 ## Evidence and claim boundaries
