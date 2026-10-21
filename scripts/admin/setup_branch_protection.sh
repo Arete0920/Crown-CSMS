@@ -12,6 +12,7 @@ Usage: scripts/admin/setup_branch_protection.sh --audit-pr <PR_NUMBER>
 
 Read live main branch protection and the check runs on the current exact PR
 head. Re-read PR/main identity before reporting to reject moving references.
+Requires read access to authoritative branch protection, including app IDs.
 This script cannot change GitHub settings. --apply is unsupported.
 USAGE
 }
@@ -41,8 +42,11 @@ pr_before="$scratch/pr-before.json"
 checks="$scratch/checks.json"
 pr_after="$scratch/pr-after.json"
 branch_after="$scratch/branch-after.json"
+policy_before="$scratch/policy-before.json"
+policy_after="$scratch/policy-after.json"
 
-if ! gh api --method GET "/repos/${REPO}/branches/${BRANCH}" > "$branch_before" ||
+if ! gh api --method GET "/repos/${REPO}/branches/${BRANCH}/protection" > "$policy_before" ||
+   ! gh api --method GET "/repos/${REPO}/branches/${BRANCH}" > "$branch_before" ||
    ! gh api --method GET "/repos/${REPO}/pulls/${pr_number}" > "$pr_before"; then
   echo "REFUSED: cannot read current branch/PR authority from GitHub." >&2
   exit 2
@@ -69,16 +73,17 @@ fi
 
 if ! gh api --method GET "/repos/${REPO}/commits/${head_sha}/check-runs?per_page=100" > "$checks" ||
    ! gh api --method GET "/repos/${REPO}/pulls/${pr_number}" > "$pr_after" ||
-   ! gh api --method GET "/repos/${REPO}/branches/${BRANCH}" > "$branch_after"; then
+   ! gh api --method GET "/repos/${REPO}/branches/${BRANCH}" > "$branch_after" ||
+   ! gh api --method GET "/repos/${REPO}/branches/${BRANCH}/protection" > "$policy_after"; then
   echo "REFUSED: exact-head checks or final identity confirmation unavailable." >&2
   exit 2
 fi
 
-python3 - "$branch_before" "$pr_before" "$checks" "$pr_after" "$branch_after" "$pr_number" "$head_sha" <<'PY'
+python3 - "$branch_before" "$pr_before" "$checks" "$pr_after" "$branch_after" "$pr_number" "$head_sha" "$policy_before" "$policy_after" <<'PY'
 import json
 import sys
 
-branch_before_path, pr_before_path, checks_path, pr_after_path, branch_after_path, num, sha = sys.argv[1:]
+branch_before_path, pr_before_path, checks_path, pr_after_path, branch_after_path, num, sha, policy_before_path, policy_after_path = sys.argv[1:]
 try:
     with open(branch_before_path, encoding="utf-8") as stream:
         branch_before = json.load(stream)
@@ -90,6 +95,13 @@ try:
         pr_after = json.load(stream)
     with open(branch_after_path, encoding="utf-8") as stream:
         branch_after = json.load(stream)
+
+    with open(policy_before_path, encoding="utf-8") as stream:
+        protection_before = json.load(stream)
+    with open(policy_after_path, encoding="utf-8") as stream:
+        protection_after = json.load(stream)
+    if protection_before != protection_after:
+        raise ValueError("authoritative branch protection changed while auditing")
 
     for branch in (branch_before, branch_after):
         if branch.get("name") != "main" or not branch.get("protected"):
@@ -107,16 +119,40 @@ try:
                 or pr.get("head", {}).get("sha") != sha):
             raise ValueError("PR head/base changed or is not current with main")
 
-    policy = branch_before["protection"]["required_status_checks"]
-    required = policy.get("checks")
-    if required is None:
-        required = [{"context": name, "app_id": None} for name in policy.get("contexts", [])]
+    policy = protection_before["required_status_checks"]
+    required = policy["checks"]
+    contexts = policy["contexts"]
+    if not isinstance(required, list) or not required:
+        raise ValueError("authoritative required-check inventory missing")
+    names = []
+    for check in required:
+        if (not isinstance(check, dict) or not isinstance(check.get("context"), str)
+                or not check["context"].strip() or "app_id" not in check):
+            raise ValueError("required-check context or application identity missing")
+        app_id = check["app_id"]
+        if app_id is not None and (type(app_id) is not int or (app_id != -1 and app_id <= 0)):
+            raise ValueError("invalid required-check application identity")
+        names.append(check["context"])
+    if (not isinstance(contexts, list) or any(not isinstance(n, str) for n in contexts)
+            or len(set(names)) != len(names) or len(set(contexts)) != len(contexts)
+            or set(names) != set(contexts)):
+        raise ValueError("required-check contexts/checks inventory inconsistent")
+    # A branch summary is supplementary: it must never override authoritative app IDs.
+    for branch in (branch_before, branch_after):
+        summary = branch["protection"]["required_status_checks"]
+        if sorted(summary["contexts"]) != sorted(contexts):
+            raise ValueError("branch summary differs from authoritative required checks")
+        if "checks" in summary and summary["checks"] != required:
+            raise ValueError("branch summary differs from authoritative application identities")
     runs = observed["check_runs"]
     total = observed["total_count"]
     if not isinstance(required, list) or not required:
         raise ValueError("live required-check inventory missing")
-    if not isinstance(runs, list) or not isinstance(total, int) or total > len(runs):
+    if not isinstance(runs, list) or type(total) is not int or total < 0 or total != len(runs):
         raise ValueError("check-run result is incomplete (pagination required)")
+
+    if any(not isinstance(run, dict) or run.get("head_sha") != sha for run in runs):
+        raise ValueError("check-run head does not match verified PR head")
 
     print(f"CROWN live main required-check audit: PR #{num}, head {sha}, main {before_main}")
     print(f"Required check contexts: {len(required)}")
@@ -144,7 +180,7 @@ try:
         sys.exit(1)
     print("REQUIRED_CHECKS_PRESENT: checked on the verified current PR head.")
     print("NOTE: this is not final GitHub merge authorization; other rules still apply.")
-except (OSError, KeyError, TypeError, ValueError, json.JSONDecodeError) as exc:
+except (OSError, KeyError, TypeError, ValueError, AttributeError, json.JSONDecodeError) as exc:
     print(f"REFUSED: cannot verify live required checks: {exc}", file=sys.stderr)
     sys.exit(2)
 PY
