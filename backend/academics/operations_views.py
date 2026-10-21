@@ -1,6 +1,7 @@
 import hashlib
 import json
 from datetime import timedelta
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from django.contrib.auth import get_user_model
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db import transaction
@@ -12,7 +13,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from core.models import StudentIdentityLink, UserRole
+from core.models import School, StudentIdentityLink, UserRole
 from crown_api.models import AttendanceRecord
 from households.scoping import get_request_school_id
 from .experience_access import is_leader, taught_sections
@@ -39,12 +40,28 @@ def operational_sections(user, school):
     return all_sections.filter(Q(id__in=own) | Q(id__in=grants(user, school).values('section_id')))
 
 
-def day_for(value):
+def school_local_date(school_id):
+    """Use the enrolled school's calendar, not the server's UTC calendar."""
+    config = School.objects.filter(pk=school_id).values_list('is_active', 'timezone').first()
+    if not config or not config[0]:
+        raise ValidationError('An active school is required for attendance.')
+    tz_name = config[1]
+    if not tz_name:
+        raise ValidationError('Configure the school timezone before recording attendance.')
+    try:
+        school_timezone = ZoneInfo(tz_name)
+    except (ZoneInfoNotFoundError, ValueError, TypeError) as exc:
+        raise ValidationError('The configured school timezone is invalid for attendance.') from exc
+    return timezone.now().astimezone(school_timezone).date()
+
+
+def day_for(value, *, today=None):
     try:
         day = parse_date(value)
     except (ValueError, TypeError):
         day = None
-    if not day or day > timezone.localdate() or day < timezone.localdate() - timedelta(days=365):
+    today = today or timezone.localdate()
+    if not day or day > today or day < today - timedelta(days=365):
         raise ValidationError('Choose a date within the last year, including today.')
     return day
 
@@ -63,13 +80,14 @@ def classroom_operations(request):
     if not sections.exists() and not is_leader(request.user, school):
         raise PermissionDenied('Assigned classroom or active substitute grant required.')
     if request.method == 'GET':
-        result = {'source': 'live', 'generated_at': timezone.now(), 'sections': list(sections.values('id', 'course__name', 'term')[:200]),
+        school_day = school_local_date(school)
+        result = {'source': 'live', 'generated_at': timezone.now(), 'school_today': school_day.isoformat(), 'sections': list(sections.values('id', 'course__name', 'term')[:200]),
                   'substitute_candidates': list(get_user_model().objects.filter(is_active=True, roles__school_id=school,
                      roles__role_code__in=['TEACHER', 'teacher', 'SUBSTITUTE']).distinct().values('id', 'username')[:200])}
         if not request.query_params.get('section_id'):
             return Response(result)
         section = get_object_or_404(sections, id=_uuid(request.query_params['section_id'], 'section_id'))
-        day = day_for(request.query_params.get('date', timezone.localdate().isoformat()))
+        day = day_for(request.query_params.get('date', school_day.isoformat()), today=school_day)
         students = [e.student for e in Enrollment.objects.filter(school_id=school, section=section, student__school_id=school, student__is_active=True).select_related('student')]
         identities = StudentIdentityLink.objects.filter(school_id=school, verification_status='verified', compatibility_student__in=students,
                             core_student__school_id=school, compatibility_student__school_id=school).exclude(evidence_reference='')
@@ -112,13 +130,14 @@ def classroom_operations(request):
         previous = ClassroomOperationEvent.objects.filter(school_id=school, actor=request.user, request_key=key).first()
         if previous:
             return Response(previous.result) if previous.fingerprint == fingerprint else Response({'detail': 'Retry key conflict.'}, status=409)
+        school_day = school_local_date(school) if operation in {'review_absence', 'attendance'} else None
         if operation == 'review_absence':
             if not (is_leader(request.user, school) or taught_sections(request.user, school).filter(id=section.id).exists()):
                 raise PermissionDenied('Assigned teacher or school leader authority required.')
-            result = review_explanation(school=school, section=section, day=day_for(data.get('date')),
+            result = review_explanation(school=school, section=section, day=day_for(data.get('date'), today=school_day),
                 actor=request.user, data=data, key=key, fingerprint=fingerprint)
         elif operation == 'attendance':
-            day = day_for(data.get('date'))
+            day = day_for(data.get('date'), today=school_day)
             session = ClassroomAttendanceSession.objects.filter(school_id=school, section=section, date=day).first()
             expected = data.get('version')
             if isinstance(expected, bool) or not isinstance(expected, int) or expected != (session.version if session else 0):
