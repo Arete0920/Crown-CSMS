@@ -399,12 +399,54 @@ class FeeScheduleVerifyTest(TestCase):
         school = _make_school()
         client = _authed_client()
         sid, name = _advance_to_committed(client, school.id)
-        r = client.get(f"{BASE_URL}{sid}/verify/", **_headers(school.id))
+        r = client.post(f"{BASE_URL}{sid}/verify/", **_headers(school.id))
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.data["status"], FeeScheduleWizardSession.STATUS_VERIFIED)
         self.assertTrue(r.data["schedule_exists"])
         self.assertEqual(r.data["line_count"], len(GOOD_LINES))
         self.assertEqual(r.data["schedule_name"], name)
+
+    def test_get_verification_is_read_only_and_post_is_idempotent(self):
+        school = _make_school()
+        client = _authed_client()
+        sid, name = _advance_to_committed(client, school.id)
+        initial = FeeScheduleWizardSession.objects.get(pk=sid)
+        initial_updated_at = initial.updated_at
+
+        # Browser prefetches and retries must not certify a financial configuration.
+        for _ in range(2):
+            inspected = client.get(
+                f"{BASE_URL}{sid}/verify/", **_headers(school.id),
+            )
+            self.assertEqual(inspected.status_code, 200)
+            self.assertEqual(
+                inspected.data["status"], FeeScheduleWizardSession.STATUS_COMMITTED,
+            )
+            self.assertEqual(inspected.data["schedule_name"], name)
+            self.assertEqual(inspected.data["line_count"], len(GOOD_LINES))
+
+        initial.refresh_from_db()
+        self.assertEqual(initial.status, FeeScheduleWizardSession.STATUS_COMMITTED)
+        self.assertEqual(initial.updated_at, initial_updated_at)
+
+        promoted = client.post(f"{BASE_URL}{sid}/verify/", **_headers(school.id))
+        self.assertEqual(promoted.status_code, 200)
+        self.assertEqual(
+            promoted.data["status"], FeeScheduleWizardSession.STATUS_VERIFIED,
+        )
+        initial.refresh_from_db()
+        verified_updated_at = initial.updated_at
+
+        # Repeated POST is safe for network retries; GET remains read-only.
+        repeated = client.post(f"{BASE_URL}{sid}/verify/", **_headers(school.id))
+        self.assertEqual(repeated.status_code, 200)
+        inspected = client.get(f"{BASE_URL}{sid}/verify/", **_headers(school.id))
+        self.assertEqual(inspected.status_code, 200)
+        self.assertEqual(
+            inspected.data["status"], FeeScheduleWizardSession.STATUS_VERIFIED,
+        )
+        initial.refresh_from_db()
+        self.assertEqual(initial.updated_at, verified_updated_at)
 
     def test_verify_before_commit_returns_400(self):
         school = _make_school()
@@ -740,7 +782,7 @@ class FeeScheduleIntegrityTest(TestCase):
         school = _make_school()
         client = _authed_client()
         sid, _ = _advance_to_committed(client, school.id)
-        verified = client.get(f"{BASE_URL}{sid}/verify/", **_headers(school.id))
+        verified = client.post(f"{BASE_URL}{sid}/verify/", **_headers(school.id))
         self.assertEqual(verified.status_code, 200)
         response = client.post(
             f"{BASE_URL}{sid}/lines/",
