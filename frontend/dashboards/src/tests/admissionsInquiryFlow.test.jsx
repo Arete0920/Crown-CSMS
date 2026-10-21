@@ -173,10 +173,10 @@ describe('staff inquiry follow-up queue', () => {
     render(<AdmissionsInquiryQueue />);
     await screen.findByText('No inquiries match these filters.');
     fireEvent.click(screen.getByLabelText('Unassigned'));
-    await waitFor(() => expect(api.list).toHaveBeenLastCalledWith({ stage: '', unassigned: 1, overdue: '', page: 1 }));
+    await waitFor(() => expect(api.list).toHaveBeenLastCalledWith({ stage: '', unassigned: 1, overdue: '' }));
     await screen.findByText('No inquiries match these filters.');
     fireEvent.click(screen.getByLabelText('Follow-up due'));
-    await waitFor(() => expect(api.list).toHaveBeenLastCalledWith({ stage: '', unassigned: 1, overdue: 1, page: 1 }));
+    await waitFor(() => expect(api.list).toHaveBeenLastCalledWith({ stage: '', unassigned: 1, overdue: 1 }));
     await screen.findByText('No inquiries match these filters.');
     expect(screen.getAllByText(/Automatic inquiry messages are off\./)).toHaveLength(1);
     expect(screen.queryByRole('form', { name: 'Update inquiry follow-up' })).toBeNull();
