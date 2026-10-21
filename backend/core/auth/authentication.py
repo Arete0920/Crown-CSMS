@@ -7,7 +7,7 @@ to authenticate directly against the API:
     "DEFAULT_AUTHENTICATION_CLASSES": [
         "core.auth.authentication.AADBearerAuthentication",
         "rest_framework.authentication.SessionAuthentication",
-        "rest_framework_simplejwt.authentication.JWTAuthentication",
+        "crown_api.tenant_authentication.TenantJWTAuthentication",
     ],
 """
 from __future__ import annotations
@@ -16,6 +16,8 @@ import logging
 
 from rest_framework.authentication import BaseAuthentication
 from rest_framework.exceptions import AuthenticationFailed
+
+from crown_api.tenant_authentication import reconcile_authenticated_tenant
 
 from .aad_jwt import decode_and_validate_bearer, get_or_create_user_from_claims
 
@@ -44,7 +46,6 @@ class AADBearerAuthentication(BaseAuthentication):
         try:
             claims = decode_and_validate_bearer(token)
             user   = get_or_create_user_from_claims(claims)
-            return (user, claims)
         except Exception as exc:
             logger.debug("AADBearerAuthentication: token rejected — %s", exc)
             # Raise only for tokens that appear to be Microsoft-issued
@@ -53,3 +54,6 @@ class AADBearerAuthentication(BaseAuthentication):
                 raise AuthenticationFailed("Microsoft token invalid.")
             # Let other backends handle it
             return None
+
+        # Tenant denials must not be swallowed by the token-validation fallback.
+        return reconcile_authenticated_tenant(request, (user, claims))

@@ -1,5 +1,5 @@
 {
-  "active_bundle": "20260515T185051Z",
+  "active_bundle": null,
   "certified_bundles": [
     {
       "bundle_id": "20260515T181936Z",
@@ -30,7 +30,8 @@
         "status": "ATTESTED"
       },
       "reason": "LF-normalized certified bundle promoted before cryptographic attestation",
-      "status": "active"
+      "status": "quarantined",
+      "quarantine_reason": "Security issue #104: exposed historical signing key; operational retirement unverified. Not usable for current authorization or new assurance claims."
     }
   ],
   "created_at_utc": "2026-05-15T18:21:47.345966+00:00",
@@ -44,7 +45,7 @@
     "status": "ATTESTED",
     "updated_at_utc": "2026-05-15T19:50:30.109624+00:00"
   },
-  "governance_notes": "Append-only bundle retention. Never delete. Mark as superseded or revoked instead.",
+  "governance_notes": "Append-only bundle retention. Never delete. Mark as superseded or revoked instead. Historical attestation metadata is preserved; quarantine is not cryptographic key retirement.",
   "index_version": "1",
   "last_updated_utc": "2026-05-15T19:50:30.109624+00:00",
   "revoked_bundles": [
@@ -67,5 +68,13 @@
       "superseded_at_utc": "2026-05-15T19:50:29.067768+00:00",
       "superseded_by": "20260515T185051Z"
     }
-  ]
+  ],
+  "security_hold": {
+    "issue": 104,
+    "bundle_id": "20260515T185051Z",
+    "state": "quarantined_pending_operational_retirement",
+    "reason": "Known compromised historical key; current trust is not established. Original attestation remains historical metadata only.",
+    "external_trust_disposition": "unverified",
+    "history_remediation": "pending"
+  }
 }

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 import re
 import uuid
 from dataclasses import asdict
@@ -40,6 +39,7 @@ from .catalog import (
     get_persona,
     get_school,
 )
+from .fictional_identities import FAMILY_RECORD_COUNT, family_identity, student_given_name
 
 
 PROHIBITED_FEEDBACK_PATTERNS = [
@@ -58,6 +58,9 @@ def note_has_prohibited_data(note: str) -> bool:
 @transaction.atomic
 def ensure_demo_school(school_spec: SandboxSchool) -> School:
     school_id = uuid.UUID(school_spec.id)
+    existing_school = School.objects.filter(pk=school_id).first()
+    if existing_school is not None and existing_school.name != school_spec.name:
+        raise RuntimeError("Sandbox school identity belongs to a different institution.")
     school, _ = School.objects.update_or_create(
         id=school_id,
         defaults={
@@ -121,6 +124,12 @@ def ensure_persona_user(school: School, persona: SandboxPersona) -> UserAccount:
             },
         )
 
+    existing_user = UserAccount.objects.filter(username=persona.email).first()
+    if existing_user is not None and (
+        existing_user.school_id != school.pk or existing_user.email != persona.email
+    ):
+        raise RuntimeError("Sandbox persona username belongs to another identity.")
+
     user, _ = UserAccount.objects.update_or_create(
         username=persona.email,
         defaults={
@@ -131,36 +140,35 @@ def ensure_persona_user(school: School, persona: SandboxPersona) -> UserAccount:
             "staff": staff,
             "guardian": guardian if persona.key == "parent" else None,
             "is_active": True,
+            "is_staff": False,
+            "is_superuser": False,
         },
     )
 
-    # Keep sandbox logins deterministic for local/demo proof runs when explicitly configured.
-    fallback_password = getattr(
-        settings, "CROWN_SANDBOX_FALLBACK_PASSWORD", ""
-    ) or os.getenv("CROWN_DEMO_PASSWORD", "")
-    if fallback_password:
-        user.set_password(fallback_password)
-    else:
-        user.set_unusable_password()
+    # Sandbox sessions authenticate by scoped one-click credentials, not
+    # password login. Never reuse global or shared demo password settings.
+    user.set_unusable_password()
     user.save(update_fields=["password"])
 
-    # The historical synthetic Board actor was mistakenly given Head of School.
-    # Retire only that exact actor's stale grant; never change real-school roles.
+    # Persistent application roles authorize sensitive writes even after Django
+    # staff privileges are lowered. Retain only the explicit sandbox roles.
+    # The fictional Heritage head demonstrates Aid Setup using AID_DIRECTOR;
+    # real-school HEAD_OF_SCHOOL grants are not broadened.
+    allowed_roles = {persona.role_code}
     if (
-        persona.key == "board"
-        and str(school.id) == SANDBOX_SCHOOLS["heritage-core"].id
-        and user.username == SANDBOX_PERSONAS["board"].email
+        persona.key == "school_admin"
+        and str(school.pk) == SANDBOX_SCHOOLS["heritage-core"].id
     ):
-        UserRole.objects.filter(
-            school=school, user=user, role_code="HEAD_OF_SCHOOL"
-        ).delete()
-
-    UserRole.objects.update_or_create(
-        school=school,
-        user=user,
-        role_code=persona.role_code,
-        defaults={},
-    )
+        allowed_roles.add("AID_DIRECTOR")
+    UserRole.objects.filter(school=school, user=user).exclude(
+        role_code__in=allowed_roles
+    ).delete()
+    for code in sorted(allowed_roles):
+        UserRole.objects.get_or_create(
+            school=school,
+            user=user,
+            role_code=code,
+        )
 
     return user
 
@@ -212,8 +220,6 @@ def create_sandbox_session(
 
 
 def _clear_flagship_data(school: School) -> None:
-    from django.db.models import Q
-
     from admissions.models import (
         AdmissionsAuditEvent,
         AdmissionsDecision,
@@ -232,24 +238,35 @@ def _clear_flagship_data(school: School) -> None:
         UserAccount.objects.filter(school=school).values_list("id", flat=True)
     )
 
+    # Never delete another school's admissions or aid evidence merely because
+    # its actor points to one of the fictional sandbox accounts. Those FKs
+    # are PROTECT references; abort before destructive writes if cross-school
+    # relationships exist, rather than erasing records to unblock a reset.
+    if user_ids:
+        actor_references = (
+            (AidReview, "reviewer_user_id"),
+            (AidAward, "decided_by_id"),
+            (AidAuditEvent, "actor_user_id"),
+            (AdmissionsReview, "reviewer_user_id"),
+            (AdmissionsDecision, "decided_by_id"),
+            (AdmissionsAuditEvent, "actor_user_id"),
+        )
+        for model, field in actor_references:
+            if model.objects.filter(**{f"{field}__in": user_ids}).exclude(
+                school_id=school.id
+            ).exists():
+                raise RuntimeError(
+                    "Sandbox reset refused: actor is referenced by another school's records."
+                )
+
     AidDocument.objects.filter(school=school).delete()
-    AidReview.objects.filter(
-        Q(school=school) | Q(reviewer_user_id__in=user_ids)
-    ).delete()
-    AidAward.objects.filter(Q(school=school) | Q(decided_by_id__in=user_ids)).delete()
-    AidAuditEvent.objects.filter(
-        Q(school=school) | Q(actor_user_id__in=user_ids)
-    ).delete()
+    AidReview.objects.filter(school=school).delete()
+    AidAward.objects.filter(school=school).delete()
+    AidAuditEvent.objects.filter(school=school).delete()
     AidApplication.objects.filter(school=school).delete()
-    AdmissionsReview.objects.filter(
-        Q(school=school) | Q(reviewer_user_id__in=user_ids)
-    ).delete()
-    AdmissionsDecision.objects.filter(
-        Q(school=school) | Q(decided_by_id__in=user_ids)
-    ).delete()
-    AdmissionsAuditEvent.objects.filter(
-        Q(school=school) | Q(actor_user_id__in=user_ids)
-    ).delete()
+    AdmissionsReview.objects.filter(school=school).delete()
+    AdmissionsDecision.objects.filter(school=school).delete()
+    AdmissionsAuditEvent.objects.filter(school=school).delete()
     FinanceAllocation.objects.filter(school=school).delete()
     FinanceInvoiceLine.objects.filter(invoice__school=school).delete()
     FinanceInvoice.objects.filter(school=school).delete()
@@ -335,27 +352,48 @@ def seed_heritage_flagship(*, reset: bool = False) -> dict:
         tuition_plans[code] = plan
 
     families = []
-    for idx in range(1, 287):
+    for idx in range(1, FAMILY_RECORD_COUNT + 1):
+        fixture = family_identity(idx)
+        # Preserve primary keys when refreshing an older Heritage sandbox.
+        # This is a sandbox-only rename; no production family records are read.
+        legacy_family_name = f"Demo Family {idx:03d}"
+        existing = Family.objects.filter(
+            school=school, family_name=legacy_family_name
+        ).first()
+        if existing is not None:
+            if Family.objects.filter(
+                school=school, family_name=fixture.family_name
+            ).exclude(pk=existing.pk).exists():
+                raise RuntimeError(
+                    "Conflicting Heritage fictional family records; reset the sandbox"
+                )
+            existing.family_name = fixture.family_name
+            existing.save(update_fields=["family_name"])
         family, _ = Family.objects.update_or_create(
             school=school,
-            family_name=f"Demo Family {idx:03d}",
+            family_name=fixture.family_name,
             defaults={
-                "address_line1": f"{1000 + idx} Covenant Way",
-                "city": "Fairview",
-                "state": "PA",
-                "zip_code": f"19{idx % 1000:03d}",
+                "address_line1": fixture.address_line1,
+                "city": fixture.city,
+                "state": fixture.state,
+                "zip_code": fixture.zip_code,
                 "status": "ACTIVE",
             },
         )
         families.append(family)
-        Guardian.objects.update_or_create(
+        # Preserve the original guardian association across a non-reset reseed.
+        Guardian.objects.filter(
             school=school,
             email=f"guardian{idx:03d}@heritage.example.org",
+        ).update(email=fixture.guardian_email)
+        Guardian.objects.update_or_create(
+            school=school,
+            email=fixture.guardian_email,
             defaults={
                 "family": family,
-                "first_name": f"Guardian{idx:03d}",
-                "last_name": "Demo",
-                "phone": f"555-01{idx % 100:02d}",
+                "first_name": fixture.guardian_first_name,
+                "last_name": fixture.surname,
+                "phone": fixture.phone,
                 "relationship": "GUARDIAN",
                 "portal_access": True,
                 "custody_flag": False,
@@ -368,14 +406,15 @@ def seed_heritage_flagship(*, reset: bool = False) -> dict:
         plan = tuition_plans[code]
         for _ in range(target):
             family = families[(student_index - 1) % len(families)]
+            fixture = family_identity((student_index - 1) % len(families) + 1)
             student_number = f"HCA-{student_index:04d}"
             student, _ = Student.objects.update_or_create(
                 school=school,
                 student_number=student_number,
                 defaults={
                     "family": family,
-                    "first_name": f"Student{student_index:04d}",
-                    "last_name": "Demo",
+                    "first_name": student_given_name(student_index),
+                    "last_name": fixture.surname,
                     "dob": date(
                         academic_year.start_date.year - (4 if code == "PK" else 5 if code == "K" else int(code) + 5),
                         3 + student_index % 4,
