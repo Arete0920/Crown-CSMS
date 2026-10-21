@@ -366,8 +366,9 @@ test.describe('CROWN buyer sandbox live browser authority', () => {
     expect(completed.demo_payment_processed).toBe(false);
     await expect(page.getByTestId('sandbox-parent-enrollment-complete')).toContainText('Jordan Reed');
 
-    // Consume response bodies as each network response arrives. Waiting to call
-    // response.json() until after reload can lose the body if the SPA navigates.
+    // Read each response body as soon as it arrives. Later browser navigation
+    // can evict a Playwright response body even when the response was successful.
+    // Preserve all existing API status, identity and persistence assertions.
     const reloadedState = page.waitForResponse((response) =>
       response.url().includes('/api/v1/sandbox/parent/enrollment/') &&
       response.request().method() === 'GET',
