@@ -1,13 +1,14 @@
 from datetime import date as _date
 
 from django.db import transaction
+from django.db.models import Sum
 from django.shortcuts import get_object_or_404
 from rest_framework import status
 from rest_framework.authentication import SessionAuthentication
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
-from rest_framework.permissions import IsAuthenticated
+from core.permissions import CrownModulePermission
 from rest_framework.response import Response
-from rest_framework_simplejwt.authentication import JWTAuthentication
+from crown_api.tenant_authentication import TenantJWTAuthentication
 
 from finance.models import FinanceInvoice, FinanceInvoiceLine, FinanceObligation, MoneyStatus
 from households.scoping import get_request_school_id
@@ -16,8 +17,8 @@ from .models import InvoiceRunWizardSession
 from drf_spectacular.utils import extend_schema
 from drf_spectacular.types import OpenApiTypes
 
-_AUTH = [JWTAuthentication, SessionAuthentication]
-_PERM = [IsAuthenticated]
+_AUTH = [TenantJWTAuthentication, SessionAuthentication]
+_PERM = [CrownModulePermission("finance.edit", write_code="finance.edit")]
 
 
 def _get_session(session_id, school_id):
@@ -60,9 +61,17 @@ def create_session(request):
 @api_view(["POST"])
 @authentication_classes(_AUTH)
 @permission_classes(_PERM)
+@transaction.atomic
 def configure_session(request, session_id):
     school_id = get_request_school_id(request)
-    session = _get_session(session_id, school_id)
+    session = get_object_or_404(
+        InvoiceRunWizardSession.objects.select_for_update(), id=session_id, school_id=school_id,
+    )
+    if session.status in (InvoiceRunWizardSession.STATUS_COMMITTED, InvoiceRunWizardSession.STATUS_VERIFIED):
+        return Response(
+            {"error": "Committed or verified invoice run sessions are immutable"},
+            status=status.HTTP_409_CONFLICT,
+        )
 
     errors = []
     period_start, e = _parse_date(request.data.get("period_start"), "period_start")
@@ -102,9 +111,12 @@ def configure_session(request, session_id):
 @api_view(["POST"])
 @authentication_classes(_AUTH)
 @permission_classes(_PERM)
+@transaction.atomic
 def load_obligations(request, session_id):
     school_id = get_request_school_id(request)
-    session = _get_session(session_id, school_id)
+    session = get_object_or_404(
+        InvoiceRunWizardSession.objects.select_for_update(), id=session_id, school_id=school_id,
+    )
 
     if session.status not in (
         InvoiceRunWizardSession.STATUS_CONFIGURED,
@@ -116,8 +128,10 @@ def load_obligations(request, session_id):
         )
 
     qs = FinanceObligation.objects.filter(
-        school__id=school_id,
+        school_id=school_id,
         status=MoneyStatus.OPEN,
+        due_date__gte=session.period_start,
+        due_date__lte=session.period_end,
     )
     obligation_ids = [str(o.id) for o in qs]
 
@@ -139,9 +153,18 @@ def load_obligations(request, session_id):
 @api_view(["POST"])
 @authentication_classes(_AUTH)
 @permission_classes(_PERM)
+@transaction.atomic
 def commit_session(request, session_id):
     school_id = get_request_school_id(request)
-    session = _get_session(session_id, school_id)
+    from core.models import School
+    # Serialize invoice runs for this school even when two distinct wizard
+    # sessions target the same payer and period. FinanceInvoice has no
+    # uniqueness constraint for that tuple, so get_or_create alone is unsafe.
+    school = get_object_or_404(School.objects.select_for_update(), id=school_id)
+    session = get_object_or_404(
+        InvoiceRunWizardSession.objects.select_for_update(),
+        id=session_id, school_id=school_id,
+    )
 
     if session.status not in (
         InvoiceRunWizardSession.STATUS_OBLIGATIONS_LOADED,
@@ -151,18 +174,75 @@ def commit_session(request, session_id):
             {"error": f"Cannot commit from status '{session.status}'"},
             status=status.HTTP_400_BAD_REQUEST,
         )
-    if not request.data.get("confirm"):
+    if request.data.get("confirm") is not True:
         return Response({"error": "confirm is required"}, status=status.HTTP_400_BAD_REQUEST)
 
-    from core.models import School
-    school = get_object_or_404(School, id=school_id)
+    # A confirmed retry must preserve the original result and not rewrite the
+    # session or attempt to create additional invoice lines.
+    if session.status == InvoiceRunWizardSession.STATUS_COMMITTED:
+        return Response({"status": session.status, **(session.commit_result or {})})
 
-    obligations = list(FinanceObligation.objects.filter(id__in=session.obligation_ids))
+    # Revalidate the loaded snapshot under row locks at commit. An obligation
+    # cannot be billed after payment or after changing out of this period.
+    obligations = list(FinanceObligation.objects.select_for_update().filter(
+        id__in=session.obligation_ids,
+        school_id=school_id,
+        status=MoneyStatus.OPEN,
+        due_date__gte=session.period_start,
+        due_date__lte=session.period_end,
+    ))
+    if len(obligations) != len(session.obligation_ids):
+        return Response(
+            {"error": "Selected obligations no longer belong to this school"},
+            status=status.HTTP_409_CONFLICT,
+        )
+
+    # InvoiceRunWizard creates USD-denominated invoices without FX conversion.
+    # Reject mismatched obligations before writing any invoice or line.
+    if any(obligation.currency != "USD" for obligation in obligations):
+        return Response(
+            {"error": "Invoice run requires USD-denominated obligations"},
+            status=status.HTTP_409_CONFLICT,
+        )
 
     # Group by payer_user_id
     by_payer: dict = {}
     for obl in obligations:
         by_payer.setdefault(obl.payer_user_id, []).append(obl)
+
+    # An obligation already associated with another invoice/period cannot
+    # be billed again through an overlapping wizard run.
+    from django.db.models import F
+    conflicting_lines = FinanceInvoiceLine.objects.select_for_update().filter(
+        obligation_id__in=session.obligation_ids,
+    ).exclude(
+        invoice__school_id=school_id,
+        invoice__payer_user_id=F("obligation__payer_user_id"),
+        invoice__period_start=session.period_start,
+        invoice__period_end=session.period_end,
+    )
+    if conflicting_lines.exists():
+        return Response(
+            {"error": "An obligation is already billed to another invoice or period"},
+            status=status.HTTP_409_CONFLICT,
+        )
+
+    # Lock existing payer/period invoices and fail before modifying finalized
+    # records or ambiguous duplicate invoices.
+    previously = FinanceInvoice.objects.select_for_update().filter(
+        school=school, payer_user_id__in=by_payer,
+        period_start=session.period_start, period_end=session.period_end,
+    )
+    matched_payers = set()
+    for existing in previously:
+        if (existing.payer_user_id in matched_payers
+            or existing.status not in (MoneyStatus.OPEN, MoneyStatus.DRAFT)
+            or existing.currency != "USD"):
+            return Response(
+                {"error": "Existing invoice cannot be safely updated"},
+                status=status.HTTP_409_CONFLICT,
+            )
+        matched_payers.add(existing.payer_user_id)
 
     invoices_created = 0
     lines_created = 0
@@ -197,6 +277,15 @@ def commit_session(request, session_id):
                 if line_created:
                     lines_created += 1
 
+            # New sessions may append lines to an existing open invoice.
+            # Reconcile cached totals to the authoritative persisted lines.
+            actual_total = (FinanceInvoiceLine.objects.filter(invoice=invoice)
+                            .aggregate(total=Sum("amount_cents"))["total"] or 0)
+            if invoice.subtotal_cents != actual_total or invoice.total_cents != actual_total:
+                invoice.subtotal_cents = actual_total
+                invoice.total_cents = actual_total
+                invoice.save(update_fields=["subtotal_cents", "total_cents", "updated_at"])
+
         result = {
             "invoices_created": invoices_created,
             "lines_created": lines_created,
@@ -214,12 +303,17 @@ def commit_session(request, session_id):
 # ---------------------------------------------------------------------------
 
 @extend_schema(responses=OpenApiTypes.OBJECT)
-@api_view(["GET"])
+@api_view(["GET", "POST"])
 @authentication_classes(_AUTH)
 @permission_classes(_PERM)
+@transaction.atomic
 def verify_session(request, session_id):
     school_id = get_request_school_id(request)
-    session = _get_session(session_id, school_id)
+    session = (
+        get_object_or_404(
+            InvoiceRunWizardSession.objects.select_for_update(), id=session_id, school_id=school_id,
+        ) if request.method == "POST" else _get_session(session_id, school_id)
+    )
 
     if session.status not in (
         InvoiceRunWizardSession.STATUS_COMMITTED,
@@ -236,8 +330,9 @@ def verify_session(request, session_id):
         period_end=session.period_end,
     ).count()
 
-    session.status = InvoiceRunWizardSession.STATUS_VERIFIED
-    session.save()
+    if request.method == "POST" and session.status == InvoiceRunWizardSession.STATUS_COMMITTED:
+        session.status = InvoiceRunWizardSession.STATUS_VERIFIED
+        session.save(update_fields=["status", "updated_at"])
 
     return Response({
         "status": session.status,
