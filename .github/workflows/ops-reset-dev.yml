@@ -27,11 +27,15 @@ jobs:
           SCHOOL_ID: ${{ inputs.school_id }}
         run: |
           set -euo pipefail
-          curl --max-time 30 -f -sS -X POST "${API_BASE}/api/v1/system/demo-reset/?verbosity=1" \
+          # The endpoint can include migration and seed command-output tails.
+          # Never echo or upload the unredacted response on a public Actions run.
+          response="$(curl --max-time 30 -f -sS -X POST "${API_BASE}/api/v1/system/demo-reset/?verbosity=1" \
             -H "X-Admin-Ops-Secret: ${OPS_SECRET}" \
             -H "X-School-Id: ${SCHOOL_ID}" \
             -H "Content-Type: application/json" \
-            -d '{}' | tee /tmp/demo-reset.json
-          echo
-          echo "---- response ----"
-          cat /tmp/demo-reset.json
+            -d '{}')"
+          if ! printf '%s' "${response}" | python3 -c 'import json, sys; data = json.load(sys.stdin); sys.exit(0 if isinstance(data, dict) and data.get("ok") is True else 1)'; then
+            echo "DEV demo reset did not return a successful acknowledgement." >&2
+            exit 1
+          fi
+          echo "DEV demo reset acknowledged; response details withheld from Actions logs."

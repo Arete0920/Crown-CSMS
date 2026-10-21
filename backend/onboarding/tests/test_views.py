@@ -11,16 +11,21 @@ Covers:
 - CSV parser: row cap enforcement
 """
 import io
+import re
 import uuid
 
 import pytest
 from django.contrib.auth import get_user_model
+from django.db import connection
+from django.test.utils import CaptureQueriesContext
 from django.core.files.uploadedfile import SimpleUploadedFile
 from rest_framework.test import APIClient
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from core.models import School
+from households.models import Guardian, Household, Student
 from onboarding.models import ImportSession
+from onboarding.models_tasks import OnboardingTask
 
 User = get_user_model()
 
@@ -50,8 +55,10 @@ def school_b(db):
 
 
 @pytest.fixture
-def user(db):
-    return User.objects.create_user(username=f"user_{uuid.uuid4().hex[:6]}", password="pass")
+def user(db, school_a):
+    return User.objects.create_user(
+        username=f"user_{uuid.uuid4().hex[:6]}", password="pass", school=school_a,
+    )
 
 
 def _authed_client(user, school):
@@ -67,8 +74,11 @@ def client_a(user, school_a):
 
 
 @pytest.fixture
-def client_b(user, school_b):
-    return _authed_client(user, school_b)
+def client_b(db, school_b):
+    school_b_user = User.objects.create_user(
+        username=f"user_b_{uuid.uuid4().hex[:6]}", password="pass", school=school_b,
+    )
+    return _authed_client(school_b_user, school_b)
 
 
 def _make_session(school, user=None, status=ImportSession.STATUS_PENDING, raw_csv="",
@@ -99,7 +109,8 @@ class TestAuth:
         res = c.post(BASE, {"mode": "students_guardians"}, format="json")
         assert res.status_code in (401, 403)
 
-    def test_missing_school_header_denied(self, user):
+    def test_missing_school_header_denied(self, user, settings):
+        settings.TENANT_HEADER_REQUIRED = True
         token = str(RefreshToken.for_user(user).access_token)
         c = APIClient()
         c.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
@@ -358,3 +369,61 @@ class TestParserLimits:
         result = _parse_csv(bad_csv, REQUIRED_HEADERS_STUDENTS_GUARDIANS)
         grade_errors = [e for e in result["errors"] if e.get("field") == "grade_level"]
         assert len(grade_errors) >= 1
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("affiliation", ["unaffiliated", "foreign_school"])
+@pytest.mark.parametrize("operation", ["create_import", "read_progress"])
+def test_real_jwt_tenant_denial_precedes_onboarding_business_access(
+    settings, school_a, school_b, affiliation, operation,
+):
+    """Existing-school onboarding cannot affiliate an arbitrary bearer user."""
+    settings.TENANT_HEADER_REQUIRED = True
+    actor = User.objects.create_user(
+        username=f"denied_{uuid.uuid4().hex[:8]}",
+        password="pass",
+        school=school_b if affiliation == "foreign_school" else None,
+    )
+    assert actor.staff_id is None
+    assert not actor.is_staff and not actor.is_superuser
+    assert not actor.roles.exists()
+    session = _make_session(
+        school_a, status=ImportSession.STATUS_UPLOADED, raw_csv=VALID_CSV,
+    )
+    task = OnboardingTask.objects.create(
+        school=school_a, task_name="Existing fictional school setup task", order=1,
+    )
+    business_models = (ImportSession, OnboardingTask, Household, Guardian, Student)
+    before_counts = {model._meta.db_table: model.objects.count() for model in business_models}
+    before_session = ImportSession.objects.values().get(pk=session.pk)
+    before_task = OnboardingTask.objects.values().get(pk=task.pk)
+    client = _authed_client(actor, school_a)
+
+    with CaptureQueriesContext(connection) as queries:
+        if operation == "create_import":
+            response = client.post(BASE, {"mode": "students_guardians"}, format="json")
+        else:
+            response = client.get(
+                f"/api/v1/onboarding/{school_a.id}/progress/",
+                {"include_parent_guidance": "1"},
+            )
+
+    assert response.status_code == 404
+    assert response.json() == {"detail": "Not found.", "code": "tenant_access_denied"}
+    touched_business_tables = {
+        model._meta.db_table
+        for model in business_models
+        # Table clauses distinguish business reads from auth columns such as guardian_id.
+        if any(
+            re.search(
+                rf'\b(?:FROM|JOIN|UPDATE|INTO)\s+(?:"[^"]+"\.)?"?{re.escape(model._meta.db_table)}"?(?=[\s(),;]|$)',
+                query["sql"],
+                flags=re.IGNORECASE,
+            )
+            for query in queries
+        )
+    }
+    assert touched_business_tables == set()
+    assert {model._meta.db_table: model.objects.count() for model in business_models} == before_counts
+    assert ImportSession.objects.values().get(pk=session.pk) == before_session
+    assert OnboardingTask.objects.values().get(pk=task.pk) == before_task

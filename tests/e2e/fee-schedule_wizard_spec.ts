@@ -46,7 +46,7 @@ test('Fee Schedule wizard creates, commits, and verifies a persisted schedule', 
     (response) => response.url().includes('/commit/') && response.request().method() === 'POST',
   );
   const verifyPromise = page.waitForResponse(
-    (response) => response.url().includes('/verify/') && response.request().method() === 'GET',
+    (response) => response.url().includes('/verify/') && response.request().method() === 'POST',
   );
   await page.getByRole('button', { name: /commit schedule/i }).click();
   const [linesResponse, commitResponse, verifyResponse] = await Promise.all([linesPromise, commitPromise, verifyPromise]);

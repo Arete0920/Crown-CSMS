@@ -6,7 +6,7 @@ from uuid import UUID
 from django.db import transaction
 
 from .models import SurveyDefinition, SurveyPublication
-from .validation import validate_answers, SurveyAnswerValidationError
+from .validation import validate_answers, SurveyAnswerValidationError, valid_storage_text
 
 
 class PublicationRejected(ValueError):
@@ -21,7 +21,7 @@ def publish_anonymous_instrument(*, school_id, survey_id, approved_by_user_id, n
     the school's consent/legal notice policy. This service does not distribute,
     invite, expose public tokens or provide a respondent route.
     """
-    if not isinstance(notice, str) or not 30 <= len(notice.strip()) <= 2000:
+    if not valid_storage_text(notice) or not 30 <= len(notice.strip()) <= 2000:
         raise PublicationRejected("A reviewed respondent notice is required.")
     if not isinstance(approved_by_user_id, UUID):
         raise PublicationRejected("A trusted approving user identifier is required.")
@@ -49,7 +49,7 @@ def publish_anonymous_instrument(*, school_id, survey_id, approved_by_user_id, n
     allowed = {"scale", "choice", "multi", "text", "boolean"}
     snapshot_questions = []
     for q in questions:
-        if q.question_type not in allowed or not q.prompt.strip():
+        if q.question_type not in allowed or not valid_storage_text(q.prompt) or not q.prompt.strip():
             raise PublicationRejected("Survey has unsupported questions.")
         if q.question_type in {"choice", "multi"} and not (
             isinstance(q.choices, list) and len(q.choices) >= 2

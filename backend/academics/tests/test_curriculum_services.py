@@ -45,9 +45,11 @@ def test_compute_percentage(score, possible, expected):
     assert result == expected
 
 
-def test_compute_percentage_zero_possible():
-    """Test percentage when points_possible is 0."""
-    assert compute_percentage(Decimal("10"), Decimal("0")) == Decimal("0.00")
+@pytest.mark.parametrize("possible", [Decimal("0"), Decimal("-1")])
+def test_compute_percentage_rejects_nonpositive_denominator(possible):
+    """Reject invalid denominators rather than fabricate a zero percent."""
+    with pytest.raises(ValueError, match="points_possible"):
+        compute_percentage(Decimal("10"), possible)
 
 
 @pytest.mark.parametrize("pct,expected_level", [
