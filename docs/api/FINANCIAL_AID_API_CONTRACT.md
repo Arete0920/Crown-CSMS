@@ -424,13 +424,17 @@ curl -i \
 
 ```powershell
 $API = "https://crown-api-dev.azurewebsites.net"
-# Set password first: $env:CROWN_PASSWORD = 'demo1234'
+# Historical example: use only an approved, uniquely provisioned account and school.
+# Load account credentials privately into the session; never print them.
+if (-not $env:CROWN_API_USERNAME -or -not $env:CROWN_API_PASSWORD -or -not $env:CROWN_API_SCHOOL_ID) {
+  throw "Set CROWN_API_USERNAME, CROWN_API_PASSWORD and CROWN_API_SCHOOL_ID securely before running."
+}
 $token = (Invoke-RestMethod -Uri "$API/api/v1/auth/token/" `
   -Method Post `
   -ContentType "application/json" `
-  -Body (@{username="head@crown-demo.local"; password=$env:CROWN_PASSWORD} | ConvertTo-Json -Compress)).access
+  -Body (@{username=$env:CROWN_API_USERNAME; password=$env:CROWN_API_PASSWORD} | ConvertTo-Json -Compress)).access
 
-$schoolId = "e5e7bec0-7e8a-4c8a-9b5c-7e8a4c8a9b5c"
+$schoolId = $env:CROWN_API_SCHOOL_ID
 
 # Summary
 $summary = Invoke-RestMethod -Uri "$API/api/v1/financial-aid/summary/" `

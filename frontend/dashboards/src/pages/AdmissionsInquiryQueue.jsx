@@ -243,12 +243,17 @@ export default function AdmissionsInquiryQueue() {
           <button className="crown-btn" type="button" onClick={reload} disabled={loading}>Refresh queue</button>
         </div>
         {savedMessage ? <p role="status">{savedMessage}</p> : null}
-        {error ? <div className="crown-alert" role="alert">{error}<button className="crown-btn" type="button" onClick={reload}>Try again</button></div> : null}
+        {error ? <div className="crown-alert" role="alert">{error}<button className="crown-btn" type="button" onClick={reload}>Try again</button>{cursor ? <button className="crown-btn" type="button" onClick={() => { setSelectedId(''); setCursor(''); setCursorStack([]); }}>Return to first page</button> : null}</div> : null}
         {loading ? <p role="status">Loading school inquiries…</p> : null}
         {!loading && !error && payload?.notifications_enabled === false ? <p className="crown-muted" role="note">
           Automatic inquiry messages are off. Review communication history before contacting families.
         </p> : null}
-        {!loading && !error && inquiries.length === 0 ? <p>No inquiries match these filters.</p> : null}
+        {!loading && !error && inquiries.length === 0 ? (
+          <div>
+            <p>{cursorStack.length ? 'No inquiries remain on this page.' : 'No inquiries match these filters.'}</p>
+            {cursorStack.length ? <button className="crown-btn" type="button" onClick={previousPage}>Previous page</button> : null}
+          </div>
+        ) : null}
         {!loading && !error && inquiries.length > 0 ? (
           <div style={{ overflowX: 'auto' }}>
             <table className="crown-table">

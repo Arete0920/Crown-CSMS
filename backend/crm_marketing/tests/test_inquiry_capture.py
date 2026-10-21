@@ -436,3 +436,66 @@ def test_staff_cursor_paging_is_deterministic_on_tied_due_dates(school):
         if not token:
             break
     assert len(seen) == len(set(seen)) == 7
+
+
+def test_inquiry_detail_requires_school_view_authority_without_mutation(school):
+    lead = MarketingLead.objects.create(
+        school=school, parent_name="Authorized Family", email="authorized@example.invalid",
+        inquiry_received_at=timezone.now(), stage="inquiry",
+    )
+    other_school = School.objects.create(name="Other details school")
+    foreign = MarketingLead.objects.create(
+        school=other_school, parent_name="Private Family", email="private@example.invalid",
+        inquiry_received_at=timezone.now(), stage="inquiry",
+    )
+    client = APIClient()
+    client.force_authenticate(user=_staff(school, edit=False))
+    before = CampaignTouchpoint.objects.filter(school=school, lead=lead).count()
+    detail = client.get(f"{URL}{lead.id}/", HTTP_X_SCHOOL_ID=str(school.id))
+    assert detail.status_code == 200
+    assert detail["Cache-Control"] == "no-store"
+    assert detail.data["id"] == str(lead.id)
+    assert {"application_ids", "duplicate_candidates", "touchpoints", "notification_status"} <= set(detail.data)
+    assert client.patch(
+        f"{URL}{lead.id}/", {"stage": "lost"}, format="json",
+        HTTP_X_SCHOOL_ID=str(school.id),
+    ).status_code == 403
+    assert client.get(f"{URL}{foreign.id}/", HTTP_X_SCHOOL_ID=str(school.id)).status_code == 404
+    assert CampaignTouchpoint.objects.filter(school=school, lead=lead).count() == before
+    lead.refresh_from_db()
+    assert lead.stage == "inquiry"
+
+    client.force_authenticate(user=_staff(other_school, edit=False))
+    assert client.get(f"{URL}{lead.id}/", HTTP_X_SCHOOL_ID=str(school.id)).status_code == 403
+
+
+def test_inquiry_cursor_preserves_due_date_and_null_last_order(school):
+    client = APIClient()
+    client.force_authenticate(user=_staff(school, edit=False))
+    base_due = timezone.now() + timedelta(days=1)
+    leads = {}
+    for name, due in (
+        ("no_due", None),
+        ("third", base_due + timedelta(days=3)),
+        ("first", base_due + timedelta(days=1)),
+        ("second", base_due + timedelta(days=2)),
+    ):
+        leads[name] = MarketingLead.objects.create(
+            school=school, parent_name=name, email=f"{name}@example.invalid",
+            inquiry_received_at=timezone.now(), stage="inquiry",
+            next_follow_up_at=due,
+        )
+    seen = []
+    cursor = None
+    for _ in range(3):
+        params = {"stage": "all", "limit": "2"}
+        if cursor:
+            params["cursor"] = cursor
+        response = client.get(URL, params, HTTP_X_SCHOOL_ID=str(school.id))
+        assert response.status_code == 200, response.data
+        seen.extend(row["id"] for row in response.data["results"])
+        cursor = response.data["next_cursor"]
+        if not cursor:
+            break
+    assert seen == [str(leads[name].id) for name in ("first", "second", "third", "no_due")]
+

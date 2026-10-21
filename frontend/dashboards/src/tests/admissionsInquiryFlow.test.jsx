@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import AdmissionsInquiryPage from '../pages/AdmissionsInquiryPage.jsx';
@@ -328,7 +328,69 @@ describe('staff inquiry pagination', () => {
     expect(screen.queryByRole('button', { name: 'Open First Family' })).toBeNull();
     expect(screen.queryByText('You have read-only access to this queue.')).toBeNull();
     expect(api.list).toHaveBeenLastCalledWith({ stage: '', unassigned: '', overdue: '', cursor: 'signed-next' });
+    fireEvent.click(screen.getByRole('button', { name: 'Previous page' }));
+    expect(await screen.findByRole('button', { name: 'Open First Family' })).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Next page' }));
+    expect(await screen.findByRole('button', { name: 'Open Older Family' })).toBeTruthy();
     fireEvent.click(screen.getByLabelText('Unassigned'));
     await waitFor(() => expect(api.list).toHaveBeenLastCalledWith({ stage: '', unassigned: 1, overdue: '' }));
+  });
+});
+
+
+describe('inquiry detail response identity and concurrent selection', () => {
+  it('never displays an older family after the user selects a different family', async () => {
+    const first = { id: 'first-family', parent_name: 'First Family', stage: 'inquiry' };
+    const second = { id: 'second-family', parent_name: 'Second Family', stage: 'inquiry' };
+    let resolveFirst;
+    api.list.mockResolvedValue({ results: [first, second], owners: [], can_edit: false });
+    api.detail.mockImplementation((id) => id === first.id
+      ? new Promise((resolve) => { resolveFirst = resolve; })
+      : Promise.resolve(second));
+    render(<AdmissionsInquiryQueue />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Open First Family' }));
+    await waitFor(() => expect(api.detail).toHaveBeenCalledWith(first.id));
+    fireEvent.click(screen.getByRole('button', { name: 'Open Second Family' }));
+    expect(await screen.findByRole('region', { name: 'Inquiry details for Second Family' })).toBeTruthy();
+    await act(async () => { resolveFirst(first); });
+    expect(screen.queryByRole('region', { name: 'Inquiry details for First Family' })).toBeNull();
+    expect(screen.getByRole('region', { name: 'Inquiry details for Second Family' })).toBeTruthy();
+  });
+
+  it('rejects a successful response whose inquiry identity does not match the selected row', async () => {
+    const inquiry = { id: 'selected-family', parent_name: 'Selected Family', stage: 'inquiry' };
+    api.list.mockResolvedValue({ results: [inquiry], owners: [], can_edit: true });
+    api.detail.mockResolvedValue({ id: 'other-family', parent_name: 'Other Family', stage: 'inquiry' });
+    render(<AdmissionsInquiryQueue />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Open Selected Family' }));
+    expect((await screen.findByRole('alert')).textContent).toContain('did not match the selected family');
+    expect(screen.queryByRole('form', { name: 'Update inquiry follow-up' })).toBeNull();
+  });
+});
+
+describe('inquiry paging recovery', () => {
+  it('returns to the previous page when concurrent changes empty the current cursor page', async () => {
+    const first = { id: 'first-family', parent_name: 'First Family', stage: 'inquiry' };
+    api.list.mockImplementation(async ({ cursor }) => ({
+      results: cursor ? [] : [first], count: 1, next_cursor: cursor ? null : 'signed-next',
+      owners: [], can_edit: false,
+    }));
+    render(<AdmissionsInquiryQueue />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Next page' }));
+    await screen.findByText('No inquiries remain on this page.');
+    fireEvent.click(screen.getByRole('button', { name: 'Previous page' }));
+    expect(await screen.findByRole('button', { name: 'Open First Family' })).toBeTruthy();
+  });
+
+  it('allows recovery from an expired or invalid signed page cursor', async () => {
+    const first = { id: 'first-family', parent_name: 'First Family', stage: 'inquiry' };
+    api.list.mockImplementation(({ cursor }) => cursor
+      ? Promise.reject(new Error('Invalid, expired, or mismatched inquiry page cursor.'))
+      : Promise.resolve({ results: [first], count: 1, next_cursor: 'signed-next', owners: [], can_edit: false }));
+    render(<AdmissionsInquiryQueue />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Next page' }));
+    await screen.findByText('Invalid, expired, or mismatched inquiry page cursor.');
+    fireEvent.click(screen.getByRole('button', { name: 'Return to first page' }));
+    expect(await screen.findByRole('button', { name: 'Open First Family' })).toBeTruthy();
   });
 });

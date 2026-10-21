@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { PATHS } from "../../src/routes/paths.js";
+import { router as assembledRouter } from "../../src/routes/router.jsx";
 import { WIZARD_MANIFEST } from "../../src/routes/wizard-manifest.js";
 import { certificationMatrix } from "./certification-matrix";
 
@@ -9,6 +10,9 @@ import { certificationMatrix } from "./certification-matrix";
  * See #273 for deployed exact-SHA runtime acceptance.
  */
 const namedRoutes = [...new Set(Object.values(PATHS).filter(
+  (route): route is string => typeof route === "string" && route.startsWith("/"),
+))];
+const declaredRoutes = [...new Set([...namedRoutes, ...assembledRouter.routes.map((route) => route.path)].filter(
   (route): route is string => typeof route === "string" && route.startsWith("/"),
 ))];
 const matrixRoutes = certificationMatrix.map((surface) => surface.route);
@@ -26,7 +30,9 @@ function routeMatchesDeclaredPattern(pattern: string, actualRoute: string): bool
 function isNamedRoute(route: string): boolean {
   // Dynamic /dash/:role can cover /dash/admin, but it cannot cover an
   // unrelated two-segment path such as /students/:id.
-  return namedRoutes.some((pattern) => routeMatchesDeclaredPattern(pattern, route));
+  // Literal aliases in the assembled router are executable routes even when
+  // they have no PATHS constant. The catch-all must never count as coverage.
+  return declaredRoutes.some((pattern) => routeMatchesDeclaredPattern(pattern, route));
 }
 
 describe("crawler coverage inventory contract (not live certification)", () => {
