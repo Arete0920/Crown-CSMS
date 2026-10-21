@@ -1,6 +1,7 @@
 from datetime import date as _date
 
 from django.db import transaction
+from django.db.models import Sum
 from django.shortcuts import get_object_or_404
 from rest_framework import status
 from rest_framework.authentication import SessionAuthentication
@@ -193,6 +194,22 @@ def commit_session(request, session_id):
     for obl in obligations:
         by_payer.setdefault(obl.payer_user_id, []).append(obl)
 
+    # Lock existing payer/period invoices and fail before modifying finalized
+    # records or ambiguous duplicate invoices.
+    previously = FinanceInvoice.objects.select_for_update().filter(
+        school=school, payer_user_id__in=by_payer,
+        period_start=session.period_start, period_end=session.period_end,
+    )
+    matched_payers = set()
+    for existing in previously:
+        if (existing.payer_user_id in matched_payers
+            or existing.status not in (MoneyStatus.OPEN, MoneyStatus.DRAFT)):
+            return Response(
+                {"error": "Existing invoice cannot be safely updated"},
+                status=status.HTTP_409_CONFLICT,
+            )
+        matched_payers.add(existing.payer_user_id)
+
     invoices_created = 0
     lines_created = 0
 
@@ -225,6 +242,15 @@ def commit_session(request, session_id):
                 )
                 if line_created:
                     lines_created += 1
+
+            # New sessions may append lines to an existing open invoice.
+            # Reconcile cached totals to the authoritative persisted lines.
+            actual_total = (FinanceInvoiceLine.objects.filter(invoice=invoice)
+                            .aggregate(total=Sum("amount_cents"))["total"] or 0)
+            if invoice.subtotal_cents != actual_total or invoice.total_cents != actual_total:
+                invoice.subtotal_cents = actual_total
+                invoice.total_cents = actual_total
+                invoice.save(update_fields=["subtotal_cents", "total_cents", "updated_at"])
 
         result = {
             "invoices_created": invoices_created,

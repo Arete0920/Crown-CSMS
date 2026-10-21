@@ -294,6 +294,52 @@ class InvoiceRunCommitTest(TestCase):
         self.assertEqual(FinanceInvoice.objects.filter(school=school).count(), 1)
         self.assertEqual(FinanceInvoiceLine.objects.filter(invoice__school=school).count(), 1)
 
+    def test_new_session_updates_existing_open_invoice_totals(self):
+        school = _make_school()
+        payer = _make_user()
+        _make_obligation(school, payer, amount_cents=100000)
+        client = _client_for(school)
+        sid1 = _advance_to_committed(client, school.id)
+        invoice = FinanceInvoice.objects.get(school=school, payer_user=payer)
+        self.assertEqual(invoice.total_cents, 100000)
+        _make_obligation(school, payer, amount_cents=50000)
+        sid2 = _advance_to_loaded(client, school.id)
+        resp = client.post(
+            f"{BASE_URL}{sid2}/commit/", {"confirm": True},
+            format="json", **_headers(school.id),
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.data["invoices_created"], 0)
+        self.assertEqual(resp.data["lines_created"], 1)
+        invoice.refresh_from_db()
+        self.assertEqual(invoice.subtotal_cents, 150000)
+        self.assertEqual(invoice.total_cents, 150000)
+        self.assertEqual(FinanceInvoiceLine.objects.filter(invoice=invoice).count(), 2)
+
+    def test_new_session_rejects_finalized_invoice_without_writes(self):
+        school = _make_school()
+        payer = _make_user()
+        _make_obligation(school, payer, amount_cents=100000)
+        client = _client_for(school)
+        _advance_to_committed(client, school.id)
+        invoice = FinanceInvoice.objects.get(school=school, payer_user=payer)
+        invoice.status = MoneyStatus.PAID
+        invoice.save(update_fields=["status"])
+        _make_obligation(school, payer, amount_cents=50000)
+        sid = _advance_to_loaded(client, school.id)
+        resp = client.post(
+            f"{BASE_URL}{sid}/commit/", {"confirm": True},
+            format="json", **_headers(school.id),
+        )
+        self.assertEqual(resp.status_code, 409)
+        invoice.refresh_from_db()
+        self.assertEqual(invoice.total_cents, 100000)
+        self.assertEqual(FinanceInvoiceLine.objects.filter(invoice=invoice).count(), 1)
+        self.assertEqual(
+            InvoiceRunWizardSession.objects.get(pk=sid).status,
+            InvoiceRunWizardSession.STATUS_OBLIGATIONS_LOADED,
+        )
+
 # ---------------------------------------------------------------------------
 # Verify
 # ---------------------------------------------------------------------------
