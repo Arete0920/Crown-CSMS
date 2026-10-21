@@ -1,10 +1,12 @@
 # Proof Gradebook Playbook
 
+> **Historical proof only (February 2026).** This document describes a frozen legacy test, not current security acceptance or authorization to use shared demo passwords. Security PR #364 replaces Heritage fixture passwords with distinct operator-supplied account secrets and disables logins if the secrets are absent. Do not replay the old tag or authenticate to hosted environments using the retired shared credential.
+
 ## Quick Summary
 
 **What**: Automated E2E proof that gradebook API (roster, grades, assignments) + UI work together with proper auth
 **When**: Runs on `workflow_dispatch` (manual trigger) or can be added to push/PR events
-**Status**: ✅ GREEN (locked at tag `proof-gradebook-green-20260211-0340`)
+**Historical status**: GREEN at the February 2026 tag; not current-main or hosted acceptance.
 
 ---
 
@@ -51,7 +53,7 @@ gh run view <run-id> -R Arete0920/Crown-CSMS --log-failed
 8. **Node setup** — 20.x installed
 9. **Frontend** — Vite dev server on 127.0.0.1:3000, health check passes
 10. **API proof** — Playwright test:
-    - Logs in as `head@crown-demo.local` (password: `demo1234`)
+    - Historical login used a now-retired shared credential. Current proof requires an explicitly authorized account-specific secret; this old step must not be replayed unchanged.
     - Fetches first section from API (no hardcoded UUIDs)
     - Calls 3 endpoints: roster (200), grades (200), assignments (200)
     - All return 200 with proper auth headers
@@ -69,7 +71,7 @@ gh run view <run-id> -R Arete0920/Crown-CSMS --log-failed
 
 **What it means**: DB seed didn't complete
 
-**Fix**: Check `CROWN_DEMO_PASSWORD` is set in workflow env or GitHub Secrets
+**Historical dependency:** Golden Path bootstrap historically used `CROWN_DEMO_PASSWORD`, but that setting must not be reused as a shared Heritage account credential. Current local Heritage tests require isolated fixtures and distinct approved per-account secrets.
 
 ---
 
@@ -105,7 +107,7 @@ gh run view <run-id> -R Arete0920/Crown-CSMS --log-failed
 - Auth endpoint path changed (e.g., `/api/v1/auth/token/` became `/api/auth/jwt/login/`)
 
 **Fix**:
-- Check password matches seed command (should be `demo1234`)
+- Use only the distinct, privately provided account-specific credential; never restore a public or common demo password.
 - Update matcher in test if auth endpoint changed:
   ```typescript
   const loginResponsePromise = page.waitForResponse((r) =>
@@ -140,7 +142,7 @@ gh run view <run-id> -R Arete0920/Crown-CSMS --log-failed
 
 **Do not change**:
 - Username: `head@crown-demo.local` (test depends on it)
-- Password: `demo1234` (test depends on it)
+- Password: the historical shared value is retired; update the test to use securely provisioned per-account credentials before reuse.
 
 ---
 
