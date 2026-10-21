@@ -157,6 +157,36 @@ def test_refresh_tokens_issued_in_same_second_are_distinct():
     assert build_refresh_token(user_id=user_id) != build_refresh_token(user_id=user_id)
 
 
+def test_legacy_refresh_expiring_while_waiting_for_user_lock_is_rejected():
+    """Lock contention must not extend a signed refresh token's lifetime."""
+    from datetime import datetime, timedelta, timezone
+    from unittest.mock import patch
+
+    from crown_api.auth_models import LegacyRefreshConsumption
+    from crown_api.jwt_utils import build_refresh_token
+
+    user = CrownUser.objects.create(
+        email="expired-under-lock@example.invalid",
+        password_hash=make_password("Synthetic-only-Passphrase!"),
+        role="teacher", school_id=uuid.uuid4(), is_active=True,
+    )
+    token = build_refresh_token(user_id=str(user.pk), ttl_seconds=60)
+    before_lock = datetime.now(timezone.utc)
+    after_lock = before_lock + timedelta(seconds=61)
+    with patch("crown_api.auth_views.datetime", wraps=datetime) as clock:
+        clock.now.side_effect = [before_lock, after_lock]
+        response = Client().post(
+            "/api/auth/refresh/", data={"refresh": token},
+            content_type="application/json", REMOTE_ADDR="203.0.113.86",
+        )
+
+    assert response.status_code == 401
+    assert response.json()["error"] == "invalid_refresh"
+    assert "access" not in response.json()
+    assert "refresh" not in response.json()
+    assert not LegacyRefreshConsumption.objects.filter(user=user).exists()
+
+
 def test_signed_legacy_refresh_without_expiry_is_rejected():
     from django.conf import settings
     from crown_api.jwt_utils import encode_jwt

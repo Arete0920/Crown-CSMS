@@ -190,6 +190,10 @@ def refresh(request):
             # Lock the user so deactivation, role and school changes cannot
             # race credential issuance. The unique digest arbitrates replay.
             user = CrownUser.objects.select_for_update().get(pk=user_uuid, is_active=True)
+            # A contended row lock may outlive the token's remaining lifetime.
+            # Recheck before consuming it or minting either replacement token.
+            if expires_at <= datetime.now(timezone.utc):
+                return JsonResponse({"ok": False, "error": "invalid_refresh"}, status=401)
             # Store only the digest, never the bearer token itself.
             LegacyRefreshConsumption.objects.create(
                 user=user,
