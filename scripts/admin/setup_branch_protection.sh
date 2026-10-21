@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Safe, read-only audit of CROWN's live main-branch required checks.
-# Retain this legacy script path as a fail-closed diagnostic, not a mutation tool.
+# Read-only audit of a currently open CROWN PR against live main protection.
+# Legacy versions unconditionally overwrote branch protection with stale checks.
 set -euo pipefail
 
 REPO="Arete0920/Crown-CSMS"
@@ -8,9 +8,11 @@ BRANCH="main"
 
 usage() {
   cat <<'USAGE'
-Usage: scripts/admin/setup_branch_protection.sh --audit <40-character-PR-head-SHA>
-Read live main branch protection and check runs for one exact PR head.
-This script never updates repository settings. --apply is unsupported.
+Usage: scripts/admin/setup_branch_protection.sh --audit-pr <PR_NUMBER>
+
+Read live main branch protection and the check runs on the current exact PR
+head. Re-read PR/main identity before reporting to reject moving references.
+This script cannot change GitHub settings. --apply is unsupported.
 USAGE
 }
 
@@ -19,69 +21,112 @@ if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
   exit 0
 fi
 if [[ "${1:-}" == "--apply" ]]; then
-  echo "REFUSED: this legacy script cannot update branch protection." >&2
+  echo "REFUSED: legacy branch protection writes are disabled." >&2
   exit 3
 fi
-if [[ "$#" -ne 2 || "$1" != "--audit" || ! "$2" =~ ^[0-9a-fA-F]{40}$ ]]; then
+if [[ "$#" -ne 2 || "$1" != "--audit-pr" || ! "$2" =~ ^[1-9][0-9]*$ ]]; then
   usage >&2
   exit 2
 fi
-commit_sha="$2"
-
+pr_number="$2"
 if ! command -v gh >/dev/null 2>&1 || ! command -v python3 >/dev/null 2>&1; then
-  echo "REFUSED: gh and python3 are required." >&2
+  echo "REFUSED: gh and python3 are required for the read-only audit." >&2
   exit 2
 fi
 
 scratch="$(mktemp -d)"
 trap 'rm -rf -- "$scratch"' EXIT
-required="$scratch/required.json"
-observed="$scratch/observed.json"
+branch_before="$scratch/branch-before.json"
+pr_before="$scratch/pr-before.json"
+checks="$scratch/checks.json"
+pr_after="$scratch/pr-after.json"
+branch_after="$scratch/branch-after.json"
 
-if ! gh api --method GET "/repos/${REPO}/branches/${BRANCH}" > "$required"; then
-  echo "REFUSED: live branch metadata read failed; historical policy is not a fallback." >&2
+if ! gh api --method GET "/repos/${REPO}/branches/${BRANCH}" > "$branch_before" ||
+   ! gh api --method GET "/repos/${REPO}/pulls/${pr_number}" > "$pr_before"; then
+  echo "REFUSED: cannot read current branch/PR authority from GitHub." >&2
   exit 2
 fi
-if ! gh api --method GET "/repos/${REPO}/commits/${commit_sha}/check-runs?per_page=100" > "$observed"; then
-  echo "REFUSED: exact-head check-run inventory failed." >&2
+
+if ! head_sha="$(python3 - "$pr_before" "$pr_number" <<'PY'
+import json
+import re
+import sys
+
+with open(sys.argv[1], encoding="utf-8") as stream:
+    pr = json.load(stream)
+sha = pr.get("head", {}).get("sha", "")
+if (pr.get("number") != int(sys.argv[2]) or pr.get("state") != "open"
+        or pr.get("base", {}).get("ref") != "main"
+        or not re.fullmatch(r"[0-9a-fA-F]{40}", sha)):
+    raise SystemExit(2)
+print(sha)
+PY
+)"; then
+  echo "REFUSED: PR is not an open main-targeting PR with a verifiable head." >&2
   exit 2
 fi
 
-python3 - "$required" "$observed" "$commit_sha" <<'PY'
+if ! gh api --method GET "/repos/${REPO}/commits/${head_sha}/check-runs?per_page=100" > "$checks" ||
+   ! gh api --method GET "/repos/${REPO}/pulls/${pr_number}" > "$pr_after" ||
+   ! gh api --method GET "/repos/${REPO}/branches/${BRANCH}" > "$branch_after"; then
+  echo "REFUSED: exact-head checks or final identity confirmation unavailable." >&2
+  exit 2
+fi
+
+python3 - "$branch_before" "$pr_before" "$checks" "$pr_after" "$branch_after" "$pr_number" "$head_sha" <<'PY'
 import json
 import sys
 
-required_path, observed_path, sha = sys.argv[1:]
+branch_before_path, pr_before_path, checks_path, pr_after_path, branch_after_path, num, sha = sys.argv[1:]
 try:
-    with open(required_path, encoding="utf-8") as stream:
-        configured = json.load(stream)
-    with open(observed_path, encoding="utf-8") as stream:
-        result = json.load(stream)
-    if configured.get("name") != "main" or not configured.get("protected"):
-        raise ValueError("main protection not confirmed by live branch response")
-    policy = configured["protection"]["required_status_checks"]
-    configured_checks = policy.get("checks")
-    if configured_checks is None:
-        configured_checks = [
-            {"context": name, "app_id": None}
-            for name in policy.get("contexts", [])
-        ]
-    runs = result["check_runs"]
-    count = result["total_count"]
-    if not isinstance(configured_checks, list) or not configured_checks:
-        raise ValueError("no usable required status-check inventory")
-    if not isinstance(runs, list) or not isinstance(count, int) or count > len(runs):
-        raise ValueError("check-run inventory incomplete; pagination required")
+    with open(branch_before_path, encoding="utf-8") as stream:
+        branch_before = json.load(stream)
+    with open(pr_before_path, encoding="utf-8") as stream:
+        pr_before = json.load(stream)
+    with open(checks_path, encoding="utf-8") as stream:
+        observed = json.load(stream)
+    with open(pr_after_path, encoding="utf-8") as stream:
+        pr_after = json.load(stream)
+    with open(branch_after_path, encoding="utf-8") as stream:
+        branch_after = json.load(stream)
 
-    print(f"CROWN main protection audit; exact head: {sha}")
-    print(f"Required contexts: {len(configured_checks)}; retrieved check runs: {len(runs)}")
+    for branch in (branch_before, branch_after):
+        if branch.get("name") != "main" or not branch.get("protected"):
+            raise ValueError("main protection was not verified")
+    before_main = branch_before["commit"]["sha"]
+    after_main = branch_after["commit"]["sha"]
+    if before_main != after_main:
+        raise ValueError("main moved while auditing; rerun against current state")
+    if branch_before.get("protection") != branch_after.get("protection"):
+        raise ValueError("branch protection changed while auditing")
+    for pr in (pr_before, pr_after):
+        if (pr.get("number") != int(num) or pr.get("state") != "open"
+                or pr.get("base", {}).get("ref") != "main"
+                or pr.get("base", {}).get("sha") != before_main
+                or pr.get("head", {}).get("sha") != sha):
+            raise ValueError("PR head/base changed or is not current with main")
+
+    policy = branch_before["protection"]["required_status_checks"]
+    required = policy.get("checks")
+    if required is None:
+        required = [{"context": name, "app_id": None} for name in policy.get("contexts", [])]
+    runs = observed["check_runs"]
+    total = observed["total_count"]
+    if not isinstance(required, list) or not required:
+        raise ValueError("live required-check inventory missing")
+    if not isinstance(runs, list) or not isinstance(total, int) or total > len(runs):
+        raise ValueError("check-run result is incomplete (pagination required)")
+
+    print(f"CROWN live main required-check audit: PR #{num}, head {sha}, main {before_main}")
+    print(f"Required check contexts: {len(required)}")
     failures = []
-    for check in configured_checks:
+    for check in required:
         name, app_id = check["context"], check.get("app_id")
-        all_named = [run for run in runs if run.get("name") == name]
-        matches = [run for run in all_named if app_id in (None, -1) or
-                   run.get("app", {}).get("id") == app_id]
-        if not all_named:
+        same_name = [r for r in runs if r.get("name") == name]
+        matches = [r for r in same_name if app_id in (None, -1)
+                   or r.get("app", {}).get("id") == app_id]
+        if not same_name:
             state = "MISSING"
         elif not matches:
             state = "WRONG_APP"
@@ -90,17 +135,16 @@ try:
         elif matches[0].get("status") == "completed" and matches[0].get("conclusion") == "success":
             state = "SUCCESS"
         else:
-            outcomes = sorted({str(run.get("conclusion") or run.get("status")) for run in matches})
-            state = "NOT_SUCCESS(" + ",".join(outcomes) + ")"
-        print(f"{state:26} {name} [app_id={app_id}]")
+            state = "NOT_SUCCESS"
+        print(f"{state:23} {name} [app_id={app_id}]")
         if state != "SUCCESS":
             failures.append(name)
     if failures:
-        print(f"BLOCKED: {len(failures)} required checks are not proven successful.")
+        print(f"BLOCKED: {len(failures)} required check contexts not fully accepted.")
         sys.exit(1)
-    print("REQUIRED_CHECKS_PRESENT: configured check runs succeeded on this exact head.")
-    print("NOTE: merge eligibility also depends on PR freshness, review, threads and all other rules.")
-except (OSError, ValueError, KeyError, TypeError, json.JSONDecodeError) as exc:
-    print(f"REFUSED: cannot evaluate complete live checks: {exc}", file=sys.stderr)
+    print("REQUIRED_CHECKS_PRESENT: checked on the verified current PR head.")
+    print("NOTE: this is not final GitHub merge authorization; other rules still apply.")
+except (OSError, KeyError, TypeError, ValueError, json.JSONDecodeError) as exc:
+    print(f"REFUSED: cannot verify live required checks: {exc}", file=sys.stderr)
     sys.exit(2)
 PY
