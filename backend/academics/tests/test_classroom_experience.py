@@ -22,7 +22,9 @@ BOARD_READ_URLS = (
 
 @pytest.fixture
 def classroom():
-    school = School.objects.create(name='Classroom school')
+    # Baseline fixtures use timezone.localdate() (Django TIME_ZONE=UTC).
+    # Set the fixture school to UTC; explicit school-timezone tests override it.
+    school = School.objects.create(name='Classroom school', timezone='UTC')
     teacher = UserAccount.objects.create_user(username='classroom-teacher', email='teacher@example.com', school=school)
     teacher.staff = Staff.objects.create(school=school, first_name='Teacher', last_name='One', email=teacher.email, role_type='TEACHER', status='ACTIVE')
     teacher.save(update_fields=['staff'])

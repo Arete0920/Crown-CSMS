@@ -6,9 +6,9 @@ export default function CrownDashboardActionGrid({ actions = [] }) {
       {actions.map((action, idx) => (
         <CrownActionCard
           key={action.title ?? `action-${idx}`}
-          title={action.title}
+          title={action.title || action.label}
           description={action.description}
-          actionLabel={action.actionLabel}
+          actionLabel={action.actionLabel || action.label || action.title}
           eyebrow={action.eyebrow || action.kicker || 'Quick Action'}
           href={action.href}
         />

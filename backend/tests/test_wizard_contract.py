@@ -114,7 +114,7 @@ def _grant_wizard_access_if_required(description, user, school):
         _grant_attendance_configuration_access(user, school)
     elif description == "financial_aid":
         _grant_financial_aid_access(user, school)
-    elif description == "fee_schedule":
+    elif description in ("fee_schedule", "billing", "invoice_run"):
         _grant_permission(
             user, school, "FINANCE_DIRECTOR", "finance.edit",
             "Manage school tuition and fee schedules",
