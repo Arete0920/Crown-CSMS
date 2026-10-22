@@ -7,10 +7,43 @@ from django.utils import timezone
 from .models import CampaignTouchpoint, LeadStage, MarketingLead
 
 
+def _related_leads(application):
+    """Include every same-school family inquiry related to an application."""
+    from applications.models import Application
+
+    return list(MarketingLead.objects.filter(
+        Q(application=application) | Q(applications=application),
+        school_id=application.school_id,
+    ).distinct().prefetch_related(Prefetch(
+        "applications",
+        queryset=Application.objects.filter(school_id=application.school_id).only("id"),
+        to_attr="scoped_applications",
+    )))
+
+
+def _confirmed_family_leads(leads, school_id):
+    """Resolve child-level enrollment truth once for all affected family leads."""
+    from applications.models import ApplicationEvent
+
+    linked = {
+        lead.id: ({app.id for app in getattr(lead, 'scoped_applications', ())}
+                  | ({lead.application_id} if lead.application_id else set()))
+        for lead in leads
+    }
+    application_ids = set().union(*linked.values()) if linked else set()
+    if not application_ids:
+        return set()
+    confirmed_ids = set(ApplicationEvent.objects.filter(
+        school_id=school_id,
+        application__school_id=school_id,
+        application_id__in=application_ids,
+        event_type="enrollment_confirmed",
+    ).values_list("application_id", flat=True))
+    return {lead_id for lead_id, child_ids in linked.items() if child_ids & confirmed_ids}
+
+
 def register_admissions_submit(application, *, source: str = "", start_term: str = ""):
-    leads = list(MarketingLead.objects.filter(
-        Q(application=application) | Q(applications=application), school_id=application.school_id,
-    ).distinct())
+    leads = _related_leads(application)
     if not leads:
         leads = [
             MarketingLead.objects.create(
@@ -21,8 +54,11 @@ def register_admissions_submit(application, *, source: str = "", start_term: str
                 primary_source=source or "",
             )
         ]
+    confirmed_lead_ids = _confirmed_family_leads(leads, application.school_id)
     for lead in leads:
-        lead.stage = LeadStage.APPLICATION_SUBMITTED
+        # A sibling submitting later cannot downgrade an already enrolled family.
+        lead.stage = (LeadStage.ENROLLED if lead.id in confirmed_lead_ids
+                      else LeadStage.APPLICATION_SUBMITTED)
         if source and not lead.first_source:
             lead.first_source = source
         if source:
@@ -32,16 +68,16 @@ def register_admissions_submit(application, *, source: str = "", start_term: str
 
 
 def register_workflow_update(application, *, stage: str, summary: str, payload=None, created_by=None):
-    leads = list(MarketingLead.objects.filter(
-        Q(application=application) | Q(applications=application), school_id=application.school_id,
-    ).distinct())
+    leads = _related_leads(application)
     if not leads:
         leads = [MarketingLead.objects.create(school_id=application.school_id, application=application, stage=stage)]
+    confirmed_lead_ids = _confirmed_family_leads(leads, application.school_id)
     now = timezone.now()
     for lead in leads:
-        lead.stage = stage
+        # The household stage represents all children, not the last child updated.
+        lead.stage = LeadStage.ENROLLED if lead.id in confirmed_lead_ids else stage
         lead.last_touch_at = now
-        if stage == LeadStage.ENROLLED and not lead.conversion_source:
+        if lead.stage == LeadStage.ENROLLED and not lead.conversion_source:
             lead.conversion_source = lead.primary_source or lead.first_source
         lead.save(update_fields=["stage", "last_touch_at", "conversion_source", "updated_at"])
         CampaignTouchpoint.objects.create(
@@ -50,7 +86,7 @@ def register_workflow_update(application, *, stage: str, summary: str, payload=N
             lead=lead,
             channel="system",
             summary=summary[:240],
-            outcome=stage,
+            outcome=lead.stage,
             metadata_json=payload or {},
             occurred_at=now,
             created_by_user_id=getattr(created_by, "id", None),

@@ -167,9 +167,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          # ubuntu-latest already ships browser shared libraries. Avoid an
-          # unrelated third-party apt feed blocking every wizard E2E run.
-          # Do not skip browser execution: launch must succeed before 28/28 specs.
+          # The disposable Ubuntu runner can carry a Microsoft APT feed returning
+          # HTTP 403, which breaks Playwright's full dependency installation.
+          # Avoid apt entirely and require a successful headless Chromium launch.
+          # Do not skip browser execution: all 28 canonical specifications remain required.
           npx playwright install chromium
           node <<'NODE'
           const { chromium } = require('@playwright/test');
