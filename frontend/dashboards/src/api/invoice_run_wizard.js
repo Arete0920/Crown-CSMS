@@ -30,5 +30,5 @@ export async function commitInvoiceRunSession(sessionId) {
 }
 
 export async function verifyInvoiceRunSession(sessionId) {
-  return apiJson(`${SESSIONS}${sessionId}/verify/`, { method: "GET" });
+  return apiJson(`${SESSIONS}${sessionId}/verify/`, { method: "POST", body: JSON.stringify({}) });
 }

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { authenticatedFetch } from "../utils/authClient";
 import CrownLayout from "../components/crown/CrownLayout.jsx";
 import ErrorBanner from "../components/ui/ErrorBanner";
@@ -17,8 +17,8 @@ export default function TeacherAttendancePage() {
   const [loadedSectionId, setLoadedSectionId] = useState("");
   const [msg, setMsg] = useState("");
 
-  const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
-  const attendanceReady = Boolean(sectionId) && loadedSectionId === sectionId;
+  const [today, setToday] = useState("");
+  const attendanceReady = Boolean(sectionId && today) && loadedSectionId === sectionId;
 
   useEffect(() => {
     (async () => {
@@ -39,6 +39,7 @@ export default function TeacherAttendancePage() {
     setRoster([]);
     setStatusMap({});
     setLoadedSectionId("");
+    setToday("");
     if (!sectionId) return;
     (async () => {
       try {
@@ -46,12 +47,14 @@ export default function TeacherAttendancePage() {
           fetchJson(`/api/v1/academics/sections/${sectionId}/roster/`, { signal: controller.signal }),
           fetchJson("/api/v1/academics/classroom/operations/", {
             signal: controller.signal,
-            query: { section_id: sectionId, date: today },
+            query: { section_id: sectionId },
           }),
         ]);
         const items = r?.students || r?.results || r?.items || r || [];
         if (!Array.isArray(items) || saved?.source !== "live"
-            || saved.section_id !== sectionId || saved.date !== today || !Array.isArray(saved.roster)) {
+            || saved.section_id !== sectionId
+            || !/^\d{4}-\d{2}-\d{2}$/.test(saved.date) || saved.date !== saved.school_today
+            || !Array.isArray(saved.roster)) {
           throw new Error("Invalid saved attendance response.");
         }
         // Both APIs identify roster members by households.Student IDs. The
@@ -72,6 +75,7 @@ export default function TeacherAttendancePage() {
         if (active) {
           setRoster(items);
           setStatusMap(nextMap);
+          setToday(saved.date);
           setLoadedSectionId(sectionId);
         }
       } catch {
@@ -79,12 +83,22 @@ export default function TeacherAttendancePage() {
       }
     })();
     return () => { active = false; controller.abort(); };
-  }, [sectionId, today]);
+  }, [sectionId]);
 
   const submit = async () => {
     if (!attendanceReady) return;
     setMsg("");
     try {
+      // A page left open overnight must not silently write yesterday's register.
+      const current = await fetchJson("/api/v1/academics/classroom/operations/", {
+        query: { section_id: sectionId },
+      });
+      if (current?.source !== "live" || current.section_id !== sectionId
+          || current.date !== today || current.school_today !== today) {
+        const error = new Error("The school day changed. Reload attendance before saving.");
+        error.code = "school_day_changed";
+        throw error;
+      }
       const items = Object.entries(statusMap).map(([student_id, status]) => ({
         student_id,
         status,
@@ -92,11 +106,17 @@ export default function TeacherAttendancePage() {
       const res = await fetchJson(`/api/v1/academics/sections/${sectionId}/attendance/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ date: today, items }),
+        body: JSON.stringify({ date: today, expected_school_today: today, items }),
       });
       setMsg(`Saved: created=${res.created} updated=${res.updated} (${res.date})`);
-    } catch {
-      setMsg("Submit failed. Check API + permissions.");
+    } catch (error) {
+      const serverDetail = error?.response?.data?.detail;
+      const dayChanged = error?.code === "school_day_changed"
+        || (error?.status === 409 && error?.response?.data?.code === "school_day_changed");
+      if (dayChanged) setLoadedSectionId("");
+      setMsg(dayChanged
+        ? (typeof serverDetail === "string" ? serverDetail : error?.message || "Reload attendance before saving.")
+        : "Submit failed. Check API + permissions.");
     }
   };
 
@@ -117,7 +137,7 @@ export default function TeacherAttendancePage() {
             );
           })}
         </select>
-        <span style={{ marginLeft: 12 }}>Date: {today}</span>
+        <span style={{ marginLeft: 12 }}>Date: {today || "Loading school date..."}</span>
         <button
           className="crown-btn crown-btn-primary"
           style={{ marginLeft: 12 }}

@@ -164,6 +164,19 @@ export const certificationMatrix: CertificationSurface[] = [
     persona: "sandbox-admin",
     slug: "billing",
   }),
+  // Exercise each public billing entry point: they use different route guards
+  // and must independently return the owning API's live provenance.
+  ...[
+    { id: "billing-route", route: "/billing" },
+    { id: "billing-dashboard", route: "/billing-dashboard" },
+    { id: "billing-dashboard-alias", route: "/billing/dashboard" },
+  ].map(({ id, route }) => dashboardSurface({
+    id,
+    label: `Billing (${route})`,
+    route,
+    persona: "sandbox-admin",
+    slug: "billing",
+  })),
   dashboardSurface({
     id: "admissions-dashboard",
     label: "Admissions dashboard",
