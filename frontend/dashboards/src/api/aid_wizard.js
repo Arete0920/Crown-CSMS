@@ -34,5 +34,5 @@ export async function commitAidSetup(sessionId) {
 
 export async function verifyAidSetup(sessionId) {
   const url = `${API_BASE}/api/v1/aid-wizard/sessions/${sessionId}/verify/`;
-  return apiJson(url, { method: "GET" });
+  return apiJson(url, { method: "POST", body: JSON.stringify({}) });
 }
