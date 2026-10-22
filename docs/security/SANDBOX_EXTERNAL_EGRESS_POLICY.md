@@ -4,9 +4,10 @@
 
 ## Invariants
 
-1. The fixed fictional Heritage school is barred from external email, SMS, and Teams delivery, including queued and direct provider paths.
+1. The fixed fictional Heritage school is barred from external email, SMS, and Teams delivery, including queued and direct provider paths, **including the separate Advancement/Django SMTP outbox**.
 2. The evaluator host MUST set `CROWN_SANDBOX_OUTBOUND_DISABLED=true` on the API **and every worker**. The fixed Heritage school ID is barred even without that setting. Never enable provider traffic for a buyer demo.
-3. Suppressed queued messages are terminal DEAD with reason `sandbox_external_egress_suppressed`; never claim sent, retry, or mark delivered. Direct receipts are suppressed.
+3. Suppressed comms queued messages are terminal DEAD with reason `sandbox_external_egress_suppressed`; never claim sent, retry, or mark delivered. Direct receipts are suppressed.
+   Advancement `EmailOutbox` supports pending/sent/failed; suppressed entries become terminal `failed` with the same explicit reason, no SMTP construction, and no retry. They are never recorded as sent.
 4. A separate evaluator authorization gate must prohibit buyer business writes; this communications guard does not make any app read-only.
 5. No payment processing, email, Teams, SMS, or production credential testing is authorized.
 
