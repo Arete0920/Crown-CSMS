@@ -11,6 +11,8 @@ import os
 
 from django.utils import timezone
 
+from sandbox_demo.egress import (SUPPRESSED_REASON, require_external_egress, sandbox_external_egress_blocked)
+
 from .models import MessageLog
 
 logger = logging.getLogger(__name__)
@@ -49,6 +51,7 @@ def send_sms_to_number(to_number: str, message: str) -> str:
     Provider/configuration failures are intentionally raised so durable outbox
     delivery can retry and ultimately dead-letter rather than falsely mark sent.
     """
+    require_external_egress("SMS")
     to_number = (to_number or "").strip()
     if not to_number:
         raise ValueError("SMS destination phone number is required.")
@@ -83,6 +86,12 @@ def send_sms(sender, recipient, message: str) -> MessageLog:
         recipient: UserAccount instance with a `phone_number` attribute.
         message: Plain-text message body (max 1600 chars).
     """
+    if sandbox_external_egress_blocked(sender=sender, recipient=recipient):
+        return MessageLog.objects.create(
+            sender=sender, recipient=recipient, channel="sms",
+            body=message, delivery_status="suppressed",
+            error_message=SUPPRESSED_REASON,
+        )
     log = MessageLog.objects.create(
         sender=sender,
         recipient=recipient,
