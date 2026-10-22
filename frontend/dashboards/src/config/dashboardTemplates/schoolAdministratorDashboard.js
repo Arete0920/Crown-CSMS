@@ -24,9 +24,9 @@ export default {
   schoolName: 'Heritage Christian Academy',
   updatesCount: 'Demo',
   user: {
-    initials: 'SJ',
-    name: 'Sarah James',
-    role: 'School Administrator',
+    initials: 'GW',
+    name: 'Grace Whitaker',
+    role: 'Head of School',
     avatar: null,
   },
   heroMessage: '"Let the peace of Christ rule in your hearts." â€” Colossians 3:15',

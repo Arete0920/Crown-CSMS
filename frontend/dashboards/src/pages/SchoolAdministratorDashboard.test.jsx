@@ -47,7 +47,7 @@ describe('SchoolAdministratorDashboard provenance', () => {
     expect(config.note).toContain('API connectivity does not certify these business figures');
     expect(config.rightRailSections.every((section) => section.title.startsWith('Sample:'))).toBe(true);
     expect(config.rightRailSections.every((section) => !section.title.startsWith('Sample: Sample:'))).toBe(true);
-    expect(config.user.name).toBe('Sarah James');
+    expect(config.user).toMatchObject({ name: 'Grace Whitaker', initials: 'GW', role: 'Head of School' });
     expect(loadSchoolAdministratorLiveSnapshot).toHaveBeenCalledTimes(1);
   });
 
