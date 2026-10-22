@@ -223,7 +223,9 @@ describe('CrownDashboardTemplate data truth defaults', () => {
     );
 
     expect(screen.getByText(/School Administrator Command Center/i)).toBeTruthy();
-    expect(screen.getByText(/Department readiness table/i)).toBeTruthy();
+    expect(screen.getByText(/Illustrative department readiness/i)).toBeTruthy();
+    expect(captured.truthStatus[0]).toMatchObject({ dataState: 'sample', sourceLabel: 'Illustrative Heritage school operations — sample data, not live school records' });
+    expect(mockUseDashboardData).toHaveBeenCalledWith('school-administrator', { enabled: false });
     expect(screen.getByText(/^Admissions$/i)).toBeTruthy();
     expect(screen.getByText(/^Student Life$/i)).toBeTruthy();
   });
