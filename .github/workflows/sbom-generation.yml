@@ -35,7 +35,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Set up Python
-        uses: actions/setup-python@7f4fc3e22c37d6ff65e88745f38bd3157c663f7c # v4
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.12"
 
@@ -46,7 +46,7 @@ jobs:
         run: cyclonedx-py requirements requirements.txt --output-file backend-sbom.cdx.json
 
       - name: Upload backend SBOM
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: backend-sbom-${{ github.run_id }}
           path: backend/backend-sbom.cdx.json
@@ -77,7 +77,7 @@ jobs:
         run: npx --yes @cyclonedx/cyclonedx-npm@6.0.1 --output-file frontend-sbom.cdx.json
 
       - name: Upload frontend SBOM
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: frontend-sbom-${{ github.run_id }}
           path: frontend/dashboards/frontend-sbom.cdx.json
@@ -108,7 +108,7 @@ jobs:
         run: npx --yes @cyclonedx/cyclonedx-npm@6.0.1 --output-file wallet-sbom.cdx.json
 
       - name: Upload Wallet SBOM
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: wallet-sbom-${{ github.run_id }}
           path: services/wallet/apple-pass-service/wallet-sbom.cdx.json

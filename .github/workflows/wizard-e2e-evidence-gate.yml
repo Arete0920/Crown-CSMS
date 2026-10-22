@@ -32,7 +32,7 @@ jobs:
           fetch-depth: 0
 
       - name: Setup Python
-        uses: actions/setup-python@7f4fc3e22c37d6ff65e88745f38bd3157c663f7c
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
         with:
           python-version: "3.12"
 
@@ -62,7 +62,7 @@ jobs:
 
       - name: Upload wizard evidence classification
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: wizard-e2e-evidence-classification
           if-no-files-found: error
@@ -94,7 +94,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
       - name: Setup Python
-        uses: actions/setup-python@7f4fc3e22c37d6ff65e88745f38bd3157c663f7c
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
         with:
           python-version: "3.12"
           cache: pip
@@ -162,21 +162,26 @@ jobs:
           rm -rf node_modules
           ln -s frontend/dashboards/node_modules node_modules
 
-      - name: Install Chromium
+      - name: Install Chromium and verify browser runtime
         working-directory: frontend/dashboards
         shell: bash
         run: |
           set -euo pipefail
           # The disposable Ubuntu runner can carry a Microsoft APT feed returning
           # HTTP 403, which breaks Playwright's full dependency installation.
-          # Exclude only that unrelated feed; retain all browser/dependency checks.
-          for source in /etc/apt/sources.list.d/*; do
-            if [ -f "$source" ] && sudo grep -q "packages.microsoft.com" "$source"; then
-              echo "Disabling unrelated Microsoft APT feed for this CI job: $source"
-              sudo mv "$source" "$source.crown-disabled"
-            fi
-          done
-          npx playwright install --with-deps chromium
+          # Avoid apt entirely and require a successful headless Chromium launch.
+          # Do not skip browser execution: all 28 canonical specifications remain required.
+          npx playwright install chromium
+          node <<'NODE'
+          const { chromium } = require('@playwright/test');
+          (async () => {
+            const browser = await chromium.launch({ headless: true });
+            await browser.close();
+          })().catch((error) => {
+            console.error('Chromium runtime preflight failed:', error);
+            process.exitCode = 1;
+          });
+          NODE
 
       - name: Assert complete canonical spec registry
         shell: bash
@@ -262,7 +267,7 @@ jobs:
 
       - name: Upload canonical wizard runtime evidence
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: canonical-wizard-playwright-runtime
           if-no-files-found: warn
