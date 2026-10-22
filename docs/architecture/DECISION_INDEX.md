@@ -2,7 +2,7 @@
 
 **Status:** CANONICAL  
 **Owner:** CROWN Engineering  
-**Last verified:** 2026-08-18
+**Last verified:** 2026-10-22 (ADR-0006 proposed; existing accepted decisions unchanged)
 
 ## Purpose
 
@@ -18,6 +18,8 @@ This index is the authoritative list of accepted architecture decisions. Documen
 | ADR-001 | `ADR-001-CANONICAL-HOUSEHOLD-GUARDIAN-STUDENT.md` | ACCEPTED FOR OPERATIONAL WRITES | `core.Family`, `core.Guardian`, and `core.Student` own canonical operational writes; compatibility-domain reconciliation remains controlled convergence work. |
 
 ## Proposed decisions
+
+- ADR-0006 — `decisions/ADR-0006-crm-relationship-domain-boundaries.md`: **PROPOSED** in PR #355. Proposed school-scoped CRM Relationship Center bounded context, with provisional contacts/groups, per-child interests, verified identity links, privacy and communications controls. Existing Core, admissions, advancement and comms canonical authorities remain unchanged. Explicit owner acceptance and a governed accepted-index update are required before architectural acceptance; design documentation grants no schema, API, messaging, migration or deployment authority.
 
 - ADR-0005 — `decisions/ADR-0005-release-candidate-validation-and-image-identity.md`: PROPOSED. Candidate validation before production mutation and deployment by validated image digest; implementation and decision acceptance remain pending governed review.
 
