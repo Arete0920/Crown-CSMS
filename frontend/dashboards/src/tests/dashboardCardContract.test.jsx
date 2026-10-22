@@ -42,18 +42,22 @@ describe('dashboard registry contract', () => {
       expect(screen.getAllByText('Heritage Christian Academy').length).toBeGreaterThan(0);
       expect(screen.queryByText('Sandbox preview data shown. Connect backend for live records.')).toBeNull();
       expect(screen.getByText('Source and sync status')).toBeTruthy();
-        expect(screen.getByText('Sample fixture — no live business-data refresh')).toBeTruthy();
-        expect(screen.getAllByText(/sample demonstration only/i).length).toBeGreaterThan(0);
+      expect(screen.getByText('Sample fixture — no live business-data refresh')).toBeTruthy();
+      expect(screen.getAllByText(/sample demonstration only/i).length).toBeGreaterThan(0);
       expect(screen.getAllByText('Sample').length).toBeGreaterThan(0);
       expect(screen.queryByText('Live')).toBeNull();
 
-      expect(screen.getAllByText('Live Data Certification').length).toBeGreaterThan(0);
-      expect(screen.getAllByText('Demo Data State').length).toBeGreaterThan(0);
-      expect(screen.getAllByText('Permission Proof').length).toBeGreaterThan(0);
-      expect(screen.getAllByText('Tenant Proof').length).toBeGreaterThan(0);
-      expect(screen.queryByText('Attendance Completion')).toBeNull();
-      expect(screen.queryByText('Tuition / AR Risk')).toBeNull();
-      expect(screen.queryByText('Enrollment')).toBeNull();
+      // The administrator's configured example KPIs must remain visible and
+      // explicitly sampled; the old generic certification placeholders are not
+      // school enrollment, attendance or financial records.
+      expect(screen.queryByText('Live Data Certification')).toBeNull();
+      expect(screen.queryByText('Demo Data State')).toBeNull();
+      expect(screen.queryByText('Permission Proof')).toBeNull();
+      expect(screen.queryByText('Tenant Proof')).toBeNull();
+      expect(screen.getAllByText('Attendance Completion').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('Tuition / AR Risk').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('Enrollment').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('Decisions Needed').length).toBeGreaterThan(0);
       expect(screen.queryByText('Safety / Student Care')).toBeNull();
 
       expect(screen.getAllByText('Admissions / Enrollment').length).toBeGreaterThan(0);
