@@ -64,7 +64,7 @@ test('Billing Setup wizard validates, persists a plan, commits, and verifies aga
     (response) => response.url().includes('/commit/') && response.request().method() === 'POST',
   );
   const verifyPromise = page.waitForResponse(
-    (response) => response.url().includes('/verify/') && response.request().method() === 'GET',
+    (response) => response.url().includes('/verify/') && response.request().method() === 'POST',
   );
   await page.getByRole('button', { name: /commit billing setup/i }).click();
   const [commitResponse, verifyResponse] = await Promise.all([commitPromise, verifyPromise]);
