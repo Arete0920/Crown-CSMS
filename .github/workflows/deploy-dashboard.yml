@@ -538,7 +538,7 @@ jobs:
           npm run certify:production
       - name: Upload DEV execution evidence
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: dev-certification-${{ inputs.dev_source_sha }}-${{ github.run_id }}
           path: |
@@ -562,7 +562,7 @@ jobs:
           npm run certify:buyer-sandbox-browser
       - name: Upload DEV buyer persistence evidence
         if: always() && steps.preview.outcome == 'success'
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: dev-buyer-persistence-${{ inputs.dev_source_sha }}-${{ github.run_id }}
           path: |
@@ -639,7 +639,7 @@ jobs:
         run: npx playwright test tests/certification/production-tenant-isolation.spec.ts --workers=1 --reporter=line,html
       - name: Upload two-tenant execution results
         if: always() && steps.preview.outcome == 'success'
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: dev-two-tenant-isolation-${{ inputs.dev_source_sha }}-${{ github.run_id }}
           path: |
