@@ -1,3 +1,5 @@
+import math
+
 from django.db.models import Count, F, Max, Q, Sum
 from django.db import transaction
 from django.db.models.functions import Coalesce
@@ -370,7 +372,18 @@ def section_drilldown(request, section_id):
 
     # Parameters
     bucket = (request.query_params.get("bucket") or "all").strip().lower()
-    threshold = float(request.query_params.get("threshold") or 70)
+    try:
+        threshold = float(request.query_params.get("threshold") or 70)
+    except (TypeError, ValueError):
+        return Response(
+            {"detail": "threshold must be a finite number"},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    if not math.isfinite(threshold):
+        return Response(
+            {"detail": "threshold must be a finite number"},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
     category_id = request.query_params.get("category_id")  # not used in MVP
 
     try:
@@ -394,39 +407,51 @@ def section_drilldown(request, section_id):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    # Fetch all student-grade aggregates for this section
+    # Aggregate all scores in one tenant-scoped query. The previous implementation
+    # executed COUNT/COUNT/SUM for every enrolled student (3N SQL queries).
+    # Preserve the original semantics: possible points and last submission only
+    # include scored entries; missing entries still affect the status bucket.
+    # Restrict roster *and* entries to the authorized school, including malformed
+    # legacy records with mismatched school identifiers.
     enrollments = (
-        Enrollment.objects.filter(section=section)
+        Enrollment.objects.filter(
+            school_id=school_id, section=section, student__school_id=school_id,
+        )
         .select_related("student")
-        .order_by("student__last_name", "student__first_name")
+        .order_by("student__last_name", "student__first_name", "student__id")
     )
+    roster_student_ids = Enrollment.objects.filter(
+        school_id=school_id, section=section, student__school_id=school_id,
+    ).values("student_id")
+    scores = {
+        item["student_id"]: item
+        for item in (
+            GradeEntry.objects.filter(
+                school_id=school_id, section=section, student_id__in=roster_student_ids,
+            )
+            .order_by()
+            .values("student_id")
+            .annotate(
+                total_entries=Count("id"),
+                missing_count=Count("id", filter=Q(points_earned__isnull=True)),
+                earned=Sum("points_earned", filter=Q(points_earned__isnull=False)),
+                possible=Sum("points_possible", filter=Q(points_earned__isnull=False)),
+                updated=Max("updated_at", filter=Q(points_earned__isnull=False)),
+            )
+        )
+    }
 
-    # Compute per-student aggregates
     rows_data = []
     for enrollment in enrollments:
         student = enrollment.student
-        entries = GradeEntry.objects.filter(
-            section=section, student=student, school_id=school_id
-        )
-
-        # Count assignments and missing entries
-        total_entries = entries.count()
-        missing_count = entries.filter(points_earned__isnull=True).count()
-
-        # Compute total points (only non-missing)
-        scored = entries.filter(points_earned__isnull=False)
-        sums = scored.aggregate(
-            earned=Sum("points_earned"),
-            possible=Sum("points_possible"),
-            updated=Max("updated_at"),
-        )
-
-        earned = float(sums["earned"] or 0)
-        possible = float(sums["possible"] or 0)
+        aggregate = scores.get(student.id, {})
+        total_entries = aggregate.get("total_entries") or 0
+        missing_count = aggregate.get("missing_count") or 0
+        earned = float(aggregate.get("earned") or 0)
+        possible = float(aggregate.get("possible") or 0)
         pct = (earned / possible * 100) if possible > 0 else 0
-        last_submission = sums["updated"]
+        last_submission = aggregate.get("updated")
 
-        # Determine status
         status_val = "normal"
         if missing_count > 0:
             status_val = "missing"

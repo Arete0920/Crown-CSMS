@@ -160,54 +160,38 @@ export async function loadMicrosoft365DashboardPayload(): Promise<DashboardApiPa
   return fetchDashboardJsonWithFallback<DashboardApiPayload>("/api/v1/dashboards/microsoft365/");
 }
 
-function hasLiveDashboardPayload(
-  meResult: DashboardMeResult,
-  summaryResult: DashboardSummaryResult,
-  alertsResult: DashboardAlertsResult,
-): boolean {
-  return (meResult.ok && meResult.data !== null && typeof meResult.data === "object" && !Array.isArray(meResult.data)) || (summaryResult.ok && summaryResult.data !== null && typeof summaryResult.data === "object" && !Array.isArray(summaryResult.data)) || (alertsResult.ok && alertsResult.data !== null && typeof alertsResult.data === "object" && !Array.isArray(alertsResult.data));
-}
-
-function buildLiveDashboardSourceLabel(
-  meResult: DashboardMeResult,
-  summaryResult: DashboardSummaryResult,
-  alertsResult: DashboardAlertsResult,
-): string {
-  const parts: string[] = [];
-  if (meResult.ok && meResult.data) parts.push("dashboard me");
-  if (summaryResult.ok && summaryResult.data) parts.push("dashboard summary");
-  if (alertsResult.ok && alertsResult.data) parts.push("dashboard alerts");
-  return parts.join(" + ");
-}
-
-function buildLiveDashboardLastSyncLabel(widgetCount: number, alertCount: number): string {
-  const detail = widgetCount || alertCount ? ` (${widgetCount} widgets, ${alertCount} alerts)` : "";
-  return `Live dashboard summary${detail}`;
+// Connectivity endpoints are not certified business aggregate sources.
+function validSchoolPayload(result: HttpJsonResult<unknown>, schoolId: string, field: 'roles' | 'widgets' | 'alerts'): boolean {
+  const data = result.data;
+  if (!result.ok || !schoolId || !data || typeof data !== 'object' || Array.isArray(data)) return false;
+  const record = data as Record<string, unknown>;
+  const meta = record.meta && typeof record.meta === 'object' && !Array.isArray(record.meta)
+    ? record.meta as Record<string, unknown> : null;
+  const returnedSchool = record.school_id ?? meta?.school_id;
+  return String(returnedSchool ?? '') === schoolId && Array.isArray(record[field])
+    && (field !== 'roles' || typeof record.default_route === 'string');
 }
 
 export async function loadSchoolAdministratorLiveSnapshot() {
   const { schoolId } = getSchoolDashboardContext();
-
   const [meResult, summaryResult, alertsResult] = await Promise.all([
-    fetchDashboardMe(schoolId, "school-administrator") as Promise<DashboardMeResult>,
-    fetchDashboardSummary(schoolId, "school-administrator") as Promise<DashboardSummaryResult>,
-    fetchDashboardAlerts(schoolId, "school-administrator") as Promise<DashboardAlertsResult>,
+    fetchDashboardMe(schoolId, 'school-administrator') as Promise<DashboardMeResult>,
+    fetchDashboardSummary(schoolId, 'school-administrator') as Promise<DashboardSummaryResult>,
+    fetchDashboardAlerts(schoolId, 'school-administrator') as Promise<DashboardAlertsResult>,
   ]);
-
-  const dashboardMe = meResult.ok ? meResult.data : null;
-  const dashboardSummary = summaryResult.ok ? summaryResult.data : null;
-  const dashboardAlerts = alertsResult.ok ? alertsResult.data : null;
-  const live = hasLiveDashboardPayload(meResult, summaryResult, alertsResult);
-  const widgetCount = Array.isArray(dashboardSummary?.widgets) ? dashboardSummary.widgets.length : 0;
-  const alertCount = Array.isArray(dashboardAlerts?.alerts) ? dashboardAlerts.alerts.length : 0;
-  const sourceLabel = live ? buildLiveDashboardSourceLabel(meResult, summaryResult, alertsResult) : "Dashboard template data";
-
+  const meValid = validSchoolPayload(meResult, schoolId, 'roles');
+  const summaryValid = validSchoolPayload(summaryResult, schoolId, 'widgets');
+  const alertsValid = validSchoolPayload(alertsResult, schoolId, 'alerts');
+  const successfulEndpointCount = Number(meValid) + Number(summaryValid) + Number(alertsValid);
   return {
-    dashboardMe,
-    dashboardSummary,
-    dashboardAlerts,
-    dataState: live ? "live" : "fallback",
-    sourceLabel: live ? `Live data from ${sourceLabel}` : sourceLabel,
-    lastSyncLabel: live ? buildLiveDashboardLastSyncLabel(widgetCount, alertCount) : "Using configured fallback data",
+    dashboardMe: meValid ? meResult.data : null,
+    dashboardSummary: summaryValid ? summaryResult.data : null,
+    dashboardAlerts: alertsValid ? alertsResult.data : null,
+    serviceState: successfulEndpointCount === 3 ? 'connected' : successfulEndpointCount > 0 ? 'partial' : 'unavailable',
+    successfulEndpointCount,
+    endpointStatuses: { me: meResult.status, summary: summaryResult.status, alerts: alertsResult.status },
+    dataState: 'sample',
+    sourceLabel: 'Dashboard API connectivity only; school business totals are illustrative',
+    lastSyncLabel: successfulEndpointCount + ' of 3 dashboard endpoints returned valid school-scoped data',
   };
 }
