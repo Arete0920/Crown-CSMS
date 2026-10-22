@@ -103,6 +103,7 @@ jobs:
         working-directory: .
         env:
           DJANGO_SETTINGS_MODULE: crown_api.settings
+          CROWN_SIMPLEJWT_BLACKLIST_ENABLED: 'true'
           DJANGO_SECRET_KEY: ci-test-secret-key
           BUILD_SHA: ${{ github.sha }}
           PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/backend
@@ -216,9 +217,12 @@ jobs:
           PY
           python backend/manage.py makemigrations --check --dry-run
       - name: Verify survey contracts and real concurrent transactions
+        env:
+          DJANGO_SETTINGS_MODULE: crown_api.test_settings
         run: >-
           python -m pytest -q backend/tests/test_survey_intelligence_*.py
           backend/tests/test_survey_collection_postgresql.py
+          backend/crown_api/tests/test_refresh_blacklist_rotation.py
           --junitxml=survey-postgresql-junit.xml
       - name: Preserve PostgreSQL test evidence
         if: always()
