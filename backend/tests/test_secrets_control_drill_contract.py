@@ -43,7 +43,7 @@ def test_secrets_control_drill_emits_sanitized_immutable_evidence():
     assert '"workflow_sha": "${GITHUB_SHA}"' in workflow
     assert '"secret_value_recorded": false' in workflow
     assert '"production_mutation_performed": false' in workflow
-    assert "actions/upload-artifact@v4" in workflow
+    assert "uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9" in workflow
     assert "retention-days: 30" in workflow
     assert "Secret value recorded: false" in workflow
     assert "Production mutation performed: false" in workflow
