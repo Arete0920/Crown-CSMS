@@ -58,7 +58,7 @@ describe('dashboard registry contract', () => {
       expect(screen.getAllByText('Tuition / AR Risk').length).toBeGreaterThan(0);
       expect(screen.getAllByText('Enrollment').length).toBeGreaterThan(0);
       expect(screen.getAllByText('Decisions Needed').length).toBeGreaterThan(0);
-      expect(screen.queryByText('Safety / Student Care')).toBeNull();
+      expect(screen.getAllByText('Safety / Student Care').length).toBeGreaterThan(0);
 
       expect(screen.getAllByText('Admissions / Enrollment').length).toBeGreaterThan(0);
       expect(screen.getAllByText('Attendance').length).toBeGreaterThan(0);
