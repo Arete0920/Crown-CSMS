@@ -5,6 +5,7 @@ import pytest
 
 from core.models import School, UserAccount
 from finance.models import FinancePayment, PaymentStatus, Processor
+from households.models import Household
 from payments.models import (
     CanonicalPaymentStatus,
     GatewayEvent,
@@ -13,6 +14,8 @@ from payments.models import (
     Payment,
     PaymentIntentRecord,
     PaymentSupportException,
+    ProviderDispute,
+    SavedPaymentMethod,
 )
 from payments.services import (
     SettlementAllocationRequired,
@@ -149,6 +152,29 @@ def test_settlement_event_creates_canonical_payment_and_routes_to_authority():
     assert event.status == GatewayEventStatus.PROCESSED
 
 
+def test_processed_gateway_event_replay_does_not_settle_twice():
+    school, user = _school_user()
+    legacy = _payment(school, user)
+    _intent(school, metadata={
+        "finance_payment_id": legacy.id,
+        "allocations": [{"obligation_id": 41, "amount_cents": 10_000}],
+    })
+    event = _event(school)
+    # The second worker may have fetched the event before it was processed.
+    stale_event = GatewayEvent.objects.get(pk=event.pk)
+
+    with patch("payments.services.settle_payment") as settle:
+        process_gateway_event_safely(event)
+        process_gateway_event_safely(stale_event)
+
+    assert settle.call_count == 1
+    assert Payment.objects.filter(
+        school_id=school.id, finance_payment_id=legacy.id,
+    ).count() == 1
+    event.refresh_from_db()
+    assert event.status == GatewayEventStatus.PROCESSED
+
+
 def test_refund_requires_prior_canonical_settlement_reconciliation():
     school, user = _school_user()
     legacy_payment = _payment(school, user, status=PaymentStatus.SETTLED)
@@ -203,3 +229,425 @@ def test_refund_routes_through_canonical_authority_and_preserves_provider_refund
     assert settle.call_args.kwargs["refund"] is refund_sentinel
     assert settle.call_args.kwargs["provider"] == GatewayProvider.COMPUWERX
     assert settle.call_args.kwargs["provider_refund_id"] == "refund_real_123"
+
+
+def _event_with_payload(school, event_type, event_id, payload):
+    return GatewayEvent.objects.create(
+        school_id=school.id if school is not None else None,
+        provider=GatewayProvider.COMPUWERX,
+        event_id=event_id,
+        event_type=event_type,
+        raw_body="{}",
+        payload=payload,
+    )
+
+
+def test_gateway_intent_lookup_does_not_cross_school_boundary():
+    school, user = _school_user()
+    other_school = School.objects.create(name="Other payment tenant")
+    payment = _payment(school, user)
+    intent = _intent(school, metadata={"finance_payment_id": payment.id})
+    event = _event_with_payload(
+        other_school, "payment.updated", "other-school-settled",
+        {"intent_id": intent.provider_intent_id, "payment_id": "pay_123", "status": "settled"},
+    )
+
+    with pytest.raises(UnmatchedPaymentError, match="another school"):
+        process_gateway_event_safely(event)
+
+    intent.refresh_from_db()
+    payment.refresh_from_db()
+    event.refresh_from_db()
+    assert intent.status == "created"
+    assert payment.status == PaymentStatus.PENDING
+    assert not Payment.objects.filter(school_id=school.id, finance_payment_id=payment.id).exists()
+    assert event.status == GatewayEventStatus.FAILED
+    assert PaymentSupportException.objects.filter(
+        school_id=other_school.id, gateway_event_id=event.id,
+    ).exists()
+
+
+def test_gateway_intent_shared_between_schools_is_rejected_even_with_local_match():
+    school, _ = _school_user()
+    other_school = School.objects.create(name="Other provider intent owner")
+    own_intent = _intent(school, client_reference_id="local-intent-reference")
+    foreign_intent = _intent(other_school, client_reference_id="other-school-intent-reference")
+    assert own_intent.provider_intent_id == foreign_intent.provider_intent_id
+
+    event = _event_with_payload(
+        school, "payment.updated", "ambiguous-cross-school-intent",
+        {"intent_id": own_intent.provider_intent_id, "payment_id": "pay_123", "status": "authorized"},
+    )
+    with pytest.raises(UnmatchedPaymentError, match="another school"):
+        process_gateway_event_safely(event)
+    own_intent.refresh_from_db()
+    foreign_intent.refresh_from_db()
+    event.refresh_from_db()
+    assert own_intent.status == "created"
+    assert foreign_intent.status == "created"
+    assert event.status == GatewayEventStatus.FAILED
+
+
+def test_unrecognized_payment_status_cannot_downgrade_an_intent():
+    school, _ = _school_user()
+    intent = _intent(school, client_reference_id="unrecognized-status-intent")
+    intent.status = "authorized"
+    intent.save(update_fields=["status"])
+    event = _event_with_payload(
+        school, "payment.updated", "unknown-status-event",
+        {"intent_id": intent.provider_intent_id, "payment_id": "pay_123", "status": "provider_new_unsupported"},
+    )
+    with pytest.raises(UnmatchedPaymentError, match="unrecognized payment status"):
+        process_gateway_event_safely(event)
+    intent.refresh_from_db()
+    event.refresh_from_db()
+    assert intent.status == "authorized"
+    assert event.status == GatewayEventStatus.FAILED
+
+
+@pytest.mark.parametrize(("persisted", "incoming"), [
+    ("settled", "authorized"),
+    ("settled", "pending"),
+    ("refunded", "settled"),
+    ("refunded", "authorized"),
+])
+def test_late_gateway_event_cannot_regress_finalized_intent(persisted, incoming):
+    school, _ = _school_user()
+    intent = _intent(school, client_reference_id="late-provider-status")
+    intent.status = persisted
+    intent.save(update_fields=["status"])
+    event = _event_with_payload(
+        school, "payment.updated", f"late-{persisted}-{incoming}",
+        {"intent_id": intent.provider_intent_id,
+         "payment_id": intent.provider_payment_id, "status": incoming},
+    )
+
+    with pytest.raises(UnmatchedPaymentError, match="cannot regress"):
+        process_gateway_event_safely(event)
+
+    intent.refresh_from_db()
+    event.refresh_from_db()
+    assert intent.status == persisted
+    assert event.status == GatewayEventStatus.FAILED
+    assert PaymentSupportException.objects.filter(
+        school_id=school.id, gateway_event_id=event.id,
+        category="gateway_event_processing",
+    ).exists()
+
+
+def test_gateway_event_rejects_ambiguous_same_school_provider_intents():
+    school, _ = _school_user()
+    first = _intent(school, client_reference_id="duplicate-intent-first")
+    second = _intent(school, client_reference_id="duplicate-intent-second")
+    assert first.provider_intent_id == second.provider_intent_id
+
+    event = _event_with_payload(
+        school, "payment.updated", "ambiguous-owned-intents",
+        {"intent_id": first.provider_intent_id, "payment_id": "pay_123", "status": "authorized"},
+    )
+    with pytest.raises(UnmatchedPaymentError, match="Ambiguous provider intent"):
+        process_gateway_event_safely(event)
+
+    first.refresh_from_db()
+    second.refresh_from_db()
+    event.refresh_from_db()
+    assert first.status == "created"
+    assert second.status == "created"
+    assert event.status == GatewayEventStatus.FAILED
+    assert not Payment.objects.filter(school_id=school.id).exists()
+
+
+def test_gateway_event_rejects_claimed_school_different_from_verified_ownership():
+    school, user = _school_user()
+    another_school = School.objects.create(name="Another school")
+    event = _event_with_payload(
+        school, "payment.updated", "forged-school-in-payload",
+        {
+            "intent_id": "forged-intent",
+            "status": "settled",
+            "metadata": {"school_id": str(another_school.id)},
+        },
+    )
+
+    with pytest.raises(UnmatchedPaymentError, match="conflicts with verified school"):
+        process_gateway_event_safely(event)
+
+    event.refresh_from_db()
+    assert event.status == GatewayEventStatus.FAILED
+    assert PaymentSupportException.objects.filter(
+        school_id=school.id, gateway_event_id=event.id
+    ).exists()
+
+
+def test_gateway_event_without_verified_school_cannot_mutate_financial_state():
+    event = _event_with_payload(
+        None, "payment.updated", "unowned-provider-event",
+        {"intent_id": "unknown", "status": "settled"},
+    )
+
+    with pytest.raises(UnmatchedPaymentError, match="verified school ownership"):
+        process_gateway_event_safely(event)
+
+    event.refresh_from_db()
+    assert event.status == GatewayEventStatus.FAILED
+    assert not PaymentSupportException.objects.filter(gateway_event_id=event.id).exists()
+
+
+def test_saved_method_event_requires_locally_owned_household():
+    school, _ = _school_user()
+    other_school = School.objects.create(name="Other saved-method tenant")
+    household = Household.objects.create(school_id=other_school.id, name="Other family")
+    event = _event_with_payload(
+        school, "payment_method.saved", "wrong-school-household",
+        {"payment_method_id": "method-foreign", "metadata": {"household_id": str(household.id)}},
+    )
+
+    with pytest.raises(UnmatchedPaymentError, match="household is not owned"):
+        process_gateway_event_safely(event)
+
+    assert not SavedPaymentMethod.objects.filter(provider_method_id="method-foreign").exists()
+
+
+def test_saved_method_event_cannot_overwrite_another_school_record():
+    school, _ = _school_user()
+    other_school = School.objects.create(name="Other method owner")
+    own_household = Household.objects.create(school_id=school.id, name="Home family")
+    other_household = Household.objects.create(school_id=other_school.id, name="Other family")
+    method = SavedPaymentMethod.objects.create(
+        school_id=other_school.id,
+        household_id=other_household.id,
+        provider=GatewayProvider.COMPUWERX,
+        provider_method_id="provider-method-shared",
+        last4="1234",
+    )
+    event = _event_with_payload(
+        school, "payment_method.saved", "method-cross-school-replay",
+        {
+            "payment_method_id": "provider-method-shared",
+            "last4": "9999",
+            "metadata": {"household_id": str(own_household.id)},
+        },
+    )
+
+    with pytest.raises(UnmatchedPaymentError, match="existing ownership"):
+        process_gateway_event_safely(event)
+
+    method.refresh_from_db()
+    assert method.school_id == other_school.id
+    assert method.last4 == "1234"
+
+
+def test_saved_method_event_for_owned_household_retains_valid_processing():
+    school, _ = _school_user()
+    household = Household.objects.create(school_id=school.id, name="Owned payment family")
+    event = _event_with_payload(
+        school, "payment_method.saved", "method-owned-valid",
+        {
+            "payment_method_id": "provider-method-owned",
+            "last4": "4321",
+            "metadata": {"household_id": str(household.id)},
+        },
+    )
+
+    process_gateway_event_safely(event)
+
+    saved = SavedPaymentMethod.objects.get(provider_method_id="provider-method-owned")
+    assert saved.school_id == school.id
+    assert saved.household_id == household.id
+    assert saved.last4 == "4321"
+
+
+def test_detach_event_does_not_change_method_owned_by_another_school():
+    school, _ = _school_user()
+    other_school = School.objects.create(name="Detached-method owner")
+    household = Household.objects.create(school_id=other_school.id, name="Other payment family")
+    method = SavedPaymentMethod.objects.create(
+        school_id=other_school.id,
+        household_id=household.id,
+        provider=GatewayProvider.COMPUWERX,
+        provider_method_id="method-to-protect",
+        is_active=True,
+    )
+    event = _event_with_payload(
+        school, "payment_method.detached", "foreign-detach-event",
+        {"payment_method_id": "method-to-protect"},
+    )
+
+    with pytest.raises(UnmatchedPaymentError, match="conflicts with verified ownership"):
+        process_gateway_event_safely(event)
+
+    method.refresh_from_db()
+    event.refresh_from_db()
+    assert method.is_active
+    assert event.status == GatewayEventStatus.FAILED
+    assert PaymentSupportException.objects.filter(
+        school_id=school.id, gateway_event_id=event.id,
+        category="gateway_event_processing",
+    ).exists()
+
+
+def test_detach_event_deactivates_locally_owned_method():
+    school, _ = _school_user()
+    household = Household.objects.create(school_id=school.id, name="Owned detach family")
+    method = SavedPaymentMethod.objects.create(
+        school_id=school.id, household_id=household.id,
+        provider=GatewayProvider.COMPUWERX,
+        provider_method_id="owned-method-to-detach",
+        is_active=True, is_default=True,
+    )
+    event = _event_with_payload(
+        school, "payment_method.detached", "valid-owned-method-detach",
+        {"payment_method_id": method.provider_method_id},
+    )
+    process_gateway_event_safely(event)
+    method.refresh_from_db()
+    event.refresh_from_db()
+    assert not method.is_active
+    assert not method.is_default
+    assert event.status == GatewayEventStatus.PROCESSED
+
+
+def test_dispute_event_does_not_overwrite_another_school_dispute():
+    school, _ = _school_user()
+    other_school = School.objects.create(name="Original dispute owner")
+    existing = ProviderDispute.objects.create(
+        school_id=other_school.id,
+        provider=GatewayProvider.COMPUWERX,
+        dispute_id="dispute-shared",
+        status="open",
+    )
+    event = _event_with_payload(
+        school, "dispute.opened", "dispute-cross-school-open",
+        {"dispute_id": "dispute-shared", "status": "lost", "amount": "50.00"},
+    )
+
+    with pytest.raises(UnmatchedPaymentError, match="existing ownership"):
+        process_gateway_event_safely(event)
+
+    existing.refresh_from_db()
+    assert existing.school_id == other_school.id
+    assert existing.status == "open"
+
+
+def test_dispute_status_event_does_not_change_another_school():
+    school, _ = _school_user()
+    other_school = School.objects.create(name="Foreign dispute owner")
+    existing = ProviderDispute.objects.create(
+        school_id=other_school.id,
+        provider=GatewayProvider.COMPUWERX,
+        dispute_id="foreign-dispute-status",
+        status="open",
+    )
+    event = _event_with_payload(
+        school, "dispute.updated", "foreign-dispute-update",
+        {"dispute_id": "foreign-dispute-status", "status": "lost"},
+    )
+
+    with pytest.raises(UnmatchedPaymentError, match="conflicts with verified ownership"):
+        process_gateway_event_safely(event)
+
+    existing.refresh_from_db()
+    event.refresh_from_db()
+    assert existing.status == "open"
+    assert event.status == GatewayEventStatus.FAILED
+    assert PaymentSupportException.objects.filter(
+        school_id=school.id, gateway_event_id=event.id,
+        category="gateway_event_processing",
+    ).exists()
+
+
+def test_dispute_event_rejects_foreign_household_metadata():
+    school, _ = _school_user()
+    other_school = School.objects.create(name="Dispute foreign family")
+    household = Household.objects.create(school_id=other_school.id, name="Outside household")
+    event = _event_with_payload(
+        school, "dispute.opened", "dispute-foreign-household",
+        {
+            "dispute_id": "fresh-dispute",
+            "amount": "40.00",
+            "metadata": {"household_id": str(household.id)},
+        },
+    )
+
+    with pytest.raises(UnmatchedPaymentError, match="household is not owned"):
+        process_gateway_event_safely(event)
+
+    assert not ProviderDispute.objects.filter(dispute_id="fresh-dispute").exists()
+
+
+@pytest.mark.parametrize("field,reference", [
+    ("intent_id", "foreign-intent-ref"),
+    ("payment_id", "foreign-payment-ref"),
+])
+def test_dispute_rejects_provider_reference_owned_by_another_school(field, reference):
+    school, _ = _school_user()
+    other = School.objects.create(name="Other gateway owner")
+    PaymentIntentRecord.objects.create(
+        school_id=other.id,
+        provider=GatewayProvider.COMPUWERX,
+        client_reference_id="other-gateway-client",
+        provider_intent_id="foreign-intent-ref",
+        provider_payment_id="foreign-payment-ref",
+        amount=Decimal("10.00"),
+    )
+    event = _event_with_payload(
+        school, "dispute.opened", f"foreign-dispute-{field}",
+        {"dispute_id": f"dispute-{field}", field: reference},
+    )
+    with pytest.raises(UnmatchedPaymentError, match="another school"):
+        process_gateway_event_safely(event)
+    assert not ProviderDispute.objects.filter(dispute_id=f"dispute-{field}").exists()
+
+
+def test_dispute_accepts_owned_provider_references():
+    school, _ = _school_user()
+    _intent(school, client_reference_id="owned-dispute-client")
+    event = _event_with_payload(
+        school, "dispute.opened", "owned-gateway-dispute",
+        {"dispute_id": "owned-dispute", "intent_id": "intent_123",
+         "payment_id": "pay_123", "amount": "10.00"},
+    )
+    process_gateway_event_safely(event)
+    dispute = ProviderDispute.objects.get(dispute_id="owned-dispute")
+    assert dispute.school_id == school.id
+
+def test_failure_ledger_uses_persisted_event_school_not_stale_caller():
+    school, _ = _school_user()
+    other = School.objects.create(name="Other Payment Exception School")
+    event = _event(school, status="unknown_provider_status")
+    # Simulate a stale or incorrectly scoped caller object. The durable event
+    # still belongs to the first school and must remain authoritative.
+    event.school_id = other.pk
+
+    with pytest.raises(UnmatchedPaymentError, match="unrecognized payment status"):
+        process_gateway_event_safely(event)
+
+    event.refresh_from_db()
+    assert event.status == GatewayEventStatus.FAILED
+    assert PaymentSupportException.objects.filter(
+        school_id=school.id, gateway_event_id=event.id,
+        category="gateway_event_processing",
+    ).exists()
+    assert not PaymentSupportException.objects.filter(
+        school_id=other.id, gateway_event_id=event.id,
+    ).exists()
+
+
+@pytest.mark.parametrize(
+    "terminal_status", [GatewayEventStatus.PROCESSED, GatewayEventStatus.IGNORED],
+)
+def test_failed_worker_does_not_overwrite_another_workers_terminal_event(terminal_status):
+    school, _ = _school_user()
+    event = _event(school, status="settled", payment_id="stale_worker")
+
+    def completed_by_other_worker(_event):
+        GatewayEvent.objects.filter(pk=event.pk).update(status=terminal_status)
+        raise UnmatchedPaymentError("stale worker failed after another worker completed")
+
+    with patch("payments.services.process_gateway_event", side_effect=completed_by_other_worker):
+        with pytest.raises(UnmatchedPaymentError, match="stale worker"):
+            process_gateway_event_safely(event)
+
+    event.refresh_from_db()
+    assert event.status == terminal_status
+    assert not PaymentSupportException.objects.filter(gateway_event_id=event.id).exists()
