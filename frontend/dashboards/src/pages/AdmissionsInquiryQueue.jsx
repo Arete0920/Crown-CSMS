@@ -170,6 +170,12 @@ export default function AdmissionsInquiryQueue() {
     }
   }, [filters, cursor]);
 
+  // A PATCH may finish after staff navigate to another signed-cursor page.
+  // Its original form callback must reload the *current* page, not the page
+  // captured when the save began.
+  const latestReload = useRef(reload);
+  useEffect(() => { latestReload.current = reload; }, [reload]);
+
   useEffect(() => { reload(); }, [reload]);
   const inquiries = Array.isArray(payload?.results) ? payload.results : [];
   const owners = Array.isArray(payload?.owners) ? payload.owners : [];
@@ -223,7 +229,7 @@ export default function AdmissionsInquiryQueue() {
   }
 
   async function afterSave() {
-    await reload();
+    await latestReload.current();
     setSavedMessage('Inquiry ownership and follow-up saved.');
   }
 

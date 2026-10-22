@@ -338,6 +338,33 @@ describe('staff inquiry pagination', () => {
 });
 
 
+describe('inquiry save and pagination race', () => {
+  it('reloads the current cursor after an earlier page save completes', async () => {
+    const first = { id: 'first-inquiry', parent_name: 'First Family', stage: 'inquiry', follow_up_consent: true };
+    const second = { id: 'second-inquiry', parent_name: 'Second Family', stage: 'inquiry', follow_up_consent: true };
+    let finishSave;
+    api.list.mockImplementation(async ({ cursor }) => ({
+      results: cursor === 'next-page' ? [second] : [first],
+      count: 101, next_cursor: cursor ? null : 'next-page',
+      owners: [], can_edit: true, page_size: 100,
+    }));
+    api.detail.mockImplementation(async (id) => id === first.id ? first : second);
+    api.update.mockImplementation(() => new Promise((resolve) => { finishSave = resolve; }));
+    render(<AdmissionsInquiryQueue />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Open First Family' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Save follow-up' }));
+    await waitFor(() => expect(api.update).toHaveBeenCalledTimes(1));
+    fireEvent.click(screen.getByRole('button', { name: 'Next page' }));
+    expect(await screen.findByRole('button', { name: 'Open Second Family' })).toBeTruthy();
+    await act(async () => { finishSave({}); });
+    await waitFor(() => expect(api.list).toHaveBeenLastCalledWith({
+      stage: '', unassigned: '', overdue: '', cursor: 'next-page',
+    }));
+    expect(screen.getByRole('button', { name: 'Open Second Family' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Open First Family' })).toBeNull();
+  });
+});
+
 describe('inquiry detail response identity and concurrent selection', () => {
   it('never displays an older family after the user selects a different family', async () => {
     const first = { id: 'first-family', parent_name: 'First Family', stage: 'inquiry' };
