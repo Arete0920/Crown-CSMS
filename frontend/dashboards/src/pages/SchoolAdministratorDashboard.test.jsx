@@ -46,6 +46,8 @@ describe('SchoolAdministratorDashboard provenance', () => {
     expect(config.commandModules.every((module) => module.dataState === 'sample')).toBe(true);
     expect(config.note).toContain('API connectivity does not certify these business figures');
     expect(config.rightRailSections.every((section) => section.title.startsWith('Sample:'))).toBe(true);
+    expect(config.rightRailSections.every((section) => !section.title.startsWith('Sample: Sample:'))).toBe(true);
+    expect(config.user.name).toBe('Sarah James');
     expect(loadSchoolAdministratorLiveSnapshot).toHaveBeenCalledTimes(1);
   });
 
