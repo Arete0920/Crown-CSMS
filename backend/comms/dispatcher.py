@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import logging
 
+from sandbox_demo.egress import sandbox_external_egress_blocked
 from .email_service import send_email
 from .inapp_service import send_inapp
 from .models import NotificationPreference
@@ -37,6 +38,12 @@ def dispatch_message(
         subject:   Subject/title used for email and in-app header.
         body:      HTML-safe message body.
     """
+    # In-app is separate from external delivery; the evaluator write gate
+    # must independently prohibit visitor-initiated business mutations.
+    if sandbox_external_egress_blocked(sender=sender, recipient=recipient):
+        send_inapp(sender, recipient, body, subject=subject)
+        return
+
     prefs, _ = NotificationPreference.objects.get_or_create(user=recipient)
 
     # In-app is always delivered

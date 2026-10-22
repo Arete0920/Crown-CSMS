@@ -12,6 +12,8 @@ import os
 import requests
 from django.utils import timezone
 
+from sandbox_demo.egress import SUPPRESSED_REASON, sandbox_external_egress_blocked
+
 from .models import MessageLog
 
 logger = logging.getLogger(__name__)
@@ -52,6 +54,12 @@ def send_email(sender, recipient, subject: str, body_html: str) -> MessageLog:
     Returns:
         MessageLog record (delivery_status="sent" or "failed").
     """
+    if sandbox_external_egress_blocked(sender=sender, recipient=recipient):
+        return MessageLog.objects.create(
+            sender=sender, recipient=recipient, channel="email",
+            subject=subject, body=body_html, delivery_status="suppressed",
+            error_message=SUPPRESSED_REASON,
+        )
     log = MessageLog.objects.create(
         sender=sender,
         recipient=recipient,

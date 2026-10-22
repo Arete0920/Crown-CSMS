@@ -328,13 +328,174 @@ def test_staff_duplicates_are_school_scoped_and_malformed_links_are_hidden(schoo
     client.force_authenticate(user=_staff(school))
     response = client.get(URL, HTTP_X_SCHOOL_ID=str(school.id))
     row = next(row for row in response.data["results"] if row["id"] == str(lead.id))
-    assert {str(item["id"]) for item in row["duplicate_candidates"]} == {second["inquiry_id"]}
-    assert foreign["inquiry_id"] not in str(row)
-    assert row["application_ids"] == []
-    assert all(item["summary"] != "Other school private note" for item in row["touchpoints"])
+    assert "duplicate_candidates" not in row
+    assert "application_ids" not in row
+    assert "notification_status" not in row
+    assert "touchpoints" not in row
+    detail = client.get(f"{URL}{lead.id}/", HTTP_X_SCHOOL_ID=str(school.id))
+    assert detail.status_code == 200
+    detail_row = detail.data
+    assert {str(item["id"]) for item in detail_row["duplicate_candidates"]} == {second["inquiry_id"]}
+    assert foreign["inquiry_id"] not in str(detail_row)
+    assert detail_row["application_ids"] == []
+    assert all(item["summary"] != "Other school private note" for item in detail_row["touchpoints"])
+    other_detail = client.get(f"{URL}{foreign['inquiry_id']}/", HTTP_X_SCHOOL_ID=str(school.id))
+    assert other_detail.status_code == 404
 
 
 @pytest.mark.parametrize("source", ["social_media", "search_engine", "community_event", "instagram", "direct_mail_qr", "current_family", "friend_or_colleague"])
 def test_source_category_does_not_invent_a_specific_channel(source):
     from applications.views_admissions import _normalize_source
     assert _normalize_source(source) == source
+
+
+def test_staff_inquiry_list_database_queries_do_not_scale_per_family(school):
+    from django.test.utils import CaptureQueriesContext
+
+    reader = _staff(school, edit=False)
+    client = APIClient()
+    client.force_authenticate(user=reader)
+    MarketingLead.objects.create(
+        school=school, parent_name="Initial Family", email="initial@example.invalid",
+        inquiry_received_at=timezone.now(),
+    )
+    with CaptureQueriesContext(connection) as small_queries:
+        small = client.get(URL, HTTP_X_SCHOOL_ID=str(school.id))
+    assert small.status_code == 200 and small.data["count"] == 1
+
+    MarketingLead.objects.bulk_create([
+        MarketingLead(school=school, parent_name=f"Additional Family {i}",
+                      email=f"family-{i}@example.invalid", inquiry_received_at=timezone.now())
+        for i in range(15)
+    ])
+    with CaptureQueriesContext(connection) as large_queries:
+        large = client.get(URL, HTTP_X_SCHOOL_ID=str(school.id))
+    assert large.status_code == 200 and large.data["count"] == 16
+    assert len(large.data["results"]) == 16
+    assert all("notification_status" not in lead and "touchpoints" not in lead
+               and "duplicate_candidates" not in lead for lead in large.data["results"])
+    assert len(large_queries) <= len(small_queries) + 2
+
+
+def test_staff_inquiry_cursor_pages_reach_older_records_and_scope_school(school):
+    client = APIClient()
+    client.force_authenticate(user=_staff(school, edit=False))
+    other = School.objects.create(name="Unrelated paging school")
+    MarketingLead.objects.bulk_create([
+        MarketingLead(school=school, parent_name=f"Inquiry Family {i:03d}",
+                      email=f"page-{i}@example.invalid",
+                      inquiry_received_at=timezone.now(), stage="inquiry")
+        for i in range(102)
+    ])
+    MarketingLead.objects.create(school=other, parent_name="Private inquiry",
+                                 email="private@example.invalid",
+                                 inquiry_received_at=timezone.now(), stage="inquiry")
+    first = client.get(URL, {"stage": "all"}, HTTP_X_SCHOOL_ID=str(school.id))
+    assert first.status_code == 200 and len(first.data["results"]) == 100
+    assert first.data["page_size"] == 100 and first.data["count"] == 102
+    token = first.data["next_cursor"]
+    assert token
+    second = client.get(URL, {"stage": "all", "cursor": token},
+                        HTTP_X_SCHOOL_ID=str(school.id))
+    assert second.status_code == 200 and len(second.data["results"]) == 2
+    assert second.data["next_cursor"] is None
+    rows = first.data["results"] + second.data["results"]
+    assert len({row["id"] for row in rows}) == 102
+    assert all(row["parent_name"] != "Private inquiry" for row in rows)
+    for params in (
+        {"stage": "all", "cursor": token + "forged"},
+        {"stage": "inquiry", "cursor": token},
+        {"stage": "all", "limit": "0"},
+        {"stage": "all", "limit": "101"},
+        {"stage": "all", "limit": "not-a-number"},
+    ):
+        assert client.get(URL, params, HTTP_X_SCHOOL_ID=str(school.id)).status_code == 400
+    foreign = APIClient()
+    foreign.force_authenticate(user=_staff(other, edit=False))
+    assert foreign.get(URL, {"stage": "all", "cursor": token},
+                       HTTP_X_SCHOOL_ID=str(other.id)).status_code == 400
+
+
+def test_staff_cursor_paging_is_deterministic_on_tied_due_dates(school):
+    client = APIClient()
+    client.force_authenticate(user=_staff(school, edit=False))
+    for i in range(7):
+        MarketingLead.objects.create(school=school, parent_name=f"Family {i}",
+                                     email=f"family-{i}@example.invalid",
+                                     inquiry_received_at=timezone.now(), stage="inquiry")
+    seen = []
+    token = None
+    for _ in range(4):
+        params = {"stage": "all", "limit": "2"}
+        if token:
+            params["cursor"] = token
+        response = client.get(URL, params, HTTP_X_SCHOOL_ID=str(school.id))
+        assert response.status_code == 200
+        seen.extend(row["id"] for row in response.data["results"])
+        token = response.data["next_cursor"]
+        if not token:
+            break
+    assert len(seen) == len(set(seen)) == 7
+
+
+def test_inquiry_detail_requires_school_view_authority_without_mutation(school):
+    lead = MarketingLead.objects.create(
+        school=school, parent_name="Authorized Family", email="authorized@example.invalid",
+        inquiry_received_at=timezone.now(), stage="inquiry",
+    )
+    other_school = School.objects.create(name="Other details school")
+    foreign = MarketingLead.objects.create(
+        school=other_school, parent_name="Private Family", email="private@example.invalid",
+        inquiry_received_at=timezone.now(), stage="inquiry",
+    )
+    client = APIClient()
+    client.force_authenticate(user=_staff(school, edit=False))
+    before = CampaignTouchpoint.objects.filter(school=school, lead=lead).count()
+    detail = client.get(f"{URL}{lead.id}/", HTTP_X_SCHOOL_ID=str(school.id))
+    assert detail.status_code == 200
+    assert detail["Cache-Control"] == "no-store"
+    assert detail.data["id"] == str(lead.id)
+    assert {"application_ids", "duplicate_candidates", "touchpoints", "notification_status"} <= set(detail.data)
+    assert client.patch(
+        f"{URL}{lead.id}/", {"stage": "lost"}, format="json",
+        HTTP_X_SCHOOL_ID=str(school.id),
+    ).status_code == 403
+    assert client.get(f"{URL}{foreign.id}/", HTTP_X_SCHOOL_ID=str(school.id)).status_code == 404
+    assert CampaignTouchpoint.objects.filter(school=school, lead=lead).count() == before
+    lead.refresh_from_db()
+    assert lead.stage == "inquiry"
+
+    client.force_authenticate(user=_staff(other_school, edit=False))
+    # Tenant mismatch is concealed as 404 before record detail is exposed.
+    assert client.get(f"{URL}{lead.id}/", HTTP_X_SCHOOL_ID=str(school.id)).status_code == 404
+
+
+def test_inquiry_cursor_preserves_due_date_and_null_last_order(school):
+    client = APIClient()
+    client.force_authenticate(user=_staff(school, edit=False))
+    base_due = timezone.now() + timedelta(days=1)
+    leads = {}
+    for name, due in (
+        ("no_due", None),
+        ("third", base_due + timedelta(days=3)),
+        ("first", base_due + timedelta(days=1)),
+        ("second", base_due + timedelta(days=2)),
+    ):
+        leads[name] = MarketingLead.objects.create(
+            school=school, parent_name=name, email=f"{name}@example.invalid",
+            inquiry_received_at=timezone.now(), stage="inquiry",
+            next_follow_up_at=due,
+        )
+    seen = []
+    cursor = None
+    for _ in range(3):
+        params = {"stage": "all", "limit": "2"}
+        if cursor:
+            params["cursor"] = cursor
+        response = client.get(URL, params, HTTP_X_SCHOOL_ID=str(school.id))
+        assert response.status_code == 200, response.data
+        seen.extend(row["id"] for row in response.data["results"])
+        cursor = response.data["next_cursor"]
+        if not cursor:
+            break
+    assert seen == [str(leads[name].id) for name in ("first", "second", "third", "no_due")]

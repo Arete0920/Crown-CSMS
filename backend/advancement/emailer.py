@@ -14,6 +14,8 @@ from email import encoders
 from django.core.mail import EmailMultiAlternatives
 from django.utils import timezone
 
+from sandbox_demo.egress import SandboxEgressSuppressed, SUPPRESSED_REASON, require_external_egress
+
 logger = logging.getLogger(__name__)
 
 
@@ -27,6 +29,19 @@ def send_outbox_email(outbox_row) -> bool:
     ``outbox_row`` is an EmailOutbox model instance (not imported at module level
     to avoid circular imports during app startup).
     """
+    # Advancement uses an independent Django SMTP outbox, not comms.tasks.
+    # Suppress before constructing a message or touching SMTP credentials.
+    try:
+        require_external_egress("EMAIL", school_id=outbox_row.school_id)
+    except SandboxEgressSuppressed:
+        # EmailOutbox supports only pending/sent/failed: failed is terminal
+        # to its management command; the reason makes suppression explicit.
+        outbox_row.status = "failed"
+        outbox_row.sent_at = None
+        outbox_row.last_error = SUPPRESSED_REASON
+        outbox_row.save(update_fields=["status", "sent_at", "last_error"])
+        return False
+
     outbox_row.attempts += 1
     try:
         msg = EmailMultiAlternatives(
