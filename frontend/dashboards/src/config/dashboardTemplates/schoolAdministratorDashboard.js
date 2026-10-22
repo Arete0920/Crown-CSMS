@@ -37,6 +37,9 @@ export default {
   lastSyncLabel: 'Sample fixture — no live business-data refresh',
   note: 'Sample demonstration only. All school operations values, statuses, activities and timestamps below are fictional examples.',
   dataSource: 'sample',
+  dataState: 'sample',
+  sourceLabel: 'Illustrative Heritage school operations — sample data, not live school records',
+  disableLiveData: true,
   apiEndpoint: '/api/v1/dashboards/schoolAdministrator/summary/',
   liveDataKey: 'schoolAdministrator',
   metrics: [

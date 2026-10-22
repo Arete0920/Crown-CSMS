@@ -38,12 +38,14 @@ describe('dashboard registry contract', () => {
 
       expect(screen.getByAltText('CROWN Christian School Management Solution')).toBeTruthy();
       expect(screen.getByAltText('CROWN - Christian School Management Solution')).toBeTruthy();
-      expect(screen.getByText('Good morning, Sarah!')).toBeTruthy();
+      expect(screen.getByText('Heritage administrator — illustrative demonstration')).toBeTruthy();
       expect(screen.getAllByText('Heritage Christian Academy').length).toBeGreaterThan(0);
       expect(screen.queryByText('Sandbox preview data shown. Connect backend for live records.')).toBeNull();
       expect(screen.getByText('Source and sync status')).toBeTruthy();
-        expect(screen.getByText('Updated from current school operations snapshot')).toBeTruthy();
-        expect(screen.getAllByText(/dashboard (records|data)/i).length).toBeGreaterThan(0);
+        expect(screen.getByText('Sample fixture — no live business-data refresh')).toBeTruthy();
+        expect(screen.getAllByText(/sample demonstration only/i).length).toBeGreaterThan(0);
+      expect(screen.getAllByText('Sample').length).toBeGreaterThan(0);
+      expect(screen.queryByText('Live')).toBeNull();
 
       expect(screen.getAllByText('Live Data Certification').length).toBeGreaterThan(0);
       expect(screen.getAllByText('Demo Data State').length).toBeGreaterThan(0);
