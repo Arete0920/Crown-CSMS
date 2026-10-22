@@ -21,6 +21,56 @@ def test_heritage_school_is_always_blocked(settings):
         require_external_egress("EMAIL", school_id=HERITAGE_SCHOOL_ID)
 
 
+@pytest.mark.django_db
+def test_unscoped_heritage_membership_denies_direct_email(settings, monkeypatch):
+    from core.models import School, UserAccount, UserRole
+    from core.tenant_models import tenant_context
+    from comms import email_service
+
+    for flag in ("CROWN_SANDBOX_OUTBOUND_DISABLED", "CROWN_SANDBOX_EVALUATOR_MODE"):
+        setattr(settings, flag, False)
+        monkeypatch.delenv(flag, raising=False)
+    settings.CROWN_DEMO_SCHOOL_ID = HERITAGE_SCHOOL_ID
+
+    school = School.objects.create(id=HERITAGE_SCHOOL_ID, name="Synthetic Heritage")
+    user = UserAccount.objects.create_user(
+        username="heritage-egress-member", email="member@example.test",
+    )
+    assert user.school_id is None
+    UserRole.objects.create(user=user, school=school, role_code="PARENT")
+
+    token = Mock(side_effect=AssertionError("No provider token may be acquired"))
+    monkeypatch.setattr(email_service, "_get_graph_token", token)
+    with tenant_context(None):
+        assert sandbox_external_egress_blocked(sender=user)
+        receipt = email_service.send_email(user, user, "Synthetic", "No send")
+    assert receipt.delivery_status == "suppressed"
+    assert receipt.error_message == SUPPRESSED_REASON
+    token.assert_not_called()
+
+
+@pytest.mark.django_db
+def test_explicit_other_school_scope_is_not_blocked_by_shared_heritage_role(settings, monkeypatch):
+    from core.models import School, UserAccount, UserRole
+    from core.tenant_models import tenant_context
+
+    for flag in ("CROWN_SANDBOX_OUTBOUND_DISABLED", "CROWN_SANDBOX_EVALUATOR_MODE"):
+        setattr(settings, flag, False)
+        monkeypatch.delenv(flag, raising=False)
+    settings.CROWN_DEMO_SCHOOL_ID = HERITAGE_SCHOOL_ID
+    heritage = School.objects.create(id=HERITAGE_SCHOOL_ID, name="Synthetic Heritage")
+    other = School.objects.create(name="Unrelated School")
+    user = UserAccount.objects.create_user(
+        username="shared-egress-member", email="shared@example.test",
+    )
+    UserRole.objects.create(user=user, school=heritage, role_code="PARENT")
+    UserRole.objects.create(user=user, school=other, role_code="PARENT")
+    with tenant_context(None):
+        assert sandbox_external_egress_blocked(sender=user)
+    with tenant_context(other):
+        assert not sandbox_external_egress_blocked(sender=user)
+
+
 def test_evaluator_host_blocks_unscoped_egress(settings):
     settings.CROWN_SANDBOX_OUTBOUND_DISABLED = True
     assert sandbox_external_egress_blocked()

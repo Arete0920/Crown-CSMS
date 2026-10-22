@@ -33,6 +33,25 @@ def _is_heritage_school(school_id: str) -> bool:
     return bool(school_id) and school_id in {HERITAGE_SCHOOL_ID, configured}
 
 
+def _unscoped_heritage_user(value) -> bool:
+    """Deny unscoped direct sends from users affiliated with Heritage.
+
+    UserAccount.school is optional: legitimate identities may be attached only
+    through UserRole. Without a tenant context, silently treating their user
+    UUID as a school UUID would bypass the unconditional Heritage quarantine.
+    """
+    from core.models import UserAccount, UserRole
+
+    if not isinstance(value, UserAccount) or value.pk is None:
+        return False
+    configured = str(getattr(settings, "CROWN_DEMO_SCHOOL_ID", "") or "").strip().lower()
+    school_ids = [HERITAGE_SCHOOL_ID]
+    if configured and configured != HERITAGE_SCHOOL_ID:
+        school_ids.append(configured)
+    # Database errors propagate: a failed ownership check must not allow I/O.
+    return UserRole.objects.filter(user_id=value.pk, school_id__in=school_ids).exists()
+
+
 def sandbox_external_egress_blocked(*, school_id=None, sender=None, recipient=None) -> bool:
     """Deny evaluator-host traffic and synthetic Heritage provider delivery."""
     for flag in ("CROWN_SANDBOX_OUTBOUND_DISABLED", "CROWN_SANDBOX_EVALUATOR_MODE"):
@@ -49,7 +68,15 @@ def sandbox_external_egress_blocked(*, school_id=None, sender=None, recipient=No
 
     from core.tenant_models import get_current_school
 
-    return _is_heritage_school(_school_id(get_current_school()))
+    current_school = get_current_school()
+    if _is_heritage_school(_school_id(current_school)):
+        return True
+    # Explicit authorized school context takes precedence for shared users.
+    # Without it, check memberships that are not represented by the nullable
+    # UserAccount.school FK before any provider token or transport is touched.
+    if current_school is None:
+        return any(_unscoped_heritage_user(value) for value in (sender, recipient))
+    return False
 
 
 def require_external_egress(channel: str, *, school_id=None, sender=None, recipient=None) -> None:
