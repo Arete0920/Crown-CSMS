@@ -7,6 +7,19 @@ import reviewed_blacklist_migrations as subject
 
 
 class BlacklistMigrationBoundaryTests(unittest.TestCase):
+    def test_runtime_manifest_pins_reviewed_simplejwt(self):
+        """The Docker/backend resolver must not silently upgrade vendor schema."""
+        from pathlib import Path
+
+        manifest = Path(__file__).resolve().parents[2] / "backend" / "requirements.txt"
+        declarations = [
+            line.strip() for line in manifest.read_text(encoding="utf-8").splitlines()
+            if line.strip().startswith("djangorestframework-simplejwt")
+        ]
+        self.assertEqual(
+            declarations, [f"djangorestframework-simplejwt=={subject.REVIEWED_VERSION}"]
+        )
+
     def test_clean_uninitialized_database(self):
         self.assertTrue(subject.validate_source_state(
             runtime_version="5.5.1",
