@@ -25,7 +25,11 @@ def test_zero_award_cycle_commits_and_verifies():
     assert committed.data["awards_skipped"] == 0
     assert committed.data["errors"] == []
 
-    verified = client.get(f"{BASE_URL}{session_id}/verify/", **headers)
+    inspected = client.get(f"{BASE_URL}{session_id}/verify/", **headers)
+    assert inspected.status_code == 200
+    assert inspected.data["status"] == "committed"  # GET must not certify the cycle.
+
+    verified = client.post(f"{BASE_URL}{session_id}/verify/", {}, format="json", **headers)
     assert verified.status_code == 200
     assert verified.data["status"] == "verified"
     assert verified.data["awards_created"] == 0

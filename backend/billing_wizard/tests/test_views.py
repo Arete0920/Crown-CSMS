@@ -3,7 +3,7 @@ from django.contrib.auth import get_user_model
 from django.test import TestCase
 from rest_framework.test import APIClient
 
-from core.models import School
+from core.models import CrownPermission, RolePermission, School, UserRole
 from billing.models import InstallmentPlan
 from billing_wizard.models import BillingWizardSession
 
@@ -52,6 +52,11 @@ def _headers(school_id):
 
 def _client_for(school):
     user = _make_user(school)
+    permission, _ = CrownPermission.objects.get_or_create(
+        code="finance.edit", defaults={"description": "Edit school finances"},
+    )
+    RolePermission.objects.get_or_create(role_code="FINANCE_DIRECTOR", permission=permission)
+    UserRole.objects.get_or_create(user=user, school=school, role_code="FINANCE_DIRECTOR")
     c = APIClient()
     c.force_authenticate(user=user)
     c._school_id = school.id
@@ -70,6 +75,13 @@ class TestAuth(TestCase):
         c = APIClient()
         r = c.post(BASE_URL, **_headers(self.school.id))
         self.assertEqual(r.status_code, 401)
+
+    def test_authenticated_user_without_finance_role_cannot_open_billing_wizard(self):
+        reader = APIClient()
+        reader.force_authenticate(user=_make_user(self.school))
+        denied = reader.post(BASE_URL, **_headers(self.school.id))
+        self.assertEqual(denied.status_code, 403)
+        self.assertFalse(BillingWizardSession.objects.filter(school=self.school).exists())
 
     def test_configure_requires_auth(self):
         c = APIClient()
@@ -169,6 +181,12 @@ class TestConfigure(TestCase):
         r = self._configure({"term": "2026-FALL", "billing_mode": "turbo"})
         self.assertEqual(r.status_code, 400)
 
+    def test_configure_non_string_fields_rejected(self):
+        for payload in ({"term": 123, "billing_mode": "simple"},
+                        {"term": "2026-FALL", "billing_mode": []}):
+            with self.subTest(payload=payload):
+                self.assertEqual(self._configure(payload).status_code, 400)
+
     def test_configure_reconfigure_allowed(self):
         self._configure({"term": "2026-FALL", "billing_mode": "simple"})
         r = self._configure({"term": "2026-SPRING", "billing_mode": "advanced"})
@@ -239,6 +257,21 @@ class TestSavePlans(TestCase):
         r = self._plans({"plans": bad})
         self.assertEqual(r.status_code, 400)
 
+    def test_non_finite_and_huge_plan_amounts_reject_without_mutation(self):
+        for amount in ("NaN", "Infinity", "-Infinity", "1e1000", "-0.001", "0.001", "10.125"):
+            with self.subTest(amount=amount):
+                record = dict(VALID_PLANS[0], total_amount=amount)
+                denied = self._plans({"plans": [record]})
+                self.assertEqual(denied.status_code, 400)
+                session = BillingWizardSession.objects.get(pk=self.session_id)
+                self.assertEqual(session.status, BillingWizardSession.STATUS_CONFIGURED)
+                self.assertFalse(session.plans_config)
+
+    def test_plan_must_be_an_object_with_string_name(self):
+        for record in (None, "invalid", dict(VALID_PLANS[0], name=123)):
+            with self.subTest(record=record):
+                self.assertEqual(self._plans({"plans": [record]}).status_code, 400)
+
 
 # ---------------------------------------------------------------------------
 # TestSaveFees
@@ -286,6 +319,22 @@ class TestSaveFees(TestCase):
         bad = [{"fee_type": "TECH", "amount": "50.00", "is_recurring": False}]
         r = self._fees({"fees": bad})
         self.assertEqual(r.status_code, 400)
+
+    def test_non_finite_and_huge_fees_reject_without_mutation(self):
+        for amount in ("NaN", "Infinity", "-Infinity", "1e1000", "-0.001", "0.001", "10.125"):
+            with self.subTest(amount=amount):
+                record = dict(VALID_FEES[0], amount=amount)
+                self.assertEqual(self._fees({"fees": [record]}).status_code, 400)
+                session = BillingWizardSession.objects.get(pk=self.session_id)
+                self.assertEqual(session.status, BillingWizardSession.STATUS_CONFIGURED)
+                self.assertFalse(session.fees_config)
+
+    def test_fee_payload_types_are_validated(self):
+        for record in (None, "invalid", dict(VALID_FEES[0], name=8),
+                       dict(VALID_FEES[0], fee_type=7),
+                       dict(VALID_FEES[0], grade_level=5)):
+            with self.subTest(record=record):
+                self.assertEqual(self._fees({"fees": [record]}).status_code, 400)
 
 
 # ---------------------------------------------------------------------------
@@ -376,7 +425,7 @@ class TestVerify(TestCase):
         self.client.post(f"{BASE_URL}{sid}/commit/", {"confirm": True}, format="json", **h)
 
     def _verify(self):
-        return self.client.get(
+        return self.client.post(
             f"{BASE_URL}{self.session_id}/verify/",
             **_headers(self.school.id),
         )
@@ -392,6 +441,28 @@ class TestVerify(TestCase):
         self.assertEqual(r2.status_code, 200)
         self.assertEqual(r2.data["status"], "verified")
 
+    def test_get_verify_is_read_only_before_and_after_post(self):
+        session = BillingWizardSession.objects.get(pk=self.session_id)
+        previous_updated_at = session.updated_at
+        url = f"{BASE_URL}{self.session_id}/verify/"
+
+        inspection = self.client.get(url, **_headers(self.school.id))
+        self.assertEqual(inspection.status_code, 200)
+        self.assertEqual(inspection.data["status"], BillingWizardSession.STATUS_COMMITTED)
+        session.refresh_from_db()
+        self.assertEqual(session.updated_at, previous_updated_at)
+        self.assertEqual(session.status, BillingWizardSession.STATUS_COMMITTED)
+
+        verified = self._verify()
+        self.assertEqual(verified.status_code, 200)
+        session.refresh_from_db()
+        verified_updated_at = session.updated_at
+        self.assertEqual(session.status, BillingWizardSession.STATUS_VERIFIED)
+        self.assertEqual(self.client.get(url, **_headers(self.school.id)).status_code, 200)
+        self.assertEqual(self._verify().status_code, 200)
+        session.refresh_from_db()
+        self.assertEqual(session.updated_at, verified_updated_at)
+
     def test_verify_requires_committed_status(self):
         # New session still in draft → 409
         r_new = self.client.post(BASE_URL, **_headers(self.school.id))
@@ -401,3 +472,71 @@ class TestVerify(TestCase):
             **_headers(self.school.id),
         )
         self.assertEqual(r2.status_code, 409)
+
+
+    def test_committed_and_verified_billing_records_cannot_be_reopened(self):
+        session = BillingWizardSession.objects.get(pk=self.session_id)
+        original_count = InstallmentPlan.objects.filter(school_id=self.school.id).count()
+        edits = (
+            ("configure/", {"term": "2027-FALL", "billing_mode": "simple"}),
+            ("plans/", {"plans": [{"name": "Unauthorized Reopen", "installment_count": 1,
+                                   "first_due_on": "2027-08-01", "cadence_days": 0,
+                                   "total_amount": "400.00"}]}),
+            ("fees/", {"fees": [{"name": "Late fee", "fee_type": "TECH", "amount": "90.00"}]}),
+        )
+        for state in (BillingWizardSession.STATUS_COMMITTED, BillingWizardSession.STATUS_VERIFIED):
+            if state == BillingWizardSession.STATUS_VERIFIED:
+                self.assertEqual(self._verify().status_code, 200)
+            session.refresh_from_db()
+            before = (session.status, session.updated_at, session.commit_result,
+                      session.term, session.plans_config, session.fees_config)
+            self.assertEqual(session.status, state)
+            for suffix, payload in edits:
+                with self.subTest(state=state, endpoint=suffix):
+                    denied = self.client.post(
+                        f"{BASE_URL}{self.session_id}/{suffix}", payload,
+                        format="json", **_headers(self.school.id),
+                    )
+                    self.assertEqual(denied.status_code, 409)
+                    session.refresh_from_db()
+                    self.assertEqual(
+                        (session.status, session.updated_at, session.commit_result,
+                         session.term, session.plans_config, session.fees_config),
+                        before,
+                    )
+                    self.assertEqual(InstallmentPlan.objects.filter(school_id=self.school.id).count(), original_count)
+
+class AuthenticatedTenantRegressionTest(TestCase):
+    def test_bearer_cannot_use_finance_role_to_override_home_school(self):
+        from rest_framework_simplejwt.tokens import AccessToken
+
+        owned, other = _make_school(), _make_school()
+        user = _make_user(owned)
+        user.school = owned
+        user.save(update_fields=["school"])
+        permission, _ = CrownPermission.objects.get_or_create(code="finance.edit")
+        RolePermission.objects.get_or_create(role_code="FINANCE_DIRECTOR", permission=permission)
+        for school in (owned, other):
+            UserRole.objects.create(user=user, school=school, role_code="FINANCE_DIRECTOR")
+        client = APIClient()
+        client.credentials(HTTP_AUTHORIZATION=f"Bearer {AccessToken.for_user(user)}")
+        denied = client.post(BASE_URL, **_headers(other.id))
+        self.assertEqual(denied.status_code, 404)
+        self.assertFalse(BillingWizardSession.objects.filter(school=other).exists())
+        self.assertEqual(client.post(BASE_URL, **_headers(owned.id)).status_code, 201)
+
+
+class BillingCertificationAuthorizationTest(TestCase):
+    def test_user_without_finance_authority_cannot_certify(self):
+        school = _make_school()
+        session = BillingWizardSession.objects.create(
+            school=school, status=BillingWizardSession.STATUS_COMMITTED,
+        )
+        before = session.updated_at
+        reader = APIClient()
+        reader.force_authenticate(user=_make_user(school))
+        response = reader.post(f"{BASE_URL}{session.id}/verify/", **_headers(school.id))
+        self.assertEqual(response.status_code, 403)
+        session.refresh_from_db()
+        self.assertEqual(session.status, BillingWizardSession.STATUS_COMMITTED)
+        self.assertEqual(session.updated_at, before)

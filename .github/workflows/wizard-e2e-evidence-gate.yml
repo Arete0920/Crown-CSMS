@@ -164,7 +164,19 @@ jobs:
 
       - name: Install Chromium
         working-directory: frontend/dashboards
-        run: npx playwright install --with-deps chromium
+        shell: bash
+        run: |
+          set -euo pipefail
+          # The disposable Ubuntu runner can carry a Microsoft APT feed returning
+          # HTTP 403, which breaks Playwright's full dependency installation.
+          # Exclude only that unrelated feed; retain all browser/dependency checks.
+          for source in /etc/apt/sources.list.d/*; do
+            if [ -f "$source" ] && sudo grep -q "packages.microsoft.com" "$source"; then
+              echo "Disabling unrelated Microsoft APT feed for this CI job: $source"
+              sudo mv "$source" "$source.crown-disabled"
+            fi
+          done
+          npx playwright install --with-deps chromium
 
       - name: Assert complete canonical spec registry
         shell: bash
