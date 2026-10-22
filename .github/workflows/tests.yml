@@ -13,9 +13,10 @@ on:
 
 concurrency:
   group: tests-${{ github.workflow }}-${{ github.ref }}
-  # Preserve in-flight governed coverage evidence across overlapping runs on the same PR ref.
-  # Queued successors may run after the current suite completes; no test or coverage gates change.
-  cancel-in-progress: false
+  # Cancel only superseded PR-head coverage runs; the newest head must still pass
+  # the entire backend suite, governed 75% coverage, and artifact upload.
+  # Preserve in-flight protected-main, spine, and manual-dispatch evidence.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   pytest-internal:
@@ -95,7 +96,7 @@ jobs:
 
       - name: Upload complete backend coverage evidence
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: tests-backend-coverage-${{ github.sha }}-${{ github.run_attempt }}
           path: audit-artifacts/backend-coverage/
@@ -187,7 +188,7 @@ jobs:
           --junitxml=survey-postgresql-junit.xml
       - name: Preserve PostgreSQL test evidence
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: survey-postgresql-${{ github.sha }}
           path: survey-postgresql-junit.xml
