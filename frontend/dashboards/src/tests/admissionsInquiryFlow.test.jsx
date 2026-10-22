@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import AdmissionsInquiryPage from '../pages/AdmissionsInquiryPage.jsx';
@@ -8,8 +8,8 @@ import ProspectiveFamilyAdmissionsWizard from '../pages/ProspectiveFamilyAdmissi
 import MarketingDashboard from '../pages/MarketingDashboard.jsx';
 import { clearAdmissionsInquiry, clearPendingAdmissionsInquiry, inquiryEntryPath, loadAdmissionsInquiry } from '../lib/admissionsInquiryState.js';
 
-const api = vi.hoisted(() => ({ submit: vi.fn(), start: vi.fn(), list: vi.fn(), update: vi.fn(), application: vi.fn(), dashboard: vi.fn() }));
-vi.mock('../api/admissionsInquiries.js', async (original) => ({ ...(await original()), submitAdmissionsInquiry: api.submit, startInquiryApplication: api.start, fetchAdmissionsInquiries: api.list, updateAdmissionsInquiry: api.update }));
+const api = vi.hoisted(() => ({ submit: vi.fn(), start: vi.fn(), list: vi.fn(), detail: vi.fn(), update: vi.fn(), application: vi.fn(), dashboard: vi.fn() }));
+vi.mock('../api/admissionsInquiries.js', async (original) => ({ ...(await original()), submitAdmissionsInquiry: api.submit, startInquiryApplication: api.start, fetchAdmissionsInquiries: api.list, fetchAdmissionsInquiry: api.detail, updateAdmissionsInquiry: api.update }));
 vi.mock('../api/admissions.js', () => ({ fetchAdmissionsPublicConfig: async () => ({ application_fee: { required: false, amount: 0, currency: 'USD' } }), submitAdmissionsIntake: api.application }));
 vi.mock('../components/crown/CrownLayout.jsx', () => ({ default: ({ title, children }) => <main><h1>{title}</h1>{children}</main> }));
 vi.mock('../hooks/useDashboardData.js', () => ({ default: api.dashboard }));
@@ -193,10 +193,11 @@ describe('staff inquiry follow-up queue', () => {
       enabled: false, notifications: [{ audience: 'family', channel: 'email', event: 'created', status: 'provider_accepted' }],
     } };
     api.list.mockResolvedValue({ results: [inquiry], owners: [], can_edit: false, notifications_enabled: enabled });
+    api.detail.mockResolvedValue(inquiry);
     render(<AdmissionsInquiryQueue />);
     fireEvent.click(await screen.findByRole('button', { name: 'Open Jordan Reed' }));
     expect(screen.queryAllByText(/Automatic inquiry messages are off\./)).toHaveLength(enabled === false ? 1 : 0);
-    const history = screen.getByText('Communication status');
+    const history = await screen.findByText('Communication status');
     fireEvent.click(history);
     expect(history.closest('details').open).toBe(true);
     expect(screen.getByText('Family · email · Accepted by provider')).toBeTruthy();
@@ -212,12 +213,14 @@ describe('staff inquiry follow-up queue', () => {
     };
     const inquiry = { id: INQUIRY, parent_name: 'Jordan Reed', email: 'jordan@example.org', stage: 'inquiry', notification_status: notificationStatus };
     api.list.mockResolvedValue({ results: [inquiry], owners: [], can_edit: false });
+    api.detail.mockResolvedValue(inquiry);
     render(<AdmissionsInquiryQueue />);
     fireEvent.click(await screen.findByRole('button', { name: 'Open Jordan Reed' }));
+    await screen.findByText('Communication status');
     const note = screen.queryByText('Automatic inquiry messages are off. Review communication history before contacting this family.');
     if (enabled === false) expect(note).toBeTruthy();
     else expect(note).toBeNull();
-    const history = screen.getByText('Communication status');
+    const history = await screen.findByText('Communication status');
     fireEvent.click(history);
     expect(history.closest('details').open).toBe(true);
     expect(screen.getByText('Family · email · Accepted by provider')).toBeTruthy();
@@ -248,10 +251,11 @@ describe('staff inquiry follow-up queue', () => {
   it('saves an owner, due date, completed contact and reversible reminder pause', async () => {
     const inquiry = { id: INQUIRY, parent_name: 'Jordan Reed', email: 'jordan@example.org', grade_interest: '6', entry_year: '2029-2030', stage: 'inquiry', first_source: 'community_event', follow_up_consent: true, family_follow_up_enabled: true, application_ids: [] };
     api.list.mockImplementation(async () => ({ results: [inquiry], owners: [{ id: 'counselor-1', name: 'Pat Counselor' }], can_edit: true }));
+    api.detail.mockImplementation(async () => inquiry);
     api.update.mockImplementation(async (_id, changes) => Object.assign(inquiry, changes));
     render(<AdmissionsInquiryQueue />);
     fireEvent.click(await screen.findByRole('button', { name: 'Open Jordan Reed' }));
-    fireEvent.change(screen.getByLabelText('Assigned counselor'), { target: { value: 'counselor-1' } });
+    fireEvent.change(await screen.findByLabelText('Assigned counselor'), { target: { value: 'counselor-1' } });
     fireEvent.change(screen.getByLabelText('Next follow-up'), { target: { value: '2026-10-20T09:00' } });
     fireEvent.change(screen.getByLabelText('Contact summary'), { target: { value: 'Called family; offered a visit.' } });
     fireEvent.click(screen.getByLabelText(/Family follow-up reminders enabled/));
@@ -265,10 +269,11 @@ describe('staff inquiry follow-up queue', () => {
   it('records a family stop request as consent withdrawal and prevents later staff re-enablement', async () => {
     const inquiry = { id: INQUIRY, parent_name: 'Jordan Reed', email: 'jordan@example.org', stage: 'inquiry', follow_up_consent: true, family_follow_up_enabled: true };
     api.list.mockImplementation(async () => ({ results: [inquiry], owners: [], can_edit: true }));
+    api.detail.mockImplementation(async () => inquiry);
     api.update.mockImplementation(async (_id, changes) => Object.assign(inquiry, changes));
     render(<AdmissionsInquiryQueue />);
     fireEvent.click(await screen.findByRole('button', { name: 'Open Jordan Reed' }));
-    expect(screen.getByLabelText('Family asked to stop reminders').checked).toBe(false);
+    expect((await screen.findByLabelText('Family asked to stop reminders')).checked).toBe(false);
     fireEvent.click(screen.getByLabelText('Family asked to stop reminders'));
     expect(screen.getByLabelText(/Family follow-up reminders enabled/).checked).toBe(false);
     expect(screen.getByLabelText(/Family follow-up reminders enabled/).disabled).toBe(true);
@@ -288,5 +293,131 @@ describe('staff inquiry follow-up queue', () => {
     expect(screen.queryByRole('table')).toBeNull();
     expect(screen.queryByText('Jordan Reed')).toBeNull();
     await waitFor(() => expect(api.list).toHaveBeenCalledTimes(1));
+  });
+});
+
+
+describe('on-demand staff inquiry details', () => {
+  it('does not render unverified details when the selected read is denied', async () => {
+    const inquiry = { id: INQUIRY, parent_name: 'Jordan Reed', email: 'jordan@example.org', stage: 'inquiry' };
+    api.list.mockResolvedValue({ results: [inquiry], owners: [], can_edit: true });
+    api.detail.mockRejectedValueOnce({ message: 'Permission denied.' });
+    render(<AdmissionsInquiryQueue />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Open Jordan Reed' }));
+    expect(await screen.findByText('Permission denied.')).toBeTruthy();
+    expect(screen.queryByRole('form', { name: 'Update inquiry follow-up' })).toBeNull();
+    expect(api.detail).toHaveBeenCalledWith(INQUIRY);
+  });
+});
+
+describe('staff inquiry pagination', () => {
+  it('navigates to older inquiries without leaking details from the previous page', async () => {
+    const first = { id: 'first-inquiry', parent_name: 'First Family', stage: 'inquiry' };
+    const older = { id: 'older-inquiry', parent_name: 'Older Family', stage: 'inquiry' };
+    api.list.mockImplementation(async ({ cursor }) => ({
+      results: cursor === 'signed-next' ? [older] : [first],
+      count: 101, next_cursor: cursor ? null : 'signed-next',
+      page_size: 100, can_edit: false, owners: [],
+    }));
+    api.detail.mockImplementation(async (id) => id === first.id ? first : older);
+    render(<AdmissionsInquiryQueue />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Open First Family' }));
+    await screen.findByText('You have read-only access to this queue.');
+    fireEvent.click(screen.getByRole('button', { name: 'Next page' }));
+    expect(await screen.findByRole('button', { name: 'Open Older Family' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Open First Family' })).toBeNull();
+    expect(screen.queryByText('You have read-only access to this queue.')).toBeNull();
+    expect(api.list).toHaveBeenLastCalledWith({ stage: '', unassigned: '', overdue: '', cursor: 'signed-next' });
+    fireEvent.click(screen.getByRole('button', { name: 'Previous page' }));
+    expect(await screen.findByRole('button', { name: 'Open First Family' })).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Next page' }));
+    expect(await screen.findByRole('button', { name: 'Open Older Family' })).toBeTruthy();
+    fireEvent.click(screen.getByLabelText('Unassigned'));
+    await waitFor(() => expect(api.list).toHaveBeenLastCalledWith({ stage: '', unassigned: 1, overdue: '' }));
+  });
+});
+
+
+describe('inquiry save and pagination race', () => {
+  it('reloads the current cursor after an earlier page save completes', async () => {
+    const first = { id: 'first-inquiry', parent_name: 'First Family', stage: 'inquiry', follow_up_consent: true };
+    const second = { id: 'second-inquiry', parent_name: 'Second Family', stage: 'inquiry', follow_up_consent: true };
+    let finishSave;
+    api.list.mockImplementation(async ({ cursor }) => ({
+      results: cursor === 'next-page' ? [second] : [first],
+      count: 101, next_cursor: cursor ? null : 'next-page',
+      owners: [], can_edit: true, page_size: 100,
+    }));
+    api.detail.mockImplementation(async (id) => id === first.id ? first : second);
+    api.update.mockImplementation(() => new Promise((resolve) => { finishSave = resolve; }));
+    render(<AdmissionsInquiryQueue />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Open First Family' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Save follow-up' }));
+    await waitFor(() => expect(api.update).toHaveBeenCalledTimes(1));
+    fireEvent.click(screen.getByRole('button', { name: 'Next page' }));
+    expect(await screen.findByRole('button', { name: 'Open Second Family' })).toBeTruthy();
+    await act(async () => { finishSave({}); });
+    await waitFor(() => expect(api.list).toHaveBeenLastCalledWith({
+      stage: '', unassigned: '', overdue: '', cursor: 'next-page',
+    }));
+    expect(screen.getByRole('button', { name: 'Open Second Family' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Open First Family' })).toBeNull();
+  });
+});
+
+describe('inquiry detail response identity and concurrent selection', () => {
+  it('never displays an older family after the user selects a different family', async () => {
+    const first = { id: 'first-family', parent_name: 'First Family', stage: 'inquiry' };
+    const second = { id: 'second-family', parent_name: 'Second Family', stage: 'inquiry' };
+    let resolveFirst;
+    api.list.mockResolvedValue({ results: [first, second], owners: [], can_edit: false });
+    api.detail.mockImplementation((id) => id === first.id
+      ? new Promise((resolve) => { resolveFirst = resolve; })
+      : Promise.resolve(second));
+    render(<AdmissionsInquiryQueue />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Open First Family' }));
+    await waitFor(() => expect(api.detail).toHaveBeenCalledWith(first.id));
+    fireEvent.click(screen.getByRole('button', { name: 'Open Second Family' }));
+    expect(await screen.findByRole('region', { name: 'Inquiry details for Second Family' })).toBeTruthy();
+    await act(async () => { resolveFirst(first); });
+    expect(screen.queryByRole('region', { name: 'Inquiry details for First Family' })).toBeNull();
+    expect(screen.getByRole('region', { name: 'Inquiry details for Second Family' })).toBeTruthy();
+  });
+
+  it('rejects a successful response whose inquiry identity does not match the selected row', async () => {
+    const inquiry = { id: 'selected-family', parent_name: 'Selected Family', stage: 'inquiry' };
+    api.list.mockResolvedValue({ results: [inquiry], owners: [], can_edit: true });
+    api.detail.mockResolvedValue({ id: 'other-family', parent_name: 'Other Family', stage: 'inquiry' });
+    render(<AdmissionsInquiryQueue />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Open Selected Family' }));
+    expect((await screen.findByRole('alert')).textContent).toContain('did not match the selected family');
+    expect(screen.queryByRole('form', { name: 'Update inquiry follow-up' })).toBeNull();
+  });
+});
+
+describe('inquiry paging recovery', () => {
+  it('returns to the previous page when concurrent changes empty the current cursor page', async () => {
+    const first = { id: 'first-family', parent_name: 'First Family', stage: 'inquiry' };
+    api.list.mockImplementation(async ({ cursor }) => ({
+      results: cursor ? [] : [first], count: 1, next_cursor: cursor ? null : 'signed-next',
+      owners: [], can_edit: false,
+    }));
+    render(<AdmissionsInquiryQueue />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Next page' }));
+    await screen.findByText('No inquiries remain on this page.');
+    fireEvent.click(screen.getByRole('button', { name: 'Previous page' }));
+    expect(await screen.findByRole('button', { name: 'Open First Family' })).toBeTruthy();
+  });
+
+  it('allows recovery from an expired or invalid signed page cursor', async () => {
+    const first = { id: 'first-family', parent_name: 'First Family', stage: 'inquiry' };
+    api.list.mockImplementation(({ cursor }) => cursor
+      ? Promise.reject(new Error('Invalid, expired, or mismatched inquiry page cursor.'))
+      : Promise.resolve({ results: [first], count: 1, next_cursor: 'signed-next', owners: [], can_edit: false }));
+    render(<AdmissionsInquiryQueue />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Next page' }));
+    await screen.findByText('Invalid, expired, or mismatched inquiry page cursor.');
+    fireEvent.click(screen.getByRole('button', { name: 'Return to first page' }));
+    expect(await screen.findByRole('button', { name: 'Open First Family' })).toBeTruthy();
   });
 });

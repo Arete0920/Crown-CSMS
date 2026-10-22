@@ -1,6 +1,7 @@
 # Admissions and Enrollment API Contract
 
-**Version:** 1.2.0
+**Version:** 2.0.0
+**Inquiry queue response change:** staff collection rows are intentionally lightweight; detail history requires a separate authorized GET (PR #356). The route stays `/api/v1/`; this document version records the incompatible response shape.
 **Status:** CURRENT AUTHORITY
 **Historical baseline verified:** 2026-08-08
 **Historical source baseline:** `9090aa2463baf1e3afcfe3590da8e250c6e12d35`
@@ -83,17 +84,53 @@ applications. Invalid, mismatched, or expired capabilities never silently fall
 back to a new unlinked application. Direct applications without inquiry fields
 retain their existing submission path.
 
-`GET /api/v1/crm/inquiries/` requires `admissions.view`. It returns scoped
-inquiries, eligible owners, contact history, duplicate candidates, and edit
-authority. The queue defaults to active pre-application inquiries. `stage=all`
-includes history; exact `stage`, `unassigned=1`, and `overdue=1` filters are
-supported. `overdue=1` always excludes submitted/closed inquiries. `count`
-reports matching inquiries; up to 100 are returned per request.
-Every successful listing includes the top-level boolean `notifications_enabled`,
-including empty or filtered queues. It reports the API process's current
-`CROWN_INQUIRY_NOTIFICATIONS_ENABLED` switch, which defaults to `false`.
-It does not establish provider readiness, worker/Beat state, consent, or delivery.
-Per-inquiry `notification_status` retains the existing recorded outcomes.
+`GET /api/v1/crm/inquiries/` requires an authenticated school context and
+`admissions.view` for that school. The collection defaults to active,
+pre-application inquiries; `stage=all`, an exact `stage`, `unassigned=1`, and
+`overdue=1` are supported. `overdue=1` excludes submitted/closed inquiries.
+`count` is the full filtered count, not just the current page size.
+
+**Incompatible collection projection in PR #356:** each `results[]` item
+contains the lightweight inquiry identifiers, contact/attribution and workflow
+fields needed to display the queue. It **does not** include
+`application_ids`, `duplicate_candidates`, `touchpoints`, or
+`notification_status`. These are intentionally absent, not empty arrays or a
+successful delivery assertion. The list still includes eligible `owners` and
+`can_edit`; it does not execute per-family related-history queries.
+
+Collection pages have `page_size` (default/maximum 100), `next_cursor`
+(signed token or `null`), and stable ordering by next follow-up ascending
+(null last), creation time and inquiry UUID. The cursor is signed with a
+24-hour maximum age, bound to the authenticated school, normalized filters and
+page size, and is invalid if any of those change. Clients must not forge,
+recycle across schools or expose cursor tokens in logs. `next_cursor` advances
+forward; a client implements Previous navigation by retaining earlier cursors.
+The cursor is not a database snapshot: a concurrently updated inquiry can
+move in the order, so users may need to refresh from the first page.
+
+`GET /api/v1/crm/inquiries/<uuid:inquiry_id>/` separately retrieves the
+selected family's related application IDs, school-scoped duplicates and
+touchpoints, and durable notification history. It requires
+`admissions.view` for the resolved school, returns 404 for another school's
+inquiry, does not mutate the lead, and uses `Cache-Control: no-store`.
+Staff with view-only authority may inspect details but cannot PATCH them.
+
+Every successful collection response includes the top-level boolean
+`notifications_enabled`, including an empty or filtered queue. It reports
+the API process's `CROWN_INQUIRY_NOTIFICATIONS_ENABLED` switch, which defaults
+to `false`; it proves neither delivery nor provider/worker readiness.
+Per-inquiry `notification_status` is now returned by the detail GET, not
+the collection. Historical channel outcomes remain subject to durable
+school-scoped outbox verification.
+
+The frontend must fetch authorized detail on selection and discard stale,
+denied or mismatched responses when staff change families. **Deploy the
+backend and frontend from the same accepted source revision**: a new frontend
+against an old backend cannot load details, while an old frontend expects
+related-history fields in collection rows. Do not deploy one half of this
+incompatible contract independently. Merge is not deployment; rollback must
+restore compatible frontend/backend contracts together.
+
 `PATCH /api/v1/crm/inquiries/<uuid:inquiry_id>/` requires `admissions.edit` and
 supports owner, follow-up time, pre-application stage, contact-history entries,
 and enabling/disabling family reminders where the family has consented.
@@ -115,7 +152,7 @@ Inquiry acknowledgments and owner notices use the shared communications outbox.
 `CROWN_INQUIRY_NOTIFICATIONS_ENABLED` defaults to `false`. While disabled, inquiry
 capture, staff assignment, consent history, and overdue staff work remain available,
 but inquiry enqueue helpers and direct processor invocations return `status: disabled`
-with zero queued work. Staff responses expose `notification_status.enabled: false`;
+with zero queued work. Staff detail responses expose `notification_status.enabled: false`;
 existing delivery history retains its recorded outcome. Other communications are
 unaffected. When explicitly enabled, the Celery schedule invokes
 `crm_marketing.tasks.process_inquiry_followups` every 15 minutes. It records

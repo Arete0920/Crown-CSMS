@@ -39,6 +39,11 @@ export async function fetchAdmissionsInquiries(filters = {}) {
   return response.data;
 }
 
+export async function fetchAdmissionsInquiry(inquiryId) {
+  const response = await crownApiClient.get(`${INQUIRIES_PATH}${encodeURIComponent(inquiryId)}/`);
+  return response.data;
+}
+
 export function updateAdmissionsInquiry(inquiryId, changes) {
   return apiPatch(`${INQUIRIES_PATH}${encodeURIComponent(inquiryId)}/`, changes);
 }
