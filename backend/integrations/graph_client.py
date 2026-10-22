@@ -18,6 +18,7 @@ import os
 import time
 
 import requests
+from sandbox_demo.egress import require_external_egress
 
 logger = logging.getLogger(__name__)
 
@@ -69,6 +70,7 @@ def send_mail(from_user: str, to: str, subject: str, body_html: str) -> None:
     Send an email via Microsoft Graph as from_user.
     Requires Mail.Send application permission on the App Registration.
     """
+    require_external_egress("EMAIL")
     token = _get_graph_token()
     url = f"https://graph.microsoft.com/v1.0/users/{from_user}/sendMail"
 
