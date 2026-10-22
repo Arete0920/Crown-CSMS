@@ -4,7 +4,7 @@ API permission enforcement tests.
 Coverage:
   - /me/entitlements/ requires authenticated user with valid tenant context
   - /plans/ is accessible to authenticated users
-  - /ops/<school_id>/ requires staff/admin
+  - /ops/<school_id>/ requires an active platform superuser
   - POST /ops/<school_id>/ assigns a new plan and closes the old subscription
 """
 import uuid
@@ -34,6 +34,13 @@ def _make_staff():
         username=f"staff_{uuid.uuid4().hex[:8]}",
         password=TEST_AUTH_SECRET,
         is_staff=True,
+    )
+
+def _make_platform_operator():
+    return User.objects.create_superuser(
+        username=f"platform_{uuid.uuid4().hex[:8]}",
+        email=f"platform_{uuid.uuid4().hex[:8]}@example.invalid",
+        password=TEST_AUTH_SECRET,
     )
 
 
@@ -113,9 +120,9 @@ def test_ops_get_subscription():
     school_id = uuid.uuid4()
     TenantSubscription.objects.create(school_id=school_id, plan=plan)
 
-    staff = _make_staff()
+    operator = _make_platform_operator()
     client = APIClient()
-    client.force_authenticate(user=staff)
+    client.force_authenticate(user=operator)
     resp = client.get(f"/api/v1/subscriptions/ops/{school_id}/")
     assert resp.status_code == 200
     data = resp.json()
@@ -124,9 +131,9 @@ def test_ops_get_subscription():
 
 
 def test_ops_get_nonexistent_404():
-    staff = _make_staff()
+    operator = _make_platform_operator()
     client = APIClient()
-    client.force_authenticate(user=staff)
+    client.force_authenticate(user=operator)
     resp = client.get(f"/api/v1/subscriptions/ops/{uuid.uuid4()}/")
     assert resp.status_code == 404
 
@@ -137,9 +144,9 @@ def test_ops_post_assigns_plan():
     school_id = uuid.uuid4()
     TenantSubscription.objects.create(school_id=school_id, plan=plan_old)
 
-    staff = _make_staff()
+    operator = _make_platform_operator()
     client = APIClient()
-    client.force_authenticate(user=staff)
+    client.force_authenticate(user=operator)
     resp = client.post(
         f"/api/v1/subscriptions/ops/{school_id}/",
         {"plan_id": plan_new.pk, "is_trial": False},
@@ -153,12 +160,27 @@ def test_ops_post_assigns_plan():
 
 
 def test_ops_post_missing_plan_id():
-    staff = _make_staff()
+    operator = _make_platform_operator()
     client = APIClient()
-    client.force_authenticate(user=staff)
+    client.force_authenticate(user=operator)
     resp = client.post(
         f"/api/v1/subscriptions/ops/{uuid.uuid4()}/",
         {},
         format="json",
     )
     assert resp.status_code == 400
+
+def test_school_staff_cannot_access_cross_school_subscription_ops():
+    plan = _make_plan()
+    school_id = uuid.uuid4()
+    TenantSubscription.objects.create(school_id=school_id, plan=plan)
+    client = APIClient()
+    client.force_authenticate(user=_make_staff())
+    assert client.get(f"/api/v1/subscriptions/ops/{school_id}/").status_code == 403
+    assert client.post(
+        f"/api/v1/subscriptions/ops/{school_id}/",
+        {"plan_id": plan.pk}, format="json",
+    ).status_code == 403
+    assert TenantSubscription.objects.filter(
+        school_id=school_id, ended_at__isnull=True,
+    ).count() == 1

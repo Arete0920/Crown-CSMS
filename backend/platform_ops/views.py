@@ -1,7 +1,7 @@
 """
 Platform Operations API views.
 
-All endpoints require IsAdminUser (staff + superuser).
+All endpoints require active platform superuser authority.
 No X-School-ID header is required — these are cross-tenant super-admin operations.
 
 Routes (registered in platform_ops/urls.py):
@@ -15,7 +15,7 @@ import logging
 import uuid
 
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAdminUser
+from core.permissions import IsPlatformOperator
 from rest_framework.request import Request
 from rest_framework.response import Response
 
@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 # ─────────────────────────────────────────────────────────────────────────────
 
 @api_view(["POST"])
-@permission_classes([IsAdminUser])
+@permission_classes([IsPlatformOperator])
 def platform_create_school(request: Request) -> Response:
     """
     Create a new school tenant and queue its provisioning job.
@@ -123,7 +123,7 @@ def platform_create_school(request: Request) -> Response:
 # ─────────────────────────────────────────────────────────────────────────────
 
 @api_view(["GET"])
-@permission_classes([IsAdminUser])
+@permission_classes([IsPlatformOperator])
 def platform_list_schools(request: Request) -> Response:
     """
     Return a paginated list of all school tenants with TenantProfile data.
@@ -181,7 +181,7 @@ def platform_list_schools(request: Request) -> Response:
 # ─────────────────────────────────────────────────────────────────────────────
 
 @api_view(["GET"])
-@permission_classes([IsAdminUser])
+@permission_classes([IsPlatformOperator])
 def platform_provisioning_status(request: Request, job_id: uuid.UUID) -> Response:
     """
     Return the current status of a provisioning job.
