@@ -22,9 +22,9 @@ describe('React Router security dependency contract', () => {
     const lockfile = JSON.parse(fs.readFileSync(path.join(dashboardRoot, 'package-lock.json'), 'utf8'));
     expect(manifest.dependencies['react-router']).toBe('8.4.0');
     expect(manifest.dependencies).not.toHaveProperty(forbiddenPackage);
-    expect(manifest.dependencies.react).toBe('19.3.0');
-    expect(manifest.dependencies['react-dom']).toBe('19.3.0');
-    expect(manifest.dependencies['@azure/msal-browser']).toBe('5.25.0');
+    expect(manifest.dependencies.react).toBe('19.3.1');
+    expect(manifest.dependencies['react-dom']).toBe('19.3.1');
+    expect(manifest.dependencies['@azure/msal-browser']).toBe('5.25.1');
     expect(manifest.dependencies['@azure/msal-react']).toBe('5.7.2');
     expect(manifest.overrides.postcss).toBe('8.5.23');
     expect(lockfile.packages['node_modules/react-router'].version).toBe('8.4.0');
