@@ -16,6 +16,8 @@ from django.utils import timezone
 from core.models import School
 from core.tenant_models import tenant_context
 
+from sandbox_demo.egress import (SandboxEgressSuppressed, SUPPRESSED_REASON, require_external_egress)
+
 from .outbox import OutboxMessage
 
 logger = logging.getLogger(__name__)
@@ -30,6 +32,7 @@ def _backoff_seconds(attempts: int) -> int:
 
 def _send(msg: OutboxMessage) -> None:
     """Dispatch a single outbox message to the appropriate channel."""
+    require_external_egress(msg.channel, school_id=getattr(msg, "school_id", None))
     if msg.channel == "EMAIL":
         from django.conf import settings as django_settings  # noqa: PLC0415
         from integrations.graph_client import send_mail  # noqa: PLC0415
@@ -116,6 +119,10 @@ def drain_outbox(self, batch_size: int = 25) -> dict:
                 msg.sent_at = timezone.now()
                 msg.last_error = ""
                 sent += 1
+            except SandboxEgressSuppressed:
+                msg.status = OutboxMessage.STATUS_DEAD
+                msg.last_error = SUPPRESSED_REASON
+                dead += 1
             except InquiryNotificationSuppressed as exc:
                 msg.status = OutboxMessage.STATUS_DEAD
                 msg.last_error = f"{SUPPRESSED_PREFIX} {exc}"[:1000]

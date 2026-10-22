@@ -13,7 +13,8 @@ psycopg[binary]==3.3.6
 pytest==9.1.1
 pytest-django==4.14.0
 # JWT auth (alongside sessions)
-djangorestframework-simplejwt>=5.5.1
+# Reviewed SimpleJWT 5.5.1 migration graph; keep runtime and hosted image identical.
+djangorestframework-simplejwt==5.5.1
 PyJWT==2.15.1
 # CORS headers for frontend integration
 django-cors-headers==4.9.0

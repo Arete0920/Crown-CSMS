@@ -45,7 +45,7 @@ class DevMigrationBoundaryTests(unittest.TestCase):
                 "DATABASE_URL": URL, "SECRET_KEY": "synthetic-secret",
             }.items()]
 
-        self.assertEqual(migration.load_dev_settings(read=read), (URL, "synthetic-secret", "crown"))
+        self.assertEqual(migration.load_dev_settings(read=read), (URL, "synthetic-secret", "crown", False))
         self.assertEqual(len(calls), 2)
         self.assertTrue(all("crown-api-dev" in call and "crown-rg" in call for call in calls))
         self.assertTrue(all(not {"create", "set", "update", "delete", "restart"}.intersection(call) for call in calls))
@@ -68,6 +68,28 @@ class DevMigrationBoundaryTests(unittest.TestCase):
             migration.load_dev_settings(read=rejected)
         self.assertEqual(rejected.call_count, 2)  # Reject target before resolving another secret.
 
+    def test_hosted_blacklist_setting_is_preserved_and_rejects_invalid_values(self):
+        def read_factory(value):
+            def read(*args):
+                if args[:2] == ("webapp", "show"):
+                    return {"name": "crown-api-dev", "defaultHostName": "crown-api-dev.azurewebsites.net"}
+                return [{"name": k, "value": v} for k, v in {
+                    "CROWN_ENV": "dev", "ENVIRONMENT": "dev", "DJANGO_ENV": "development",
+                    "DATABASE_URL": URL, "SECRET_KEY": "synthetic-secret",
+                    "CROWN_SIMPLEJWT_BLACKLIST_ENABLED": value,
+                }.items()]
+            return read
+
+        for value in ("true", "1", "ON"):
+            with self.subTest(value=value):
+                self.assertEqual(migration.load_dev_settings(read=read_factory(value))[-1], True)
+        for value in ("false", "0", "off", ""):
+            with self.subTest(value=value):
+                self.assertEqual(migration.load_dev_settings(read=read_factory(value))[-1], False)
+        for value in ("unexpected", None, "@Microsoft.KeyVault(SecretUri=invalid)"):
+            with self.subTest(value=value), self.assertRaisesRegex(migration.Blocked, "invalid_dev_blacklist_setting"):
+                migration.load_dev_settings(read=read_factory(value))
+
     def test_verified_tls_is_configured_before_django_application_setup(self):
         def setup():
             target = migration.urlsplit(os.environ["DATABASE_URL"])
@@ -81,6 +103,26 @@ class DevMigrationBoundaryTests(unittest.TestCase):
                 patch.object(migration.Path, "is_file", return_value=True):
             with self.assertRaisesRegex(RuntimeError, "stop before database access"):
                 migration.migrate_on_dev(URL, "synthetic-secret", "crown", SHA)
+
+    def test_blacklist_app_enabled_only_in_read_only_or_authorized_schema_stage(self):
+        # Stop before opening a database and inspect exactly what Django sees.
+        for kwargs, enabled in (
+            ({}, "false"),
+            ({"hosted_blacklist_enabled": True}, "true"),
+            ({"check_only": True}, "true"),
+            ({"apply_blacklist": True}, "true"),
+        ):
+            with self.subTest(kwargs=kwargs):
+                def setup():
+                    self.assertEqual(
+                        os.environ["CROWN_SIMPLEJWT_BLACKLIST_ENABLED"], enabled
+                    )
+                    raise RuntimeError("halt before touching database")
+                with patch.dict(os.environ, {}, clear=True), patch.dict(
+                    "sys.modules", {"django": SimpleNamespace(setup=setup)}
+                ), patch.object(migration.Path, "is_file", return_value=True):
+                    with self.assertRaisesRegex(RuntimeError, "halt before"):
+                        migration.migrate_on_dev(URL, "synthetic-secret", "crown", SHA, **kwargs)
 
     def test_key_vault_reference_is_parsed_as_data_and_rejects_external_hosts(self):
         read = Mock(return_value={"value": "resolved-private-value"})
@@ -118,7 +160,8 @@ class DevMigrationBoundaryTests(unittest.TestCase):
                     SimpleNamespace(returncode=0, stdout=SHA), SimpleNamespace(returncode=0),
                 ]))
 
-    def _execute(self, plans, *, identity_error=False, ddl_error=False):
+    def _execute(self, plans, *, identity_error=False, ddl_error=False, check_only=False,
+                 plan_validator=migration.validate_plan, post_verify=None):
         events = []
 
         @contextlib.contextmanager
@@ -148,7 +191,8 @@ class DevMigrationBoundaryTests(unittest.TestCase):
 
         self.events = events
         return migration.apply_reviewed_plan(acquire_lock=acquire, verify_identity=verify_identity,
-            verify_ddl=verify_ddl, read_plan=read_plan, invoke=invoke)
+            verify_ddl=verify_ddl, read_plan=read_plan, invoke=invoke,
+            check_only=check_only, plan_validator=plan_validator, post_verify=post_verify)
 
     def test_reviewed_plan_is_checked_and_verified_under_same_lock(self):
         item = SimpleNamespace(app_label="crm_marketing", name="0002_inquiry_capture")
@@ -197,7 +241,7 @@ class DevMigrationBoundaryTests(unittest.TestCase):
         plan = [(other, False), (reviewed, True), (unsafe, False)] + [(other, False)] * 20
         output = io.StringIO()
         with patch.object(migration, "validate_source"), patch.object(migration, "load_dev_settings",
-                return_value=(URL, "synthetic-secret", "crown")), patch.object(migration, "migrate_on_dev",
+                return_value=(URL, "synthetic-secret", "crown", False)), patch.object(migration, "migrate_on_dev",
                 side_effect=lambda *args: self._execute([plan])), contextlib.redirect_stdout(output):
             self.assertEqual(migration.main(["--expected-sha", SHA]), 1)
         # Masking commands are consumed by GitHub; only the final line is structured evidence.
@@ -219,6 +263,98 @@ class DevMigrationBoundaryTests(unittest.TestCase):
         for sensitive in ("private-password", "SELECT", URL, "synthetic-secret"):
             self.assertNotIn(sensitive, evidence_line)
         self.assertFalse(any(isinstance(item, tuple) for item in self.events))
+
+    def test_read_only_preflight_never_invokes_migration_or_ddl(self):
+        item = SimpleNamespace(app_label="crm_marketing", name="0002_inquiry_capture")
+        self.assertEqual(
+            self._execute([[(item, False)]], check_only=True),
+            ["crm_marketing.0002_inquiry_capture"],
+        )
+        self.assertEqual(self.events, ["lock", "identity", "plan", "unlock"])
+        other = SimpleNamespace(app_label="token_blacklist", name="0001_initial")
+        with self.assertRaisesRegex(migration.Blocked, "unreviewed"):
+            self._execute([[(other, False)]], check_only=True)
+        self.assertEqual(self.events, ["lock", "identity", "plan", "unlock"])
+
+    def test_read_only_cli_emits_mode_and_invokes_no_write_path(self):
+        output = io.StringIO()
+        with patch.object(migration, "validate_source"), patch.object(
+            migration, "load_dev_settings",
+            return_value=(URL, "synthetic-secret", "crown", False)
+        ), patch.object(migration, "migrate_on_dev", return_value=[]) as called, contextlib.redirect_stdout(output):
+            self.assertEqual(migration.main(["--expected-sha", SHA, "--check-only"]), 0)
+        called.assert_called_once_with(URL, "synthetic-secret", "crown", SHA, check_only=True)
+        evidence = json.loads(output.getvalue().splitlines()[-1])
+        self.assertEqual(evidence["status"], "PASS")
+        self.assertEqual(evidence["mode"], "read_only")
+        self.assertEqual(evidence["reviewed_pending_migrations"], [])
+
+    def test_explicit_blacklist_stage_accepts_only_exact_upstream_suffix(self):
+        from reviewed_blacklist_migrations import APP_LABEL, MIGRATION_NAMES
+        suffix = [(SimpleNamespace(app_label=APP_LABEL, name=name), False)
+                  for name in MIGRATION_NAMES[9:]]
+        self.assertEqual(migration.validate_blacklist_plan(suffix),
+                         [(APP_LABEL, name) for name in MIGRATION_NAMES[9:]])
+        self.assertEqual(migration.validate_blacklist_plan([]), [])
+        foreign = (SimpleNamespace(app_label="crm_marketing", name="0002_inquiry_capture"), False)
+        for bad in [
+            [foreign],
+            suffix + [foreign],
+            [foreign] + suffix,
+            list(reversed(suffix)),
+            [(suffix[0][0], True)],
+        ]:
+            with self.subTest(plan=bad), self.assertRaises(migration.UnreviewedPlan):
+                migration.validate_blacklist_plan(bad)
+
+    def test_schema_postverification_precedes_unlock_and_is_required(self):
+        from reviewed_blacklist_migrations import APP_LABEL, MIGRATION_NAMES
+        final = SimpleNamespace(app_label=APP_LABEL, name=MIGRATION_NAMES[-1])
+        def verified():
+            self.events.append("schema_verified")
+        self.assertEqual(
+            self._execute(
+                [[(final, False)], []],
+                plan_validator=migration.validate_blacklist_plan,
+                post_verify=verified,
+            ), [APP_LABEL + "." + MIGRATION_NAMES[-1]]
+        )
+        self.assertEqual(self.events[-3:], ["plan", "schema_verified", "unlock"])
+        with self.assertRaisesRegex(migration.Blocked, "schema_invalid"):
+            self._execute(
+                [[], []],
+                plan_validator=migration.validate_blacklist_plan,
+                post_verify=lambda: (_ for _ in ()).throw(migration.Blocked("schema_invalid")),
+            )
+        self.assertEqual(self.events[-1], "unlock")
+
+    def test_blacklist_schema_authority_is_explicit_and_conflict_safe(self):
+        output = io.StringIO()
+        with patch.object(migration, "validate_source"), patch.object(
+            migration, "load_dev_settings",
+            return_value=(URL, "synthetic-secret", "crown", False)
+        ), patch.object(migration, "migrate_on_dev", return_value=[]) as called, contextlib.redirect_stdout(output):
+            self.assertEqual(
+                migration.main(["--expected-sha", SHA, "--apply-reviewed-blacklist",
+                                "--confirm-dev-blacklist", "migrate-dev-blacklist"]), 0
+            )
+        called.assert_called_once_with(URL, "synthetic-secret", "crown", SHA,
+                                       apply_blacklist=True)
+        self.assertEqual(json.loads(output.getvalue().splitlines()[-1])["mode"],
+                         "reviewed_dev_blacklist")
+        for args in [
+            ["--apply-reviewed-blacklist"],
+            ["--confirm-dev-blacklist", "migrate-dev-blacklist"],
+            ["--apply-reviewed-blacklist", "--confirm-dev-blacklist", "wrong"],
+            ["--apply-reviewed-blacklist", "--confirm-dev-blacklist", "migrate-dev-blacklist",
+             "--check-only"],
+        ]:
+            with self.subTest(args=args), patch.object(migration, "validate_source") as source, patch.object(
+                migration, "load_dev_settings"
+            ) as read, contextlib.redirect_stdout(io.StringIO()):
+                self.assertEqual(migration.main(["--expected-sha", SHA, *args]), 1)
+                source.assert_not_called()
+                read.assert_not_called()
 
     def test_workflow_checks_source_then_schema_before_any_runtime_mutation(self):
         import yaml

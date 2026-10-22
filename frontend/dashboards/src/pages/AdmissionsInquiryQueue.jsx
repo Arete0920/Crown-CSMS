@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import CrownLayout from '../components/crown/CrownLayout.jsx';
-import { fetchAdmissionsInquiries, updateAdmissionsInquiry } from '../api/admissionsInquiries.js';
+import { fetchAdmissionsInquiry, fetchAdmissionsInquiries, updateAdmissionsInquiry } from '../api/admissionsInquiries.js';
 import { inquirySourceLabel } from '../lib/admissionsInquiryState.js';
 import '../styles/crown-wizard.css';
 
@@ -141,8 +141,13 @@ function InquiryDetails({ inquiry, owners, canEdit, notificationsEnabled, onSave
 
 export default function AdmissionsInquiryQueue() {
   const [filters, setFilters] = useState({ stage: '', unassigned: false, overdue: false });
+  const [cursor, setCursor] = useState('');
+  const [cursorStack, setCursorStack] = useState([]);
   const [payload, setPayload] = useState(null);
   const [selectedId, setSelectedId] = useState('');
+  const [details, setDetails] = useState(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [detailError, setDetailError] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [savedMessage, setSavedMessage] = useState('');
@@ -153,7 +158,7 @@ export default function AdmissionsInquiryQueue() {
     setLoading(true);
     setError('');
     try {
-      const result = await fetchAdmissionsInquiries({ stage: filters.stage, unassigned: filters.unassigned ? 1 : '', overdue: filters.overdue ? 1 : '' });
+      const result = await fetchAdmissionsInquiries({ stage: filters.stage, unassigned: filters.unassigned ? 1 : '', overdue: filters.overdue ? 1 : '', ...(cursor ? { cursor } : {}) });
       if (version === loadVersion.current) setPayload(result);
     } catch (failure) {
       if (version === loadVersion.current) {
@@ -163,16 +168,68 @@ export default function AdmissionsInquiryQueue() {
     } finally {
       if (version === loadVersion.current) setLoading(false);
     }
-  }, [filters]);
+  }, [filters, cursor]);
+
+  // A PATCH may finish after staff navigate to another signed-cursor page.
+  // Its original form callback must reload the *current* page, not the page
+  // captured when the save began.
+  const latestReload = useRef(reload);
+  useEffect(() => { latestReload.current = reload; }, [reload]);
 
   useEffect(() => { reload(); }, [reload]);
   const inquiries = Array.isArray(payload?.results) ? payload.results : [];
   const owners = Array.isArray(payload?.owners) ? payload.owners : [];
   const selected = inquiries.find((item) => item.id === selectedId);
+  useEffect(() => {
+    if (!selected || loading || error) {
+      setDetails(null);
+      setDetailLoading(false);
+      setDetailError('');
+      return undefined;
+    }
+    let active = true;
+    setDetails(null);
+    setDetailLoading(true);
+    setDetailError('');
+    fetchAdmissionsInquiry(selected.id)
+      .then((result) => {
+        if (!active) return;
+        if (result?.id !== selected.id) {
+          setDetailError('The inquiry detail did not match the selected family.');
+          return;
+        }
+        setDetails(result);
+      })
+      .catch((failure) => { if (active) setDetailError(failure?.message || 'Could not load inquiry details.'); })
+      .finally(() => { if (active) setDetailLoading(false); });
+    return () => { active = false; };
+  }, [selectedId, payload, loading, error]);
   const ownerName = (id) => owners.find((owner) => owner.id === id)?.name || (id ? 'Assigned counselor' : 'Unassigned');
+  const currentPage = cursorStack.length + 1;
+  function nextPage() {
+    if (loading || !payload?.next_cursor) return;
+    setSelectedId('');
+    setSavedMessage('');
+    setCursorStack((previous) => [...previous, cursor]);
+    setCursor(payload.next_cursor);
+  }
+  function previousPage() {
+    if (loading || cursorStack.length === 0) return;
+    setSelectedId('');
+    setSavedMessage('');
+    setCursor(cursorStack[cursorStack.length - 1]);
+    setCursorStack((previous) => previous.slice(0, -1));
+  }
+  function changeFilters(changes) {
+    setSelectedId('');
+    setSavedMessage('');
+    setCursor('');
+    setCursorStack([]);
+    setFilters((previous) => ({ ...previous, ...changes }));
+  }
 
   async function afterSave() {
-    await reload();
+    await latestReload.current();
     setSavedMessage('Inquiry ownership and follow-up saved.');
   }
 
@@ -182,26 +239,31 @@ export default function AdmissionsInquiryQueue() {
         <div style={{ ...ROW, justifyContent: 'space-between', marginBottom: 18 }}>
           <div style={ROW}>
             <label style={{ display: 'grid', gap: 5 }}>Stage
-              <select style={INPUT} value={filters.stage} onChange={(event) => setFilters((previous) => ({ ...previous, stage: event.target.value }))}>
+              <select style={INPUT} value={filters.stage} onChange={(event) => changeFilters({ stage: event.target.value })}>
                 <option value="">Active inquiries</option><option value="all">All stages and history</option>{Object.entries(STAGES).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
               </select>
             </label>
-            <label><input type="checkbox" checked={filters.unassigned} onChange={(event) => setFilters((previous) => ({ ...previous, unassigned: event.target.checked }))} /> Unassigned</label>
-            <label><input type="checkbox" checked={filters.overdue} onChange={(event) => setFilters((previous) => ({ ...previous, overdue: event.target.checked }))} /> Follow-up due</label>
+            <label><input type="checkbox" checked={filters.unassigned} onChange={(event) => changeFilters({ unassigned: event.target.checked })} /> Unassigned</label>
+            <label><input type="checkbox" checked={filters.overdue} onChange={(event) => changeFilters({ overdue: event.target.checked })} /> Follow-up due</label>
           </div>
           <button className="crown-btn" type="button" onClick={reload} disabled={loading}>Refresh queue</button>
         </div>
         {savedMessage ? <p role="status">{savedMessage}</p> : null}
-        {error ? <div className="crown-alert" role="alert">{error}<button className="crown-btn" type="button" onClick={reload}>Try again</button></div> : null}
+        {error ? <div className="crown-alert" role="alert">{error}<button className="crown-btn" type="button" onClick={reload}>Try again</button>{cursor ? <button className="crown-btn" type="button" onClick={() => { setSelectedId(''); setCursor(''); setCursorStack([]); }}>Return to first page</button> : null}</div> : null}
         {loading ? <p role="status">Loading school inquiries…</p> : null}
         {!loading && !error && payload?.notifications_enabled === false ? <p className="crown-muted" role="note">
           Automatic inquiry messages are off. Review communication history before contacting families.
         </p> : null}
-        {!loading && !error && inquiries.length === 0 ? <p>No inquiries match these filters.</p> : null}
+        {!loading && !error && inquiries.length === 0 ? (
+          <div>
+            <p>{cursorStack.length ? 'No inquiries remain on this page.' : 'No inquiries match these filters.'}</p>
+            {cursorStack.length ? <button className="crown-btn" type="button" onClick={previousPage}>Previous page</button> : null}
+          </div>
+        ) : null}
         {!loading && !error && inquiries.length > 0 ? (
           <div style={{ overflowX: 'auto' }}>
             <table className="crown-table">
-              <caption style={{ textAlign: 'left', paddingBottom: 10 }}>{inquiries.length} of {payload.count ?? inquiries.length} matching inquiry record(s) shown. The queue displays up to 100 records.</caption>
+              <caption style={{ textAlign: 'left', paddingBottom: 10 }}>Page {currentPage}: {inquiries.length} of {payload.count ?? inquiries.length} matching inquiries shown; at most {payload.page_size || 100} per page.</caption>
               <thead><tr>{['Family contact', 'Interest', 'Source', 'Stage', 'Owner', 'Next follow-up', 'Action'].map((heading) => <th scope="col" key={heading}>{heading}</th>)}</tr></thead>
               <tbody>{inquiries.map((inquiry) => (
                 <tr key={inquiry.id}>
@@ -215,10 +277,23 @@ export default function AdmissionsInquiryQueue() {
                 </tr>
               ))}</tbody>
             </table>
+            <nav aria-label="Inquiry queue pages" style={{ ...ROW, justifyContent: 'flex-end', paddingTop: 12 }}>
+              <button className="crown-btn" type="button" onClick={previousPage} disabled={loading || cursorStack.length === 0}>Previous page</button>
+              <span>Page {currentPage}</span>
+              <button className="crown-btn" type="button" onClick={nextPage} disabled={loading || !payload?.next_cursor}>Next page</button>
+            </nav>
           </div>
         ) : null}
       </div>
-      {selected && !loading && !error ? <InquiryDetails key={`${selected.id}-${selected.updated_at || selected.next_follow_up_at || ''}`} inquiry={selected} owners={owners} canEdit={payload?.can_edit === true} notificationsEnabled={payload?.notifications_enabled} onSaved={afterSave} /> : null}
+      {selected && !loading && !error ? (
+        <>
+          {detailLoading ? <p role="status">Loading inquiry details…</p> : null}
+          {detailError ? <div className="crown-alert" role="alert">{detailError}</div> : null}
+          {details?.id === selected.id && !detailLoading && !detailError
+            ? <InquiryDetails key={`${selected.id}-${selected.updated_at || selected.next_follow_up_at || ''}`} inquiry={details} owners={owners} canEdit={payload?.can_edit === true} notificationsEnabled={payload?.notifications_enabled} onSaved={afterSave} />
+            : null}
+        </>
+      ) : null}
     </CrownLayout>
   );
 }

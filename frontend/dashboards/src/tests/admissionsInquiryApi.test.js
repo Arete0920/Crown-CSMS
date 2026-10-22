@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { fetchAdmissionsInquiries } from '../api/admissionsInquiries.js';
+import { fetchAdmissionsInquiry, fetchAdmissionsInquiries } from '../api/admissionsInquiries.js';
 
 const transport = vi.hoisted(() => ({ authenticatedFetch: vi.fn() }));
 vi.mock('../utils/authClient', async (importOriginal) => ({
@@ -70,5 +70,20 @@ describe('staff inquiry list transport', () => {
       isNetworkError: false,
     });
     expect(transport.authenticatedFetch).toHaveBeenCalledTimes(1);
+  });
+});
+
+
+describe('staff inquiry detail transport', () => {
+  it('fetches only the requested family through the authenticated client', async () => {
+    const detail = { id: 'family-record-id', parent_name: 'Jordan Reed', touchpoints: [] };
+    transport.authenticatedFetch.mockResolvedValueOnce(new Response(JSON.stringify(detail), {
+      status: 200, headers: { 'Content-Type': 'application/json' },
+    }));
+    await expect(fetchAdmissionsInquiry('family-record-id')).resolves.toEqual(detail);
+    expect(transport.authenticatedFetch).toHaveBeenCalledTimes(1);
+    const [url, options] = transport.authenticatedFetch.mock.calls[0];
+    expect(new URL(url, 'http://localhost').pathname).toBe('/api/v1/crm/inquiries/family-record-id/');
+    expect(options).toMatchObject({ method: 'GET', credentials: 'include' });
   });
 });

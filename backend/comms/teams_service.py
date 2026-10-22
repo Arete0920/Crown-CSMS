@@ -12,6 +12,8 @@ import requests
 from django.utils import timezone
 
 from .email_service import _get_graph_token
+from sandbox_demo.egress import SUPPRESSED_REASON, sandbox_external_egress_blocked
+
 from .models import MessageLog
 
 logger = logging.getLogger(__name__)
@@ -35,6 +37,11 @@ def post_to_teams_channel(
     Returns:
         MessageLog record.
     """
+    if sandbox_external_egress_blocked(sender=sender):
+        return MessageLog.objects.create(
+            sender=sender, channel="teams", body=message,
+            delivery_status="suppressed", error_message=SUPPRESSED_REASON,
+        )
     log = MessageLog.objects.create(
         sender=sender,
         channel="teams",

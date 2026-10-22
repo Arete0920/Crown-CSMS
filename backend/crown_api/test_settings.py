@@ -4,9 +4,15 @@ from copy import deepcopy
 
 from .settings import *  # noqa: F401,F403
 
-# Exercise one-use refresh against migrated synthetic test databases only.
-# Do not mutate process-wide environment configuration during settings import.
+# Exercise legacy refresh one-use only against migrated synthetic test databases.
 CROWN_LEGACY_REFRESH_ONE_USE_ENABLED = True
+
+# Exercise the guarded revocation path with migrated synthetic test databases.
+# Never modify process-wide environment state during Django settings import;
+# preserve independently configurable hosted feature activation.
+CROWN_SIMPLEJWT_BLACKLIST_ENABLED = True
+if "rest_framework_simplejwt.token_blacklist" not in INSTALLED_APPS:
+    INSTALLED_APPS = [*INSTALLED_APPS, "rest_framework_simplejwt.token_blacklist"]
 
 
 _section_alias = deepcopy(DATABASES["default"])

@@ -80,8 +80,8 @@ CROWN_SOLOMON_GUIDANCE_ENABLED = _env_bool("CROWN_SOLOMON_GUIDANCE_ENABLED", def
 # SOLOMON internal context consumption gate. Separate from API gate.
 CROWN_SOLOMON_CONTEXT_ENABLED = _env_bool("CROWN_SOLOMON_CONTEXT_ENABLED", default=False)
 
-# Two-stage legacy token rollout: source is inert until schema and clients are ready.
-# Leave disabled in hosted environments until independently verified.
+# Stage legacy signed-token replay protection without hosted activation.
+# Requires reviewed migration 0014 and client acceptance before enabling.
 CROWN_LEGACY_REFRESH_ONE_USE_ENABLED = _env_bool("CROWN_LEGACY_REFRESH_ONE_USE_ENABLED", default=False)
 
 
@@ -277,6 +277,13 @@ INSTALLED_APPS = [
     'survey_sentiment.apps.SurveySentimentConfig',
 ]
 INSTALLED_APPS += WIZARD_INSTALLED_APPS  # wizard SDK: single source of truth in wizard_registry.py
+
+# Two-stage rollout: accept source with existing runtime behavior, migrate the
+# existing database through the separately authorized schema stage, and only
+# then enable revocation. This flag MUST NOT default to on before migrations.
+CROWN_SIMPLEJWT_BLACKLIST_ENABLED = _env_bool("CROWN_SIMPLEJWT_BLACKLIST_ENABLED", False)
+if CROWN_SIMPLEJWT_BLACKLIST_ENABLED:
+    INSTALLED_APPS.append("rest_framework_simplejwt.token_blacklist")
 
 # Use the project custom user model everywhere to avoid dual auth model registration.
 AUTH_USER_MODEL = 'core.UserAccount'

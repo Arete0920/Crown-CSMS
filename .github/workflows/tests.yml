@@ -19,10 +19,41 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  pytest-internal:
-    name: pytest-internal
+  tenant-fixtures:
+    name: tenant-fixtures
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: "3.12"
+      - name: Install requirements
+        run: python -m pip install -r requirements.txt
+      - name: Run tenant fixture regression tests
+        shell: bash
+        env:
+          DJANGO_SETTINGS_MODULE: crown_api.settings
+          DJANGO_SECRET_KEY: ci-test-secret-key
+          BUILD_SHA: ${{ github.sha }}
+          PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/backend
+        run: |
+          python -m pytest -q \
+            advancement/tests/test_advancement_stage3_4.py \
+            core/tests/test_nav_endpoint.py \
+            financial_aid/tests/test_financial_aid_authz.py \
+            applications/tests/test_admissions_tenant_scoping.py \
+            households/tests/test_tenant_isolation.py \
+            sandbox_demo/test_finance_transaction.py
+
+  backend-coverage:
+    name: backend-coverage
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
     defaults:
       run:
         working-directory: backend
@@ -42,7 +73,7 @@ jobs:
           df -h || true
 
       - name: Set up Python
-        uses: actions/setup-python@7f4fc3e22c37d6ff65e88745f38bd3157c663f7c
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
         with:
           python-version: "3.12"
 
@@ -67,27 +98,12 @@ jobs:
       - name: Install requirements
         run: pip install -r requirements.txt
 
-      - name: Run tenant fixture regression tests
-        shell: bash
-        env:
-          DJANGO_SETTINGS_MODULE: crown_api.settings
-          DJANGO_SECRET_KEY: ci-test-secret-key
-          BUILD_SHA: ${{ github.sha }}
-          PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/backend
-        run: |
-          python -m pytest -q \
-            advancement/tests/test_advancement_stage3_4.py \
-            core/tests/test_nav_endpoint.py \
-            financial_aid/tests/test_financial_aid_authz.py \
-            applications/tests/test_admissions_tenant_scoping.py \
-            households/tests/test_tenant_isolation.py \
-            sandbox_demo/test_finance_transaction.py
-
       - name: Run governed backend coverage
         shell: pwsh
         working-directory: .
         env:
           DJANGO_SETTINGS_MODULE: crown_api.settings
+          CROWN_SIMPLEJWT_BLACKLIST_ENABLED: 'true'
           DJANGO_SECRET_KEY: ci-test-secret-key
           BUILD_SHA: ${{ github.sha }}
           PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/backend
@@ -102,6 +118,25 @@ jobs:
           path: audit-artifacts/backend-coverage/
           if-no-files-found: error
           retention-days: 14
+
+  pytest-internal:
+    name: pytest-internal
+    needs: [tenant-fixtures, backend-coverage]
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Require tenant regression and governed backend suite
+        env:
+          TENANT_RESULT: ${{ needs['tenant-fixtures'].result }}
+          COVERAGE_RESULT: ${{ needs['backend-coverage'].result }}
+        shell: bash
+        run: |
+          if [ "$TENANT_RESULT" != "success" ] || [ "$COVERAGE_RESULT" != "success" ]; then
+            echo "::error::Both tenant regression and full backend coverage must succeed."
+            echo "tenant-fixtures=$TENANT_RESULT backend-coverage=$COVERAGE_RESULT"
+            exit 1
+          fi
 
   survey-scope:
     runs-on: ubuntu-latest
@@ -162,7 +197,7 @@ jobs:
       PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/backend
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-      - uses: actions/setup-python@7f4fc3e22c37d6ff65e88745f38bd3157c663f7c
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
         with:
           python-version: '3.12'
           cache: pip
@@ -182,9 +217,12 @@ jobs:
           PY
           python backend/manage.py makemigrations --check --dry-run
       - name: Verify survey and legacy refresh contracts on PostgreSQL
+        env:
+          DJANGO_SETTINGS_MODULE: crown_api.test_settings
         run: >-
           python -m pytest -q backend/tests/test_survey_intelligence_*.py
           backend/tests/test_survey_collection_postgresql.py
+          backend/crown_api/tests/test_refresh_blacklist_rotation.py
           backend/crown_api/tests/test_auth_jwt.py
           backend/crown_api/tests/test_auth_rate_limit.py
           backend/crown_api/tests/test_legacy_refresh_cleanup.py
