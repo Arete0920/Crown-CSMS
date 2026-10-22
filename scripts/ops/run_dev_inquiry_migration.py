@@ -131,7 +131,17 @@ def load_dev_settings(*, read=read_azure):
     database_url = resolve_value(values.get("DATABASE_URL"), read=read)
     database_name = validate_database_url(database_url)
     secret = resolve_value(values.get("DJANGO_SECRET_KEY") or values.get("SECRET_KEY"), read=read)
-    return database_url, secret, database_name
+    # Preserve the actual hosted activation state. Ordinary deployments must
+    # validate an already enabled target rather than silently disabling the
+    # blacklist app in the isolated migration preflight process.
+    raw_blacklist = values.get("CROWN_SIMPLEJWT_BLACKLIST_ENABLED", "false")
+    if not isinstance(raw_blacklist, str):
+        raise Blocked("invalid_dev_blacklist_setting")
+    flag = raw_blacklist.strip().lower()
+    if flag not in {"", "0", "false", "no", "off", "1", "true", "yes", "on"}:
+        raise Blocked("invalid_dev_blacklist_setting")
+    hosted_blacklist_enabled = flag in {"1", "true", "yes", "on"}
+    return database_url, secret, database_name, hosted_blacklist_enabled
 
 
 def validate_plan(plan):
@@ -174,9 +184,11 @@ def apply_reviewed_plan(*, acquire_lock, verify_identity, verify_ddl, read_plan,
 
 
 def migrate_on_dev(database_url, secret, database_name, source_sha, *,
-                   check_only=False, apply_blacklist=False):
+                   check_only=False, apply_blacklist=False, hosted_blacklist_enabled=False):
     if check_only and apply_blacklist:
         raise Blocked("conflicting_dev_migration_modes")
+    if not isinstance(hosted_blacklist_enabled, bool):
+        raise Blocked("invalid_dev_blacklist_setting")
     if validate_database_url(database_url) != database_name:
         raise Blocked("effective_database_target_mismatch")
     ca_bundle = Path("/etc/ssl/certs/ca-certificates.crt")
@@ -192,7 +204,7 @@ def migrate_on_dev(database_url, secret, database_name, source_sha, *,
                       DJANGO_ENV="development", ENVIRONMENT="dev", DJANGO_DEBUG="false",
                       DEBUG="false", BUILD_SHA=source_sha,
                       CROWN_SIMPLEJWT_BLACKLIST_ENABLED=(
-                          "true" if check_only or apply_blacklist else "false"
+                          "true" if check_only or apply_blacklist or hosted_blacklist_enabled else "false"
                       ))
     sys.path.insert(0, str(ROOT / "backend"))
     import django
@@ -290,7 +302,7 @@ def main(argv=None):
             raise Blocked("explicit_dev_blacklist_authority_required")
         validate_source(args.expected_sha)
         stage = "dev_configuration"
-        database_url, secret, database_name = load_dev_settings()
+        database_url, secret, database_name, hosted_blacklist_enabled = load_dev_settings()
         # GitHub masking commands are consumed by the runner, not evidence files.
         for value in (database_url, secret):
             print("::add-mask::" + value.replace("%", "%25"), flush=True)
@@ -303,7 +315,8 @@ def main(argv=None):
                 applied = migrate_on_dev(database_url, secret, database_name,
                                          args.expected_sha, apply_blacklist=True)
             else:
-                applied = migrate_on_dev(database_url, secret, database_name, args.expected_sha)
+                applied = migrate_on_dev(database_url, secret, database_name, args.expected_sha,
+                                         hosted_blacklist_enabled=hosted_blacklist_enabled)
         result = {"status": "PASS", "source_sha": args.expected_sha, "target_app": DEV_APP,
                   "mode": ("read_only" if args.check_only else
                            "reviewed_dev_blacklist" if args.apply_reviewed_blacklist else "migrate"),
