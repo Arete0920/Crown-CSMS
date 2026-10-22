@@ -466,7 +466,8 @@ def test_inquiry_detail_requires_school_view_authority_without_mutation(school):
     assert lead.stage == "inquiry"
 
     client.force_authenticate(user=_staff(other_school, edit=False))
-    assert client.get(f"{URL}{lead.id}/", HTTP_X_SCHOOL_ID=str(school.id)).status_code == 403
+    # Tenant mismatch is concealed as 404 before record detail is exposed.
+    assert client.get(f"{URL}{lead.id}/", HTTP_X_SCHOOL_ID=str(school.id)).status_code == 404
 
 
 def test_inquiry_cursor_preserves_due_date_and_null_last_order(school):
