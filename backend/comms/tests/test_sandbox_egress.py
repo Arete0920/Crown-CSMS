@@ -136,6 +136,62 @@ def test_legacy_outbox_without_school_attribute(settings, monkeypatch):
     send.assert_called_once_with("+15551234567", "Fixture")
 
 
+
+def test_advancement_smtp_outbox_suppressed_before_transport(settings, monkeypatch):
+    from advancement import emailer
+
+    settings.CROWN_SANDBOX_OUTBOUND_DISABLED = False
+    settings.CROWN_SANDBOX_EVALUATOR_MODE = False
+    construct = Mock(side_effect=AssertionError("Django mail must not initialize"))
+    monkeypatch.setattr(emailer, "EmailMultiAlternatives", construct)
+    row = SimpleNamespace(
+        school_id=HERITAGE_SCHOOL_ID,
+        attempts=0,
+        status="pending",
+        sent_at=None,
+        last_error="",
+        save=Mock(),
+    )
+    assert emailer.send_outbox_email(row) is False
+    assert row.status == "failed"
+    assert row.last_error == SUPPRESSED_REASON
+    assert row.attempts == 0
+    assert row.sent_at is None
+    row.save.assert_called_once_with(update_fields=["status", "sent_at", "last_error"])
+    construct.assert_not_called()
+
+
+def test_advancement_smtp_outbox_unrelated_school_still_sends(settings, monkeypatch):
+    from advancement import emailer
+    from core.tenant_models import tenant_context
+
+    settings.CROWN_SANDBOX_OUTBOUND_DISABLED = False
+    settings.CROWN_SANDBOX_EVALUATOR_MODE = False
+    settings.CROWN_DEMO_SCHOOL_ID = HERITAGE_SCHOOL_ID
+    message = Mock()
+    construct = Mock(return_value=message)
+    monkeypatch.setattr(emailer, "EmailMultiAlternatives", construct)
+    row = SimpleNamespace(
+        school_id="11111111-1111-1111-1111-111111111111",
+        attempts=0,
+        status="pending",
+        sent_at=None,
+        last_error="",
+        subject="Normal school test",
+        body_text="Test",
+        to_email="synthetic@example.org",
+        body_html="",
+        attachments_json=[],
+        save=Mock(),
+    )
+    with tenant_context(SimpleNamespace(pk=row.school_id)):
+        assert emailer.send_outbox_email(row) is True
+    assert row.status == "sent"
+    assert row.attempts == 1
+    construct.assert_called_once()
+    message.send.assert_called_once_with(fail_silently=False)
+
+
 @pytest.mark.django_db
 def test_outbox_suppression_terminal(settings, monkeypatch):
     from comms.models import OutboxMessage
