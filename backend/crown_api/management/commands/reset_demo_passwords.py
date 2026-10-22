@@ -1,86 +1,145 @@
+"""Reset only the explicitly selected fictional Heritage demonstration accounts."""
+
+from __future__ import annotations
+
 import os
-from django.core.management.base import BaseCommand
+
 from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError
+from django.core.management.base import BaseCommand, CommandError
+from django.db import transaction
+
+from core.demo_credentials import configured_demo_passwords
+from core.demo_seed_safety import require_local_demo_seed
 from core.models import School, UserRole
 
-DEMO_USERNAMES = [
+
+DEMO_USERNAMES = (
     "head@crown-demo.local",
     "finance@crown-demo.local",
     "aid@crown-demo.local",
-]
-
-EXTRA_DEMO_USERS = [
+    "registrar@crown-demo.local",
+)
+DEMO_DIRECTOR_ROLES = {
+    "head@crown-demo.local": "HEAD_OF_SCHOOL",
+    "finance@crown-demo.local": "FINANCE_DIRECTOR",
+    "aid@crown-demo.local": "AID_DIRECTOR",
+    "registrar@crown-demo.local": "REGISTRAR",
+}
+EXTRA_DEMO_USERS = (
     {"username": "teacher", "email": "teacher@crown-demo.local", "role_code": "TEACHER"},
     {"username": "parent", "email": "parent@crown-demo.local", "role_code": "PARENT"},
-]
+)
+
 
 class Command(BaseCommand):
-    help = "Reset demo user passwords from CROWN_DEMO_PASSWORD."
+    help = "Reset selected Heritage demo accounts using distinct per-account secrets."
 
+    def add_arguments(self, parser):
+        parser.add_argument(
+            "--school-id",
+            default=None,
+            help="Heritage demo school UUID; required unless CROWN_DEMO_SCHOOL_ID is set.",
+        )
+
+    @transaction.atomic
     def handle(self, *args, **options):
-        pw = os.getenv("CROWN_DEMO_PASSWORD")
-        if not pw:
-            raise SystemExit("CROWN_DEMO_PASSWORD is not set")
+        require_local_demo_seed(operation="password reset")
+        passwords = configured_demo_passwords(require_complete=True)
+
+        school_id = options.get("school_id") or os.environ.get("CROWN_DEMO_SCHOOL_ID")
+        if not school_id:
+            raise CommandError("--school-id or CROWN_DEMO_SCHOOL_ID is required.")
+        try:
+            school = School.objects.get(pk=school_id)
+        except (School.DoesNotExist, ValidationError, ValueError) as exc:
+            raise CommandError("Specified demo school does not exist.") from exc
+        if school.name != "Heritage Christian Academy":
+            raise CommandError("Only the Heritage Christian Academy demo school is supported.")
 
         User = get_user_model()
-        changed = 0
-        missing = []
+        target_usernames = (*DEMO_USERNAMES, *(spec["username"] for spec in EXTRA_DEMO_USERS))
+        existing = {user.username: user for user in User.objects.filter(username__in=target_usernames)}
+        expected_emails = {
+            **{username: username for username in DEMO_USERNAMES},
+            **{spec["username"]: spec["email"] for spec in EXTRA_DEMO_USERS},
+        }
 
-        school_id = os.getenv("CROWN_DEMO_SCHOOL_ID")
-        school = None
-        if school_id:
-            school = School.objects.filter(pk=school_id).first()
-        if school is None:
-            school = School.objects.order_by("name").first()
-
-        for username in DEMO_USERNAMES:
-            try:
-                user = User.objects.get(username=username)
-            except User.DoesNotExist:
-                missing.append(username)
-                continue
-
-            user.set_password(pw)
-            user.is_active = True
-            user.save(update_fields=["password", "is_active"])
-            changed += 1
-
-        created = 0
-        for spec in EXTRA_DEMO_USERS:
-            user, was_created = User.objects.get_or_create(
-                username=spec["username"],
-                defaults={
-                    "email": spec["email"],
-                    "is_active": True,
-                    "school": school,
-                },
-            )
-
-            user.email = spec["email"]
-            user.is_active = True
-            if user.school_id is None and school is not None:
-                user.school = school
-            user.set_password(pw)
-            user.save(update_fields=["email", "is_active", "school", "password"])
-
-            if school is not None:
-                UserRole.objects.update_or_create(
-                    school=school,
-                    user=user,
-                    role_code=spec["role_code"],
+        # Perform all cross-school and identity checks before modifying accounts.
+        for username, user in existing.items():
+            if user.school_id != school.pk:
+                raise CommandError(
+                    f"Refusing demo password reset: {username} belongs to another school."
+                )
+            if user.email != expected_emails[username]:
+                raise CommandError(
+                    f"Refusing demo password reset: identity mismatch for {username}."
                 )
 
+        # Do not add demo identities to a SQLite database that contains
+        # unrelated schools. Per-username validation alone is insufficient:
+        # previously absent usernames could otherwise be created in-place.
+        if School.objects.exclude(pk=school.pk).exists():
+            raise CommandError(
+                "Demo password reset requires an isolated single-school Heritage database."
+            )
+
+        changed = 0
+        missing = []
+        created = 0
+
+        for username in DEMO_USERNAMES:
+            user = existing.get(username)
+            if user is None:
+                missing.append(username)
+                continue
+            user.set_password(passwords[username])
+            user.is_superuser = False
+            user.is_staff = False
+            user.save(update_fields=["password", "is_superuser", "is_staff"])
+            # A previous role assignment may still confer app privileges
+            # after Django staff/superuser is cleared. Keep exactly the
+            # intended demo persona grant.
+            role_code = DEMO_DIRECTOR_ROLES[username]
+            UserRole.objects.filter(school=school, user=user).exclude(
+                role_code=role_code
+            ).delete()
+            UserRole.objects.get_or_create(
+                school=school, user=user, role_code=role_code
+            )
             changed += 1
-            if was_created:
+
+        for spec in EXTRA_DEMO_USERS:
+            user = existing.get(spec["username"])
+            if user is None:
+                user = User(
+                    username=spec["username"],
+                    school=school,
+                    email=spec["email"],
+                    is_active=True,
+                    is_staff=False,
+                    is_superuser=False,
+                )
                 created += 1
 
-        self.stdout.write(self.style.SUCCESS(
-            f"Reset passwords for {changed} demo users."
-        ))
-        self.stdout.write(self.style.SUCCESS(
-            f"Created missing teacher/parent users: {created}."
-        ))
+            user.set_password(passwords[spec['username']])
+            user.is_superuser = False
+            user.is_staff = False
+            user.is_active = True
+            user.save()
+            UserRole.objects.filter(school=school, user=user).exclude(
+                role_code=spec["role_code"]
+            ).delete()
+            UserRole.objects.get_or_create(
+                school=school,
+                user=user,
+                role_code=spec["role_code"],
+            )
+            changed += 1
+
+        self.stdout.write(self.style.SUCCESS(f"Reset passwords for {changed} Heritage demo users."))
+        self.stdout.write(self.style.SUCCESS(f"Created missing teacher/parent users: {created}."))
         if missing:
-            self.stdout.write(self.style.WARNING(
-                f"Missing users (not modified): {missing}"
-            ))
+            self.stdout.write(
+                self.style.WARNING(f"Missing legacy demo accounts (not modified): {missing}")
+            )

@@ -107,7 +107,7 @@ def test_cross_school_issuance_revocation_and_payload_denied(collection):
     assert not SurveyResponse.objects.exists()
 
 
-@pytest.mark.parametrize("body", [b"{}", b"[]", b"{", b"\xff", b"x" * 65537, b'{"answers":{},"answers":{}}', b'{"answers":{"x":NaN}}'])
+@pytest.mark.parametrize("body", [b"{}", b"[]", b"{", b"\xff", b"\\xed\\xa0\\x80", b"x" * 65537, b'{"answers":{},"answers":{}}', b'{"answers":{"x":NaN}}'])
 def test_malformed_body_creates_no_rows(collection, body):
     with pytest.raises(CollectionRejected):
         collect_response(token=collection[4], body=body)
@@ -235,3 +235,24 @@ def test_expiration_boundary_is_exclusive(collection, expiry):
         with pytest.raises(CollectionRejected, match="Survey is not available"):
             send(collection)
     assert not SurveyResponse.objects.exists() and not SurveyCollectionReceipt.objects.exists()
+
+@pytest.mark.parametrize("expiry", [None, "tomorrow", 17, [], {}])
+def test_grant_issue_rejects_malformed_expiration(collection, expiry):
+    school, user, _, pub, _, _ = collection
+    with pytest.raises(CollectionRejected):
+        issue_respondent_grant(school_id=school.pk, publication_id=pub.pk, issuer=user, expires_at=expiry)
+    assert SurveyRespondentGrant.objects.count() == 1
+
+
+def test_nul_answer_rejected_without_response_or_receipt(collection):
+    payload = dict(collection[5], answers={"satisfaction": 4, "unexpected": "a\\u0000b"})
+    with pytest.raises(CollectionRejected):
+        send(collection, payload)
+    assert not SurveyResponse.objects.exists()
+    assert not SurveyCollectionReceipt.objects.exists()
+
+def test_lone_surrogate_is_safely_rejected_in_response_body(collection):
+    payload = dict(collection[5], answers={"satisfaction": 4, "extra": "\ud800"})
+    with pytest.raises(CollectionRejected):
+        send(collection, payload)
+    assert not SurveyResponse.objects.exists()

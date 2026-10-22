@@ -165,13 +165,10 @@ jobs:
           payments/tests/test_option_a_finance_runtime_chain.py
           payments/tests/test_option_a_compatibility_audit.py
 
-      - name: Build Heritage target demo dataset
-        run: |
-          python manage.py migrate --noinput
-          python manage.py seed_heritage_realism_pack --no-comms
-
-      - name: Audit Heritage finance data strictly
-        run: python manage.py audit_finance_hardening --school-name "Heritage Christian Academy"
+      # The PostgreSQL canonical payment test above provisions an isolated
+      # tenant-keyed school, settles/refunds a real manual payment, and runs the
+      # non-vacuous finance audit. Do not call legacy local-SQLite-only seeds
+      # or claim that this verifies a hosted Heritage database.
 
   finance-postgresql-concurrency:
     name: finance-postgresql-concurrency
@@ -283,7 +280,19 @@ jobs:
 
       - name: Install Chromium
         working-directory: frontend/dashboards
-        run: npx playwright install --with-deps chromium
+        shell: bash
+        run: |
+          set -euo pipefail
+          # An unrelated third-party Microsoft APT feed intermittently returns
+          # HTTP 403 on disposable Ubuntu runners. Preserve Playwright's full
+          # browser and OS-library installation while isolating only that feed.
+          for source in /etc/apt/sources.list.d/*; do
+            if [ -f "$source" ] && sudo grep -q "packages.microsoft.com" "$source"; then
+              echo "Excluding unrelated Microsoft APT feed: $source"
+              sudo mv "$source" "$source.crown-disabled"
+            fi
+          done
+          npx playwright install --with-deps chromium
 
       - name: Run Heritage Finance Director process journey
         working-directory: frontend/dashboards
@@ -295,7 +304,7 @@ jobs:
 
       - name: Upload Playwright and crawler evidence
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: finance-final-browser-crawler-evidence
           if-no-files-found: ignore
