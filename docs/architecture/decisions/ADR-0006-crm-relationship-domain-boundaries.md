@@ -1,15 +1,16 @@
 # ADR-0006: CROWN CRM Relationship Center Domain Boundaries
 
-**Status:** ACCEPTED BY PRODUCT-OWNER DIRECTION; EFFECTIVE ON GOVERNED INDEXED MERGE
+**Status:** PROPOSED — owner decision and governed acceptance pending
 **Date:** 2026-10-19
 **Repository:** Arete0920/Crown-CSMS
-**Inspected accepted-main baseline:** 433aa0b6cb54c3b5a86f50f5f3137c46ebb12940
+**Original inspected-main baseline:** 433aa0b6cb54c3b5a86f50f5f3137c46ebb12940
+**Reconciled accepted-main source:** c686bbb648006b7d56525901df87dd3b83756336 (2026-10-22)
 **Product owner:** CROWN Product Owner
-**Approval record:** Owner's October 19, 2026 direction to proceed with the documented CRM architecture and sequenced implementation; formal code, deployment, privacy and operational approvals remain separate. The accepted ADR takes effect only if this exact indexed PR passes applicable checks and is merged.
+**Approval record:** October 19, 2026 product-owner direction initiated design-first CRM planning, not independent formal acceptance of ADR-0006. Explicit owner approval of domain boundaries, applicable protected checks, and admission into the accepted decision index remain prerequisites. Implementation and operational approvals are separate.
 **Implementation status:** DESIGN ONLY; no schema, application, worker, provider, or deployment change
 **Supersedes:** None
 
-> This ADR is submitted for canonical admission in the same governed pull request that adds its accepted-index entry. Until merged, the accepted main index remains unchanged and this branch is only proposed authority. Source inspection is not deployed-runtime certification.
+> PR #355 places ADR-0006 in **Proposed decisions**, not Accepted decisions. A design-document merge alone does not confer architecture authority. The status must be changed only after a recorded owner acceptance and governed accepted-index update (in this PR if approved before merge). Source inspection is not deployed-runtime certification.
 
 ## Context and problem
 
@@ -72,7 +73,7 @@ The proposed schema is additive; names below are design candidates and not exist
 
 **Opportunity stage:** A child/academic-year opportunity derives its stage from authoritative admissions events; a family overview derives an aggregate. Family status is not a last-child-wins write. If one linked child has confirmed enrollment, a later sibling update must not erase that fact. Additional open interests stay visible independently. An admissions stage must not be inferred from an unverified CRM label.
 
-**Known concurrent corrective work:** Draft PR [#353](https://github.com/Arete0920/Crown-CSMS/pull/353) addresses the existing sibling family-stage regression. This proposal does not duplicate or supersede that patch. Verify its accepted final form before implementing lifecycle changes.
+**Merged regression correction:** PR [#353](https://github.com/Arete0920/Crown-CSMS/pull/353) merged into protected main on 2026-10-21 at 13:17 UTC (`b5cad5b48d6247c88193bc03904a6c158c4b1922`). `crm_marketing/services.py` now checks linked same-school child applications and authoritative `enrollment_confirmed` events before deriving the aggregate family stage, preventing a later sibling submission/update from erasing confirmed enrollment. The merged sibling and tenant-isolation regression tests are accepted-source safeguards; preserve them without reopening #353. Per-child/year EnrollmentInterest, historical/backfill reconciliation and deployed-runtime proof remain separate uncompleted or unverified obligations.
 
 ### 4. Tenant and authorization contract
 
@@ -148,12 +149,12 @@ Costs: temporary compatibility adapters; provenance-aware linking; careful tenan
 
 ## Decision and acceptance dependencies
 
-1. Admit this owner-directed ADR through the governed PR and same-commit accepted-index update. Before merge it is not canonical main authority.
+1. Record the owner's explicit architecture acceptance and complete a governed accepted-index update after applicable exact-head checks; before then ADR-0006 remains proposed, even if its documentation merges.
 2. Complete the detailed [Phase-0 gap and delivery specification](../../product/CROWN_CRM_RELATIONSHIP_CENTER_PHASE0_20261019.md).
-3. Validate or disposition draft PR #353 independently; do not conflate correction with new CRM feature PRs.
+3. Preserve the merged #353 same-school, event-backed family-stage safeguard and its regression tests; do not conflate the completed correction with unimplemented CRM opportunity or identity-link services.
 4. Approve contact/group identity linkage and consent purposes before any additive migration or live send.
 5. Require evidence and rollback design for each numbered implementation slice.
 
 ## Verification and rollback rule
 
-This is a documentation-only architecture decision; no migrations, queues, notifications, integrations, production resources or tenant data have changed. If rejected, close/revert the design PR without operational rollback. Acceptance of these domain boundaries is not approval of any unverified code, migration, outbound communication, paid service, deployment, or live operating posture. ADR authority begins only after the reviewed, indexed PR merges with the applicable protected checks passing.
+This is a documentation-only architecture decision; no migrations, queues, notifications, integrations, production resources or tenant data have changed. If rejected, close/revert the design PR without operational rollback. Acceptance of these domain boundaries is not approval of any unverified code, migration, outbound communication, paid service, deployment, or live operating posture. ADR authority begins only after a recorded architecture acceptance and governed listing under **Accepted decisions**; document merge, source proof and deployed-runtime certification are distinct milestones.

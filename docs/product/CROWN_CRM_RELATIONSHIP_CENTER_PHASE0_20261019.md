@@ -3,7 +3,8 @@
 **Status:** PROPOSED DESIGN SPECIFICATION — not an implemented product, certified release, or accepted ADR
 **Date:** 2026-10-19
 **Repository:** Arete0920/Crown-CSMS
-**Source baseline inspected:** accepted main 433aa0b6cb54c3b5a86f50f5f3137c46ebb12940
+**Original inspected source baseline:** accepted main 433aa0b6cb54c3b5a86f50f5f3137c46ebb12940
+**Reconciled accepted-main source:** c686bbb648006b7d56525901df87dd3b83756336 (2026-10-22)
 **Proposed architecture:** [ADR-0006](../architecture/decisions/ADR-0006-crm-relationship-domain-boundaries.md)
 **Scope of this file:** source-observed CRM work, bounded design choices, risk disposition, next implementation slices and acceptance tests.
 
@@ -16,6 +17,7 @@ Deliver a tenant-safe school relationship center covering prospective families, 
 | Area | Source evidence | Classification |
 | --- | --- | --- |
 | School-scoped leads, stages, campaigns, touchpoints | backend/crm_marketing/models.py; migrations 0001, 0002 | Implemented source; runtime not inferred |
+| Sibling-safe family aggregate stage | Merged #353; backend/crm_marketing/services.py; tests/test_campaign_growth.py | Corrected in accepted source October 21; deployment proof separate |
 | Public intake and idempotent replay | api/inquiries.py, inquiry_services.py, admissions API contract | Implemented source; hosted verification separate |
 | Pre-application continuation, multi-application linking | inquiry_services.py, applications/views_admissions.py | Implemented source, preserve contract |
 | Protected admissions queue and ownership | frontend/dashboards/src/pages/AdmissionsInquiryQueue.jsx, api/inquiries.py | Implemented source |
@@ -30,9 +32,9 @@ Deliver a tenant-safe school relationship center covering prospective families, 
 
 ## 3. Findings and decisions
 
-### F-01: Family aggregate stage can regress (critical)
+### F-01: Family aggregate stage regression corrected in accepted source; lifecycle design remains open
 
-Current main crm_marketing.services.register_admissions_submit and register_workflow_update update MarketingLead.stage from one application. With multiple child applications linked to one lead, a sibling's later transition can overwrite a prior confirmed enrollment. Draft PR #353 proposes a targeted preservation correction on the inspected main; it is not merged or tested by this documentation PR. **Disposition:** Do not duplicate #353. Check exact final tests, accepted merge and authoritative enrollment-stage derivation before implementing separate opportunity stages.
+The original October 19 source baseline allowed a later sibling update to overwrite a family's confirmed enrolled stage. PR [#353](https://github.com/Arete0920/Crown-CSMS/pull/353) merged into protected main October 21 at 13:17 UTC (`b5cad5b48d6247c88193bc03904a6c158c4b1922`). Accepted `register_admissions_submit` and `register_workflow_update` preserve `ENROLLED` for a family lead if a linked same-school application has an authoritative `enrollment_confirmed` event, while preserving prior behavior when that evidence is absent. The merged patch includes sibling and cross-school negative regression tests. **Disposition: corrected in accepted source; do not duplicate or reopen #353.** Per-child/year opportunity stages, verified identity links, historical records/backfills and deployed-runtime verification remain separate work.
 
 ### F-02: Identity models conflict unless authority is explicit (critical)
 
@@ -44,7 +46,7 @@ MarketingLead has grade_interest and entry_year on a lead plus one compatibility
 
 ### F-04: Inquiry list query/cap behavior can limit scale (high)
 
-The protected GET leads query hard-caps serialized results at 100 and invokes per-lead duplicate candidate and notification status lookups in _serialize. It returns a match count but no cursor/offset contract in the inspected source. **Disposition:** Introduce bounded, deterministic pagination and batched status/duplicate projections, with query-count and response-contract regressions; preserve historical response compatibility.
+The protected GET leads query hard-caps serialized results at 100 and invokes per-lead duplicate candidate and notification status lookups in _serialize. It returns a match count but no cursor/offset contract in the inspected source. **Disposition:** Introduce bounded, deterministic pagination and batched status/duplicate projections, with query-count and response-contract regressions; preserve historical response compatibility. Separate PR [#356](https://github.com/Arete0920/Crown-CSMS/pull/356) is open and proposes school-scoped on-demand history and cursor navigation; reconcile its accepted final state before creating overlapping changes.
 
 ### F-05: Messaging and consent are narrow by design (critical)
 
@@ -107,7 +109,7 @@ No work below is authorized as completed by the presence of this document. The e
 | Slice | Change boundary | Tests/evidence | Dependency and reversal |
 | --- | --- | --- | --- |
 | CR-00 | Approve ADR-0006; reconcile approved owner matrix and API contract | Accepted ADR entry and diff inspection | No data writes; doc revert only |
-| CR-01 | Independent close-out of existing PR #353 sibling regression | Same-source focused tests, tenant negatives, protected checks | Must land separately; revert service/tests if needed |
+| CR-01 | **Complete in accepted source:** #353 merged October 21; preserve sibling stage correction | Merged source and sibling/tenant-negative tests identified; runtime verification stays within CR-09 | No duplicate corrective PR; preserve existing event-backed family stage |
 | CR-02 | Prospective group/contact/interest additive schema only | PostgreSQL migration drill, same-school FKs, distinct children, old API compatibility, rollback | ADR and lifecycle acceptance; no destructive migration |
 | CR-03 | Verified identity-link workflow (no auto-merge) | Unauthorized, mixed school, duplicate, revoked, simultaneous link tests and audit | CR-02; reversible link status |
 | CR-04 | CRMTask schema and transaction services | Due/assigned/completed, role changes, exactly-once creation and concurrent transitions | CR-02; no provider dispatch |
@@ -124,7 +126,8 @@ Keep code, schema, security permission, UI, and live external activation changes
 All must be true before CR-02 migration proposal proceeds:
 
 - [ ] Proposed ADR-0006 reviewed/accepted and indexed through governance.
-- [ ] Exact accepted-head tests and open overlapping PRs reconciled; #353 has a documented final disposition.
+- [x] PR #353 disposition recorded: merged into protected main on October 21, with source-level correction and regression tests; not proof of deployed behavior.
+- [ ] Reconcile other overlapping CRM PRs and exact-head checks before architectural acceptance or CR-02.
 - [ ] Canonical identity writer and CRM read-only/verified-link boundaries accepted.
 - [ ] Opportunity stage aggregation policy accepted, including siblings and multi-year cases.
 - [ ] CRM prospective contact group and relationship-link semantics approved with custody/portal restriction test plan.
@@ -136,6 +139,6 @@ All must be true before CR-02 migration proposal proceeds:
 
 ## 8. Repository verification and claim limits
 
-The inspected accepted-main baseline is 433aa0b6cb54c3b5a86f50f5f3137c46ebb12940. Draft #353 was open at inspection with two changed files and no locally executed tests reported in its PR. This document records source-observed gaps and proposed decisions only. It does not imply any model was migrated, route released, permission granted, worker enabled, real family contacted, deployment changed, or infrastructure cost incurred.
+The October 19 inspection used accepted main 433aa0b6cb54c3b5a86f50f5f3137c46ebb12940. The October 22 source reconciliation against main c686bbb648006b7d56525901df87dd3b83756336 confirms merged #353's accepted-source correction; the former draft/open observation is historical only. PR #355 still proposes unimplemented relationship functionality and unresolved design gates. It does not prove new models or migrations, route availability, permissions, external messaging, real-family outreach, deployed runtime, or infrastructure cost.
 
 Reference release-governance source: [CURRENT_RELEASE_STATUS](../CURRENT_RELEASE_STATUS.md); [accepted architecture index](../architecture/DECISION_INDEX.md). 
