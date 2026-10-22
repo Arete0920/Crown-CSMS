@@ -3,6 +3,7 @@ from datetime import timedelta
 import pytest
 from django.utils import timezone
 from rest_framework.test import APIClient
+from rest_framework.exceptions import ValidationError
 from academics.tests.test_classroom_experience import classroom
 from core.models import Family, Student as CoreStudent, StudentIdentityLink, UserAccount, UserRole
 from academics.operations_models import ClassroomAttendanceSession, ClassroomAttendanceAudit, ClassroomSubstituteGrant, ClassroomEmergencySession
@@ -108,4 +109,76 @@ def test_attendance_duplicate_rows_and_blank_reason_do_not_write(classroom):
     row = {'student_id': str(classroom[4].id), 'status': 'PRESENT'}
     assert request(classroom, operation='attendance', version=0, items=[row, row], reason='Roll call').status_code == 400
     assert request(classroom, operation='attendance', version=0, items=[row], reason='').status_code == 400
+    assert not AttendanceRecord.objects.exists()
+
+
+def test_school_day_comes_from_school_timezone_at_utc_midnight(classroom, monkeypatch):
+    from datetime import datetime, timezone as utc_timezone
+
+    school = classroom[0]
+    school.timezone = 'America/New_York'
+    school.save(update_fields=['timezone'])
+    # At 01:30 UTC on October 20, the school's date is still October 19.
+    instant = datetime(2026, 10, 20, 1, 30, tzinfo=utc_timezone.utc)
+    monkeypatch.setattr('academics.operations_views.timezone.now', lambda: instant)
+    client = APIClient()
+    client.force_authenticate(classroom[1])
+    response = client.get(URL, {'section_id': str(classroom[5].id)}, HTTP_X_SCHOOL_ID=str(school.id))
+    assert response.status_code == 200
+    assert response.data['school_today'] == '2026-10-19'
+    assert str(response.data['date']) == '2026-10-19'
+
+
+def test_school_day_rejects_invalid_configured_timezone(classroom):
+    school = classroom[0]
+    school.timezone = 'Not/A_Timezone'
+    school.save(update_fields=['timezone'])
+    client = APIClient()
+    client.force_authenticate(classroom[1])
+    response = client.get(URL, {'section_id': str(classroom[5].id)}, HTTP_X_SCHOOL_ID=str(school.id))
+    assert response.status_code == 400
+    assert not AttendanceRecord.objects.exists()
+
+
+@pytest.mark.parametrize(
+    ('active', 'configured_timezone', 'message'),
+    [
+        (False, 'UTC', 'An active school is required'),
+        (True, '', 'Configure the school timezone'),
+    ],
+)
+def test_school_day_distinguishes_inactive_school_from_missing_timezone(
+    classroom, active, configured_timezone, message
+):
+    from academics.operations_views import school_local_date
+
+    school = classroom[0]
+    school.is_active = active
+    school.timezone = configured_timezone
+    school.save(update_fields=['is_active', 'timezone'])
+
+    with pytest.raises(ValidationError, match=message):
+        school_local_date(school.id)
+    assert not AttendanceRecord.objects.exists()
+
+
+def test_legacy_attendance_writer_rejects_stale_expected_school_day(classroom):
+    from academics.operations_views import school_local_date
+
+    identity(classroom)
+    client = APIClient()
+    client.force_authenticate(classroom[1])
+    today = school_local_date(classroom[0].id)
+    response = client.post(
+        f'/api/v1/academics/sections/{classroom[5].id}/attendance/',
+        {
+            'date': (today - timedelta(days=1)).isoformat(),
+            'expected_school_today': (today - timedelta(days=1)).isoformat(),
+            'items': [{'student_id': str(classroom[4].id), 'status': 'ABSENT'}],
+        },
+        format='json', HTTP_X_SCHOOL_ID=str(classroom[0].id),
+    )
+    assert response.status_code == 409
+    assert response.data['code'] == 'school_day_changed'
+    assert 'school day changed' in response.data['detail'].lower()
     assert not AttendanceRecord.objects.exists()

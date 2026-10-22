@@ -7,7 +7,7 @@ from rest_framework import status
 from rest_framework.authentication import SessionAuthentication
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.response import Response
-from rest_framework_simplejwt.authentication import JWTAuthentication
+from crown_api.tenant_authentication import TenantJWTAuthentication
 
 from academics.models import Course, Section, Term
 from core.models import AcademicYear
@@ -18,7 +18,7 @@ from .models import SchedulingWizardSession
 from drf_spectacular.utils import extend_schema
 from drf_spectacular.types import OpenApiTypes
 
-_AUTH = [JWTAuthentication, SessionAuthentication]
+_AUTH = [TenantJWTAuthentication, SessionAuthentication]
 _VIEW_PERM = [CrownModulePermission("scheduling.view")]
 _CONFIGURE_PERM = [CrownModulePermission("scheduling.view", "scheduling.configure")]
 _EDIT_PERM = [CrownModulePermission("scheduling.view", "scheduling.edit")]
@@ -398,12 +398,18 @@ def commit_session(request, session_id):
 
 
 @extend_schema(responses=OpenApiTypes.OBJECT)
-@api_view(["GET"])
+@api_view(["GET", "POST"])
 @authentication_classes(_AUTH)
-@permission_classes(_VIEW_PERM)
+@permission_classes(_PUBLISH_PERM)
+@transaction.atomic
 def verify_session(request, session_id):
     school_id = get_request_school_id(request)
-    session = _get_session(session_id, school_id)
+    session = (
+        get_object_or_404(
+            SchedulingWizardSession.objects.select_for_update(),
+            id=session_id, school_id=school_id,
+        ) if request.method == "POST" else _get_session(session_id, school_id)
+    )
 
     if session.status == SchedulingWizardSession.STATUS_VERIFIED:
         return Response({
@@ -433,8 +439,9 @@ def verify_session(request, session_id):
             status=status.HTTP_409_CONFLICT,
         )
 
-    session.status = SchedulingWizardSession.STATUS_VERIFIED
-    session.save(update_fields=["status", "updated_at"])
+    if request.method == "POST":
+        session.status = SchedulingWizardSession.STATUS_VERIFIED
+        session.save(update_fields=["status", "updated_at"])
 
     return Response({
         "session_id": str(session.id),
