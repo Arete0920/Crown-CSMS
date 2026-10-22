@@ -5,8 +5,8 @@ Routes:
   GET  /api/v1/subscriptions/me/entitlements/    — current tenant's full entitlement snapshot
   GET  /api/v1/subscriptions/plans/              — list all active plans (public/authenticated)
   GET  /api/v1/subscriptions/features/           — list all feature keys (public/authenticated)
-  GET  /api/v1/subscriptions/ops/<school_id>/    — ops: get subscription for any school [IsAdminUser]
-  POST /api/v1/subscriptions/ops/<school_id>/    — ops: assign/update plan for a school [IsAdminUser]
+  GET  /api/v1/subscriptions/ops/<school_id>/    — ops: get subscription for any school [IsPlatformOperator]
+  POST /api/v1/subscriptions/ops/<school_id>/    — ops: assign/update plan for a school [IsPlatformOperator]
 """
 from __future__ import annotations
 
@@ -14,7 +14,9 @@ import uuid
 
 from django.utils import timezone
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAdminUser, IsAuthenticated
+from rest_framework.permissions import IsAuthenticated
+
+from core.permissions import IsPlatformOperator
 from rest_framework.response import Response
 
 from crown_api.tenant import get_tenant_school_id
@@ -93,7 +95,7 @@ def feature_list(request) -> Response:
 
 
 @api_view(["GET", "POST"])
-@permission_classes([IsAdminUser])
+@permission_classes([IsPlatformOperator])
 def ops_school_subscription(request, school_id: uuid.UUID) -> Response:
     """Read or update a school's active subscription as an administrator."""
     if request.method == "GET":
