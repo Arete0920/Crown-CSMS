@@ -22,6 +22,21 @@ from django.http import JsonResponse
 from rest_framework.permissions import BasePermission
 
 
+class IsPlatformOperator(BasePermission):
+    """Only active platform superusers may perform cross-school operations."""
+
+    message = "Platform operator access required."
+
+    def has_permission(self, request, view):
+        user = getattr(request, "user", None)
+        return bool(
+            user
+            and getattr(user, "is_authenticated", False)
+            and getattr(user, "is_active", False)
+            and getattr(user, "is_superuser", False)
+        )
+
+
 def user_has_permission(user, permission_code, school=None):
     """
     Return True only for an active user's grant in an explicit school.

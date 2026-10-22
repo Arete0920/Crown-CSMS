@@ -47,6 +47,13 @@ def _is_public_inquiry_post(request, path: str) -> bool:
     ) is not None
 
 
+def _is_platform_operator_path(path: str) -> bool:
+    """Exact privileged schoolless paths, not public or school-scoped APIs."""
+    return path.startswith("/api/platform/") or re.fullmatch(
+        r"/api/v1/subscriptions/ops/[0-9a-fA-F-]{36}", path
+    ) is not None
+
+
 def _record_tenant_decision(request, *, outcome: str, reason: str, required: bool = False) -> bool:
     """Persist tenant decisions; authorized overrides fail closed when evidence cannot persist."""
     try:
@@ -145,6 +152,18 @@ def enforce_tenant_context(request) -> None:
     normalized_path = path.rstrip("/") or "/"
 
     if not normalized_path.startswith("/api/"):
+        return
+
+    # Global operations cannot borrow a caller-selected tenant. Separate view
+    # permissions require active platform-superuser identity.
+    if _is_platform_operator_path(normalized_path):
+        if "HTTP_X_SCHOOL_ID" in request.META or "HTTP_X_CROWN_SCHOOL_ID" in request.META:
+            raise _tenant_context_error(
+                request,
+                {"detail": "School selector forbidden on global operations.",
+                 "code": "platform_tenant_selector_forbidden"},
+                status=400,
+            )
         return
 
     # School-less DEV demo-reset credential probes must reach the ops guard.
