@@ -93,6 +93,9 @@ jobs:
       - name: Verify DEV migration boundary without database execution
         run: python -m unittest discover -s scripts/ops -p test_run_dev_inquiry_migration.py -v
 
+      - name: Verify SimpleJWT migration allowlist without database access
+        run: python -m unittest discover -s scripts/ops -p test_reviewed_blacklist_migrations.py -v
+
       - name: Apply only reviewed DEV inquiry migration before deployment
         env:
           EXPECTED_SOURCE_SHA: ${{ steps.vars.outputs.deploy_sha }}

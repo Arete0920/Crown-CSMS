@@ -49,9 +49,15 @@ def _is_public_inquiry_post(request, path: str) -> bool:
 
 def _is_platform_operator_path(path: str) -> bool:
     """Exact privileged schoolless paths, not public or school-scoped APIs."""
-    return path.startswith("/api/platform/") or re.fullmatch(
-        r"/api/v1/subscriptions/ops/[0-9a-fA-F-]{36}", path
-    ) is not None
+    uuid_pattern = (
+        r"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-"
+        r"[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"
+    )
+    return (
+        path in {"/api/platform/schools", "/api/platform/schools/list"}
+        or bool(re.fullmatch(rf"/api/platform/provisioning/{uuid_pattern}", path))
+        or bool(re.fullmatch(rf"/api/v1/subscriptions/ops/{uuid_pattern}", path))
+    )
 
 
 def _record_tenant_decision(request, *, outcome: str, reason: str, required: bool = False) -> bool:

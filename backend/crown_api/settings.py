@@ -274,6 +274,13 @@ INSTALLED_APPS = [
 ]
 INSTALLED_APPS += WIZARD_INSTALLED_APPS  # wizard SDK: single source of truth in wizard_registry.py
 
+# Two-stage rollout: accept source with existing runtime behavior, migrate the
+# existing database through the separately authorized schema stage, and only
+# then enable revocation. This flag MUST NOT default to on before migrations.
+CROWN_SIMPLEJWT_BLACKLIST_ENABLED = _env_bool("CROWN_SIMPLEJWT_BLACKLIST_ENABLED", False)
+if CROWN_SIMPLEJWT_BLACKLIST_ENABLED:
+    INSTALLED_APPS.append("rest_framework_simplejwt.token_blacklist")
+
 # Use the project custom user model everywhere to avoid dual auth model registration.
 AUTH_USER_MODEL = 'core.UserAccount'
 

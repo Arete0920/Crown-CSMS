@@ -125,3 +125,7 @@ class PlatformOperatorBoundaryTests(TestCase):
         response = self.client_for().get("/api/platform-unsafe/list")
         self.assertEqual(response.status_code, 400)
         self.assertEqual(response.json()["code"], "missing_tenant")
+        for path in ("/api/platform/undefined-operation", "/api/platform/schools/export"):
+            response = self.client_for().get(path)
+            self.assertEqual(response.status_code, 400)
+            self.assertEqual(response.json()["code"], "missing_tenant")

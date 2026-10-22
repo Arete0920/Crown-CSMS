@@ -4,9 +4,12 @@ All /api/v1/* and /api/* routes resolve through here.
 """
 from importlib.util import find_spec
 
+from django.conf import settings
+from django.db import DatabaseError
 from django.urls import include, path
 from rest_framework.exceptions import APIException
 from rest_framework.response import Response
+from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView,
@@ -26,6 +29,7 @@ from applications.views_admissions_identity import (
     admissions_lifecycle_chain_update,
 )
 from crown_api.admissions_runtime import admissions_summary
+from crown_api.refresh_rotation import SerializedTokenRefreshSerializer
 from crown_api.auth_rate_limit import (
     AuthRateLimitBackendUnavailable,
     check_auth_rate_limit,
@@ -121,6 +125,12 @@ class RateLimitedTokenObtainPairView(TokenObtainPairView):
 class RateLimitedTokenRefreshView(TokenRefreshView):
     """SimpleJWT refresh with abuse protection for invalid token attempts."""
 
+    serializer_class = (
+        SerializedTokenRefreshSerializer
+        if settings.CROWN_SIMPLEJWT_BLACKLIST_ENABLED
+        else TokenRefreshSerializer
+    )
+
     def post(self, request, *args, **kwargs):
         identity = str(request.data.get("refresh") or "missing").strip()
         rate = check_auth_rate_limit(
@@ -141,6 +151,15 @@ class RateLimitedTokenRefreshView(TokenRefreshView):
 
         try:
             response = super().post(request, *args, **kwargs)
+        except DatabaseError:
+            # Revocation persistence is mandatory once blacklist is enabled.
+            # Never turn a backend failure into a reusable refresh success.
+            return Response(
+                {"detail": "Authentication temporarily unavailable.",
+                 "code": "auth_temporarily_unavailable"},
+                status=503,
+                headers={"Retry-After": "60"},
+            )
         except APIException:
             unavailable = _record_auth_failure_or_response(
                 request,
