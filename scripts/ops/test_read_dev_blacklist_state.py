@@ -101,6 +101,46 @@ class InventoryTests(unittest.TestCase):
             with self.assertRaises(subject.EvidenceBlocked):
                 subject.inspect_database(URL, "crown", connector=connect, ca_file=ca)
 
+    def test_configuration_helper_errors_preserve_only_safe_codes(self):
+        for reason in (
+            "azure_read_unavailable",
+            "dev_configuration_unavailable",
+            "unsupported_key_vault_reference",
+            "database_target_not_verified_dev",
+        ):
+            with self.subTest(reason=reason):
+                output = io.StringIO()
+                with patch.object(subject, "verify_accepted_source"), patch.object(
+                    subject, "read_dev_database_setting",
+                    side_effect=subject.Blocked(reason),
+                ), patch.object(subject, "inspect_database") as inspect, contextlib.redirect_stdout(output):
+                    self.assertEqual(subject.main(["--expected-sha", SHA]), 1)
+                packet = json.loads(output.getvalue())
+                self.assertEqual(packet["reason"], reason)
+                self.assertEqual(packet["stage"], "dev_configuration")
+                self.assertEqual(packet["status"], "BLOCKED")
+                self.assertFalse(packet["activation_authorized"])
+                inspect.assert_not_called()
+
+    def test_untrusted_helper_messages_and_untyped_codes_are_redacted(self):
+        for error in (
+            subject.Blocked(URL),
+            subject.Blocked("azure_read_unavailable: " + URL),
+            subject.Blocked("new_unreviewed_reason"),
+            RuntimeError("azure_read_unavailable"),
+        ):
+            with self.subTest(error_type=type(error).__name__):
+                output = io.StringIO()
+                with patch.object(subject, "verify_accepted_source"), patch.object(
+                    subject, "read_dev_database_setting", side_effect=error,
+                ), patch.object(subject, "inspect_database") as inspect, contextlib.redirect_stdout(output):
+                    self.assertEqual(subject.main(["--expected-sha", SHA]), 1)
+                self.assertEqual(json.loads(output.getvalue())["reason"],
+                                 "evidence_collection_unavailable")
+                self.assertNotIn("private-password", output.getvalue())
+                self.assertNotIn(URL, output.getvalue())
+                inspect.assert_not_called()
+
     def test_error_output_does_not_expose_connection_string(self):
         output = io.StringIO()
         with patch.object(subject, "verify_accepted_source"), patch.object(
