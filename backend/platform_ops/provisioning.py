@@ -78,7 +78,10 @@ def audit(
             payload=payload,
         )
     except Exception as exc:  # pragma: no cover
-        logger.error("audit() failed — action=%s error=%s", action, exc)
+        logger.error("Platform audit storage unavailable: action=%s", action)
+        raise ProvisioningAuditError(
+            "Required platform audit event could not be persisted."
+        ) from exc
 
 
 def _get_client_ip(request) -> Optional[str]:
