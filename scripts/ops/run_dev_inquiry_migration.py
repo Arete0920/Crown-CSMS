@@ -197,7 +197,7 @@ def apply_reviewed_plan(*, acquire_lock, verify_identity, verify_ddl, read_plan,
             # Read the verified migration plan; never invoke schema-changing commands.
             return [".".join(item) for item in pending]
         if pending:
-            verify_ddl()
+            verify_ddl(pending)
         invoke("migrate_with_lock", lock_timeout_seconds=300, check=not bool(pending))
         invoke("migrate", check=True, interactive=False)
         if read_plan():
@@ -205,6 +205,46 @@ def apply_reviewed_plan(*, acquire_lock, verify_identity, verify_ddl, read_plan,
         if post_verify is not None:
             post_verify()
     return [".".join(item) for item in pending]
+
+
+def verify_ddl_authority(connection, pending, *, legacy_stage=False, apply_blacklist=False):
+    """Require authority for every reviewed operation before any migration runs."""
+    with connection.cursor() as cursor:
+        if legacy_stage:
+            cursor.execute(
+                "SELECT has_schema_privilege(current_user, 'public', 'CREATE'), "
+                "has_table_privilege(current_user, "
+                "'public.crown_api_crownuser', 'REFERENCES')"
+            )
+            if cursor.fetchone() != (True, True):
+                raise Blocked("legacy_refresh_database_ddl_authority_unavailable")
+            if REVIEWED not in pending:
+                return
+            # The paired stage also alters the existing inquiry table. Ledger
+            # creation authority alone must never authorize that ALTER TABLE.
+        elif apply_blacklist:
+            cursor.execute(
+                "SELECT has_schema_privilege(current_user, 'public', 'CREATE'), "
+                "has_table_privilege(current_user, "
+                "'public.core_useraccount', 'REFERENCES')"
+            )
+            if cursor.fetchone() != (True, True):
+                raise Blocked("blacklist_database_ddl_authority_unavailable")
+            return
+        cursor.execute(
+            "SELECT has_schema_privilege(current_user, 'public', 'CREATE'), "
+            "pg_has_role(current_user, relowner, 'USAGE') FROM pg_class "
+            "WHERE oid = to_regclass('public.crm_marketing_marketinglead')"
+        )
+        if cursor.fetchone() != (True, True):
+            raise Blocked("existing_database_ddl_authority_unavailable")
+        if legacy_stage:
+            cursor.execute(
+                "SELECT has_table_privilege(current_user, "
+                "'public.applications_application', 'REFERENCES')"
+            )
+            if cursor.fetchone() != (True,):
+                raise Blocked("inquiry_application_reference_authority_unavailable")
 
 
 def migrate_on_dev(database_url, secret, database_name, source_sha, *,
@@ -272,32 +312,6 @@ def migrate_on_dev(database_url, secret, database_name, source_sha, *,
             cursor.execute("SET lock_timeout = '15s'")
             cursor.execute("SET statement_timeout = '300s'")
 
-    def verify_ddl():
-        with connection.cursor() as cursor:
-            if legacy_stage:
-                cursor.execute(
-                    "SELECT has_schema_privilege(current_user, 'public', 'CREATE'), "
-                    "has_table_privilege(current_user, "
-                    "'public.crown_api_crownuser', 'REFERENCES')"
-                )
-                if cursor.fetchone() != (True, True):
-                    raise Blocked("legacy_refresh_database_ddl_authority_unavailable")
-                return
-            if apply_blacklist:
-                cursor.execute(
-                    "SELECT has_schema_privilege(current_user, 'public', 'CREATE'), "
-                    "has_table_privilege(current_user, "
-                    "'public.core_useraccount', 'REFERENCES')"
-                )
-                if cursor.fetchone() != (True, True):
-                    raise Blocked("blacklist_database_ddl_authority_unavailable")
-                return
-            cursor.execute("SELECT has_schema_privilege(current_user, 'public', 'CREATE'), "
-                           "pg_has_role(current_user, relowner, 'USAGE') FROM pg_class "
-                           "WHERE oid = to_regclass('public.crm_marketing_marketinglead')")
-            if cursor.fetchone() != (True, True):
-                raise Blocked("existing_database_ddl_authority_unavailable")
-
     def read_plan():
         executor = MigrationExecutor(connection)
         executor.loader.check_consistent_history(connection)
@@ -321,7 +335,11 @@ def migrate_on_dev(database_url, secret, database_name, source_sha, *,
     try:
         return apply_reviewed_plan(
             acquire_lock=lambda: Command()._migration_lock(timeout_seconds=300, allow_non_postgresql=False),
-            verify_identity=verify_identity, verify_ddl=verify_ddl, read_plan=read_plan,
+            verify_identity=verify_identity,
+            verify_ddl=lambda pending: verify_ddl_authority(
+                connection, pending, legacy_stage=legacy_stage, apply_blacklist=apply_blacklist,
+            ),
+            read_plan=read_plan,
             invoke=call_command, check_only=check_only,
             plan_validator=(validate_blacklist_plan if apply_blacklist else
                             validate_legacy_plan if legacy_stage else validate_plan),

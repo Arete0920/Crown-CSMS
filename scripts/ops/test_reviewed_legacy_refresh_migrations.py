@@ -36,19 +36,44 @@ class LegacyBoundaryTests(unittest.TestCase):
     def test_reviewed_source_digest_and_modified_bytes_fail_closed(self):
         root = Path(__file__).resolve().parents[2]
         subject.verify_source(root)
-        with tempfile.TemporaryDirectory() as temp:
-            fake = Path(temp) / "backend/crown_api/migrations/0014_legacy_refresh_consumption.py"
-            fake.parent.mkdir(parents=True)
-            fake.write_bytes(b"unexpected")
-            with self.assertRaisesRegex(subject.LegacyBoundaryError, "digest_mismatch"):
-                subject.verify_source(Path(temp))
+        for changed in (subject.INQUIRY, subject.REVIEWED):
+            with self.subTest(changed=changed), tempfile.TemporaryDirectory() as temp:
+                for app, name in (subject.INQUIRY, subject.REVIEWED):
+                    relative = Path("backend") / app / "migrations" / (name + ".py")
+                    fake = Path(temp) / relative
+                    fake.parent.mkdir(parents=True, exist_ok=True)
+                    fake.write_bytes((root / relative).read_bytes())
+                fake = Path(temp) / "backend" / changed[0] / "migrations" / (changed[1] + ".py")
+                fake.write_bytes(b"unexpected")
+                with self.assertRaisesRegex(subject.LegacyBoundaryError, "digest_mismatch"):
+                    subject.verify_source(Path(temp))
 
-    def test_single_forward_migration_only(self):
+    def test_empty_and_legacy_only_plans_remain_reviewed(self):
         self.assertEqual(subject.validate_plan([]), [])
         self.assertEqual(subject.validate_plan([(node(), False)]), [subject.REVIEWED])
         for plan in ([(node(), True)], [(node("other"), False)],
                      [(node(), False), (node("other"), False)],
                      [(node("other"), False), (node(), False)]):
+            with self.subTest(plan=plan), self.assertRaises(subject.LegacyBoundaryError):
+                subject.validate_plan(plan)
+
+    def test_observed_inquiry_then_legacy_plan_is_reviewed(self):
+        inquiry = node("crm_marketing", "0002_inquiry_capture")
+        self.assertEqual(
+            subject.validate_plan([(inquiry, False), (node(), False)]),
+            [("crm_marketing", "0002_inquiry_capture"), subject.REVIEWED],
+        )
+
+    def test_combined_plan_rejects_reordering_duplicates_and_other_work(self):
+        inquiry = node("crm_marketing", "0002_inquiry_capture")
+        for plan in (
+            [(inquiry, False)],
+            [(node(), False), (inquiry, False)],
+            [(inquiry, True), (node(), False)],
+            [(inquiry, False), (node(), True)],
+            [(inquiry, False), (inquiry, False), (node(), False)],
+            [(inquiry, False), (node(), False), (node("other"), False)],
+        ):
             with self.subTest(plan=plan), self.assertRaises(subject.LegacyBoundaryError):
                 subject.validate_plan(plan)
 
