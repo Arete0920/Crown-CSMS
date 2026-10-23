@@ -18,7 +18,8 @@ describe("canonical billing and platform route ownership", () => {
     )?.[0];
     expect(routeFilter).toBeDefined();
     expect(routeFilter).toContain("route.path !== PATHS.BILLING_DASHBOARD");
-    expect(routeFilter).toContain("route.path !== PATHS.MASTER_CONTROL_DASHBOARD");  });
+    expect(routeFilter).toContain("route.path !== PATHS.MASTER_CONTROL_DASHBOARD");
+  });
 
   it("keeps the school administrator dashboard under a single registry owner", () => {
     expect(DASHBOARD_REGISTRY.filter((dashboard) => dashboard.path === PATHS.SCHOOL_ADMIN_DASHBOARD)).toHaveLength(1);
