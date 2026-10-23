@@ -159,7 +159,7 @@ def test_provisioning_audit_failure_rolls_back_activation(monkeypatch):
 
 
 @pytest.mark.django_db
-def test_operator_command_defaults_to_read_only_and_rejects_sqlite():
+def test_operator_command_defaults_to_read_only_and_rejects_sqlite(monkeypatch):
     """Command needs an active owner, exact confirmation and real row locking."""
     from django.contrib.auth import get_user_model
     from django.core.management import call_command
@@ -189,6 +189,34 @@ def test_operator_command_defaults_to_read_only_and_rejects_sqlite():
             "run_school_provisioning",
             job_id=str(job.pk), actor_id=str(owner.pk), apply=True,
         )
+    # Neither a plausible actor UUID nor --apply authorizes an unspecified,
+    # production, or conflicting hosted execution environment.
+    for label in ("", "prod", "production"):
+        monkeypatch.setenv("CROWN_ENV", label)
+        with pytest.raises(CommandError, match="DEV environment"):
+            call_command(
+                "run_school_provisioning",
+                job_id=str(job.pk), actor_id=str(owner.pk),
+                apply=True, confirm_job_id=str(job.pk),
+            )
+    monkeypatch.setenv("CROWN_ENV", "dev")
+    monkeypatch.setenv("DJANGO_ENV", "production")
+    with pytest.raises(CommandError, match="DEV environment"):
+        call_command(
+            "run_school_provisioning",
+            job_id=str(job.pk), actor_id=str(owner.pk),
+            apply=True, confirm_job_id=str(job.pk),
+        )
+    monkeypatch.delenv("DJANGO_ENV", raising=False)
+    monkeypatch.setenv("WEBSITE_HOSTNAME", "crown-api-prod.azurewebsites.net")
+    with pytest.raises(CommandError, match="DEV environment"):
+        call_command(
+            "run_school_provisioning",
+            job_id=str(job.pk), actor_id=str(owner.pk),
+            apply=True, confirm_job_id=str(job.pk),
+        )
+    monkeypatch.delenv("WEBSITE_HOSTNAME", raising=False)
+    monkeypatch.setenv("CROWN_ENV", "dev")
     # Exercise the refusal deterministically on PostgreSQL and SQLite CI.
     from unittest.mock import patch
     with patch(
