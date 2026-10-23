@@ -1,0 +1,61 @@
+name: Platform Provisioning PostgreSQL
+on:
+  pull_request:
+    paths:
+      - 'backend/platform_ops/**'
+      - 'backend/tests/test_platform_provisioning.py'
+      - '.github/workflows/platform-provisioning-postgresql.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  provisioning-postgresql:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: provisioning_ci
+          POSTGRES_USER: provisioning_ci
+          POSTGRES_PASSWORD: provisioning-ci-only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U provisioning_ci -d provisioning_ci"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://provisioning_ci:provisioning-ci-only@localhost:5432/provisioning_ci
+      DJANGO_SECRET_KEY: provisioning-ci-only-secret
+      DJANGO_DEBUG: '1'
+      ALLOWED_HOSTS: localhost,127.0.0.1,testserver
+      PYTHONPATH: ${{ github.workspace }}/backend
+      DJANGO_SETTINGS_MODULE: crown_api.test_settings
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+      - name: Install backend dependencies
+        run: python -m pip install -r backend/requirements.txt
+      - name: Verify PostgreSQL backend and run provisioning tests
+        run: |
+          python - <<'PY'
+          import django
+          django.setup()
+          from django.db import connection
+          assert connection.vendor == 'postgresql', 'Expected PostgreSQL, no fallback allowed'
+          PY
+          python -m pytest -q backend/tests/test_platform_provisioning.py --junitxml=provisioning-postgresql.xml
+      - name: Preserve test results
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: provisioning-postgresql-${{ github.sha }}
+          path: provisioning-postgresql.xml
+          if-no-files-found: warn
+          retention-days: 14
