@@ -78,7 +78,7 @@ export default {
       primaryActionLabel: 'Example Evidence', backActionLabel: 'Example Intake',
       primaryActionHref: '/compliance-audit-dashboard', backActionHref: '/compliance-audit-dashboard', lastUpdated: 'Demo data' },
     { key: 'policies', icon: 'PL', title: 'School Policy Examples', status: 'Sample', statusTone: 'warn',
-      mainKpi: 'Illustrative policy library', summary: 'No management approval or completed review asserted.',
+      mainKpi: 'Illustrative policy library', summary: 'Illustrative school policy library; no management approval or completed review asserted.',
       kpis: [{ label: 'Example Policies', value: '6' }, { label: 'Actual Approved', value: 'Not supplied' }],
       details: ['Practice policy versioning and acknowledgment', 'Real approvals require names, versions and effective dates'],
       primaryActionLabel: 'Example Policies', backActionLabel: 'Example History',
