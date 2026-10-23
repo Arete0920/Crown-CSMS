@@ -242,7 +242,7 @@ class DevMigrationBoundaryTests(unittest.TestCase):
         output = io.StringIO()
         with patch.object(migration, "validate_source"), patch.object(migration, "load_dev_settings",
                 return_value=(URL, "synthetic-secret", "crown", False)), patch.object(migration, "migrate_on_dev",
-                side_effect=lambda *args: self._execute([plan])), contextlib.redirect_stdout(output):
+                side_effect=lambda *args, **kwargs: self._execute([plan])), contextlib.redirect_stdout(output):
             self.assertEqual(migration.main(["--expected-sha", SHA]), 1)
         # Masking commands are consumed by GitHub; only the final line is structured evidence.
         evidence_line = output.getvalue().splitlines()[-1]
