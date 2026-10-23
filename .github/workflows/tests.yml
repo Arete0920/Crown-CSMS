@@ -232,6 +232,8 @@ jobs:
           backend/crown_api/tests/test_auth_jwt.py
           backend/crown_api/tests/test_auth_rate_limit.py
           backend/crown_api/tests/test_legacy_refresh_cleanup.py
+          backend/crown_api/tests/test_dev_reviewed_migration_pair.py
+          --migrations --create-db
           --junitxml=survey-postgresql-junit.xml
       - name: Preserve PostgreSQL test evidence
         if: always()
