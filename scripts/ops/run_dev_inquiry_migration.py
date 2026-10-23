@@ -57,7 +57,7 @@ def read_azure(*arguments):
     return json.loads(result.stdout)
 
 
-def validate_source(expected_sha, *, root=ROOT, run=subprocess.run):
+def validate_source(expected_sha, *, root=ROOT, run=subprocess.run, reviewed_legacy=False):
     if not re.fullmatch(r"[0-9a-f]{40}", expected_sha):
         raise Blocked("full_source_sha_required")
     head = run(["git", "rev-parse", "HEAD"], cwd=root, capture_output=True, text=True, check=False)
@@ -68,6 +68,14 @@ def validate_source(expected_sha, *, root=ROOT, run=subprocess.run):
     migration = root / "backend" / REVIEWED[0] / "migrations" / (REVIEWED[1] + ".py")
     if not migration.is_file() or hashlib.sha256(migration.read_bytes()).hexdigest() != MIGRATION_SHA256:
         raise Blocked("reviewed_migration_digest_mismatch")
+    if reviewed_legacy:
+        from reviewed_legacy_refresh_migrations import (
+            LegacyBoundaryError, verify_source as verify_legacy_source,
+        )
+        try:
+            verify_legacy_source(root)
+        except LegacyBoundaryError as exc:
+            raise Blocked(str(exc)) from exc
 
 
 def resolve_value(raw, *, read=read_azure):
@@ -115,7 +123,7 @@ def validate_database_url(database_url):
     return name
 
 
-def load_dev_settings(*, read=read_azure):
+def load_dev_settings(*, read=read_azure, legacy_stage=False):
     target = ["--resource-group", "crown-rg", "--name", DEV_APP]
     app = read("webapp", "show", *target, "--query", "{name:name,defaultHostName:defaultHostName}")
     if not isinstance(app, dict) or app.get("name") != DEV_APP or app.get("defaultHostName") != DEV_APP + ".azurewebsites.net":
@@ -141,6 +149,12 @@ def load_dev_settings(*, read=read_azure):
     if flag not in {"", "0", "false", "no", "off", "1", "true", "yes", "on"}:
         raise Blocked("invalid_dev_blacklist_setting")
     hosted_blacklist_enabled = flag in {"1", "true", "yes", "on"}
+    if legacy_stage:
+        # Fail closed if one-use runtime traffic is already using this schema.
+        raw_legacy = values.get("CROWN_LEGACY_REFRESH_ONE_USE_ENABLED", "false")
+        if (not isinstance(raw_legacy, str) or
+                raw_legacy.strip().lower() not in {"", "0", "false", "no", "off"}):
+            raise Blocked("legacy_refresh_must_be_disabled_for_schema_stage")
     return database_url, secret, database_name, hosted_blacklist_enabled
 
 
@@ -159,6 +173,16 @@ def validate_blacklist_plan(plan):
     if not is_reviewed_plan(plan, allow_blacklist=True):
         raise UnreviewedPlan(plan)
     return [(item.app_label, item.name) for item, _ in plan]
+
+
+def validate_legacy_plan(plan):
+    from reviewed_legacy_refresh_migrations import (
+        LegacyBoundaryError, validate_plan as validate_legacy_boundary_plan,
+    )
+    try:
+        return validate_legacy_boundary_plan(plan)
+    except LegacyBoundaryError as exc:
+        raise UnreviewedPlan(plan) from exc
 
 
 def apply_reviewed_plan(*, acquire_lock, verify_identity, verify_ddl, read_plan,
@@ -184,8 +208,9 @@ def apply_reviewed_plan(*, acquire_lock, verify_identity, verify_ddl, read_plan,
 
 
 def migrate_on_dev(database_url, secret, database_name, source_sha, *,
-                   check_only=False, apply_blacklist=False, hosted_blacklist_enabled=False):
-    if check_only and apply_blacklist:
+                   check_only=False, apply_blacklist=False, hosted_blacklist_enabled=False,
+                   legacy_stage=False):
+    if (check_only and apply_blacklist) or (apply_blacklist and legacy_stage):
         raise Blocked("conflicting_dev_migration_modes")
     if not isinstance(hosted_blacklist_enabled, bool):
         raise Blocked("invalid_dev_blacklist_setting")
@@ -204,8 +229,12 @@ def migrate_on_dev(database_url, secret, database_name, source_sha, *,
                       DJANGO_ENV="development", ENVIRONMENT="dev", DJANGO_DEBUG="false",
                       DEBUG="false", BUILD_SHA=source_sha,
                       CROWN_SIMPLEJWT_BLACKLIST_ENABLED=(
-                          "true" if check_only or apply_blacklist or hosted_blacklist_enabled else "false"
+                          "true" if (apply_blacklist or (check_only and not legacy_stage)
+                                     or hosted_blacklist_enabled) else "false"
                       ))
+    if legacy_stage:
+        # Never activate one-use behavior when its schema is being examined/staged.
+        os.environ["CROWN_LEGACY_REFRESH_ONE_USE_ENABLED"] = "false"
     sys.path.insert(0, str(ROOT / "backend"))
     import django
     django.setup()
@@ -218,6 +247,11 @@ def migrate_on_dev(database_url, secret, database_name, source_sha, *,
         preflight as validate_blacklist_preflight,
         verify_applied_schema,
         BlacklistBoundaryError,
+    )
+    from reviewed_legacy_refresh_migrations import (
+        LegacyBoundaryError,
+        preflight as validate_legacy_preflight,
+        verify_applied_schema as verify_legacy_applied_schema,
     )
 
     config = connection.settings_dict
@@ -240,6 +274,15 @@ def migrate_on_dev(database_url, secret, database_name, source_sha, *,
 
     def verify_ddl():
         with connection.cursor() as cursor:
+            if legacy_stage:
+                cursor.execute(
+                    "SELECT has_schema_privilege(current_user, 'public', 'CREATE'), "
+                    "has_table_privilege(current_user, "
+                    "'public.crown_api_crownuser', 'REFERENCES')"
+                )
+                if cursor.fetchone() != (True, True):
+                    raise Blocked("legacy_refresh_database_ddl_authority_unavailable")
+                return
             if apply_blacklist:
                 cursor.execute(
                     "SELECT has_schema_privilege(current_user, 'public', 'CREATE'), "
@@ -266,6 +309,11 @@ def migrate_on_dev(database_url, secret, database_name, source_sha, *,
             )
         except BlacklistBoundaryError as exc:
             raise Blocked(str(exc)) from exc
+        if legacy_stage:
+            try:
+                validate_legacy_preflight(connection, executor.loader)
+            except LegacyBoundaryError as exc:
+                raise Blocked(str(exc)) from exc
         if executor.loader.detect_conflicts():
             raise Blocked("migration_graph_conflict")
         return executor.migration_plan(executor.loader.graph.leaf_nodes())
@@ -275,8 +323,11 @@ def migrate_on_dev(database_url, secret, database_name, source_sha, *,
             acquire_lock=lambda: Command()._migration_lock(timeout_seconds=300, allow_non_postgresql=False),
             verify_identity=verify_identity, verify_ddl=verify_ddl, read_plan=read_plan,
             invoke=call_command, check_only=check_only,
-            plan_validator=validate_blacklist_plan if apply_blacklist else validate_plan,
-            post_verify=(lambda: verify_applied_schema(connection)) if apply_blacklist else None,
+            plan_validator=(validate_blacklist_plan if apply_blacklist else
+                            validate_legacy_plan if legacy_stage else validate_plan),
+            post_verify=((lambda: verify_applied_schema(connection)) if apply_blacklist else
+                         (lambda: verify_legacy_applied_schema(connection)) if
+                         legacy_stage and not check_only else None),
         )
     finally:
         connection.close()
@@ -291,44 +342,76 @@ def main(argv=None):
                         help="Explicit guarded DEV-only SimpleJWT schema stage")
     parser.add_argument("--confirm-dev-blacklist", default="",
                         help="Must equal migrate-dev-blacklist for explicit DEV schema stage")
+    parser.add_argument("--inspect-reviewed-legacy-refresh", action="store_true",
+                        help="DEV legacy schema plan inspection only; never mutate")
+    parser.add_argument("--apply-reviewed-legacy-refresh", action="store_true",
+                        help="Explicit guarded DEV-only legacy refresh schema stage")
+    parser.add_argument("--confirm-dev-legacy-refresh", default="",
+                        help="Must equal migrate-dev-legacy-refresh to apply schema")
     args = parser.parse_args(argv)
     stage = "source"
     try:
-        if args.check_only and args.apply_reviewed_blacklist:
+        legacy_stage = args.inspect_reviewed_legacy_refresh or args.apply_reviewed_legacy_refresh
+        if ((args.check_only and (args.apply_reviewed_blacklist or legacy_stage))
+                or (args.apply_reviewed_blacklist and legacy_stage)
+                or (args.inspect_reviewed_legacy_refresh and args.apply_reviewed_legacy_refresh)):
             raise Blocked("conflicting_dev_migration_modes")
         if args.apply_reviewed_blacklist != (args.confirm_dev_blacklist == "migrate-dev-blacklist"):
             raise Blocked("explicit_dev_blacklist_authority_required")
         if args.confirm_dev_blacklist and not args.apply_reviewed_blacklist:
             raise Blocked("explicit_dev_blacklist_authority_required")
-        validate_source(args.expected_sha)
+        if (args.apply_reviewed_legacy_refresh !=
+                (args.confirm_dev_legacy_refresh == "migrate-dev-legacy-refresh")):
+            raise Blocked("explicit_dev_legacy_authority_required")
+        if args.confirm_dev_legacy_refresh and not args.apply_reviewed_legacy_refresh:
+            raise Blocked("explicit_dev_legacy_authority_required")
+        if legacy_stage:
+            validate_source(args.expected_sha, reviewed_legacy=True)
+        else:
+            validate_source(args.expected_sha)
         stage = "dev_configuration"
-        database_url, secret, database_name, hosted_blacklist_enabled = load_dev_settings()
+        if legacy_stage:
+            database_url, secret, database_name, hosted_blacklist_enabled = load_dev_settings(legacy_stage=True)
+        else:
+            database_url, secret, database_name, hosted_blacklist_enabled = load_dev_settings()
         # GitHub masking commands are consumed by the runner, not evidence files.
         for value in (database_url, secret):
             print("::add-mask::" + value.replace("%", "%25"), flush=True)
         stage = "database_plan_and_migration"
         with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
-            if args.check_only:
+            if args.inspect_reviewed_legacy_refresh:
+                applied = migrate_on_dev(database_url, secret, database_name,
+                                         args.expected_sha, check_only=True, legacy_stage=True,
+                                         hosted_blacklist_enabled=hosted_blacklist_enabled)
+            elif args.check_only:
                 applied = migrate_on_dev(database_url, secret, database_name,
                                          args.expected_sha, check_only=True)
             elif args.apply_reviewed_blacklist:
                 applied = migrate_on_dev(database_url, secret, database_name,
                                          args.expected_sha, apply_blacklist=True)
+            elif args.apply_reviewed_legacy_refresh:
+                applied = migrate_on_dev(database_url, secret, database_name,
+                                         args.expected_sha, legacy_stage=True,
+                                         hosted_blacklist_enabled=hosted_blacklist_enabled)
             else:
                 applied = migrate_on_dev(database_url, secret, database_name, args.expected_sha,
                                          hosted_blacklist_enabled=hosted_blacklist_enabled)
         result = {"status": "PASS", "source_sha": args.expected_sha, "target_app": DEV_APP,
                   "mode": ("read_only" if args.check_only else
+                           "reviewed_dev_legacy_inspect" if args.inspect_reviewed_legacy_refresh else
+                           "reviewed_dev_legacy_apply" if args.apply_reviewed_legacy_refresh else
                            "reviewed_dev_blacklist" if args.apply_reviewed_blacklist else "migrate"),
                   "database_identity_verified": True,
                   "database_identity_sha256": hashlib.sha256((DEV_HOST + "/" + database_name).encode()).hexdigest()}
-        if args.check_only:
+        if args.check_only or args.inspect_reviewed_legacy_refresh:
             result.update(reviewed_pending_migrations=applied, remaining_pending=len(applied))
         else:
             result.update(applied_migrations=applied, remaining_pending=0)
     except (Exception, SystemExit) as exc:
         result = {"status": "BLOCKED",
                   "mode": ("read_only" if args.check_only else
+                           "reviewed_dev_legacy_inspect" if args.inspect_reviewed_legacy_refresh else
+                           "reviewed_dev_legacy_apply" if args.apply_reviewed_legacy_refresh else
                            "reviewed_dev_blacklist" if args.apply_reviewed_blacklist else "migrate"),
                   "stage": stage,
                   "source_sha": args.expected_sha if re.fullmatch(r"[0-9a-f]{40}", args.expected_sha) else None,

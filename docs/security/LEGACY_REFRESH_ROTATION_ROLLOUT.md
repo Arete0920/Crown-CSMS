@@ -76,3 +76,7 @@ stateless behavior while disabled; this is not revocation certification.
 After governed schema-first migration and client acceptance, activation on
 the intended environment is a separate operator-controlled configuration
 change. Never enable the feature on production merely because CI passed.
+
+## Separate reviewed DEV migration stage (source only)
+
+The ordinary `deploy-dev.yml` path remains restricted to its original migration allowlist. The operator-only runner supports `--inspect-reviewed-legacy-refresh` for read-only planning and a separately confirmed `--apply-reviewed-legacy-refresh --confirm-dev-legacy-refresh migrate-dev-legacy-refresh` stage. Both require accepted-main source identity, the unchanged DEV PostgreSQL target/TLS checks, pinned migration bytes, explicit off-state for the hosted one-use flag, and the reviewed legacy schema/plan constraints. No workflow automatically dispatches or applies this stage. Actual usage requires verified DEV database history, restore evidence, owner approval and a protected operating window. Source merge is not deployment authorization.
