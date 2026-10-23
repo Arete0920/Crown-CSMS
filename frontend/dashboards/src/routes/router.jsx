@@ -789,7 +789,7 @@ export const router = createBrowserRouter([
   },
   {
     path: PATHS.MASTER_CONTROL,
-    element: <AuthenticatedSchoolRouteGuard><AdminDashboard /></AuthenticatedSchoolRouteGuard>,
+    element: <PlatformOwnerConsole />,
   },
   {
     path: PATHS.OFFICE,
