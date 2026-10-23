@@ -138,6 +138,36 @@ class DevMigrationBoundaryTests(unittest.TestCase):
                 migration.resolve_value(reference, read=read)
         self.assertEqual(read.call_count, 1)
 
+    def test_versionless_key_vault_uri_allows_one_trailing_slash(self):
+        base = "https://existing-vault.vault.azure.net/secrets/existing-secret"
+        for uri in (base, base + "/", base + "/version"):
+            with self.subTest(uri=uri):
+                read = Mock(return_value={"value": "synthetic-secret"})
+                self.assertEqual(migration.resolve_value(
+                    "@Microsoft.KeyVault(SecretUri=" + uri + ")", read=read
+                ), "synthetic-secret")
+                read.assert_called_once_with("keyvault", "secret", "show", "--id", uri)
+
+    def test_key_vault_trailing_slash_does_not_relax_uri_boundaries(self):
+        base = "https://existing-vault.vault.azure.net/secrets/existing-secret"
+        rejected = (
+            base + "//", base + "/version/", base + "/version/extra",
+            base + "/?override=true", base + "/#fragment",
+            base.replace("https:", "http:") + "/",
+            base.replace(".vault.azure.net", ".vault.azure.net.attacker.invalid") + "/",
+            base.replace("https://", "https://user:password@") + "/",
+            base.replace(".net/", ".net:444/") + "/",
+            base.replace("existing-secret", "%2e%2e") + "/",
+        )
+        for uri in rejected:
+            with self.subTest(uri=uri):
+                read = Mock()
+                with self.assertRaises(migration.Blocked):
+                    migration.resolve_value(
+                        "@Microsoft.KeyVault(SecretUri=" + uri + ")", read=read
+                    )
+                read.assert_not_called()
+
     def test_source_requires_full_accepted_sha_and_exact_reviewed_migration_bytes(self):
         reviewed_bytes = (migration.ROOT / "backend/crm_marketing/migrations/0002_inquiry_capture.py").read_bytes()
         with tempfile.TemporaryDirectory() as directory:
@@ -242,7 +272,7 @@ class DevMigrationBoundaryTests(unittest.TestCase):
         output = io.StringIO()
         with patch.object(migration, "validate_source"), patch.object(migration, "load_dev_settings",
                 return_value=(URL, "synthetic-secret", "crown", False)), patch.object(migration, "migrate_on_dev",
-                side_effect=lambda *args: self._execute([plan])), contextlib.redirect_stdout(output):
+                side_effect=lambda *args, **kwargs: self._execute([plan])), contextlib.redirect_stdout(output):
             self.assertEqual(migration.main(["--expected-sha", SHA]), 1)
         # Masking commands are consumed by GitHub; only the final line is structured evidence.
         evidence_line = output.getvalue().splitlines()[-1]
