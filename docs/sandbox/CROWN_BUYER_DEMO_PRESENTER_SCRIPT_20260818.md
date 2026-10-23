@@ -172,7 +172,7 @@ Keep the visual story consistent throughout the demo. Call attention to the same
 
 **Say:**
 
-“What you have seen is one role-aware platform using the same CROWN design system and the same connected records across leadership, admissions, finance, classroom, family, and student workflows. The product and repository are production-ready. Buyer-specific deployment, account transfer, monitoring ownership, operational acceptance, and payment-provider activation are controlled transaction-time activities after the applicable agreements are executed.”
+“What you have seen is one role-aware platform using the same CROWN design system and connected records across leadership, admissions, finance, classroom, family, and student workflows. This selected synthetic-data demonstration is not a production certification. The August 18 engineering certification applies to its historical baseline; the current release requires exact-head source checks and separate operational acceptance. Buyer-specific deployment, account transfer, monitoring ownership, and payment-provider activation require appropriate transaction authority and evidence.”
 
 Invite questions around workflow, implementation, transition, support, data migration, integrations, or ownership handoff.
 

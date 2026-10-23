@@ -1,18 +1,18 @@
 # CROWN Owner Handoff
 
-**Status:** Canonical transfer guide  
-**Last verified:** 2026-08-18  
+**Status:** Canonical transfer guide — current release certification pending\
+**Release-claim reconciliation:** 2026-10-22\
 **Authority:** `docs/CURRENT_RELEASE_STATUS.md`
 
 ## Current posture
 
-CROWN is production-ready from a product and repository-engineering standpoint. The current Crown-CSMS `main` containing the formal certification record is the production-ready source baseline.
+CROWN is currently a release candidate, not a certified current production deployment. The August 18, 2026 engineering certification covers its historical baseline; it does not certify the current `main` after subsequent security, dependency, and architecture changes. Under `docs/CURRENT_RELEASE_STATUS.md`, the selected exact source head requires applicable repository/security checks, and deployment, recovery, payment, and buyer acceptance require separate operational evidence.
 
-Owner transfer remains a separate transaction-time process. Production-ready engineering certification is not a substitute for successor deployment/runtime identity, operational recovery evidence, successor-controlled account ownership, credential transition, payment-provider activation, or final buyer acceptance.
+Owner transfer remains a separate transaction-time process. Historical engineering certification is not a substitute for successor deployment/runtime identity, operational recovery evidence, successor-controlled account ownership, credential transition, payment-provider activation, or final buyer acceptance.
 
 ## Required transfer sequence
 
-1. Verify the exact Crown-CSMS `main` SHA and current production-ready certification record.
+1. Verify the exact Crown-CSMS `main` SHA, review `docs/CURRENT_RELEASE_STATUS.md`, and obtain release evidence applicable to that exact head; do not infer current certification from the August 18 historical record.
 2. Verify that no required transfer work is stranded only on a non-main branch.
 3. Confirm the signed transaction/transfer authority, effective date, successor entity, and authorized successor representatives.
 4. Establish one exact source, deployment, and runtime identity with false-positive-resistant evidence.
