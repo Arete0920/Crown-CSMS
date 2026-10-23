@@ -15,6 +15,18 @@ describe("platform Master Control legacy-route truth", () => {
     expect(component).not.toContain("getDashboardTemplate");
   });
 
+  it("uses a schoolless guard for both canonical and legacy owner paths", () => {
+    const router = readFileSync("src/routes/router.jsx", "utf8");
+    const legacyStart = router.indexOf("path: PATHS.MASTER_CONTROL_DASHBOARD,");
+    expect(legacyStart).toBeGreaterThanOrEqual(0);
+    const legacyBlock = router.slice(legacyStart, router.indexOf("\n  },", legacyStart));
+    expect(legacyBlock).toContain("<AuthenticatedPlatformRouteGuard>");
+    expect(legacyBlock).toContain("<Navigate to={PATHS.MASTER_CONTROL} replace />");
+    expect(legacyBlock).not.toContain("<RoleRouteGuard");
+    expect(legacyBlock).not.toContain("<AuthenticatedSchoolRouteGuard");
+    expect(router).toContain("PATHS.MASTER_CONTROL_DASHBOARD,\n  ].includes(route.path)");
+  });
+
   it("preserves an authenticated platform route and server-side authority", () => {
     const router = readFileSync("src/routes/router.jsx", "utf8");
     const operatorApi = readFileSync("../../backend/platform_ops/views.py", "utf8");

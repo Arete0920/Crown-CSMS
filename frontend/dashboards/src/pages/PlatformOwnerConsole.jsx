@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Alert, Box, Button, Card, CardContent, Chip, CircularProgress,
   Container, Stack, Table, TableBody, TableCell, TableHead,
@@ -16,34 +16,59 @@ export default function PlatformOwnerConsole() {
   const [schools, setSchools] = useState(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [refreshVersion, setRefreshVersion] = useState(0);
 
-  const refresh = useCallback(async () => {
-    setLoading(true);
-    setError("");
-    try {
-      const summary = await authenticatedJson("/api/platform/overview", {
-        omitSchoolContext: true,
-      });
-      const list = await authenticatedJson("/api/platform/schools/list", {
-        omitSchoolContext: true,
-        query: { page: 1, per_page: 50 },
-      });
-      setOverview(summary);
-      setSchools(list);
-    } catch (caught) {
-      setOverview(null);
-      setSchools(null);
-      setError(
-        caught?.status === 403
-          ? "Access denied: active platform-operator authority is required."
-          : "Unable to load operator records. Verify backend availability and your session.",
-      );
-    } finally {
-      setLoading(false);
+  // An owner may oversee hundreds of schools. Retrieve only the requested
+  // server page and cancel stale requests on navigation/unmount.
+  useEffect(() => {
+    const controller = new AbortController();
+
+    async function load() {
+      setLoading(true);
+      setError("");
+      try {
+        const [summary, list] = await Promise.all([
+          authenticatedJson("/api/platform/overview", {
+            omitSchoolContext: true,
+            signal: controller.signal,
+          }),
+          authenticatedJson("/api/platform/schools/list", {
+            omitSchoolContext: true,
+            query: { page, per_page: 50 },
+            signal: controller.signal,
+          }),
+        ]);
+        if (controller.signal.aborted) return;
+        setOverview(summary);
+        setSchools(list);
+      } catch (caught) {
+        if (controller.signal.aborted) return;
+        setOverview(null);
+        setSchools(null);
+        setError(
+          caught?.status === 401 || caught?.status === 403
+            ? "Access denied: active platform-operator authority is required."
+            : "Unable to load operator records. Verify backend availability and your session.",
+        );
+      } finally {
+        if (!controller.signal.aborted) setLoading(false);
+      }
     }
-  }, []);
 
-  useEffect(() => { refresh(); }, [refresh]);
+    void load();
+    return () => controller.abort();
+  }, [page, refreshVersion]);
+
+  const refresh = () => setRefreshVersion((version) => version + 1);
+  const pageSize = schools?.per_page || 50;
+  const totalSchools = schools?.total || 0;
+  const displayedPage = schools?.page || page;
+  const pageCount = Math.max(1, Math.ceil(totalSchools / pageSize));
+  const firstSchool = totalSchools > 0 ? (displayedPage - 1) * pageSize + 1 : 0;
+  const lastSchool = schools?.results?.length
+    ? firstSchool + schools.results.length - 1
+    : 0;
 
   const statusEntries = Object.entries(overview?.schools?.by_status || {});
   const jobEntries = Object.entries(overview?.provisioning?.by_state || {});
@@ -61,7 +86,7 @@ export default function PlatformOwnerConsole() {
       </Stack>
       {loading && <CircularProgress aria-label="Loading operator data" />}
       {error && <Alert severity="error">{error}</Alert>}
-      {overview && (
+      {!loading && overview && (
         <Stack spacing={3}>
           <Alert severity="info">
             Counts describe records in this database, including any sandbox records.
@@ -105,7 +130,7 @@ export default function PlatformOwnerConsole() {
           <Card><CardContent>
             <Typography variant="h6">School Directory</Typography>
             <Typography variant="body2" color="text.secondary">
-              First {schools?.results?.length || 0} of {schools?.total || 0} records.
+              Showing {firstSchool}–{lastSchool} of {totalSchools} records.
               School-specific financial and student information is not exposed.
             </Typography>
             <Box sx={{ overflowX: "auto" }}>
@@ -124,6 +149,25 @@ export default function PlatformOwnerConsole() {
                 ))}</TableBody>
               </Table>
             </Box>
+            <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mt: 2 }}>
+              <Button
+                variant="outlined"
+                onClick={() => setPage((current) => Math.max(1, current - 1))}
+                disabled={loading || displayedPage <= 1}
+              >
+                Previous page
+              </Button>
+              <Typography variant="body2" aria-live="polite">
+                Page {displayedPage} of {pageCount}
+              </Typography>
+              <Button
+                variant="outlined"
+                onClick={() => setPage((current) => current + 1)}
+                disabled={loading || displayedPage >= pageCount}
+              >
+                Next page
+              </Button>
+            </Stack>
           </CardContent></Card>
           <Card><CardContent>
             <Typography variant="h6">Recent Provisioning</Typography>

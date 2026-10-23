@@ -1,7 +1,5 @@
 import { createBrowserRouter, Navigate } from "react-router";
 
-// No-op touch to ensure required route/dashboard gate contexts run on this PR.
-
 import RoleDashboardPage from "../pages/RoleDashboardPage.jsx";
 import BillingDashboard from "../pages/BillingDashboard.jsx";
 import FinancialAidDashboard from "../pages/FinancialAidDashboard.jsx";
@@ -544,7 +542,10 @@ export const router = createBrowserRouter([
   },
   // Billing is owned by the explicit finance-guarded route above.
   // Keep its registry metadata for navigation without registering a second route.
-  ...dashboardRoutes.filter((route) => route.path !== PATHS.BILLING_DASHBOARD),
+  ...dashboardRoutes.filter((route) => ![
+    PATHS.BILLING_DASHBOARD,
+    PATHS.MASTER_CONTROL_DASHBOARD,
+  ].includes(route.path)),
   {
     path: PATHS.ACADEMICS,
     element: (
@@ -791,6 +792,15 @@ export const router = createBrowserRouter([
   {
     path: PATHS.MASTER_CONTROL,
     element: <AuthenticatedPlatformRouteGuard><PlatformOwnerConsole /></AuthenticatedPlatformRouteGuard>,
+  },
+  {
+    // Legacy owner link must not pass through school-role or scaffold-release guards.
+    path: PATHS.MASTER_CONTROL_DASHBOARD,
+    element: (
+      <AuthenticatedPlatformRouteGuard>
+        <Navigate to={PATHS.MASTER_CONTROL} replace />
+      </AuthenticatedPlatformRouteGuard>
+    ),
   },
   {
     path: PATHS.OFFICE,

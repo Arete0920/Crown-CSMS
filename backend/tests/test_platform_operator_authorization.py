@@ -163,6 +163,30 @@ class PlatformOperatorBoundaryTests(TestCase):
             ).plan_id, self.other_plan.id
         )
 
+    def test_large_school_directory_paginates_without_repeating_tenants(self):
+        """Platform owner can reach schools beyond the initial 50-record page."""
+        for index in range(51):
+            school = School.objects.create(name=f"Synthetic Expansion {index:03d}")
+            TenantProfile.objects.create(
+                school=school, slug=f"expansion-{index:03d}"
+            )
+        client = self.client_for(self.owner)
+        first = client.get("/api/platform/schools/list?page=1&per_page=50")
+        second = client.get("/api/platform/schools/list?page=2&per_page=50")
+        self.assertEqual((first.status_code, second.status_code), (200, 200))
+        self.assertEqual(first.data["total"], 53)
+        self.assertEqual(second.data["total"], 53)
+        self.assertEqual(len(first.data["results"]), 50)
+        self.assertEqual(len(second.data["results"]), 3)
+        first_ids = {row["school_id"] for row in first.data["results"]}
+        second_ids = {row["school_id"] for row in second.data["results"]}
+        self.assertFalse(first_ids & second_ids)
+        self.assertEqual(len(first_ids | second_ids), 53)
+        self.assertEqual(
+            client.get("/api/platform/schools/list?page=bad").status_code,
+            400,
+        )
+
     def test_inactive_superuser_denied(self):
         self.owner.is_active = False
         self.owner.save(update_fields=["is_active"])
