@@ -36,6 +36,12 @@ Request:
 
 Response:
 
+Omitted scope fields default to the `school` track, all supported personas and
+the `heritage-core` seed pack. Explicit scope values must name the supported
+track and nonempty lists of known persona or seed-pack keys. Null, empty,
+malformed and unknown scopes return HTTP 400 before creating an invitation;
+they never expand to the default access scope.
+
 ```json
 {
   "invite_id": "sbx_inv_...",
