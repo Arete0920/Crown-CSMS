@@ -1,6 +1,6 @@
 # CROWN SOC 2 Risk Assessment — Draft for Management Approval
 
-**Status:** HISTORICAL OCTOBER 8 DRAFT / NOT APPROVED — current blockers summarized in [October 23 reconciliation](SOC2_RECONCILIATION_20261023.md)  
+**Status:** HISTORICAL OCTOBER 8 DRAFT / NOT APPROVED — current blockers summarized in [October 23 reconciliation](SOC2_RECONCILIATION_20261023.md)
 **Prepared:** 2026-10-08  
 **Method:** Likelihood 1–5 x Impact 1–5 as defined in `SECURITY_OPERATING_POLICY.md`  
 **Boundary:** Scores are a source-evidence-based readiness assessment, not an assertion of incidents or exploitation. Management must approve or revise scores, treatment owners, dates, and residual-risk decisions.
