@@ -72,6 +72,56 @@ class PlatformOperatorBoundaryTests(TestCase):
         profile = TenantProfile.objects.get(school_id=first.data["school_id"])
         self.assertEqual(profile.status, "pending")
 
+    def test_overview_exposes_only_authorized_database_facts(self):
+        """Owner sees actual registry/job counts, never illustrative revenue."""
+        TenantProfile.objects.filter(school=self.school).update(status="active")
+        ProvisioningJob.objects.create(
+            school=self.school,
+            idempotency_key=str(uuid.uuid4()),
+            state=ProvisioningJob.STATE_FAILED,
+            error="Sensitive diagnostic must not leave the API.",
+        )
+        response = self.client_for(self.owner).get("/api/platform/overview")
+        self.assertEqual(response.status_code, 200)
+        body = response.data
+        self.assertEqual(body["meta"]["data_source"], "live_db")
+        self.assertEqual(body["meta"]["scope"], "current_database")
+        self.assertEqual(body["schools"]["total"], 2)
+        self.assertEqual(body["schools"]["by_status"]["active"], 1)
+        self.assertEqual(body["schools"]["by_status"]["pending"], 1)
+        self.assertEqual(body["provisioning"]["by_state"]["failed"], 1)
+        self.assertEqual(len(body["provisioning"]["recent_jobs"]), 1)
+        self.assertNotIn("Sensitive diagnostic", str(body))
+        self.assertEqual(
+            body["company_finance"]["data_state"], "not_configured"
+        )
+        self.assertEqual(
+            body["external_payments"]["provisioning_policy"], "disabled"
+        )
+
+    def test_overview_denies_anonymous_staff_inactive_and_tenant_header(self):
+        self.assertIn(
+            self.client_for().get("/api/platform/overview").status_code,
+            (401, 403),
+        )
+        self.assertEqual(
+            self.client_for(self.staff).get("/api/platform/overview").status_code,
+            403,
+        )
+        self.assertEqual(
+            self.client_for(self.owner).get(
+                "/api/platform/overview",
+                HTTP_X_SCHOOL_ID=str(self.school.id),
+            ).status_code,
+            400,
+        )
+        self.owner.is_active = False
+        self.owner.save(update_fields=["is_active"])
+        self.assertEqual(
+            self.client_for(self.owner).get("/api/platform/overview").status_code,
+            403,
+        )
+
     def test_tenant_selector_denied_even_for_superuser(self):
         client = self.client_for(self.owner)
         response = client.get(
