@@ -542,10 +542,8 @@ export const router = createBrowserRouter([
   },
   // Billing is owned by the explicit finance-guarded route above.
   // Keep its registry metadata for navigation without registering a second route.
-  ...dashboardRoutes.filter((route) => ![
-    PATHS.BILLING_DASHBOARD,
-    PATHS.MASTER_CONTROL_DASHBOARD,
-  ].includes(route.path)),
+  ...dashboardRoutes.filter((route) => route.path !== PATHS.BILLING_DASHBOARD
+    && route.path !== PATHS.MASTER_CONTROL_DASHBOARD),
   {
     path: PATHS.ACADEMICS,
     element: (
