@@ -41,6 +41,7 @@ import LogoutPage from "../pages/LogoutPage.jsx";
 import SandboxLandingPage from "../pages/SandboxLandingPage.jsx";
 import IntegrityDashboard from "../pages/IntegrityDashboard.jsx";
 import AdminDashboard from "../pages/AdminDashboard.jsx";
+import PlatformOwnerConsole from "../pages/PlatformOwnerConsole.jsx";
 import SchoolAdministratorDashboard from "../pages/SchoolAdministratorDashboard.jsx";
 import BoardDashboard from "../pages/BoardDashboard.jsx";
 import FinanceDashboard from "../pages/FinanceDashboard.jsx";
