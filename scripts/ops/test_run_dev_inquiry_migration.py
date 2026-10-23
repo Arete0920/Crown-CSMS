@@ -480,6 +480,11 @@ class DevMigrationBoundaryTests(unittest.TestCase):
                 else:
                     migration.verify_ddl_authority(connection, [INQUIRY, REVIEWED], legacy_stage=True)
                 self.assertEqual(cursor.execute.call_count, expected_calls)
+                if expected_calls == 3:
+                    cursor.execute.assert_called_with(
+                        "SELECT has_table_privilege(current_user, "
+                        "'public.application', 'REFERENCES')"
+                    )
         connection = MagicMock()
         cursor = connection.cursor.return_value.__enter__.return_value
         cursor.fetchone.return_value = (True, True)

@@ -241,7 +241,7 @@ def verify_ddl_authority(connection, pending, *, legacy_stage=False, apply_black
         if legacy_stage:
             cursor.execute(
                 "SELECT has_table_privilege(current_user, "
-                "'public.applications_application', 'REFERENCES')"
+                "'public.application', 'REFERENCES')"
             )
             if cursor.fetchone() != (True,):
                 raise Blocked("inquiry_application_reference_authority_unavailable")
