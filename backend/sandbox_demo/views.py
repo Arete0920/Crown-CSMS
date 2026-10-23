@@ -278,7 +278,7 @@ class SandboxSessionView(APIView):
     permission_classes = [permissions.AllowAny]
 
     def post(self, request):
-        role = request.data.get("role") or "school_admin"
+        role = request.data.get("role", "school_admin")
         if not isinstance(role, str) or role not in SANDBOX_PERSONAS:
             return Response(
                 {"detail": "Unknown sandbox role.", "code": "sandbox_role_invalid"},
@@ -286,7 +286,7 @@ class SandboxSessionView(APIView):
             )
         persona = SANDBOX_PERSONAS[role]
 
-        requested_school_key = request.data.get("school") or "heritage-core"
+        requested_school_key = request.data.get("school", "heritage-core")
         heritage_id = SANDBOX_SCHOOLS["heritage-core"].id
         if (
             not isinstance(requested_school_key, str)
@@ -301,8 +301,12 @@ class SandboxSessionView(APIView):
         school_key = school.key
 
         guidance = request.data.get("guidance") or "guided"
-        track = request.data.get("track") or school.track
-        if track != school.track or track not in persona.track_keys:
+        track = request.data.get("track", school.track)
+        if (
+            not isinstance(track, str)
+            or track != school.track
+            or track not in persona.track_keys
+        ):
             return Response(
                 {"detail": "Invalid sandbox track.", "code": "sandbox_track_invalid"},
                 status=400,
