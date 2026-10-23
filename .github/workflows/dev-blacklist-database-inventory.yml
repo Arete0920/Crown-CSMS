@@ -6,6 +6,11 @@ on:
         description: Accepted main SHA (40 characters)
         required: true
         type: string
+      inspect_migration_plan:
+        description: Inspect pending DEV migrations without applying schema changes
+        required: false
+        type: boolean
+        default: false
 permissions:
   contents: read
 concurrency:
@@ -39,6 +44,14 @@ jobs:
           python-version: '3.12'
       - name: Verify collector boundary (offline)
         run: python -m unittest discover -s scripts/ops -p test_read_dev_blacklist_state.py -v
+      - name: Verify migration inspection boundary (offline)
+        if: inputs.inspect_migration_plan
+        run: |
+          python -m unittest discover -s scripts/ops -p test_run_dev_inquiry_migration.py -v
+          python -m unittest discover -s scripts/ops -p test_reviewed_legacy_refresh_migrations.py -v
+      - name: Install accepted migration inspection dependencies
+        if: inputs.inspect_migration_plan
+        run: python -m pip install -r backend/requirements.txt
       - name: Authenticate to existing DEV Azure
         uses: azure/login@a457da9ea143d694b1b9c7c869ebb04ebe844ef5 # v2
         with:
@@ -54,6 +67,14 @@ jobs:
           set -euo pipefail
           umask 077
           python scripts/ops/read_dev_blacklist_state.py --expected-sha "$SHA" > dev-blacklist-state.json
+      - name: Inspect pending DEV migrations without applying
+        if: inputs.inspect_migration_plan
+        env:
+          SHA: ${{ inputs.expected_sha }}
+        # Keep stdout attached to Actions: the runner emits credential masking
+        # commands before its redacted JSON. Never redirect raw stdout to artifacts.
+        # A blocked plan fails the run and reports pending identifiers in the log.
+        run: python scripts/ops/run_dev_inquiry_migration.py --expected-sha "$SHA" --inspect-reviewed-legacy-refresh
       - name: Preserve redacted evidence
         if: always() && hashFiles('dev-blacklist-state.json') != ''
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
