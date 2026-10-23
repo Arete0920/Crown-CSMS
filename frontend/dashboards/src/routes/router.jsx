@@ -78,6 +78,7 @@ import FinanceSetupWizard from "../pages/wizards/FinanceSetupWizard.jsx";
 import NotAuthorized from "../pages/NotAuthorized.jsx";
 import RoleRouteGuard from "../components/routing/RoleRouteGuard.jsx";
 import AuthenticatedSchoolRouteGuard from "../components/routing/AuthenticatedSchoolRouteGuard.jsx";
+import AuthenticatedPlatformRouteGuard from "../components/routing/AuthenticatedPlatformRouteGuard.jsx";
 import ParentJourneyRouteGuard from "../components/routing/ParentJourneyRouteGuard.jsx";
 import RoleGuard from "./RoleGuard.jsx";
 import RequirePermission from "../components/auth/RequirePermission.jsx";
