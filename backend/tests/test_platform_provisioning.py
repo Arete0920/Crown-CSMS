@@ -203,3 +203,117 @@ def test_operator_command_defaults_to_read_only_and_rejects_sqlite():
             )
     job.refresh_from_db()
     assert job.state == "queued"
+
+
+@pytest.mark.django_db(transaction=True)
+def test_postgresql_parallel_provisioning_claims_once():
+    """Two independent PostgreSQL connections activate a school exactly once."""
+    from concurrent.futures import ThreadPoolExecutor
+    from threading import Event
+    from time import sleep
+
+    from django.db import close_old_connections, connection
+    from platform_ops.models import AuditEvent, ProvisioningJob
+    from platform_ops import provisioning
+    from tenants.models import TenantProfile
+
+    if connection.vendor != "postgresql":
+        pytest.skip("PostgreSQL row locks are required for this proof")
+
+    key = str(uuid.uuid4())
+    job = provisioning.create_school_and_queue_provisioning(
+        name="Parallel Provisioning School",
+        slug=f"parallel-{key[:8]}",
+        idempotency_key=key,
+    )
+
+    first_has_lock = Event()
+    release_first = Event()
+    original_audit = provisioning._record_provisioning_audit
+
+    def paused_audit(action, **kwargs):
+        if action == "provisioning.started":
+            first_has_lock.set()
+            if not release_first.wait(timeout=20):
+                raise RuntimeError("Parallel test timed out waiting for release")
+        return original_audit(action, **kwargs)
+
+    def execute():
+        close_old_connections()
+        try:
+            # Each worker receives a stale object, so only the persisted
+            # row lock can serialize these attempts correctly.
+            return provisioning.run_provisioning_job(job).state
+        finally:
+            close_old_connections()
+
+    # The first worker has locked the job when "started" audit is reached.
+    # Release it only after the second database session is submitted.
+    with pytest.MonkeyPatch.context() as patcher:
+        patcher.setattr(provisioning, "_record_provisioning_audit", paused_audit)
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            first = pool.submit(execute)
+            try:
+                assert first_has_lock.wait(timeout=20), "First worker never claimed job"
+                second = pool.submit(execute)
+                sleep(0.15)
+            finally:
+                release_first.set()
+            assert first.result(timeout=35) == ProvisioningJob.STATE_SUCCEEDED
+            assert second.result(timeout=35) == ProvisioningJob.STATE_SUCCEEDED
+
+    job.refresh_from_db()
+    assert job.progress == 100
+    assert job.state == ProvisioningJob.STATE_SUCCEEDED
+    assert TenantProfile.objects.get(school_id=job.school_id).status == "active"
+    assert AuditEvent.objects.filter(
+        resource_id=job.id, action="provisioning.started"
+    ).count() == 1
+    assert AuditEvent.objects.filter(
+        resource_id=job.id, action="provisioning.succeeded"
+    ).count() == 1
+
+
+@pytest.mark.django_db(transaction=True)
+def test_postgresql_operator_command_executes_one_job():
+    """The confirmed PostgreSQL command creates one durable activation."""
+    from io import StringIO
+
+    from django.contrib.auth import get_user_model
+    from django.core.management import call_command
+    from django.db import connection
+    from platform_ops.models import AuditEvent, ProvisioningJob
+    from platform_ops.provisioning import create_school_and_queue_provisioning
+    from tenants.models import TenantProfile
+
+    if connection.vendor != "postgresql":
+        pytest.skip("PostgreSQL command execution requires real PostgreSQL")
+
+    key = str(uuid.uuid4())
+    job = create_school_and_queue_provisioning(
+        name="Command PostgreSQL School",
+        slug=f"cmd-pg-{key[:8]}",
+        idempotency_key=key,
+    )
+    operator = get_user_model().objects.create_superuser(
+        username=f"operator-{key[:8]}",
+        email=f"{key[:8]}@example.invalid",
+        password="local-test-only",
+    )
+    output = StringIO()
+    call_command(
+        "run_school_provisioning",
+        job_id=str(job.id),
+        actor_id=str(operator.id),
+        apply=True,
+        confirm_job_id=str(job.id),
+        stdout=output,
+    )
+    job.refresh_from_db()
+    assert job.state == ProvisioningJob.STATE_SUCCEEDED
+    assert TenantProfile.objects.get(school_id=job.school_id).status == "active"
+    assert AuditEvent.objects.filter(
+        resource_id=job.id, action="provisioning.succeeded",
+        actor_user_id=operator.id,
+    ).count() == 1
+    assert "PROVISIONED" in output.getvalue()
