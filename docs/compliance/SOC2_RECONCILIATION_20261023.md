@@ -1,10 +1,10 @@
 # CROWN SOC 2 — October 23, 2026 Evidence and Claims Reconciliation
 
-**Status:** INTERNAL MANAGEMENT REVIEW / NOT AN ATTESTATION / POLICY ADOPTION OPEN  
-**Reconciliation date:** 2026-10-23  
-**Repository checkpoint inspected:** `b12ed66bc55f5159d044e2ed4c3044ee31b17a5d`  
-**Related control issue:** [#173](https://github.com/Arete0920/Crown-CSMS/issues/173)  
-**Release authority:** [CURRENT_RELEASE_STATUS](../CURRENT_RELEASE_STATUS.md)  
+**Status:** INTERNAL MANAGEMENT REVIEW / NOT AN ATTESTATION / POLICY ADOPTION OPEN
+**Reconciliation date:** 2026-10-23
+**Repository checkpoint inspected:** `b12ed66bc55f5159d044e2ed4c3044ee31b17a5d`
+**Related control issue:** [#173](https://github.com/Arete0920/Crown-CSMS/issues/173)
+**Release authority:** [CURRENT_RELEASE_STATUS](../CURRENT_RELEASE_STATUS.md)
 **Owner:** Proposed Founder / Product Owner; formal per-control appointments remain pending.
 
 ## 1. Purpose and authority
