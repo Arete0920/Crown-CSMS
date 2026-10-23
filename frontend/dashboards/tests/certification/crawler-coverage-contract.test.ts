@@ -152,7 +152,7 @@ describe("anonymous specialist route denial contract", () => {
 
   it("requires a platform bearer guard instead of a school tenant selector", () => {
     const start = router.indexOf("path: PATHS.MASTER_CONTROL,");
-    const block = router.slice(start, router.indexOf("\\n  },", start));
+    const block = router.slice(start, router.indexOf("\n  },", start));
     const operatorGuard = readFileSync(
       "src/components/routing/AuthenticatedPlatformRouteGuard.jsx",
       "utf8",
