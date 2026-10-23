@@ -14,7 +14,7 @@ from sandbox_demo.catalog import (
     catalog_payload,
     get_school,
 )
-from sandbox_demo.models import SandboxInvite
+from sandbox_demo.models import SandboxEvent, SandboxInvite
 
 
 class SandboxCatalogTests(SimpleTestCase):
@@ -97,6 +97,37 @@ class SandboxInviteWorkflowTests(TestCase):
         )
         self.assertEqual(response.status_code, 403)
         self.assertEqual(response.json()["code"], "sandbox_invite_required")
+
+    @override_settings(CROWN_SANDBOX_ALLOW_OPEN_SESSION=True)
+    def test_session_rejects_unknown_selectors_before_mutation(self):
+        invalid_cases = (
+            ({"role": "not-a-role", "school": "heritage"}, "sandbox_role_invalid"),
+            ({"role": ["teacher"], "school": "heritage"}, "sandbox_role_invalid"),
+            ({"role": "teacher", "school": "unknown-school"}, "sandbox_school_invalid"),
+            ({"role": "teacher", "school": {"key": "heritage"}}, "sandbox_school_invalid"),
+            (
+                {"role": "teacher", "school": "heritage", "track": "other"},
+                "sandbox_track_invalid",
+            ),
+        )
+        for payload, expected_code in invalid_cases:
+            with self.subTest(payload=payload):
+                response = self.client.post(
+                    reverse("sandbox-session"), payload, format="json"
+                )
+                self.assertEqual(response.status_code, 400)
+                self.assertEqual(response.json()["code"], expected_code)
+                self.assertFalse(
+                    School.objects.filter(
+                        pk=SANDBOX_SCHOOLS["heritage-core"].id
+                    ).exists()
+                )
+                self.assertFalse(
+                    UserAccount.objects.filter(
+                        username=SANDBOX_PERSONAS["school_admin"].email
+                    ).exists()
+                )
+                self.assertEqual(SandboxEvent.objects.count(), 0)
 
     @override_settings(CROWN_SANDBOX_ALLOW_OPEN_SESSION=True)
     def test_session_allows_missing_invite_only_when_open_session_enabled(self):
