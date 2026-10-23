@@ -1,7 +1,7 @@
 # CROWN Owner Handoff
 
-**Status:** Canonical transfer guide — current release certification pending  
-**Release-claim reconciliation:** 2026-10-22  
+**Status:** Canonical transfer guide — current release certification pending\
+**Release-claim reconciliation:** 2026-10-22\
 **Authority:** `docs/CURRENT_RELEASE_STATUS.md`
 
 ## Current posture
