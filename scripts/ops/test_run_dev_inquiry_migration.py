@@ -264,6 +264,31 @@ class DevMigrationBoundaryTests(unittest.TestCase):
             self.assertNotIn(sensitive, evidence_line)
         self.assertFalse(any(isinstance(item, tuple) for item in self.events))
 
+    def test_operator_terminal_never_prints_database_password_or_django_key(self):
+        # Offline synthetic regression: local CLI must emit only redacted JSON.
+        for actions in ("", "false", "TRUE"):
+            output = io.StringIO()
+            with patch.dict(os.environ, {"GITHUB_ACTIONS": actions}), patch.object(
+                migration, "validate_source"
+            ), patch.object(
+                migration, "load_dev_settings",
+                return_value=(URL, "synthetic-secret", "crown", False)
+            ), patch.object(
+                migration, "migrate_on_dev", return_value=[]
+            ), contextlib.redirect_stdout(output):
+                self.assertEqual(migration.main(["--expected-sha", SHA, "--check-only"]), 0)
+            lines = output.getvalue().splitlines()
+            self.assertEqual(json.loads(lines[-1])["status"], "PASS")
+            if actions.strip().lower() == "true":
+                self.assertEqual(lines[:-1], [
+                    "::add-mask::" + URL.replace("%", "%25"),
+                    "::add-mask::synthetic-secret",
+                ])
+            else:
+                self.assertEqual(len(lines), 1)
+                self.assertNotIn(URL, output.getvalue())
+                self.assertNotIn("synthetic-secret", output.getvalue())
+
     def test_read_only_preflight_never_invokes_migration_or_ddl(self):
         item = SimpleNamespace(app_label="crm_marketing", name="0002_inquiry_capture")
         self.assertEqual(
