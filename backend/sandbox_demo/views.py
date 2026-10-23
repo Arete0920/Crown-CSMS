@@ -13,13 +13,14 @@ from rest_framework.views import APIView
 
 from core.models import UserAccount
 
-from .catalog import SANDBOX_PERSONAS, catalog_payload, get_persona, get_school
+from .catalog import SANDBOX_PERSONAS, SANDBOX_SCHOOLS, catalog_payload, get_school
 from .models import SandboxEvent, SandboxFeedback, SandboxInvite
 from .parent_enrollment import (
     SandboxParentEnrollmentError,
     complete_parent_enrollment_demo,
     get_parent_enrollment_state,
 )
+from . import catalog as sandbox_catalog
 from .permissions import ensure_sandbox_role_permissions
 from .services import create_sandbox_session, note_has_prohibited_data
 
@@ -180,6 +181,7 @@ class SandboxInviteCreateView(APIView):
     permission_classes = [permissions.AllowAny]
 
     def post(self, request):
+        """Create an invitation only for an explicit, valid catalog scope."""
         if not _ops_allowed(request):
             return Response(
                 {
@@ -189,6 +191,38 @@ class SandboxInviteCreateView(APIView):
                 status=403,
             )
 
+        track = request.data.get("track", "school")
+        if not isinstance(track, str) or track not in sandbox_catalog.SANDBOX_TRACKS:
+            return Response(
+                {
+                    "detail": "Unknown sandbox invite track.",
+                    "code": "sandbox_invite_track_invalid",
+                },
+                status=400,
+            )
+
+        roles = request.data.get("allowed_roles", list(SANDBOX_PERSONAS))
+        seed_packs = request.data.get("allowed_seed_packs", ["heritage-core"])
+        for field, values, catalog in (
+            ("allowed_roles", roles, SANDBOX_PERSONAS),
+            ("allowed_seed_packs", seed_packs, sandbox_catalog.SANDBOX_SCHOOLS),
+        ):
+            if (
+                not isinstance(values, list)
+                or not values
+                or any(
+                    not isinstance(value, str) or value not in catalog
+                    for value in values
+                )
+            ):
+                return Response(
+                    {
+                        "detail": f"Invalid sandbox invite {field}.",
+                        "code": f"sandbox_invite_{field}_invalid",
+                    },
+                    status=400,
+                )
+
         expires_at, expires_error = _invite_expiry_from_request(request)
         if expires_error:
             return expires_error
@@ -196,11 +230,9 @@ class SandboxInviteCreateView(APIView):
         invite = SandboxInvite.objects.create(
             organization_label=request.data.get("organization_label")
             or "External evaluator",
-            track=request.data.get("track") or "school",
-            allowed_roles=request.data.get("allowed_roles")
-            or list(SANDBOX_PERSONAS.keys()),
-            allowed_seed_packs=request.data.get("allowed_seed_packs")
-            or ["heritage-core"],
+            track=track,
+            allowed_roles=roles,
+            allowed_seed_packs=seed_packs,
             default_guidance=request.data.get("default_guidance") or "guided",
             expires_at=expires_at,
             created_by=request.user
@@ -278,13 +310,39 @@ class SandboxSessionView(APIView):
     permission_classes = [permissions.AllowAny]
 
     def post(self, request):
-        role = request.data.get("role") or "school_admin"
-        persona = get_persona(role)
-        requested_school_key = request.data.get("school") or "heritage-core"
+        role = request.data.get("role", "school_admin")
+        if not isinstance(role, str) or role not in SANDBOX_PERSONAS:
+            return Response(
+                {"detail": "Unknown sandbox role.", "code": "sandbox_role_invalid"},
+                status=400,
+            )
+        persona = SANDBOX_PERSONAS[role]
+
+        requested_school_key = request.data.get("school", "heritage-core")
+        heritage_id = SANDBOX_SCHOOLS["heritage-core"].id
+        if (
+            not isinstance(requested_school_key, str)
+            or requested_school_key.strip()
+            not in {"heritage", "heritage-core", heritage_id}
+        ):
+            return Response(
+                {"detail": "Unknown sandbox school.", "code": "sandbox_school_invalid"},
+                status=400,
+            )
         school = get_school(requested_school_key)
         school_key = school.key
+
         guidance = request.data.get("guidance") or "guided"
-        track = request.data.get("track") or school.track
+        track = request.data.get("track", school.track)
+        if (
+            not isinstance(track, str)
+            or track != school.track
+            or track not in persona.track_keys
+        ):
+            return Response(
+                {"detail": "Invalid sandbox track.", "code": "sandbox_track_invalid"},
+                status=400,
+            )
         tour = request.data.get("tour") or ""
         invite_id = request.data.get("invite_id") or request.query_params.get("invite")
 
