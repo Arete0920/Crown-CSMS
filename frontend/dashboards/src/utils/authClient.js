@@ -194,8 +194,20 @@ export async function authenticatedFetch(input, init = {}) {
   if (trustedApiRequest) {
     const token = getAccessToken();
     if (token && !headers.has("Authorization")) headers.set("Authorization", `Bearer ${token}`);
-    const schoolId = getSelectedSchoolId();
-    if (schoolId && !headers.has("X-School-Id")) headers.set("X-School-Id", schoolId);
+    const isPlatformOperatorRequest = (
+      typeof input === "string"
+      && /^\/api\/platform\/(?:overview|schools(?:\/list)?)$/.test(input)
+    );
+    if (omitSchoolContext && !isPlatformOperatorRequest) {
+      throw new Error("Schoolless requests are restricted to explicit platform endpoints.");
+    }
+    if (omitSchoolContext) {
+      headers.delete("X-School-Id");
+      headers.delete("X-Crown-School-Id");
+    } else {
+      const schoolId = getSelectedSchoolId();
+      if (schoolId && !headers.has("X-School-Id")) headers.set("X-School-Id", schoolId);
+    }
     if (methodNeedsCsrf(requestInit.method)) {
       const csrfToken = getCookie("csrftoken");
       if (csrfToken && !headers.has("X-CSRFToken")) headers.set("X-CSRFToken", csrfToken);
