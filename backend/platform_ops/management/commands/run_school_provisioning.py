@@ -1,4 +1,5 @@
 """Explicit, single-school provisioning execution; never a background scheduler."""
+import os
 import uuid
 
 from django.contrib.auth import get_user_model
@@ -53,6 +54,33 @@ class Command(BaseCommand):
 
         if options["confirm_job_id"] != str(job_id):
             raise CommandError("Confirm exact job UUID with --confirm-job-id.")
+
+        # An attributed actor UUID is not proof of shell identity. Restrict
+        # mutations to a specifically identified development environment;
+        # never allow the management command to touch production by accident.
+        labels = {
+            os.getenv(key, "").strip().lower()
+            for key in (
+                "CROWN_ENV", "DJANGO_ENV", "ENVIRONMENT",
+                "APP_ENV", "AZURE_ENVIRONMENT",
+            )
+            if os.getenv(key, "").strip()
+        }
+        if (
+            not labels
+            or labels - {"dev", "development"}
+            or os.getenv("CROWN_ENV", "").strip().lower() not in {
+                "dev", "development"
+            }
+            or (
+                os.getenv("WEBSITE_HOSTNAME", "")
+                and not os.getenv("WEBSITE_HOSTNAME", "").split(".", 1)[0]
+                .lower().endswith("-dev")
+            )
+        ):
+            raise CommandError(
+                "Execution requires an explicitly identified DEV environment."
+            )
 
         if connection.vendor != "postgresql":
             raise CommandError(
