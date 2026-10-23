@@ -4,6 +4,9 @@ from copy import deepcopy
 
 from .settings import *  # noqa: F401,F403
 
+# Exercise legacy refresh one-use only against migrated synthetic test databases.
+CROWN_LEGACY_REFRESH_ONE_USE_ENABLED = True
+
 # Exercise the guarded revocation path with migrated synthetic test databases.
 # Never modify process-wide environment state during Django settings import;
 # preserve independently configurable hosted feature activation.

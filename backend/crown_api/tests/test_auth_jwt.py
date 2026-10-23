@@ -10,6 +10,16 @@ from crown_api.auth_models import CrownUser
 pytestmark = pytest.mark.django_db
 
 
+@pytest.fixture(autouse=True)
+def _enable_one_use_legacy_refresh_in_auth_tests(settings):
+    """Test staged one-use behavior without changing runtime activation.
+
+    The hosted rollout remains disabled until the audited schema migration,
+    restore plan, and client rotation contract are accepted.
+    """
+    settings.CROWN_LEGACY_REFRESH_ONE_USE_ENABLED = True
+
+
 def test_login_success_and_me_requires_token():
     school_id = uuid.uuid4()
     user = CrownUser.objects.create(
@@ -99,6 +109,18 @@ def test_refresh_issues_new_access():
     body2 = r.json()
     assert body2["ok"] is True
     assert "access" in body2 and len(body2["access"]) > 20
+    assert "refresh" in body2 and len(body2["refresh"]) > 20
+    assert body2["refresh"] != refresh
+    replay = c.post(
+        "/api/auth/refresh/", data={"refresh": refresh},
+        content_type="application/json",
+    )
+    assert replay.status_code == 401
+    rotated = c.post(
+        "/api/auth/refresh/", data={"refresh": body2["refresh"]},
+        content_type="application/json",
+    )
+    assert rotated.status_code == 200
 
     # new access works on /me
     r = c.get("/api/auth/me/", HTTP_AUTHORIZATION=f"Bearer {body2['access']}")
@@ -126,3 +148,211 @@ def test_me_rejects_empty_bearer_token():
 
     assert r.status_code == 401
     assert r.json()["error"] == "Unauthorized"
+
+
+def test_refresh_tokens_issued_in_same_second_are_distinct():
+    from crown_api.jwt_utils import build_refresh_token
+
+    user_id = str(uuid.uuid4())
+    assert build_refresh_token(user_id=user_id) != build_refresh_token(user_id=user_id)
+
+
+def test_legacy_refresh_expiring_while_waiting_for_user_lock_is_rejected():
+    """Lock contention must not extend a signed refresh token's lifetime."""
+    from datetime import datetime, timedelta, timezone
+    from unittest.mock import patch
+
+    from crown_api.auth_models import LegacyRefreshConsumption
+    from crown_api.jwt_utils import build_refresh_token
+
+    user = CrownUser.objects.create(
+        email="expired-under-lock@example.invalid",
+        password_hash=make_password("Synthetic-only-Passphrase!"),
+        role="teacher", school_id=uuid.uuid4(), is_active=True,
+    )
+    token = build_refresh_token(user_id=str(user.pk), ttl_seconds=60)
+    before_lock = datetime.now(timezone.utc)
+    after_lock = before_lock + timedelta(seconds=61)
+    with patch("crown_api.auth_views.datetime", wraps=datetime) as clock:
+        clock.now.side_effect = [before_lock, after_lock]
+        response = Client().post(
+            "/api/auth/refresh/", data={"refresh": token},
+            content_type="application/json", REMOTE_ADDR="203.0.113.86",
+        )
+
+    assert response.status_code == 401
+    assert response.json()["error"] == "invalid_refresh"
+    assert "access" not in response.json()
+    assert "refresh" not in response.json()
+    assert not LegacyRefreshConsumption.objects.filter(user=user).exists()
+
+
+def test_signed_legacy_refresh_without_expiry_is_rejected():
+    from django.conf import settings
+    from crown_api.jwt_utils import encode_jwt
+
+    user = CrownUser.objects.create(
+        email="no-expiry@example.invalid", password_hash=make_password("Valid-Passphrase!"),
+        role="teacher", school_id=uuid.uuid4(), is_active=True,
+    )
+    malformed = encode_jwt(
+        {"typ": "refresh", "sub": str(user.pk)},
+        secret=settings.SECRET_KEY + "|refresh",
+    )
+    result = Client().post(
+        "/api/auth/refresh/", data={"refresh": malformed},
+        content_type="application/json", REMOTE_ADDR="203.0.113.81",
+    )
+    assert result.status_code == 401
+
+
+def test_legacy_refresh_database_outage_never_issues_access():
+    from unittest.mock import patch
+    from django.db import DatabaseError
+    from crown_api.jwt_utils import build_refresh_token
+
+    user = CrownUser.objects.create(
+        email="db-outage@example.invalid", password_hash=make_password("Valid-Passphrase!"),
+        role="staff", school_id=uuid.uuid4(), is_active=True,
+    )
+    token = build_refresh_token(user_id=str(user.pk))
+    with patch(
+        "crown_api.auth_views.LegacyRefreshConsumption.objects.create",
+        side_effect=DatabaseError("synthetic read-only database outage"),
+    ):
+        result = Client().post(
+            "/api/auth/refresh/", data={"refresh": token},
+            content_type="application/json", REMOTE_ADDR="203.0.113.82",
+        )
+    assert result.status_code == 503
+    assert result.json()["error"] == "auth_temporarily_unavailable"
+
+
+@pytest.mark.django_db(transaction=True)
+def test_concurrent_legacy_refresh_allows_exactly_one_redemption():
+    from concurrent.futures import ThreadPoolExecutor
+    from threading import Barrier
+    from django.db import connection, connections
+    from crown_api.auth_models import LegacyRefreshConsumption
+    from crown_api.jwt_utils import build_refresh_token
+
+    if connection.vendor != "postgresql":
+        pytest.skip("PostgreSQL unique-key concurrency contract")
+    user = CrownUser.objects.create(
+        email="parallel-refresh@example.invalid",
+        password_hash=make_password("Valid-Passphrase!"),
+        role="staff", school_id=uuid.uuid4(), is_active=True,
+    )
+    token = build_refresh_token(user_id=str(user.pk))
+    barrier = Barrier(2)
+
+    def redeem(_):
+        connections.close_all()
+        try:
+            barrier.wait(timeout=15)
+            return Client().post(
+                "/api/auth/refresh/", data={"refresh": token},
+                content_type="application/json", REMOTE_ADDR="203.0.113.83",
+            ).status_code
+        finally:
+            connections.close_all()
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        results = sorted(pool.map(redeem, range(2)))
+    assert results == [200, 401]
+    assert LegacyRefreshConsumption.objects.filter(user=user).count() == 1
+
+
+def test_legacy_refresh_rechecks_current_user_under_database_lock():
+    from unittest.mock import patch
+    from crown_api.jwt_utils import build_refresh_token
+
+    user = CrownUser.objects.create(
+        email="locked-refresh@example.invalid",
+        password_hash=make_password("Valid-Passphrase!"),
+        role="staff", school_id=uuid.uuid4(), is_active=True,
+    )
+    token = build_refresh_token(user_id=str(user.pk))
+    with patch("crown_api.auth_views.CrownUser.objects.select_for_update") as selected, \
+            patch("crown_api.auth_views.LegacyRefreshConsumption.objects.create") as consumed:
+        selected.return_value.get.side_effect = CrownUser.DoesNotExist
+        result = Client().post(
+            "/api/auth/refresh/", data={"refresh": token},
+            content_type="application/json", REMOTE_ADDR="203.0.113.84",
+        )
+    assert result.status_code == 401
+    assert result.json()["error"] == "invalid_refresh"
+    consumed.assert_not_called()
+
+
+def test_legacy_default_disabled_mode_does_not_require_consumption_table():
+    from django.test import override_settings
+    from unittest.mock import patch
+    from crown_api.jwt_utils import build_refresh_token
+
+    user = CrownUser.objects.create(
+        email="disabled-ledger@example.invalid", password_hash=make_password("Valid-Passphrase!"),
+        role="staff", school_id=uuid.uuid4(), is_active=True,
+    )
+    signed = build_refresh_token(user_id=str(user.pk))
+    with override_settings(CROWN_LEGACY_REFRESH_ONE_USE_ENABLED=False), patch(
+        "crown_api.auth_views.LegacyRefreshConsumption.objects.create",
+        side_effect=AssertionError("disabled mode must not touch consumption schema"),
+    ):
+        first = Client().post("/api/auth/refresh/", data={"refresh": signed},
+                              content_type="application/json")
+        second = Client().post("/api/auth/refresh/", data={"refresh": signed},
+                               content_type="application/json")
+    assert first.status_code == second.status_code == 200
+    assert "access" in first.json()
+    assert "refresh" not in first.json()
+def test_legacy_refresh_uses_current_school_role_and_deactivation():
+    """Old tokens must not restore a prior school or privilege after account changes."""
+    from django.core.cache import cache
+    from crown_api.jwt_utils import build_refresh_token, decode_access
+
+    cache.clear()
+    old_school = uuid.uuid4()
+    new_school = uuid.uuid4()
+    user = CrownUser.objects.create(
+        email="reassigned-refresh@example.invalid",
+        password_hash=make_password("Synthetic-Only-Password!"),
+        role="admin",
+        school_id=old_school,
+        is_active=True,
+    )
+    old_refresh = build_refresh_token(user_id=str(user.pk))
+    # Simulate an authorized administrator reducing privileges and reassignment.
+    CrownUser.objects.filter(pk=user.pk).update(role="teacher", school_id=new_school)
+    client = Client()
+    request_args = {
+        "content_type": "application/json",
+        "REMOTE_ADDR": "203.0.113.85",
+    }
+    rotated = client.post(
+        "/api/auth/refresh/",
+        data={"refresh": old_refresh},
+        **request_args,
+    )
+    assert rotated.status_code == 200
+    rotated_body = rotated.json()
+    access = decode_access(rotated_body["access"])
+    assert access.ok
+    assert access.payload["school_id"] == str(new_school)
+    assert access.payload["school_id"] != str(old_school)
+    assert access.payload["role"] == "teacher"
+    replacement = rotated_body["refresh"]
+
+    replay = client.post(
+        "/api/auth/refresh/", data={"refresh": old_refresh}, **request_args
+    )
+    assert replay.status_code == 401
+    assert "access" not in replay.json()
+
+    # Even an unused replacement cannot revive a subsequently deactivated user.
+    CrownUser.objects.filter(pk=user.pk).update(is_active=False)
+    deactivated = client.post(
+        "/api/auth/refresh/", data={"refresh": replacement}, **request_args
+    )
+    assert deactivated.status_code == 401
+    assert "access" not in deactivated.json()

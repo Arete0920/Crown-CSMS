@@ -80,6 +80,10 @@ CROWN_SOLOMON_GUIDANCE_ENABLED = _env_bool("CROWN_SOLOMON_GUIDANCE_ENABLED", def
 # SOLOMON internal context consumption gate. Separate from API gate.
 CROWN_SOLOMON_CONTEXT_ENABLED = _env_bool("CROWN_SOLOMON_CONTEXT_ENABLED", default=False)
 
+# Stage legacy signed-token replay protection without hosted activation.
+# Requires reviewed migration 0014 and client acceptance before enabling.
+CROWN_LEGACY_REFRESH_ONE_USE_ENABLED = _env_bool("CROWN_LEGACY_REFRESH_ONE_USE_ENABLED", default=False)
+
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
