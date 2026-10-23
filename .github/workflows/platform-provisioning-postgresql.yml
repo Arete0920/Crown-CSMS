@@ -8,6 +8,9 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
+concurrency:
+  group: platform-provisioning-pg-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 jobs:
   provisioning-postgresql:
     runs-on: ubuntu-latest
@@ -33,6 +36,7 @@ jobs:
       ALLOWED_HOSTS: localhost,127.0.0.1,testserver
       PYTHONPATH: ${{ github.workspace }}/backend
       DJANGO_SETTINGS_MODULE: crown_api.test_settings
+      CROWN_ENV: dev
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
@@ -57,5 +61,5 @@ jobs:
         with:
           name: provisioning-postgresql-${{ github.sha }}
           path: provisioning-postgresql.xml
-          if-no-files-found: warn
+          if-no-files-found: error
           retention-days: 14
