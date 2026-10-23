@@ -22,6 +22,16 @@ describe('release authority consistency contract', () => {
     expect(source.includes('Current buyer diligence package: **NOT READY')).toBe(false);
   });
 
+  it('keeps buyer and ownership claims conditional on current release evidence', () => {
+    const handoff = readRepoFile('docs/ownership/OWNER_HANDOFF.md');
+    const script = readRepoFile('docs/sandbox/CROWN_BUYER_DEMO_PRESENTER_SCRIPT_20260818.md');
+    expect(handoff.includes('CROWN is currently a release candidate')).toBe(true);
+    expect(handoff.includes('docs/CURRENT_RELEASE_STATUS.md')).toBe(true);
+    expect(handoff.includes('CROWN is production-ready from a product')).toBe(false);
+    expect(script.includes('not a production certification')).toBe(true);
+    expect(script.includes('The product and repository are production-ready')).toBe(false);
+  });
+
   it('keeps actual buyer turnover pending and payment processing disabled', () => {
     const source = readRepoFile('docs/CURRENT_RELEASE_STATUS.md');
     expect(source.includes('Environment-specific production certification is a separate, explicit fail-closed activity.')).toBe(true);
