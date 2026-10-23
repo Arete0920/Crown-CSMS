@@ -14,12 +14,22 @@ import re
 import subprocess
 
 from run_dev_inquiry_migration import (
+    Blocked,
     DEV_APP,
     DEV_HOST,
     read_azure,
     resolve_value,
     validate_database_url,
 )
+
+# Only these fixed helper codes may cross the evidence boundary.
+SAFE_CONFIGURATION_REASONS = frozenset({
+    "azure_read_unavailable",
+    "dev_configuration_unavailable",
+    "unsupported_key_vault_reference",
+    "database_target_not_verified_dev",
+})
+
 
 ROOT = Path(__file__).resolve().parents[2]
 RESOURCE_GROUP = "crown-rg"
@@ -183,7 +193,12 @@ def main(argv=None):
         packet["status"] = "COLLECTED"
     except Exception as exc:
         packet["stage"] = stage
-        packet["reason"] = str(exc) if isinstance(exc, EvidenceBlocked) else "evidence_collection_unavailable"
+        reason = str(exc)
+        packet["reason"] = (
+            reason if isinstance(exc, EvidenceBlocked)
+            or (isinstance(exc, Blocked) and reason in SAFE_CONFIGURATION_REASONS)
+            else "evidence_collection_unavailable"
+        )
     print(json.dumps(packet, sort_keys=True))
     return 0 if packet["status"] == "COLLECTED" else 1
 
