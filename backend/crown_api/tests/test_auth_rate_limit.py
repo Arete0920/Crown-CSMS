@@ -198,3 +198,44 @@ def test_simplejwt_refresh_fails_closed_when_failure_counter_write_fails():
     assert response.status_code == 503
     assert response.json()["code"] == "auth_temporarily_unavailable"
     assert response["Retry-After"] == "60"
+
+
+def test_legacy_replay_rate_limit_after_one_use():
+    """Repeated use of a consumed refresh cannot bypass abuse throttling."""
+    import uuid
+
+    from django.contrib.auth.hashers import make_password
+    from django.test import override_settings
+
+    from crown_api.auth_models import CrownUser
+    from crown_api.jwt_utils import build_refresh_token
+
+    cache.clear()
+    user = CrownUser.objects.create(
+        email="replay-throttle@example.invalid",
+        password_hash=make_password("Synthetic-only-Passphrase!"),
+        role="staff",
+        school_id=uuid.uuid4(),
+        is_active=True,
+    )
+    token = build_refresh_token(user_id=str(user.pk))
+    client = Client()
+    options = {
+        "data": {"refresh": token},
+        "content_type": "application/json",
+        "REMOTE_ADDR": "203.0.113.26",
+    }
+    with override_settings(CROWN_LEGACY_REFRESH_ONE_USE_ENABLED=True):
+        first = client.post("/api/auth/refresh/", **options)
+        assert first.status_code == 200
+
+        for _ in range(10):
+            replay = client.post("/api/auth/refresh/", **options)
+            assert replay.status_code == 401
+            assert "access" not in replay.json()
+
+        blocked = client.post("/api/auth/refresh/", **options)
+
+    assert blocked.status_code == 429
+    assert blocked.json()["error"] == "rate_limited"
+    assert blocked["Retry-After"] == "60"

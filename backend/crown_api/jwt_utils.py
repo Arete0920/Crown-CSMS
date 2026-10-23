@@ -4,6 +4,7 @@ import hashlib
 import hmac
 import json
 import time
+import uuid
 from dataclasses import dataclass
 from typing import Any, Dict, Optional
 
@@ -90,12 +91,13 @@ def build_access_token(*, user_id: str, email: str, role: str, school_id: Option
 
 def build_refresh_token(*, user_id: str, ttl_seconds: int = 60 * 60 * 24 * 7) -> str:
     """
-    Stateless refresh token (phase 1). No server-side revocation yet.
+    Legacy Crown refresh token. The endpoint records one-time consumption in SQL.
     """
     iat = _now()
     payload = {
         "typ": "refresh",
         "sub": user_id,
+        "jti": uuid.uuid4().hex,
         "iat": iat,
         "exp": iat + int(ttl_seconds),
     }

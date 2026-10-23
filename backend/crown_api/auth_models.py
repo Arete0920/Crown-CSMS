@@ -26,3 +26,16 @@ class CrownUser(models.Model):
 
     def __str__(self) -> str:
         return f"{self.email} ({self.role})"
+
+
+class LegacyRefreshConsumption(models.Model):
+    """One-time consumption ledger for signed legacy Crown refresh tokens."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(CrownUser, on_delete=models.CASCADE, related_name="consumed_refresh_tokens")
+    token_digest = models.CharField(max_length=64, unique=True)
+    consumed_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField(db_index=True)
+
+    class Meta:
+        ordering = ["-consumed_at"]

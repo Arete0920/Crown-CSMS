@@ -216,13 +216,16 @@ jobs:
               print(cursor.fetchone()[0])
           PY
           python backend/manage.py makemigrations --check --dry-run
-      - name: Verify survey contracts and real concurrent transactions
+      - name: Verify survey and legacy refresh contracts on PostgreSQL
         env:
           DJANGO_SETTINGS_MODULE: crown_api.test_settings
         run: >-
           python -m pytest -q backend/tests/test_survey_intelligence_*.py
           backend/tests/test_survey_collection_postgresql.py
           backend/crown_api/tests/test_refresh_blacklist_rotation.py
+          backend/crown_api/tests/test_auth_jwt.py
+          backend/crown_api/tests/test_auth_rate_limit.py
+          backend/crown_api/tests/test_legacy_refresh_cleanup.py
           --junitxml=survey-postgresql-junit.xml
       - name: Preserve PostgreSQL test evidence
         if: always()
