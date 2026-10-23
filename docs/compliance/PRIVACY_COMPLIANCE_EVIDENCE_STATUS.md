@@ -1,6 +1,6 @@
 # CROWN Privacy and Compliance Evidence Status
 
-**Status:** Controlled compliance supporting record  
+**Status:** HISTORICAL SUPPORTING RECORD — not current control certification  
 **Last reconciled:** 2026-08-09  
 **Certified backend:** `ce12c9536ec85346b2446018fa8bfe27edb3ffa0`  
 **Controlling authority:** GitHub issue #1619
@@ -10,10 +10,12 @@
 - documented student-data claim boundaries;
 - regulated-data inventory and policy foundations;
 - authentication, authorization, tenant, audit, and payment-containment controls;
-- bounded live Heritage certification recorded in `docs/CURRENT_RELEASE_STATUS.md`;
+- historical bounded Heritage test records, which do not certify the current Azure release;
 - synthetic-data and sensitive-repository rules;
 - payment processing disabled and fail closed;
-- historically exposed key retired from operational use.
+- source-side signing-key safeguards; operational retirement, history cleanup and distributable acceptance remain OPEN under [issue #104](https://github.com/Arete0920/Crown-CSMS/issues/104).
+
+**October 23, 2026 caution:** This August record is not authoritative for current deployment, credential retirement or SOC 2 readiness. Use [the current evidence reconciliation](SOC2_RECONCILIATION_20261023.md) and live issue evidence. Do not repeat historical key-retirement claims without operator proof.
 
 ## Boundary
 
