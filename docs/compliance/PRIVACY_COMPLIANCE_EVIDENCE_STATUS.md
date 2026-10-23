@@ -1,6 +1,6 @@
 # CROWN Privacy and Compliance Evidence Status
 
-**Status:** HISTORICAL SUPPORTING RECORD — not current control certification  
+**Status:** HISTORICAL SUPPORTING RECORD — not current control certification
 **Last reconciled:** 2026-08-09  
 **Certified backend:** `ce12c9536ec85346b2446018fa8bfe27edb3ffa0`  
 **Controlling authority:** GitHub issue #1619
