@@ -13,10 +13,12 @@ describe("canonical billing and platform route ownership", () => {
     expect(routerSource).toMatch(/path:\s*PATHS\.BILLING_DASHBOARD,[\s\S]*?<RoleRouteGuard allowedRoles=\{FINANCE_ALLOWED_ROLES\}>/);
     // Billing and platform-owner routes each have their own explicit guards.
     // Neither may be registered again via generic dashboardRoutes.
-    expect(routerSource).toMatch(
-      /\.\.\.dashboardRoutes\.filter\(\(route\) => !\[[\s\S]*?PATHS\.BILLING_DASHBOARD,[\s\S]*?PATHS\.MASTER_CONTROL_DASHBOARD,[\s\S]*?\]\.includes\(route\.path\)\)/,
-    );
-  });
+    const routeFilter = routerSource.match(
+      /\.\.\.dashboardRoutes\.filter\(\(route\) =>[\s\S]*?\),/,
+    )?.[0];
+    expect(routeFilter).toBeDefined();
+    expect(routeFilter).toContain("route.path !== PATHS.BILLING_DASHBOARD");
+    expect(routeFilter).toContain("route.path !== PATHS.MASTER_CONTROL_DASHBOARD");  });
 
   it("keeps the school administrator dashboard under a single registry owner", () => {
     expect(DASHBOARD_REGISTRY.filter((dashboard) => dashboard.path === PATHS.SCHOOL_ADMIN_DASHBOARD)).toHaveLength(1);
