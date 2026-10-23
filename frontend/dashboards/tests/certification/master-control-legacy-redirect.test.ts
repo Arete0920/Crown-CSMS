@@ -24,7 +24,7 @@ describe("platform Master Control legacy-route truth", () => {
     expect(legacyBlock).toContain("<Navigate to={PATHS.MASTER_CONTROL} replace />");
     expect(legacyBlock).not.toContain("<RoleRouteGuard");
     expect(legacyBlock).not.toContain("<AuthenticatedSchoolRouteGuard");
-    expect(router).toContain("PATHS.MASTER_CONTROL_DASHBOARD,\n  ].includes(route.path)");
+    expect(router).toContain("&& route.path !== PATHS.MASTER_CONTROL_DASHBOARD");
   });
 
   it("preserves an authenticated platform route and server-side authority", () => {
