@@ -294,6 +294,31 @@ class DevMigrationBoundaryTests(unittest.TestCase):
             self.assertNotIn(sensitive, evidence_line)
         self.assertFalse(any(isinstance(item, tuple) for item in self.events))
 
+    def test_operator_terminal_never_prints_database_password_or_django_key(self):
+        # Offline synthetic regression: local CLI must emit only redacted JSON.
+        for actions in ("", "false", "TRUE"):
+            output = io.StringIO()
+            with patch.dict(os.environ, {"GITHUB_ACTIONS": actions}), patch.object(
+                migration, "validate_source"
+            ), patch.object(
+                migration, "load_dev_settings",
+                return_value=(URL, "synthetic-secret", "crown", False)
+            ), patch.object(
+                migration, "migrate_on_dev", return_value=[]
+            ), contextlib.redirect_stdout(output):
+                self.assertEqual(migration.main(["--expected-sha", SHA, "--check-only"]), 0)
+            lines = output.getvalue().splitlines()
+            self.assertEqual(json.loads(lines[-1])["status"], "PASS")
+            if actions.strip().lower() == "true":
+                self.assertEqual(lines[:-1], [
+                    "::add-mask::" + URL.replace("%", "%25"),
+                    "::add-mask::synthetic-secret",
+                ])
+            else:
+                self.assertEqual(len(lines), 1)
+                self.assertNotIn(URL, output.getvalue())
+                self.assertNotIn("synthetic-secret", output.getvalue())
+
     def test_read_only_preflight_never_invokes_migration_or_ddl(self):
         item = SimpleNamespace(app_label="crm_marketing", name="0002_inquiry_capture")
         self.assertEqual(
@@ -385,6 +410,52 @@ class DevMigrationBoundaryTests(unittest.TestCase):
                 self.assertEqual(migration.main(["--expected-sha", SHA, *args]), 1)
                 source.assert_not_called()
                 read.assert_not_called()
+
+    def test_legacy_schema_modes_are_separate_and_explicit(self):
+        from reviewed_legacy_refresh_migrations import REVIEWED
+        reviewed = SimpleNamespace(app_label=REVIEWED[0], name=REVIEWED[1])
+        self.assertEqual(migration.validate_legacy_plan([(reviewed, False)]), [REVIEWED])
+        with self.assertRaises(migration.UnreviewedPlan):
+            migration.validate_legacy_plan([(SimpleNamespace(app_label="other", name="0001"), False)])
+        for option, expected_mode, kwargs in (
+            ("--inspect-reviewed-legacy-refresh", "reviewed_dev_legacy_inspect",
+             {"check_only": True, "legacy_stage": True, "hosted_blacklist_enabled": False}),
+            ("--apply-reviewed-legacy-refresh", "reviewed_dev_legacy_apply",
+             {"legacy_stage": True, "hosted_blacklist_enabled": False}),
+        ):
+            args = ["--expected-sha", SHA, option]
+            if option == "--apply-reviewed-legacy-refresh":
+                args += ["--confirm-dev-legacy-refresh", "migrate-dev-legacy-refresh"]
+            output = io.StringIO()
+            with patch.object(migration, "validate_source") as validate, patch.object(
+                migration, "load_dev_settings", return_value=(URL, "synthetic-secret", "crown", False)
+            ) as load, patch.object(migration, "migrate_on_dev", return_value=[]) as invoked, contextlib.redirect_stdout(output):
+                self.assertEqual(migration.main(args), 0)
+            validate.assert_called_once_with(SHA, reviewed_legacy=True)
+            load.assert_called_once_with(legacy_stage=True)
+            invoked.assert_called_once_with(URL, "synthetic-secret", "crown", SHA, **kwargs)
+            self.assertEqual(json.loads(output.getvalue().splitlines()[-1])["mode"], expected_mode)
+        for flags in (
+            ["--apply-reviewed-legacy-refresh"],
+            ["--confirm-dev-legacy-refresh", "migrate-dev-legacy-refresh"],
+            ["--inspect-reviewed-legacy-refresh", "--apply-reviewed-legacy-refresh",
+             "--confirm-dev-legacy-refresh", "migrate-dev-legacy-refresh"],
+        ):
+            with self.subTest(flags=flags), patch.object(migration, "load_dev_settings") as load, contextlib.redirect_stdout(io.StringIO()):
+                self.assertEqual(migration.main(["--expected-sha", SHA, *flags]), 1)
+                load.assert_not_called()
+
+    def test_legacy_stage_refuses_hosted_activation(self):
+        def fake_read(*args):
+            if args[:2] == ("webapp", "show"):
+                return {"name": "crown-api-dev", "defaultHostName": "crown-api-dev.azurewebsites.net"}
+            return [{"name": k, "value": v} for k, v in {
+                "CROWN_ENV": "dev", "ENVIRONMENT": "dev", "DJANGO_ENV": "development",
+                "DATABASE_URL": URL, "SECRET_KEY": "synthetic-secret",
+                "CROWN_LEGACY_REFRESH_ONE_USE_ENABLED": "true",
+            }.items()]
+        with self.assertRaisesRegex(migration.Blocked, "legacy_refresh_must_be_disabled"):
+            migration.load_dev_settings(read=fake_read, legacy_stage=True)
 
     def test_workflow_checks_source_then_schema_before_any_runtime_mutation(self):
         import yaml
