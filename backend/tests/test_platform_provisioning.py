@@ -189,11 +189,17 @@ def test_operator_command_defaults_to_read_only_and_rejects_sqlite():
             "run_school_provisioning",
             job_id=str(job.pk), actor_id=str(owner.pk), apply=True,
         )
-    with pytest.raises(CommandError, match="PostgreSQL"):
-        call_command(
-            "run_school_provisioning",
-            job_id=str(job.pk), actor_id=str(owner.pk), apply=True,
-            confirm_job_id=str(job.pk),
-        )
+    # Exercise the refusal deterministically on PostgreSQL and SQLite CI.
+    from unittest.mock import patch
+    with patch(
+        "platform_ops.management.commands.run_school_provisioning.connection"
+    ) as mocked_connection:
+        mocked_connection.vendor = "sqlite"
+        with pytest.raises(CommandError, match="PostgreSQL"):
+            call_command(
+                "run_school_provisioning",
+                job_id=str(job.pk), actor_id=str(owner.pk), apply=True,
+                confirm_job_id=str(job.pk),
+            )
     job.refresh_from_db()
     assert job.state == "queued"
