@@ -103,7 +103,7 @@ const router = readFileSync("src/routes/router.jsx", "utf8");
 const guard = readFileSync("src/components/routing/AuthenticatedSchoolRouteGuard.jsx", "utf8");
 
 const specialistRoutes = [
-  "BOARD", "IT", "MARKETING", "SPIRITUAL_LIFE", "MASTER_CONTROL",
+  "BOARD", "IT", "MARKETING", "SPIRITUAL_LIFE",
   "OFFICE", "HEALTH", "COUNSELING", "FOOD", "ATHLETICS",
   "ADVANCEMENT", "TRANSPORTATION", "FACILITIES", "SECURITY",
   "ACADEMIC_SUPPORT", "FINE_ARTS", "LIBRARY", "EXTENDED_CARE",
