@@ -345,3 +345,32 @@ def test_postgresql_operator_command_executes_one_job():
         actor_user_id=operator.id,
     ).count() == 1
     assert "PROVISIONED" in output.getvalue()
+
+
+@pytest.mark.django_db
+def test_school_creation_rolls_back_when_audit_write_fails(monkeypatch):
+    """A failed required audit write must roll back the school and queued job."""
+    from core.models import School
+    from platform_ops.models import AuditEvent, ProvisioningJob
+    from platform_ops.provisioning import (
+        ProvisioningAuditError,
+        create_school_and_queue_provisioning,
+    )
+    from tenants.models import TenantProfile
+
+    key = str(uuid.uuid4())
+    slug = f"unaudited-{key[:8]}"
+
+    def broken_audit(*args, **kwargs):
+        raise RuntimeError("sensitive database diagnostic")
+
+    monkeypatch.setattr(AuditEvent.objects, "create", broken_audit)
+    with pytest.raises(ProvisioningAuditError):
+        create_school_and_queue_provisioning(
+            name="Unaudited Synthetic School",
+            slug=slug,
+            idempotency_key=key,
+        )
+    assert not School.objects.filter(name="Unaudited Synthetic School").exists()
+    assert not TenantProfile.objects.filter(slug=slug).exists()
+    assert not ProvisioningJob.objects.filter(idempotency_key=key).exists()
