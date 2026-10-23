@@ -97,7 +97,7 @@ def resolve_value(raw, *, read=read_azure):
         uri = urlsplit(fields["SecretUri"])
         if (uri.scheme != "https" or not re.fullmatch(r"[A-Za-z0-9-]+\.vault\.azure\.net", uri.hostname or "")
                 or uri.username or uri.password or uri.port not in (None, 443) or uri.query or uri.fragment
-                or not re.fullmatch(r"/secrets/[A-Za-z0-9-]+(?:/[A-Za-z0-9-]+)?", uri.path)):
+                or not re.fullmatch(r"/secrets/[A-Za-z0-9-]+(?:/[A-Za-z0-9-]+|/)?", uri.path)):
             raise Blocked("unsupported_key_vault_reference")
         result = read("keyvault", "secret", "show", "--id", fields["SecretUri"])
     else:
