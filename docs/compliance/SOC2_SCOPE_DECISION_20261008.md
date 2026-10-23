@@ -1,6 +1,6 @@
 # CROWN SOC 2 Scope Decision — Draft for Management Approval
 
-**Status:** DRAFT / NOT APPROVED  
+**Status:** HISTORICAL OCTOBER 8 DRAFT / NOT APPROVED — see [October 23 reconciliation](SOC2_RECONCILIATION_20261023.md)  
 **Prepared:** 2026-10-08  
 **Purpose:** Establish the proposed initial SOC 2 readiness boundary from current repository and connected-platform evidence.
 
@@ -21,11 +21,13 @@ This remains subject to confirmation against the legal contracting entity and au
 Repository authority currently states:
 
 - Azure is the selected hosted destination.
-- CROWN is currently **undeployed**; repository CI and deployment workflows do not establish hosted operation.
+- **As of the October 8 source assessment**, CROWN's proposed production release was described as undeployed. This historical assertion must not be applied to subsequent Azure DEV/demo activity. No current production release acceptance follows merely from a reachable hosted URL.
 - No successor production deployment, runtime identity, or operational acceptance is asserted by `docs/CURRENT_RELEASE_STATUS.md`. That record withholds claims; the explicit undeployed statement comes from `docs/operations/AZURE_CLASSROOM_FIRST_RELEASE.md`.
 - The Azure readiness path references intended resources such as `crown-rg`, `crown-api-prod`, `crown-api-dev`, and `crownregistry`, but the repository explicitly states that actual Azure resources, subscription, region, cost, and credentials remain unverified.
 - Automatic Azure drift checks are disabled and require explicit manual execution.
 - The earlier connected Render check was recorded on 2026-10-08 as returning no services or PostgreSQL instances in the inspected workspace. This is historical, workspace-limited evidence, not proof that every Render workspace is empty. The current reconciliation could not repeat that inventory because no workspace is selected. Render does not establish current CROWN production hosting.
+
+**October 23 clarification:** Azure DEV/runtime observations and source-side migration progress are separately documented in issues [#273](https://github.com/Arete0920/Crown-CSMS/issues/273), [#350](https://github.com/Arete0920/Crown-CSMS/issues/350) and [#372](https://github.com/Arete0920/Crown-CSMS/issues/372). Reconcile actual authenticated subscription, deployment and control evidence before revising the final deployed system description.
 
 **Open scope evidence:** actual Azure subscription/tenant, selected region(s), deployed services, database, broker/worker/beat services, identity, networking, storage/backups, monitoring, and exact deployed source identity.
 
@@ -33,7 +35,7 @@ Repository authority currently states:
 
 Payment processing remains **disabled / fail closed / not authorized for activation** in the current release authority.
 
-Planning evidence identifies Metro Payment Technologies as the intended payment-processing partner, with a tokenized hosted-gateway design and school-specific merchant accounts. Provider compliance/API documentation, gateway confirmation, contract/DPA, PCI responsibility allocation, regions, credentials, and activation approval remain outstanding.
+Planning evidence identifies Metro Payment Technologies as the intended payment-processing partner, with a tokenized hosted-gateway design and school-specific merchant accounts (historical planning only). CompuWerx subsequently became the intended payment gateway; see the current [vendor register](SUBPROCESSOR_REGISTER.md). Provider compliance/API documentation, gateway confirmation, contract/DPA, PCI responsibility allocation, regions, credentials, and activation approval remain outstanding.
 
 Until those items are complete, payment processing is not an operating in-scope production integration.
 
