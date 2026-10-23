@@ -150,6 +150,25 @@ describe("anonymous specialist route denial contract", () => {
     expect(block).toContain('"board_member"');
   });
 
+  it("requires a platform bearer guard instead of a school tenant selector", () => {
+    const start = router.indexOf("path: PATHS.MASTER_CONTROL,");
+    const block = router.slice(start, router.indexOf("\\n  },", start));
+    const operatorGuard = readFileSync(
+      "src/components/routing/AuthenticatedPlatformRouteGuard.jsx",
+      "utf8",
+    );
+    const platformApi = readFileSync("src/utils/authClient.js", "utf8");
+    expect(start).toBeGreaterThanOrEqual(0);
+    expect(block).toContain("<AuthenticatedPlatformRouteGuard>");
+    expect(block).toContain("</AuthenticatedPlatformRouteGuard>");
+    expect(block).not.toContain("<AuthenticatedSchoolRouteGuard>");
+    expect(operatorGuard).toContain("!getAccessToken()");
+    expect(operatorGuard).not.toContain("getSelectedSchoolId");
+    expect(operatorGuard).toContain('to="/not-authorized"');
+    expect(platformApi).toContain('omitSchoolContext');
+    expect(platformApi).toContain('headers.delete("X-School-Id")');
+  });
+
   it("denies routes with missing bearer or school rather than showing data", () => {
     expect(guard).toContain("!getAccessToken() || !getSelectedSchoolId()");
     expect(guard).toContain('to="/not-authorized"');
