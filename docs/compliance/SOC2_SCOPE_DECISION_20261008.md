@@ -1,6 +1,6 @@
 # CROWN SOC 2 Scope Decision — Draft for Management Approval
 
-**Status:** HISTORICAL OCTOBER 8 DRAFT / NOT APPROVED — see [October 23 reconciliation](SOC2_RECONCILIATION_20261023.md)  
+**Status:** HISTORICAL OCTOBER 8 DRAFT / NOT APPROVED — see [October 23 reconciliation](SOC2_RECONCILIATION_20261023.md)
 **Prepared:** 2026-10-08  
 **Purpose:** Establish the proposed initial SOC 2 readiness boundary from current repository and connected-platform evidence.
 
