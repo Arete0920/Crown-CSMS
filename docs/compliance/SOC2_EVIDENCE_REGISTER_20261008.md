@@ -1,6 +1,6 @@
 # CROWN SOC 2 Evidence Register
 
-**Status:** HISTORICAL OCTOBER 8 SOURCE CHECKPOINT / OPERATING EVIDENCE INCOMPLETE  
+**Status:** HISTORICAL OCTOBER 8 SOURCE CHECKPOINT / OPERATING EVIDENCE INCOMPLETE
 **Prepared:** 2026-10-08  
 **Scope:** Source and repository-controlled documentation at `a091504ec4ce37c84037b51e15d9f909fcaf6f91`
 **Reconciled:** 2026-10-08 after fresh exact-head Actions evidence  
