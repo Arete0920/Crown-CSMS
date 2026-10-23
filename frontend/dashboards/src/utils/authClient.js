@@ -179,6 +179,7 @@ export async function authenticatedFetch(input, init = {}) {
     query,
     correlationId = createCorrelationId(),
     validateStatus = (status) => status >= 200 && status < 300,
+    omitSchoolContext = false,
     ...requestInit
   } = init;
 
