@@ -204,7 +204,7 @@ class PlatformOperatorBoundaryTests(TestCase):
             self.assertEqual(response.status_code, 400)
             self.assertEqual(response.json()["code"], "missing_tenant")
 
-def test_school_bound_superuser_cannot_perform_platform_operations(self):
+    def test_school_bound_superuser_cannot_perform_platform_operations(self):
         """A school-associated Django superuser is not a platform owner."""
         scoped_user = get_user_model().objects.create_superuser(
             username="synthetic-school-superuser",
