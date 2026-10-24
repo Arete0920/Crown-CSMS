@@ -256,7 +256,7 @@ def verify_ddl_authority(connection, pending, *, legacy_stage=False, apply_black
 def migrate_on_dev(database_url, secret, database_name, source_sha, *,
                    check_only=False, apply_blacklist=False, hosted_blacklist_enabled=False,
                    legacy_stage=False, support_stage=False):
-    if (check_only and apply_blacklist) or (apply_blacklist and legacy_stage) or (support_stage and (apply_blacklist or legacy_stage)):
+    if (check_only and (apply_blacklist or support_stage)) or (apply_blacklist and legacy_stage) or (support_stage and (apply_blacklist or legacy_stage)):
         raise Blocked("conflicting_dev_migration_modes")
     if not isinstance(hosted_blacklist_enabled, bool):
         raise Blocked("invalid_dev_blacklist_setting")

@@ -75,6 +75,17 @@ class SupportStageTests(unittest.TestCase):
             "verified", "transaction-ended", "unlock",
         ])
 
+    def test_support_stage_and_read_only_check_are_incompatible_at_api_boundary(self):
+        """Direct calls must not accidentally run DDL when check_only=True."""
+        import run_dev_inquiry_migration as runner
+
+        with self.assertRaisesRegex(runner.Blocked, "conflicting_dev_migration_modes"):
+            runner.migrate_on_dev(
+                "postgresql://synthetic:secret@invalid.invalid/crown",
+                "synthetic-secret", "crown", "a" * 40,
+                support_stage=True, check_only=True,
+            )
+
     def test_unsafe_plan_never_migrates(self):
         mutate = Mock()
         with self.assertRaises(stage.SupportBoundaryError):
