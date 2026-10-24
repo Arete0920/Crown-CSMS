@@ -286,7 +286,7 @@ def _scope_students(user, qs: QuerySet, role: str) -> QuerySet:
                verified households.Guardian.account link
     - student: no user FK on Student yet (Phase 3); deny for now
     """
-    if role in {"head", "director", "registrar", "admin"}:
+    if role in {"head", "director", "registrar", "admin", "school_admin"}:
         return qs
 
     if role == "teacher":
@@ -462,6 +462,7 @@ FIELD_SCOPE: dict[str, dict[str, FieldScope]] = {
         "unknown": FieldScope(allow=set(), deny=set()),
     },
     DOMAIN_STUDENTS: {
+        "school_admin": FieldScope(allow="__all__", deny=set()),
         "head": FieldScope(allow="__all__", deny=set()),
         "director": FieldScope(allow="__all__", deny=set()),
         "registrar": FieldScope(allow="__all__", deny=set()),
@@ -608,10 +609,13 @@ def scope_serializer_fields(user, serializer, *, school_id=None) -> None:
         ):
             nested = serializer.fields.get(name)
             if nested is not None:
+                child_rule = get_field_scope(user, child_domain, school_id=school_id)
+                if child_rule.allow != "__all__" and not child_rule.allow:
+                    # Empty embedded objects would still disclose a record count.
+                    serializer.fields.pop(name, None)
+                    continue
                 child = getattr(nested, "child", nested)
-                _apply_field_rule(
-                    child, get_field_scope(user, child_domain, school_id=school_id)
-                )
+                _apply_field_rule(child, child_rule)
 
 
 def scoped_serializer_context(domain: str, base: Optional[dict] = None) -> dict:

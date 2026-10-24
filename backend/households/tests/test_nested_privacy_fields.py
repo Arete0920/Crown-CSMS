@@ -98,3 +98,41 @@ class NestedHouseholdPrivacyTests(TestCase):
                 self.assertEqual(
                     client.get(f"{prefix}guardians/{self.guardian.pk}/").status_code, 200,
                 )
+
+    def test_explicit_school_admin_retains_authorized_student_reads(self):
+        admin = UserAccount.objects.create_user(
+            username="synthetic-school-admin", email="school-admin@example.invalid",
+            school=self.school, is_staff=True,
+        )
+        UserRole.objects.create(
+            user=admin, school=self.school, role_code="school_admin",
+        )
+        permission, _ = CrownPermission.objects.get_or_create(code="households.view")
+        RolePermission.objects.get_or_create(role_code="school_admin", permission=permission)
+        client = self.client_for(admin)
+        for prefix in ("/api/", "/api/v1/"):
+            with self.subTest(prefix=prefix):
+                response = client.get(f"{prefix}students/{self.child.pk}/")
+                self.assertEqual(response.status_code, 200)
+                self.assertEqual(response.json()["id"], str(self.child.pk))
+                household = client.get(f"{prefix}households/{self.home.pk}/")
+                self.assertEqual(household.status_code, 200)
+                self.assertEqual(household.json()["students"][0]["id"], str(self.child.pk))
+
+    def test_household_duty_without_student_scope_exposes_no_nested_record_count(self):
+        officer = UserAccount.objects.create_user(
+            username="synthetic-household-office", email="household-office@example.invalid",
+            school=self.school, is_staff=True,
+        )
+        UserRole.objects.create(
+            user=officer, school=self.school, role_code="office_manager",
+        )
+        permission, _ = CrownPermission.objects.get_or_create(code="households.view")
+        RolePermission.objects.get_or_create(role_code="office_manager", permission=permission)
+        client = self.client_for(officer)
+        for prefix in ("/api/", "/api/v1/"):
+            with self.subTest(prefix=prefix):
+                response = client.get(f"{prefix}households/{self.home.pk}/")
+                self.assertEqual(response.status_code, 200)
+                self.assertNotIn("students", response.json())
+                self.assertEqual(client.get(f"{prefix}students/").json(), [])
