@@ -65,6 +65,7 @@ class LocationViewSet(SchoolScopedViewSet):
         return (
             Location.objects
             .filter(school_id=self.get_school_id())
+            .select_related("parent")
             .order_by("name")
         )
 
@@ -80,6 +81,7 @@ class AssetViewSet(SchoolScopedViewSet):
         return (
             Asset.objects
             .filter(school_id=self.get_school_id())
+            .select_related("location")
             .order_by("name")
         )
 
@@ -158,6 +160,7 @@ class SafetyIncidentViewSet(SchoolScopedViewSet):
         return (
             SafetyIncident.objects
             .filter(school_id=self.get_school_id())
+            .select_related("location", "related_asset", "reported_by", "assigned_to")
             .order_by("-created_at")
         )
 
@@ -174,6 +177,7 @@ class DrillViewSet(SchoolScopedViewSet):
         return (
             Drill.objects
             .filter(school_id=self.get_school_id())
+            .select_related("created_by")
             .order_by("-planned_for", "-created_at")
         )
 
@@ -205,6 +209,7 @@ class AlertViewSet(SchoolScopedViewSet):
         return (
             Alert.objects
             .filter(school_id=self.get_school_id())
+            .select_related("emitted_by")
             .order_by("-created_at")
         )
 
