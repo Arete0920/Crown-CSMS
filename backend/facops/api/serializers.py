@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from rest_framework import serializers
+from drf_spectacular.utils import extend_schema_field
 
 from core.models import School
 from core.permissions import user_has_permission
@@ -105,7 +106,20 @@ class WorkOrderCommentSerializer(serializers.ModelSerializer):
 
 class WorkOrderSerializer(TenantRelatedFieldsMixin, serializers.ModelSerializer):
     tenant_relation_fields = ("location", "asset", "assigned_to")
-    comments = WorkOrderCommentSerializer(many=True, read_only=True)
+    # Every representation (list, detail, PATCH, transition) must apply the
+    # tenant filter. The queryset prefetch alone is not a security boundary.
+    comments = serializers.SerializerMethodField()
+
+    @extend_schema_field(WorkOrderCommentSerializer(many=True))
+    def get_comments(self, obj: WorkOrder):
+        comments = getattr(obj, "tenant_scoped_comments", None)
+        if comments is None:
+            comments = WorkOrderComment.objects.filter(
+                work_order_id=obj.pk, school_id=obj.school_id,
+            ).select_related("author")
+        return WorkOrderCommentSerializer(
+            comments, many=True, context=self.context,
+        ).data
 
     def validate(self, attrs):
         """Prevent unauthorized lifecycle writes and cross-school relationships.

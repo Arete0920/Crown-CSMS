@@ -156,3 +156,25 @@ def test_nested_comment_author_identity_never_crosses_school(school_context):
     good = comments["Local comment with local author"]
     assert str(good["author"]) == str(f["reporter"].pk)
     assert good["author_name"] == f["reporter"].username
+
+
+
+def test_work_order_mutations_cannot_serialize_cross_tenant_comments(school_context):
+    """Transition and update bypass the list prefetch; both must fail closed."""
+    f = school_context
+    client = request_client(f["facilities"], f["school"])
+    path = f"/api/facilities/work-orders/{f['own_order'].pk}/"
+
+    for response in (
+        client.patch(path, {"description": "Authorized local update"}, format="json"),
+        client.post(path + "transition/", {"status": "IN_PROGRESS"}, format="json"),
+    ):
+        assert response.status_code == 200, (response.status_code, response.content)
+        contents = response.json()
+        comments = {item["body"]: item for item in contents["comments"]}
+        assert "FOREIGN-SCHOOL-PRIVATE-COMMENT" not in comments
+        assert "Local comment with local author" in comments
+        assert "Local comment with foreign author" in comments
+        assert comments["Local comment with foreign author"]["author"] is None
+        assert comments["Local comment with foreign author"]["author_name"] == ""
+        assert f["foreign_author"].username not in str(response.content)

@@ -102,7 +102,8 @@ class WorkOrderViewSet(SchoolScopedViewSet):
                     "comments",
                     queryset=WorkOrderComment.objects.filter(
                         school_id=school_id, work_order__school_id=school_id,
-                    ),
+                    ).select_related("author"),
+                    to_attr="tenant_scoped_comments",
                 )
             )
         )
