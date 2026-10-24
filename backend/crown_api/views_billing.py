@@ -6,8 +6,10 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
+from core.models import HouseholdFamilyLink
 from crown_api.access_households import resolve_household_access
 from crown_api.models import Household, Invoice, Payment
+from households.scoping import get_request_school_id
 from crown_api.serializers_billing import InvoiceMiniSerializer
 
 
@@ -18,6 +20,20 @@ def household_billing_summary(request, household_id):
         return Response(
             {"detail": "Authentication credentials were not provided."}, status=401
         )
+
+    # Legacy household, invoice and payment tables do not record tenant IDs.
+    # A school-qualified bridge is the minimum safe attribution for these
+    # compatibility reads. Require one unambiguous school across *all* linked
+    # families before reading any invoice/payment data, and fail closed on
+    # missing, malformed or shared cross-school ownership.
+    school_id = get_request_school_id(request, required=True)
+    owners = list(
+        HouseholdFamilyLink.objects.filter(household_id=household_id)
+        .values_list("school_id", "family__school_id")
+        .distinct()[:2]
+    )
+    if owners != [(school_id, school_id)]:
+        raise Http404()
 
     access = resolve_household_access(request)
 

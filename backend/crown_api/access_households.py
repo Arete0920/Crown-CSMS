@@ -27,14 +27,13 @@ def resolve_person_for_user(user) -> Person | None:
         link = user.person_link
     except UserPersonLink.DoesNotExist:
         link = None
-    if link is not None:
-        return link.person
-
-    email = (getattr(user, "email", None) or "").strip()
-    if not email:
+    # The explicit authenticated-user link is the sole authority. A matching
+    # email is not proof of person/household identity, particularly because
+    # this compatibility Person directory has no school ownership column.
+    # Fail closed until a verified UserPersonLink is provisioned.
+    if link is None:
         return None
-
-    return Person.objects.filter(email__iexact=email).first()
+    return link.person
 
 
 def resolve_household_access(request) -> HouseholdAccess:
