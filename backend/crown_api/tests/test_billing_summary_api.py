@@ -3,7 +3,7 @@ from datetime import date
 from django.test import TestCase
 from rest_framework.test import APIClient
 
-from core.models import School, UserAccount
+from core.models import Family, HouseholdFamilyLink, School, UserAccount
 from crown_api.models import Household, HouseholdMember, Invoice, Payment, Person, UserPersonLink
 from crown_api.models_households import ROLE_GUARDIAN
 
@@ -34,6 +34,20 @@ class BillingSummaryApiTests(TestCase):
 
         self.household_a = Household.objects.create(household_name="Household A")
         self.household_b = Household.objects.create(household_name="Household B")
+        # The legacy tables have no tenant key. Real compatibility reads
+        # require an explicit, unambiguous school-owned family crosswalk.
+        self.family_a = Family.objects.create(school=self.school, family_name="Family A")
+        self.family_b = Family.objects.create(school=self.school, family_name="Family B")
+        HouseholdFamilyLink.objects.create(
+            school=self.school, family=self.family_a,
+            household_id=self.household_a.id,
+            source=HouseholdFamilyLink.SOURCE_MANUAL,
+        )
+        HouseholdFamilyLink.objects.create(
+            school=self.school, family=self.family_b,
+            household_id=self.household_b.id,
+            source=HouseholdFamilyLink.SOURCE_MANUAL,
+        )
 
         self.parent_person = Person.objects.create(
             first_name="Parent",
@@ -85,7 +99,8 @@ class BillingSummaryApiTests(TestCase):
         )
 
     def test_staff_can_get_household_billing_summary(self):
-        self.client.force_authenticate(user=self.staff_user)
+        self.client.force_login(self.staff_user)
+        self.client.credentials(HTTP_X_SCHOOL_ID=str(self.school.pk))
 
         resp = self.client.get(f"/api/households/{self.household_a.id}/billing/summary/")
         self.assertEqual(resp.status_code, 200)
@@ -98,7 +113,8 @@ class BillingSummaryApiTests(TestCase):
         self.assertEqual(body["last_payment_date"], "2026-01-15")
 
     def test_parent_scoped_and_no_existence_leak(self):
-        self.client.force_authenticate(user=self.parent_user)
+        self.client.force_login(self.parent_user)
+        self.client.credentials(HTTP_X_SCHOOL_ID=str(self.school.pk))
 
         ok = self.client.get(f"/api/households/{self.household_a.id}/billing/summary/")
         self.assertEqual(ok.status_code, 200)
@@ -112,7 +128,8 @@ class BillingSummaryApiTests(TestCase):
         self.assertEqual(resp.status_code, 401)
 
     def test_recent_invoices_limited_and_contains_invoice_number(self):
-        self.client.force_authenticate(user=self.staff_user)
+        self.client.force_login(self.staff_user)
+        self.client.credentials(HTTP_X_SCHOOL_ID=str(self.school.pk))
 
         resp = self.client.get(f"/api/households/{self.household_a.id}/billing/summary/")
         self.assertEqual(resp.status_code, 200)
@@ -122,3 +139,54 @@ class BillingSummaryApiTests(TestCase):
         self.assertTrue(any(row["invoice_number"] == "INV-A-0001" for row in recent))
 
 
+
+
+    def test_staff_cannot_view_foreign_or_ambiguous_legacy_finance(self):
+        foreign = School.objects.create(name="Synthetic Foreign Finance School")
+        foreign_family = Family.objects.create(school=foreign, family_name="Foreign")
+        foreign_household = Household.objects.create(household_name="Foreign Household")
+        HouseholdFamilyLink.objects.create(
+            school=foreign, family=foreign_family,
+            household_id=foreign_household.pk,
+            source=HouseholdFamilyLink.SOURCE_MANUAL,
+        )
+        Invoice.objects.create(
+            household=foreign_household,
+            invoice_number="SYNTH-FOREIGN-001",
+            amount_cents=30000,
+            status=Invoice.STATUS_OPEN,
+        )
+        self.client.force_login(self.staff_user)
+        self.client.credentials(HTTP_X_SCHOOL_ID=str(self.school.pk))
+        foreign_response = self.client.get(
+            f"/api/households/{foreign_household.pk}/billing/summary/"
+        )
+        self.assertEqual(foreign_response.status_code, 404)
+        self.assertNotIn("SYNTH-FOREIGN", str(foreign_response.content))
+
+        # An otherwise permitted legacy household that is linked to two
+        # schools cannot safely attribute its unowned invoices to either.
+        HouseholdFamilyLink.objects.create(
+            school=foreign, family=foreign_family,
+            household_id=self.household_a.pk,
+            source=HouseholdFamilyLink.SOURCE_MANUAL,
+        )
+        ambiguous = self.client.get(
+            f"/api/households/{self.household_a.pk}/billing/summary/"
+        )
+        self.assertEqual(ambiguous.status_code, 404)
+        self.assertNotIn("INV-A-0001", str(ambiguous.content))
+
+    def test_matching_email_without_link_does_not_grant_legacy_billing(self):
+        unlinked = UserAccount.objects.create_user(
+            username="synthetic-email-only-billing",
+            email="parent@example.com",
+            school=self.school,
+        )
+        self.client.force_login(unlinked)
+        self.client.credentials(HTTP_X_SCHOOL_ID=str(self.school.pk))
+        denied = self.client.get(
+            f"/api/households/{self.household_a.pk}/billing/summary/"
+        )
+        self.assertEqual(denied.status_code, 404)
+        self.assertNotIn("INV-A-0001", str(denied.content))
