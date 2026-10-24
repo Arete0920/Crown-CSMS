@@ -138,15 +138,19 @@ class OwnerRuntimePrecheckTests(unittest.TestCase):
 
     def test_workflow_is_manual_readonly_unprivileged_and_main_only(self):
         workflow = (Path(__file__).resolve().parents[2] /
-                    '.github/workflows/dev-owner-runtime-precheck.yml').read_text()
+                    '.github/workflows/azure-classroom-preflight.yml').read_text()
         self.assertIn('workflow_dispatch:', workflow)
         self.assertNotIn('  push:', workflow)
-        self.assertIn("if: github.ref == 'refs/heads/main'", workflow)
+        self.assertIn("github.ref == 'refs/heads/main'", workflow)
+        self.assertIn("dev-owner-runtime-precheck:", workflow)
+        self.assertIn("inputs.dev_owner_runtime_precheck == true", workflow)
+        self.assertIn("inputs.dev_owner_runtime_precheck != true", workflow)
         self.assertIn('contents: read', workflow)
+        owner_job = workflow.split("  dev-owner-runtime-precheck:", 1)[1].split("  azure-inventory:", 1)[0]
         for prohibited in ('id-token: write', 'secrets.', 'azure/login@',
                            'az webapp', 'database_url:', 'POST /api/'):
-            self.assertNotIn(prohibited, workflow)
-        self.assertIn('verify_dev_owner_runtime.py --expected-sha', workflow)
+            self.assertNotIn(prohibited, owner_job)
+        self.assertIn('verify_dev_owner_runtime.py --expected-sha', owner_job)
 
     def test_only_full_lowercase_commit_shas_are_allowed(self):
         for sha in ("", "main", "a" * 7, "A" * 40, "a" * 39 + "\n"):
