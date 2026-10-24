@@ -92,3 +92,9 @@ Dashboard certification PRs must not commit generated certification truth dumps 
 Dashboard certification work should remain in one coherent, independently reversible pull request containing the implementation, evidence-generation scripts, compact evidence summary, denominator/state reconciliation, and certification promotion required for the same outcome. A separate pull request requires an independent risk, authority, or rollback boundary under `docs/governance/CHANGE_MANAGEMENT.md`.
 
 A dashboard is not certified until route, permission, tenant, runtime/browser, evidence packet, state/matrix, and solo-developer workaround record all agree.
+
+## 8. Current PR narrative language
+
+The title and description of a newly opened or edited pull request must satisfy the same reference-language control as tracked first-party source. Repository Policy evaluates both fields in the pull-request event and blocks prohibited provider or method branding, including references split across lines. Descriptions must state implemented behavior and verified evidence, not tool-generated promotional copy, unearned contributor credit, or unsupported completion claims.
+
+This check is prospective. It does not remove historical third-party attribution, dependency release notes, signed provenance, commit authors, or past discussion events. Required factual disclosure belongs in controlled technical records; exceptions need an owner-reviewed, evidence-backed decision rather than a silent bypass. See `docs/governance/PUBLIC_LANGUAGE_POLICY.md`.
