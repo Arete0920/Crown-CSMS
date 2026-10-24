@@ -3,10 +3,12 @@ from django.db.models.functions import Coalesce
 from django.http import Http404
 from django.shortcuts import get_object_or_404
 from rest_framework.decorators import api_view, permission_classes
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from core.models import HouseholdFamilyLink
+from core.models import HouseholdFamilyLink, School
+from core.permissions import user_has_permission
 from crown_api.access_households import resolve_household_access
 from crown_api.models import Household, Invoice, Payment
 from crown_api.models_households import GUARDIAN_ROLES, ROLE_FINANCIALLY_RESPONSIBLE
@@ -28,6 +30,13 @@ def household_billing_summary(request, household_id):
     # families before reading any invoice/payment data, and fail closed on
     # missing, malformed or shared cross-school ownership.
     school_id = get_request_school_id(request, required=True)
+    access = resolve_household_access(
+        request, allowed_roles=(*GUARDIAN_ROLES, ROLE_FINANCIALLY_RESPONSIBLE)
+    )
+    if access.is_staff:
+        school = School.objects.filter(pk=school_id, is_active=True).first()
+        if not user_has_permission(request.user, "billing.view", school=school):
+            raise PermissionDenied("Billing access is not authorized.")
     owners = list(
         HouseholdFamilyLink.objects.filter(household_id=household_id)
         .values_list("school_id", "family__school_id")
@@ -35,10 +44,6 @@ def household_billing_summary(request, household_id):
     )
     if owners != [(school_id, school_id)]:
         raise Http404()
-
-    access = resolve_household_access(
-        request, allowed_roles=(*GUARDIAN_ROLES, ROLE_FINANCIALLY_RESPONSIBLE)
-    )
 
     if not access.is_staff:
         # No existence leak: if household isn't in-scope, return 404

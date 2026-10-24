@@ -3,7 +3,7 @@ from datetime import date
 from django.test import TestCase
 from rest_framework.test import APIClient
 
-from core.models import Family, HouseholdFamilyLink, School, UserAccount
+from core.models import CrownPermission, Family, HouseholdFamilyLink, RolePermission, School, UserAccount, UserRole
 from crown_api.models import Household, HouseholdMember, Invoice, Payment, Person, UserPersonLink
 from crown_api.models_households import ROLE_GUARDIAN, ROLE_FINANCIALLY_RESPONSIBLE, ROLE_AUTHORIZED_PICKUP
 
@@ -22,6 +22,14 @@ class BillingSummaryApiTests(TestCase):
             password=TEST_AUTH_SECRET,
             is_staff=True,
             school=self.school,
+        )
+        # A staff account's Django flag is not a financial permission grant.
+        permission, _ = CrownPermission.objects.get_or_create(code="billing.view")
+        RolePermission.objects.get_or_create(
+            role_code="FINANCE_DIRECTOR", permission=permission
+        )
+        UserRole.objects.get_or_create(
+            user=self.staff_user, school=self.school, role_code="FINANCE_DIRECTOR"
         )
 
         self.parent_user = UserAccount.objects.create_user(
@@ -111,6 +119,40 @@ class BillingSummaryApiTests(TestCase):
         self.assertEqual(body["invoices_count_open"], 1)
         self.assertEqual(body["invoices_count_total"], 2)
         self.assertEqual(body["last_payment_date"], "2026-01-15")
+
+    def test_staff_without_billing_grant_cannot_read_private_finance(self):
+        ungranted = UserAccount.objects.create_user(
+            username="synthetic-no-billing-grant",
+            email="no-billing-grant@example.invalid",
+            is_staff=True,
+            school=self.school,
+        )
+        self.client.force_login(ungranted)
+        self.client.credentials(HTTP_X_SCHOOL_ID=str(self.school.pk))
+        denied = self.client.get(
+            f"/api/households/{self.household_a.pk}/billing/summary/"
+        )
+        self.assertEqual(denied.status_code, 403)
+        self.assertNotIn("INV-A-0001", str(denied.content))
+
+    def test_staff_grant_in_other_school_does_not_authorize_finance(self):
+        foreign = School.objects.create(name="Synthetic Billing Grant Other School")
+        cross_school = UserAccount.objects.create_user(
+            username="synthetic-foreign-billing-grant",
+            email="foreign-billing-grant@example.invalid",
+            is_staff=True,
+            school=self.school,
+        )
+        UserRole.objects.create(
+            user=cross_school, school=foreign, role_code="FINANCE_DIRECTOR"
+        )
+        self.client.force_login(cross_school)
+        self.client.credentials(HTTP_X_SCHOOL_ID=str(self.school.pk))
+        denied = self.client.get(
+            f"/api/households/{self.household_a.pk}/billing/summary/"
+        )
+        self.assertEqual(denied.status_code, 403)
+        self.assertNotIn("INV-A-0001", str(denied.content))
 
     def test_parent_scoped_and_no_existence_leak(self):
         self.client.force_login(self.parent_user)
