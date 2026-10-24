@@ -58,7 +58,9 @@ def test_legacy_director_writes_require_matching_school_role():
     )
     UserRole.objects.create(user=director, school=own, role_code="AID_DIRECTOR")
     client = APIClient()
-    client.force_authenticate(user=director)
+    # The director action boundary authenticates in Django middleware before
+    # DRF; use a real session instead of late force_authenticate().
+    client.force_login(director)
     payload = {"action": "POST_ACCEPTED_AWARDS", "ids": [str(uuid4())]}
     url = "/api/director/actions/"
 
@@ -77,7 +79,7 @@ def test_legacy_director_writes_require_matching_school_role():
         school=other, is_staff=True,
     )
     UserRole.objects.create(user=impostor, school=other, role_code="AID_DIRECTOR")
-    client.force_authenticate(user=impostor)
+    client.force_login(impostor)
     wrong = client.post(url, {**payload, "school_id": str(own.pk)},
                         format="json", HTTP_X_SCHOOL_ID=str(own.pk))
     assert wrong.status_code == 403
