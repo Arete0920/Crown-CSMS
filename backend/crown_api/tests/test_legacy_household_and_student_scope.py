@@ -6,6 +6,7 @@ guardian links; never use email matching as household identity proof.
 
 import pytest
 from django.contrib.auth import get_user_model
+from django.urls import path, resolve
 from rest_framework.test import APIClient
 from rest_framework_simplejwt.tokens import AccessToken
 
@@ -14,6 +15,20 @@ from crown_api.models import (
     Household, HouseholdMember, Person, Student, UserPersonLink,
 )
 from crown_api.models_households import ROLE_AUTHORIZED_PICKUP, ROLE_GUARDIAN
+from crown_api.views_households import household_detail, households_list
+from crown_api.views_students import student_detail, students_list
+from households.views import HouseholdViewSet, StudentViewSet
+
+
+# Isolated test URLs are necessary because production /api/ resolves to the
+# canonical households viewsets before reaching these legacy crown_api views.
+urlpatterns = [
+    path("api/legacy-contract/households/", households_list),
+    path("api/legacy-contract/households/<uuid:household_id>/", household_detail),
+    path("api/legacy-contract/students/", students_list),
+    path("api/legacy-contract/students/<uuid:student_id>/", student_detail),
+]
+
 
 
 @pytest.fixture(autouse=True)
@@ -21,6 +36,7 @@ def strict_tenant(settings):
     settings.TENANT_HEADER_REQUIRED = True
     settings.CROWN_DEV_OPEN_API = False
     settings.CROWN_ENV = "development"
+    settings.ROOT_URLCONF = __name__
 
 
 @pytest.fixture
@@ -70,6 +86,11 @@ def scope(db):
     }
 
 
+def test_public_routes_are_canonical():
+    assert resolve("/api/households/", urlconf="crown_api.urls").func.cls is HouseholdViewSet
+    assert resolve("/api/students/", urlconf="crown_api.urls").func.cls is StudentViewSet
+
+
 def _client(user):
     client = APIClient()
     client.force_login(user)
@@ -77,8 +98,8 @@ def _client(user):
 
 
 @pytest.mark.parametrize("endpoint,key", [
-    ("/api/households/", "ha"),
-    ("/api/students/", "sa"),
+    ("/api/legacy-contract/households/", "ha"),
+    ("/api/legacy-contract/students/", "sa"),
 ])
 def test_staff_list_is_limited_to_selected_school(scope, endpoint, key):
     response = _client(scope["staff"]).get(
@@ -93,8 +114,8 @@ def test_staff_list_is_limited_to_selected_school(scope, endpoint, key):
 
 
 @pytest.mark.parametrize("endpoint,foreign", [
-    ("/api/households/{id}/", "hb"),
-    ("/api/students/{id}/", "sb"),
+    ("/api/legacy-contract/households/{id}/", "hb"),
+    ("/api/legacy-contract/students/{id}/", "sb"),
 ])
 def test_staff_foreign_detail_and_header_denied(scope, endpoint, foreign):
     client = _client(scope["staff"])
@@ -106,8 +127,8 @@ def test_staff_foreign_detail_and_header_denied(scope, endpoint, foreign):
 
 
 @pytest.mark.parametrize("endpoint,key", [
-    ("/api/households/", "ha"),
-    ("/api/students/", "sa"),
+    ("/api/legacy-contract/households/", "ha"),
+    ("/api/legacy-contract/students/", "sa"),
 ])
 def test_verified_guardian_only_sees_own_school_records(scope, endpoint, key):
     response = _client(scope["guardian"]).get(
@@ -131,15 +152,15 @@ def test_ambiguous_cross_school_household_rejected_for_staff_and_guardian(scope)
     for user in (scope["staff"], scope["guardian"]):
         client = _client(user)
         for url in (
-            "/api/households/",
-            "/api/students/",
+            "/api/legacy-contract/households/",
+            "/api/legacy-contract/students/",
         ):
             response = client.get(url, HTTP_X_SCHOOL_ID=str(scope["a"].pk))
             assert response.status_code == 200
             assert response.json() == []
         for url in (
-            f"/api/households/{scope['ha'].pk}/",
-            f"/api/students/{scope['sa'].pk}/",
+            f"/api/legacy-contract/households/{scope['ha'].pk}/",
+            f"/api/legacy-contract/students/{scope['sa'].pk}/",
         ):
             assert client.get(
                 url, HTTP_X_SCHOOL_ID=str(scope["a"].pk)
@@ -149,7 +170,7 @@ def test_ambiguous_cross_school_household_rejected_for_staff_and_guardian(scope)
 def test_missing_verified_user_person_link_fails_closed(scope):
     UserPersonLink.objects.filter(user=scope["guardian"]).delete()
     client = _client(scope["guardian"])
-    for url in ("/api/households/", "/api/students/"):
+    for url in ("/api/legacy-contract/households/", "/api/legacy-contract/students/"):
         response = client.get(url, HTTP_X_SCHOOL_ID=str(scope["a"].pk))
         assert response.status_code == 200
         assert response.json() == []
@@ -160,7 +181,7 @@ def test_real_jwt_staff_is_school_scoped(scope):
     token = AccessToken.for_user(scope["staff"])
     client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
     response = client.get(
-        "/api/households/", HTTP_X_SCHOOL_ID=str(scope["a"].pk),
+        "/api/legacy-contract/households/", HTTP_X_SCHOOL_ID=str(scope["a"].pk),
     )
     assert response.status_code == 200, response.content[:250]
     assert [str(h["id"]) for h in response.json()] == [str(scope["ha"].pk)]
@@ -168,11 +189,11 @@ def test_real_jwt_staff_is_school_scoped(scope):
 
 def test_inactive_school_and_malformed_header_fail_closed(scope):
     client = _client(scope["staff"])
-    malformed = client.get("/api/students/", HTTP_X_SCHOOL_ID="not-a-uuid")
+    malformed = client.get("/api/legacy-contract/students/", HTTP_X_SCHOOL_ID="not-a-uuid")
     assert malformed.status_code == 400
     scope["a"].is_active = False
     scope["a"].save(update_fields=["is_active"])
     inactive = client.get(
-        "/api/households/", HTTP_X_SCHOOL_ID=str(scope["a"].pk),
+        "/api/legacy-contract/households/", HTTP_X_SCHOOL_ID=str(scope["a"].pk),
     )
     assert inactive.status_code == 404
