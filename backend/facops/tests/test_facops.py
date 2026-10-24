@@ -17,7 +17,7 @@ import pytest
 from django.contrib.auth import get_user_model
 from rest_framework.test import APIClient
 
-from core.models import School
+from core.models import School, UserRole, CrownPermission, RolePermission
 from facops.models import (
     Alert,
     Asset,
@@ -42,18 +42,28 @@ def _school(name: str = "Crown Academy") -> School:
 def _user(username: str, is_staff: bool = False):
     return User.objects.create_user(
         username=username,
+        email=f"{username}@example.invalid",
         password="testpass",
         is_staff=is_staff,
     )
 
 
 def _client(user, school: School, role: str = "admin") -> APIClient:
+    # Positive legacy fixtures now establish a real school affiliation and
+    # persisted school-scoped write duties, not an untrusted header role.
+    if user.school_id is None:
+        user.school = school
+        user.save(update_fields=["school"])
+    if user.is_staff and user.school_id == school.pk:
+        UserRole.objects.get_or_create(user=user, school=school, role_code="school_admin")
+        for code in ("facilities.edit", "safety.edit"):
+            permission, _ = CrownPermission.objects.get_or_create(code=code)
+            RolePermission.objects.get_or_create(
+                role_code="school_admin", permission=permission,
+            )
     c = APIClient()
     c.force_authenticate(user=user)
-    c.credentials(
-        HTTP_X_SCHOOL_ID=str(school.id),
-        HTTP_X_ROLE=role,
-    )
+    c.credentials(HTTP_X_SCHOOL_ID=str(school.id), HTTP_X_ROLE=role)
     return c
 
 
