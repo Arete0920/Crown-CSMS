@@ -131,6 +131,8 @@ def apply_support_stage(*, acquire_lock, verify_identity, read_plan,
 
     Both Django migration records and PostgreSQL DDL are in one transaction.
     A migration or postcondition failure rolls everything back.
+    Return both applied support migrations and still-pending non-support
+    migrations so stage success cannot be mistaken for total DB readiness.
     """
     with acquire_lock():
         verify_identity()
@@ -138,7 +140,10 @@ def apply_support_stage(*, acquire_lock, verify_identity, read_plan,
         support_pending = [item for item in pending if item[0] == "support"]
         if not support_pending:
             verify_after()
-            return []
+            return {
+                "applied": [],
+                "remaining": [".".join(item) for item in pending],
+            }
         verify_ddl()
         with atomic():
             migrate_support()
@@ -146,4 +151,7 @@ def apply_support_stage(*, acquire_lock, verify_identity, read_plan,
             if any(item[0] == "support" for item in remaining):
                 raise SupportBoundaryError("support_migrations_remain_pending")
             verify_after()
-        return [".".join(item) for item in support_pending]
+        return {
+            "applied": [".".join(item) for item in support_pending],
+            "remaining": [".".join(item) for item in remaining],
+        }

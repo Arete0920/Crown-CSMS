@@ -473,7 +473,16 @@ def main(argv=None):
                            "reviewed_dev_blacklist" if args.apply_reviewed_blacklist else "migrate"),
                   "database_identity_verified": True,
                   "database_identity_sha256": hashlib.sha256((DEV_HOST + "/" + database_name).encode()).hexdigest()}
-        if args.check_only or args.inspect_reviewed_legacy_refresh:
+        if support_stage:
+            # Support staging does NOT apply separate CRM / legacy migrations.
+            # Report the remaining reviewed plan observed under the migration
+            # lock, never claim an empty plan merely because support succeeded.
+            result.update(
+                applied_migrations=applied["applied"],
+                remaining_migrations=applied["remaining"],
+                remaining_pending=len(applied["remaining"]),
+            )
+        elif args.check_only or args.inspect_reviewed_legacy_refresh:
             result.update(reviewed_pending_migrations=applied, remaining_pending=len(applied))
         else:
             result.update(applied_migrations=applied, remaining_pending=0)

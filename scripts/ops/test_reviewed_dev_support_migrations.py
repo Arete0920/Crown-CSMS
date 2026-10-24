@@ -68,8 +68,12 @@ class SupportStageTests(unittest.TestCase):
             verify_after=lambda: events.append("verified"),
             atomic=atomic,
         )
-        self.assertEqual(result, ["support.0002_ticket_attribution",
-                                  "support.0003_preserve_legacy_ticket_inserts"])
+        self.assertEqual(result, {
+            "applied": ["support.0002_ticket_attribution",
+                        "support.0003_preserve_legacy_ticket_inserts"],
+            "remaining": ["crm_marketing.0002_inquiry_capture",
+                          "crown_api.0014_legacy_refresh_consumption"],
+        })
         self.assertEqual(events, [
             "lock", "identity", "ddl", "transaction", "migrate-to-0003",
             "verified", "transaction-ended", "unlock",
@@ -85,6 +89,28 @@ class SupportStageTests(unittest.TestCase):
                 "synthetic-secret", "crown", "a" * 40,
                 support_stage=True, check_only=True,
             )
+
+
+    def test_existing_support_stage_still_reports_other_pending_migrations(self):
+        """No pending support DDL must not be reported as full DB readiness."""
+        verify = Mock()
+        migrate = Mock()
+        result = stage.apply_support_stage(
+            acquire_lock=lambda: _nothing(),
+            verify_identity=lambda: None,
+            read_plan=lambda: [node(stage.INQUIRY), node(stage.LEGACY)],
+            migrate_support=migrate,
+            verify_ddl=migrate,
+            verify_after=verify,
+            atomic=lambda: _nothing(),
+        )
+        self.assertEqual(result, {
+            "applied": [],
+            "remaining": ["crm_marketing.0002_inquiry_capture",
+                          "crown_api.0014_legacy_refresh_consumption"],
+        })
+        verify.assert_called_once()
+        migrate.assert_not_called()
 
     def test_unsafe_plan_never_migrates(self):
         mutate = Mock()
