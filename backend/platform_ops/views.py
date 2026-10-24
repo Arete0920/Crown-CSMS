@@ -27,86 +27,99 @@ logger = logging.getLogger(__name__)
 # POST /api/platform/schools
 # ─────────────────────────────────────────────────────────────────────────────
 
+def _matches_onboarding_request(job, details: dict, actor_id: uuid.UUID) -> bool:
+    """Fail closed when an idempotency key is replayed with different intent.
+
+    A matching key must belong to the same principal and original school
+    details. Never return another operator's school/job metadata on conflict.
+    """
+    from tenants.models import TenantProfile
+
+    if job.created_by_user_id != actor_id:
+        return False
+    try:
+        profile = job.school.tenant_profile
+    except TenantProfile.DoesNotExist:
+        return False
+    return (
+        job.school.name == details["name"]
+        and profile.slug == details["slug"]
+        and profile.domain == details["domain"]
+        and profile.plan_code == details["plan_code"]
+        and profile.timezone == details["timezone"]
+        and profile.payment_provider == details["payment_provider"]
+    )
+
+
 @api_view(["POST"])
 @permission_classes([IsPlatformOperator])
 def platform_create_school(request: Request) -> Response:
+    """Create one validated school and atomically queue its audited job.
+
+    A repeated key only succeeds for the original operator and same exact
+    normalized request. School creation does not execute its queued job.
     """
-    Create a new school tenant and queue its provisioning job.
+    from django.db import IntegrityError
+    from platform_ops.models import ProvisioningJob
+    from platform_ops.provisioning import create_school_and_queue_provisioning
+    from platform_ops.school_create_validation import PlatformSchoolCreateSerializer
 
-    Required body fields:
-      name            str — display name for the school
-      slug            str — URL-safe identifier (must be globally unique)
-      idempotency_key str — caller-generated idempotency key (UUID recommended)
-
-    Optional body fields:
-      domain           str — custom domain (default "")
-      plan_code        str — starter | growth | enterprise (default "starter")
-      timezone         str — IANA timezone string (default "America/New_York")
-      payment_provider str — manual | none (default "none")
-
-    Returns:
-      201 on first creation, 200 on idempotent repeat.
-      {"job_id": "...", "school_id": "...", "state": "queued", "idempotent": bool}
-    """
-    data = request.data
-
-    name = (data.get("name") or "").strip()
-    slug = (data.get("slug") or "").strip()
-    idempotency_key = (data.get("idempotency_key") or "").strip()
-
-    # ── Validate required fields and payment mode before any DB write ─────────
-    errors: dict[str, str] = {}
-    if not name:
-        errors["name"] = "This field is required."
-    if not slug:
-        errors["slug"] = "This field is required."
-    if not idempotency_key:
-        errors["idempotency_key"] = "This field is required."
-
-    from platform_ops.provisioning import normalize_payment_provider  # noqa: PLC0415
+    serializer = PlatformSchoolCreateSerializer(data=request.data)
+    if not serializer.is_valid():
+        return Response({"errors": serializer.errors}, status=400)
+    details = serializer.validated_data
+    key = details["idempotency_key"]
 
     try:
-        payment_provider = normalize_payment_provider(data.get("payment_provider", "none"))
-    except ValueError as exc:
-        errors["payment_provider"] = str(exc)
+        actor_id = uuid.UUID(str(request.user.pk))
+    except (ValueError, TypeError, AttributeError):
+        return Response({"error": "Platform operator identity unavailable."}, status=403)
 
-    if errors:
-        return Response({"errors": errors}, status=400)
+    def find_existing():
+        return (
+            ProvisioningJob.objects.select_related("school", "school__tenant_profile")
+            .filter(idempotency_key=key)
+            .first()
+        )
 
-    # ── Check idempotency before any DB write ────────────────────────────────
-    from platform_ops.models import ProvisioningJob  # noqa: PLC0415
-
-    existing = ProvisioningJob.objects.filter(idempotency_key=idempotency_key).first()
-    is_idempotent = existing is not None
-
-    if existing is None:
-        from platform_ops.provisioning import create_school_and_queue_provisioning  # noqa: PLC0415
-
-        actor_id = getattr(request.user, "id", None)
-        try:
-            actor_uuid = uuid.UUID(str(actor_id)) if actor_id else None
-        except (ValueError, TypeError):
-            actor_uuid = None
-
+    job = find_existing()
+    is_idempotent = job is not None
+    if job is None:
         try:
             job = create_school_and_queue_provisioning(
-                name=name,
-                slug=slug,
-                domain=data.get("domain", ""),
-                plan_code=data.get("plan_code", "starter"),
-                timezone_str=data.get("timezone", "America/New_York"),
-                payment_provider=payment_provider,
-                idempotency_key=idempotency_key,
-                actor_user_id=actor_uuid,
+                name=details["name"],
+                slug=details["slug"],
+                domain=details["domain"],
+                plan_code=details["plan_code"],
+                timezone_str=details["timezone"],
+                payment_provider=details["payment_provider"],
+                idempotency_key=key,
+                actor_user_id=actor_id,
                 request=request._request,
             )
+        except IntegrityError:
+            # The atomic service rolls back a duplicate slug or racing key.
+            # Re-query only after its transaction has ended.
+            job = find_existing()
+            if job is None:
+                return Response(
+                    {"error": "School identifier already exists."},
+                    status=409,
+                )
+            is_idempotent = True
         except Exception:
-            logger.exception("platform_create_school failed")
-            return Response({"error": "Unable to create school at this time."}, status=500)
-    else:
-        job = existing
+            logger.exception("Platform school intake failed")
+            return Response(
+                {"error": "Unable to create school at this time."},
+                status=500,
+            )
 
-    status_code = 200 if is_idempotent else 201
+    if not _matches_onboarding_request(job, details, actor_id):
+        return Response(
+            {"error": "Onboarding key already used for a different request."},
+            status=409,
+        )
+
     return Response(
         {
             "job_id": str(job.id),
@@ -114,10 +127,11 @@ def platform_create_school(request: Request) -> Response:
             "state": job.state,
             "idempotent": is_idempotent,
         },
-        status=status_code,
+        status=200 if is_idempotent else 201,
     )
 
 
+# ─────────────────────────────────────────────────────────────────────────────
 # ─────────────────────────────────────────────────────────────────────────────
 # GET /api/platform/schools/list
 # ─────────────────────────────────────────────────────────────────────────────

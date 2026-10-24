@@ -72,6 +72,99 @@ class PlatformOperatorBoundaryTests(TestCase):
         profile = TenantProfile.objects.get(school_id=first.data["school_id"])
         self.assertEqual(profile.status, "pending")
 
+    def test_intake_rejects_untrusted_fields_without_side_effects(self):
+        """Reject bad types, unauthorized provider, and unsupported metadata."""
+        key = str(uuid.uuid4())
+        base = {
+            "name": "Synthetic New School",
+            "slug": "synthetic-new-school",
+            "idempotency_key": key,
+        }
+        invalid = [
+            {"name": ["not-a-string"]},
+            {"name": "x" * 256},
+            {"name": ""},
+            {"slug": 123},
+            {"slug": "BAD slug"},
+            {"slug": "x" * 129},
+            {"domain": {"nested": "value"}},
+            {"domain": "https://school.example.test/path"},
+            {"domain": "not-a-qualified-domain"},
+            {"timezone": "../etc/passwd"},
+            {"timezone": True},
+            {"plan_code": "unapproved-tier"},
+            {"payment_provider": "stripe"},
+            {"idempotency_key": False},
+            {"internal_notes": "not-permitted"},
+            {"stripe_account_id": "not-permitted"},
+        ]
+        for changes in invalid:
+            with self.subTest(changes=changes):
+                response = self.client_for(self.owner).post(
+                    "/api/platform/schools", {**base, **changes},
+                    format="json",
+                )
+                self.assertEqual(response.status_code, 400)
+                self.assertEqual(ProvisioningJob.objects.count(), 0)
+                self.assertEqual(School.objects.count(), 2)
+
+    def test_intake_idempotency_key_rejects_changed_request_and_actor(self):
+        """One key must not return another request's school identifiers."""
+        key = str(uuid.uuid4())
+        payload = {
+            "name": "Synthetic Consistent Intake",
+            "slug": "synthetic-consistent-intake",
+            "idempotency_key": key,
+            "payment_provider": "manual",
+        }
+        first = self.client_for(self.owner).post(
+            "/api/platform/schools", payload, format="json"
+        )
+        self.assertEqual(first.status_code, 201)
+        same = self.client_for(self.owner).post(
+            "/api/platform/schools",
+            {**payload, "domain": "", "plan_code": "starter"},
+            format="json",
+        )
+        self.assertEqual(same.status_code, 200)
+        self.assertEqual(same.data["job_id"], first.data["job_id"])
+
+        mismatched = self.client_for(self.owner).post(
+            "/api/platform/schools",
+            {**payload, "name": "Different School"},
+            format="json",
+        )
+        self.assertEqual(mismatched.status_code, 409)
+        self.assertNotIn(first.data["school_id"], str(mismatched.data))
+
+        other_owner = get_user_model().objects.create_superuser(
+            username="synthetic-second-owner",
+            email="another-owner@example.invalid",
+            password="synthetic-password-for-tests",
+        )
+        cross_actor = self.client_for(other_owner).post(
+            "/api/platform/schools", payload, format="json",
+        )
+        self.assertEqual(cross_actor.status_code, 409)
+        self.assertNotIn(first.data["job_id"], str(cross_actor.data))
+        self.assertEqual(ProvisioningJob.objects.count(), 1)
+        self.assertEqual(School.objects.count(), 3)
+
+    def test_intake_duplicate_slug_rolls_back_without_orphan_school(self):
+        """A unique school slug collision must not create partial records."""
+        payload = {
+            "name": "Synthetic Intake Existing Slug",
+            "slug": "synthetic-one",
+            "idempotency_key": str(uuid.uuid4()),
+        }
+        response = self.client_for(self.owner).post(
+            "/api/platform/schools", payload, format="json",
+        )
+        self.assertEqual(response.status_code, 409)
+        self.assertEqual(School.objects.count(), 2)
+        self.assertEqual(ProvisioningJob.objects.count(), 0)
+
+
     def test_overview_exposes_only_authorized_database_facts(self):
         """Owner sees actual registry/job counts, never illustrative revenue."""
         TenantProfile.objects.filter(school=self.school).update(status="active")
