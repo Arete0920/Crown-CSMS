@@ -43,7 +43,11 @@ def _authorized_director_school(request, raw_school_id):
     access to the selected school. The developer-open flag is not authorization.
     """
     user = getattr(request, "user", None)
-    if user is None or not getattr(user, "is_authenticated", False):
+    if (
+        user is None
+        or not getattr(user, "is_authenticated", False)
+        or not getattr(user, "is_active", False)
+    ):
         return False
 
     try:
@@ -67,7 +71,10 @@ def _authorized_director_school(request, raw_school_id):
         except (TypeError, ValueError, AttributeError):
             return False
 
-    if getattr(user, "is_superuser", False):
+    # Global director authority is reserved for an active, schoolless owner.
+    # A school-assigned superuser must establish a matching director role;
+    # Django's superuser bit alone never crosses the tenant boundary.
+    if getattr(user, "is_superuser", False) and getattr(user, "school_id", None) is None:
         return True
 
     # Resolve after DRF authenticates (the early middleware may have bound an

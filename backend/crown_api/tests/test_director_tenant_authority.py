@@ -119,3 +119,50 @@ def test_platform_owner_can_read_only_active_director_school():
     )
     assert active_response.status_code == 200
     assert pending_response.status_code == 403
+
+@pytest.mark.django_db
+def test_school_assigned_superuser_requires_target_school_director_role():
+    own = School.objects.create(name="Synthetic Owner-Bound Director School")
+    other = School.objects.create(name="Synthetic Other Director School")
+    principal = get_user_model().objects.create_user(
+        username=f"synthetic-school-bound-superuser-{uuid4().hex}",
+        school=own,
+        is_staff=True,
+        is_superuser=True,
+    )
+    client = APIClient()
+    client.force_authenticate(user=principal)
+    endpoint = "/api/director/registrar/summary/"
+
+    # A superuser flag on a school-bound account cannot authorize a different
+    # school merely because the request supplies that school's identifier.
+    denied = client.get(
+        f"{endpoint}?school_id={other.pk}", HTTP_X_SCHOOL_ID=str(other.pk),
+    )
+    assert denied.status_code == 403
+
+    # A principal's own director role remains usable on its authorized school.
+    UserRole.objects.create(user=principal, school=own, role_code="AID_DIRECTOR")
+    allowed = client.get(
+        f"{endpoint}?school_id={own.pk}", HTTP_X_SCHOOL_ID=str(own.pk),
+    )
+    assert allowed.status_code == 200
+
+
+@pytest.mark.django_db
+def test_inactive_director_cannot_use_legacy_exempt_route():
+    school = School.objects.create(name="Synthetic Inactive Director School")
+    principal = get_user_model().objects.create_user(
+        username=f"synthetic-inactive-director-{uuid4().hex}",
+        school=school,
+        is_staff=True,
+        is_active=False,
+    )
+    UserRole.objects.create(user=principal, school=school, role_code="AID_DIRECTOR")
+    client = APIClient()
+    client.force_authenticate(user=principal)
+    denied = client.get(
+        f"/api/director/registrar/summary/?school_id={school.pk}",
+        HTTP_X_SCHOOL_ID=str(school.pk),
+    )
+    assert denied.status_code == 403
