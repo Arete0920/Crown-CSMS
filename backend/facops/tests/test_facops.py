@@ -216,8 +216,11 @@ class TestWorkOrders:
         s = _school("WO Create")
         u = _user("teacher1", is_staff=False)
         c = _client(u, s, role="teacher")
-        resp = c.post(self.URL, {"title": "Broken door", "priority": "NORMAL"}, format="json")
-        assert resp.status_code == 201
+        # Ordinary school users may report a repair but cannot override
+        # internal priority or lifecycle fields without facilities.edit.
+        resp = c.post(self.URL, {"title": "Broken door"}, format="json")
+        assert resp.status_code == 201, resp.content
+        assert resp.json()["priority"] == WorkOrder.PRIORITY_NORMAL
 
     def test_filter_by_status(self):
         s = _school("WO Filter")
