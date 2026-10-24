@@ -108,9 +108,13 @@ def create_school_and_queue_provisioning(
     idempotency_key: str,
     actor_user_id: Optional[uuid.UUID] = None,
     request=None,
-) -> "ProvisioningJob":
+    return_created: bool = False,
+) -> "ProvisioningJob | tuple[ProvisioningJob, bool]":
     """
     Idempotently create a school tenant and queue its provisioning job.
+
+    With return_created=True, also report whether this call actually
+    inserted the job, including after a concurrent idempotency replay.
 
     If a ProvisioningJob with idempotency_key already exists, returns it
     immediately without creating duplicate records.
@@ -132,7 +136,7 @@ def create_school_and_queue_provisioning(
             "create_school_and_queue_provisioning: idempotency hit — returning existing job %s",
             existing.id,
         )
-        return existing
+        return (existing, False) if return_created else existing
 
     payment_provider = normalize_payment_provider(payment_provider)
 
@@ -180,7 +184,7 @@ def create_school_and_queue_provisioning(
         school.id,
         job.id,
     )
-    return job
+    return (job, True) if return_created else job
 
 
 class ProvisioningStateError(ValueError):
