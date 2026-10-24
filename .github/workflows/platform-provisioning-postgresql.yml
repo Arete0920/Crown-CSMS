@@ -4,6 +4,7 @@ on:
     paths:
       - 'backend/platform_ops/**'
       - 'backend/tests/test_platform_provisioning.py'
+      - 'backend/tests/test_platform_operator_authorization.py'
       - '.github/workflows/platform-provisioning-postgresql.yml'
   workflow_dispatch:
 permissions:
@@ -54,7 +55,7 @@ jobs:
           from django.db import connection
           assert connection.vendor == 'postgresql', 'Expected PostgreSQL, no fallback allowed'
           PY
-          python -m pytest -q backend/tests/test_platform_provisioning.py --junitxml=provisioning-postgresql.xml
+          python -m pytest -q backend/tests/test_platform_provisioning.py backend/tests/test_platform_operator_authorization.py --junitxml=provisioning-postgresql.xml
       - name: Preserve test results
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
