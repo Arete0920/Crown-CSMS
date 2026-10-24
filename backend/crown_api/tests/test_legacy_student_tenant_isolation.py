@@ -59,9 +59,11 @@ def records(db):
         notes_public="PRIVATE GRADE B",
     )
     Account = get_user_model()
-    staff = Account.objects.create_user(username="synthetic-reader-a", school=school_a, is_staff=True)
+    staff = Account.objects.create_user(username="synthetic-reader-a", email="synthetic-reader-a@example.invalid",
+        school=school_a, is_staff=True)
     UserRole.objects.create(user=staff, school=school_a, role_code="REGISTRAR")
-    parent = Account.objects.create_user(username="synthetic-guardian-a", school=school_a)
+    parent = Account.objects.create_user(username="synthetic-guardian-a", email="synthetic-guardian-a@example.invalid",
+        school=school_a)
     UserRole.objects.create(user=parent, school=school_a, role_code="PARENT")
     household_a = Household.objects.create(household_name="Synthetic household A")
     person_a = Person.objects.create(first_name="Parent", last_name="A")

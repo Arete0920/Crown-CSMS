@@ -42,10 +42,12 @@ def scope(db):
     sb = Student.objects.create(person=pb, household=hb, grade_level="6")
     Account = get_user_model()
     staff = Account.objects.create_user(
-        username="synthetic-legacy-staff-a", school=a, is_staff=True,
+        username="synthetic-legacy-staff-a", email="synthetic-legacy-staff-a@example.invalid",
+        school=a, is_staff=True,
     )
     guardian = Account.objects.create_user(
-        username="synthetic-legacy-guardian-a", school=a,
+        username="synthetic-legacy-guardian-a", email="synthetic-legacy-guardian-a@example.invalid",
+        school=a,
     )
     person = Person.objects.create(first_name="Guardian", last_name="A")
     UserPersonLink.objects.create(user=guardian, person=person)
@@ -53,7 +55,8 @@ def scope(db):
         household=ha, person=person, role=ROLE_GUARDIAN, is_primary=True,
     )
     pickup = Account.objects.create_user(
-        username="synthetic-legacy-pickup-a", school=a,
+        username="synthetic-legacy-pickup-a", email="synthetic-legacy-pickup-a@example.invalid",
+        school=a,
     )
     pickup_person = Person.objects.create(first_name="Pickup", last_name="A")
     UserPersonLink.objects.create(user=pickup, person=pickup_person)

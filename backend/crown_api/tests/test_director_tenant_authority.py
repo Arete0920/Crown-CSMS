@@ -21,7 +21,9 @@ def test_legacy_director_reads_require_active_matching_school_role():
     )
     User = get_user_model()
     director = User.objects.create_user(
-        username=f"synthetic-director-{uuid4().hex}", school=own, is_staff=True,
+        username=f"synthetic-director-{uuid4().hex}",
+        email=f"synthetic-director-{uuid4().hex}@example.invalid",
+        school=own, is_staff=True,
     )
     UserRole.objects.create(user=director, school=own, role_code="AID_DIRECTOR")
     client = APIClient()
@@ -42,6 +44,7 @@ def test_legacy_director_reads_require_active_matching_school_role():
     with override_settings(CROWN_DEV_OPEN_API=True):
         no_role = User.objects.create_user(
             username=f"synthetic-director-norole-{uuid4().hex}",
+            email=f"synthetic-director-norole-{uuid4().hex}@example.invalid",
             school=own, is_staff=True,
         )
         client.force_authenticate(user=no_role)
@@ -126,9 +129,14 @@ def test_school_assigned_superuser_requires_target_school_director_role():
     other = School.objects.create(name="Synthetic Other Director School")
     principal = get_user_model().objects.create_user(
         username=f"synthetic-school-bound-superuser-{uuid4().hex}",
+        email=f"synthetic-school-bound-superuser-{uuid4().hex}@example.invalid",
         school=own,
         is_staff=True,
         is_superuser=True,
+    )
+    year = AcademicYear.objects.create(
+        school=own, name="2026-2027", start_date=date(2026, 8, 1),
+        end_date=date(2027, 6, 30), is_current=True,
     )
     client = APIClient()
     client.force_authenticate(user=principal)
@@ -144,7 +152,8 @@ def test_school_assigned_superuser_requires_target_school_director_role():
     # A principal's own director role remains usable on its authorized school.
     UserRole.objects.create(user=principal, school=own, role_code="AID_DIRECTOR")
     allowed = client.get(
-        f"{endpoint}?school_id={own.pk}", HTTP_X_SCHOOL_ID=str(own.pk),
+        f"{endpoint}?school_id={own.pk}&academic_year_id={year.pk}",
+        HTTP_X_SCHOOL_ID=str(own.pk),
     )
     assert allowed.status_code == 200
 
