@@ -82,3 +82,11 @@ No current control-level closure percentage is asserted, and **none of the 22 ar
 - Demo language: unsupported CROWN SOC 2 exam / control pass claims replaced with explicit fictional school content; associated source regression test added.
 - All repository changes require a governed exact-head PR, required security/tenant/frontend tests, branch protections, and an accepted protected-main merge. This document itself is **not** proof of those checks passing.
 - After merge, verify the final main paths, update issue #173 with that source-only scope, and keep operating and external-assurance checkboxes open.
+
+## 8. October 24 source-evidence update
+
+This update records source/change-verification evidence after the October 23 checkpoint. It does not change any operating or external-assurance disposition.
+
+- **#442 accepted-main verification:** Tests run [40122932467](https://github.com/Arete0920/Crown-CSMS/actions/runs/40122932467) completed successfully on `98b6fd8f2aa74496308980fcc093acb5c943e79f`; all five returned jobs succeeded. Backend coverage job `120958196324` records 82.158215% governed operational-inclusive coverage against the unchanged 75.0% threshold and explicitly identifies that SHA. GitHub artifact `12572695605` is retained as run evidence; its reported digest has not been independently recomputed from downloaded bytes here.
+- **#443 current-main source verification:** Main is `c499a3f2ed2eb7b134a538b0fc4fb50f67469bbe`, whose change requires school-bound facilities and safety write grants. The exact-SHA Actions query returned 18 completed main workflow runs, all successful: `40127680533`, `40127680566`, `40127680550`, `40127680632`, `40127680570`, `40127680500`, `40127680519`, `40127680511`, `40127680471`, `40127680481`, `40127680425`, `40127680522`, `40127680514`, `40127680499`, `40127680465`, `40127680510`, `40127680492`, and `40127680494`.
+- These records support only source/change-verification evidence relevant to S08 and, for the applicable security and release checks, S11/S15. They do not verify deployment, live access reviews/MFA, monitoring or alert delivery, operational recovery, policy adoption, vendor/workforce/legal evidence, or independent review/CPA work. No S01–S22 control is promoted to OPERATING or EXTERNAL by this update; issue #173 remains open.
