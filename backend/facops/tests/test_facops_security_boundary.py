@@ -151,3 +151,50 @@ def test_work_order_foreign_school_relationships_are_rejected(subjects):
         )
         assert response.status_code == 400, (field, response.data)
         assert not WorkOrder.objects.filter(title=f"Cross school {field}").exists()
+
+
+
+def test_campus_relationship_fields_reject_foreign_school_references(subjects):
+    """Every writable related ID must resolve inside the selected school."""
+    from facops.models import Asset
+
+    f = subjects
+    foreign_location = Location.objects.create(
+        school=f["b"], name="Foreign campus room",
+    )
+    foreign_asset = Asset.objects.create(
+        school=f["b"], name="Foreign campus asset",
+    )
+    own_location = Location.objects.create(
+        school=f["a"], name="Own campus room",
+    )
+    facility = client(f["facilities"], f["a"])
+    safety = client(f["safety"], f["a"])
+
+    proposals = (
+        (facility, "/api/facilities/locations/", {"name": "Foreign location parent", "parent": str(foreign_location.pk)}),
+        (facility, "/api/facilities/assets/", {"name": "Foreign asset location", "location": str(foreign_location.pk)}),
+        (safety, "/api/security/incidents/", {"title": "Foreign incident location", "location": str(foreign_location.pk)}),
+        (safety, "/api/security/incidents/", {"title": "Foreign related asset", "related_asset": str(foreign_asset.pk)}),
+        (safety, "/api/security/incidents/", {"title": "Foreign incident assignee", "assigned_to": str(f["other_school_staff"].pk)}),
+    )
+    for actor, route, data in proposals:
+        denied = actor.post(route, data, format="json")
+        assert denied.status_code == 400, (route, data, denied.data)
+
+    # Legitimate within-school references remain usable.
+    assert facility.post(
+        "/api/facilities/locations/",
+        {"name": "Permitted child location", "parent": str(own_location.pk)},
+        format="json",
+    ).status_code == 201
+    assert facility.post(
+        "/api/facilities/assets/",
+        {"name": "Permitted local asset", "location": str(own_location.pk)},
+        format="json",
+    ).status_code == 201
+    assert safety.post(
+        "/api/security/incidents/",
+        {"title": "Permitted school incident", "location": str(own_location.pk)},
+        format="json",
+    ).status_code == 201

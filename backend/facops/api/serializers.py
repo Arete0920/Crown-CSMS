@@ -19,13 +19,38 @@ from facops.models import (
 )
 
 
-class LocationSerializer(serializers.ModelSerializer):
+class TenantRelatedFieldsMixin:
+    """Constrain writable foreign keys to the selected school's records.
+
+    DRF validates PrimaryKeyRelatedField against this queryset before model
+    instances are assigned. Never infer school membership from a submitted ID.
+    """
+
+    tenant_relation_fields = ()
+
+    def get_fields(self):
+        fields = super().get_fields()
+        request = self.context.get("request")
+        if request is None:
+            return fields
+        school_id = get_request_school_id(request, required=True)
+        for name in self.tenant_relation_fields:
+            related = fields.get(name)
+            queryset = getattr(related, "queryset", None)
+            if queryset is not None:
+                related.queryset = queryset.filter(school_id=school_id)
+        return fields
+
+
+class LocationSerializer(TenantRelatedFieldsMixin, serializers.ModelSerializer):
+    tenant_relation_fields = ("parent",)
     class Meta:
         model = Location
         fields = ["id", "name", "kind", "parent", "notes", "created_at", "updated_at"]
 
 
-class AssetSerializer(serializers.ModelSerializer):
+class AssetSerializer(TenantRelatedFieldsMixin, serializers.ModelSerializer):
+    tenant_relation_fields = ("location",)
     class Meta:
         model = Asset
         fields = [
@@ -58,7 +83,8 @@ class WorkOrderCommentSerializer(serializers.ModelSerializer):
         return ""
 
 
-class WorkOrderSerializer(serializers.ModelSerializer):
+class WorkOrderSerializer(TenantRelatedFieldsMixin, serializers.ModelSerializer):
+    tenant_relation_fields = ("location", "asset", "assigned_to")
     comments = WorkOrderCommentSerializer(many=True, read_only=True)
 
     def validate(self, attrs):
@@ -124,7 +150,8 @@ class WorkOrderSerializer(serializers.ModelSerializer):
         read_only_fields = ["requested_by", "closed_at"]
 
 
-class SafetyIncidentSerializer(serializers.ModelSerializer):
+class SafetyIncidentSerializer(TenantRelatedFieldsMixin, serializers.ModelSerializer):
+    tenant_relation_fields = ("location", "related_asset", "assigned_to")
     class Meta:
         model = SafetyIncident
         fields = [
