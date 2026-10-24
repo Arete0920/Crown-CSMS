@@ -1,9 +1,11 @@
 # CROWN SOC 2 Risk Assessment — Draft for Management Approval
 
-**Status:** DRAFT / NOT APPROVED  
+**Status:** HISTORICAL OCTOBER 8 DRAFT / NOT APPROVED — current blockers summarized in [October 23 reconciliation](SOC2_RECONCILIATION_20261023.md)
 **Prepared:** 2026-10-08  
 **Method:** Likelihood 1–5 x Impact 1–5 as defined in `SECURITY_OPERATING_POLICY.md`  
 **Boundary:** Scores are a source-evidence-based readiness assessment, not an assertion of incidents or exploitation. Management must approve or revise scores, treatment owners, dates, and residual-risk decisions.
+
+**Current evidence warning:** Source controls and migration-stage preparations added after October 8 do not constitute operational closure. Risks R01, R02, R03, R04, R06, R07 and R08 require environment/people/vendor proof; R05 requires reconciled claims. Keep all draft risk scores and residual targets unapproved until formal management review.
 
 ## Scoring
 
