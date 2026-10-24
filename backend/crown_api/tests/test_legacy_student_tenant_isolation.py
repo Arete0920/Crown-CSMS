@@ -155,3 +155,65 @@ def test_inactive_school_and_invalid_header_fail_closed(records, record):
     school_a.save(update_fields=["is_active"])
     denied = client.get(own, HTTP_X_SCHOOL_ID=str(school_a.pk))
     assert denied.status_code == 404
+
+
+@pytest.mark.django_db
+def test_school_owned_terms_and_sections_are_isolated(records):
+    from core.models import AcademicYear
+    from academics.models import Course as AcademicCourse
+    from academics.models import Section as AcademicSection
+    from academics.models import Term as AcademicTerm
+
+    a, b = records["school_a"], records["school_b"]
+    def term_for(school, suffix):
+        year = AcademicYear.objects.create(
+            school=school, name=f"2026-{suffix}",
+            start_date=date(2026, 8, 1), end_date=date(2027, 6, 30),
+        )
+        return AcademicTerm.objects.create(
+            school_id=school.pk, academic_year=year,
+            code=f"FALL-{suffix}", name=f"Fall {suffix}",
+            start_date=date(2026, 8, 15),
+        )
+
+    term_a = term_for(a, "A")
+    term_b = term_for(b, "B")
+    course_a = AcademicCourse.objects.create(
+        school_id=a.pk, code="MATH-A", name="Math A",
+    )
+    course_b = AcademicCourse.objects.create(
+        school_id=b.pk, code="MATH-B", name="Math B",
+    )
+    section_a = AcademicSection.objects.create(
+        school_id=a.pk, term_ref=term_a, course=course_a, term=term_a.code,
+    )
+    AcademicSection.objects.create(
+        school_id=b.pk, term_ref=term_b, course=course_b, term=term_b.code,
+    )
+
+    client = APIClient()
+    client.force_login(records["staff"])
+    headers = {"HTTP_X_SCHOOL_ID": str(a.pk)}
+    terms = client.get("/api/v1/terms/", **headers)
+    assert terms.status_code == 200
+    assert {row["term_id"] for row in terms.json()} == {str(term_a.pk)}
+    own_sections = client.get(f"/api/v1/terms/{term_a.pk}/sections/", **headers)
+    assert own_sections.status_code == 200
+    assert {row["section_id"] for row in own_sections.json()} == {str(section_a.pk)}
+    foreign_sections = client.get(f"/api/v1/terms/{term_b.pk}/sections/", **headers)
+    assert foreign_sections.status_code == 404
+
+
+@pytest.mark.django_db
+def test_unowned_legacy_scheduling_terms_cannot_cross_school(records):
+    from crown_api.models_scheduling_core import Term as LegacyTerm
+
+    legacy = LegacyTerm.objects.create(code="UNOWNED-2026", name="Unowned Synthetic Term")
+    client = APIClient()
+    client.force_login(records["staff"])
+    headers = {"HTTP_X_SCHOOL_ID": str(records["school_a"].pk)}
+    terms = client.get("/api/v1/terms/", **headers)
+    assert terms.status_code == 200
+    assert terms.json() == []
+    result = client.get(f"/api/v1/terms/{legacy.pk}/sections/", **headers)
+    assert result.status_code == 404
