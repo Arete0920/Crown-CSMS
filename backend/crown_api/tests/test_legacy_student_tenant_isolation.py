@@ -217,3 +217,32 @@ def test_unowned_legacy_scheduling_terms_cannot_cross_school(records):
     assert terms.json() == []
     result = client.get(f"/api/v1/terms/{legacy.pk}/sections/", **headers)
     assert result.status_code == 404
+
+
+@pytest.mark.django_db
+def test_matching_email_without_verified_person_link_never_authorizes_guardian(records):
+    # The legacy Person directory is unowned by school. Email equality alone
+    # must never grant household-derived attendance or grade access.
+    person = records["parent"].person_link.person
+    person.email = "reused-guardian@example.invalid"
+    person.save(update_fields=["email"])
+
+    Account = get_user_model()
+    unlinked = Account.objects.create_user(
+        username="synthetic-email-only",
+        email="reused-guardian@example.invalid",
+        school=records["school_a"],
+    )
+    UserRole.objects.create(
+        user=unlinked, school=records["school_a"], role_code="PARENT",
+    )
+    client = APIClient()
+    client.force_login(unlinked)
+    headers = {"HTTP_X_SCHOOL_ID": str(records["school_a"].pk)}
+    for record in ("attendance", "grades"):
+        response = client.get(
+            f"/api/v1/students/{records['student_a'].pk}/{record}/",
+            **headers,
+        )
+        assert response.status_code == 404
+        assert "PRIVATE" not in str(response.content)
