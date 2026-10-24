@@ -68,6 +68,16 @@ def test_legacy_director_writes_require_matching_school_role():
                          format="json", HTTP_X_SCHOOL_ID=str(other.pk))
     assert denied.status_code == 403
 
+    # Non-ledger director operations previously skipped the early ledger-only
+    # middleware and must also obey the view's exact-school authorization.
+    nonledger_denied = client.post(
+        url,
+        {"action": "AID_GENERATE_NEEDS_INFO_EMAILS", "school_id": str(other.pk), "ids": []},
+        format="json",
+        HTTP_X_SCHOOL_ID=str(other.pk),
+    )
+    assert nonledger_denied.status_code == 403
+
     allowed = client.post(url, {**payload, "school_id": str(own.pk)},
                           format="json", HTTP_X_SCHOOL_ID=str(own.pk))
     assert allowed.status_code == 200
