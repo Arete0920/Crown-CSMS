@@ -13,8 +13,8 @@ import uuid
 from django.contrib.auth import get_user_model
 from django.test import TestCase, override_settings
 from rest_framework.test import APIClient  # type: ignore[import-untyped]
-from core.models import School
-from households.models import Household, Student
+from core.models import School, UserRole
+from households.models import Guardian, Household, Student
 
 
 User = get_user_model()
@@ -77,6 +77,18 @@ class TenantIsolationTestCase(TestCase):
             first_name="Bob",
             last_name="FamilyB"
         )
+
+        # These positive tenant checks use actual parent authority rather than
+        # a feature flag that bypasses within-school privacy.
+        for user, school, household in (
+            (self.user_a, self.school_a, self.household_a),
+            (self.user_b, self.school_b, self.household_b),
+        ):
+            UserRole.objects.create(user=user, school=school, role_code="PARENT")
+            Guardian.objects.create(
+                school_id=school.pk, household=household, account=user,
+                first_name="Synthetic", last_name="Guardian", email=user.email,
+            )
 
         self.api_client = APIClient()
 

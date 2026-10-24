@@ -24,14 +24,14 @@ from rest_framework_simplejwt.tokens import AccessToken
 from athletics.api.permissions import _request_school
 from core.auth.authentication import AADBearerAuthentication
 from core.middleware import TenantQuerySetMixin
-from core.models import School, UserRole
+from core.models import CrownPermission, RolePermission, School, UserRole
 from core.tenant_header_middleware import TenantContextError
 from core.tenant_models import clear_current_school, get_current_school, set_current_school
 from crown_api.audit_models import AuditEvent
 from crown_api.dashboards.tenant import get_dashboard_school_id
 from crown_api.tenant import bind_tenant_context, build_tenant_context, get_tenant_school_id
 from crown_api.tenant_authentication import TenantJWTAuthentication
-from households.models import Household
+from households.models import Guardian, Household
 from onboarding.models import ImportSession
 
 
@@ -107,6 +107,12 @@ def _assert_denied_without_school(response, records):
 def test_real_simplejwt_principal_controls_own_and_foreign_records(records, consumer):
     """Exercise default auth and an existing explicitly JWT-configured consumer."""
     if consumer == "household":
+        # Tenant authentication alone is not household read authority.
+        UserRole.objects.create(user=records.user, school=records.school_a, role_code="PARENT")
+        Guardian.objects.create(
+            school_id=records.school_a.pk, household=records.household_a,
+            account=records.user, first_name="Synthetic", last_name="Guardian",
+        )
         own_record, foreign_record = records.household_a, records.household_b
         own_url = f"/api/v1/households/{own_record.pk}/"
         foreign_url = f"/api/v1/households/{foreign_record.pk}/"
@@ -196,14 +202,23 @@ def test_foreign_scope_is_denied_before_cached_consumers_query_data(records, set
     _assert_denied_without_school(response, records)
 
 
-def test_real_simplejwt_support_override_is_audited(records):
+def test_real_simplejwt_support_override_does_not_change_assigned_school(records):
     UserRole.objects.create(user=records.user, school=records.school_a, role_code="SUPPORT")
+    # Cross-school selection and private record access are distinct grants.
+    records.user.is_staff = True
+    records.user.save(update_fields=["is_staff"])
+    UserRole.objects.create(user=records.user, school=records.school_b, role_code="REGISTRAR")
+    permission, _ = CrownPermission.objects.get_or_create(code="households.view")
+    RolePermission.objects.get_or_create(role_code="REGISTRAR", permission=permission)
     response = _jwt_client(records.user).get(
         f"/api/v1/households/{records.household_b.pk}/",
         HTTP_X_SCHOOL_ID=str(records.school_b.id),
     )
-    assert response.status_code == 200
-    assert response.json()["id"] == str(records.household_b.pk)
+    # Audited tenant selection does not change the account's assigned school.
+    # Even a target-school role cannot widen this protected read boundary.
+    assert response.status_code == 404
+    assert str(records.household_b.pk) not in str(response.content)
+    assert records.household_b.name not in str(response.content)
     _assert_bound(response.renderer_context["request"], records.school_b, records.school_a)
     assert response.wsgi_request._crown_school_override_id == records.school_b.id
     event = AuditEvent.objects.get(action="tenant.context.decision")
@@ -365,3 +380,19 @@ def test_tenant_jwt_schema_keeps_existing_bearer_security_contract():
     assert extension.get_security_definition(None) == {
         "type": "http", "scheme": "bearer", "bearerFormat": "JWT",
     }
+
+
+def test_real_simplejwt_support_override_alone_cannot_read_household(records):
+    UserRole.objects.create(user=records.user, school=records.school_a, role_code="SUPPORT")
+    response = _jwt_client(records.user).get(
+        f"/api/v1/households/{records.household_b.pk}/",
+        HTTP_X_SCHOOL_ID=str(records.school_b.pk),
+    )
+    assert response.status_code == 404
+    assert "Fictional Household" not in str(response.content)
+    # Tenant selection is still authorized/audited even though row scope denies
+    # the private directory record. Do not conflate the two decisions.
+    _assert_bound(response.renderer_context["request"], records.school_b, records.school_a)
+    event = AuditEvent.objects.get(action="tenant.context.decision")
+    assert event.meta["override_authorized"] is True
+    assert event.meta["outcome"] == "authorized"
