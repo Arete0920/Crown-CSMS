@@ -93,3 +93,150 @@ def test_cross_school_selector_cannot_grant_facilities_access(subjects):
         "/api/facilities/locations/", {"name": "Wrong School"}, format="json",
     ).status_code in (403, 404)
     assert not Location.objects.filter(name="Wrong School").exists()
+
+
+def test_requester_cannot_set_work_order_lifecycle_or_assignment(subjects):
+    """Request creation must not be a substitute for facilities.write."""
+    f = subjects
+    c = client(f["requester"], f["a"])
+    proposals = (
+        ("status", "DONE"),
+        ("priority", "URGENT"),
+        ("assigned_to", str(f["facilities"].pk)),
+        ("labor_minutes", 999),
+        ("due_at", "2026-11-01T12:00:00Z"),
+    )
+    for field, value in proposals:
+        response = c.post(
+            "/api/facilities/work-orders/",
+            {"title": f"Unauthorized {field}", field: value},
+            format="json",
+        )
+        assert response.status_code == 400, (field, response.data)
+        assert not WorkOrder.objects.filter(title=f"Unauthorized {field}").exists()
+
+    clean = c.post(
+        "/api/facilities/work-orders/", {"title": "Unprivileged legitimate request"},
+        format="json",
+    )
+    assert clean.status_code == 201, clean.data
+    order = WorkOrder.objects.get(pk=clean.data["id"])
+    assert order.requested_by_id == f["requester"].pk
+    assert order.status == WorkOrder.STATUS_NEW
+    assert order.assigned_to_id is None
+    assert order.labor_minutes == 0
+
+
+def test_work_order_foreign_school_relationships_are_rejected(subjects):
+    """Tenant-owned location, asset and assignee IDs cannot be forged."""
+    from facops.models import Asset
+
+    f = subjects
+    foreign_location = Location.objects.create(
+        school=f["b"], name="Foreign synthetic room"
+    )
+    foreign_asset = Asset.objects.create(
+        school=f["b"], name="Foreign synthetic asset"
+    )
+    c = client(f["facilities"], f["a"])
+    for field, foreign in (
+        ("location", foreign_location.pk),
+        ("asset", foreign_asset.pk),
+        ("assigned_to", f["other_school_staff"].pk),
+    ):
+        response = c.post(
+            "/api/facilities/work-orders/",
+            {"title": f"Cross school {field}", field: str(foreign)},
+            format="json",
+        )
+        assert response.status_code == 400, (field, response.data)
+        assert not WorkOrder.objects.filter(title=f"Cross school {field}").exists()
+
+
+
+def test_campus_relationship_fields_reject_foreign_school_references(subjects):
+    """Every writable related ID must resolve inside the selected school."""
+    from facops.models import Asset
+
+    f = subjects
+    foreign_location = Location.objects.create(
+        school=f["b"], name="Foreign campus room",
+    )
+    foreign_asset = Asset.objects.create(
+        school=f["b"], name="Foreign campus asset",
+    )
+    own_location = Location.objects.create(
+        school=f["a"], name="Own campus room",
+    )
+    facility = client(f["facilities"], f["a"])
+    safety = client(f["safety"], f["a"])
+
+    proposals = (
+        (facility, "/api/facilities/locations/", {"name": "Foreign location parent", "parent": str(foreign_location.pk)}),
+        (facility, "/api/facilities/assets/", {"name": "Foreign asset location", "location": str(foreign_location.pk)}),
+        (safety, "/api/security/incidents/", {"title": "Foreign incident location", "location": str(foreign_location.pk)}),
+        (safety, "/api/security/incidents/", {"title": "Foreign related asset", "related_asset": str(foreign_asset.pk)}),
+        (safety, "/api/security/incidents/", {"title": "Foreign incident assignee", "assigned_to": str(f["other_school_staff"].pk)}),
+    )
+    for actor, route, data in proposals:
+        denied = actor.post(route, data, format="json")
+        assert denied.status_code == 400, (route, data, denied.data)
+
+    # Legitimate within-school references remain usable.
+    assert facility.post(
+        "/api/facilities/locations/",
+        {"name": "Permitted child location", "parent": str(own_location.pk)},
+        format="json",
+    ).status_code == 201
+    assert facility.post(
+        "/api/facilities/assets/",
+        {"name": "Permitted local asset", "location": str(own_location.pk)},
+        format="json",
+    ).status_code == 201
+    assert safety.post(
+        "/api/security/incidents/",
+        {"title": "Permitted school incident", "location": str(own_location.pk)},
+        format="json",
+    ).status_code == 201
+
+
+def test_openapi_fake_view_does_not_require_tenant_header():
+    """Documentation introspection cannot dilute runtime school selection."""
+    from types import SimpleNamespace
+
+    from rest_framework.request import Request
+    from rest_framework.test import APIRequestFactory
+
+    from facops.api.serializers import (
+        AssetSerializer, LocationSerializer, SafetyIncidentSerializer,
+        WorkOrderSerializer,
+    )
+    from households.scoping import MissingSchoolContext
+
+    unscoped_request = Request(APIRequestFactory().get("/api/facilities/work-orders/"))
+    for serializer_class in (
+        LocationSerializer, AssetSerializer, WorkOrderSerializer,
+        SafetyIncidentSerializer,
+    ):
+        schema_serializer = serializer_class(context={
+            "request": unscoped_request,
+            "view": SimpleNamespace(swagger_fake_view=True),
+        })
+        assert schema_serializer.fields, serializer_class.__name__
+        actual_serializer = serializer_class(context={
+            "request": unscoped_request,
+            "view": SimpleNamespace(swagger_fake_view=False),
+        })
+        with pytest.raises(MissingSchoolContext):
+            _ = actual_serializer.fields
+
+
+def test_work_order_summary_needs_facilities_read_or_edit_grant(subjects):
+    f = subjects
+    for actor in (f["requester"], f["staff"], f["safety"]):
+        assert client(actor, f["a"]).get("/api/facilities/summary/").status_code == 403
+    granted = client(f["facilities"], f["a"]).get("/api/facilities/summary/")
+    assert granted.status_code == 200
+    assert granted.json()["total_open_work_orders"] >= 1
+    foreign = client(f["other_school_staff"], f["a"]).get("/api/facilities/summary/")
+    assert foreign.status_code in (403, 404)

@@ -65,5 +65,23 @@ class IsSafetyOfficerOrReadOnly(BasePermission):
         if school is None:
             return False
         if request.method in SAFE_METHODS:
-            return True
+            # Safety reports, visitor logs and alerts contain private data.
+            # School membership is not an authorization to inspect them.
+            return (
+                _school_grant(request, school, "safety.view")
+                or _school_grant(request, school, "safety.edit")
+            )
         return _school_grant(request, school, "safety.edit")
+
+
+class CanViewFacilitiesSummary(BasePermission):
+    """Work-order aggregates require a school-bound facilities grant."""
+
+    def has_permission(self, request, view) -> bool:
+        school = _school_for_actor(request)
+        return bool(
+            school and (
+                _school_grant(request, school, "facilities.view")
+                or _school_grant(request, school, "facilities.edit")
+            )
+        )
