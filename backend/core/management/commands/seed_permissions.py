@@ -30,6 +30,8 @@ PERMISSIONS = [
     ("gradebook.edit", "Create or modify grades within authorized sections"),
     ("attendance.configure", "Configure canonical tenant attendance policies and codes"),
     ("admin.view", "View administration dashboard"),
+    ("support.view", "View the school operational support queue"),
+    ("support.manage", "Resolve school operational support tickets"),
     ("board.view", "View board / governance dashboard"),
     ("finance.view", "View financial summaries and ledger"),
     ("billing.view", "View billing and fee dashboard"),
@@ -98,6 +100,7 @@ PERMISSIONS = [
 
 ROLE_PERMISSIONS: dict = {
     "HEAD_OF_SCHOOL": [
+        "support.view", "support.manage",
         "admin.view", "board.view", "finance.view", "billing.view", "admissions.view", "financial_aid.view",
         "academics.view", "teacher.view", "registrar.view", "academic_support.view", "library.view", "rosters.edit",
         "gradebook.edit", "attendance.configure", "scheduling.view", "scheduling.configure", "scheduling.edit", "scheduling.publish",
@@ -115,6 +118,7 @@ ROLE_PERMISSIONS: dict = {
     "PARENT": ["parent.view"],
     "STUDENT": ["student.view", "service.self"],
     "head_of_school": [
+        "support.view", "support.manage",
         "admin.view", "board.view", "finance.view", "billing.view", "admissions.view", "financial_aid.view",
         "academics.view", "teacher.view", "registrar.view", "academic_support.view", "library.view", "rosters.edit",
         "gradebook.edit", "attendance.configure", "scheduling.view", "scheduling.configure", "scheduling.edit", "scheduling.publish",
@@ -141,6 +145,7 @@ ROLE_PERMISSIONS: dict = {
     "chaplain": ["spiritual_life.view", "spiritual_life.edit"], "spiritual_life": ["spiritual_life.view", "spiritual_life.edit"], "office_manager": ["office.view"],
     "parent": ["parent.view"], "student": ["student.view", "service.self"], "board": ["board.view"],
     "school_admin": [
+        "support.view", "support.manage",
         "admin.view", "board.view", "finance.view", "billing.view", "admissions.view", "financial_aid.view",
         "academics.view", "teacher.view", "registrar.view", "academic_support.view", "library.view", "rosters.edit",
         "attendance.configure", "scheduling.view", "scheduling.configure", "scheduling.edit", "scheduling.publish",

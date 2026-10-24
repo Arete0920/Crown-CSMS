@@ -37,8 +37,12 @@ class HighRiskPrefixedRouteAuthorizationTest(SimpleTestCase):
         request.school = self.school
         return request
 
-    def test_onboarding_completion_denies_before_task_lookup_without_admin_authority(self):
-        request = self.authenticated(self.factory.post("/onboarding/tasks/7/complete/", {}))
+    def test_onboarding_completion_denies_before_task_lookup_without_admin_authority(
+        self,
+    ):
+        request = self.authenticated(
+            self.factory.post("/onboarding/tasks/7/complete/", {})
+        )
 
         with (
             patch(
@@ -60,8 +64,12 @@ class HighRiskPrefixedRouteAuthorizationTest(SimpleTestCase):
         self.assertEqual(response.status_code, 403)
         task_get.assert_not_called()
 
-    def test_onboarding_completion_allows_tenant_admin_and_mutates_only_scoped_task(self):
-        request = self.authenticated(self.factory.post("/onboarding/tasks/7/complete/", {}))
+    def test_onboarding_completion_allows_tenant_admin_and_mutates_only_scoped_task(
+        self,
+    ):
+        request = self.authenticated(
+            self.factory.post("/onboarding/tasks/7/complete/", {})
+        )
         task = MagicMock(id=7)
 
         with (
@@ -93,62 +101,72 @@ class HighRiskPrefixedRouteAuthorizationTest(SimpleTestCase):
         task_get.assert_called_once_with(pk=7, school_id=str(self.school_id))
         task.save.assert_called_once_with(update_fields=["status", "completed_at"])
 
-    def test_ticket_resolution_denies_before_ticket_lookup_without_admin_authority(self):
-        request = self.authenticated(self.factory.post("/support/tickets/19/resolve/", {}))
-
+    def test_ticket_resolution_denies_before_service_without_support_authority(self):
+        request = self.authenticated(
+            self.factory.post("/support/tickets/19/resolve/", {})
+        )
         with (
-            patch("support.api_support.get_request_school_id", return_value=self.school_id),
-            patch("support.api_support.user_has_permission", return_value=False),
-            patch("support.api_support.SupportTicket.objects.get") as ticket_get,
-        ):
-            response = resolve_ticket(request, ticket_id=19)
-
-        self.assertEqual(response.status_code, 403)
-        ticket_get.assert_not_called()
-
-    def test_ticket_resolution_allows_tenant_admin_and_keeps_tenant_filter(self):
-        request = self.authenticated(self.factory.post("/support/tickets/19/resolve/", {}))
-        ticket = MagicMock(id=19)
-
-        with (
-            patch("support.api_support.get_request_school_id", return_value=self.school_id),
-            patch("support.api_support.user_has_permission", return_value=True),
             patch(
-                "support.api_support.SupportTicket.objects.get",
-                return_value=ticket,
-            ) as ticket_get,
+                "support.api_support.get_request_school_id", return_value=self.school_id
+            ),
+            patch("support.api_support.can_manage", return_value=False),
+            patch("support.api_support.resolve_ticket_for_school") as resolve,
         ):
             response = resolve_ticket(request, ticket_id=19)
+        self.assertEqual(response.status_code, 403)
+        resolve.assert_not_called()
 
+    def test_ticket_resolution_passes_validated_school_and_actor_to_service(self):
+        data = {"resolution_summary": "Verified synthetic correction"}
+        request = self.authenticated(
+            self.factory.post("/support/tickets/19/resolve/", data, format="json")
+        )
+        ticket = MagicMock(id=19, status=SupportTicket.STATUS_CLOSED)
+        with (
+            patch(
+                "support.api_support.get_request_school_id", return_value=self.school_id
+            ),
+            patch("support.api_support.can_manage", return_value=True),
+            patch(
+                "support.api_support.resolve_ticket_for_school", return_value=ticket
+            ) as resolve,
+        ):
+            response = resolve_ticket(request, ticket_id=19)
         self.assertEqual(response.status_code, 200)
-        ticket_get.assert_called_once_with(pk=19, school_id=self.school_id)
-        self.assertEqual(ticket.status, SupportTicket.STATUS_CLOSED)
-        ticket.save.assert_called_once_with(update_fields=["status", "resolved_at"])
+        resolve.assert_called_once_with(
+            actor=self.ordinary_user,
+            school=self.school,
+            ticket_id=19,
+            data=data,
+        )
+        self.assertEqual(response.data["status"], SupportTicket.STATUS_CLOSED)
 
-    def test_global_escalation_denies_tenant_user_before_cross_tenant_service(self):
+    def test_escalation_denies_before_service_without_support_authority(self):
         request = self.authenticated(self.factory.post("/support/escalation/run/", {}))
-
-        with patch("support.api_support.escalate_overdue_tickets") as escalate:
+        with (
+            patch(
+                "support.api_support.get_request_school_id", return_value=self.school_id
+            ),
+            patch("support.api_support.can_manage", return_value=False),
+            patch("support.api_support.escalate_overdue_tickets") as escalate,
+        ):
             response = run_escalation(request)
-
         self.assertEqual(response.status_code, 403)
         escalate.assert_not_called()
 
-    def test_global_escalation_allows_platform_staff(self):
-        request = self.authenticated(
-            self.factory.post("/support/escalation/run/", {}),
-            user=self.staff_user,
-        )
-
+    def test_escalation_passes_only_validated_school_to_service(self):
+        request = self.authenticated(self.factory.post("/support/escalation/run/", {}))
         with (
-            patch("support.api_support.get_request_school_id", return_value=self.school_id),
+            patch(
+                "support.api_support.get_request_school_id", return_value=self.school_id
+            ),
+            patch("support.api_support.can_manage", return_value=True),
             patch(
                 "support.api_support.escalate_overdue_tickets",
                 return_value={"escalated": [3]},
             ) as escalate,
         ):
             response = run_escalation(request)
-
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data, {"escalated": [3]})
         escalate.assert_called_once_with(school_id=self.school_id)
@@ -157,7 +175,10 @@ class HighRiskPrefixedRouteAuthorizationTest(SimpleTestCase):
         request = self.authenticated(self.factory.post("/analytics/export/", {}))
 
         with (
-            patch("analytics.api_health.get_request_school_id", return_value=self.school_id),
+            patch(
+                "analytics.api_health.get_request_school_id",
+                return_value=self.school_id,
+            ),
             patch("analytics.api_health.user_has_permission", return_value=False),
             patch("analytics.api_health.export_school_data") as export_data,
         ):
@@ -170,7 +191,10 @@ class HighRiskPrefixedRouteAuthorizationTest(SimpleTestCase):
         request = self.authenticated(self.factory.post("/analytics/export/", {}))
 
         with (
-            patch("analytics.api_health.get_request_school_id", return_value=self.school_id),
+            patch(
+                "analytics.api_health.get_request_school_id",
+                return_value=self.school_id,
+            ),
             patch("analytics.api_health.user_has_permission", return_value=True),
             patch(
                 "analytics.api_health.export_school_data",
