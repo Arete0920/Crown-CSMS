@@ -7,6 +7,7 @@ from rest_framework.test import APIClient
 
 from core.models import School
 from platform_ops.models import AuditEvent, ProvisioningJob
+from support.models import SupportTicket
 from subscriptions.models import Plan, TenantSubscription
 from tenants.models import TenantProfile
 
@@ -249,6 +250,50 @@ class PlatformOperatorBoundaryTests(TestCase):
         )
         self.assertEqual(
             body["external_payments"]["provisioning_policy"], "disabled"
+        )
+
+    def test_overview_support_pulse_counts_without_exposing_ticket_contents(self):
+        from datetime import timedelta
+        from django.utils import timezone
+
+        now = timezone.now()
+        critical = SupportTicket.objects.create(
+            school_id=self.school.pk, title="PRIVATE critical title",
+            description="PRIVATE critical description", priority="critical",
+        )
+        SupportTicket.objects.filter(pk=critical.pk).update(
+            created_at=now - timedelta(hours=3)
+        )
+        SupportTicket.objects.create(
+            school_id=self.other.pk, title="PRIVATE open title",
+            description="PRIVATE open description", priority="medium",
+        )
+        SupportTicket.objects.create(
+            school_id=self.other.pk, title="PRIVATE escalated title",
+            description="PRIVATE escalated description", priority="high",
+            status=SupportTicket.STATUS_ESCALATED,
+        )
+        SupportTicket.objects.create(
+            school_id=self.school.pk, title="PRIVATE closed title",
+            description="PRIVATE closed description", priority="low",
+            status=SupportTicket.STATUS_CLOSED,
+        )
+        response = self.client_for(self.owner).get("/api/platform/overview")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["support"], {
+            "data_state": "available",
+            "scope": "current_database",
+            "unresolved": 3,
+            "open": 2,
+            "escalated": 1,
+            "critical_unresolved": 1,
+            "overdue_open": 1,
+            "alert_delivery": "not_certified",
+        })
+        self.assertNotIn("PRIVATE", str(response.data))
+        self.assertEqual(
+            self.client_for(self.staff).get("/api/platform/overview").status_code,
+            403,
         )
 
     def test_overview_denies_anonymous_staff_inactive_and_tenant_header(self):
