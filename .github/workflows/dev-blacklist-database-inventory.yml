@@ -1,5 +1,12 @@
 name: DEV Blacklist Database Inventory (read-only)
 on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/dev-blacklist-database-inventory.yml'
+      - 'scripts/ops/reviewed_dev_support_migrations.py'
+      - 'scripts/ops/test_reviewed_dev_support_migrations.py'
+      - 'scripts/ops/run_dev_inquiry_migration.py'
   workflow_dispatch:
     inputs:
       expected_sha:
@@ -27,6 +34,23 @@ concurrency:
   group: crown-dev-blacklist-db-readonly
   cancel-in-progress: false
 jobs:
+  support-contract-tests:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+      - name: Test pinned support migrations and negative authority contracts
+        run: |
+          python -m unittest discover -s scripts/ops -p test_reviewed_dev_support_migrations.py -v
+          python -m unittest discover -s scripts/ops -p test_run_dev_inquiry_migration.py -v
   inspect:
     if: github.ref == 'refs/heads/main' && inputs.apply_reviewed_support != true
     runs-on: ubuntu-latest
