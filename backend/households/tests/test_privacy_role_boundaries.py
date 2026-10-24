@@ -140,3 +140,62 @@ def test_parent_does_not_inherit_co_guardian_contact_access(people, prefix):
     assert "guardians" not in household.json()
     assert "coguardian-private@example.invalid" not in str(household.content)
     assert "555-9988" not in str(household.content)
+
+
+
+@pytest.mark.parametrize("prefix", ["/api/", "/api/v1/"])
+def test_mismatched_school_related_rows_never_leak_in_nested_or_direct_reads(
+    people, prefix
+):
+    """A foreign-school child/guardian cannot travel through a local FK.
+
+    Model clean() is not called by every Django write path; the public read
+    boundary therefore must independently validate both school IDs.
+    """
+    f = people
+    foreign_child = Student.objects.create(
+        school_id=f["foreign"].pk,
+        household=f["home"],
+        first_name="ForeignTenant", last_name="SyntheticChild",
+    )
+    foreign_contact = Guardian.objects.create(
+        school_id=f["foreign"].pk,
+        household=f["home"],
+        first_name="ForeignTenant", last_name="SyntheticGuardian",
+        email="mismatched-contact@example.invalid",
+    )
+    staff_a = UserAccount.objects.create_user(
+        username=f"boundary-a-{uuid.uuid4()}",
+        email=f"boundary-a-{uuid.uuid4()}@example.invalid",
+        school=f["school"], is_staff=True,
+    )
+    staff_b = UserAccount.objects.create_user(
+        username=f"boundary-b-{uuid.uuid4()}",
+        email=f"boundary-b-{uuid.uuid4()}@example.invalid",
+        school=f["foreign"], is_staff=True,
+    )
+    for staff, school in ((staff_a, f["school"]), (staff_b, f["foreign"])):
+        UserRole.objects.create(user=staff, school=school, role_code="REGISTRAR")
+    for code in ("households.view", "guardians.view"):
+        permission, _ = CrownPermission.objects.get_or_create(code=code)
+        RolePermission.objects.get_or_create(
+            role_code="REGISTRAR", permission=permission,
+        )
+
+    for actor in (f["linked"], staff_a):
+        response = api(actor, f["school"]).get(
+            f"{prefix}households/{f['home'].pk}/",
+        )
+        assert response.status_code == 200
+        assert str(foreign_child.pk) not in str(response.content)
+        assert str(foreign_contact.pk) not in str(response.content)
+        assert "ForeignTenant" not in str(response.content)
+        assert "mismatched-contact@example.invalid" not in str(response.content)
+
+    # The foreign-school registrar must not be able to read a record whose
+    # related household actually belongs to another school.
+    client_b = api(staff_b, f["foreign"])
+    for path, pk in (("students", foreign_child.pk), ("guardians", foreign_contact.pk)):
+        result = client_b.get(f"{prefix}{path}/{pk}/")
+        assert result.status_code == 404
+        assert "ForeignTenant" not in str(result.content)
