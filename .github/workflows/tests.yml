@@ -170,7 +170,7 @@ jobs:
               if result.returncode == 0:
                   paths = result.stdout.decode('utf-8', errors='replace').split('\0')
                   exact = {'backend/requirements.txt', 'backend/conftest.py', 'backend/tests/conftest.py', 'pytest.ini', '.github/workflows/tests.yml'}
-                  prefixes = ('backend/survey_sentiment/', 'backend/core/', 'backend/crown_api/', 'backend/tests/test_survey_intelligence_', 'backend/tests/test_survey_collection_')
+                  prefixes = ('backend/support/', 'backend/survey_sentiment/', 'backend/core/', 'backend/crown_api/', 'backend/tests/test_survey_intelligence_', 'backend/tests/test_survey_collection_')
                   required = any(path in exact or path.startswith(prefixes) for path in paths)
           with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
               output.write('required=' + str(required).lower() + '\n')
@@ -222,7 +222,7 @@ jobs:
               print(cursor.fetchone()[0])
           PY
           python backend/manage.py makemigrations --check --dry-run
-      - name: Verify survey and legacy refresh contracts on PostgreSQL
+      - name: Verify survey, support and legacy refresh contracts on PostgreSQL
         env:
           DJANGO_SETTINGS_MODULE: crown_api.test_settings
         run: >-
@@ -233,6 +233,7 @@ jobs:
           backend/crown_api/tests/test_auth_rate_limit.py
           backend/crown_api/tests/test_legacy_refresh_cleanup.py
           backend/crown_api/tests/test_dev_reviewed_migration_pair.py
+          backend/support/test_ticket_workflow.py
           --migrations --create-db
           --junitxml=survey-postgresql-junit.xml
       - name: Preserve PostgreSQL test evidence
