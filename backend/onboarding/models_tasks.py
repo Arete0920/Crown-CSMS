@@ -231,7 +231,12 @@ def seed_onboarding_tasks(school: School) -> list[OnboardingTask]:
 def can_activate_school(school: School) -> bool:
     """Return True only when every onboarding task is complete.
     Used as a gate before enabling live billing."""
-    tasks = OnboardingTask.objects.filter(school=school)
-    if not tasks.exists():
-        return False
-    return not tasks.filter(status=OnboardingTask.STATUS_PENDING).exists()
+    tasks = dict(
+        OnboardingTask.objects.filter(school=school).values_list(
+            "task_name", "status"
+        )
+    )
+    required = set(DEFAULT_TASKS)
+    return required.issubset(tasks) and all(
+        status == OnboardingTask.STATUS_COMPLETE for status in tasks.values()
+    )

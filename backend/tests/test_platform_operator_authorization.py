@@ -71,6 +71,33 @@ class PlatformOperatorBoundaryTests(TestCase):
         self.assertEqual(first.data["state"], "queued")
         profile = TenantProfile.objects.get(school_id=first.data["school_id"])
         self.assertEqual(profile.status, "pending")
+        school = School.objects.get(pk=first.data["school_id"])
+        self.assertFalse(school.is_active)
+        # A newly created tenant must not be accessible before provisioning,
+        # even to a valid user assigned to that tenant. This tests the real
+        # middleware boundary, not merely model state.
+        preactive_staff = get_user_model().objects.create_user(
+            username="synthetic-pending-staff",
+            school=school,
+            is_staff=True,
+        )
+        pending_response = self.client_for(preactive_staff).get(
+            f"/api/v1/onboarding/{school.pk}/progress/",
+            HTTP_X_SCHOOL_ID=str(school.pk),
+        )
+        self.assertEqual(pending_response.status_code, 404)
+        # Gradebook is exempt from early tenant-header middleware. Its shared
+        # request-school resolver must also reject inactive pending tenants.
+        from core.models import UserRole
+        UserRole.objects.create(
+            school=school, user=preactive_staff, role_code="HEAD_OF_SCHOOL"
+        )
+        exempt_gradebook = self.client_for(preactive_staff).get(
+            "/api/v1/gradebook/sections/",
+            HTTP_X_SCHOOL_ID=str(school.pk),
+        )
+        self.assertEqual(exempt_gradebook.status_code, 404)
+        self.assertTrue(School.objects.get(pk=self.school.pk).is_active)
 
     def test_intake_rejects_untrusted_fields_without_side_effects(self):
         """Reject bad types, unauthorized provider, and unsupported metadata."""
