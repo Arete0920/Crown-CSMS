@@ -1,61 +1,69 @@
-# backend/facops/api/permissions.py
+"""School-bound permissions for facilities, work orders, and campus safety.
+
+A request header is never a role grant. Canonical tenant selection and persisted
+school role/permission records independently control writes.
+"""
 from __future__ import annotations
 
 from rest_framework.permissions import BasePermission, SAFE_METHODS
 
+from core.models import School
+from core.permissions import user_has_permission
+from households.scoping import get_request_school_id
 
-def _authenticated(request) -> bool:
+
+def _school_for_actor(request):
     user = getattr(request, "user", None)
-    return bool(user and getattr(user, "is_authenticated", False))
-
-
-def _is_staff_or_super(request) -> bool:
-    user = getattr(request, "user", None)
-    return bool(
+    if not (
         user
         and getattr(user, "is_authenticated", False)
-        and (getattr(user, "is_staff", False) or getattr(user, "is_superuser", False))
+        and getattr(user, "is_active", False)
+    ):
+        return None
+    school_id = get_request_school_id(request, required=True)
+    if not school_id or str(getattr(user, "school_id", "")) != str(school_id):
+        return None
+    return School.objects.filter(pk=school_id, is_active=True).first()
+
+
+def _school_grant(request, school, permission_code):
+    return bool(
+        school
+        and user_has_permission(request.user, permission_code, school=school)
     )
 
 
-def _role(request) -> str:
-    return (request.headers.get("X-Role") or "").lower()
-
-
-FACILITIES_WRITE_ROLES = frozenset({"facilities_director", "technician", "admin"})
-SAFETY_WRITE_ROLES = frozenset({"safety_officer", "admin", "facilities_director"})
-
-
 class IsFacilitiesStaffOrReadOnly(BasePermission):
-    """
-    Safe methods: any authenticated user.
-    Writes: staff/superuser or recognised facilities role.
-    """
+    """School members may read; facilities writes require a persisted grant."""
 
     def has_permission(self, request, view) -> bool:
-        if not _authenticated(request):
+        school = _school_for_actor(request)
+        if school is None:
             return False
         if request.method in SAFE_METHODS:
             return True
-        return _is_staff_or_super(request) or _role(request) in FACILITIES_WRITE_ROLES
+        return _school_grant(request, school, "facilities.edit")
 
 
 class CanCreateWorkOrder(BasePermission):
-    """Any authenticated user may create or read work orders — teachers can request."""
+    """School members may request service, not change the job lifecycle."""
 
     def has_permission(self, request, view) -> bool:
-        return _authenticated(request)
+        school = _school_for_actor(request)
+        if school is None:
+            return False
+        if request.method in SAFE_METHODS or getattr(view, "action", None) == "create":
+            return True
+        return _school_grant(request, school, "facilities.edit")
 
 
 class IsSafetyOfficerOrReadOnly(BasePermission):
-    """
-    Safe methods: any authenticated user.
-    Writes: staff/superuser or recognised safety role.
-    """
+    """School members may read; safety writes require a persisted grant."""
 
     def has_permission(self, request, view) -> bool:
-        if not _authenticated(request):
+        school = _school_for_actor(request)
+        if school is None:
             return False
         if request.method in SAFE_METHODS:
             return True
-        return _is_staff_or_super(request) or _role(request) in SAFETY_WRITE_ROLES
+        return _school_grant(request, school, "safety.edit")
