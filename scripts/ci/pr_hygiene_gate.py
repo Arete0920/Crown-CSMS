@@ -15,6 +15,8 @@ import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
+from repository_identity_hygiene import reference_found
+
 MAX_NORMAL_ADDITIONS = int(os.environ.get("CROWN_MAX_NORMAL_ADDITIONS", "1500"))
 MAX_DOC_AUDIT_ADDITIONS = int(os.environ.get("CROWN_MAX_DOC_AUDIT_ADDITIONS", "3000"))
 MAX_CHANGED_FILES = int(os.environ.get("CROWN_MAX_CHANGED_FILES", "20"))
@@ -139,6 +141,25 @@ def read_event_body(pull_request: dict[str, object]) -> str:
     return body if isinstance(body, str) else ""
 
 
+def pr_language_findings(pull_request: dict[str, object]) -> list[str]:
+    """Check maintained PR narrative, not immutable commits or audit history."""
+    findings: list[str] = []
+    for field in ("title", "body"):
+        content = pull_request.get(field)
+        if not isinstance(content, str) or not reference_found(content):
+            continue
+        lines = [
+            str(number)
+            for number, line in enumerate(content.splitlines(), start=1)
+            if reference_found(line)
+        ]
+        if lines:
+            findings.append(f"prohibited reference in pull-request {field} at line(s) {', '.join(lines)}")
+        else:
+            findings.append(f"prohibited wrapped reference in pull-request {field}")
+    return findings
+
+
 def is_doc_or_audit_only(files: list[FileStat]) -> bool:
     if not files:
         return False
@@ -230,6 +251,8 @@ def main() -> int:
     threshold = MAX_DOC_AUDIT_ADDITIONS if is_doc_or_audit_only(files) else MAX_NORMAL_ADDITIONS
     failures: list[str] = []
     warnings: list[str] = []
+    if pull_request:
+        failures.extend(pr_language_findings(pull_request))
 
     body = read_event_body(pull_request)
     large_migration, large_migration_reasons = is_issue_1887_large_migration(files, pull_request, body)
