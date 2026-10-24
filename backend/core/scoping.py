@@ -169,7 +169,14 @@ def resolve_role(user, school_id=None) -> str:
 
 def _verified_school_role(user, school_id) -> str:
     """Require an active account with a persisted role in the selected school."""
-    if not school_id or user is None or not getattr(user, "is_authenticated", False) or not getattr(user, "is_active", False):
+    if (
+        not school_id or user is None
+        or not getattr(user, "is_authenticated", False)
+        or not getattr(user, "is_active", False)
+        # Choosing a tenant for audited support does not confer permission
+        # to read protected records in a different assigned school.
+        or str(getattr(user, "school_id", None)) != str(school_id)
+    ):
         return "unknown"
     roles = getattr(user, "roles", None)
     if roles is None:
@@ -269,7 +276,15 @@ def _scope_households(user, qs: QuerySet, role: str, school_id) -> QuerySet:
 def _scope_guardians(user, qs: QuerySet, role: str, school_id) -> QuerySet:
     if role == "parent":
         ids = _linked_guardian_household_ids(user, school_id)
-        return qs.filter(household_id__in=ids, household__school_id=school_id) if ids is not None else _empty(qs)
+        # Shared residence does not disclose a co-guardian's contacts.
+        # Only the explicitly linked Guardian.account owns this read.
+        return (
+            qs.filter(
+                school_id=school_id, account_id=user.pk,
+                household_id__in=ids, household__school_id=school_id,
+            )
+            if ids is not None else _empty(qs)
+        )
     if role not in {"unknown", "parent", "student"} and _staff_read_grant(user, school_id, "guardians.view"):
         return qs
     return _empty(qs)
@@ -449,7 +464,7 @@ FIELD_SCOPE: dict[str, dict[str, FieldScope]] = {
         "school_admin": FieldScope(allow="__all__", deny=set()),
         "office_manager": FieldScope(allow="__all__", deny=set()),
         "parent": FieldScope(allow={"id", "name", "address1", "address2", "city",
-                                    "state", "postal_code", "is_active", "guardians", "students"}, deny=set()),
+                                    "state", "postal_code", "is_active", "students"}, deny={"guardians"}),
         "unknown": FieldScope(allow=set(), deny=set()),
     },
     DOMAIN_GUARDIANS: {

@@ -49,10 +49,11 @@ class NestedHouseholdPrivacyTests(TestCase):
                 student_response = client.get(f"{prefix}students/{self.child.pk}/")
                 self.assertEqual(guardian_response.status_code, 200)
                 self.assertEqual(student_response.status_code, 200)
-                self.assertEqual(body["guardians"], [guardian_response.json()])
+                # The parent's private household read must not bypass the
+                # independent contact-directory boundary for other adults.
+                self.assertNotIn("guardians", body)
+                self.assertEqual(guardian_response.json()["id"], str(self.guardian.pk))
                 self.assertEqual(body["students"], [student_response.json()])
-                self.assertNotIn("created_at", body["guardians"][0])
-                self.assertNotIn("updated_at", body["guardians"][0])
                 self.assertNotIn("household", body["students"][0])
                 self.assertNotIn("created_at", body["students"][0])
 

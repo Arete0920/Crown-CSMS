@@ -451,3 +451,19 @@ Any change to row or field visibility requires:
 ---
 
 *Layer C Canon v1 Locked*
+
+
+
+### October 24, 2026 — #441 co-guardian and identity-source guard
+
+A verified parent linked through `households.Guardian.account` may read
+their own contact record but may not enumerate other adults' contacts
+merely because those guardians share a household. Nested household
+serialization omits `guardians` for parent consumers. Staff directory
+grants remain distinct. A cross-school tenant-selector override alone
+does not authorize private household reads.
+
+Wizard E2E certification must use the canonical `core.Student` list
+(`/api/v1/student-records/`) rather than compatibility
+`households.Student` (`/api/v1/students/`); their UUIDs cannot be
+substituted. The server-side student/school validation remains enforced.

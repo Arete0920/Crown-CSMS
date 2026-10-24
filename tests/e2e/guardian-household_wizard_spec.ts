@@ -6,9 +6,11 @@ test('Guardian Household persists canonical family and guardian data and verifie
   await page.goto(`${frontendUrl}/guardian-household-setup`, { waitUntil: 'networkidle' });
   await expect(page).toHaveURL(/\/guardian-household-setup/);
 
-  const studentsPayload = await authenticatedApiJson(page, '/api/v1/students/');
+  // The wizard accepts core.Student UUIDs, not households.Student
+  // compatibility IDs returned by /api/v1/students/.
+  const studentsPayload = await authenticatedApiJson(page, '/api/v1/student-records/');
   const students = resultList(studentsPayload);
-  if (!students.length) throw new Error(`Heritage seed has no canonical students: ${JSON.stringify(studentsPayload)}`);
+  if (!students.length) throw new Error(`Heritage seed has no canonical core.Student records: ${JSON.stringify(studentsPayload)}`);
   const studentId = String(students[0].id);
   const email = `guardian.cert.${Date.now()}@heritage.example.org`;
 

@@ -117,3 +117,26 @@ def test_parent_role_in_different_school_cannot_expand_scope(people):
     UserRole.objects.create(user=outsider, school=people["foreign"], role_code="PARENT")
     client = api(outsider, people["foreign"])
     assert client.get(f"/api/households/{people['home'].pk}/").status_code == 404
+
+
+
+@pytest.mark.parametrize("prefix", ["/api/", "/api/v1/"])
+def test_parent_does_not_inherit_co_guardian_contact_access(people, prefix):
+    """A linked parent may only read their own Guardian.account contact."""
+    f = people
+    other_adult = Guardian.objects.create(
+        school_id=f["school"].pk, household=f["home"],
+        first_name="Private", last_name="CoGuardian",
+        email="coguardian-private@example.invalid", phone="555-9988",
+    )
+    c = api(f["linked"], f["school"])
+    contacts = c.get(f"{prefix}guardians/")
+    assert contacts.status_code == 200
+    assert len(contacts.json()) == 1
+    assert contacts.json()[0]["email"] == "shared@example.invalid"
+    assert c.get(f"{prefix}guardians/{other_adult.pk}/").status_code == 404
+    household = c.get(f"{prefix}households/{f['home'].pk}/")
+    assert household.status_code == 200
+    assert "guardians" not in household.json()
+    assert "coguardian-private@example.invalid" not in str(household.content)
+    assert "555-9988" not in str(household.content)
