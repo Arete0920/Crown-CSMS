@@ -50,7 +50,7 @@ class SupportTicket(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     resolved_at = models.DateTimeField(null=True, blank=True)
     escalated_at = models.DateTimeField(null=True, blank=True)
-    resolution_summary = models.TextField(blank=True, default="")
+    resolution_summary = models.TextField(blank=True, default="", db_default="")
 
     class Meta:
         ordering = ["-created_at", "-pk"]
