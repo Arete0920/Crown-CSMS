@@ -76,15 +76,30 @@ class AssetSerializer(TenantRelatedFieldsMixin, serializers.ModelSerializer):
 
 
 class WorkOrderCommentSerializer(serializers.ModelSerializer):
+    # Author identity is private when a bypass-written comment references
+    # a user from another tenant, even if the comment's school is valid.
+    author = serializers.SerializerMethodField()
     author_name = serializers.SerializerMethodField()
 
     class Meta:
         model = WorkOrderComment
         fields = ["id", "work_order", "author", "author_name", "body", "created_at"]
 
+    @staticmethod
+    def _visible_author(obj: WorkOrderComment):
+        author = obj.author if obj.author_id else None
+        if author is None or getattr(author, "school_id", None) != obj.school_id:
+            return None
+        return author
+
+    def get_author(self, obj: WorkOrderComment):
+        author = self._visible_author(obj)
+        return author.pk if author is not None else None
+
     def get_author_name(self, obj: WorkOrderComment) -> str:
-        if obj.author_id and hasattr(obj.author, "get_full_name"):
-            return obj.author.get_full_name() or obj.author.username
+        author = self._visible_author(obj)
+        if author is not None and hasattr(author, "get_full_name"):
+            return author.get_full_name() or author.username
         return ""
 
 

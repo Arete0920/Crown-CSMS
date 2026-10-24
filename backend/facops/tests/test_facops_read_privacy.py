@@ -55,6 +55,19 @@ def school_context():
     WorkOrderComment.objects.create(
         school=foreign, work_order=own_order, body="FOREIGN-SCHOOL-PRIVATE-COMMENT",
     )
+    foreign_author = UserAccount.objects.create_user(
+        username=f"foreign-author-{uuid.uuid4().hex[:12]}",
+        email=f"foreign-author-{uuid.uuid4().hex[:12]}@example.invalid",
+        school=foreign,
+    )
+    WorkOrderComment.objects.create(
+        school=school, work_order=own_order, author=foreign_author,
+        body="Local comment with foreign author",
+    )
+    WorkOrderComment.objects.create(
+        school=school, work_order=own_order, author=reporter,
+        body="Local comment with local author",
+    )
     return locals()
 
 
@@ -125,3 +138,21 @@ def test_foreign_school_selection_does_not_grant_safety_read(school_context):
         "/api/security/incidents/"
     )
     assert response.status_code in (403, 404)
+
+
+def test_nested_comment_author_identity_never_crosses_school(school_context):
+    # Dirty imported author relationships must not expose another school's user.
+    f = school_context
+    response = request_client(f["reporter"], f["school"]).get(
+        f"/api/facilities/work-orders/{f['own_order'].pk}/"
+    )
+    assert response.status_code == 200
+    comments = {item["body"]: item for item in response.json()["comments"]}
+    bad = comments["Local comment with foreign author"]
+    assert bad["author"] is None
+    assert bad["author_name"] == ""
+    assert f["foreign_author"].username not in str(response.content)
+    assert str(f["foreign_author"].pk) not in str(response.content)
+    good = comments["Local comment with local author"]
+    assert str(good["author"]) == str(f["reporter"].pk)
+    assert good["author_name"] == f["reporter"].username
