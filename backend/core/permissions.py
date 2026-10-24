@@ -34,6 +34,9 @@ class IsPlatformOperator(BasePermission):
             and getattr(user, "is_authenticated", False)
             and getattr(user, "is_active", False)
             and getattr(user, "is_superuser", False)
+            # A superuser assigned to a school must not receive global
+            # cross-tenant platform authority from Django's superuser bit.
+            and getattr(user, "school_id", None) is None
         )
 
 

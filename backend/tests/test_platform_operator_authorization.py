@@ -203,3 +203,46 @@ class PlatformOperatorBoundaryTests(TestCase):
             response = self.client_for().get(path)
             self.assertEqual(response.status_code, 400)
             self.assertEqual(response.json()["code"], "missing_tenant")
+
+def test_school_bound_superuser_cannot_perform_platform_operations(self):
+        """A school-associated Django superuser is not a platform owner."""
+        scoped_user = get_user_model().objects.create_superuser(
+            username="synthetic-school-superuser",
+            email="school-superuser@example.invalid",
+            password="synthetic-password-for-tests",
+            school=self.school,
+        )
+        client = self.client_for(scoped_user)
+        job = ProvisioningJob.objects.create(
+            school=self.other, idempotency_key=str(uuid.uuid4())
+        )
+        for path in (
+            "/api/platform/overview",
+            "/api/platform/schools/list",
+            f"/api/platform/provisioning/{job.id}",
+            f"/api/v1/subscriptions/ops/{self.other.id}/",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(client.get(path).status_code, 403)
+
+        response = client.post(
+            "/api/platform/schools",
+            {"name": "Forbidden Cross-Tenant School",
+             "slug": "forbidden-cross-tenant",
+             "idempotency_key": str(uuid.uuid4())},
+            format="json",
+        )
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(ProvisioningJob.objects.count(), 1)
+
+        response = client.post(
+            f"/api/v1/subscriptions/ops/{self.other.id}/",
+            {"plan_id": str(self.other_plan.id)},
+            format="json",
+        )
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(
+            TenantSubscription.objects.get(
+                school_id=self.other.id, ended_at__isnull=True
+            ).plan_id, self.plan.id,
+        )
