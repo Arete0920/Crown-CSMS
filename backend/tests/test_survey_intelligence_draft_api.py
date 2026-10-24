@@ -123,7 +123,9 @@ def test_bearer_editor_cannot_create_for_inactive_school(school_client):
     school.is_active = False
     school.save(update_fields=["is_active"])
     denied = request(bearer_client(user), school, payload())
-    assert denied.status_code == 403, denied.content
+    # Inactive tenants are deliberately indistinguishable from unknown tenants.
+    # The shared school resolver denies them before the survey draft handler.
+    assert denied.status_code == 404, denied.content
     assert not SurveyDefinition.objects.exists()
 
 
