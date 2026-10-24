@@ -2,7 +2,7 @@
 
 Prepared October 8 2026 for management review and buyer diligence
 
-DRAFT FOR APPROVAL   Management adoption and operational assurance remain open
+HISTORICAL OCTOBER 8 DRAFT FOR APPROVAL — Management adoption and operational assurance remain open. For subsequent changes, see [October 23 reconciliation](SOC2_RECONCILIATION_20261023.md).
 
 CROWN has substantial documented security control design, merged security hardening, and fresh executable repository evidence. The October 8 reconciliation removes the stale claim that the current reviewed head lacks fresh CI. It does not establish an operating production environment, adopted policies, completed SOC 2 readiness, or an independent CPA report.
 
@@ -33,9 +33,9 @@ Proposed initial product boundary: CROWN hosted school operations, enabled modul
 
 | Area | Disposition for approval |
 | --- | --- |
-| Hosting claim | The Azure first-release procedure explicitly says CROWN is undeployed. Current release authority asserts no successor production deployment or operational acceptance. Neither a template resource name nor CI is a live asset inventory. |
+| Hosting claim | The Azure first-release procedure explicitly says CROWN was described as undeployed in this October 8 historical source assessment; subsequent DEV/demo Azure observations do not certify production acceptance. Current release authority asserts no successor production deployment or operational acceptance. Neither a template resource name nor CI is a live asset inventory. |
 | Diadem | Proposed product exclusion pending documented infrastructure, contracts and data flows. Include shared infrastructure, customer data and security controls whenever they affect CROWN; a product label cannot remove these dependencies. |
-| Payments | External processing remains disabled and unauthorized for activation. CROWN billing and financial records remain in the proposed data boundary. Metro is selected for planning only. |
+| Payments | External processing remains disabled and unauthorized for activation. CROWN billing and financial records remain in the proposed data boundary. Metro was selected for historical planning on September 30; CompuWerx is the subsequent intended gateway, still not contracted/certified for activation. See current subprocessor register. |
 | Existing services | GitHub is directly observed serving the repository and Actions. Inventory it as used for source/change governance; administration, contracts and assurance responsibilities still need review. |
 | People and locations | Include actual administrators, support staff, contractors, workforce devices, work locations and restricted evidence storage. Planned staffing roles are not named appointments. |
 | Trust Services | Security proposed initially. Evaluate Availability, Confidentiality, Processing Integrity and Privacy against customer commitments with the CPA. The 22 work areas are not 22 individual AICPA criteria. |

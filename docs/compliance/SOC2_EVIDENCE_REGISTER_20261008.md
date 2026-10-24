@@ -1,10 +1,12 @@
 # CROWN SOC 2 Evidence Register
 
-**Status:** SOURCE EVIDENCE RECONCILED / OPERATING EVIDENCE INCOMPLETE  
+**Status:** HISTORICAL OCTOBER 8 SOURCE CHECKPOINT / OPERATING EVIDENCE INCOMPLETE
 **Prepared:** 2026-10-08  
 **Scope:** Source and repository-controlled documentation at `a091504ec4ce37c84037b51e15d9f909fcaf6f91`
 **Reconciled:** 2026-10-08 after fresh exact-head Actions evidence  
 **Boundary:** This register does not establish production operation, management approval, independent assurance, or a SOC 2 report.
+
+**Current evidence overlay:** [October 23 SOC 2 reconciliation](SOC2_RECONCILIATION_20261023.md). This ledger intentionally retains its October 8 SHA and counts as dated source evidence. Do not relabel historical CI as current-head assurance.
 
 ## Evidence states
 

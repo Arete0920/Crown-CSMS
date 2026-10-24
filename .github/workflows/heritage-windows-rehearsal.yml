@@ -55,6 +55,9 @@ jobs:
           node --version
           npm --version
           python scripts/demo/start_heritage_local.py --prepare-only
+      - name: Verify guarded Heritage listener boundary
+        shell: pwsh
+        run: .\.venv\Scripts\python.exe -m pytest -q backend/crown_api/tests/test_heritage_runserver.py
       - name: Verify immutable sales-starter ZIP contract
         shell: pwsh
         run: .\.venv\Scripts\python.exe -m pytest -q backend/tests/test_heritage_sales_package.py

@@ -199,7 +199,7 @@ def main() -> int:
             print("Heritage is prepared. Start again to open the demo.")
             return 0
         for name, command, cwd in [
-            ("backend", [str(python), str(ROOT / "backend/manage.py"), "runserver", "127.0.0.1:8000", "--noreload"], ROOT),
+            ("backend", [str(python), str(ROOT / "backend/manage.py"), "heritage_runserver", "127.0.0.1:8000", "--noreload"], ROOT),
             ("frontend", preview_command(), FRONTEND),
         ]:
             log = (STATE / f"{name}.log").open("w", encoding="utf-8")
