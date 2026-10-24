@@ -14,6 +14,17 @@ import pytest
 from django.test import TestCase
 
 
+@pytest.fixture
+def platform_operator(django_user_model):
+    """Schoolless operator for explicit mutation tests."""
+    suffix = uuid.uuid4().hex[:10]
+    return django_user_model.objects.create_superuser(
+        username=f"provisioning-{suffix}",
+        email=f"provisioning-{suffix}@example.invalid",
+        password="synthetic-only",
+    )
+
+
 @pytest.mark.django_db(transaction=True)
 def test_create_school_idempotent(django_user_model):
     """
@@ -52,7 +63,7 @@ def test_create_school_idempotent(django_user_model):
 
 
 @pytest.mark.django_db(transaction=True)
-def test_provisioning_job_runs_to_succeeded(django_user_model):
+def test_provisioning_job_runs_to_succeeded(django_user_model, platform_operator):
     """
     run_provisioning_job() must bring a queued job all the way to
     state='succeeded' with progress=100 and activate the TenantProfile.
@@ -76,7 +87,7 @@ def test_provisioning_job_runs_to_succeeded(django_user_model):
     assert job.state == ProvisioningJob.STATE_QUEUED
 
     # Run provisioning synchronously
-    completed_job = run_provisioning_job(job)
+    completed_job = run_provisioning_job(job, actor_user_id=platform_operator.pk)
 
     # Must have reached succeeded
     assert completed_job.state == ProvisioningJob.STATE_SUCCEEDED, (
@@ -93,7 +104,7 @@ def test_provisioning_job_runs_to_succeeded(django_user_model):
 
 
 @pytest.mark.django_db
-def test_provisioning_repeat_uses_database_state_not_stale_object():
+def test_provisioning_repeat_uses_database_state_not_stale_object(platform_operator):
     """A stale queued instance cannot perform the completed job twice."""
     from platform_ops.models import AuditEvent
     from platform_ops.provisioning import (
@@ -105,9 +116,9 @@ def test_provisioning_repeat_uses_database_state_not_stale_object():
         name="Stale Job School", slug=f"stale-{key[:8]}",
         idempotency_key=key,
     )
-    completed = run_provisioning_job(job)
+    completed = run_provisioning_job(job, actor_user_id=platform_operator.pk)
     assert completed.state == "succeeded"
-    second = run_provisioning_job(job)
+    second = run_provisioning_job(job, actor_user_id=platform_operator.pk)
     assert second.state == "succeeded"
     assert AuditEvent.objects.filter(
         resource_id=job.pk, action="provisioning.succeeded"
@@ -115,7 +126,7 @@ def test_provisioning_repeat_uses_database_state_not_stale_object():
 
 
 @pytest.mark.django_db
-def test_failed_or_running_job_cannot_restart_implicitly():
+def test_failed_or_running_job_cannot_restart_implicitly(platform_operator):
     """Operator recovery must be a distinct approved action."""
     from platform_ops.provisioning import (
         ProvisioningStateError, create_school_and_queue_provisioning,
@@ -130,11 +141,11 @@ def test_failed_or_running_job_cannot_restart_implicitly():
         job.state = state
         job.save(update_fields=["state"])
         with pytest.raises(ProvisioningStateError):
-            run_provisioning_job(job)
+            run_provisioning_job(job, actor_user_id=platform_operator.pk)
 
 
 @pytest.mark.django_db
-def test_provisioning_audit_failure_rolls_back_activation(monkeypatch):
+def test_provisioning_audit_failure_rolls_back_activation(monkeypatch, platform_operator):
     """The school cannot activate when mandatory audit persistence fails."""
     from platform_ops.models import AuditEvent
     from platform_ops.provisioning import (
@@ -152,7 +163,7 @@ def test_provisioning_audit_failure_rolls_back_activation(monkeypatch):
         raise RuntimeError("Sensitive audit database diagnostic")
     monkeypatch.setattr(AuditEvent.objects, "create", fail)
     with pytest.raises(ProvisioningAuditError):
-        run_provisioning_job(job)
+        run_provisioning_job(job, actor_user_id=platform_operator.pk)
     job.refresh_from_db()
     assert job.state == "queued"
     assert TenantProfile.objects.get(school_id=job.school_id).status == "pending"
@@ -197,7 +208,7 @@ def test_operator_command_defaults_to_read_only_and_rejects_sqlite(monkeypatch):
             call_command(
                 "run_school_provisioning",
                 job_id=str(job.pk), actor_id=str(owner.pk),
-                apply=True, confirm_job_id=str(job.pk),
+                apply=True, confirm_job_id=str(job.pk), change_id=str(uuid.uuid4()),
             )
     monkeypatch.setenv("CROWN_ENV", "dev")
     monkeypatch.setenv("DJANGO_ENV", "production")
@@ -205,7 +216,7 @@ def test_operator_command_defaults_to_read_only_and_rejects_sqlite(monkeypatch):
         call_command(
             "run_school_provisioning",
             job_id=str(job.pk), actor_id=str(owner.pk),
-            apply=True, confirm_job_id=str(job.pk),
+            apply=True, confirm_job_id=str(job.pk), change_id=str(uuid.uuid4()),
         )
     monkeypatch.delenv("DJANGO_ENV", raising=False)
     monkeypatch.setenv("WEBSITE_HOSTNAME", "crown-api-prod.azurewebsites.net")
@@ -213,7 +224,7 @@ def test_operator_command_defaults_to_read_only_and_rejects_sqlite(monkeypatch):
         call_command(
             "run_school_provisioning",
             job_id=str(job.pk), actor_id=str(owner.pk),
-            apply=True, confirm_job_id=str(job.pk),
+            apply=True, confirm_job_id=str(job.pk), change_id=str(uuid.uuid4()),
         )
     monkeypatch.delenv("WEBSITE_HOSTNAME", raising=False)
     monkeypatch.setenv("CROWN_ENV", "dev")
@@ -227,7 +238,7 @@ def test_operator_command_defaults_to_read_only_and_rejects_sqlite(monkeypatch):
             call_command(
                 "run_school_provisioning",
                 job_id=str(job.pk), actor_id=str(owner.pk), apply=True,
-                confirm_job_id=str(job.pk),
+                confirm_job_id=str(job.pk), change_id=str(uuid.uuid4()),
             )
     # A DEV environment label or active owner UUID must not authorize writes
     # against an unrelated/production PostgreSQL server.
@@ -250,7 +261,7 @@ def test_operator_command_defaults_to_read_only_and_rejects_sqlite(monkeypatch):
                 call_command(
                     "run_school_provisioning",
                     job_id=str(job.pk), actor_id=str(owner.pk), apply=True,
-                    confirm_job_id=str(job.pk),
+                    confirm_job_id=str(job.pk), change_id=str(uuid.uuid4()),
                 )
             db.cursor.assert_not_called()
             activate.assert_not_called()
@@ -291,7 +302,7 @@ def test_provisioning_dev_target_identity_and_tls_guards(monkeypatch):
 
 
 @pytest.mark.django_db(transaction=True)
-def test_postgresql_parallel_provisioning_claims_once():
+def test_postgresql_parallel_provisioning_claims_once(platform_operator):
     """Two independent PostgreSQL connections activate a school exactly once."""
     from concurrent.futures import ThreadPoolExecutor
     from threading import Event
@@ -328,7 +339,7 @@ def test_postgresql_parallel_provisioning_claims_once():
         try:
             # Each worker receives a stale object, so only the persisted
             # row lock can serialize these attempts correctly.
-            return provisioning.run_provisioning_job(job).state
+            return provisioning.run_provisioning_job(job, actor_user_id=platform_operator.pk).state
         finally:
             close_old_connections()
 
@@ -360,7 +371,7 @@ def test_postgresql_parallel_provisioning_claims_once():
 
 
 @pytest.mark.django_db(transaction=True)
-def test_postgresql_operator_command_executes_one_job():
+def test_postgresql_operator_command_executes_one_job(monkeypatch):
     """The confirmed PostgreSQL command creates one durable activation."""
     from io import StringIO
 
@@ -385,6 +396,8 @@ def test_postgresql_operator_command_executes_one_job():
         email=f"{key[:8]}@example.invalid",
         password="local-test-only",
     )
+    monkeypatch.setenv('CROWN_ENV', 'dev')
+    change_id = uuid.uuid4()
     output = StringIO()
     call_command(
         "run_school_provisioning",
@@ -392,6 +405,7 @@ def test_postgresql_operator_command_executes_one_job():
         actor_id=str(operator.id),
         apply=True,
         confirm_job_id=str(job.id),
+        change_id=str(change_id),
         stdout=output,
     )
     job.refresh_from_db()
@@ -402,6 +416,8 @@ def test_postgresql_operator_command_executes_one_job():
         actor_user_id=operator.id,
     ).count() == 1
     assert "PROVISIONED" in output.getvalue()
+    assert AuditEvent.objects.get(resource_id=job.id, action="provisioning.started").request_id == str(change_id)
+    assert AuditEvent.objects.get(resource_id=job.id, action="provisioning.succeeded").request_id == str(change_id)
 
 
 @pytest.mark.django_db
@@ -431,3 +447,71 @@ def test_school_creation_rolls_back_when_audit_write_fails(monkeypatch):
     assert not School.objects.filter(name="Unaudited Synthetic School").exists()
     assert not TenantProfile.objects.filter(slug=slug).exists()
     assert not ProvisioningJob.objects.filter(idempotency_key=key).exists()
+
+
+@pytest.mark.django_db
+def test_retry_requires_new_failure_and_bounded_operator_approval(
+    platform_operator, django_user_model, monkeypatch,
+):
+    """Two retry grants at most, each backed by new failure evidence."""
+    from platform_ops.models import AuditEvent
+    from platform_ops.provisioning import (
+        ProvisioningStateError, authorize_failed_provisioning_retry,
+        create_school_and_queue_provisioning, run_provisioning_job,
+    )
+    from tenants.models import SchoolSettings, TenantProfile
+
+    token = uuid.uuid4().hex[:8]
+    job = create_school_and_queue_provisioning(
+        name="Synthetic Retry School", slug=f"retry-approved-{token}",
+        idempotency_key=str(uuid.uuid4()),
+    )
+    change_id = uuid.uuid4()
+    with pytest.raises(ProvisioningStateError, match="Only failed"):
+        authorize_failed_provisioning_retry(
+            job.pk, actor_user_id=platform_operator.pk,
+            correlation_id=change_id, reason_code="transient_dependency",
+        )
+    staff = django_user_model.objects.create_user(username=f"retry-staff-{token}")
+
+    def fail(*args, **kwargs):
+        raise RuntimeError("SYNTHETIC_SECRET_NOT_FOR_AUDIT")
+
+    for count in (1, 2, 3):
+        with monkeypatch.context() as m:
+            m.setattr(SchoolSettings.objects, "get_or_create", fail)
+            failed = run_provisioning_job(
+                job, actor_user_id=platform_operator.pk, correlation_id=change_id,
+            )
+        assert failed.state == "failed"
+        assert "SYNTHETIC_SECRET" not in failed.error
+        assert TenantProfile.objects.get(school_id=job.school_id).status == "pending"
+        with pytest.raises(ProvisioningStateError, match="operator"):
+            authorize_failed_provisioning_retry(
+                job.pk, actor_user_id=staff.pk,
+                correlation_id=change_id, reason_code="transient_dependency",
+            )
+        if count == 3:
+            with pytest.raises(ProvisioningStateError, match="retry limit"):
+                authorize_failed_provisioning_retry(
+                    job.pk, actor_user_id=platform_operator.pk,
+                    correlation_id=change_id, reason_code="transient_dependency",
+                )
+            break
+        requeued = authorize_failed_provisioning_retry(
+            job.pk, actor_user_id=platform_operator.pk,
+            correlation_id=change_id, reason_code="transient_dependency",
+        )
+        assert requeued.state == "queued"
+        assert requeued.started_at is None
+        assert requeued.finished_at is None
+        event = AuditEvent.objects.get(
+            resource_id=job.id, action="provisioning.retry_authorized",
+            payload__retry_number=count,
+        )
+        assert event.actor_user_id == platform_operator.pk
+        assert event.request_id == str(change_id)
+        assert event.payload["reason_code"] == "transient_dependency"
+    assert AuditEvent.objects.filter(
+        resource_id=job.pk, action="provisioning.retry_authorized"
+    ).count() == 2
