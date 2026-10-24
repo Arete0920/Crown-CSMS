@@ -178,9 +178,21 @@ class BillingSummaryApiTests(TestCase):
         self.assertNotIn("INV-A-0001", str(ambiguous.content))
 
     def test_matching_email_without_link_does_not_grant_legacy_billing(self):
+        # Use a distinct email from the existing parent to respect the
+        # school's unique (school, email) account constraint. The fictional
+        # address still matches a separate legacy household Person, proving
+        # that email equality cannot substitute for a UserPersonLink.
+        email_only = Person.objects.create(
+            first_name="Unlinked", last_name="Guardian",
+            email="email-only-synthetic@example.invalid",
+        )
+        HouseholdMember.objects.create(
+            household=self.household_a, person=email_only,
+            role=ROLE_GUARDIAN, is_primary=False,
+        )
         unlinked = UserAccount.objects.create_user(
             username="synthetic-email-only-billing",
-            email="parent@example.com",
+            email="email-only-synthetic@example.invalid",
             school=self.school,
         )
         self.client.force_login(unlinked)
