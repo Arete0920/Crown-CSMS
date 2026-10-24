@@ -337,3 +337,50 @@ def test_parent_permission_grant_cannot_expand_private_thread_scope(records):
     denied = client.get(f"/api/v1/threads/{foreign.pk}/", **headers)
     assert denied.status_code == 404
     assert "PRIVATE other household" not in str(denied.content)
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("actor", ["staff", "parent"])
+@pytest.mark.parametrize("link_school", ["school_a", "school_b"])
+def test_ambiguous_household_ownership_cannot_expose_private_threads(records, actor, link_school):
+    """Neither staff grants nor guardian membership resolve schoolless messages."""
+    from core.models import CrownPermission, RolePermission
+    from crown_api.models import MessageThread
+
+    household = records["parent"].person_link.person.household_memberships.first().household
+    thread = MessageThread.objects.create(
+        household=household, subject="PRIVATE ambiguous ownership",
+        thread_type="GENERAL",
+    )
+    permission, _ = CrownPermission.objects.get_or_create(
+        code="communications.view",
+        defaults={"description": "View school communications"},
+    )
+    RolePermission.objects.get_or_create(
+        role_code="REGISTRAR" if actor == "staff" else "PARENT",
+        permission=permission,
+    )
+    client = APIClient()
+    client.force_login(records[actor])
+    headers = {"HTTP_X_SCHOOL_ID": str(records["school_a"].pk)}
+    endpoint = "/api/v1/threads/"
+    before = client.get(endpoint, **headers)
+    assert before.status_code == 200
+    assert {row["thread_id"] for row in before.json()} == {str(thread.pk)}
+    assert client.get(f"{endpoint}{thread.pk}/", **headers).status_code == 200
+
+    foreign_family = Family.objects.create(
+        school=records["school_b"], family_name="Synthetic foreign ownership",
+    )
+    # Exercise both valid cross-school ownership and a malformed same-school
+    # bridge pointing at a foreign family. Neither can safely attribute messages.
+    HouseholdFamilyLink.objects.create(
+        school=records[link_school], family=foreign_family,
+        household_id=household.pk, source=HouseholdFamilyLink.SOURCE_MANUAL,
+    )
+    after = client.get(endpoint, **headers)
+    assert after.status_code == 200
+    assert after.json() == []
+    denied = client.get(f"{endpoint}{thread.pk}/", **headers)
+    assert denied.status_code == 404
+    assert "PRIVATE" not in str(denied.content)
