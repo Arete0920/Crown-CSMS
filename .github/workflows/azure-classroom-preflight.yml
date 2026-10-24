@@ -12,6 +12,8 @@ on:
       - 'scripts/ops/test_azure_runtime_inventory.py'
       - 'scripts/ops/jireh_azure_site_preflight.py'
       - 'scripts/ops/test_jireh_azure_site_preflight.py'
+      - 'scripts/ops/verify_dev_owner_runtime.py'
+      - 'scripts/ops/test_verify_dev_owner_runtime.py'
       - 'docs/operations/CROWN_AZURE_FREE_FIRST_COST_CONTROL.md'
       - '.github/workflows/azure-classroom-preflight.yml'
   push:
@@ -25,10 +27,22 @@ on:
       - 'scripts/ops/test_azure_runtime_inventory.py'
       - 'scripts/ops/jireh_azure_site_preflight.py'
       - 'scripts/ops/test_jireh_azure_site_preflight.py'
+      - 'scripts/ops/verify_dev_owner_runtime.py'
+      - 'scripts/ops/test_verify_dev_owner_runtime.py'
       - 'docs/operations/CROWN_AZURE_FREE_FIRST_COST_CONTROL.md'
       - '.github/workflows/azure-classroom-preflight.yml'
       - 'sites/jireh/README.md'
   workflow_dispatch:
+    inputs:
+      dev_owner_runtime_precheck:
+        description: "Read-only public DEV owner runtime precheck; skip privileged Azure inventory"
+        type: boolean
+        required: false
+        default: false
+      expected_dev_sha:
+        description: "Full 40-character accepted main SHA deployed to DEV API and preview"
+        required: false
+        type: string
 
 permissions:
   contents: read
@@ -59,6 +73,8 @@ jobs:
       - name: Verify Jireh website Azure inventory failure contracts
         run: python -m unittest discover -s scripts/ops -p test_jireh_azure_site_preflight.py -v
 
+      - name: Verify DEV owner public precheck contracts offline
+        run: python -m unittest discover -s scripts/ops -p test_verify_dev_owner_runtime.py -v
 
   jireh-free-staging-once:
     # Explicit commit marker makes this a one-shot staging action, never a recurring deploy.
@@ -157,8 +173,69 @@ jobs:
         if: always()
         run: az logout
 
+  dev-owner-runtime-precheck:
+    # Explicit owner-mode dispatch only. No Azure login, secrets, tenancy
+    # changes, schema mutations, payments, or provisioned resources.
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.dev_owner_runtime_precheck == true
+    needs: collector-tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout accepted main
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Verify requested full SHA is current protected main
+        shell: bash
+        env:
+          EXPECTED_SHA: ${{ inputs.expected_dev_sha }}
+        run: |
+          set -euo pipefail
+          [[ "$EXPECTED_SHA" =~ ^[0-9a-f]{40}$ ]] || { echo 'BLOCKED: full lowercase SHA required'; exit 1; }
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SHA" || { echo 'BLOCKED: checkout differs from requested SHA'; exit 1; }
+          git fetch --no-tags origin refs/heads/main:refs/remotes/origin/main
+          test "$(git rev-parse origin/main)" = "$EXPECTED_SHA" || { echo 'BLOCKED: main advanced; re-review before probing'; exit 1; }
+      - name: Public DEV runtime precheck without credentials
+        env:
+          EXPECTED_SHA: ${{ inputs.expected_dev_sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          report="$RUNNER_TEMP/dev-owner-runtime-precheck.json"
+          set +e
+          python3 scripts/ops/verify_dev_owner_runtime.py --expected-sha "$EXPECTED_SHA" > "$report"
+          result=$?
+          set -e
+          python3 - "$report" <<'PY'
+          import json, os, sys
+          from pathlib import Path
+          packet = json.loads(Path(sys.argv[1]).read_text())
+          lines = [
+              "## DEV owner public precheck (not runtime certification)",
+              "Expected source: " + packet["expected_main_sha"],
+              "Precheck: **" + packet["precheck"] + "**",
+          ]
+          lines.extend(f"- {key}: {value}" for key, value in sorted(packet["checks"].items()))
+          lines.append("Operator authentication, provisioning, backup/restore and release authority remain NOT VERIFIED.")
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as output:
+              output.write("\n".join(lines) + "\n")
+          print("DEV owner precheck: " + packet["precheck"] + " (unprivileged read only)")
+          PY
+          exit "$result"
+      - name: Retain sanitized result only
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: dev-owner-runtime-precheck-${{ github.run_id }}
+          path: ${{ runner.temp }}/dev-owner-runtime-precheck.json
+          retention-days: 7
+          if-no-files-found: warn
+
   azure-inventory:
-    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.dev_owner_runtime_precheck != true
     needs: collector-tests
     runs-on: ubuntu-latest
     timeout-minutes: 15
