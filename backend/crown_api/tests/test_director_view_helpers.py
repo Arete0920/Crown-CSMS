@@ -18,43 +18,29 @@ def _request(user):
     return SimpleNamespace(user=user)
 
 
-def test_crown_director_allowed_honors_explicit_dev_override(monkeypatch):
+def test_crown_director_allowed_does_not_accept_dev_override_without_school(monkeypatch):
     monkeypatch.setattr(views.settings, "CROWN_DEV_OPEN_API", True, raising=False)
-
-    assert views.crown_director_allowed(_request(None)) is True
-
-
-def test_crown_director_allowed_allows_superuser(monkeypatch):
-    monkeypatch.setattr(views.settings, "CROWN_DEV_OPEN_API", False, raising=False)
-
-    assert views.crown_director_allowed(_request(_user(superuser=True))) is True
+    assert views.crown_director_allowed(_request(None)) is False
 
 
-@pytest.mark.parametrize(
-    "user",
-    [
-        None,
-        _user(authenticated=False),
-        _user(user_id=None),
-    ],
-)
-def test_crown_director_allowed_fails_closed_without_valid_identity(monkeypatch, user):
-    monkeypatch.setattr(views.settings, "CROWN_DEV_OPEN_API", False, raising=False)
+def test_crown_director_allowed_passes_school_to_authoritative_guard(monkeypatch):
+    calls = []
+    def check_school(request, raw_school_id):
+        calls.append((request.user, raw_school_id))
+        return raw_school_id == "school-a" and request.user.is_superuser
 
-    assert views.crown_director_allowed(_request(user)) is False
-
-
-def test_crown_director_allowed_checks_authoritative_role_codes(monkeypatch):
-    monkeypatch.setattr(views.settings, "CROWN_DEV_OPEN_API", False, raising=False)
-    query = MagicMock()
-    query.filter.return_value.exists.return_value = True
-    monkeypatch.setattr(views.UserRole, "objects", query)
-
-    assert views.crown_director_allowed(_request(_user(user_id=42))) is True
-    query.filter.assert_called_once_with(
-        user_id=42,
-        role_code__in=views.ALLOWED_ROLE_CODES,
+    monkeypatch.setattr(views, "_authorized_director_school", check_school)
+    request = SimpleNamespace(
+        user=_user(superuser=True),
+        query_params={"school_id": "school-a"},
     )
+    assert views.crown_director_allowed(request) is True
+    assert calls == [(request.user, "school-a")]
+
+
+@pytest.mark.parametrize("user", [None, _user(authenticated=False), _user(user_id=None)])
+def test_crown_director_allowed_fails_closed_without_valid_identity(user):
+    assert views.crown_director_allowed(_request(user)) is False
 
 
 def test_user_has_director_role_fails_closed_for_missing_identity():
