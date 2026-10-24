@@ -72,3 +72,16 @@ class IsSafetyOfficerOrReadOnly(BasePermission):
                 or _school_grant(request, school, "safety.edit")
             )
         return _school_grant(request, school, "safety.edit")
+
+
+class CanViewFacilitiesSummary(BasePermission):
+    """Work-order aggregates require a school-bound facilities grant."""
+
+    def has_permission(self, request, view) -> bool:
+        school = _school_for_actor(request)
+        return bool(
+            school and (
+                _school_grant(request, school, "facilities.view")
+                or _school_grant(request, school, "facilities.edit")
+            )
+        )

@@ -31,7 +31,12 @@ class TenantRelatedFieldsMixin:
     def get_fields(self):
         fields = super().get_fields()
         request = self.context.get("request")
-        if request is None:
+        # drf-spectacular constructs a synthetic, unscoped request when
+        # generating OpenAPI. Only its explicitly marked fake view may skip
+        # tenant selection; ordinary unscoped API requests still fail closed.
+        if request is None or getattr(
+            self.context.get("view"), "swagger_fake_view", False
+        ):
             return fields
         school_id = get_request_school_id(request, required=True)
         for name in self.tenant_relation_fields:

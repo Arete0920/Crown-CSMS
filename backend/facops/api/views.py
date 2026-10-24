@@ -26,6 +26,7 @@ from facops.models import (
 )
 from facops.api.permissions import (
     CanCreateWorkOrder,
+    CanViewFacilitiesSummary,
     IsFacilitiesStaffOrReadOnly,
     IsSafetyOfficerOrReadOnly,
 )
@@ -228,7 +229,7 @@ class AlertViewSet(SchoolScopedViewSet):
 
 
 @api_view(["GET"])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, CanViewFacilitiesSummary])
 def facilities_summary(request):
     school_id = get_request_school_id(request)
     closed_statuses = [WorkOrder.STATUS_DONE, WorkOrder.STATUS_CANCELED]

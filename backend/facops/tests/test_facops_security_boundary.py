@@ -198,3 +198,45 @@ def test_campus_relationship_fields_reject_foreign_school_references(subjects):
         {"title": "Permitted school incident", "location": str(own_location.pk)},
         format="json",
     ).status_code == 201
+
+
+def test_openapi_fake_view_does_not_require_tenant_header():
+    """Documentation introspection cannot dilute runtime school selection."""
+    from types import SimpleNamespace
+
+    from rest_framework.request import Request
+    from rest_framework.test import APIRequestFactory
+
+    from facops.api.serializers import (
+        AssetSerializer, LocationSerializer, SafetyIncidentSerializer,
+        WorkOrderSerializer,
+    )
+    from households.scoping import MissingSchoolContext
+
+    unscoped_request = Request(APIRequestFactory().get("/api/facilities/work-orders/"))
+    for serializer_class in (
+        LocationSerializer, AssetSerializer, WorkOrderSerializer,
+        SafetyIncidentSerializer,
+    ):
+        schema_serializer = serializer_class(context={
+            "request": unscoped_request,
+            "view": SimpleNamespace(swagger_fake_view=True),
+        })
+        assert schema_serializer.fields, serializer_class.__name__
+        actual_serializer = serializer_class(context={
+            "request": unscoped_request,
+            "view": SimpleNamespace(swagger_fake_view=False),
+        })
+        with pytest.raises(MissingSchoolContext):
+            _ = actual_serializer.fields
+
+
+def test_work_order_summary_needs_facilities_read_or_edit_grant(subjects):
+    f = subjects
+    for actor in (f["requester"], f["staff"], f["safety"]):
+        assert client(actor, f["a"]).get("/api/facilities/summary/").status_code == 403
+    granted = client(f["facilities"], f["a"]).get("/api/facilities/summary/")
+    assert granted.status_code == 200
+    assert granted.json()["total_open_work_orders"] >= 1
+    foreign = client(f["other_school_staff"], f["a"]).get("/api/facilities/summary/")
+    assert foreign.status_code in (403, 404)
