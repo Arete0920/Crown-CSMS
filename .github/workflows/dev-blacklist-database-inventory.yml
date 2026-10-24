@@ -23,6 +23,16 @@ on:
         required: false
         type: string
         default: ""
+      apply_reviewed_legacy_refresh:
+        description: "Separate explicit DEV-only reviewed CRM + legacy refresh stage"
+        required: false
+        type: boolean
+        default: false
+      confirm_dev_legacy_refresh:
+        description: "Type migrate-dev-legacy-refresh for the DEV-only legacy stage"
+        required: false
+        type: string
+        default: ""
       inspect_migration_plan:
         description: Inspect pending DEV migrations without applying schema changes
         required: false
@@ -53,8 +63,9 @@ jobs:
         run: |
           python -m unittest discover -s scripts/ops -p test_reviewed_dev_support_migrations.py -v
           python -m unittest discover -s scripts/ops -p test_run_dev_inquiry_migration.py -v
+          python -m unittest discover -s scripts/ops -p test_reviewed_legacy_refresh_migrations.py -v
   inspect:
-    if: github.ref == 'refs/heads/main' && inputs.apply_reviewed_support != true
+    if: github.ref == 'refs/heads/main' && inputs.apply_reviewed_support != true && inputs.apply_reviewed_legacy_refresh != true
     runs-on: ubuntu-latest
     environment: dev
     timeout-minutes: 15
@@ -127,8 +138,8 @@ jobs:
         if: always() && steps.azure_login.outcome == 'success'
         run: az logout
 
-  stage-reviewed-support:
-    if: github.ref == 'refs/heads/main' && inputs.apply_reviewed_support == true
+  stage-reviewed-dev-migrations:
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && (inputs.apply_reviewed_support == true || inputs.apply_reviewed_legacy_refresh == true)
     runs-on: ubuntu-latest
     environment: dev
     timeout-minutes: 20
@@ -140,13 +151,25 @@ jobs:
         shell: bash
         env:
           EXPECTED_SHA: ${{ inputs.expected_sha }}
-          CONFIRM: ${{ inputs.confirm_dev_support }}
+          SUPPORT_MODE: ${{ inputs.apply_reviewed_support }}
+          LEGACY_MODE: ${{ inputs.apply_reviewed_legacy_refresh }}
+          CONFIRM_SUPPORT: ${{ inputs.confirm_dev_support }}
+          CONFIRM_LEGACY: ${{ inputs.confirm_dev_legacy_refresh }}
           INSPECT_PLAN: ${{ inputs.inspect_migration_plan }}
         run: |
           set -euo pipefail
           [[ "$EXPECTED_SHA" =~ ^[0-9a-f]{40}$ ]]
-          test "$CONFIRM" = migrate-dev-support
           test "$INSPECT_PLAN" != true
+          if [[ "$SUPPORT_MODE" == "true" && "$LEGACY_MODE" != "true" ]]; then
+            test "$CONFIRM_SUPPORT" = migrate-dev-support
+            test -z "$CONFIRM_LEGACY"
+          elif [[ "$LEGACY_MODE" == "true" && "$SUPPORT_MODE" != "true" ]]; then
+            test "$CONFIRM_LEGACY" = migrate-dev-legacy-refresh
+            test -z "$CONFIRM_SUPPORT"
+          else
+            echo 'BLOCKED: choose exactly one reviewed DEV migration stage' >&2
+            exit 1
+          fi
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ inputs.expected_sha }}
@@ -164,9 +187,11 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: '3.12'
-      - name: Verify fail-closed support staging contracts without Azure
+      - name: Verify both fail-closed migration-stage contracts without Azure
         run: |
+          python -m pip install pyyaml==6.0.3
           python -m unittest discover -s scripts/ops -p test_reviewed_dev_support_migrations.py -v
+          python -m unittest discover -s scripts/ops -p test_reviewed_legacy_refresh_migrations.py -v
           python -m unittest discover -s scripts/ops -p test_run_dev_inquiry_migration.py -v
       - name: Install reviewed backend dependencies
         run: python -m pip install -r backend/requirements.txt
@@ -176,23 +201,32 @@ jobs:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      - name: Stage exact support compatibility migrations under PostgreSQL lock
+      - name: Stage only the selected reviewed DEV migrations under PostgreSQL lock
         shell: bash
         env:
           EXPECTED_SHA: ${{ inputs.expected_sha }}
+          SUPPORT_MODE: ${{ inputs.apply_reviewed_support }}
         run: |
           set -euo pipefail
-          python scripts/ops/run_dev_inquiry_migration.py \
-            --expected-sha "$EXPECTED_SHA" \
-            --apply-reviewed-support \
-            --confirm-dev-support migrate-dev-support
+          if [[ "$SUPPORT_MODE" == "true" ]]; then
+            python scripts/ops/run_dev_inquiry_migration.py \
+              --expected-sha "$EXPECTED_SHA" \
+              --apply-reviewed-support \
+              --confirm-dev-support migrate-dev-support
+          else
+            python scripts/ops/run_dev_inquiry_migration.py \
+              --expected-sha "$EXPECTED_SHA" \
+              --apply-reviewed-legacy-refresh \
+              --confirm-dev-legacy-refresh migrate-dev-legacy-refresh
+          fi
       - name: Record stage boundary
         if: always()
         run: |
           {
-            echo '## DEV support compatibility stage'
+            echo '## DEV explicitly reviewed schema stage'
             echo 'Target: crown-api-dev only, approved exact main SHA'
-            echo 'Only support.0002 + support.0003; CRM/JWT schema not authorized'
+            echo 'Select exactly one: support 0002+0003 OR CRM 0002+legacy refresh 0014'
+            echo 'No SimpleJWT blacklist activation or unrelated migrations authorized'
             echo 'Live application image unchanged; DEV runtime NOT CERTIFIED'
             echo 'A passing job is not backup/restore or production authorization'
           } >> "$GITHUB_STEP_SUMMARY"
