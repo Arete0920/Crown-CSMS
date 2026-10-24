@@ -562,11 +562,23 @@ def get_field_scope(user, domain: str, *, school_id=None) -> FieldScope:
         else resolve_role(user, school_id=school_id)
     )
     domain_map = FIELD_SCOPE.get(domain, {})
-    return (
+    rule = (
         domain_map.get(role)
         or domain_map.get("unknown")
         or FieldScope(allow=set(), deny=set())
     )
+    # A household directory grant must not implicitly grant the distinct
+    # guardian contact directory through its embedded serializer.
+    if domain == DOMAIN_HOUSEHOLDS and role != "parent":
+        if not _staff_read_grant(user, school_id, "guardians.view"):
+            rule = FieldScope(allow=rule.allow, deny=rule.deny | {"guardians"})
+    return rule
+
+
+def _apply_field_rule(serializer, rule: FieldScope) -> None:
+    for name in list(serializer.fields):
+        if name in rule.deny or (rule.allow != "__all__" and name not in rule.allow):
+            serializer.fields.pop(name, None)
 
 
 def scope_serializer_fields(user, serializer, *, school_id=None) -> None:
@@ -586,17 +598,20 @@ def scope_serializer_fields(user, serializer, *, school_id=None) -> None:
         serializer.fields.clear()
         return
 
-    rule = get_field_scope(user, domain, school_id=school_id)
-    current_fields = set(serializer.fields.keys())
-
-    if rule.allow != "__all__":
-        allowed = set(rule.allow)
-        for name in list(current_fields):
-            if name not in allowed:
-                serializer.fields.pop(name, None)
-
-    for name in rule.deny:
-        serializer.fields.pop(name, None)
+    _apply_field_rule(serializer, get_field_scope(user, domain, school_id=school_id))
+    if domain == DOMAIN_HOUSEHOLDS:
+        # Nested serializers inherit the root context. Apply each relation's
+        # domain explicitly without mutating that shared context.
+        for name, child_domain in (
+            ("guardians", DOMAIN_GUARDIANS),
+            ("students", DOMAIN_STUDENTS),
+        ):
+            nested = serializer.fields.get(name)
+            if nested is not None:
+                child = getattr(nested, "child", nested)
+                _apply_field_rule(
+                    child, get_field_scope(user, child_domain, school_id=school_id)
+                )
 
 
 def scoped_serializer_context(domain: str, base: Optional[dict] = None) -> dict:
