@@ -134,7 +134,7 @@ export default function PlatformOwnerConsole() {
             ) : (
               <Alert severity="warning">Support operational metrics unavailable; not verified.</Alert>
             )}
-          </Card></Card>
+          </CardContent></Card>
           <Card><CardContent>
             <Typography variant="h6" gutterBottom>Company Finance</Typography>
             <Alert severity="warning">
