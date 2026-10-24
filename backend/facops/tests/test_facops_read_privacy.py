@@ -6,7 +6,10 @@ import pytest
 from rest_framework.test import APIClient
 
 from core.models import CrownPermission, RolePermission, School, UserAccount, UserRole
-from facops.models import SafetyIncident, VisitorLog, WorkOrder, WorkOrderComment
+from facops.models import (
+    Alert, Asset, Drill, Location, SafetyIncident, VisitorLog,
+    WorkOrder, WorkOrderComment,
+)
 
 pytestmark = pytest.mark.django_db
 
@@ -178,3 +181,120 @@ def test_work_order_mutations_cannot_serialize_cross_tenant_comments(school_cont
         assert comments["Local comment with foreign author"]["author"] is None
         assert comments["Local comment with foreign author"]["author_name"] == ""
         assert f["foreign_author"].username not in str(response.content)
+
+
+@pytest.fixture
+def related_records(school_context):
+    """Valid local records, with separate synthetic foreign related objects."""
+    f = school_context
+    local_user = f["reporter"]
+    local_location = Location.objects.create(school=f["school"], name="Local room")
+    foreign_location = Location.objects.create(school=f["foreign"], name="Private foreign room")
+    local_asset = Asset.objects.create(school=f["school"], name="Local asset")
+    foreign_asset = Asset.objects.create(school=f["foreign"], name="Private foreign asset")
+    schoolless_user = UserAccount.objects.create_user(
+        username=f"schoolless-{uuid.uuid4().hex[:12]}",
+        email=f"schoolless-{uuid.uuid4().hex[:12]}@example.invalid",
+    )
+    rows = {
+        "facilities/locations": Location.objects.create(
+            school=f["school"], name="Local child room", parent=local_location,
+        ),
+        "facilities/assets": Asset.objects.create(
+            school=f["school"], name="Local located asset", location=local_location,
+        ),
+        "facilities/work-orders": WorkOrder.objects.create(
+            school=f["school"], title="Local related repair",
+            location=local_location, asset=local_asset,
+            requested_by=local_user, assigned_to=local_user,
+        ),
+        "security/incidents": SafetyIncident.objects.create(
+            school=f["school"], title="Local related incident",
+            location=local_location, related_asset=local_asset,
+            reported_by=local_user, assigned_to=local_user,
+        ),
+        "security/drills": Drill.objects.create(
+            school=f["school"], drill_type="FIRE", created_by=local_user,
+        ),
+        "security/alerts": Alert.objects.create(
+            school=f["school"], title="Local related alert", emitted_by=local_user,
+        ),
+    }
+    related = {
+        "location": (local_location, foreign_location),
+        "asset": (local_asset, foreign_asset),
+        "user": (local_user, f["foreign_author"]),
+    }
+    return rows, related, schoolless_user
+
+
+@pytest.mark.parametrize("resource,field,kind", [
+    ("facilities/locations", "parent", "location"),
+    ("facilities/assets", "location", "location"),
+    ("facilities/work-orders", "location", "location"),
+    ("facilities/work-orders", "asset", "asset"),
+    ("facilities/work-orders", "requested_by", "user"),
+    ("facilities/work-orders", "assigned_to", "user"),
+    ("security/incidents", "location", "location"),
+    ("security/incidents", "related_asset", "asset"),
+    ("security/incidents", "reported_by", "user"),
+    ("security/incidents", "assigned_to", "user"),
+    ("security/drills", "created_by", "user"),
+    ("security/alerts", "emitted_by", "user"),
+])
+def test_historical_foreign_relations_are_redacted_on_every_response(
+    school_context, related_records, resource, field, kind,
+):
+    """Write validation cannot protect identities already present in old rows."""
+    f = school_context
+    rows, related, _ = related_records
+    row = rows[resource]
+    local, foreign = related[kind]
+    actor = f["facilities"] if resource.startswith("facilities/") else f["safety"]
+    client = request_client(actor, f["school"])
+    path = f"/api/{resource}/{row.pk}/"
+
+    allowed = client.get(path)
+    assert allowed.status_code == 200, allowed.content
+    assert str(allowed.json()[field]) == str(local.pk)
+
+    # Simulate historical import/raw SQL writes that bypassed the API's checks.
+    type(row).objects.filter(pk=row.pk).update(**{f"{field}_id": foreign.pk})
+    responses = [client.get(path), client.patch(path, {}, format="json")]
+    listing = client.get(f"/api/{resource}/")
+    assert listing.status_code == 200, listing.content
+    listed = next(item for item in listing.json() if item["id"] == row.pk)
+    assert listed[field] is None
+    if resource == "facilities/work-orders":
+        responses.append(client.post(
+            path + "transition/", {"status": "IN_PROGRESS"}, format="json",
+        ))
+    for response in responses:
+        assert response.status_code == 200, response.content
+        assert response.json()[field] is None
+        if kind == "user":
+            assert str(foreign.pk) not in str(response.content)
+    row.refresh_from_db()
+    assert getattr(row, f"{field}_id") == foreign.pk
+
+
+@pytest.mark.parametrize("resource,field", [
+    ("facilities/work-orders", "requested_by"),
+    ("facilities/work-orders", "assigned_to"),
+    ("security/incidents", "reported_by"),
+    ("security/incidents", "assigned_to"),
+    ("security/drills", "created_by"),
+    ("security/alerts", "emitted_by"),
+])
+def test_schoolless_related_actor_does_not_expose_platform_identity(
+    school_context, related_records, resource, field,
+):
+    f = school_context
+    rows, _, schoolless = related_records
+    row = rows[resource]
+    type(row).objects.filter(pk=row.pk).update(**{f"{field}_id": schoolless.pk})
+    actor = f["facilities"] if resource.startswith("facilities/") else f["safety"]
+    response = request_client(actor, f["school"]).get(f"/api/{resource}/{row.pk}/")
+    assert response.status_code == 200, response.content
+    assert response.json()[field] is None
+    assert str(schoolless.pk) not in str(response.content)
