@@ -6,7 +6,7 @@ from django.test import TestCase, override_settings
 from rest_framework.test import APIClient
 
 from core.models import School
-from platform_ops.models import ProvisioningJob
+from platform_ops.models import AuditEvent, ProvisioningJob
 from subscriptions.models import Plan, TenantSubscription
 from tenants.models import TenantProfile
 
@@ -107,6 +107,8 @@ class PlatformOperatorBoundaryTests(TestCase):
                 self.assertEqual(response.status_code, 400)
                 self.assertEqual(ProvisioningJob.objects.count(), 0)
                 self.assertEqual(School.objects.count(), 2)
+                self.assertEqual(TenantProfile.objects.count(), 2)
+                self.assertEqual(AuditEvent.objects.count(), 0)
 
     def test_intake_idempotency_key_rejects_changed_request_and_actor(self):
         """One key must not return another request's school identifiers."""
@@ -128,6 +130,7 @@ class PlatformOperatorBoundaryTests(TestCase):
         )
         self.assertEqual(same.status_code, 200)
         self.assertEqual(same.data["job_id"], first.data["job_id"])
+        self.assertEqual(AuditEvent.objects.filter(action="school.created").count(), 1)
 
         mismatched = self.client_for(self.owner).post(
             "/api/platform/schools",
@@ -149,6 +152,8 @@ class PlatformOperatorBoundaryTests(TestCase):
         self.assertNotIn(first.data["job_id"], str(cross_actor.data))
         self.assertEqual(ProvisioningJob.objects.count(), 1)
         self.assertEqual(School.objects.count(), 3)
+        self.assertEqual(TenantProfile.objects.count(), 3)
+        self.assertEqual(AuditEvent.objects.count(), 1)
 
     def test_intake_duplicate_slug_rolls_back_without_orphan_school(self):
         """A unique school slug collision must not create partial records."""
@@ -163,6 +168,8 @@ class PlatformOperatorBoundaryTests(TestCase):
         self.assertEqual(response.status_code, 409)
         self.assertEqual(School.objects.count(), 2)
         self.assertEqual(ProvisioningJob.objects.count(), 0)
+        self.assertEqual(TenantProfile.objects.count(), 2)
+        self.assertEqual(AuditEvent.objects.count(), 0)
 
 
     def test_overview_exposes_only_authorized_database_facts(self):
