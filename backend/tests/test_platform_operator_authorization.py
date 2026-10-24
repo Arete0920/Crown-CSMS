@@ -86,6 +86,17 @@ class PlatformOperatorBoundaryTests(TestCase):
             HTTP_X_SCHOOL_ID=str(school.pk),
         )
         self.assertEqual(pending_response.status_code, 404)
+        # Gradebook is exempt from early tenant-header middleware. Its shared
+        # request-school resolver must also reject inactive pending tenants.
+        from core.models import UserRole
+        UserRole.objects.create(
+            school=school, user=preactive_staff, role_code="HEAD_OF_SCHOOL"
+        )
+        exempt_gradebook = self.client_for(preactive_staff).get(
+            "/api/v1/gradebook/sections/",
+            HTTP_X_SCHOOL_ID=str(school.pk),
+        )
+        self.assertEqual(exempt_gradebook.status_code, 404)
         self.assertTrue(School.objects.get(pk=self.school.pk).is_active)
 
     def test_intake_rejects_untrusted_fields_without_side_effects(self):
