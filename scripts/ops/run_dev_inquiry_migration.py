@@ -57,7 +57,7 @@ def read_azure(*arguments):
     return json.loads(result.stdout)
 
 
-def validate_source(expected_sha, *, root=ROOT, run=subprocess.run, reviewed_legacy=False):
+def validate_source(expected_sha, *, root=ROOT, run=subprocess.run, reviewed_legacy=False, reviewed_support=False):
     if not re.fullmatch(r"[0-9a-f]{40}", expected_sha):
         raise Blocked("full_source_sha_required")
     head = run(["git", "rev-parse", "HEAD"], cwd=root, capture_output=True, text=True, check=False)
@@ -68,6 +68,12 @@ def validate_source(expected_sha, *, root=ROOT, run=subprocess.run, reviewed_leg
     migration = root / "backend" / REVIEWED[0] / "migrations" / (REVIEWED[1] + ".py")
     if not migration.is_file() or hashlib.sha256(migration.read_bytes()).hexdigest() != MIGRATION_SHA256:
         raise Blocked("reviewed_migration_digest_mismatch")
+    if reviewed_support:
+        from reviewed_dev_support_migrations import verify_source as verify_support_source
+        try:
+            verify_support_source(root)
+        except Exception as exc:
+            raise Blocked("reviewed_support_migration_digest_mismatch") from exc
     if reviewed_legacy:
         from reviewed_legacy_refresh_migrations import (
             LegacyBoundaryError, verify_source as verify_legacy_source,
@@ -249,8 +255,8 @@ def verify_ddl_authority(connection, pending, *, legacy_stage=False, apply_black
 
 def migrate_on_dev(database_url, secret, database_name, source_sha, *,
                    check_only=False, apply_blacklist=False, hosted_blacklist_enabled=False,
-                   legacy_stage=False):
-    if (check_only and apply_blacklist) or (apply_blacklist and legacy_stage):
+                   legacy_stage=False, support_stage=False):
+    if (check_only and (apply_blacklist or support_stage)) or (apply_blacklist and legacy_stage) or (support_stage and (apply_blacklist or legacy_stage)):
         raise Blocked("conflicting_dev_migration_modes")
     if not isinstance(hosted_blacklist_enabled, bool):
         raise Blocked("invalid_dev_blacklist_setting")
@@ -333,6 +339,32 @@ def migrate_on_dev(database_url, secret, database_name, source_sha, *,
         return executor.migration_plan(executor.loader.graph.leaf_nodes())
 
     try:
+        if support_stage:
+            from django.db import transaction
+            from reviewed_dev_support_migrations import (
+                apply_support_stage, validate_starting_schema,
+                verify_ddl_authority as verify_support_ddl,
+                verify_final_schema as verify_support_final,
+            )
+            def support_plan():
+                executor = MigrationExecutor(connection)
+                executor.loader.check_consistent_history(connection)
+                if executor.loader.detect_conflicts():
+                    raise Blocked("migration_graph_conflict")
+                validate_starting_schema(connection, executor.loader)
+                return executor.migration_plan(executor.loader.graph.leaf_nodes())
+            return apply_support_stage(
+                acquire_lock=lambda: Command()._migration_lock(
+                    timeout_seconds=300, allow_non_postgresql=False),
+                verify_identity=verify_identity,
+                read_plan=support_plan,
+                migrate_support=lambda: call_command(
+                    "migrate", "support", "0003_preserve_legacy_ticket_inserts",
+                    interactive=False, verbosity=0),
+                verify_ddl=lambda: verify_support_ddl(connection),
+                verify_after=lambda: verify_support_final(connection),
+                atomic=lambda: transaction.atomic(),
+            )
         return apply_reviewed_plan(
             acquire_lock=lambda: Command()._migration_lock(timeout_seconds=300, allow_non_postgresql=False),
             verify_identity=verify_identity,
@@ -354,6 +386,10 @@ def migrate_on_dev(database_url, secret, database_name, source_sha, *,
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--expected-sha", required=True)
+    parser.add_argument("--apply-reviewed-support", action="store_true",
+                        help="DEV-only support 0002+0003 atomic compatibility stage")
+    parser.add_argument("--confirm-dev-support", default="",
+                        help="Must equal migrate-dev-support to authorize DEV support stage")
     parser.add_argument("--check-only", action="store_true",
                         help="Read-only DEV migration preflight; never apply migrations")
     parser.add_argument("--apply-reviewed-blacklist", action="store_true",
@@ -370,10 +406,16 @@ def main(argv=None):
     stage = "source"
     try:
         legacy_stage = args.inspect_reviewed_legacy_refresh or args.apply_reviewed_legacy_refresh
-        if ((args.check_only and (args.apply_reviewed_blacklist or legacy_stage))
+        support_stage = args.apply_reviewed_support
+        if ((support_stage and (args.check_only or args.apply_reviewed_blacklist or legacy_stage))
+                or (args.check_only and (args.apply_reviewed_blacklist or legacy_stage))
                 or (args.apply_reviewed_blacklist and legacy_stage)
                 or (args.inspect_reviewed_legacy_refresh and args.apply_reviewed_legacy_refresh)):
             raise Blocked("conflicting_dev_migration_modes")
+        if support_stage != (args.confirm_dev_support == "migrate-dev-support"):
+            raise Blocked("explicit_dev_support_authority_required")
+        if args.confirm_dev_support and not support_stage:
+            raise Blocked("explicit_dev_support_authority_required")
         if args.apply_reviewed_blacklist != (args.confirm_dev_blacklist == "migrate-dev-blacklist"):
             raise Blocked("explicit_dev_blacklist_authority_required")
         if args.confirm_dev_blacklist and not args.apply_reviewed_blacklist:
@@ -383,7 +425,9 @@ def main(argv=None):
             raise Blocked("explicit_dev_legacy_authority_required")
         if args.confirm_dev_legacy_refresh and not args.apply_reviewed_legacy_refresh:
             raise Blocked("explicit_dev_legacy_authority_required")
-        if legacy_stage:
+        if support_stage:
+            validate_source(args.expected_sha, reviewed_support=True)
+        elif legacy_stage:
             validate_source(args.expected_sha, reviewed_legacy=True)
         else:
             validate_source(args.expected_sha)
@@ -400,7 +444,11 @@ def main(argv=None):
                 print("::add-mask::" + value.replace("%", "%25"), flush=True)
         stage = "database_plan_and_migration"
         with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
-            if args.inspect_reviewed_legacy_refresh:
+            if support_stage:
+                applied = migrate_on_dev(database_url, secret, database_name,
+                                         args.expected_sha, support_stage=True,
+                                         hosted_blacklist_enabled=hosted_blacklist_enabled)
+            elif args.inspect_reviewed_legacy_refresh:
                 applied = migrate_on_dev(database_url, secret, database_name,
                                          args.expected_sha, check_only=True, legacy_stage=True,
                                          hosted_blacklist_enabled=hosted_blacklist_enabled)
@@ -418,13 +466,23 @@ def main(argv=None):
                 applied = migrate_on_dev(database_url, secret, database_name, args.expected_sha,
                                          hosted_blacklist_enabled=hosted_blacklist_enabled)
         result = {"status": "PASS", "source_sha": args.expected_sha, "target_app": DEV_APP,
-                  "mode": ("read_only" if args.check_only else
+                  "mode": ("reviewed_dev_support" if support_stage else
+                            "read_only" if args.check_only else
                            "reviewed_dev_legacy_inspect" if args.inspect_reviewed_legacy_refresh else
                            "reviewed_dev_legacy_apply" if args.apply_reviewed_legacy_refresh else
                            "reviewed_dev_blacklist" if args.apply_reviewed_blacklist else "migrate"),
                   "database_identity_verified": True,
                   "database_identity_sha256": hashlib.sha256((DEV_HOST + "/" + database_name).encode()).hexdigest()}
-        if args.check_only or args.inspect_reviewed_legacy_refresh:
+        if support_stage:
+            # Support staging does NOT apply separate CRM / legacy migrations.
+            # Report the remaining reviewed plan observed under the migration
+            # lock, never claim an empty plan merely because support succeeded.
+            result.update(
+                applied_migrations=applied["applied"],
+                remaining_migrations=applied["remaining"],
+                remaining_pending=len(applied["remaining"]),
+            )
+        elif args.check_only or args.inspect_reviewed_legacy_refresh:
             result.update(reviewed_pending_migrations=applied, remaining_pending=len(applied))
         else:
             result.update(applied_migrations=applied, remaining_pending=0)
