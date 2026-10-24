@@ -9,6 +9,7 @@ from rest_framework.response import Response
 from core.models import HouseholdFamilyLink
 from crown_api.access_households import resolve_household_access
 from crown_api.models import Household, Invoice, Payment
+from crown_api.models_households import GUARDIAN_ROLES, ROLE_FINANCIALLY_RESPONSIBLE
 from households.scoping import get_request_school_id
 from crown_api.serializers_billing import InvoiceMiniSerializer
 
@@ -35,7 +36,9 @@ def household_billing_summary(request, household_id):
     if owners != [(school_id, school_id)]:
         raise Http404()
 
-    access = resolve_household_access(request)
+    access = resolve_household_access(
+        request, allowed_roles=(*GUARDIAN_ROLES, ROLE_FINANCIALLY_RESPONSIBLE)
+    )
 
     if not access.is_staff:
         # No existence leak: if household isn't in-scope, return 404

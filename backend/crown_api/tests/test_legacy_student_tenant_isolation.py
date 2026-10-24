@@ -15,7 +15,7 @@ from crown_api.models import (
     AttendanceRecord, Course, GradeRecord, Household, HouseholdMember,
     Person, UserPersonLink,
 )
-from crown_api.models_households import ROLE_GUARDIAN
+from crown_api.models_households import ROLE_GUARDIAN, ROLE_AUTHORIZED_PICKUP
 
 
 @pytest.fixture(autouse=True)
@@ -246,3 +246,47 @@ def test_matching_email_without_verified_person_link_never_authorizes_guardian(r
         )
         assert response.status_code == 404
         assert "PRIVATE" not in str(response.content)
+
+
+@pytest.mark.django_db
+def test_pickup_contact_cannot_read_student_records_or_communications(records):
+    """A linked pickup contact is not a guardian, even with a PARENT login role."""
+    from crown_api.models import MessageThread
+
+    household = (
+        records["parent"].person_link.person.household_memberships.first().household
+    )
+    person = Person.objects.create(
+        first_name="Pickup", last_name="Only",
+        email="synthetic-pickup@example.invalid",
+    )
+    HouseholdMember.objects.create(
+        household=household, person=person,
+        role=ROLE_AUTHORIZED_PICKUP, is_primary=False,
+    )
+    pickup = get_user_model().objects.create_user(
+        username="synthetic-pickup-only",
+        email="synthetic-pickup@example.invalid",
+        school=records["school_a"],
+    )
+    UserRole.objects.create(
+        user=pickup, school=records["school_a"], role_code="PARENT",
+    )
+    UserPersonLink.objects.create(user=pickup, person=person)
+    MessageThread.objects.create(
+        household=household, subject="PRIVATE guardian conversation",
+        thread_type="GENERAL", created_by=person,
+    )
+    client = APIClient()
+    client.force_login(pickup)
+    headers = {"HTTP_X_SCHOOL_ID": str(records["school_a"].pk)}
+    for record_type in ("attendance", "grades"):
+        denied = client.get(
+            f"/api/v1/students/{records['student_a'].pk}/{record_type}/",
+            **headers,
+        )
+        assert denied.status_code == 404
+        assert "PRIVATE" not in str(denied.content)
+    threads = client.get("/api/v1/threads/", **headers)
+    assert threads.status_code == 200
+    assert threads.json() == []

@@ -5,7 +5,7 @@ from rest_framework.test import APIClient
 
 from core.models import Family, HouseholdFamilyLink, School, UserAccount
 from crown_api.models import Household, HouseholdMember, Invoice, Payment, Person, UserPersonLink
-from crown_api.models_households import ROLE_GUARDIAN
+from crown_api.models_households import ROLE_GUARDIAN, ROLE_FINANCIALLY_RESPONSIBLE, ROLE_AUTHORIZED_PICKUP
 
 
 TEST_AUTH_SECRET = "TestAuthSecret-LocalOnly"
@@ -196,6 +196,57 @@ class BillingSummaryApiTests(TestCase):
             school=self.school,
         )
         self.client.force_login(unlinked)
+        self.client.credentials(HTTP_X_SCHOOL_ID=str(self.school.pk))
+        denied = self.client.get(
+            f"/api/households/{self.household_a.pk}/billing/summary/"
+        )
+        self.assertEqual(denied.status_code, 404)
+        self.assertNotIn("INV-A-0001", str(denied.content))
+
+
+    def test_financially_responsible_member_has_billing_only(self):
+        person = Person.objects.create(
+            first_name="Responsible", last_name="Payer",
+            email="synthetic-payer@example.invalid",
+        )
+        HouseholdMember.objects.create(
+            household=self.household_a, person=person,
+            role=ROLE_FINANCIALLY_RESPONSIBLE, is_primary=False,
+        )
+        account = UserAccount.objects.create_user(
+            username="synthetic-financial-payer",
+            email="synthetic-payer@example.invalid",
+            school=self.school,
+        )
+        UserPersonLink.objects.create(user=account, person=person)
+        self.client.force_login(account)
+        self.client.credentials(HTTP_X_SCHOOL_ID=str(self.school.pk))
+        allowed = self.client.get(
+            f"/api/households/{self.household_a.pk}/billing/summary/"
+        )
+        self.assertEqual(allowed.status_code, 200)
+        self.assertEqual(allowed.json()["open_balance_cents"], 150000)
+        wrong = self.client.get(
+            f"/api/households/{self.household_b.pk}/billing/summary/"
+        )
+        self.assertEqual(wrong.status_code, 404)
+
+    def test_pickup_member_cannot_inherit_financial_read_authority(self):
+        person = Person.objects.create(
+            first_name="Pickup", last_name="Only",
+            email="pickup-billing@example.invalid",
+        )
+        HouseholdMember.objects.create(
+            household=self.household_a, person=person,
+            role=ROLE_AUTHORIZED_PICKUP, is_primary=False,
+        )
+        account = UserAccount.objects.create_user(
+            username="synthetic-pickup-billing",
+            email="pickup-billing@example.invalid",
+            school=self.school,
+        )
+        UserPersonLink.objects.create(user=account, person=person)
+        self.client.force_login(account)
         self.client.credentials(HTTP_X_SCHOOL_ID=str(self.school.pk))
         denied = self.client.get(
             f"/api/households/{self.household_a.pk}/billing/summary/"
