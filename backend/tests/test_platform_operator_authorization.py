@@ -155,6 +155,58 @@ class PlatformOperatorBoundaryTests(TestCase):
         self.assertEqual(TenantProfile.objects.count(), 3)
         self.assertEqual(AuditEvent.objects.count(), 1)
 
+    def test_service_idempotency_result_reports_insert_or_replay(self):
+        """Legacy callers retain a job; opt-in callers receive insert status."""
+        from platform_ops.provisioning import create_school_and_queue_provisioning
+
+        payload = {
+            "name": "Synthetic Service Replay",
+            "slug": "synthetic-service-replay",
+            "idempotency_key": str(uuid.uuid4()),
+            "actor_user_id": self.owner.pk,
+        }
+        first, created = create_school_and_queue_provisioning(
+            **payload, return_created=True,
+        )
+        self.assertTrue(created)
+        repeated, created = create_school_and_queue_provisioning(
+            **payload, return_created=True,
+        )
+        self.assertFalse(created)
+        self.assertEqual(first.pk, repeated.pk)
+        legacy = create_school_and_queue_provisioning(**payload)
+        self.assertEqual(legacy.pk, first.pk)
+        self.assertEqual(ProvisioningJob.objects.count(), 1)
+
+    def test_service_level_race_replay_returns_200(self):
+        """A job inserted after the view's lookup remains an idempotent replay."""
+        from unittest.mock import patch
+
+        from platform_ops.provisioning import create_school_and_queue_provisioning
+
+        payload = {
+            "name": "Synthetic Concurrent Intake",
+            "slug": "synthetic-concurrent-intake",
+            "idempotency_key": str(uuid.uuid4()),
+        }
+        original = create_school_and_queue_provisioning(
+            **payload, actor_user_id=self.owner.pk,
+        )
+        # Simulate a missed preflight lookup. The service's independent
+        # database query still sees the previously committed job.
+        with patch(
+            "platform_ops.models.ProvisioningJob.objects.select_related"
+        ) as select_related:
+            select_related.return_value.filter.return_value.first.return_value = None
+            result = self.client_for(self.owner).post(
+                "/api/platform/schools", payload, format="json",
+            )
+        self.assertEqual(result.status_code, 200)
+        self.assertTrue(result.data["idempotent"])
+        self.assertEqual(result.data["job_id"], str(original.pk))
+        self.assertEqual(ProvisioningJob.objects.count(), 1)
+        self.assertEqual(School.objects.count(), 3)
+
     def test_intake_duplicate_slug_rolls_back_without_orphan_school(self):
         """A unique school slug collision must not create partial records."""
         payload = {

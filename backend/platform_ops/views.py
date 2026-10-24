@@ -86,7 +86,7 @@ def platform_create_school(request: Request) -> Response:
     is_idempotent = job is not None
     if job is None:
         try:
-            job = create_school_and_queue_provisioning(
+            job, created = create_school_and_queue_provisioning(
                 name=details["name"],
                 slug=details["slug"],
                 domain=details["domain"],
@@ -96,7 +96,9 @@ def platform_create_school(request: Request) -> Response:
                 idempotency_key=key,
                 actor_user_id=actor_id,
                 request=request._request,
+                return_created=True,
             )
+            is_idempotent = not created
         except IntegrityError:
             # The atomic service rolls back a duplicate slug or racing key.
             # Re-query only after its transaction has ended.
