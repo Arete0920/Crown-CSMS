@@ -1,7 +1,7 @@
 from django.test import TestCase
 from rest_framework.test import APIClient
 
-from core.models import School, UserAccount, UserRole
+from core.models import CrownPermission, RolePermission, School, UserAccount, UserRole
 from households.models import Guardian, Household, Student
 
 
@@ -21,6 +21,11 @@ class StudentsApiTests(TestCase):
             is_staff=True,
             school=self.school,
         )
+        # Authorized school duties, not a Django staff bit, permit these reads.
+        UserRole.objects.create(user=self.staff_user, school=self.school, role_code="REGISTRAR")
+        for code in ("households.view", "guardians.view"):
+            permission, _ = CrownPermission.objects.get_or_create(code=code)
+            RolePermission.objects.get_or_create(role_code="REGISTRAR", permission=permission)
 
         self.parent_user = UserAccount.objects.create_user(
             username="parentuser",
@@ -42,10 +47,11 @@ class StudentsApiTests(TestCase):
             school_id=self.school.id,
         )
 
-        # Guardian for household_a matching parent_user email
+        # Guardian for household_a explicitly linked to the authenticated parent
         self.parent_guardian = Guardian.objects.create(
             school_id=self.school.id,
             household=self.household_a,
+            account=self.parent_user,
             first_name="Parent",
             last_name="A",
             email="parent@example.com",
@@ -71,7 +77,7 @@ class StudentsApiTests(TestCase):
         )
 
     def test_list_students_staff_sees_all(self):
-        """Staff users see all students in their school."""
+        """An authorized school registrar sees students in the selected school."""
         self.client.force_authenticate(user=self.staff_user)
         resp = self.client.get("/api/students/")
         self.assertEqual(resp.status_code, 200)
