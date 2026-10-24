@@ -14,14 +14,14 @@ Model wiring (as of 2026-02-22):
         Path on Student qs: .filter(enrollments__section__teacher=user).distinct()
 
     Parent → Student:
-        households.Guardian.email matched against user.email
+        verified households.Guardian.account link matching the selected school
         households.Student.household → households.Household → households.Guardian
-        Path: .filter(household__guardians__email__iexact=user.email).distinct()
+        Path: .filter(household__guardians__account_id=user.pk)
         (mirrors the live pattern in households/views.py)
 
     Parent → FinancialAidApplication:
         financial_aid.FinancialAidApplication.household_id (bare UUID, no FK)
-        Resolve via: Guardian.objects.filter(email__iexact=user.email).values_list('household_id', flat=True)
+        Resolve via: Guardian.objects.filter(account_id=user.pk, school_id=user.school_id)
         Path: .filter(household_id__in=household_ids)
 
     Parent → LedgerEntry (financial domain):
@@ -79,6 +79,8 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 DOMAIN_STUDENTS = "students"
+DOMAIN_HOUSEHOLDS = "households"
+DOMAIN_GUARDIANS = "guardians"
 DOMAIN_FINANCIAL = "financial"
 DOMAIN_FINANCIAL_AID = "financial_aid"
 DOMAIN_DISCIPLINE = "discipline"
@@ -87,6 +89,8 @@ DOMAIN_REFERRALS = "referrals"
 
 ALL_DOMAINS: Set[str] = {
     DOMAIN_STUDENTS,
+    DOMAIN_HOUSEHOLDS,
+    DOMAIN_GUARDIANS,
     DOMAIN_FINANCIAL,
     DOMAIN_FINANCIAL_AID,
     DOMAIN_DISCIPLINE,
@@ -163,6 +167,46 @@ def resolve_role(user, school_id=None) -> str:
 # Row scope (queryset filtering)
 # ---------------------------------------------------------------------------
 
+def _verified_school_role(user, school_id) -> str:
+    """Require an active account with a persisted role in the selected school."""
+    if not school_id or user is None or not getattr(user, "is_authenticated", False) or not getattr(user, "is_active", False):
+        return "unknown"
+    roles = getattr(user, "roles", None)
+    if roles is None:
+        return "unknown"
+    try:
+        codes = set(roles.filter(school_id=school_id).values_list("role_code", flat=True))
+    except Exception:
+        logger.warning("school role resolution failed closed", exc_info=True)
+        return "unknown"
+    for code in _ROLE_PRIORITY:
+        if code in codes:
+            return _ROLE_CODE_TO_CANONICAL.get(code, code.lower())
+    if codes:
+        code = sorted(codes)[0]
+        return _ROLE_CODE_TO_CANONICAL.get(code, _ROLE_CODE_TO_CANONICAL.get(code.upper(), code.lower()))
+    return "unknown"
+
+
+def _linked_guardian_household_ids(user, school_id):
+    """Never use email equality to authorize a guardian or parent."""
+    if not school_id or user is None or not getattr(user, "pk", None) or getattr(user, "school_id", None) != school_id:
+        return None
+    from households.models import Guardian
+    return Guardian.objects.filter(
+        account_id=user.pk, school_id=school_id, household__school_id=school_id
+    ).values("household_id")
+
+
+def _staff_read_grant(user, school_id, code):
+    if not school_id or not getattr(user, "is_staff", False) or not getattr(user, "is_active", False):
+        return False
+    from core.models import School
+    from core.permissions import user_has_permission
+    school = School.objects.filter(pk=school_id, is_active=True).first()
+    return bool(school and user_has_permission(user, code, school=school))
+
+
 def _empty(qs: QuerySet) -> QuerySet:
     return qs.none()
 
@@ -185,7 +229,15 @@ def scope_queryset(user, qs: QuerySet, domain: str, *, school_id=None) -> QueryS
     if domain not in ALL_DOMAINS:
         return _empty(qs)
 
-    role = resolve_role(user, school_id=school_id)
+    role = (
+        _verified_school_role(user, school_id)
+        if school_id is not None and domain in {DOMAIN_STUDENTS, DOMAIN_HOUSEHOLDS, DOMAIN_GUARDIANS}
+        else resolve_role(user, school_id=school_id)
+    )
+    if domain == DOMAIN_HOUSEHOLDS:
+        return _scope_households(user, qs, role, school_id)
+    if domain == DOMAIN_GUARDIANS:
+        return _scope_guardians(user, qs, role, school_id)
 
     dispatch = {
         DOMAIN_STUDENTS: _scope_students,
@@ -205,6 +257,24 @@ def scope_queryset(user, qs: QuerySet, domain: str, *, school_id=None) -> QueryS
 # Domain row-scope implementations
 # ---------------------------------------------------------------------------
 
+def _scope_households(user, qs: QuerySet, role: str, school_id) -> QuerySet:
+    if role == "parent":
+        ids = _linked_guardian_household_ids(user, school_id)
+        return qs.filter(pk__in=ids) if ids is not None else _empty(qs)
+    if role not in {"unknown", "parent", "student"} and _staff_read_grant(user, school_id, "households.view"):
+        return qs
+    return _empty(qs)
+
+
+def _scope_guardians(user, qs: QuerySet, role: str, school_id) -> QuerySet:
+    if role == "parent":
+        ids = _linked_guardian_household_ids(user, school_id)
+        return qs.filter(household_id__in=ids, household__school_id=school_id) if ids is not None else _empty(qs)
+    if role not in {"unknown", "parent", "student"} and _staff_read_grant(user, school_id, "guardians.view"):
+        return qs
+    return _empty(qs)
+
+
 def _scope_students(user, qs: QuerySet, role: str) -> QuerySet:
     """
     Row scoping for households.Student querysets.
@@ -213,7 +283,7 @@ def _scope_students(user, qs: QuerySet, role: str) -> QuerySet:
     - teacher: academics.Enrollment.section.teacher (FK → AUTH_USER_MODEL)
                Student reverse: .enrollments (related_name on academics.Enrollment.student)
     - parent:  households.Student.household → households.Household
-               households.Guardian.email matched against user.email
+               verified households.Guardian.account link
     - student: no user FK on Student yet (Phase 3); deny for now
     """
     if role in {"head", "director", "registrar", "admin"}:
@@ -225,15 +295,15 @@ def _scope_students(user, qs: QuerySet, role: str) -> QuerySet:
         return qs.filter(enrollments__section__teacher=user).distinct()
 
     if role == "parent":
-        email = getattr(user, "email", None)
-        if not email:
-            return _empty(qs)
-        # households.Student.household → Household.guardians → Guardian.email
-        return qs.filter(household__guardians__email__iexact=email).distinct()
+        school_id = getattr(user, "school_id", None)
+        ids = _linked_guardian_household_ids(user, school_id)
+        return qs.filter(household_id__in=ids, household__school_id=school_id) if ids is not None else _empty(qs)
 
     if role == "student":
-        # Phase 3: Student.user FK not yet migrated. Deny until wired.
-        return _empty(qs)
+        school_id = getattr(user, "school_id", None)
+        if not school_id or not getattr(user, "pk", None):
+            return _empty(qs)
+        return qs.filter(account_id=user.pk, school_id=school_id)
 
     if role == "counselor":
         # No counselor-to-student assignment model exists yet. Deny until wired.
@@ -273,21 +343,15 @@ def _scope_financial_aid(user, qs: QuerySet, role: str) -> QuerySet:
     Row scoping for financial_aid.FinancialAidApplication querysets.
 
     FinancialAidApplication.household_id is a bare UUID field (no FK).
-    Parent resolution: households.Guardian.household_id matched by user.email.
+    Parent resolution: Guardian.account link in the selected school.
     """
     if role in {"head", "director", "finance", "aid_officer"}:
         return qs
 
     if role == "parent":
-        email = getattr(user, "email", None)
-        if not email:
-            return _empty(qs)
-        # Lazy import to avoid circular dependency.
-        from households.models import Guardian as HouseholdsGuardian  # noqa: PLC0415
-        household_ids = HouseholdsGuardian.objects.filter(
-            email__iexact=email
-        ).values_list("household_id", flat=True)
-        return qs.filter(household_id__in=household_ids)
+        school_id = getattr(user, "school_id", None)
+        ids = _linked_guardian_household_ids(user, school_id)
+        return qs.filter(school_id=school_id, household_id__in=ids) if ids is not None else _empty(qs)
 
     return _empty(qs)
 
@@ -379,6 +443,24 @@ class FieldScope:
 
 
 FIELD_SCOPE: dict[str, dict[str, FieldScope]] = {
+    DOMAIN_HOUSEHOLDS: {
+        "head": FieldScope(allow="__all__", deny=set()),
+        "registrar": FieldScope(allow="__all__", deny=set()),
+        "school_admin": FieldScope(allow="__all__", deny=set()),
+        "office_manager": FieldScope(allow="__all__", deny=set()),
+        "parent": FieldScope(allow={"id", "name", "address1", "address2", "city",
+                                    "state", "postal_code", "is_active", "guardians", "students"}, deny=set()),
+        "unknown": FieldScope(allow=set(), deny=set()),
+    },
+    DOMAIN_GUARDIANS: {
+        "head": FieldScope(allow="__all__", deny=set()),
+        "registrar": FieldScope(allow="__all__", deny=set()),
+        "school_admin": FieldScope(allow="__all__", deny=set()),
+        "office_manager": FieldScope(allow="__all__", deny=set()),
+        "parent": FieldScope(allow={"id", "household", "first_name", "last_name",
+                                    "email", "phone", "is_primary"}, deny={"created_at", "updated_at"}),
+        "unknown": FieldScope(allow=set(), deny=set()),
+    },
     DOMAIN_STUDENTS: {
         "head": FieldScope(allow="__all__", deny=set()),
         "director": FieldScope(allow="__all__", deny=set()),
@@ -474,7 +556,11 @@ FIELD_SCOPE: dict[str, dict[str, FieldScope]] = {
 
 
 def get_field_scope(user, domain: str, *, school_id=None) -> FieldScope:
-    role = resolve_role(user, school_id=school_id)
+    role = (
+        _verified_school_role(user, school_id)
+        if school_id is not None and domain in {DOMAIN_STUDENTS, DOMAIN_HOUSEHOLDS, DOMAIN_GUARDIANS}
+        else resolve_role(user, school_id=school_id)
+    )
     domain_map = FIELD_SCOPE.get(domain, {})
     return (
         domain_map.get(role)
