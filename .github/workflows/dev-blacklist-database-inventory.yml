@@ -1,11 +1,38 @@
 name: DEV Blacklist Database Inventory (read-only)
 on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/dev-blacklist-database-inventory.yml'
+      - 'scripts/ops/reviewed_dev_support_migrations.py'
+      - 'scripts/ops/test_reviewed_dev_support_migrations.py'
+      - 'scripts/ops/run_dev_inquiry_migration.py'
   workflow_dispatch:
     inputs:
       expected_sha:
         description: Accepted main SHA (40 characters)
         required: true
         type: string
+      apply_reviewed_support:
+        description: "Explicit DEV-only support 0002+0003 compatibility stage"
+        required: false
+        type: boolean
+        default: false
+      confirm_dev_support:
+        description: "Type migrate-dev-support for the DEV-only support stage"
+        required: false
+        type: string
+        default: ""
+      apply_reviewed_legacy_refresh:
+        description: "Separate explicit DEV-only reviewed CRM + legacy refresh stage"
+        required: false
+        type: boolean
+        default: false
+      confirm_dev_legacy_refresh:
+        description: "Type migrate-dev-legacy-refresh for the DEV-only legacy stage"
+        required: false
+        type: string
+        default: ""
       inspect_migration_plan:
         description: Inspect pending DEV migrations without applying schema changes
         required: false
@@ -17,8 +44,28 @@ concurrency:
   group: crown-dev-blacklist-db-readonly
   cancel-in-progress: false
 jobs:
+  support-contract-tests:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+      - name: Install pinned test-only YAML parser
+        run: python -m pip install pyyaml==6.0.3
+      - name: Test pinned support migrations and negative authority contracts
+        run: |
+          python -m unittest discover -s scripts/ops -p test_reviewed_dev_support_migrations.py -v
+          python -m unittest discover -s scripts/ops -p test_run_dev_inquiry_migration.py -v
+          python -m unittest discover -s scripts/ops -p test_reviewed_legacy_refresh_migrations.py -v
   inspect:
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' && inputs.apply_reviewed_support != true && inputs.apply_reviewed_legacy_refresh != true
     runs-on: ubuntu-latest
     environment: dev
     timeout-minutes: 15
@@ -90,3 +137,99 @@ jobs:
       - name: Logout Azure
         if: always() && steps.azure_login.outcome == 'success'
         run: az logout
+
+  stage-reviewed-dev-migrations:
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && (inputs.apply_reviewed_support == true || inputs.apply_reviewed_legacy_refresh == true)
+    runs-on: ubuntu-latest
+    environment: dev
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Require exact authority before any Azure login
+        shell: bash
+        env:
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+          SUPPORT_MODE: ${{ inputs.apply_reviewed_support }}
+          LEGACY_MODE: ${{ inputs.apply_reviewed_legacy_refresh }}
+          CONFIRM_SUPPORT: ${{ inputs.confirm_dev_support }}
+          CONFIRM_LEGACY: ${{ inputs.confirm_dev_legacy_refresh }}
+          INSPECT_PLAN: ${{ inputs.inspect_migration_plan }}
+        run: |
+          set -euo pipefail
+          [[ "$EXPECTED_SHA" =~ ^[0-9a-f]{40}$ ]]
+          test "$INSPECT_PLAN" != true
+          if [[ "$SUPPORT_MODE" == "true" && "$LEGACY_MODE" != "true" ]]; then
+            test "$CONFIRM_SUPPORT" = migrate-dev-support
+            test -z "$CONFIRM_LEGACY"
+          elif [[ "$LEGACY_MODE" == "true" && "$SUPPORT_MODE" != "true" ]]; then
+            test "$CONFIRM_LEGACY" = migrate-dev-legacy-refresh
+            test -z "$CONFIRM_SUPPORT"
+          else
+            echo 'BLOCKED: choose exactly one reviewed DEV migration stage' >&2
+            exit 1
+          fi
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.expected_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Require current accepted protected main
+        shell: bash
+        env:
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+          git fetch --no-tags origin refs/heads/main:refs/remotes/origin/main
+          test "$(git rev-parse origin/main)" = "$EXPECTED_SHA"
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+      - name: Verify both fail-closed migration-stage contracts without Azure
+        run: |
+          python -m pip install pyyaml==6.0.3
+          python -m unittest discover -s scripts/ops -p test_reviewed_dev_support_migrations.py -v
+          python -m unittest discover -s scripts/ops -p test_reviewed_legacy_refresh_migrations.py -v
+          python -m unittest discover -s scripts/ops -p test_run_dev_inquiry_migration.py -v
+      - name: Install reviewed backend dependencies
+        run: python -m pip install -r backend/requirements.txt
+      - name: Authenticate existing DEV only
+        uses: azure/login@a457da9ea143d694b1b9c7c869ebb04ebe844ef5 # v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - name: Stage only the selected reviewed DEV migrations under PostgreSQL lock
+        shell: bash
+        env:
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+          SUPPORT_MODE: ${{ inputs.apply_reviewed_support }}
+        run: |
+          set -euo pipefail
+          if [[ "$SUPPORT_MODE" == "true" ]]; then
+            python scripts/ops/run_dev_inquiry_migration.py \
+              --expected-sha "$EXPECTED_SHA" \
+              --apply-reviewed-support \
+              --confirm-dev-support migrate-dev-support
+          else
+            python scripts/ops/run_dev_inquiry_migration.py \
+              --expected-sha "$EXPECTED_SHA" \
+              --apply-reviewed-legacy-refresh \
+              --confirm-dev-legacy-refresh migrate-dev-legacy-refresh
+          fi
+      - name: Record stage boundary
+        if: always()
+        run: |
+          {
+            echo '## DEV explicitly reviewed schema stage'
+            echo 'Target: crown-api-dev only, approved exact main SHA'
+            echo 'Select exactly one: support 0002+0003 OR CRM 0002+legacy refresh 0014'
+            echo 'No SimpleJWT blacklist activation or unrelated migrations authorized'
+            echo 'Live application image unchanged; DEV runtime NOT CERTIFIED'
+            echo 'A passing job is not backup/restore or production authorization'
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Logout Azure
+        if: always()
+        run: az logout || true
