@@ -29,6 +29,11 @@ SUPPORTED_PAYMENT_PROVIDERS = frozenset({"manual", "none"})
 PAYMENT_PROCESSING_DISABLED_MESSAGE = (
     "External payment processing is disabled; use 'none' or 'manual'."
 )
+MAX_PROVISIONING_RETRIES = 2
+PROVISIONING_RETRY_REASONS = frozenset({
+    "transient_dependency",
+    "corrected_configuration",
+})
 
 
 def normalize_payment_provider(value: str | None) -> str:
@@ -53,7 +58,7 @@ def audit(
     """
     Record a platform-level AuditEvent.
 
-    Never raises — audit failures are logged but never surface to callers.
+    Required audit writes raise on failure, rolling back the surrounding transaction.
     """
     try:
         from platform_ops.models import AuditEvent  # noqa: PLC0415
@@ -159,20 +164,15 @@ def create_school_and_queue_provisioning(
         created_by_user_id=actor_user_id,
     )
 
-    # ── Audit ────────────────────────────────────────────────────────────────
-    audit(
+    # Bind the queue entry and a minimal, non-PII audit record atomically.
+    # A request's free-form headers and the school's name do not belong here.
+    _record_provisioning_audit(
         "school.created",
+        job_id=job.id,
         school_id=school.id,
         actor_user_id=actor_user_id,
         resource_kind="School",
         resource_id=school.id,
-        payload={
-            "name": name,
-            "slug": slug,
-            "plan_code": plan_code,
-            "payment_provider": payment_provider,
-        },
-        request=request,
     )
 
     logger.info(
@@ -197,18 +197,29 @@ def _record_provisioning_audit(
     job_id: uuid.UUID,
     school_id: uuid.UUID,
     actor_user_id: Optional[uuid.UUID],
+    correlation_id: Optional[uuid.UUID] = None,
+    resource_kind: str = "ProvisioningJob",
+    resource_id: Optional[uuid.UUID] = None,
+    retry_number: Optional[int] = None,
+    reason_code: Optional[str] = None,
 ) -> None:
-    """Persist a minimal audit event or fail the entire state transition."""
+    """Persist correlated, non-sensitive evidence or roll back the mutation."""
     from platform_ops.models import AuditEvent
 
+    payload = {"job_id": str(job_id)}
+    if retry_number is not None:
+        payload["retry_number"] = retry_number
+    if reason_code is not None:
+        payload["reason_code"] = reason_code
     try:
         AuditEvent.objects.create(
             action=action,
             school_id=school_id,
             actor_user_id=actor_user_id,
-            resource_kind="ProvisioningJob",
-            resource_id=job_id,
-            payload={"job_id": str(job_id)},
+            resource_kind=resource_kind,
+            resource_id=resource_id or job_id,
+            request_id=str(correlation_id or job_id),
+            payload=payload,
         )
     except Exception as exc:
         raise ProvisioningAuditError(
@@ -216,11 +227,29 @@ def _record_provisioning_audit(
         ) from exc
 
 
+def _require_platform_operator(actor_user_id: Optional[uuid.UUID]) -> None:
+    """Check schoolless operator authority at the service boundary."""
+    from django.contrib.auth import get_user_model
+
+    if not isinstance(actor_user_id, uuid.UUID) or not (
+        get_user_model().objects.filter(
+            pk=actor_user_id,
+            is_active=True,
+            is_superuser=True,
+            school__isnull=True,
+        ).exists()
+    ):
+        raise ProvisioningStateError(
+            "An active, schoolless platform operator is required."
+        )
+
+
 def run_provisioning_job(
     job: "ProvisioningJob",
     *,
     actor_user_id: Optional[uuid.UUID] = None,
     request=None,
+    correlation_id: Optional[uuid.UUID] = None,
 ) -> "ProvisioningJob":
     """Run exactly one queued job, using a database lock and durable audit.
 
@@ -237,6 +266,8 @@ def run_provisioning_job(
     """
     from platform_ops.models import ProvisioningJob
     from tenants.models import SchoolSettings, TenantProfile
+
+    _require_platform_operator(actor_user_id)
 
     # Read the state from the database under the lock, never from a stale
     # Django object supplied by a queue consumer.
@@ -266,6 +297,7 @@ def run_provisioning_job(
                 job_id=locked.pk,
                 school_id=locked.school_id,
                 actor_user_id=actor_user_id,
+                correlation_id=correlation_id,
             )
             locked.state = ProvisioningJob.STATE_RUNNING
             locked.started_at = timezone.now()
@@ -295,6 +327,7 @@ def run_provisioning_job(
                 job_id=locked.pk,
                 school_id=locked.school_id,
                 actor_user_id=actor_user_id,
+                correlation_id=correlation_id,
             )
             locked.state = ProvisioningJob.STATE_SUCCEEDED
             locked.progress = 100
@@ -329,6 +362,7 @@ def run_provisioning_job(
                 job_id=failed.pk,
                 school_id=failed.school_id,
                 actor_user_id=actor_user_id,
+                correlation_id=correlation_id,
             )
             failed.state = ProvisioningJob.STATE_FAILED
             failed.error = "Provisioning failed. Review restricted server logs."
@@ -340,3 +374,85 @@ def run_provisioning_job(
                 ]
             )
             return failed
+
+
+@transaction.atomic
+def authorize_failed_provisioning_retry(
+    job_id: uuid.UUID,
+    *,
+    actor_user_id: uuid.UUID,
+    correlation_id: uuid.UUID,
+    reason_code: str,
+) -> "ProvisioningJob":
+    """Requeue an audited failure, without executing it.
+
+    A database row lock serializes competing recovery attempts. Every retry
+    requires a distinct recorded failure, pending school state and an active
+    schoolless operator. The two-attempt cap is derived from immutable audit
+    records; no schema change or external payment action is involved.
+    """
+    from platform_ops.models import AuditEvent, ProvisioningJob
+    from tenants.models import TenantProfile
+
+    _require_platform_operator(actor_user_id)
+    if not isinstance(correlation_id, uuid.UUID):
+        raise ProvisioningStateError(
+            "An approved change UUID is required for provisioning recovery."
+        )
+    if reason_code not in PROVISIONING_RETRY_REASONS:
+        raise ProvisioningStateError("Unrecognized provisioning recovery reason.")
+
+    locked = ProvisioningJob.objects.select_for_update().get(pk=job_id)
+    if locked.state != ProvisioningJob.STATE_FAILED:
+        raise ProvisioningStateError("Only failed provisioning jobs may be requeued.")
+    profile = TenantProfile.objects.select_for_update().get(
+        school_id=locked.school_id
+    )
+    if profile.status != "pending":
+        raise ProvisioningStateError("Recovery requires a pending school.")
+    try:
+        normalize_payment_provider(profile.payment_provider)
+    except ValueError as exc:
+        raise ProvisioningStateError(
+            "Unsupported payment configuration blocks recovery."
+        ) from exc
+
+    evidence = AuditEvent.objects.filter(
+        resource_kind="ProvisioningJob",
+        resource_id=locked.id,
+    )
+    failures = evidence.filter(
+        action="provisioning.failed",
+        actor_user_id__isnull=False,
+    ).count()
+    previous = evidence.filter(action="provisioning.retry_authorized").count()
+    if previous >= MAX_PROVISIONING_RETRIES:
+        raise ProvisioningStateError(
+            "Provisioning retry limit reached; escalation required."
+        )
+    if failures != previous + 1:
+        raise ProvisioningStateError(
+            "Recovery requires a new attributable failed-attempt audit."
+        )
+
+    _record_provisioning_audit(
+        "provisioning.retry_authorized",
+        job_id=locked.id,
+        school_id=locked.school_id,
+        actor_user_id=actor_user_id,
+        correlation_id=correlation_id,
+        retry_number=previous + 1,
+        reason_code=reason_code,
+    )
+    locked.state = ProvisioningJob.STATE_QUEUED
+    locked.progress = 0
+    locked.error = ""
+    locked.started_at = None
+    locked.finished_at = None
+    locked.save(
+        update_fields=[
+            "state", "progress", "error", "started_at",
+            "finished_at", "updated_at",
+        ]
+    )
+    return locked
