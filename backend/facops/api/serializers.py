@@ -3,6 +3,10 @@ from __future__ import annotations
 
 from rest_framework import serializers
 
+from core.models import School
+from core.permissions import user_has_permission
+from households.scoping import get_request_school_id
+
 from facops.models import (
     Alert,
     Asset,
@@ -56,6 +60,46 @@ class WorkOrderCommentSerializer(serializers.ModelSerializer):
 
 class WorkOrderSerializer(serializers.ModelSerializer):
     comments = WorkOrderCommentSerializer(many=True, read_only=True)
+
+    def validate(self, attrs):
+        """Prevent unauthorized lifecycle writes and cross-school relationships.
+
+        A school member may submit a maintenance request but cannot set its
+        status, assignee, due date, labor, or internal priority without the
+        explicit school-bound facilities.edit grant.
+        """
+        request = self.context.get("request")
+        if request is None:
+            return attrs
+
+        school_id = get_request_school_id(request, required=True)
+        for field in ("location", "asset", "assigned_to"):
+            related = attrs.get(field)
+            if related is not None and getattr(related, "school_id", None) != school_id:
+                raise serializers.ValidationError({
+                    field: "The selected record is not available for this school."
+                })
+
+        view = self.context.get("view")
+        if request.method == "POST" and getattr(view, "action", None) == "create":
+            school = School.objects.filter(pk=school_id, is_active=True).first()
+            may_manage = bool(
+                school and user_has_permission(
+                    request.user, "facilities.edit", school=school
+                )
+            )
+            if not may_manage:
+                restricted = (
+                    {"status", "priority", "assigned_to", "due_at", "labor_minutes"}
+                    & set(request.data)
+                )
+                if restricted:
+                    raise serializers.ValidationError({
+                        field: "A school facilities grant is required."
+                        for field in sorted(restricted)
+                    })
+        return attrs
+
 
     class Meta:
         model = WorkOrder
