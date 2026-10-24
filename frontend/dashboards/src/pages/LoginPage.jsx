@@ -42,6 +42,7 @@ const PROD_ROLES = [
   { value: "teacher", label: "Teacher", route: "/teacher" },
   { value: "parent", label: "Parent", route: "/parent" },
   { value: "student", label: "Student/Learner", route: "/student" },
+  { value: "super_admin", label: "Platform Operator", route: "/master-control" },
 ];
 
 const PROD_ROLE_SERVER_ALIASES = {
@@ -64,7 +65,7 @@ function productionRoleIsAuthorized(selectedRole, serverRoles) {
     .some((role) => allowed.has(role));
 }
 
-async function fetchAuthenticatedIdentity(access) {
+async function fetchAuthenticatedIdentity(access, { requireSchool = true } = {}) {
   const response = await globalThis.fetch(apiUrl("/api/system/whoami/"), {
     method: "GET",
     headers: {
@@ -77,7 +78,7 @@ async function fetchAuthenticatedIdentity(access) {
   }
   const identity = await response.json();
   const schoolId = identity?.user?.school_id || "";
-  if (!schoolId) {
+  if (requireSchool && !schoolId) {
     throw new Error("This account is not assigned to an active school.");
   }
   return identity;
@@ -144,7 +145,9 @@ function normalizeRoleList(payload, selectedRole, authoritativeRoles = []) {
 }
 
 function buildSessionUser(payload, role, selectedSchoolId, email, authoritativeRoles = []) {
-  const schoolId = payload?.school_id || payload?.schoolId || payload?.school?.id || selectedSchoolId || DEMO_SCHOOL;
+  const schoolId = !IS_SANDBOX && role.value === "super_admin"
+    ? null
+    : payload?.school_id || payload?.schoolId || payload?.school?.id || selectedSchoolId || DEMO_SCHOOL;
   const selectedRole = IS_SANDBOX ? role.value : null;
   const roles = normalizeRoleList(payload, selectedRole, authoritativeRoles);
   const primaryRole = IS_SANDBOX ? (roles[0] || role.value) : (role.value || roles[0] || "");
@@ -166,7 +169,8 @@ function persistAuthenticatedSession(payload, role, selectedSchoolId, email, aut
   const access = payload?.access || payload?.token || "";
   const refresh = payload?.refresh || "";
   const currentUser = buildSessionUser(payload, role, selectedSchoolId, email, authoritativeRoles);
-  const schoolId = currentUser.school_id || selectedSchoolId || DEMO_SCHOOL;
+  const schoolId = !IS_SANDBOX && role.value === "super_admin"
+    ? null : currentUser.school_id || selectedSchoolId || DEMO_SCHOOL;
   const serializedUser = JSON.stringify(currentUser);
   const serializedRoles = JSON.stringify(currentUser.roles || [role.value]);
 
@@ -176,7 +180,8 @@ function persistAuthenticatedSession(payload, role, selectedSchoolId, email, aut
   } else {
     sessionStorage.removeItem("crown.jwt.refresh");
   }
-  sessionStorage.setItem("crown.school.id", schoolId);
+  if (schoolId) sessionStorage.setItem("crown.school.id", schoolId);
+  else sessionStorage.removeItem("crown.school.id");
   sessionStorage.setItem("crown.role", role.value);
   sessionStorage.setItem("crown.active.role", role.value);
   sessionStorage.setItem("crown_user", serializedUser);
@@ -195,7 +200,8 @@ function persistAuthenticatedSession(payload, role, selectedSchoolId, email, aut
   localStorage.removeItem("crown_user_roles");
   localStorage.removeItem("crown.role");
   localStorage.removeItem("crown.active.role");
-  localStorage.setItem("crown.school.id", schoolId);
+  if (schoolId) localStorage.setItem("crown.school.id", schoolId);
+  else localStorage.removeItem("crown.school.id");
 
   if (IS_SANDBOX) {
     localStorage.setItem("crown.role", role.value);
@@ -317,7 +323,35 @@ export default function LoginPage() {
         throw new Error("Login response missing access token.");
       }
 
-      const identity = await fetchAuthenticatedIdentity(access);
+      const platformOperator = role.value === "super_admin";
+      const identity = await fetchAuthenticatedIdentity(access, {
+        requireSchool: !platformOperator,
+      });
+      // Normal credentials, with a mandatory server-side platform permission
+      // proof. A school-scoped user cannot use this schoolless operator route.
+      if (platformOperator) {
+        if (identity?.user?.school_id) {
+          throw new Error("Platform operator access requires a schoolless account.");
+        }
+        const authorization = await globalThis.fetch(apiUrl("/api/platform/overview"), {
+          method: "GET",
+          headers: {
+            Accept: "application/json",
+            Authorization: `Bearer ${access}`,
+          },
+        });
+        if (!authorization.ok) {
+          throw new Error("Platform operator access is not authorized.");
+        }
+        persistAuthenticatedSession(
+          { ...payload, school_id: null, user: identity.user },
+          role,
+          "",
+          username,
+        );
+        globalThis.location.href = role.route;
+        return;
+      }
       const authenticatedSchoolId = identity.user.school_id;
       const roleContext = await fetchAuthorizedRoleContext(access, authenticatedSchoolId);
       if (!productionRoleIsAuthorized(role.value, roleContext.roles)) {

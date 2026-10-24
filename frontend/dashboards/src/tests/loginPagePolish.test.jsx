@@ -271,6 +271,82 @@ describe("login page polish", () => {
     expect(sessionStorage.getItem("crown.jwt.access")).toBeNull();
   });
 
+  it("authenticates a schoolless platform operator using real server permissions", async () => {
+    vi.unstubAllEnvs();
+    vi.stubEnv("VITE_DEMO_MODE", "production");
+    vi.stubEnv("VITE_SANDBOX_MODE", "0");
+    vi.stubEnv("VITE_API_BASE_URL", "https://api.example.test");
+    const fetchMock = vi.fn((url) => {
+      if (String(url).endsWith("/api/v1/auth/token/")) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ access: "owner-token" }) });
+      }
+      if (String(url).endsWith("/api/system/whoami/")) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({
+          user: { id: "owner-id", email: "operator@example.test", school_id: null },
+        }) });
+      }
+      if (String(url).endsWith("/api/platform/overview")) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ meta: { data_source: "live_db" } }) });
+      }
+      return Promise.resolve({ ok: false, status: 404, json: () => Promise.resolve({}) });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    vi.resetModules();
+    const { default: LoginPage } = await import("../pages/LoginPage.jsx");
+    render(<LoginPage />);
+    fireEvent.change(screen.getByLabelText("Role"), { target: { value: "super_admin" } });
+    fireEvent.change(screen.getByLabelText("Email"), { target: { value: "operator@example.test" } });
+    fireEvent.change(screen.getByLabelText("Password"), { target: { value: "SyntheticTestPassword1!" } });
+    fireEvent.click(screen.getByRole("button", { name: "Sign In" }));
+    await waitFor(() => expect(sessionStorage.getItem("crown.jwt.access")).toBe("owner-token"));
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://api.example.test/api/platform/overview",
+      expect.objectContaining({
+        method: "GET",
+        headers: expect.objectContaining({ Authorization: "Bearer owner-token" }),
+      }),
+    );
+    expect(fetchMock.mock.calls.some(([url]) => String(url).includes("/api/v1/dashboards/me/"))).toBe(false);
+    expect(sessionStorage.getItem("crown.school.id")).toBeNull();
+    expect(localStorage.getItem("crown.school.id")).toBeNull();
+    expect(JSON.parse(sessionStorage.getItem("crown_user")).school_id).toBeNull();
+    expect(sessionStorage.getItem("crown.role")).toBe("super_admin");
+  });
+
+  it.each([
+    ["school-associated superuser", { school_id: "school-A" }, false],
+    ["schoolless user without operator privileges", { school_id: null }, true],
+  ])("rejects platform login for %s", async (_label, user, attemptsOverview) => {
+    vi.unstubAllEnvs();
+    vi.stubEnv("VITE_DEMO_MODE", "production");
+    vi.stubEnv("VITE_SANDBOX_MODE", "0");
+    vi.stubEnv("VITE_API_BASE_URL", "https://api.example.test");
+    const fetchMock = vi.fn((url) => {
+      if (String(url).endsWith("/api/v1/auth/token/")) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ access: "unprivileged-token" }) });
+      }
+      if (String(url).endsWith("/api/system/whoami/")) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ user }) });
+      }
+      if (String(url).endsWith("/api/platform/overview")) {
+        return Promise.resolve({ ok: false, status: 403, json: () => Promise.resolve({ detail: "Forbidden" }) });
+      }
+      return Promise.resolve({ ok: false, status: 404, json: () => Promise.resolve({}) });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    vi.resetModules();
+    const { default: LoginPage } = await import("../pages/LoginPage.jsx");
+    render(<LoginPage />);
+    fireEvent.change(screen.getByLabelText("Role"), { target: { value: "super_admin" } });
+    fireEvent.change(screen.getByLabelText("Email"), { target: { value: "test@example.test" } });
+    fireEvent.change(screen.getByLabelText("Password"), { target: { value: "SyntheticTestPassword1!" } });
+    fireEvent.click(screen.getByRole("button", { name: "Sign In" }));
+    await waitFor(() => expect(screen.getByRole("alert")).toBeTruthy());
+    expect(fetchMock.mock.calls.some(([url]) => String(url).endsWith("/api/platform/overview"))).toBe(attemptsOverview);
+    expect(sessionStorage.getItem("crown.jwt.access")).toBeNull();
+    expect(sessionStorage.getItem("crown.school.id")).toBeNull();
+  });
+
   it("surfaces the approved-link message when the sandbox invite is required", async () => {
     vi.unstubAllEnvs();
     vi.stubEnv("VITE_DEMO_MODE", "sandbox");
