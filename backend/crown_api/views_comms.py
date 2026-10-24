@@ -43,7 +43,10 @@ def _authorized_threads(request):
     access = resolve_household_access(request)
     qs = MessageThread.objects.select_related("household", "student")
 
-    if user_has_permission(request.user, "communications.view", school=school):
+    # School-wide communications permission is a staff capability; a parent
+    # or pickup contact cannot gain every household's private threads merely
+    # because a role was accidentally granted dashboard-read permission.
+    if access.is_staff and user_has_permission(request.user, "communications.view", school=school):
         return qs.filter(household_id__in=tenant_households)
 
     if access.is_staff or access.person is None:

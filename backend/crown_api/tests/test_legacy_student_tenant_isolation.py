@@ -290,3 +290,50 @@ def test_pickup_contact_cannot_read_student_records_or_communications(records):
     threads = client.get("/api/v1/threads/", **headers)
     assert threads.status_code == 200
     assert threads.json() == []
+
+
+@pytest.mark.django_db
+def test_parent_permission_grant_cannot_expand_private_thread_scope(records):
+    from core.models import CrownPermission, RolePermission
+    from crown_api.models import MessageThread
+
+    own_household = (
+        records["parent"].person_link.person.household_memberships.first().household
+    )
+    another_household = Household.objects.create(
+        household_name="Unrelated Synthetic Household"
+    )
+    other_family = Family.objects.create(
+        school=records["school_a"], family_name="Unrelated Synthetic Family",
+    )
+    HouseholdFamilyLink.objects.create(
+        school=records["school_a"], family=other_family,
+        household_id=another_household.pk,
+        source=HouseholdFamilyLink.SOURCE_MANUAL,
+    )
+    own = MessageThread.objects.create(
+        household=own_household, subject="PRIVATE own household",
+        thread_type="GENERAL",
+    )
+    foreign = MessageThread.objects.create(
+        household=another_household, subject="PRIVATE other household",
+        thread_type="GENERAL",
+    )
+    permission, _ = CrownPermission.objects.get_or_create(
+        code="communications.view",
+        defaults={"description": "View school communications"},
+    )
+    RolePermission.objects.get_or_create(
+        role_code="PARENT", permission=permission,
+    )
+    client = APIClient()
+    client.force_login(records["parent"])
+    headers = {"HTTP_X_SCHOOL_ID": str(records["school_a"].pk)}
+    response = client.get("/api/v1/threads/", **headers)
+    assert response.status_code == 200
+    identifiers = {row["thread_id"] for row in response.json()}
+    assert identifiers == {str(own.pk)}
+    assert str(foreign.pk) not in identifiers
+    denied = client.get(f"/api/v1/threads/{foreign.pk}/", **headers)
+    assert denied.status_code == 404
+    assert "PRIVATE other household" not in str(denied.content)
