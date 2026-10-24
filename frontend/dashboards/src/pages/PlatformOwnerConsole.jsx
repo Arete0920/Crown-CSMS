@@ -117,6 +117,25 @@ export default function PlatformOwnerConsole() {
             </CardContent></Card>
           </Stack>
           <Card><CardContent>
+            <Typography variant="h6" gutterBottom>Support Operations</Typography>
+            {overview.support?.data_state === "available" ? (
+              <Stack spacing={1}>
+                <Typography variant="body2">
+                  Unresolved tickets: {overview.support.unresolved} · Open: {overview.support.open} · Escalated: {overview.support.escalated}
+                </Typography>
+                <Typography variant="body2">
+                  Critical unresolved: {overview.support.critical_unresolved} · Overdue open: {overview.support.overdue_open}
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  Aggregated current-database records only. Alert delivery is not certified.
+                  No student details or ticket contents are displayed.
+                </Typography>
+              </Stack>
+            ) : (
+              <Alert severity="warning">Support operational metrics unavailable; not verified.</Alert>
+            )}
+          </Card></Card>
+          <Card><CardContent>
             <Typography variant="h6" gutterBottom>Company Finance</Typography>
             <Alert severity="warning">
               {overview.company_finance.reason} No estimated, tuition, or synthetic
