@@ -229,8 +229,65 @@ def test_operator_command_defaults_to_read_only_and_rejects_sqlite(monkeypatch):
                 job_id=str(job.pk), actor_id=str(owner.pk), apply=True,
                 confirm_job_id=str(job.pk),
             )
+    # A DEV environment label or active owner UUID must not authorize writes
+    # against an unrelated/production PostgreSQL server.
+    monkeypatch.setenv("WEBSITE_HOSTNAME", "crown-api-dev.azurewebsites.net")
+    for host, sslmode in (
+        ("crown-pg-prod.postgres.database.azure.com", "verify-full"),
+        ("crown-pg-dev.postgres.database.azure.com", "require"),
+    ):
+        with patch(
+            "platform_ops.management.commands.run_school_provisioning.connection"
+        ) as db, patch(
+            "platform_ops.management.commands.run_school_provisioning.run_provisioning_job"
+        ) as activate:
+            db.vendor = "postgresql"
+            db.settings_dict = {
+                "HOST": host, "PORT": "5432", "NAME": "crown",
+                "OPTIONS": {"sslmode": sslmode},
+            }
+            with pytest.raises(CommandError, match="pinned DEV PostgreSQL"):
+                call_command(
+                    "run_school_provisioning",
+                    job_id=str(job.pk), actor_id=str(owner.pk), apply=True,
+                    confirm_job_id=str(job.pk),
+                )
+            db.cursor.assert_not_called()
+            activate.assert_not_called()
     job.refresh_from_db()
     assert job.state == "queued"
+
+
+def test_provisioning_dev_target_identity_and_tls_guards(monkeypatch):
+    """Pin Azure target and verify actual PostgreSQL identity before mutation."""
+    from unittest.mock import MagicMock
+    from django.core.management.base import CommandError
+    from platform_ops.management.commands.run_school_provisioning import (
+        _verify_dev_postgresql_target,
+    )
+
+    monkeypatch.setenv("CROWN_ENV", "dev")
+    monkeypatch.setenv("WEBSITE_HOSTNAME", "crown-api-dev.azurewebsites.net")
+    db = MagicMock()
+    db.vendor = "postgresql"
+    db.settings_dict = {
+        "HOST": "crown-pg-dev.postgres.database.azure.com",
+        "PORT": "5432", "NAME": "crown",
+        "OPTIONS": {"sslmode": "verify-full"},
+    }
+    cursor = db.cursor.return_value.__enter__.return_value
+    cursor.fetchone.side_effect = [("crown", "public", False), (True,)]
+    _verify_dev_postgresql_target(db)
+    assert cursor.execute.call_count == 2
+
+    for rows, message in (
+        ([("different_database", "public", False)], "identity does not match"),
+        ([("crown", "public", True)], "identity does not match"),
+        ([("crown", "public", False), (False,)], "TLS is not verified"),
+    ):
+        cursor.fetchone.side_effect = rows
+        with pytest.raises(CommandError, match=message):
+            _verify_dev_postgresql_target(db)
 
 
 @pytest.mark.django_db(transaction=True)

@@ -5,8 +5,66 @@ import uuid
 from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand, CommandError
 from django.db import connection
+from django.db.utils import DatabaseError
 
 from platform_ops.models import ProvisioningJob
+
+# An operator-provided CROWN_ENV or DATABASE_URL does not prove a DEV target.
+DEV_POSTGRES_HOST = "crown-pg-dev.postgres.database.azure.com"
+DEV_APP_HOST = "crown-api-dev.azurewebsites.net"
+
+
+def _verify_dev_postgresql_target(db) -> None:
+    """Check pinned target, session identity and verified TLS before mutation.
+
+    The only non-Azure exception is an isolated pytest-created local database.
+    It cannot connect to another Azure server or an ordinary local database.
+    """
+    if db.vendor != "postgresql":
+        raise CommandError("Execution requires PostgreSQL row-lock guarantees.")
+
+    config = db.settings_dict
+    host = str(config.get("HOST") or "").strip().rstrip(".").lower()
+    port = str(config.get("PORT") or "5432")
+    name = str(config.get("NAME") or "").strip()
+    is_isolated_test = bool(
+        os.getenv("PYTEST_CURRENT_TEST")
+        and os.getenv("DJANGO_SETTINGS_MODULE") == "crown_api.test_settings"
+        and not os.getenv("WEBSITE_HOSTNAME")
+        and host in {"localhost", "127.0.0.1"}
+        and name.startswith("test_")
+    )
+    if not is_isolated_test:
+        options = config.get("OPTIONS") or {}
+        if (
+            host != DEV_POSTGRES_HOST
+            or port != "5432"
+            or not name
+            or name.lower() in {"postgres", "template0", "template1"}
+            or os.getenv("WEBSITE_HOSTNAME", "").strip().lower() != DEV_APP_HOST
+            or not isinstance(options, dict)
+            or str(options.get("sslmode") or "").lower() != "verify-full"
+        ):
+            raise CommandError(
+                "Execution requires the pinned DEV PostgreSQL target, "
+                "hosted app identity, and hostname-verified TLS."
+            )
+    try:
+        with db.cursor() as cursor:
+            cursor.execute(
+                "SELECT current_database(), current_schema(), pg_is_in_recovery()"
+            )
+            if cursor.fetchone() != (name, "public", False):
+                raise CommandError("Connected DEV database identity does not match.")
+            if not is_isolated_test:
+                cursor.execute(
+                    "SELECT ssl FROM pg_stat_ssl WHERE pid = pg_backend_pid()"
+                )
+                if cursor.fetchone() != (True,):
+                    raise CommandError("DEV database TLS is not verified.")
+    except DatabaseError as exc:
+        raise CommandError("Unable to verify DEV database identity.") from exc
+
 from platform_ops.provisioning import (
     ProvisioningAuditError,
     ProvisioningStateError,
@@ -82,10 +140,7 @@ class Command(BaseCommand):
                 "Execution requires an explicitly identified DEV environment."
             )
 
-        if connection.vendor != "postgresql":
-            raise CommandError(
-                "Execution requires PostgreSQL row-lock guarantees."
-            )
+        _verify_dev_postgresql_target(connection)
         try:
             completed = run_provisioning_job(job, actor_user_id=actor.pk)
         except (ProvisioningStateError, ProvisioningAuditError) as exc:
