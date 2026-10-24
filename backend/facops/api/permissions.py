@@ -65,5 +65,10 @@ class IsSafetyOfficerOrReadOnly(BasePermission):
         if school is None:
             return False
         if request.method in SAFE_METHODS:
-            return True
+            # Safety reports, visitor logs and alerts contain private data.
+            # School membership is not an authorization to inspect them.
+            return (
+                _school_grant(request, school, "safety.view")
+                or _school_grant(request, school, "safety.edit")
+            )
         return _school_grant(request, school, "safety.edit")

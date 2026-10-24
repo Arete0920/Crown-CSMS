@@ -2,10 +2,14 @@
 from __future__ import annotations
 
 from django.utils import timezone
+from django.db.models import Prefetch, Q
 from rest_framework import viewsets
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+
+from core.models import School
+from core.permissions import user_has_permission
 
 # Crown canonical tenant helper
 from households.scoping import get_request_school_id
@@ -92,8 +96,29 @@ class WorkOrderViewSet(SchoolScopedViewSet):
             WorkOrder.objects
             .filter(school_id=school_id)
             .select_related("location", "asset", "requested_by", "assigned_to")
-            .prefetch_related("comments")
+            .prefetch_related(
+                Prefetch(
+                    "comments",
+                    queryset=WorkOrderComment.objects.filter(
+                        school_id=school_id, work_order__school_id=school_id,
+                    ),
+                )
+            )
         )
+        # An authenticated user can request a repair, but only a verified
+        # school-wide facilities grant permits reading all work orders.
+        user = self.request.user
+        school = School.objects.filter(pk=school_id, is_active=True).first()
+        can_read_all = bool(
+            school and (
+                user_has_permission(user, "facilities.view", school=school)
+                or user_has_permission(user, "facilities.edit", school=school)
+            )
+        )
+        if not can_read_all:
+            qs = qs.filter(
+                Q(requested_by_id=user.pk) | Q(assigned_to_id=user.pk)
+            )
         status = self.request.query_params.get("status")
         if status:
             qs = qs.filter(status=status)
@@ -226,7 +251,7 @@ def facilities_summary(request):
 
 
 @api_view(["GET"])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, IsSafetyOfficerOrReadOnly])
 def security_summary(request):
     school_id = get_request_school_id(request)
     total_incidents = SafetyIncident.objects.filter(school_id=school_id).count()
