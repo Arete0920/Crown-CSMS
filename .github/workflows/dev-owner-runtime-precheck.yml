@@ -1,0 +1,82 @@
+name: DEV Owner Runtime Precheck (read-only)
+
+# Manual-only public precheck. Does not deploy, authenticate, mutate Azure,
+# provision schools, enable payment processing, or certify a release.
+on:
+  workflow_dispatch:
+    inputs:
+      expected_sha:
+        description: "Full 40-character accepted main SHA deployed to DEV API and isolated preview"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: crown-dev-owner-runtime-precheck
+  cancel-in-progress: false
+
+jobs:
+  probe:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Checkout accepted precheck from main
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Verify selected source is exactly current protected main
+        env:
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$EXPECTED_SHA" =~ ^[0-9a-f]{40}$ ]] || { echo 'BLOCKED: full lowercase SHA required'; exit 1; }
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SHA" || { echo 'BLOCKED: selected workflow source is not the expected revision'; exit 1; }
+          git fetch --no-tags origin refs/heads/main:refs/remotes/origin/main
+          test "$(git rev-parse origin/main)" = "$EXPECTED_SHA" || { echo 'BLOCKED: main advanced; re-review before probing'; exit 1; }
+
+      - name: Verify probe has no unsafe network or logging behavior
+        run: python3 -m unittest discover -s scripts/ops -p test_verify_dev_owner_runtime.py -v
+
+      - name: Probe public DEV build identity, anonymous denials, and preview CORS
+        env:
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          report="$RUNNER_TEMP/dev-owner-runtime-precheck.json"
+          set +e
+          python3 scripts/ops/verify_dev_owner_runtime.py --expected-sha "$EXPECTED_SHA" > "$report"
+          rc=$?
+          set -e
+          python3 - "$report" <<'PY'
+          import json, os, sys
+          with open(sys.argv[1], encoding='utf-8') as source:
+              packet = json.load(source)
+          lines = [
+              '## CROWN Azure DEV owner precheck (read-only)',
+              'Target: pinned DEV API and isolated SWA DEV preview; no credentials used.',
+              'Expected source: ' + chr(96) + packet['expected_main_sha'] + chr(96),
+              'Precheck: **' + packet['precheck'] + '**',
+          ]
+          lines += ['- ' + key + ': ' + value for key, value in sorted(packet['checks'].items())]
+          lines.append('Authenticated owner access, hosted provisioning, restore and release certification: **NOT VERIFIED**')
+          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a', encoding='utf-8') as out:
+              out.write('\n'.join(lines) + '\n')
+          print('Precheck=' + packet['precheck'] + '; no owner access or release approval inferred')
+          PY
+          exit "$rc"
+
+      - name: Retain sanitized precheck only
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: dev-owner-runtime-precheck-${{ github.run_id }}
+          path: ${{ runner.temp }}/dev-owner-runtime-precheck.json
+          if-no-files-found: warn
+          retention-days: 7
