@@ -46,7 +46,7 @@ def get_request_school_id(request, required: bool = True) -> Optional[UUID]:
     Enforcement contract:
     - malformed tenant header -> 400;
     - missing tenant when required -> 400;
-    - unknown school -> 404;
+    - unknown or inactive school -> 404;
     - conflicting header without explicit override authority -> 404;
     - superuser, explicit permission, or SUPPORT-role override -> allowed.
 
@@ -69,7 +69,7 @@ def get_request_school_id(request, required: bool = True) -> Optional[UUID]:
     try:
         from core.models import School
 
-        school = School.objects.filter(pk=school_id).first()
+        school = School.objects.filter(pk=school_id, is_active=True).first()
         if school is None:
             raise NotFound({"detail": "Tenant not found"})
     except NotFound:
