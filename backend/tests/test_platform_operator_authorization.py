@@ -72,6 +72,56 @@ class PlatformOperatorBoundaryTests(TestCase):
         profile = TenantProfile.objects.get(school_id=first.data["school_id"])
         self.assertEqual(profile.status, "pending")
 
+    def test_overview_exposes_only_authorized_database_facts(self):
+        """Owner sees actual registry/job counts, never illustrative revenue."""
+        TenantProfile.objects.filter(school=self.school).update(status="active")
+        ProvisioningJob.objects.create(
+            school=self.school,
+            idempotency_key=str(uuid.uuid4()),
+            state=ProvisioningJob.STATE_FAILED,
+            error="Sensitive diagnostic must not leave the API.",
+        )
+        response = self.client_for(self.owner).get("/api/platform/overview")
+        self.assertEqual(response.status_code, 200)
+        body = response.data
+        self.assertEqual(body["meta"]["data_source"], "live_db")
+        self.assertEqual(body["meta"]["scope"], "current_database")
+        self.assertEqual(body["schools"]["total"], 2)
+        self.assertEqual(body["schools"]["by_status"]["active"], 1)
+        self.assertEqual(body["schools"]["by_status"]["pending"], 1)
+        self.assertEqual(body["provisioning"]["by_state"]["failed"], 1)
+        self.assertEqual(len(body["provisioning"]["recent_jobs"]), 1)
+        self.assertNotIn("Sensitive diagnostic", str(body))
+        self.assertEqual(
+            body["company_finance"]["data_state"], "not_configured"
+        )
+        self.assertEqual(
+            body["external_payments"]["provisioning_policy"], "disabled"
+        )
+
+    def test_overview_denies_anonymous_staff_inactive_and_tenant_header(self):
+        self.assertIn(
+            self.client_for().get("/api/platform/overview").status_code,
+            (401, 403),
+        )
+        self.assertEqual(
+            self.client_for(self.staff).get("/api/platform/overview").status_code,
+            403,
+        )
+        self.assertEqual(
+            self.client_for(self.owner).get(
+                "/api/platform/overview",
+                HTTP_X_SCHOOL_ID=str(self.school.id),
+            ).status_code,
+            400,
+        )
+        self.owner.is_active = False
+        self.owner.save(update_fields=["is_active"])
+        self.assertEqual(
+            self.client_for(self.owner).get("/api/platform/overview").status_code,
+            403,
+        )
+
     def test_tenant_selector_denied_even_for_superuser(self):
         client = self.client_for(self.owner)
         response = client.get(
@@ -113,6 +163,30 @@ class PlatformOperatorBoundaryTests(TestCase):
             ).plan_id, self.other_plan.id
         )
 
+    def test_large_school_directory_paginates_without_repeating_tenants(self):
+        """Platform owner can reach schools beyond the initial 50-record page."""
+        for index in range(51):
+            school = School.objects.create(name=f"Synthetic Expansion {index:03d}")
+            TenantProfile.objects.create(
+                school=school, slug=f"expansion-{index:03d}"
+            )
+        client = self.client_for(self.owner)
+        first = client.get("/api/platform/schools/list?page=1&per_page=50")
+        second = client.get("/api/platform/schools/list?page=2&per_page=50")
+        self.assertEqual((first.status_code, second.status_code), (200, 200))
+        self.assertEqual(first.data["total"], 53)
+        self.assertEqual(second.data["total"], 53)
+        self.assertEqual(len(first.data["results"]), 50)
+        self.assertEqual(len(second.data["results"]), 3)
+        first_ids = {row["school_id"] for row in first.data["results"]}
+        second_ids = {row["school_id"] for row in second.data["results"]}
+        self.assertFalse(first_ids & second_ids)
+        self.assertEqual(len(first_ids | second_ids), 53)
+        self.assertEqual(
+            client.get("/api/platform/schools/list?page=bad").status_code,
+            400,
+        )
+
     def test_inactive_superuser_denied(self):
         self.owner.is_active = False
         self.owner.save(update_fields=["is_active"])
@@ -129,3 +203,46 @@ class PlatformOperatorBoundaryTests(TestCase):
             response = self.client_for().get(path)
             self.assertEqual(response.status_code, 400)
             self.assertEqual(response.json()["code"], "missing_tenant")
+
+    def test_school_bound_superuser_cannot_perform_platform_operations(self):
+        """A school-associated Django superuser is not a platform owner."""
+        scoped_user = get_user_model().objects.create_superuser(
+            username="synthetic-school-superuser",
+            email="school-superuser@example.invalid",
+            password="synthetic-password-for-tests",
+            school=self.school,
+        )
+        client = self.client_for(scoped_user)
+        job = ProvisioningJob.objects.create(
+            school=self.other, idempotency_key=str(uuid.uuid4())
+        )
+        for path in (
+            "/api/platform/overview",
+            "/api/platform/schools/list",
+            f"/api/platform/provisioning/{job.id}",
+            f"/api/v1/subscriptions/ops/{self.other.id}/",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(client.get(path).status_code, 403)
+
+        response = client.post(
+            "/api/platform/schools",
+            {"name": "Forbidden Cross-Tenant School",
+             "slug": "forbidden-cross-tenant",
+             "idempotency_key": str(uuid.uuid4())},
+            format="json",
+        )
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(ProvisioningJob.objects.count(), 1)
+
+        response = client.post(
+            f"/api/v1/subscriptions/ops/{self.other.id}/",
+            {"plan_id": str(self.other_plan.id)},
+            format="json",
+        )
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(
+            TenantSubscription.objects.get(
+                school_id=self.other.id, ended_at__isnull=True
+            ).plan_id, self.plan.id,
+        )

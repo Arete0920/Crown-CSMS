@@ -54,7 +54,7 @@ def _is_platform_operator_path(path: str) -> bool:
         r"[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"
     )
     return (
-        path in {"/api/platform/schools", "/api/platform/schools/list"}
+        path in {"/api/platform/overview", "/api/platform/schools", "/api/platform/schools/list"}
         or bool(re.fullmatch(rf"/api/platform/provisioning/{uuid_pattern}", path))
         or bool(re.fullmatch(rf"/api/v1/subscriptions/ops/{uuid_pattern}", path))
     )

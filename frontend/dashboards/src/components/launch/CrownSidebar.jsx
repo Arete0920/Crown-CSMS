@@ -22,10 +22,10 @@ const NAV_ITEMS = [
   },
   {
     key: 'administration',
-    label: 'Control Center',
+    label: 'Platform Control',
     href: '/master-control',
     icon: 'control',
-    roles: ['school_admin', 'head_of_school', 'admin', 'director', 'principal', 'super_admin'],
+    roles: ['super_admin'],
     activePrefixes: ['/master-control', '/master-control-dashboard'],
   },
   {
