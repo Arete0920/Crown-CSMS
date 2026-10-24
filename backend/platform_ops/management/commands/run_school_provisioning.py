@@ -66,7 +66,9 @@ def _verify_dev_postgresql_target(db) -> None:
         raise CommandError("Unable to verify DEV database identity.") from exc
 
 from platform_ops.provisioning import (
+    PROVISIONING_RETRY_REASONS,
     ProvisioningAuditError,
+    authorize_failed_provisioning_retry,
     ProvisioningStateError,
     run_provisioning_job,
 )
@@ -83,8 +85,11 @@ class Command(BaseCommand):
             help="Explicitly authorize database mutations for this job",
         )
         parser.add_argument(
-            "--confirm-job-id", help="Must equal --job-id to execute",
+            "--confirm-job-id", help="Must equal --job-id to mutate",
         )
+        parser.add_argument("--change-id", help="Approved change UUID")
+        parser.add_argument("--retry-failed", action="store_true")
+        parser.add_argument("--reason-code", choices=sorted(PROVISIONING_RETRY_REASONS))
 
     def handle(self, *args, **options):
         try:
@@ -96,7 +101,7 @@ class Command(BaseCommand):
         actor = get_user_model().objects.filter(pk=actor_id).first()
         if not (
             actor and actor.is_active and actor.is_superuser
-            and actor.is_authenticated
+            and actor.is_authenticated and actor.school_id is None
         ):
             raise CommandError("An active platform superuser is required.")
 
@@ -112,6 +117,10 @@ class Command(BaseCommand):
 
         if options["confirm_job_id"] != str(job_id):
             raise CommandError("Confirm exact job UUID with --confirm-job-id.")
+        try:
+            change_id = uuid.UUID(str(options["change_id"]))
+        except (ValueError, TypeError) as exc:
+            raise CommandError("An approved --change-id UUID is required.") from exc
 
         # An attributed actor UUID is not proof of shell identity. Restrict
         # mutations to a specifically identified development environment;
@@ -141,8 +150,24 @@ class Command(BaseCommand):
             )
 
         _verify_dev_postgresql_target(connection)
+        if options["retry_failed"]:
+            if not options["reason_code"]:
+                raise CommandError("--reason-code required for recovery.")
+            try:
+                requeued = authorize_failed_provisioning_retry(
+                    job.id, actor_user_id=actor.pk, correlation_id=change_id,
+                    reason_code=options["reason_code"],
+                )
+            except (ProvisioningStateError, ProvisioningAuditError) as exc:
+                raise CommandError(str(exc)) from exc
+            self.stdout.write(f"REQUEUED job={requeued.id}; execute separately")
+            return
+        if options["reason_code"]:
+            raise CommandError("--reason-code is only valid for retry.")
         try:
-            completed = run_provisioning_job(job, actor_user_id=actor.pk)
+            completed = run_provisioning_job(
+                job, actor_user_id=actor.pk, correlation_id=change_id,
+            )
         except (ProvisioningStateError, ProvisioningAuditError) as exc:
             raise CommandError(str(exc)) from exc
 
