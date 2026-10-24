@@ -338,6 +338,30 @@ class SupportTicketWorkflowTests(TestCase):
         )
 
 
+@pytest.mark.django_db
+def test_pre_attribution_model_can_insert_after_current_migrations():
+    """The old image can still insert tickets after schema-first staging."""
+    import uuid
+    from django.db import connection
+    from django.db.migrations.loader import MigrationLoader
+
+    legacy_apps = MigrationLoader(connection).project_state([
+        ("support", "0001_initial"),
+    ]).apps
+    LegacyTicket = legacy_apps.get_model("support", "SupportTicket")
+    legacy = LegacyTicket.objects.create(
+        school_id=uuid.uuid4(),
+        title="Synthetic old-image ticket",
+        description="No private records",
+        priority="medium",
+    )
+    restored = SupportTicket.objects.get(pk=legacy.pk)
+    assert restored.title == "Synthetic old-image ticket"
+    assert restored.requester_id is None
+    assert restored.resolution_summary == ""
+    assert not restored.events.exists()
+
+
 def _require_disposable_postgresql():
     """Never run schema/concurrency proof against a hosted or non-test database."""
     from django.db import connection
@@ -357,7 +381,7 @@ def test_support_migration_preserves_unowned_legacy_ticket():
 
     _require_disposable_postgresql()
     before = [("support", "0001_initial")]
-    after = [("support", "0002_ticket_attribution")]
+    after = [("support", "0003_preserve_legacy_ticket_inserts")]
     executor = MigrationExecutor(connection)
     try:
         executor.migrate(before)
