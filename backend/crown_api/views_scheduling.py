@@ -9,13 +9,9 @@ from academics.models import Term as AcademicTerm
 from core.models import Student as CoreStudent, StudentIdentityLink
 from households.scoping import get_request_school_id
 from crown_api.access_households import resolve_household_access
-from crown_api.models_scheduling_core import (
-    Section as LegacySection,
-    SectionEnrollment as LegacySectionEnrollment,
-    Term as LegacyTerm,
-)
+from crown_api.models_scheduling_core import SectionEnrollment as LegacySectionEnrollment
 from crown_api.scoping_students import get_core_student_or_404_for_request
-from crown_api.serializers_scheduling import StudentScheduleEnrollmentSerializer, TermListSerializer
+from crown_api.serializers_scheduling import StudentScheduleEnrollmentSerializer
 from households.models import Guardian as HouseholdGuardian
 
 
@@ -25,13 +21,6 @@ def _require_auth_or_401(request):
             {"detail": "Authentication credentials were not provided."}, status=401
         )
     return None
-
-
-def _request_school_id(request):
-    school = getattr(request, "school", None)
-    if school is not None:
-        return school.id
-    return getattr(getattr(request, "user", None), "school_id", None)
 
 
 def _compat_household_ids(request, school_id):
@@ -160,19 +149,16 @@ def terms_list(request):
         return unauth
 
     access = resolve_household_access(request)
-    school_id = _request_school_id(request)
+    school_id = get_request_school_id(request, required=True)
 
     canonical_qs = AcademicTerm.objects.filter(school_id=school_id).order_by("-start_date", "code")
     if not access.is_staff:
         canonical_qs = canonical_qs.filter(active=True)
 
-    if canonical_qs.exists():
-        return Response([_canonical_term_payload(term) for term in canonical_qs])
-
-    legacy_qs = LegacyTerm.objects.order_by("-start_date", "code")
-    if not access.is_staff:
-        legacy_qs = legacy_qs.filter(active=True)
-    return Response(TermListSerializer(legacy_qs, many=True).data)
+    # Legacy scheduling terms have no tenant owner. They cannot be safely
+    # enumerated in a shared multi-school deployment. Only canonical terms
+    # that belong to the selected school may be returned.
+    return Response([_canonical_term_payload(term) for term in canonical_qs])
 
 
 @api_view(["GET"])
@@ -183,63 +169,17 @@ def term_sections(request, term_id):
         return unauth
 
     access = resolve_household_access(request)
-    school_id = _request_school_id(request)
+    school_id = get_request_school_id(request, required=True)
 
-    canonical_term = AcademicTerm.objects.filter(id=term_id, school_id=school_id).first()
+    # Unowned legacy term/section rows cannot be attributed to a school.
+    # Resolve from the tenant-owned canonical term table or fail closed.
+    canonical_term = get_object_or_404(AcademicTerm, id=term_id, school_id=school_id)
     if canonical_term is not None:
         if not access.is_staff and not canonical_term.active:
             return Response({"detail": "Not found."}, status=404)
         sections = _canonical_sections_for_term(request, canonical_term, access, school_id)
         return Response([_canonical_section_payload(section) for section in sections])
 
-    legacy_term_qs = LegacyTerm.objects.order_by("-start_date", "code")
-    if not access.is_staff:
-        legacy_term_qs = legacy_term_qs.filter(active=True)
-    legacy_term = get_object_or_404(legacy_term_qs, id=term_id)
-
-    qs = (
-        LegacySection.objects.filter(term=legacy_term)
-        .select_related("term", "course", "teacher")
-        .order_by("course__course_code", "section_code")
-    )
-
-    if not access.is_staff:
-        from admissions.models import AdmissionsApplication
-
-        in_scope_student_ids = set(
-            AdmissionsApplication.objects.filter(
-                household_id__in=access.household_ids
-            ).values_list("student_id", flat=True)
-        )
-        qs = qs.filter(
-            roster__active=True,
-            roster__student_id__in=in_scope_student_ids,
-        ).distinct()
-
-    payload = []
-    for section in qs:
-        payload.append(
-            {
-                "section_id": str(section.id),
-                "term": {"term_id": str(section.term_id), "code": section.term.code, "name": section.term.name},
-                "course": {"code": section.course.course_code, "name": section.course.name},
-                "section_code": section.section_code,
-                "name": section.name_override or section.course.name,
-                "teacher": (
-                    {
-                        "person_id": str(section.teacher_id),
-                        "first_name": section.teacher.first_name,
-                        "last_name": section.teacher.last_name,
-                    }
-                    if section.teacher_id
-                    else None
-                ),
-                "room": section.room,
-                "meeting_days": section.meeting_days,
-                "meeting_time": section.meeting_time,
-            }
-        )
-    return Response(payload)
 
 
 @api_view(["GET"])

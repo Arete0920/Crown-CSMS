@@ -11,6 +11,9 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 
 from decimal import Decimal
+from uuid import UUID
+
+from crown_api.tenant import build_tenant_context
 
 from aid.models import AidApplication, AidAuditEvent, AidAward, AidDocument
 from admissions.models import AdmissionsApplication
@@ -18,6 +21,7 @@ from ledger.models import Allocation as LedgerAllocation
 from ledger.models import LedgerAccount, Payment
 from core.models import (
     AcademicYear,
+    School,
     Enrollment,
     Family,
     GradeLevel,
@@ -31,33 +35,71 @@ from crown_api.director_roles import ALLOWED_DIRECTOR_ROLE_CODES
 ALLOWED_ROLE_CODES = ALLOWED_DIRECTOR_ROLE_CODES
 
 
+def _authorized_director_school(request, raw_school_id):
+    """Require an active target school and an actor's school-specific authority.
+
+    The legacy director API is exempt from the early tenant-header middleware.
+    Resolve the authenticated actor here; a role in another school never grants
+    access to the selected school. The developer-open flag is not authorization.
+    """
+    user = getattr(request, "user", None)
+    if (
+        user is None
+        or not getattr(user, "is_authenticated", False)
+        or not getattr(user, "is_active", False)
+    ):
+        return False
+
+    try:
+        school_id = UUID(str(raw_school_id))
+    except (TypeError, ValueError, AttributeError):
+        return False
+
+    if not School.objects.filter(pk=school_id, is_active=True).exists():
+        return False
+
+    # Reject malformed, conflicting, and mismatched legacy/canonical selectors
+    # even when the actor has the platform superuser role.
+    meta = getattr(request, "META", {})
+    for header in ("HTTP_X_SCHOOL_ID", "HTTP_X_CROWN_SCHOOL_ID"):
+        value = meta.get(header)
+        if value is None:
+            continue
+        try:
+            if UUID(str(value)) != school_id:
+                return False
+        except (TypeError, ValueError, AttributeError):
+            return False
+
+    # Global director authority is reserved for an active, schoolless owner.
+    # A school-assigned superuser must establish a matching director role;
+    # Django's superuser bit alone never crosses the tenant boundary.
+    if getattr(user, "is_superuser", False) and getattr(user, "school_id", None) is None:
+        return True
+
+    # Resolve after DRF authenticates (the early middleware may have bound an
+    # anonymous context on this exempt route). Do not trust that stale context.
+    context = build_tenant_context(request)
+    if (
+        context.school_id != school_id
+        or context.source == "header_invalid"
+        or (context.override_requested and not context.override_authorized)
+    ):
+        return False
+
+    return UserRole.objects.filter(
+        user_id=user.pk,
+        school_id=school_id,
+        role_code__in=ALLOWED_ROLE_CODES,
+    ).exists()
+
+
 def crown_director_allowed(request):
-    """
-    Check if user is allowed to access director APIs.
-
-    Allows:
-    1. Dev mode (CROWN_DEV_OPEN_API=1 env var)
-    2. Superuser
-    3. Users with director role codes
-    """
-    user = request.user
-
-    # Dev override (explicit toggle)
-    if getattr(settings, "CROWN_DEV_OPEN_API", False):
-        return True
-
-    # Superuser always allowed
-    if user and getattr(user, "is_superuser", False):
-        return True
-
-    # Check authenticated + role
-    if not user or not user.is_authenticated:
-        return False
-
-    user_id = getattr(user, "id", None)
-    if not user_id:
-        return False
-    return UserRole.objects.filter(user_id=user_id, role_code__in=ALLOWED_ROLE_CODES).exists()
+    """Authorize the selected active tenant, not a director role in any school."""
+    query = getattr(request, "query_params", None)
+    if query is None:
+        query = getattr(request, "GET", {})
+    return _authorized_director_school(request, query.get("school_id"))
 
 
 def user_has_director_role(user):
@@ -814,6 +856,16 @@ def director_actions(request):
             return Response(
                 {"error": "Missing required field: action"},
                 status=status.HTTP_400_BAD_REQUEST,
+            )
+        if not school_id:
+            return Response(
+                {"detail": "school_id is required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if not _authorized_director_school(request, school_id):
+            return Response(
+                {"detail": "Forbidden"},
+                status=status.HTTP_403_FORBIDDEN,
             )
 
         if action == "POST_ACCEPTED_AWARDS":

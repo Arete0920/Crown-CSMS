@@ -133,6 +133,21 @@ class DirectorActionsAuthRequiredTests(TestCase):
         self.assertIsNone(award.ledger_entry_id)
 
         UserRole.objects.create(user=staff, school=school, role_code="AID_DIRECTOR")
+        # Multiple role-derived schools without an unambiguous principal
+        # school must not provide implicit cross-school selection authority.
+        ambiguous = self.client.post(
+            "/api/director/actions/",
+            data=json.dumps(payload),
+            content_type="application/json",
+            HTTP_X_SCHOOL_ID=str(school.id),
+        )
+        self.assertEqual(ambiguous.status_code, 403)
+        award.refresh_from_db()
+        self.assertIsNone(award.ledger_entry_id)
+
+        # Establish an explicit principal school and a matching school role.
+        staff.school = school
+        staff.save(update_fields=["school"])
         resp = self.client.post(
             "/api/director/actions/",
             data=json.dumps(payload),
