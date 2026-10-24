@@ -10,7 +10,7 @@ import pytest
 GATE = Path(__file__).resolve().parents[2] / 'scripts/ci/pr_hygiene_gate.py'
 sys.path.insert(0, str(GATE.parent))
 from pr_hygiene_gate import pr_language_findings
-from repository_identity_hygiene import REFERENCE_WORDS
+from repository_identity_hygiene import REFERENCE_WORDS, reference_found
 
 
 def git(directory, *args):
@@ -66,7 +66,10 @@ def test_pr_metadata_reference_denied_with_precise_field(field):
 
 
 def test_pr_metadata_wrapped_reference_and_neutral_narrative():
-    wrapped = next(word for word in REFERENCE_WORDS if ' ' in word)
+    wrapped = next(
+        word for word in REFERENCE_WORDS
+        if ' ' in word and all(not reference_found(piece) for piece in word.split())
+    )
     findings = pr_language_findings({'body': 'Technical review\n' + wrapped.replace(' ', '\n')})
     assert findings == ['prohibited wrapped reference in pull-request body']
     assert pr_language_findings({'title': 'Verify account isolation', 'body': 'Evidence pending, release not authorized.'}) == []
