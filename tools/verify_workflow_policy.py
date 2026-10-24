@@ -63,6 +63,7 @@ CANONICAL_WORKFLOW_FILES = {
     "license-audit.yml",
     "migration-lock-gate.yml",
     "ops-reset-dev.yml",
+    "platform-provisioning-postgresql.yml",
     "pr-preflight.yml",
     "prod-health-watch.yml",
     "prod-immutable-rollback-drill.yml",
