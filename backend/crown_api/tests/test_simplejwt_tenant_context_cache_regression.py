@@ -202,7 +202,7 @@ def test_foreign_scope_is_denied_before_cached_consumers_query_data(records, set
     _assert_denied_without_school(response, records)
 
 
-def test_real_simplejwt_support_override_with_target_read_grant_is_audited(records):
+def test_real_simplejwt_support_override_does_not_change_assigned_school(records):
     UserRole.objects.create(user=records.user, school=records.school_a, role_code="SUPPORT")
     # Cross-school selection and private record access are distinct grants.
     records.user.is_staff = True
@@ -214,8 +214,11 @@ def test_real_simplejwt_support_override_with_target_read_grant_is_audited(recor
         f"/api/v1/households/{records.household_b.pk}/",
         HTTP_X_SCHOOL_ID=str(records.school_b.id),
     )
-    assert response.status_code == 200
-    assert response.json()["id"] == str(records.household_b.pk)
+    # Audited tenant selection does not change the account's assigned school.
+    # Even a target-school role cannot widen this protected read boundary.
+    assert response.status_code == 404
+    assert str(records.household_b.pk) not in str(response.content)
+    assert records.household_b.name not in str(response.content)
     _assert_bound(response.renderer_context["request"], records.school_b, records.school_a)
     assert response.wsgi_request._crown_school_override_id == records.school_b.id
     event = AuditEvent.objects.get(action="tenant.context.decision")

@@ -155,15 +155,19 @@ def test_mismatched_school_related_rows_never_leak_in_nested_or_direct_reads(
     f = people
     foreign_child = Student.objects.create(
         school_id=f["foreign"].pk,
-        household=f["home"],
+        household=f["outside"],
         first_name="ForeignTenant", last_name="SyntheticChild",
     )
     foreign_contact = Guardian.objects.create(
         school_id=f["foreign"].pk,
-        household=f["home"],
+        household=f["outside"],
         first_name="ForeignTenant", last_name="SyntheticGuardian",
         email="mismatched-contact@example.invalid",
     )
+    # Normal model saves must reject these relations. Deliberately model an
+    # old/bypass-written row with QuerySet.update(), which skips clean().
+    Student.objects.filter(pk=foreign_child.pk).update(household=f["home"])
+    Guardian.objects.filter(pk=foreign_contact.pk).update(household=f["home"])
     staff_a = UserAccount.objects.create_user(
         username=f"boundary-a-{uuid.uuid4()}",
         email=f"boundary-a-{uuid.uuid4()}@example.invalid",
