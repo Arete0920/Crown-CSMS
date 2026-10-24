@@ -12,11 +12,14 @@ from __future__ import annotations
 
 import uuid
 
+from django.db import transaction
 from django.utils import timezone
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 
+from core.models import School
 from core.permissions import IsPlatformOperator
+from platform_ops.models import AuditEvent
 from rest_framework.response import Response
 
 from crown_api.tenant import get_tenant_school_id
@@ -97,41 +100,112 @@ def feature_list(request) -> Response:
 @api_view(["GET", "POST"])
 @permission_classes([IsPlatformOperator])
 def ops_school_subscription(request, school_id: uuid.UUID) -> Response:
-    """Read or update a school's active subscription as an administrator."""
+    """Read or change one existing school's plan with a durable audit trail.
+
+    The feature-entitlement plan is not a CROWN corporate revenue ledger.
+    Writes lock the school identity, validate the input and active plan, and
+    commit subscription history with an audit event in the same transaction.
+    A repeated request for the existing plan/trial state is a no-op.
+    """
     if request.method == "GET":
-        try:
-            sub = TenantSubscription.objects.select_related("plan").get(
-                school_id=school_id, ended_at__isnull=True
-            )
-        except TenantSubscription.DoesNotExist:
+        if not School.objects.filter(pk=school_id).exists():
+            return Response({"error": "School not found."}, status=404)
+
+        current = list(
+            TenantSubscription.objects.select_related("plan")
+            .filter(school_id=school_id, ended_at__isnull=True)
+            .order_by("-started_at", "-pk")[:2]
+        )
+        if len(current) > 1:
             return Response(
-                {"error": f"No active subscription for school {school_id}."}, status=404
+                {"error": "Multiple active subscriptions require operator review."},
+                status=409,
             )
-        serializer = TenantSubscriptionSerializer(sub)
-        return Response(serializer.data)
+        if not current:
+            return Response(
+                {"error": "No active subscription for this school."},
+                status=404,
+            )
+        return Response(TenantSubscriptionSerializer(current[0]).data)
 
-    data = request.data
-    plan_id = data.get("plan_id")
-    is_trial = bool(data.get("is_trial", False))
-
-    if not plan_id:
-        return Response({"error": "plan_id is required."}, status=400)
-
+    raw_plan_id = request.data.get("plan_id")
     try:
-        plan = Plan.objects.get(pk=plan_id)
-    except Plan.DoesNotExist:
-        return Response({"error": f"Plan {plan_id} not found."}, status=404)
+        if (
+            isinstance(raw_plan_id, bool)
+            or not isinstance(raw_plan_id, (str, int))
+            or len(str(raw_plan_id)) > 18
+        ):
+            raise ValueError("Invalid plan identifier.")
+        plan_id = int(raw_plan_id)
+        if plan_id < 1:
+            raise ValueError("Invalid plan identifier.")
+    except (TypeError, ValueError):
+        return Response(
+            {"error": "plan_id must be a positive integer."}, status=400
+        )
 
-    TenantSubscription.objects.filter(
-        school_id=school_id, ended_at__isnull=True
-    ).update(ended_at=timezone.now())
+    is_trial = request.data.get("is_trial", False)
+    if not isinstance(is_trial, bool):
+        return Response(
+            {"error": "is_trial must be a JSON boolean."}, status=400
+        )
 
-    sub = TenantSubscription.objects.create(
-        school_id=school_id,
-        plan=plan,
-        is_trial=is_trial,
-        started_at=timezone.now(),
-    )
+    with transaction.atomic():
+        # A school-level lock serializes competing assignments, including
+        # the initial assignment when no subscription row exists to lock.
+        school = School.objects.select_for_update().filter(pk=school_id).first()
+        if school is None:
+            return Response({"error": "School not found."}, status=404)
 
-    serializer = TenantSubscriptionSerializer(sub)
-    return Response(serializer.data, status=201)
+        plan = Plan.objects.filter(pk=plan_id, is_active=True).first()
+        if plan is None:
+            return Response(
+                {"error": "Active plan not found."}, status=404
+            )
+
+        existing = list(
+            TenantSubscription.objects.select_for_update()
+            .select_related("plan")
+            .filter(school_id=school_id, ended_at__isnull=True)
+            .order_by("-started_at", "-pk")[:2]
+        )
+        if len(existing) > 1:
+            return Response(
+                {"error": "Multiple active subscriptions require operator review."},
+                status=409,
+            )
+
+        previous = existing[0] if existing else None
+        if previous and previous.plan_id == plan.id and previous.is_trial == is_trial:
+            return Response(TenantSubscriptionSerializer(previous).data, status=200)
+
+        changed_at = timezone.now()
+        if previous:
+            TenantSubscription.objects.filter(
+                pk=previous.pk, ended_at__isnull=True
+            ).update(ended_at=changed_at)
+
+        subscription = TenantSubscription.objects.create(
+            school_id=school.id,
+            plan=plan,
+            is_trial=is_trial,
+            started_at=changed_at,
+        )
+
+        # Never silently accept a plan change that could not be audited.
+        # Audit persistence participates in the same atomic transaction.
+        AuditEvent.objects.create(
+            school_id=school.id,
+            actor_user_id=request.user.pk,
+            action="subscription.plan_changed" if previous else "subscription.plan_assigned",
+            resource_kind="School",
+            resource_id=school.id,
+            payload={
+                "previous_plan": previous.plan.code if previous else None,
+                "new_plan": plan.code,
+                "previous_trial": previous.is_trial if previous else None,
+                "new_trial": is_trial,
+            },
+        )
+
+    return Response(TenantSubscriptionSerializer(subscription).data, status=201)

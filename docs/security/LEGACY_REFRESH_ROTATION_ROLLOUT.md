@@ -80,3 +80,30 @@ change. Never enable the feature on production merely because CI passed.
 ## Separate reviewed DEV migration stage (source only)
 
 The ordinary `deploy-dev.yml` path remains restricted to its original migration allowlist. The operator-only runner supports `--inspect-reviewed-legacy-refresh` for read-only planning and a separately confirmed `--apply-reviewed-legacy-refresh --confirm-dev-legacy-refresh migrate-dev-legacy-refresh` stage. Both require accepted-main source identity, the unchanged DEV PostgreSQL target/TLS checks, pinned migration bytes, explicit off-state for the hosted one-use flag, and the reviewed legacy schema/plan constraints. No workflow automatically dispatches or applies this stage. Actual usage requires verified DEV database history, restore evidence, owner approval and a protected operating window. Source merge is not deployment authorization.
+
+### Reviewed inquiry and legacy pair
+
+Read-only DEV inspection on 2026-10-23 at accepted source
+`d526ee2a88dbbd03e8334a0313b836a05d21c895` found exactly two pending forward
+migrations: `crm_marketing.0002_inquiry_capture`, then
+`crown_api.0014_legacy_refresh_consumption` ([run 40014509847](https://github.com/Arete0920/Crown-CSMS/actions/runs/40014509847)).
+The separate one-migration guards could not stage that combined plan.
+
+The explicit legacy stage now recognizes that exact ordered pair as well as an
+empty plan or the legacy migration alone. It verifies the pinned bytes of both
+migration files. Before applying the pair, it requires both ledger creation /
+user-reference privileges, ownership authority for the existing inquiry
+table, and reference authority for the related application table. Reordered,
+reverse, duplicate and unrelated migrations remain blocked;
+the ordinary deployment still cannot apply the pair. Read-only inspection never
+invokes DDL or migration commands, and the existing advisory lock covers planning,
+application and verification.
+
+The existing PostgreSQL CI job rehearses the pair in its disposable test database,
+including non-mutating inspection, real migrations and locking, legacy constraints,
+old-model inquiry insertion after migration, and an idempotent second execution.
+That rehearsal does not prove an operating Azure backup restore or authorize live
+schema application. After protected source acceptance, rerun read-only inspection
+on current main; apply only in the separately approved DEV recovery window. Keep
+both hosted authentication activation flags disabled. No source merge or ordinary
+deploy enables blacklist enforcement or legacy one-use consumption.

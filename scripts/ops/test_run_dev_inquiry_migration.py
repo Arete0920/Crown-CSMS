@@ -8,7 +8,7 @@ from pathlib import Path
 from types import SimpleNamespace
 import tempfile
 import unittest
-from unittest.mock import Mock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 import run_dev_inquiry_migration as migration
 
@@ -207,8 +207,9 @@ class DevMigrationBoundaryTests(unittest.TestCase):
             if identity_error:
                 raise migration.Blocked("connected_database_identity_mismatch")
 
-        def verify_ddl():
+        def verify_ddl(pending):
             events.append("ddl")
+            self.ddl_plan = pending
             if ddl_error:
                 raise migration.Blocked("existing_database_ddl_authority_unavailable")
 
@@ -444,6 +445,51 @@ class DevMigrationBoundaryTests(unittest.TestCase):
             with self.subTest(flags=flags), patch.object(migration, "load_dev_settings") as load, contextlib.redirect_stdout(io.StringIO()):
                 self.assertEqual(migration.main(["--expected-sha", SHA, *flags]), 1)
                 load.assert_not_called()
+
+    def test_observed_pair_is_read_only_until_explicit_legacy_apply(self):
+        from reviewed_legacy_refresh_migrations import INQUIRY, REVIEWED
+        plan = [(SimpleNamespace(app_label=app, name=name), False)
+                for app, name in (INQUIRY, REVIEWED)]
+        with self.assertRaises(migration.UnreviewedPlan):
+            self._execute([plan])  # Ordinary deployment stays inquiry-only.
+        self.assertEqual(self._execute(
+            [plan], check_only=True, plan_validator=migration.validate_legacy_plan,
+        ), [".".join(item) for item in (INQUIRY, REVIEWED)])
+        self.assertEqual(self.events, ["lock", "identity", "plan", "unlock"])
+        self._execute([plan, []], plan_validator=migration.validate_legacy_plan)
+        self.assertEqual(self.ddl_plan, [INQUIRY, REVIEWED])
+        self.assertEqual(self.events[-1], "unlock")
+
+    def test_paired_stage_requires_inquiry_ownership_and_legacy_privileges(self):
+        from reviewed_legacy_refresh_migrations import INQUIRY, REVIEWED
+        for answers, expected_calls, failure in (
+            ([(False, True)], 1, "legacy_refresh_database_ddl"),
+            ([(True, False)], 1, "legacy_refresh_database_ddl"),
+            ([(True, True), (True, False)], 2, "existing_database_ddl"),
+            ([(True, True), None], 2, "existing_database_ddl"),
+            ([(True, True), (True, True), (False,)], 3, "inquiry_application_reference"),
+            ([(True, True), (True, True), (True,)], 3, None),
+        ):
+            connection = MagicMock()
+            cursor = connection.cursor.return_value.__enter__.return_value
+            cursor.fetchone.side_effect = answers
+            with self.subTest(answers=answers):
+                if failure:
+                    with self.assertRaisesRegex(migration.Blocked, failure):
+                        migration.verify_ddl_authority(connection, [INQUIRY, REVIEWED], legacy_stage=True)
+                else:
+                    migration.verify_ddl_authority(connection, [INQUIRY, REVIEWED], legacy_stage=True)
+                self.assertEqual(cursor.execute.call_count, expected_calls)
+                if expected_calls == 3:
+                    cursor.execute.assert_called_with(
+                        "SELECT has_table_privilege(current_user, "
+                        "'public.application', 'REFERENCES')"
+                    )
+        connection = MagicMock()
+        cursor = connection.cursor.return_value.__enter__.return_value
+        cursor.fetchone.return_value = (True, True)
+        migration.verify_ddl_authority(connection, [REVIEWED], legacy_stage=True)
+        self.assertEqual(cursor.execute.call_count, 1)
 
     def test_legacy_stage_refuses_hosted_activation(self):
         def fake_read(*args):
