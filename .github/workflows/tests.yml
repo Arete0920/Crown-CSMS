@@ -233,6 +233,7 @@ jobs:
           backend/crown_api/tests/test_auth_rate_limit.py
           backend/crown_api/tests/test_legacy_refresh_cleanup.py
           backend/crown_api/tests/test_dev_reviewed_migration_pair.py
+          backend/crown_api/tests/test_dev_reviewed_support_stage.py
           backend/support/test_ticket_workflow.py
           --migrations --create-db
           --junitxml=survey-postgresql-junit.xml
