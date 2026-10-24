@@ -209,3 +209,88 @@ def platform_provisioning_status(request: Request, job_id: uuid.UUID) -> Respons
             "updated_at": job.updated_at.isoformat(),
         }
     )
+
+
+@api_view(["GET"])
+@permission_classes([IsPlatformOperator])
+def platform_overview(request: Request) -> Response:
+    """Return platform-owned operational facts from the current database.
+
+    This is not a tenant dashboard, a customer-count attestation, a company
+    general ledger, or a payment gateway health check. Counts may include
+    synthetic records in non-production environments. Never return audit
+    payloads, provisioning error strings, or any family/student data.
+    """
+    from datetime import timedelta
+
+    from django.db.models import Count
+    from django.utils import timezone
+
+    from platform_ops.models import AuditEvent, ProvisioningJob
+    from tenants.models import TenantProfile
+
+    now = timezone.now()
+    schools_by_status = {
+        state: 0 for state, _label in TenantProfile.STATUS_CHOICES
+    }
+    for entry in TenantProfile.objects.values("status").annotate(
+        total=Count("pk")
+    ):
+        schools_by_status[entry["status"]] = entry["total"]
+
+    jobs_by_state = {
+        state: 0 for state, _label in ProvisioningJob.STATE_CHOICES
+    }
+    for entry in ProvisioningJob.objects.values("state").annotate(
+        total=Count("pk")
+    ):
+        jobs_by_state[entry["state"]] = entry["total"]
+
+    recent_jobs = [
+        {
+            "job_id": str(job.id),
+            "school_id": str(job.school_id),
+            "school_name": job.school.name,
+            "state": job.state,
+            "progress": job.progress,
+            "created_at": job.created_at.isoformat(),
+        }
+        for job in ProvisioningJob.objects.select_related("school")
+        .order_by("-created_at", "-pk")[:10]
+    ]
+
+    return Response(
+        {
+            "schools": {
+                "total": sum(schools_by_status.values()),
+                "by_status": schools_by_status,
+            },
+            "provisioning": {
+                "by_state": jobs_by_state,
+                "recent_jobs": recent_jobs,
+            },
+            "audit": {
+                "events_last_7_days": AuditEvent.objects.filter(
+                    created_at__gte=now - timedelta(days=7)
+                ).count(),
+            },
+            "company_finance": {
+                "data_state": "not_configured",
+                "reason": (
+                    "CROWN corporate revenue, invoices, receivables, refunds, "
+                    "and cash collections require an authoritative, reconciled "
+                    "company ledger. School tuition is not company revenue."
+                ),
+            },
+            "external_payments": {
+                "provisioning_policy": "disabled",
+                "allowed_modes": ["none", "manual"],
+            },
+            "meta": {
+                "data_source": "live_db",
+                "scope": "current_database",
+                "as_of": now.isoformat(),
+                "financial_data_source": "not_configured",
+            },
+        }
+    )

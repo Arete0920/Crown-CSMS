@@ -1,7 +1,5 @@
 import { createBrowserRouter, Navigate } from "react-router";
 
-// No-op touch to ensure required route/dashboard gate contexts run on this PR.
-
 import RoleDashboardPage from "../pages/RoleDashboardPage.jsx";
 import BillingDashboard from "../pages/BillingDashboard.jsx";
 import FinancialAidDashboard from "../pages/FinancialAidDashboard.jsx";
@@ -41,6 +39,7 @@ import LogoutPage from "../pages/LogoutPage.jsx";
 import SandboxLandingPage from "../pages/SandboxLandingPage.jsx";
 import IntegrityDashboard from "../pages/IntegrityDashboard.jsx";
 import AdminDashboard from "../pages/AdminDashboard.jsx";
+import PlatformOwnerConsole from "../pages/PlatformOwnerConsole.jsx";
 import SchoolAdministratorDashboard from "../pages/SchoolAdministratorDashboard.jsx";
 import BoardDashboard from "../pages/BoardDashboard.jsx";
 import FinanceDashboard from "../pages/FinanceDashboard.jsx";
@@ -77,6 +76,7 @@ import FinanceSetupWizard from "../pages/wizards/FinanceSetupWizard.jsx";
 import NotAuthorized from "../pages/NotAuthorized.jsx";
 import RoleRouteGuard from "../components/routing/RoleRouteGuard.jsx";
 import AuthenticatedSchoolRouteGuard from "../components/routing/AuthenticatedSchoolRouteGuard.jsx";
+import AuthenticatedPlatformRouteGuard from "../components/routing/AuthenticatedPlatformRouteGuard.jsx";
 import ParentJourneyRouteGuard from "../components/routing/ParentJourneyRouteGuard.jsx";
 import RoleGuard from "./RoleGuard.jsx";
 import RequirePermission from "../components/auth/RequirePermission.jsx";
@@ -542,7 +542,8 @@ export const router = createBrowserRouter([
   },
   // Billing is owned by the explicit finance-guarded route above.
   // Keep its registry metadata for navigation without registering a second route.
-  ...dashboardRoutes.filter((route) => route.path !== PATHS.BILLING_DASHBOARD),
+  ...dashboardRoutes.filter((route) => route.path !== PATHS.BILLING_DASHBOARD
+    && route.path !== PATHS.MASTER_CONTROL_DASHBOARD),
   {
     path: PATHS.ACADEMICS,
     element: (
@@ -788,7 +789,16 @@ export const router = createBrowserRouter([
   },
   {
     path: PATHS.MASTER_CONTROL,
-    element: <AuthenticatedSchoolRouteGuard><AdminDashboard /></AuthenticatedSchoolRouteGuard>,
+    element: <AuthenticatedPlatformRouteGuard><PlatformOwnerConsole /></AuthenticatedPlatformRouteGuard>,
+  },
+  {
+    // Legacy owner link must not pass through school-role or scaffold-release guards.
+    path: PATHS.MASTER_CONTROL_DASHBOARD,
+    element: (
+      <AuthenticatedPlatformRouteGuard>
+        <Navigate to={PATHS.MASTER_CONTROL} replace />
+      </AuthenticatedPlatformRouteGuard>
+    ),
   },
   {
     path: PATHS.OFFICE,

@@ -103,7 +103,7 @@ const router = readFileSync("src/routes/router.jsx", "utf8");
 const guard = readFileSync("src/components/routing/AuthenticatedSchoolRouteGuard.jsx", "utf8");
 
 const specialistRoutes = [
-  "BOARD", "IT", "MARKETING", "SPIRITUAL_LIFE", "MASTER_CONTROL",
+  "BOARD", "IT", "MARKETING", "SPIRITUAL_LIFE",
   "OFFICE", "HEALTH", "COUNSELING", "FOOD", "ATHLETICS",
   "ADVANCEMENT", "TRANSPORTATION", "FACILITIES", "SECURITY",
   "ACADEMIC_SUPPORT", "FINE_ARTS", "LIBRARY", "EXTENDED_CARE",
@@ -148,6 +148,25 @@ describe("anonymous specialist route denial contract", () => {
     const block = router.slice(start, router.indexOf("},", start) + 2);
     expect(block).toContain("<RoleRouteGuard allowedRoles=");
     expect(block).toContain('"board_member"');
+  });
+
+  it("requires a platform bearer guard instead of a school tenant selector", () => {
+    const start = router.indexOf("path: PATHS.MASTER_CONTROL,");
+    const block = router.slice(start, router.indexOf("\n  },", start));
+    const operatorGuard = readFileSync(
+      "src/components/routing/AuthenticatedPlatformRouteGuard.jsx",
+      "utf8",
+    );
+    const platformApi = readFileSync("src/utils/authClient.js", "utf8");
+    expect(start).toBeGreaterThanOrEqual(0);
+    expect(block).toContain("<AuthenticatedPlatformRouteGuard>");
+    expect(block).toContain("</AuthenticatedPlatformRouteGuard>");
+    expect(block).not.toContain("<AuthenticatedSchoolRouteGuard>");
+    expect(operatorGuard).toContain("!getAccessToken()");
+    expect(operatorGuard).not.toContain("getSelectedSchoolId");
+    expect(operatorGuard).toContain('to="/not-authorized"');
+    expect(platformApi).toContain('omitSchoolContext');
+    expect(platformApi).toContain('headers.delete("X-School-Id")');
   });
 
   it("denies routes with missing bearer or school rather than showing data", () => {
