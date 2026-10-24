@@ -243,6 +243,13 @@ must not be used for active scoping logic. `academics.Enrollment` links
 
 ---
 
+
+## Issue #441: canonical public privacy boundary
+
+The accepted ADR-001 reserves canonical operational writes for `core.Family`, `core.Guardian`, and `core.Student`. The `households.*` models remain compatibility/read models, not the canonical operational writers; earlier identity labels in section 8.1 are superseded.
+
+Canonical `/api/` and `/api/v1/` household, guardian and student endpoints require selected active school plus Layer C row/field scope. School-wide household access requires `households.view`; guardian directory access separately requires `guardians.view`. A Django staff bit, email match, unknown role, and a role belonging to another school do not authorize personal data. Parent household/student and financial aid reads require a persisted same-school `households.Guardian.account` link. The old guardian-scope toggle does not bypass protected viewsets. Permission seeding and hosted acceptance are distinct operational steps.
+
 ## 9. Layer C Implementation Plan
 
 ### Phase 1 — Infrastructure (Foundation Layer)
