@@ -140,7 +140,7 @@ class OwnerRuntimePrecheckTests(unittest.TestCase):
         workflow = (Path(__file__).resolve().parents[2] /
                     '.github/workflows/azure-classroom-preflight.yml').read_text()
         self.assertIn('workflow_dispatch:', workflow)
-        self.assertNotIn('  push:', workflow)
+        self.assertIn('  push:', workflow)  # existing preflight retains normal triggers
         self.assertIn("github.ref == 'refs/heads/main'", workflow)
         self.assertIn("dev-owner-runtime-precheck:", workflow)
         self.assertIn("inputs.dev_owner_runtime_precheck == true", workflow)
