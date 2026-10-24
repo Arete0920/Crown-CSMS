@@ -38,7 +38,7 @@ def main() -> int:
         if not python.is_file():
             raise RuntimeError("Run start_heritage_local.py --prepare-only before this rehearsal")
         for name, command, cwd in (
-            ("backend", [str(python), str(ROOT / "backend/manage.py"), "runserver", "127.0.0.1:8000", "--noreload"], ROOT),
+            ("backend", [str(python), str(ROOT / "backend/manage.py"), "heritage_runserver", "127.0.0.1:8000", "--noreload"], ROOT),
             ("frontend", launcher.preview_command(), launcher.FRONTEND),
         ):
             log = (state / f"rehearsal-{name}.log").open("w", encoding="utf-8")
