@@ -515,3 +515,109 @@ def test_retry_requires_new_failure_and_bounded_operator_approval(
     assert AuditEvent.objects.filter(
         resource_id=job.pk, action="provisioning.retry_authorized"
     ).count() == 2
+
+
+@pytest.mark.django_db
+def test_recovery_audit_outage_rolls_back(monkeypatch, platform_operator):
+    """A broken audit store cannot grant another attempt."""
+    from platform_ops.models import AuditEvent
+    from platform_ops.provisioning import (
+        ProvisioningAuditError, authorize_failed_provisioning_retry,
+        create_school_and_queue_provisioning, run_provisioning_job,
+    )
+    from tenants.models import SchoolSettings
+
+    job = create_school_and_queue_provisioning(
+        name="Synthetic Audit Recovery",
+        slug=f"audit-recovery-{uuid.uuid4().hex[:8]}",
+        idempotency_key=str(uuid.uuid4()),
+    )
+    with monkeypatch.context() as patcher:
+        def failure(*args, **kwargs):
+            raise RuntimeError("synthetic restricted diagnostic")
+        patcher.setattr(SchoolSettings.objects, "get_or_create", failure)
+        assert run_provisioning_job(
+            job, actor_user_id=platform_operator.pk,
+        ).state == "failed"
+
+    def unavailable(*args, **kwargs):
+        raise RuntimeError("synthetic sensitive database detail")
+
+    monkeypatch.setattr(AuditEvent.objects, "create", unavailable)
+    with pytest.raises(ProvisioningAuditError):
+        authorize_failed_provisioning_retry(
+            job.pk, actor_user_id=platform_operator.pk,
+            correlation_id=uuid.uuid4(), reason_code="transient_dependency",
+        )
+    job.refresh_from_db()
+    assert job.state == "failed"
+
+
+@pytest.mark.django_db(transaction=True)
+def test_postgresql_concurrent_recovery_claims_once(platform_operator):
+    """Only one contender may claim a failed job for a given attempt."""
+    from concurrent.futures import ThreadPoolExecutor
+    from threading import Event
+    from time import sleep
+
+    from django.db import close_old_connections, connection
+    from platform_ops import provisioning
+    from platform_ops.models import AuditEvent
+
+    if connection.vendor != "postgresql":
+        pytest.skip("PostgreSQL concurrency proof requires PostgreSQL")
+
+    job = provisioning.create_school_and_queue_provisioning(
+        name="Synthetic Collision School",
+        slug=f"recovery-collision-{uuid.uuid4().hex[:8]}",
+        idempotency_key=str(uuid.uuid4()),
+    )
+    AuditEvent.objects.create(
+        school_id=job.school_id,
+        actor_user_id=platform_operator.pk,
+        action="provisioning.failed",
+        resource_kind="ProvisioningJob",
+        resource_id=job.pk,
+        payload={"job_id": str(job.pk)},
+    )
+    from platform_ops.models import ProvisioningJob
+    ProvisioningJob.objects.filter(pk=job.pk).update(state="failed")
+    locked = Event()
+    release = Event()
+    original = provisioning._record_provisioning_audit
+
+    def pause(action, **kwargs):
+        if action == "provisioning.retry_authorized":
+            locked.set()
+            if not release.wait(timeout=20):
+                raise RuntimeError("synthetic concurrency timeout")
+        return original(action, **kwargs)
+
+    def contender():
+        close_old_connections()
+        try:
+            return provisioning.authorize_failed_provisioning_retry(
+                job.pk, actor_user_id=platform_operator.pk,
+                correlation_id=uuid.uuid4(),
+                reason_code="transient_dependency",
+            ).state
+        finally:
+            close_old_connections()
+
+    with pytest.MonkeyPatch.context() as patcher:
+        patcher.setattr(provisioning, "_record_provisioning_audit", pause)
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            first = pool.submit(contender)
+            try:
+                assert locked.wait(timeout=20)
+                second = pool.submit(contender)
+                sleep(0.15)
+            finally:
+                release.set()
+            assert first.result(timeout=35) == "queued"
+            with pytest.raises(provisioning.ProvisioningStateError):
+                second.result(timeout=35)
+
+    assert AuditEvent.objects.filter(
+        resource_id=job.pk, action="provisioning.retry_authorized",
+    ).count() == 1
