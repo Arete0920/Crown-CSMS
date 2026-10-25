@@ -182,3 +182,34 @@ def test_ensure_ci_user_no_header_returns_403():
                 content_type="application/json",
             )
     assert resp.status_code == 403
+
+
+@pytest.mark.parametrize("runtime", [
+    {"ENVIRONMENT": "dev", "CROWN_ENV": "prod", "WEBSITE_HOSTNAME": ""},
+    {"ENVIRONMENT": "dev", "CROWN_ENV": "dev", "WEBSITE_HOSTNAME": "crown-api-prod.azurewebsites.net"},
+    {"ENVIRONMENT": "dev", "CROWN_ENV": "staging", "WEBSITE_HOSTNAME": "crown-api-dev.azurewebsites.net"},
+])
+def test_demo_school_rejects_conflicting_runtime(runtime):
+    from django.http import Http404
+    from django.test import RequestFactory
+    from crown_api.ops_views import demo_school
+
+    request = RequestFactory().get("/api/v1/system/demo-school/", HTTP_X_DEVOPS_SECRET="synthetic-only")
+    with override_settings(ENVIRONMENT=runtime["ENVIRONMENT"], CROWN_ENV=runtime["CROWN_ENV"], DJANGO_ENV="", DEV_OPS_SECRET="synthetic-only"), patch.dict(os.environ, {**runtime, "DJANGO_ENV": ""}), patch("crown_api.ops_views.School.objects") as schools:
+        with pytest.raises(Http404):
+            demo_school(request)
+    schools.assert_not_called()
+
+
+def test_demo_school_valid_dev_uses_configured_id_without_database():
+    import json
+    from django.test import RequestFactory
+    from crown_api.ops_views import demo_school
+
+    value = "00000000-0000-0000-0000-000000000111"
+    request = RequestFactory().get("/api/v1/system/demo-school/", HTTP_X_DEVOPS_SECRET="synthetic-only")
+    with override_settings(ENVIRONMENT="dev", CROWN_ENV="dev", DJANGO_ENV="", DEV_OPS_SECRET="synthetic-only"), patch.dict(os.environ, {"ENVIRONMENT": "dev", "CROWN_ENV": "dev", "DJANGO_ENV": "", "WEBSITE_HOSTNAME": "crown-api-dev.azurewebsites.net", "DEMO_SCHOOL_ID": value}), patch("crown_api.ops_views.School.objects") as schools:
+        response = demo_school(request)
+    assert response.status_code == 200
+    assert json.loads(response.content)["school_id"] == value
+    schools.assert_not_called()
