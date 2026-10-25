@@ -11,6 +11,8 @@ on:
       - "backend/crm_marketing/migrations/0002_inquiry_capture.py"
       - "backend/crm_marketing/tests/test_inquiry_capture.py"
       - "docs/operations/ISOLATED_POSTGRES_RESTORE_DRILL.md"
+      - "scripts/ops/dev_backup_restore.py"
+      - "scripts/ops/test_dev_backup_restore.py"
   push:
     branches: [main]
     paths:
@@ -21,7 +23,26 @@ on:
       - "backend/crm_marketing/migrations/0002_inquiry_capture.py"
       - "backend/crm_marketing/tests/test_inquiry_capture.py"
       - "docs/operations/ISOLATED_POSTGRES_RESTORE_DRILL.md"
-  workflow_dispatch: {}
+      - "scripts/ops/dev_backup_restore.py"
+      - "scripts/ops/test_dev_backup_restore.py"
+  workflow_dispatch:
+    inputs:
+      dev_operational_restore:
+        description: "Authorized synthetic DEV backup into disposable CI PostgreSQL only"
+        type: boolean
+        default: false
+      expected_dev_sha:
+        description: "Full current accepted main SHA (operational mode only)"
+        type: string
+        required: false
+      confirm_dev_restore:
+        description: "Type restore-dev-backup-in-ci to confirm the bounded exercise"
+        type: string
+        default: ""
+      synthetic_dev_confirmed:
+        description: "Owner confirmed source DEV contains synthetic test data only"
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -31,7 +52,109 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  dev-restore-contracts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: crown_drill
+          POSTGRES_PASSWORD: crown-drill-password
+          POSTGRES_DB: postgres
+        options: >-
+          --health-cmd "pg_isready -U crown_drill -d postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: '3.12'
+      - name: Verify operational recovery privacy and target boundaries offline
+        env:
+          CROWN_RESTORE_TEST_CONTAINER: ${{ job.services.postgres.id }}
+        run: python -m unittest discover -s scripts/ops -p test_dev_backup_restore.py -v
+
+  dev-operational-restore:
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.dev_operational_restore == true
+    needs: dev-restore-contracts
+    runs-on: ubuntu-latest
+    environment: dev
+    permissions:
+      contents: read
+      id-token: write
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: crown_drill
+          POSTGRES_PASSWORD: crown-drill-password
+          POSTGRES_DB: postgres
+        options: >-
+          --health-cmd "pg_isready -U crown_drill -d postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Verify current accepted source and explicit authority before Azure login
+        env:
+          EXPECTED_SHA: ${{ inputs.expected_dev_sha }}
+          CONFIRMATION: ${{ inputs.confirm_dev_restore }}
+          SYNTHETIC_CONFIRMED: ${{ inputs.synthetic_dev_confirmed }}
+        run: |
+          set -euo pipefail
+          [[ "$EXPECTED_SHA" =~ ^[0-9a-f]{40}$ ]]
+          test "$CONFIRMATION" = restore-dev-backup-in-ci
+          test "$SYNTHETIC_CONFIRMED" = true
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+          git fetch --no-tags origin refs/heads/main:refs/remotes/origin/main
+          test "$(git rev-parse origin/main)" = "$EXPECTED_SHA"
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: '3.12'
+      - name: Install pinned metadata client only
+        run: python -m pip install 'psycopg[binary]==3.3.6'
+      - name: Authenticate existing DEV read identity
+        id: azure_login
+        uses: azure/login@a457da9ea143d694b1b9c7c869ebb04ebe844ef5
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - name: Restore authorized DEV snapshot only inside the job service
+        env:
+          EXPECTED_SHA: ${{ inputs.expected_dev_sha }}
+          CONFIRMATION: ${{ inputs.confirm_dev_restore }}
+          SYNTHETIC_CONFIRMED: ${{ inputs.synthetic_dev_confirmed }}
+          POSTGRES_CONTAINER_ID: ${{ job.services.postgres.id }}
+        run: |
+          umask 077
+          python scripts/ops/dev_backup_restore.py \
+            --expected-sha "$EXPECTED_SHA" \
+            --confirmation "$CONFIRMATION" \
+            --synthetic-dev-confirmed "$SYNTHETIC_CONFIRMED" \
+            --evidence-path "$RUNNER_TEMP/dev-restore-evidence.json"
+      - name: Retain sanitized operational result only
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: dev-operational-restore-${{ github.run_id }}
+          path: ${{ runner.temp }}/dev-restore-evidence.json
+          if-no-files-found: warn
+          retention-days: 7
+      - name: Logout Azure
+        if: always() && steps.azure_login.outcome == 'success'
+        run: az logout
+
   restore-drill:
+    if: inputs.dev_operational_restore != true
     runs-on: ubuntu-latest
     timeout-minutes: 30
     services:
