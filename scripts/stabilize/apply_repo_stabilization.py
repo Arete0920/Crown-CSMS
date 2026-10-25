@@ -211,7 +211,7 @@ def patch_director_views():
     ]
     for fn in get_funcs:
         ensure_function_extend_schema(path, fn, "@extend_schema(responses=OpenApiTypes.OBJECT)")
-    for fn in ["director_actions", "force_seed_user"]:
+    for fn in ["director_actions"]:
         ensure_function_extend_schema(path, fn, "@extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)")
 
 def patch_aftercare():
