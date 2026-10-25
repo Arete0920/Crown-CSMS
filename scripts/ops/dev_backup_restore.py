@@ -95,6 +95,32 @@ def docker_command(container, env, command):
     return args + [container] + command
 
 
+def classify_dump_failure(stderr: bytes) -> str:
+    """Map raw pg_dump diagnostics to literal, non-sensitive evidence codes only.
+
+    Never include stderr, connection parameters, object names or exception text
+    in a returned value, artifact or public job output. Ambiguous failures stay
+    unclassified rather than guessing the underlying problem.
+    """
+    detail = (stderr or b"")[:65536].decode("utf-8", errors="replace").lower()
+    categories = (
+        (r"(?:password authentication failed|fe_sendauth: no password supplied|no pg_hba\\.conf entry)",
+         "source_dump_authentication_blocked"),
+        (r"(?:could not translate host name|connection timed out|connection refused|network is unreachable|could not connect to server)",
+         "source_dump_connectivity_blocked"),
+        (r"(?:certificate verify failed|ssl error|root certificate file)",
+         "source_dump_tls_blocked"),
+        (r"(?:server version mismatch|aborting because of server version mismatch)",
+         "source_dump_client_version_blocked"),
+        (r"(?:permission denied for|permission denied to|must be owner of)",
+         "source_dump_read_permission_blocked"),
+        (r"(?:invalid snapshot identifier|could not import snapshot|invalid snapshot|snapshot .* does not exist)",
+         "source_dump_snapshot_blocked"),
+    )
+    matches = [code for pattern, code in categories if re.search(pattern, detail)]
+    return matches[0] if len(matches) == 1 else "source_dump_unclassified_failure"
+
+
 def execute(container, env, command, *, run=subprocess.run, stdin=None, stdout=None):
     try:
         result = run(docker_command(container, env, command), env=env, stdin=stdin,
@@ -103,6 +129,8 @@ def execute(container, env, command, *, run=subprocess.run, stdin=None, stdout=N
     except (OSError, subprocess.TimeoutExpired) as exc:
         raise RestoreBlocked("postgres_process_unavailable") from exc
     if result.returncode:
+        if command and command[0] == "pg_dump":
+            raise RestoreBlocked(classify_dump_failure(result.stderr))
         raise RestoreBlocked("postgres_process_failed")
     return result.stdout or b""
 
