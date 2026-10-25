@@ -11,13 +11,13 @@ Authenticated POST requests to `/api/compliance/parent-rights/` and
 validates school context and authorized tenant selection before any receipt is
 written. Request bodies cannot select the actor, school, consent type or outcome.
 
-A durable `ConsentAudit` row records the distinct `data_rights_request` event,
-the authenticated requester, canonical school and request type, with
-`metadata.status=received`. The existing audit store is reused; this event
-is explicitly not privacy acceptance, school authorization or parental consent.
-The receipt timestamp uses the existing `accepted_at` column as its storage
-timestamp, not as evidence of legal consent. No IP address or student record is
-required for this intake.
+A durable existing `audit.AuditLog` row, with action
+`compliance.data_rights_request.received`, records the authenticated requester,
+canonical `metadata.school_id`, request type, and `metadata.status=received`.
+This production audit ledger is deliberately separate from `ConsentAudit`:
+request intake does not create, imply, amend, or accept parental consent.
+The row's `created_at` is an intake timestamp, not legal consent evidence.
+No new database migration, IP address or student record is required.
 
 Only after persistence succeeds does the API return HTTP 202 with
 `status=received`, `request_type` and the audit row's `request_id`.
@@ -33,9 +33,10 @@ automated staff work queue. Do not activate this intake for live schools until
 the school assigns a privacy contact and verifies a restricted receipt-review
 and fulfillment procedure, including:
 
-1. Review pending `data_rights_request` events for the selected school using
-   authorized restricted access. Do not expose the cross-school audit store to
-   parents or ordinary staff.
+1. Review `audit.AuditLog` rows with action
+   `compliance.data_rights_request.received` and that school's
+   `metadata.school_id` using authorized restricted access. Do not expose the
+   cross-school audit store to parents or ordinary staff.
 2. Verify the requester and guardian/student relationship through school records;
    authentication alone does not establish rights to a particular student's data.
 3. Apply applicable school policies, legal holds, retention requirements,
@@ -58,8 +59,8 @@ Those events must not be relied upon as consent. A qualified, authorized
 reviewer should inventory these historical rows in restricted storage, trace
 their original requester and school using reliable evidence, and disposition
 them with a preserved audit trail. Do not guess school identity or bulk relabel
-historical records automatically. This migration changes event choices only
-and deliberately preserves original records.
+historical records automatically. This correction introduces no new migration
+and does not modify historical consent rows.
 
 ## Verification and rollback
 
@@ -70,5 +71,5 @@ requests and storage failure. Frontend tests cover all three JSON submissions,
 pending feedback, overlapping clicks, failures and malformed receipts.
 
 Rollback: revert the source change through the governed release process.
-Preserve received event rows and do not relabel them as consent. Reverting the
-choices migration does not authorize deleting historical audit evidence.
+Preserve received audit events and do not relabel them as consent. No new
+migration is required by this change; existing migration history stays intact.

@@ -7,7 +7,6 @@ class ConsentAudit(models.Model):
         ("privacy_policy", "Privacy Policy"),
         ("school_authorization", "School Authorization"),
         ("parental_consent", "Parental Consent"),
-        ("data_rights_request", "Data Rights Request (Not Consent)"),
         ("faith_data_acknowledgement", "Faith Data Acknowledgement"),
     ]
 

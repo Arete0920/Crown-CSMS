@@ -4,7 +4,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.compliance.models import ConsentAudit
+from audit.models import AuditLog
 from households.scoping import get_request_school_id
 
 
@@ -33,12 +33,17 @@ class ParentDataRightsRequestView(APIView):
         serializer.is_valid(raise_exception=True)
         request_type = serializer.validated_data["request_type"]
 
-        receipt = ConsentAudit.objects.create(
-            tenant_id=str(school_id),
-            consent_type="data_rights_request",
-            version="2026.10",
-            user=request.user,
-            metadata={"request_type": request_type, "status": "received"},
+        # Rights-request intake is not a consent event. Reuse the existing
+        # school-attributed audit ledger without introducing DEV migrations.
+        receipt = AuditLog.objects.create(
+            user_id=request.user.pk,
+            action="compliance.data_rights_request.received",
+            model="compliance.parent_data_rights_request",
+            metadata={
+                "school_id": str(school_id),
+                "request_type": request_type,
+                "status": "received",
+            },
         )
 
         return Response(
