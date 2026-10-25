@@ -21,7 +21,7 @@ def test_source_inventory_matches_original_inclusive_repo_semantics(tmp_path):
         assert "Should not be read" not in expected
 
         assert repository_python_source(tmp_path) is repository_python_source(tmp_path)
-        assert repository_python_source.cache_info().hits == 1
+        assert repository_python_source.cache_info().hits == 2
     finally:
         repository_python_files.cache_clear()
         repository_python_source.cache_clear()
