@@ -74,7 +74,7 @@ class DeployOnlyBoundaryTests(unittest.TestCase):
             with self.subTest(guard=guard_name):
                 body = step(guard_name)
                 self.assertIn('git fetch --no-tags origin refs/heads/main:refs/remotes/origin/main', body)
-                source = re.search(r'run: \\|\\n(.*)', body, re.S).group(1)
+                source = body.split("run: |\n", 1)[1]
                 self._run_exact_main_guard(textwrap.dedent(source))
 
     def _run_exact_main_guard(self, source):
