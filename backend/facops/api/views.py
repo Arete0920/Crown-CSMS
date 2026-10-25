@@ -218,20 +218,20 @@ class AlertViewSet(SchoolScopedViewSet):
 
     @action(detail=False, methods=["post"])
     def emit(self, request):
-        title = request.data.get("title", "").strip()
-        body = request.data.get("body", "").strip()
-        channel = request.data.get("channel", "TEAMS")
-        if not title:
-            return Response({"detail": "title required"}, status=400)
-        school = self._school()
-        alert = Alert.objects.create(
-            school=school,
-            title=title,
-            body=body,
-            channel=channel,
-            emitted_by=request.user,
-        )
-        return Response(AlertSerializer(alert).data, status=201)
+        # Use the same type/length validation as ordinary alert creation.
+        # Preserve emit's input contract: kind, external_ref and actor/school
+        # attribution are never supplied by the caller on this action.
+        data = request.data
+        if isinstance(data, dict):
+            data = {
+                field: data[field]
+                for field in ("title", "body", "channel")
+                if field in data
+            }
+        serializer = self.get_serializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        return Response(serializer.data, status=201)
 
 
 @api_view(["GET"])
