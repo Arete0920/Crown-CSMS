@@ -48,6 +48,10 @@ on:
         description: "Deploy an isolated preview on the EXISTING SWA against DEV; never production"
         type: boolean
         default: false
+      dev_deploy_only:
+        description: "DEV preview deployment and read-only checks only; no CORS changes, browser writes or fixture creation"
+        type: boolean
+        default: true
       dev_source_sha:
         description: "Full accepted source SHA already deployed to DEV (preview only)"
         type: string
@@ -464,6 +468,7 @@ jobs:
           skip_app_build: true
           deployment_environment: dev-certification
       - name: Configure exact owned DEV preview origin
+        if: toJSON(inputs.dev_deploy_only) == 'false'
         env:
           PREVIEW_URL: ${{ steps.preview.outputs.static_web_app_url }}
           WORKFLOW_SHA: ${{ github.sha }}
@@ -497,7 +502,7 @@ jobs:
             pwsh -NoProfile -File tools/appsettings_allowlist_gate.ps1 -AppSettingsJsonPath appsettings.dev-preview.json -AllowedKeysFile appsettings.preview.allowlist.json -AllowedKeySet dev
             az webapp config appsettings set --resource-group crown-rg --name crown-api-dev --settings @appsettings.dev-preview.json --output none --only-show-errors
           fi
-      - name: Wait for pinned DEV API after configuration
+      - name: Verify pinned DEV API and existing CORS
         env:
           SOURCE_SHA: ${{ inputs.dev_source_sha }}
           PREVIEW_URL: ${{ steps.preview.outputs.static_web_app_url }}
@@ -519,10 +524,29 @@ jobs:
           else:
               raise SystemExit('DEV did not recover matching healthy runtime after origin configuration')
           PYCODE
+      - name: Verify deployed DEV frontend identity without writes
+        env:
+          SOURCE_SHA: ${{ inputs.dev_source_sha }}
+          PREVIEW_URL: ${{ steps.preview.outputs.static_web_app_url }}
+        run: |
+          python3 - <<'PYCODE'
+          import json, os, urllib.request
+          expected_origin = 'https://yellow-forest-0eecc8b0f-devcertification.eastus2.7.azurestaticapps.net'
+          origin = os.environ['PREVIEW_URL'].rstrip('/')
+          if origin != expected_origin:
+              raise SystemExit('Unexpected DEV preview origin')
+          with urllib.request.urlopen(origin + '/build.json', timeout=30) as response:
+              payload = json.load(response)
+              if response.status != 200 or payload.get('build_sha') != os.environ['SOURCE_SHA']:
+                  raise SystemExit('Deployed DEV frontend identity mismatch')
+          print('DEV frontend identity verified; runtime journeys require separate certification')
+          PYCODE
       - name: Install existing Playwright browser
+        if: toJSON(inputs.dev_deploy_only) == 'false'
         working-directory: frontend/dashboards
         run: npx playwright install chromium --with-deps
       - name: Execute existing live certification against DEV preview
+        if: toJSON(inputs.dev_deploy_only) == 'false'
         working-directory: frontend/dashboards
         env:
           CI: '1'
@@ -549,7 +573,7 @@ jobs:
           retention-days: 30
 
       - name: Execute existing buyer persistence journeys on DEV
-        if: always() && steps.preview.outcome == 'success'
+        if: always() && toJSON(inputs.dev_deploy_only) == 'false' && steps.preview.outcome == 'success'
         working-directory: frontend/dashboards
         env:
           CI: '1'
@@ -561,7 +585,7 @@ jobs:
           git show "$CROWN_REHEARSAL_TEST_SHA:frontend/dashboards/tests/certification/buyer-sandbox-browser-authority.spec.ts" > tests/certification/buyer-sandbox-browser-authority.spec.ts
           npm run certify:buyer-sandbox-browser
       - name: Upload DEV buyer persistence evidence
-        if: always() && steps.preview.outcome == 'success'
+        if: always() && toJSON(inputs.dev_deploy_only) == 'false' && steps.preview.outcome == 'success'
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: dev-buyer-persistence-${{ inputs.dev_source_sha }}-${{ github.run_id }}
@@ -572,15 +596,15 @@ jobs:
           retention-days: 30
 
       - name: Set up existing backend fixture runtime
-        if: always() && steps.preview.outcome == 'success'
+        if: always() && toJSON(inputs.dev_deploy_only) == 'false' && steps.preview.outcome == 'success'
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
         with:
           python-version: '3.12'
       - name: Install accepted backend dependencies for synthetic fixtures
-        if: always() && steps.preview.outcome == 'success'
+        if: always() && toJSON(inputs.dev_deploy_only) == 'false' && steps.preview.outcome == 'success'
         run: python -m pip install -r backend/requirements.txt
       - name: Prepare two synthetic DEV tenants using existing models
-        if: always() && steps.preview.outcome == 'success'
+        if: always() && toJSON(inputs.dev_deploy_only) == 'false' && steps.preview.outcome == 'success'
         env:
           WORKFLOW_SHA: ${{ github.sha }}
           SOURCE_SHA: ${{ inputs.dev_source_sha }}
@@ -628,7 +652,7 @@ jobs:
               raise SystemExit(1)
           PYCODE
       - name: Execute existing Playwright framework for two-tenant HTTP isolation
-        if: always() && steps.preview.outcome == 'success'
+        if: always() && toJSON(inputs.dev_deploy_only) == 'false' && steps.preview.outcome == 'success'
         working-directory: frontend/dashboards
         env:
           CI: '1'
@@ -638,7 +662,7 @@ jobs:
           CROWN_DEV_TENANT_FIXTURE: ${{ runner.temp }}/crown-dev-tenant-fixtures.json
         run: npx playwright test tests/certification/production-tenant-isolation.spec.ts --workers=1 --reporter=line,html
       - name: Upload two-tenant execution results
-        if: always() && steps.preview.outcome == 'success'
+        if: always() && toJSON(inputs.dev_deploy_only) == 'false' && steps.preview.outcome == 'success'
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: dev-two-tenant-isolation-${{ inputs.dev_source_sha }}-${{ github.run_id }}
@@ -652,3 +676,11 @@ jobs:
         env:
           FIXTURE_PATH: ${{ runner.temp }}/crown-dev-tenant-fixtures.json
         run: rm -f -- "$FIXTURE_PATH"
+      - name: Record DEV deployment scope
+        if: always()
+        env:
+          DEPLOY_ONLY: ${{ inputs.dev_deploy_only }}
+        run: |
+          if [[ "$DEPLOY_ONLY" != "false" ]]; then
+            echo 'DEV deployment-only: CORS mutation, browser journeys and synthetic fixtures skipped. This run does not certify tenant isolation or owner workflows.' >> "$GITHUB_STEP_SUMMARY"
+          fi
