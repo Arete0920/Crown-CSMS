@@ -174,6 +174,13 @@ class RecoveryBoundaryTests(unittest.TestCase):
         self.assertIn("synthetic-dev-confirmed", workflow)
         self.assertIn("before Azure login", workflow)
 
+    def test_fixture_restore_pins_matching_client_major_before_dump(self):
+        path = Path(__file__).resolve().parents[2] / ".github/workflows/isolated-postgres-restore-drill.yml"
+        workflow = path.read_text().split("  restore-drill:", 1)[1]
+        self.assertLess(workflow.index("Use PostgreSQL 16 clients"), workflow.index("Prepare isolated source database"))
+        self.assertIn("/usr/lib/postgresql/16/bin/$tool", workflow)
+        self.assertIn('echo "$client_bin" >> "$GITHUB_PATH"', workflow)
+
     @unittest.skipUnless(os.environ.get("CROWN_RESTORE_TEST_CONTAINER"), "requires disposable CI PostgreSQL")
     def test_real_disposable_postgres_dump_restore_and_corruption_cleanup(self):
         container = os.environ["CROWN_RESTORE_TEST_CONTAINER"]

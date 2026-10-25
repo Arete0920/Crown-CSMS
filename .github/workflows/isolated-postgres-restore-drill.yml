@@ -202,6 +202,22 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r backend/requirements.txt
 
+      - name: Use PostgreSQL 16 clients from the matching disposable service
+        shell: bash
+        env:
+          POSTGRES_CONTAINER_ID: ${{ job.services.postgres.id }}
+        run: |
+          set -euo pipefail
+          [[ "$POSTGRES_CONTAINER_ID" =~ ^[0-9a-f]{12,64}$ ]]
+          client_bin="$RUNNER_TEMP/crown-pg16-client"
+          mkdir -p "$client_bin"
+          for tool in pg_dump pg_restore psql createdb dropdb; do
+            docker --host unix:///var/run/docker.sock cp \
+              "$POSTGRES_CONTAINER_ID:/usr/lib/postgresql/16/bin/$tool" "$client_bin/$tool"
+            "$client_bin/$tool" --version | grep -E '\(PostgreSQL\) 16[.]'
+          done
+          echo "$client_bin" >> "$GITHUB_PATH"
+
       - name: Prepare isolated source database
         shell: bash
         run: |
