@@ -65,10 +65,19 @@ class DeployOnlyBoundaryTests(unittest.TestCase):
         self.assertIn('does not certify tenant isolation or owner workflows', step('Record DEV deployment scope'))
 
     def test_exact_main_guard_accepts_only_fresh_main_and_rejects_stale_ancestor(self):
-        body = step('Require exact current protected main')
-        self.assertIn('git fetch --no-tags origin refs/heads/main:refs/remotes/origin/main', body)
-        source = re.search(r'run: \|\n(.*)', body, re.S).group(1)
-        source = textwrap.dedent(source)
+        recheck_name = 'Recheck exact main before preview upload'
+        upload_name = 'Deploy preview on existing SWA only'
+        self.assertLess(DEV.index('      - name: ' + recheck_name), DEV.index('      - name: ' + upload_name))
+        tail = DEV.split('      - name: ' + recheck_name, 1)[1]
+        self.assertTrue(tail.split('      - name:', 1)[1].startswith(' ' + upload_name))
+        for guard_name in ('Require exact current protected main', recheck_name):
+            with self.subTest(guard=guard_name):
+                body = step(guard_name)
+                self.assertIn('git fetch --no-tags origin refs/heads/main:refs/remotes/origin/main', body)
+                source = re.search(r'run: \\|\\n(.*)', body, re.S).group(1)
+                self._run_exact_main_guard(textwrap.dedent(source))
+
+    def _run_exact_main_guard(self, source):
         with tempfile.TemporaryDirectory() as temp_dir:
             git = Path(temp_dir) / 'git'
             git.write_text('#!/bin/sh\n'
