@@ -3,7 +3,7 @@
 Change owner: repository protected-merge review; source baseline: `565b98191dc584f2d5d0ed64235590847a600462`. Tracking: issue #450 / PR #452.
 
 ## Change and decoded-content review
-These three existing, canonical variants previously referenced sibling SVG files using relative `<image href>`. The changed variants embed unchanged source artwork using percent-encoded `data:image/svg+xml;charset=utf-8,` payloads. The canonical source artwork remains unmodified. Exact decoded-byte comparisons for all three variants matched their original canonical files. Neither scripts nor external network image references are introduced.
+These three existing, canonical variants previously referenced sibling SVG files using relative `<image href>`. The changed variants embed unchanged source artwork using self-contained, percent-encoded SVG image data URIs (MIME type `image/svg+xml`). The canonical source artwork remains unmodified. Exact decoded-byte comparisons for all three variants matched their original canonical files. Neither scripts nor external network image references are introduced.
 
 | Reviewed variant | SHA-256 of changed SVG |
 | --- | --- |
