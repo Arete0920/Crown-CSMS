@@ -103,8 +103,41 @@ def execute(container, env, command, *, run=subprocess.run, stdin=None, stdout=N
     except (OSError, subprocess.TimeoutExpired) as exc:
         raise RestoreBlocked("postgres_process_unavailable") from exc
     if result.returncode:
-        raise RestoreBlocked("postgres_process_failed")
+        raise RestoreBlocked(process_failure_category(result.stderr))
     return result.stdout or b""
+
+
+def process_failure_category(stderr):
+    """Emit only a fixed category, never any substring of private diagnostics.
+
+    Categories are hints from client output, not independent root-cause proof.
+    Unknown/localized errors remain generic and fail closed.
+    """
+    error = (stderr or b"")[:65536].lower()
+    for marker, category in (
+        (b"root certificate file", "postgres_ca_file_error"),
+        (b"certificate verify failed", "postgres_certificate_verification_failed"),
+        (b"server certificate for", "postgres_certificate_hostname_error"),
+        (b"password authentication failed", "postgres_authentication_failed"),
+        (b"permission denied", "postgres_permission_denied"),
+        (b"could not translate host name", "postgres_dns_failed"),
+        (b"connection timed out", "postgres_connection_timed_out"),
+        (b"connection refused", "postgres_connection_refused"),
+        (b"invalid snapshot identifier", "postgres_snapshot_invalid"),
+        (b"server version mismatch", "postgres_client_version_mismatch"),
+        (b"canceling statement due to", "postgres_statement_cancelled"),
+    ):
+        if marker in error:
+            return category
+    return "postgres_process_failed"
+
+
+def source_client_prerequisites(container, env):
+    # This is inside the disposable container, before DEV credential retrieval.
+    try:
+        execute(container, env, ["test", "-s", CA])
+    except RestoreBlocked as exc:
+        raise RestoreBlocked("source_client_ca_bundle_unavailable") from exc
 
 
 def scalar(container, env, database, query):
@@ -236,19 +269,26 @@ def private_archive(environ, evidence):
 def perform(container, database, evidence, environ):
     import psycopg
     target_env = target_environment(environ)
+    evidence["recovery_stage"] = "disposable_target_identity"
     target_identity(container, target_env)  # Before reading DEV credentials or creating any DB.
+    evidence["recovery_stage"] = "source_client_prerequisites"
+    source_client_prerequisites(container, target_env)
+    evidence["recovery_stage"] = "source_setting_validation"
     url, source_db = read_dev_database_setting()
     source_env = source_environment(url, source_db, environ)
     with private_archive(environ, evidence) as archive:
+        evidence["recovery_stage"] = "source_connection"
         with psycopg.connect(
             host=DEV_HOST, port=5432, dbname=source_db, user=source_env["PGUSER"],
             password=source_env["PGPASSWORD"], sslmode="verify-full", sslrootcert=CA,
             connect_timeout=12, options="-c default_transaction_read_only=on -c statement_timeout=300000",
         ) as connection:
+            evidence["recovery_stage"] = "source_snapshot"
             facts = read_snapshot(connection)
             evidence.update(source_snapshot_at_utc=facts[5], source_tls_verified=True,
                             source_transaction_read_only=True, source_postgres_version=facts[4])
             evidence["backup_started_at_utc"] = now()
+            evidence["recovery_stage"] = "source_pg_dump"
             with archive.open("xb") as output:
                 os.chmod(archive, 0o600)
                 execute(container, source_env, ["pg_dump", "--format=custom", "--no-owner",
@@ -263,11 +303,14 @@ def perform(container, database, evidence, environ):
             for chunk in iter(lambda: source.read(1024 * 1024), b""):
                 digest.update(chunk)
         evidence["backup_sha256"] = digest.hexdigest()
+        evidence["recovery_stage"] = "archive_preflight"
         with archive.open("rb") as source:
             execute(container, target_env, ["pg_restore", "--list"], stdin=source)
+        evidence["recovery_stage"] = "disposable_restore_and_validation"
         restore_archive(container, target_env, database, archive, facts, evidence)
     if not evidence["ephemeral_backup_removed"]:
         raise RestoreBlocked("ephemeral_backup_cleanup_failed")
+    evidence["recovery_stage"] = "completed"
 
 
 def main(argv=None):
