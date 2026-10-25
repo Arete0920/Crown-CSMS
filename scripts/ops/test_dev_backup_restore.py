@@ -77,6 +77,9 @@ class RecoveryBoundaryTests(unittest.TestCase):
             self.assertEqual(list(Path(directory).iterdir()), [])
 
     def test_target_identity_is_checked_before_database_creation(self):
+        with patch.object(module, "scalar", return_value="postgres|crown_drill|127.0.0.1|160015") as query:
+            module.target_identity("b" * 64, module.target_environment(ENV))
+            self.assertIn("host(inet_server_addr())", query.call_args.args[3])
         for value in ["postgres|crown_drill|10.0.0.1|160015", "production|crown_drill|127.0.0.1|160015",
                       "postgres|other|127.0.0.1|160015", "postgres|crown_drill|127.0.0.1|180000"]:
             with patch.object(module, "scalar", return_value=value), self.assertRaises(module.RestoreBlocked):

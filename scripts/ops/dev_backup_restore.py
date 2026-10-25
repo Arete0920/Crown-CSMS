@@ -116,7 +116,7 @@ def scalar(container, env, database, query):
 def target_identity(container, env):
     value = scalar(container, env, "postgres",
                    "SELECT current_database() || '|' || current_user || '|' || "
-                   "inet_server_addr()::text || '|' || current_setting('server_version_num')")
+                   "host(inet_server_addr()) || '|' || current_setting('server_version_num')")
     pieces = value.split("|")
     if (len(pieces) != 4 or pieces[:3] != ["postgres", "crown_drill", "127.0.0.1"]
             or not pieces[3].isdigit() or not 160000 <= int(pieces[3]) < 170000):
