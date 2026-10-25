@@ -38,6 +38,18 @@ or issue comments. Private temporary backup files are removed on success and
 failure; the service container is destroyed by the job. This test does not
 create a durable operational backup archive or change Azure retention policy.
 
+The runner records a fixed `recovery_stage` and maps recognized client failures
+to fixed categories without copying stderr, names, URLs or statement text.
+These categories are diagnostic hints, not independent root-cause proof; unknown
+or localized failures retain `postgres_process_failed`. The disposable client's
+CA bundle is copied from the runner's public system trust store into the job
+container and its SHA-256 is compared before DEV credentials are retrieved.
+This changes only the ephemeral CI container; no package installation, Azure
+change or new trust authority is introduced. Missing, unreadable or mismatched
+trust material fails closed; never disable certificate verification
+to complete the exercise. Correct client prerequisites through protected source
+review and rerun only under the existing bounded authority at accepted main.
+
 A passing result establishes this snapshot's dump/restore and recorded integrity
 checks. It does not establish application rollback-image compatibility, total
 recovery RTO, accepted RPO, deployed source parity, provisioning or release

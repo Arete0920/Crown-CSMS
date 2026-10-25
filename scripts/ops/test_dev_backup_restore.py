@@ -65,6 +65,73 @@ class RecoveryBoundaryTests(unittest.TestCase):
         with self.assertRaisesRegex(module.RestoreBlocked, "^postgres_process_failed$"):
             module.execute("b" * 64, module.target_environment(ENV), ["psql"], run=fail)
 
+    def test_process_failure_categories_never_copy_private_diagnostics(self):
+        cases = {
+            b'root certificate file "/PRIVATE" does not exist': "postgres_ca_file_error",
+            b'PRIVATE certificate verify failed': "postgres_certificate_verification_failed",
+            b'server certificate for "PRIVATE" does not match': "postgres_certificate_hostname_error",
+            b'password authentication failed for user "PRIVATE"': "postgres_authentication_failed",
+            b'permission denied for table PRIVATE': "postgres_permission_denied",
+            b'could not translate host name "PRIVATE"': "postgres_dns_failed",
+            b'PRIVATE connection timed out': "postgres_connection_timed_out",
+            b'PRIVATE connection refused': "postgres_connection_refused",
+            b'invalid snapshot identifier: PRIVATE': "postgres_snapshot_invalid",
+            b'aborting because of server version mismatch PRIVATE': "postgres_client_version_mismatch",
+            b'canceling statement due to statement timeout PRIVATE': "postgres_statement_cancelled",
+            b'PRIVATE unknown error': "postgres_process_failed",
+        }
+        for stderr, expected in cases.items():
+            with self.subTest(expected=expected):
+                def fail(*args, **kwargs):
+                    return SimpleNamespace(returncode=1, stdout=b"PRIVATE", stderr=stderr.upper())
+                with self.assertRaises(module.RestoreBlocked) as raised:
+                    module.execute("b" * 64, {}, ["pg_dump"], run=fail)
+                self.assertEqual(str(raised.exception), expected)
+                self.assertNotIn("PRIVATE", str(raised.exception))
+        self.assertEqual(module.process_failure_category(None), "postgres_process_failed")
+        self.assertEqual(module.process_failure_category(b'x' * 65536 + b'permission denied'),
+                         "postgres_process_failed")
+
+    def test_missing_container_ca_blocks_before_dev_credentials_are_read(self):
+        with patch.dict(sys.modules, {"psycopg": SimpleNamespace()}), \
+             patch.object(module, "target_identity"), \
+             patch.object(module, "execute", side_effect=module.RestoreBlocked("postgres_process_failed")) as run, \
+             patch.object(module, "read_dev_database_setting") as settings:
+            evidence = {}
+            with self.assertRaisesRegex(module.RestoreBlocked, "^source_client_ca_bundle_unavailable$"):
+                module.perform("b" * 64, "crown_restore_123_2", evidence, ENV)
+            settings.assert_not_called()
+            self.assertEqual(evidence["recovery_stage"], "source_client_prerequisites")
+            self.assertEqual(run.call_args.args[2], ["tee", module.CLIENT_CA])
+
+    def test_container_trust_copy_verifies_digest_before_acceptance(self):
+        import hashlib
+        with tempfile.TemporaryDirectory() as directory:
+            bundle = Path(directory) / "public-ca.pem"
+            bundle.write_bytes(b"public trust material")
+            digest = hashlib.sha256(bundle.read_bytes()).hexdigest()
+            calls = []
+            def action(container, env, command, **kwargs):
+                calls.append(command)
+                if command[0] == "tee":
+                    self.assertEqual(kwargs["stdin"].read(), bundle.read_bytes())
+                    self.assertEqual(kwargs["stdout"], module.subprocess.DEVNULL)
+                return (digest + "  " + module.CLIENT_CA + "\n").encode()
+            with patch.object(module, "CA", str(bundle)), patch.object(module, "execute", action):
+                module.source_client_prerequisites("b" * 64, {})
+            self.assertEqual(calls, [["tee", module.CLIENT_CA], ["chmod", "600", module.CLIENT_CA],
+                                    ["sha256sum", module.CLIENT_CA]])
+            for payload in [b"PRIVATE", ("0" * 64 + "  " + module.CLIENT_CA).encode()]:
+                with patch.object(module, "CA", str(bundle)), \
+                     patch.object(module, "execute", return_value=payload), \
+                     self.assertRaisesRegex(module.RestoreBlocked, "^source_client_ca_bundle_unavailable$"):
+                    module.source_client_prerequisites("b" * 64, {})
+            bundle.write_bytes(b"")
+            with patch.object(module, "CA", str(bundle)), patch.object(module, "execute") as run, \
+                 self.assertRaises(module.RestoreBlocked):
+                module.source_client_prerequisites("b" * 64, {})
+            run.assert_not_called()
+
     def test_private_archive_removed_after_failure(self):
         evidence = {}
         with tempfile.TemporaryDirectory() as directory:
@@ -186,6 +253,7 @@ class RecoveryBoundaryTests(unittest.TestCase):
         container = os.environ["CROWN_RESTORE_TEST_CONTAINER"]
         env = module.target_environment(os.environ)
         module.target_identity(container, env)
+        module.source_client_prerequisites(container, env)
         source_db, restore_db = "crown_restore_1_1", "crown_restore_1_2"
         with module.disposable_database(container, env, source_db, {}):
             module.scalar(container, env, source_db,
