@@ -69,7 +69,15 @@ jobs:
             test "$SOURCE_SHA" = "$REQUESTED_REF"
           fi
           git fetch --no-tags origin refs/heads/main:refs/remotes/origin/main
-          git merge-base --is-ancestor "$SOURCE_SHA" origin/main
+          CURRENT_MAIN_SHA="$(git rev-parse refs/remotes/origin/main)"
+          if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]]; then
+            if [[ "$SOURCE_SHA" != "$CURRENT_MAIN_SHA" ]]; then
+              echo 'BLOCKED: manual DEV deploy must use exact protected main, not a stale ancestor' >&2
+              exit 1
+            fi
+          else
+            git merge-base --is-ancestor "$SOURCE_SHA" "$CURRENT_MAIN_SHA"
+          fi
           echo "deploy_sha=$SOURCE_SHA" >> "$GITHUB_OUTPUT"
           echo "deploy_sha_short=${SOURCE_SHA:0:7}" >> "$GITHUB_OUTPUT"
           echo "DEPLOY_SHA=$SOURCE_SHA" >> "$GITHUB_ENV"

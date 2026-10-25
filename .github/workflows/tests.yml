@@ -39,6 +39,7 @@ jobs:
         run: |
           python -m unittest discover -s scripts/ops -p test_reviewed_legacy_refresh_migrations.py -v
           python -m unittest discover -s scripts/ops -p test_run_dev_inquiry_migration.py -v
+          python -m unittest discover -s scripts/ops -p test_dev_deploy_exact_main.py -v
 
       - name: Run tenant fixture regression tests
         shell: bash

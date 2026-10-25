@@ -547,7 +547,15 @@ class DevMigrationBoundaryTests(unittest.TestCase):
         source = next(i for i, step in enumerate(steps) if step.get("name") == "Verify accepted DEV source")
         gate = next(i for i, step in enumerate(steps) if "run_dev_inquiry_migration.py --expected-sha" in step.get("run", ""))
         self.assertIn("git fetch --no-tags origin refs/heads/main:refs/remotes/origin/main", steps[source]["run"])
-        self.assertIn('git merge-base --is-ancestor "$SOURCE_SHA" origin/main', steps[source]["run"])
+        source_script = steps[source]["run"]
+        self.assertIn('CURRENT_MAIN_SHA="$(git rev-parse refs/remotes/origin/main)"', source_script)
+        self.assertIn('if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]]; then', source_script)
+        self.assertIn('if [[ "$SOURCE_SHA" != "$CURRENT_MAIN_SHA" ]]; then', source_script)
+        self.assertIn('git merge-base --is-ancestor "$SOURCE_SHA" "$CURRENT_MAIN_SHA"', source_script)
+        self.assertLess(
+            source_script.index('if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]]; then'),
+            source_script.index('git merge-base --is-ancestor "$SOURCE_SHA" "$CURRENT_MAIN_SHA"'),
+        )
         self.assertNotIn("if", steps[gate])
         self.assertNotIn("continue-on-error", steps[gate])
         for index, step in enumerate(steps):
