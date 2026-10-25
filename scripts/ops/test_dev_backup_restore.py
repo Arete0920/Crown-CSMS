@@ -65,6 +65,33 @@ class RecoveryBoundaryTests(unittest.TestCase):
         with self.assertRaisesRegex(module.RestoreBlocked, "^postgres_process_failed$"):
             module.execute("b" * 64, module.target_environment(ENV), ["psql"], run=fail)
 
+    def test_dump_failure_is_classified_without_leaking_raw_diagnostics(self):
+        cases = (
+            (b"password authentication failed for user PRIVATE", "source_dump_authentication_blocked"),
+            (b"Connection timed out at PRIVATE", "source_dump_connectivity_blocked"),
+            (b"SSL error: certificate verify failed PRIVATE", "source_dump_tls_blocked"),
+            (b"aborting because of server version mismatch PRIVATE", "source_dump_client_version_blocked"),
+            (b"permission denied for table PRIVATE", "source_dump_read_permission_blocked"),
+            (b"invalid snapshot identifier PRIVATE", "source_dump_snapshot_blocked"),
+            (b"PRIVATE_UNKNOWN_FAILURE", "source_dump_unclassified_failure"),
+            (b"permission denied for table and connection timed out PRIVATE", "source_dump_unclassified_failure"),
+        )
+        for diagnostic, expected in cases:
+            with self.subTest(expected=expected):
+                self.assertEqual(module.classify_dump_failure(diagnostic), expected)
+                def fail(*args, **kwargs):
+                    return SimpleNamespace(returncode=1, stdout=b"", stderr=diagnostic)
+                with self.assertRaises(module.RestoreBlocked) as raised:
+                    module.execute("b" * 64, module.target_environment(ENV),
+                                   ["pg_dump", "--format=custom"], run=fail)
+                self.assertEqual(str(raised.exception), expected)
+                self.assertNotIn("PRIVATE", str(raised.exception))
+
+        def fail(*args, **kwargs):
+            return SimpleNamespace(returncode=1, stdout=b"", stderr=b"PRIVATE")
+        with self.assertRaisesRegex(module.RestoreBlocked, "^postgres_process_failed$"):
+            module.execute("b" * 64, module.target_environment(ENV), ["psql"], run=fail)
+
     def test_private_archive_removed_after_failure(self):
         evidence = {}
         with tempfile.TemporaryDirectory() as directory:
