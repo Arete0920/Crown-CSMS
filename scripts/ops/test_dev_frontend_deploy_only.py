@@ -67,14 +67,14 @@ class DeployOnlyBoundaryTests(unittest.TestCase):
     def test_exact_main_guard_accepts_only_fresh_main_and_rejects_stale_ancestor(self):
         body = step('Require exact current protected main')
         self.assertIn('git fetch --no-tags origin refs/heads/main:refs/remotes/origin/main', body)
-        source = re.search(r'run: \\|\\n(.*)', body, re.S).group(1)
+        source = re.search(r'run: \|\n(.*)', body, re.S).group(1)
         source = textwrap.dedent(source)
         with tempfile.TemporaryDirectory() as temp_dir:
             git = Path(temp_dir) / 'git'
-            git.write_text('#!/bin/sh\\n'
-                           'if [ "$1" = "fetch" ]; then exit 0; fi\\n'
-                           'if [ "$1" = "rev-parse" ]; then printf "%s\\\\n" "$FAKE_CURRENT_MAIN_SHA"; exit 0; fi\\n'
-                           'exit 88\\n')
+            git.write_text('#!/bin/sh\n'
+                           'if [ "$1" = "fetch" ]; then exit 0; fi\n'
+                           'if [ "$1" = "rev-parse" ]; then printf "%s\\n" "$FAKE_CURRENT_MAIN_SHA"; exit 0; fi\n'
+                           'exit 88\n')
             git.chmod(0o755)
             for current, expected_success in ((SHA, True), ('b' * 40, False)):
                 with self.subTest(current=current):
