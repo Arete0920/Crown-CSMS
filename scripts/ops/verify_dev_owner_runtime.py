@@ -109,6 +109,10 @@ def probe(expected_sha: str, *, opener=None) -> dict:
             item.strip().lower()
             for item in cors_headers.get("Access-Control-Allow-Headers", "").split(",")
         }
+        and "GET" in {
+            item.strip().upper()
+            for item in cors_headers.get("Access-Control-Allow-Methods", "").split(",")
+        }
     )
     checks = {
         "backend_build_sha": backend,
