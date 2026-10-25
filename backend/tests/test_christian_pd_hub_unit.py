@@ -6,19 +6,15 @@ Covers check 40: Unit Tests Exist.
 import pytest
 from pathlib import Path
 
+from ._source_inventory import repository_python_files, repository_python_source
+
 pytestmark = pytest.mark.filterwarnings("ignore::DeprecationWarning")
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 
 def test_christian_pd_hub_module_source_exists():
     """Verify Christian PD Hub implementation source is present in the repository."""
-    all_py = list(PROJECT_ROOT.rglob("*.py"))
-    source_text = ""
-    for p in all_py:
-        try:
-            source_text += p.read_text(encoding="utf-8", errors="ignore")
-        except Exception:
-            continue
+    source_text = repository_python_source(PROJECT_ROOT)
     keywords = ["PDHub", "professional_development", "course", "training", "teacher_development"]
     found = any(kw.lower() in source_text.lower() for kw in keywords)
     assert found, f"Christian PD Hub module keywords not found in source: {keywords}"
@@ -34,18 +30,13 @@ def test_christian_pd_hub_pytest_config_present():
 
 def test_christian_pd_hub_no_placeholder_in_source():
     """Verify Christian PD Hub source does not consist entirely of placeholder stubs."""
-    all_py = list(PROJECT_ROOT.rglob("*.py"))
+    all_py = repository_python_files(PROJECT_ROOT)
     assert len(all_py) > 10, "Fewer than 10 Python files found — likely wrong root"
 
 
 def test_christian_pd_hub_school_keyword_in_source():
     """Verify tenant/school scoping keywords appear in the Christian PD Hub source tree."""
-    source_text = ""
-    for p in PROJECT_ROOT.rglob("*.py"):
-        try:
-            source_text += p.read_text(encoding="utf-8", errors="ignore")
-        except Exception:
-            continue
+    source_text = repository_python_source(PROJECT_ROOT)
     assert (
         "school_id" in source_text
         or "TenantScoped" in source_text
