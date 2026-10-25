@@ -104,7 +104,7 @@ def classify_dump_failure(stderr: bytes) -> str:
     """
     detail = (stderr or b"")[:65536].decode("utf-8", errors="replace").lower()
     categories = (
-        (r"(?:password authentication failed|fe_sendauth: no password supplied|no pg_hba\\.conf entry)",
+        (r"(?:password authentication failed|fe_sendauth: no password supplied|no pg_hba\.conf entry)",
          "source_dump_authentication_blocked"),
         (r"(?:could not translate host name|connection timed out|connection refused|network is unreachable|could not connect to server)",
          "source_dump_connectivity_blocked"),
