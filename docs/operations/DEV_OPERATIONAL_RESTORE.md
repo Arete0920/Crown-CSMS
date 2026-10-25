@@ -42,8 +42,11 @@ The runner records a fixed `recovery_stage` and maps recognized client failures
 to fixed categories without copying stderr, names, URLs or statement text.
 These categories are diagnostic hints, not independent root-cause proof; unknown
 or localized failures retain `postgres_process_failed`. The disposable client's
-CA bundle must be present before DEV credentials are retrieved. Missing or
-unreadable trust material fails closed; never disable certificate verification
+CA bundle is copied from the runner's public system trust store into the job
+container and its SHA-256 is compared before DEV credentials are retrieved.
+This changes only the ephemeral CI container; no package installation, Azure
+change or new trust authority is introduced. Missing, unreadable or mismatched
+trust material fails closed; never disable certificate verification
 to complete the exercise. Correct client prerequisites through protected source
 review and rerun only under the existing bounded authority at accepted main.
 

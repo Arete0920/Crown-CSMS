@@ -102,7 +102,35 @@ class RecoveryBoundaryTests(unittest.TestCase):
                 module.perform("b" * 64, "crown_restore_123_2", evidence, ENV)
             settings.assert_not_called()
             self.assertEqual(evidence["recovery_stage"], "source_client_prerequisites")
-            self.assertEqual(run.call_args.args[2], ["test", "-s", module.CA])
+            self.assertEqual(run.call_args.args[2], ["tee", module.CLIENT_CA])
+
+    def test_container_trust_copy_verifies_digest_before_acceptance(self):
+        import hashlib
+        with tempfile.TemporaryDirectory() as directory:
+            bundle = Path(directory) / "public-ca.pem"
+            bundle.write_bytes(b"public trust material")
+            digest = hashlib.sha256(bundle.read_bytes()).hexdigest()
+            calls = []
+            def action(container, env, command, **kwargs):
+                calls.append(command)
+                if command[0] == "tee":
+                    self.assertEqual(kwargs["stdin"].read(), bundle.read_bytes())
+                    self.assertEqual(kwargs["stdout"], module.subprocess.DEVNULL)
+                return (digest + "  " + module.CLIENT_CA + "\n").encode()
+            with patch.object(module, "CA", str(bundle)), patch.object(module, "execute", action):
+                module.source_client_prerequisites("b" * 64, {})
+            self.assertEqual(calls, [["tee", module.CLIENT_CA], ["chmod", "600", module.CLIENT_CA],
+                                    ["sha256sum", module.CLIENT_CA]])
+            for payload in [b"PRIVATE", ("0" * 64 + "  " + module.CLIENT_CA).encode()]:
+                with patch.object(module, "CA", str(bundle)), \
+                     patch.object(module, "execute", return_value=payload), \
+                     self.assertRaisesRegex(module.RestoreBlocked, "^source_client_ca_bundle_unavailable$"):
+                    module.source_client_prerequisites("b" * 64, {})
+            bundle.write_bytes(b"")
+            with patch.object(module, "CA", str(bundle)), patch.object(module, "execute") as run, \
+                 self.assertRaises(module.RestoreBlocked):
+                module.source_client_prerequisites("b" * 64, {})
+            run.assert_not_called()
 
     def test_private_archive_removed_after_failure(self):
         evidence = {}

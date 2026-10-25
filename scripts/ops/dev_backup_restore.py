@@ -24,6 +24,7 @@ from run_dev_inquiry_migration import DEV_APP, DEV_HOST, validate_database_url
 
 SOURCE_IDENTITY = "fb4bfe404d7d9b1f6f9c91b12d906f6b2b23be5e16792e7a6af6642cbf5d2eb7"
 CA = "/etc/ssl/certs/ca-certificates.crt"
+CLIENT_CA = "/tmp/crown-dev-restore-ca.pem"
 IDENTIFIER = re.compile(r"[A-Za-z_][A-Za-z0-9_]*\Z")
 CONFIRMATION = "restore-dev-backup-in-ci"
 
@@ -70,7 +71,7 @@ def source_environment(url, database, environ):
     return {
         **clean_environment(environ), "PGHOST": DEV_HOST, "PGPORT": "5432",
         "PGUSER": user, "PGPASSWORD": password, "PGDATABASE": database,
-        "PGSSLMODE": "verify-full", "PGSSLROOTCERT": CA,
+        "PGSSLMODE": "verify-full", "PGSSLROOTCERT": CLIENT_CA,
         "PGCONNECT_TIMEOUT": "12",
         "PGOPTIONS": "-c default_transaction_read_only=on -c statement_timeout=300000",
     }
@@ -133,10 +134,20 @@ def process_failure_category(stderr):
 
 
 def source_client_prerequisites(container, env):
-    # This is inside the disposable container, before DEV credential retrieval.
+    # The service image may omit the runner's public trust bundle. Copy only
+    # that public file into the disposable container before retrieving secrets.
     try:
-        execute(container, env, ["test", "-s", CA])
-    except RestoreBlocked as exc:
+        with Path(CA).open("rb") as bundle:
+            digest = hashlib.file_digest(bundle, "sha256").hexdigest()
+            if bundle.tell() == 0:
+                raise RestoreBlocked("source_client_ca_bundle_unavailable")
+            bundle.seek(0)
+            execute(container, env, ["tee", CLIENT_CA], stdin=bundle, stdout=subprocess.DEVNULL)
+        execute(container, env, ["chmod", "600", CLIENT_CA])
+        actual = execute(container, env, ["sha256sum", CLIENT_CA]).decode().split()
+        if len(actual) != 2 or actual[0] != digest or actual[1] != CLIENT_CA:
+            raise RestoreBlocked("source_client_ca_bundle_unavailable")
+    except (OSError, RestoreBlocked, UnicodeError) as exc:
         raise RestoreBlocked("source_client_ca_bundle_unavailable") from exc
 
 
