@@ -1,6 +1,6 @@
 # CROWN Logo Style Guide — Controlled Repository Reference
 
-Status: CURRENT REPOSITORY USE GUIDE (2026-10-23). This guide governs source-code asset selection; it does not certify artwork ownership, trademark registration, complete asset provenance, live deployment, or legal transferability.
+Status: CURRENT REPOSITORY USE GUIDE (updated 2026-10-25, accepted source `367dc2f0f6c6f342663470baeb6ff2ab7a7ea053`). This guide governs source-code asset selection; it does not certify artwork ownership, trademark registration, complete asset provenance, live deployment, or legal transferability.
 
 ## Identity
 
@@ -38,10 +38,10 @@ Preserve proportional scaling, approved clear space, cross/crown geometry and le
 ## Preservation and reproduction warnings
 
 - The active nine canonical file names are separate from *legacy compatibility alias files* under `public/brand/` and `public/brand/crown/ui/`. Do not delete these aliases without dependency, rendered-output, rollback and deployment verification.
-- The full-color SVG lockups inspected on 2026-10-23 embed PNG imagery; they are SVG containers, not fully editable vector artwork. The inspected royal monochrome SVG uses a relative reference to the horizontal SVG. Test portability in email, presentation, print/export and offline conversion before representing the supplied set as standalone editable masters.
+- The full-color SVG lockups inspected on 2026-10-23 embed PNG imagery; they are SVG containers, not necessarily editable vector masters. PR #452 removed the three confirmed sibling-SVG image dependencies from the square mark and both monochrome SVG variants by embedding the unchanged source content; the embedded source may itself contain raster data. Chromium image-context checks passed, but email, presentation, print/export, offline conversion and source-master editability still require separate acceptance.
 - Do not alter the logo merely to resolve visual differences between historical creative material and the active application.
 - Metadata or matching filenames do not establish copyright, trademark rights, source-image licenses or executed IP assignment. Buyer use requires separately documented rights/provenance.
 
 ## Evidence and release gates
 
-The non-destructive 2026-10-23 review of main SHA `c22cb5db4cb085f3e8fa44ffc673f88a8c204f5d` found nine canonical logo variants and two groups of identical-content UI/legacy SVG aliases; no asset removal was authorized. See the intake checklist for missing favicons, third-party asset provenance and buyer-facing artwork/documentation hold conditions. Require passing asset readiness, visual QA and approved protected-branch workflow before stating brand implementation is certified.
+The original 2026-10-23 inventory at main `c22cb5db4cb085f3e8fa44ffc673f88a8c204f5d` found nine canonical logos and two identical-content UI/legacy SVG alias groups; all were preserved. Protected PR #451 added the canonical shield SVG favicon, #452 fixed three dependent variants with browser screenshot checks, and #453 added an internal nine-asset checksum manifest with distribution restrictions. At accepted main `367dc2f0f6c6f342663470baeb6ff2ab7a7ea053`, raster/ICO favicon derivatives, deployed rendering, accessibility/export, master-file provenance, third-party permissions and buyer-rights acceptance are **not** complete. Do not delete aliases or distribute unapproved assets.

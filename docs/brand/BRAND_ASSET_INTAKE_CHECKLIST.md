@@ -1,19 +1,26 @@
 # Brand Asset Intake and Buyer IP Evidence Checklist
 
-Status: INTERNAL WORKING CONTROL, audit dated **2026-10-23**. No assurance that the whole Drive, past Git history, Azure deployed content, laptops, websites, legal files, or outside storage has been inspected. Do not circulate unapproved files as buyer-ready.
+Status: INTERNAL WORKING CONTROL; original non-destructive inventory **2026-10-23**, source-integration checkpoint **2026-10-25** at main `367dc2f0f6c6f342663470baeb6ff2ab7a7ea053`. No assurance that the whole Drive, past Git history, Azure deployed content, laptops, websites, legal files, or outside storage has been inspected. Do not circulate unapproved files as buyer-ready.
 
 ## Required production asset intake
 
-1. **CROWN favicon set:** `frontend/dashboards/public/brand/crown/favicon/favicon.ico`, `favicon-16x16.png`, `favicon-32x32.png`, `apple-touch-icon.png`, `android-chrome-192x192.png`, `android-chrome-512x512.png`. None of those paths appeared in the audited default-branch tree; this is **missing-file evidence**, not proof that no favicon is deployed elsewhere.
+1. **CROWN favicon set:** PR #451 integrated an SVG browser icon declaration in `frontend/dashboards/index.html` referencing the canonical shield logo. The separately requested `frontend/dashboards/public/brand/crown/favicon/favicon.ico`, `favicon-16x16.png`, `favicon-32x32.png`, `apple-touch-icon.png`, `android-chrome-192x192.png`, and `android-chrome-512x512.png` remain absent from the audited source inventory. SVG wiring does **not** fulfill these six raster/ICO/Apple/Android assets or prove deployed icon delivery. Verify actual supported browsers and obtain approved original derivatives before marking the package complete.
 2. **Microsoft third-party assets:** the existing `frontend/dashboards/public/brand/third-party/microsoft/manifest.json` lists 17 entries with null paths. Acquire original official Microsoft artwork only where licensed/authorized and record asset, origin, retrieval date, permitted use and reviewer in the source register. Do not generate replacements. Text fallback remains safer than unverifiable marks.
-3. **CROWN nine canonical SVG variants:** present in default-branch tree. Test actual render, cross-device backgrounds, image export/print, packaging, accessibility/alt text, source-file portability and rights provenance. Some full-color SVGs embed PNG data; some monochrome assets reference other files.
+3. **CROWN nine canonical SVG variants:** present in default-branch tree. PR #452 replaced the three confirmed relative SVG image dependencies (square mark, royal monochrome and white monochrome) with self-contained source-preserving data URIs. Source parity, Chromium image-context tests and screenshot evidence passed on the exact PR head before protected merge. Full-color assets and embedded source artwork may still contain PNG imagery; this is **not** proof of editable vector masters. Cross-device/hosted rendering, email/print/export, accessibility/alt text, source portability and rights provenance remain open.
 
-## Verified 2026-10-23 non-destructive repository evidence
+## Verified 2026-10-23 non-destructive repository evidence (historical source snapshot)
 
 - GitHub `Arete0920/Crown-CSMS`, main SHA `c22cb5db4cb085f3e8fa44ffc673f88a8c204f5d`; recursive tree was not truncated, 6,010 entries.
 - Extension-only image/PDF inventory: **20 SVG, 6 WEBP, 1 PNG, 1 PDF** (28 files); embedded images in documents, nonstandard extensions, branches, website uploads and deployed assets are outside that count.
 - One Git blob SHA `8e53309fb9c558790a6552303bcdd95293d6cb34` occurs in **eight** public-brand SVG paths (legacy lockup plus seven UI aliases). SHA `3ec06e520ce22350617d51d59ebecc55d0db34f6` occurs in **two** paths (legacy mark and sidebar collapsed alias). This gives eight content-redundant instances across the groups; all preserved pending dependency/deploy review.
 - The active stylesheet and July 2026 CROWN Style Guide agree on `--crown-primary: #2a5ec4`, `--crown-gold: #c28a24`; legacy repository logo instructions and the separate CROWN manifest color block disagreed. Use the live CSS palette for application tokens, but do not arbitrarily recolor approved image masters.
+
+## Source integration checkpoint — 2026-10-25
+
+- PR #451: canonical shield SVG favicon link and focused regression merged under protected checks.
+- PR #452: the three confirmed relative SVG image dependencies were embedded without changing canonical originals; the strict content-hash registry, independent Chromium image-context checks, and screenshot proof passed before protected merge.
+- PR #453: `docs/brand/CROWN_BUYER_ASSET_REVIEW_MANIFEST.json` and its CI integrity contract merged; the manifest lists nine canonical SVG paths with SHA-256 and explicit `buyer_distribution: HOLD`, `rights_status: UNVERIFIED` and transfer-approval restrictions. It is **internal evidence, not buyer distribution authorization or evidence of legal ownership**.
+- Accepted source SHA at this checkpoint: `367dc2f0f6c6f342663470baeb6ff2ab7a7ea053`. No deployed Azure, browser fleet, proprietary rights, editing-master provenance, or final buyer export certification is inferred.
 
 ## Verified Google Drive findings (Drive originals NOT changed)
 
@@ -39,4 +46,4 @@ Status: INTERNAL WORKING CONTROL, audit dated **2026-10-23**. No assurance that 
 - `cd frontend/dashboards && npm run test -- src/components/brand/CrownLogo.test.jsx src/components/brand/MicrosoftProductLogo.test.jsx src/tests/brandIntegrity.test.js src/tests/loginPagePolish.test.jsx src/tests/dashboardCardContract.test.jsx`
 - `cd frontend/dashboards && npm run test:contracts && npm run ci:shell`
 
-Release acceptance requires verified checks, design review, permissions and IP evidence. **No checks or builds were executed by the 2026-10-23 connector-only audit.** Historical or duplicate content was not removed; remaining brand buyer-readiness holds are OPEN.
+Release acceptance requires verified checks, design review, permissions and IP evidence. The original 2026-10-23 connector-only audit did not execute checks; subsequent PRs #451–#453 executed scoped GitHub CI. Those scoped checks do **not** establish complete buyer or deployed-asset acceptance. Historical or duplicate content was not removed; remaining brand buyer-readiness holds are OPEN.
