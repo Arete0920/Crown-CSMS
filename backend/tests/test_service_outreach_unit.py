@@ -5,6 +5,7 @@ Covers check 40: Unit Tests Exist.
 """
 import pytest
 from pathlib import Path
+from backend.tests._source_catalog import source_inventory
 
 pytestmark = pytest.mark.filterwarnings("ignore::DeprecationWarning")
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -12,13 +13,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 def test_service_outreach_module_source_exists():
     """Verify Service Outreach implementation source is present in the repository."""
-    all_py = list(PROJECT_ROOT.rglob("*.py"))
-    source_text = ""
-    for p in all_py:
-        try:
-            source_text += p.read_text(encoding="utf-8", errors="ignore")
-        except Exception:
-            continue
+    _, source_text = source_inventory()
     keywords = ["Service", "Outreach", "mission_trip", "service_hours", "community_impact"]
     found = any(kw.lower() in source_text.lower() for kw in keywords)
     assert found, f"Service Outreach module keywords not found in source: {keywords}"
@@ -34,18 +29,12 @@ def test_service_outreach_pytest_config_present():
 
 def test_service_outreach_no_placeholder_in_source():
     """Verify Service Outreach source does not consist entirely of placeholder stubs."""
-    all_py = list(PROJECT_ROOT.rglob("*.py"))
-    assert len(all_py) > 10, "Fewer than 10 Python files found — likely wrong root"
+    assert source_inventory()[0] > 10, "Fewer than 10 Python files found — likely wrong root"
 
 
 def test_service_outreach_school_keyword_in_source():
     """Verify tenant/school scoping keywords appear in the Service Outreach source tree."""
-    source_text = ""
-    for p in PROJECT_ROOT.rglob("*.py"):
-        try:
-            source_text += p.read_text(encoding="utf-8", errors="ignore")
-        except Exception:
-            continue
+    _, source_text = source_inventory()
     assert (
         "school_id" in source_text
         or "TenantScoped" in source_text
