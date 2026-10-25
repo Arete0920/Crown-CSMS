@@ -503,6 +503,38 @@ class DevMigrationBoundaryTests(unittest.TestCase):
         with self.assertRaisesRegex(migration.Blocked, "legacy_refresh_must_be_disabled"):
             migration.load_dev_settings(read=fake_read, legacy_stage=True)
 
+    def test_dev_readonly_inspection_provisions_yaml_before_offline_tests(self):
+        import yaml
+
+        workflow = yaml.safe_load(
+            (migration.ROOT / ".github/workflows/dev-blacklist-database-inventory.yml").read_text()
+        )
+        steps = workflow["jobs"]["inspect"]["steps"]
+        dependencies = next(
+            i for i, step in enumerate(steps)
+            if step.get("name") == "Install accepted migration inspection dependencies"
+        )
+        offline_tests = next(
+            i for i, step in enumerate(steps)
+            if step.get("name") == "Verify migration inspection boundary (offline)"
+        )
+        azure_login = next(
+            i for i, step in enumerate(steps)
+            if step.get("name") == "Authenticate to existing DEV Azure"
+        )
+        self.assertEqual(steps[dependencies].get("if"), "inputs.inspect_migration_plan")
+        self.assertEqual(steps[offline_tests].get("if"), "inputs.inspect_migration_plan")
+        self.assertLess(dependencies, offline_tests)
+        self.assertLess(offline_tests, azure_login)
+        self.assertIn("python -m pip install pyyaml==6.0.3", steps[dependencies]["run"])
+        self.assertIn(
+            "python -m pip install -r backend/requirements.txt", steps[dependencies]["run"]
+        )
+        self.assertIn(
+            "python -m unittest discover -s scripts/ops -p test_run_dev_inquiry_migration.py -v",
+            steps[offline_tests]["run"],
+        )
+
     def test_workflow_checks_source_then_schema_before_any_runtime_mutation(self):
         import yaml
         workflow = yaml.safe_load((migration.ROOT / ".github/workflows/deploy-dev.yml").read_text())
