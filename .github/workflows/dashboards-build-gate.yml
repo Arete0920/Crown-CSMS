@@ -43,6 +43,9 @@ jobs:
       - name: Verify CROWN standalone logo asset integrity
         run: npm run test -- src/brand/standaloneSvgAssets.test.js
 
+      - name: Verify buyer asset review manifest integrity
+        run: npm run test -- src/brand/buyerAssetManifest.test.js
+
       - name: Stage 1 regression guard - no silent catch handlers
         working-directory: .
         run: |
