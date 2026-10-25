@@ -33,6 +33,7 @@ class FakeOpener:
             "Access-Control-Allow-Origin": runtime.PREVIEW,
             "Access-Control-Allow-Credentials": "true",
             "Access-Control-Allow-Headers": "content-type, authorization",
+            "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
         }
 
     def open(self, request, timeout):
@@ -114,6 +115,23 @@ class OwnerRuntimePrecheckTests(unittest.TestCase):
         self.assertEqual(result["checks"]["dev_preview_build_sha"], "MISMATCH")
         self.assertEqual(result["checks"]["dev_preview_cors"], "NOT_VERIFIED")
         self.assertEqual(result["precheck"], "BLOCKED")
+
+    def test_cors_must_allow_get_not_just_origin_credentials_and_headers(self):
+        client = safe_opener(cors_headers={
+            "Access-Control-Allow-Origin": runtime.PREVIEW,
+            "Access-Control-Allow-Credentials": "true",
+            "Access-Control-Allow-Headers": "authorization",
+            "Access-Control-Allow-Methods": "POST, OPTIONS",
+        })
+        result = runtime.probe(SHA, opener=client)
+        self.assertEqual(result["checks"]["dev_preview_cors"], "NOT_VERIFIED")
+        self.assertEqual(result["precheck"], "BLOCKED")
+
+        # Header tokens are case-insensitive; an explicit GET restores readiness.
+        client.cors_headers["Access-Control-Allow-Methods"] = "post, gEt"
+        result = runtime.probe(SHA, opener=client)
+        self.assertEqual(result["checks"]["dev_preview_cors"], "READY")
+        self.assertEqual(result["precheck"], "PASS")
 
     def test_unavailable_and_redirect_are_blocked_without_following(self):
         client = safe_opener()
