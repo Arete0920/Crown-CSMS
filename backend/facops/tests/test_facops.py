@@ -425,6 +425,53 @@ class TestAlerts:
         resp = c.post(f"{self.URL}emit/", {"body": "No title"}, format="json")
         assert resp.status_code == 400
 
+    @pytest.mark.parametrize("payload", [
+        [],
+        {"title": []},
+        {"title": {"unexpected": "object"}},
+        {"title": " "},
+        {"title": "X" * 201},
+        {"title": "Alert", "body": {"unexpected": "object"}},
+        {"title": "Alert", "channel": []},
+        {"title": "Alert", "channel": "X" * 51},
+    ])
+    def test_emit_rejects_invalid_payload_without_persisting_alert(self, payload):
+        s = _school("Alert Invalid Payload")
+        u = _user("invalid_alert_emitter", is_staff=True)
+        client = _client(u, s, role="safety_officer")
+
+        response = client.post(f"{self.URL}emit/", payload, format="json")
+
+        assert response.status_code == 400
+        assert not Alert.objects.filter(school=s).exists()
+
+    def test_emit_preserves_server_owned_fields_and_default_channel(self):
+        s = _school("Alert Server Attribution")
+        u = _user("attributed_alert_emitter", is_staff=True)
+        client = _client(u, s, role="safety_officer")
+
+        response = client.post(
+            f"{self.URL}emit/",
+            {
+                "title": "  Server-owned alert  ",
+                "body": "  Valid message  ",
+                "kind": "FACILITIES",
+                "school": "untrusted-school",
+                "emitted_by": "untrusted-actor",
+                "external_ref": "unverified-delivery",
+            },
+            format="json",
+        )
+
+        assert response.status_code == 201
+        alert = Alert.objects.get(school=s)
+        assert alert.title == "Server-owned alert"
+        assert alert.body == "Valid message"
+        assert alert.channel == "TEAMS"
+        assert alert.kind == "SECURITY"
+        assert alert.emitted_by_id == u.pk
+        assert alert.external_ref == ""
+
     def test_readonly_cannot_emit(self):
         s = _school("Alert RO")
         u = _user("emit_ro", is_staff=False)
@@ -478,3 +525,4 @@ class TestSecuritySummary:
         c = _anon_client(s)
         resp = c.get(self.URL)
         assert resp.status_code in (401, 403)
+
