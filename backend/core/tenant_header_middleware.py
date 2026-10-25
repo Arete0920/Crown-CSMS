@@ -105,7 +105,6 @@ class TenantHeaderRequiredMiddleware:
         "/api/schema",
         "/api/docs",
         "/api/redoc",
-        "/api/director/force_seed_user",
         "/api/v1/admissions/submit",
         "/api/admissions/submit",
         "/api/v1/admissions/public-config",
