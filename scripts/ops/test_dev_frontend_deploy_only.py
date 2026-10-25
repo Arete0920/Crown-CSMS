@@ -62,12 +62,13 @@ class DeployOnlyBoundaryTests(unittest.TestCase):
         self.assertIn('if: always()', step('Remove ephemeral synthetic actor tokens'))
         self.assertIn('does not certify tenant isolation or owner workflows', step('Record DEV deployment scope'))
 
-    def run_identity(self, actual=SHA, origin=ORIGIN, status=200):
+    def run_identity(self, actual=SHA, origin=ORIGIN, status=200, response_url=None):
         body = step('Verify deployed DEV frontend identity without writes')
         source = re.search(r"python3 - <<'PYCODE'\n(.*?)^          PYCODE", body, re.M | re.S).group(1)
         source = textwrap.dedent(source)
         response = io.StringIO(json.dumps({'build_sha': actual}))
         response.status = status
+        response.geturl = lambda: response_url or ORIGIN + '/build.json'
         with patch.dict(os.environ, SOURCE_SHA=SHA, PREVIEW_URL=origin), patch('urllib.request.urlopen', return_value=response) as request, contextlib.redirect_stdout(io.StringIO()):
             exec(compile(source, '<workflow-identity>', 'exec'), {})
             self.assertEqual(request.call_count, 1)
@@ -83,6 +84,11 @@ class DeployOnlyBoundaryTests(unittest.TestCase):
     def test_non_200_fails(self):
         with self.assertRaisesRegex(SystemExit, 'identity mismatch'):
             self.run_identity(status=404)
+
+    def test_redirected_build_identity_fails_even_when_sha_matches(self):
+        for url in (ORIGIN + '/other-build.json', 'https://untrusted.invalid/build.json'):
+            with self.subTest(url=url), self.assertRaisesRegex(SystemExit, 'redirected'):
+                self.run_identity(response_url=url)
 
     def test_unowned_or_production_origin_fails_before_request(self):
         for origin in ('https://attacker.invalid', ORIGIN + '.attacker.invalid', 'https://yellow-forest-0eecc8b0f.7.azurestaticapps.net'):
