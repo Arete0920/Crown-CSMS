@@ -1,0 +1,122 @@
+{
+  "schema_version": 1,
+  "status": "INTERNAL_REVIEW_ONLY_NOT_APPROVED_FOR_DISTRIBUTION",
+  "review_date": "2026-10-25",
+  "repository": "Arete0920/Crown-CSMS",
+  "source_candidate_sha": "ef50b8ead64b7fe80f084865d935d9493e726980",
+  "rights_review": "UNVERIFIED",
+  "owner_assignment": "UNVERIFIED",
+  "source_design_master_files": "NOT_ESTABLISHED",
+  "trademark_registration": "NOT_ESTABLISHED",
+  "commercial_transfer_authority": "NOT_APPROVED",
+  "evidence_scope": "Canonical CROWN logo source paths and SHA-256 at candidate source commit; no deployed or external asset provenance certification",
+  "assets": [
+    {
+      "path": "frontend/dashboards/public/brand/crown/logo/crown-logo-compact-full-color.svg",
+      "sha256": "ded33d0cb3e6894eae65df240e9939f373e534327c0437a554e13fbf55f68f02",
+      "file_type": "image/svg+xml",
+      "rights_status": "UNVERIFIED",
+      "provenance_status": "UNVERIFIED",
+      "buyer_distribution": "HOLD",
+      "master_editability": "NOT_VERIFIED"
+    },
+    {
+      "path": "frontend/dashboards/public/brand/crown/logo/crown-logo-horizontal-full-color.svg",
+      "sha256": "bc5a2421283c0310d16458de13aec4309d754a5d4b900e42148a9ac64c392fc9",
+      "file_type": "image/svg+xml",
+      "rights_status": "UNVERIFIED",
+      "provenance_status": "UNVERIFIED",
+      "buyer_distribution": "HOLD",
+      "master_editability": "NOT_VERIFIED"
+    },
+    {
+      "path": "frontend/dashboards/public/brand/crown/logo/crown-logo-mark-crown-only.svg",
+      "sha256": "dab0df65e7473b9e8bf4afe0d37e7deb810b234e22371dd24c1dedf6e8b8dde7",
+      "file_type": "image/svg+xml",
+      "rights_status": "UNVERIFIED",
+      "provenance_status": "UNVERIFIED",
+      "buyer_distribution": "HOLD",
+      "master_editability": "NOT_VERIFIED"
+    },
+    {
+      "path": "frontend/dashboards/public/brand/crown/logo/crown-logo-mark-shield.svg",
+      "sha256": "cf3fa57e739deb25940a9732bb5aacc59d52bdce85672bb4e9bbf45726185453",
+      "file_type": "image/svg+xml",
+      "rights_status": "UNVERIFIED",
+      "provenance_status": "UNVERIFIED",
+      "buyer_distribution": "HOLD",
+      "master_editability": "NOT_VERIFIED"
+    },
+    {
+      "path": "frontend/dashboards/public/brand/crown/logo/crown-logo-mark-square.svg",
+      "sha256": "c3c87898050a98b3dc217afdc11a4fb31a98dc9668cafc938d4d4b679a5d1939",
+      "file_type": "image/svg+xml",
+      "rights_status": "UNVERIFIED",
+      "provenance_status": "UNVERIFIED",
+      "buyer_distribution": "HOLD",
+      "master_editability": "NOT_VERIFIED"
+    },
+    {
+      "path": "frontend/dashboards/public/brand/crown/logo/crown-logo-monochrome-royal.svg",
+      "sha256": "fa8b9dcd35deb5c0eb7f78bb2d471c3753bb7e3398678b07fa825f8e6db79007",
+      "file_type": "image/svg+xml",
+      "rights_status": "UNVERIFIED",
+      "provenance_status": "UNVERIFIED",
+      "buyer_distribution": "HOLD",
+      "master_editability": "NOT_VERIFIED"
+    },
+    {
+      "path": "frontend/dashboards/public/brand/crown/logo/crown-logo-monochrome-white.svg",
+      "sha256": "258905c6067f52aa70293e5d9cf7a35fe392e06d47e480bf896e34df732775ab",
+      "file_type": "image/svg+xml",
+      "rights_status": "UNVERIFIED",
+      "provenance_status": "UNVERIFIED",
+      "buyer_distribution": "HOLD",
+      "master_editability": "NOT_VERIFIED"
+    },
+    {
+      "path": "frontend/dashboards/public/brand/crown/logo/crown-logo-primary-stacked-full-color.svg",
+      "sha256": "d31d3cf69e04821d1101bce68916e75ffeefa8d2031e95bd0a90f664edd29466",
+      "file_type": "image/svg+xml",
+      "rights_status": "UNVERIFIED",
+      "provenance_status": "UNVERIFIED",
+      "buyer_distribution": "HOLD",
+      "master_editability": "NOT_VERIFIED"
+    },
+    {
+      "path": "frontend/dashboards/public/brand/crown/logo/crown-logo-wordmark-full-color.svg",
+      "sha256": "7082c7fe2607bdfb765c9d194e06fa4d9ce46893853696d62e875bb53f5d7e92",
+      "file_type": "image/svg+xml",
+      "rights_status": "UNVERIFIED",
+      "provenance_status": "UNVERIFIED",
+      "buyer_distribution": "HOLD",
+      "master_editability": "NOT_VERIFIED"
+    }
+  ],
+  "duplicate_alias_groups": [
+    {
+      "git_blob_sha": "8e53309fb9c558790a6552303bcdd95293d6cb34",
+      "instances": 8,
+      "retention": "PRESERVE_PENDING_DEPENDENCY_REVIEW"
+    },
+    {
+      "git_blob_sha": "3ec06e520ce22350617d51d59ebecc55d0db34f6",
+      "instances": 2,
+      "retention": "PRESERVE_PENDING_DEPENDENCY_REVIEW"
+    }
+  ],
+  "third_party_logos": {
+    "microsoft_manifest_entries": 17,
+    "licensed_artwork_present": "NOT_VERIFIED",
+    "approved_action": "RETAIN_TEXT_FALLBACK"
+  },
+  "excluded_evidence": [
+    "External and Drive originals",
+    "Historic branches and artifacts",
+    "Website and print distribution",
+    "Independent visual-design approval",
+    "Copyright assignments and trademark searches",
+    "Cloud deployment, browser and packaging acceptance"
+  ],
+  "approval_required_before_external_sharing": true
+}
