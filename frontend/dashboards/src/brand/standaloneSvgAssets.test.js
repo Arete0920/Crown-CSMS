@@ -15,11 +15,11 @@ describe('CROWN standalone SVG image variants', () => {
     it(`${variant} embeds the canonical source without a relative external image`, () => {
       const svg = fs.readFileSync(path.join(assetRoot, variant), 'utf8');
       const original = fs.readFileSync(path.join(assetRoot, canonical), 'utf8');
-      const imageHrefs = [...svg.matchAll(/<image\\b[^>]*\\bhref="([^"]+)"/gi)].map((match) => match[1]);
+      const imageHrefs = [...svg.matchAll(/<image\b[^>]*\bhref="([^"]+)"/gi)].map((match) => match[1]);
       expect(imageHrefs).toHaveLength(1);
       expect(imageHrefs[0].startsWith('data:image/svg+xml;charset=utf-8,')).toBe(true);
       expect(decodeURIComponent(imageHrefs[0].split(',', 2)[1])).toBe(original);
-      expect(svg).not.toMatch(/<script\\b/i);
+      expect(svg).not.toMatch(/<script\b/i);
     });
   }
 });
