@@ -21,13 +21,28 @@ from facops.models import (
 
 
 class TenantRelatedFieldsMixin:
-    """Constrain writable foreign keys to the selected school's records.
+    """Keep incoming references and represented identities within one school.
 
     DRF validates PrimaryKeyRelatedField against this queryset before model
     instances are assigned. Never infer school membership from a submitted ID.
     """
 
     tenant_relation_fields = ()
+    tenant_read_only_relation_fields = ()
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        # Queryset restrictions only protect incoming writes. Historical rows
+        # may contain inconsistent relations, so every response must also keep
+        # related identities inside the parent record's school.
+        relation_fields = self.tenant_relation_fields + self.tenant_read_only_relation_fields
+        for name in relation_fields:
+            related = getattr(instance, name, None)
+            if related is not None and (
+                getattr(related, "school_id", None) != instance.school_id
+            ):
+                data[name] = None
+        return data
 
     def get_fields(self):
         fields = super().get_fields()
@@ -106,6 +121,7 @@ class WorkOrderCommentSerializer(serializers.ModelSerializer):
 
 class WorkOrderSerializer(TenantRelatedFieldsMixin, serializers.ModelSerializer):
     tenant_relation_fields = ("location", "asset", "assigned_to")
+    tenant_read_only_relation_fields = ("requested_by",)
     # Every representation (list, detail, PATCH, transition) must apply the
     # tenant filter. The queryset prefetch alone is not a security boundary.
     comments = serializers.SerializerMethodField()
@@ -186,6 +202,7 @@ class WorkOrderSerializer(TenantRelatedFieldsMixin, serializers.ModelSerializer)
 
 class SafetyIncidentSerializer(TenantRelatedFieldsMixin, serializers.ModelSerializer):
     tenant_relation_fields = ("location", "related_asset", "assigned_to")
+    tenant_read_only_relation_fields = ("reported_by",)
     class Meta:
         model = SafetyIncident
         fields = [
@@ -205,7 +222,8 @@ class SafetyIncidentSerializer(TenantRelatedFieldsMixin, serializers.ModelSerial
         read_only_fields = ["reported_by"]
 
 
-class DrillSerializer(serializers.ModelSerializer):
+class DrillSerializer(TenantRelatedFieldsMixin, serializers.ModelSerializer):
+    tenant_read_only_relation_fields = ("created_by",)
     class Meta:
         model = Drill
         fields = [
@@ -235,7 +253,8 @@ class VisitorLogSerializer(serializers.ModelSerializer):
         ]
 
 
-class AlertSerializer(serializers.ModelSerializer):
+class AlertSerializer(TenantRelatedFieldsMixin, serializers.ModelSerializer):
+    tenant_read_only_relation_fields = ("emitted_by",)
     class Meta:
         model = Alert
         fields = [
