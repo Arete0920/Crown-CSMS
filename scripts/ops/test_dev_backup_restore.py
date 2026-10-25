@@ -158,6 +158,12 @@ class RecoveryBoundaryTests(unittest.TestCase):
             text = path.read_text()
             self.assertNotIn("PRIVATE", text)
             self.assertEqual(json.loads(text)["result"], "BLOCKED")
+            with patch.dict(module.os.environ, ENV, clear=True):
+                result = module.main(["--expected-sha", "PRIVATE", "--confirmation", module.CONFIRMATION,
+                                      "--synthetic-dev-confirmed", "true", "--evidence-path", str(path)])
+            self.assertEqual(result, 1)
+            self.assertIsNone(json.loads(path.read_text())["source_sha"])
+            self.assertNotIn("PRIVATE", path.read_text())
 
     def test_workflow_never_uploads_archive_or_creates_azure_resources(self):
         path = Path(__file__).resolve().parents[2] / ".github/workflows/isolated-postgres-restore-drill.yml"

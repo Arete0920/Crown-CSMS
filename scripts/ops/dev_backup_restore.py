@@ -279,7 +279,8 @@ def main(argv=None):
     args = parser.parse_args(argv)
     started = time.monotonic()
     evidence = {
-        "result": "BLOCKED", "started_at_utc": now(), "source_sha": args.expected_sha,
+        "result": "BLOCKED", "started_at_utc": now(),
+        "source_sha": args.expected_sha if re.fullmatch(r"[0-9a-f]{40}", args.expected_sha) else None,
         "source_app": DEV_APP, "source_database_identity_sha256": SOURCE_IDENTITY,
         "data_origin": "owner_attested_synthetic_dev" if args.synthetic_dev_confirmed == "true" else "NOT_VERIFIED",
         "source_write_performed": False,
