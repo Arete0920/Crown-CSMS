@@ -40,6 +40,9 @@ jobs:
       - name: Verify CROWN canonical SVG favicon contract
         run: npm run test -- src/brand/faviconContract.test.js
 
+      - name: Verify CROWN standalone logo asset integrity
+        run: npm run test -- src/brand/standaloneSvgAssets.test.js
+
       - name: Stage 1 regression guard - no silent catch handlers
         working-directory: .
         run: |

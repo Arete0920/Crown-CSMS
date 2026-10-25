@@ -45,6 +45,21 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install chromium --with-deps
 
+      - name: Browser-render CROWN standalone SVG assets in image context
+        run: npx playwright test tests/ui/crown-standalone-svg.spec.ts --reporter=line
+        env:
+          CI: "1"
+          VITE_DEV_BASE_URL: "http://localhost:4173"
+
+      - name: Upload CROWN SVG render evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: crown-svg-render-proof-${{ github.run_id }}
+          path: frontend/dashboards/crown-svg-proof/
+          retention-days: 7
+          if-no-files-found: warn
+
       - name: Browser-verify Jireh marketing-site desktop and mobile presentation
         run: npx playwright test --config playwright.jireh.config.ts --reporter=line
 
