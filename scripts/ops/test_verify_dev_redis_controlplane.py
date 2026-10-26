@@ -9,7 +9,7 @@ spec = importlib.util.spec_from_file_location("probe", Path(__file__).with_name(
 probe = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(probe)
 SUB = "11111111-2222-3333-4444-555555555555"
-VNET = f"/subscriptions/{SUB}/resourceGroups/crown-rg/providers/Microsoft.Network/virtualNetworks/dev-vnet"
+VNET = f"/subscriptions/{SUB}/resourceGroups/crown-rg/providers/Microsoft.Network/virtualNetworks/crown-vnet"
 CACHE = f"/subscriptions/{SUB}/resourceGroups/crown-rg/providers/Microsoft.Cache/redisEnterprise/crown-auth-cache-dev"
 ZONE = f"/subscriptions/{SUB}/resourceGroups/crown-rg/providers/Microsoft.Network/privateDnsZones/privatelink.redis.azure.net"
 
@@ -19,11 +19,11 @@ def sample():
                       state="Succeeded", public="Disabled", tls="1.2", sku="Balanced_B0", location="eastus"),
         "redis_database": dict(type=probe.DATABASE_TYPE, runtime="Running",
                                state="Succeeded", client="Encrypted", clustering="NoCluster", eviction="NoEviction", port=10000),
-        "private_endpoint": dict(state="Succeeded", subnet=VNET + "/subnets/private", connections=[dict(target=CACHE, status="Approved", groups=["redisEnterprise"])]),
+        "private_endpoint": dict(state="Succeeded", subnet=VNET + "/subnets/db-subnet", connections=[dict(target=CACHE, status="Approved", groups=["redisEnterprise"])]),
         "dns_zone_groups": [dict(state="Succeeded", zones=[ZONE])],
         "dns_vnet_links": [dict(state="Succeeded", vnet=VNET)],
         "dns_a_records": [dict(name="crown-auth-cache-dev.eastus", count=1)],
-        "app_vnet": [dict(subnet=VNET + "/subnets/app", vnet=VNET)],
+        "app_vnet": dict(subnet=VNET + "/subnets/app-subnet"),
         "app_setting_names": ["CROWN_CACHE_URL"],
     }
 
@@ -99,7 +99,7 @@ class RedisReadOnlyTests(unittest.TestCase):
             dict(type="Microsoft.Cache/Redis", sku="Basic"),
             dict(sku="Balanced_B1"), dict(ha="Enabled"),
             dict(location="westus"), dict(runtime="Creating"),
-            dict(public=None), dict(tls="1.1"),
+            dict(public=None), dict(tls="1.1"), dict(tls=1.2),
         ):
             with self.subTest(changes=changes):
                 values = sample()
@@ -128,6 +128,18 @@ class RedisReadOnlyTests(unittest.TestCase):
         report = probe.evaluate(SUB, values)
         self.assertEqual(report["checks"]["private_endpoint"], "BLOCKED")
         self.assertEqual(report["control_plane_metadata"], "BLOCKED")
+
+    def test_only_the_approved_app_and_endpoint_subnets_pass(self):
+        for name, changes in (
+            ("private_endpoint", dict(subnet=VNET + "/subnets/app-subnet")),
+            ("private_endpoint", dict(subnet=VNET.replace("crown-vnet", "other-vnet") + "/subnets/db-subnet")),
+            ("app_vnet", dict(subnet=VNET + "/subnets/db-subnet")),
+            ("app_vnet", dict(subnet=VNET.replace("crown-vnet", "other-vnet") + "/subnets/app-subnet")),
+        ):
+            with self.subTest(name=name, changes=changes):
+                values = sample()
+                values[name].update(changes)
+                self.assertEqual(probe.evaluate(SUB, values)["checks"][name], "BLOCKED")
 
     def test_managed_gets_use_explicit_type_api_and_default_database(self):
         values = sample()

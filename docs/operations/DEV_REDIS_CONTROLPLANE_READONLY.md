@@ -45,3 +45,11 @@ that actual Azure properties were independently observed.
 No access-key operation is supported. App-setting names are projected by Azure
 CLI; values and raw CLI errors are never printed or retained in the report.
 Operator access and live inventory execution remain separate prerequisites.
+
+The approved topology is pinned to crown-vnet: the private endpoint must use
+db-subnet and the App Service must report virtualNetworkSubnetId=app-subnet.
+Merely sharing an arbitrary VNet cannot pass. DNS A-record presence is labeled
+PRESENT_ONLY; endpoint IP equivalence and app-side resolution remain unverified.
+Schema provenance: the reviewed official ARM 2025-07-01 specification blob is
+`a5fc76ec85fa6968a04160adcb502da736fcb89c` in Azure/azure-rest-api-specs at
+`specification/redisenterprise/resource-manager/Microsoft.Cache/RedisEnterprise/stable/2025-07-01/redisenterprise.json`.

@@ -41,8 +41,8 @@ READS = (
      "[].{state:provisioningState,vnet:virtualNetwork.id}"),
     ("dns_a_records", ("network", "private-dns", "record-set", "a", "list", "-g", GROUP, "-z", ZONE),
      "[].{name:name,count:length(aRecords)}"),
-    ("app_vnet", ("webapp", "vnet-integration", "list", "-g", GROUP, "-n", APP),
-     "[].{subnet:subnetResourceId,vnet:vnetResourceId}"),
+    ("app_vnet", ("webapp", "show", "-g", GROUP, "-n", APP),
+     "{subnet:virtualNetworkSubnetId}"),
     ("app_setting_names", ("webapp", "config", "appsettings", "list", "-g", GROUP, "-n", APP),
      "[].name"),
 )
@@ -76,6 +76,8 @@ def subnet_vnet(value):
 def evaluate(subscription, readings):
     """Return only bounded classifications, never raw resource IDs or settings."""
     checks = {key: "NOT_VERIFIED" for key, _, _ in READS}
+    approved_vnet = (f"/subscriptions/{subscription}/resourceGroups/{GROUP}"
+                     "/providers/Microsoft.Network/virtualNetworks/crown-vnet")
     redis = readings.get("redis")
     if isinstance(redis, dict):
         checks["redis"] = "CONSISTENT" if (
@@ -84,7 +86,7 @@ def evaluate(subscription, readings):
             and redis.get("runtime") == "Running"
             and redis.get("ha") == "Disabled"
             and redis.get("public") == "Disabled"
-            and str(redis.get("tls")) == "1.2"
+            and redis.get("tls") == "1.2"
             and redis.get("sku") == "Balanced_B0"
             and redis.get("location") == "eastus"
         ) else "BLOCKED"
@@ -110,6 +112,7 @@ def evaluate(subscription, readings):
         links = endpoint.get("connections")
         checks["private_endpoint"] = "CONSISTENT" if (
             endpoint.get("state") == "Succeeded" and vnet
+            and same_id(endpoint.get("subnet"), approved_vnet + "/subnets/db-subnet")
             and isinstance(links, list)
             and any(isinstance(link, dict)
                     and same_id(link.get("target"), cache_id)
@@ -133,12 +136,12 @@ def evaluate(subscription, readings):
     if isinstance(links, list):
         checks["dns_vnet_links"] = "CONSISTENT" if vnet and any(
             isinstance(link, dict) and link.get("state") == "Succeeded"
-            and same_id(link.get("vnet"), vnet) for link in links
+            and same_id(link.get("vnet"), approved_vnet) for link in links
         ) else "BLOCKED"
 
     records = readings.get("dns_a_records")
     if isinstance(records, list):
-        checks["dns_a_records"] = "CONSISTENT" if any(
+        checks["dns_a_records"] = "PRESENT_ONLY" if any(
             isinstance(record, dict)
             and record.get("name") == f"{CACHE}.eastus"
             and isinstance(record.get("count"), int)
@@ -147,13 +150,9 @@ def evaluate(subscription, readings):
         ) else "BLOCKED"
 
     app_links = readings.get("app_vnet")
-    if isinstance(app_links, list):
-        checks["app_vnet"] = "CONSISTENT" if vnet and any(
-            isinstance(link, dict) and (
-                same_id(subnet_vnet(link.get("subnet")), vnet)
-                or same_id(link.get("vnet"), vnet)
-            ) for link in app_links
-        ) else "BLOCKED"
+    if isinstance(app_links, dict):
+        checks["app_vnet"] = "CONSISTENT" if same_id(
+            app_links.get("subnet"), approved_vnet + "/subnets/app-subnet") else "BLOCKED"
 
     names = readings.get("app_setting_names")
     if isinstance(names, list) and all(isinstance(name, str) for name in names):
@@ -179,6 +178,7 @@ def evaluate(subscription, readings):
             "Control-plane projections do not prove effective process settings.",
             "Setting names do not verify resolved Key Vault references or TLS credentials.",
             "Private DNS metadata does not prove resolution from the App Service subnet.",
+            "DNS record presence does not prove endpoint IP equivalence.",
             "No credentials, network probes, tenant actions, or Azure writes were performed.",
         ],
     }
