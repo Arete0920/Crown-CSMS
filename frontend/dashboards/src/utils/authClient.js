@@ -225,10 +225,10 @@ export async function authenticatedFetch(input, init = {}) {
     || (!isAbsoluteHttpUrl(resolvedInput) && /^\/(?!\/)/.test(resolvedInput))
   );
   const headers = new Headers(requestInit.headers || {});
-  const requestToken = trustedApiRequest ? getAccessToken() : "";
+  const token = trustedApiRequest ? getAccessToken() : "";
   if (trustedApiRequest) {
-    if (requestToken && !headers.has("Authorization")) {
-      headers.set("Authorization", `Bearer ${requestToken}`);
+    if (token && !headers.has("Authorization")) {
+      headers.set("Authorization", `Bearer ${token}`);
     }
     const isPlatformOperatorRequest = (
       typeof input === "string"
@@ -282,9 +282,9 @@ export async function authenticatedFetch(input, init = {}) {
     if (
       response.status === 401
       && trustedApiRequest
-      && requestToken
-      && headers.get("Authorization") === `Bearer ${requestToken}`
-      && getAccessToken() === requestToken
+      && token
+      && headers.get("Authorization") === `Bearer ${token}`
+      && getAccessToken() === token
     ) {
       expireBrowserSession();
     }
