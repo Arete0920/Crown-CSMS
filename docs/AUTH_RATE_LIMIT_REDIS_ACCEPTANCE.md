@@ -16,8 +16,9 @@ SHA, printed authentication module SHA-256 and terminal result as source evidenc
 
 The harness creates a disposable Redis process with TCP disabled, persistence
 disabled and a private temporary Unix socket. Two separately spawned Python
-workers import the repository's actual authentication counter functions with
-minimal isolated Django settings. No deployment settings, database, credentials
+workers load the repository's actual authentication counter file directly with
+minimal isolated Django settings, avoiding application package initialization
+and its Celery/schema-extension imports. No deployment settings, database, credentials
 or target URLs are loaded. Each case terminates its workers and owned Redis and
 removes the temporary directory, including when an assertion fails.
 

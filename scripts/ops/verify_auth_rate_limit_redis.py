@@ -5,6 +5,7 @@ the harness never loads application deployment settings or contacts hosted Redis
 """
 
 import hashlib
+import importlib.util
 import multiprocessing
 from pathlib import Path
 import shutil
@@ -17,7 +18,7 @@ import unittest
 
 
 ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT / "backend"))
+AUTH_SOURCE = ROOT / "backend/crown_api/auth_rate_limit.py"
 
 
 def _worker(connection, socket_path, barrier):
@@ -38,12 +39,12 @@ def _worker(connection, socket_path, barrier):
                 },
             }},
         )
-        from crown_api.auth_rate_limit import (
-            AuthRateLimitBackendUnavailable,
-            check_auth_rate_limit,
-            clear_auth_identity_failures,
-            record_auth_failure,
-        )
+        # Import the actual counter file without executing crown_api/__init__,
+        # which also boots Celery and application-wide schema extensions.
+        spec = importlib.util.spec_from_file_location("isolated_auth_counters", AUTH_SOURCE)
+        counters = importlib.util.module_from_spec(spec)
+        sys.modules[spec.name] = counters
+        spec.loader.exec_module(counters)
 
         connection.send({"ready": True})
         while True:
@@ -59,7 +60,7 @@ def _worker(connection, socket_path, barrier):
                 "identity": command.pop("identity", "synthetic@example.invalid"),
             }
             if operation == "check":
-                result = check_auth_rate_limit(request, **arguments, **command)
+                result = counters.check_auth_rate_limit(request, **arguments, **command)
                 connection.send({
                     "allowed": result.allowed,
                     "backend_available": result.backend_available,
@@ -69,13 +70,13 @@ def _worker(connection, socket_path, barrier):
                     if command.pop("concurrent", False):
                         barrier.wait(timeout=5)
                     for _ in range(command.pop("count", 1)):
-                        record_auth_failure(request, **arguments, window_seconds=300)
-                except AuthRateLimitBackendUnavailable:
+                        counters.record_auth_failure(request, **arguments, window_seconds=300)
+                except counters.AuthRateLimitBackendUnavailable:
                     connection.send({"unavailable": True})
                 else:
                     connection.send({"unavailable": False})
             elif operation == "clear":
-                clear_auth_identity_failures(request, **arguments)
+                counters.clear_auth_identity_failures(request, **arguments)
                 connection.send({"cleared": True})
             else:
                 raise ValueError("Unknown synthetic worker operation")
@@ -225,6 +226,5 @@ class RedisAcceptance(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    source = ROOT / "backend/crown_api/auth_rate_limit.py"
-    print("auth_rate_limit_sha256=" + hashlib.sha256(source.read_bytes()).hexdigest(), flush=True)
+    print("auth_rate_limit_sha256=" + hashlib.sha256(AUTH_SOURCE.read_bytes()).hexdigest(), flush=True)
     unittest.main(verbosity=2)
