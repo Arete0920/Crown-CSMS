@@ -135,6 +135,68 @@ jobs:
           git diff --name-only "${LIVE_SHA}" "${CERTIFIED_SHA}" -- frontend/dashboards
           exit 1
 
+  dev-runtime-drift:
+    # Post-merge and daily public precheck only. This is deliberately not a PR
+    # merge gate: DEV may not be redeployed until Redis and schema prerequisites
+    # are independently accepted. A failing result makes the drift visible.
+    name: DEV public runtime parity (not certification)
+    if: >-
+      github.event_name == 'push' ||
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'schedule' && github.event.schedule == '17 6 * * *')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout accepted source without persistent credentials
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Check public DEV build identities and safe prerequisite responses
+        shell: bash
+        run: |
+          set -euo pipefail
+          expected_sha="$(git rev-parse HEAD)"
+          report="$RUNNER_TEMP/dev-runtime-drift.json"
+          set +e
+          python3 scripts/ops/verify_dev_owner_runtime.py --expected-sha "$expected_sha" > "$report"
+          probe_exit=$?
+          set -e
+          python3 - "$report" <<'PY'
+          import json
+          import os
+          import sys
+          from pathlib import Path
+
+          result = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+          lines = [
+              "## DEV public runtime parity — not certification",
+              f"Compared with source SHA: \`{result['expected_main_sha']}\`",
+              f"Read-only precheck: **{result['precheck']}**",
+          ]
+          lines.extend(
+              f"- {name}: \`{state}\`"
+              for name, state in sorted(result["checks"].items())
+          )
+          lines.append(
+              "An exact-SHA public PASS is not authenticated owner, schema, "
+              "Redis, provisioning, recovery or production acceptance."
+          )
+          lines.append(
+              "Follow up: https://github.com/Arete0920/Crown-CSMS/issues/427"
+          )
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as out:
+              out.write("\n".join(lines) + "\n")
+          if result["precheck"] != "PASS":
+              print(
+                  "::error::DEV public provenance/preconditions are BLOCKED; "
+                  "review the step summary and issue #427. "
+                  "Do not bypass Redis or schema gates to make this green."
+              )
+          PY
+          exit "$probe_exit"
+
   report-stale-branches:
     name: Report stale branches (no push in 60 days)
     if: >-
