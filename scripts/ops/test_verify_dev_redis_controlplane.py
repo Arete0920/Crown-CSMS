@@ -73,5 +73,25 @@ class RedisReadOnlyTests(unittest.TestCase):
         bad = lambda *args, **kwargs: Mock(returncode=1, stdout="private", stderr="secret")
         self.assertIsNone(probe.azure_read(("redis", "show"), "sku.name", subscription=SUB, runner=bad))
 
+    def test_workflow_wires_offline_tests_and_restricted_oidc_inventory(self):
+        workflow = (Path(__file__).resolve().parents[2]
+                    / ".github/workflows/azure-classroom-preflight.yml").read_text(encoding="utf-8")
+        self.assertIn("run: python -m unittest discover -s scripts/ops -p test_verify_dev_redis_controlplane.py -v", workflow)
+        self.assertIn("inputs.dev_redis_controlplane_precheck != true", workflow)
+        self.assertIn("dev-redis-controlplane-precheck:", workflow)
+        section = workflow.split("  dev-redis-controlplane-precheck:\n", 1)[1].split("  jireh-free-staging-once:\n", 1)[0]
+        self.assertIn("github.ref == 'refs/heads/main'", section)
+        self.assertIn("inputs.dev_redis_controlplane_precheck == true", section)
+        self.assertIn("inputs.dev_owner_runtime_precheck != true", section)
+        self.assertIn("environment: production", section)
+        self.assertIn("id-token: write", section)
+        self.assertIn("persist-credentials: false", section)
+        self.assertIn("verify_dev_redis_controlplane.py", section)
+        self.assertIn("CROWN_EXPECTED_AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}", section)
+        self.assertIn("if-no-files-found: warn", section)
+        self.assertNotIn("az webapp config appsettings set", section)
+        self.assertNotIn("az redis create", section)
+        self.assertNotIn("az deployment group create", section)
+
 if __name__ == "__main__":
     unittest.main()
