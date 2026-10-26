@@ -95,79 +95,6 @@ jobs:
       - name: Verify DEV Redis read-only inventory contracts offline
         run: python -m unittest discover -s scripts/ops -p test_verify_dev_redis_controlplane.py -v
 
-  dev-redis-controlplane-precheck:
-    # Operator-dispatched READ-ONLY Azure metadata verification for existing
-    # DEV Redis. Never run the unrelated cost/prod inventory or Jireh deploy.
-    if: >-
-      github.event_name == 'workflow_dispatch' &&
-      github.ref == 'refs/heads/main' &&
-      inputs.dev_redis_controlplane_precheck == true &&
-      inputs.dev_owner_runtime_precheck != true
-    needs: collector-tests
-    runs-on: ubuntu-latest
-    timeout-minutes: 12
-    environment: production
-    permissions:
-      contents: read
-      id-token: write
-    steps:
-      - name: Checkout reviewed protected main without persisted credentials
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-          fetch-depth: 0
-      - name: Refuse stale source checkout
-        shell: bash
-        run: |
-          set -euo pipefail
-          expected_sha="$(git rev-parse HEAD)"
-          git fetch --no-tags origin refs/heads/main:refs/remotes/origin/main
-          test "$(git rev-parse origin/main)" = "$expected_sha" || {
-            echo 'BLOCKED: main moved since workflow dispatch'; exit 1;
-          }
-      - name: Azure login through existing environment federation
-        uses: azure/login@a457da9ea143d694b1b9c7c869ebb04ebe844ef5
-        with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      - name: Inspect existing DEV Redis metadata without Azure mutation
-        shell: bash
-        env:
-          CROWN_EXPECTED_AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-        run: |
-          set -euo pipefail
-          umask 077
-          report="$RUNNER_TEMP/dev-redis-controlplane-readonly.json"
-          set +e
-          python3 scripts/ops/verify_dev_redis_controlplane.py > "$report"
-          result=$?
-          set -e
-          python3 - "$report" <<'PY'
-          import json, os, sys
-          from pathlib import Path
-          data = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
-          lines = ["## Existing DEV Redis control-plane metadata (not release certification)",
-                   "Preflight: **" + data.get("preflight", "BLOCKED") + "**"]
-          for name, state in sorted(data.get("checks", {}).items()):
-              lines.append(f"- {name}: {state}")
-          lines.append("Hosted Redis TLS/connectivity, process secrets and 429/503 acceptance remain NOT VERIFIED.")
-          with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as output:
-              output.write("\n".join(lines) + "\n")
-          PY
-          exit "$result"
-      - name: Retain sanitized DEV Redis evidence
-        if: always()
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: dev-redis-controlplane-readonly-${{ github.run_id }}
-          path: ${{ runner.temp }}/dev-redis-controlplane-readonly.json
-          retention-days: 7
-          if-no-files-found: warn
-      - name: Terminate Azure federation session
-        if: always()
-        run: az logout
-
   jireh-free-staging-once:
     # Explicit commit marker makes this a one-shot staging action, never a recurring deploy.
     if: >-
@@ -485,3 +412,75 @@ jobs:
         if: always()
         run: az logout
 
+  dev-redis-controlplane-precheck:
+    # Operator-dispatched READ-ONLY Azure metadata verification for existing
+    # DEV Redis. Never run the unrelated cost/prod inventory or Jireh deploy.
+    if: >-
+      github.event_name == 'workflow_dispatch' &&
+      github.ref == 'refs/heads/main' &&
+      inputs.dev_redis_controlplane_precheck == true &&
+      inputs.dev_owner_runtime_precheck != true
+    needs: collector-tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    environment: production
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout reviewed protected main without persisted credentials
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Refuse stale source checkout
+        shell: bash
+        run: |
+          set -euo pipefail
+          expected_sha="$(git rev-parse HEAD)"
+          git fetch --no-tags origin refs/heads/main:refs/remotes/origin/main
+          test "$(git rev-parse origin/main)" = "$expected_sha" || {
+            echo 'BLOCKED: main moved since workflow dispatch'; exit 1;
+          }
+      - name: Azure login through existing environment federation
+        uses: azure/login@a457da9ea143d694b1b9c7c869ebb04ebe844ef5
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - name: Inspect existing DEV Redis metadata without Azure mutation
+        shell: bash
+        env:
+          CROWN_EXPECTED_AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+        run: |
+          set -euo pipefail
+          umask 077
+          report="$RUNNER_TEMP/dev-redis-controlplane-readonly.json"
+          set +e
+          python3 scripts/ops/verify_dev_redis_controlplane.py > "$report"
+          result=$?
+          set -e
+          python3 - "$report" <<'PY'
+          import json, os, sys
+          from pathlib import Path
+          data = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+          lines = ["## Existing DEV Redis control-plane metadata (not release certification)",
+                   "Preflight: **" + data.get("preflight", "BLOCKED") + "**"]
+          for name, state in sorted(data.get("checks", {}).items()):
+              lines.append(f"- {name}: {state}")
+          lines.append("Hosted Redis TLS/connectivity, process secrets and 429/503 acceptance remain NOT VERIFIED.")
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as output:
+              output.write("\n".join(lines) + "\n")
+          PY
+          exit "$result"
+      - name: Retain sanitized DEV Redis evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: dev-redis-controlplane-readonly-${{ github.run_id }}
+          path: ${{ runner.temp }}/dev-redis-controlplane-readonly.json
+          retention-days: 7
+          if-no-files-found: warn
+      - name: Terminate Azure federation session
+        if: always()
+        run: az logout
