@@ -17,6 +17,13 @@ user must sign in again. Explicit logout uses the same cleanup. Responses 403,
 in-flight requests after another login, and network failures do not trigger
 the expiry cleanup. Server-side role/tenant checks remain authoritative.
 
+This 401 handler covers requests that use the canonical `authenticatedFetch`
+transport; it does **not** intercept every raw `fetch`, Axios, MSAL, or
+cookie-backed route in the dashboard. Existing first-party components have
+some direct bearer-header implementations. Their expiry/redirect behavior
+requires a route-by-route inventory and hosted role testing before a
+whole-application session-continuity claim is warranted.
+
 This browser cleanup is **not token revocation**. Existing signed access tokens
 are still valid at the server until their own expiry or any server-side
 revocation policy. The UI guard is not an authorization control. A failed
