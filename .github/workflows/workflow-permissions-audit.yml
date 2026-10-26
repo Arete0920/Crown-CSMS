@@ -38,6 +38,7 @@ jobs:
         run: python tools/ci/report_ci_metrics.py
 
       - name: Upload permissions audit artifact
+        if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: workflow-permissions-audit-${{ github.run_id }}
@@ -46,3 +47,4 @@ jobs:
             ci-metrics.json
           retention-days: 14
           if-no-files-found: error
+
