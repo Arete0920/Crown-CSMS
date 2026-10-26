@@ -9,6 +9,40 @@
 const TOKEN_KEY = "crown.jwt.access";
 const SCHOOL_KEY = "crown.school.id";
 const DEFAULT_TIMEOUT_MS = 15000;
+const AUTH_STORAGE_KEYS = [
+  "crown.jwt.access", "crown.jwt.refresh", "crown_auth_token", "access_token",
+  "crown_auth", "crown_user", "crown_current_user", "crown_user_roles",
+  "crown.role", "crown.active.role", "crown.school.id", "crown.school.name",
+  "schoolId", "crown.demo.role", "crown.demo.school_id",
+  "crown.demo.guidance", "crown.demo.tour", "crown.sandbox.command_center",
+];
+
+function isSandboxBuild() {
+  return import.meta.env.VITE_DEMO_MODE === "sandbox"
+    || import.meta.env.VITE_SANDBOX_MODE === "1"
+    || import.meta.env.VITE_WIZARD_CERTIFICATION === "1";
+}
+
+/** Clear browser credentials and identity context, not unrelated drafts. */
+export function clearBrowserAuthState() {
+  for (const name of ["sessionStorage", "localStorage"]) {
+    try {
+      const storage = globalThis[name];
+      for (const key of AUTH_STORAGE_KEYS) storage?.removeItem(key);
+    } catch {
+      // Storage may be blocked; never prevent a logout/redirect.
+    }
+  }
+}
+
+function expireBrowserSession() {
+  if (isSandboxBuild()) return;
+  clearBrowserAuthState();
+  if (typeof window !== "undefined" && window.location.pathname !== "/login") {
+    window.location.replace("/login?reason=session-expired");
+  }
+}
+
 
 function normalizeApiBaseUrl(value) {
   return String(value || "").trim().replace(/\/+$/, "");
@@ -183,17 +217,19 @@ export async function authenticatedFetch(input, init = {}) {
     ...requestInit
   } = init;
 
-  const relativeApiInput = typeof input === "string" && !isAbsoluteHttpUrl(input);
   const resolvedInput = typeof input === "string" ? buildApiUrl(input, query) : input;
-  const trustedApiRequest = relativeApiInput
-    || (typeof resolvedInput === "string" && (
-      isSameBrowserOrigin(resolvedInput) || isConfiguredApiUrl(resolvedInput)
-    ));
+  // Trust the final resolved URL, never the shape of a potentially external input.
+  const trustedApiRequest = typeof resolvedInput === "string" && (
+    isSameBrowserOrigin(resolvedInput)
+    || isConfiguredApiUrl(resolvedInput)
+    || (!isAbsoluteHttpUrl(resolvedInput) && /^\/(?!\/)/.test(resolvedInput))
+  );
   const headers = new Headers(requestInit.headers || {});
-
+  const token = trustedApiRequest ? getAccessToken() : "";
   if (trustedApiRequest) {
-    const token = getAccessToken();
-    if (token && !headers.has("Authorization")) headers.set("Authorization", `Bearer ${token}`);
+    if (token && !headers.has("Authorization")) {
+      headers.set("Authorization", `Bearer ${token}`);
+    }
     const isPlatformOperatorRequest = (
       typeof input === "string"
       && /^\/api\/platform\/(?:overview|schools(?:\/list)?)$/.test(input)
@@ -241,6 +277,17 @@ export async function authenticatedFetch(input, init = {}) {
       credentials: trustedApiRequest ? (requestInit.credentials ?? "include") : requestInit.credentials,
       signal: controller.signal,
     });
+    // Do not replay write requests or activate a disabled refresh rollout.
+    // A stale concurrent request cannot clear a newer signed-in session.
+    if (
+      response.status === 401
+      && trustedApiRequest
+      && token
+      && headers.get("Authorization") === `Bearer ${token}`
+      && getAccessToken() === token
+    ) {
+      expireBrowserSession();
+    }
     if (!validateStatus(response.status)) {
       const text = await response.text().catch(() => "");
       const contentType = response.headers?.get?.("content-type") || "";
@@ -292,5 +339,11 @@ export async function jwtLogin({ username, password, apiBase = "" }) {
   const data = await response.json();
   if (!data?.access) throw new Error("Login response missing access token");
   setAccessToken(data.access);
+  // Non-sandbox browser sessions currently require reauthentication.
+  try {
+    sessionStorage.removeItem("crown.jwt.refresh");
+  } catch {
+    // Storage access is handled by setAccessToken.
+  }
   return data;
 }

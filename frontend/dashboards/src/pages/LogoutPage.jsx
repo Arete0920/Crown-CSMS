@@ -1,32 +1,16 @@
 import { useEffect } from "react";
-import { Navigate } from "react-router";
-
-const STORAGE_KEYS = [
-  "crown.jwt.access",
-  "crown.role",
-  "crown.school.id",
-  "crown.demo.role",
-  "schoolId",
-  "crown_user_roles",
-  "crown_current_user",
-];
-
-function clearBrowserAuthState() {
-  for (const storage of [sessionStorage, localStorage]) {
-    try {
-      for (const key of STORAGE_KEYS) {
-        storage.removeItem(key);
-      }
-    } catch {
-      // Ignore storage access failures and continue redirecting to login.
-    }
-  }
-}
+import { useNavigate } from "react-router";
+import { clearBrowserAuthState } from "../utils/authClient.js";
 
 export default function LogoutPage() {
-  useEffect(() => {
-    clearBrowserAuthState();
-  }, []);
+  const navigate = useNavigate();
 
-  return <Navigate to="/login" replace />;
+  useEffect(() => {
+    // Clear credentials before changing routes. A child <Navigate> could
+    // navigate before the former parent's passive cleanup effect executed.
+    clearBrowserAuthState();
+    navigate("/login", { replace: true });
+  }, [navigate]);
+
+  return null;
 }
