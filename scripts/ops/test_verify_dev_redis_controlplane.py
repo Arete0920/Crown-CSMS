@@ -1,5 +1,6 @@
 """Offline contracts for a read-only DEV Redis control-plane inventory."""
 import importlib.util
+import json
 from pathlib import Path
 import unittest
 from unittest.mock import Mock
@@ -14,8 +15,10 @@ ZONE = f"/subscriptions/{SUB}/resourceGroups/crown-rg/providers/Microsoft.Networ
 
 def sample():
     return {
-        "redis": dict(state="Succeeded", public="Disabled", tls="1.2", sku="Balanced_B0", location="eastus"),
-        "redis_database": dict(state="Succeeded", client="Encrypted", clustering="NoCluster", eviction="NoEviction", port=10000),
+        "redis": dict(type=probe.CACHE_TYPE, runtime="Running", ha="Disabled",
+                      state="Succeeded", public="Disabled", tls="1.2", sku="Balanced_B0", location="eastus"),
+        "redis_database": dict(type=probe.DATABASE_TYPE, runtime="Running",
+                               state="Succeeded", client="Encrypted", clustering="NoCluster", eviction="NoEviction", port=10000),
         "private_endpoint": dict(state="Succeeded", subnet=VNET + "/subnets/private", connections=[dict(target=CACHE, status="Approved", groups=["redisEnterprise"])]),
         "dns_zone_groups": [dict(state="Succeeded", zones=[ZONE])],
         "dns_vnet_links": [dict(state="Succeeded", vnet=VNET)],
@@ -50,8 +53,8 @@ class RedisReadOnlyTests(unittest.TestCase):
 
     def test_managed_redis_cli_resource_and_private_link_contract(self):
         commands = {name: cmd for name, cmd, _ in probe.READS}
-        self.assertEqual(commands["redis"][:2], ("redisenterprise", "show"))
-        self.assertEqual(commands["redis_database"][:3], ("redisenterprise", "database", "show"))
+        self.assertEqual(commands["redis"][:2], ("resource", "show"))
+        self.assertEqual(commands["redis_database"][:3], ("rest", "--method", "get"))
         self.assertEqual(commands["dns_a_records"][4], "list")
         report = probe.evaluate(SUB, sample())
         self.assertEqual(report["checks"]["redis_database"], "CONSISTENT")
@@ -81,7 +84,8 @@ class RedisReadOnlyTests(unittest.TestCase):
             calls.append((args, subscription, query))
             if args == ("account", "show"):
                 return SUB
-            return values[next(name for name, cmd, _ in probe.READS if cmd == args)]
+            return values[next(name for name, cmd, _ in probe.READS
+                               if tuple(arg.format(subscription=SUB) for arg in cmd) == args)]
         self.assertEqual(probe.collect(SUB, read=read)["preflight"], "CONSISTENT")
         self.assertEqual(len(calls), len(probe.READS) + 1)
         self.assertTrue(all(call[1] == SUB for call in calls[1:]))
@@ -89,6 +93,74 @@ class RedisReadOnlyTests(unittest.TestCase):
     def test_cli_fail_closed_does_not_expose_error(self):
         bad = lambda *args, **kwargs: Mock(returncode=1, stdout="private", stderr="secret")
         self.assertIsNone(probe.azure_read(("redisenterprise", "show"), "sku.name", subscription=SUB, runner=bad))
+
+    def test_classic_redis_and_unapproved_cluster_settings_never_pass(self):
+        for changes in (
+            dict(type="Microsoft.Cache/Redis", sku="Basic"),
+            dict(sku="Balanced_B1"), dict(ha="Enabled"),
+            dict(location="westus"), dict(runtime="Creating"),
+            dict(public=None), dict(tls="1.1"),
+        ):
+            with self.subTest(changes=changes):
+                values = sample()
+                values["redis"].update(changes)
+                self.assertEqual(probe.evaluate(SUB, values)["checks"]["redis"], "BLOCKED")
+
+    def test_unsafe_or_missing_database_properties_never_pass(self):
+        for changes in (
+            dict(type="Microsoft.Cache/Redis"), dict(client="Plaintext"),
+            dict(port=6379), dict(port="10000"), dict(port=True),
+            dict(clustering="OSSCluster"), dict(eviction="AllKeysLRU"),
+            dict(runtime="Updating"), dict(state=None),
+        ):
+            with self.subTest(changes=changes):
+                values = sample()
+                values["redis_database"].update(changes)
+                self.assertEqual(probe.evaluate(SUB, values)["checks"]["redis_database"], "BLOCKED")
+        values = sample()
+        del values["redis_database"]
+        self.assertEqual(probe.evaluate(SUB, values)["control_plane_metadata"], "BLOCKED")
+
+    def test_private_endpoint_cannot_point_to_classic_same_name_cache(self):
+        values = sample()
+        values["private_endpoint"]["connections"][0]["target"] = CACHE.replace(
+            "/redisEnterprise/", "/Redis/")
+        report = probe.evaluate(SUB, values)
+        self.assertEqual(report["checks"]["private_endpoint"], "BLOCKED")
+        self.assertEqual(report["control_plane_metadata"], "BLOCKED")
+
+    def test_managed_gets_use_explicit_type_api_and_default_database(self):
+        values = sample()
+        calls = []
+        def read(args, query, *, subscription=None):
+            calls.append((args, subscription, query))
+            if args == ("account", "show"):
+                return SUB
+            return values[next(name for name, cmd, _ in probe.READS
+                               if tuple(arg.format(subscription=SUB) for arg in cmd) == args)]
+        self.assertEqual(probe.collect(SUB, read=read)["preflight"], "CONSISTENT")
+        cluster_args = calls[1][0]
+        self.assertEqual(cluster_args[:2], ("resource", "show"))
+        self.assertIn(probe.CACHE_TYPE, cluster_args)
+        self.assertIn(probe.API_VERSION, cluster_args)
+        database_args = calls[2][0]
+        self.assertEqual(database_args[:3], ("rest", "--method", "get"))
+        self.assertEqual(database_args[-1],
+                         "https://management.azure.com" + CACHE
+                         + "/databases/default?api-version=" + probe.API_VERSION)
+        for args, _, query in calls:
+            self.assertNotIn("listKeys", " ".join(args))
+            self.assertNotIn("regenerate", " ".join(args))
+            self.assertNotIn("create", args)
+            self.assertIsInstance(query, str)
+
+    def test_reports_do_not_emit_projected_resource_ids_or_unexpected_data(self):
+        values = sample()
+        values["redis"]["unexpected"] = "synthetic-sensitive-response"
+        report = json.dumps(probe.evaluate(SUB, values))
+        self.assertNotIn(SUB, report)
+        self.assertNotIn(VNET, report)
+        self.assertNotIn("synthetic-sensitive-response", report)
 
     def test_workflow_wires_offline_tests_and_restricted_oidc_inventory(self):
         workflow = (Path(__file__).resolve().parents[2]

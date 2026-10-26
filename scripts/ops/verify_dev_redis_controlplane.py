@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Read-only Azure DEV Redis control-plane inventory, issue #427.
 
-No secrets are fetched, no raw Azure responses are emitted, and no resources
+No access keys are requested, no raw Azure responses are emitted, and no resources
 are modified. Control-plane agreement is not hosted release certification.
 """
 from __future__ import annotations
@@ -20,12 +20,19 @@ ENDPOINT = "pe-crown-auth-cache-dev"
 ZONE = "privatelink.redis.azure.net"
 UUID = re.compile(r"[0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}\Z")
 CACHE_KEYS = {"CROWN_CACHE_URL"}
+API_VERSION = "2025-07-01"
+CACHE_TYPE = "Microsoft.Cache/redisEnterprise"
+DATABASE_TYPE = CACHE_TYPE + "/databases"
 
 READS = (
-    ("redis", ("redisenterprise", "show", "-g", GROUP, "-n", CACHE),
-     "{state:provisioningState,public:publicNetworkAccess,tls:minimumTlsVersion,sku:sku.name,location:location}"),
-    ("redis_database", ("redisenterprise", "database", "show", "-g", GROUP, "--cluster-name", CACHE),
-     "{state:provisioningState,client:clientProtocol,clustering:clusteringPolicy,eviction:evictionPolicy,port:port}"),
+    ("redis", ("resource", "show", "-g", GROUP, "-n", CACHE,
+               "--resource-type", CACHE_TYPE, "--api-version", API_VERSION),
+     "{type:type,location:location,state:properties.provisioningState,runtime:properties.resourceState,public:properties.publicNetworkAccess,tls:properties.minimumTlsVersion,sku:sku.name,ha:properties.highAvailability}"),
+    ("redis_database", ("rest", "--method", "get", "--url",
+                       "https://management.azure.com/subscriptions/{subscription}/resourceGroups/"
+                       + GROUP + "/providers/" + CACHE_TYPE + "/" + CACHE
+                       + "/databases/default?api-version=" + API_VERSION),
+     "{type:type,state:properties.provisioningState,runtime:properties.resourceState,client:properties.clientProtocol,port:properties.port,clustering:properties.clusteringPolicy,eviction:properties.evictionPolicy}"),
     ("private_endpoint", ("network", "private-endpoint", "show", "-g", GROUP, "-n", ENDPOINT),
      "{state:provisioningState,subnet:subnet.id,connections:privateLinkServiceConnections[].{target:privateLinkServiceId,status:privateLinkServiceConnectionState.status,groups:groupIds}}"),
     ("dns_zone_groups", ("network", "private-endpoint", "dns-zone-group", "list", "-g", GROUP, "--endpoint-name", ENDPOINT),
@@ -72,7 +79,10 @@ def evaluate(subscription, readings):
     redis = readings.get("redis")
     if isinstance(redis, dict):
         checks["redis"] = "CONSISTENT" if (
-            redis.get("state") == "Succeeded"
+            same_id(redis.get("type"), CACHE_TYPE)
+            and redis.get("state") == "Succeeded"
+            and redis.get("runtime") == "Running"
+            and redis.get("ha") == "Disabled"
             and redis.get("public") == "Disabled"
             and str(redis.get("tls")) == "1.2"
             and redis.get("sku") == "Balanced_B0"
@@ -82,10 +92,13 @@ def evaluate(subscription, readings):
     database = readings.get("redis_database")
     if isinstance(database, dict):
         checks["redis_database"] = "CONSISTENT" if (
-            database.get("state") == "Succeeded"
+            same_id(database.get("type"), DATABASE_TYPE)
+            and database.get("state") == "Succeeded"
+            and database.get("runtime") == "Running"
             and database.get("client") == "Encrypted"
             and database.get("clustering") == "NoCluster"
             and database.get("eviction") == "NoEviction"
+            and type(database.get("port")) is int
             and database.get("port") == 10000
         ) else "BLOCKED"
 
@@ -151,6 +164,9 @@ def evaluate(subscription, readings):
         "captured_at_utc": datetime.now(timezone.utc).isoformat(),
         "target": "crown-rg/crown-api-dev + crown-auth-cache-dev",
         "subscription_match": True,
+        "expected_cache_resource_type": CACHE_TYPE,
+        "expected_cache_sku": "Balanced_B0",
+        "expected_database": "default",
         "checks": checks,
         "control_plane_metadata": "CONSISTENT" if consistent else "BLOCKED",
         "hosted_redis_connectivity": "NOT_TESTED",
@@ -176,7 +192,8 @@ def collect(expected_subscription, *, read=azure_read):
     if not same_id(selected, expected_subscription):
         return {"preflight": "BLOCKED", "reason": "AZURE_SUBSCRIPTION_MISMATCH_OR_UNAVAILABLE",
                 "release_certification": "NOT_VERIFIED"}
-    readings = {name: read(args, query, subscription=expected_subscription)
+    readings = {name: read(tuple(arg.format(subscription=expected_subscription) for arg in args),
+                           query, subscription=expected_subscription)
                 for name, args, query in READS}
     result = evaluate(expected_subscription, readings)
     result["preflight"] = result["control_plane_metadata"]
