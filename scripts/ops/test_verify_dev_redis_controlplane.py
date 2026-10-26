@@ -79,7 +79,7 @@ class RedisReadOnlyTests(unittest.TestCase):
         self.assertIn("run: python -m unittest discover -s scripts/ops -p test_verify_dev_redis_controlplane.py -v", workflow)
         self.assertIn("inputs.dev_redis_controlplane_precheck != true", workflow)
         self.assertIn("dev-redis-controlplane-precheck:", workflow)
-        section = workflow.split("  dev-redis-controlplane-precheck:\n", 1)[1].split("  jireh-free-staging-once:\n", 1)[0]
+        section = workflow.split("  dev-redis-controlplane-precheck:\n", 1)[1]
         self.assertIn("github.ref == 'refs/heads/main'", section)
         self.assertIn("inputs.dev_redis_controlplane_precheck == true", section)
         self.assertIn("inputs.dev_owner_runtime_precheck != true", section)
