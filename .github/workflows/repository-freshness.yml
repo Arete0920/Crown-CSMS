@@ -172,11 +172,11 @@ jobs:
           result = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
           lines = [
               "## DEV public runtime parity — not certification",
-              f"Compared with source SHA: \`{result['expected_main_sha']}\`",
+              f"Compared with source SHA: `{result['expected_main_sha']}`",
               f"Read-only precheck: **{result['precheck']}**",
           ]
           lines.extend(
-              f"- {name}: \`{state}\`"
+              f"- {name}: `{state}`"
               for name, state in sorted(result["checks"].items())
           )
           lines.append(
