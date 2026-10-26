@@ -34,6 +34,12 @@ jobs:
           python-version: "3.12"
       - name: Install requirements
         run: python -m pip install -r requirements.txt
+      - name: Verify isolated shared authentication counters with Redis
+        working-directory: .
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends redis-server
+          python scripts/ops/verify_auth_rate_limit_redis.py
       - name: Verify reviewed DEV migration contracts (offline)
         working-directory: .
         run: |
@@ -247,3 +253,4 @@ jobs:
           path: survey-postgresql-junit.xml
           if-no-files-found: error
           retention-days: 14
+
