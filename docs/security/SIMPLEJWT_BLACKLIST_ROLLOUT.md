@@ -94,8 +94,8 @@ Database Inventory (read-only)* workflow, and request only:
 - `expected_sha`: current complete protected-main commit SHA;
 - `apply_reviewed_blacklist`: true (leave support and legacy flags false);
 - `confirm_dev_blacklist`: `migrate-dev-blacklist`;
-- `dev_recovery_receipt`: the independently approved, current DEV recovery
-  evidence URL in this repository, without secret data;
+- `dev_recovery_receipt`: the current DEV recovery evidence URL in this repository,
+  without secret data; **INDEPENDENT_REVIEW_REQUIRED** before dispatch;
 - `inspect_migration_plan`: false.
 
 The job checks that exactly one schema mode is selected and that the correct
