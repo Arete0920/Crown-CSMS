@@ -3,7 +3,8 @@
 
 All network targets are pinned to existing CROWN DEV hosts. No credentials,
 state-changing requests, Azure administration, school provisioning, or source
-commits are performed. Raw HTTP bodies and headers are never written to logs.
+commits are performed. Owner response bodies are never read. Raw HTTP bodies
+and headers are never written to logs.
 """
 
 from __future__ import annotations
@@ -31,8 +32,8 @@ class NoRedirect(urllib.request.HTTPRedirectHandler):
         return None
 
 
-def _open_request(opener, url: str, *, method: str = "GET", headers=None):
-    """Return a status and bounded response, without exposing response data."""
+def _open_request(opener, url: str, *, method: str = "GET", headers=None, read_json=False):
+    """Read bounded public metadata only when requested; otherwise inspect status."""
     request = urllib.request.Request(
         url, method=method, headers=headers or {"Accept": "application/json"}
     )
@@ -40,7 +41,7 @@ def _open_request(opener, url: str, *, method: str = "GET", headers=None):
         with opener.open(request, timeout=TIMEOUT_SECONDS) as response:
             status = response.status
             response_headers = response.headers
-            if method == "OPTIONS":
+            if method == "OPTIONS" or not read_json:
                 return status, response_headers, None
             body = response.read(MAX_BYTES + 1)
             if len(body) > MAX_BYTES:
@@ -70,14 +71,14 @@ def probe(expected_sha: str, *, opener=None) -> dict:
     if not FULL_SHA.fullmatch(expected_sha):
         raise ValueError("Expected source must be a full lowercase SHA-1 commit ID.")
     opener = opener or urllib.request.build_opener(NoRedirect())
-    health_status, _, health = _open_request(opener, API + "/api/health/")
+    health_status, _, health = _open_request(opener, API + "/api/health/", read_json=True)
     health = health if health_status == 200 and isinstance(health, dict) else {}
     backend = _identity(health.get("build_sha"), expected_sha)
     artifact = _identity(health.get("artifact_build_sha"), expected_sha)
     environment = "DEV" if health.get("env") == "dev" else "NOT_VERIFIED"
     database = "READY" if health.get("db") == "ok" and health.get("ok") is True else "NOT_VERIFIED"
 
-    frontend_status, _, frontend = _open_request(opener, PREVIEW + "/build.json")
+    frontend_status, _, frontend = _open_request(opener, PREVIEW + "/build.json", read_json=True)
     frontend = frontend if frontend_status == 200 and isinstance(frontend, dict) else {}
     preview = _identity(frontend.get("build_sha"), expected_sha)
 
@@ -86,7 +87,7 @@ def probe(expected_sha: str, *, opener=None) -> dict:
         ("overview", "/api/platform/overview"),
         ("school_directory", "/api/platform/schools/list"),
     ):
-        response_status, _, _ = _open_request(opener, API + path)
+        response_status, _, _ = _open_request(opener, API + path, read_json=False)
         anon[label] = (
             "DENIED" if response_status in (401, 403)
             else "EXPOSED" if response_status == 200

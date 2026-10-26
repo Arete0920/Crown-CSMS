@@ -105,6 +105,35 @@ class OwnerRuntimePrecheckTests(unittest.TestCase):
         self.assertEqual(result["checks"]["backend_environment"], "NOT_VERIFIED")
         self.assertEqual(result["precheck"], "BLOCKED")
 
+    def test_owner_probes_never_read_response_bodies(self):
+        class StatusOnlyResponse(FakeResponse):
+            def read(self, *args, **kwargs):
+                raise AssertionError("Owner probe must inspect status only")
+
+        for path, check in (
+            ("/api/platform/overview", "anonymous_overview"),
+            ("/api/platform/schools/list", "anonymous_school_directory"),
+        ):
+            for status in (200, 204, 302, 401, 403, 500):
+                with self.subTest(path=path, status=status):
+                    client = safe_opener()
+                    response = StatusOnlyResponse(status=status)
+
+                    def client_open(request, timeout):
+                        if request.full_url == runtime.API + path and request.get_method() == "GET":
+                            return response
+                        return FakeOpener.open(client, request, timeout)
+
+                    client.open = client_open
+                    result = runtime.probe(SHA, opener=client)
+                    expected = (
+                        "DENIED" if status in (401, 403)
+                        else "EXPOSED" if status == 200 else "NOT_VERIFIED"
+                    )
+                    self.assertEqual(result["checks"][check], expected)
+                    self.assertEqual(result["precheck"], "PASS" if expected == "DENIED" else "BLOCKED")
+                    self.assertTrue(response.closed)
+
     def test_frontend_mismatch_and_invalid_cors_block(self):
         client = safe_opener(frontend={"build_sha": "b" * 40}, cors_headers={
             "Access-Control-Allow-Origin": "https://unapproved.example",
