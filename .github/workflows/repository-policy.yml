@@ -199,6 +199,9 @@ jobs:
           python tools/ci/verify_backend_lock.py
           python -m unittest discover -s tools/ci -p 'test_verify_backend_lock.py' -v
 
+      - name: Test CI metrics accounting
+        run: python -m unittest discover -s tools/ci -p 'test_report_ci_metrics.py' -v
+
       - name: Verify reviewed CI tool pins
         run: |
           python tools/ci/verify_ci_tool_pins.py

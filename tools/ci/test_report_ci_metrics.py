@@ -87,7 +87,80 @@ class MetricsTests(unittest.TestCase):
             self.assertEqual(report['conclusions'], {'failure': 1})
             self.assertIn('Timing is incomplete or invalid', summary_path.read_text())
 
+    def test_step_free_skipped_jobs_have_lifecycle_receipts_not_runner_time(self):
+        run = {'id': 1, 'name': 'Tests', 'head_sha': 'a' * 40,
+               'html_url': 'https://example.invalid'}
+        for started, completed, lifecycle_status in (
+            ('2026-10-26T20:13:14Z', '2026-10-26T20:13:13Z', 'invalid'),
+            ('2026-10-26T20:13:13Z', '2026-10-26T20:13:14Z', 'valid'),
+            (None, None, 'missing'),
+        ):
+            with self.subTest(lifecycle_status=lifecycle_status):
+                skipped = {'id': 7, 'name': 'conditional', 'status': 'completed',
+                           'conclusion': 'skipped', 'steps': [],
+                           'started_at': started, 'completed_at': completed}
+                executed = {'id': 8, 'name': 'executed', 'conclusion': 'success',
+                            'started_at': '2026-10-26T20:11:00Z',
+                            'completed_at': '2026-10-26T20:13:00Z'}
+                result = metrics.summarize(run, [skipped, executed], [])
+                self.assertEqual(result['runner_seconds'], 120)
+                self.assertTrue(result['runner_time_complete'])
+                self.assertEqual(result['timing_errors'], [])
+                self.assertEqual(result['skipped_jobs'], [{
+                    'job_id': 7, 'name': 'conditional', 'started_at': started,
+                    'completed_at': completed, 'lifecycle_timing_status': lifecycle_status,
+                }])
+
+    def test_skipped_classification_requires_complete_nonexecution_evidence(self):
+        run = {'id': 1, 'name': 'Tests', 'head_sha': 'a' * 40,
+               'html_url': 'https://example.invalid'}
+        base = {'id': 7, 'name': 'conditional', 'status': 'completed',
+                'conclusion': 'skipped', 'steps': [],
+                'started_at': '2026-10-26T20:13:14Z',
+                'completed_at': '2026-10-26T20:13:13Z'}
+        for changes in ({'status': 'in_progress'}, {'conclusion': 'failure'},
+                        {'steps': [{'name': 'executed step'}]}, {'steps': None}):
+            with self.subTest(changes=changes):
+                result = metrics.summarize(run, [dict(base, **changes)], [])
+                self.assertFalse(result['runner_time_complete'])
+                self.assertEqual(result['timing_errors'], ['job:7'])
+                self.assertEqual(result['skipped_jobs'], [])
+
+    def test_skipped_lifecycle_anomaly_is_reported_without_failing_runner_accounting(self):
+        from io import BytesIO
+        run = {'id': 1, 'name': 'Tests', 'head_sha': 'a' * 40,
+               'html_url': 'https://example.invalid', 'conclusion': 'success'}
+        responses = [
+            {'workflow_runs': [run]},
+            {'total_count': 1, 'jobs': [
+                {'id': 7, 'name': 'conditional', 'status': 'completed',
+                 'conclusion': 'skipped', 'steps': [],
+                 'started_at': '2026-10-26T20:13:14Z',
+                 'completed_at': '2026-10-26T20:13:13Z'},
+                {'id': 8, 'name': 'executed', 'conclusion': 'success',
+                 'started_at': '2026-10-26T20:11:00Z',
+                 'completed_at': '2026-10-26T20:13:00Z'},
+            ]},
+            {'total_count': 1, 'artifacts': [{'size_in_bytes': 123}]},
+        ]
+        with tempfile.TemporaryDirectory() as directory:
+            report_path = Path(directory) / 'ci-metrics.json'
+            summary_path = Path(directory) / 'summary.md'
+            with patch.dict(os.environ, {'GH_TOKEN': 'synthetic-test-only',
+                                        'GITHUB_STEP_SUMMARY': str(summary_path)}), \
+                 patch.object(metrics, 'urlopen', side_effect=[BytesIO(json.dumps(r).encode())
+                                                             for r in responses]), \
+                 patch.object(metrics, 'Path', return_value=report_path):
+                metrics.main()
+            report = json.loads(report_path.read_text())
+            self.assertEqual(report['invalid_timing_runs'], [])
+            self.assertTrue(report['runner_time_complete'])
+            self.assertEqual(report['runner_minutes'], 2)
+            self.assertEqual(report['skipped_job_count'], 1)
+            self.assertEqual(report['skipped_lifecycle_anomaly_count'], 1)
+            self.assertEqual(report['artifact_bytes'], 123)
+            self.assertIn('1 skipped-job lifecycle timing anomalies', summary_path.read_text())
+
 
 if __name__ == '__main__':
     unittest.main()
-
