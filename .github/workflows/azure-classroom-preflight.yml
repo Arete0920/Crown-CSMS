@@ -14,6 +14,8 @@ on:
       - 'scripts/ops/test_jireh_azure_site_preflight.py'
       - 'scripts/ops/verify_dev_owner_runtime.py'
       - 'scripts/ops/test_verify_dev_owner_runtime.py'
+      - 'scripts/ops/verify_dev_ops_credential_retirement.py'
+      - 'scripts/ops/test_verify_dev_ops_credential_retirement.py'
       - 'docs/operations/CROWN_AZURE_FREE_FIRST_COST_CONTROL.md'
       - '.github/workflows/azure-classroom-preflight.yml'
   push:
@@ -29,6 +31,8 @@ on:
       - 'scripts/ops/test_jireh_azure_site_preflight.py'
       - 'scripts/ops/verify_dev_owner_runtime.py'
       - 'scripts/ops/test_verify_dev_owner_runtime.py'
+      - 'scripts/ops/verify_dev_ops_credential_retirement.py'
+      - 'scripts/ops/test_verify_dev_ops_credential_retirement.py'
       - 'docs/operations/CROWN_AZURE_FREE_FIRST_COST_CONTROL.md'
       - '.github/workflows/azure-classroom-preflight.yml'
       - 'sites/jireh/README.md'
@@ -75,6 +79,9 @@ jobs:
 
       - name: Verify DEV owner public precheck contracts offline
         run: python -m unittest discover -s scripts/ops -p test_verify_dev_owner_runtime.py -v
+
+      - name: Verify DEV schoolless credential probe contracts offline
+        run: python -m unittest discover -s scripts/ops -p test_verify_dev_ops_credential_retirement.py -v
 
   jireh-free-staging-once:
     # Explicit commit marker makes this a one-shot staging action, never a recurring deploy.
