@@ -1,11 +1,16 @@
 import { useEffect } from "react";
-import { Navigate } from "react-router";
+import { useNavigate } from "react-router";
 import { clearBrowserAuthState } from "../utils/authClient.js";
 
 export default function LogoutPage() {
-  useEffect(() => {
-    clearBrowserAuthState();
-  }, []);
+  const navigate = useNavigate();
 
-  return <Navigate to="/login" replace />;
+  useEffect(() => {
+    // Clear credentials before changing routes. A child <Navigate> could
+    // navigate before the former parent's passive cleanup effect executed.
+    clearBrowserAuthState();
+    navigate("/login", { replace: true });
+  }, [navigate]);
+
+  return null;
 }
