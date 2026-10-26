@@ -9,23 +9,45 @@ from urllib.request import Request, urlopen
 REPOSITORY = 'Arete0920/Crown-CSMS'
 
 
+class NegativeActionsDuration(ValueError):
+    """Provider timestamps indicate completion before start."""
+
+
 def seconds(start, end):
     if not start or not end:
         return None
     duration = (datetime.fromisoformat(end.replace('Z', '+00:00')) -
                 datetime.fromisoformat(start.replace('Z', '+00:00'))).total_seconds()
     if duration < 0:
-        raise ValueError('negative Actions duration')
+        raise NegativeActionsDuration('negative Actions duration')
     return duration
 
 
 def summarize(run, jobs, artifacts):
-    durations = [seconds(j.get('started_at'), j.get('completed_at')) for j in jobs]
+    durations = []
+    invalid_job_timing = []
+    for job in jobs:
+        try:
+            duration = seconds(job.get('started_at'), job.get('completed_at'))
+        except NegativeActionsDuration:
+            # Skipped GitHub jobs can expose contradictory start/end times.
+            # Keep the run but mark its runner time incomplete, not zero.
+            duration = None
+            invalid_job_timing.append(job.get('name') or '<unnamed>')
+        durations.append(duration)
+    try:
+        queue_seconds = seconds(run.get('created_at'), run.get('run_started_at'))
+        invalid_queue_timing = False
+    except NegativeActionsDuration:
+        queue_seconds = None
+        invalid_queue_timing = True
     complete = all(d is not None for d in durations)
     return {
         'run_id': run['id'], 'workflow': run['name'], 'source_sha': run['head_sha'],
         'conclusion': run.get('conclusion'), 'attempt': run.get('run_attempt', 1),
-        'queue_seconds': seconds(run.get('created_at'), run.get('run_started_at')),
+        'queue_seconds': queue_seconds,
+        'invalid_queue_timing': invalid_queue_timing,
+        'invalid_job_timing': invalid_job_timing,
         'runner_seconds': sum(d for d in durations if d is not None),
         'runner_time_complete': complete,
         'artifact_bytes': sum(a.get('size_in_bytes', 0) for a in artifacts),
@@ -61,6 +83,7 @@ def main():
         'run_count': len(records), 'unique_source_heads': len({r['source_sha'] for r in records}),
         'conclusions': dict(Counter(r['conclusion'] for r in records)),
         'runner_minutes': sum(r['runner_seconds'] for r in records) / 60,
+        'timing_anomaly_count': sum(len(r['invalid_job_timing']) + int(r['invalid_queue_timing']) for r in records),
         'artifact_bytes': sum(r['artifact_bytes'] for r in records),
         'extra_run_attempts': sum(max(0, r['attempt'] - 1) for r in records),
         'runs': records,
@@ -73,10 +96,14 @@ def main():
             output.write(f"## CI sample\n{len(records)} completed workflow runs; "
                          f"{report['unique_source_heads']} source heads; "
                          f"{report['runner_minutes']:.1f} runner minutes; "
-                         f"{report['artifact_bytes'] / 1048576:.1f} MiB artifacts.\n")
+                         f"{report['artifact_bytes'] / 1048576:.1f} MiB artifacts; "
+                         f"{report['timing_anomaly_count']} invalid provider timing entries.\n")
             for r in records:
                 if r['failed_jobs']:
                     output.write(f"- [{r['workflow']}]({r['url']}): {', '.join(r['failed_jobs'])}\n")
+                if r['invalid_job_timing'] or r['invalid_queue_timing']:
+                    output.write(f"- [{r['workflow']}]({r['url']}): inconsistent provider timestamps; "
+                                 "runner accounting incomplete.\n")
     print('Wrote bounded read-only CI metrics to ci-metrics.json')
 
 
