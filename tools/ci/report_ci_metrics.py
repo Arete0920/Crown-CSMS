@@ -20,14 +20,25 @@ def seconds(start, end):
 
 
 def summarize(run, jobs, artifacts):
-    durations = [seconds(j.get('started_at'), j.get('completed_at')) for j in jobs]
+    timing_errors = []
+
+    def measured(start, end, label):
+        try:
+            return seconds(start, end)
+        except ValueError:
+            timing_errors.append(label)
+            return None
+
+    durations = [measured(j.get('started_at'), j.get('completed_at'),
+                          'job:' + str(j.get('id', j['name']))) for j in jobs]
     complete = all(d is not None for d in durations)
     return {
         'run_id': run['id'], 'workflow': run['name'], 'source_sha': run['head_sha'],
         'conclusion': run.get('conclusion'), 'attempt': run.get('run_attempt', 1),
-        'queue_seconds': seconds(run.get('created_at'), run.get('run_started_at')),
+        'queue_seconds': measured(run.get('created_at'), run.get('run_started_at'), 'queue'),
         'runner_seconds': sum(d for d in durations if d is not None),
         'runner_time_complete': complete,
+        'timing_errors': timing_errors,
         'artifact_bytes': sum(a.get('size_in_bytes', 0) for a in artifacts),
         'failed_jobs': [j['name'] for j in jobs if j.get('conclusion') == 'failure'],
         'url': run['html_url'],
@@ -61,6 +72,8 @@ def main():
         'run_count': len(records), 'unique_source_heads': len({r['source_sha'] for r in records}),
         'conclusions': dict(Counter(r['conclusion'] for r in records)),
         'runner_minutes': sum(r['runner_seconds'] for r in records) / 60,
+        'runner_time_complete': all(r['runner_time_complete'] for r in records),
+        'invalid_timing_runs': [r['run_id'] for r in records if r['timing_errors']],
         'artifact_bytes': sum(r['artifact_bytes'] for r in records),
         'extra_run_attempts': sum(max(0, r['attempt'] - 1) for r in records),
         'runs': records,
@@ -74,11 +87,16 @@ def main():
                          f"{report['unique_source_heads']} source heads; "
                          f"{report['runner_minutes']:.1f} runner minutes; "
                          f"{report['artifact_bytes'] / 1048576:.1f} MiB artifacts.\n")
+            if not report['runner_time_complete'] or report['invalid_timing_runs']:
+                output.write('Timing is incomplete or invalid; totals include measured intervals only.\n')
             for r in records:
                 if r['failed_jobs']:
                     output.write(f"- [{r['workflow']}]({r['url']}): {', '.join(r['failed_jobs'])}\n")
     print('Wrote bounded read-only CI metrics to ci-metrics.json')
+    if report['invalid_timing_runs']:
+        raise SystemExit('Invalid Actions timing; see retained ci-metrics.json')
 
 
 if __name__ == '__main__':
     main()
+
