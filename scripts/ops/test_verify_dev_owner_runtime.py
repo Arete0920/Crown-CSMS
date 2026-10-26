@@ -199,6 +199,37 @@ class OwnerRuntimePrecheckTests(unittest.TestCase):
             self.assertNotIn(prohibited, owner_job)
         self.assertIn('verify_dev_owner_runtime.py --expected-sha', owner_job)
 
+    def test_repository_freshness_checks_dev_runtime_without_privileges(self):
+        workflow = (
+            Path(__file__).resolve().parents[2]
+            / ".github/workflows/repository-freshness.yml"
+        ).read_text(encoding="utf-8")
+        self.assertIn("  dev-runtime-drift:", workflow)
+        job = workflow.split("  dev-runtime-drift:", 1)[1].split(
+            "  report-stale-branches:", 1
+        )[0]
+        # Main pushes and daily checks report drift; no PR write/merge dependency.
+        self.assertIn("github.event_name == 'push'", job)
+        self.assertIn("github.event_name == 'schedule'", job)
+        self.assertIn("github.event.schedule == '17 6 * * *'", job)
+        self.assertNotIn("github.event_name == 'pull_request'", job)
+        self.assertIn('persist-credentials: false', job)
+        self.assertIn('contents: read', job)
+        self.assertIn('verify_dev_owner_runtime.py --expected-sha', job)
+        self.assertIn('GITHUB_STEP_SUMMARY', job)
+        self.assertIn('exit "$probe_exit"', job)
+        self.assertIn('not certification', job)
+        for forbidden in (
+            'id-token: write',
+            'secrets.',
+            'azure/login@',
+            'az webapp',
+            'az rest',
+            'POST /api/',
+            'school_id',
+        ):
+            self.assertNotIn(forbidden, job)
+
     def test_only_full_lowercase_commit_shas_are_allowed(self):
         for sha in ("", "main", "a" * 7, "A" * 40, "a" * 39 + "\n"):
             with self.subTest(sha=sha), self.assertRaises(ValueError):
