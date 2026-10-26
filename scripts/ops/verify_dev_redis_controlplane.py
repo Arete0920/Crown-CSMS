@@ -88,7 +88,7 @@ def evaluate(subscription, readings):
             and redis.get("public") == "Disabled"
             and redis.get("tls") == "1.2"
             and redis.get("sku") == "Balanced_B0"
-            and redis.get("location") == "eastus"
+            and redis.get("location") in ("eastus", "East US")
         ) else "BLOCKED"
 
     database = readings.get("redis_database")
