@@ -289,6 +289,19 @@ describe("canonical authenticated client", () => {
     expect(getAccessToken()).toBe("token-123");
   });
 
+  it("does not redirect or clear tenant context for an anonymous 401", async () => {
+    vi.stubGlobal("sessionStorage", memoryStorage({ "crown.school.id": "school-123" }));
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(null, { status: 401 }));
+    await expect(authenticatedFetch("/api/v1/nav/")).rejects.toMatchObject({ status: 401 });
+    expect(sessionStorage.getItem("crown.school.id")).toBe("school-123");
+  });
+
+  it("leaves the current session intact on a transport error", async () => {
+    vi.spyOn(globalThis, "fetch").mockRejectedValue(new TypeError("network unavailable"));
+    await expect(authenticatedFetch("/api/v1/nav/")).rejects.toThrow("network unavailable");
+    expect(getAccessToken()).toBe("token-123");
+  });
+
   it("does not change explicit sandbox sessions on 401", async () => {
     vi.stubEnv("VITE_DEMO_MODE", "sandbox");
     vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(null, { status: 401 }));
