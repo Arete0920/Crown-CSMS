@@ -29,8 +29,27 @@ def summarize(run, jobs, artifacts):
             timing_errors.append(label)
             return None
 
-    durations = [measured(j.get('started_at'), j.get('completed_at'),
-                          'job:' + str(j.get('id', j['name']))) for j in jobs]
+    durations = []
+    skipped_jobs = []
+    for job in jobs:
+        if (job.get('status') == 'completed' and job.get('conclusion') == 'skipped'
+                and job.get('steps') == []):
+            # No steps executed. These are provider lifecycle timestamps, not
+            # runner execution intervals; preserve them as separate diagnostics.
+            started, completed = job.get('started_at'), job.get('completed_at')
+            lifecycle_status = 'valid' if started and completed else 'missing'
+            try:
+                seconds(started, completed)
+            except ValueError:
+                lifecycle_status = 'invalid'
+            skipped_jobs.append({
+                'job_id': job.get('id'), 'name': job['name'],
+                'started_at': started, 'completed_at': completed,
+                'lifecycle_timing_status': lifecycle_status,
+            })
+            continue
+        durations.append(measured(job.get('started_at'), job.get('completed_at'),
+                                  'job:' + str(job.get('id', job['name']))))
     complete = all(d is not None for d in durations)
     return {
         'run_id': run['id'], 'workflow': run['name'], 'source_sha': run['head_sha'],
@@ -39,6 +58,7 @@ def summarize(run, jobs, artifacts):
         'runner_seconds': sum(d for d in durations if d is not None),
         'runner_time_complete': complete,
         'timing_errors': timing_errors,
+        'skipped_jobs': skipped_jobs,
         'artifact_bytes': sum(a.get('size_in_bytes', 0) for a in artifacts),
         'failed_jobs': [j['name'] for j in jobs if j.get('conclusion') == 'failure'],
         'url': run['html_url'],
@@ -74,6 +94,10 @@ def main():
         'runner_minutes': sum(r['runner_seconds'] for r in records) / 60,
         'runner_time_complete': all(r['runner_time_complete'] for r in records),
         'invalid_timing_runs': [r['run_id'] for r in records if r['timing_errors']],
+        'skipped_job_count': sum(len(r['skipped_jobs']) for r in records),
+        'skipped_lifecycle_anomaly_count': sum(
+            job['lifecycle_timing_status'] == 'invalid'
+            for r in records for job in r['skipped_jobs']),
         'artifact_bytes': sum(r['artifact_bytes'] for r in records),
         'extra_run_attempts': sum(max(0, r['attempt'] - 1) for r in records),
         'runs': records,
@@ -87,6 +111,9 @@ def main():
                          f"{report['unique_source_heads']} source heads; "
                          f"{report['runner_minutes']:.1f} runner minutes; "
                          f"{report['artifact_bytes'] / 1048576:.1f} MiB artifacts.\n")
+            output.write(f"{report['skipped_job_count']} completed, step-free skipped jobs "
+                         f"excluded from runner time; {report['skipped_lifecycle_anomaly_count']} "
+                         "skipped-job lifecycle timing anomalies retained as diagnostics.\n")
             if not report['runner_time_complete'] or report['invalid_timing_runs']:
                 output.write('Timing is incomplete or invalid; totals include measured intervals only.\n')
             for r in records:
@@ -99,4 +126,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
