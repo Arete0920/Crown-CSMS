@@ -19,19 +19,21 @@ CACHE = "crown-auth-cache-dev"
 ENDPOINT = "pe-crown-auth-cache-dev"
 ZONE = "privatelink.redis.azure.net"
 UUID = re.compile(r"[0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}\Z")
-CACHE_KEYS = {"CROWN_CACHE_URL", "REDIS_URL", "CELERY_BROKER_URL"}
+CACHE_KEYS = {"CROWN_CACHE_URL"}
 
 READS = (
-    ("redis", ("redis", "show", "-g", GROUP, "-n", CACHE),
-     '{state:provisioningState,public:publicNetworkAccess,tls:minimumTlsVersion,nonTls:enableNonSslPort,sku:sku.name,capacity:sku.capacity,family:sku.family,eviction:redisConfiguration."maxmemory-policy"}'),
+    ("redis", ("redisenterprise", "show", "-g", GROUP, "-n", CACHE),
+     "{state:provisioningState,public:publicNetworkAccess,tls:minimumTlsVersion,sku:sku.name,location:location}"),
+    ("redis_database", ("redisenterprise", "database", "show", "-g", GROUP, "--cluster-name", CACHE),
+     "{state:provisioningState,client:clientProtocol,clustering:clusteringPolicy,eviction:evictionPolicy,port:port}"),
     ("private_endpoint", ("network", "private-endpoint", "show", "-g", GROUP, "-n", ENDPOINT),
-     "{state:provisioningState,subnet:subnet.id,connections:privateLinkServiceConnections[].{target:privateLinkServiceId,status:privateLinkServiceConnectionState.status}}"),
+     "{state:provisioningState,subnet:subnet.id,connections:privateLinkServiceConnections[].{target:privateLinkServiceId,status:privateLinkServiceConnectionState.status,groups:groupIds}}"),
     ("dns_zone_groups", ("network", "private-endpoint", "dns-zone-group", "list", "-g", GROUP, "--endpoint-name", ENDPOINT),
      "[].{state:provisioningState,zones:privateDnsZoneConfigs[].privateDnsZoneId}"),
     ("dns_vnet_links", ("network", "private-dns", "link", "vnet", "list", "-g", GROUP, "-z", ZONE),
      "[].{state:provisioningState,vnet:virtualNetwork.id}"),
-    ("dns_a_records", ("network", "private-dns", "record-set", "a", "show", "-g", GROUP, "-z", ZONE, "-n", CACHE),
-     "length(aRecords)"),
+    ("dns_a_records", ("network", "private-dns", "record-set", "a", "list", "-g", GROUP, "-z", ZONE),
+     "[].{name:name,count:length(aRecords)}"),
     ("app_vnet", ("webapp", "vnet-integration", "list", "-g", GROUP, "-n", APP),
      "[].{subnet:subnetResourceId,vnet:vnetResourceId}"),
     ("app_setting_names", ("webapp", "config", "appsettings", "list", "-g", GROUP, "-n", APP),
@@ -73,17 +75,24 @@ def evaluate(subscription, readings):
             redis.get("state") == "Succeeded"
             and redis.get("public") == "Disabled"
             and str(redis.get("tls")) == "1.2"
-            and redis.get("nonTls") is False
-            and redis.get("sku") == "Basic"
-            and redis.get("family") == "C"
-            and redis.get("capacity") == 0
-            and str(redis.get("eviction", "")).lower() == "noeviction"
+            and redis.get("sku") == "Balanced_B0"
+            and redis.get("location") == "eastus"
+        ) else "BLOCKED"
+
+    database = readings.get("redis_database")
+    if isinstance(database, dict):
+        checks["redis_database"] = "CONSISTENT" if (
+            database.get("state") == "Succeeded"
+            and database.get("client") == "Encrypted"
+            and database.get("clustering") == "NoCluster"
+            and database.get("eviction") == "NoEviction"
+            and database.get("port") == 10000
         ) else "BLOCKED"
 
     endpoint = readings.get("private_endpoint")
     vnet = subnet_vnet(endpoint.get("subnet")) if isinstance(endpoint, dict) else None
     cache_id = (f"/subscriptions/{subscription}/resourceGroups/{GROUP}"
-                f"/providers/Microsoft.Cache/Redis/{CACHE}")
+                f"/providers/Microsoft.Cache/redisEnterprise/{CACHE}")
     if isinstance(endpoint, dict):
         links = endpoint.get("connections")
         checks["private_endpoint"] = "CONSISTENT" if (
@@ -91,7 +100,9 @@ def evaluate(subscription, readings):
             and isinstance(links, list)
             and any(isinstance(link, dict)
                     and same_id(link.get("target"), cache_id)
-                    and link.get("status") == "Approved" for link in links)
+                    and link.get("status") == "Approved"
+                    and isinstance(link.get("groups"), list)
+                    and "redisEnterprise" in link["groups"] for link in links)
         ) else "BLOCKED"
 
     zone_id = (f"/subscriptions/{subscription}/resourceGroups/{GROUP}"
@@ -113,8 +124,14 @@ def evaluate(subscription, readings):
         ) else "BLOCKED"
 
     records = readings.get("dns_a_records")
-    if isinstance(records, int) and not isinstance(records, bool):
-        checks["dns_a_records"] = "CONSISTENT" if records > 0 else "BLOCKED"
+    if isinstance(records, list):
+        checks["dns_a_records"] = "CONSISTENT" if any(
+            isinstance(record, dict)
+            and record.get("name") == f"{CACHE}.eastus"
+            and isinstance(record.get("count"), int)
+            and not isinstance(record.get("count"), bool)
+            and record["count"] > 0 for record in records
+        ) else "BLOCKED"
 
     app_links = readings.get("app_vnet")
     if isinstance(app_links, list):

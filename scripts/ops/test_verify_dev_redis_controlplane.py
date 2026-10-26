@@ -9,16 +9,17 @@ probe = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(probe)
 SUB = "11111111-2222-3333-4444-555555555555"
 VNET = f"/subscriptions/{SUB}/resourceGroups/crown-rg/providers/Microsoft.Network/virtualNetworks/dev-vnet"
-CACHE = f"/subscriptions/{SUB}/resourceGroups/crown-rg/providers/Microsoft.Cache/Redis/crown-auth-cache-dev"
+CACHE = f"/subscriptions/{SUB}/resourceGroups/crown-rg/providers/Microsoft.Cache/redisEnterprise/crown-auth-cache-dev"
 ZONE = f"/subscriptions/{SUB}/resourceGroups/crown-rg/providers/Microsoft.Network/privateDnsZones/privatelink.redis.azure.net"
 
 def sample():
     return {
-        "redis": dict(state="Succeeded", public="Disabled", tls="1.2", nonTls=False, sku="Basic", family="C", capacity=0, eviction="noeviction"),
-        "private_endpoint": dict(state="Succeeded", subnet=VNET + "/subnets/private", connections=[dict(target=CACHE, status="Approved")]),
+        "redis": dict(state="Succeeded", public="Disabled", tls="1.2", sku="Balanced_B0", location="eastus"),
+        "redis_database": dict(state="Succeeded", client="Encrypted", clustering="NoCluster", eviction="NoEviction", port=10000),
+        "private_endpoint": dict(state="Succeeded", subnet=VNET + "/subnets/private", connections=[dict(target=CACHE, status="Approved", groups=["redisEnterprise"])]),
         "dns_zone_groups": [dict(state="Succeeded", zones=[ZONE])],
         "dns_vnet_links": [dict(state="Succeeded", vnet=VNET)],
-        "dns_a_records": 1,
+        "dns_a_records": [dict(name="crown-auth-cache-dev.eastus", count=1)],
         "app_vnet": [dict(subnet=VNET + "/subnets/app", vnet=VNET)],
         "app_setting_names": ["CROWN_CACHE_URL"],
     }
@@ -33,14 +34,30 @@ class RedisReadOnlyTests(unittest.TestCase):
     def test_unsafe_and_missing_metadata_block(self):
         for name, replacement in [
             ("redis", dict(sample()["redis"], public="Enabled")),
+            ("redis", dict(sample()["redis"], sku="Basic")),
+            ("redis_database", dict(sample()["redis_database"], client="Plaintext")),
+            ("redis_database", dict(sample()["redis_database"], eviction="AllKeysLRU")),
+            ("redis_database", dict(sample()["redis_database"], port=6380)),
             ("private_endpoint", dict(state="Succeeded", subnet=VNET+"/subnets/private", connections=[])),
-            ("dns_zone_groups", []), ("dns_vnet_links", []), ("dns_a_records", 0),
+            ("dns_zone_groups", []), ("dns_vnet_links", []), ("dns_a_records", []),
+            ("dns_a_records", [dict(name="crown-auth-cache-dev", count=1)]),
             ("app_vnet", []), ("app_setting_names", []),
         ]:
             with self.subTest(name=name):
                 values = sample()
                 values[name] = replacement
                 self.assertEqual(probe.evaluate(SUB, values)["control_plane_metadata"], "BLOCKED")
+
+    def test_managed_redis_cli_resource_and_private_link_contract(self):
+        commands = {name: cmd for name, cmd, _ in probe.READS}
+        self.assertEqual(commands["redis"][:2], ("redisenterprise", "show"))
+        self.assertEqual(commands["redis_database"][:3], ("redisenterprise", "database", "show"))
+        self.assertEqual(commands["dns_a_records"][4], "list")
+        report = probe.evaluate(SUB, sample())
+        self.assertEqual(report["checks"]["redis_database"], "CONSISTENT")
+        mismatch = sample()
+        mismatch["private_endpoint"]["connections"][0]["target"] = CACHE.replace("redisEnterprise", "Redis")
+        self.assertEqual(probe.evaluate(SUB, mismatch)["checks"]["private_endpoint"], "BLOCKED")
 
     def test_unavailable_reads_block(self):
         for name, _, _ in probe.READS:
@@ -71,7 +88,7 @@ class RedisReadOnlyTests(unittest.TestCase):
 
     def test_cli_fail_closed_does_not_expose_error(self):
         bad = lambda *args, **kwargs: Mock(returncode=1, stdout="private", stderr="secret")
-        self.assertIsNone(probe.azure_read(("redis", "show"), "sku.name", subscription=SUB, runner=bad))
+        self.assertIsNone(probe.azure_read(("redisenterprise", "show"), "sku.name", subscription=SUB, runner=bad))
 
     def test_workflow_wires_offline_tests_and_restricted_oidc_inventory(self):
         workflow = (Path(__file__).resolve().parents[2]
