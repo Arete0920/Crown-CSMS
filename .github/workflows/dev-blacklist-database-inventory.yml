@@ -38,6 +38,21 @@ on:
         required: false
         type: boolean
         default: false
+      apply_reviewed_blacklist:
+        description: "Explicit DEV-only SimpleJWT schema stage; does not activate runtime"
+        required: false
+        type: boolean
+        default: false
+      confirm_dev_blacklist:
+        description: "Type migrate-dev-blacklist for the DEV-only schema stage"
+        required: false
+        type: string
+        default: ""
+      dev_recovery_receipt:
+        description: "Operator-verified current DEV backup/restore receipt URL; no secrets"
+        required: false
+        type: string
+        default: ""
 permissions:
   contents: read
 concurrency:
@@ -64,8 +79,9 @@ jobs:
           python -m unittest discover -s scripts/ops -p test_reviewed_dev_support_migrations.py -v
           python -m unittest discover -s scripts/ops -p test_run_dev_inquiry_migration.py -v
           python -m unittest discover -s scripts/ops -p test_reviewed_legacy_refresh_migrations.py -v
+          python -m unittest discover -s scripts/ops -p test_dev_blacklist_workflow_stage.py -v
   inspect:
-    if: github.ref == 'refs/heads/main' && inputs.apply_reviewed_support != true && inputs.apply_reviewed_legacy_refresh != true
+    if: github.ref == 'refs/heads/main' && inputs.apply_reviewed_support != true && inputs.apply_reviewed_legacy_refresh != true && inputs.apply_reviewed_blacklist != true
     runs-on: ubuntu-latest
     environment: dev
     timeout-minutes: 15
@@ -143,7 +159,7 @@ jobs:
         run: az logout
 
   stage-reviewed-dev-migrations:
-    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && (inputs.apply_reviewed_support == true || inputs.apply_reviewed_legacy_refresh == true)
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && (inputs.apply_reviewed_support == true || inputs.apply_reviewed_legacy_refresh == true || inputs.apply_reviewed_blacklist == true)
     runs-on: ubuntu-latest
     environment: dev
     timeout-minutes: 20
@@ -160,19 +176,37 @@ jobs:
           CONFIRM_SUPPORT: ${{ inputs.confirm_dev_support }}
           CONFIRM_LEGACY: ${{ inputs.confirm_dev_legacy_refresh }}
           INSPECT_PLAN: ${{ inputs.inspect_migration_plan }}
+          BLACKLIST_MODE: ${{ inputs.apply_reviewed_blacklist }}
+          CONFIRM_BLACKLIST: ${{ inputs.confirm_dev_blacklist }}
+          RECOVERY_RECEIPT: ${{ inputs.dev_recovery_receipt }}
         run: |
           set -euo pipefail
           [[ "$EXPECTED_SHA" =~ ^[0-9a-f]{40}$ ]]
           test "$INSPECT_PLAN" != true
-          if [[ "$SUPPORT_MODE" == "true" && "$LEGACY_MODE" != "true" ]]; then
+          # Fail closed before Azure login: exactly one stage and only its confirmation.
+          selected=0
+          for flag in "$SUPPORT_MODE" "$LEGACY_MODE" "$BLACKLIST_MODE"; do
+            if [[ "$flag" == "true" ]]; then selected=$((selected + 1)); fi
+          done
+          test "$selected" -eq 1 || { echo 'BLOCKED: choose exactly one reviewed DEV migration stage' >&2; exit 1; }
+          if [[ "$SUPPORT_MODE" == "true" ]]; then
             test "$CONFIRM_SUPPORT" = migrate-dev-support
             test -z "$CONFIRM_LEGACY"
-          elif [[ "$LEGACY_MODE" == "true" && "$SUPPORT_MODE" != "true" ]]; then
+            test -z "$CONFIRM_BLACKLIST"
+            test -z "$RECOVERY_RECEIPT"
+          elif [[ "$LEGACY_MODE" == "true" ]]; then
             test "$CONFIRM_LEGACY" = migrate-dev-legacy-refresh
             test -z "$CONFIRM_SUPPORT"
-          else
-            echo 'BLOCKED: choose exactly one reviewed DEV migration stage' >&2
-            exit 1
+            test -z "$CONFIRM_BLACKLIST"
+            test -z "$RECOVERY_RECEIPT"
+          elif [[ "$BLACKLIST_MODE" == "true" ]]; then
+            test "$CONFIRM_BLACKLIST" = migrate-dev-blacklist
+            test -z "$CONFIRM_SUPPORT"
+            test -z "$CONFIRM_LEGACY"
+            # URI syntax is not proof of a current tested recovery point.
+            [[ "$RECOVERY_RECEIPT" =~ ^https://github[.]com/Arete0920/Crown-CSMS/actions/runs/[0-9]+$ ]] || {
+              echo 'BLOCKED: current DEV recovery evidence reference is required' >&2; exit 1;
+            }
           fi
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -197,6 +231,7 @@ jobs:
           python -m unittest discover -s scripts/ops -p test_reviewed_dev_support_migrations.py -v
           python -m unittest discover -s scripts/ops -p test_reviewed_legacy_refresh_migrations.py -v
           python -m unittest discover -s scripts/ops -p test_run_dev_inquiry_migration.py -v
+          python -m unittest discover -s scripts/ops -p test_dev_blacklist_workflow_stage.py -v
       - name: Install reviewed backend dependencies
         run: python -m pip install -r backend/requirements.txt
       - name: Authenticate existing DEV only
@@ -210,9 +245,15 @@ jobs:
         env:
           EXPECTED_SHA: ${{ inputs.expected_sha }}
           SUPPORT_MODE: ${{ inputs.apply_reviewed_support }}
+          BLACKLIST_MODE: ${{ inputs.apply_reviewed_blacklist }}
         run: |
           set -euo pipefail
-          if [[ "$SUPPORT_MODE" == "true" ]]; then
+          if [[ "$BLACKLIST_MODE" == "true" ]]; then
+            python scripts/ops/run_dev_inquiry_migration.py \
+              --expected-sha "$EXPECTED_SHA" \
+              --apply-reviewed-blacklist \
+              --confirm-dev-blacklist migrate-dev-blacklist
+          elif [[ "$SUPPORT_MODE" == "true" ]]; then
             python scripts/ops/run_dev_inquiry_migration.py \
               --expected-sha "$EXPECTED_SHA" \
               --apply-reviewed-support \
@@ -229,8 +270,9 @@ jobs:
           {
             echo '## DEV explicitly reviewed schema stage'
             echo 'Target: crown-api-dev only, approved exact main SHA'
-            echo 'Select exactly one: support 0002+0003 OR CRM 0002+legacy refresh 0014'
-            echo 'No SimpleJWT blacklist activation or unrelated migrations authorized'
+            echo 'Select exactly one: support 0002+0003, CRM 0002+legacy refresh 0014, OR vendor-reviewed SimpleJWT blacklist migrations'
+            echo 'Blacklist mode requires typed confirmation and current DEV recovery receipt reference'
+            echo 'Schema only: does not enable SimpleJWT, deploy code or authorize unrelated migrations'
             echo 'Live application image unchanged; DEV runtime NOT CERTIFIED'
             echo 'A passing job is not backup/restore or production authorization'
           } >> "$GITHUB_STEP_SUMMARY"
