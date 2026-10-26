@@ -67,6 +67,9 @@ class OwnerRuntimePrecheckTests(unittest.TestCase):
         self.assertEqual(result["overall_release_certification"], "NOT_VERIFIED")
         self.assertEqual(result["owner_console_authenticated_acceptance"], "NOT_TESTED")
         self.assertEqual(result["school_provisioning_execution"], "NOT_TESTED")
+        self.assertEqual(result["observed_build_shas"], {
+            "backend": SHA, "backend_artifact": SHA, "dev_preview": SHA,
+        })
         self.assertEqual(len(client.calls), 5)
         for url, method, headers, timeout in client.calls:
             self.assertIn(method, ("GET", "OPTIONS"))
@@ -82,7 +85,24 @@ class OwnerRuntimePrecheckTests(unittest.TestCase):
         result = runtime.probe(SHA, opener=client)
         self.assertEqual(result["precheck"], "BLOCKED")
         self.assertEqual(result["checks"]["backend_build_sha"], "MISMATCH")
+        self.assertEqual(result["observed_build_shas"]["backend"], "b" * 40)
         self.assertNotIn("DO_NOT_LOG", json.dumps(result))
+
+    def test_invalid_identity_fields_are_withheld_from_public_receipt(self):
+        for value in (None, 7, {"private": "DO_NOT_LOG"}, "DO_NOT_LOG", "A" * 40,
+                      "a" * 39, "a" * 40 + "\n"):
+            with self.subTest(value=value):
+                client = safe_opener(
+                    health={"ok": True, "db": "ok", "env": "dev", "build_sha": value,
+                            "artifact_build_sha": value},
+                    frontend={"build_sha": value},
+                )
+                result = runtime.probe(SHA, opener=client)
+                self.assertEqual(result["observed_build_shas"], {
+                    "backend": None, "backend_artifact": None, "dev_preview": None,
+                })
+                self.assertEqual(result["precheck"], "BLOCKED")
+                self.assertNotIn("DO_NOT_LOG", json.dumps(result))
 
     def test_no_owner_authority_is_exposed_anonymously(self):
         client = safe_opener()

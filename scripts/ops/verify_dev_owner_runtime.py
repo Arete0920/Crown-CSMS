@@ -66,6 +66,11 @@ def _identity(value, expected_sha: str) -> str:
     return "UNAVAILABLE"
 
 
+def _public_sha(value):
+    """Retain only syntactically valid public commit identifiers, never raw fields."""
+    return value if isinstance(value, str) and FULL_SHA.fullmatch(value) else None
+
+
 def probe(expected_sha: str, *, opener=None) -> dict:
     """Evaluate public preconditions only. A pass never proves operator access."""
     if not FULL_SHA.fullmatch(expected_sha):
@@ -138,6 +143,11 @@ def probe(expected_sha: str, *, opener=None) -> dict:
     return {
         "captured_at_utc": datetime.now(timezone.utc).isoformat(),
         "expected_main_sha": expected_sha,
+        "observed_build_shas": {
+            "backend": _public_sha(health.get("build_sha")),
+            "backend_artifact": _public_sha(health.get("artifact_build_sha")),
+            "dev_preview": _public_sha(frontend.get("build_sha")),
+        },
         "api_health_http_status": health_status,
         "dev_preview_build_http_status": frontend_status,
         "checks": checks,
