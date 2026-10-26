@@ -103,7 +103,7 @@ def main():
                     output.write(f"- [{r['workflow']}]({r['url']}): {', '.join(r['failed_jobs'])}\n")
                 if r['invalid_job_timing'] or r['invalid_queue_timing']:
                     output.write(f"- [{r['workflow']}]({r['url']}): inconsistent provider timestamps; "
-                                 "runner accounting incomplete.\n")
+                                 "timing accounting incomplete.\n")
     print('Wrote bounded read-only CI metrics to ci-metrics.json')
 
 
