@@ -4,8 +4,8 @@
   "python": "3.12",
   "compiler": "pip-tools==7.6.2",
   "source": "backend/requirements.txt",
-  "source_sha256": "a6f8eb4d12ef5601ebc7b6468bdabfc76933b45469125b61568b309437a9d516",
+  "source_sha256": "2e52765ddc3500e8226e4172418d2899d77f97ad7668e4d4572af04fd4322a3e",
   "lock": "tools/ci/requirements-linux-py312.lock",
-  "lock_sha256": "5c0ee91c44f95647377d155e5620581db8dc824604d19c9b1ecfd53358036212",
+  "lock_sha256": "8e92beeae2ed3469a462bf672fa16ec141c7d96ea5bf91892305d26a99c8f4a0",
   "command": "python -m piptools compile --generate-hashes --no-emit-index-url --no-emit-trusted-host --no-header --no-annotate --output-file tools/ci/requirements-linux-py312.lock backend/requirements.txt"
 }
