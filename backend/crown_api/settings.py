@@ -609,6 +609,12 @@ if _CROWN_CACHE_URL:
         }
     }
 
+# A process-local cache cannot provide a shared authentication throttle across
+# hosted workers. Fail closed until a shared Redis backend is configured.
+CROWN_AUTH_RATE_LIMIT_REQUIRE_SHARED_CACHE = (
+    _CROWN_HARDENED_RUNTIME or _CROWN_HOSTED_RUNTIME
+)
+
 
 # ---------------------------------------------------------------------------
 # Celery (background tasks / outbox drain)
