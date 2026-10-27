@@ -29,10 +29,12 @@ def test_072_idempotency_tests_for_payment_and_invoice_writes_exist():
     assert "idempotency" in invoice_tests.lower()
 
 
-def test_073_immutable_audit_trail_tests_for_financial_mutations_exist():
+def test_073_request_audit_and_immutable_ledger_tests_exist():
+    # Request-level audit records are not proof of database immutability.
     audit_contract = _read("backend/crown_api/tests/test_audit_log_contract.py")
-    assert "immutable audit trail" in audit_contract.lower()
+    assert "request-level audit records" in audit_contract.lower()
 
+    # Ledger immutability is a distinct control with its own regression tests.
     ledger_immutability = _read("backend/ledger/tests/test_ledger_immutability.py")
     assert "immutable" in ledger_immutability.lower()
 
