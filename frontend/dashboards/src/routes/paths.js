@@ -42,6 +42,7 @@ export const PATHS = {
   ATHLETICS: '/athletics',
 
   REPORTING: '/integrity',
+  SURVEY_DRAFTS: '/survey-intelligence/drafts',
   STAFF: '/staff-setup',
   SETTINGS: '/settings',
   PROFILE: '/profile',

@@ -128,7 +128,10 @@ def survey_drafts(request):
             SurveyDefinition.objects.filter(school=school)
             .prefetch_related("questions")[:100]
         )
-        return JsonResponse({"results": [_serialize(survey) for survey in surveys]})
+        return JsonResponse({
+            "results": [_serialize(survey) for survey in surveys],
+            "can_create": user_has_permission(request.user, "survey.edit", school=school),
+        })
 
     validated, errors = _validated_draft_payload(request)
     if errors:

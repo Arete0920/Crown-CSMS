@@ -29,6 +29,8 @@ NAV_ITEMS: List[NavItem] = [
     NavItem(group="Operations", label="Facilities",        href="/facilities",      permission="facilities.view"),
     NavItem(group="Operations", label="Transportation",    href="/transportation",  permission="transportation.view"),
 
+    NavItem(group="Operations", label="Survey Drafts", href="/survey-intelligence/drafts", permission="survey.view"),
+
     # ── Enrollment & Revenue ────────────────────────────────────────────────
     NavItem(group="Enrollment & Revenue", label="Admissions",      href="/admissions",    permission="admissions.view"),
     NavItem(group="Enrollment & Revenue", label="Financial Aid",   href="/financial-aid", permission="financial_aid.view"),
