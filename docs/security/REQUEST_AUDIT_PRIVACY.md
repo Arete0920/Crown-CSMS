@@ -1,7 +1,8 @@
 # Automatic request audit privacy
 
 Scope: `audit.AuditLog` records written by `AuditMiddleware` and the early
-director-action denial path. This application control does not configure
+director-action denial path, plus route labels in the application-owned
+`crown.request` structured logs and `crown.performance` slow-request warnings. This application control does not configure
 infrastructure, telemetry providers, access logs, deployment or legal compliance.
 
 ## Stored request evidence
@@ -24,7 +25,12 @@ Domain-specific audit events remain responsible for object identifiers, school
 attribution, permission decisions and sensitive-access history. A route template
 is not proof that a particular business change succeeded, and this change does
 not make the audit table immutable or provide cross-school read authorization.
-Other domain audit helpers and web-server/access logs have separate contracts.
+The same safe route label is used by the application-owned general request and
+slow-request loggers after downstream URL resolution. Unresolved or early
+responses use the fixed marker. Response content, status, correlation-ID behavior,
+timing headers and slow-request thresholds are preserved. This does not sanitize
+caller-supplied correlation identifiers or configure framework, proxy, access,
+APM or other domain logs; those retain separate contracts and require review.
 
 ## Persistence failures
 

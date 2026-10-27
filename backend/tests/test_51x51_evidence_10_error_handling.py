@@ -17,6 +17,7 @@ SHA evidence: tied to current main — see commit history for module-010 wiring 
 import json
 import logging
 import uuid
+from types import SimpleNamespace
 
 from django.test import TestCase, RequestFactory
 
@@ -33,6 +34,7 @@ class TestModule010MiddlewareUnit(TestCase):
         """Return a middleware instance wired to a no-op get_response."""
         def get_response(request):
             from django.http import HttpResponse
+            request.resolver_match = SimpleNamespace(route="api/v1/test/")
             return HttpResponse("ok", status=200)
 
         mw = RequestCorrelationMiddleware(get_response)

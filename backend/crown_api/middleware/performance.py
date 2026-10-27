@@ -1,6 +1,8 @@
 import logging
 import time
 
+from audit.request_logging import request_audit_route
+
 logger = logging.getLogger("crown.performance")
 
 # Requests slower than this threshold are logged at WARNING level.
@@ -34,7 +36,7 @@ class PerformanceMiddleware:
         if duration_s > _SLOW_REQUEST_THRESHOLD_S:
             logger.warning(
                 "SLOW_REQUEST path=%s method=%s status=%s duration_ms=%.0f",
-                request.path,
+                request_audit_route(request),
                 request.method,
                 getattr(response, "status_code", "?"),
                 duration_ms,
