@@ -265,12 +265,13 @@ def _build_admissions_continuity_payload(
         school_id=school_id,
         household_ids=[app.household_id for app in apps if getattr(app, "household_id", None)],
     )
-    latest_contract_by_app = {
-        row.application_id: row
-        for row in enrollment_contract_model.objects.filter(school_id=school_id, application_id__in=app_ids).order_by(
-            "application_id", "-version", "-created_at"
-        )
-    }
+    latest_contract_by_app: dict[Any, Any] = {}
+    contracts = enrollment_contract_model.objects.filter(
+        school_id=school_id, application_id__in=app_ids
+    ).order_by("application_id", "-version", "-created_at")
+    for contract in contracts:
+        # The queryset is newest first; older versions must not replace it.
+        latest_contract_by_app.setdefault(contract.application_id, contract)
     applicants_by_app: dict[Any, dict[str, Any]] = {
         row["application_id"]: row["flags"] or {}
         for row in applicant_model.objects.filter(school_id=school_id, application_id__in=app_ids)
