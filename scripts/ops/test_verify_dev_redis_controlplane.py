@@ -34,6 +34,13 @@ class RedisReadOnlyTests(unittest.TestCase):
         self.assertEqual(report["release_certification"], "NOT_VERIFIED")
         self.assertEqual(report["hosted_redis_connectivity"], "NOT_TESTED")
 
+    def test_azure_cli_display_location_is_accepted(self):
+        values = sample()
+        values["redis"]["location"] = "East US"
+        self.assertEqual(probe.evaluate(SUB, values)["checks"]["redis"], "CONSISTENT")
+        values["redis"]["location"] = "West US"
+        self.assertEqual(probe.evaluate(SUB, values)["checks"]["redis"], "BLOCKED")
+
     def test_unsafe_and_missing_metadata_block(self):
         for name, replacement in [
             ("redis", dict(sample()["redis"], public="Enabled")),
