@@ -17,12 +17,13 @@ const BTN = { fontSize: '0.875rem', padding: '5px 15px', cursor: 'pointer', bord
 const BTN_FILLED = { ...BTN, background: 'var(--crown-compat-color-cb69c739b8)', color: 'var(--crown-compat-color-e08de71387)' };
 const ROW = { display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' };
 const LABEL = { margin: 0, fontSize: '0.875rem' };
-const ADMISSIONS_PIPELINE_ALLOWED_ROLES = [
+export const ADMISSIONS_PIPELINE_ALLOWED_ROLES = [
   'super_admin',
   'school_admin',
   'head_of_school',
   'admissions_manager',
   'admissions_director',
+  'registrar',
   'admin',
   'director',
   'principal',
