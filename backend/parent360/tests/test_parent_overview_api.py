@@ -391,4 +391,3 @@ def test_parent_overview_returns_latest_contract_per_application_with_household_
             contract.contract_totals["net_family_obligation_cents"]
         )
     assert rows[str(applications[2].id)]["contract_detail"] is None
-
