@@ -38,6 +38,7 @@ import LoginPage from "../pages/LoginPage.jsx";
 import LogoutPage from "../pages/LogoutPage.jsx";
 import SandboxLandingPage from "../pages/SandboxLandingPage.jsx";
 import IntegrityDashboard from "../pages/IntegrityDashboard.jsx";
+import SurveyDraftsPage from "../pages/SurveyDraftsPage.jsx";
 import AdminDashboard from "../pages/AdminDashboard.jsx";
 import PlatformOwnerConsole from "../pages/PlatformOwnerConsole.jsx";
 import SchoolAdministratorDashboard from "../pages/SchoolAdministratorDashboard.jsx";
@@ -218,6 +219,10 @@ export const router = createBrowserRouter([
   {
     path: PATHS.ADMISSIONS_INQUIRIES,
     element: <AuthenticatedSchoolRouteGuard><AdmissionsInquiryQueue /></AuthenticatedSchoolRouteGuard>,
+  },
+  {
+    path: PATHS.SURVEY_DRAFTS,
+    element: <AuthenticatedSchoolRouteGuard><SurveyDraftsPage /></AuthenticatedSchoolRouteGuard>,
   },
   {
     path: PATHS.ADMISSIONS_START,

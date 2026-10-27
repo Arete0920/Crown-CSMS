@@ -2,6 +2,7 @@
 import json
 
 import pytest
+from django.test import override_settings
 
 from core.models import CrownPermission, RolePermission, School, UserAccount, UserRole
 from survey_sentiment.models import SurveyDefinition, SurveyQuestion
@@ -51,6 +52,7 @@ def test_authorized_admin_can_create_and_read_scoped_draft(school_client):
     assert not survey.public_enabled and not survey.anonymous_allowed
     listed = client.get("/api/v1/survey-intelligence/surveys/", HTTP_X_SCHOOL_ID=str(school.pk))
     assert listed.status_code == 200
+    assert listed.json()["can_create"] is True
     assert len(listed.json()["results"]) == 1
     read = client.get(f"/api/v1/survey-intelligence/surveys/{survey.pk}/", HTTP_X_SCHOOL_ID=str(school.pk))
     assert read.status_code == 200
@@ -99,6 +101,28 @@ def test_bearer_editor_can_create_list_and_read_an_inactive_draft(school_client)
     detail = authenticated.get(f"/api/v1/survey-intelligence/surveys/{survey.pk}/", HTTP_X_SCHOOL_ID=str(school.pk))
     assert detail.status_code == 200, detail.content
     assert detail.json()["id"] == str(survey.pk)
+
+
+def test_list_creation_capability_uses_current_school_permission(school_client):
+    client, school, _ = school_client
+    RolePermission.objects.filter(role_code="survey_draft_editor_test", permission__code="survey.edit").delete()
+    listed = client.get("/api/v1/survey-intelligence/surveys/", HTTP_X_SCHOOL_ID=str(school.pk))
+    assert listed.status_code == 200
+    assert listed.json()["can_create"] is False
+    assert request(client, school, payload()).status_code == 403
+
+
+@override_settings(TENANT_HEADER_REQUIRED=True)
+def test_survey_navigation_is_permission_filtered(school_client):
+    client, school, _ = school_client
+    nav = client.get("/api/v1/nav/", HTTP_X_SCHOOL_ID=str(school.pk))
+    assert nav.status_code == 200
+    hrefs = [item["href"] for group in nav.json()["groups"] for item in group["items"]]
+    assert "/survey-intelligence/drafts" in hrefs
+    RolePermission.objects.filter(role_code="survey_draft_editor_test", permission__code="survey.view").delete()
+    nav = client.get("/api/v1/nav/", HTTP_X_SCHOOL_ID=str(school.pk))
+    hrefs = [item["href"] for group in nav.json()["groups"] for item in group["items"]]
+    assert "/survey-intelligence/drafts" not in hrefs
 
 
 def test_bearer_authority_stays_school_and_action_scoped(school_client):
