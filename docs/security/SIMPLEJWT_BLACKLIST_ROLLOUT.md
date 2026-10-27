@@ -72,6 +72,47 @@ previous accepted revision until schema application and independent testing
 are complete. The ordinary `deploy-dev.yml` migration allowlist remains
 unchanged; a failed or incomplete separate schema stage must not be bypassed.
 
+## Existing GitHub Actions DEV-only schema execution path
+
+The **existing** `.github/workflows/dev-blacklist-database-inventory.yml` can now
+expose a separately confirmed, operator-dispatched reviewed blacklist schema
+stage. This is a safer authenticated alternative to pasting database credentials
+or repeatedly running migration commands from a local shell. No new workflow,
+automatic database write, runtime setting change, application deployment or
+production migration is introduced.
+
+**Prerequisites before any dispatch:** (1) accepted exact `main` SHA;
+(2) documented currently recoverable DEV backup and independently rehearsed
+restore evidence for the target database; (3) validated installed SimpleJWT
+version and vendor migration graph; (4) approval by the DEV operator to perform
+a controlled migration at that exact source. The October 25 isolated restore
+drill alone does not establish a current target backup; a GitHub URL is a
+reference, not proof that these prerequisites were met.
+
+From GitHub Actions on protected `main`, select the existing *DEV Blacklist
+Database Inventory (read-only)* workflow, and request only:
+- `expected_sha`: current complete protected-main commit SHA;
+- `apply_reviewed_blacklist`: true (leave support and legacy flags false);
+- `confirm_dev_blacklist`: `migrate-dev-blacklist`;
+- `dev_recovery_receipt`: the current DEV recovery evidence URL in this repository,
+  without secret data; **INDEPENDENT_REVIEW_REQUIRED** before dispatch;
+- `inspect_migration_plan`: false.
+
+The job checks that exactly one schema mode is selected and that the correct
+typed confirmation and recovery-reference form are present **before Azure
+login**. It then requires the checked-out source to be the unchanged protected
+main SHA, validates source/vendor and tenant/database guards in the existing
+runner, uses PostgreSQL locking, applies only the reviewed contiguous
+SimpleJWT blacklist migration suffix, and verifies the resulting schema.
+This is a bounded schema mutation, not a read-only job. A syntactically valid
+recovery URL must never be treated as independent proof of recoverability.
+Preserve the sanitized Actions result, read back the actual schema, and test
+real PostgreSQL concurrent token replay before changing any hosted settings.
+
+**Do not set `CROWN_SIMPLEJWT_BLACKLIST_ENABLED=true` in DEV until all post-stage
+requirements pass.** Do not enable production as a consequence of this DEV
+job. The ordinary non-stage inventory remains read-only.
+
 ## Safe two-stage application activation
 
 The new `CROWN_SIMPLEJWT_BLACKLIST_ENABLED` application setting defaults to
