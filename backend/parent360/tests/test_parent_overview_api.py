@@ -322,3 +322,72 @@ def test_admissions_continuity_degrades_when_applications_optional_imports_fail(
         "contract_complete": 0,
         "deposit_complete": 0,
     }
+
+
+@pytest.mark.parametrize("url", [PARENT360_V1_URL, PARENT360_URL])
+def test_parent_overview_returns_latest_contract_per_application_with_household_scope(url):
+    from applications.models import Application, EnrollmentContract
+
+    school = School.objects.create(name="Parent Contract Version School")
+    client, user = _make_parent_client(school=school)
+    household, _ = _make_household_bundle(school, account=user)
+    applications = [
+        Application.objects.create(school_id=school.id, household=household)
+        for _ in range(3)
+    ]
+
+    latest_contracts = {}
+    for application, latest_version, amount in (
+        (applications[0], 3, 123400),
+        (applications[1], 2, 567800),
+    ):
+        # Create older versions afterward so version outranks creation time.
+        latest_contracts[str(application.id)] = EnrollmentContract.objects.create(
+            school_id=school.id,
+            application=application,
+            version=latest_version,
+            status="issued",
+            contract_totals={"net_family_obligation_cents": amount},
+        )
+        for version in range(1, latest_version):
+            EnrollmentContract.objects.create(
+                school_id=school.id,
+                application=application,
+                version=version,
+                status="superseded",
+                contract_totals={"net_family_obligation_cents": 999900},
+            )
+
+    other_school = School.objects.create(name="Foreign Contract School")
+    for excluded_school in (school, other_school):
+        excluded_household, _ = _make_household_bundle(
+            excluded_school,
+            email="excluded-parent@example.com",
+            household_name="Excluded Contract Household",
+        )
+        excluded_application = Application.objects.create(
+            school_id=excluded_school.id, household=excluded_household
+        )
+        EnrollmentContract.objects.create(
+            school_id=excluded_school.id,
+            application=excluded_application,
+            version=99,
+            contract_totals={"net_family_obligation_cents": 888800},
+        )
+
+    response = client.get(url)
+
+    assert response.status_code == 200, response.content
+    continuity = response.json()["admissions_continuity"]
+    rows = {row["application_id"]: row for row in continuity["applications"]}
+    assert set(rows) == {str(application.id) for application in applications}
+    assert continuity["summary"]["total"] == 3
+    for application_id, contract in latest_contracts.items():
+        detail = rows[application_id]["contract_detail"]
+        assert detail["contract_id"] == str(contract.id)
+        assert detail["version"] == contract.version
+        assert detail["status"] == "issued"
+        assert detail["totals"]["net_family_obligation_cents"] == (
+            contract.contract_totals["net_family_obligation_cents"]
+        )
+    assert rows[str(applications[2].id)]["contract_detail"] is None
