@@ -2,6 +2,7 @@ import contextlib
 import importlib.util
 import io
 import json
+import re
 from pathlib import Path
 import unittest
 from unittest.mock import patch
@@ -197,13 +198,34 @@ class CredentialProbeTests(unittest.TestCase):
         self.assertEqual(failure.exception.code, 2)
         self.assertNotIn(OLD, output.getvalue())
 
-    def test_ci_runs_contract_only_without_real_operator_credentials(self):
-        workflow = (Path(__file__).resolve().parents[2] /
-                    ".github/workflows/azure-classroom-preflight.yml").read_text()
-        collector = workflow.split("  collector-tests:", 1)[1].split("  jireh-free-staging-once:", 1)[0]
+    def assert_offline_collector(self, workflow):
+        remaining = re.split(r"(?m)^  collector-tests:[ \t]*$", workflow, maxsplit=1)[1]
+        collector = re.split(r"(?m)^  [A-Za-z_][A-Za-z0-9_-]*:", remaining, maxsplit=1)[0]
         self.assertIn("-p test_verify_dev_ops_credential_retirement.py", collector)
         self.assertNotIn("secrets.", collector)
         self.assertNotIn("--expected-runtime-sha", collector)
+
+    def test_ci_runs_contract_only_without_real_operator_credentials(self):
+        workflow = (Path(__file__).resolve().parents[2] /
+                    ".github/workflows/azure-classroom-preflight.yml").read_text()
+        self.assert_offline_collector(workflow)
+
+    def test_adjacent_privileged_job_is_excluded_but_collector_violations_still_fail(self):
+        workflow = (
+            "jobs:\n  collector-tests:\n    steps:\n"
+            "      - run: python -m unittest -p test_verify_dev_ops_credential_retirement.py\n"
+            "  dev-redis-controlplane-precheck:\n    env:\n"
+            "      CLIENT_ID: ${{ secrets.SYNTHETIC_CLIENT_ID }}\n"
+            "  jireh-free-staging-once:\n    steps: []\n"
+        )
+        self.assert_offline_collector(workflow)
+        for unsafe in (
+            "    env:\n      OPS: ${{ secrets.SYNTHETIC_OPS_SECRET }}\n",
+            "    steps:\n      - run: python probe.py --expected-runtime-sha synthetic\n",
+        ):
+            with self.subTest(unsafe=unsafe), self.assertRaises(AssertionError):
+                self.assert_offline_collector(workflow.replace(
+                    "  dev-redis-controlplane-precheck:", unsafe + "  dev-redis-controlplane-precheck:"))
 
 
 if __name__ == "__main__":
