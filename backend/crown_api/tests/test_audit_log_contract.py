@@ -8,20 +8,21 @@ Contract under test (audit/middleware.py + audit/models.py):
   After any POST/PUT/PATCH/DELETE request, an AuditLog row MUST exist with:
     - user_id:   matches the authenticated user's primary key
     - action:    the HTTP method ("POST", "PATCH", etc.)
-    - model:     the request path (e.g. "/api/v1/billing/installment-plans/")
+    - model:     the registered route template (static paths stay unchanged)
     - metadata:  JSON containing "status_code" from the response
 
 Fields the model currently has:
     id, user_id, action, model (path), object_id, metadata (JSON), created_at
 
 What this proves:
-  1. Writes leave an immutable audit trail.
+  1. Mutating requests append request-level audit records; DB immutability is not proven.
   2. The actor (user_id) is captured.
   3. The action type and target path are recorded.
   4. The HTTP outcome (status_code) is captured.
 
 Current limitation (documented):
-  - "model" stores the request path, not the Django model class name.
+  - "model" stores a server-defined route template, not raw URL values or a Django model name.
+  - Unresolved paths use /<unresolved>; early denials use only fixed API aliases.
   - "object_id" is not populated by the middleware (middleware has no access to
     response body to extract the created object's ID — this would require
     view-level instrumentation).
@@ -203,7 +204,7 @@ class AuditLogFieldContractTests(_AuditBase):
 
     def test_audit_entry_model_field_is_request_path(self):
         """
-        AuditLog.model stores the request path (not Django model class name).
+        AuditLog.model preserves the registered static path (not Django model class name).
         This is the current contract per audit/middleware.py.
         """
         self.client.post(
