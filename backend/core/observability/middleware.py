@@ -3,6 +3,8 @@ import logging
 import time
 import uuid
 
+from audit.request_logging import request_audit_route
+
 logger = logging.getLogger("crown.request")
 
 
@@ -32,7 +34,7 @@ class RequestCorrelationMiddleware:
                 {
                     "event": "http_request",
                     "method": request.method,
-                    "path": request.path,
+                    "path": request_audit_route(request),
                     "status_code": response.status_code,
                     "duration_ms": duration_ms,
                     "correlation_id": correlation_id,
