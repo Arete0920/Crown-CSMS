@@ -57,6 +57,7 @@ CANONICAL_WORKFLOW_FILES = {
     "deploy-prod.yml",
     "dev-blacklist-database-inventory.yml",
     "dev-smoke.yml",
+    "dev-ops-secret-proof.yml",
     "finance-final-hardening.yml",
     "heritage-windows-rehearsal.yml",
     "isolated-postgres-restore-drill.yml",
