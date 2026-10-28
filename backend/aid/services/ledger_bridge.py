@@ -15,6 +15,7 @@ from __future__ import annotations
 
 from decimal import Decimal
 
+from django.core.exceptions import ValidationError
 from django.db import transaction
 
 from aid.models import AidAuditEvent, AidAward, AidBudgetTracker
@@ -66,6 +67,21 @@ def _ensure_student_account_credit(*, award: AidAward, actor_user):
         reference=reference,
     ).first()
     if existing is not None:
+        # Reusing an idempotency key must never silently accept changed financial
+        # facts or a voided credit. Reconciliation requires an explicit,
+        # separately authorized correction; do not recreate/rehydrate history.
+        expected_amount = (
+            Decimal(int(award.awarded_cents)) / Decimal("100")
+        ).quantize(Decimal("0.01"))
+        if (
+            existing.is_void
+            or existing.amount != expected_amount
+            or existing.account.school_id != award.school_id
+            or existing.account.household.school_id != award.school_id
+        ):
+            raise ValidationError(
+                "Existing financial aid credit requires controlled reconciliation"
+            )
         return existing
 
     household_ids = list(

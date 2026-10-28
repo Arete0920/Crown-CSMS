@@ -2,6 +2,7 @@ from datetime import date
 from decimal import Decimal
 
 import pytest
+from django.core.exceptions import ValidationError
 
 from aid.models import AidAuditEvent, AidAward, AidBudgetTracker
 from aid.services.ledger_bridge import approve_award
@@ -57,6 +58,43 @@ def test_approval_retry_repairs_credit_without_double_budget_or_duplicate_credit
     budget.refresh_from_db()
     assert budget.awarded_cents == 25_000
     assert _credit_qs(school, award).count() == 1
+
+
+def test_approved_award_retry_rejects_changed_amount_without_reposting_credit():
+    school, award = _fixture(linked=True)
+    approve_award(award=award, actor_user=None, reason="Initial accepted award")
+    award.refresh_from_db()
+    original_entry_id = award.ledger_entry_id
+    original_credit = _credit_qs(school, award).get()
+
+    # Simulate a subsequent unexpected mutation of the accepted award amount.
+    # A previous immutable non-cash credit must not be treated as matching.
+    award.awarded_cents = 26_000
+    award.save(update_fields=["awarded_cents"])
+    with pytest.raises(ValidationError, match="controlled reconciliation"):
+        approve_award(award=award, actor_user=None, reason="Invalid replay")
+
+    award.refresh_from_db()
+    assert award.ledger_entry_id == original_entry_id
+    assert _credit_qs(school, award).count() == 1
+    assert _credit_qs(school, award).get().amount == original_credit.amount
+    assert not Payment.objects.filter(school_id=school.id, source="FINANCIAL_AID").exists()
+
+
+def test_approved_award_retry_rejects_voided_credit_without_resurrection():
+    school, award = _fixture(linked=True)
+    approve_award(award=award, actor_user=None, reason="Initial accepted award")
+    from ledger.services import void_account_credit
+
+    original = _credit_qs(school, award).get()
+    void_account_credit(credit=original)
+    with pytest.raises(ValidationError, match="controlled reconciliation"):
+        approve_award(award=award, actor_user=None, reason="Voided credit replay")
+
+    original.refresh_from_db()
+    assert original.is_void
+    assert _credit_qs(school, award).count() == 1
+    assert not Payment.objects.filter(school_id=school.id, source="FINANCIAL_AID").exists()
 
 
 def test_approval_rejects_family_link_to_other_school_household():
