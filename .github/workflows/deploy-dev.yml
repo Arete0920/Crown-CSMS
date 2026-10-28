@@ -1,262 +1,119 @@
-name: Dev Deploy (rc/**)
-
-on:
-  # Automatically deploy whenever rc/** is pushed  keeps dev in sync with RC
+name: Scoped DEV queue recovery 40587751947
+'on':
   push:
     branches:
-      - "rc/**"
-  # Also allow a manual trigger (e.g. to redeploy after secrets change)
-  workflow_dispatch:
-    inputs:
-      ref:
-        description: "Git ref to deploy (branch/SHA/tag). Leave blank for default branch."
-        required: false
-        default: ""
-
-concurrency:
-  group: crown-api-dev-deploy
-  cancel-in-progress: false
-
+    - maintenance/cancel-obsolete-dev-40587751947
+    paths:
+    - .github/workflows/deploy-dev.yml
 permissions:
-  contents: read
   actions: read
-  id-token: write
-
-env:
-  REGISTRY: crownregistry.azurecr.io
-  IMAGE_NAME: crown2026
-  RESOURCE_GROUP: crown-rg
-  WEBAPP_NAME: crown-api-dev
-
 jobs:
-  build-and-deploy:
-    name: "Build & Deploy  crown-api-dev"
-    environment: dev
+  verify-target:
+    if: ${{ github.event.created == true && github.repository == 'Arete0920/Crown-CSMS' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 30
-
+    timeout-minutes: 4
+    outputs:
+      perform: ${{ steps.verify.outputs.perform }}
     steps:
-      - name: Guard manual ref input
-        if: github.event_name == 'workflow_dispatch' && github.event.inputs.ref != ''
-        shell: bash
-        env:
-          INPUT_REF: ${{ github.event.inputs.ref }}
-        run: |
-          set -euo pipefail
-          REF="$INPUT_REF"
-          if [[ "$REF" =~ ^refs/heads/rc/.+ ]] || [[ "$REF" =~ ^rc/.+ ]] || [[ "$REF" =~ ^[0-9a-f]{40}$ ]]; then
-            echo "Manual ref accepted: $REF"
-          else
-            echo "ERROR: ref must be rc/*, refs/heads/rc/*, or a full 40-char SHA"
-            exit 1
-          fi
+    - name: Verify exact obsolete run and exclusive DEV scope
+      id: verify
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        python3 - <<'PY'
+        ACTIVE = {"queued", "in_progress", "pending", "waiting", "requested"}
+        EXPECTED_ID = 40587751947
+        EXPECTED_SHA = "e834dff25527002aab19aa10b8bc2842a8d974d0"
+        EXPECTED_WORKFLOW = 338145753
 
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.ref || github.sha }}
-          fetch-depth: 0
+        def validate_target(target, active, own_id):
+            if (
+                target.get("id") != EXPECTED_ID
+                or target.get("head_sha") != EXPECTED_SHA
+                or target.get("workflow_id") != EXPECTED_WORKFLOW
+                or target.get("name") != "Dev Deploy (rc/**)"
+                or target.get("event") != "workflow_dispatch"
+                or target.get("repository", {}).get("full_name") != "Arete0920/Crown-CSMS"
+            ):
+                raise ValueError("Target identity mismatch")
+            if target.get("status") == "completed":
+                if target.get("conclusion") == "cancelled":
+                    return False
+                raise ValueError("Target already terminal without cancellation")
+            if target.get("status") not in ACTIVE or target.get("conclusion") is not None:
+                raise ValueError("Target is not the verified active run")
+            others = [run for run in active if run.get("id") != own_id]
+            if len(others) != 1 or others[0].get("id") != EXPECTED_ID:
+                raise ValueError("Another DEV run or inconsistent inventory blocks recovery")
+            return True
 
-      - name: Verify accepted DEV source
-        id: vars
-        env:
-          REQUESTED_REF: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.ref || github.sha }}
-        run: |
-          set -euo pipefail
-          SOURCE_SHA="$(git rev-parse HEAD)"
-          [[ "$SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]]
-          if [[ "$REQUESTED_REF" =~ ^[0-9a-f]{40}$ ]]; then
-            test "$SOURCE_SHA" = "$REQUESTED_REF"
-          fi
-          git fetch --no-tags origin refs/heads/main:refs/remotes/origin/main
-          CURRENT_MAIN_SHA="$(git rev-parse refs/remotes/origin/main)"
-          if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]]; then
-            if [[ "$SOURCE_SHA" != "$CURRENT_MAIN_SHA" ]]; then
-              echo 'BLOCKED: manual DEV deploy must use exact protected main, not a stale ancestor' >&2
-              exit 1
-            fi
-          else
-            git merge-base --is-ancestor "$SOURCE_SHA" "$CURRENT_MAIN_SHA"
-          fi
-          echo "deploy_sha=$SOURCE_SHA" >> "$GITHUB_OUTPUT"
-          echo "deploy_sha_short=${SOURCE_SHA:0:7}" >> "$GITHUB_OUTPUT"
-          echo "DEPLOY_SHA=$SOURCE_SHA" >> "$GITHUB_ENV"
-          echo "DEPLOY_SHA_SHORT=${SOURCE_SHA:0:7}" >> "$GITHUB_ENV"
+        import json
+        import os
+        import urllib.request
 
-      - name: Azure Login
-        uses: azure/login@a457da9ea143d694b1b9c7c869ebb04ebe844ef5 # v2
-        with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-
-      - name: Set up existing runner for DEV schema verification
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
-        with:
-          python-version: '3.12'
-
-      - name: Install accepted backend dependencies
-        run: python -m pip install -r backend/requirements.txt
-
-      - name: Verify DEV migration boundary without database execution
-        run: python -m unittest discover -s scripts/ops -p test_run_dev_inquiry_migration.py -v
-
-      - name: Verify SimpleJWT migration allowlist without database access
-        run: python -m unittest discover -s scripts/ops -p test_reviewed_blacklist_migrations.py -v
-
-      - name: Apply only reviewed DEV inquiry migration before deployment
-        env:
-          EXPECTED_SOURCE_SHA: ${{ steps.vars.outputs.deploy_sha }}
-        run: python scripts/ops/run_dev_inquiry_migration.py --expected-sha "$EXPECTED_SOURCE_SHA"
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
-
-      - name: Log in to Azure Container Registry
-        run: az acr login --name crownregistry --only-show-errors
-
-      - name: Build allowed appsettings JSON
-        shell: pwsh
-        run: |
-          $settings = @{
-            "BUILD_SHA"       = "${{ env.DEPLOY_SHA }}"
-            "DEPLOY_RUN_ID"   = "${{ github.run_id }}"
-            "DEPLOY_WORKFLOW" = "${{ github.workflow }}"
-            "WEBSITES_PORT"   = "8000"
-            "CROWN_ENV"      = "dev"
-            "DJANGO_ENV"     = "development"
-            "ENVIRONMENT"    = "dev"
-          }
-          $settings | ConvertTo-Json -Depth 5 | Out-File -Encoding utf8 appsettings.dev.json
-          Get-Content appsettings.dev.json
-
-      - name: Appsettings allowlist gate
-        shell: pwsh
-        run: |
-          ./tools/appsettings_allowlist_gate.ps1 `
-            -AppSettingsJsonPath "appsettings.dev.json" `
-            -AllowedKeysFile "tools/appsettings_allowlist.keys.json" `
-            -AllowedKeySet "dev"
-
-      - name: Apply appsettings (allowlisted only)
-        shell: pwsh
-        run: |
-          az webapp config appsettings set `
-            --resource-group ${{ env.RESOURCE_GROUP }} `
-            --name ${{ env.WEBAPP_NAME }} `
-            --settings '@appsettings.dev.json' `
-            --output none `
-            --only-show-errors
-          echo " BUILD_SHA=${{ env.DEPLOY_SHA }} set (before image deploy)"
-
-      - name: Bake BUILD_SHA into artifact
-        run: |
-          echo "BUILD_SHA = \"${{ env.DEPLOY_SHA }}\"" > backend/crown_api/build_info.py
-          echo " build_info.py written with SHA: ${{ env.DEPLOY_SHA }}"
-
-      - name: Build and push Docker image
-        uses: docker/build-push-action@ca052bb54ab0790a636c9b5f226502c73d547a25 # v5
-        with:
-          context: .
-          push: true
-          # Explicitly target linux/amd64  multi-platform OCI index manifests
-          # (produced without this setting) cause ContainerCreateFailure on
-          # Azure App Service because it cannot resolve the platform from an
-          # OCI index containing unknown/unknown cache entries.
-          platforms: linux/amd64
-          provenance: false
-          tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:dev-${{ env.DEPLOY_SHA }}
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:dev-latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Deploy to Azure Web App (managed identity pull)
-        run: |
-          # ACR admin is disabled. The App Service system-assigned managed identity
-          # holds AcrPull on crownregistry  no credentials needed here.
-          az webapp config container set \
-            --name ${{ env.WEBAPP_NAME }} \
-            --resource-group ${{ env.RESOURCE_GROUP }} \
-            --docker-registry-server-url https://${{ env.REGISTRY }} \
-            --docker-custom-image-name ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:dev-${{ env.DEPLOY_SHA }} \
-            --output none \
-            --only-show-errors
-          echo " Container image set: dev-${{ env.DEPLOY_SHA_SHORT }} (managed identity pull)"
-
-          # A stopped App Service returns HTTP 403 and `az webapp restart` cannot
-          # transition it to Running. For an explicitly requested DEV release,
-          # start an existing stopped app; never provision or resize resources.
-          APP_STATE="$(az webapp show \
-            --name ${{ env.WEBAPP_NAME }} \
-            --resource-group ${{ env.RESOURCE_GROUP }} \
-            --query state --output tsv --only-show-errors)"
-          case "$APP_STATE" in
-            Stopped)
-              az webapp start \
-                --name ${{ env.WEBAPP_NAME }} \
-                --resource-group ${{ env.RESOURCE_GROUP }} \
-                --only-show-errors
-              echo "Existing DEV App Service started for deployment"
-              ;;
-            Running)
-              az webapp restart \
-                --name ${{ env.WEBAPP_NAME }} \
-                --resource-group ${{ env.RESOURCE_GROUP }} \
-                --only-show-errors
-              echo "Running DEV App Service restarted for deployment"
-              ;;
-            *)
-              echo "ERROR: unexpected DEV App Service state '$APP_STATE'; refusing mutation" >&2
-              exit 1
-              ;;
-          esac
-
-      - name: Health check after verified schema and application startup
-        run: |
-          set -euo pipefail
-          echo "Waiting for app to come up (up to 6 minutes)..."
-          for i in $(seq 1 36); do
-            STATUS=$(curl --max-time 30 -s -o /dev/null -w "%{http_code}" https://${{ env.WEBAPP_NAME }}.azurewebsites.net/api/health/ || true)
-            if [ "$STATUS" = "200" ]; then
-              echo " Health check passed (attempt $i)"
-              break
-            fi
-            echo "  attempt $i: HTTP $STATUS  waiting 10s..."
-            sleep 10
-            if [ "$i" = "36" ]; then
-              echo " Health check timed out after 360s"
-              exit 1
-            fi
-          done
-
-      - name: Verify BUILD_SHA matches deployed commit (with retry)
-        run: |
-          set -euo pipefail
-          WANT="${{ env.DEPLOY_SHA }}"
-          echo "Verifying deployed SHA matches $WANT ..."
-          for i in $(seq 1 12); do
-            BODY=$(curl --max-time 30 -fsS https://${{ env.WEBAPP_NAME }}.azurewebsites.net/api/health/ 2>/dev/null || true)
-            GOT=$(echo "$BODY" | python3 -c "import json,sys; d=json.load(sys.stdin); sha=d.get('build_sha',''); artifact=d.get('artifact_build_sha',''); print(sha if sha == artifact else '<artifact-mismatch>')" 2>/dev/null || true)
-            if [ -z "$GOT" ] || [ "$GOT" = "local-dev" ] || [ "$GOT" = "unknown" ]; then
-              echo "  attempt $i: SHA not ready yet (got: ${GOT:-empty})  waiting 15s..."
-              sleep 15
-              continue
-            fi
-            if [[ "$GOT" =~ ^[0-9a-f]{40}$ ]] && [[ "$GOT" == "$WANT" ]]; then
-              echo " build_sha verified: $GOT"
-              exit 0
-            fi
-            echo "  attempt $i: mismatch  deployed=$GOT expected=$WANT  waiting 15s..."
-            sleep 15
-          done
-          echo " build_sha did not converge to expected SHA after retries"
-          echo "   deployed=$GOT  expected=$WANT"
-          exit 1
-
-      - name: Summary
-        run: |
-          echo " crown-api-dev deployed successfully"
-          echo "   SHA: ${{ env.DEPLOY_SHA }}"
-          echo "   URL: https://${{ env.WEBAPP_NAME }}.azurewebsites.net"
-
+        try:
+            own_id = int(os.environ["GITHUB_RUN_ID"])
+            if (
+                os.environ["GITHUB_REPOSITORY"] != "Arete0920/Crown-CSMS"
+                or os.environ["GITHUB_REF"] != "refs/heads/maintenance/cancel-obsolete-dev-40587751947"
+                or os.environ["GITHUB_EVENT_NAME"] != "push"
+            ):
+                raise ValueError("Unexpected execution context")
+            token = os.environ["GH_TOKEN"]
+            def read(path):
+                request = urllib.request.Request(
+                    "https://api.github.com/repos/Arete0920/Crown-CSMS/" + path,
+                    headers={
+                        "Authorization": "Bearer " + token,
+                        "Accept": "application/vnd.github+json",
+                        "X-GitHub-Api-Version": "2022-11-28",
+                        "User-Agent": "CROWN-scoped-DEV-queue-recovery",
+                    },
+                    method="GET",
+                )
+                with urllib.request.urlopen(request, timeout=20) as response:
+                    return json.load(response)
+            target = read("actions/runs/40587751947")
+            active = []
+            for status in sorted(ACTIVE):
+                for page in range(1, 21):
+                    listing = read(
+                        "actions/workflows/338145753/runs?status="
+                        + status + "&per_page=100&page=" + str(page)
+                    )
+                    rows = listing["workflow_runs"]
+                    if any(row.get("workflow_id") != EXPECTED_WORKFLOW for row in rows):
+                        raise ValueError("Unexpected workflow in inventory")
+                    active.extend(rows)
+                    if len(rows) < 100:
+                        break
+                else:
+                    raise ValueError("Inventory is incomplete")
+            perform = validate_target(target, active, own_id)
+            print(json.dumps({
+                "preflight": "PASS",
+                "target": EXPECTED_ID,
+                "source_sha": EXPECTED_SHA,
+                "status": target["status"],
+                "conclusion": target["conclusion"],
+                "other_active_dev_runs": 0,
+                "acquire_scoped_group": perform,
+            }))
+            with open(os.environ["GITHUB_OUTPUT"], "a") as output:
+                output.write("perform=" + ("true" if perform else "false") + "\n")
+        except Exception:
+            print("PRECHECK=BLOCKED; concurrency group was not acquired")
+            raise SystemExit(1)
+        PY
+  acquire-dev-group:
+    needs: verify-target
+    if: ${{ needs.verify-target.outputs.perform == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    permissions: {}
+    concurrency:
+      group: crown-api-dev-deploy
+      cancel-in-progress: true
+    steps:
+    - name: Acquire only the obsolete DEV deployment concurrency group
+      run: echo 'Scoped group acquired. No Azure action was performed; read target run status separately before claiming cancellation.'
