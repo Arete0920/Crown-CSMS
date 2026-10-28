@@ -52,11 +52,6 @@ on:
         type: boolean
         required: false
         default: false
-      dev_ops_schoolless_precheck:
-        description: "DEV-only, no-school GitHub Actions secret acceptance probe (no resets)"
-        type: boolean
-        required: false
-        default: false
       expected_dev_sha:
         description: "Full 40-character accepted main SHA deployed to DEV API and preview"
         required: false
@@ -197,67 +192,6 @@ jobs:
         if: always()
         run: az logout
 
-  dev-ops-schoolless-precheck:
-    # DEV-only schoolless credential acceptance with no school selector.
-    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.dev_ops_schoolless_precheck == true && inputs.dev_owner_runtime_precheck != true && inputs.dev_redis_controlplane_precheck != true
-    needs: collector-tests
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    environment: dev
-    permissions:
-      contents: read
-    steps:
-      - name: Checkout protected source
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-          fetch-depth: 0
-      - name: Verify exact accepted source and deployed ancestor
-        shell: bash
-        env:
-          EXPECTED_SHA: ${{ inputs.expected_dev_sha }}
-        run: |
-          set -euo pipefail
-          [[ "$EXPECTED_SHA" =~ ^[0-9a-f]{40}$ ]] || { echo "BLOCKED: full deployed SHA required"; exit 1; }
-          git fetch --no-tags origin refs/heads/main:refs/remotes/origin/main
-          test "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)" || { echo "BLOCKED: main moved"; exit 1; }
-          git merge-base --is-ancestor "$EXPECTED_SHA" HEAD || { echo "BLOCKED: deployed SHA is not an accepted ancestor"; exit 1; }
-      - name: Prove Actions credential at pinned DEV without selecting a school
-        shell: bash
-        env:
-          EXPECTED_SHA: ${{ inputs.expected_dev_sha }}
-          DEV_OPS_SECRET: ${{ secrets.DEV_OPS_SECRET }}
-        run: |
-          set +x
-          python3 - <<'PY'
-          import os
-          import sys
-          from pathlib import Path
-          import urllib.request
-
-          sys.path.insert(0, str(Path.cwd() / "scripts" / "ops"))
-          from verify_dev_ops_credential_retirement import _request, _healthy_runtime, NoRedirect
-
-          secret = os.getenv("DEV_OPS_SECRET", "")
-          expected = os.getenv("EXPECTED_SHA", "")
-          if len(secret) < 32 or len(expected) != 40:
-              print("BLOCKED: expected identity or credential unavailable")
-              sys.exit(1)
-          opener = urllib.request.build_opener(NoRedirect())
-          before_status, before = _request(opener)
-          if not _healthy_runtime(before_status, before, expected):
-              print("BLOCKED: DEV health or baked artifact identity mismatch; no credential transmitted")
-              sys.exit(1)
-          status, body = _request(opener, credential=secret)
-          after_status, after = _request(opener)
-          accepted = status == 400 and body == {"detail": "Missing school_id (send X-School-Id or ?school_id=...)"}
-          if not (accepted and _healthy_runtime(after_status, after, expected)):
-              print("BLOCKED: no-school handler acceptance or post-probe health not verified")
-              sys.exit(1)
-          print("PASS: configured GitHub Actions DEV_OPS_SECRET accepted by verified DEV reset handler without a school")
-          print("Other consumers, old-secret revocation and diagnostic denial remain separately gated")
-          PY
-
   dev-owner-runtime-precheck:
     # Explicit owner-mode dispatch only. No Azure login, secrets, tenancy
     # changes, schema mutations, payments, or provisioned resources.
@@ -320,7 +254,7 @@ jobs:
           if-no-files-found: warn
 
   azure-inventory:
-    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.dev_owner_runtime_precheck != true && inputs.dev_redis_controlplane_precheck != true && inputs.dev_ops_schoolless_precheck != true
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.dev_owner_runtime_precheck != true && inputs.dev_redis_controlplane_precheck != true
     needs: collector-tests
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -485,8 +419,7 @@ jobs:
       github.event_name == 'workflow_dispatch' &&
       github.ref == 'refs/heads/main' &&
       inputs.dev_redis_controlplane_precheck == true &&
-      inputs.dev_owner_runtime_precheck != true &&
-      inputs.dev_ops_schoolless_precheck != true
+      inputs.dev_owner_runtime_precheck != true
     needs: collector-tests
     runs-on: ubuntu-latest
     timeout-minutes: 12
