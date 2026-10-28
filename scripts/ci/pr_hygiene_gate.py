@@ -269,6 +269,9 @@ def main() -> int:
 
     for f in files:
         normalized = f.path.replace("\\", "/")
+        # A deletion still counts toward the cap, but removes forbidden content.
+        if f.status == "D":
+            continue
         if normalized not in SUMMARY_ALLOWLIST:
             for pattern in FORBIDDEN_GENERATED_PATTERNS:
                 if pattern.search(normalized):
