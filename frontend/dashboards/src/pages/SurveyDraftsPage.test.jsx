@@ -134,12 +134,13 @@ it('clears unsaved school content when the selected school changes', async () =>
 async function beginSavedEdit(definition = saved, can_create = true) {
   listSurveyDrafts.mockResolvedValue({ results: [definition], can_create });
   readSurveyDraft.mockResolvedValue(definition);
-  render(<SurveyDraftsPage />);
+  const view = render(<SurveyDraftsPage />);
   fireEvent.click(await screen.findByRole('button', { name: `${definition.name} · ${definition.status}` }));
   await screen.findByRole('region', { name: 'Saved survey preview' });
   if (can_create && definition.status === 'draft') {
     fireEvent.click(screen.getByRole('button', { name: 'Edit saved draft' }));
   }
+  return view;
 }
 
 it('loads a current saved questionnaire into the same administrator editing flow', async () => {
@@ -270,12 +271,14 @@ it('keeps published or read-only saved definitions out of the edit flow', async 
 });
 
 it('clears saved editing state when school selection changes', async () => {
-  await beginSavedEdit();
+  const view = await beginSavedEdit();
   fireEvent.change(screen.getByLabelText('Survey name'), { target: { value: 'Old school notes' } });
   sessionStorage.setItem('crown.school.id', 'school-b');
-  // The selected school is read on each render; a context transition invalidates old forms.
-  fireEvent.click(screen.getByRole('button', { name: 'Cancel editing' }));
-  expect(screen.queryByText('Old school notes')).toBeNull();
+  listSurveyDrafts.mockResolvedValue({ results: [], can_create: true });
+  view.rerender(<SurveyDraftsPage />);
+  await waitFor(() => expect(listSurveyDrafts).toHaveBeenLastCalledWith('school-b'));
+  expect(screen.queryByRole('form', { name: 'Edit saved survey draft' })).toBeNull();
+  expect(screen.getByLabelText('Survey name').value).toBe('');
   expect(replaceSurveyDraft).not.toHaveBeenCalled();
 });
 
