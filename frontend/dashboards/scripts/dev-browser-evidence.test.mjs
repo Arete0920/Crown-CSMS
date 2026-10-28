@@ -158,8 +158,27 @@ test('bounded outcome consistency retains skip and interrupted semantics', () =>
     item.results = statuses.map((status, retry) => result({ status, retry }));
     const collector = new EvidenceCollector(ctx, PROJECT); collector.begin([item]);
     for (const observation of item.results) collector.endTest(item, observation);
-    assert.equal(collector.finish(fullResult()).cases[0].outcome, outcome);
+    assert.equal(collector.finish(fullResult('failed')).cases[0].outcome, outcome);
   }
+});
+
+test('all-skipped or interrupted Playwright results cannot publish as a passing suite', () => {
+  for (const [expectedStatus, status] of [['skipped', 'skipped'], ['passed', 'interrupted']]) {
+    const ctx = context(); const observation = result({ status });
+    const item = testCase(ctx, observation);
+    item.expectedStatus = expectedStatus; item.outcome = () => 'skipped';
+    const collector = new EvidenceCollector(ctx, PROJECT);
+    collector.begin([item]); collector.endTest(item, observation);
+    assert.throws(() => collector.finish(fullResult()), /SAFE_BROWSER_EVIDENCE_INVALID/);
+    assert.equal(collector.finish(fullResult('failed')).cases[0].outcome, 'skipped');
+  }
+});
+
+test('actual all-skipped Playwright suite is not publishable evidence', async t => {
+  const f = fixture(t, { buyer: "import { test } from '@playwright/test';\ntest.skip('skipped', () => {});\n" });
+  const result = await executeSuite({ suite: 'buyer', env: f.env, projectDirectory: f.projectDirectory });
+  assert.equal(result.evidenceValid, false);
+  assert.notEqual(result.exitCode, 0);
 });
 
 test('external validation rejects stale, absent, truncated, symlink and additional-field reports', t => {
