@@ -79,11 +79,11 @@ Engineering support, architecture, review, and evidence audit are advisory. Appr
 
 ## 6. Required Enforcement
 
-The `PR Hygiene Gate` workflow must run on pull requests.
+The `Repository Policy` workflow (`.github/workflows/repository-policy.yml`) runs on pull-request events. Its `repository-policy` job invokes `python scripts/ci/pr_hygiene_gate.py` in the **Run pull-request hygiene** step. The check evaluates the pull request's exact source-head SHA, maintained title/body, source diff, default 20-file threshold, and applicable evidence restrictions. `PR Hygiene Gate` describes this embedded control; it is not the name of a separate Actions workflow.
 
-The check should be treated as required for merge once repository rulesets are updated.
+The same `repository-policy` job runs on selected protected-`main` pushes, but its pull-request-specific step is skipped on push. A green post-merge repository-policy job cannot, by itself, prove that a pull request's metadata and source-diff checks ran. Approved, narrowly scoped exception paths remain subject to their documented conditions; this explanation grants no new waiver.
 
-Until it is required by ruleset, any PR failing this gate remains draft, blocked, or NO-GO.
+An exact-head pull-request hygiene failure, missing result, or stale result is **NO-GO**, regardless of whether GitHub administration currently marks the context as required. The repository owner must verify the actual required-check configuration in the authorized branch-protection or ruleset view; a branch's `protected` flag does not prove which checks are required. Do not self-approve or bypass required protections. Use the approved solo-developer review procedure and retain the decision evidence.
 
 ## 7. Dashboard-Specific Rule
 
