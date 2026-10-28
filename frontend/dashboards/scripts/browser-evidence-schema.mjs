@@ -271,6 +271,11 @@ export function validateReport(report, expectedContext) {
   if (report.runner_status === 'passed') {
     check(report.cases.length > 0 && report.global_error_count === 0);
     check(report.cases.every(record => record.results.length > 0 && ['expected', 'flaky', 'skipped'].includes(record.outcome)));
+    // A completely skipped/interrupted suite can exit zero in Playwright.
+    // It must not publish a passing execution without an actual assertion.
+    check(report.cases.some(record => record.results.some(result =>
+      result.status === 'passed' || (record.expected_status === 'failed' && result.status === 'failed')
+    )));
   }
   return report;
 }
