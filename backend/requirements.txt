@@ -28,7 +28,7 @@ cryptography>=50.0.2
 urllib3>=2.8.0
 idna>=3.20
 aiohttp>=3.14.5
-pillow>=12.2.0
+pillow>=13.0.0
 qrcode==8.2
 # Sentry error telemetry (production only; loaded conditionally in settings.py)
 sentry-sdk>=2.71.0
