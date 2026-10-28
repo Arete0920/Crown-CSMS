@@ -149,7 +149,9 @@ export default function SurveyDraftsPage() {
 
   function cancelEdit() {
     if (pending.current) return;
+    version.current += 1; // Discard any in-flight comparison readback.
     if (editLatest) setSaved(editLatest);
+    setLoading(false);
     setEditing(null); setEditGate(''); setEditLatest(null); setEditError('');
   }
 
@@ -206,25 +208,28 @@ export default function SurveyDraftsPage() {
 
   async function checkLatest() {
     if (!editing || pending.current) return;
+    const serverBlocked = editGate === 'blocked';
     const current = ++version.current;
     setLoading(true); setEditError('');
     try {
       const latest = await readSurveyDraft(schoolId, editing.id);
       if (current !== version.current) return;
-      setEditLatest(latest); setEditGate('review');
-      setEditError(canEditSaved(latest)
-        ? 'Compare the current saved version below with your unsaved edits. To continue, explicitly discard your edits and use the latest revision.'
-        : 'The current saved survey cannot be edited. Your unsaved changes remain visible until you cancel.');
+      setEditLatest(latest); setEditGate(serverBlocked ? 'blocked' : 'review');
+      setEditError(serverBlocked
+        ? 'The server denied editing this survey. Readback is for comparison only; cancel editing to leave.'
+        : canEditSaved(latest)
+          ? 'Compare the current saved version below with your unsaved edits. To continue, explicitly discard your edits and use the latest revision.'
+          : 'The current saved survey cannot be edited. Your unsaved changes remain visible until you cancel.');
     } catch {
       if (current === version.current) {
-        setEditGate('uncertain');
+        setEditGate(serverBlocked ? 'blocked' : 'uncertain');
         setEditError('The latest saved survey could not be read. Editing remains blocked; try checking again.');
       }
     } finally { if (current === version.current) setLoading(false); }
   }
 
   function useLatest() {
-    if (!editLatest || !canEditSaved(editLatest) || !library?.can_create || pending.current) return;
+    if (editGate !== 'review' || !editLatest || !canEditSaved(editLatest) || !library?.can_create || pending.current || loading) return;
     editNextKey.current = 1;
     setSaved(editLatest); setEditing(editorFromSaved(editLatest));
     setLibrary((old) => ({ ...old, results: old.results.map((item) => item.id === editLatest.id ? editLatest : item) }));
@@ -268,14 +273,14 @@ export default function SurveyDraftsPage() {
             <button type="button" disabled={editing.rows.length === 1} onClick={() => setEditing((old) => ({ ...old, rows: old.rows.filter((item) => item.key !== row.key) }))}>Remove question {index + 1}</button>
           </fieldset>)}
           <button type="button" className="crown-btn" disabled={editing.rows.length >= 40} onClick={addSavedQuestion}>Add question</button>{' '}
-          <button type="submit" className="crown-btn">{busy ? 'Saving changes...' : 'Save changes'}</button>
+          <button type="submit" className="crown-btn" disabled={busy || loading || !!editGate}>{busy ? 'Saving changes...' : 'Save changes'}</button>
         </fieldset>
         <button type="button" className="crown-btn" onClick={cancelEdit} disabled={busy}>Cancel editing</button>{' '}
         {editGate ? <button type="button" className="crown-btn" onClick={checkLatest} disabled={busy || loading}>Check latest saved version</button> : null}
       </form>
       <Preview survey={{ ...asPayload(editing.name, editing.purpose, editing.rows), status: 'draft' }} heading="Unsaved changes preview" />
       {editLatest ? <Preview survey={editLatest} heading="Current saved survey (server)" /> : null}
-      {editLatest && canEditSaved(editLatest) ? <button type="button" className="crown-btn" onClick={useLatest} disabled={busy || loading}>Discard my edits and use latest saved version</button> : null}
+      {editGate === 'review' && editLatest && canEditSaved(editLatest) ? <button type="button" className="crown-btn" onClick={useLatest} disabled={busy || loading}>Discard my edits and use latest saved version</button> : null}
     </> : null}
     {library && !library.can_create ? <p>You have read-only survey access.</p> : null}
     {library?.can_create && !editing ? <>
