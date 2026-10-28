@@ -198,9 +198,9 @@ class AidAward(TimeStampedModel):
         # A stale model instance must not reopen a declined financial award.
         type(self).objects.select_for_update().get(pk=self.pk)
         self.refresh_from_db()
-        if self.decision_status == self.DECISION_DECLINED:
-            from django.core.exceptions import ValidationError
+        from django.core.exceptions import ValidationError
 
+        if self.decision_status == self.DECISION_DECLINED:
             raise ValidationError("Declined aid award requires controlled reinstatement")
         if self.decision_status == self.DECISION_ACCEPTED or self.ledger_entry_id:
             raise ValidationError("Accepted or posted aid award requires controlled reversal")
