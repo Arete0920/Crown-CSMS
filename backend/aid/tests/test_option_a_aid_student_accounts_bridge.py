@@ -208,3 +208,45 @@ def test_decline_handles_previously_voided_credit_without_reactivating_it():
     assert credit.is_void
     assert _credit_qs(school, award).count() == 1
     assert not AidAuditEvent.objects.filter(school=school, entity_id=str(award.id), action="STUDENT_ACCOUNT_CREDIT_VOIDED").exists()
+
+
+def test_decline_foreign_household_mapping_never_creates_foreign_account():
+    school, award = _fixture(linked=False)
+    other = School.objects.create(name="Other school decline isolation")
+    household = Household.objects.create(school_id=other.id, name="Foreign household")
+    HouseholdFamilyLink.objects.create(
+        school=school,
+        family=award.student.family,
+        household_id=household.id,
+        source=HouseholdFamilyLink.SOURCE_MANUAL,
+    )
+    approve_award(award=award, actor_user=None)
+    award.refresh_from_db()
+    award.mark_declined_and_reverse()
+    assert not _credit_qs(school, award).exists()
+    assert not LedgerAccount.objects.filter(household_id=household.id).exists()
+    assert not Payment.objects.filter(school_id=school.id, source="FINANCIAL_AID").exists()
+
+
+def test_decline_audit_failure_rolls_back_prior_void_and_reversal():
+    from unittest.mock import patch
+    from core.models import LedgerEntry
+
+    school, award = _fixture(linked=True)
+    approve_award(award=award, actor_user=None)
+    award.refresh_from_db()
+    original_log = AidAuditEvent.log
+
+    def fail_on_decline(**kwargs):
+        if kwargs.get("action") == "AWARD_DECLINED":
+            raise RuntimeError("synthetic audit failure")
+        return original_log(**kwargs)
+
+    with patch.object(AidAuditEvent, "log", side_effect=fail_on_decline):
+        with pytest.raises(RuntimeError, match="synthetic audit failure"):
+            award.mark_declined_and_reverse()
+    award.refresh_from_db()
+    assert award.decision_status == AidAward.DECISION_ACCEPTED
+    assert not _credit_qs(school, award).get().is_void
+    assert LedgerEntry.objects.filter(reversal_of_id=award.ledger_entry_id).count() == 0
+    assert AidBudgetTracker.objects.get(school=school, academic_year=award.academic_year, bucket=award.award_type).awarded_cents == 25_000
