@@ -15,10 +15,12 @@ from __future__ import annotations
 
 from decimal import Decimal
 
+from django.core.exceptions import ValidationError
 from django.db import transaction
 
 from aid.models import AidAuditEvent, AidAward, AidBudgetTracker
 from core.models import HouseholdFamilyLink
+from households.models import Household
 from ledger.models import Credit, LedgerAccount
 from ledger.services import post_account_credit
 
@@ -65,6 +67,21 @@ def _ensure_student_account_credit(*, award: AidAward, actor_user):
         reference=reference,
     ).first()
     if existing is not None:
+        # Reusing an idempotency key must never silently accept changed financial
+        # facts or a voided credit. Reconciliation requires an explicit,
+        # separately authorized correction; do not recreate/rehydrate history.
+        expected_amount = (
+            Decimal(int(award.awarded_cents)) / Decimal("100")
+        ).quantize(Decimal("0.01"))
+        if (
+            existing.is_void
+            or existing.amount != expected_amount
+            or existing.account.school_id != award.school_id
+            or existing.account.household.school_id != award.school_id
+        ):
+            raise ValidationError(
+                "Existing financial aid credit requires controlled reconciliation"
+            )
         return existing
 
     household_ids = list(
@@ -81,6 +98,17 @@ def _ensure_student_account_credit(*, award: AidAward, actor_user):
         return None
 
     household_id = household_ids[0]
+    # HouseholdFamilyLink stores a UUID rather than a protected foreign key.
+    # Validate the actual household's tenant before creating an account.
+    if not Household.objects.filter(
+        pk=household_id, school_id=award.school_id,
+    ).exists():
+        _log_credit_deferred_once(
+            award=award, actor_user=actor_user,
+            reason="household_missing_or_wrong_school",
+        )
+        return None
+
     account = LedgerAccount.objects.filter(household_id=household_id).first()
     if account is not None and account.school_id != award.school_id:
         _log_credit_deferred_once(
@@ -123,6 +151,30 @@ def _ensure_student_account_credit(*, award: AidAward, actor_user):
             },
         )
     return credit
+
+
+@transaction.atomic
+def ensure_accepted_award_credit(*, award: AidAward, actor_user) -> Credit | None:
+    """Idempotently project an already-posted legacy award as a non-cash Credit.
+
+    The director action may post an accepted legacy award without running the
+    separate new-approval budget decision. The existing canonical family-to-
+    household bridge handles unique mappings and auditable deferral.
+    """
+    if (
+        award.decision_status != AidAward.DECISION_ACCEPTED
+        or award.ledger_entry_id is None
+    ):
+        raise RuntimeError("An accepted, legacy-posted award is required")
+    if (
+        award.student.school_id != award.school_id
+        or award.student.family.school_id != award.school_id
+        or award.academic_year.school_id != award.school_id
+    ):
+        raise RuntimeError("Award student/family/year school mismatch")
+    if award.awarded_cents <= 0:
+        raise RuntimeError("Award amount must be positive")
+    return _ensure_student_account_credit(award=award, actor_user=actor_user)
 
 
 @transaction.atomic

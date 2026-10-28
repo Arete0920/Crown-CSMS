@@ -135,7 +135,7 @@ jobs:
 
   pytest-internal:
     name: pytest-internal
-    needs: [tenant-fixtures, backend-coverage]
+    needs: [tenant-fixtures, backend-coverage, finance-postgresql]
     if: ${{ always() }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -144,11 +144,12 @@ jobs:
         env:
           TENANT_RESULT: ${{ needs['tenant-fixtures'].result }}
           COVERAGE_RESULT: ${{ needs['backend-coverage'].result }}
+          FINANCE_RESULT: ${{ needs['finance-postgresql'].result }}
         shell: bash
         run: |
-          if [ "$TENANT_RESULT" != "success" ] || [ "$COVERAGE_RESULT" != "success" ]; then
-            echo "::error::Both tenant regression and full backend coverage must succeed."
-            echo "tenant-fixtures=$TENANT_RESULT backend-coverage=$COVERAGE_RESULT"
+          if [ "$TENANT_RESULT" != "success" ] || [ "$COVERAGE_RESULT" != "success" ] || [ "$FINANCE_RESULT" != "success" ]; then
+            echo "::error::Tenant regression, full backend coverage and PostgreSQL finance proof must succeed."
+            echo "tenant-fixtures=$TENANT_RESULT backend-coverage=$COVERAGE_RESULT finance-postgresql=$FINANCE_RESULT"
             exit 1
           fi
 
@@ -254,3 +255,62 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
+
+  finance-postgresql:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: finance_ci
+          POSTGRES_USER: finance_ci
+          POSTGRES_PASSWORD: finance-ci-only
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://finance_ci:finance-ci-only@localhost:5432/finance_ci
+      DJANGO_SETTINGS_MODULE: crown_api.test_settings
+      DJANGO_SECRET_KEY: finance-ci-only-secret
+      DJANGO_DEBUG: '1'
+      ALLOWED_HOSTS: localhost,127.0.0.1,testserver
+      PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/backend
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+      - name: Install existing backend dependencies
+        run: python -m pip install -r backend/requirements.txt
+      - name: Require PostgreSQL (no fallback)
+        run: |
+          python - <<'PYTHON'
+          import django
+          django.setup()
+          from django.db import connection
+          assert connection.vendor == 'postgresql', 'Financial concurrency proof requires PostgreSQL'
+          with connection.cursor() as cursor:
+              cursor.execute('SELECT version()')
+              print(cursor.fetchone()[0])
+          PYTHON
+      - name: Verify financial aid posting and concurrent retry contracts
+        run: >-
+          python -m pytest -v
+          backend/aid/tests/test_option_a_aid_student_accounts_bridge.py
+          backend/crown_api/tests/test_director_actions_auth_required.py
+          backend/crown_api/tests/test_director_aid_posting_integrity.py
+          --migrations --create-db --junitxml=finance-postgresql-junit.xml
+      - name: Preserve PostgreSQL financial posting evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: finance-postgresql-${{ github.sha }}
+          path: finance-postgresql-junit.xml
+          if-no-files-found: error
+          retention-days: 14
