@@ -307,12 +307,26 @@ class AidAward(TimeStampedModel):
             raise ValidationError("Award student/family/year school mismatch")
 
         was_declined = award.decision_status == self.DECISION_DECLINED
-        approved_by_service = AidAuditEvent.objects.filter(
-            school=award.school,
-            entity_type=AidAuditEvent.ENTITY_AWARD,
-            entity_id=award.id,
-            action="AWARD_APPROVED",
-        ).exists()
+        # The approval audit is the recorded budget reservation. Current award
+        # fields can be mutated by legacy callers, so never release a different
+        # budget bucket or amount from the one actually reserved.
+        approval_facts = list(
+            AidAuditEvent.objects.filter(
+                school=award.school,
+                entity_type=AidAuditEvent.ENTITY_AWARD,
+                entity_id=award.id,
+                action="AWARD_APPROVED",
+            ).values_list("details_json", flat=True)[:2]
+        )
+        approved_by_service = bool(approval_facts)
+        if approved_by_service:
+            if (
+                len(approval_facts) != 1
+                or not isinstance(approval_facts[0], dict)
+                or approval_facts[0].get("bucket") != award.award_type
+                or approval_facts[0].get("awarded_cents") != award.awarded_cents
+            ):
+                raise ValidationError("Award approval budget facts require controlled reconciliation")
         budget_release_recorded = AidAuditEvent.objects.filter(
             school=award.school,
             entity_type=AidAuditEvent.ENTITY_AWARD,

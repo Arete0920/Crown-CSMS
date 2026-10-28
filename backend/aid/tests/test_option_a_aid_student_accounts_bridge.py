@@ -442,3 +442,41 @@ def test_concurrent_approval_vs_decline_remains_balanced_on_postgresql():
         school=school, entity_id=str(award.id), action="AWARD_BUDGET_RELEASED",
     ).count() <= 1
     assert not Payment.objects.filter(school_id=school.id, source="FINANCIAL_AID").exists()
+
+def test_decline_refuses_budget_release_for_mutated_approval_bucket():
+    school, award = _fixture(linked=True)
+    approve_award(award=award, actor_user=None)
+    award.refresh_from_db()
+    award.award_type = AidAward.TYPE_MERIT
+    award.save(update_fields=["award_type"])
+    with pytest.raises(ValidationError, match="approval budget facts"):
+        award.mark_declined_and_reverse()
+    award.refresh_from_db()
+    assert award.decision_status == AidAward.DECISION_ACCEPTED
+    assert _credit_qs(school, award).filter(is_void=False).count() == 1
+    assert AidBudgetTracker.objects.get(
+        school=school, academic_year=award.academic_year, bucket=AidAward.TYPE_NEED,
+    ).awarded_cents == 25_000
+    assert AidAuditEvent.objects.filter(
+        school=school, entity_id=str(award.id), action="AWARD_BUDGET_RELEASED",
+    ).count() == 0
+
+
+def test_decline_refuses_ambiguous_approval_budget_audit():
+    school, award = _fixture(linked=True)
+    approve_award(award=award, actor_user=None)
+    award.refresh_from_db()
+    AidAuditEvent.log(
+        school=school,
+        entity_type=AidAuditEvent.ENTITY_AWARD,
+        entity_id=award.id,
+        action="AWARD_APPROVED",
+        actor_user=None,
+        details={"bucket": award.award_type, "awarded_cents": award.awarded_cents},
+    )
+    with pytest.raises(ValidationError, match="approval budget facts"):
+        award.mark_declined_and_reverse()
+    assert _credit_qs(school, award).filter(is_void=False).count() == 1
+    assert AidBudgetTracker.objects.get(
+        school=school, academic_year=award.academic_year, bucket=award.award_type,
+    ).awarded_cents == 25_000
