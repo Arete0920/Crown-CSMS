@@ -263,6 +263,10 @@ class DirectorActionsAuthRequiredTests(TestCase):
             school=school, academic_year=year, student=student,
             awarded_cents=50000, decision_status=AidAward.DECISION_ACCEPTED,
         )
+        good_award = AidAward.objects.create(
+            school=school, academic_year=year, student=student,
+            awarded_cents=25000, decision_status=AidAward.DECISION_ACCEPTED,
+        )
         User = get_user_model()
         director = User.objects.create_user(
             username="director_credit_rollback", password="synthetic",
@@ -274,29 +278,40 @@ class DirectorActionsAuthRequiredTests(TestCase):
             "action": "POST_ACCEPTED_AWARDS",
             "school_id": str(school.id),
             "year_id": str(year.id),
-            "ids": [str(award.id)],
+            "ids": [str(award.id), str(good_award.id)],
         }
+        from aid.services.ledger_bridge import ensure_accepted_award_credit as real_ensure
+        failed_award_pk = award.pk
+
+        def selective_projection_failure(*, award, actor_user):
+            if award.pk == failed_award_pk:
+                raise RuntimeError("synthetic credit projection failure")
+            return real_ensure(award=award, actor_user=actor_user)
+
         with patch(
             "crown_api.director_views.ensure_accepted_award_credit",
-            side_effect=RuntimeError("synthetic credit projection failure"),
+            side_effect=selective_projection_failure,
         ):
             failed = self.client.post(
                 "/api/director/actions/", data=json.dumps(payload),
                 content_type="application/json", HTTP_X_SCHOOL_ID=str(school.id),
             )
         self.assertEqual(failed.status_code, 200)
-        self.assertEqual(failed.json()["posted_count"], 0)
+        self.assertEqual(failed.json()["posted_count"], 1)
         self.assertEqual(
             failed.json()["errors"],
             [{"award_id": str(award.id), "error": "Internal processing error"}],
         )
         award.refresh_from_db()
+        good_award.refresh_from_db()
         self.assertIsNone(award.ledger_entry_id)
-        self.assertEqual(LedgerEntry.objects.filter(school=school, student=student).count(), 0)
+        self.assertIsNotNone(good_award.ledger_entry_id)
+        self.assertEqual(LedgerEntry.objects.filter(school=school, student=student).count(), 1)
         self.assertFalse(AidAuditEvent.objects.filter(
             school=school, entity_id=str(award.id), action="LEDGER_POSTED",
         ).exists())
 
+        payload["ids"] = [str(award.id)]
         retried = self.client.post(
             "/api/director/actions/", data=json.dumps(payload),
             content_type="application/json", HTTP_X_SCHOOL_ID=str(school.id),
@@ -306,6 +321,7 @@ class DirectorActionsAuthRequiredTests(TestCase):
         self.assertIsNone(retried.json()["errors"])
         award.refresh_from_db()
         self.assertIsNotNone(award.ledger_entry_id)
+        self.assertEqual(LedgerEntry.objects.filter(school=school, student=student).count(), 2)
 
     def test_director_actions_rejects_mismatched_tenant_header(self):
         school = School.objects.create(name="Header Target School")
