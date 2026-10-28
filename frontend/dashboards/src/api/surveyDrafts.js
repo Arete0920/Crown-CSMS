@@ -12,7 +12,7 @@ async function request(schoolId, path, init = {}) {
   assertSchool(schoolId);
   const result = await authenticatedJson(path, {
     ...init,
-    headers: { 'Content-Type': 'application/json', 'X-School-Id': schoolId },
+    headers: { ...(init.headers || {}), 'Content-Type': 'application/json', 'X-School-Id': schoolId },
   });
   assertSchool(schoolId);
   return result;
@@ -36,15 +36,38 @@ export async function readSurveyDraft(schoolId, id) {
   return result;
 }
 
+function draftPayload(draft) {
+  return {
+    name: draft.name, purpose: draft.purpose,
+    questions: draft.questions.map(({ key, prompt, question_type, choices, required }) => ({
+      key, prompt, question_type, choices, required,
+    })),
+  };
+}
+
 export async function createSurveyDraft(schoolId, draft) {
   const result = definition(await request(schoolId, ROOT, {
-    method: 'POST', body: JSON.stringify({
-      name: draft.name, purpose: draft.purpose,
-      questions: draft.questions.map(({ key, prompt, question_type, choices, required }) => ({
-        key, prompt, question_type, choices, required,
-      })),
-    }),
+    method: 'POST', body: JSON.stringify(draftPayload(draft)),
   }));
   if (result.status !== 'draft') throw new Error('Draft creation could not be confirmed.');
+  return result;
+}
+
+/** The backend requires its opaque strong ETag, not a locally calculated version. */
+export async function replaceSurveyDraft(schoolId, id, revision, draft) {
+  if (typeof id !== 'string' || !id || typeof revision !== 'string'
+      || !/^[0-9a-f]{64}$/.test(revision)) {
+    throw new Error('Reload the current saved draft before editing.');
+  }
+  const result = definition(await request(schoolId, `${ROOT}${encodeURIComponent(id)}/`, {
+    method: 'PUT',
+    headers: { 'If-Match': `"${revision}"` },
+    body: JSON.stringify(draftPayload(draft)),
+  }));
+  if (result.id !== id || result.status !== 'draft'
+      || typeof result.revision !== 'string' || !/^[0-9a-f]{64}$/.test(result.revision)
+      || result.revision === revision) {
+    throw new Error('The saved revision could not be confirmed. Reload before another write.');
+  }
   return result;
 }
