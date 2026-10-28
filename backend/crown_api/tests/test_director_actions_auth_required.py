@@ -335,6 +335,86 @@ class DirectorActionsAuthRequiredTests(TestCase):
         self.assertIsNotNone(award.ledger_entry_id)
         self.assertEqual(LedgerEntry.objects.filter(school=school, student=student).count(), 2)
 
+    def test_invalid_award_school_links_and_nonpositive_amount_fail_closed(self):
+        school = School.objects.create(name="Award integrity school")
+        other = School.objects.create(name="Unrelated award school")
+        year = AcademicYear.objects.create(
+            school=school, name="2026-27",
+            start_date=date(2026, 8, 1), end_date=date(2027, 5, 31),
+        )
+        other_year = AcademicYear.objects.create(
+            school=other, name="2026-27-other",
+            start_date=date(2026, 8, 1), end_date=date(2027, 5, 31),
+        )
+        family = Family.objects.create(school=school, family_name="Valid family")
+        student = Student.objects.create(
+            school=school, family=family, student_number="I-1",
+            first_name="Valid", last_name="Student", dob=date(2011, 1, 1),
+        )
+        foreign_family = Family.objects.create(
+            school=other, family_name="Foreign family",
+        )
+        foreign_student = Student.objects.create(
+            school=other, family=foreign_family, student_number="I-2",
+            first_name="Foreign", last_name="Student", dob=date(2011, 1, 1),
+        )
+        ChartAccount.objects.create(
+            school=school, code="AID", name="Aid", account_type="INCOME",
+        )
+        awards = [
+            AidAward.objects.create(
+                school=school, academic_year=other_year, student=student,
+                awarded_cents=3000, decision_status=AidAward.DECISION_ACCEPTED,
+            ),
+            AidAward.objects.create(
+                school=school, academic_year=year, student=foreign_student,
+                awarded_cents=3000, decision_status=AidAward.DECISION_ACCEPTED,
+            ),
+            AidAward.objects.create(
+                school=school, academic_year=year, student=student,
+                awarded_cents=0, decision_status=AidAward.DECISION_ACCEPTED,
+            ),
+            AidAward.objects.create(
+                school=school, academic_year=year, student=student,
+                awarded_cents=-500, decision_status=AidAward.DECISION_ACCEPTED,
+            ),
+        ]
+        User = get_user_model()
+        actor = User.objects.create_user(
+            username="director_award_integrity", password="synthetic",
+            school=school, is_staff=True,
+        )
+        UserRole.objects.create(user=actor, school=school, role_code="AID_DIRECTOR")
+        self.client.force_login(actor)
+        payload = {
+            "action": "POST_ACCEPTED_AWARDS",
+            "school_id": str(school.id),
+            "ids": [str(award.id) for award in awards],
+        }
+        response = self.client.post(
+            "/api/director/actions/", data=json.dumps(payload),
+            content_type="application/json", HTTP_X_SCHOOL_ID=str(school.id),
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["posted_count"], 0)
+        self.assertEqual(
+            [error["award_id"] for error in response.json()["errors"]],
+            [str(award.id) for award in awards],
+        )
+        self.assertTrue(all(
+            error["error"] == "Internal processing error"
+            for error in response.json()["errors"]
+        ))
+        for award in awards:
+            award.refresh_from_db()
+            self.assertIsNone(award.ledger_entry_id)
+        self.assertFalse(LedgerEntry.objects.filter(school=school).exists())
+        self.assertFalse(Credit.objects.filter(school_id=school.id).exists())
+        self.assertFalse(Payment.objects.filter(school_id=school.id).exists())
+        self.assertFalse(AidAuditEvent.objects.filter(
+            school=school, action="LEDGER_POSTED",
+        ).exists())
+
     def test_director_actions_rejects_mismatched_tenant_header(self):
         school = School.objects.create(name="Header Target School")
         other_school = School.objects.create(name="Header Other School")

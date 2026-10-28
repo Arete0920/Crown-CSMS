@@ -153,8 +153,11 @@ def ensure_accepted_award_credit(*, award: AidAward, actor_user) -> Credit | Non
     if (
         award.student.school_id != award.school_id
         or award.student.family.school_id != award.school_id
+        or award.academic_year.school_id != award.school_id
     ):
-        raise RuntimeError("Award student/family school mismatch")
+        raise RuntimeError("Award student/family/year school mismatch")
+    if award.awarded_cents <= 0:
+        raise RuntimeError("Award amount must be positive")
     return _ensure_student_account_credit(award=award, actor_user=actor_user)
 
 
