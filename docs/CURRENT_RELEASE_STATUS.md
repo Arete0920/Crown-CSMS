@@ -1,7 +1,7 @@
 # CROWN Current Release Status
 
 **Status:** RELEASE CANDIDATE — EXACT-HEAD VERIFICATION REQUIRED  
-**Last release-governance reconciliation:** 2026-10-27 (dated DEV checkpoint below; resolve live source at the next decision)  
+**Last release-governance reconciliation:** 2026-10-27, 20:14 Eastern (see dated DEV evidence and strict-current-head drift checkpoint below; resolve live source at every release decision)  
 **Current repository identity:** resolve exact `refs/heads/main` from Git/GitHub at the decision point  
 **Release rule:** production-ready source status is granted only to an exact repository head whose applicable security, dependency, test, schema, tenant-isolation, build, repository-policy, and release-authority checks are passing.
 
