@@ -21,8 +21,8 @@ Layer C applies **after**:
 
 ---
 
-## 2. Role-Based Row Scoping Matrix (target visibility doctrine)
-
+## 2. Role-Based Row Scoping Matrix (target visibility doctrine)
+
 The roles below express intended policy. They do **not** certify that all listed behavior has been implemented or deployed. Section 8 records the reviewed source behavior, with stricter fail-closed states where assignments or permissions are not yet supported.
 
 ### 2.1 Students Domain
@@ -182,7 +182,7 @@ Each domain must have:
 
 ## 8. Layer C: Current Implementation Status
 
-_Last updated: 2026-02-22. Update this table with every scoping PR._
+_Source behavior reconciled on 2026-10-28 to protected main `2ae0c7a6283f566fa8918e43e61669dd2fa2d30a`; hosted privacy acceptance remains open under issue #441._
 
 ### 8.1 Authoritative identity versus compatibility read models
 
@@ -244,8 +244,8 @@ The accepted ADR-001 reserves canonical operational writes for `core.Family`, `c
 
 Canonical `/api/` and `/api/v1/` household, guardian and student endpoints require selected active school plus Layer C row/field scope. School-wide household access requires `households.view`; guardian directory access separately requires `guardians.view`. A Django staff bit, email match, unknown role, and a role belonging to another school do not authorize personal data. Parent household/student and financial aid reads require a persisted same-school `households.Guardian.account` link. The old guardian-scope toggle does not bypass protected viewsets. Permission seeding and hosted acceptance are distinct operational steps.
 
-## 9. Historical Layer C implementation plan (archived)
-
+## 9. Historical Layer C implementation plan (archived)
+
 The original phase/task examples below are preserved as historical design intent, not active implementation instructions. The current executable interfaces are `scope_queryset`, `scope_serializer_fields`, `scoped_serializer_context` and `apply_scope` in `backend/core/scoping.py`; the illustrative `scope_fields()` below is not the current interface.
 
 ### Phase 1 — Infrastructure (Foundation Layer)
