@@ -207,6 +207,13 @@ jobs:
           python tools/ci/verify_ci_tool_pins.py
           python -m unittest discover -s tools/ci -p 'test_verify_ci_tool_pins.py' -v
 
+      - name: Validate ISO 27001 Annex A intake and claims
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m unittest discover -s tools/ci -p 'test_verify_iso27001_soa.py' -v
+          python tools/ci/verify_iso27001_soa.py
+
       - name: Enforce external tool integration security
         run: python tools/ci/verify_tool_integration_security.py
 
