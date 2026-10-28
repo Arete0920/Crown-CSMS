@@ -202,6 +202,8 @@ class AidAward(TimeStampedModel):
             from django.core.exceptions import ValidationError
 
             raise ValidationError("Declined aid award requires controlled reinstatement")
+        if self.decision_status == self.DECISION_ACCEPTED or self.ledger_entry_id:
+            raise ValidationError("Accepted or posted aid award requires controlled reversal")
         self.decision_status = self.DECISION_OFFERED
         self.decided_by = actor_user
         self.decided_at = timezone.now()

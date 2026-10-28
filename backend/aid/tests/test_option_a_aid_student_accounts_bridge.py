@@ -480,3 +480,43 @@ def test_decline_refuses_ambiguous_approval_budget_audit():
     assert AidBudgetTracker.objects.get(
         school=school, academic_year=award.academic_year, bucket=award.award_type,
     ).awarded_cents == 25_000
+
+def test_accepted_financial_award_cannot_be_reoffered_without_reversal():
+    school, award = _fixture(linked=True)
+    approve_award(award=award, actor_user=None)
+    award.refresh_from_db()
+    with pytest.raises(ValidationError, match="controlled reversal"):
+        award.mark_offered()
+    award.refresh_from_db()
+    assert award.decision_status == AidAward.DECISION_ACCEPTED
+    assert _credit_qs(school, award).filter(is_void=False).count() == 1
+    assert AidBudgetTracker.objects.get(
+        school=school, academic_year=award.academic_year, bucket=award.award_type,
+    ).awarded_cents == 25_000
+    assert AidAuditEvent.objects.filter(
+        school=school, entity_id=str(award.id), action="AWARD_OFFERED",
+    ).count() == 0
+
+
+def test_acceptance_retry_does_not_project_credit_without_legacy_posting():
+    school, award = _fixture(linked=True)
+    award.decision_status = AidAward.DECISION_ACCEPTED
+    award.save(update_fields=["decision_status"])
+    with pytest.raises(ValidationError, match="without legacy posting"):
+        approve_award(award=award, actor_user=None)
+    assert not _credit_qs(school, award).exists()
+    assert AidBudgetTracker.objects.get(
+        school=school, academic_year=award.academic_year, bucket=award.award_type,
+    ).awarded_cents == 0
+
+
+def test_approval_rejects_wrong_school_award_family_without_writing():
+    school, award = _fixture(linked=True)
+    other = School.objects.create(name="Invalid approval family tenancy")
+    Family.objects.filter(pk=award.student.family_id).update(school=other)
+    with pytest.raises(ValidationError, match="Award student/family/year school mismatch"):
+        approve_award(award=award, actor_user=None)
+    assert not _credit_qs(school, award).exists()
+    assert AidBudgetTracker.objects.get(
+        school=school, academic_year=award.academic_year, bucket=award.award_type,
+    ).awarded_cents == 0

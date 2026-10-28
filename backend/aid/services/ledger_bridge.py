@@ -192,11 +192,19 @@ def approve_award(
     Accounts credit projection.
     """
     award = AidAward.objects.select_for_update().select_related("student__family", "school").get(pk=award.pk)
+    if (
+        award.student.school_id != award.school_id
+        or award.student.family.school_id != award.school_id
+        or award.academic_year.school_id != award.school_id
+    ):
+        raise ValidationError("Award student/family/year school mismatch")
 
     # Retry-safe migration behavior: an already-approved award does not consume
     # budget again, but can repair a previously missing Student Accounts credit
     # after its household-family mapping becomes available.
     if award.decision_status == AidAward.DECISION_ACCEPTED:
+        if award.ledger_entry_id is None:
+            raise ValidationError("Accepted award without legacy posting requires controlled reconciliation")
         _ensure_student_account_credit(award=award, actor_user=actor_user)
         return award
 
