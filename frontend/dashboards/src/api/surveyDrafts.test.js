@@ -1,7 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createSurveyDraft, listSurveyDrafts, readSurveyDraft } from './surveyDrafts.js';
+import { createSurveyDraft, listSurveyDrafts, readSurveyDraft, replaceSurveyDraft } from './surveyDrafts.js';
 
-const draft = { id: 'saved-1', name: 'School pulse', purpose: 'parent_pulse', status: 'draft', questions: [] };
+const revision = 'a'.repeat(64);
+const nextRevision = 'b'.repeat(64);
+const draft = { id: 'saved-1', name: 'School pulse', purpose: 'parent_pulse', status: 'draft', revision, questions: [] };
 const response = (data) => new Response(JSON.stringify(data), { status: 200, headers: { 'content-type': 'application/json' } });
 
 beforeEach(() => {
@@ -63,5 +65,73 @@ describe('survey draft transport', () => {
       questions: [{ key: 'q1', prompt: 'Clear?', question_type: 'boolean', choices: [], required: false }],
     });
     expect(globalThis.fetch.mock.calls[0][1].method).toBe('POST');
+  });
+});
+
+describe('conditional saved-draft replacement transport', () => {
+  const input = {
+    name: 'Revised school pulse', purpose: 'custom',
+    school_id: 'foreign', status: 'active', public_enabled: true,
+    questions: [{ key: 'q1', prompt: 'Updated?', question_type: 'boolean', required: true, choices: [], strategic_tags: ['forbidden'] }],
+  };
+
+  it('uses canonical school/auth transport and a quoted strong If-Match with only allowed fields', async () => {
+    globalThis.fetch.mockResolvedValue(response({ ...draft, revision: nextRevision }));
+    expect((await replaceSurveyDraft('school-a', 'saved-1', revision, input)).revision).toBe(nextRevision);
+    const [url, init] = globalThis.fetch.mock.calls[0];
+    expect(url).toContain('/api/v1/survey-intelligence/surveys/saved-1/');
+    expect(init.method).toBe('PUT');
+    expect(init.headers.get('Authorization')).toBe('Bearer synthetic-access');
+    expect(init.headers.get('X-School-Id')).toBe('school-a');
+    expect(init.headers.get('If-Match')).toBe(`"${revision}"`);
+    expect(JSON.parse(init.body)).toEqual({
+      name: 'Revised school pulse', purpose: 'custom',
+      questions: [{ key: 'q1', prompt: 'Updated?', question_type: 'boolean', choices: [], required: true }],
+    });
+  });
+
+  it('rejects missing, weak, wildcard and malformed revisions without sending', async () => {
+    for (const bad of ['', '*', 'W/"abc"', '"abc"', 'ABC', undefined]) {
+      await expect(replaceSurveyDraft('school-a', 'saved-1', bad, input)).rejects.toThrow('Reload');
+    }
+    expect(globalThis.fetch).not.toHaveBeenCalled();
+  });
+
+  it('fails closed if the selected school is different before a write', async () => {
+    await expect(replaceSurveyDraft('school-b', 'saved-1', revision, input)).rejects.toThrow('School changed');
+    expect(globalThis.fetch).not.toHaveBeenCalled();
+  });
+
+  it('propagates validation, forbidden, immutable, stale and precondition errors without retries', async () => {
+    for (const status of [400, 403, 409, 412, 428]) {
+      globalThis.fetch.mockResolvedValueOnce(new Response(JSON.stringify({ detail: 'denied' }), {
+        status, headers: { 'content-type': 'application/json' },
+      }));
+      await expect(replaceSurveyDraft('school-a', 'saved-1', revision, input)).rejects.toMatchObject({ status });
+    }
+    expect(globalThis.fetch).toHaveBeenCalledTimes(5);
+  });
+
+  it('never treats an unexpected revision, identifier or state as confirmed', async () => {
+    for (const result of [
+      { ...draft, revision },
+      { ...draft, revision: '' },
+      { ...draft, id: 'other', revision: nextRevision },
+      { ...draft, status: 'active', revision: nextRevision },
+    ]) {
+      globalThis.fetch.mockResolvedValueOnce(response(result));
+      await expect(replaceSurveyDraft('school-a', 'saved-1', revision, input)).rejects.toThrow('could not be confirmed');
+    }
+    expect(globalThis.fetch).toHaveBeenCalledTimes(4);
+  });
+
+  it('discards a successful-looking write response after school selection changes', async () => {
+    let resolve;
+    globalThis.fetch.mockReturnValue(new Promise((done) => { resolve = done; }));
+    const pending = replaceSurveyDraft('school-a', 'saved-1', revision, input);
+    sessionStorage.setItem('crown.school.id', 'school-b');
+    resolve(response({ ...draft, revision: nextRevision }));
+    await expect(pending).rejects.toThrow('School changed');
+    expect(globalThis.fetch).toHaveBeenCalledTimes(1);
   });
 });

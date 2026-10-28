@@ -40,6 +40,7 @@
 | ADM-04 Invalid schema/oversize request | 400, atomic no-write | Input limit and DB tests |
 | ADM-05 Saved draft replacement | Current school editor, matching revision, atomic replacement; retained question keys preserve identity/server tags | API + DB; UI acceptance separate |
 | ADM-06 Stale or simultaneous editors | Missing revision 428; changed revision 412; exactly one concurrent matching-revision writer succeeds | API + PostgreSQL lock tests |
+| ADM-07 Saved draft editing UI | Existing admin screen edits eligible school drafts; invalid, conflicting and uncertain saves retain text and require explicit reconciliation; no publish control | Focused browser/transport tests + hosted acceptance separately |
 | PUB-01 Version approval | Matching immutable snapshot, hash, notice, signer and timestamp | Migration + service + DB tests |
 | PUB-02 Published question edit | Denied or new version; old report unchanged | Version contract regression |
 | PUB-03 Unapproved/minor/protected survey | Publish denied unless separate approval path satisfied | Negative API/evidence |
@@ -90,6 +91,34 @@ commit orderings, including an observed database lock wait. SQLite unit tests
 alone do not establish that concurrency result. These API cases do not complete
 the saved-edit UI, hosted browser journey, publication/distribution workflow,
 research review or pilot acceptance.
+
+## Existing administrator saved-editor contract
+
+The school-authorized `/survey-intelligence/drafts` page uses the same
+administrator navigation and canonical authenticated transport for both new
+surveys and editing saved drafts. An editor must first read the current detail
+and its opaque revision, then submit only `name`, `purpose`, and `questions`
+with a strong quoted `If-Match`. The page does not infer permissions from role
+names or expose publication/distribution/response controls.
+
+Only server-advertised editors see editing actions, and a saved item must
+report draft status plus a valid revision before the action is enabled.
+The backend remains the authority on publication history, response eligibility,
+school scope, permissions and CSRF; frontend controls never substitute for
+those checks. Existing question keys stay stable across an edit; newly added
+questions use unused keys.
+
+A 400 preserves typed input for correction. A 412/428 stale-precondition
+response, 409 immutable-draft response, or indeterminate network/server result
+blocks resubmission; the administrator may read the current server definition,
+compare it with the retained unsaved text, and explicitly discard edits and
+resume from the latest saved revision. No automatic rebase, overwrite or
+write retry is permitted. Changing the selected school invalidates the
+previous school's draft editing context. The existing create workflow remains.
+
+Source-level UI tests are separate from hosted authenticated browser acceptance,
+legal/privacy/research acceptance, deployment and publication/distribution
+authority. None of these actions enables public survey collection.
 
 ## Statistical and research rules
 
