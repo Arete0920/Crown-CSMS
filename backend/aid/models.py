@@ -195,6 +195,15 @@ class AidAward(TimeStampedModel):
 
     @transaction.atomic
     def mark_offered(self, actor_user: UserAccount | None = None):
+        # A stale model instance must not reopen a declined financial award.
+        type(self).objects.select_for_update().get(pk=self.pk)
+        self.refresh_from_db()
+        from django.core.exceptions import ValidationError
+
+        if self.decision_status == self.DECISION_DECLINED:
+            raise ValidationError("Declined aid award requires controlled reinstatement")
+        if self.decision_status == self.DECISION_ACCEPTED or self.ledger_entry_id:
+            raise ValidationError("Accepted or posted aid award requires controlled reversal")
         self.decision_status = self.DECISION_OFFERED
         self.decided_by = actor_user
         self.decided_at = timezone.now()
@@ -215,6 +224,13 @@ class AidAward(TimeStampedModel):
         Accept the award and create a negative ledger entry (credit) under ChartAccount code 'AID'.
         Safe to call once; prevents duplicate ledger posting via self.ledger_entry.
         """
+        # Serialize with decline, including legacy/direct callers holding stale objects.
+        type(self).objects.select_for_update().get(pk=self.pk)
+        self.refresh_from_db()
+        if self.decision_status == self.DECISION_DECLINED:
+            from django.core.exceptions import ValidationError
+
+            raise ValidationError("Declined aid award requires controlled reinstatement")
         self.decision_status = self.DECISION_ACCEPTED
         self.decided_by = actor_user
         self.decided_at = timezone.now()
@@ -267,33 +283,198 @@ class AidAward(TimeStampedModel):
 
     @transaction.atomic
     def mark_declined_and_reverse(self, actor_user: UserAccount | None = None):
-        """
-        If declined after posting, reverse the ledger entry by creating a reversal entry.
-        """
-        self.decision_status = self.DECISION_DECLINED
-        self.decided_by = actor_user
-        self.decided_at = timezone.now()
-        self.save()
+        """Atomically decline or reconcile an already-declined aid award.
 
-        AidAuditEvent.log(
-            school=self.school,
-            entity_type=AidAuditEvent.ENTITY_AWARD,
-            entity_id=self.id,
-            action="AWARD_DECLINED",
-            actor_user=actor_user,
-            details={"awarded_cents": self.awarded_cents, "award_type": self.award_type},
+        All legacy reversals, canonical non-cash Credit voids, budget releases
+        and audit events share one transaction. The award row lock serializes
+        competing award transitions. Never fabricate a cash Payment.
+        """
+        from decimal import Decimal
+
+        from django.core.exceptions import ValidationError
+
+        from ledger.models import Credit
+        from ledger.services import void_account_credit
+
+        award = (
+            type(self).objects.select_for_update()
+            .select_related("student__family", "academic_year")
+            .get(pk=self.pk)
         )
+        if (
+            award.student.school_id != award.school_id
+            or award.student.family.school_id != award.school_id
+            or award.academic_year.school_id != award.school_id
+        ):
+            raise ValidationError("Award student/family/year school mismatch")
 
-        if self.ledger_entry_id:
-            reversal = LedgerEntry.create_reversal(self.ledger_entry, created_by=actor_user)
-            AidAuditEvent.log(
-                school=self.school,
+        was_declined = award.decision_status == self.DECISION_DECLINED
+        # The approval audit is the recorded budget reservation. Current award
+        # fields can be mutated by legacy callers, so never release a different
+        # budget bucket or amount from the one actually reserved.
+        approval_facts = list(
+            AidAuditEvent.objects.filter(
+                school=award.school,
                 entity_type=AidAuditEvent.ENTITY_AWARD,
-                entity_id=self.id,
+                entity_id=award.id,
+                action="AWARD_APPROVED",
+            ).values_list("details_json", flat=True)[:2]
+        )
+        approved_by_service = bool(approval_facts)
+        if approved_by_service:
+            if (
+                len(approval_facts) != 1
+                or not isinstance(approval_facts[0], dict)
+                or approval_facts[0].get("bucket") != award.award_type
+                or approval_facts[0].get("awarded_cents") != award.awarded_cents
+            ):
+                raise ValidationError("Award approval budget facts require controlled reconciliation")
+        budget_release_recorded = AidAuditEvent.objects.filter(
+            school=award.school,
+            entity_type=AidAuditEvent.ENTITY_AWARD,
+            entity_id=award.id,
+            action="AWARD_BUDGET_RELEASED",
+        ).exists()
+        if budget_release_recorded and not was_declined:
+            raise ValidationError("Award budget history requires controlled reconciliation")
+
+        # Direct legacy-only awards never reserved budget through the canonical
+        # service. Do not decrement the bucket for those awards.
+        budget = None
+        if approved_by_service and not budget_release_recorded:
+            budget = AidBudgetTracker.objects.select_for_update().get(
+                school=award.school,
+                academic_year=award.academic_year,
+                bucket=award.award_type,
+            )
+            if award.awarded_cents <= 0 or budget.awarded_cents < award.awarded_cents:
+                raise ValidationError("Award budget requires controlled reconciliation")
+
+        reference = f"aid_award:{award.pk}"
+        credit = (
+            Credit.objects.select_for_update()
+            .filter(
+                school_id=award.school_id,
+                source=Credit.SOURCE_FINANCIAL_AID,
+                reference=reference,
+            )
+            .first()
+        )
+        if credit is not None:
+            expected = (Decimal(award.awarded_cents) / Decimal("100")).quantize(Decimal("0.01"))
+            if (
+                credit.amount != expected
+                or credit.account.school_id != award.school_id
+                or credit.account.household.school_id != award.school_id
+            ):
+                raise ValidationError("Existing aid credit requires controlled reconciliation")
+
+        reversal = None
+        if award.ledger_entry_id:
+            original = award.ledger_entry
+            if (
+                original.school_id != award.school_id
+                or original.student_id != award.student_id
+                or original.family_id != award.student.family_id
+                or original.academic_year_id != award.academic_year_id
+                or original.source != LedgerEntry.SOURCE_AID_AWARD
+                or original.family.school_id != award.school_id
+                or original.account.school_id != award.school_id
+                or original.is_reversal
+                or original.amount_cents != -abs(int(award.awarded_cents))
+            ):
+                raise ValidationError("Legacy aid entry requires controlled reconciliation")
+
+            # Detect an existing reversal even if historical flags are wrong.
+            previous = list(
+                LedgerEntry.objects.filter(reversal_of_id=original.id)[:2]
+            )
+            if len(previous) > 1:
+                raise ValidationError("Multiple legacy reversals require controlled reconciliation")
+            if previous:
+                reversal = previous[0]
+                if (
+                    not reversal.is_reversal
+                    or reversal.school_id != award.school_id
+                    or reversal.family_id != original.family_id
+                    or reversal.student_id != original.student_id
+                    or reversal.academic_year_id != original.academic_year_id
+                    or reversal.account_id != original.account_id
+                    or reversal.source != original.source
+                    or reversal.amount_cents != -original.amount_cents
+                ):
+                    raise ValidationError("Invalid legacy reversal requires controlled reconciliation")
+            elif was_declined:
+                # Do not silently fabricate a missing historic reversal.
+                raise ValidationError("Previously declined award lacks a legacy reversal")
+        elif award.decision_status == self.DECISION_ACCEPTED or credit is not None:
+            raise ValidationError("Aid credit or acceptance without legacy posting requires reconciliation")
+
+        if was_declined and not credit and budget is None:
+            # Existing clean decline is a true no-op, including its audit log.
+            self.decision_status = award.decision_status
+            return
+
+        if credit is not None and not credit.is_void:
+            void_account_credit(credit=credit)
+            if not AidAuditEvent.objects.filter(
+                school=award.school,
+                entity_type=AidAuditEvent.ENTITY_AWARD,
+                entity_id=award.id,
+                action="STUDENT_ACCOUNT_CREDIT_VOIDED",
+            ).exists():
+                AidAuditEvent.log(
+                    school=award.school,
+                    entity_type=AidAuditEvent.ENTITY_AWARD,
+                    entity_id=award.id,
+                    action="STUDENT_ACCOUNT_CREDIT_VOIDED",
+                    actor_user=actor_user,
+                    details={"credit_id": str(credit.pk), "reference": reference},
+                )
+
+        if award.ledger_entry_id and reversal is None:
+            reversal = LedgerEntry.create_reversal(award.ledger_entry, created_by=actor_user)
+            AidAuditEvent.log(
+                school=award.school,
+                entity_type=AidAuditEvent.ENTITY_AWARD,
+                entity_id=award.id,
                 action="LEDGER_REVERSED",
                 actor_user=actor_user,
-                details={"original_ledger_entry_id": str(self.ledger_entry_id), "reversal_ledger_entry_id": str(reversal.id)},
+                details={
+                    "original_ledger_entry_id": str(award.ledger_entry_id),
+                    "reversal_ledger_entry_id": str(reversal.id),
+                },
             )
+
+        if budget is not None:
+            budget.awarded_cents -= award.awarded_cents
+            budget.save(update_fields=["awarded_cents"])
+            AidAuditEvent.log(
+                school=award.school,
+                entity_type=AidAuditEvent.ENTITY_AWARD,
+                entity_id=award.id,
+                action="AWARD_BUDGET_RELEASED",
+                actor_user=actor_user,
+                details={"bucket": award.award_type, "awarded_cents": award.awarded_cents},
+            )
+
+        if not was_declined:
+            award.decision_status = self.DECISION_DECLINED
+            award.decided_by = actor_user
+            award.decided_at = timezone.now()
+            award.save(update_fields=["decision_status", "decided_by", "decided_at"])
+            AidAuditEvent.log(
+                school=award.school,
+                entity_type=AidAuditEvent.ENTITY_AWARD,
+                entity_id=award.id,
+                action="AWARD_DECLINED",
+                actor_user=actor_user,
+                details={"awarded_cents": award.awarded_cents, "award_type": award.award_type},
+            )
+
+        self.decision_status = award.decision_status
+        self.decided_by = award.decided_by
+        self.decided_at = award.decided_at
 
 
 class AidAuditEvent(TimeStampedModel):
