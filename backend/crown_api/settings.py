@@ -152,7 +152,9 @@ CORS_ALLOW_HEADERS = list(default_headers) + [
     "x-crown-school-id",
     "x-demo-key",
     "x-demo-role",
+    "if-match",
 ]
+CORS_EXPOSE_HEADERS = ["etag"]
 
 # Azure reverse-proxy HTTPS handling
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
