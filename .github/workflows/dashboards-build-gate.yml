@@ -37,6 +37,9 @@ jobs:
       - name: Install
         run: npm ci
 
+      - name: Verify DEV browser evidence privacy and failure handling
+        run: node --test scripts/dev-browser-evidence.test.mjs
+
       - name: Verify CROWN canonical SVG favicon contract
         run: npm run test -- src/brand/faviconContract.test.js
 

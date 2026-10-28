@@ -564,12 +564,36 @@ jobs:
                   raise SystemExit('Deployed DEV frontend identity mismatch')
           print('DEV frontend identity verified; runtime journeys require separate certification')
           PYCODE
+      - name: Load pinned DEV evidence exporter
+        id: dev-evidence-exporter
+        if: toJSON(inputs.dev_deploy_only) == 'false'
+        env:
+          WORKFLOW_SHA: ${{ github.sha }}
+        run: |
+          python3 - <<'PYCODE'
+          import os, re, subprocess
+          from pathlib import Path
+          source = os.environ['WORKFLOW_SHA']
+          if not re.fullmatch(r'[0-9a-f]{40}', source):
+              raise SystemExit('Invalid evidence exporter source')
+          paths = (
+              'frontend/dashboards/scripts/browser-evidence-schema.mjs',
+              'frontend/dashboards/scripts/dev-browser-evidence-reporter.mjs',
+              'frontend/dashboards/scripts/run-dev-browser-evidence.mjs',
+              'frontend/dashboards/playwright.dev-evidence.config.ts',
+          )
+          # Resolve every pinned file before replacing any checkout file.
+          resolved = [(Path(path), subprocess.check_output(['git', 'show', source + ':' + path])) for path in paths]
+          for path, content in resolved:
+              path.write_bytes(content)
+          PYCODE
       - name: Install existing Playwright browser
         if: toJSON(inputs.dev_deploy_only) == 'false'
         working-directory: frontend/dashboards
         run: npx playwright install chromium --with-deps
       - name: Execute existing live certification against DEV preview
-        if: toJSON(inputs.dev_deploy_only) == 'false'
+        id: dev-certification-evidence
+        if: toJSON(inputs.dev_deploy_only) == 'false' && steps.dev-evidence-exporter.outcome == 'success'
         working-directory: frontend/dashboards
         env:
           CI: '1'
@@ -580,23 +604,24 @@ jobs:
           CROWN_LIVE_API_BASE_URL: https://crown-api-dev.azurewebsites.net
           CROWN_CERTIFICATION_TENANT_MODE: sandbox
           CROWN_LIVE_USE_SANDBOX_CREDENTIALS: '1'
+          CROWN_EVIDENCE_RUNTIME_SHA: ${{ inputs.dev_source_sha }}
+          CROWN_EVIDENCE_TEST_SHA: ${{ inputs.dev_source_sha }}
+          CROWN_EVIDENCE_EXPORTER_SHA: ${{ github.sha }}
         run: |
           test -n "$CROWN_LIVE_FRONTEND_URL"
-          npm run certify:production
+          node scripts/run-dev-browser-evidence.mjs --suite certification
       - name: Upload DEV execution evidence
-        if: always()
+        if: always() && toJSON(inputs.dev_deploy_only) == 'false' && steps.dev-certification-evidence.outputs.evidence_valid == 'true'
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
-          name: dev-certification-${{ inputs.dev_source_sha }}-${{ github.run_id }}
-          path: |
-            audit-artifacts/production-certification/current/
-            frontend/dashboards/test-results/
-            frontend/dashboards/playwright-report/
-          if-no-files-found: warn
+          name: dev-certification-${{ inputs.dev_source_sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ steps.dev-certification-evidence.outputs.evidence_path }}
+          if-no-files-found: error
           retention-days: 30
 
       - name: Execute existing buyer persistence journeys on DEV
-        if: always() && toJSON(inputs.dev_deploy_only) == 'false' && steps.preview.outcome == 'success'
+        id: dev-buyer-evidence
+        if: always() && toJSON(inputs.dev_deploy_only) == 'false' && steps.preview.outcome == 'success' && steps.dev-evidence-exporter.outcome == 'success'
         working-directory: frontend/dashboards
         env:
           CI: '1'
@@ -604,17 +629,18 @@ jobs:
           CROWN_LIVE_API_BASE_URL: https://crown-api-dev.azurewebsites.net
           CROWN_BROWSER_AUTHORITY_OUTPUT: test-results/buyer-sandbox-browser-authority.json
           CROWN_REHEARSAL_TEST_SHA: ${{ github.sha }}
+          CROWN_EVIDENCE_RUNTIME_SHA: ${{ inputs.dev_source_sha }}
+          CROWN_EVIDENCE_TEST_SHA: ${{ github.sha }}
+          CROWN_EVIDENCE_EXPORTER_SHA: ${{ github.sha }}
         run: |
           git show "$CROWN_REHEARSAL_TEST_SHA:frontend/dashboards/tests/certification/buyer-sandbox-browser-authority.spec.ts" > tests/certification/buyer-sandbox-browser-authority.spec.ts
-          npm run certify:buyer-sandbox-browser
+          node scripts/run-dev-browser-evidence.mjs --suite buyer
       - name: Upload DEV buyer persistence evidence
-        if: always() && toJSON(inputs.dev_deploy_only) == 'false' && steps.preview.outcome == 'success'
+        if: always() && toJSON(inputs.dev_deploy_only) == 'false' && steps.preview.outcome == 'success' && steps.dev-buyer-evidence.outputs.evidence_valid == 'true'
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
-          name: dev-buyer-persistence-${{ inputs.dev_source_sha }}-${{ github.run_id }}
-          path: |
-            frontend/dashboards/test-results/
-            frontend/dashboards/playwright-report/
+          name: dev-buyer-persistence-${{ inputs.dev_source_sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ steps.dev-buyer-evidence.outputs.evidence_path }}
           if-no-files-found: error
           retention-days: 30
 
@@ -675,7 +701,8 @@ jobs:
               raise SystemExit(1)
           PYCODE
       - name: Execute existing Playwright framework for two-tenant HTTP isolation
-        if: always() && toJSON(inputs.dev_deploy_only) == 'false' && steps.preview.outcome == 'success'
+        id: dev-tenant-evidence
+        if: always() && toJSON(inputs.dev_deploy_only) == 'false' && steps.preview.outcome == 'success' && steps.dev-evidence-exporter.outcome == 'success'
         working-directory: frontend/dashboards
         env:
           CI: '1'
@@ -683,15 +710,16 @@ jobs:
           CROWN_LIVE_FRONTEND_URL: ${{ steps.preview.outputs.static_web_app_url }}
           CROWN_LIVE_API_BASE_URL: https://crown-api-dev.azurewebsites.net
           CROWN_DEV_TENANT_FIXTURE: ${{ runner.temp }}/crown-dev-tenant-fixtures.json
-        run: npx playwright test tests/certification/production-tenant-isolation.spec.ts --workers=1 --reporter=line,html
+          CROWN_EVIDENCE_RUNTIME_SHA: ${{ inputs.dev_source_sha }}
+          CROWN_EVIDENCE_TEST_SHA: ${{ github.sha }}
+          CROWN_EVIDENCE_EXPORTER_SHA: ${{ github.sha }}
+        run: node scripts/run-dev-browser-evidence.mjs --suite tenant-isolation
       - name: Upload two-tenant execution results
-        if: always() && toJSON(inputs.dev_deploy_only) == 'false' && steps.preview.outcome == 'success'
+        if: always() && toJSON(inputs.dev_deploy_only) == 'false' && steps.preview.outcome == 'success' && steps.dev-tenant-evidence.outputs.evidence_valid == 'true'
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
-          name: dev-two-tenant-isolation-${{ inputs.dev_source_sha }}-${{ github.run_id }}
-          path: |
-            frontend/dashboards/test-results/
-            frontend/dashboards/playwright-report/
+          name: dev-two-tenant-isolation-${{ inputs.dev_source_sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ steps.dev-tenant-evidence.outputs.evidence_path }}
           if-no-files-found: error
           retention-days: 30
       - name: Remove ephemeral synthetic actor tokens
