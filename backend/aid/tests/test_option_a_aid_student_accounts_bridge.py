@@ -250,3 +250,73 @@ def test_decline_audit_failure_rolls_back_prior_void_and_reversal():
     assert not _credit_qs(school, award).get().is_void
     assert LedgerEntry.objects.filter(reversal_of_id=award.ledger_entry_id).count() == 0
     assert AidBudgetTracker.objects.get(school=school, academic_year=award.academic_year, bucket=award.award_type).awarded_cents == 25_000
+
+
+def test_preexisting_declined_award_reconciles_old_active_credit_once():
+    from core.models import LedgerEntry
+
+    school, award = _fixture(linked=True)
+    approve_award(award=award, actor_user=None)
+    award.refresh_from_db()
+    # Reproduce the historical bug without calling the new decline method.
+    original = award.ledger_entry
+    LedgerEntry.create_reversal(original)
+    award.decision_status = AidAward.DECISION_DECLINED
+    award.save(update_fields=["decision_status"])
+    assert not _credit_qs(school, award).get().is_void
+
+    award.mark_declined_and_reverse()
+    assert _credit_qs(school, award).get().is_void
+    assert LedgerEntry.objects.filter(reversal_of=original).count() == 1
+    assert AidBudgetTracker.objects.get(school=school, academic_year=award.academic_year, bucket=award.award_type).awarded_cents == 0
+    audit_count = AidAuditEvent.objects.filter(school=school, entity_id=str(award.id)).count()
+    award.mark_declined_and_reverse()
+    assert AidAuditEvent.objects.filter(school=school, entity_id=str(award.id)).count() == audit_count
+
+
+def test_declined_award_cannot_be_reapproved_or_reoffered():
+    school, award = _fixture(linked=True)
+    approve_award(award=award, actor_user=None)
+    award.refresh_from_db()
+    award.mark_declined_and_reverse()
+    with pytest.raises(ValidationError, match="controlled reinstatement"):
+        approve_award(award=award, actor_user=None)
+    with pytest.raises(ValidationError, match="controlled reinstatement"):
+        award.mark_accepted_and_post()
+    with pytest.raises(ValidationError, match="controlled reinstatement"):
+        award.mark_offered()
+    assert _credit_qs(school, award).get().is_void
+
+
+@pytest.mark.django_db(transaction=True)
+def test_concurrent_declines_are_serialized_on_postgresql():
+    from concurrent.futures import ThreadPoolExecutor
+    from threading import Barrier
+    from django.db import close_old_connections, connection
+    from core.models import LedgerEntry
+
+    if connection.vendor != "postgresql":
+        pytest.skip("PostgreSQL row locking required")
+    school, award = _fixture(linked=True)
+    approve_award(award=award, actor_user=None)
+    award.refresh_from_db()
+    barrier = Barrier(2)
+
+    def decline():
+        close_old_connections()
+        try:
+            barrier.wait(timeout=10)
+            AidAward.objects.get(pk=award.pk).mark_declined_and_reverse()
+        finally:
+            connection.close()
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        a = pool.submit(decline)
+        b = pool.submit(decline)
+        a.result(timeout=30)
+        b.result(timeout=30)
+    award.refresh_from_db()
+    assert award.decision_status == AidAward.DECISION_DECLINED
+    assert _credit_qs(school, award).get().is_void
+    assert LedgerEntry.objects.filter(reversal_of_id=award.ledger_entry_id).count() == 1
+    assert AidBudgetTracker.objects.get(school=school, academic_year=award.academic_year, bucket=award.award_type).awarded_cents == 0
