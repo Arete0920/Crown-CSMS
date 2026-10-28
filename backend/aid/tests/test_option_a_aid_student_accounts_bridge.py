@@ -163,7 +163,7 @@ def test_decline_without_household_link_never_fabricates_credit():
     assert not Payment.objects.filter(school_id=school.id, source="FINANCIAL_AID").exists()
 
 
-def test_decline_fails_closed_for_wrong_tenant_credit_account():
+def test_decline_rolls_back_when_credit_void_service_fails():
     from unittest.mock import patch
 
     school, award = _fixture(linked=True)
@@ -320,3 +320,125 @@ def test_concurrent_declines_are_serialized_on_postgresql():
     assert _credit_qs(school, award).get().is_void
     assert LedgerEntry.objects.filter(reversal_of_id=award.ledger_entry_id).count() == 1
     assert AidBudgetTracker.objects.get(school=school, academic_year=award.academic_year, bucket=award.award_type).awarded_cents == 0
+
+def test_decline_rejects_cross_school_credit_household_without_financial_write():
+    from core.models import LedgerEntry
+
+    school, award = _fixture(linked=True)
+    approve_award(award=award, actor_user=None)
+    award.refresh_from_db()
+    credit = _credit_qs(school, award).get()
+    foreign = School.objects.create(name="Credit foreign-household guard")
+
+    # Synthetic pre-existing damaged link: do not mutate immutable Credit facts.
+    Household.objects.filter(pk=credit.account.household_id).update(school_id=foreign.id)
+    event_count = AidAuditEvent.objects.filter(school=school, entity_id=str(award.id)).count()
+    with pytest.raises(ValidationError, match="Existing aid credit requires controlled reconciliation"):
+        award.mark_declined_and_reverse()
+    award.refresh_from_db()
+    credit.refresh_from_db()
+    assert award.decision_status == AidAward.DECISION_ACCEPTED
+    assert not credit.is_void
+    assert LedgerEntry.objects.filter(reversal_of_id=award.ledger_entry_id).count() == 0
+    assert AidBudgetTracker.objects.get(
+        school=school, academic_year=award.academic_year, bucket=award.award_type,
+    ).awarded_cents == 25_000
+    assert AidAuditEvent.objects.filter(school=school, entity_id=str(award.id)).count() == event_count
+
+
+def test_decline_rejects_cross_school_legacy_chart_account():
+    from core.models import LedgerEntry
+
+    school, award = _fixture(linked=True)
+    approve_award(award=award, actor_user=None)
+    award.refresh_from_db()
+    foreign = School.objects.create(name="Legacy chart-account mismatch")
+    ChartAccount.objects.filter(pk=award.ledger_entry.account_id).update(school=foreign)
+    with pytest.raises(ValidationError, match="Legacy aid entry requires controlled reconciliation"):
+        award.mark_declined_and_reverse()
+    award.refresh_from_db()
+    assert award.decision_status == AidAward.DECISION_ACCEPTED
+    assert not _credit_qs(school, award).get().is_void
+    assert LedgerEntry.objects.filter(reversal_of_id=award.ledger_entry_id).count() == 0
+
+
+def test_stale_award_instance_cannot_reapprove_or_reoffer_after_decline():
+    school, award = _fixture(linked=True)
+    approve_award(award=award, actor_user=None)
+    stale = AidAward.objects.get(pk=award.pk)
+    award.refresh_from_db()
+    award.mark_declined_and_reverse()
+    with pytest.raises(ValidationError, match="controlled reinstatement"):
+        stale.mark_accepted_and_post()
+    with pytest.raises(ValidationError, match="controlled reinstatement"):
+        stale.mark_offered()
+    stale.refresh_from_db()
+    assert stale.decision_status == AidAward.DECISION_DECLINED
+    assert _credit_qs(school, award).get().is_void
+
+
+def test_stale_credit_projection_cannot_recreate_credit_after_decline():
+    from aid.services.ledger_bridge import ensure_accepted_award_credit
+
+    school, award = _fixture(linked=True)
+    approve_award(award=award, actor_user=None)
+    stale = AidAward.objects.get(pk=award.pk)
+    award.refresh_from_db()
+    award.mark_declined_and_reverse()
+    with pytest.raises(RuntimeError, match="accepted, legacy-posted"):
+        ensure_accepted_award_credit(award=stale, actor_user=None)
+    credit = _credit_qs(school, award).get()
+    assert credit.is_void
+    assert _credit_qs(school, award).count() == 1
+
+
+@pytest.mark.django_db(transaction=True)
+def test_concurrent_approval_vs_decline_remains_balanced_on_postgresql():
+    from concurrent.futures import ThreadPoolExecutor
+    from threading import Barrier
+    from django.db import close_old_connections, connection
+    from core.models import LedgerEntry
+
+    if connection.vendor != "postgresql":
+        pytest.skip("PostgreSQL row locking required")
+    school, award = _fixture(linked=True)
+    barrier = Barrier(2)
+
+    def act(kind):
+        close_old_connections()
+        try:
+            barrier.wait(timeout=10)
+            fresh = AidAward.objects.get(pk=award.pk)
+            if kind == "approve":
+                try:
+                    approve_award(award=fresh, actor_user=None)
+                    return "approved"
+                except ValidationError as exc:
+                    assert "controlled reinstatement" in str(exc)
+                    return "decline-before-approval"
+            fresh.mark_declined_and_reverse()
+            return "declined"
+        finally:
+            connection.close()
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        a = pool.submit(act, "approve")
+        b = pool.submit(act, "decline")
+        approved_outcome = a.result(timeout=30)
+        assert b.result(timeout=30) == "declined"
+
+    assert approved_outcome in {"approved", "decline-before-approval"}
+    award.refresh_from_db()
+    assert award.decision_status == AidAward.DECISION_DECLINED
+    assert _credit_qs(school, award).filter(is_void=False).count() == 0
+    assert _credit_qs(school, award).count() <= 1
+    assert AidBudgetTracker.objects.get(
+        school=school, academic_year=award.academic_year, bucket=award.award_type,
+    ).awarded_cents == 0
+    entries = list(LedgerEntry.objects.filter(school=school).values_list("amount_cents", flat=True))
+    assert len(entries) in (0, 2)
+    assert sum(entries) == 0
+    assert AidAuditEvent.objects.filter(
+        school=school, entity_id=str(award.id), action="AWARD_BUDGET_RELEASED",
+    ).count() <= 1
+    assert not Payment.objects.filter(school_id=school.id, source="FINANCIAL_AID").exists()

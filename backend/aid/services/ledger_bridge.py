@@ -161,6 +161,9 @@ def ensure_accepted_award_credit(*, award: AidAward, actor_user) -> Credit | Non
     separate new-approval budget decision. The existing canonical family-to-
     household bridge handles unique mappings and auditable deferral.
     """
+    # Re-read under the decline/approval lock before projecting a Credit.
+    # Callers may hold an ACCEPTED instance from before a concurrent decline.
+    award = AidAward.objects.select_for_update().get(pk=award.pk)
     if (
         award.decision_status != AidAward.DECISION_ACCEPTED
         or award.ledger_entry_id is None

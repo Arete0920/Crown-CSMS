@@ -195,6 +195,9 @@ class AidAward(TimeStampedModel):
 
     @transaction.atomic
     def mark_offered(self, actor_user: UserAccount | None = None):
+        # A stale model instance must not reopen a declined financial award.
+        type(self).objects.select_for_update().get(pk=self.pk)
+        self.refresh_from_db()
         if self.decision_status == self.DECISION_DECLINED:
             from django.core.exceptions import ValidationError
 
@@ -219,6 +222,9 @@ class AidAward(TimeStampedModel):
         Accept the award and create a negative ledger entry (credit) under ChartAccount code 'AID'.
         Safe to call once; prevents duplicate ledger posting via self.ledger_entry.
         """
+        # Serialize with decline, including legacy/direct callers holding stale objects.
+        type(self).objects.select_for_update().get(pk=self.pk)
+        self.refresh_from_db()
         if self.decision_status == self.DECISION_DECLINED:
             from django.core.exceptions import ValidationError
 
@@ -356,6 +362,8 @@ class AidAward(TimeStampedModel):
                 or original.family_id != award.student.family_id
                 or original.academic_year_id != award.academic_year_id
                 or original.source != LedgerEntry.SOURCE_AID_AWARD
+                or original.family.school_id != award.school_id
+                or original.account.school_id != award.school_id
                 or original.is_reversal
                 or original.amount_cents != -abs(int(award.awarded_cents))
             ):
@@ -372,6 +380,11 @@ class AidAward(TimeStampedModel):
                 if (
                     not reversal.is_reversal
                     or reversal.school_id != award.school_id
+                    or reversal.family_id != original.family_id
+                    or reversal.student_id != original.student_id
+                    or reversal.academic_year_id != original.academic_year_id
+                    or reversal.account_id != original.account_id
+                    or reversal.source != original.source
                     or reversal.amount_cents != -original.amount_cents
                 ):
                     raise ValidationError("Invalid legacy reversal requires controlled reconciliation")
