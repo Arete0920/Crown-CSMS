@@ -10,6 +10,13 @@ SENSITIVE_HEADER_NAMES = {
     "x-ops-secret",
     "x-devops-secret",
     "x-crown-ops-secret",
+    # URLs can carry sensitive path identifiers and query values.
+    "referer",
+    "referrer",
+    "x-original-url",
+    "x-original-uri",
+    "x-rewrite-url",
+    "x-forwarded-uri",
 }
 
 
@@ -30,6 +37,8 @@ def before_send(event, hint):
         request.pop("data", None)
         request.pop("cookies", None)
         request.pop("query_string", None)
+        # Even without query_string, the raw URL can expose tokens or record IDs.
+        request.pop("url", None)
         if "headers" in request:
             request["headers"] = _redact_headers(request.get("headers"))
 
