@@ -239,6 +239,11 @@ it('blocks edits on 409 publication or response conflict, without losing local i
   expect((await screen.findByRole('alert')).textContent).toContain('no longer eligible');
   expect(screen.getByLabelText('Survey name').value).toBe('Do not publish me');
   expect(screen.getByRole('button', { name: 'Save changes' }).disabled).toBe(true);
+  readSurveyDraft.mockResolvedValueOnce(saved); // A draft-looking response does not erase a 409 denial.
+  fireEvent.click(screen.getByRole('button', { name: 'Check latest saved version' }));
+  await screen.findByRole('region', { name: 'Current saved survey (server)' });
+  expect(screen.queryByRole('button', { name: 'Discard my edits and use latest saved version' })).toBeNull();
+  expect(screen.getByRole('button', { name: 'Save changes' }).disabled).toBe(true);
   fireEvent.click(screen.getByRole('button', { name: 'Save changes' }));
   expect(replaceSurveyDraft).toHaveBeenCalledTimes(1);
 });
