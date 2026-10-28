@@ -38,6 +38,8 @@
 | ADM-02 Non-editor writes | 403 and zero writes | Role-negative API |
 | ADM-03 Cross-school UUID read/write | 403/404 and no foreign data/side effect | Two-tenant API and query log |
 | ADM-04 Invalid schema/oversize request | 400, atomic no-write | Input limit and DB tests |
+| ADM-05 Saved draft replacement | Current school editor, matching revision, atomic replacement; retained question keys preserve identity/server tags | API + DB; UI acceptance separate |
+| ADM-06 Stale or simultaneous editors | Missing revision 428; changed revision 412; exactly one concurrent matching-revision writer succeeds | API + PostgreSQL lock tests |
 | PUB-01 Version approval | Matching immutable snapshot, hash, notice, signer and timestamp | Migration + service + DB tests |
 | PUB-02 Published question edit | Denied or new version; old report unchanged | Version contract regression |
 | PUB-03 Unapproved/minor/protected survey | Publish denied unless separate approval path satisfied | Negative API/evidence |
@@ -57,6 +59,37 @@
 | DEP-01 Staging acceptance | Recorded exact SHA, migration checks, incident/rollback practice | Environment packet |
 
 **A passing backend test or generic health check is not equivalent to these tests passing.**
+
+## Saved draft API contract
+
+`GET /api/v1/survey-intelligence/surveys/{id}/` returns the current definition,
+an opaque `revision`, and a matching quoted HTTP `ETag`. Creation and library
+entries expose the same revision. This is a content/write revision, not an
+approval, publication version, entitlement or credential.
+
+An editor replaces a saved draft with `PUT` to that detail route, the exact
+quoted `If-Match` value from the last read, and only `name`, `purpose` and
+`questions`, using the existing bounded draft validator. A missing condition
+returns 428; a stale, wildcard, weak or otherwise nonmatching condition returns
+412. The caller must reload and reconcile its edits; an automatic overwrite or
+blind retry is not permitted. A successful replacement returns a fresh revision,
+including when submitted content is unchanged. A timeout requires a readback
+before deciding whether another write is appropriate.
+
+The existing active-school and `survey.edit` permission checks apply. A draft
+that is active, closed, archived, public-enabled, anonymous-enabled, previously
+published or response-bearing is ineligible (409). No school, status, audience,
+public flag, tag, publication or response field is writable through this API.
+Retained question keys preserve their row identity and server-owned strategic
+tags; omitted keys are removed only from an eligible draft. Definition and
+question writes roll back together on storage failure.
+
+Replacement and the canonical publication service take the same survey-row
+lock. PostgreSQL acceptance must prove competing editors and both edit/publish
+commit orderings, including an observed database lock wait. SQLite unit tests
+alone do not establish that concurrency result. These API cases do not complete
+the saved-edit UI, hosted browser journey, publication/distribution workflow,
+research review or pilot acceptance.
 
 ## Statistical and research rules
 

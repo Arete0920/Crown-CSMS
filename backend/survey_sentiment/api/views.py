@@ -3,10 +3,13 @@
 This deliberately cannot publish questionnaires, distribute tokens, accept
 responses, or reveal raw response/identity data.
 """
+import hashlib
 import json
+from datetime import timedelta
 
 from django.db import transaction
 from django.http import JsonResponse
+from django.utils import timezone
 from drf_spectacular.utils import OpenApiTypes, extend_schema
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.exceptions import APIException
@@ -35,7 +38,7 @@ def _authorize(request, permission_code):
 
 
 def _serialize(survey):
-    return {
+    data = {
         "id": str(survey.pk), "name": survey.name, "purpose": survey.purpose,
         "status": survey.status, "audience": survey.audience,
         "questions": [
@@ -48,6 +51,21 @@ def _serialize(survey):
             for q in survey.questions.all()
         ],
     }
+    # Include the write timestamp so even an identical accepted replacement
+    # invalidates an editor's old revision. No public token/response is hashed.
+    canonical = json.dumps(
+        {"definition": data, "updated_at": survey.updated_at.isoformat()},
+        sort_keys=True, separators=(",", ":"), ensure_ascii=False,
+    )
+    data["revision"] = hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+    return data
+
+
+def _draft_response(survey, *, status=200):
+    data = _serialize(survey)
+    response = JsonResponse(data, status=status)
+    response["ETag"] = f'"{data["revision"]}"'
+    return response
 
 
 def _unique_json_object(pairs):
@@ -148,17 +166,59 @@ def survey_drafts(request):
             SurveyQuestion(survey=survey, **row) for row in validated["questions"]
         ])
     survey = SurveyDefinition.objects.filter(pk=survey.pk).prefetch_related("questions").get()
-    return JsonResponse(_serialize(survey), status=201)
+    return _draft_response(survey, status=201)
 
 
 @extend_schema(responses=OpenApiTypes.OBJECT)
-@api_view(["GET"])
+@api_view(["GET", "PUT"])
 @permission_classes([IsAuthenticated])
 def survey_draft_detail(request, survey_id):
-    school, error = _authorize(request, "survey.view")
+    school, error = _authorize(request, "survey.view" if request.method == "GET" else "survey.edit")
     if error is not None:
         return error
+    if request.method == "PUT":
+        return _replace_draft(request, school, survey_id)
     survey = SurveyDefinition.objects.filter(pk=survey_id, school=school).prefetch_related("questions").first()
     if survey is None:
         return JsonResponse({"detail": "Survey not found."}, status=404)
-    return JsonResponse(_serialize(survey))
+    return _draft_response(survey)
+
+
+@transaction.atomic
+def _replace_draft(request, school, survey_id):
+    # Publication takes this same parent-row lock. Eligibility and revision
+    # checks must occur under it, before any definition/question write.
+    survey = SurveyDefinition.objects.select_for_update().filter(pk=survey_id, school=school).first()
+    if survey is None:
+        return JsonResponse({"detail": "Survey not found."}, status=404)
+    if (survey.status != "draft" or survey.public_enabled or survey.anonymous_allowed
+            or survey.publications.exists() or survey.responses.exists()):
+        return JsonResponse({"detail": "This survey is no longer an editable draft."}, status=409)
+    expected = request.headers.get("If-Match")
+    if expected is None:
+        return JsonResponse({"detail": "Reload the draft and supply its If-Match revision."}, status=428)
+    current = _serialize(survey)["revision"]
+    if expected != f'"{current}"':
+        return JsonResponse({"detail": "The draft changed. Reload it before saving."}, status=412)
+    validated, errors = _validated_draft_payload(request)
+    if errors:
+        return JsonResponse({"detail": "Invalid survey draft.", "errors": errors}, status=400)
+
+    survey.name = validated["name"]
+    survey.purpose = validated["purpose"]
+    # A conditional update also guards a non-locking database against stale
+    # replacement. PostgreSQL row-lock ordering is proved separately in CI.
+    next_updated_at = max(timezone.now(), survey.updated_at + timedelta(microseconds=1))
+    changed = SurveyDefinition.objects.filter(pk=survey.pk, updated_at=survey.updated_at).update(
+        name=survey.name, purpose=survey.purpose, updated_at=next_updated_at,
+    )
+    if changed != 1:
+        return JsonResponse({"detail": "The draft changed. Reload it before saving."}, status=412)
+    survey.updated_at = next_updated_at
+    keys = [row["key"] for row in validated["questions"]]
+    survey.questions.exclude(key__in=keys).delete()
+    for row in validated["questions"]:
+        # Preserve identities and server-owned tags for retained question keys.
+        values = {key: value for key, value in row.items() if key != "key"}
+        SurveyQuestion.objects.update_or_create(survey=survey, key=row["key"], defaults=values)
+    return _draft_response(survey)
