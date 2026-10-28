@@ -6,6 +6,10 @@ SENSITIVE_HEADER_NAMES = {
     "x-demo-key",
     "x-csrf-token",
     "x-csrftoken",
+    "x-admin-ops-secret",
+    "x-ops-secret",
+    "x-devops-secret",
+    "x-crown-ops-secret",
 }
 
 
