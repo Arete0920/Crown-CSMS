@@ -542,6 +542,7 @@ if _env_is_prod():
                 traces_sample_rate=0.2,
                 send_default_pii=False,
                 before_send=before_send,
+                before_send_transaction=before_send,
                 release=BUILD_SHA,
             )
         except ImportError:
