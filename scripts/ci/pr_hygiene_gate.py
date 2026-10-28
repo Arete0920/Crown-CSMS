@@ -103,11 +103,11 @@ def run(args: list[str]) -> str:
 
 
 def changed_files(base_ref: str, head_ref: str = "HEAD") -> list[FileStat]:
-    out = run(["git", "diff", "--numstat", "--diff-filter=ACMR", f"{base_ref}...{head_ref}"])
+    out = run(["git", "diff", "--numstat", "--diff-filter=ACMRD", f"{base_ref}...{head_ref}"])
     rows: list[FileStat] = []
     if not out:
         return rows
-    status_out = run(["git", "diff", "--name-status", "--diff-filter=ACMR", f"{base_ref}...{head_ref}"])
+    status_out = run(["git", "diff", "--name-status", "--diff-filter=ACMRD", f"{base_ref}...{head_ref}"])
     status_by_path: dict[str, str] = {}
     for line in status_out.splitlines():
         parts = line.split("\t")
