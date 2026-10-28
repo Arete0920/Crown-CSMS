@@ -244,6 +244,18 @@ class DirectorActionsAuthRequiredTests(TestCase):
                 action="STUDENT_ACCOUNT_CREDIT_POSTED",
             ).count(), 1,
         )
+        # Duplicate identifiers in one request must not issue another credit.
+        payload["ids"] = [str(award.id), str(award.id)]
+        repeated = post_action()
+        self.assertEqual(repeated.status_code, 200)
+        self.assertEqual(repeated.json()["posted_count"], 0)
+        self.assertIsNone(repeated.json()["errors"])
+        self.assertEqual(Credit.objects.filter(
+            school_id=school.id, source=Credit.SOURCE_FINANCIAL_AID,
+        ).count(), 1)
+        self.assertEqual(LedgerEntry.objects.filter(
+            school=school, student=student,
+        ).count(), 1)
 
     def test_credit_projection_error_rolls_back_legacy_post(self):
         school = School.objects.create(name="Rollback Director School")

@@ -824,7 +824,11 @@ def director_actions(request):
 
                 for award_id in ids:
                     try:
-                        award = AidAward.objects.get(pk=award_id, school_id=school_id)
+                        # Hold the award row lock through the outer transaction so
+                        # concurrent retries observe the first committed posting.
+                        award = AidAward.objects.select_for_update().get(
+                            pk=award_id, school_id=school_id,
+                        )
 
                         if year_id and str(award.academic_year_id) != str(year_id):
                             errors.append({
