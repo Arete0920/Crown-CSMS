@@ -207,7 +207,7 @@ jobs:
           retention-days: 7
 
   report-stale-branches:
-    name: Report stale branches (no push in 60 days)
+    name: Report stale branches (last commit over 60 days old)
     if: >-
       github.event_name == 'workflow_dispatch' ||
       (github.event_name == 'schedule' && github.event.schedule == '0 9 * * 1')
@@ -236,7 +236,7 @@ jobs:
           echo "Protected branches from API:"
           cat protected-branches.txt || true
 
-      - name: Report branches with no activity in 60+ days
+      - name: Report branches whose head commit is over 60 days old
         run: |
           set -euo pipefail
           CUTOFF=$(date -d "60 days ago" +%s)
@@ -244,7 +244,7 @@ jobs:
           PROTECTED_EXACT="main develop"
           PROTECTED_PREFIXES="rc/ release/ stabilize/ hotfix/"
 
-          echo "=== STALE BRANCH REPORT (>60 days inactive) ==="
+          echo "=== BRANCH HEAD COMMIT AGE REPORT (>60 days) ==="
           echo "Cutoff date: $(date -d @$CUTOFF '+%Y-%m-%d')"
           echo ""
 
@@ -281,14 +281,14 @@ jobs:
             last_commit=$(git log -1 --format="%ct" "origin/$short" 2>/dev/null || echo "0")
             if [ "$last_commit" -lt "$CUTOFF" ]; then
               last_date=$(date -d @$last_commit '+%Y-%m-%d')
-              echo "  STALE: $short (last push: $last_date)"
+              echo "  REVIEW: $short (head commit date: $last_date; last push time NOT established)"
               STALE_COUNT=$((STALE_COUNT + 1))
               if [ "$FIRST" -eq 1 ]; then
                 FIRST=0
               else
                 echo "," >> "$TMP_JSON"
               fi
-              printf '  {"branch":"%s","last_push":"%s"}' "$short" "$last_date" >> "$TMP_JSON"
+              printf '  {"branch":"%s","head_commit_date":"%s","classification":"age_only_not_deletion_approval"}' "$short" "$last_date" >> "$TMP_JSON"
             fi
           done < <(git branch -r | sed 's/^ *//')
 
@@ -300,10 +300,10 @@ jobs:
           echo "Total stale branches: $STALE_COUNT"
           if [ "$STALE_COUNT" -gt 0 ]; then
             echo ""
-            echo "ACTION REQUIRED: Delete stale branches via:"
-            echo "  git push origin --delete <branch-name>"
+            echo "REVIEW REQUIRED: Do not delete from age alone. Check PR state, unique commits, protected/release refs, tags, security evidence and retention before any deletion."
+            echo "Deletion is not authorized by this report."
           else
-            echo "No stale branches found."
+            echo "No branch heads older than the configured cutoff found."
           fi
 
       - name: Upload stale branch report
