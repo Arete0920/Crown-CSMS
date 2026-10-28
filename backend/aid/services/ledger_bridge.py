@@ -126,6 +126,27 @@ def _ensure_student_account_credit(*, award: AidAward, actor_user):
 
 
 @transaction.atomic
+def ensure_accepted_award_credit(*, award: AidAward, actor_user) -> Credit | None:
+    """Idempotently project an already-posted legacy award as a non-cash Credit.
+
+    The director action may post an accepted legacy award without running the
+    separate new-approval budget decision. The existing canonical family-to-
+    household bridge handles unique mappings and auditable deferral.
+    """
+    if (
+        award.decision_status != AidAward.DECISION_ACCEPTED
+        or award.ledger_entry_id is None
+    ):
+        raise RuntimeError("An accepted, legacy-posted award is required")
+    if (
+        award.student.school_id != award.school_id
+        or award.student.family.school_id != award.school_id
+    ):
+        raise RuntimeError("Award student/family school mismatch")
+    return _ensure_student_account_credit(award=award, actor_user=actor_user)
+
+
+@transaction.atomic
 def approve_award(
     *,
     award: AidAward,
