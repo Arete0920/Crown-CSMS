@@ -8,7 +8,7 @@ from aid.services.ledger_bridge import approve_award
 from core.models import AcademicYear, Family, HouseholdFamilyLink, School, Student
 from finance.models import ChartAccount
 from households.models import Household
-from ledger.models import Credit, Payment
+from ledger.models import Credit, LedgerAccount, Payment
 
 pytestmark = pytest.mark.django_db
 
@@ -57,3 +57,30 @@ def test_approval_retry_repairs_credit_without_double_budget_or_duplicate_credit
     budget.refresh_from_db()
     assert budget.awarded_cents == 25_000
     assert _credit_qs(school, award).count() == 1
+
+
+def test_approval_rejects_family_link_to_other_school_household():
+    school, award = _fixture(linked=False)
+    other_school = School.objects.create(name="Other school for negative credit")
+    foreign_household = Household.objects.create(
+        school_id=other_school.id, name="Foreign household",
+    )
+    HouseholdFamilyLink.objects.create(
+        school=school,
+        family=award.student.family,
+        household_id=foreign_household.id,
+        source=HouseholdFamilyLink.SOURCE_MANUAL,
+    )
+
+    approve_award(award=award, actor_user=None, reason="Tenant denial check")
+    award.refresh_from_db()
+    assert award.ledger_entry_id is not None  # Legacy-only migration path retained.
+    assert not _credit_qs(school, award).exists()
+    assert not Payment.objects.filter(school_id=school.id, source="FINANCIAL_AID").exists()
+    assert not LedgerAccount.objects.filter(household_id=foreign_household.id).exists()
+    events = AidAuditEvent.objects.filter(
+        school=school, entity_id=str(award.id),
+        action="STUDENT_ACCOUNT_CREDIT_DEFERRED",
+    )
+    assert events.count() == 1
+    assert events.first().details_json["reason"] == "household_missing_or_wrong_school"

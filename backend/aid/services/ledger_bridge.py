@@ -19,6 +19,7 @@ from django.db import transaction
 
 from aid.models import AidAuditEvent, AidAward, AidBudgetTracker
 from core.models import HouseholdFamilyLink
+from households.models import Household
 from ledger.models import Credit, LedgerAccount
 from ledger.services import post_account_credit
 
@@ -81,6 +82,17 @@ def _ensure_student_account_credit(*, award: AidAward, actor_user):
         return None
 
     household_id = household_ids[0]
+    # HouseholdFamilyLink stores a UUID rather than a protected foreign key.
+    # Validate the actual household's tenant before creating an account.
+    if not Household.objects.filter(
+        pk=household_id, school_id=award.school_id,
+    ).exists():
+        _log_credit_deferred_once(
+            award=award, actor_user=actor_user,
+            reason="household_missing_or_wrong_school",
+        )
+        return None
+
     account = LedgerAccount.objects.filter(household_id=household_id).first()
     if account is not None and account.school_id != award.school_id:
         _log_credit_deferred_once(
