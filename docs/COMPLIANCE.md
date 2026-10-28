@@ -1,77 +1,19 @@
-# Crown Privacy and Compliance Operating Framework
+# CROWN Privacy and Compliance Framework — Superseded Reference
 
-## FERPA / COPPA Compliance Documentation
+**Status:** SUPERSEDED / HISTORICAL PLANNING DOCUMENT — NOT CURRENT CONTROL OR COMPLIANCE CERTIFICATION  
+**Original recorded date:** July 1, 2026  
+**Disposition:** October 28, 2026; retain this compatibility link. The earlier text remains in [repository history](https://github.com/Arete0920/Crown-CSMS/blob/0093b07dd37cd494d46b83fc83cb563217dda936/docs/COMPLIANCE.md).
 
-Effective Date: July 1, 2026
+The earlier version described an intended student-data privacy role, proposed retention periods, a vendor list, response and notification intervals, and contact addresses without evidence of corresponding current agreements, operating controls, approved service levels, or verified routing. Those statements do **not** establish legal status, compliance certification, deployed data flows, active subprocessors, actual retention, incident-response performance, or customer commitments. Do not reuse them as present-tense assurances. This disposition does not revoke privacy, security, contractual, or incident-response obligations.
 
-## 1. Scope and Purpose
+## Current controlling records
 
-This document defines Crown's operating framework for compliance with FERPA and COPPA.
-Crown operates as a school official under FERPA and processes student data only under
-the direction of partner schools.
+- [Current release status](CURRENT_RELEASE_STATUS.md) — exact-source and environment-specific authorization limits.
+- [FERPA position](compliance/FERPA_POSITION.md) and [COPPA position](compliance/COPPA_POSITION.md) — conditional applicability, intended controls, and legal-review requirements.
+- [Retention policy](compliance/RETENTION_POLICY.md) and [incident response policy](compliance/INCIDENT_RESPONSE_POLICY.md) — governing requirements and outstanding operational evidence.
+- [Subprocessor register](compliance/SUBPROCESSOR_REGISTER.md) and [CompuWerx vendor acceptance](vendor-coordination/compuwerx.md) — candidate versus active service distinctions.
+- [Compliance readiness matrix](compliance/COMPLIANCE_READINESS_MATRIX.md) and [student privacy program](compliance/STUDENT_PRIVACY_DATA_PROTECTION_PROGRAM.md) — open controls, owners, and verification requirements.
 
-## 2. Roles and Responsibilities
+**Payment boundary:** CompuWerx is the owner-designated intended payment gateway, not an established active processor. Contracting, vendor specifications, merchant terms, and operational certification remain unverified; external payment processing is disabled and fail closed.
 
-| Role | Responsibility |
-|---|---|
-| Partner School | Data controller and owner of student records |
-| Crown | Data processor and school official |
-| Crown Compliance Officer | Internal policy owner and incident coordinator |
-| School Data Administrator | School-side point of contact for FERPA requests |
-
-## 3. Data We Process
-
-| Category | Examples | Retention |
-|---|---|---|
-| Student identity | Name, date of birth, grade level, student ID | Enrollment duration plus 7 years |
-| Academic records | Grades, attendance, transcripts | Enrollment duration plus 7 years |
-| Financial records | Billing amounts, payment history, aid applications | 7 years |
-| Family records | Guardian contacts, household structure | Enrollment duration plus 7 years |
-| Faith records | Chapel attendance, Bible progress, milestones | Enrollment duration |
-| Communications | Announcements and messages | 2 years |
-| Audit logs | Access and change logs | 7 years |
-
-## 4. Access Controls
-
-- Student data is scoped to the owning school.
-- Access within a school is governed by RBAC.
-- API endpoints require authentication.
-- Audit logs are written for sensitive mutations.
-
-## 5. Data Subject Rights
-
-School administrators can inspect, correct, export, and request deletion of student records.
-
-## 6. Data Processing Agreement
-
-Every partner school must execute Crown's DPA before onboarding.
-
-## 7. Sub-Processors
-
-| Sub-Processor | Purpose | Data Shared |
-|---|---|---|
-| Microsoft Azure | Cloud infrastructure | Platform data |
-| CompuWerx | Payment processing | Billing amounts and transaction metadata |
-| Sentry | Error monitoring | Error traces and request metadata |
-| Twilio | SMS notifications | Phone numbers and message content |
-
-## 8. Incident Response
-
-| Phase | SLA | Owner |
-|---|---|---|
-| Detection | Within 4 hours of alert | Crown DevOps |
-| Containment | Within 24 hours | Engineering lead |
-| School notification | Within 72 hours of confirmed breach | Compliance officer |
-| Post-incident review | Within 14 days | Engineering and compliance |
-
-## 9. COPPA Applicability
-
-Crown serves K-12 schools and operates under the school-consent exception for COPPA.
-
-## 10. Compliance Contacts
-
-| Purpose | Contact |
-|---|---|
-| Security incidents | security@crownschoolsystem.com |
-| DPA execution and legal | legal@crownschoolsystem.com |
-| General compliance | compliance@crownschoolsystem.com |
+Confirm each applicable school agreement, legal role, vendor and data flow, retention schedule, incident deadline, notification channel, and operating claim through qualified review and actual evidence. Documentation alone establishes none of these. The prior document is preserved unchanged in Git history; this pointer changes no runtime, security control, license, migration, or customer data.
