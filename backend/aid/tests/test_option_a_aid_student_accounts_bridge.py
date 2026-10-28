@@ -122,3 +122,89 @@ def test_approval_rejects_family_link_to_other_school_household():
     )
     assert events.count() == 1
     assert events.first().details_json["reason"] == "household_missing_or_wrong_school"
+
+
+def test_decline_voids_credit_and_reverses_legacy_exactly_once():
+    from core.models import LedgerEntry
+
+    school, award = _fixture(linked=True)
+    approve_award(award=award, actor_user=None)
+    award.refresh_from_db()
+    original = award.ledger_entry_id
+    award.mark_declined_and_reverse()
+    award.refresh_from_db()
+    assert award.decision_status == AidAward.DECISION_DECLINED
+    credit = _credit_qs(school, award).get()
+    assert credit.is_void
+    assert LedgerEntry.objects.filter(reversal_of_id=original).count() == 1
+    assert sum(LedgerEntry.objects.filter(school=school).values_list("amount_cents", flat=True)) == 0
+    budget = AidBudgetTracker.objects.get(school=school, academic_year=award.academic_year, bucket=award.award_type)
+    assert budget.awarded_cents == 0
+    assert not Payment.objects.filter(school_id=school.id, source="FINANCIAL_AID").exists()
+
+    audit_count = AidAuditEvent.objects.filter(school=school, entity_id=str(award.id)).count()
+    award.mark_declined_and_reverse()
+    budget.refresh_from_db()
+    assert budget.awarded_cents == 0
+    assert LedgerEntry.objects.filter(reversal_of_id=original).count() == 1
+    assert AidAuditEvent.objects.filter(school=school, entity_id=str(award.id)).count() == audit_count
+
+
+def test_decline_without_household_link_never_fabricates_credit():
+    from core.models import LedgerEntry
+
+    school, award = _fixture(linked=False)
+    approve_award(award=award, actor_user=None)
+    award.refresh_from_db()
+    award.mark_declined_and_reverse()
+    assert not _credit_qs(school, award).exists()
+    assert LedgerEntry.objects.filter(reversal_of_id=award.ledger_entry_id).count() == 1
+    assert AidBudgetTracker.objects.get(school=school, academic_year=award.academic_year, bucket=award.award_type).awarded_cents == 0
+    assert not Payment.objects.filter(school_id=school.id, source="FINANCIAL_AID").exists()
+
+
+def test_decline_fails_closed_for_wrong_tenant_credit_account():
+    from unittest.mock import patch
+
+    school, award = _fixture(linked=True)
+    approve_award(award=award, actor_user=None)
+    award.refresh_from_db()
+    with patch("ledger.services.void_account_credit", side_effect=RuntimeError("synthetic void failure")):
+        with pytest.raises(RuntimeError, match="synthetic void failure"):
+            award.mark_declined_and_reverse()
+    award.refresh_from_db()
+    assert award.decision_status == AidAward.DECISION_ACCEPTED
+    assert not _credit_qs(school, award).get().is_void
+    assert AidBudgetTracker.objects.get(school=school, academic_year=award.academic_year, bucket=award.award_type).awarded_cents == 25_000
+
+
+def test_decline_rolls_back_credit_void_when_legacy_reversal_fails():
+    from unittest.mock import patch
+    from core.models import LedgerEntry
+
+    school, award = _fixture(linked=True)
+    approve_award(award=award, actor_user=None)
+    award.refresh_from_db()
+    with patch.object(LedgerEntry, "create_reversal", side_effect=RuntimeError("synthetic reversal failure")):
+        with pytest.raises(RuntimeError, match="synthetic reversal failure"):
+            award.mark_declined_and_reverse()
+    award.refresh_from_db()
+    assert award.decision_status == AidAward.DECISION_ACCEPTED
+    assert not _credit_qs(school, award).get().is_void
+    assert AidBudgetTracker.objects.get(school=school, academic_year=award.academic_year, bucket=award.award_type).awarded_cents == 25_000
+    assert LedgerEntry.objects.filter(reversal_of_id=award.ledger_entry_id).count() == 0
+
+
+def test_decline_handles_previously_voided_credit_without_reactivating_it():
+    from ledger.services import void_account_credit
+
+    school, award = _fixture(linked=True)
+    approve_award(award=award, actor_user=None)
+    award.refresh_from_db()
+    credit = _credit_qs(school, award).get()
+    void_account_credit(credit=credit)
+    award.mark_declined_and_reverse()
+    credit.refresh_from_db()
+    assert credit.is_void
+    assert _credit_qs(school, award).count() == 1
+    assert not AidAuditEvent.objects.filter(school=school, entity_id=str(award.id), action="STUDENT_ACCOUNT_CREDIT_VOIDED").exists()
