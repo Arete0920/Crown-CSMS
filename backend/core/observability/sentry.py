@@ -19,7 +19,8 @@ def _redact_headers(headers):
             key: ("[Filtered]" if str(key).lower() in SENSITIVE_HEADER_NAMES else value)
             for key, value in headers.items()
         }
-    return headers
+    # Unknown header representations must never bypass privacy filtering.
+    return {}
 
 
 def before_send(event, hint):
