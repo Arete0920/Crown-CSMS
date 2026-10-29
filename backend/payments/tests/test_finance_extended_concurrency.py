@@ -61,6 +61,7 @@ def _payment_fixture(*, amount_cents=10_000):
         username="extended_finance_concurrency_payer",
         password="pass",
         email="extended-finance-concurrency@test.example.com",
+        school=school,
     )
     household = Household.objects.create(school_id=school.id, name="Extended Concurrency Household")
     HouseholdGuardian.objects.create(
@@ -69,6 +70,7 @@ def _payment_fixture(*, amount_cents=10_000):
         first_name="Extended",
         last_name="Guardian",
         email=payer.email,
+        account=payer,
         is_primary=True,
     )
     LedgerAccount.objects.create(school_id=school.id, household=household)
