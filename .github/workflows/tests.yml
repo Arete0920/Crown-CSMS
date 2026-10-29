@@ -299,12 +299,14 @@ jobs:
               cursor.execute('SELECT version()')
               print(cursor.fetchone()[0])
           PYTHON
-      - name: Verify financial aid posting and concurrent retry contracts
+      - name: Verify financial posting, settlement/refund authority and concurrent retry contracts
         run: >-
           python -m pytest -v
           backend/aid/tests/test_option_a_aid_student_accounts_bridge.py
           backend/crown_api/tests/test_director_actions_auth_required.py
           backend/crown_api/tests/test_director_aid_posting_integrity.py
+          backend/finance/tests/test_finance_settlement_authorization.py
+          backend/finance/tests/test_finance_payer_authorization.py
           --migrations --create-db --junitxml=finance-postgresql-junit.xml
       - name: Preserve PostgreSQL financial posting evidence
         if: always()
