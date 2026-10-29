@@ -52,15 +52,17 @@ def _money_from_cents(cents: int) -> Decimal:
     return (Decimal(int(cents)) / Decimal("100")).quantize(Decimal("0.01"))
 
 
-def _resolve_ledger_account_for_user(*, school_id, user) -> LedgerAccount | None:
-    """Return one verified same-school household, never an email guess.
+def _verified_household_id_for_user(*, school_id, user):
+    """Resolve one persisted, active, same-school payer household without writing.
 
-    Account-backed household guardians and first-class core family-to-household
-    links are the only accepted identity evidence. Parent roles alone do not
-    prove ownership of a particular ledger household. Conflicts fail closed.
+    Contact email and a parent school role do not prove a particular household.
+    A school-bound user cannot borrow a guardian link from another tenant.
     """
     user_id = getattr(user, "pk", None)
     if not user_id or not getattr(user, "is_active", False):
+        return None
+    user_school_id = getattr(user, "school_id", None)
+    if user_school_id is not None and str(user_school_id) != str(school_id):
         return None
 
     household_ids = set(
@@ -74,7 +76,7 @@ def _resolve_ledger_account_for_user(*, school_id, user) -> LedgerAccount | None
         family_ids = list(
             CoreGuardian.objects.filter(
                 pk=core_guardian_id, school_id=school_id,
-                family__school_id=school_id,
+                family__school_id=school_id, family__status="ACTIVE",
             ).values_list("family_id", flat=True)
         )
         if family_ids:
@@ -92,12 +94,19 @@ def _resolve_ledger_account_for_user(*, school_id, user) -> LedgerAccount | None
         pk=household_id, school_id=school_id, is_active=True,
     ).exists():
         return None
+    return household_id
+
+
+def _resolve_ledger_account_for_user(*, school_id, user) -> LedgerAccount | None:
+    """Create/access a ledger account only after verifying payer identity."""
+    household_id = _verified_household_id_for_user(school_id=school_id, user=user)
+    if household_id is None:
+        return None
 
     account, _ = LedgerAccount.objects.get_or_create(
         school_id=school_id, household_id=household_id,
     )
     return account
-
 
 def ledger_post_obligation(obligation: FinanceObligation) -> LedgerPostResult:
     """
