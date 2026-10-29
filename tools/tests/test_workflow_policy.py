@@ -182,5 +182,87 @@ class WorkflowPolicyTests(unittest.TestCase):
         self.assertIs(lock["cancel-in-progress"], False)
 
 
+class BranchAgeReportTests(unittest.TestCase):
+    """Behavioral checks for the existing read-only branch-age report step."""
+
+    @staticmethod
+    def _report(*, state="ok", timestamp="1", protected=False):
+        import json
+        import os
+        import subprocess
+        import yaml
+
+        doc = yaml.safe_load(
+            (ROOT / ".github/workflows/repository-freshness.yml").read_text(encoding="utf-8")
+        )
+        steps = doc["jobs"]["report-stale-branches"]["steps"]
+        script = next(
+            step["run"] for step in steps
+            if step.get("name") == "Report branches whose head commit is over 60 days old"
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            fake_git = root / "git"
+            fake_git.write_text(
+                "#!/bin/sh\n"
+                'case "$1" in\n'
+                '  branch) printf "  origin/old-branch\\n";;\n'
+                '  log)\n'
+                '    case "$CROWN_TEST_GIT_STATUS" in\n'
+                '      fail) echo "synthetic read failure" >&2; exit 128;;\n'
+                '      empty) exit 0;;\n'
+                '      invalid) printf "invalid-date\\n";;\n'
+                '      *) printf "%s\\n" "$CROWN_TEST_GIT_TIMESTAMP";;\n'
+                '    esac;;\n'
+                '  *) echo "unexpected git operation" >&2; exit 2;;\n'
+                'esac\n',
+                encoding="utf-8",
+            )
+            fake_git.chmod(0o755)
+            if protected:
+                (root / "protected-branches.txt").write_text("old-branch\n", encoding="utf-8")
+            env = {
+                **os.environ,
+                "PATH": str(root) + os.pathsep + os.environ["PATH"],
+                "CROWN_TEST_GIT_STATUS": state,
+                "CROWN_TEST_GIT_TIMESTAMP": timestamp,
+            }
+            result = subprocess.run(
+                ["bash", "-e"], input=script, cwd=root, env=env,
+                capture_output=True, text=True, check=False,
+            )
+            output = root / "stale-branches.json"
+            records = json.loads(output.read_text(encoding="utf-8")) if output.exists() else None
+            return result, records
+
+    def test_missing_head_cannot_be_reported_as_old(self):
+        run, records = self._report(state="fail")
+        self.assertNotEqual(run.returncode, 0, run.stdout + run.stderr)
+        self.assertIn("Cannot read head commit", run.stdout)
+        self.assertIsNone(records)
+
+    def test_empty_or_invalid_head_timestamp_fails_closed(self):
+        for state in ("empty", "invalid"):
+            with self.subTest(state=state):
+                run, records = self._report(state=state)
+                self.assertNotEqual(run.returncode, 0, run.stdout + run.stderr)
+                self.assertIn("Invalid head-commit timestamp", run.stdout)
+                self.assertIsNone(records)
+
+    def test_old_head_requires_review_and_is_not_deletion_permission(self):
+        run, records = self._report(state="ok", timestamp="1")
+        self.assertEqual(run.returncode, 0, run.stdout + run.stderr)
+        self.assertEqual(len(records), 1)
+        self.assertEqual(records[0]["branch"], "old-branch")
+        self.assertEqual(records[0]["head_commit_date"], "1970-01-01")
+        self.assertEqual(records[0]["classification"], "age_only_not_deletion_approval")
+        self.assertIn("Deletion is not authorized", run.stdout)
+
+    def test_protected_branch_excluded(self):
+        run, records = self._report(state="ok", timestamp="1", protected=True)
+        self.assertEqual(run.returncode, 0, run.stdout + run.stderr)
+        self.assertEqual(records, [])
+
+
 if __name__ == "__main__":
     unittest.main()
