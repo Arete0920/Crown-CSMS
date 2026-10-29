@@ -21,7 +21,9 @@ Layer C applies **after**:
 
 ---
 
-## 2. Role-Based Row Scoping Matrix
+## 2. Role-Based Row Scoping Matrix (target visibility doctrine)
+
+The roles below express intended policy. They do **not** certify that all listed behavior has been implemented or deployed. Section 8 records the reviewed source behavior, with stricter fail-closed states where assignments or permissions are not yet supported.
 
 ### 2.1 Students Domain
 
@@ -180,77 +182,71 @@ Each domain must have:
 
 ## 8. Layer C: Current Implementation Status
 
-_Last updated: 2026-02-22. Update this table with every scoping PR._
+_Source behavior reconciled on 2026-10-28 to protected main `2ae0c7a6283f566fa8918e43e61669dd2fa2d30a`; hosted privacy acceptance remains open under issue #441._
 
-### 8.1 Canonical Student Model
+### 8.1 Authoritative identity versus compatibility read models
 
-`households.Student` is the **authoritative SIS identity model** for all row
-scoping in the Students domain. `core.models.Student` is the legacy model and
-must not be used for active scoping logic. `academics.Enrollment` links
-`households.Student` to sections.
+The accepted [ADR-001](architecture/ADR-001-CANONICAL-HOUSEHOLD-GUARDIAN-STUDENT.md) governs operational **writes**. Model naming and a protected read endpoint do not transfer that write authority.
 
-| Model | Status |
-|-------|--------|
-| `households.Student` | **Canonical — use this** |
-| `core.models.Student` | Legacy — do not scope against |
-| `crown_api.models_student_core.StudentProfile` | Feature supplement only |
+| Model family | Current responsibility | Boundary |
+|---|---|---|
+| `core.Family`, `core.Guardian`, `core.Student` | Canonical operational family/guardian/student writes | School-scoped services and ADR-001; no implicit cross-model remapping |
+| `households.Household`, `households.Guardian`, `households.Student` | Compatibility/read domain behind `/api/` and `/api/v1/` household, guardian and student views | Tenant, persisted school role, domain row and field scope before serialization |
+| `crown_api` household/person/student models | Separate compatibility domain | No equivalence of identifiers without controlled reconciliation |
 
-### 8.2 Row Scoping Implementation Status
+Do not substitute compatibility student identifiers for canonical `core.Student` records or the `/api/v1/student-records/` wizard identity route.
 
-| Domain | Role | Pathway | Status |
-|--------|------|---------|--------|
-| Students | Director / Head / Registrar | All rows | ✅ Implemented |
-| Students | Teacher | `enrollments__section__teacher=user` (via `academics.Section` + `academics.Enrollment`) | ✅ Implemented |
-| Students | Parent | `household__guardians__email__iexact=user.email` (via `households.Guardian`) | ✅ Implemented |
-| Students | Student (self) | `Student.user` FK not yet created | 🚫 Blocked — Phase 3 |
-| Students | Counselor | Assignment model not yet defined | ⏳ Stub (deny) |
-| Students | Board | Aggregate-only; raw endpoint not defined | ⏳ Stub (deny) |
-| Financial Aid | Director / Finance / Aid Officer | All rows | ✅ Implemented |
-| Financial Aid | Parent | `household_id__in` resolved from `households.Guardian.email` | ✅ Implemented |
-| Financial Aid | Student | No student FK on application | ⏳ Stub (deny) |
-| Financial (LedgerEntry) | Director / Finance | All rows | ✅ Implemented |
-| Financial (LedgerEntry) | Parent | `family=user.guardian.family` (via `core.UserAccount.guardian → core.Guardian.family`) | ✅ Implemented |
-| Discipline | All non-director roles | `Discipline` model not yet defined | ⏳ Stub (deny) |
-| Formation (Barnabas) | All non-director roles | Formation model not yet defined | ⏳ Stub (deny) |
-| Referrals (Op. Andrew) | All non-director roles | `Referral` model has no submitter FK | ⏳ Stub (deny) |
+### 8.2 Current Layer C source behavior (not hosted certification)
 
-### 8.3 Endpoint Wiring Status
+Source authorities: `backend/core/scoping.py`, `backend/households/scoping.py`, `backend/households/views.py` and `backend/households/serializers.py`. The following describes the reviewed protected source, not a blanket claim that every endpoint in every module is wired or deployed.
 
-| Endpoint / ViewSet | Scoping Applied | Notes |
-|--------------------|-----------------|-------|
-| `households.StudentViewSet` | ✅ `scope_queryset(user, qs, DOMAIN_STUDENTS)` | Inline guardian filter removed from view |
-| `households.HouseholdViewSet` | ⏳ Inline filter still in view | TODO: migrate to DOMAIN_FINANCIAL or new DOMAIN_HOUSEHOLDS |
-| All other endpoints | ⏳ Not yet wired | Requires per-endpoint migration |
+| Domain and caller | Current row authorization | Current restriction |
+|---|---|---|
+| Compatibility household API, parent | Existing `households.Guardian.account` linked to this user in the selected school and matching household school | Email equality, unlinked guardians and cross-school selection alone confer no access |
+| Compatibility guardian API, parent | Own linked `Guardian.account` row only | Co-guardian contact details are not inherited from residence; nested household `guardians` omitted |
+| Compatibility student API, parent | Students of a verified linked household in the selected school | Legacy guardian-scope feature toggle does not bypass Layer C |
+| Compatibility student API, teacher | Students in the teacher's linked section enrollments | Other students denied; current role must be verified in the selected school |
+| Compatibility student API, student | Own record via `households.Student.account_id` when the required school role and link exist | Without the persisted linkage, deny |
+| Compatibility household directory, staff | Persisted school role plus active staff status and explicit `households.view` grant | `is_staff` alone does not authorize directory access |
+| Compatibility guardian directory, staff | Persisted school role plus active staff status and separate `guardians.view` grant | A household-directory grant does not confer contact-directory access |
+| Student protected reads, unidentified/unauthorized actor | None | Unknown/no-role, other-school roles, and unsupported duties fail closed |
+| Financial-aid row-scoping helper, parent | Selected-school household IDs resolved through linked `households.Guardian.account` | Email-only identity is not accepted |
+| Legacy core LedgerEntry row-scoping helper, parent | `core.UserAccount.guardian.family` | Distinct legacy model and permission contract; not a cross-model household promotion |
+| Discipline row-scoping helper, teacher/counselor | Denied pending reviewed assignment ownership | Section 2 expresses target doctrine, **not** a currently granted teacher/counselor permission |
+| Formation and referral row-scoping helpers | Role-specific source rules; unsupported relationships deny | Presence of a helper is not proof of active protected endpoint coverage |
 
-### 8.4 Test Coverage Status
+All public compatibility viewsets first resolve an active school via the canonical tenant contract, then apply domain rows and serializer fields. Inconsistent related household/guardian/student school IDs are excluded before direct or embedded serialization.
 
-| Test | Pathway | Status |
-|------|---------|--------|
-| `test_teacher_sees_only_enrolled_students` | Teacher → Section → Enrollment | ✅ Passing |
-| `test_teacher_with_no_sections_sees_nothing` | Teacher (no sections) → deny | ✅ Passing |
-| `test_parent_sees_only_own_household_students` | Parent email → guardian → household | ✅ Passing |
-| `test_parent_email_match_is_case_insensitive` | Email case insensitivity | ✅ Passing |
-| `test_parent_with_no_guardian_record_sees_nothing` | Orphan parent → deny | ✅ Passing |
-| `test_parent_sees_only_own_household_applications` | Parent → FinancialAidApplication household_id | ✅ Passing |
-| `test_parent_with_no_guardian_record_sees_nothing` (aid) | No guardian → deny | ✅ Passing |
-| `test_parent_filter_targets_own_family` | Parent → LedgerEntry via guardian.family | ✅ Passing |
-| `test_parent_without_guardian_db_record_sees_nothing` | No guardian FK → deny | ✅ Passing |
-| `test_unknown_domain_returns_empty_queryset` | Unknown domain → deny | ✅ Passing |
-| `test_empty_domain_string_returns_empty_queryset` | Empty string → deny | ✅ Passing |
-| `test_teacher_student_fields_are_pruned` | Field: teacher cannot see ssn/counseling_notes | ✅ Passing |
-| `test_director_student_fields_unchanged` | Field: director sees all fields | ✅ Passing |
-| `test_missing_domain_in_context_clears_all_fields` | No crown_domain → deny all fields | ✅ Passing |
+### 8.3 Current canonical compatibility endpoint wiring
+
+| Endpoint / ViewSet | Centralized source contract | Verification status |
+|---|---|---|
+| `households.HouseholdViewSet` at `/api/households/` and `/api/v1/households/` | `DOMAIN_HOUSEHOLDS`, verified guardian ownership or granted staff duty, scoped nested children | Merged source and synthetic regression; hosted acceptance remains open |
+| `households.GuardianViewSet` at `/api/guardians/` and `/api/v1/guardians/` | `DOMAIN_GUARDIANS`, own contact or separate contact-directory grant | Merged source and synthetic regression; hosted acceptance remains open |
+| `households.StudentViewSet` at `/api/students/` and `/api/v1/students/` | `DOMAIN_STUDENTS`, role- and household-bound before field serialization | Merged source and synthetic regression; distinct from canonical operational `core.Student` |
+| Other product APIs | Verify each actual route, scoping call and negative tests separately | Do not infer universal Layer C coverage from the three viewsets |
+
+### 8.4 Security regression inventory and evidence boundaries
+
+Existing source tests include:
+- `backend/households/tests/test_privacy_role_boundaries.py`: both public aliases, unknown-role denial, linked versus email-only parent, wrong family, school mismatch and co-guardian negatives.
+- `backend/households/tests/test_nested_privacy_fields.py`: direct/embedded parity, distinct staff directory grants and absence of denied nested record counts.
+- `backend/households/tests/test_guardian_scoping.py`: verified parent, registrar grants and teacher household-denial behavior.
+- `backend/households/tests/test_scoping_canonical_authority.py`: canonical tenant resolution and rejected unauthorized tenant overrides.
+
+These cases are part of the governed backend suite. Source correction [PR #442](https://github.com/Arete0920/Crown-CSMS/pull/442) was merged with required CI. **Neither source checks nor synthetic tests establish live DEV permission seeding, guardian-link reconciliation, or deployed tenant/privacy acceptance.** Track those separately under [issue #441](https://github.com/Arete0920/Crown-CSMS/issues/441); keep it open until actual authorized hosted negatives are verified. No production compliance or assurance certification is asserted.
 
 ---
 
-
 ## Issue #441: canonical public privacy boundary
 
-The accepted ADR-001 reserves canonical operational writes for `core.Family`, `core.Guardian`, and `core.Student`. The `households.*` models remain compatibility/read models, not the canonical operational writers; earlier identity labels in section 8.1 are superseded.
+The accepted ADR-001 reserves canonical operational writes for `core.Family`, `core.Guardian`, and `core.Student`. The `households.*` models remain compatibility/read models, not canonical operational writers; section 8.1 now distinguishes the current authorities.
 
 Canonical `/api/` and `/api/v1/` household, guardian and student endpoints require selected active school plus Layer C row/field scope. School-wide household access requires `households.view`; guardian directory access separately requires `guardians.view`. A Django staff bit, email match, unknown role, and a role belonging to another school do not authorize personal data. Parent household/student and financial aid reads require a persisted same-school `households.Guardian.account` link. The old guardian-scope toggle does not bypass protected viewsets. Permission seeding and hosted acceptance are distinct operational steps.
 
-## 9. Layer C Implementation Plan
+## 9. Historical Layer C implementation plan (archived)
+
+The original phase/task examples below are preserved as historical design intent, not active implementation instructions. The current executable interfaces are `scope_queryset`, `scope_serializer_fields`, `scoped_serializer_context` and `apply_scope` in `backend/core/scoping.py`; the illustrative `scope_fields()` below is not the current interface.
 
 ### Phase 1 — Infrastructure (Foundation Layer)
 
