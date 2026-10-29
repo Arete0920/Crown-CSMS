@@ -61,8 +61,19 @@ class TestObligationsTenantEnforcement(TestCase):
         self.client = APIClient()
         self.client.force_authenticate(user=self.staff)
 
-    def test_missing_school_header_returns_fail_closed(self):
-        """No X-School-Id header → 400 (MissingSchoolContext)."""
+    def test_single_school_finance_role_resolves_own_school_without_header(self):
+        """Canonical tenant contract permits an unambiguous persisted school role."""
+        other_school = _make_school("Unrelated Academy")
+        payer = _make_user("foreign_payer")
+        _make_obligation(other_school, payer, amount_cents=9_999)
+        r = self.client.get("/api/finance/obligations/")
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.json(), [])
+
+    def test_missing_header_and_no_school_role_fail_closed(self):
+        """A schoolless, ungranted principal has no tenant authority."""
+        no_role = _make_user("no_school_finance_user", is_staff=True)
+        self.client.force_authenticate(user=no_role)
         r = self.client.get("/api/finance/obligations/")
         self.assertIn(r.status_code, (400, 403, 404), msg=f"Got {r.status_code}: {r.content}")
 
