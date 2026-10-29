@@ -292,6 +292,7 @@ def platform_overview(request: Request) -> Response:
         due=Count("pk", filter=due_filter),
         dead=Count("pk", filter=Q(status=OutboxMessage.STATUS_DEAD)),
         failed=Count("pk", filter=Q(status=OutboxMessage.STATUS_FAILED)),
+        retrying=Count("pk", filter=Q(status=OutboxMessage.STATUS_PENDING, attempts__gt=0)),
         oldest_due=Min("created_at", filter=due_filter),
     )
     oldest_due = counts.pop("oldest_due")
@@ -338,6 +339,7 @@ def platform_overview(request: Request) -> Response:
                 "due": counts["due"],
                 "deferred": counts["pending"] - counts["due"],
                 "failed": counts["failed"],
+                "retrying": counts["retrying"],
                 "dead": counts["dead"],
                 "oldest_due_age_seconds": oldest_due_seconds,
                 "worker_status": "not_verified",

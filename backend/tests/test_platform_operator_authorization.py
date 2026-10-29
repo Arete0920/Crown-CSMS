@@ -482,7 +482,8 @@ class PlatformOperatorBoundaryTests(TestCase):
             body="PRIVATE_BODY", idempotency_key="synthetic-due",
         )
         OutboxMessage.objects.filter(pk=old.pk).update(
-            created_at=timezone.now() - timedelta(minutes=8)
+            created_at=timezone.now() - timedelta(minutes=8),
+            attempts=2, last_error="PRIVATE_RETRY_ERROR",
         )
         OutboxMessage.objects.create(
             school_id=str(self.other.id), channel="SMS",
@@ -503,8 +504,9 @@ class PlatformOperatorBoundaryTests(TestCase):
         self.assertEqual(response.status_code, 200)
         pulse = response.data["outbox"]
         self.assertEqual(
-            (pulse["pending"], pulse["due"], pulse["deferred"], pulse["failed"], pulse["dead"]),
-            (2, 1, 1, 1, 1),
+            (pulse["pending"], pulse["due"], pulse["deferred"],
+             pulse["retrying"], pulse["failed"], pulse["dead"]),
+            (2, 1, 1, 1, 1, 1),
         )
         self.assertGreaterEqual(pulse["oldest_due_age_seconds"], 470)
         self.assertEqual(pulse["worker_status"], "not_verified")
