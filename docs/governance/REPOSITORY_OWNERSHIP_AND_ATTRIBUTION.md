@@ -3,8 +3,16 @@
 ## Repository Owner
 
 - **Name:** John T. C. Megahan
-- **GitHub account:** `@tcmegahan`
+- **Current GitHub account:** `@Arete0920` (`Arete0920/Crown-CSMS`)
+- **Historical GitHub account:** `@tcmegahan` (`tcmegahan/Crown2026`; retained for attribution to original repository history)
+- **Consulting name:** Arete Advisory Group, used by the same founder and product owner
 - **Role:** Creator, Founder, Product Owner, principal product designer, architecture and workflow authority, repository owner, technical direction authority, acceptance authority, and final release authority
+
+## Account Migration and Attribution Continuity
+
+The original `@tcmegahan` account and the current `@Arete0920` account represent the same individual, John T. C. Megahan. Arete Advisory Group is his consulting business name, not a separate person who created CROWN. Moving development to `Arete0920/Crown-CSMS` did not by itself change the product owner, original authorship, technical direction, or release authority.
+
+This record concerns repository identity and attribution. It is not evidence of a particular legal entity form, executed IP assignment, or contracting arrangement; those matters require their own authoritative records. Preserve historical account names and source links in dated evidence rather than rewriting history.
 
 ## Attribution Standard
 
@@ -44,7 +52,7 @@ General involvement does not establish specific authorship. Any future contribut
 Future locally created commits should use:
 
 - `user.name`: `John T. C. Megahan`
-- `user.email`: the email address verified on the `tcmegahan` GitHub account
+- `user.email`: an email address verified on the current `Arete0920` GitHub account
 
 The email address is intentionally not published in this repository document.
 
@@ -53,7 +61,7 @@ The email address is intentionally not published in this repository document.
 Material pull requests should identify:
 
 - Product Owner: John T. C. Megahan
-- Repository Owner: `@tcmegahan`
+- Repository Owner (current GitHub account): `@Arete0920`
 - Technical direction and acceptance authority: John T. C. Megahan
 
 Contributors or co-authors should be credited when they have made an identifiable substantive contribution and identification is authorized. Automated tools should not be represented as product owners, release authorities, or independent reviewers.
