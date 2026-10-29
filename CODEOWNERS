@@ -1,18 +1,18 @@
 ﻿# CODEOWNERS  Spine guardrails
-# GitHub will request reviews from these owners when files change.
-# Adjust owner handles as needed.
+# Compatibility mirror; .github/CODEOWNERS is authoritative for GitHub review requests.
+# Keep owner handles aligned with the active repository account: @Arete0920.
 
 # Spine-critical
-/.github/workflows/                @tcmegahan
-/docs/                             @tcmegahan
-/CODEOWNERS                        @tcmegahan
+/.github/workflows/                @Arete0920
+/docs/                             @Arete0920
+/CODEOWNERS                        @Arete0920
 
 # Backend spine
-/backend/crown_api/                @tcmegahan
-/backend/*/urls.py                 @tcmegahan
-/backend/*/settings.py             @tcmegahan
-/backend/**/middleware*.py         @tcmegahan
+/backend/crown_api/                @Arete0920
+/backend/*/urls.py                 @Arete0920
+/backend/*/settings.py             @Arete0920
+/backend/**/middleware*.py         @Arete0920
 
 # Production/deploy surfaces
-/requirements.txt                  @tcmegahan
-/backend/requirements.txt          @tcmegahan
+/requirements.txt                  @Arete0920
+/backend/requirements.txt          @Arete0920
