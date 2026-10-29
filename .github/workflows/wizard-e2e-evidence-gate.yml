@@ -337,7 +337,7 @@ jobs:
               action="AWARD_STAGED",
           ).count() == 1
           assert not Credit.objects.filter(
-              school=school, source=Credit.SOURCE_FINANCIAL_AID,
+              school_id=school.id, source=Credit.SOURCE_FINANCIAL_AID,
               reference=f"aid_award:{award.pk}",
           ).exists(), "Offering an award must not create a household credit"
           print("PASS: browser wizard created one auditable offered award; no financial posting")
