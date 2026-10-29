@@ -29,6 +29,8 @@ from django.test import TestCase
 from rest_framework.test import APIClient
 
 from core.models import School
+from households.models import Guardian as HouseholdGuardian, Household
+from finance.models import FinancePayment
 
 User = get_user_model()
 
@@ -251,9 +253,29 @@ class FinancialAidApplicationsRbacTests(_RbacWriteBase):
 
 class FinancePaymentIntentRbacTests(_RbacWriteBase):
     """
-    POST /api/finance/payments/intent/ — IsAuthenticated.
-    Unauthenticated → 401; authenticated → 201 (or 400 on bad data).
+    POST /api/finance/payments/intent/ requires verified payer identity.
+    Unauthenticated → 401; verified payer → 201; unlinked user → 403.
     """
+
+    def setUp(self):
+        super().setUp()
+        household = Household.objects.create(
+            school_id=self.school.pk, name="Synthetic RBAC payer household",
+        )
+        HouseholdGuardian.objects.create(
+            school_id=self.school.pk, household=household, account=self.non_staff,
+            first_name="Synthetic", last_name="Guardian", email=self.non_staff.email,
+        )
+
+    def test_unlinked_authenticated_user_cannot_create_payment(self):
+        self.client.force_authenticate(user=self.staff)
+        before = FinancePayment.objects.count()
+        response = self.client.post(
+            PAYMENT_INTENT_URL, data={"amount_cents": 1000}, format="json",
+            HTTP_X_SCHOOL_ID=str(self.school.pk),
+        )
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(FinancePayment.objects.count(), before)
 
     def test_unauthenticated_payment_intent_returns_401(self):
         resp = self.client.post(

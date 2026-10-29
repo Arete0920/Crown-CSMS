@@ -249,8 +249,9 @@ jobs:
           echo ""
 
           STALE_COUNT=0
-          echo "[]" > stale-branches.json
+          # Publish only a fully evaluated report; failed enumeration must not yield an empty-success artifact.
           TMP_JSON="$(mktemp)"
+          trap 'rm -f "$TMP_JSON"' EXIT
           echo "[" > "$TMP_JSON"
           FIRST=1
           while IFS= read -r branch; do
@@ -278,7 +279,14 @@ jobs:
             done
             $protected && continue
 
-            last_commit=$(git log -1 --format="%ct" "origin/$short" 2>/dev/null || echo "0")
+            if ! last_commit="$(git log -1 --format="%ct" "origin/$short")"; then
+              echo "::error::Cannot read head commit for $short; branch-age report incomplete."
+              exit 1
+            fi
+            if [[ ! "$last_commit" =~ ^[1-9][0-9]*$ ]]; then
+              echo "::error::Invalid head-commit timestamp for $short; branch-age report incomplete."
+              exit 1
+            fi
             if [ "$last_commit" -lt "$CUTOFF" ]; then
               last_date=$(date -d @$last_commit '+%Y-%m-%d')
               echo "  REVIEW: $short (head commit date: $last_date; last push time NOT established)"
