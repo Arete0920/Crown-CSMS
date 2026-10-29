@@ -82,12 +82,35 @@ def _ensure_ledger_identity(parent: UserAccount) -> None:
         name="Reed Family",
         defaults={"address1": "100 Demo Lane", "city": "Fairview", "state": "PA", "postal_code": "19000", "is_active": True},
     )
-    HouseholdGuardian.objects.update_or_create(
-        school_id=parent.school_id,
-        household=household,
-        email=parent.email,
-        defaults={"first_name": parent.first_name or "Miriam", "last_name": parent.last_name or "Reed", "phone": "555-0100", "is_primary": True, "account": parent},
-    )
+    # Local classroom seeding may already bind this account to Reed Family
+    # with a blank email. Reuse its OneToOne guardian instead of creating another.
+    guardian = HouseholdGuardian.objects.filter(account=parent).first()
+    if guardian is not None and (
+        guardian.school_id != parent.school_id or guardian.household_id != household.pk
+    ):
+        raise SandboxFinanceError("heritage_parent_household_conflict")
+    if guardian is None:
+        candidates = list(
+            HouseholdGuardian.objects.filter(
+                school_id=parent.school_id, household=household,
+                email__iexact=parent.email,
+            ).order_by("pk")[:2]
+        )
+        if len(candidates) > 1:
+            raise SandboxFinanceError("heritage_parent_guardian_ambiguous")
+        guardian = candidates[0] if candidates else None
+        if guardian is not None and guardian.account_id not in (None, parent.pk):
+            raise SandboxFinanceError("heritage_parent_guardian_conflict")
+    if guardian is None:
+        guardian = HouseholdGuardian(school_id=parent.school_id, household=household)
+    guardian.account = parent
+    guardian.email = parent.email
+    guardian.first_name = parent.first_name or "Miriam"
+    guardian.last_name = parent.last_name or "Reed"
+    guardian.phone = "555-0100"
+    guardian.is_primary = True
+    guardian.full_clean()
+    guardian.save()
 
 
 def _ensure_voided_obligation(parent: UserAccount, director: UserAccount | None = None) -> FinanceObligation:

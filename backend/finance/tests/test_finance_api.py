@@ -319,6 +319,7 @@ class TestPaymentIntentEndpoint(TestCase):
     def setUp(self):
         self.school = _school()
         self.parent = _user("pi_parent")
+        _link_payer_to_household(self.school, self.parent)
 
     def test_creates_pending_payment(self):
         c = _auth_client(self.parent)
