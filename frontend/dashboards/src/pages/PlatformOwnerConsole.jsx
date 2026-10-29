@@ -138,7 +138,7 @@ export default function PlatformOwnerConsole() {
                 </Typography>
               </Stack>
             ) : <Alert severity="warning">Outbox backlog unavailable; runtime health unknown.</Alert>}
-          </Card></Card>
+          </CardContent></Card>
           <Card><CardContent>
             <Typography variant="h6" gutterBottom>Support Operations</Typography>
             {overview.support?.data_state === "available" ? (
