@@ -4,8 +4,8 @@ finance/api_views.py â€” Finance & Tuition module API endpoints.
 Tenant isolation: every view calls get_request_school_id(request, required=True),
 which raises MissingSchoolContext (HTTP 400) or NotFound (HTTP 404) on failure.
 
-Auth: IsAuthenticated guards all endpoints.
-Admin-only routes additionally check request.user.is_staff.
+Auth: IsAuthenticated guards all endpoints. Schoolwide reads and financial
+mutations require the corresponding school-scoped Crown finance grant.
 
 Ledger posting: explicit via services.py â€” no signals, no side-effects in views.
 """
@@ -55,14 +55,9 @@ from finance.services import (
 
 logger = logging.getLogger(__name__)
 
-DETAIL_ADMIN_REQUIRED = "Admin required."
 DETAIL_SCHOOL_NOT_FOUND = "School not found."
 DETAIL_AMOUNT_NOT_INT = "amount_cents must be an integer."
 DETAIL_AMOUNT_POSITIVE = "amount_cents must be > 0."
-
-
-def _is_staff(request) -> bool:
-    return bool(getattr(request, "user", None) and request.user.is_authenticated and request.user.is_staff)
 
 
 def _authorized_payer(payer, school_id) -> bool:
@@ -332,16 +327,13 @@ def payment_intent_create(request):
 
 @extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, CrownModulePermission("finance.edit", write_code="finance.edit")])
 def payment_settle(request, payment_id: int):
     """
     POST â€” Admin: settle a payment and allocate to obligations.
     Body: allocations = [{"obligation_id": int, "amount_cents": int}, ...]
     Idempotent: already-settled payments return 200.
     """
-    if not _is_staff(request):
-        return Response({"detail": DETAIL_ADMIN_REQUIRED}, status=403)
-
     school = get_request_school_id(request, required=True)
 
     try:
@@ -370,16 +362,13 @@ def payment_settle(request, payment_id: int):
 
 @extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, CrownModulePermission("finance.edit", write_code="finance.edit")])
 def refund_create(request, payment_id: int):
     """
     POST â€” Admin: initiate a refund against a settled payment.
     Body: amount_cents, idempotency_key (optional)
     Raises 409 if refund would exceed original payment amount.
     """
-    if not _is_staff(request):
-        return Response({"detail": DETAIL_ADMIN_REQUIRED}, status=403)
-
     school = get_request_school_id(request, required=True)
 
     try:

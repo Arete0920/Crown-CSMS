@@ -1,5 +1,6 @@
 """Fail-closed financial-aid admin and family access regression tests."""
 from datetime import date
+from uuid import uuid4
 
 from django.test import TestCase
 from rest_framework.test import APIClient
@@ -200,3 +201,10 @@ class AidSensitiveAccessTests(TestCase):
         })
         self.assertEqual(response.status_code, 404)
         self.assertNotIn("awards", response.json())
+
+    def test_family_denials_do_not_reveal_student_existence(self):
+        responses = [self._get("/api/aid/family/status/", {
+            "student_id": str(student_id), "academic_year_id": str(self.year.id),
+        }) for student_id in (self.other_student.id, uuid4())]
+        self.assertEqual([response.status_code for response in responses], [404, 404])
+        self.assertEqual(responses[0].json(), responses[1].json())

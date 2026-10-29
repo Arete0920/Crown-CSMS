@@ -458,7 +458,7 @@ def family_aid_status(request):
             pk=student_id, school_id=school_id, family__school_id=school_id,
         )
     except Student.DoesNotExist:
-        return Response({"detail": "Student not found"}, status=status.HTTP_404_NOT_FOUND)
+        return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
 
     user = request.user
     aid_officer_allowed = user_has_permission(user, "financial_aid.view", school=student.school)

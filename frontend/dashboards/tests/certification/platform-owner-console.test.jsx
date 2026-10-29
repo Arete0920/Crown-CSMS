@@ -11,6 +11,9 @@ const overview = {
   schools: { total: 120, by_status: { active: 120 } },
   provisioning: { by_state: { queued: 0 }, recent_jobs: [] },
   audit: { events_last_7_days: 0 },
+  outbox: { data_state: "available", pending: 3, due: 2, deferred: 1,
+    retrying: 1, failed: 0, dead: 1, oldest_due_age_seconds: 120,
+    worker_status: "not_verified", beat_status: "not_verified" },
   company_finance: { data_state: "not_configured", reason: "No corporate ledger configured." },
   external_payments: { provisioning_policy: "disabled" },
   meta: { data_source: "live_db", as_of: "2026-10-23T16:00:00Z" },
@@ -90,5 +93,37 @@ describe("platform owner console verified behavior", () => {
     await waitFor(() => expect(signal).toBeDefined());
     view.unmount();
     expect(signal.aborted).toBe(true);
+  });
+});
+
+describe("operator queue pulse", () => {
+  it("presents backlog without asserting worker health", async () => {
+    render(<PlatformOwnerConsole />);
+    expect(await screen.findByText(/Outbox pending: 3/)).toBeTruthy();
+    expect(screen.getByText(/Due messages await processing/)).toBeTruthy();
+    expect(screen.getByText(/Failed or dead outbox records require operator review/)).toBeTruthy();
+    expect(screen.getByText(/Failed: 0/)).toBeTruthy();
+    expect(screen.getByText(/Retrying: 1/)).toBeTruthy();
+    expect(screen.getByText(/Retrying outbox messages require operator review/)).toBeTruthy();
+    expect(screen.getByText(/Worker and beat: not verified/)).toBeTruthy();
+  });
+
+  it("warns on failed records even when no messages are currently due", async () => {
+    vi.mocked(authenticatedJson).mockImplementation((endpoint, options) => {
+      if (endpoint === "/api/platform/overview") {
+        return Promise.resolve({
+          ...overview,
+          outbox: { ...overview.outbox, pending: 0, due: 0, deferred: 0, retrying: 0, failed: 2, dead: 0 },
+        });
+      }
+      if (endpoint === "/api/platform/schools/list") {
+        return Promise.resolve(schoolPage(options.query.page));
+      }
+      return Promise.reject(new Error("Unexpected endpoint"));
+    });
+    render(<PlatformOwnerConsole />);
+    expect(await screen.findByText(/Failed: 2/)).toBeTruthy();
+    expect(screen.getByText(/Failed or dead outbox records require operator review/)).toBeTruthy();
+    expect(screen.queryByText(/Due messages await processing/)).toBeNull();
   });
 });

@@ -4,7 +4,7 @@ from datetime import date, timedelta
 import pytest
 from rest_framework.test import APIClient
 
-from core.models import School, UserAccount
+from core.models import CrownPermission, RolePermission, School, UserAccount, UserRole
 from finance.models import (
     FinanceObligation,
     FinancePayment,
@@ -48,6 +48,17 @@ def _post(client, url, body, school_id):
     )
 
 
+def _grant_finance_edit(school, actor):
+    """Grant the synthetic actor explicit school-scoped financial write access."""
+    UserRole.objects.get_or_create(
+        user=actor, school=school, role_code="FINANCE_DIRECTOR",
+    )
+    edit_permission, _ = CrownPermission.objects.get_or_create(code="finance.edit")
+    RolePermission.objects.get_or_create(
+        role_code="FINANCE_DIRECTOR", permission=edit_permission,
+    )
+
+
 def _household(school, payer):
     payer.school = school
     payer.save(update_fields=["school"])
@@ -81,6 +92,7 @@ def test_finance_payment_urls_write_through_canonical_payments_authority():
     school = School.objects.create(name="Canonical Finance API")
     payer = _user("canonical_finance_parent")
     staff = _user("canonical_finance_staff", is_staff=True)
+    _grant_finance_edit(school, staff)
     household = _household(school, payer)
     obligation = _obligation(school, payer)
 
@@ -246,6 +258,7 @@ def test_compatibility_adoption_rejects_wrong_immutable_canonical_household():
     school = School.objects.create(name="Canonical identity mismatch school")
     payer = _user("mismatched_canonical_payer")
     staff = _user("mismatched_canonical_staff", is_staff=True)
+    _grant_finance_edit(school, staff)
     _household(school, payer)
     different = Household.objects.create(school_id=school.id, name="Different household")
     obligation = _obligation(school, payer)
