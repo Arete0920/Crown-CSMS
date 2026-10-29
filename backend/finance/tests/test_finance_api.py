@@ -22,7 +22,7 @@ from datetime import date, timedelta
 from django.test import TestCase
 from rest_framework.test import APIClient
 
-from core.models import School, UserAccount
+from core.models import School, UserAccount, CrownPermission, RolePermission, UserRole
 from households.models import Guardian as HouseholdGuardian, Household
 from ledger.models import LedgerAccount
 from finance.models import (
@@ -105,6 +105,18 @@ def _auth_client(user):
     return c
 
 
+def _grant_finance(staff, school):
+    UserRole.objects.get_or_create(user=staff, school=school, role_code="FINANCE_DIRECTOR")
+    for code in ("finance.view", "finance.edit"):
+        permission, _ = CrownPermission.objects.get_or_create(code=code)
+        RolePermission.objects.get_or_create(role_code="FINANCE_DIRECTOR", permission=permission)
+
+
+def _authorize_payer(payer, school):
+    UserRole.objects.get_or_create(user=payer, school=school, role_code="PARENT")
+
+
+
 def _json_post(client, url, data, school_id):
     return client.post(
         url,
@@ -123,6 +135,8 @@ class TestObligationsEndpoint(TestCase):
         self.school = _school()
         self.staff = _user("o_staff", is_staff=True)
         self.parent = _user("o_parent")
+        _grant_finance(self.staff, self.school)
+        _authorize_payer(self.parent, self.school)
 
     def test_list_returns_only_school_obligations(self):
         other_school = _school("Other")
@@ -189,6 +203,8 @@ class TestInvoiceCreateEndpoint(TestCase):
         self.school = _school()
         self.staff = _user("inv_staff", is_staff=True)
         self.payer = _user("inv_payer")
+        _grant_finance(self.staff, self.school)
+        _authorize_payer(self.payer, self.school)
 
     def test_create_invoice_from_obligations_returns_201(self):
         ob1 = _obligation(self.school, self.payer, amount_cents=3_000)
@@ -410,6 +426,7 @@ class TestDonationEndpoint(TestCase):
         self.school = _school()
         self.donor = _user("donor_user")
         self.staff = _user("don_staff", is_staff=True)
+        _grant_finance(self.staff, self.school)
 
     def test_create_donation_returns_201(self):
         c = _auth_client(self.donor)
