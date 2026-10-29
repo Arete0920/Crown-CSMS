@@ -5,6 +5,7 @@ Synthetic fixtures only. These tests do not trigger a payment gateway.
 from datetime import date
 
 from django.test import TestCase
+from django.urls import resolve
 from rest_framework.test import APIClient
 
 from core.models import CrownPermission, RolePermission, School, UserAccount, UserRole
@@ -13,6 +14,7 @@ from finance.models import (
     ObligationType, PaymentStatus, Processor,
 )
 from finance.services import settle_payment_and_allocate
+from finance import payment_compat_api
 from households.models import Guardian as HouseholdGuardian, Household
 from ledger.models import Allocation as LedgerAllocation
 from ledger.models import Charge as LedgerCharge
@@ -100,6 +102,16 @@ class FinanceSettlementAuthorityTests(TestCase):
             LedgerPayment.objects.count(),
             LedgerCharge.objects.count(),
             LedgerAllocation.objects.count(),
+        )
+
+    def test_registered_mutation_routes_use_canonical_payment_compatibility(self):
+        self.assertIs(
+            resolve(f"/api/finance/payments/{self.payment.pk}/settle/").func,
+            payment_compat_api.payment_settle,
+        )
+        self.assertIs(
+            resolve(f"/api/finance/payments/{self.payment.pk}/refund/").func,
+            payment_compat_api.refund_create,
         )
 
     def test_is_staff_without_finance_grant_cannot_settle(self):

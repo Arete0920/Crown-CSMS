@@ -10,6 +10,7 @@ import logging
 import uuid
 
 from django.db import transaction
+from core.permissions import CrownModulePermission
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -40,17 +41,9 @@ from payments.models import Payment as CanonicalPayment
 
 logger = logging.getLogger(__name__)
 
-DETAIL_ADMIN_REQUIRED = "Admin required."
 DETAIL_AMOUNT_NOT_INT = "amount_cents must be an integer."
 DETAIL_AMOUNT_POSITIVE = "amount_cents must be > 0."
 
-
-def _is_staff(request) -> bool:
-    return bool(
-        getattr(request, "user", None)
-        and request.user.is_authenticated
-        and request.user.is_staff
-    )
 
 
 def _household_id_for_user(*, school_id, user):
@@ -198,11 +191,9 @@ def payment_intent_create(request):
 
 
 @api_view(["POST"])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, CrownModulePermission("finance.edit", write_code="finance.edit")])
 def payment_settle(request, payment_id: int):
     """Settle through canonical Payments, projecting into legacy Finance."""
-    if not _is_staff(request):
-        return Response({"detail": DETAIL_ADMIN_REQUIRED}, status=403)
     school_id = get_request_school_id(request, required=True)
 
     try:
@@ -240,11 +231,9 @@ def payment_settle(request, payment_id: int):
 
 
 @api_view(["POST"])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, CrownModulePermission("finance.edit", write_code="finance.edit")])
 def refund_create(request, payment_id: int):
     """Create and settle a manual refund through canonical Payments authority."""
-    if not _is_staff(request):
-        return Response({"detail": DETAIL_ADMIN_REQUIRED}, status=403)
     school_id = get_request_school_id(request, required=True)
 
     try:
