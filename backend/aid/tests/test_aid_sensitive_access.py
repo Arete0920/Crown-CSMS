@@ -154,6 +154,7 @@ class AidSensitiveAccessTests(TestCase):
         )
         parent = UserAccount.objects.create_user(
             username="mismatched-parent-link", password="test-only",
+            email="foreign-linked-parent@example.invalid",
             school=self.school, guardian=foreign_guardian,
         )
         UserRole.objects.create(user=parent, school=self.school, role_code="PARENT")
