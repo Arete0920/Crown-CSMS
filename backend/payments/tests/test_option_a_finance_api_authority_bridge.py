@@ -268,4 +268,3 @@ def test_compatibility_adoption_rejects_wrong_immutable_canonical_household():
     assert legacy.status == "pending"
     assert canonical.status == CanonicalPaymentStatus.PENDING
     assert not legacy.allocations.exists()
-
