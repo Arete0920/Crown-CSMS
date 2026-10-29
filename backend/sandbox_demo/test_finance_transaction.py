@@ -2,6 +2,8 @@ import pytest
 
 from core.models import UserAccount
 from finance.models import FinanceAllocation, FinanceObligation, FinancePayment, PaymentStatus
+from finance.services import _verified_household_id_for_user
+from households.models import Guardian as HouseholdGuardian
 from ledger.models import Allocation as LedgerAllocation
 from ledger.models import Payment as LedgerPayment
 from sandbox_demo.finance import (
@@ -80,3 +82,14 @@ def test_non_finance_persona_cannot_use_finance_orchestration(settings):
     parent = _user("parent.reed@heritage.example.org")
     with pytest.raises(SandboxFinanceError, match="heritage_finance_director_required"):
         apply_demo_payment(parent)
+
+
+def test_seed_payer_guardian_identity_uses_same_uuid_school(settings):
+    _prepare(settings)
+    parent = _user("parent.reed@heritage.example.org")
+    linked_guardian = HouseholdGuardian.objects.get(account=parent)
+    assert linked_guardian.school_id == parent.school_id
+    assert linked_guardian.household.school_id == parent.school_id
+    assert _verified_household_id_for_user(
+        school_id=parent.school_id, user=parent,
+    ) == linked_guardian.household_id

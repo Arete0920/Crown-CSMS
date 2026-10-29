@@ -55,6 +55,7 @@ def _build_payment(*, amount_cents=10_000):
         username="finance_concurrency_payer",
         password="pass",
         email="finance-concurrency@test.example.com",
+        school=school,
     )
     household = Household.objects.create(school_id=school.id, name="Concurrency Household")
     HouseholdGuardian.objects.create(
@@ -63,6 +64,7 @@ def _build_payment(*, amount_cents=10_000):
         first_name="Concurrency",
         last_name="Guardian",
         email=payer.email,
+        account=payer,
         is_primary=True,
     )
     LedgerAccount.objects.create(school_id=school.id, household=household)
