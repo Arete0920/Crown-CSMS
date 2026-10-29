@@ -72,8 +72,10 @@ on:
       - ".github/workflows/deploy-dashboard.yml"
 
 concurrency:
-  group: crown-dashboard-swa-deploy-${{ inputs.dev_certification_preview == true && 'dev-certification' || github.ref_type }}
-  cancel-in-progress: true
+  # Tag and manual production dispatches share one non-cancelling mutex.
+  # DEV certification previews are isolated from production deployments.
+  group: crown-dashboard-swa-deploy-${{ inputs.dev_certification_preview == true && 'dev-certification' || 'production' }}
+  cancel-in-progress: false
 
 jobs:
   resolve-certified-backend:
@@ -147,6 +149,7 @@ jobs:
 
   build-and-deploy:
     name: "Build + deploy dashboard  ${{ github.ref_name }}"
+    environment: production
     needs: resolve-certified-backend
     runs-on: ubuntu-latest
     timeout-minutes: 45
