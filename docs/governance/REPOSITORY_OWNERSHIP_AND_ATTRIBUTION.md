@@ -4,7 +4,7 @@
 
 - **Name:** John T. C. Megahan
 - **Current GitHub account:** `@Arete0920` (`Arete0920/Crown-CSMS`)
-- **Historical GitHub account:** `@tcmegahan` (`tcmegahan/Crown2026`; retained for attribution to original repository history)
+- **Historical GitHub account:** `@tcmegahan` (original `Crown2026` repository; retained for historical attribution)
 - **Consulting name:** Arete Advisory Group, used by the same founder and product owner
 - **Role:** Creator, Founder, Product Owner, principal product designer, architecture and workflow authority, repository owner, technical direction authority, acceptance authority, and final release authority
 
