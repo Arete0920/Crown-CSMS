@@ -1,7 +1,7 @@
 # CROWN Current Release Status
 
-**Status:** RELEASE CANDIDATE — EXACT-HEAD VERIFICATION REQUIRED  
-**Last release-governance reconciliation:** 2026-10-27, 20:14 Eastern (see dated DEV evidence and strict-current-head drift checkpoint below; resolve live source at every release decision)  
+**Status:** LATEST PROTECTED SOURCE BASELINE — NEW RELEASE CANDIDATE / HOSTED CERTIFICATION NOT YET ACCEPTED  
+**Last release-governance reconciliation:** October 28, 2026, after accepted financial-aid correction; resolve exact source again at every release decision  
 **Current repository identity:** resolve exact `refs/heads/main` from Git/GitHub at the decision point  
 **Release rule:** production-ready source status is granted only to an exact repository head whose applicable security, dependency, test, schema, tenant-isolation, build, repository-policy, and release-authority checks are passing.
 
@@ -10,6 +10,25 @@
 The August 18, 2026 engineering certification remains historical evidence for that certified baseline. Subsequent dependency, scheduling, architecture, security, and repository-governance changes require exact-head verification before a current production-ready source claim is made.
 
 Current release authority is defined by this document, the canonical document index, the diligence evidence index, exact-head CI, and current supporting evidence. Dated predecessor-era release campaigns and retired comparison/superiority artifacts remain provenance only and are not executable release authority.
+
+## October 28, 2026 — newest accepted source; release-candidate selection remains open
+
+**GitHub checkpoint (protected source only):** `main=2ae0c7a6283f566fa8918e43e61669dd2fa2d30a` following the protected [#519 merge](https://github.com/Arete0920/Crown-CSMS/pull/519) at 22:28:50 UTC. It contains financial-aid reversal reconciliation, duplicate prevention, budget-release and tenant safeguards; defect [#517](https://github.com/Arete0920/Crown-CSMS/issues/517) closed following merge. The prior [#516](https://github.com/Arete0920/Crown-CSMS/pull/516) non-cash posting correction was also accepted. These are **accepted engineering source changes**, not approval of production finance or a hosted workflow.
+
+**Evidence at that checkpoint:**
+- Final #519 exact PR-head checks were **38 succeeded / 2 skipped / 0 failed**. Its focused PostgreSQL finance test results were **36 passing tests and two passing subtests**. These results are tied to the PR revision that merged; do not silently transplant them to a future candidate.
+- The post-merge protected-main checks included successful source contract, frontend audit, backend gate, finance PostgreSQL, tenant isolation, security, repository policy, release verify and browser/wizard work. At the initial Oct 28 inspection, a separate **backend-coverage** run was still in progress and **DEV public runtime parity** had failed. A post-merge failure must be retained, not reclassified as a passing release gate.
+- [#520](https://github.com/Arete0920/Crown-CSMS/pull/520) proposes wallet dependency-update coverage and correct branch-age terminology and was **not part of this source checkpoint**. Re-resolve its merge state and select a new full SHA if it later integrates. No dependency update or branch cleanup is represented as completed until merged/verified.
+
+**Latest released/deployed identities:** As inspected October 28, GitHub exposes only one published Crown-CSMS GitHub Release: the **October 12 Heritage demo prerelease** at `61e728150b4ac728de29a80239e10c355d3fcaf9`. It is historical and not a current production or buyer-authorized identity. The later October 27 *same-SHA DEV backend, artifact and isolated frontend preview* remained at `63121646f6356eadea5e6f2f1bbe02081b2e1491` in the October 28 read-only drift evidence. The pairing is internally consistent but **behind accepted main**. That older hosted run passed **51/51** scoped crawler/buyer/synthetic tenant cases on its tested source; it does **not** certify the Oct 28 main.
+
+**Business-flow truth:** Accepted source tests establish the **financial-aid ledger** accept/decline behavior, not a complete live financial-aid UI or verified school finances. Financial Aid dashboard templates retain explicitly labeled illustrative/fallback metrics. The canonical owner console and guarded manual provisioning executor are implemented in source, while authenticated and synthetic hosted acceptance remains open under [#414](https://github.com/Arete0920/Crown-CSMS/issues/414), [#420](https://github.com/Arete0920/Crown-CSMS/issues/420), [#441](https://github.com/Arete0920/Crown-CSMS/issues/441) and [#427](https://github.com/Arete0920/Crown-CSMS/issues/427). No buyer access before signed agreement; no live school provisioning, payment activation or customer-data handling is approved.
+
+**Next controlled decision:** After #520 and any further required source PRs resolve, freeze final accepted `main`, require all applicable exact-head checks terminal and accepted, and prepare a separately governed immutable **release candidate** consistent with `docs/RELEASE_TAG_POLICY.md`. A new RC tag is **not asserted by this record**. Before any current-source hosted certification, clear the documented queued/stale deployment and recovery guards under #427, then align frontend/API/artifact identities in a single controlled DEV scope and run the operator/financial/guardian acceptance cases. The [three-journey acceptance matrix](release/BUYER_DILIGENCE_WORKFLOW_ACCEPTANCE_20261028.md) defines what must be observed and what is intentionally deferred. Do not spend on broad Azure reconstruction solely to change a documentation status.
+
+**Disposition:** **NOT YET CERTIFIED** for current-hosted DEV, customer production, payment processing, external security/compliance assurance, or buyer operations. No successor production tag or release is asserted by this record. The dated October 27 and earlier sections **below** remain retained as historical evidence, not current-head certification.
+
+---
 
 ## October 27, 2026 (20:14 Eastern / October 28 00:14 UTC) — hosted DEV certification and current-head drift
 
