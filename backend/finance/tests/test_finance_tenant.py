@@ -14,7 +14,7 @@ from datetime import date, timedelta
 from django.test import TestCase
 from rest_framework.test import APIClient
 
-from core.models import AcademicYear, School, UserAccount
+from core.models import AcademicYear, School, UserAccount, CrownPermission, RolePermission, UserRole
 from finance.models import FinanceObligation, MoneyStatus, ObligationType
 
 
@@ -55,6 +55,9 @@ class TestObligationsTenantEnforcement(TestCase):
     def setUp(self):
         self.school = _make_school("Acme Academy")
         self.staff = _make_user("admin_staff", is_staff=True)
+        UserRole.objects.get_or_create(user=self.staff, school=self.school, role_code="FINANCE_DIRECTOR")
+        perm, _ = CrownPermission.objects.get_or_create(code="finance.view")
+        RolePermission.objects.get_or_create(role_code="FINANCE_DIRECTOR", permission=perm)
         self.client = APIClient()
         self.client.force_authenticate(user=self.staff)
 
