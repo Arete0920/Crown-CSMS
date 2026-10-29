@@ -22,7 +22,7 @@ from finance.models import (
     Processor,
 )
 from finance.serializers import PaymentSerializer, RefundSerializer
-from households.models import Guardian as HouseholdGuardian
+from finance.services import _verified_household_id_for_user
 from households.scoping import get_request_school_id
 from payments.authority_services import (
     CanonicalOverRefundError,
@@ -45,21 +45,9 @@ DETAIL_AMOUNT_NOT_INT = "amount_cents must be an integer."
 DETAIL_AMOUNT_POSITIVE = "amount_cents must be > 0."
 
 
-
 def _household_id_for_user(*, school_id, user):
-    email = (getattr(user, "email", "") or "").strip()
-    if not email:
-        return None
-    household_ids = list(
-        HouseholdGuardian.objects.filter(
-            school_id=school_id,
-            email__iexact=email,
-        )
-        .values_list("household_id", flat=True)
-        .distinct()
-    )
-    return household_ids[0] if len(household_ids) == 1 else None
-
+    """Use the same persisted household identity required for ledger posting."""
+    return _verified_household_id_for_user(school_id=school_id, user=user)
 
 def _canonical_for_legacy(
     *,
@@ -67,17 +55,28 @@ def _canonical_for_legacy(
     created_by=None,
     requested_allocations: list[dict] | None = None,
 ) -> CanonicalPayment:
+    household_id = _household_id_for_user(
+        school_id=legacy_payment.school_id, user=legacy_payment.payer_user,
+    )
+    if household_id is None:
+        raise PaymentCompatibilityRequired("Verified payer household is required.")
+
     canonical = CanonicalPayment.objects.filter(
         school_id=legacy_payment.school_id,
         finance_payment_id=legacy_payment.pk,
     ).first()
+    if canonical is not None and (
+        canonical.household_id != household_id
+        or canonical.amount_cents != legacy_payment.amount_cents
+        or canonical.currency != legacy_payment.currency
+    ):
+        # Canonical identity/amount facts are immutable: never silently repair.
+        raise PaymentCompatibilityRequired("Canonical payment conflicts with verified payer facts.")
+
     if canonical is None:
         canonical = create_payment(
             school_id=legacy_payment.school_id,
-            household_id=_household_id_for_user(
-                school_id=legacy_payment.school_id,
-                user=legacy_payment.payer_user,
-            ),
+            household_id=household_id,
             finance_payment_id=legacy_payment.pk,
             amount_cents=legacy_payment.amount_cents,
             currency=legacy_payment.currency,
@@ -130,6 +129,9 @@ def payment_intent_create(request):
 
     currency = (request.data.get("currency", "USD") or "USD").strip().upper()
     idempotency_key = (request.data.get("idempotency_key", "") or "").strip()
+    household_id = _household_id_for_user(school_id=school_id, user=request.user)
+    if household_id is None:
+        return Response({"detail": "Verified payer household is required."}, status=403)
 
     if idempotency_key:
         existing = (
@@ -141,6 +143,16 @@ def payment_intent_create(request):
             .first()
         )
         if existing is not None:
+            if (
+                existing.payer_user_id != request.user.pk
+                or existing.amount_cents != amount_cents
+                or existing.currency != currency
+                or existing.processor != Processor.MANUAL
+            ):
+                return Response(
+                    {"detail": "Existing payment conflicts with requested payment facts."},
+                    status=409,
+                )
             try:
                 _canonical_for_legacy(
                     legacy_payment=existing,
@@ -170,10 +182,7 @@ def payment_intent_create(request):
         )
         create_payment(
             school_id=school_id,
-            household_id=_household_id_for_user(
-                school_id=school_id,
-                user=request.user,
-            ),
+            household_id=household_id,
             finance_payment_id=legacy_payment.pk,
             amount_cents=amount_cents,
             currency=currency,
