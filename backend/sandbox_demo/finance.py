@@ -75,13 +75,15 @@ def _parent_user() -> UserAccount:
 
 
 def _ensure_ledger_identity(parent: UserAccount) -> None:
+    # Model same-school validation compares UUID fields before DB conversion.
+    # Reuse the canonical typed school id from the seeded parent, not catalog text.
     household, _ = Household.objects.update_or_create(
-        school_id=SCHOOL_ID,
+        school_id=parent.school_id,
         name="Reed Family",
         defaults={"address1": "100 Demo Lane", "city": "Fairview", "state": "PA", "postal_code": "19000", "is_active": True},
     )
     HouseholdGuardian.objects.update_or_create(
-        school_id=SCHOOL_ID,
+        school_id=parent.school_id,
         household=household,
         email=parent.email,
         defaults={"first_name": parent.first_name or "Miriam", "last_name": parent.last_name or "Reed", "phone": "555-0100", "is_primary": True, "account": parent},
