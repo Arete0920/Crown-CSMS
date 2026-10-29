@@ -7,6 +7,7 @@ from rest_framework.test import APIClient
 
 from core.models import School
 from platform_ops.models import AuditEvent, ProvisioningJob
+from comms.models import OutboxMessage
 from support.models import SupportTicket
 from subscriptions.models import Plan, TenantSubscription
 from tenants.models import TenantProfile
@@ -470,3 +471,49 @@ class PlatformOperatorBoundaryTests(TestCase):
                 school_id=self.other.id, ended_at__isnull=True
             ).plan_id, self.plan.id,
         )
+
+    def test_owner_outbox_pulse_is_aggregate_without_recipient_or_message(self):
+        from datetime import timedelta
+        from django.utils import timezone
+
+        old = OutboxMessage.objects.create(
+            school_id=str(self.school.id), channel="EMAIL",
+            to="PRIVATE_RECIPIENT", subject="PRIVATE_SUBJECT",
+            body="PRIVATE_BODY", idempotency_key="synthetic-due",
+        )
+        OutboxMessage.objects.filter(pk=old.pk).update(
+            created_at=timezone.now() - timedelta(minutes=8)
+        )
+        OutboxMessage.objects.create(
+            school_id=str(self.other.id), channel="SMS",
+            to="PRIVATE", body="PRIVATE", idempotency_key="synthetic-future",
+            next_attempt_at=timezone.now() + timedelta(hours=1),
+        )
+        OutboxMessage.objects.create(
+            school_id=str(self.other.id), channel="EMAIL",
+            to="PRIVATE", body="PRIVATE", idempotency_key="synthetic-dead",
+            status=OutboxMessage.STATUS_DEAD,
+        )
+        response = self.client_for(self.owner).get("/api/platform/overview")
+        self.assertEqual(response.status_code, 200)
+        pulse = response.data["outbox"]
+        self.assertEqual(
+            (pulse["pending"], pulse["due"], pulse["deferred"], pulse["dead"]),
+            (2, 1, 1, 1),
+        )
+        self.assertGreaterEqual(pulse["oldest_due_age_seconds"], 470)
+        self.assertEqual(pulse["worker_status"], "not_verified")
+        self.assertEqual(pulse["beat_status"], "not_verified")
+        self.assertNotIn("PRIVATE", str(response.data))
+        self.assertEqual(
+            self.client_for(self.staff).get("/api/platform/overview").status_code,
+            403,
+        )
+
+    def test_empty_outbox_is_not_worker_health_proof(self):
+        response = self.client_for(self.owner).get("/api/platform/overview")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["outbox"]["pending"], 0)
+        self.assertIsNone(response.data["outbox"]["oldest_due_age_seconds"])
+        self.assertIsNone(response.data["provisioning"]["oldest_queued_age_seconds"])
+        self.assertEqual(response.data["outbox"]["worker_status"], "not_verified")
