@@ -4,7 +4,7 @@ from datetime import date, timedelta
 import pytest
 from rest_framework.test import APIClient
 
-from core.models import School, UserAccount
+from core.models import CrownPermission, RolePermission, School, UserAccount, UserRole
 from finance.models import (
     FinanceObligation,
     FinancePayment,
@@ -78,6 +78,11 @@ def test_finance_payment_urls_write_through_canonical_payments_authority():
     school = School.objects.create(name="Canonical Finance API")
     payer = _user("canonical_finance_parent")
     staff = _user("canonical_finance_staff", is_staff=True)
+    UserRole.objects.create(user=staff, school=school, role_code="FINANCE_DIRECTOR")
+    edit_permission, _ = CrownPermission.objects.get_or_create(code="finance.edit")
+    RolePermission.objects.get_or_create(
+        role_code="FINANCE_DIRECTOR", permission=edit_permission,
+    )
     household = _household(school, payer)
     obligation = _obligation(school, payer)
 

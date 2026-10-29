@@ -8,8 +8,8 @@ and test_tenant_isolation_writes.py.
 Scope here: same school_id, different users.
 
 What IS enforced (role-based object access):
-  - Staff-only actions (admissions/enroll, finance/settle, finance/refund)
-    → non-staff user in the SAME school receives 403.
+  - Admissions enrollment remains staff-restricted; finance settlement/refund
+    require a school-scoped finance.edit grant rather than the Django staff bit.
   - These are ROLE-based object access controls, not creator-based.
 
 What is NOT currently enforced (documented boundary):
@@ -19,7 +19,7 @@ What is NOT currently enforced (documented boundary):
 
 Evidence anchors:
   - admissions/views_enroll.py: _require_staff() checks is_staff/is_superuser.
-  - finance/api_views.py: _is_staff() applied to settle and refund endpoints.
+  - finance/payment_compat_api.py: registered settlement/refund use finance.edit.
   - discipline/api/views.py: DisciplineIncidentActions — school-scoped only.
 """
 from __future__ import annotations
@@ -30,7 +30,7 @@ from django.test import TestCase
 from rest_framework.test import APIClient
 
 from admissions.models import AdmissionsApplication
-from core.models import AcademicYear, Family, School
+from core.models import AcademicYear, CrownPermission, Family, RolePermission, School, UserRole
 from finance.models import FinancePayment
 
 User = get_user_model()
@@ -71,6 +71,13 @@ class _ObjPermBase(TestCase):
             password="pass",
             school_id=self.school.id,
             is_staff=False,
+        )
+        UserRole.objects.get_or_create(
+            school=self.school, user=self.user_staff, role_code="FINANCE_DIRECTOR"
+        )
+        edit_permission, _ = CrownPermission.objects.get_or_create(code="finance.edit")
+        RolePermission.objects.get_or_create(
+            role_code="FINANCE_DIRECTOR", permission=edit_permission,
         )
         self.client = APIClient()
 

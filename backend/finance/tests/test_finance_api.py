@@ -335,6 +335,7 @@ class TestPaymentSettleEndpoint(TestCase):
         self.school = _school()
         self.staff = _user("settle_staff", is_staff=True)
         self.payer = _user("settle_payer")
+        _grant_finance(self.staff, self.school)
 
     def test_settle_payment_with_allocation(self):
         ob = _obligation(self.school, self.payer, amount_cents=10_000)
@@ -384,6 +385,7 @@ class TestRefundEndpoint(TestCase):
         self.school = _school()
         self.staff = _user("ref_staff", is_staff=True)
         self.payer = _user("ref_payer")
+        _grant_finance(self.staff, self.school)
 
     def _make_settled_payment(self, amount_cents=10_000):
         ob = _obligation(self.school, self.payer, amount_cents=amount_cents)
