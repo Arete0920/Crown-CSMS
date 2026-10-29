@@ -84,7 +84,7 @@ def _ensure_ledger_identity(parent: UserAccount) -> None:
         school_id=SCHOOL_ID,
         household=household,
         email=parent.email,
-        defaults={"first_name": parent.first_name or "Miriam", "last_name": parent.last_name or "Reed", "phone": "555-0100", "is_primary": True},
+        defaults={"first_name": parent.first_name or "Miriam", "last_name": parent.last_name or "Reed", "phone": "555-0100", "is_primary": True, "account": parent},
     )
 
 

@@ -164,7 +164,7 @@ class TestObligationsEndpoint(TestCase):
     def test_list_returns_only_school_obligations(self):
         other_school = _school("Other")
         _obligation(self.school, self.staff, amount_cents=1_000)
-        _obligation(other_school, self.staff, amount_cents=9_999)
+        _obligation(other_school, _user("o_other_school_payer"), amount_cents=9_999)
 
         c = _auth_client(self.staff)
         r = c.get("/api/finance/obligations/", HTTP_X_SCHOOL_ID=str(self.school.id))
