@@ -93,4 +93,3 @@ def test_seed_payer_guardian_identity_uses_same_uuid_school(settings):
     assert _verified_household_id_for_user(
         school_id=parent.school_id, user=parent,
     ) == linked_guardian.household_id
-
