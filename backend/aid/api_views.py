@@ -26,6 +26,7 @@ from aid.services.award_engine import recommend_award
 from aid.services.profile_service import build_engine_application, build_review_signals, carry_forward_profile
 from aid.services.ledger_bridge import AidBudgetError, approve_award
 from core.models import AcademicYear, LedgerEntry
+from core.permissions import CrownModulePermission, user_has_permission
 from households.scoping import MissingSchoolContext, get_request_school_id
 from drf_spectacular.utils import extend_schema
 from drf_spectacular.types import OpenApiTypes
@@ -45,7 +46,7 @@ def days_waiting(dt):
 
 @extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["GET"])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, CrownModulePermission("financial_aid.view")])
 def aid_priority_queue(request):
     """
     Priority queue for Aid Director - returns ONLY aid-related items.
@@ -57,12 +58,15 @@ def aid_priority_queue(request):
     }
     """
     # Get context (in production, from session/auth)
-    school_id = request.query_params.get('school_id')
+    school_id = get_request_school_id(request, required=True)
+    requested_school_id = request.query_params.get('school_id')
     year_id = request.query_params.get('year_id')
+    if requested_school_id and requested_school_id != str(school_id):
+        return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
 
-    if not school_id or not year_id:
+    if not year_id:
         return Response(
-            {"detail": "school_id and year_id are required"},
+            {"detail": "year_id is required"},
             status=status.HTTP_400_BAD_REQUEST
         )
 
@@ -145,7 +149,7 @@ def aid_priority_queue(request):
 
 @extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["GET"])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, CrownModulePermission("financial_aid.view")])
 def aid_metrics(request):
     """
     Metrics for Aid Director - returns ONLY aid metrics.
@@ -156,12 +160,15 @@ def aid_metrics(request):
         "meta": {"persona"}
     }
     """
-    school_id = request.query_params.get('school_id')
+    school_id = get_request_school_id(request, required=True)
+    requested_school_id = request.query_params.get('school_id')
     year_id = request.query_params.get('year_id')
+    if requested_school_id and requested_school_id != str(school_id):
+        return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
 
-    if not school_id or not year_id:
+    if not year_id:
         return Response(
-            {"detail": "school_id and year_id are required"},
+            {"detail": "year_id is required"},
             status=status.HTTP_400_BAD_REQUEST
         )
 
@@ -207,7 +214,7 @@ def aid_metrics(request):
 
 @extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["GET"])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, CrownModulePermission("financial_aid.view")])
 def aid_timeline(request):
     """
     Timeline for Aid Director - returns ONLY aid events.
@@ -218,12 +225,15 @@ def aid_timeline(request):
         "meta": {"persona", "count"}
     }
     """
-    school_id = request.query_params.get('school_id')
+    school_id = get_request_school_id(request, required=True)
+    requested_school_id = request.query_params.get('school_id')
     year_id = request.query_params.get('year_id')
+    if requested_school_id and requested_school_id != str(school_id):
+        return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
 
-    if not school_id or not year_id:
+    if not year_id:
         return Response(
-            {"detail": "school_id and year_id are required"},
+            {"detail": "year_id is required"},
             status=status.HTTP_400_BAD_REQUEST
         )
 
@@ -263,7 +273,7 @@ def aid_timeline(request):
 
 @extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["GET"])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, CrownModulePermission("financial_aid.view")])
 def admin_aid_overview(request):
     """
     Admin overview: applications + awards + budgets for a school/year.
@@ -298,7 +308,7 @@ def admin_aid_overview(request):
 
 @extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, CrownModulePermission("financial_aid.view", write_code="financial_aid.edit")])
 def admin_recommend_award(request):
     """
     Generate a new award recommendation via the award engine.
@@ -373,7 +383,7 @@ def admin_recommend_award(request):
 
 @extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, CrownModulePermission("financial_aid.view", write_code="financial_aid.edit")])
 def admin_approve_award(request, award_id):
     """
     Approve an AidAward: budget check → ledger posting → audit log.
@@ -433,16 +443,33 @@ def family_aid_status(request):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    # Application is tied to the family, not the student — look up via student.family
-    from core.models import Student  # local import to avoid circular at module level
+    # Family records require an explicitly granted officer or verified linked parent.
+    from core.models import Guardian, Student  # local imports avoid startup cycles
     try:
         student = Student.objects.get(pk=student_id, school_id=school_id)
     except Student.DoesNotExist:
         return Response({"detail": "Student not found"}, status=status.HTTP_404_NOT_FOUND)
 
+    user = request.user
+    aid_officer_allowed = user_has_permission(user, "financial_aid.view", school=student.school)
+    linked_parent = bool(
+        getattr(user, "is_active", False)
+        and getattr(user, "guardian_id", None)
+        and user.roles.filter(school_id=school_id, role_code="PARENT").exists()
+        and Guardian.objects.filter(
+            pk=user.guardian_id,
+            school_id=school_id,
+            family_id=student.family_id,
+            family__school_id=school_id,
+        ).exists()
+    )
+    if not aid_officer_allowed and not linked_parent:
+        # Deny without disclosing whether another family has aid records.
+        return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
+
     application = AidApplication.objects.filter(
         school_id=school_id,
-        family=student.family,
+        family_id=student.family_id,
         academic_year_id=academic_year_id,
     ).first()
 
@@ -460,7 +487,7 @@ def family_aid_status(request):
 
 @extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["GET"])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, CrownModulePermission("financial_aid.view")])
 def admin_application_review(request, application_id):
     """Return deterministic review signals and canonical profile data."""
     school_id = get_request_school_id(request)
@@ -483,7 +510,7 @@ def admin_application_review(request, application_id):
 
 @extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, CrownModulePermission("financial_aid.view", write_code="financial_aid.edit")])
 def admin_carry_forward_profile(request):
     """
     Create a new annual profile from a prior profile with explicit reuse consent.
