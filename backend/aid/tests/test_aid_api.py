@@ -16,7 +16,7 @@ from datetime import date
 from django.test import TestCase
 
 from aid.models import AidApplication, AidAward, AidBudgetTracker, AidPolicy
-from core.models import AcademicYear, Family, School, Student, UserAccount
+from core.models import AcademicYear, CrownPermission, Family, RolePermission, School, Student, UserAccount, UserRole
 from finance.models import ChartAccount
 
 
@@ -53,13 +53,18 @@ def _make_student(school, family, *, first_name="Jane", last_name="Doe", number=
 
 
 def _make_staff_user(school, suffix=""):
-    return UserAccount.objects.create_user(
+    user = UserAccount.objects.create_user(
         username=f"staff{suffix}",
         password="pass",
         email=f"staff{suffix}@test.example.com",
         is_staff=True,
         school=school,
     )
+    UserRole.objects.get_or_create(user=user, school=school, role_code="AID_DIRECTOR")
+    for code in ("financial_aid.view", "financial_aid.edit"):
+        permission, _ = CrownPermission.objects.get_or_create(code=code)
+        RolePermission.objects.get_or_create(role_code="AID_DIRECTOR", permission=permission)
+    return user
 
 
 def _make_application(school, ay, family):
