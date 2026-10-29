@@ -6,6 +6,7 @@ Contract must be identical across all director personas.
 """
 
 import logging
+from uuid import UUID
 
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
@@ -429,8 +430,8 @@ def family_aid_status(request):
     Family-portal view: application status + awards for a student/year.
 
     Required query params:
-      student_id       (int PK of Student)
-      academic_year_id (int PK of AcademicYear)
+      student_id       (UUID PK of Student)
+      academic_year_id (UUID PK of AcademicYear)
     Required header: X-School-Id
     """
     school_id = get_request_school_id(request)
@@ -443,10 +444,19 @@ def family_aid_status(request):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    # Family records require an explicitly granted officer or verified linked parent.
+    # Validate untrusted identifiers and deny inconsistent related-school records
+    # before disclosing any financial-aid information.
+    try:
+        student_id = UUID(str(student_id))
+        academic_year_id = UUID(str(academic_year_id))
+    except (ValueError, TypeError, AttributeError):
+        return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
+
     from core.models import Guardian, Student  # local imports avoid startup cycles
     try:
-        student = Student.objects.get(pk=student_id, school_id=school_id)
+        student = Student.objects.get(
+            pk=student_id, school_id=school_id, family__school_id=school_id,
+        )
     except Student.DoesNotExist:
         return Response({"detail": "Student not found"}, status=status.HTTP_404_NOT_FOUND)
 

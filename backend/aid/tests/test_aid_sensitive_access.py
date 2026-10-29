@@ -174,3 +174,29 @@ class AidSensitiveAccessTests(TestCase):
         })
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.json()["awards"]), 1)
+    def test_family_status_invalid_student_or_year_uuid_denied_without_error(self):
+        self._grant()
+        base = {
+            "student_id": str(self.student.id),
+            "academic_year_id": str(self.year.id),
+        }
+        for field in ("student_id", "academic_year_id"):
+            with self.subTest(field=field):
+                params = dict(base)
+                params[field] = "not-a-uuid"
+                response = self._get("/api/aid/family/status/", params)
+                self.assertEqual(response.status_code, 404)
+                self.assertNotIn("awards", response.json())
+
+    def test_aid_reader_denied_when_student_family_belongs_to_other_school(self):
+        self._grant()
+        foreign_family = Family.objects.create(
+            school=self.other_school, family_name="Foreign Linked Family",
+        )
+        Student.objects.filter(pk=self.student.pk).update(family=foreign_family)
+        response = self._get("/api/aid/family/status/", {
+            "student_id": str(self.student.id),
+            "academic_year_id": str(self.year.id),
+        })
+        self.assertEqual(response.status_code, 404)
+        self.assertNotIn("awards", response.json())
