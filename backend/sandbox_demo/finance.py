@@ -77,18 +77,29 @@ def _parent_user() -> UserAccount:
 def _ensure_ledger_identity(parent: UserAccount) -> None:
     # Model same-school validation compares UUID fields before DB conversion.
     # Reuse the canonical typed school id from the seeded parent, not catalog text.
-    household, _ = Household.objects.update_or_create(
-        school_id=parent.school_id,
-        name="Reed Family",
-        defaults={"address1": "100 Demo Lane", "city": "Fairview", "state": "PA", "postal_code": "19000", "is_active": True},
-    )
-    # Local classroom seeding may already bind this account to Reed Family
-    # with a blank email. Reuse its OneToOne guardian instead of creating another.
-    guardian = HouseholdGuardian.objects.filter(account=parent).first()
-    if guardian is not None and (
-        guardian.school_id != parent.school_id or guardian.household_id != household.pk
-    ):
-        raise SandboxFinanceError("heritage_parent_household_conflict")
+    # The local classroom fixture intentionally uses a different academic
+    # household from the Reed enrollment scenario. Financial posting follows
+    # the parent's verified account link, never a same-name/email guess.
+    guardian = HouseholdGuardian.objects.select_related("household").filter(
+        account=parent,
+    ).first()
+    if guardian is not None:
+        household = guardian.household
+        if (
+            guardian.school_id != parent.school_id
+            or household.school_id != parent.school_id
+            or not household.is_active
+        ):
+            raise SandboxFinanceError("heritage_parent_household_conflict")
+    else:
+        # A fresh finance-only fictional fixture has no guardian link yet.
+        # Preserve the existing deterministic seed without reassigning an
+        # existing account-bound guardian or looking up authority by email.
+        household, _ = Household.objects.update_or_create(
+            school_id=parent.school_id,
+            name="Reed Family",
+            defaults={"address1": "100 Demo Lane", "city": "Fairview", "state": "PA", "postal_code": "19000", "is_active": True},
+        )
     if guardian is None:
         candidates = list(
             HouseholdGuardian.objects.filter(
