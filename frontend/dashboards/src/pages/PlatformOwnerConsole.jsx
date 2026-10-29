@@ -117,6 +117,39 @@ export default function PlatformOwnerConsole() {
             </CardContent></Card>
           </Stack>
           <Card><CardContent>
+            <Typography variant="h6" gutterBottom>Backend queues · database pulse</Typography>
+            {overview.outbox?.data_state === "available" ? (
+              <Stack spacing={1}>
+                <Typography variant="body2">
+                  Outbox pending: {overview.outbox.pending} · Due: {overview.outbox.due} ·
+                  Deferred: {overview.outbox.deferred} · Retrying: {overview.outbox.retrying ?? "unknown"} ·
+                  Failed: {overview.outbox.failed} · Dead: {overview.outbox.dead}
+                </Typography>
+                <Typography variant="body2">
+                  Oldest due: {overview.outbox.oldest_due_age_seconds == null
+                    ? "none" : `${overview.outbox.oldest_due_age_seconds} seconds`}
+                  {" · "}Oldest queued provisioning: {overview.provisioning?.oldest_queued_age_seconds == null
+                    ? "none" : `${overview.provisioning.oldest_queued_age_seconds} seconds`}
+                </Typography>
+                {overview.outbox.due > 0 && <Alert severity="warning">
+                  Due messages await processing. Verify worker and broker before diagnosing lag.
+                </Alert>}
+                {overview.outbox.retrying > 0 && <Alert severity="warning">
+                  Retrying outbox messages require operator review of prior delivery failures.
+                </Alert>}
+                {(overview.outbox.failed > 0 || overview.outbox.dead > 0) && (
+                  <Alert severity="warning">
+                    Failed or dead outbox records require operator review.
+                    Database state alone does not establish delivery or worker health.
+                  </Alert>
+                )}
+                <Typography variant="caption" color="text.secondary">
+                  Worker and beat: not verified. Database records do not prove delivery.
+                </Typography>
+              </Stack>
+            ) : <Alert severity="warning">Outbox backlog unavailable; runtime health unknown.</Alert>}
+          </CardContent></Card>
+          <Card><CardContent>
             <Typography variant="h6" gutterBottom>Support Operations</Typography>
             {overview.support?.data_state === "available" ? (
               <Stack spacing={1}>
