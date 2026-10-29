@@ -89,6 +89,9 @@ jobs:
       CROWN_DEMO_SCHOOL_ID: "19801b59-8c05-4c84-9312-5d792e4e839d"
       CROWN_IMPORT_E2E_FAMILY_ID: "fa100000-0000-4000-8000-000000000001"
       CROWN_IMPORT_E2E_HOUSEHOLD_ID: "fa100000-0000-4000-8000-000000000002"
+      CROWN_AID_E2E_FAMILY_ID: "fa310000-0000-4000-8000-000000000001"
+      CROWN_AID_E2E_STUDENT_ID: "fa310000-0000-4000-8000-000000000002"
+      CROWN_AID_E2E_APPLICATION_ID: "9102501"
     steps:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -132,6 +135,42 @@ jobs:
               household = Household.objects.create(id=os.environ['CROWN_IMPORT_E2E_HOUSEHOLD_ID'], school_id=school.id, name='Synthetic browser import household')
               HouseholdFamilyLink.objects.create(school=school, family=family, household_id=household.id, source=HouseholdFamilyLink.SOURCE_MANUAL)
           PYFIXTURE
+          # Disposable, fixed-identity financial-aid award fixture for the
+          # browser's positive non-cash offer path. Never seed production.
+          python manage.py shell <<'PYAID'
+          import os
+          from datetime import date
+          from uuid import UUID
+          from django.db import transaction
+          from aid.models import AidApplication
+          from core.models import AcademicYear, Family, School, Student
+          with transaction.atomic():
+              school = School.objects.get(pk=UUID(os.environ["CROWN_DEMO_SCHOOL_ID"]))
+              year = AcademicYear.objects.get(school=school, name="2026-2027")
+              family = Family.objects.create(
+                  id=UUID(os.environ["CROWN_AID_E2E_FAMILY_ID"]),
+                  school=school,
+                  family_name="Synthetic browser aid family",
+              )
+              student = Student.objects.create(
+                  id=UUID(os.environ["CROWN_AID_E2E_STUDENT_ID"]),
+                  school=school,
+                  family=family,
+                  student_number="HCA-AID-E2E-001",
+                  first_name="Synthetic",
+                  last_name="Scholar",
+                  dob=date(2012, 3, 15),
+              )
+              application = AidApplication.objects.create(
+                  id=int(os.environ["CROWN_AID_E2E_APPLICATION_ID"]),
+                  school=school,
+                  academic_year=year,
+                  family=family,
+                  status=AidApplication.STATUS_SUBMITTED,
+              )
+              assert student.family_id == application.family_id
+              assert student.school_id == application.school_id == year.school_id
+          PYAID
           nohup python manage.py runserver 127.0.0.1:8000 --noreload > /tmp/crown-wizard-backend.log 2>&1 &
           for attempt in {1..60}; do
             status=$(curl --silent --output /dev/null --write-out "%{http_code}" --connect-timeout 2 --max-time 5 http://127.0.0.1:8000/api/v1/sandbox/catalog/ || true)
@@ -264,6 +303,45 @@ jobs:
             exit 1
           fi
           npx playwright test -c playwright.wizards.runtime.config.ts "${args[@]}" --workers=1 --reporter=line
+
+      - name: Verify synthetic financial-aid browser award persisted
+        working-directory: backend
+        run: |
+          set -euo pipefail
+          python manage.py shell <<'PYAIDVERIFY'
+          import os
+          from uuid import UUID
+          from aid.models import AidApplication, AidAuditEvent, AidAward
+          from core.models import School
+          from ledger.models import Credit
+          school = School.objects.get(pk=UUID(os.environ["CROWN_DEMO_SCHOOL_ID"]))
+          application = AidApplication.objects.get(
+              pk=int(os.environ["CROWN_AID_E2E_APPLICATION_ID"]),
+              school=school,
+          )
+          student_id = UUID(os.environ["CROWN_AID_E2E_STUDENT_ID"])
+          awards = AidAward.objects.filter(
+              school=school, academic_year=application.academic_year,
+              aid_application=application, student_id=student_id,
+              award_type=AidAward.TYPE_NEED,
+          )
+          assert awards.count() == 1, "Browser must commit exactly one synthetic award"
+          award = awards.get()
+          assert award.awarded_cents == 25000
+          assert award.decision_status == AidAward.DECISION_OFFERED
+          assert award.ledger_entry_id is None, "Offered award must not be financially posted"
+          assert AidAuditEvent.objects.filter(
+              school=school,
+              entity_type=AidAuditEvent.ENTITY_AWARD,
+              entity_id=award.id,
+              action="AWARD_STAGED",
+          ).count() == 1
+          assert not Credit.objects.filter(
+              school=school, source=Credit.SOURCE_FINANCIAL_AID,
+              reference=f"aid_award:{award.pk}",
+          ).exists(), "Offering an award must not create a household credit"
+          print("PASS: browser wizard created one auditable offered award; no financial posting")
+          PYAIDVERIFY
 
       - name: Upload canonical wizard runtime evidence
         if: always()
