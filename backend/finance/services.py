@@ -28,7 +28,8 @@ from finance.models import (
     MoneyStatus,
     PaymentStatus,
 )
-from households.models import Guardian as HouseholdGuardian
+from core.models import Guardian as CoreGuardian, HouseholdFamilyLink
+from households.models import Guardian as HouseholdGuardian, Household
 from ledger.models import Allocation as LedgerAllocation
 from ledger.models import Charge as LedgerCharge
 from ledger.models import LedgerAccount
@@ -38,7 +39,7 @@ from ledger.models import Payment as LedgerPayment
 # ---------------------------------------------------------------------------
 # Ledger bridge
 # These functions perform real postings into the ledger app models.
-# Mapping rule: UserAccount.email -> households.Guardian.email (single household).
+# Mapping rule: persisted guardian account or verified core family/household link.
 # ---------------------------------------------------------------------------
 
 @dataclass(frozen=True)
@@ -52,24 +53,50 @@ def _money_from_cents(cents: int) -> Decimal:
 
 
 def _resolve_ledger_account_for_user(*, school_id, user) -> LedgerAccount | None:
-    email = (getattr(user, "email", "") or "").strip()
-    if not email:
+    """Return one verified same-school household, never an email guess.
+
+    Account-backed household guardians and first-class core family-to-household
+    links are the only accepted identity evidence. Parent roles alone do not
+    prove ownership of a particular ledger household. Conflicts fail closed.
+    """
+    user_id = getattr(user, "pk", None)
+    if not user_id or not getattr(user, "is_active", False):
         return None
 
-    household_ids = list(
-        HouseholdGuardian.objects
-        .filter(school_id=school_id, email__iexact=email)
-        .values_list("household_id", flat=True)
-        .distinct()
+    household_ids = set(
+        HouseholdGuardian.objects.filter(
+            school_id=school_id, account_id=user_id,
+            household__school_id=school_id,
+        ).values_list("household_id", flat=True)
     )
+    core_guardian_id = getattr(user, "guardian_id", None)
+    if core_guardian_id:
+        family_ids = list(
+            CoreGuardian.objects.filter(
+                pk=core_guardian_id, school_id=school_id,
+                family__school_id=school_id,
+            ).values_list("family_id", flat=True)
+        )
+        if family_ids:
+            household_ids.update(
+                HouseholdFamilyLink.objects.filter(
+                    school_id=school_id, family_id__in=family_ids,
+                    family__school_id=school_id,
+                ).values_list("household_id", flat=True)
+            )
+
     if len(household_ids) != 1:
         return None
+    household_id = next(iter(household_ids))
+    if not Household.objects.filter(
+        pk=household_id, school_id=school_id, is_active=True,
+    ).exists():
+        return None
 
-    acct, _ = LedgerAccount.objects.get_or_create(
-        school_id=school_id,
-        household_id=household_ids[0],
+    account, _ = LedgerAccount.objects.get_or_create(
+        school_id=school_id, household_id=household_id,
     )
-    return acct
+    return account
 
 
 def ledger_post_obligation(obligation: FinanceObligation) -> LedgerPostResult:
