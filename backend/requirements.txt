@@ -21,7 +21,7 @@ django-cors-headers==4.9.0
 drf-spectacular>=0.27.2
 drf-spectacular-sidecar>=2026.10.1
 # Microsoft 365 SSO (OAuth2 via Authlib)
-authlib>=1.8.0
+authlib>=1.9.1
 requests>=2.34.2
 cryptography>=50.0.2
 # Transitive security floors (pulled by requests/twilio/reportlab)
