@@ -11,6 +11,9 @@ const overview = {
   schools: { total: 120, by_status: { active: 120 } },
   provisioning: { by_state: { queued: 0 }, recent_jobs: [] },
   audit: { events_last_7_days: 0 },
+  outbox: { data_state: "available", pending: 3, due: 2, deferred: 1,
+    failed: 0, dead: 1, oldest_due_age_seconds: 120,
+    worker_status: "not_verified", beat_status: "not_verified" },
   company_finance: { data_state: "not_configured", reason: "No corporate ledger configured." },
   external_payments: { provisioning_policy: "disabled" },
   meta: { data_source: "live_db", as_of: "2026-10-23T16:00:00Z" },
@@ -90,5 +93,14 @@ describe("platform owner console verified behavior", () => {
     await waitFor(() => expect(signal).toBeDefined());
     view.unmount();
     expect(signal.aborted).toBe(true);
+  });
+});
+
+describe("operator queue pulse", () => {
+  it("presents backlog without asserting worker health", async () => {
+    render(<PlatformOwnerConsole />);
+    expect(await screen.findByText(/Outbox pending: 3/)).toBeTruthy();
+    expect(screen.getByText(/Due messages await processing/)).toBeTruthy();
+    expect(screen.getByText(/Worker and beat: not verified/)).toBeTruthy();
   });
 });
