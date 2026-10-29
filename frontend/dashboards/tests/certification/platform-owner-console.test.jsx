@@ -101,6 +101,27 @@ describe("operator queue pulse", () => {
     render(<PlatformOwnerConsole />);
     expect(await screen.findByText(/Outbox pending: 3/)).toBeTruthy();
     expect(screen.getByText(/Due messages await processing/)).toBeTruthy();
+    expect(screen.getByText(/Failed or dead outbox records require operator review/)).toBeTruthy();
+    expect(screen.getByText(/Failed: 0/)).toBeTruthy();
     expect(screen.getByText(/Worker and beat: not verified/)).toBeTruthy();
+  });
+
+  it("warns on failed records even when no messages are currently due", async () => {
+    vi.mocked(authenticatedJson).mockImplementation((endpoint, options) => {
+      if (endpoint === "/api/platform/overview") {
+        return Promise.resolve({
+          ...overview,
+          outbox: { ...overview.outbox, pending: 0, due: 0, deferred: 0, failed: 2, dead: 0 },
+        });
+      }
+      if (endpoint === "/api/platform/schools/list") {
+        return Promise.resolve(schoolPage(options.query.page));
+      }
+      return Promise.reject(new Error("Unexpected endpoint"));
+    });
+    render(<PlatformOwnerConsole />);
+    expect(await screen.findByText(/Failed: 2/)).toBeTruthy();
+    expect(screen.getByText(/Failed or dead outbox records require operator review/)).toBeTruthy();
+    expect(screen.queryByText(/Due messages await processing/)).toBeNull();
   });
 });

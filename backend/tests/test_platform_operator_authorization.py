@@ -494,12 +494,17 @@ class PlatformOperatorBoundaryTests(TestCase):
             to="PRIVATE", body="PRIVATE", idempotency_key="synthetic-dead",
             status=OutboxMessage.STATUS_DEAD,
         )
+        OutboxMessage.objects.create(
+            school_id=str(self.other.id), channel="EMAIL",
+            to="PRIVATE", body="PRIVATE", idempotency_key="synthetic-failed",
+            status=OutboxMessage.STATUS_FAILED,
+        )
         response = self.client_for(self.owner).get("/api/platform/overview")
         self.assertEqual(response.status_code, 200)
         pulse = response.data["outbox"]
         self.assertEqual(
-            (pulse["pending"], pulse["due"], pulse["deferred"], pulse["dead"]),
-            (2, 1, 1, 1),
+            (pulse["pending"], pulse["due"], pulse["deferred"], pulse["failed"], pulse["dead"]),
+            (2, 1, 1, 1, 1),
         )
         self.assertGreaterEqual(pulse["oldest_due_age_seconds"], 470)
         self.assertEqual(pulse["worker_status"], "not_verified")

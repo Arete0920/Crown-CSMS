@@ -122,7 +122,8 @@ export default function PlatformOwnerConsole() {
               <Stack spacing={1}>
                 <Typography variant="body2">
                   Outbox pending: {overview.outbox.pending} · Due: {overview.outbox.due} ·
-                  Deferred: {overview.outbox.deferred} · Dead: {overview.outbox.dead}
+                  Deferred: {overview.outbox.deferred} · Failed: {overview.outbox.failed} ·
+                  Dead: {overview.outbox.dead}
                 </Typography>
                 <Typography variant="body2">
                   Oldest due: {overview.outbox.oldest_due_age_seconds == null
@@ -133,6 +134,12 @@ export default function PlatformOwnerConsole() {
                 {overview.outbox.due > 0 && <Alert severity="warning">
                   Due messages await processing. Verify worker and broker before diagnosing lag.
                 </Alert>}
+                {(overview.outbox.failed > 0 || overview.outbox.dead > 0) && (
+                  <Alert severity="warning">
+                    Failed or dead outbox records require operator review.
+                    Database state alone does not establish delivery or worker health.
+                  </Alert>
+                )}
                 <Typography variant="caption" color="text.secondary">
                   Worker and beat: not verified. Database records do not prove delivery.
                 </Typography>
