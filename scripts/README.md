@@ -10,6 +10,12 @@ This directory contains scripts and modules for safe credential handling, redact
 - Confirm secret existence with boolean or name-only queries rather than dumping values.
 - Rotate any credential that may have been exposed and verify the old credential is invalid.
 
+## Retired predecessor operations
+
+The predecessor-era Azure migration/bootstrap script and the one-off 48-hour recovery scripts were removed from the active script tree. They targeted obsolete repository or deployment identities and could mutate app settings, restart resources, or rewrite source outside current release controls. Their original content remains in Git history for provenance, not execution.
+
+For current DEV migrations and deployment, use the protected repository workflows and the exact-source/authorization requirements in [current release status](../docs/CURRENT_RELEASE_STATUS.md) and [operations](../docs/operations/README.md). Do not recreate the old ad hoc commands or bypass the queued-run incident under issue #427.
+
 ## Core utilities
 
 ### `Redact.psm1`
