@@ -51,11 +51,6 @@ jobs:
           ALLOWED_HOSTS: localhost,127.0.0.1
           DATABASE_URL: sqlite:///./ci.sqlite3
         run: |
+          # The full gate already fails on tenant AST tripwires (checks 4-6).
           python tools/verify_backend_gate.py
-
-      - name: "Tenant tripwires (structural AST checks)"
-        run: |
-          # Checks 4+5 from verify_backend_gate.py €” multi-line-safe AST analysis.
-          # Replaces grep-based tripwires that could false-positive on multi-line calls.
-          python tools/verify_backend_gate.py --tenant-checks-only
 
