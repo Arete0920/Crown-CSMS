@@ -234,3 +234,16 @@ def test_release_requires_authenticated_staff_actor_not_just_contact_id():
             pickup_verified=True, when=OUT, verified_by=None,
         )
     _assert_unchanged(case)
+
+
+def test_completed_release_preserves_contact_and_verifier_audit():
+    from django.db.models.deletion import ProtectedError
+
+    case = _scenario("AuditRetention")
+    _checkout(case, contact_id=case.contact.id)
+    with pytest.raises(ProtectedError):
+        case.contact.delete()
+    case.attendance.refresh_from_db()
+    assert case.attendance.pickup_verified
+    assert case.attendance.pickup_contact_id == case.contact.id
+    assert case.attendance.pickup_verified_by_id == case.verifier.id
