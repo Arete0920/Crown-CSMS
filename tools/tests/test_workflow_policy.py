@@ -174,6 +174,107 @@ class WorkflowPolicyTests(unittest.TestCase):
         self.assertIn("python tools/verify_workflow_policy.py\n", step["run"])
         self.assertNotIn("changed_workflows", step["run"])
 
+    def test_dev_deploy_rejects_stale_source_and_runs_only_from_main(self):
+        """Prevent historic RC workflow reruns from reintroducing stale DEV deployments."""
+        import yaml
+
+        source = (ROOT / ".github/workflows/deploy-dev.yml").read_text(encoding="utf-8")
+        workflow = yaml.safe_load(source)
+        triggers = workflow.get("on", workflow.get(True))
+        self.assertEqual(set(triggers), {"workflow_dispatch"})
+        self.assertTrue(triggers["workflow_dispatch"]["inputs"]["ref"]["required"])
+        self.assertEqual(workflow["concurrency"]["group"], "crown-api-dev-deploy")
+        self.assertIs(workflow["concurrency"]["cancel-in-progress"], False)
+        self.assertEqual(workflow["jobs"]["build-and-deploy"]["environment"], "dev")
+        steps = workflow["jobs"]["build-and-deploy"]["steps"]
+        names = [step.get("name", "") for step in steps]
+        guard = steps[names.index("Guard exact protected-main dispatch")]
+        self.assertIn('"$GITHUB_REF" != "refs/heads/main"', guard["run"])
+        self.assertIn('"$GITHUB_EVENT_NAME" != "workflow_dispatch"', guard["run"])
+        self.assertEqual(steps[names.index("Checkout")]["with"]["ref"], "$" + "{{ inputs.ref }}")
+        source_guard = steps[names.index("Verify accepted DEV source")]
+        self.assertIn('"$SOURCE_SHA" != "$CURRENT_MAIN_SHA"', source_guard["run"])
+        self.assertIn('"$SOURCE_SHA" != "$WORKFLOW_SHA"', source_guard["run"])
+        self.assertEqual(source_guard["env"]["WORKFLOW_SHA"], "$" + "{{ github.sha }}")
+        self.assertIn('"$SOURCE_SHA" != "$REQUESTED_REF"', source_guard["run"])
+        self.assertNotIn("merge-base --is-ancestor", source)
+        self.assertNotIn("dev-latest", source[:source.index("      - name: Build and push Docker image")])
+
+        for mutation, gate in (
+            ("Build and push Docker image", "DEV image push"),
+            ("Apply only reviewed DEV inquiry migration before deployment", "DEV migration"),
+            ("Apply appsettings (allowlisted only)", "DEV appsettings"),
+            ("Deploy to Azure Web App (managed identity pull)", "DEV container deployment"),
+        ):
+            idx = names.index(mutation)
+            self.assertEqual(names[idx - 1], "Reverify protected main before " + gate)
+            check = steps[idx - 1]
+            self.assertEqual(check["env"]["EXPECTED_DEV_SHA"], "$" + "{{ steps.vars.outputs.deploy_sha }}")
+            self.assertIn('git fetch --no-tags origin refs/heads/main:', check["run"])
+            self.assertIn('"$(git rev-parse refs/remotes/origin/main)" != "$EXPECTED_DEV_SHA"', check["run"])
+            self.assertIn('"$GITHUB_SHA" != "$EXPECTED_DEV_SHA"', check["run"])
+            self.assertIn('"$(git rev-parse HEAD)" != "$EXPECTED_DEV_SHA"', check["run"])
+
+    def test_dev_deploy_source_gate_runtime_denies_stale_and_foreign_refs(self):
+        """Exercise the workflow's actual shell guard with fake Git, without Azure."""
+        import os
+        import shutil
+        import subprocess
+        import yaml
+
+        if shutil.which("bash") is None:
+            self.skipTest("Bash is required for shell-gate regression")
+        source = (ROOT / ".github/workflows/deploy-dev.yml").read_text(encoding="utf-8")
+        steps = yaml.safe_load(source)["jobs"]["build-and-deploy"]["steps"]
+        script = next(step["run"] for step in steps if step.get("name") == "Verify accepted DEV source")
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            fake_git = root / "git"
+            fake_git.write_text(
+                '#!/bin/sh\n'
+                'if [ "$1" = "fetch" ]; then exit 0; fi\n'
+                'if [ "$1" = "rev-parse" ]; then\n'
+                '  case "$2" in\n'
+                '    HEAD) printf "%s\\n" "$FAKE_HEAD_SHA";;\n'
+                '    refs/remotes/origin/main) printf "%s\\n" "$FAKE_MAIN_SHA";;\n'
+                '    *) exit 4;;\n'
+                '  esac\n'
+                '  exit 0\n'
+                'fi\n'
+                'exit 5\n',
+                encoding="utf-8",
+            )
+            fake_git.chmod(0o755)
+            current, old = "a" * 40, "b" * 40
+
+            def run(head, main, requested, event="workflow_dispatch", ref="refs/heads/main",
+                    workflow_sha=None):
+                env = {
+                    **os.environ,
+                    "PATH": str(root) + os.pathsep + os.environ["PATH"],
+                    "FAKE_HEAD_SHA": head,
+                    "FAKE_MAIN_SHA": main,
+                    "REQUESTED_REF": requested,
+                    "WORKFLOW_SHA": workflow_sha or head,
+                    "GITHUB_SHA": workflow_sha or head,
+                    "GITHUB_EVENT_NAME": event,
+                    "GITHUB_REF": ref,
+                    "GITHUB_OUTPUT": str(root / "out.txt"),
+                    "GITHUB_ENV": str(root / "env.txt"),
+                }
+                return subprocess.run(["bash", "-e", "-c", script], cwd=root, env=env,
+                                      capture_output=True, text=True, check=False)
+
+            self.assertEqual(run(current, current, current).returncode, 0)
+            for result in (
+                run(old, current, old),  # historic RC source is an ancestor, not current
+                run(current, current, old),  # dispatch input mismatches checkout
+                run(current, current, current, event="push"),  # RC push must never deploy
+                run(current, current, current, ref="refs/heads/rc/old"),
+                run(current, current, current, workflow_sha=old),
+            ):
+                self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
+
     def test_dashboard_deployment_is_serialized_and_environment_gated(self):
         import yaml
         source = (ROOT / ".github/workflows/deploy-dashboard.yml").read_text(encoding="utf-8")
