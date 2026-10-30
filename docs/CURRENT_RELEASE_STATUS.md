@@ -1,7 +1,7 @@
 # CROWN Current Release Status
 
 **Status:** LATEST PROTECTED SOURCE BASELINE — NEW RELEASE CANDIDATE / HOSTED CERTIFICATION NOT YET ACCEPTED  
-**Last release-governance reconciliation:** October 28, 2026, after accepted financial-aid correction; resolve exact source again at every release decision  
+**Last release-governance reconciliation:** October 30, 2026, after protected #558 deployment-authority source merge; verify exact source and environment controls at every release decision  
 **Current repository identity:** resolve exact `refs/heads/main` from Git/GitHub at the decision point  
 **Release rule:** production-ready source status is granted only to an exact repository head whose applicable security, dependency, test, schema, tenant-isolation, build, repository-policy, and release-authority checks are passing.
 
@@ -11,7 +11,29 @@ The August 18, 2026 engineering certification remains historical evidence for th
 
 Current release authority is defined by this document, the canonical document index, the diligence evidence index, exact-head CI, and current supporting evidence. Dated predecessor-era release campaigns and retired comparison/superiority artifacts remain provenance only and are not executable release authority.
 
-## October 28, 2026 — newest accepted source; release-candidate selection remains open
+## October 30, 2026 — current source and DEV release-authority checkpoint
+
+At this dated, read-only checkpoint, protected `main` was `c872ca82a9bbff10b6279cfad7c1065ee1475578`, after merged [#558](https://github.com/Arete0920/Crown-CSMS/pull/558) restricted the **current-source** DEV backend deployment workflow to exact-main manual dispatch, with rechecks before state-changing deployment stages. The verified backend and isolated DEV frontend source-parity evidence under [#427](https://github.com/Arete0920/Crown-CSMS/issues/427) belongs to **earlier source** `2c77580df6676ebfb5580b2d3924897ff33125ee` and does not certify the newer protected-main commit, unmerged PR heads, production readiness, or authenticated user journeys.
+
+Historical [workflow run 40587751947](https://github.com/Arete0920/Crown-CSMS/actions/runs/40587751947) was still reported as `queued` against older `main` source `e834dff25527002aab19aa10b8bc2842a8d974d0` (run last updated October 27); a separate historical [RC rerun 40074629745](https://github.com/Arete0920/Crown-CSMS/actions/runs/40074629745) previously overwrote newer Azure DEV code. Changing current workflow source **does not retrofit protections into historical rerun definitions**. Authorized personnel must reconcile GitHub `dev` environment deployment branch/reviewer restrictions, historic workflow dispositions, and Azure OIDC authority before a new release attempt. A branch restriction to `main` alone does not protect against historical `main` dispatch reruns.
+
+Current protected source continues to contain the older credential-bearing `DEV Smoke - Golden Path`; [#557](https://github.com/Arete0920/Crown-CSMS/pull/557) proposes a safe read-only replacement but is not part of this source checkpoint. Do **not** dispatch the old mutating smoke action, infer safe operations from `-SkipSeed`, or turn demo/test transactions into live acceptance. Proposed finance authorization [#559](https://github.com/Arete0920/Crown-CSMS/pull/559) and rationale redaction [#561](https://github.com/Arete0920/Crown-CSMS/pull/561) likewise remain unmerged as observed. Source checks and public HTTP identity are not substitutes for approved synthetic two-school, role/guardian, finance, worker/outbox and security acceptance.
+
+This entry is a dated observation, not a live dashboard: re-read protected `main`, PR heads, CI and hosted identity before any merge, deployment or operational approval. All October 29 and earlier checkpoints below remain historical records.
+
+---
+
+## October 29, 2026 — later accepted-source checkpoint; hosted acceptance still open
+
+At this dated, read-only checkpoint, protected `main` was `865feb3c824ec87e192ff325f016238bbc174edb`. The subsequent CI-optimization merge #550 and ownership-alignment merge #551 advanced source beyond the October 28 checkpoint below. The final #551 head `2f4091be9c5a22478b2c9a65f5a4189a9086c3a9` had 19 completed successful workflow runs and 35 terminal individual checks (30 passed, 5 skipped). Those checks validate that PR head only; they do not certify a later release candidate or hosted environment.
+
+The guarded DEV run [40587751947](https://github.com/Arete0920/Crown-CSMS/actions/runs/40587751947) still requires a safe terminal disposition under [issue #427](https://github.com/Arete0920/Crown-CSMS/issues/427). The last independently observed consistent hosted DEV backend/artifact/preview identity was behind protected main. Subsequent source merges, including financial-aid and repository-governance changes, therefore do **not** establish current-source DEV parity, authenticated operator/guardian acceptance, production readiness, payment activation, or buyer authorization. Resolve exact source/run/runtime state again at the next release decision.
+
+The October 28 and earlier records below are preserved as dated source and operating observations, not representations of the currently selected release identity.
+
+---
+
+## October 28, 2026 — historical accepted-source checkpoint; release-candidate selection remains open
 
 **GitHub checkpoint (protected source only):** `main=2ae0c7a6283f566fa8918e43e61669dd2fa2d30a` following the protected [#519 merge](https://github.com/Arete0920/Crown-CSMS/pull/519) at 22:28:50 UTC. It contains financial-aid reversal reconciliation, duplicate prevention, budget-release and tenant safeguards; defect [#517](https://github.com/Arete0920/Crown-CSMS/issues/517) closed following merge. The prior [#516](https://github.com/Arete0920/Crown-CSMS/pull/516) non-cash posting correction was also accepted. These are **accepted engineering source changes**, not approval of production finance or a hosted workflow.
 
