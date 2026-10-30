@@ -17,7 +17,9 @@ def _principal(school, role_code, username):
     )
     UserRole.objects.create(user=user, school=school, role_code=role_code)
     client = APIClient(SERVER_PORT="443", **{"wsgi.url_scheme": "https"})
-    client.force_authenticate(user=user)
+    # Production tenant middleware authenticates before DRF force_authenticate runs.
+    # Use the real Django test session to reach both middleware and view grants.
+    client.force_login(user)
     return user, client
 
 
