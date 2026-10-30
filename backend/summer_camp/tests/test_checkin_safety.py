@@ -1,5 +1,5 @@
 """Synthetic DB-backed negative and positive Summer Camp check-in safety tests."""
-from datetime import datetime, timedelta, time
+from datetime import timedelta, time
 
 import pytest
 from django.utils import timezone
@@ -7,7 +7,7 @@ from django.utils import timezone
 from core.models import School
 from households.models import Household, Student
 from summer_camp.models import (
-    SummerCampAttendance, SummerCampEnrollment, SummerCampPickupContact,
+    SummerCampAttendance, SummerCampEnrollment, SummerCampFormRequirement, SummerCampPickupContact,
     SummerCampProgram, SummerCampSession, SummerCampStaffAssignment,
 )
 from summer_camp.services import checkin_camper, compute_camper_readiness
@@ -33,6 +33,9 @@ def camp_case(django_user_model):
         end_date=when.date() + timedelta(days=1),
         start_time=time(8, 0), end_time=time(16, 0),
         capacity=20, status="PUBLISHED",
+    )
+    SummerCampFormRequirement.objects.create(
+        school=school, session=session, form_type="GUARDIAN_CONSENT", required=True,
     )
     enrollment = SummerCampEnrollment.objects.create(
         school=school, session=session, student=student, household=household,
