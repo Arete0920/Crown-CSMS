@@ -181,7 +181,8 @@ class SummerCampAttendance(models.Model):
     checkin_time = models.DateTimeField()
     checkout_time = models.DateTimeField(null=True, blank=True)
     pickup_verified = models.BooleanField(default=False)
-    pickup_contact = models.ForeignKey(SummerCampPickupContact, on_delete=models.SET_NULL, null=True, blank=True)
+    # Preserve the identity of the authorized person in historical release records.
+    pickup_contact = models.ForeignKey(SummerCampPickupContact, on_delete=models.PROTECT, null=True, blank=True)
     pickup_verified_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.PROTECT, null=True, blank=True,
         related_name="verified_summer_camp_pickups",
