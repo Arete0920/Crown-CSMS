@@ -159,7 +159,6 @@ def enrollments(request):
 
         new_start = ser.validated_data["start_date"]
         new_end = ser.validated_data.get("end_date")
-        new_days = set(ser.validated_data.get("days_of_week") or [])
         session = ser.validated_data.get("care_session", "PM")
         existing = AftercareEnrollment.objects.filter(
             school_fk_id=school_id, student_fk=student,
@@ -170,7 +169,7 @@ def enrollments(request):
                 (new_end is None or row.start_date <= new_end)
                 and (row.end_date is None or row.end_date >= new_start)
             )
-            if date_overlap and new_days.intersection(row.days_of_week or []):
+            if date_overlap:
                 return _bad_request("Overlapping active enrollment for this care session.")
         enrollment = ser.save(school_fk_id=school_id)
     return Response(AftercareEnrollmentSerializer(enrollment).data, status=status.HTTP_201_CREATED)
