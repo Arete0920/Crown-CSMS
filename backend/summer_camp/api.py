@@ -121,16 +121,17 @@ def _require_role(request, allowed: set[str]) -> bool:
 @api_view(["GET", "PUT"])
 def config_view(request):
     school_id = school_id_from_request(request, required=True)
-    config = ensure_config(school_id)
 
     if request.method == "GET":
         if not _require_role(request, VIEW_ROLES):
             return Response({"detail": "Forbidden"}, status=status.HTTP_403_FORBIDDEN)
+        config = ensure_config(school_id)
         return Response(SummerCampProgramConfigSerializer(config).data)
 
     if not _require_role(request, EDIT_ROLES):
         return Response({"detail": "Forbidden"}, status=status.HTTP_403_FORBIDDEN)
 
+    config = ensure_config(school_id)
     serializer = SummerCampProgramConfigSerializer(config, data=request.data, partial=True)
     serializer.is_valid(raise_exception=True)
     serializer.save(school_id=school_id)
