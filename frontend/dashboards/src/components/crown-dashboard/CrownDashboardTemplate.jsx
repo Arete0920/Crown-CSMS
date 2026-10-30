@@ -58,14 +58,12 @@ function getDashboardDataState(source, payload, error, loading) {
   const servedFrom = String(payload?.meta?.served_from || '').toLowerCase();
 
   if (loading) return 'loading';
-  // Failed refreshes must take precedence over any previously cached payload.
-  if (source === 'none' && error) return 'error';
+  // A missing request source cannot inherit a stale payload's sample/live claim.
+  if (source === 'none') return error ? 'error' : 'unavailable';
   if (servedFrom === 'sample') return 'sample';
   if (servedFrom === 'fallback' || servedFrom === 'stale_snapshot') return 'fallback';
   if (source === 'live') return 'live';
   if (source === 'fallback') return 'fallback';
-  if (source === 'none' && error) return 'error';
-  if (source === 'none') return 'unavailable';
   return source || 'unavailable';
 }
 
@@ -73,22 +71,17 @@ function getDashboardSourceLabel(dataState, endpoint, payload) {
   const servedFrom = String(payload?.meta?.served_from || '').toLowerCase();
   const snapshotSource = payload?.meta?.snapshot_source;
 
-  if (servedFrom === 'snapshot') {
-    return snapshotSource
-      ? `Dashboard snapshot service (${snapshotSource})`
-      : 'Dashboard snapshot service';
-  }
-
-  if (servedFrom === 'sample') {
-    return `Dashboard summary service sample (${endpoint})`;
-  }
-
-  if (dataState === 'live') {
-    return `Dashboard summary service (${endpoint})`;
+  // A previous response must never override the truth of a failed/loading request.
+  if (dataState === 'error' || dataState === 'unavailable') {
+    return `Dashboard summary service unavailable (${endpoint})`;
   }
 
   if (dataState === 'loading') {
     return `Loading dashboard summary service (${endpoint})`;
+  }
+
+  if (dataState === 'sample') {
+    return `Dashboard summary service sample (${endpoint})`;
   }
 
   if (dataState === 'fallback') {
@@ -97,8 +90,14 @@ function getDashboardSourceLabel(dataState, endpoint, payload) {
     return `Frontend fallback dashboard data (${endpoint})`;
   }
 
-  if (dataState === 'error' || dataState === 'unavailable') {
-    return `Dashboard summary service unavailable (${endpoint})`;
+  if (servedFrom === 'snapshot' && dataState === 'live') {
+    return snapshotSource
+      ? `Dashboard snapshot service (${snapshotSource})`
+      : 'Dashboard snapshot service';
+  }
+
+  if (dataState === 'live') {
+    return `Dashboard summary service (${endpoint})`;
   }
 
   return 'Static dashboard scaffold';
