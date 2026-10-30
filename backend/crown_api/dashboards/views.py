@@ -296,6 +296,18 @@ class DashboardSummaryView(APIView):
             if not getattr(user, 'is_staff', False) and not getattr(user, 'is_superuser', False):
                 return Response({'detail': 'Forbidden.'}, status=status.HTTP_403_FORBIDDEN)
 
+        sensitive_finance_grants = {
+            'financial-aid': 'financial_aid.view',
+            'billing': 'billing.view',
+        }
+        if key in sensitive_finance_grants:
+            # Aid snapshots and live billing totals contain school finance data.
+            # Authentication and hidden navigation do not confer read authority.
+            school = _resolve_school_strict(request, allow_dev_open_fallback=False)
+            if not user_has_permission(user, sensitive_finance_grants[key], school=school):
+                return Response({'detail': 'Forbidden.'}, status=status.HTTP_403_FORBIDDEN)
+            school_id = str(school.id)
+
         if key == 'portrait-service':
             school = _resolve_school_strict(request, allow_dev_open_fallback=False)
             if not user_has_permission(user, 'spiritual_life.view', school=school):
