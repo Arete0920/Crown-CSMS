@@ -117,13 +117,15 @@ def checkin_student(school_id, student_id, when: datetime | None = None, note: s
     when = when or timezone.now()
     student = _canonical_student(school_id=school_id, student_id=student_id)
     _active_enrollment(school_id=school_id, student=student, on_date=when.date(), care_session=care_session)
-    attendance, created = AftercareAttendance.objects.get_or_create(
+    attendance, created = AftercareAttendance.objects.select_for_update().get_or_create(
         school_fk_id=school_id,
         student_fk=student,
         date=when.date(),
         care_session=care_session,
         defaults={"checkin_time": when, "notes": note},
     )
+    if not created and attendance.checkout_time is not None:
+        raise ValueError("Extended-care session has already been closed.")
     if not created and note:
         attendance.notes = (attendance.notes + " | " + note).strip(" |")
         attendance.save(update_fields=["notes"])
