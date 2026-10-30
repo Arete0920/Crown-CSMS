@@ -37,7 +37,7 @@ The following topics do not yet have an accepted ADR in this index. Their absenc
 6. payment-provider adapter and future activation contract;
 7. HR/Core Staff ownership convergence;
 8. report-card official-record authority where not already governed by accepted Gradebook/Transcript boundaries;
-9. Little Lambs daycare-specific authority beyond the current Aftercare compatibility surface.
+9. Diadem standalone daycare authority beyond the current Aftercare compatibility surface.
 
 These are explicit architecture follow-ups, not permission to imply that an unimplemented target is already complete.
 
