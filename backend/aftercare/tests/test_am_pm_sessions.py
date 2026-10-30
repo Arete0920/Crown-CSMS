@@ -237,3 +237,67 @@ def test_api_accepts_separate_future_session_after_prior_enrollment_ends():
     assert AftercareEnrollment.objects.filter(
         school_fk=school, student_fk=child, care_session="AM",
     ).count() == 2
+
+
+
+def test_am_pm_board_kpis_are_session_scoped_and_not_misleading(monkeypatch):
+    """Unique pupils, date windows, incidents and assessed fees must reconcile."""
+    from datetime import timedelta
+    from rest_framework.test import APIClient
+
+    from aftercare import api
+    from aftercare.models import AftercareIncident
+
+    school, _household, child, director = setup_family()
+    view_permission, _ = CrownPermission.objects.get_or_create(code="extended_care.view")
+    RolePermission.objects.get_or_create(role_code="SUPPORT", permission=view_permission)
+    monkeypatch.setattr(api.timezone, "now", lambda: at(17, 30))
+
+    am = checkin_student(school.id, child.id, when=at(7, 30), care_session="AM")
+    pm = checkin_student(school.id, child.id, when=at(15, 30), care_session="PM")
+    pm.late_minutes = 15
+    pm.late_fee_cents = 500
+    pm.save(update_fields=["late_minutes", "late_fee_cents"])
+
+    for label, attendance in (("morning", am), ("afternoon", pm), ("unknown", None)):
+        AftercareIncident.objects.create(
+            school_fk=school, student_fk=child, attendance_fk=attendance,
+            description=label, occurred_at=at(16, 0),
+        )
+    # The reporting window must not include future-dated attendance or incidents.
+    AftercareAttendance.objects.create(
+        school_fk=school, student_fk=child, date=DAY + timedelta(days=2),
+        care_session="AM", checkin_time=at(7, 30) + timedelta(days=2),
+    )
+    AftercareIncident.objects.create(
+        school_fk=school, student_fk=child, attendance_fk=am,
+        description="future", occurred_at=at(16, 0) + timedelta(days=2),
+    )
+
+    family = Household.objects.create(school_id=school.id, name="Expired Care Family")
+    expired = Student.objects.create(
+        school_id=school.id, household=family,
+        first_name="Former", last_name="Camper", grade_level="4",
+    )
+    AftercareEnrollment.objects.create(
+        school_fk=school, student_fk=expired, care_session="AM",
+        start_date=date(2025, 1, 1), end_date=DAY - timedelta(days=1),
+        days_of_week=["WED"], billing_model="FLAT_MONTHLY",
+    )
+
+    client = APIClient()
+    client.force_authenticate(user=director)
+    client.credentials(HTTP_X_SCHOOL_ID=str(school.id))
+    am_view = client.get("/api/v1/aftercare/board/summary/?care_session=AM")
+    pm_view = client.get("/api/v1/aftercare/board/summary/?care_session=PM")
+    combined = client.get("/api/v1/aftercare/board/summary/")
+    assert all(result.status_code == 200 for result in (am_view, pm_view, combined))
+    assert am_view.data["care_session"] == "AM"
+    assert pm_view.data["care_session"] == "PM"
+    assert combined.data["care_session"] == "ALL"
+    assert [result.data["active_enrollment"] for result in (am_view, pm_view, combined)] == [1, 1, 1]
+    assert [result.data["sessions_mtd"] for result in (am_view, pm_view, combined)] == [1, 1, 2]
+    assert [result.data["incidents_mtd"] for result in (am_view, pm_view, combined)] == [1, 1, 3]
+    assert all(result.data["unattributed_incidents_mtd"] == 1 for result in (am_view, pm_view, combined))
+    assert [result.data["late_fee_assessed_mtd"] for result in (am_view, pm_view, combined)] == [0.0, 5.0, 5.0]
+    assert [result.data["late_pickups_mtd"] for result in (am_view, pm_view, combined)] == [0, 1, 1]

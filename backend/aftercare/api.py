@@ -48,6 +48,9 @@ class BoardSummaryResponseSerializer(serializers.Serializer):
     sessions_mtd = serializers.IntegerField()
     late_pickups_mtd = serializers.IntegerField()
     incidents_mtd = serializers.IntegerField()
+    unattributed_incidents_mtd = serializers.IntegerField()
+    late_fee_assessed_mtd = serializers.FloatField()
+    # Legacy response key; this figure is an assessment, not cash receipts.
     late_fee_revenue_mtd = serializers.FloatField()
 
 
@@ -383,22 +386,34 @@ def board_summary(request):
     care_session = request.query_params.get("care_session")
     if care_session is not None and care_session not in ("AM", "PM"):
         return _bad_request("Invalid care session.")
-    enrollments = AftercareEnrollment.objects.filter(school_fk_id=school_id, is_active=True)
-    attendance_qs = AftercareAttendance.objects.filter(school_fk_id=school_id)
+    enrollments = (
+        AftercareEnrollment.objects.filter(
+            school_fk_id=school_id, student_fk__isnull=False,
+            is_active=True, start_date__lte=today,
+        ).filter(Q(end_date__isnull=True) | Q(end_date__gte=today))
+    )
+    attendance_qs = AftercareAttendance.objects.filter(
+        school_fk_id=school_id, date__range=(month_start, today),
+    )
+    incidents_qs = AftercareIncident.objects.filter(
+        school_fk_id=school_id,
+        occurred_at__date__range=(month_start, today),
+    )
+    # An incident lacking an attendance link cannot reliably be attributed
+    # to AM or PM; report it separately rather than copying it to both.
+    unattributed_incidents = incidents_qs.filter(attendance_fk__isnull=True).count()
     if care_session:
         enrollments = enrollments.filter(care_session=care_session)
         attendance_qs = attendance_qs.filter(care_session=care_session)
+        incidents_qs = incidents_qs.filter(
+            attendance_fk__care_session=care_session,
+            attendance_fk__school_fk_id=school_id,
+        )
     active_enrollment = enrollments.values("student_fk_id").distinct().count()
-    sessions = attendance_qs.filter(date__gte=month_start).count()
-    late_pickups = attendance_qs.filter(date__gte=month_start, late_minutes__gt=0).count()
-    incidents_mtd = AftercareIncident.objects.filter(
-        school_fk_id=school_id, occurred_at__date__gte=month_start
-    ).count()
-    late_fee_cents = (
-        attendance_qs.filter(date__gte=month_start)
-        .aggregate(total=Sum("late_fee_cents"))["total"]
-        or 0
-    )
+    sessions = attendance_qs.count()
+    late_pickups = attendance_qs.filter(late_minutes__gt=0).count()
+    incidents_mtd = incidents_qs.count()
+    late_fee_cents = attendance_qs.aggregate(total=Sum("late_fee_cents"))["total"] or 0
     return Response(
         {
             "care_session": care_session or "ALL",
@@ -407,6 +422,8 @@ def board_summary(request):
             "sessions_mtd": sessions,
             "late_pickups_mtd": late_pickups,
             "incidents_mtd": incidents_mtd,
+            "unattributed_incidents_mtd": unattributed_incidents,
+            "late_fee_assessed_mtd": float(late_fee_cents) / 100.0,
             "late_fee_revenue_mtd": float(late_fee_cents) / 100.0,
         }
     )
