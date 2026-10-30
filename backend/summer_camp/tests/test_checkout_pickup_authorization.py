@@ -7,7 +7,7 @@ import pytest
 from django.utils import timezone
 from rest_framework.test import APIRequestFactory, force_authenticate
 
-from core.models import School
+from core.models import CrownPermission, RolePermission, School, UserAccount, UserRole
 from households.models import Household, Student
 from summer_camp import api
 from summer_camp.models import (
@@ -59,17 +59,25 @@ def _scenario(suffix):
     contact = SummerCampPickupContact.objects.create(
         school=school, enrollment=enrollment, name=f"Authorized {suffix}",
     )
+    verifier = UserAccount.objects.create_user(
+        username=f"camp-pickup-{suffix}", password="synthetic",
+        school=school, is_staff=True,
+    )
+    UserRole.objects.create(user=verifier, school=school, role_code="TEACHER")
+    permission, _ = CrownPermission.objects.get_or_create(code="summer_camp.edit")
+    RolePermission.objects.get_or_create(role_code="TEACHER", permission=permission)
     return SimpleNamespace(
         school=school, student=student, session=session,
-        enrollment=enrollment, attendance=attendance, contact=contact,
+        enrollment=enrollment, attendance=attendance, contact=contact, verifier=verifier,
     )
 
 
-def _checkout(case, *, contact_id=None, verified=True, when=OUT):
+def _checkout(case, *, contact_id=None, verified=True, when=OUT, verifier=None):
     return checkout_camper(
         school_id=case.school.id, session_id=case.session.id,
         student_id=case.student.id, pickup_contact_id=contact_id,
         pickup_verified=verified, when=when,
+        verified_by=verifier if verifier is not None else case.verifier,
     )
 
 
@@ -78,6 +86,7 @@ def _assert_unchanged(case):
     assert case.attendance.checkout_time is None
     assert case.attendance.pickup_contact_id is None
     assert case.attendance.pickup_verified is False
+    assert case.attendance.pickup_verified_by_id is None
 
 
 def test_verified_active_same_enrollment_pickup_succeeds():
@@ -86,6 +95,7 @@ def test_verified_active_same_enrollment_pickup_succeeds():
     assert result.checkout_time == OUT
     assert result.pickup_verified is True
     assert result.pickup_contact_id == case.contact.id
+    assert result.pickup_verified_by_id == case.verifier.id
     case.attendance.refresh_from_db()
     assert case.attendance.pickup_contact_id == case.contact.id
 
@@ -193,4 +203,34 @@ def test_checkout_api_returns_bounded_client_error_without_checkout_write(monkey
     assert response.data == {
         "detail": "Checkout requires a valid check-in and verified authorized pickup.",
     }
+    _assert_unchanged(case)
+
+
+def test_release_requires_identified_active_school_scoped_staff_grant():
+    case = _scenario("Verifier")
+    staff_only = UserAccount.objects.create_user(
+        username="camp-staff-without-grant", school=case.school,
+        password="synthetic", is_staff=True,
+    )
+    foreign = _scenario("UnrelatedVerifier").verifier
+    for actor in (staff_only, foreign):
+        with pytest.raises(ValueError, match="school-authorized staff verifier"):
+            _checkout(case, contact_id=case.contact.id, verifier=actor)
+        _assert_unchanged(case)
+
+    case.verifier.is_active = False
+    case.verifier.save(update_fields=["is_active"])
+    with pytest.raises(ValueError, match="school-authorized staff verifier"):
+        _checkout(case, contact_id=case.contact.id)
+    _assert_unchanged(case)
+
+
+def test_release_requires_authenticated_staff_actor_not_just_contact_id():
+    case = _scenario("NoActor")
+    with pytest.raises(ValueError, match="school-authorized staff verifier"):
+        checkout_camper(
+            school_id=case.school.id, session_id=case.session.id,
+            student_id=case.student.id, pickup_contact_id=case.contact.id,
+            pickup_verified=True, when=OUT, verified_by=None,
+        )
     _assert_unchanged(case)
