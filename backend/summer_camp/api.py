@@ -8,6 +8,7 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
 from core.permissions import user_has_permission
+from households.models import Guardian
 from .models import (
     SummerCampEnrollment,
     SummerCampIncident,
@@ -420,7 +421,18 @@ def health_review_queue_view(request):
 @api_view(["GET"])
 def parent_student_view(request, student_id):
     school_id = school_id_from_request(request, required=True)
-    if not _require_role(request, VIEW_ROLES):
+    user = getattr(request, "user", None)
+    owns_student = bool(
+        user and getattr(user, "is_authenticated", False)
+        and getattr(user, "is_active", False)
+        and Guardian.objects.filter(
+            account=user, school_id=school_id,
+            household__students__id=student_id,
+            household__students__school_id=school_id,
+            household__students__is_active=True,
+        ).exists()
+    )
+    if not owns_student and not _require_role(request, VIEW_ROLES):
         return Response({"detail": "Forbidden"}, status=status.HTTP_403_FORBIDDEN)
     return Response({"student_id": str(student_id), "rows": parent_student_summary(school_id, student_id)})
 
