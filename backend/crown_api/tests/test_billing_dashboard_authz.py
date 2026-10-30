@@ -12,7 +12,7 @@ from crown_api.dashboards.payload_contract import build_dashboard_payload, metri
 
 def _principal(school, role_code, username, *, is_staff=False):
     user = UserAccount.objects.create_user(
-        username=username, school=school, is_staff=is_staff
+        username=username, email=f"{username}@example.invalid", school=school, is_staff=is_staff
     )
     if role_code:
         UserRole.objects.create(user=user, school=school, role_code=role_code)

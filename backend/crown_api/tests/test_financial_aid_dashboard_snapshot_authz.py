@@ -12,7 +12,9 @@ pytestmark = pytest.mark.django_db
 
 
 def _principal(school, role_code, username):
-    user = UserAccount.objects.create_user(username=username, school=school)
+    user = UserAccount.objects.create_user(
+        username=username, email=f"{username}@example.invalid", school=school
+    )
     UserRole.objects.create(user=user, school=school, role_code=role_code)
     client = APIClient(SERVER_PORT="443", **{"wsgi.url_scheme": "https"})
     client.force_authenticate(user=user)
