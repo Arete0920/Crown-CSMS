@@ -100,6 +100,8 @@ describe('Financial Aid dashboard runtime data truth', () => {
     expect(captured.truth[0].dataState).toBe('error');
     expect(captured.metrics).toEqual([]);
     expect(captured.truth[0].lastSyncLabel).toBe('Last sync unavailable');
+    expect(captured.truth[0].sourceLabel).toContain('unavailable');
+    expect(captured.truth[0].sourceLabel).not.toContain('sample');
     expect(screen.getByTestId('dashboard-error')).toBeTruthy();
   });
 
