@@ -18,12 +18,13 @@ from .serializers import (
     AftercarePickupContactSerializer,
     AftercareProgramConfigSerializer,
 )
-from .services import checkin_student, checkout_student, ensure_config, record_incident
+from .services import checkin_student, checkout_student, ensure_config, handoff_student_to_school, record_incident
 from .tenant import school_id_from_request
 
 
 class RosterTodayRowSerializer(serializers.Serializer):
     student_id = serializers.UUIDField()
+    care_session = serializers.ChoiceField(choices=["AM", "PM"])
     enrollment = AftercareEnrollmentSerializer()
     attendance = AftercareAttendanceSerializer(allow_null=True)
 
@@ -50,11 +51,13 @@ class BoardSummaryResponseSerializer(serializers.Serializer):
 
 class AftercareCheckinRequestSerializer(serializers.Serializer):
     student_id = serializers.UUIDField()
+    care_session = serializers.ChoiceField(choices=["AM", "PM"], default="PM")
     note = serializers.CharField(required=False, allow_blank=True)
 
 
 class AftercareCheckoutRequestSerializer(serializers.Serializer):
     student_id = serializers.UUIDField()
+    care_session = serializers.ChoiceField(choices=["PM"], default="PM")
     pickup_contact_id = serializers.IntegerField(min_value=1)
     # Legacy clients may send a freeform label, but the service never trusts it.
     pickup_name_freeform = serializers.CharField(required=False, allow_blank=True)
@@ -196,23 +199,27 @@ def roster_today(request):
         .filter(Q(end_date__isnull=True) | Q(end_date__gte=today))
         .select_related("student_fk")
     )
-    enroll = [row for row in enroll_qs if dow in (row.days_of_week or [])]
+    requested_session = request.query_params.get("care_session", "PM")
+    if requested_session not in ("AM", "PM"):
+        return _bad_request("Invalid care session.")
+    enroll = [row for row in enroll_qs if row.care_session == requested_session and dow in (row.days_of_week or [])]
     attendance_map = {
-        row.student_fk_id: row
-        for row in AftercareAttendance.objects.filter(school_fk_id=school_id, date=today)
+        (row.student_fk_id, row.care_session): row
+        for row in AftercareAttendance.objects.filter(school_fk_id=school_id, date=today, care_session=requested_session)
     }
     rows = [
         {
             "student_id": row.student_fk_id,
+            "care_session": row.care_session,
             "enrollment": AftercareEnrollmentSerializer(row).data,
             "attendance": (
-                AftercareAttendanceSerializer(attendance_map[row.student_fk_id]).data
-                if row.student_fk_id in attendance_map else None
+                AftercareAttendanceSerializer(attendance_map[(row.student_fk_id, row.care_session)]).data
+                if (row.student_fk_id, row.care_session) in attendance_map else None
             ),
         }
         for row in enroll
     ]
-    return Response({"date": str(today), "dow": dow, "rows": rows})
+    return Response({"date": str(today), "dow": dow, "care_session": requested_session, "rows": rows})
 
 
 @extend_schema(request=AftercareCheckinRequestSerializer, responses={201: AftercareAttendanceSerializer})
@@ -228,6 +235,7 @@ def checkin(request):
             school_id=school_id,
             student_id=ser.validated_data["student_id"],
             note=ser.validated_data.get("note", ""),
+            care_session=ser.validated_data["care_session"],
         )
     except ValueError as exc:
         return _bad_request(exc)
@@ -249,8 +257,33 @@ def checkout(request):
             pickup_contact_id=ser.validated_data["pickup_contact_id"],
             pickup_name_freeform=ser.validated_data.get("pickup_name_freeform", ""),
             pickup_verified=ser.validated_data["pickup_verified"],
+            care_session=ser.validated_data["care_session"],
         )
     except (ValueError, AftercareAttendance.DoesNotExist) as exc:
+        return _bad_request(exc)
+    return Response(AftercareAttendanceSerializer(attendance).data)
+
+
+class AftercareHandoffRequestSerializer(serializers.Serializer):
+    student_id = serializers.UUIDField()
+    receiving_staff_id = serializers.UUIDField()
+
+
+@extend_schema(request=AftercareHandoffRequestSerializer, responses={200: AftercareAttendanceSerializer})
+@api_view(["POST"])
+def school_handoff(request):
+    school_id = school_id_from_request(request, required=True)
+    if not _has_permission(request, "extended_care.edit"):
+        return _forbidden()
+    serializer = AftercareHandoffRequestSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    from core.models import UserAccount
+    receiver = UserAccount.objects.filter(pk=serializer.validated_data["receiving_staff_id"], school_id=school_id).first()
+    try:
+        attendance = handoff_student_to_school(
+            school_id, serializer.validated_data["student_id"], receiver,
+        )
+    except ValueError as exc:
         return _bad_request(exc)
     return Response(AftercareAttendanceSerializer(attendance).data)
 
@@ -297,7 +330,7 @@ def parent_view(request, student_id):
     ).first()
     attendance = AftercareAttendance.objects.filter(
         school_fk_id=school_id, student_fk_id=student_id
-    ).order_by("-date")[:30]
+    ).order_by("-date", "care_session")[:60]
     return Response(
         {
             "enrollment": AftercareEnrollmentSerializer(enrollment).data if enrollment else None,
@@ -318,21 +351,28 @@ def board_summary(request):
 
     today = timezone.now().date()
     month_start = today.replace(day=1)
-    active_enrollment = AftercareEnrollment.objects.filter(school_fk_id=school_id, is_active=True).count()
-    sessions = AftercareAttendance.objects.filter(school_fk_id=school_id, date__gte=month_start).count()
-    late_pickups = AftercareAttendance.objects.filter(
-        school_fk_id=school_id, date__gte=month_start, late_minutes__gt=0
-    ).count()
+    care_session = request.query_params.get("care_session")
+    if care_session is not None and care_session not in ("AM", "PM"):
+        return _bad_request("Invalid care session.")
+    enrollments = AftercareEnrollment.objects.filter(school_fk_id=school_id, is_active=True)
+    attendance_qs = AftercareAttendance.objects.filter(school_fk_id=school_id)
+    if care_session:
+        enrollments = enrollments.filter(care_session=care_session)
+        attendance_qs = attendance_qs.filter(care_session=care_session)
+    active_enrollment = enrollments.values("student_fk_id").distinct().count()
+    sessions = attendance_qs.filter(date__gte=month_start).count()
+    late_pickups = attendance_qs.filter(date__gte=month_start, late_minutes__gt=0).count()
     incidents_mtd = AftercareIncident.objects.filter(
         school_fk_id=school_id, occurred_at__date__gte=month_start
     ).count()
     late_fee_cents = (
-        AftercareAttendance.objects.filter(school_fk_id=school_id, date__gte=month_start)
+        attendance_qs.filter(date__gte=month_start)
         .aggregate(total=Sum("late_fee_cents"))["total"]
         or 0
     )
     return Response(
         {
+            "care_session": care_session or "ALL",
             "as_of": str(today),
             "active_enrollment": active_enrollment,
             "sessions_mtd": sessions,
