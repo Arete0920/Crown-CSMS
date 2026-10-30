@@ -172,7 +172,7 @@ def enrollments(request):
             )
             if date_overlap and new_days.intersection(row.days_of_week or []):
                 return _bad_request("Overlapping active enrollment for this care session.")
-        enrollment = ser.save(school_fk_id=school_id, student_fk=student)
+        enrollment = ser.save(school_fk_id=school_id)
     return Response(AftercareEnrollmentSerializer(enrollment).data, status=status.HTTP_201_CREATED)
 
 
