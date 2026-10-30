@@ -19,4 +19,12 @@ class Migration(migrations.Migration):
                 to=settings.AUTH_USER_MODEL,
             ),
         ),
+        migrations.AlterField(
+            model_name="summercampattendance",
+            name="pickup_contact",
+            field=models.ForeignKey(
+                blank=True, null=True, on_delete=django.db.models.deletion.PROTECT,
+                to="summer_camp.summercamppickupcontact",
+            ),
+        ),
     ]
