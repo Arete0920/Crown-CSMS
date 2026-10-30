@@ -25,20 +25,25 @@ def test_require_role_fails_closed_without_authenticated_user(monkeypatch):
     permission_check.assert_not_called()
 
 
-def test_require_role_allows_superuser_without_permission_lookup(monkeypatch):
-    permission_check = Mock()
+def test_require_role_denies_superuser_without_explicit_school_grant(monkeypatch):
+    school = SimpleNamespace(id="school-a")
+    permission_check = Mock(return_value=False)
     monkeypatch.setattr(api, "user_has_permission", permission_check)
 
-    assert api._require_role(_request(_user(superuser=True)), api.EDIT_ROLES) is True
-    permission_check.assert_not_called()
+    assert api._require_role(_request(_user(superuser=True), school), api.EDIT_ROLES) is False
+    assert permission_check.call_count == 1
+    assert permission_check.call_args.args[1] == "summer_camp.edit"
+    assert permission_check.call_args.kwargs == {"school": school}
 
 
-def test_require_role_allows_staff_without_permission_lookup(monkeypatch):
-    permission_check = Mock()
+def test_require_role_denies_staff_without_explicit_school_grant(monkeypatch):
+    school = SimpleNamespace(id="school-a")
+    permission_check = Mock(return_value=False)
     monkeypatch.setattr(api, "user_has_permission", permission_check)
 
-    assert api._require_role(_request(_user(staff=True)), api.EDIT_ROLES) is True
-    permission_check.assert_not_called()
+    assert api._require_role(_request(_user(staff=True), school), api.EDIT_ROLES) is False
+    assert permission_check.call_count == 1
+    assert permission_check.call_args.kwargs == {"school": school}
 
 
 def test_require_role_checks_permissions_against_request_school(monkeypatch):
