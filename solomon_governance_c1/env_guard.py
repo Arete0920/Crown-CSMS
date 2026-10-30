@@ -45,7 +45,7 @@ def is_authoritative_remote(remote_url: str) -> bool:
     else:
         parsed = urlsplit(remote_url)
         if (
-            parsed.scheme not in ("https", "ssh", "git")
+            parsed.scheme not in ("https", "ssh")
             or parsed.hostname != "github.com"
             or parsed.query
             or parsed.fragment
