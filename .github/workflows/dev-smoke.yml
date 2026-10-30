@@ -20,6 +20,8 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
 
       - name: Set up Python
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
@@ -39,6 +41,20 @@ jobs:
           fi
           if [[ ! "$EXPECTED_SHA" =~ ^[0-9a-f]{40}$ ]]; then
             echo "::error::Expected source must be an exact 40-character commit SHA."
+            exit 1
+          fi
+
+      - name: Verify dispatch source is current protected main
+        shell: bash
+        env:
+          EXPECTED_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin refs/heads/main:refs/remotes/origin/main
+          SOURCE_SHA="$(git rev-parse HEAD)"
+          CURRENT_MAIN_SHA="$(git rev-parse refs/remotes/origin/main)"
+          if [[ "$SOURCE_SHA" != "$EXPECTED_SHA" || "$CURRENT_MAIN_SHA" != "$EXPECTED_SHA" ]]; then
+            echo "::error::Stale DEV precheck source: refusing historic or mismatched main dispatch." >&2
             exit 1
           fi
 
