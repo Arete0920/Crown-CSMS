@@ -75,6 +75,7 @@ describe('Financial Aid dashboard runtime data truth', () => {
     renderFinancialAid();
     expect(mockUseDashboardData).toHaveBeenCalledWith('financialAid', { enabled: true });
     expect(captured.truth[0].dataState).toBe('error');
+    expect(captured.truth[0].lastSyncLabel).toBe('Last sync unavailable');
     expect(captured.metrics).toEqual([]);
     expect(captured.activities[0].items).toEqual([]);
     expect(captured.status[0].statuses.map((entry) => entry.label)).toEqual([
@@ -82,6 +83,41 @@ describe('Financial Aid dashboard runtime data truth', () => {
     ]);
     expect(screen.getByTestId('dashboard-error').textContent).toBe('Dashboard data unavailable');
     expect(JSON.stringify(captured)).not.toMatch(/\$210K|\$42K|Compliance: Clean|Healthy|April disbursement batch/);
+  });
+
+  it('fails closed when an old sample payload remains after an API error', () => {
+    mockUseDashboardData.mockReturnValue({
+      data: {
+        metrics: [{ label: 'Aid Applications', value: '112' }],
+        meta: { served_from: 'sample' },
+      },
+      error: new Error('refresh failed'),
+      loading: false,
+      source: 'none',
+      config: { endpoint: '/api/v1/dashboards/financial-aid/summary' },
+    });
+    renderFinancialAid();
+    expect(captured.truth[0].dataState).toBe('error');
+    expect(captured.metrics).toEqual([]);
+    expect(captured.truth[0].lastSyncLabel).toBe('Last sync unavailable');
+    expect(screen.getByTestId('dashboard-error')).toBeTruthy();
+  });
+
+  it('does not promote a stale snapshot to live status', () => {
+    mockUseDashboardData.mockReturnValue({
+      data: {
+        metrics: [{ label: 'Aid Applications', value: '2' }],
+        meta: { served_from: 'stale_snapshot' },
+      },
+      error: null,
+      loading: false,
+      source: 'live',
+      config: { endpoint: '/api/v1/dashboards/financial-aid/summary' },
+    });
+    renderFinancialAid();
+    expect(captured.truth[0].dataState).toBe('fallback');
+    expect(captured.truth[0].sourceLabel).toContain('Stale dashboard snapshot');
+    expect(captured.metrics[0].dataState).toBe('fallback');
   });
 
   it('displays authenticated live metrics only from the returned API payload', () => {
