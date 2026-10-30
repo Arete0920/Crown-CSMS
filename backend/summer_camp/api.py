@@ -317,12 +317,18 @@ def attendance_checkin_view(request):
     serializer = SummerCampAttendanceActionSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
     payload = serializer.validated_data
-    attendance = checkin_camper(
-        school_id=school_id,
-        session_id=payload["session_id"],
-        student_id=payload["student_id"],
-        note=payload.get("note", ""),
-    )
+    try:
+        attendance = checkin_camper(
+            school_id=school_id,
+            session_id=payload["session_id"],
+            student_id=payload["student_id"],
+            note=payload.get("note", ""),
+        )
+    except ValueError:
+        return Response(
+            {"detail": "Camp check-in denied: session, registration, or clearance is invalid."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
     return Response({"attendance_id": str(attendance.id), "checkin_time": attendance.checkin_time.isoformat()}, status=status.HTTP_201_CREATED)
 
 
