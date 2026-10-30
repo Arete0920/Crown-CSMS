@@ -1,17 +1,15 @@
-name: Dev Deploy (rc/**)
+name: DEV Deploy (protected main)
 
+# Manual-only: an old rc/** push workflow may be re-run later against DEV.
+# The GitHub dev environment MUST additionally restrict deployment branches
+# to protected main; source changes cannot retroactively secure old reruns.
 on:
-  # Automatically deploy whenever rc/** is pushed  keeps dev in sync with RC
-  push:
-    branches:
-      - "rc/**"
-  # Also allow a manual trigger (e.g. to redeploy after secrets change)
   workflow_dispatch:
     inputs:
       ref:
-        description: "Git ref to deploy (branch/SHA/tag). Leave blank for default branch."
-        required: false
-        default: ""
+        description: "Full 40-character protected-main commit SHA (required)"
+        required: true
+        type: string
 
 concurrency:
   group: crown-api-dev-deploy
@@ -36,47 +34,53 @@ jobs:
     timeout-minutes: 30
 
     steps:
-      - name: Guard manual ref input
-        if: github.event_name == 'workflow_dispatch' && github.event.inputs.ref != ''
+      - name: Guard exact protected-main dispatch
         shell: bash
         env:
-          INPUT_REF: ${{ github.event.inputs.ref }}
+          INPUT_REF: ${{ inputs.ref }}
+          DISPATCH_SHA: ${{ github.sha }}
         run: |
           set -euo pipefail
-          REF="$INPUT_REF"
-          if [[ "$REF" =~ ^refs/heads/rc/.+ ]] || [[ "$REF" =~ ^rc/.+ ]] || [[ "$REF" =~ ^[0-9a-f]{40}$ ]]; then
-            echo "Manual ref accepted: $REF"
-          else
-            echo "ERROR: ref must be rc/*, refs/heads/rc/*, or a full 40-char SHA"
+          if [[ "$GITHUB_EVENT_NAME" != "workflow_dispatch" || "$GITHUB_REF" != "refs/heads/main" ]]; then
+            echo "::error::DEV deployment requires manual dispatch on protected main" >&2
+            exit 1
+          fi
+          if [[ ! "$INPUT_REF" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "::error::DEV deployment requires an exact 40-character commit SHA" >&2
+            exit 1
+          fi
+          if [[ "$INPUT_REF" != "$DISPATCH_SHA" ]]; then
+            echo "::error::DEV deployment requested SHA does not match workflow-dispatch SHA" >&2
             exit 1
           fi
 
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.ref || github.sha }}
+          ref: ${{ inputs.ref }}
           fetch-depth: 0
 
       - name: Verify accepted DEV source
         id: vars
         env:
-          REQUESTED_REF: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.ref || github.sha }}
+          REQUESTED_REF: ${{ inputs.ref }}
+          WORKFLOW_SHA: ${{ github.sha }}
         run: |
           set -euo pipefail
+          if [[ "$GITHUB_EVENT_NAME" != "workflow_dispatch" || "$GITHUB_REF" != "refs/heads/main" ]]; then
+            echo "::error::DEV deployment requires protected-main manual dispatch" >&2
+            exit 1
+          fi
           SOURCE_SHA="$(git rev-parse HEAD)"
-          [[ "$SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]]
-          if [[ "$REQUESTED_REF" =~ ^[0-9a-f]{40}$ ]]; then
-            test "$SOURCE_SHA" = "$REQUESTED_REF"
+          if [[ ! "$SOURCE_SHA" =~ ^[0-9a-f]{40}$ || "$SOURCE_SHA" != "$REQUESTED_REF" ]]; then
+            echo "::error::Checked-out source does not match approved exact SHA" >&2
+            exit 1
           fi
           git fetch --no-tags origin refs/heads/main:refs/remotes/origin/main
           CURRENT_MAIN_SHA="$(git rev-parse refs/remotes/origin/main)"
-          if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]]; then
-            if [[ "$SOURCE_SHA" != "$CURRENT_MAIN_SHA" ]]; then
-              echo 'BLOCKED: manual DEV deploy must use exact protected main, not a stale ancestor' >&2
-              exit 1
-            fi
-          else
-            git merge-base --is-ancestor "$SOURCE_SHA" "$CURRENT_MAIN_SHA"
+          if [[ "$SOURCE_SHA" != "$WORKFLOW_SHA" || "$SOURCE_SHA" != "$CURRENT_MAIN_SHA" ]]; then
+            echo "::error::BLOCKED: DEV deploy requires current protected main and workflow identity, never an ancestor" >&2
+            exit 1
           fi
           echo "deploy_sha=$SOURCE_SHA" >> "$GITHUB_OUTPUT"
           echo "deploy_sha_short=${SOURCE_SHA:0:7}" >> "$GITHUB_OUTPUT"
@@ -103,6 +107,18 @@ jobs:
 
       - name: Verify SimpleJWT migration allowlist without database access
         run: python -m unittest discover -s scripts/ops -p test_reviewed_blacklist_migrations.py -v
+
+      - name: Reverify protected main before DEV migration
+        shell: bash
+        env:
+          EXPECTED_DEV_SHA: ${{ steps.vars.outputs.deploy_sha }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin refs/heads/main:refs/remotes/origin/main
+          if [[ "$GITHUB_REF" != "refs/heads/main" || "$GITHUB_SHA" != "$EXPECTED_DEV_SHA" || "$(git rev-parse HEAD)" != "$EXPECTED_DEV_SHA" || "$(git rev-parse refs/remotes/origin/main)" != "$EXPECTED_DEV_SHA" ]]; then
+            echo "::error::Protected main moved: refusing DEV migration" >&2
+            exit 1
+          fi
 
       - name: Apply only reviewed DEV inquiry migration before deployment
         env:
@@ -138,6 +154,18 @@ jobs:
             -AllowedKeysFile "tools/appsettings_allowlist.keys.json" `
             -AllowedKeySet "dev"
 
+      - name: Reverify protected main before DEV appsettings
+        shell: bash
+        env:
+          EXPECTED_DEV_SHA: ${{ steps.vars.outputs.deploy_sha }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin refs/heads/main:refs/remotes/origin/main
+          if [[ "$GITHUB_REF" != "refs/heads/main" || "$GITHUB_SHA" != "$EXPECTED_DEV_SHA" || "$(git rev-parse HEAD)" != "$EXPECTED_DEV_SHA" || "$(git rev-parse refs/remotes/origin/main)" != "$EXPECTED_DEV_SHA" ]]; then
+            echo "::error::Protected main moved: refusing DEV appsettings" >&2
+            exit 1
+          fi
+
       - name: Apply appsettings (allowlisted only)
         shell: pwsh
         run: |
@@ -154,6 +182,17 @@ jobs:
           echo "BUILD_SHA = \"${{ env.DEPLOY_SHA }}\"" > backend/crown_api/build_info.py
           echo " build_info.py written with SHA: ${{ env.DEPLOY_SHA }}"
 
+      - name: Reverify protected main before DEV image push
+        shell: bash
+        env:
+          EXPECTED_DEV_SHA: ${{ steps.vars.outputs.deploy_sha }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin refs/heads/main:refs/remotes/origin/main
+          if [[ "$GITHUB_REF" != "refs/heads/main" || "$GITHUB_SHA" != "$EXPECTED_DEV_SHA" || "$(git rev-parse HEAD)" != "$EXPECTED_DEV_SHA" || "$(git rev-parse refs/remotes/origin/main)" != "$EXPECTED_DEV_SHA" ]]; then
+            echo "::error::Protected main changed: refusing DEV image push" >&2
+            exit 1
+          fi
       - name: Build and push Docker image
         uses: docker/build-push-action@ca052bb54ab0790a636c9b5f226502c73d547a25 # v5
         with:
@@ -170,6 +209,18 @@ jobs:
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:dev-latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Reverify protected main before DEV container deployment
+        shell: bash
+        env:
+          EXPECTED_DEV_SHA: ${{ steps.vars.outputs.deploy_sha }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin refs/heads/main:refs/remotes/origin/main
+          if [[ "$GITHUB_REF" != "refs/heads/main" || "$GITHUB_SHA" != "$EXPECTED_DEV_SHA" || "$(git rev-parse HEAD)" != "$EXPECTED_DEV_SHA" || "$(git rev-parse refs/remotes/origin/main)" != "$EXPECTED_DEV_SHA" ]]; then
+            echo "::error::Protected main moved: refusing DEV container deployment" >&2
+            exit 1
+          fi
 
       - name: Deploy to Azure Web App (managed identity pull)
         run: |
