@@ -536,11 +536,12 @@ class DevMigrationBoundaryTests(unittest.TestCase):
         )
 
     def test_workflow_checks_source_then_schema_before_any_runtime_mutation(self):
+        """Require current main, never ancestor/RC, at each DEV write boundary."""
         import yaml
         workflow = yaml.safe_load((migration.ROOT / ".github/workflows/deploy-dev.yml").read_text())
         triggers = workflow.get("on", workflow.get(True))
-        self.assertEqual(set(triggers), {"push", "workflow_dispatch"})
-        self.assertEqual(triggers["push"]["branches"], ["rc/**"])
+        self.assertEqual(set(triggers), {"workflow_dispatch"})
+        self.assertTrue(triggers["workflow_dispatch"]["inputs"]["ref"]["required"])
         job = workflow["jobs"]["build-and-deploy"]
         self.assertEqual(job["environment"], "dev")
         steps = job["steps"]
@@ -549,13 +550,11 @@ class DevMigrationBoundaryTests(unittest.TestCase):
         self.assertIn("git fetch --no-tags origin refs/heads/main:refs/remotes/origin/main", steps[source]["run"])
         source_script = steps[source]["run"]
         self.assertIn('CURRENT_MAIN_SHA="$(git rev-parse refs/remotes/origin/main)"', source_script)
-        self.assertIn('if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]]; then', source_script)
+        self.assertIn('"$GITHUB_EVENT_NAME" != "workflow_dispatch"', source_script)
+        self.assertIn('"$GITHUB_REF" != "refs/heads/main"', source_script)
         self.assertIn('if [[ "$SOURCE_SHA" != "$CURRENT_MAIN_SHA" ]]; then', source_script)
-        self.assertIn('git merge-base --is-ancestor "$SOURCE_SHA" "$CURRENT_MAIN_SHA"', source_script)
-        self.assertLess(
-            source_script.index('if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]]; then'),
-            source_script.index('git merge-base --is-ancestor "$SOURCE_SHA" "$CURRENT_MAIN_SHA"'),
-        )
+        self.assertNotIn("git merge-base --is-ancestor", source_script)
+        self.assertLess(source, gate)
         self.assertNotIn("if", steps[gate])
         self.assertNotIn("continue-on-error", steps[gate])
         for index, step in enumerate(steps):
@@ -566,8 +565,23 @@ class DevMigrationBoundaryTests(unittest.TestCase):
                     or "docker/build-push-action@" in action or "az webapp start" in command):
                 self.assertLess(gate, index)
         guard = steps[0]
-        self.assertEqual(guard["env"]["INPUT_REF"], "${{ github.event.inputs.ref }}")
-        self.assertNotIn("${{ github.event.inputs.ref }}", guard["run"])
+        self.assertEqual(guard["name"], "Guard exact protected-main dispatch")
+        self.assertEqual(guard["env"]["INPUT_REF"], "$" + "{{ inputs.ref }}")
+        self.assertIn('"$GITHUB_REF" != "refs/heads/main"', guard["run"])
+        self.assertNotIn("$" + "{{ inputs.ref }}", guard["run"])
+
+        names = [step.get("name") for step in steps]
+        for mutation, check in (
+            ("Apply only reviewed DEV inquiry migration before deployment", "DEV migration"),
+            ("Apply appsettings (allowlisted only)", "DEV appsettings"),
+            ("Deploy to Azure Web App (managed identity pull)", "DEV container deployment"),
+        ):
+            index = names.index(mutation)
+            self.assertEqual(names[index - 1], "Reverify protected main before " + check)
+            self.assertEqual(steps[index - 1]["env"]["EXPECTED_DEV_SHA"],
+                             "$" + "{{ steps.vars.outputs.deploy_sha }}")
+            self.assertIn('"$(git rev-parse refs/remotes/origin/main)" != "$EXPECTED_DEV_SHA"',
+                          steps[index - 1]["run"])
 
 
 if __name__ == "__main__":
