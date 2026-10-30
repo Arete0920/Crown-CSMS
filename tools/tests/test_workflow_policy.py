@@ -174,6 +174,43 @@ class WorkflowPolicyTests(unittest.TestCase):
         self.assertIn("python tools/verify_workflow_policy.py\n", step["run"])
         self.assertNotIn("changed_workflows", step["run"])
 
+    def test_dashboard_deployment_is_serialized_and_environment_gated(self):
+        import yaml
+        source = (ROOT / ".github/workflows/deploy-dashboard.yml").read_text(encoding="utf-8")
+        doc = yaml.safe_load(source)
+        self.assertEqual(doc["concurrency"]["group"], policy.DASHBOARD_DEPLOY_GROUP)
+        self.assertIs(doc["concurrency"]["cancel-in-progress"], False)
+        self.assertEqual(doc["jobs"]["build-and-deploy"]["environment"], "production")
+        self.assertEqual(doc["jobs"]["dev-certification-preview"]["environment"], "dev")
+        errors, _, _ = policy.check_file(ROOT / ".github/workflows/deploy-dashboard.yml")
+        self.assertFalse(errors, errors)
+
+    def test_dashboard_deployment_negative_authority_proofs(self):
+        source = (ROOT / ".github/workflows/deploy-dashboard.yml").read_text(encoding="utf-8")
+        mutations = (
+            ("cancellation",
+             source.replace("  cancel-in-progress: false", "  cancel-in-progress: true", 1),
+             "must not cancel an active release"),
+            ("mutex drift",
+             source.replace(policy.DASHBOARD_DEPLOY_GROUP, "uncontrolled-dashboard-release", 1),
+             "must use the controlled deployment mutex"),
+            ("production job without environment",
+             source.replace("    environment: production\n", "", 1),
+             "build-and-deploy must declare environment: production"),
+            ("preview job without dev environment",
+             source.replace("    environment: dev\n", "", 1),
+             "dev-certification-preview must declare environment: dev"),
+        )
+        for name, mutated, expected_error in mutations:
+            with self.subTest(name=name), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                path = root / ".github/workflows/deploy-dashboard.yml"
+                path.parent.mkdir(parents=True)
+                path.write_text(mutated, encoding="utf-8")
+                with patch.object(policy, "ROOT", root):
+                    errors, _, _ = policy.check_file(path)
+                self.assertIn(expected_error, "\n".join(errors))
+
     def test_schema_job_serialization_is_preserved(self):
         import yaml
         workflow = yaml.safe_load((ROOT / ".github/workflows/schema-migration-stage.yml").read_text())
