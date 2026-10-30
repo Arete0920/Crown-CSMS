@@ -1,3 +1,4 @@
+from django.db import transaction
 from django.db.models import Q, Sum
 from django.utils import timezone
 from drf_spectacular.types import OpenApiTypes
@@ -147,9 +148,31 @@ def enrollments(request):
     ser = AftercareEnrollmentSerializer(data=request.data)
     ser.is_valid(raise_exception=True)
     student_id = ser.validated_data["student_fk_id"]
-    if not _canonical_student_exists(school_id=school_id, student_id=student_id):
-        return _bad_request("Student is not active in this school.")
-    enrollment = ser.save(school_fk_id=school_id)
+    with transaction.atomic():
+        # Serialize same-child enrollment creation to prevent duplicate schedules
+        # from triggering duplicate care attendance or recurring charges.
+        student = Student.objects.select_for_update().filter(
+            pk=student_id, school_id=school_id, is_active=True,
+        ).first()
+        if student is None:
+            return _bad_request("Student is not active in this school.")
+
+        new_start = ser.validated_data["start_date"]
+        new_end = ser.validated_data.get("end_date")
+        new_days = set(ser.validated_data.get("days_of_week") or [])
+        session = ser.validated_data.get("care_session", "PM")
+        existing = AftercareEnrollment.objects.filter(
+            school_fk_id=school_id, student_fk=student,
+            care_session=session, is_active=True,
+        )
+        for row in existing:
+            date_overlap = (
+                (new_end is None or row.start_date <= new_end)
+                and (row.end_date is None or row.end_date >= new_start)
+            )
+            if date_overlap and new_days.intersection(row.days_of_week or []):
+                return _bad_request("Overlapping active enrollment for this care session.")
+        enrollment = ser.save(school_fk_id=school_id, student_fk=student)
     return Response(AftercareEnrollmentSerializer(enrollment).data, status=status.HTTP_201_CREATED)
 
 
