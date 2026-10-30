@@ -67,11 +67,12 @@ class DevDeployExactMainTests(unittest.TestCase):
         self.workflow = WORKFLOW.read_text(encoding="utf-8")
         self.script = _step_script(self.workflow)
 
-    def _run_guard(self, target: str, event: str, requested: str = "") -> subprocess.CompletedProcess:
+    def _run_guard(self, target: str, event: str, requested: str = "",
+                   ref: str = "refs/heads/main") -> subprocess.CompletedProcess:
         _git("checkout", "--detach", "-q", target, cwd=self.checkout)
         with tempfile.TemporaryDirectory() as output:
-            env = dict(os.environ, GITHUB_EVENT_NAME=event, REQUESTED_REF=requested,
-                       GITHUB_OUTPUT=str(Path(output) / "output"),
+            env = dict(os.environ, GITHUB_EVENT_NAME=event, GITHUB_REF=ref,
+                       REQUESTED_REF=requested, GITHUB_OUTPUT=str(Path(output) / "output"),
                        GITHUB_ENV=str(Path(output) / "env"))
             return subprocess.run(["bash", "-euo", "pipefail", "-c", self.script],
                                   cwd=self.checkout, env=env,
@@ -80,19 +81,27 @@ class DevDeployExactMainTests(unittest.TestCase):
     def test_manual_old_sha_is_rejected_even_if_ancestor_of_main(self):
         result = self._run_guard(self.old, "workflow_dispatch", self.old)
         self.assertNotEqual(result.returncode, 0)
-        self.assertIn("exact protected main", result.stderr)
+        self.assertIn("never an ancestor", result.stderr)
 
     def test_manual_current_main_is_accepted(self):
         result = self._run_guard(self.main, "workflow_dispatch", self.main)
         self.assertEqual(result.returncode, 0, result.stderr)
 
-    def test_default_main_manual_dispatch_is_accepted(self):
+    def test_missing_exact_commit_input_is_rejected(self):
         result = self._run_guard(self.main, "workflow_dispatch")
-        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("does not match approved exact SHA", result.stderr)
 
-    def test_existing_ancestor_rc_push_path_is_unchanged(self):
-        result = self._run_guard(self.old, "push", self.old)
-        self.assertEqual(result.returncode, 0, result.stderr)
+    def test_ancestor_rc_push_is_rejected(self):
+        result = self._run_guard(self.old, "push", self.old,
+                                 ref="refs/heads/rc/stale")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("protected-main manual dispatch", result.stderr)
+
+    def test_historic_main_dispatch_wrong_ref_is_rejected(self):
+        result = self._run_guard(self.main, "workflow_dispatch", self.main,
+                                 ref="refs/heads/rc/stale")
+        self.assertNotEqual(result.returncode, 0)
 
     def test_source_check_runs_before_azure_login(self):
         self.assertLess(self.workflow.index("- name: Verify accepted DEV source"),
