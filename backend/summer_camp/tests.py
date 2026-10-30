@@ -7,7 +7,7 @@ from django.contrib.auth import get_user_model
 from django.utils import timezone
 from rest_framework.test import APIClient
 
-from core.models import School
+from core.models import CrownPermission, RolePermission, School, UserRole
 from households.models import Household, Student
 
 from .models import (
@@ -39,6 +39,10 @@ def staff_user(school):
     )
     user.set_unusable_password()
     user.save(update_fields=["password"])
+    UserRole.objects.create(user=user, school=school, role_code="SUPPORT")
+    for code in ("summer_camp.view", "summer_camp.edit"):
+        permission, _ = CrownPermission.objects.get_or_create(code=code)
+        RolePermission.objects.get_or_create(role_code="SUPPORT", permission=permission)
     return user
 
 
