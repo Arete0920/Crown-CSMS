@@ -196,11 +196,6 @@ def test_api_contract_core_endpoints(staff_user, school, session, household_stud
             "student_id": str(student.id),
             "household_id": str(household.id),
             "registration_source": "EXISTING",
-            "form_status": "MISSING",
-            "payment_status": "DEPOSIT_DUE",
-            "health_status": "NEEDS_REVIEW",
-            "pickup_status": "MISSING",
-            "balance_due_cents": 10000,
         },
         format="json",
     )

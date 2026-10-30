@@ -96,3 +96,45 @@ def test_api_rejects_foreign_child_without_creating_enrollment(monkeypatch):
     assert result.status_code == 400
     assert result.data == {"detail": "Camp registration denied: camper, session or capacity is invalid."}
     assert not SummerCampEnrollment.objects.filter(school=school).exists()
+
+
+
+def test_registration_cannot_self_attest_clearance_or_waive_fees():
+    school = School.objects.create(name="Camp Intake Clearance Authority")
+    child = _student(school, "Intake")
+    session = _session(school)
+    session.price_cents = 12000
+    session.deposit_cents = 2000
+    session.save(update_fields=["price_cents", "deposit_cents"])
+
+    enrollment = enroll_camper(school.id, child.id, session.id, {
+        "form_status": "COMPLETE",
+        "health_status": "APPROVED",
+        "pickup_status": "VERIFIED",
+        "payment_status": "PAID_IN_FULL",
+        "payment_required_before_attendance": False,
+        "balance_due_cents": 0,
+    })
+    enrollment.refresh_from_db()
+    assert enrollment.form_status == "MISSING"
+    assert enrollment.health_status == "NEEDS_REVIEW"
+    assert enrollment.pickup_status == "MISSING"
+    assert enrollment.payment_status == "DEPOSIT_DUE"
+    assert enrollment.balance_due_cents == 12000
+    assert enrollment.payment_required_before_attendance is True
+    assert enrollment.readiness_status == "BLOCKED"
+
+
+def test_registration_api_rejects_clearance_claims():
+    school = School.objects.create(name="Camp API Intake Truth")
+    child = _student(school, "Claim")
+    session = _session(school)
+    from summer_camp.api import SummerCampEnrollmentCreateSerializer
+
+    request = SummerCampEnrollmentCreateSerializer(data={
+        "session_id": session.id, "student_id": str(child.id),
+        "health_status": "APPROVED", "payment_status": "PAID_IN_FULL",
+    })
+    assert not request.is_valid()
+    assert "detail" in request.errors
+    assert SummerCampEnrollment.objects.filter(school=school).count() == 0

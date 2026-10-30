@@ -159,7 +159,7 @@ def test_form_and_staff_ratio_status(monkeypatch):
     )
     monkeypatch.setattr(services, "ensure_config", lambda school_id: SimpleNamespace(default_staff_ratio=5))
     staff_manager = MagicMock()
-    staff_manager.filter.return_value.count.return_value = 2
+    staff_manager.filter.return_value.values.return_value.distinct.return_value.count.return_value = 2
     monkeypatch.setattr(services.SummerCampStaffAssignment, "objects", staff_manager)
     result = services.compute_staff_ratio_status("school-1", "session-1")
     assert result["required_staff"] == 3
@@ -173,6 +173,7 @@ def test_readiness_blockers_and_ready_state(monkeypatch):
         status="WAITLISTED",
         balance_due_cents=100,
         payment_required_before_attendance=True,
+        payment_status="DEPOSIT_DUE",
         health_status="NEEDS_REVIEW",
         readiness_status="",
         readiness_blockers=[],
@@ -199,6 +200,7 @@ def test_readiness_blockers_and_ready_state(monkeypatch):
 
     enrollment.status = "REGISTERED"
     enrollment.balance_due_cents = 0
+    enrollment.payment_status = "PAID_IN_FULL"
     enrollment.health_status = "APPROVED"
     monkeypatch.setattr(services, "compute_form_status", lambda school_id, enrollment_id: "COMPLETE")
     pickup_manager.filter.return_value.exists.return_value = True

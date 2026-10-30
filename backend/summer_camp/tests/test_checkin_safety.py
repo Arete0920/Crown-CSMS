@@ -163,3 +163,32 @@ def test_api_incomplete_camper_returns_400_and_never_creates_attendance(camp_cas
         "detail": "Camp check-in denied: session, registration, or clearance is invalid.",
     }
     assert not SummerCampAttendance.objects.filter(school=school, session=session, student=student).exists()
+
+
+
+def test_inactive_or_foreign_staff_does_not_satisfy_camp_ratio(camp_case):
+    school, foreign_school, _student, session, _enrollment, _when = camp_case
+    assignment = SummerCampStaffAssignment.objects.get(school=school, session=session)
+    worker = assignment.staff_user
+    worker.is_active = False
+    worker.save(update_fields=["is_active"])
+    with pytest.raises(ValueError, match="not cleared"):
+        _admit(camp_case)
+    _assert_no_attendance(camp_case)
+
+    worker.is_active = True
+    worker.school = foreign_school
+    worker.save(update_fields=["is_active", "school"])
+    with pytest.raises(ValueError, match="not cleared"):
+        _admit(camp_case)
+    _assert_no_attendance(camp_case)
+
+
+def test_payment_pending_even_with_zero_balance_cannot_self_clear(camp_case):
+    enrollment = camp_case[4]
+    enrollment.payment_required_before_attendance = True
+    enrollment.payment_status = "DEPOSIT_DUE"
+    enrollment.save(update_fields=["payment_required_before_attendance", "payment_status"])
+    with pytest.raises(ValueError, match="not cleared"):
+        _admit(camp_case)
+    _assert_no_attendance(camp_case)

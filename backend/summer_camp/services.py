@@ -108,10 +108,26 @@ def enroll_camper(school_id, student_id, session_id, payload: dict):
     if student is None or student.household.school_id != school_id:
         raise ValueError("Camper is not an active member of the requested school.")
 
-    payload = dict(payload)
-    if payload.get("household_id") is not None and str(payload["household_id"]) != str(student.household_id):
+    incoming = dict(payload)
+    if incoming.get("household_id") is not None and str(incoming["household_id"]) != str(student.household_id):
         raise ValueError("Registration household does not match the camper.")
-    payload["household_id"] = student.household_id
+    # Registration is not clearance: never accept client-supplied paid,
+    # health-approved, form-complete or fee-waived assertions as evidence.
+    price_cents = int(getattr(session, "price_cents", 0) or 0)
+    deposit_cents = int(getattr(session, "deposit_cents", 0) or 0)
+    if price_cents < 0 or deposit_cents < 0:
+        raise ValueError("Invalid camp session price.")
+    payable_cents = max(price_cents, deposit_cents)
+    payload = {
+        "household_id": student.household_id,
+        "registration_source": incoming.get("registration_source") or "EXISTING",
+        "form_status": "MISSING",
+        "health_status": "NEEDS_REVIEW",
+        "pickup_status": "MISSING",
+        "payment_status": "DEPOSIT_DUE" if payable_cents else "NOT_BILLED",
+        "payment_required_before_attendance": payable_cents > 0,
+        "balance_due_cents": payable_cents,
+    }
 
     if SummerCampEnrollment.objects.filter(
         school_id=school_id, student_id=student.id, session_id=session.id,
@@ -301,7 +317,12 @@ def compute_staff_ratio_status(school_id, session_id):
         status="REGISTERED",
     ).count()
     required_staff = (registered + max(config.default_staff_ratio - 1, 0)) // max(config.default_staff_ratio, 1)
-    assigned_staff = SummerCampStaffAssignment.objects.filter(school_id=school_id, session_id=session_id).count()
+    assigned_staff = (
+        SummerCampStaffAssignment.objects.filter(
+            school_id=school_id, session_id=session_id,
+            staff_user__school_id=school_id, staff_user__is_active=True,
+        ).values("staff_user_id").distinct().count()
+    )
     return {
         "session_id": str(session.id),
         "registered": registered,
@@ -358,7 +379,10 @@ def compute_camper_readiness(school_id, enrollment_id):
     elif enrollment.status != "REGISTERED":
         blockers.append("BLOCKED")
 
-    if enrollment.balance_due_cents > 0 and enrollment.payment_required_before_attendance:
+    if enrollment.payment_required_before_attendance and (
+        enrollment.balance_due_cents > 0
+        or getattr(enrollment, "payment_status", None) not in ("DEPOSIT_PAID", "PAID_IN_FULL")
+    ):
         blockers.append("MISSING_PAYMENT")
 
     if compute_form_status(school_id, enrollment_id) != "COMPLETE":

@@ -59,12 +59,19 @@ class SummerCampEnrollmentCreateSerializer(serializers.Serializer):
     student_id = serializers.UUIDField(required=False, allow_null=True)
     household_id = serializers.UUIDField(required=False, allow_null=True)
     registration_source = serializers.CharField(required=False, allow_blank=True)
-    form_status = serializers.CharField(required=False, allow_blank=True)
-    payment_status = serializers.CharField(required=False, allow_blank=True)
-    health_status = serializers.CharField(required=False, allow_blank=True)
-    pickup_status = serializers.CharField(required=False, allow_blank=True)
-    payment_required_before_attendance = serializers.BooleanField(required=False)
-    balance_due_cents = serializers.IntegerField(required=False)
+    def validate(self, attrs):
+        # Client-controlled clearance would allow a registration to claim that
+        # forms, health review and payment were already approved.
+        forbidden = {
+            "form_status", "payment_status", "health_status", "pickup_status",
+            "payment_required_before_attendance", "balance_due_cents",
+            "readiness_status", "readiness_blockers", "status",
+        }
+        if forbidden.intersection(self.initial_data):
+            raise serializers.ValidationError(
+                {"detail": "Camp clearance and payment status cannot be set during registration."}
+            )
+        return attrs
 
 
 class SummerCampIncidentCreateSerializer(serializers.Serializer):
@@ -256,12 +263,8 @@ def enrollments_view(request):
             payload={
                 "household_id": payload.get("household_id"),
                 "registration_source": payload.get("registration_source", "EXISTING"),
-                "form_status": payload.get("form_status", "MISSING"),
-                "payment_status": payload.get("payment_status", "DEPOSIT_DUE"),
-                "health_status": payload.get("health_status", "NEEDS_REVIEW"),
-                "pickup_status": payload.get("pickup_status", "MISSING"),
-                "payment_required_before_attendance": payload.get("payment_required_before_attendance", True),
-                "balance_due_cents": payload.get("balance_due_cents", 0),
+                # Intake only forwards registration identity and source.
+                # Clearance/fees are derived and reviewed by trusted services.
             },
         )
     except ValueError:
