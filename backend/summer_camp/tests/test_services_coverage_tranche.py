@@ -61,7 +61,20 @@ def test_capacity_and_waitlist_position(monkeypatch):
 
 
 def test_enroll_camper_registers_and_waitlists(monkeypatch):
+    session = SimpleNamespace(id="session-1", waitlist_capacity=10)
+    session_manager = MagicMock()
+    session_manager.select_for_update.return_value.filter.return_value.first.return_value = session
+    monkeypatch.setattr(services.SummerCampSession, "objects", session_manager)
+    student = SimpleNamespace(
+        id="student-1", household_id="family-1",
+        household=SimpleNamespace(school_id="school-1"),
+    )
+    student_manager = MagicMock()
+    student_manager.select_related.return_value.filter.return_value.first.return_value = student
+    monkeypatch.setattr(services.Student, "objects", student_manager)
+
     manager = MagicMock()
+    manager.filter.return_value.exists.return_value = False
     enrollment = SimpleNamespace(id="enrollment-1")
     manager.create.return_value = enrollment
     monkeypatch.setattr(services.SummerCampEnrollment, "objects", manager)
