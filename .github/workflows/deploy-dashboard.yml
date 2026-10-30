@@ -52,6 +52,10 @@ on:
         description: "DEV preview deployment and read-only checks only; no CORS changes, browser writes or fixture creation"
         type: boolean
         default: true
+      dev_aid_wizard_preview:
+        description: "Explicitly expose only the draft aid setup UI in isolated DEV; no production or certification claim"
+        type: boolean
+        default: false
       dev_source_sha:
         description: "Full accepted source SHA already deployed to DEV (preview only)"
         type: string
@@ -433,6 +437,7 @@ jobs:
           VITE_DEPLOY_TAG: dev-certification-preview
           VITE_SANDBOX_MODE: '1'
           VITE_DEMO_MODE: sandbox
+          VITE_DEV_AID_WIZARD_PREVIEW: ${{ inputs.dev_aid_wizard_preview && '1' || '0' }}
           VITE_LAUNCH_UI_TAKEOVER: '1'
         run: |
           set -euo pipefail
