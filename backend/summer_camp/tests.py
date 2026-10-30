@@ -220,7 +220,8 @@ def test_api_contract_core_endpoints(staff_user, school, session, household_stud
         {"session_id": str(session.id), "student_id": str(student.id), "pickup_verified": True},
         format="json",
     )
-    assert checkout_resp.status_code == 200
+    # A caller-supplied flag without a linked authorized pickup is insufficient.
+    assert checkout_resp.status_code == 400
 
     incident_resp = client.post(
         "/api/v1/summer-camp/incidents/",
