@@ -197,11 +197,22 @@ def checkout_student(
 @transaction.atomic
 def handoff_student_to_school(school_id, student_id, receiving_user, when: datetime | None = None) -> AftercareAttendance:
     """Close a morning session only when a current-school staff recipient attests receipt."""
+    from core.models import School, Staff
+    from core.permissions import user_has_permission
+
     when = when or timezone.now()
     if not getattr(receiving_user, "is_authenticated", False) or not getattr(receiving_user, "is_active", False):
         raise ValueError("An active receiving staff member is required.")
-    if not (getattr(receiving_user, "school_id", None) == school_id and getattr(receiving_user, "is_staff", False)):
+    if getattr(receiving_user, "school_id", None) != school_id:
         raise ValueError("Receiving staff member must belong to this school.")
+    staff_id = getattr(receiving_user, "staff_id", None)
+    if not staff_id or not Staff.objects.filter(
+        pk=staff_id, school_id=school_id, status="ACTIVE",
+    ).exists():
+        raise ValueError("An active school staff assignment is required for handoff.")
+    school = School.objects.filter(pk=school_id, is_active=True).first()
+    if school is None or not user_has_permission(receiving_user, "extended_care.edit", school=school):
+        raise ValueError("Receiving staff member lacks school-scoped handoff authority.")
     student = _canonical_student(school_id=school_id, student_id=student_id)
     attendance = AftercareAttendance.objects.select_for_update().filter(
         school_fk_id=school_id, student_fk=student, date=when.date(), care_session="AM",
