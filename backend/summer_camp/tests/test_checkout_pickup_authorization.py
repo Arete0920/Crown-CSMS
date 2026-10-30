@@ -60,7 +60,7 @@ def _scenario(suffix):
         school=school, enrollment=enrollment, name=f"Authorized {suffix}",
     )
     verifier = UserAccount.objects.create_user(
-        username=f"camp-pickup-{suffix}", password="synthetic",
+        username=f"camp-pickup-{suffix}", email=f"camp-pickup-{suffix.lower()}@example.test", password="synthetic",
         school=school, is_staff=True,
     )
     UserRole.objects.create(user=verifier, school=school, role_code="TEACHER")
@@ -209,7 +209,7 @@ def test_checkout_api_returns_bounded_client_error_without_checkout_write(monkey
 def test_release_requires_identified_active_school_scoped_staff_grant():
     case = _scenario("Verifier")
     staff_only = UserAccount.objects.create_user(
-        username="camp-staff-without-grant", school=case.school,
+        username="camp-staff-without-grant", email="camp-staff-no-grant@example.test", school=case.school,
         password="synthetic", is_staff=True,
     )
     foreign = _scenario("UnrelatedVerifier").verifier
