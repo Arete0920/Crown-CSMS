@@ -193,15 +193,38 @@ def mark_health_review_complete(school_id, enrollment_id, reviewer_id):
 
 @transaction.atomic
 def checkin_camper(school_id, student_id, session_id, when=None, note=""):
+    """Admit only a currently cleared camper into an active school-owned session."""
     when = when or timezone.now()
-    attendance, _ = SummerCampAttendance.objects.get_or_create(
-        school_id=school_id,
-        student_id=student_id,
-        session_id=session_id,
-        date=when.date(),
-        defaults={"checkin_time": when, "notes": note},
+    session = SummerCampSession.objects.select_for_update().filter(
+        id=session_id, school_id=school_id, status="PUBLISHED",
+        start_date__lte=when.date(), end_date__gte=when.date(),
+    ).first()
+    if session is None:
+        raise ValueError("Camp session is not available for check-in.")
+
+    enrollment = SummerCampEnrollment.objects.select_for_update().filter(
+        school_id=school_id, session_id=session.id, student_id=student_id,
+        student__school_id=school_id, student__is_active=True,
+        status="REGISTERED",
+    ).first()
+    if enrollment is None:
+        raise ValueError("Camper does not have an active registration for this session.")
+
+    # Recompute rather than trusting a readiness value cached at enrollment.
+    readiness = compute_camper_readiness(school_id, enrollment.id)
+    if readiness["status"] != "READY":
+        raise ValueError("Camper is not cleared for check-in.")
+
+    if SummerCampAttendance.objects.filter(
+        school_id=school_id, session_id=session.id,
+        student_id=student_id, date=when.date(),
+    ).exists():
+        raise ValueError("Camper has already been checked in for this session and date.")
+
+    return SummerCampAttendance.objects.create(
+        school_id=school_id, student_id=student_id, session_id=session.id,
+        date=when.date(), checkin_time=when, notes=note,
     )
-    return attendance
 
 
 @transaction.atomic
@@ -302,6 +325,8 @@ def compute_camper_readiness(school_id, enrollment_id):
 
     if enrollment.status == "WAITLISTED":
         blockers.append("WAITLISTED")
+    elif enrollment.status != "REGISTERED":
+        blockers.append("BLOCKED")
 
     if enrollment.balance_due_cents > 0 and enrollment.payment_required_before_attendance:
         blockers.append("MISSING_PAYMENT")
