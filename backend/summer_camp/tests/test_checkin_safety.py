@@ -137,3 +137,29 @@ def test_removed_pickup_or_staff_clearance_denied(camp_case):
     with pytest.raises(ValueError, match="not cleared"):
         _admit(camp_case)
     _assert_no_attendance(camp_case)
+
+
+def test_api_incomplete_camper_returns_400_and_never_creates_attendance(camp_case, monkeypatch):
+    from types import SimpleNamespace
+    from uuid import uuid4
+
+    from rest_framework.test import APIRequestFactory, force_authenticate
+    from summer_camp import api
+
+    school, _other, student, session, enrollment, _when = camp_case
+    enrollment.form_status = "MISSING"
+    enrollment.save(update_fields=["form_status"])
+    monkeypatch.setattr(api, "school_id_from_request", lambda request, required=True: school.id)
+    monkeypatch.setattr(api, "_require_role", lambda request, roles: True)
+    request = APIRequestFactory().post(
+        "/api/v1/summer-camp/attendance/checkin/",
+        {"session_id": session.id, "student_id": str(student.id)},
+        format="json",
+    )
+    force_authenticate(request, user=SimpleNamespace(is_authenticated=True, is_active=True, pk=uuid4()))
+    response = api.attendance_checkin_view(request)
+    assert response.status_code == 400
+    assert response.data == {
+        "detail": "Camp check-in denied: session, registration, or clearance is invalid.",
+    }
+    assert not SummerCampAttendance.objects.filter(school=school, session=session, student=student).exists()
