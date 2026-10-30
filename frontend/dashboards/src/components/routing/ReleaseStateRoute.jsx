@@ -5,13 +5,22 @@ import {
   isProductionReady,
 } from "../../config/releaseState";
 
+import { canExposeDevAidWizard } from "./devAidPreviewAccess.js";
+
 const WIZARD_CERTIFICATION_ACCESS_ENABLED = import.meta.env.VITE_WIZARD_CERTIFICATION === "1";
 
 export default function ReleaseStateRoute({ route, children, fallbackPath }) {
   const certificationAccess =
     WIZARD_CERTIFICATION_ACCESS_ENABLED && route?.moduleType === "wizard";
 
-  if (isProductionReady(route) || certificationAccess) {
+  const isolatedAidPreviewAccess = canExposeDevAidWizard(route, {
+    flag: import.meta.env.VITE_DEV_AID_WIZARD_PREVIEW,
+    sandboxMode: import.meta.env.VITE_SANDBOX_MODE,
+    demoMode: import.meta.env.VITE_DEMO_MODE,
+    origin: globalThis.location?.origin,
+  });
+
+  if (isProductionReady(route) || certificationAccess || isolatedAidPreviewAccess) {
     return children;
   }
 
