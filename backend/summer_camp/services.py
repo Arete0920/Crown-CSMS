@@ -213,19 +213,49 @@ def checkout_camper(
     pickup_verified=False,
     when=None,
 ):
+    """Record checkout only after verified pickup by an active contact for this camper."""
+    # A caller-supplied assertion and contact ID are not sufficient authority.
+    if pickup_verified is not True:
+        raise ValueError("Pickup identity must be verified before checkout.")
+    if type(pickup_contact_id) is not int or pickup_contact_id <= 0:
+        raise ValueError("An active authorized pickup contact is required.")
+
     when = when or timezone.now()
-    attendance = SummerCampAttendance.objects.get(
-        school_id=school_id,
-        student_id=student_id,
-        session_id=session_id,
-        date=when.date(),
+    attendance = (
+        SummerCampAttendance.objects.select_for_update()
+        .filter(
+            school_id=school_id,
+            student_id=student_id,
+            session_id=session_id,
+            date=when.date(),
+        )
+        .first()
     )
+    if attendance is None:
+        raise ValueError("A matching camp check-in is required before checkout.")
+    if attendance.checkout_time is not None:
+        raise ValueError("Camper has already been checked out.")
+    if when < attendance.checkin_time:
+        raise ValueError("Checkout cannot precede check-in.")
+
+    # SummerCampPickupContact belongs to a specific enrollment, not directly to
+    # the student. Require the entire same-school/session/student association.
+    pickup_contact = SummerCampPickupContact.objects.filter(
+        pk=pickup_contact_id,
+        is_active=True,
+        school_id=school_id,
+        enrollment__school_id=school_id,
+        enrollment__session_id=session_id,
+        enrollment__student_id=student_id,
+    ).first()
+    if pickup_contact is None:
+        raise ValueError("Pickup contact is not authorized for this camper and session.")
+
     attendance.checkout_time = when
-    attendance.pickup_contact_id = pickup_contact_id
-    attendance.pickup_verified = bool(pickup_verified)
+    attendance.pickup_contact = pickup_contact
+    attendance.pickup_verified = True
     attendance.save(update_fields=["checkout_time", "pickup_contact", "pickup_verified"])
     return attendance
-
 
 @transaction.atomic
 def assign_staff(school_id, session_id, staff_user_id, role, assigned_date=None):
