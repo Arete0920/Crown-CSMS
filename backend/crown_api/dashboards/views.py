@@ -296,6 +296,15 @@ class DashboardSummaryView(APIView):
             if not getattr(user, 'is_staff', False) and not getattr(user, 'is_superuser', False):
                 return Response({'detail': 'Forbidden.'}, status=status.HTTP_403_FORBIDDEN)
 
+        if key == 'financial-aid':
+            # A persisted snapshot can contain school financial-aid information.
+            # Dashboard route visibility, authentication, and tenant middleware
+            # do not replace the canonical school-scoped aid-reader grant.
+            school = _resolve_school_strict(request, allow_dev_open_fallback=False)
+            if not user_has_permission(user, 'financial_aid.view', school=school):
+                return Response({'detail': 'Forbidden.'}, status=status.HTTP_403_FORBIDDEN)
+            school_id = str(school.id)
+
         if key == 'portrait-service':
             school = _resolve_school_strict(request, allow_dev_open_fallback=False)
             if not user_has_permission(user, 'spiritual_life.view', school=school):
