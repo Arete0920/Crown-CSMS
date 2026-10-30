@@ -179,3 +179,61 @@ def test_completed_pm_session_cannot_be_reopened_by_duplicate_checkin():
     attendance = AftercareAttendance.objects.get(school_fk=school, student_fk=child)
     assert attendance.notes == ""
     assert attendance.checkout_time == at(17, 30)
+
+
+def test_api_prevents_overlapping_am_pm_enrollment_rows_and_duplicate_billing():
+    from rest_framework.test import APIClient
+
+    school, _household, child, receiver = setup_family()
+    client = APIClient()
+    client.force_authenticate(user=receiver)
+    client.credentials(HTTP_X_SCHOOL_ID=str(school.id))
+    baseline = AftercareEnrollment.objects.filter(
+        school_fk=school, student_fk=child, is_active=True,
+    ).count()
+    assert baseline == 2
+    for session in ("AM", "PM"):
+        denied = client.post(
+            "/api/v1/aftercare/enrollments/",
+            {
+                "student_id": str(child.id),
+                "care_session": session,
+                "start_date": "2025-09-01",
+                "days_of_week": ["THU"],
+                "billing_model": "FLAT_MONTHLY",
+                "monthly_rate": "125.00",
+            },
+            format="json",
+        )
+        assert denied.status_code == 400, denied.data
+        assert "Overlapping active enrollment" in str(denied.data)
+    assert AftercareEnrollment.objects.filter(school_fk=school, student_fk=child).count() == baseline
+
+
+def test_api_accepts_separate_future_session_after_prior_enrollment_ends():
+    from rest_framework.test import APIClient
+
+    school, _household, child, receiver = setup_family()
+    AftercareEnrollment.objects.filter(
+        school_fk=school, student_fk=child, care_session="AM",
+    ).update(end_date=date(2025, 9, 5))
+    client = APIClient()
+    client.force_authenticate(user=receiver)
+    client.credentials(HTTP_X_SCHOOL_ID=str(school.id))
+    response = client.post(
+        "/api/v1/aftercare/enrollments/",
+        {
+            "student_id": str(child.id),
+            "care_session": "AM",
+            "start_date": "2025-09-08",
+            "days_of_week": ["MON", "WED"],
+            "billing_model": "FLAT_MONTHLY",
+            "monthly_rate": "90.00",
+        },
+        format="json",
+    )
+    assert response.status_code == 201, response.data
+    assert response.data["care_session"] == "AM"
+    assert AftercareEnrollment.objects.filter(
+        school_fk=school, student_fk=child, care_session="AM",
+    ).count() == 2
