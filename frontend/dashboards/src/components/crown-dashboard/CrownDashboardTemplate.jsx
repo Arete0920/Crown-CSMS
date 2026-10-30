@@ -25,7 +25,7 @@ function getDefaultLastSyncLabel(dataState) {
   const state = String(dataState || '').toLowerCase();
   if (state === 'live') return 'Last synced just now';
   if (state === 'loading') return 'Sync in progress';
-  if (state === 'unavailable') return 'Last sync unavailable';
+  if (state === 'unavailable' || state === 'error') return 'Last sync unavailable';
   return 'Using configured fallback data';
 }
 
@@ -58,7 +58,10 @@ function getDashboardDataState(source, payload, error, loading) {
   const servedFrom = String(payload?.meta?.served_from || '').toLowerCase();
 
   if (loading) return 'loading';
+  // Failed refreshes must take precedence over any previously cached payload.
+  if (source === 'none' && error) return 'error';
   if (servedFrom === 'sample') return 'sample';
+  if (servedFrom === 'fallback' || servedFrom === 'stale_snapshot') return 'fallback';
   if (source === 'live') return 'live';
   if (source === 'fallback') return 'fallback';
   if (source === 'none' && error) return 'error';
@@ -89,6 +92,8 @@ function getDashboardSourceLabel(dataState, endpoint, payload) {
   }
 
   if (dataState === 'fallback') {
+    if (servedFrom === 'stale_snapshot') return `Stale dashboard snapshot (${endpoint})`;
+    if (servedFrom === 'fallback') return `Dashboard summary service fallback (${endpoint})`;
     return `Frontend fallback dashboard data (${endpoint})`;
   }
 
@@ -156,9 +161,9 @@ function buildLiveDashboardConfig(config, payload, endpointConfig, loading, erro
   const fallbackMetrics = Array.isArray(config.metrics) ? config.metrics : [];
   const payloadMetrics = Array.isArray(payload?.metrics) ? payload.metrics : [];
   // A live response with no metrics must not turn configured example figures into live records.
-  const metricInputs = dataState === 'live'
-    ? payloadMetrics
-    : (payloadMetrics.length > 0 ? payloadMetrics : fallbackMetrics);
+  const metricInputs = (dataState === 'error' || dataState === 'unavailable')
+    ? [] // Never re-display cached financial/operational values as current after an error.
+    : (dataState === 'live' ? payloadMetrics : (payloadMetrics.length > 0 ? payloadMetrics : fallbackMetrics));
   const metrics = metricInputs.map((item, index) => ({
     label: item.label,
     value: item.value,
