@@ -247,21 +247,27 @@ def enrollments_view(request):
     serializer.is_valid(raise_exception=True)
     payload = serializer.validated_data
 
-    enrollment = enroll_camper(
-        school_id=school_id,
-        student_id=payload.get("student_id"),
-        session_id=payload["session_id"],
-        payload={
-            "household_id": payload.get("household_id"),
-            "registration_source": payload.get("registration_source", "EXISTING"),
-            "form_status": payload.get("form_status", "MISSING"),
-            "payment_status": payload.get("payment_status", "DEPOSIT_DUE"),
-            "health_status": payload.get("health_status", "NEEDS_REVIEW"),
-            "pickup_status": payload.get("pickup_status", "MISSING"),
-            "payment_required_before_attendance": payload.get("payment_required_before_attendance", True),
-            "balance_due_cents": payload.get("balance_due_cents", 0),
-        },
-    )
+    try:
+        enrollment = enroll_camper(
+            school_id=school_id,
+            student_id=payload.get("student_id"),
+            session_id=payload["session_id"],
+            payload={
+                "household_id": payload.get("household_id"),
+                "registration_source": payload.get("registration_source", "EXISTING"),
+                "form_status": payload.get("form_status", "MISSING"),
+                "payment_status": payload.get("payment_status", "DEPOSIT_DUE"),
+                "health_status": payload.get("health_status", "NEEDS_REVIEW"),
+                "pickup_status": payload.get("pickup_status", "MISSING"),
+                "payment_required_before_attendance": payload.get("payment_required_before_attendance", True),
+                "balance_due_cents": payload.get("balance_due_cents", 0),
+            },
+        )
+    except ValueError:
+        return Response(
+            {"detail": "Camp registration denied: camper, session or capacity is invalid."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
     return Response(SummerCampEnrollmentSerializer(enrollment).data, status=status.HTTP_201_CREATED)
 
 
