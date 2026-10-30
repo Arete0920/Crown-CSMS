@@ -343,6 +343,7 @@ def attendance_checkout_view(request):
             student_id=payload["student_id"],
             pickup_contact_id=payload.get("pickup_contact_id"),
             pickup_verified=payload.get("pickup_verified", False),
+            verified_by=request.user,
         )
     except ValueError:
         # Do not expose whether a pupil, enrollment or contact exists.
