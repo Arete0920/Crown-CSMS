@@ -212,13 +212,23 @@ def checkout_camper(
     pickup_contact_id=None,
     pickup_verified=False,
     when=None,
+    verified_by=None,
 ):
-    """Record checkout only after verified pickup by an active contact for this camper."""
-    # A caller-supplied assertion and contact ID are not sufficient authority.
+    """Release a camper only to an authorized contact with attributable staff approval."""
+    from core.models import School
+    from core.permissions import user_has_permission
+
     if pickup_verified is not True:
         raise ValueError("Pickup identity must be verified before checkout.")
     if type(pickup_contact_id) is not int or pickup_contact_id <= 0:
         raise ValueError("An active authorized pickup contact is required.")
+    if not verified_by or not getattr(verified_by, "is_authenticated", False):
+        raise ValueError("A school-authorized staff verifier is required.")
+    if not getattr(verified_by, "is_active", False) or getattr(verified_by, "school_id", None) != school_id:
+        raise ValueError("A school-authorized staff verifier is required.")
+    school = School.objects.filter(pk=school_id, is_active=True).first()
+    if school is None or not user_has_permission(verified_by, "summer_camp.edit", school=school):
+        raise ValueError("A school-authorized staff verifier is required.")
 
     when = when or timezone.now()
     attendance = (
@@ -254,7 +264,8 @@ def checkout_camper(
     attendance.checkout_time = when
     attendance.pickup_contact = pickup_contact
     attendance.pickup_verified = True
-    attendance.save(update_fields=["checkout_time", "pickup_contact", "pickup_verified"])
+    attendance.pickup_verified_by = verified_by
+    attendance.save(update_fields=["checkout_time", "pickup_contact", "pickup_verified", "pickup_verified_by"])
     return attendance
 
 @transaction.atomic
