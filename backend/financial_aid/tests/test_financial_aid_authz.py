@@ -321,3 +321,67 @@ class TestFinancialAidApiRoutePermissions:
 
         assert response.status_code == 404
         assert response.json()["code"] == "tenant_access_denied"
+
+
+class TestFinancialAidAwardListRationaleRedaction:
+    """The legacy award list must not bypass drilldown's sensitive-rationale grant."""
+
+    @pytest.mark.parametrize("path", [
+        "/api/v1/financial-aid/awards/",
+        "/api/financial-aid/awards/",
+    ])
+    def test_aid_view_without_rationale_grant_returns_null(self, path):
+        school = _school("Award Rationale Read")
+        user = _user("award-reader")
+        _assign_role(user, school, "AID_AWARD_READ_ONLY_TEST")
+        _grant("AID_AWARD_READ_ONLY_TEST", "financial_aid.view")
+        _seed_fa_data(school.id)
+
+        response = _client_for(user).get(path, HTTP_X_SCHOOL_ID=str(school.id))
+        assert response.status_code == 200
+        payload = response.json()
+        assert payload["ok"] is True
+        assert len(payload["data"]) == 1
+        assert "rationale" in payload["data"][0]
+        assert payload["data"][0]["rationale"] is None
+        assert b"Demonstrable need" not in response.content
+
+    @pytest.mark.parametrize("path", [
+        "/api/v1/financial-aid/awards/",
+        "/api/financial-aid/awards/",
+    ])
+    def test_explicit_same_school_rationale_grant_preserves_value(self, path):
+        school = _school("Award Rationale Allowed")
+        user = _user("award-rationale-reader")
+        _assign_role(user, school, "AID_AWARD_RATIONALE_TEST")
+        _grant("AID_AWARD_RATIONALE_TEST", "financial_aid.view")
+        _grant("AID_AWARD_RATIONALE_TEST", "financial_aid.view_rationale")
+        _seed_fa_data(school.id)
+
+        response = _client_for(user).get(path, HTTP_X_SCHOOL_ID=str(school.id))
+        assert response.status_code == 200
+        payload = response.json()
+        assert payload["ok"] is True
+        assert payload["data"][0]["rationale"] == "Demonstrable need"
+
+    def test_grant_at_other_school_cannot_disclose_home_school_rationale(self):
+        home = _school("Award Rationale Home")
+        foreign = _school("Award Rationale Other")
+        user = _user("award-role-separation")
+        _assign_role(user, home, "AID_AWARD_HOME_VIEW_TEST")
+        UserRole.objects.create(
+            user=user, school=foreign, role_code="AID_AWARD_OTHER_RATIONALE_TEST"
+        )
+        _grant("AID_AWARD_HOME_VIEW_TEST", "financial_aid.view")
+        _grant("AID_AWARD_OTHER_RATIONALE_TEST", "financial_aid.view_rationale")
+        _seed_fa_data(home.id)
+
+        response = _client_for(user).get(
+            "/api/v1/financial-aid/awards/",
+            HTTP_X_SCHOOL_ID=str(home.id),
+        )
+        assert response.status_code == 200
+        payload = response.json()
+        assert len(payload["data"]) == 1
+        assert payload["data"][0]["rationale"] is None
+        assert b"Demonstrable need" not in response.content
