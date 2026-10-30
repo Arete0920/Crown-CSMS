@@ -267,7 +267,14 @@ def checkout(request):
 
 class AftercareHandoffRequestSerializer(serializers.Serializer):
     student_id = serializers.UUIDField()
-    receiving_staff_id = serializers.UUIDField()
+
+    def validate(self, attrs):
+        # A staff identifier supplied by another operator is not an acknowledgement.
+        if "receiving_staff_id" in self.initial_data:
+            raise serializers.ValidationError(
+                {"receiving_staff_id": "The receiving staff member must authenticate and acknowledge directly."}
+            )
+        return attrs
 
 
 @extend_schema(request=AftercareHandoffRequestSerializer, responses={200: AftercareAttendanceSerializer})
@@ -278,14 +285,13 @@ def school_handoff(request):
         return _forbidden()
     serializer = AftercareHandoffRequestSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
-    from core.models import UserAccount
-    receiver = UserAccount.objects.filter(pk=serializer.validated_data["receiving_staff_id"], school_id=school_id).first()
     try:
+        # Authenticated staff self-attestation: another user's ID is never accepted.
         attendance = handoff_student_to_school(
-            school_id, serializer.validated_data["student_id"], receiver,
+            school_id, serializer.validated_data["student_id"], request.user,
         )
-    except ValueError as exc:
-        return _bad_request(exc)
+    except ValueError:
+        return _bad_request("A valid, authorized receiving staff acknowledgement is required.")
     return Response(AftercareAttendanceSerializer(attendance).data)
 
 
