@@ -55,9 +55,10 @@ class AftercareCheckinRequestSerializer(serializers.Serializer):
 
 class AftercareCheckoutRequestSerializer(serializers.Serializer):
     student_id = serializers.UUIDField()
-    pickup_contact_id = serializers.IntegerField(required=False, allow_null=True)
+    pickup_contact_id = serializers.IntegerField(min_value=1)
+    # Legacy clients may send a freeform label, but the service never trusts it.
     pickup_name_freeform = serializers.CharField(required=False, allow_blank=True)
-    pickup_verified = serializers.BooleanField(required=False)
+    pickup_verified = serializers.BooleanField()
 
 
 class AftercareIncidentCreateRequestSerializer(serializers.Serializer):
@@ -245,9 +246,9 @@ def checkout(request):
         attendance = checkout_student(
             school_id=school_id,
             student_id=ser.validated_data["student_id"],
-            pickup_contact_id=ser.validated_data.get("pickup_contact_id"),
+            pickup_contact_id=ser.validated_data["pickup_contact_id"],
             pickup_name_freeform=ser.validated_data.get("pickup_name_freeform", ""),
-            pickup_verified=ser.validated_data.get("pickup_verified", False),
+            pickup_verified=ser.validated_data["pickup_verified"],
         )
     except (ValueError, AftercareAttendance.DoesNotExist) as exc:
         return _bad_request(exc)

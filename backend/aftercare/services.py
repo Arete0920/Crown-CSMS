@@ -135,30 +135,40 @@ def checkout_student(
     pickup_verified: bool,
     when: datetime | None = None,
 ) -> AftercareAttendance:
+    # Check the two release prerequisites before any attendance or finance write.
+    # The staff assertion does not replace an active school/student pickup grant.
+    if pickup_verified is not True:
+        raise ValueError("Pickup identity must be verified before checkout.")
+    if pickup_contact_id is None:
+        raise ValueError("An active authorized pickup contact is required before checkout.")
+
     when = when or timezone.now()
     student = _canonical_student(school_id=school_id, student_id=student_id)
-    cfg = ensure_config(school_id)
     attendance = AftercareAttendance.objects.select_for_update().get(
         school_fk_id=school_id,
         student_fk=student,
         date=when.date(),
     )
+    if attendance.checkout_time is not None:
+        raise ValueError("Student has already been checked out.")
+    if when < attendance.checkin_time:
+        raise ValueError("Checkout cannot precede check-in.")
 
-    pickup_contact = None
-    if pickup_contact_id is not None:
-        pickup_contact = AftercarePickupContact.objects.filter(
-            pk=pickup_contact_id,
-            school_fk_id=school_id,
-            student_fk=student,
-            is_active=True,
-        ).first()
-        if pickup_contact is None:
-            raise ValueError("Pickup contact is not authorized for this student and school.")
+    pickup_contact = AftercarePickupContact.objects.filter(
+        pk=pickup_contact_id,
+        school_fk_id=school_id,
+        student_fk=student,
+        is_active=True,
+    ).first()
+    if pickup_contact is None:
+        raise ValueError("Pickup contact is not authorized for this student and school.")
 
+    cfg = ensure_config(school_id)
     attendance.checkout_time = when
     attendance.pickup_contact_fk = pickup_contact
-    attendance.pickup_name_freeform = pickup_name_freeform or ""
-    attendance.pickup_verified = bool(pickup_verified)
+    # Record the canonical authorized contact; never trust a freeform name.
+    attendance.pickup_name_freeform = pickup_contact.name
+    attendance.pickup_verified = True
     fee = compute_late_fee(cfg, when.date(), when)
     attendance.late_minutes = fee.late_minutes
     attendance.late_fee_cents = fee.late_fee_cents

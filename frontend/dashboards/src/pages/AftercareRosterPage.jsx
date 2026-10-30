@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import CrownLayout from "../components/crown/CrownLayout.jsx";
 import DashboardSection from "../components/layout/DashboardSection.jsx";
-import { fetchRosterToday, checkinStudent, checkoutStudent } from "../api/aftercareApi.js";
+import { fetchRosterToday, checkinStudent, checkoutStudent, fetchPickupContacts } from "../api/aftercareApi.js";
 
 const TAG = {
   base: { display: "inline-block", padding: "2px 8px", borderRadius: 12, fontSize: 12, fontWeight: 600 },
@@ -19,6 +19,8 @@ export default function AftercareRosterPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [roster, setRoster] = useState(null);
+  const [pickup, setPickup] = useState(null);
+  const [pickupBusy, setPickupBusy] = useState(false);
 
   async function load() {
     setLoading(true);
@@ -69,12 +71,35 @@ export default function AftercareRosterPage() {
     }
   }
 
-  async function handleCheckout(studentId) {
+  async function beginCheckout(studentId) {
+    setPickupBusy(true);
+    setError(null);
     try {
-      await checkoutStudent({ student_id: studentId, pickup_verified: false });
+      const contacts = await fetchPickupContacts(studentId);
+      setPickup({ studentId, contacts: Array.isArray(contacts) ? contacts.filter((c) => c.is_active) : [],
+                  contactId: "", verified: false });
+    } catch (e) {
+      setError(`Cannot load authorized pickup contacts: ${e.message}`);
+    } finally {
+      setPickupBusy(false);
+    }
+  }
+
+  async function handleCheckout() {
+    if (!pickup?.contactId || !pickup.verified) return;
+    setPickupBusy(true);
+    try {
+      await checkoutStudent({
+        student_id: pickup.studentId,
+        pickup_contact_id: pickup.contactId,
+        pickup_verified: true,
+      });
+      setPickup(null);
       await load();
     } catch (e) {
-      alert(`Check-out failed: ${e.message}`);
+      setError(`Check-out failed: ${e.message}`);
+    } finally {
+      setPickupBusy(false);
     }
   }
 
@@ -131,7 +156,7 @@ export default function AftercareRosterPage() {
                           <button style={BTN_OUT} onClick={() => handleCheckin(row.student_id)}>Check In</button>
                         )}
                         {hasCheckin && !hasCheckout && (
-                          <button style={BTN_PRIM} onClick={() => handleCheckout(row.student_id)}>Check Out</button>
+                          <button style={BTN_PRIM} onClick={() => beginCheckout(row.student_id)} disabled={pickupBusy}>Verify Pickup</button>
                         )}
                       </td>
                     </tr>
@@ -139,6 +164,35 @@ export default function AftercareRosterPage() {
                 })}
               </tbody>
             </table>
+          </div>
+        )}
+        {pickup && (
+          <div role="dialog" aria-modal="true" aria-label="Verify authorized pickup" style={{ border: "1px solid var(--crown-border)", padding: 16, marginTop: 16 }}>
+            <h3>Verify pickup for {pickup.studentId}</h3>
+            <p>Confirm the person's identity against the school's authorized pickup record before releasing a student.</p>
+            {pickup.contacts.length === 0 ? (
+              <p>No active authorized pickup contacts are on file. Checkout is blocked; contact school administration.</p>
+            ) : (
+              <>
+                <label htmlFor="pickup-contact">Authorized pickup contact</label>
+                <select id="pickup-contact" value={pickup.contactId}
+                  onChange={(e) => setPickup((old) => ({ ...old, contactId: e.target.value, verified: false }))}>
+                  <option value="">Select a contact</option>
+                  {pickup.contacts.map((contact) => (
+                    <option key={contact.id} value={contact.id}>{contact.name} — {contact.relationship || "Authorized contact"}</option>
+                  ))}
+                </select>
+                <label style={{ display: "block", marginTop: 12 }}>
+                  <input type="checkbox" checked={pickup.verified}
+                    disabled={!pickup.contactId}
+                    onChange={(e) => setPickup((old) => ({ ...old, verified: e.target.checked }))} />
+                  I have checked this person's identity against the selected authorized pickup record.
+                </label>
+                <button type="button" onClick={handleCheckout}
+                  disabled={pickupBusy || !pickup.contactId || !pickup.verified}>Confirm Checkout</button>
+              </>
+            )}
+            <button type="button" style={{ marginLeft: 12 }} disabled={pickupBusy} onClick={() => setPickup(null)}>Cancel</button>
           </div>
         )}
       </DashboardSection>
