@@ -1,6 +1,8 @@
 from types import SimpleNamespace
 from unittest.mock import Mock
 
+import pytest
+
 from summer_camp import api
 
 
@@ -81,3 +83,25 @@ def test_view_roles_include_view_and_edit_permissions():
 
 def test_edit_roles_are_restricted_to_edit_permission():
     assert api.EDIT_ROLES == {"summer_camp.edit"}
+
+
+@pytest.mark.django_db
+def test_unprivileged_django_staff_cannot_create_camp_config_on_read():
+    import uuid
+    from rest_framework.test import APIClient
+    from core.models import School, UserAccount
+    from summer_camp.models import SummerCampProgramConfig
+
+    school = School.objects.create(name=f"Camp RBAC Denied {uuid.uuid4().hex[:8]}")
+    user = UserAccount.objects.create_user(
+        username=f"camp-no-grant-{uuid.uuid4().hex[:8]}",
+        password="synthetic", school=school, is_staff=True,
+    )
+    client = APIClient()
+    client.force_authenticate(user=user)
+    client.credentials(HTTP_X_SCHOOL_ID=str(school.id))
+    assert client.get("/api/v1/summer-camp/config/").status_code == 403
+    assert client.put(
+        "/api/v1/summer-camp/config/", {"camp_name": "Unauthorized"}, format="json",
+    ).status_code == 403
+    assert not SummerCampProgramConfig.objects.filter(school=school).exists()
