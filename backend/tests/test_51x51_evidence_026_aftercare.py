@@ -10,7 +10,7 @@ from rest_framework.test import APIClient
 
 from aftercare.models import (
     AftercareAttendance, AftercareEnrollment, AftercareIncident,
-    AftercareMonthlyChargeRun, AftercareProgramConfig,
+    AftercareMonthlyChargeRun, AftercareProgramConfig, AftercarePickupContact,
 )
 from aftercare.services import checkin_student, checkout_student, record_incident, run_monthly_flat_billing
 from core.models import CrownPermission, RolePermission, School, UserRole
@@ -141,7 +141,8 @@ class TestModule026AttendanceAndBilling(TestCase):
         AftercareProgramConfig.objects.create(school_fk=self.school, start_time=time(15), end_time=time(18),
                                              late_fee_per_10_min="10.00", late_fee_cap="100.00")
         checkin_student(self.school.id, self.student.id, when=self.when)
-        attendance = checkout_student(self.school.id, self.student.id, pickup_contact_id=None,
+        contact = AftercarePickupContact.objects.create(school_fk=self.school, student_fk=self.student, name="Parent")
+        attendance = checkout_student(self.school.id, self.student.id, pickup_contact_id=contact.id,
                      pickup_name_freeform="Parent", pickup_verified=True,
                      when=timezone.make_aware(datetime(2026, 6, 15, 18, 31)))
         self.assertEqual(attendance.late_minutes, 31)
