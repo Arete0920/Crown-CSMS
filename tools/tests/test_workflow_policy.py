@@ -194,11 +194,14 @@ class WorkflowPolicyTests(unittest.TestCase):
         self.assertEqual(steps[names.index("Checkout")]["with"]["ref"], "$" + "{{ inputs.ref }}")
         source_guard = steps[names.index("Verify accepted DEV source")]
         self.assertIn('"$SOURCE_SHA" != "$CURRENT_MAIN_SHA"', source_guard["run"])
+        self.assertIn('"$SOURCE_SHA" != "$WORKFLOW_SHA"', source_guard["run"])
+        self.assertEqual(source_guard["env"]["WORKFLOW_SHA"], "$" + "{{ github.sha }}")
         self.assertIn('"$SOURCE_SHA" != "$REQUESTED_REF"', source_guard["run"])
         self.assertNotIn("merge-base --is-ancestor", source)
         self.assertNotIn("dev-latest", source[:source.index("      - name: Build and push Docker image")])
 
         for mutation, gate in (
+            ("Build and push Docker image", "DEV image push"),
             ("Apply only reviewed DEV inquiry migration before deployment", "DEV migration"),
             ("Apply appsettings (allowlisted only)", "DEV appsettings"),
             ("Deploy to Azure Web App (managed identity pull)", "DEV container deployment"),
@@ -209,6 +212,8 @@ class WorkflowPolicyTests(unittest.TestCase):
             self.assertEqual(check["env"]["EXPECTED_DEV_SHA"], "$" + "{{ steps.vars.outputs.deploy_sha }}")
             self.assertIn('git fetch --no-tags origin refs/heads/main:', check["run"])
             self.assertIn('"$(git rev-parse refs/remotes/origin/main)" != "$EXPECTED_DEV_SHA"', check["run"])
+            self.assertIn('"$GITHUB_SHA" != "$EXPECTED_DEV_SHA"', check["run"])
+            self.assertIn('"$(git rev-parse HEAD)" != "$EXPECTED_DEV_SHA"', check["run"])
 
     def test_dev_deploy_source_gate_runtime_denies_stale_and_foreign_refs(self):
         """Exercise the workflow's actual shell guard with fake Git, without Azure."""
@@ -242,13 +247,16 @@ class WorkflowPolicyTests(unittest.TestCase):
             fake_git.chmod(0o755)
             current, old = "a" * 40, "b" * 40
 
-            def run(head, main, requested, event="workflow_dispatch", ref="refs/heads/main"):
+            def run(head, main, requested, event="workflow_dispatch", ref="refs/heads/main",
+                    workflow_sha=None):
                 env = {
                     **os.environ,
                     "PATH": str(root) + os.pathsep + os.environ["PATH"],
                     "FAKE_HEAD_SHA": head,
                     "FAKE_MAIN_SHA": main,
                     "REQUESTED_REF": requested,
+                    "WORKFLOW_SHA": workflow_sha or head,
+                    "GITHUB_SHA": workflow_sha or head,
                     "GITHUB_EVENT_NAME": event,
                     "GITHUB_REF": ref,
                     "GITHUB_OUTPUT": str(root / "out.txt"),
@@ -263,6 +271,7 @@ class WorkflowPolicyTests(unittest.TestCase):
                 run(current, current, old),  # dispatch input mismatches checkout
                 run(current, current, current, event="push"),  # RC push must never deploy
                 run(current, current, current, ref="refs/heads/rc/old"),
+                run(current, current, current, workflow_sha=old),
             ):
                 self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
 

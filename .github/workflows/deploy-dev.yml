@@ -38,6 +38,7 @@ jobs:
         shell: bash
         env:
           INPUT_REF: ${{ inputs.ref }}
+          DISPATCH_SHA: ${{ github.sha }}
         run: |
           set -euo pipefail
           if [[ "$GITHUB_EVENT_NAME" != "workflow_dispatch" || "$GITHUB_REF" != "refs/heads/main" ]]; then
@@ -46,6 +47,10 @@ jobs:
           fi
           if [[ ! "$INPUT_REF" =~ ^[0-9a-f]{40}$ ]]; then
             echo "::error::DEV deployment requires an exact 40-character commit SHA" >&2
+            exit 1
+          fi
+          if [[ "$INPUT_REF" != "$DISPATCH_SHA" ]]; then
+            echo "::error::DEV deployment requested SHA does not match workflow-dispatch SHA" >&2
             exit 1
           fi
 
@@ -59,6 +64,7 @@ jobs:
         id: vars
         env:
           REQUESTED_REF: ${{ inputs.ref }}
+          WORKFLOW_SHA: ${{ github.sha }}
         run: |
           set -euo pipefail
           if [[ "$GITHUB_EVENT_NAME" != "workflow_dispatch" || "$GITHUB_REF" != "refs/heads/main" ]]; then
@@ -72,8 +78,8 @@ jobs:
           fi
           git fetch --no-tags origin refs/heads/main:refs/remotes/origin/main
           CURRENT_MAIN_SHA="$(git rev-parse refs/remotes/origin/main)"
-          if [[ "$SOURCE_SHA" != "$CURRENT_MAIN_SHA" ]]; then
-            echo "::error::BLOCKED: DEV deploy requires current protected main, never an ancestor" >&2
+          if [[ "$SOURCE_SHA" != "$WORKFLOW_SHA" || "$SOURCE_SHA" != "$CURRENT_MAIN_SHA" ]]; then
+            echo "::error::BLOCKED: DEV deploy requires current protected main and workflow identity, never an ancestor" >&2
             exit 1
           fi
           echo "deploy_sha=$SOURCE_SHA" >> "$GITHUB_OUTPUT"
@@ -109,7 +115,7 @@ jobs:
         run: |
           set -euo pipefail
           git fetch --no-tags origin refs/heads/main:refs/remotes/origin/main
-          if [[ "$(git rev-parse refs/remotes/origin/main)" != "$EXPECTED_DEV_SHA" ]]; then
+          if [[ "$GITHUB_REF" != "refs/heads/main" || "$GITHUB_SHA" != "$EXPECTED_DEV_SHA" || "$(git rev-parse HEAD)" != "$EXPECTED_DEV_SHA" || "$(git rev-parse refs/remotes/origin/main)" != "$EXPECTED_DEV_SHA" ]]; then
             echo "::error::Protected main moved: refusing DEV migration" >&2
             exit 1
           fi
@@ -155,7 +161,7 @@ jobs:
         run: |
           set -euo pipefail
           git fetch --no-tags origin refs/heads/main:refs/remotes/origin/main
-          if [[ "$(git rev-parse refs/remotes/origin/main)" != "$EXPECTED_DEV_SHA" ]]; then
+          if [[ "$GITHUB_REF" != "refs/heads/main" || "$GITHUB_SHA" != "$EXPECTED_DEV_SHA" || "$(git rev-parse HEAD)" != "$EXPECTED_DEV_SHA" || "$(git rev-parse refs/remotes/origin/main)" != "$EXPECTED_DEV_SHA" ]]; then
             echo "::error::Protected main moved: refusing DEV appsettings" >&2
             exit 1
           fi
@@ -176,6 +182,17 @@ jobs:
           echo "BUILD_SHA = \"${{ env.DEPLOY_SHA }}\"" > backend/crown_api/build_info.py
           echo " build_info.py written with SHA: ${{ env.DEPLOY_SHA }}"
 
+      - name: Reverify protected main before DEV image push
+        shell: bash
+        env:
+          EXPECTED_DEV_SHA: ${{ steps.vars.outputs.deploy_sha }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin refs/heads/main:refs/remotes/origin/main
+          if [[ "$GITHUB_REF" != "refs/heads/main" || "$GITHUB_SHA" != "$EXPECTED_DEV_SHA" || "$(git rev-parse HEAD)" != "$EXPECTED_DEV_SHA" || "$(git rev-parse refs/remotes/origin/main)" != "$EXPECTED_DEV_SHA" ]]; then
+            echo "::error::Protected main changed: refusing DEV image push" >&2
+            exit 1
+          fi
       - name: Build and push Docker image
         uses: docker/build-push-action@ca052bb54ab0790a636c9b5f226502c73d547a25 # v5
         with:
@@ -200,7 +217,7 @@ jobs:
         run: |
           set -euo pipefail
           git fetch --no-tags origin refs/heads/main:refs/remotes/origin/main
-          if [[ "$(git rev-parse refs/remotes/origin/main)" != "$EXPECTED_DEV_SHA" ]]; then
+          if [[ "$GITHUB_REF" != "refs/heads/main" || "$GITHUB_SHA" != "$EXPECTED_DEV_SHA" || "$(git rev-parse HEAD)" != "$EXPECTED_DEV_SHA" || "$(git rev-parse refs/remotes/origin/main)" != "$EXPECTED_DEV_SHA" ]]; then
             echo "::error::Protected main moved: refusing DEV container deployment" >&2
             exit 1
           fi

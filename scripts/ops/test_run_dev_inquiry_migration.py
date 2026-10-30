@@ -552,7 +552,8 @@ class DevMigrationBoundaryTests(unittest.TestCase):
         self.assertIn('CURRENT_MAIN_SHA="$(git rev-parse refs/remotes/origin/main)"', source_script)
         self.assertIn('"$GITHUB_EVENT_NAME" != "workflow_dispatch"', source_script)
         self.assertIn('"$GITHUB_REF" != "refs/heads/main"', source_script)
-        self.assertIn('if [[ "$SOURCE_SHA" != "$CURRENT_MAIN_SHA" ]]; then', source_script)
+        self.assertIn('"$SOURCE_SHA" != "$WORKFLOW_SHA"', source_script)
+        self.assertIn('"$SOURCE_SHA" != "$CURRENT_MAIN_SHA"', source_script)
         self.assertNotIn("git merge-base --is-ancestor", source_script)
         self.assertLess(source, gate)
         self.assertNotIn("if", steps[gate])
@@ -572,6 +573,7 @@ class DevMigrationBoundaryTests(unittest.TestCase):
 
         names = [step.get("name") for step in steps]
         for mutation, check in (
+            ("Build and push Docker image", "DEV image push"),
             ("Apply only reviewed DEV inquiry migration before deployment", "DEV migration"),
             ("Apply appsettings (allowlisted only)", "DEV appsettings"),
             ("Deploy to Azure Web App (managed identity pull)", "DEV container deployment"),
@@ -582,6 +584,8 @@ class DevMigrationBoundaryTests(unittest.TestCase):
                              "$" + "{{ steps.vars.outputs.deploy_sha }}")
             self.assertIn('"$(git rev-parse refs/remotes/origin/main)" != "$EXPECTED_DEV_SHA"',
                           steps[index - 1]["run"])
+            self.assertIn('"$GITHUB_SHA" != "$EXPECTED_DEV_SHA"', steps[index - 1]["run"])
+            self.assertIn('"$(git rev-parse HEAD)" != "$EXPECTED_DEV_SHA"', steps[index - 1]["run"])
 
 
 if __name__ == "__main__":

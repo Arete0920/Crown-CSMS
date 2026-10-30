@@ -68,10 +68,13 @@ class DevDeployExactMainTests(unittest.TestCase):
         self.script = _step_script(self.workflow)
 
     def _run_guard(self, target: str, event: str, requested: str = "",
-                   ref: str = "refs/heads/main") -> subprocess.CompletedProcess:
+                   ref: str = "refs/heads/main",
+                   workflow_sha: str | None = None) -> subprocess.CompletedProcess:
         _git("checkout", "--detach", "-q", target, cwd=self.checkout)
         with tempfile.TemporaryDirectory() as output:
             env = dict(os.environ, GITHUB_EVENT_NAME=event, GITHUB_REF=ref,
+                       GITHUB_SHA=workflow_sha or target,
+                       WORKFLOW_SHA=workflow_sha or target,
                        REQUESTED_REF=requested, GITHUB_OUTPUT=str(Path(output) / "output"),
                        GITHUB_ENV=str(Path(output) / "env"))
             return subprocess.run(["bash", "-euo", "pipefail", "-c", self.script],
@@ -102,6 +105,12 @@ class DevDeployExactMainTests(unittest.TestCase):
         result = self._run_guard(self.main, "workflow_dispatch", self.main,
                                  ref="refs/heads/rc/stale")
         self.assertNotEqual(result.returncode, 0)
+
+    def test_old_workflow_dispatch_cannot_authorize_new_main_checkout(self):
+        result = self._run_guard(self.main, "workflow_dispatch", self.main,
+                                 workflow_sha=self.old)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("workflow identity", result.stderr)
 
     def test_source_check_runs_before_azure_login(self):
         self.assertLess(self.workflow.index("- name: Verify accepted DEV source"),
