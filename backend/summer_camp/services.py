@@ -6,6 +6,8 @@ from django.db import transaction
 from django.db.models import Count, Max, Q, Sum
 from django.utils import timezone
 
+from households.models import Student
+
 from .models import (
     SummerCampAttendance,
     SummerCampBillingLedgerLink,
@@ -91,14 +93,42 @@ def _next_waitlist_position(school_id, session_id):
 
 @transaction.atomic
 def enroll_camper(school_id, student_id, session_id, payload: dict):
-    state = compute_session_capacity(school_id, session_id)
+    """Register only a verified same-school child; serialize seat allocation per session."""
+    session = SummerCampSession.objects.select_for_update().filter(
+        pk=session_id, school_id=school_id, status="PUBLISHED",
+    ).first()
+    if session is None:
+        raise ValueError("Camp session is unavailable for registration.")
+
+    # External/standalone children require a real provisioned camper identity.
+    # Do not create a nullable-student registration that cannot be supervised.
+    student = Student.objects.select_related("household").filter(
+        pk=student_id, school_id=school_id, is_active=True,
+    ).first() if student_id else None
+    if student is None or student.household.school_id != school_id:
+        raise ValueError("Camper is not an active member of the requested school.")
+
+    payload = dict(payload)
+    if payload.get("household_id") is not None and str(payload["household_id"]) != str(student.household_id):
+        raise ValueError("Registration household does not match the camper.")
+    payload["household_id"] = student.household_id
+
+    if SummerCampEnrollment.objects.filter(
+        school_id=school_id, student_id=student.id, session_id=session.id,
+        status__in=["REGISTERED", "WAITLISTED"],
+    ).exists():
+        raise ValueError("Camper is already registered or waitlisted in this session.")
+
+    state = compute_session_capacity(school_id, session.id)
+    if not state.has_open_capacity and state.waitlisted_count >= session.waitlist_capacity:
+        raise ValueError("Camp session and waitlist have no remaining capacity.")
     status = "REGISTERED" if state.has_open_capacity else "WAITLISTED"
-    waitlist_position = None if status == "REGISTERED" else _next_waitlist_position(school_id, session_id)
+    waitlist_position = None if status == "REGISTERED" else _next_waitlist_position(school_id, session.id)
 
     enrollment = SummerCampEnrollment.objects.create(
         school_id=school_id,
-        student_id=student_id,
-        session_id=session_id,
+        student_id=student.id,
+        session_id=session.id,
         status=status,
         waitlist_position=waitlist_position,
         **payload,
