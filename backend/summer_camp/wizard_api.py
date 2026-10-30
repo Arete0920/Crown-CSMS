@@ -26,6 +26,17 @@ class CampWizardSaveSerializer(serializers.Serializer):
     is_completed = serializers.BooleanField(required=False)
 
     def validate(self, attrs):
+        allowed_config_fields = {
+            "camp_name", "default_start_time", "default_end_time",
+            "default_capacity", "default_staff_ratio", "required_form_policy",
+            "billing_policy", "pickup_policy", "health_review_policy",
+            "public_registration_enabled",
+        }
+        unexpected = set(attrs["config"]) - allowed_config_fields
+        if unexpected:
+            raise serializers.ValidationError({
+                "config": "Unsupported or privileged camp configuration field."
+            })
         steps = attrs.get("completed_steps", [])
         if steps != list(WIZARD_STEPS[:len(steps)]):
             raise serializers.ValidationError({
