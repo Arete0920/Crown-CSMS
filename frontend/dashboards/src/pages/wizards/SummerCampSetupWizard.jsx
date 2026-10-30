@@ -108,6 +108,20 @@ export default function SummerCampSetupWizard() {
 
             {step === 1 && (
               <>
+                <label style={{ display: "block", marginBottom: 8 }}>
+                  <input name="public_registration_enabled" type="checkbox" checked={data.public_registration_enabled} onChange={updateField} /> Public Registration Enabled
+                </label>
+                <label htmlFor="billing_policy">Billing Policy</label>
+                <select id="billing_policy" name="billing_policy" value={data.billing_policy} onChange={updateField} style={{ display: "block", marginBottom: 10 }}>
+                  <option value="PER_SESSION">Per Session</option>
+                  <option value="PER_WEEK">Per Week</option>
+                  <option value="FULL_CAMP">Full Camp</option>
+                </select>
+              </>
+            )}
+
+            {step === 2 && (
+              <>
                 <label htmlFor="default_capacity">Default Session Capacity</label>
                 <input id="default_capacity" name="default_capacity" type="number" min="1" value={data.default_capacity} onChange={updateField} style={{ display: "block", width: "100%", marginBottom: 10 }} />
                 <label htmlFor="default_staff_ratio">Maximum Campers per Staff Member</label>
