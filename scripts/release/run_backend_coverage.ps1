@@ -88,7 +88,8 @@ try {
         python -m coverage erase
     }
 
-    & python -m coverage run --rcfile=.coveragerc -m pytest -q backend --junitxml=$pytestJunit *>&1 |
+    # Report slowest pytest phases separately (setup, call, teardown); full suite and gate unchanged.
+    & python -m coverage run --rcfile=.coveragerc -m pytest -q backend --durations=20 --junitxml=$pytestJunit *>&1 |
         Tee-Object -FilePath $pytestLog
     $pytestExitCode = $LASTEXITCODE
 
@@ -161,7 +162,7 @@ try {
         source_sha = $sourceSha
         worktree_clean_before_run = $true
         runner = "scripts/release/run_backend_coverage.ps1"
-        test_command = "python -m coverage run --rcfile=.coveragerc -m pytest -q backend --junitxml=<artifact-path>"
+        test_command = "python -m coverage run --rcfile=.coveragerc -m pytest -q backend --durations=20 --junitxml=<artifact-path>"
         coverage_config = ".coveragerc"
         coverage_boundary_config = "scripts/release/backend_coverage_boundary.json"
         coverage_boundary_evaluator = "scripts/release/evaluate_backend_coverage.py"
