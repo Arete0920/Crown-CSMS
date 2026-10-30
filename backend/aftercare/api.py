@@ -43,6 +43,7 @@ class ParentViewResponseSerializer(serializers.Serializer):
 class BoardSummaryResponseSerializer(serializers.Serializer):
     as_of = serializers.CharField()
     active_enrollment = serializers.IntegerField()
+    care_session = serializers.CharField()
     sessions_mtd = serializers.IntegerField()
     late_pickups_mtd = serializers.IntegerField()
     incidents_mtd = serializers.IntegerField()
