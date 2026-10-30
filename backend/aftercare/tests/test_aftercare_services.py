@@ -5,7 +5,7 @@ import pytest
 from django.utils import timezone
 
 from aftercare.integrations import AftercareIntegrationError
-from aftercare.models import AftercareEnrollment, AftercareIncident
+from aftercare.models import AftercareAttendance, AftercareEnrollment, AftercareIncident, AftercarePickupContact
 from aftercare.services import checkin_student, checkout_student, ensure_config, record_incident
 from core.models import School
 from households.models import Household, Student
@@ -69,8 +69,6 @@ def test_checkin_creates_and_is_idempotent():
 
 
 def test_checkout_rejects_cross_student_pickup_contact():
-    from aftercare.models import AftercarePickupContact
-
     school = School.objects.create(name="Pickup School")
     student = _student(school, "A")
     other = _student(school, "B")
@@ -103,15 +101,19 @@ def test_checkout_sets_time_without_synthetic_finance_write():
         student.id,
         when=timezone.make_aware(datetime(2025, 9, 3, 15, 0)),
     )
+    contact = AftercarePickupContact.objects.create(school_fk=school, student_fk=student, name="Verified Parent")
     attendance = checkout_student(
         school.id,
         student.id,
-        pickup_contact_id=None,
-        pickup_name_freeform="Parent",
+        pickup_contact_id=contact.id,
+        pickup_name_freeform="Untrusted freeform",
         pickup_verified=True,
         when=timezone.make_aware(datetime(2025, 9, 3, 17, 30)),
     )
     assert attendance.checkout_time is not None
+    assert attendance.pickup_verified is True
+    assert attendance.pickup_contact_fk_id == contact.id
+    assert attendance.pickup_name_freeform == "Verified Parent"
     assert attendance.late_fee_charge_id is None
 
 
@@ -129,3 +131,52 @@ def test_major_incident_fails_closed_without_verified_discipline_bridge():
     with pytest.raises(AftercareIntegrationError, match="no verified canonical mapping"):
         record_incident(school.id, student.id, "MAJOR", "Serious incident")
     assert AftercareIncident.objects.filter(school_fk=school, student_fk=student).count() == 0
+
+
+def test_checkout_fails_closed_without_verified_active_contact_and_no_fee_side_effect(monkeypatch):
+    school = School.objects.create(name="Fail Closed Pickup School")
+    student = _student(school, "FailClosed")
+    other = _student(school, "Other")
+    _enroll(school, student, days=["WED"])
+    checkin = timezone.make_aware(datetime(2025, 9, 3, 15, 0))
+    checkout = timezone.make_aware(datetime(2025, 9, 3, 18, 31))
+    attendance = checkin_student(school.id, student.id, when=checkin)
+    own = AftercarePickupContact.objects.create(school_fk=school, student_fk=student, name="Authorized")
+    inactive = AftercarePickupContact.objects.create(school_fk=school, student_fk=student, name="Inactive", is_active=False)
+    foreign = AftercarePickupContact.objects.create(school_fk=school, student_fk=other, name="Other Child")
+    called = []
+    monkeypatch.setattr("aftercare.services.create_ledger_charge_aftercare", lambda **kw: called.append(kw))
+    for contact_id, verified, expected in (
+        (None, True, "active authorized pickup contact"),
+        (own.id, False, "identity must be verified"),
+        (inactive.id, True, "not authorized"),
+        (foreign.id, True, "not authorized"),
+    ):
+        with pytest.raises(ValueError, match=expected):
+            checkout_student(school.id, student.id, pickup_contact_id=contact_id,
+                             pickup_name_freeform="untrusted", pickup_verified=verified, when=checkout)
+        attendance.refresh_from_db()
+        assert attendance.checkout_time is None
+        assert attendance.pickup_contact_fk_id is None
+        assert attendance.late_fee_charge_id is None
+    assert called == []
+
+
+def test_checkout_rejects_repeat_without_rewriting_pickup_or_billing():
+    school = School.objects.create(name="Repeat Pickup School")
+    student = _student(school, "Repeat")
+    _enroll(school, student, days=["WED"])
+    when = timezone.make_aware(datetime(2025, 9, 3, 15, 5))
+    checkin_student(school.id, student.id, when=when)
+    contact = AftercarePickupContact.objects.create(school_fk=school, student_fk=student, name="First")
+    second = AftercarePickupContact.objects.create(school_fk=school, student_fk=student, name="Second")
+    first = checkout_student(school.id, student.id, pickup_contact_id=contact.id,
+                             pickup_name_freeform="", pickup_verified=True,
+                             when=timezone.make_aware(datetime(2025, 9, 3, 17, 30)))
+    with pytest.raises(ValueError, match="already been checked out"):
+        checkout_student(school.id, student.id, pickup_contact_id=second.id,
+                         pickup_name_freeform="", pickup_verified=True,
+                         when=timezone.make_aware(datetime(2025, 9, 3, 17, 31)))
+    first.refresh_from_db()
+    assert first.pickup_contact_fk_id == contact.id
+    assert first.pickup_name_freeform == "First"
