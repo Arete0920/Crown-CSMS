@@ -126,9 +126,13 @@ def test_handoff_rejects_user_without_active_staff_assignment_or_grant():
     assert attendance.handoff_time is None
 
 
-def test_handoff_endpoint_refuses_to_impersonate_another_staff_member():
+def test_handoff_endpoint_refuses_to_impersonate_another_staff_member(monkeypatch):
     from rest_framework.test import APIClient
 
+    # The API uses the current date, while this synthetic attendance fixture
+    # is pinned to 2025-09-03. Keep the request within that care day; otherwise
+    # the service correctly rejects an attendance lookup on another date.
+    monkeypatch.setattr("aftercare.services.timezone.now", lambda: at(8, 15))
     school, _household, child, receiver = setup_family()
     checkin_student(school.id, child.id, when=at(7, 15), care_session="AM")
     another_staff = Staff.objects.create(
