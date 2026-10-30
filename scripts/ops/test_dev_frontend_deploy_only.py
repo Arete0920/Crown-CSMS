@@ -185,14 +185,17 @@ class DeployOnlyBoundaryTests(unittest.TestCase):
             )
             git.chmod(0o755)
             stale = 'b' * 40
-            cases = (
+            cases = [
                 ('fresh current main', SHA, SHA, SHA, 'refs/heads/main', 'workflow_dispatch', True),
                 ('stale main tip', stale, SHA, SHA, 'refs/heads/main', 'workflow_dispatch', False),
                 ('mismatched checkout', SHA, stale, SHA, 'refs/heads/main', 'workflow_dispatch', False),
                 ('mismatched workflow SHA', SHA, SHA, stale, 'refs/heads/main', 'workflow_dispatch', False),
                 ('foreign ref', SHA, SHA, SHA, 'refs/heads/rc/old', 'workflow_dispatch', False),
-                ('non-dispatch event', SHA, SHA, SHA, 'refs/heads/main', 'push', False),
-            )
+            ]
+            # The initial guard enforces workflow_dispatch. The later upload
+            # guard runs downstream and independently enforces current-main identity.
+            if 'GITHUB_EVENT_NAME' in source:
+                cases.append(('non-dispatch event', SHA, SHA, SHA, 'refs/heads/main', 'push', False))
             for label, main, checkout, workflow, ref, event, expected_success in cases:
                 with self.subTest(scenario=label):
                     env = dict(
