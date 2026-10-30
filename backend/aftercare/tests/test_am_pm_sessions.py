@@ -6,7 +6,7 @@ from django.utils import timezone
 
 from aftercare.models import AftercareAttendance, AftercareEnrollment, AftercarePickupContact
 from aftercare.services import checkin_student, checkout_student, handoff_student_to_school
-from core.models import School, UserAccount
+from core.models import CrownPermission, RolePermission, School, Staff, UserAccount, UserRole
 from households.models import Household, Student
 
 pytestmark = pytest.mark.django_db
@@ -30,9 +30,17 @@ def setup_family():
             start_date=date(2025, 1, 1), days_of_week=["WED"],
             billing_model="FLAT_MONTHLY",
         )
-    receiver = UserAccount.objects.create_user(
-        username="extended-care-receiver", password="test", school=school, is_staff=True,
+    staff = Staff.objects.create(
+        school=school, first_name="Receiving", last_name="Teacher",
+        email="receiver@example.test", role_type="TEACHER", status="ACTIVE",
     )
+    receiver = UserAccount.objects.create_user(
+        username="extended-care-receiver", password="test", school=school,
+        staff=staff,
+    )
+    UserRole.objects.create(user=receiver, school=school, role_code="SUPPORT")
+    permission, _ = CrownPermission.objects.get_or_create(code="extended_care.edit")
+    RolePermission.objects.get_or_create(role_code="SUPPORT", permission=permission)
     return school, household, child, receiver
 
 
@@ -98,3 +106,76 @@ def test_absent_am_does_not_block_pm():
     assert not AftercareAttendance.objects.filter(
         school_fk=school, student_fk=child, date=DAY, care_session="AM"
     ).exists()
+
+
+def test_handoff_rejects_user_without_active_staff_assignment_or_grant():
+    school, _household, child, receiver = setup_family()
+    checkin_student(school.id, child.id, when=at(7, 15), care_session="AM")
+    receiver.staff.status = "INACTIVE"
+    receiver.staff.save(update_fields=["status"])
+    with pytest.raises(ValueError, match="active school staff"):
+        handoff_student_to_school(school.id, child.id, receiver, when=at(8, 15))
+    attendance = AftercareAttendance.objects.get(school_fk=school, student_fk=child)
+    assert attendance.handoff_time is None
+    receiver.staff.status = "ACTIVE"
+    receiver.staff.save(update_fields=["status"])
+    UserRole.objects.filter(user=receiver, school=school).delete()
+    with pytest.raises(ValueError, match="school-scoped handoff authority"):
+        handoff_student_to_school(school.id, child.id, receiver, when=at(8, 15))
+    attendance.refresh_from_db()
+    assert attendance.handoff_time is None
+
+
+def test_handoff_endpoint_refuses_to_impersonate_another_staff_member():
+    from rest_framework.test import APIClient
+
+    school, _household, child, receiver = setup_family()
+    checkin_student(school.id, child.id, when=at(7, 15), care_session="AM")
+    another_staff = Staff.objects.create(
+        school=school, first_name="Other", last_name="Teacher",
+        email="another@example.test", role_type="TEACHER", status="ACTIVE",
+    )
+    another = UserAccount.objects.create_user(
+        username="another-handoff-staff", school=school, staff=another_staff, password="test",
+    )
+    client = APIClient()
+    client.force_authenticate(user=receiver)
+    client.credentials(HTTP_X_SCHOOL_ID=str(school.id))
+    rejected = client.post(
+        "/api/v1/aftercare/attendance/school-handoff/",
+        {"student_id": str(child.id), "receiving_staff_id": str(another.id)},
+        format="json",
+    )
+    assert rejected.status_code == 400
+    assert "receiving_staff_id" in rejected.data
+    assert not AftercareAttendance.objects.filter(
+        school_fk=school, student_fk=child, care_session="AM",
+        handoff_verified=True,
+    ).exists()
+    accepted = client.post(
+        "/api/v1/aftercare/attendance/school-handoff/",
+        {"student_id": str(child.id)}, format="json",
+    )
+    assert accepted.status_code == 200
+    attendance = AftercareAttendance.objects.get(
+        school_fk=school, student_fk=child, care_session="AM",
+    )
+    assert attendance.handoff_recipient_id == receiver.id
+    assert attendance.handoff_recipient_id != another.id
+    assert attendance.handoff_verified is True
+
+
+def test_completed_pm_session_cannot_be_reopened_by_duplicate_checkin():
+    school, _household, child, _receiver = setup_family()
+    checkin_student(school.id, child.id, when=at(15), care_session="PM")
+    contact = AftercarePickupContact.objects.create(
+        school_fk=school, student_fk=child, name="Authorized",
+    )
+    checkout_student(
+        school.id, child.id, contact.pk, "", True, when=at(17, 30),
+    )
+    with pytest.raises(ValueError, match="already been closed"):
+        checkin_student(school.id, child.id, when=at(17, 40), care_session="PM", note="override")
+    attendance = AftercareAttendance.objects.get(school_fk=school, student_fk=child)
+    assert attendance.notes == ""
+    assert attendance.checkout_time == at(17, 30)
