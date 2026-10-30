@@ -19,6 +19,7 @@ import importlib
 import subprocess
 import sys
 from pathlib import Path
+from urllib.parse import urlsplit
 
 
 def run_cmd(args: list[str], cwd: Path | None = None) -> tuple[int, str, str]:
@@ -33,32 +34,50 @@ def run_cmd(args: list[str], cwd: Path | None = None) -> tuple[int, str, str]:
     return proc.returncode, proc.stdout.strip(), proc.stderr.strip()
 
 
+CURRENT_REPOSITORY = "Arete0920/Crown-CSMS"
+
+
+def is_authoritative_remote(remote_url: str) -> bool:
+    """Accept only the current GitHub repository, via supported HTTPS/SSH transports."""
+    remote_url = remote_url.strip()
+    if remote_url.startswith("git@github.com:"):
+        repository_path = remote_url.removeprefix("git@github.com:")
+    else:
+        parsed = urlsplit(remote_url)
+        if (
+            parsed.scheme not in ("https", "ssh", "git")
+            or parsed.hostname != "github.com"
+            or parsed.query
+            or parsed.fragment
+            or parsed.username not in (None, "git")
+            or parsed.password
+        ):
+            return False
+        repository_path = parsed.path.lstrip("/")
+    return repository_path.removesuffix(".git") == CURRENT_REPOSITORY
+
+
 def find_repo_root() -> Path | None:
-    """Find Crown2026 repository root by walking up directory tree."""
+    """Find the current Crown-CSMS Git repository, never its predecessor."""
     current = Path.cwd()
-    while current != current.parent:
-        if (current / ".git").exists() and (current / "README.md").exists():
-            git_remote_output = subprocess.run(
-                ["git", "remote", "-v"],
-                cwd=current,
-                capture_output=True,
-                text=True,
-                encoding="utf-8",
-            ).stdout
-            if "Crown2026" in git_remote_output or "tcmegahan" in git_remote_output:
+    while True:
+        if (current / ".git").exists() and (current / "README.md").is_file():
+            rc, remote, _ = run_cmd(["git", "remote", "get-url", "origin"], cwd=current)
+            if rc == 0 and is_authoritative_remote(remote):
                 return current
+        if current == current.parent:
+            break
         current = current.parent
     return None
 
 
 def validate_repo_root() -> Path:
-    """Validate we are in Crown2026 repository root."""
+    """Require the authoritative Crown-CSMS repository before governance actions."""
     root = find_repo_root()
     if not root:
-        print("FAILED: Crown2026 repository root not found")
-        print("This script must be run from within the Crown2026 repository")
+        print("FAILED: Current Arete0920/Crown-CSMS repository root not found")
+        print("This script must run inside a clone of Arete0920/Crown-CSMS with an authoritative origin remote")
         sys.exit(1)
-
     return root
 
 
