@@ -20,7 +20,7 @@ def test_camp_permissions_migrate_idempotently_without_granting_ordinary_staff()
     other_school = School.objects.create(name="Unrelated Camp RBAC School")
 
     authorized = UserAccount.objects.create_user(
-        username="camp-permission-owner", school=school, password="synthetic-test",
+        username="camp-permission-owner", email="camp-owner@example.test", school=school, password="synthetic-test",
     )
     UserRole.objects.create(user=authorized, school=school, role_code="HEAD_OF_SCHOOL")
     for permission_code, _description in migration.CAMP_PERMISSIONS:
@@ -34,7 +34,7 @@ def test_camp_permissions_migrate_idempotently_without_granting_ordinary_staff()
 
         ungranted_staff = UserAccount.objects.create_user(
             username="camp-permission-staff-" + permission_code.replace(".", "-"),
-            school=school, is_staff=True, password="synthetic-test",
+            school=school, email="camp-staff-" + permission_code.replace(".", "-") + "@example.test", is_staff=True, password="synthetic-test",
         )
         assert not user_has_permission(ungranted_staff, permission_code, school=school)
         assert not RolePermission.objects.filter(

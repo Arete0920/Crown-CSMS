@@ -36,14 +36,14 @@ def test_parent_can_view_only_verified_household_camper_in_same_school():
             status="REGISTERED",
         )
     parent = UserAccount.objects.create_user(
-        username="synthetic-parent-camp", school=school, password="synthetic", is_staff=False,
+        username="synthetic-parent-camp", email="parent-camp@example.test", school=school, password="synthetic", is_staff=False,
     )
     Guardian.objects.create(
         school_id=school.id, household=own_family,
         account=parent, first_name="Linked", last_name="Guardian",
     )
     outsider = UserAccount.objects.create_user(
-        username="synthetic-unlinked-camp", school=school, password="synthetic", is_staff=False,
+        username="synthetic-unlinked-camp", email="unlinked-camp@example.test", school=school, password="synthetic", is_staff=False,
     )
     client = APIClient()
     client.credentials(HTTP_X_SCHOOL_ID=str(school.id))
