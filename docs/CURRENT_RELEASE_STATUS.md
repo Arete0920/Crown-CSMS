@@ -1,7 +1,7 @@
 # CROWN Current Release Status
 
 **Status:** LATEST PROTECTED SOURCE BASELINE — NEW RELEASE CANDIDATE / HOSTED CERTIFICATION NOT YET ACCEPTED  
-**Last release-governance reconciliation:** October 28, 2026, after accepted financial-aid correction; resolve exact source again at every release decision  
+**Last release-governance reconciliation:** October 29, 2026, after further protected source and ownership-governance merges; resolve exact source again at every release decision  
 **Current repository identity:** resolve exact `refs/heads/main` from Git/GitHub at the decision point  
 **Release rule:** production-ready source status is granted only to an exact repository head whose applicable security, dependency, test, schema, tenant-isolation, build, repository-policy, and release-authority checks are passing.
 
@@ -11,7 +11,17 @@ The August 18, 2026 engineering certification remains historical evidence for th
 
 Current release authority is defined by this document, the canonical document index, the diligence evidence index, exact-head CI, and current supporting evidence. Dated predecessor-era release campaigns and retired comparison/superiority artifacts remain provenance only and are not executable release authority.
 
-## October 28, 2026 — newest accepted source; release-candidate selection remains open
+## October 29, 2026 — later accepted-source checkpoint; hosted acceptance still open
+
+At this dated, read-only checkpoint, protected `main` was `865feb3c824ec87e192ff325f016238bbc174edb`. The subsequent CI-optimization merge #550 and ownership-alignment merge #551 advanced source beyond the October 28 checkpoint below. The final #551 head `2f4091be9c5a22478b2c9a65f5a4189a9086c3a9` had 19 completed successful workflow runs and 35 terminal individual checks (30 passed, 5 skipped). Those checks validate that PR head only; they do not certify a later release candidate or hosted environment.
+
+The guarded DEV run [40587751947](https://github.com/Arete0920/Crown-CSMS/actions/runs/40587751947) still requires a safe terminal disposition under [issue #427](https://github.com/Arete0920/Crown-CSMS/issues/427). The last independently observed consistent hosted DEV backend/artifact/preview identity was behind protected main. Subsequent source merges, including financial-aid and repository-governance changes, therefore do **not** establish current-source DEV parity, authenticated operator/guardian acceptance, production readiness, payment activation, or buyer authorization. Resolve exact source/run/runtime state again at the next release decision.
+
+The October 28 and earlier records below are preserved as dated source and operating observations, not representations of the currently selected release identity.
+
+---
+
+## October 28, 2026 — historical accepted-source checkpoint; release-candidate selection remains open
 
 **GitHub checkpoint (protected source only):** `main=2ae0c7a6283f566fa8918e43e61669dd2fa2d30a` following the protected [#519 merge](https://github.com/Arete0920/Crown-CSMS/pull/519) at 22:28:50 UTC. It contains financial-aid reversal reconciliation, duplicate prevention, budget-release and tenant safeguards; defect [#517](https://github.com/Arete0920/Crown-CSMS/issues/517) closed following merge. The prior [#516](https://github.com/Arete0920/Crown-CSMS/pull/516) non-cash posting correction was also accepted. These are **accepted engineering source changes**, not approval of production finance or a hosted workflow.
 
