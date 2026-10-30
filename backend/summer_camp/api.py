@@ -103,14 +103,16 @@ EDIT_ROLES = {"summer_camp.edit"}
 
 
 def _require_role(request, allowed: set[str]) -> bool:
+    """Only explicit, active, school-scoped camp grants authorize API access."""
     user = getattr(request, "user", None)
     if not user or not getattr(user, "is_authenticated", False):
         return False
-
-    if getattr(user, "is_superuser", False) or getattr(user, "is_staff", False):
-        return True
+    if not getattr(user, "is_active", True):
+        return False
 
     school = getattr(request, "school", None)
+    if school is None:
+        return False
     return any(user_has_permission(user, permission, school=school) for permission in allowed)
 
 
