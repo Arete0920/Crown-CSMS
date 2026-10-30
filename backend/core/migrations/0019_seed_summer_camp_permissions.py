@@ -23,18 +23,10 @@ def seed_summer_camp_permissions(apps, schema_editor):
 
 
 def unseed_summer_camp_permissions(apps, schema_editor):
-    permission_model = apps.get_model("core", "CrownPermission")
-    role_permission_model = apps.get_model("core", "RolePermission")
-    for code, _ in CAMP_PERMISSIONS:
-        permission = permission_model.objects.filter(code=code).first()
-        if permission is None:
-            continue
-        role_permission_model.objects.filter(
-            role_code__in=DEFAULT_ROLES, permission=permission,
-        ).delete()
-        # Preserve permissions independently assigned to other roles.
-        if not role_permission_model.objects.filter(permission=permission).exists():
-            permission.delete()
+    # Do not revoke potentially pre-existing or subsequently granted RBAC
+    # assignments when rolling back a schema-independent seed migration.
+    # Operators must explicitly review any grant-removal decision.
+    return
 
 
 class Migration(migrations.Migration):
