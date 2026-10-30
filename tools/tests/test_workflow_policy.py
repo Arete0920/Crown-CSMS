@@ -226,17 +226,17 @@ class WorkflowPolicyTests(unittest.TestCase):
             root = Path(directory)
             fake_git = root / "git"
             fake_git.write_text(
-                '#!/bin/sh\\n'
-                'if [ "$1" = "fetch" ]; then exit 0; fi\\n'
-                'if [ "$1" = "rev-parse" ]; then\\n'
-                '  case "$2" in\\n'
-                '    HEAD) printf "%s\\\\n" "$FAKE_HEAD_SHA";;\\n'
-                '    refs/remotes/origin/main) printf "%s\\\\n" "$FAKE_MAIN_SHA";;\\n'
-                '    *) exit 4;;\\n'
-                '  esac\\n'
-                '  exit 0\\n'
-                'fi\\n'
-                'exit 5\\n',
+                '#!/bin/sh\n'
+                'if [ "$1" = "fetch" ]; then exit 0; fi\n'
+                'if [ "$1" = "rev-parse" ]; then\n'
+                '  case "$2" in\n'
+                '    HEAD) printf "%s\\n" "$FAKE_HEAD_SHA";;\n'
+                '    refs/remotes/origin/main) printf "%s\\n" "$FAKE_MAIN_SHA";;\n'
+                '    *) exit 4;;\n'
+                '  esac\n'
+                '  exit 0\n'
+                'fi\n'
+                'exit 5\n',
                 encoding="utf-8",
             )
             fake_git.chmod(0o755)
