@@ -213,14 +213,8 @@ def test_api_contract_core_endpoints(staff_user, school, session, household_stud
         {"session_id": str(session.id), "student_id": str(student.id)},
         format="json",
     )
-    assert checkin_resp.status_code == 201
-
-    checkout_resp = client.post(
-        "/api/v1/summer-camp/attendance/checkout/",
-        {"session_id": str(session.id), "student_id": str(student.id), "pickup_verified": True},
-        format="json",
-    )
-    assert checkout_resp.status_code == 200
+    # An incomplete application is not an authorization to admit a camper.
+    assert checkin_resp.status_code == 400
 
     incident_resp = client.post(
         "/api/v1/summer-camp/incidents/",
