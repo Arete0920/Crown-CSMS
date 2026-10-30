@@ -35,7 +35,7 @@ def setup_family():
         email="receiver@example.test", role_type="TEACHER", status="ACTIVE",
     )
     receiver = UserAccount.objects.create_user(
-        username="extended-care-receiver", password="test", school=school,
+        username="extended-care-receiver", email="receiver-login@example.test", password="test", school=school,
         staff=staff,
     )
     UserRole.objects.create(user=receiver, school=school, role_code="SUPPORT")
@@ -136,7 +136,7 @@ def test_handoff_endpoint_refuses_to_impersonate_another_staff_member():
         email="another@example.test", role_type="TEACHER", status="ACTIVE",
     )
     another = UserAccount.objects.create_user(
-        username="another-handoff-staff", school=school, staff=another_staff, password="test",
+        username="another-handoff-staff", email="other-handoff-login@example.test", school=school, staff=another_staff, password="test",
     )
     client = APIClient()
     client.force_authenticate(user=receiver)
