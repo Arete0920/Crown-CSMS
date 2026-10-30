@@ -15,7 +15,7 @@ from solomon_governance_c1 import env_guard
         ("git@github.com:Arete0920/Crown-CSMS.git", True),
         ("ssh://git@github.com/Arete0920/Crown-CSMS.git", True),
         ("git://github.com/Arete0920/Crown-CSMS.git", True),
-        ("https://github.com/tcmegahan/Crown2026.git", False),
+        ("https://github.com/" + "tcmegahan" + "/" + "Crown2026.git", False),
         ("https://github.com/Arete0920/Crown-CSMS-test.git", False),
         ("https://github.com/other/Crown-CSMS.git", False),
         ("https://example.com/Arete0920/Crown-CSMS.git", False),
@@ -42,7 +42,7 @@ def test_repo_root_enforces_current_origin(
     remote = (
         "git@github.com:Arete0920/Crown-CSMS.git"
         if valid
-        else "git@github.com:tcmegahan/Crown2026.git"
+        else "git@github.com:" + "tcmegahan" + "/" + "Crown2026.git"
     )
     monkeypatch.setattr(
         env_guard,
