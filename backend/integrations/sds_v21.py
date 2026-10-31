@@ -29,6 +29,7 @@ from rest_framework.permissions import IsAuthenticated
 from academics.models import Enrollment, Section, TeacherAssignment, Term
 from core.models import School
 from core.permissions import CrownModulePermission
+from crown_api.audit import audit_log
 from households.scoping import get_request_school_id
 
 SDS_FILENAMES = (
@@ -302,6 +303,21 @@ def sds_v21_export(request):
         teacher_assignments=teacher_assignments,
     )
     payload = _zip_sds_files(files)
+
+    audit_log(
+        request=request,
+        action="microsoft.sds.exported",
+        object_type="academic_term",
+        object_id=term.id,
+        meta={
+            "school_id": str(school.id),
+            "term_id": str(term.id),
+            "files": list(SDS_FILENAMES),
+            "classes": len(sections),
+            "students": len({item.student_id for item in student_enrollments}),
+            "teachers": len({item.staff_id for item in teacher_assignments}),
+        },
+    )
 
     response = HttpResponse(payload, content_type="application/zip")
     response["Content-Disposition"] = (
