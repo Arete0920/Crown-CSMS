@@ -12,7 +12,7 @@ class FiveModuleRouteEvidenceTests(SimpleTestCase):
 
     def test_complete_source_route_indicators(self):
         from pathlib import Path
-        root = Path(__file__).resolve().parents[4]
+        root = Path(__file__).resolve().parents[3]
         routes = root / "frontend" / "dashboards" / "src" / "routes"
         result = frontend_route_evidence(
             (routes / "paths.js").read_text(encoding="utf-8"),
