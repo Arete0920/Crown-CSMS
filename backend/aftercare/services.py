@@ -180,6 +180,14 @@ def _open_attendance_for_custody_release(school_id, student, session, at: dateti
     # Do not permit a fresh release while an older or future-dated session
     # remains open for this child. Those records require manual reconciliation.
     eligible_dates = (local_day, local_day - timedelta(days=1))
+    # Historical/imported records may carry simultaneous AM and PM custody.
+    # Never close either record independently while another program still
+    # claims custody of this child; require explicit supervisor reconciliation.
+    if AftercareAttendance.objects.select_for_update().filter(
+        school_fk_id=school_id, student_fk=student,
+        checkout_time__isnull=True,
+    ).exclude(care_session=session).exists():
+        raise ValueError("Conflicting open AM/PM custody requires supervisor reconciliation.")
     open_sessions = AftercareAttendance.objects.select_for_update().filter(
         school_fk_id=school_id, student_fk=student, care_session=session,
         checkout_time__isnull=True,
@@ -231,7 +239,7 @@ def checkout_student(
     when = when or timezone.now()
     attendance_day = school_local_date(school_id, when)
     # Inactivation of a student profile must never strand an already checked-in child.
-    student = Student.objects.filter(pk=student_id, school_id=school_id).first()
+    student = Student.objects.select_for_update().filter(pk=student_id, school_id=school_id).first()
     if student is None:
         raise ValueError("Student does not belong to this school.")
     attendance = _open_attendance_for_custody_release(school_id, student, "PM", when)
@@ -300,7 +308,7 @@ def handoff_student_to_school(school_id, student_id, receiving_user, when: datet
     school = School.objects.filter(pk=school_id, is_active=True).first()
     if school is None or not user_has_permission(receiving_user, "extended_care.edit", school=school):
         raise ValueError("Receiving staff member lacks school-scoped handoff authority.")
-    student = Student.objects.filter(pk=student_id, school_id=school_id).first()
+    student = Student.objects.select_for_update().filter(pk=student_id, school_id=school_id).first()
     if student is None:
         raise ValueError("Student does not belong to this school.")
     attendance = _open_attendance_for_custody_release(school_id, student, "AM", when)

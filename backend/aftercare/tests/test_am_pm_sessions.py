@@ -1,5 +1,5 @@
 """Synthetic, DB-backed AM/PM extended-care contract and release regressions."""
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 
 import pytest
 from django.utils import timezone
@@ -124,6 +124,47 @@ def test_prior_day_open_pm_blocks_next_day_am_without_duplicate_custody():
     assert not AftercareAttendance.objects.filter(
         school_fk=school, student_fk=child, care_session="AM",
     ).exists()
+
+
+def test_pm_checkout_rejects_open_am_custody_without_rewriting_either_record():
+    school, _household, child, receiver = setup_family()
+    am = checkin_student(school.id, child.id, when=at(7, 15), care_session="AM")
+    # Deliberately bypass admission guards to model a malformed legacy import.
+    pm = AftercareAttendance.objects.create(
+        school_fk=school, student_fk=child, date=DAY,
+        care_session="PM", checkin_time=at(15, 5),
+    )
+    contact = AftercarePickupContact.objects.create(
+        school_fk=school, student_fk=child, name="Authorized Pickup",
+    )
+    with pytest.raises(ValueError, match="supervisor reconciliation"):
+        checkout_student(
+            school.id, child.id, pickup_contact_id=contact.pk,
+            pickup_name_freeform="", pickup_verified=True,
+            when=at(17, 0), verified_by=receiver,
+        )
+    am.refresh_from_db()
+    pm.refresh_from_db()
+    assert am.checkout_time is None and pm.checkout_time is None
+    assert pm.pickup_contact_fk_id is None
+    assert pm.pickup_verified_by_id is None
+    assert pm.late_fee_charge_id is None
+
+
+def test_am_handoff_rejects_prior_day_open_pm_custody():
+    school, _household, child, receiver = setup_family()
+    previous_day = DAY - timedelta(days=1)
+    pm = AftercareAttendance.objects.create(
+        school_fk=school, student_fk=child, date=previous_day,
+        care_session="PM", checkin_time=at(15, 5) - timedelta(days=1),
+    )
+    am = checkin_student(school.id, child.id, when=at(7, 15), care_session="AM")
+    with pytest.raises(ValueError, match="supervisor reconciliation"):
+        handoff_student_to_school(school.id, child.id, receiver, when=at(8, 25))
+    am.refresh_from_db()
+    pm.refresh_from_db()
+    assert am.checkout_time is None and pm.checkout_time is None
+    assert am.handoff_recipient_id is None and am.handoff_verified is False
 
 
 def test_absent_am_does_not_block_pm():
