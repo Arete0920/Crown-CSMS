@@ -63,6 +63,11 @@ class MicrosoftTenantBinding(models.Model):
                 fields=["school", "tenant_id"],
                 name="uniq_microsoft_school_tenant",
             ),
+            models.UniqueConstraint(
+                fields=["school"],
+                condition=models.Q(is_active=True),
+                name="uniq_active_microsoft_tenant_per_school",
+            ),
         ]
         indexes = [
             models.Index(fields=["tenant_id", "is_active"], name="integration_tenant__ee9b98_idx"),
