@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-import { render, screen } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { cleanup, render, screen } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import CrownDashboardTemplate from '../components/crown-dashboard/CrownDashboardTemplate.jsx';
 import { getFinancialAidDashboardConfig } from './FinancialAidDashboard.jsx';
 
@@ -55,6 +55,8 @@ function renderFinancialAid() {
   render(<CrownDashboardTemplate roleKey="financialAid" config={getFinancialAidDashboardConfig()} />);
 }
 
+afterEach(() => cleanup());
+
 beforeEach(() => {
   captured.metrics = [];
   captured.truth = [];
@@ -73,7 +75,7 @@ describe('Financial Aid dashboard runtime data truth', () => {
       config: { endpoint: '/api/v1/dashboards/financial-aid/summary' },
     });
     renderFinancialAid();
-    expect(mockUseDashboardData).toHaveBeenCalledWith('financialAid', { enabled: true });
+    expect(mockUseDashboardData).toHaveBeenCalledWith('financial-aid', { enabled: true });
     expect(captured.truth[0].dataState).toBe('error');
     expect(captured.truth[0].lastSyncLabel).toBe('Last sync unavailable');
     expect(captured.metrics).toEqual([]);

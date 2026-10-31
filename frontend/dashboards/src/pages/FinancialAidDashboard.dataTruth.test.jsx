@@ -18,7 +18,7 @@ describe('Financial Aid dashboard data truth', () => {
     const original = getDashboardTemplate('financialAid');
     const config = getFinancialAidDashboardConfig();
     expect(config.key).toBe('financialAid');
-    expect(config.liveDataKey).toBe('financialAid');
+    expect(config.liveDataKey).toBe('financial-aid');
     expect(config.liveDataKey).toBe(original.liveDataKey);
     expect(config.disableLiveData).not.toBe(true);
     expect(config.activePath).toBe(original.activePath);
@@ -53,6 +53,6 @@ describe('Financial Aid dashboard data truth', () => {
     expect(observed.config.metrics).toEqual([]);
     expect(observed.config.commandModules).toEqual([]);
     expect(observed.config.activities).toEqual([]);
-    expect(observed.config.liveDataKey).toBe('financialAid');
+    expect(observed.config.liveDataKey).toBe('financial-aid');
   });
 });

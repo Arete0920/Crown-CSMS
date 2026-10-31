@@ -228,7 +228,7 @@ function buildLiveDashboardConfig(config, payload, endpointConfig, loading, erro
           title: 'Dashboard data unavailable',
           message: sourceLabel,
         }
-      : config.errorState,
+      : (dataState === 'loading' ? null : config.errorState),
   };
 }
 
