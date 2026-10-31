@@ -65,3 +65,12 @@ def test_recipient_denial(field,value,reason):
 def test_attendance_denial(field,value,reason):
     p=baseline();p["attendance"]=replace(p["attendance"],**{field:value})
     d=release_decision(**p);assert not d.allowed and d.code==reason
+
+def test_archived_child_can_exit_with_existing_verified_custody():
+    p=baseline();p["child"]=replace(p["child"],active=False)
+    assert release_decision(**p).code=="authorized_release"
+
+@pytest.mark.parametrize("method",[None,1,[],{}])
+def test_malformed_identity_method_denied(method):
+    p=baseline();p["identity_method"]=method
+    assert release_decision(**p).code=="identity_verification_required"
