@@ -182,3 +182,24 @@ def test_revoking_staff_coverage_keeps_staff_identity():
     assert coverage.is_active is False
     with pytest.raises(CheckinRefused):
         check(d)
+
+def test_guardian_revocation_before_checkin_denies_entry():
+    d=setup()
+    d["authority"].is_active=False
+    d["authority"].save()
+    with pytest.raises(CheckinRefused) as error:
+        check(d)
+    assert error.value.code=="verified_pickup_authority_required"
+    assert not DaycareAttendance.objects.exists()
+    assert not AuditLog.objects.filter(action="diadem.daycare.checkin").exists()
+
+def test_unverified_guardian_cannot_be_the_only_pickup_clearance():
+    d=setup()
+    d["authority"].is_active=False
+    d["authority"].verified_by=None
+    d["authority"].verified_at=None
+    d["authority"].save()
+    with pytest.raises(CheckinRefused) as error:
+        check(d)
+    assert error.value.code=="verified_pickup_authority_required"
+    assert not DaycareAttendance.objects.exists()
