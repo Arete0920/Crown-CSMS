@@ -425,4 +425,3 @@ class TestFinancialAidAwardOwnershipConsistency:
         assert metrics.status_code == 200
         assert metrics.json()["budget_awarded"] == "9000.00"
         assert metrics.json()["avg_award"] == 4500
-
