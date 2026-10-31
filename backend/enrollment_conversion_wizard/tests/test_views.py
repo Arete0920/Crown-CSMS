@@ -146,6 +146,17 @@ class EnrollmentConversionAuthTest(TestCase):
         user.save(update_fields=["is_superuser"])
         self.assertFalse(can_manage_enrollment_conversion(user, school))
 
+    def test_read_only_admin_permission_cannot_commit_enrollment(self):
+        school = _make_school()
+        user = _make_user()
+        role_code = "ENROLLMENT_READ_ONLY_TEST"
+        UserRole.objects.create(user=user, school=school, role_code=role_code)
+        permission, _ = CrownPermission.objects.get_or_create(
+            code="admin.view", defaults={"description": "View administration dashboard"},
+        )
+        RolePermission.objects.get_or_create(role_code=role_code, permission=permission)
+        self.assertFalse(can_manage_enrollment_conversion(user, school))
+
     def test_explicit_admin_view_is_scoped_to_its_own_school(self):
         school = _make_school()
         other_school = _make_school()
@@ -157,6 +168,10 @@ class EnrollmentConversionAuthTest(TestCase):
         RolePermission.objects.get_or_create(
             role_code="HEAD_OF_SCHOOL", permission=permission,
         )
+        action, _ = CrownPermission.objects.get_or_create(
+            code="director.actions", defaults={"description": "Execute director-level actions"},
+        )
+        RolePermission.objects.get_or_create(role_code="HEAD_OF_SCHOOL", permission=action)
         self.assertTrue(can_manage_enrollment_conversion(user, school))
         self.assertFalse(can_manage_enrollment_conversion(user, other_school))
         user.is_active = False
