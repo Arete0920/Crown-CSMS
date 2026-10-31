@@ -42,8 +42,8 @@ authentication.
 
 ## Provisioning
 
-Provisioning is explicit. The bearer-token authentication path does not create
-users or links.
+Provisioning is explicit. Neither the bearer-token path nor the server-side
+Microsoft OAuth session callback creates users or identity links.
 
 Use the Django administration interface under **Integrations**:
 
@@ -76,6 +76,12 @@ Authentication fails closed when:
 
 Changing a user's Microsoft email/UPN does not change the CROWN identity link.
 
+The server-side OAuth callback applies the same identity rule. Microsoft Graph
+`/me` supplies the user's immutable object `id`, which is resolved together with
+the configured Entra tenant GUID. Graph email/UPN is never used for CROWN account
+lookup. Entra group membership may still gate login and select a display/navigation
+route, but it never creates, replaces, or removes CROWN `UserRole` grants.
+
 ## Recovery
 
 If a mapping is wrong:
@@ -102,5 +108,6 @@ Education tenant test proving:
 - an unprovisioned `oid` is rejected;
 - a disabled CROWN link is rejected;
 - a conflicting mapping is rejected;
-- Microsoft token roles do not alter CROWN role grants;
+- Microsoft token roles or OAuth group mappings do not alter CROWN role grants;
+- the server-side OAuth callback resolves the same CROWN user from tenant GUID + Graph object ID even after email/UPN changes;
 - cross-school tenant denial remains unchanged.
