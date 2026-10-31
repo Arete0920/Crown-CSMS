@@ -328,6 +328,8 @@ def test_am_pm_board_kpis_are_session_scoped_and_not_misleading(monkeypatch):
     monkeypatch.setattr(api.timezone, "now", lambda: at(17, 30))
 
     am = checkin_student(school.id, child.id, when=at(7, 30), care_session="AM")
+    # A same-child PM admission requires an authorized, recorded AM school handoff.
+    handoff_student_to_school(school.id, child.id, director, when=at(8, 25))
     pm = checkin_student(school.id, child.id, when=at(15, 30), care_session="PM")
     pm.late_minutes = 15
     pm.late_fee_cents = 500
@@ -390,6 +392,7 @@ def test_guardian_reads_both_care_enrollments_but_pickup_only_contact_cannot():
 
     school, household, child, _receiver = setup_family()
     am = checkin_student(school.id, child.id, when=at(7, 15), care_session="AM")
+    handoff_student_to_school(school.id, child.id, _receiver, when=at(8, 25))
     pm = checkin_student(school.id, child.id, when=at(15, 5), care_session="PM")
 
     guardian_user = UserAccount.objects.create_user(
