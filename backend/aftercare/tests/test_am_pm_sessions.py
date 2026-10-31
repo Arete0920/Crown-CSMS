@@ -366,3 +366,34 @@ def test_guardian_reads_both_care_enrollments_but_pickup_only_contact_cannot():
         f"/api/v1/aftercare/parent/{unrelated_child.id}/",
     )
     assert denied_foreign.status_code == 403
+
+
+@pytest.mark.parametrize("role_code", [
+    "aftercare_staff", "extended_care_manager",
+    "AFTERCARE_STAFF", "EXTENDED_CARE_MANAGER",
+])
+def test_seeded_care_staff_roles_have_real_tenant_scoped_api_access(role_code):
+    """UI-listed care roles must work with backend RBAC, not only route guards."""
+    from django.core.management import call_command
+    from rest_framework.test import APIClient
+    from core.permissions import user_has_permission
+
+    school, _household, child, _receiver = setup_family()
+    call_command("seed_permissions", verbosity=0)
+    operator = UserAccount.objects.create_user(
+        username=f"care-role-{role_code.lower()}",
+        password="test", school=school,
+    )
+    UserRole.objects.create(user=operator, school=school, role_code=role_code)
+    assert user_has_permission(operator, "extended_care.view", school=school)
+    assert user_has_permission(operator, "extended_care.edit", school=school)
+    assert not user_has_permission(operator, "finance.view", school=school)
+
+    client = APIClient()
+    client.force_authenticate(user=operator)
+    client.credentials(HTTP_X_SCHOOL_ID=str(school.id))
+    response = client.get("/api/v1/aftercare/enrollments/")
+    assert response.status_code == 200, response.data
+    assert {row["care_session"] for row in response.data} == {"AM", "PM"}
+    other_school = School.objects.create(name="Unrelated Role Check")
+    assert not user_has_permission(operator, "extended_care.view", school=other_school)
