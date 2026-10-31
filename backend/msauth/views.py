@@ -35,7 +35,7 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 AZURE_CLIENT_ID     = os.getenv("AZURE_CLIENT_ID", "")
 AZURE_CLIENT_SECRET = os.getenv("AZURE_CLIENT_SECRET", "")
-AZURE_TENANT_ID     = os.getenv("AZURE_TENANT_ID", "")
+AZURE_TENANT_ID     = str(getattr(settings, "AAD_TENANT_ID", "") or "").strip()
 AZURE_REDIRECT_URI  = os.getenv("AZURE_REDIRECT_URI", "")
 
 _AUTHORITY    = f"https://login.microsoftonline.com/{AZURE_TENANT_ID}"
