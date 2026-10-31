@@ -3,6 +3,7 @@
 import uuid
 from unittest.mock import patch
 
+import jwt
 import pytest
 from django.contrib import admin
 from django.contrib.auth import get_user_model
@@ -183,6 +184,44 @@ def test_aad_authenticator_rejects_valid_but_unprovisioned_microsoft_identity():
     ):
         with pytest.raises(AuthenticationFailed, match="not provisioned"):
             authenticator.authenticate(request)
+
+
+@pytest.mark.parametrize(
+    "token_error",
+    [
+        jwt.InvalidAudienceError("synthetic audience mismatch"),
+        jwt.InvalidIssuerError("synthetic issuer mismatch"),
+        jwt.ExpiredSignatureError("synthetic expired token"),
+        jwt.DecodeError("synthetic malformed token"),
+    ],
+)
+def test_aad_authenticator_fails_closed_on_all_pyjwt_validation_errors(token_error):
+    request = APIRequestFactory().get(
+        "/api/iam/me/",
+        HTTP_AUTHORIZATION="Bearer " + ("x" * 150),
+    )
+    authenticator = AADBearerAuthentication()
+
+    with patch(
+        "core.auth.authentication.decode_and_validate_bearer",
+        side_effect=token_error,
+    ):
+        with pytest.raises(AuthenticationFailed, match="Microsoft token invalid"):
+            authenticator.authenticate(request)
+
+
+def test_aad_authenticator_allows_unclassified_configuration_error_to_fall_through():
+    request = APIRequestFactory().get(
+        "/api/iam/me/",
+        HTTP_AUTHORIZATION="Bearer " + ("x" * 150),
+    )
+    authenticator = AADBearerAuthentication()
+
+    with patch(
+        "core.auth.authentication.decode_and_validate_bearer",
+        side_effect=ValueError("AAD_API_AUDIENCE is not configured"),
+    ):
+        assert authenticator.authenticate(request) is None
 
 
 def test_aad_authenticator_fails_closed_on_identity_store_error():
