@@ -223,3 +223,25 @@ def daycare_open_roster(request, site_id):
         "children_present": len(rows),
         "rows": rows,
     })
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def daycare_sites(request):
+    """Discover only tenant-owned sites accessible by this staff role."""
+    school = _staff_scope(request, "diadem.daycare.view", allow_inactive_school=True)
+    now = timezone.now()
+    director = request.user.roles.filter(school=school, role_code="DAYCARE_DIRECTOR").exists()
+    sites = DaycareSite.objects.filter(school=school).order_by("name", "pk")
+    if not director:
+        assigned = DaycareRoomStaffCoverage.objects.filter(
+            school=school, staff=request.user, is_active=True, is_qualified=True,
+            verified_at__isnull=False, verified_at__lte=now,
+            verified_by__school=school, verified_by__is_active=True,
+            starts_at__lte=now, ends_at__gt=now, room__is_active=True,
+        ).exclude(qualification_evidence="").values_list("site_id", flat=True)
+        sites = sites.filter(pk__in=assigned)
+    return Response({"sites": [
+        {"site_id": str(site.pk), "name": site.name, "is_active": site.is_active}
+        for site in sites
+    ]})
