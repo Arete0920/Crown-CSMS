@@ -28,7 +28,7 @@ def test_valid_posted_accepted_award():
     assert (x['accepted_award_records'],x['accepted_award_face_value_cents'],x['accepted_without_ledger_count'])==(1,12500,0)
 
 def test_declined_award_reversal_not_accepted_value():
-    x=summarize(award('DECLINED',ledger_reversal_count=1))
+    x=summarize(award('DECLINED',ledger_reversal_count=1,ledger_reversal_validated=True))
     assert x['accepted_award_records']==0
     assert x['accepted_award_face_value_cents']==0
 

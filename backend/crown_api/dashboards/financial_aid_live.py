@@ -92,7 +92,7 @@ def summarize_financial_aid_rows(*, school_id, year_id, applications, awards):
                 or reversal_count < 0 or reversal_count > 1
                 or award['decision_status'] == 'OFFERED'
                 or (award['decision_status'] == 'ACCEPTED' and reversal_count != 0)
-                or (award['decision_status'] == 'DECLINED' and reversal_count != 1)
+                or (award['decision_status'] == 'DECLINED' and (reversal_count != 1 or award.get('ledger_reversal_validated') is not True))
             ):
                 raise FinancialAidDashboardIntegrityError('Award ledger linkage requires reconciliation')
 
@@ -155,10 +155,53 @@ def financial_aid_live_payload(school_id):
         'ledger_entry__amount_cents', 'ledger_entry__is_reversal',
         'ledger_entry__source', 'ledger_entry__account__school_id',
         'ledger_entry__account__code', 'ledger_entry__reversal_of_id',
+        'ledger_entry__account_id',
     )
+    # Validate the reversal *transaction*, not merely the existence/count of
+    # a record pointing back to the original aid credit.  A single malformed
+    # reversal could otherwise make an unreconciled decline look clean.
+    award_rows = list(awards)
+    posted_declines = [
+        row for row in award_rows
+        if row.get('decision_status') == 'DECLINED' and row.get('ledger_entry_id') is not None
+    ]
+    if posted_declines:
+        from core.models import LedgerEntry
+        original_ids = [row['ledger_entry_id'] for row in posted_declines]
+        if len(set(str(pk) for pk in original_ids)) != len(original_ids):
+            raise FinancialAidDashboardIntegrityError('Duplicate original aid ledger reference')
+        reversal_rows = LedgerEntry.objects.filter(
+            reversal_of_id__in=original_ids,
+        ).values(
+            'reversal_of_id', 'school_id', 'family_id', 'student_id',
+            'academic_year_id', 'account_id', 'source', 'amount_cents', 'is_reversal',
+        )
+        by_original = {}
+        for reversal in reversal_rows:
+            by_original.setdefault(str(reversal.get('reversal_of_id')), []).append(reversal)
+        for row in posted_declines:
+            candidates = by_original.get(str(row['ledger_entry_id']), [])
+            if len(candidates) != 1:
+                raise FinancialAidDashboardIntegrityError('Aid reversal requires reconciliation')
+            reversal = candidates[0]
+            if (
+                not _same_id(reversal.get('reversal_of_id'), row['ledger_entry_id'])
+                or not _same_id(reversal.get('school_id'), school_id)
+                or not _same_id(reversal.get('family_id'), row.get('ledger_entry__family_id'))
+                or not _same_id(reversal.get('student_id'), row.get('ledger_entry__student_id'))
+                or not _same_id(reversal.get('academic_year_id'), row.get('ledger_entry__academic_year_id'))
+                or not _same_id(reversal.get('account_id'), row.get('ledger_entry__account_id'))
+                or reversal.get('source') != row.get('ledger_entry__source')
+                or reversal.get('is_reversal') is not True
+                or type(reversal.get('amount_cents')) is not int
+                or type(row.get('ledger_entry__amount_cents')) is not int
+                or reversal['amount_cents'] != -row['ledger_entry__amount_cents']
+            ):
+                raise FinancialAidDashboardIntegrityError('Invalid aid reversal requires reconciliation')
+            row['ledger_reversal_validated'] = True
     facts = summarize_financial_aid_rows(
         school_id=school_id, year_id=year_id,
-        applications=applications, awards=awards,
+        applications=applications, awards=award_rows,
     )
 
     unposted = facts['accepted_without_ledger_count']
