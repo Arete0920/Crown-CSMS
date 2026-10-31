@@ -10,6 +10,7 @@ urlpatterns = [
     path("roster/today/", api.roster_today, name="aftercare_roster_today"),
     path("attendance/checkin/", api.checkin, name="aftercare_checkin"),
     path("attendance/checkout/", api.checkout, name="aftercare_checkout"),
+    path("attendance/school-handoff/", api.school_handoff, name="beforecare_school_handoff"),
     path("incidents/", api.incidents, name="aftercare_incidents"),
     path("parent/<uuid:student_id>/", api.parent_view, name="aftercare_parent_view"),
     path("board/summary/", api.board_summary, name="aftercare_board_summary"),

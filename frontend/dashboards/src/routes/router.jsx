@@ -71,6 +71,7 @@ import HumanResources from "../pages/HumanResources.jsx";
 import SafetyDashboard from "../pages/SafetyDashboard.jsx";
 import BoardExecutiveDashboard from "../pages/BoardExecutiveDashboard.jsx";
 import AftercareRosterPage from "../pages/AftercareRosterPage.jsx";
+import CareSessionDirectorDashboard from "../pages/CareSessionDirectorDashboard.jsx";
 import AftercareSetupWizard from "../pages/wizards/AftercareSetupWizard.jsx";
 import SummerCampSetupWizard from "../pages/wizards/SummerCampSetupWizard.jsx";
 import FinanceSetupWizard from "../pages/wizards/FinanceSetupWizard.jsx";
@@ -926,8 +927,20 @@ export const router = createBrowserRouter([
     element: <AuthenticatedSchoolRouteGuard><BoardExecutiveDashboard /></AuthenticatedSchoolRouteGuard>,
   },
   {
+    path: PATHS.BEFORECARE_DIRECTOR,
+    element: <AuthenticatedSchoolRouteGuard><RoleRouteGuard allowedRoles={ROLE_GROUPS.AFTERCARE_STAFF}><CareSessionDirectorDashboard careSession="AM" /></RoleRouteGuard></AuthenticatedSchoolRouteGuard>,
+  },
+  {
+    path: PATHS.AFTERCARE_DIRECTOR,
+    element: <AuthenticatedSchoolRouteGuard><RoleRouteGuard allowedRoles={ROLE_GROUPS.AFTERCARE_STAFF}><CareSessionDirectorDashboard careSession="PM" /></RoleRouteGuard></AuthenticatedSchoolRouteGuard>,
+  },
+  {
+    path: PATHS.BEFORECARE_ROSTER,
+    element: <AuthenticatedSchoolRouteGuard><RoleRouteGuard allowedRoles={ROLE_GROUPS.AFTERCARE_STAFF}><AftercareRosterPage careSession="AM" /></RoleRouteGuard></AuthenticatedSchoolRouteGuard>,
+  },
+  {
     path: PATHS.AFTERCARE_ROSTER,
-    element: <AuthenticatedSchoolRouteGuard><RoleRouteGuard allowedRoles={ROLE_GROUPS.AFTERCARE_STAFF}><AftercareRosterPage /></RoleRouteGuard></AuthenticatedSchoolRouteGuard>,
+    element: <AuthenticatedSchoolRouteGuard><RoleRouteGuard allowedRoles={ROLE_GROUPS.AFTERCARE_STAFF}><AftercareRosterPage careSession="PM" /></RoleRouteGuard></AuthenticatedSchoolRouteGuard>,
   },
   {
     path: PATHS.WIZARD_AFTERCARE_SETUP,
