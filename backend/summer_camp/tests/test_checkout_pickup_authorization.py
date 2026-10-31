@@ -343,3 +343,17 @@ def test_cancelled_enrollment_cannot_hide_unresolved_camp_child_custody():
     assert matching[0]["enrollment_id"] is None
     assert matching[0]["checkout_time"] is None
     _unchanged(c)
+
+
+def test_inconsistent_local_custody_date_blocks_release_without_mutation():
+    """Malformed historical attendance is a supervisor hold, not a free checkout."""
+    c = _case("InconsistentLocalDay")
+    c.school.timezone = "America/Los_Angeles"
+    c.school.save(update_fields=["timezone"])
+    # 00:30 UTC on Sep 4 is still Sep 3 at the school.
+    c.attendance.checkin_time = datetime(2025, 9, 4, 0, 30, tzinfo=utc.utc)
+    c.attendance.date = date(2025, 9, 4)  # Deliberately wrong civil date.
+    c.attendance.save(update_fields=["checkin_time", "date"])
+    with pytest.raises(ValueError, match="check-in date mismatch"):
+        _release(c, at=datetime(2025, 9, 4, 18, tzinfo=utc.utc))
+    _unchanged(c)
