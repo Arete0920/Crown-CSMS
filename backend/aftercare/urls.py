@@ -5,6 +5,8 @@ from . import api, wizard_api, daycare_api
 urlpatterns = [
     path("daycare/sites/", daycare_api.daycare_sites, name="diadem_sites"),
     path("daycare/sites/<uuid:site_id>/roster/", daycare_api.daycare_open_roster, name="diadem_open_roster"),
+    path("daycare/sites/<uuid:site_id>/scheduled/", daycare_api.daycare_scheduled_children, name="diadem_scheduled_children"),
+    path("daycare/attendance/<uuid:attendance_id>/pickup-authorities/", daycare_api.daycare_pickup_authorities, name="diadem_pickup_authorities"),
     path("daycare/attendance/checkin/", daycare_api.daycare_checkin, name="diadem_checkin"),
     path("daycare/attendance/release/", daycare_api.daycare_release, name="diadem_release"),
     path("config/", api.program_config, name="aftercare_config"),
