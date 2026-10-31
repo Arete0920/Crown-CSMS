@@ -38,6 +38,7 @@ class RosterTodayResponseSerializer(serializers.Serializer):
 
 class ParentViewResponseSerializer(serializers.Serializer):
     enrollment = AftercareEnrollmentSerializer(allow_null=True)
+    enrollments = AftercareEnrollmentSerializer(many=True)
     attendance = AftercareAttendanceSerializer(many=True)
 
 
@@ -357,15 +358,27 @@ def parent_view(request, student_id):
     school_id = school_id_from_request(request, required=True)
     if not _guardian_can_view_student(request, school_id=school_id, student_id=student_id):
         return _forbidden()
-    enrollment = AftercareEnrollment.objects.filter(
-        school_fk_id=school_id, student_fk_id=student_id, is_active=True
-    ).first()
+    # Preserve the PM-first legacy field while exposing the authoritative
+    # full AM/PM enrollment set for family portals. One child is not two profiles.
+    enrollments = list(
+        AftercareEnrollment.objects.filter(
+            school_fk_id=school_id, student_fk_id=student_id, is_active=True,
+        ).order_by("care_session", "-start_date", "-created_at")
+    )
+    legacy_enrollment = next(
+        (row for row in enrollments if row.care_session == "PM"),
+        enrollments[0] if enrollments else None,
+    )
     attendance = AftercareAttendance.objects.filter(
         school_fk_id=school_id, student_fk_id=student_id
     ).order_by("-date", "care_session")[:60]
     return Response(
         {
-            "enrollment": AftercareEnrollmentSerializer(enrollment).data if enrollment else None,
+            "enrollment": (
+                AftercareEnrollmentSerializer(legacy_enrollment).data
+                if legacy_enrollment else None
+            ),
+            "enrollments": AftercareEnrollmentSerializer(enrollments, many=True).data,
             "attendance": AftercareAttendanceSerializer(attendance, many=True).data,
         }
     )

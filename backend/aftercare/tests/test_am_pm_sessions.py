@@ -305,3 +305,58 @@ def test_am_pm_board_kpis_are_session_scoped_and_not_misleading(monkeypatch):
     assert all(result.data["unattributed_incidents_mtd"] == 1 for result in (am_view, pm_view, combined))
     assert [result.data["late_fee_assessed_mtd"] for result in (am_view, pm_view, combined)] == [0.0, 5.0, 5.0]
     assert [result.data["late_pickups_mtd"] for result in (am_view, pm_view, combined)] == [0, 1, 1]
+
+
+def test_guardian_reads_both_care_enrollments_but_pickup_only_contact_cannot():
+    """One child profile, two program enrollments, separate session attendance."""
+    from rest_framework.test import APIClient
+    from households.models import Guardian
+
+    school, household, child, _receiver = setup_family()
+    am = checkin_student(school.id, child.id, when=at(7, 15), care_session="AM")
+    pm = checkin_student(school.id, child.id, when=at(15, 5), care_session="PM")
+
+    guardian_user = UserAccount.objects.create_user(
+        username="extended-care-guardian", email="guardian@example.test",
+        password="test", school=school,
+    )
+    Guardian.objects.create(
+        school_id=school.id, household=household, account=guardian_user,
+        first_name="Verified", last_name="Guardian", is_primary=True,
+    )
+    client = APIClient()
+    client.force_authenticate(user=guardian_user)
+    client.credentials(HTTP_X_SCHOOL_ID=str(school.id))
+    url = f"/api/v1/aftercare/parent/{child.id}/"
+    response = client.get(url)
+    assert response.status_code == 200, response.data
+    assert len(response.data["enrollments"]) == 2
+    assert {row["care_session"] for row in response.data["enrollments"]} == {"AM", "PM"}
+    # The legacy scalar field remains backward-compatible and PM-preferred.
+    assert response.data["enrollment"]["care_session"] == "PM"
+    assert {row["id"] for row in response.data["attendance"]} == {am.pk, pm.pk}
+    assert {row["care_session"] for row in response.data["attendance"]} == {"AM", "PM"}
+
+    pickup_only_user = UserAccount.objects.create_user(
+        username="extended-care-pickup-only", password="test", school=school,
+    )
+    AftercarePickupContact.objects.create(
+        school_fk=school, student_fk=child, name="Pickup Only",
+    )
+    client.force_authenticate(user=pickup_only_user)
+    denied = client.get(url)
+    assert denied.status_code == 403
+
+    foreign = School.objects.create(name="Unrelated Care Organization")
+    unrelated_household = Household.objects.create(
+        school_id=foreign.id, name="Unrelated Household",
+    )
+    unrelated_child = Student.objects.create(
+        school_id=foreign.id, household=unrelated_household,
+        first_name="Not", last_name="Linked",
+    )
+    client.force_authenticate(user=guardian_user)
+    denied_foreign = client.get(
+        f"/api/v1/aftercare/parent/{unrelated_child.id}/",
+    )
+    assert denied_foreign.status_code == 403
