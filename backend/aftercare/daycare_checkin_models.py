@@ -1,8 +1,9 @@
 """Daycare staffing coverage and immutable check-in storage, independent of K12 attendance."""
 import uuid
 from django.conf import settings
+from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
-from django.db import models
+from django.db import models, transaction
 from django.utils import timezone
 from .daycare_models import DaycareScopedRecord
 
@@ -35,6 +36,29 @@ class DaycareRoomStaffCoverage(DaycareScopedRecord):
             and self.verified_by_id and self.verified_at and self.verified_by.is_active
             and self.verified_by_id != self.staff_id):
             raise ValidationError("Verified independent qualification and active staffing required.")
+
+    def save(self, *args, **kwargs):
+        # Serialize active-shift writes by the canonical staff account, including
+        # concurrent inserts. A coverage-row lock alone does not protect a row
+        # which has not yet been inserted into another room.
+        if self.is_active:
+            with transaction.atomic():
+                staff = get_user_model().objects.select_for_update().filter(
+                    pk=self.staff_id, school_id=self.school_id, is_active=True
+                ).first()
+                if staff is None:
+                    raise ValidationError("Active same-tenant staff required.")
+                if (self.starts_at is not None and self.ends_at is not None and
+                    DaycareRoomStaffCoverage.objects.filter(
+                        school_id=self.school_id, staff_id=self.staff_id,
+                        is_active=True, starts_at__lt=self.ends_at,
+                        ends_at__gt=self.starts_at,
+                    ).exclude(pk=self.pk).exists()):
+                    raise ValidationError(
+                        "A staff member cannot have overlapping active room coverage."
+                    )
+                return super().save(*args, **kwargs)
+        return super().save(*args, **kwargs)
 
 class DaycareAttendance(DaycareScopedRecord):
     site=models.ForeignKey("aftercare.DaycareSite",on_delete=models.PROTECT,related_name="daycare_attendance")
