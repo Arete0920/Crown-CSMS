@@ -13,7 +13,7 @@ class AftercareProgramConfigSerializer(serializers.ModelSerializer):
     class Meta:
         model = AftercareProgramConfig
         fields = [
-            "id", "start_time", "end_time", "late_fee_per_10_min",
+            "id", "before_start_time", "before_end_time", "start_time", "end_time", "late_fee_per_10_min",
             "late_fee_grace_minutes", "late_fee_cap", "ratio_k_2", "ratio_3_5",
             "ratio_6_8", "ratio_9_12", "default_billing_model", "dropin_daily_rate",
             "prepaid_session_unit_price", "monthly_rate_1_day", "monthly_rate_2_days",
@@ -26,10 +26,15 @@ class AftercareProgramConfigSerializer(serializers.ModelSerializer):
 class AftercareEnrollmentSerializer(serializers.ModelSerializer):
     student_id = serializers.UUIDField(source="student_fk_id")
 
+    def validate_monthly_rate(self, value):
+        if value is not None and (not value.is_finite() or value < 0):
+            raise serializers.ValidationError("Monthly rate must be nonnegative and finite.")
+        return value
+
     class Meta:
         model = AftercareEnrollment
         fields = [
-            "id", "student_id", "start_date", "end_date", "days_of_week",
+            "id", "student_id", "care_session", "start_date", "end_date", "days_of_week",
             "billing_model", "monthly_rate", "prepaid_sessions_balance",
             "dropin_daily_rate", "is_active", "created_at",
         ]
@@ -55,7 +60,8 @@ class AftercareAttendanceSerializer(serializers.ModelSerializer):
     class Meta:
         model = AftercareAttendance
         fields = [
-            "id", "student_id", "date", "checkin_time", "checkout_time",
+            "id", "student_id", "care_session", "date", "checkin_time", "checkout_time",
+            "handoff_time", "handoff_recipient", "handoff_verified",
             "pickup_contact_id", "pickup_name_freeform", "pickup_verified",
             "late_minutes", "late_fee_cents", "late_fee_charge_id", "notes", "created_at",
         ]
