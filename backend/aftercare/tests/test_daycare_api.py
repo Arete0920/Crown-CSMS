@@ -177,3 +177,26 @@ def test_inactive_school_rejects_foreign_school_custody_header():
         format="json", HTTP_X_SCHOOL_ID=str(foreign.pk))
     assert response.status_code in (403, 404)
     assert not DaycareRelease.objects.exists()
+
+def test_site_directory_is_school_scoped_and_staff_visible():
+    d = setup()
+    c = _client(d["actor"])
+    r = c.get("/api/v1/aftercare/daycare/sites/")
+    assert r.status_code == 200, getattr(r, "data", None)
+    assert r.data["sites"] == [{"site_id": str(d["site"].id), "name": d["site"].name, "is_active": True}]
+
+
+def test_site_directory_denies_staff_without_current_verified_coverage():
+    d = setup()
+    d["coverage"].is_active = False
+    d["coverage"].save()
+    r = _client(d["actor"]).get("/api/v1/aftercare/daycare/sites/")
+    assert r.status_code == 200
+    assert r.data["sites"] == []
+
+
+def test_site_directory_denies_foreign_tenant_selection():
+    d = setup()
+    foreign = School.objects.create(name="Foreign synthetic daycare")
+    r = _client(d["actor"]).get("/api/v1/aftercare/daycare/sites/", HTTP_X_SCHOOL_ID=str(foreign.pk))
+    assert r.status_code in (403, 404)
