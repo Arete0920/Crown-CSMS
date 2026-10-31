@@ -23,6 +23,13 @@ export default function JirehSGODashboard() {
   const [error, setError] = useState("");
 
   useEffect(() => {
+    // A previous member's grantor records must not remain visible when a
+    // session ends or the authenticated principal changes.
+    setOrganizations(null);
+    setOrganizationId("");
+    setOverview(null);
+    setError("");
+    setLoading(false);
     if (!token) return;
     let live = true;
     setLoading(true);
@@ -63,10 +70,10 @@ export default function JirehSGODashboard() {
     <p>Standalone, noncash pilot workspace. No settlement or payments enabled.</p>
     <p role="note">Commitments are not funded, cleared, allocated, or paid.</p>
     {!token && <p role="alert">Authorized SGO sign-in is required.</p>}
-    {loading && <p role="status">Verifying grantor membership and records…</p>}
-    {error && <p role="alert">{error}</p>}
-    {organizations?.length === 0 && !error && <p>No active SGO membership is assigned.</p>}
-    {organizations?.length > 0 && <section aria-label="SGO membership">
+    {token && loading && <p role="status">Verifying grantor membership and records…</p>}
+    {token && error && <p role="alert">{error}</p>}
+    {token && organizations?.length === 0 && !error && <p>No active SGO membership is assigned.</p>}
+    {token && organizations?.length > 0 && <section aria-label="SGO membership">
       <label htmlFor="sgo-organization">Grantor organization</label>
       <select id="sgo-organization" value={organizationId}
         onChange={(event) => setOrganizationId(event.target.value)}>
@@ -75,7 +82,7 @@ export default function JirehSGODashboard() {
         </option>)}
       </select>
     </section>}
-    {overview && !loading && <>
+    {token && overview && !loading && <>
       <section aria-label="Noncash aggregate totals">
         <h2>{overview.organization.name}</h2>
         <p>Authorized role: {overview.role}</p>

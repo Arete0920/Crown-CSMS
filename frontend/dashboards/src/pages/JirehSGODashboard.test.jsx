@@ -43,6 +43,17 @@ describe("Standalone Jireh SGO read-only grantor UI", () => {
     expect(screen.getByRole("alert").textContent).toMatch(/sign-in/i);
     expect(authenticatedFetch).not.toHaveBeenCalled();
   });
+  it("immediately hides cached grantor data after logout", async () => {
+    const view = render(<JirehSGODashboard />);
+    expect(await screen.findByText("Synthetic Grant Program")).toBeTruthy();
+    getAccessToken.mockReturnValue("");
+    view.rerender(<JirehSGODashboard />);
+    expect(screen.getByRole("alert").textContent).toMatch(/sign-in/i);
+    expect(screen.queryByText("Synthetic Grant Program")).toBeNull();
+    expect(screen.queryByLabelText("SGO membership")).toBeNull();
+    expect(screen.queryByText("Noncash commitments:")).toBeNull();
+  });
+
   it("does not show data from a mismatched organization", async () => {
     authenticatedFetch.mockImplementation(async (url) =>
       url.endsWith("/organizations/")
