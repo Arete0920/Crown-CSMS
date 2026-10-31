@@ -93,6 +93,14 @@ def checkin_child(*,school_id:UUID,actor_id:UUID,site_id:UUID,room_id:UUID,
                      Q(effective_until__isnull=True)|Q(effective_until__gt=at)).exists()
             if not verified_pickup:
                 raise CheckinRefused("verified_pickup_authority_required")
+            # Coverage writes lock staff accounts. Lock candidate accounts here
+            # before the authoritative coverage re-read to serialize shift edits.
+            candidate_ids=list(DaycareRoomStaffCoverage.objects.filter(
+                school=school,site_id=site_id,room=room,is_active=True,
+                starts_at__lte=at,ends_at__gt=at
+            ).values_list("staff_id",flat=True).distinct())
+            list(UserAccount.objects.select_for_update().filter(
+                pk__in=candidate_ids,school=school).order_by("pk").values_list("pk",flat=True))
             staff_ids=list(DaycareRoomStaffCoverage.objects.filter(
                 school=school,site_id=site_id,room=room,is_active=True,is_qualified=True,
                 staff__school_id=school_id,staff__is_active=True,
