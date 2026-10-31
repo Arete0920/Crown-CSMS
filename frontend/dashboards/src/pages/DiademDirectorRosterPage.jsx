@@ -52,14 +52,19 @@ export default function DiademDirectorRosterPage() {
     ]).then(([present, scheduled]) => {
       if (!live) return;
       const problems = [];
-      if (present.status === "fulfilled" && present.value.data?.site_id === siteId && Array.isArray(present.value.data?.rows)) {
+      const rosterVerified = present.status === "fulfilled" &&
+        present.value.data?.site_id === siteId && Array.isArray(present.value.data?.rows);
+      if (rosterVerified) {
         setRoster(present.value.data);
-      } else problems.push("Open custody roster unavailable.");
+        // A verified custody roster resolves an uncertain write even when
+        // admission lookups are denied because the organization is suspended.
+        // A denied schedule does not block the supervised release path.
+        setWriteStateUnknown(false);
+      } else problems.push("Open custody roster unavailable. Do not retry custody actions.");
       if (scheduled.status === "fulfilled" && scheduled.value.data?.site_id === siteId && Array.isArray(scheduled.value.data?.rows)) {
         setCandidates(scheduled.value.data);
       } else problems.push("Scheduled intake unavailable or unauthorized.");
       if (problems.length) setError(problems.join(" "));
-      else setWriteStateUnknown(false);
     }).finally(() => { if (live) setLoading(false); });
     return () => { live = false; };
   }, [siteId, sites]);

@@ -44,8 +44,8 @@ function liveGet(url) {
 }
 
 beforeEach(() => {
-  vi.stubGlobal("crypto", { randomUUID: vi.fn(() => "00000000-0000-4000-8000-000000000001") });
   vi.resetAllMocks();
+  vi.stubGlobal("crypto", { randomUUID: vi.fn(() => "00000000-0000-4000-8000-000000000001") });
   crownApiClient.get.mockImplementation(liveGet);
   crownApiClient.post.mockResolvedValue({ status: 201, data: {} });
 });
@@ -132,4 +132,20 @@ describe("Diadem staff physical custody controls", () => {
     expect(screen.queryByRole("group", { name: "Verify child release" })).toBeNull();
     expect(crownApiClient.post).not.toHaveBeenCalled();
   });
+  it("preserves supervised pickup when the suspended-school schedule is denied", async () => {
+    crownApiClient.get.mockImplementation((url) =>
+      url.endsWith("/scheduled/")
+        ? Promise.reject({ response: { status: 403, data: { detail: "Admission disabled" } } })
+        : liveGet(url)
+    );
+    render(<DiademDirectorRosterPage />);
+    const open = await screen.findByRole("button", { name: "Verify authorized pickup" });
+    await waitFor(() => expect(open.disabled).toBe(false));
+    expect(screen.queryByRole("button", { name: "Record check-in" })).toBeNull();
+    expect(screen.getByText(/Scheduled intake unavailable or unauthorized/)).toBeTruthy();
+    fireEvent.click(open);
+    await screen.findByRole("option", { name: "Approved Guardian" });
+    expect(screen.getByRole("button", { name: "Record verified release" }).disabled).toBe(true);
+  });
+
 });
