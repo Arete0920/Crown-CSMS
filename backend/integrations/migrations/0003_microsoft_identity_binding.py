@@ -37,6 +37,11 @@ class Migration(migrations.Migration):
                 ],
                 "constraints": [
                     models.UniqueConstraint(fields=("school", "tenant_id"), name="uniq_microsoft_school_tenant"),
+                    models.UniqueConstraint(
+                        condition=models.Q(("is_active", True)),
+                        fields=("school",),
+                        name="uniq_active_microsoft_tenant_per_school",
+                    ),
                 ],
             },
         ),
