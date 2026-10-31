@@ -45,6 +45,14 @@ describe("Summer Camp live roster and custody", () => {
     expect(campCustodyLabel({ ...checked, checkout_time: "16:00", pickup_verified: true })).toContain("verified");
   });
 
+  it("blocks manual-review and ambiguous open custody without hiding custody", () => {
+    const checked = { ...today.rows[0], checkin_time: "2026-07-02T23:55:00-04:00" };
+    expect(campCanVerifyPickup(child, { ...checked, requires_supervisor_reconciliation: true })).toBe(false);
+    expect(campCanVerifyPickup(child, { ...checked, open_custody_count: 2 })).toBe(false);
+    expect(campCanVerifyPickup(child, { ...checked, open_custody_count: 1 })).toBe(true);
+    expect(campCustodyLabel({ ...checked, requires_supervisor_reconciliation: true })).toContain("supervisor");
+  });
+
   it("rejects mismatched and malformed pickup choices", () => {
     expect(campPickupContacts({ enrollment_id: 11, contacts: [{ id: 7, name: "Guardian" }] }, 11)).toHaveLength(1);
     expect(() => campPickupContacts({ enrollment_id: 12, contacts: [] }, 11)).toThrow();

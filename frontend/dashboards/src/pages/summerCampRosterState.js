@@ -43,12 +43,15 @@ export function campCanCheckIn(row, custody, session, day, duplicate = false) {
 
 export function campCanVerifyPickup(row, custody, duplicate = false) {
   return Boolean(!duplicate && row?.student_id && row.status === "REGISTERED" &&
-    custody?.checkin_time && !custody.checkout_time);
+    custody?.checkin_time && !custody.checkout_time &&
+    !custody.requires_supervisor_reconciliation &&
+    (custody.open_custody_count == null || custody.open_custody_count === 1));
 }
 
 export function campCustodyLabel(custody) {
   if (!custody) return "Custody status unavailable";
   if (!custody.checkin_time) return "Not checked in today";
+  if (custody.requires_supervisor_reconciliation || custody.open_custody_count > 1) return "Unresolved custody; supervisor reconciliation required";
   if (!custody.checkout_time) return "Checked in; awaiting authorized release";
   return custody.pickup_verified ? "Released to verified pickup" : "Release needs review";
 }
