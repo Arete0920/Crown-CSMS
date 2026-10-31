@@ -4,6 +4,7 @@ import uuid
 from unittest.mock import patch
 
 import pytest
+from django.contrib import admin
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
@@ -13,6 +14,7 @@ from rest_framework.test import APIRequestFactory
 from core.auth.aad_jwt import MicrosoftIdentityError, get_user_from_claims
 from core.auth.authentication import AADBearerAuthentication
 from core.models import School, UserRole
+from integrations.admin import MicrosoftIdentityLinkAdmin, MicrosoftTenantBindingAdmin
 from integrations.models import MicrosoftIdentityLink, MicrosoftTenantBinding
 
 
@@ -201,3 +203,12 @@ def test_aad_authenticator_fails_closed_on_identity_store_error():
     ):
         with pytest.raises(AuthenticationFailed, match="resolution unavailable"):
             authenticator.authenticate(request)
+
+
+def test_microsoft_binding_admin_disables_hard_delete():
+    site = admin.AdminSite()
+    tenant_admin = MicrosoftTenantBindingAdmin(MicrosoftTenantBinding, site)
+    identity_admin = MicrosoftIdentityLinkAdmin(MicrosoftIdentityLink, site)
+
+    assert tenant_admin.has_delete_permission(None) is False
+    assert identity_admin.has_delete_permission(None) is False
