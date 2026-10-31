@@ -71,6 +71,14 @@ def release_child(*,school_id:UUID,actor_id:UUID,site_id:UUID,room_id:UUID,
                 raise ReleaseRefused("recipient_not_authorized")
             verified=bool(authority.verified and authority.verified_at<=at and
                           authority.verified_by.is_active and authority.verified_by.school_id==school_id)
+            # Serialize concurrent staffing edits with the same staff account locks
+            # used by the coverage model. Re-read authoritative coverage afterward.
+            candidate_ids=list(DaycareRoomStaffCoverage.objects.filter(
+                school=school,site_id=site_id,room=room,is_active=True,
+                starts_at__lte=at,ends_at__gt=at
+            ).values_list("staff_id",flat=True).distinct())
+            list(UserAccount.objects.select_for_update().filter(
+                pk__in=candidate_ids,school=school).order_by("pk").values_list("pk",flat=True))
             staff_ids=set(DaycareRoomStaffCoverage.objects.filter(
                 school=school,site_id=site_id,room=room,is_active=True,is_qualified=True,
                 staff__school_id=school_id,staff__is_active=True,
