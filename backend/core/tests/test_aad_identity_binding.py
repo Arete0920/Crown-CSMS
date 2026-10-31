@@ -6,6 +6,7 @@ from unittest.mock import patch
 import pytest
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
+from django.db import IntegrityError, transaction
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework.test import APIRequestFactory
 
@@ -109,6 +110,30 @@ def test_shared_tid_oid_may_map_multiple_schools_to_same_crown_user():
     resolved = get_user_from_claims({"tid": str(tenant_id), "oid": str(object_id)})
 
     assert resolved.pk == user.pk
+
+
+def test_school_cannot_have_two_active_microsoft_tenant_bindings():
+    school = School.objects.create(name="Single Active Tenant School")
+    MicrosoftTenantBinding.objects.create(
+        school=school,
+        tenant_id=uuid.uuid4(),
+        is_active=True,
+    )
+
+    with pytest.raises(IntegrityError):
+        with transaction.atomic():
+            MicrosoftTenantBinding.objects.create(
+                school=school,
+                tenant_id=uuid.uuid4(),
+                is_active=True,
+            )
+
+    inactive = MicrosoftTenantBinding.objects.create(
+        school=school,
+        tenant_id=uuid.uuid4(),
+        is_active=False,
+    )
+    assert inactive.pk is not None
 
 
 def test_link_rejects_user_without_membership_in_bound_school():
