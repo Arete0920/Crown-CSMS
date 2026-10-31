@@ -16,6 +16,9 @@ class MicrosoftTenantBindingAdmin(admin.ModelAdmin):
         immutable = ("school", "tenant_id") if obj else ()
         return immutable + ("created_at", "updated_at")
 
+    def has_delete_permission(self, request, obj=None):
+        return False
+
     def save_model(self, request, obj, form, change):
         with transaction.atomic():
             super().save_model(request, obj, form, change)
@@ -48,6 +51,9 @@ class MicrosoftIdentityLinkAdmin(admin.ModelAdmin):
     def get_readonly_fields(self, request, obj=None):
         immutable = ("binding", "user", "object_id") if obj else ()
         return immutable + ("created_at", "updated_at")
+
+    def has_delete_permission(self, request, obj=None):
+        return False
 
     def save_model(self, request, obj, form, change):
         with transaction.atomic():
