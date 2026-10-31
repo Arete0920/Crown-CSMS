@@ -192,6 +192,37 @@ class TestModule026AttendanceAndBilling(TestCase):
         self.assertFalse(AftercareMonthlyChargeRun.objects.filter(school_fk=self.school).exists())
 
     @patch("aftercare.services.create_ledger_charge_aftercare")
+    def test_negative_monthly_rate_blocks_all_charges(self, charge):
+        # An invalid AM row must prevent PM billing, not leave a partial run.
+        _enroll(self.school, self.student, care_session="AM", monthly_rate="-19.99")
+        with self.assertRaisesMessage(ValueError, "nonnegative and finite"):
+            run_monthly_flat_billing(self.school.id, 2026, 6)
+        charge.assert_not_called()
+        self.assertFalse(AftercareMonthlyChargeRun.objects.filter(school_fk=self.school).exists())
+
+    @patch("aftercare.services.create_ledger_charge_aftercare", return_value="synthetic-posted-id")
+    def test_fractional_monthly_decimal_billed_without_float_rounding(self, charge):
+        row = AftercareEnrollment.objects.get(
+            school_fk=self.school, student_fk=self.student, care_session="PM",
+        )
+        row.monthly_rate = "0.29"
+        row.save(update_fields=["monthly_rate"])
+        result = run_monthly_flat_billing(self.school.id, 2026, 6)
+        self.assertEqual(result["charged"], 1)
+        self.assertEqual(charge.call_args.kwargs["amount_cents"], 29)
+
+    def test_enrollment_api_rejects_negative_monthly_rate(self):
+        user = _user(self.school, grants=("extended_care.view", "extended_care.edit"))
+        payload = _payload(self.student)
+        payload["care_session"] = "AM"
+        payload["monthly_rate"] = "-0.01"
+        response = _client(user, self.school).post(AFTERCARE_URL, payload, format="json")
+        self.assertEqual(response.status_code, 400, response.data)
+        self.assertFalse(AftercareEnrollment.objects.filter(
+            school_fk=self.school, student_fk=self.student, care_session="AM",
+        ).exists())
+
+    @patch("aftercare.services.create_ledger_charge_aftercare")
     def test_monthly_billing_rejects_inactive_tenant_without_charge(self, charge):
         self.school.is_active = False
         self.school.save(update_fields=["is_active"])

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from decimal import Decimal
 from datetime import date, datetime, time
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
@@ -336,20 +337,32 @@ def run_monthly_flat_billing(school_id, year: int, month: int) -> dict:
     # child and session twice. Fail before any finance obligation is created;
     # an AM and a PM enrollment are two legitimately distinct services.
     seen = set()
+    payable = []
     for enrollment in enrollments:
+        if enrollment.care_session not in ("AM", "PM"):
+            raise ValueError("Invalid monthly enrollment care session.")
         key = (enrollment.student_fk_id, enrollment.care_session)
         if key in seen:
             raise ValueError("Duplicate monthly enrollment for student and care session.")
         seen.add(key)
+        if enrollment.monthly_rate is None:
+            continue
+        rate = Decimal(enrollment.monthly_rate)
+        if not rate.is_finite() or rate < 0:
+            raise ValueError("Monthly enrollment rate must be nonnegative and finite.")
+        if rate == 0:
+            continue
+        # Money is stored in decimal dollars at two places. Never convert
+        # through float, and validate every charge before creating any.
+        amount_cents = int(rate * 100)
+        payable.append((enrollment, amount_cents))
 
     charged = 0
-    for enrollment in enrollments:
-        if not enrollment.monthly_rate:
-            continue
+    for enrollment, amount_cents in payable:
         create_ledger_charge_aftercare(
             school_id=school.id,
             student_id=enrollment.student_fk_id,
-            amount_cents=to_cents(enrollment.monthly_rate),
+            amount_cents=amount_cents,
             description=f"Extended Care {enrollment.care_session} Monthly ({year}-{month:02d})",
         )
         charged += 1
