@@ -19,7 +19,7 @@ from rest_framework.exceptions import AuthenticationFailed
 
 from crown_api.tenant_authentication import reconcile_authenticated_tenant
 
-from .aad_jwt import decode_and_validate_bearer, get_or_create_user_from_claims
+from .aad_jwt import MicrosoftIdentityError, decode_and_validate_bearer, get_user_from_claims
 
 logger = logging.getLogger(__name__)
 
@@ -45,14 +45,17 @@ class AADBearerAuthentication(BaseAuthentication):
 
         try:
             claims = decode_and_validate_bearer(token)
-            user   = get_or_create_user_from_claims(claims)
+            user   = get_user_from_claims(claims)
+        except MicrosoftIdentityError as exc:
+            logger.info("AADBearerAuthentication: Microsoft identity rejected — %s", exc)
+            raise AuthenticationFailed("Microsoft identity is not provisioned for CROWN.") from exc
         except Exception as exc:
             logger.debug("AADBearerAuthentication: token rejected — %s", exc)
-            # Raise only for tokens that appear to be Microsoft-issued
+            # Raise only for tokens that appear to be Microsoft-issued.
             exc_text = f"{exc}"
             if "matching JWKS" in exc_text or "InvalidTokenError" in type(exc).__name__:
-                raise AuthenticationFailed("Microsoft token invalid.")
-            # Let other backends handle it
+                raise AuthenticationFailed("Microsoft token invalid.") from exc
+            # Let other backends handle tokens/configuration this authenticator cannot classify.
             return None
 
         # Tenant denials must not be swallowed by the token-validation fallback.
