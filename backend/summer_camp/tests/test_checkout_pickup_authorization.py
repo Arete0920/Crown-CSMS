@@ -207,3 +207,78 @@ def test_school_civil_midnight_checkin_release_needs_approved_staff_evidence():
     assert release.pk == attendance.pk and release.date == DAY
     assert release.checkout_time == departed and release.pickup_contact_id == c.pickup.id
     assert release.pickup_verified_by_id == c.actor.id
+
+
+def test_real_school_local_midnight_allows_verified_overnight_pickup():
+    from summer_camp.services import roster_today
+    from unittest.mock import patch
+
+    c = _case("RealLocalMidnight")
+    c.school.timezone = "America/Los_Angeles"
+    c.school.save(update_fields=["timezone"])
+    # 23:55 local Sep 3 -> 00:05 local Sep 4; UTC days both Sep 4.
+    arrived = datetime(2025, 9, 4, 6, 55, tzinfo=utc.utc)
+    departed = datetime(2025, 9, 4, 7, 5, tzinfo=utc.utc)
+    c.attendance.checkin_time = arrived
+    c.attendance.save(update_fields=["checkin_time"])
+    with patch("summer_camp.services.timezone.now", return_value=departed):
+        before = roster_today(c.school.id)
+    assert before["date"] == "2025-09-04"
+    open_record = [r for r in before["rows"] if r["attendance_id"] == str(c.attendance.id)]
+    assert len(open_record) == 1
+    assert open_record[0]["unresolved_custody"] is True
+    assert open_record[0]["checkout_time"] is None
+    released = _release(c, at=departed)
+    assert released.id == c.attendance.id
+    assert released.pickup_verified_by_id == c.actor.id
+    assert released.pickup_contact_id == c.pickup.id
+
+
+def test_open_custody_beyond_previous_day_is_visible_but_not_releasable():
+    from summer_camp.services import roster_today
+    from unittest.mock import patch
+
+    c = _case("StaleCustody")
+    c.school.timezone = "America/Los_Angeles"
+    c.school.save(update_fields=["timezone"])
+    later = datetime(2025, 9, 6, 18, tzinfo=utc.utc)
+    with patch("summer_camp.services.timezone.now", return_value=later):
+        data = roster_today(c.school.id)
+    rows = [r for r in data["rows"] if r["attendance_id"] == str(c.attendance.id)]
+    assert len(rows) == 1
+    assert rows[0]["unresolved_custody"]
+    assert rows[0]["requires_supervisor_reconciliation"]
+    with pytest.raises(ValueError, match="Older camp custody"):
+        _release(c, at=later)
+    _unchanged(c)
+
+
+def test_multiple_open_camp_sessions_require_supervisor_reconciliation():
+    c = _case("AmbiguousCustody")
+    other_session = _session(c.school, "AmbiguousSecond")
+    SummerCampAttendance.objects.create(
+        school=c.school, session=other_session, student=c.child,
+        date=DAY, checkin_time=ARRIVAL,
+    )
+    with pytest.raises(ValueError, match="Multiple open camp custody"):
+        _release(c)
+    _unchanged(c)
+
+
+def test_camp_roster_uses_school_local_day_not_utc_day():
+    from summer_camp.services import roster_today
+    from unittest.mock import patch
+
+    c = _case("LocalDayRoster")
+    c.school.timezone = "America/Los_Angeles"
+    c.school.save(update_fields=["timezone"])
+    c.session.status = "PUBLISHED"
+    c.session.save(update_fields=["status"])
+    # UTC Sep 4 at 00:30 is Sep 3 at 17:30 in Los Angeles.
+    instant = datetime(2025, 9, 4, 0, 30, tzinfo=utc.utc)
+    with patch("summer_camp.services.timezone.now", return_value=instant):
+        roster = roster_today(c.school.id)
+    assert roster["date"] == "2025-09-03"
+    rows = [r for r in roster["rows"] if r["attendance_id"] == str(c.attendance.id)]
+    assert len(rows) == 1
+    assert rows[0]["student_id"] == str(c.child.id)
