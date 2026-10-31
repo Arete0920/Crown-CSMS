@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import date, datetime, time
+from datetime import date, datetime, time, timedelta
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from django.db import transaction
@@ -140,8 +140,19 @@ def checkin_student(school_id, student_id, when: datetime | None = None, note: s
         raise ValueError("Invalid care session.")
     when = when or timezone.now()
     attendance_day = school_local_date(school_id, when)
-    student = _canonical_student(school_id=school_id, student_id=student_id)
+    # Serialize admissions for this student across days so yesterday's still-
+    # open custody cannot be hidden by a new admission into the same session.
+    student = Student.objects.select_for_update().filter(
+        pk=student_id, school_id=school_id, is_active=True,
+    ).first()
+    if student is None:
+        raise ValueError("Student is not active in this school.")
     _active_enrollment(school_id=school_id, student=student, on_date=attendance_day, care_session=care_session)
+    if AftercareAttendance.objects.select_for_update().filter(
+        school_fk_id=school_id, student_fk=student,
+        care_session=care_session, checkout_time__isnull=True,
+    ).exclude(date=attendance_day).exists():
+        raise ValueError("An earlier care session remains open; supervisor reconciliation required.")
     attendance, created = AftercareAttendance.objects.select_for_update().get_or_create(
         school_fk_id=school_id,
         student_fk=student,
@@ -155,6 +166,25 @@ def checkin_student(school_id, student_id, when: datetime | None = None, note: s
         attendance.notes = (attendance.notes + " | " + note).strip(" |")
         attendance.save(update_fields=["notes"])
     return attendance
+
+
+def _open_attendance_for_custody_release(school_id, student, session, at: datetime):
+    """Lock a unique open session from today or the previous school-local day.
+
+    Only the prior day is eligible for automatic rollover; older unresolved
+    custody requires manual supervisor reconciliation, never silent checkout.
+    """
+    local_day = school_local_date(school_id, at)
+    records = list(
+        AftercareAttendance.objects.select_for_update().filter(
+            school_fk_id=school_id, student_fk=student, care_session=session,
+            date__in=(local_day, local_day - timedelta(days=1)),
+            checkout_time__isnull=True,
+        ).order_by("-date", "-pk")[:2]
+    )
+    if len(records) > 1:
+        raise ValueError("Multiple open care sessions need supervisor reconciliation.")
+    return records[0] if records else None
 
 
 @transaction.atomic
@@ -178,15 +208,19 @@ def checkout_student(
 
     when = when or timezone.now()
     attendance_day = school_local_date(school_id, when)
-    student = _canonical_student(school_id=school_id, student_id=student_id)
-    attendance = AftercareAttendance.objects.select_for_update().get(
-        school_fk_id=school_id,
-        student_fk=student,
-        date=attendance_day,
-        care_session="PM",
-    )
-    if attendance.checkout_time is not None:
-        raise ValueError("Student has already been checked out.")
+    # Inactivation of a student profile must never strand an already checked-in child.
+    student = Student.objects.filter(pk=student_id, school_id=school_id).first()
+    if student is None:
+        raise ValueError("Student does not belong to this school.")
+    attendance = _open_attendance_for_custody_release(school_id, student, "PM", when)
+    if attendance is None:
+        if AftercareAttendance.objects.filter(
+            school_fk_id=school_id, student_fk=student, care_session="PM",
+            date__in=(attendance_day, attendance_day - timedelta(days=1)),
+            checkout_time__isnull=False,
+        ).exists():
+            raise ValueError("Student has already been checked out.")
+        raise AftercareAttendance.DoesNotExist("No open afternoon session requires checkout.")
     if when < attendance.checkin_time:
         raise ValueError("Checkout cannot precede check-in.")
 
@@ -205,7 +239,8 @@ def checkout_student(
     # Record the canonical authorized contact; never trust a freeform name.
     attendance.pickup_name_freeform = pickup_contact.name
     attendance.pickup_verified = True
-    fee = compute_late_fee(cfg, attendance_day, when)
+    # Late cutoff follows the original care-session date, not midnight rollover.
+    fee = compute_late_fee(cfg, attendance.date, when)
     attendance.late_minutes = fee.late_minutes
     attendance.late_fee_cents = fee.late_fee_cents
 
@@ -242,11 +277,17 @@ def handoff_student_to_school(school_id, student_id, receiving_user, when: datet
     school = School.objects.filter(pk=school_id, is_active=True).first()
     if school is None or not user_has_permission(receiving_user, "extended_care.edit", school=school):
         raise ValueError("Receiving staff member lacks school-scoped handoff authority.")
-    student = _canonical_student(school_id=school_id, student_id=student_id)
-    attendance = AftercareAttendance.objects.select_for_update().filter(
-        school_fk_id=school_id, student_fk=student, date=attendance_day, care_session="AM",
-    ).first()
+    student = Student.objects.filter(pk=student_id, school_id=school_id).first()
+    if student is None:
+        raise ValueError("Student does not belong to this school.")
+    attendance = _open_attendance_for_custody_release(school_id, student, "AM", when)
     if attendance is None:
+        if AftercareAttendance.objects.filter(
+            school_fk_id=school_id, student_fk=student, care_session="AM",
+            date__in=(attendance_day, attendance_day - timedelta(days=1)),
+            checkout_time__isnull=False,
+        ).exists():
+            raise ValueError("Morning handoff has already been recorded.")
         raise ValueError("Morning check-in is required before handoff.")
     if attendance.handoff_time is not None or attendance.checkout_time is not None:
         raise ValueError("Morning handoff has already been recorded.")

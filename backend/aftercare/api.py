@@ -228,7 +228,10 @@ def enrollments(request):
 def pickup_contacts(request, student_id):
     school_id = school_id_from_request(request, required=True)
     if not _canonical_student_exists(school_id=school_id, student_id=student_id):
-        return _bad_request("Student is not active in this school.")
+        if request.method != "GET" or not has_open_custody(
+            school_id, "PM", student_id=student_id,
+        ):
+            return _bad_request("Student is not active in this school.")
 
     if request.method == "GET":
         guardian = _guardian_can_view_student(request, school_id=school_id, student_id=student_id)
@@ -287,13 +290,26 @@ def roster_today(request):
     # Custody records must remain visible after an enrollment is suspended,
     # expired, deactivated, or its student profile has become inactive.
     attendance_qs = AftercareAttendance.objects.filter(
-        school_fk_id=school_id, date=today, care_session=requested_session,
+        school_fk_id=school_id, care_session=requested_session,
+    ).filter(
+        Q(date=today) |
+        Q(date=today - timedelta(days=1), checkout_time__isnull=True)
     )
     if not enabled:
         # During a lapsed contract only unfinished custody may remain visible.
         attendance_qs = attendance_qs.filter(checkout_time__isnull=True)
     attendance_records = list(attendance_qs.select_related("student_fk"))
-    attendance_map = {row.student_fk_id: row for row in attendance_records if row.student_fk_id}
+    carryover_ids = {
+        row.student_fk_id for row in attendance_records
+        if row.student_fk_id and row.date < today and row.checkout_time is None
+    }
+    # An unresolved overnight custody record takes precedence over today's
+    # scheduled arrival. Never show a new "check in" action for that child.
+    enroll = [row for row in enroll if row.student_fk_id not in carryover_ids]
+    attendance_map = {
+        row.student_fk_id: row for row in attendance_records
+        if row.student_fk_id and row.date == today
+    }
     scheduled_student_ids = {row.student_fk_id for row in enroll}
     rows = [
         {

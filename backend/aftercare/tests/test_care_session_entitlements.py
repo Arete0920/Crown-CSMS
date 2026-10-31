@@ -3,7 +3,8 @@
 These tests exercise real DRF endpoints against canonical school-bound users,
 without payment activation or customer records.
 """
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
+from zoneinfo import ZoneInfo
 from unittest.mock import patch
 from uuid import uuid4
 
@@ -239,3 +240,84 @@ def test_expired_diadem_subscription_never_unlocks_am_pm():
             "student_id": str(child.pk), "care_session": session,
         }, format="json")
         assert denied.status_code == 403
+
+def test_expired_pm_overnight_carryover_remains_visible_and_releasable(monkeypatch):
+    """Midnight must not strand a checked-in child or misdate the late-fee cutoff."""
+    school, _household, child, _staff, client = family()
+    mod = grant(school, "PM")
+    enrollment(school, child, "PM")
+    before_midnight = datetime(2026, 10, 30, 23, 55, tzinfo=ZoneInfo("UTC"))
+    after_midnight = datetime(2026, 10, 31, 0, 15, tzinfo=ZoneInfo("UTC"))
+    record = AftercareAttendance.objects.create(
+        school_fk=school, student_fk=child, care_session="PM",
+        date=date(2026, 10, 30), checkin_time=before_midnight,
+    )
+    pickup_contact = AftercarePickupContact.objects.create(
+        school_fk=school, student_fk=child, name="Verified Guardian",
+    )
+    mod.status = "expired"
+    mod.save(update_fields=["status"])
+    monkeypatch.setattr("aftercare.api.timezone.now", lambda: after_midnight)
+    roster = client.get(API + "roster/today/?care_session=PM")
+    assert roster.status_code == 200, roster.data
+    assert len(roster.data["rows"]) == 1
+    assert roster.data["rows"][0]["unscheduled"] is True
+    assert roster.data["rows"][0]["attendance"]["date"] == "2026-10-30"
+    with patch("aftercare.services.create_ledger_charge_aftercare", return_value="synthetic-only"):
+        release = client.post(API + "attendance/checkout/", {
+            "student_id": str(child.pk), "pickup_contact_id": pickup_contact.pk,
+            "pickup_verified": True, "care_session": "PM",
+        }, format="json")
+    assert release.status_code == 200, release.data
+    record.refresh_from_db()
+    assert record.date == date(2026, 10, 30)
+    assert record.checkout_time == after_midnight
+    assert record.pickup_verified is True
+    assert client.get(API + "roster/today/?care_session=PM").status_code == 403
+
+
+def test_active_program_cannot_check_in_child_with_unresolved_yesterday_custody(monkeypatch):
+    school, _household, child, _staff, client = family()
+    grant(school, "PM")
+    enrollment(school, child, "PM")
+    AftercareAttendance.objects.create(
+        school_fk=school, student_fk=child, care_session="PM",
+        date=date(2026, 10, 30),
+        checkin_time=datetime(2026, 10, 30, 23, 55, tzinfo=ZoneInfo("UTC")),
+    )
+    monkeypatch.setattr(
+        "aftercare.api.timezone.now",
+        lambda: datetime(2026, 10, 31, 0, 15, tzinfo=ZoneInfo("UTC")),
+    )
+    response = client.post(API + "attendance/checkin/", {
+        "student_id": str(child.id), "care_session": "PM",
+    }, format="json")
+    assert response.status_code == 400, response.data
+    assert AftercareAttendance.objects.filter(school_fk=school).count() == 1
+
+
+def test_inactive_child_still_has_authorized_pm_custody_release(monkeypatch):
+    school, _household, child, _staff, client = family()
+    mod = grant(school, "PM")
+    enrollment(school, child, "PM")
+    pickup_contact = AftercarePickupContact.objects.create(
+        school_fk=school, student_fk=child, name="Authorized Parent",
+    )
+    when = timezone.now()
+    AftercareAttendance.objects.create(
+        school_fk=school, student_fk=child, date=school_local_date(school.id, when),
+        care_session="PM", checkin_time=when - timedelta(minutes=5),
+    )
+    child.is_active = False
+    child.save(update_fields=["is_active"])
+    mod.status = "suspended"
+    mod.save(update_fields=["status"])
+    assert client.get(API + f"students/{child.pk}/pickup-contacts/").status_code == 200
+    with patch("aftercare.services.create_ledger_charge_aftercare", return_value="synthetic-only"):
+        release = client.post(API + "attendance/checkout/", {
+            "student_id": str(child.pk), "care_session": "PM",
+            "pickup_contact_id": pickup_contact.pk, "pickup_verified": True,
+        }, format="json")
+    assert release.status_code == 200, release.data
+    assert release.data["pickup_verified"] is True
+
