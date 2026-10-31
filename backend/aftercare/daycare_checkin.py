@@ -47,7 +47,7 @@ def checkin_child(*,school_id:UUID,actor_id:UUID,site_id:UUID,room_id:UUID,
             if not user_has_permission(actor,"diadem.daycare.checkin",school=school):
                 raise PermissionDenied("Diadem check-in role required.")
             require_entitlement(school_id)
-            room=DaycareRoom.objects.select_for_update().select_related("site","policy_verified_by").filter(
+            room=DaycareRoom.objects.select_for_update().select_related("site").filter(
                 pk=room_id,school=school,site_id=site_id,is_active=True,site__is_active=True).first()
             if room is None:
                 raise CheckinRefused("room_unavailable")
