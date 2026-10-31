@@ -15,13 +15,20 @@ from aftercare.models import (
 from aftercare.services import checkin_student, checkout_student, record_incident, run_monthly_flat_billing
 from core.models import CrownPermission, RolePermission, School, UserRole
 from households.models import Household, Student
+from subscriptions.models import SchoolModule
 
 AFTERCARE_URL = "/api/v1/aftercare/enrollments/"
 ROSTER_URL = "/api/v1/aftercare/roster/today/"
 
 
 def _school():
-    return School.objects.create(name=f"M026 {uuid.uuid4().hex[:8]}")
+    school = School.objects.create(name=f"M026 {uuid.uuid4().hex[:8]}")
+    for key in ("before_care", "after_care"):
+        SchoolModule.objects.create(
+            school=school, module_key=key, status="active",
+            expiry_date=timezone.now() + timezone.timedelta(days=30),
+        )
+    return school
 
 
 def _student(school):

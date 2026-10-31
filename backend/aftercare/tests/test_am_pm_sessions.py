@@ -7,6 +7,7 @@ from django.utils import timezone
 from aftercare.models import AftercareAttendance, AftercareEnrollment, AftercarePickupContact
 from aftercare.services import checkin_student, checkout_student, handoff_student_to_school
 from core.models import CrownPermission, RolePermission, School, Staff, UserAccount, UserRole
+from subscriptions.models import SchoolModule
 from households.models import Household, Student
 
 pytestmark = pytest.mark.django_db
@@ -19,6 +20,11 @@ def at(hour, minute=0):
 
 def setup_family():
     school = School.objects.create(name="Extended Care Session Test")
+    for key in ("before_care", "after_care"):
+        SchoolModule.objects.create(
+            school=school, module_key=key, status="active",
+            expiry_date=timezone.now() + timezone.timedelta(days=30),
+        )
     household = Household.objects.create(school_id=school.id, name="One Household")
     child = Student.objects.create(
         school_id=school.id, household=household,
