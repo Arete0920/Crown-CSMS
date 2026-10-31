@@ -342,6 +342,41 @@ def test_credential_review_cannot_reuse_revoked_reference(camp_case):
     _assert_no_attendance(camp_case)
 
 
+def test_unresolved_prior_local_day_custody_blocks_new_checkin(camp_case):
+    school, _foreign, student, session, _enrollment, when = camp_case
+    old = SummerCampAttendance.objects.create(
+        school=school, session=session, student=student,
+        date=when.date() - timedelta(days=1),
+        checkin_time=when - timedelta(days=1),
+    )
+    with pytest.raises(ValueError, match="unresolved camp custody"):
+        checkin_camper(school.id, student.id, session.id, when=when)
+    assert SummerCampAttendance.objects.filter(
+        school=school, session=session, student=student,
+    ).count() == 1
+    old.refresh_from_db()
+    assert old.checkout_time is None
+
+
+def test_unresolved_different_session_blocks_new_camp_admission(camp_case):
+    school, _foreign, student, session, enrollment, when = camp_case
+    other_session = SummerCampSession.objects.create(
+        school=school, program=session.program, name="Concurrent Camp",
+        start_date=when.date() - timedelta(days=1),
+        end_date=when.date() + timedelta(days=1),
+        start_time=time(8), end_time=time(16), capacity=20, status="PUBLISHED",
+    )
+    SummerCampAttendance.objects.create(
+        school=school, student=student, session=other_session,
+        date=when.date(), checkin_time=when - timedelta(hours=1),
+    )
+    with pytest.raises(ValueError, match="unresolved camp custody"):
+        checkin_camper(school.id, student.id, session.id, when=when)
+    assert not SummerCampAttendance.objects.filter(
+        school=school, student=student, session=session,
+    ).exists()
+
+
 def test_open_other_camp_session_blocks_checkin(camp_case):
     school, _other, student, session, _enrollment, when = camp_case
     other_session = SummerCampSession.objects.create(
@@ -354,7 +389,7 @@ def test_open_other_camp_session_blocks_checkin(camp_case):
         school=school, session=other_session, student=student,
         date=when.date(), checkin_time=when - timedelta(hours=1),
     )
-    with pytest.raises(ValueError, match="Unresolved earlier Camp custody"):
+    with pytest.raises(ValueError, match="unresolved camp custody"):
         checkin_camper(school.id, student.id, session.id, when=when)
     assert not SummerCampAttendance.objects.filter(
         school=school, student=student, session=session,
@@ -387,20 +422,3 @@ def test_roster_does_not_offer_fresh_other_session_admission_over_open_custody(c
     assert rows[0]["requires_supervisor_reconciliation"] is True
     assert rows[0]["open_custody_count"] == 1
     assert not any(r["session_id"] == str(session.id) for r in rows)
-
-def test_unresolved_prior_local_day_custody_blocks_new_checkin(camp_case):
-    school, _foreign, student, session, _enrollment, when = camp_case
-    school.timezone = "UTC"
-    school.save(update_fields=["timezone"])
-    old = SummerCampAttendance.objects.create(
-        school=school, session=session, student=student,
-        date=when.date() - timedelta(days=1),
-        checkin_time=when - timedelta(days=1),
-    )
-    with pytest.raises(ValueError, match="Unresolved earlier Camp custody"):
-        checkin_camper(school.id, student.id, session.id, when=when)
-    assert SummerCampAttendance.objects.filter(
-        school=school, session=session, student=student,
-    ).count() == 1
-    old.refresh_from_db()
-    assert old.checkout_time is None
