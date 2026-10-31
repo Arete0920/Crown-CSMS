@@ -19,6 +19,11 @@ logger = logging.getLogger(__name__)
 _JWKS_CACHE: dict = {"ts": 0, "jwks": None}
 
 
+class MicrosoftIdentityError(ValueError):
+    """A validated Microsoft token cannot be mapped to an authorized CROWN identity."""
+
+
+
 def _get_jwks(tenant: str | None = None) -> dict:
     now = int(time.time())
     if _JWKS_CACHE["jwks"] and now - _JWKS_CACHE["ts"] < 3600:
@@ -88,11 +93,11 @@ def decode_and_validate_bearer(token: str) -> dict:
 def _require_uuid_claim(claims: dict, name: str) -> uuid.UUID:
     raw = str(claims.get(name) or "").strip()
     if not raw:
-        raise ValueError(f"Microsoft token missing required {name} claim")
+        raise MicrosoftIdentityError(f"Microsoft token missing required {name} claim")
     try:
         return uuid.UUID(raw)
     except (TypeError, ValueError) as exc:
-        raise ValueError(f"Microsoft token has invalid {name} claim") from exc
+        raise MicrosoftIdentityError(f"Microsoft token has invalid {name} claim") from exc
 
 
 def get_user_from_claims(claims: dict):
@@ -113,15 +118,15 @@ def get_user_from_claims(claims: dict):
         .order_by("binding__school_id", "user_id")
     )
     if not links:
-        raise ValueError("Microsoft identity is not provisioned in CROWN")
+        raise MicrosoftIdentityError("Microsoft identity is not provisioned in CROWN")
 
     user_ids = {link.user_id for link in links}
     if len(user_ids) != 1:
-        raise ValueError("Microsoft identity binding is ambiguous across CROWN schools")
+        raise MicrosoftIdentityError("Microsoft identity binding is ambiguous across CROWN schools")
 
     user = links[0].user
     if not getattr(user, "is_active", False):
-        raise ValueError("Microsoft identity is linked to an inactive CROWN user")
+        raise MicrosoftIdentityError("Microsoft identity is linked to an inactive CROWN user")
 
     bound_school_ids = {link.binding.school_id for link in links}
     direct_school_id = getattr(user, "school_id", None)
@@ -130,4 +135,4 @@ def get_user_from_claims(claims: dict):
     if user.roles.filter(school_id__in=bound_school_ids).exists():
         return user
 
-    raise ValueError("Microsoft identity link has no active CROWN school membership")
+    raise MicrosoftIdentityError("Microsoft identity link has no active CROWN school membership")
