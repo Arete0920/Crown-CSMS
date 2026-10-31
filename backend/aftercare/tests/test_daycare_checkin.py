@@ -12,6 +12,7 @@ from audit.models import AuditLog
 from core.models import School, UserAccount, UserRole
 from households.models import Household, Guardian
 from subscriptions.models import Plan, Feature, TenantSubscription, EntitlementOverride
+from tenants.models import TenantProfile
 pytestmark=pytest.mark.django_db
 
 def setup():
@@ -21,6 +22,7 @@ def setup():
     UserRole.objects.create(school=school,user=actor,role_code="DAYCARE_STAFF")
     plan=Plan.objects.create(code="care_synthetic",name="Care synthetic")
     TenantSubscription.objects.create(school_id=school.pk,plan=plan)
+    TenantProfile.objects.create(school=school,slug="diadem-synthetic-tenant",status="active")
     feature=Feature.objects.get(key="diadem.daycare")
     entitlement=EntitlementOverride.objects.create(school_id=school.pk,feature=feature,enabled=True)
     site=DaycareSite.objects.create(school=school,code="center",name="Synthetic Center",is_active=True)
@@ -91,3 +93,21 @@ def test_request_key_uniqueness():
     check(d,request_key=key)
     with pytest.raises(CheckinRefused): check(d,request_key=key)
     assert DaycareAttendance.objects.count()==1
+
+@pytest.mark.parametrize("status",["pending","provisioning","suspended","offboarded"])
+def test_non_active_tenant_blocks_checkin_without_audit(status):
+    d=setup()
+    tenant=TenantProfile.objects.get(school=d["school"])
+    tenant.status=status
+    tenant.save(update_fields=["status"])
+    with pytest.raises(PermissionDenied):
+        check(d)
+    assert not DaycareAttendance.objects.exists()
+    assert not AuditLog.objects.filter(action="diadem.daycare.checkin").exists()
+
+def test_missing_tenant_profile_blocks_checkin():
+    d=setup()
+    TenantProfile.objects.filter(school=d["school"]).delete()
+    with pytest.raises(PermissionDenied):
+        check(d)
+    assert not DaycareAttendance.objects.exists()
