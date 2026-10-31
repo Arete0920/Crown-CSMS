@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { fetchStudents, fetchTranscript } from "../api/academics";
 import { downloadOfficialTranscriptPdf, issueOfficialTranscript } from "../api/transcript";
 import { getCurrentUserRoles } from "../auth/roleAdapter";
@@ -16,6 +16,9 @@ export function TranscriptRO() {
   const [issuing, setIssuing] = useState(false);
   const [issuance, setIssuance] = useState(null);
   const [error, setError] = useState(null);
+  // Updated synchronously on selection so an in-flight request cannot publish
+  // the previous student's record in the gap before effect cleanup.
+  const selectedStudentRef = useRef("");
   const canIssueOfficial = useMemo(
     () => getCurrentUserRoles().some((role) => TRANSCRIPT_ISSUER_ROLES.has(role)),
     [],
@@ -31,8 +34,10 @@ export function TranscriptRO() {
         const results = Array.isArray(data) ? data : data?.results;
         if (!Array.isArray(results)) throw new Error("Invalid students response.");
         setStudents(results);
-        if (results.length > 0) {
-          setSelectedStudentId((currentId) => currentId || String(results[0].id));
+        if (results.length > 0 && !selectedStudentRef.current) {
+          const firstStudentId = String(results[0].id);
+          selectedStudentRef.current = firstStudentId;
+          setSelectedStudentId(firstStudentId);
         }
       })
       .catch((err) => { if (active) setError(`Failed to load students: ${err.message}`); })
@@ -52,7 +57,7 @@ export function TranscriptRO() {
     setLoadingTranscript(true);
     fetchTranscript(selectedStudentId)
       .then((data) => {
-        if (!active) return;
+        if (!active || selectedStudentRef.current !== selectedStudentId) return;
         // Never render a document under a different selected student.
         if (String(data?.student?.student_id || "") !== String(selectedStudentId)) {
           throw new Error("Transcript student identity does not match selection.");
@@ -61,38 +66,55 @@ export function TranscriptRO() {
         setError(null);
       })
       .catch((err) => {
-        if (!active) return;
+        if (!active || selectedStudentRef.current !== selectedStudentId) return;
         setError(`Failed to load transcript: ${err.message}`);
         setTranscript(null);
       })
-      .finally(() => { if (active) setLoadingTranscript(false); });
+      .finally(() => {
+        if (active && selectedStudentRef.current === selectedStudentId) {
+          setLoadingTranscript(false);
+        }
+      });
     return () => { active = false; };
   }, [selectedStudentId]);
 
   const handleStudentChange = (event) => {
+    const nextStudentId = event.target.value;
+    selectedStudentRef.current = nextStudentId;
     setTranscript(null);
     setIssuance(null);
-    setSelectedStudentId(event.target.value);
+    setSelectedStudentId(nextStudentId);
   };
 
   const handleIssueOfficial = async () => {
-    if (!selectedStudentId || !canIssueOfficial || !transcript || loadingTranscript || issuing) return;
+    const requestedStudentId = selectedStudentId;
+    if (
+      !requestedStudentId || !canIssueOfficial || !transcript || loadingTranscript || issuing
+      || selectedStudentRef.current !== requestedStudentId
+      || String(transcript.student?.student_id || "") !== requestedStudentId
+    ) return;
     setIssuing(true);
     setError(null);
     try {
-      const record = await issueOfficialTranscript(selectedStudentId);
+      const record = await issueOfficialTranscript(requestedStudentId);
+      // The issuance may already exist server-side, but changing students
+      // must never download or display its artifact under the next student's UI.
+      if (selectedStudentRef.current !== requestedStudentId) return;
       const blob = await downloadOfficialTranscriptPdf(record.issuance_id);
+      if (selectedStudentRef.current !== requestedStudentId) return;
       const href = URL.createObjectURL(blob);
       const anchor = document.createElement("a");
       anchor.href = href;
-      anchor.download = `official-transcript-${selectedStudentId}.pdf`;
+      anchor.download = `official-transcript-${requestedStudentId}.pdf`;
       document.body.appendChild(anchor);
       anchor.click();
       anchor.remove();
       URL.revokeObjectURL(href);
       setIssuance(record);
     } catch (err) {
-      setError(err.message || "Official transcript issuance failed.");
+      if (selectedStudentRef.current === requestedStudentId) {
+        setError(err.message || "Official transcript issuance failed.");
+      }
     } finally {
       setIssuing(false);
     }
@@ -124,7 +146,7 @@ export function TranscriptRO() {
             <button
               className="crown-btn crown-btn-primary"
               onClick={handleIssueOfficial}
-              disabled={!transcript || loadingTranscript || issuing}
+              disabled={!transcript || loadingTranscript || issuing || String(transcript.student?.student_id || "") !== selectedStudentId}
             >
               {issuing ? "Issuing..." : "Issue Official PDF"}
             </button>
