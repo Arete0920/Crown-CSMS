@@ -38,8 +38,8 @@ def family():
         role_type="TEACHER", status="ACTIVE",
     )
     operator = UserAccount.objects.create_user(
-        username=f"care-operator-{uuid4().hex[:8]}", password="test",
-        school=school, staff=staff,
+        username=f"care-operator-{uuid4().hex[:8]}",
+        email=staff.email, password="test", school=school, staff=staff,
     )
     role = f"care_e2e_{uuid4().hex[:8]}"
     UserRole.objects.create(user=operator, school=school, role_code=role)
@@ -217,7 +217,8 @@ def test_guardian_can_read_historical_custody_after_contract_expires():
         checkout_time=timezone.now() - timedelta(hours=1), pickup_verified=True,
     )
     parent = UserAccount.objects.create_user(
-        username=f"care-parent-{uuid4().hex[:8]}", password="test", school=school,
+        username=f"care-parent-{uuid4().hex[:8]}",
+        email=f"care-parent-{uuid4().hex}@example.test", password="test", school=school,
     )
     Guardian.objects.create(
         school_id=school.id, household=household, account=parent,
