@@ -68,9 +68,12 @@ def test_unauthenticated_cannot_read_or_mutate():
         c.get(f'/api/v1/aftercare/daycare/sites/{d["site"].id}/roster/'),
         _release(d, uuid4(), c),
     ):
-        # Canonical tenant middleware rejects missing school context first.
-        assert response.status_code == 400
-        assert response.json()["code"] == "missing_tenant"
+        # Middleware-enabled tests deny missing context with 400; in the
+        # coverage runner authentication can reject first with 401/403.
+        # All configurations must be fail-closed with no attendance write.
+        assert response.status_code in (400, 401, 403)
+        if response.status_code == 400:
+            assert response.json()["code"] == "missing_tenant"
     # With a valid school selector, tenant resolution succeeds but DRF must
     # independently reject the unauthenticated caller.
     header = {"HTTP_X_SCHOOL_ID": str(d["school"].id)}

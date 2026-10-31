@@ -137,9 +137,9 @@ def test_postgresql_simultaneous_custody_release_has_one_winner():
     from concurrent.futures import ThreadPoolExecutor
     from threading import Barrier
     from django.db import connection, close_old_connections, connections
-    d=setup()
     if connection.vendor!="postgresql":
         pytest.skip("Concurrent custody proof requires PostgreSQL.")
+    d=setup()
     attendance=check(d)
     gate=Barrier(2)
     def attempt():
