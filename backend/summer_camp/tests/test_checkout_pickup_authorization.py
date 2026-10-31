@@ -282,3 +282,64 @@ def test_camp_roster_uses_school_local_day_not_utc_day():
     rows = [r for r in roster["rows"] if r["attendance_id"] == str(c.attendance.id)]
     assert len(rows) == 1
     assert rows[0]["student_id"] == str(c.child.id)
+
+
+
+def test_overnight_open_custody_suppresses_another_sessions_scheduled_roster():
+    """A child may have a new registration without being released from yesterday."""
+    from unittest.mock import patch
+    from summer_camp.services import roster_today
+
+    c = _case("CrossSessionRollover")
+    c.school.timezone = "America/Los_Angeles"
+    c.school.save(update_fields=["timezone"])
+    other_session = _session(c.school, "NextDay")
+    other_session.start_date = date(2025, 9, 4)
+    other_session.end_date = date(2025, 9, 4)
+    other_session.status = "PUBLISHED"
+    other_session.save(update_fields=["start_date", "end_date", "status"])
+    SummerCampEnrollment.objects.create(
+        school=c.school, session=other_session, student=c.child, status="REGISTERED",
+    )
+    current = datetime(2025, 9, 4, 17, tzinfo=utc.utc)  # 10 AM local
+    with patch("summer_camp.services.timezone.now", return_value=current):
+        roster = roster_today(c.school.id)
+
+    matching = [row for row in roster["rows"] if row["student_id"] == str(c.child.id)]
+    assert len(matching) == 1
+    assert matching[0]["session_id"] == str(c.session.id)
+    assert matching[0]["attendance_id"] == str(c.attendance.id)
+    assert matching[0]["unresolved_custody"] is True
+    assert matching[0]["checkout_time"] is None
+    assert not any(row["session_id"] == str(other_session.id) for row in matching)
+
+    with pytest.raises(ValueError, match="different session"):
+        checkout_camper(
+            c.school.id, c.child.id, other_session.id,
+            pickup_contact_id=c.pickup.id, pickup_verified=True,
+            when=current, verified_by=c.actor,
+        )
+    _unchanged(c)
+
+
+def test_cancelled_enrollment_cannot_hide_unresolved_camp_child_custody():
+    """No active registration must not erase an existing child custody record."""
+    from unittest.mock import patch
+    from summer_camp.services import roster_today
+
+    c = _case("CancelledOpenCustody")
+    c.school.timezone = "America/Los_Angeles"
+    c.school.save(update_fields=["timezone"])
+    c.enrollment.status = "CANCELLED"
+    c.enrollment.save(update_fields=["status"])
+    current = datetime(2025, 9, 4, 17, tzinfo=utc.utc)
+    with patch("summer_camp.services.timezone.now", return_value=current):
+        roster = roster_today(c.school.id)
+
+    matching = [row for row in roster["rows"] if row["attendance_id"] == str(c.attendance.id)]
+    assert len(matching) == 1
+    assert matching[0]["unresolved_custody"] is True
+    assert matching[0]["requires_supervisor_reconciliation"] is True
+    assert matching[0]["enrollment_id"] is None
+    assert matching[0]["checkout_time"] is None
+    _unchanged(c)
