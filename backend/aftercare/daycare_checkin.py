@@ -87,6 +87,13 @@ def checkin_child(*,school_id:UUID,actor_id:UUID,site_id:UUID,room_id:UUID,
                 verified_by__school_id=school_id,verified_by__is_active=True,
                 verified_at__isnull=False,verified_at__lte=at,starts_at__lte=at,ends_at__gt=at
             ).exclude(qualification_evidence="").values_list("staff_id",flat=True).distinct())
+            # Staff with overlapping active assignments in another room are
+            # not available to satisfy this room's staffing ratio.
+            conflicting=set(DaycareRoomStaffCoverage.objects.filter(
+                school=school,staff_id__in=staff_ids,is_active=True,
+                starts_at__lte=at,ends_at__gt=at
+            ).exclude(room=room).values_list("staff_id",flat=True))
+            staff_ids=[staff_id for staff_id in staff_ids if staff_id not in conflicting]
             if actor_id not in staff_ids:
                 raise CheckinRefused("room_staff_authority_required")
             occupied=DaycareAttendance.objects.filter(school=school,room=room,custody_release__isnull=True).count()
