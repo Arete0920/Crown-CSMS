@@ -357,5 +357,74 @@ describe('CrownDashboardTemplate data truth defaults', () => {
     expect(captured.metrics[0].value).toBe('12');
     expect(captured.metrics[0].dataState).toBe('fallback');
   });
+
+  it('withholds stale queue items, alerts and status during an API failure', () => {
+    mockUseDashboardData.mockReturnValue({
+      data: {
+        metrics: [{ label: 'Donors YTD', value: '999' }],
+        queue: ['Send cached notice'],
+        alerts: [{ title: 'Cached approval required', level: 'High' }],
+        meta: { served_from: 'sample' },
+      },
+      error: new Error('refresh failed'),
+      loading: false,
+      source: 'none',
+      config: { endpoint: '/api/v1/dashboards/advancement/summary' },
+    });
+    render(<CrownDashboardTemplate roleKey="advancement" config={{
+      key: 'advancement',
+      title: 'Advancement Dashboard',
+      liveDataKey: 'advancement',
+      metrics: [{ label: 'Donors YTD', value: '152' }],
+      statuses: [{ label: 'Compliance', state: 'Healthy' }],
+      commandModules: [{ key: 'donors', title: 'Donors' }],
+      quickActions: [], activities: [], trendPanels: [],
+      priorities: [], alerts: [],
+    }} />);
+
+    expect(captured.truthStatus[0].dataState).toBe('error');
+    expect(captured.truthStatus[0].sourceLabel).toContain('unavailable');
+    expect(captured.metrics).toHaveLength(0);
+    expect(captured.statuses[0].statuses.map((row) => row.label)).toEqual([
+      'Dashboard Data State', 'Dashboard Data Source',
+    ]);
+    expect(screen.queryByText('Send cached notice')).toBeNull();
+    expect(screen.queryByText('Cached approval required')).toBeNull();
+    expect(screen.queryByText('Healthy')).toBeNull();
+  });
+
+
+  it('does not surface cached financial aid tasks or alerts during loading', () => {
+    mockUseDashboardData.mockReturnValue({
+      data: {
+        metrics: [{ label: 'Aid Applications', value: '112' }],
+        queue: ['Release stale award'],
+        alerts: [{ title: 'Stale disbursement action', level: 'High' }],
+        meta: { served_from: 'database' },
+      },
+      error: null,
+      loading: true,
+      source: 'live',
+      config: { endpoint: '/api/v1/dashboards/financial-aid/summary' },
+    });
+    render(<CrownDashboardTemplate roleKey="financialAid" config={{
+      key: 'financialAid',
+      title: 'Financial Aid Dashboard',
+      liveDataKey: 'financialAid',
+      metrics: [{ label: 'Aid Applications', value: '112' }],
+      statuses: [{ label: 'Aid system', state: 'Healthy' }],
+      commandModules: [{ key: 'applications', title: 'Applications' }],
+      quickActions: [], activities: [], trendPanels: [],
+      priorities: [], alerts: [],
+    }} />);
+
+    expect(captured.truthStatus[0].dataState).toBe('loading');
+    expect(captured.metrics).toHaveLength(0);
+    expect(captured.statuses[0].statuses).toHaveLength(2);
+    expect(screen.queryByText('Release stale award')).toBeNull();
+    expect(screen.queryByText('Stale disbursement action')).toBeNull();
+    expect(screen.queryByText('Healthy')).toBeNull();
+  });
+
 });
 
