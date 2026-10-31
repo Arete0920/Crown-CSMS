@@ -8,6 +8,7 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
 from core.permissions import user_has_permission
+from households.models import Guardian
 from .models import (
     SummerCampEnrollment,
     SummerCampIncident,
@@ -49,7 +50,7 @@ class SummerCampAttendanceActionSerializer(serializers.Serializer):
     session_id = serializers.IntegerField()
     student_id = serializers.UUIDField()
     note = serializers.CharField(required=False, allow_blank=True)
-    pickup_contact_id = serializers.UUIDField(required=False, allow_null=True)
+    pickup_contact_id = serializers.IntegerField(min_value=1, required=False, allow_null=True)
     pickup_verified = serializers.BooleanField(required=False)
 
 
@@ -58,12 +59,19 @@ class SummerCampEnrollmentCreateSerializer(serializers.Serializer):
     student_id = serializers.UUIDField(required=False, allow_null=True)
     household_id = serializers.UUIDField(required=False, allow_null=True)
     registration_source = serializers.CharField(required=False, allow_blank=True)
-    form_status = serializers.CharField(required=False, allow_blank=True)
-    payment_status = serializers.CharField(required=False, allow_blank=True)
-    health_status = serializers.CharField(required=False, allow_blank=True)
-    pickup_status = serializers.CharField(required=False, allow_blank=True)
-    payment_required_before_attendance = serializers.BooleanField(required=False)
-    balance_due_cents = serializers.IntegerField(required=False)
+    def validate(self, attrs):
+        # Client-controlled clearance would allow a registration to claim that
+        # forms, health review and payment were already approved.
+        forbidden = {
+            "form_status", "payment_status", "health_status", "pickup_status",
+            "payment_required_before_attendance", "balance_due_cents",
+            "readiness_status", "readiness_blockers", "status",
+        }
+        if forbidden.intersection(self.initial_data):
+            raise serializers.ValidationError(
+                {"detail": "Camp clearance and payment status cannot be set during registration."}
+            )
+        return attrs
 
 
 class SummerCampIncidentCreateSerializer(serializers.Serializer):
@@ -103,14 +111,16 @@ EDIT_ROLES = {"summer_camp.edit"}
 
 
 def _require_role(request, allowed: set[str]) -> bool:
+    """Only explicit, active, school-scoped camp grants authorize API access."""
     user = getattr(request, "user", None)
     if not user or not getattr(user, "is_authenticated", False):
         return False
-
-    if getattr(user, "is_superuser", False) or getattr(user, "is_staff", False):
-        return True
+    if not getattr(user, "is_active", True):
+        return False
 
     school = getattr(request, "school", None)
+    if school is None:
+        return False
     return any(user_has_permission(user, permission, school=school) for permission in allowed)
 
 
@@ -119,16 +129,17 @@ def _require_role(request, allowed: set[str]) -> bool:
 @api_view(["GET", "PUT"])
 def config_view(request):
     school_id = school_id_from_request(request, required=True)
-    config = ensure_config(school_id)
 
     if request.method == "GET":
         if not _require_role(request, VIEW_ROLES):
             return Response({"detail": "Forbidden"}, status=status.HTTP_403_FORBIDDEN)
+        config = ensure_config(school_id)
         return Response(SummerCampProgramConfigSerializer(config).data)
 
     if not _require_role(request, EDIT_ROLES):
         return Response({"detail": "Forbidden"}, status=status.HTTP_403_FORBIDDEN)
 
+    config = ensure_config(school_id)
     serializer = SummerCampProgramConfigSerializer(config, data=request.data, partial=True)
     serializer.is_valid(raise_exception=True)
     serializer.save(school_id=school_id)
@@ -244,21 +255,23 @@ def enrollments_view(request):
     serializer.is_valid(raise_exception=True)
     payload = serializer.validated_data
 
-    enrollment = enroll_camper(
-        school_id=school_id,
-        student_id=payload.get("student_id"),
-        session_id=payload["session_id"],
-        payload={
-            "household_id": payload.get("household_id"),
-            "registration_source": payload.get("registration_source", "EXISTING"),
-            "form_status": payload.get("form_status", "MISSING"),
-            "payment_status": payload.get("payment_status", "DEPOSIT_DUE"),
-            "health_status": payload.get("health_status", "NEEDS_REVIEW"),
-            "pickup_status": payload.get("pickup_status", "MISSING"),
-            "payment_required_before_attendance": payload.get("payment_required_before_attendance", True),
-            "balance_due_cents": payload.get("balance_due_cents", 0),
-        },
-    )
+    try:
+        enrollment = enroll_camper(
+            school_id=school_id,
+            student_id=payload.get("student_id"),
+            session_id=payload["session_id"],
+            payload={
+                "household_id": payload.get("household_id"),
+                "registration_source": payload.get("registration_source", "EXISTING"),
+                # Intake only forwards registration identity and source.
+                # Clearance/fees are derived and reviewed by trusted services.
+            },
+        )
+    except ValueError:
+        return Response(
+            {"detail": "Camp registration denied: camper, session or capacity is invalid."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
     return Response(SummerCampEnrollmentSerializer(enrollment).data, status=status.HTTP_201_CREATED)
 
 
@@ -317,12 +330,18 @@ def attendance_checkin_view(request):
     serializer = SummerCampAttendanceActionSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
     payload = serializer.validated_data
-    attendance = checkin_camper(
-        school_id=school_id,
-        session_id=payload["session_id"],
-        student_id=payload["student_id"],
-        note=payload.get("note", ""),
-    )
+    try:
+        attendance = checkin_camper(
+            school_id=school_id,
+            session_id=payload["session_id"],
+            student_id=payload["student_id"],
+            note=payload.get("note", ""),
+        )
+    except ValueError:
+        return Response(
+            {"detail": "Camp check-in denied: session, registration, or clearance is invalid."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
     return Response({"attendance_id": str(attendance.id), "checkin_time": attendance.checkin_time.isoformat()}, status=status.HTTP_201_CREATED)
 
 
@@ -336,13 +355,21 @@ def attendance_checkout_view(request):
     serializer = SummerCampAttendanceActionSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
     payload = serializer.validated_data
-    attendance = checkout_camper(
-        school_id=school_id,
-        session_id=payload["session_id"],
-        student_id=payload["student_id"],
-        pickup_contact_id=payload.get("pickup_contact_id"),
-        pickup_verified=payload.get("pickup_verified", False),
-    )
+    try:
+        attendance = checkout_camper(
+            school_id=school_id,
+            session_id=payload["session_id"],
+            student_id=payload["student_id"],
+            pickup_contact_id=payload.get("pickup_contact_id"),
+            pickup_verified=payload.get("pickup_verified", False),
+            verified_by=request.user,
+        )
+    except ValueError:
+        # Do not expose whether a pupil, enrollment or contact exists.
+        return Response(
+            {"detail": "Checkout requires a valid check-in and verified authorized pickup."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
     return Response(
         {
             "attendance_id": str(attendance.id),
@@ -405,7 +432,18 @@ def health_review_queue_view(request):
 @api_view(["GET"])
 def parent_student_view(request, student_id):
     school_id = school_id_from_request(request, required=True)
-    if not _require_role(request, VIEW_ROLES):
+    user = getattr(request, "user", None)
+    owns_student = bool(
+        user and getattr(user, "is_authenticated", False)
+        and getattr(user, "is_active", False)
+        and Guardian.objects.filter(
+            account=user, school_id=school_id,
+            household__students__id=student_id,
+            household__students__school_id=school_id,
+            household__students__is_active=True,
+        ).exists()
+    )
+    if not owns_student and not _require_role(request, VIEW_ROLES):
         return Response({"detail": "Forbidden"}, status=status.HTTP_403_FORBIDDEN)
     return Response({"student_id": str(student_id), "rows": parent_student_summary(school_id, student_id)})
 
