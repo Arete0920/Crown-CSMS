@@ -5,7 +5,7 @@ import logging
 from decimal import Decimal
 from uuid import UUID
 
-from django.db.models import Avg, Count, Sum
+from django.db.models import Avg, Count, Q, Sum
 from django.http import JsonResponse, HttpRequest
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods
@@ -86,6 +86,13 @@ def aid_applications(request):
     return _envelope([_app_to_dict(a) for a in qs], status=200)
 
 
+def _school_owned_awards(school_id):
+    """Exclude awards linked to another school's application; retain unlinked awards."""
+    return AidAward.objects.filter(school_id=school_id).filter(
+        Q(application__isnull=True) | Q(application__school_id=school_id)
+    )
+
+
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def aid_awards(request):
@@ -96,7 +103,7 @@ def aid_awards(request):
     if permission_error is not None:
         return permission_error
 
-    qs = AidAward.objects.filter(school_id=sid).select_related("application").order_by("-created_at")
+    qs = _school_owned_awards(sid).select_related("application").order_by("-created_at")
     # Keep the stable response contract but redact the sensitive rationale
     # unless this reader also holds the school-scoped rationale-specific grant.
     school = School.objects.get(pk=sid)
@@ -151,7 +158,7 @@ def financial_aid_metrics(request: HttpRequest):
         decided_count = apps.filter(status="decided").count()
         overdue_count = apps.filter(status="in_review", submitted_at__lt=overdue_cutoff).count()
 
-        awards = AidAward.objects.filter(school_id=sid)
+        awards = _school_owned_awards(sid)
         budget_awarded = awards.aggregate(total=Sum("amount"))["total"] or Decimal("0")
         avg_award_raw = awards.aggregate(avg=Avg("amount"))["avg"] or Decimal("0")
         avg_award = int(avg_award_raw.quantize(Decimal("1")))
