@@ -51,6 +51,7 @@ def test_resolves_by_tid_oid_even_when_mutable_username_changes():
     object_id = uuid.uuid4()
     school, user = _school_user("Immutable School")
     _bind(school=school, user=user, tenant_id=tenant_id, object_id=object_id)
+    UserRole.objects.create(user=user, school=school, role_code="PARENT")
 
     claims = {
         "tid": str(tenant_id),
@@ -63,7 +64,7 @@ def test_resolves_by_tid_oid_even_when_mutable_username_changes():
     resolved = get_user_from_claims(claims)
 
     assert resolved.pk == user.pk
-    assert list(user.roles.values_list("role_code", flat=True)) == []
+    assert list(user.roles.values_list("role_code", flat=True)) == ["PARENT"]
 
 
 def test_unprovisioned_tid_oid_fails_closed_without_creating_user():
