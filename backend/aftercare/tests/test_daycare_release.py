@@ -129,3 +129,38 @@ def test_malformed_release_method_denied_without_writing(invalid_method):
     with pytest.raises(ReleaseRefused):
         release(d,attendance,identity_method=invalid_method)
     assert not DaycareRelease.objects.exists()
+
+
+@pytest.mark.django_db(transaction=True)
+def test_postgresql_simultaneous_custody_release_has_one_winner():
+    """Two physical-release requests on distinct DB connections: one custody event."""
+    from concurrent.futures import ThreadPoolExecutor
+    from threading import Barrier
+    from django.db import connection, close_old_connections, connections
+    d=setup()
+    if connection.vendor!="postgresql":
+        pytest.skip("Concurrent custody proof requires PostgreSQL.")
+    attendance=check(d)
+    gate=Barrier(2)
+    def attempt():
+        close_old_connections()
+        try:
+            with connection.cursor() as cur:
+                cur.execute("SELECT pg_backend_pid()")
+                pid=cur.fetchone()[0]
+            gate.wait(timeout=20)
+            try:
+                release(d,attendance)
+                return pid,"released"
+            except ReleaseRefused as error:
+                return pid,error.code
+        finally:
+            connections.close_all()
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        left=pool.submit(attempt)
+        right=pool.submit(attempt)
+        outcomes=[left.result(timeout=40),right.result(timeout=40)]
+    assert len({pid for pid,_ in outcomes})==2,outcomes
+    assert sorted(result for _,result in outcomes)==["attendance_not_open","released"],outcomes
+    assert DaycareRelease.objects.filter(attendance=attendance).count()==1
+    assert AuditLog.objects.filter(action="diadem.daycare.release").count()==1
