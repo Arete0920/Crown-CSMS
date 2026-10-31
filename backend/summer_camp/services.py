@@ -728,8 +728,11 @@ def roster_today(school_id):
             today_attendance[key] = record
         if record.checkout_time is None:
             open_rows.append(record)
-            open_student_ids.add(record.student_id)
-            open_counts[record.student_id] = open_counts.get(record.student_id, 0) + 1
+            # Orphaned custody must remain visible for supervisor handling,
+            # but must never suppress unrelated external (student-less) enrollments.
+            if record.student_id is not None:
+                open_student_ids.add(record.student_id)
+                open_counts[record.student_id] = open_counts.get(record.student_id, 0) + 1
 
     # An earlier unresolved custody takes precedence over a new scheduled
     # arrival. Retain only a UNIQUE current registration for safe identity
@@ -756,8 +759,12 @@ def roster_today(school_id):
             "session_name": session.name if valid_session else "Unlinked Camp Session",
             "student_id": str(student.id) if valid_student else None,
             "student_name": (
-                f"{student.first_name} {student.last_name}" if valid_student else "Unlinked Camper"
+                f"{student.first_name} {student.last_name}" if valid_student else (
+                    "External Camper" if enrollment and enrollment.student_id is None else "Unlinked Camper"
+                )
             ),
+            "status": enrollment.status if enrollment else "UNLINKED_CUSTODY",
+            "open_custody_count": open_counts.get(student.id, 0) if valid_student else 0,
             "readiness_status": enrollment.readiness_status if enrollment else "BLOCKED",
             "readiness_blockers": (
                 enrollment.readiness_blockers if enrollment else ["UNRESOLVED_CUSTODY"]
@@ -813,4 +820,9 @@ def roster_today(school_id):
     return {
         "date": str(today),
         "rows": rows,
+        # Contract used by the verified pickup UI. Count supervisor holds
+        # separately from safe current-day attended/releasable rows.
+        "unresolved_custody_count": sum(
+            1 for row in rows if row["requires_supervisor_reconciliation"]
+        ),
     }

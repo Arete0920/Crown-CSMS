@@ -378,3 +378,63 @@ def test_cross_school_session_fk_never_authorizes_camp_release():
             verified_by=current.actor,
         )
     _unchanged(current)
+
+
+def test_camp_roster_contract_exposes_status_and_school_custody_counts():
+    """Keep the existing staff pickup UI contract consistent across custody PRs."""
+    from unittest.mock import patch
+    from summer_camp.services import roster_today
+
+    c = _case("RosterContract")
+    c.school.timezone = "UTC"
+    c.school.save(update_fields=["timezone"])
+    present = datetime(2025, 9, 3, 12, tzinfo=utc.utc)
+    with patch("summer_camp.services.timezone.now", return_value=present):
+        roster = roster_today(c.school.id)
+    matching = [row for row in roster["rows"] if row["student_id"] == str(c.child.id)]
+    assert len(matching) == 1
+    assert matching[0]["status"] == "REGISTERED"
+    assert matching[0]["open_custody_count"] == 1
+    assert matching[0]["unresolved_custody"] is True
+    assert matching[0]["requires_supervisor_reconciliation"] is False
+    assert roster["unresolved_custody_count"] == 0
+
+    c.enrollment.status = "CANCELLED"
+    c.enrollment.save(update_fields=["status"])
+    with patch("summer_camp.services.timezone.now", return_value=present):
+        cancelled = roster_today(c.school.id)
+    hold = [row for row in cancelled["rows"] if row["attendance_id"] == str(c.attendance.id)]
+    assert len(hold) == 1
+    assert hold[0]["status"] == "UNLINKED_CUSTODY"
+    assert hold[0]["open_custody_count"] == 1
+    assert hold[0]["requires_supervisor_reconciliation"] is True
+    assert cancelled["unresolved_custody_count"] == 1
+
+
+def test_orphan_null_student_custody_does_not_hide_external_camp_enrollments():
+    """Orphan records need attention, not suppression of all external campers."""
+    from unittest.mock import patch
+    from summer_camp.services import roster_today
+
+    c = _case("ExternalOrphan")
+    c.school.timezone = "UTC"
+    c.school.save(update_fields=["timezone"])
+    external = SummerCampEnrollment.objects.create(
+        school=c.school, session=c.session, student=None, status="REGISTERED",
+    )
+    orphan = SummerCampAttendance.objects.create(
+        school=c.school, session=c.session, student=None,
+        date=DAY, checkin_time=ARRIVAL,
+    )
+    present = datetime(2025, 9, 3, 12, tzinfo=utc.utc)
+    with patch("summer_camp.services.timezone.now", return_value=present):
+        roster = roster_today(c.school.id)
+    enrolled = [row for row in roster["rows"] if row["enrollment_id"] == str(external.id)]
+    assert len(enrolled) == 1
+    assert enrolled[0]["status"] == "REGISTERED"
+    assert enrolled[0]["student_name"] == "External Camper"
+    assert enrolled[0]["student_id"] is None
+    orphans = [row for row in roster["rows"] if row["attendance_id"] == str(orphan.id)]
+    assert len(orphans) == 1
+    assert orphans[0]["requires_supervisor_reconciliation"] is True
+    assert orphans[0]["unresolved_custody"] is True
