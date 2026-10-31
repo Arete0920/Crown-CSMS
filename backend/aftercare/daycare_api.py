@@ -10,8 +10,10 @@ activate childcare licensing or authorize production operations.
 from __future__ import annotations
 
 from uuid import UUID
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from django.utils import timezone
+from django.db.models import Q
 from rest_framework import serializers, status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.exceptions import NotFound, PermissionDenied, ValidationError
@@ -20,9 +22,9 @@ from rest_framework.response import Response
 
 from core.models import School
 from core.permissions import user_has_permission
-from .daycare_checkin import CheckinRefused, checkin_child
+from .daycare_checkin import CheckinRefused, checkin_child, require_entitlement
 from .daycare_release import ReleaseRefused, release_child
-from .daycare_models import DaycareSite
+from .daycare_models import DaycareSite, DaycareEnrollment, DaycareGuardianAuthority
 from .daycare_checkin_models import DaycareAttendance, DaycareRoomStaffCoverage
 
 
@@ -245,3 +247,125 @@ def daycare_sites(request):
         {"site_id": str(site.pk), "name": site.name, "is_active": site.is_active}
         for site in sites
     ]})
+
+
+def _staff_room_ids(school, site, actor, now):
+    """Only verified live room assignments; do not infer access from a school role."""
+    candidate = DaycareRoomStaffCoverage.objects.filter(
+        school=school, site=site, staff=actor, is_active=True, is_qualified=True,
+        staff__is_active=True, verified_at__isnull=False, verified_at__lte=now,
+        verified_by__school=school, verified_by__is_active=True,
+        starts_at__lte=now, ends_at__gt=now,
+    ).exclude(qualification_evidence="")
+    ids = set(candidate.values_list("room_id", flat=True))
+    conflicts = set(DaycareRoomStaffCoverage.objects.filter(
+        school=school, staff=actor, is_active=True, starts_at__lte=now, ends_at__gt=now,
+    ).exclude(site=site).values_list("room_id", flat=True))
+    # Overlap in the same center is also forbidden; a stale overlapping row
+    # may exist from historical data or privileged imports.
+    active_count = DaycareRoomStaffCoverage.objects.filter(
+        school=school, staff=actor, is_active=True, starts_at__lte=now, ends_at__gt=now
+    ).count()
+    if active_count > 1 or conflicts:
+        return set()
+    return ids
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def daycare_scheduled_children(request, site_id):
+    """Scheduled enrollment candidates, never a guarantee of actual admission.
+
+    The transactional check-in service verifies authority, room ratios,
+    custody clearance, entitlement and duplicate admission again under locks.
+    """
+    school = _staff_scope(request, "diadem.daycare.checkin")
+    require_entitlement(school.id)
+    site = DaycareSite.objects.filter(pk=site_id, school=school, is_active=True).first()
+    if site is None:
+        raise NotFound()
+    now = timezone.now()
+    try:
+        local_date = timezone.localtime(now, ZoneInfo(school.timezone)).date()
+    except (TypeError, ValueError, ZoneInfoNotFoundError) as exc:
+        raise ValidationError({"detail": "School timezone is not configured correctly."}) from exc
+    director = request.user.roles.filter(school=school, role_code="DAYCARE_DIRECTOR").exists()
+    allowed_rooms = None if director else _staff_room_ids(school, site, request.user, now)
+    if allowed_rooms is not None and not allowed_rooms:
+        raise PermissionDenied("Current verified room assignment required.")
+    attended = DaycareAttendance.objects.filter(
+        school=school, site=site, care_date=local_date
+    ).values_list("child_id", flat=True)
+    qs = DaycareEnrollment.objects.filter(
+        school=school, site=site, status="ACTIVE", readiness="READY",
+        site__is_active=True, child__is_active=True,
+        child__household__is_active=True, program__is_active=True,
+        room__is_active=True, start_date__lte=local_date
+    ).filter(Q(end_date__isnull=True) | Q(end_date__gte=local_date)).exclude(
+        child_id__in=attended
+    ).select_related("child", "room", "program").order_by(
+        "room__code", "child__last_name", "child__first_name", "pk"
+    )
+    if allowed_rooms is not None:
+        qs = qs.filter(room_id__in=allowed_rooms)
+    # Never silently return an incomplete child list as the full intake roster.
+    candidate_rows = list(qs[:501])
+    if len(candidate_rows) > 500:
+        raise ValidationError({"detail": "Too many candidates; staff intake requires a narrower verified selection."})
+    rows = [{
+        "enrollment_id": str(row.pk),
+        "child_id": str(row.child_id),
+        "child_name": f"{row.child.first_name} {row.child.last_name}".strip(),
+        "room_id": str(row.room_id),
+        "room_name": row.room.name,
+        "program_code": row.program.code,
+    } for row in candidate_rows if local_date.weekday() in row.weekdays]
+    return Response({
+        "site_id": str(site.pk),
+        "care_date": local_date.isoformat(),
+        "as_of": now.isoformat(),
+        "disclaimer": "Scheduled candidates only. Admission depends on transactional safety verification.",
+        "rows": rows,
+    })
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def daycare_pickup_authorities(request, attendance_id):
+    """Current verified recipients for one OPEN custody record only.
+
+    The release service always revalidates identity and custody under locks.
+    No phone, government ID, medical data or restricted guardian data leaves
+    this endpoint. Staff must attest to in-person identity separately.
+    """
+    school = _staff_scope(request, "diadem.daycare.release", allow_inactive_school=True)
+    attendance = DaycareAttendance.objects.filter(
+        pk=attendance_id, school=school, custody_release__isnull=True
+    ).select_related("child", "room", "site").first()
+    if attendance is None:
+        raise NotFound()
+    now = timezone.now()
+    if attendance.room_id not in _staff_room_ids(school, attendance.site, request.user, now):
+        raise PermissionDenied("Current verified room assignment required.")
+    rows = DaycareGuardianAuthority.objects.filter(
+        school=school, child_id=attendance.child_id,
+        guardian__school_id=school.id,
+        guardian__household_id=attendance.child.household_id,
+        verified_by__school_id=school.id, verified_by__is_active=True,
+        verified_at__isnull=False, verified_at__lte=now,
+        is_active=True, can_pickup=True, custody_status="CLEAR",
+    ).filter(
+        Q(effective_from__isnull=True) | Q(effective_from__lte=now),
+        Q(effective_until__isnull=True) | Q(effective_until__gt=now)
+    ).select_related("guardian").order_by("guardian__last_name", "guardian__first_name", "pk")
+    return Response({
+        "attendance_id": str(attendance.pk),
+        "site_id": str(attendance.site_id),
+        "room_id": str(attendance.room_id),
+        "child_id": str(attendance.child_id),
+        "recipients": [{
+            "guardian_authority_id": str(row.pk),
+            "guardian_name": f"{row.guardian.first_name} {row.guardian.last_name}".strip(),
+        } for row in rows],
+        "disclaimer": "Staff must independently verify recipient identity at the time of release.",
+    })
