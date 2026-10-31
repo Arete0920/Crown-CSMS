@@ -17,6 +17,9 @@ CSV class-roster package from CROWN records:
 The package is a real ZIP archive and the same five-file set is emitted every
 time. CROWN remains authoritative for school, section, enrollment, and teacher
 assignment records. Export does not create or change Microsoft 365 objects.
+A successful export is persisted in the canonical CROWN audit log with actor,
+school, term, file set, and aggregate counts; no student names or cloud usernames
+are copied into the audit metadata.
 
 ## Endpoint
 
