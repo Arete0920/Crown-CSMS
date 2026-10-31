@@ -308,15 +308,28 @@ def test_inactive_school_custody_reads_reject_cross_school_selector():
 
 
 def test_diadem_navigation_link_requires_explicit_school_scoped_role_grant():
+    # nav_view is a plain Django view; DRF force_authenticate does not attach
+    # request.user to it. Supply the authenticated principal and tenant via
+    # RequestFactory to verify its actual permission-derived menu contract.
+    import json
+    from django.test import RequestFactory
+    from core.views_nav import nav_view
+
     d = setup()
-    client = _client(d["actor"])
-    response = client.get("/api/v1/nav/")
-    assert response.status_code == 200, getattr(response, "data", response.content)
-    visible = [item["href"] for group in response.json()["groups"] for item in group["items"]]
+    request = RequestFactory().get("/api/v1/nav/")
+    request.user = d["actor"]
+    request.school = d["school"]
+
+    response = nav_view(request)
+    assert response.status_code == 200
+    visible = [item["href"] for group in json.loads(response.content)["groups"]
+               for item in group["items"]]
     assert "/diadem/daycare" in visible
     assert "/extended-care" not in visible
+
     UserRole.objects.filter(user=d["actor"], school=d["school"]).delete()
-    response = client.get("/api/v1/nav/")
+    response = nav_view(request)
     assert response.status_code == 200
-    after = [item["href"] for group in response.json()["groups"] for item in group["items"]]
+    after = [item["href"] for group in json.loads(response.content)["groups"]
+             for item in group["items"]]
     assert "/diadem/daycare" not in after
