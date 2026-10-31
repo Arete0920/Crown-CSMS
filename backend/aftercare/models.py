@@ -239,3 +239,9 @@ class AftercareMonthlyChargeRun(models.Model):
             models.Index(fields=["school_id", "year", "month"]),
             models.Index(fields=["school_fk", "year", "month"]),
         ]
+
+# Standalone Diadem foundation; staffing and custody ship in separately reviewed slices.
+from .daycare_models import (  # noqa: E402,F401
+    DaycareSite, DaycareRoom, DaycareChild, DaycareGuardianAuthority,
+    DaycareProgram, DaycareEnrollment,
+)
