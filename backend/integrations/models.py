@@ -74,6 +74,19 @@ class MicrosoftTenantBinding(models.Model):
             models.Index(fields=["school", "is_active"], name="integration_school__67d95b_idx"),
         ]
 
+    def save(self, *args, **kwargs):
+        if self.pk:
+            original = type(self).objects.filter(pk=self.pk).values("school_id", "tenant_id").first()
+            if original and (
+                original["school_id"] != self.school_id
+                or original["tenant_id"] != self.tenant_id
+            ):
+                raise ValidationError(
+                    "Microsoft tenant binding school and tenant_id are immutable after creation."
+                )
+        self.full_clean()
+        return super().save(*args, **kwargs)
+
     def __str__(self) -> str:
         return f"{self.school_id}:{self.tenant_id}"
 
@@ -128,6 +141,18 @@ class MicrosoftIdentityLink(models.Model):
         )
 
     def save(self, *args, **kwargs):
+        if self.pk:
+            original = type(self).objects.filter(pk=self.pk).values(
+                "binding_id", "user_id", "object_id"
+            ).first()
+            if original and (
+                original["binding_id"] != self.binding_id
+                or original["user_id"] != self.user_id
+                or original["object_id"] != self.object_id
+            ):
+                raise ValidationError(
+                    "Microsoft identity binding, user, and object_id are immutable after creation."
+                )
         self.full_clean()
         return super().save(*args, **kwargs)
 
