@@ -38,27 +38,36 @@ class DaycareRoomStaffCoverage(DaycareScopedRecord):
             raise ValidationError("Verified independent qualification and active staffing required.")
 
     def save(self, *args, **kwargs):
-        # Serialize active-shift writes by the canonical staff account, including
-        # concurrent inserts. A coverage-row lock alone does not protect a row
-        # which has not yet been inserted into another room.
-        if self.is_active:
-            with transaction.atomic():
-                staff = get_user_model().objects.select_for_update().filter(
-                    pk=self.staff_id, school_id=self.school_id, is_active=True
-                ).first()
-                if staff is None:
-                    raise ValidationError("Active same-tenant staff required.")
-                if (self.starts_at is not None and self.ends_at is not None and
-                    DaycareRoomStaffCoverage.objects.filter(
-                        school_id=self.school_id, staff_id=self.staff_id,
-                        is_active=True, starts_at__lt=self.ends_at,
-                        ends_at__gt=self.starts_at,
-                    ).exclude(pk=self.pk).exists()):
+        # All changes, including revocation of coverage, must use the same
+        # canonical staff-account lock that check-in and release hold before
+        # making a ratio / staff authority decision.
+        with transaction.atomic():
+            if not self._state.adding:
+                previous = type(self).objects.select_for_update().filter(
+                    pk=self.pk
+                ).values("school_id", "site_id", "room_id", "staff_id").first()
+                if previous is None:
+                    raise ValidationError("Staffing coverage no longer exists.")
+                if any(getattr(self, field) != previous[field] for field in previous):
                     raise ValidationError(
-                        "A staff member cannot have overlapping active room coverage."
+                        "Staffing coverage identity is immutable; deactivate and create a new shift."
                     )
-                return super().save(*args, **kwargs)
-        return super().save(*args, **kwargs)
+            staff = get_user_model().objects.select_for_update().filter(
+                pk=self.staff_id, school_id=self.school_id
+            ).first()
+            if staff is None or (self.is_active and not staff.is_active):
+                raise ValidationError("Same-tenant staff must be active for live coverage.")
+            if (self.is_active and self.starts_at is not None and
+                self.ends_at is not None and
+                type(self).objects.filter(
+                    school_id=self.school_id, staff_id=self.staff_id,
+                    is_active=True, starts_at__lt=self.ends_at,
+                    ends_at__gt=self.starts_at,
+                ).exclude(pk=self.pk).exists()):
+                raise ValidationError(
+                    "A staff member cannot have overlapping active room coverage."
+                )
+            return super().save(*args, **kwargs)
 
 class DaycareAttendance(DaycareScopedRecord):
     site=models.ForeignKey("aftercare.DaycareSite",on_delete=models.PROTECT,related_name="daycare_attendance")
