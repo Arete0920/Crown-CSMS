@@ -263,9 +263,31 @@ def enforce_tenant_context(request) -> None:
         request.method == "POST"
         and normalized_path == "/api/v1/aftercare/daycare/attendance/release"
     )
+    # Under school deactivation, staff must still identify children already
+    # in care and inspect verified release authority. This is an exact-route
+    # read-only exception; admission candidates, billing, writes other than
+    # physical release, and general school APIs remain blocked.
+    daycare_uuid = (
+        r"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-"
+        r"[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"
+    )
+    is_daycare_custody_read = (
+        request.method == "GET"
+        and (
+            normalized_path == "/api/v1/aftercare/daycare/sites"
+            or re.fullmatch(
+                rf"/api/v1/aftercare/daycare/sites/{daycare_uuid}/roster",
+                normalized_path,
+            ) is not None
+            or re.fullmatch(
+                rf"/api/v1/aftercare/daycare/attendance/{daycare_uuid}/pickup-authorities",
+                normalized_path,
+            ) is not None
+        )
+    )
     if (
         school is None
-        and is_daycare_custody_exit
+        and (is_daycare_custody_exit or is_daycare_custody_read)
         and context.principal_school_id is not None
         and context.principal_school_id == context.school_id
         and not context.override_requested
