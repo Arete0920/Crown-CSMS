@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import CrownLayout from "../components/crown/CrownLayout.jsx";
 import DashboardSection from "../components/layout/DashboardSection.jsx";
+import { CareHandoffDialog, CarePickupDialog } from "../components/care/CareCustodyDialogs.jsx";
 import { fetchRosterToday, checkinStudent, checkoutStudent, fetchPickupContacts, handoffToSchool } from "../api/aftercareApi.js";
 
 const TAG = {
@@ -25,6 +26,8 @@ export default function AftercareRosterPage({ careSession = "PM" }) {
   const [roster, setRoster] = useState(null);
   const [pickup, setPickup] = useState(null);
   const [pickupBusy, setPickupBusy] = useState(false);
+  const [checkinBusyId, setCheckinBusyId] = useState(null);
+  const checkinInFlightRef = useRef(false);
   const sessionRef = useRef(careSession);
 
   async function load() {
@@ -54,6 +57,8 @@ export default function AftercareRosterPage({ careSession = "PM" }) {
     setHandoff(null);
     setPickupBusy(false);
     setHandoffBusy(false);
+    setCheckinBusyId(null);
+    checkinInFlightRef.current = false;
     let cancelled = false;
 
     async function initialize() {
@@ -84,11 +89,20 @@ export default function AftercareRosterPage({ careSession = "PM" }) {
   }, [careSession]);
 
   async function handleCheckin(studentId) {
+    if (checkinInFlightRef.current || sessionRef.current !== careSession) return;
+    checkinInFlightRef.current = true;
+    setCheckinBusyId(studentId);
+    setError(null);
     try {
       await checkinStudent({ student_id: studentId, care_session: careSession });
       await load();
     } catch (e) {
-      alert(`Check-in failed: ${e.message}`);
+      if (sessionRef.current === careSession) setError(`Check-in failed: ${e.message}`);
+    } finally {
+      if (sessionRef.current === careSession) {
+        checkinInFlightRef.current = false;
+        setCheckinBusyId(null);
+      }
     }
   }
 
@@ -147,12 +161,13 @@ export default function AftercareRosterPage({ careSession = "PM" }) {
   const rosterTitle = currentRoster
     ? "Today's " + sessionLabel + " Roster - " + currentRoster.date + " (" + currentRoster.dow + ")"
     : "Today's " + sessionLabel + " Roster";
+  const childName = (studentId) => currentRoster?.rows.find((row) => row.student_id === studentId)?.student_name || studentId || "";
 
   return (
     <CrownLayout title={sessionLabel + " Roster"}>
       <DashboardSection title={rosterTitle}>
         {(loading || (!currentRoster && !error)) && <span>Loading...</span>}
-        {error && <div style={{ color: "var(--crown-danger)", background: "var(--crown-danger-bg)", padding: "10px 14px", borderRadius: 4, marginBottom: 12 }}>{error}</div>}
+        {error && <div role="alert" style={{ color: "var(--crown-danger)", background: "var(--crown-danger-bg)", padding: "10px 14px", borderRadius: 4, marginBottom: 12 }}>{error}</div>}
         {!loading && !error && currentRoster && (
           <div style={{ border: "1px solid var(--crown-border)", borderRadius: 4, overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
@@ -202,7 +217,7 @@ export default function AftercareRosterPage({ careSession = "PM" }) {
                       </td>
                       <td style={TD}>
                         {!hasCheckin && !row.unscheduled && (
-                          <button style={BTN_OUT} onClick={() => handleCheckin(row.student_id)}>Check In</button>
+                          <button type="button" style={BTN_OUT} disabled={Boolean(checkinBusyId) || loading} onClick={() => handleCheckin(row.student_id)}>{checkinBusyId === row.student_id ? "Checking In..." : "Check In"}</button>
                         )}
                         {hasCheckin && !hasCheckout && !isMorning && (
                           <button style={BTN_PRIM} onClick={() => beginCheckout(row.student_id)} disabled={pickupBusy}>Verify Pickup</button>
@@ -224,47 +239,27 @@ export default function AftercareRosterPage({ careSession = "PM" }) {
         {currentRoster?.unlinked_attendance_count > 0 && (
           <p role="alert">{currentRoster.unlinked_attendance_count} attendance record(s) cannot be linked to a verified student in this school. Escalate for manual custody reconciliation; identities from other schools are not displayed.</p>
         )}
-        {handoff && isMorning && currentRoster && handoff.careSession === careSession && (
-          <div role="dialog" aria-modal="true" aria-label="Confirm receiving staff handoff" style={{ border: "1px solid var(--crown-border)", padding: 16, marginTop: 16 }}>
-            <h3>School handoff for {handoff.studentId}</h3>
-            <p>The authenticated receiving staff member must personally confirm the child is physically in their care. This is a recorded staff attestation, not automated identity proof.</p>
-            <label style={{ display: "block", marginTop: 12 }}>
-              <input type="checkbox" checked={handoff.acknowledged} onChange={(e) => setHandoff((old) => ({ ...old, acknowledged: e.target.checked }))} />
-              I am the receiving staff member and acknowledge custody of this child.
-            </label>
-            <button type="button" onClick={handleHandoff} disabled={handoffBusy || !handoff.acknowledged}>Record School Handoff</button>
-            <button type="button" style={{ marginLeft: 12 }} disabled={handoffBusy} onClick={() => setHandoff(null)}>Cancel</button>
-          </div>
-        )}
-        {pickup && !isMorning && currentRoster && pickup.careSession === careSession && (
-          <div role="dialog" aria-modal="true" aria-label="Verify authorized pickup" style={{ border: "1px solid var(--crown-border)", padding: 16, marginTop: 16 }}>
-            <h3>Verify pickup for {pickup.studentId}</h3>
-            <p>Confirm the person's identity against the school's authorized pickup record before releasing a student.</p>
-            {pickup.contacts.length === 0 ? (
-              <p>No active authorized pickup contacts are on file. Checkout is blocked; contact school administration.</p>
-            ) : (
-              <>
-                <label htmlFor="pickup-contact">Authorized pickup contact</label>
-                <select id="pickup-contact" value={pickup.contactId}
-                  onChange={(e) => setPickup((old) => ({ ...old, contactId: e.target.value, verified: false }))}>
-                  <option value="">Select a contact</option>
-                  {pickup.contacts.map((contact) => (
-                    <option key={contact.id} value={contact.id}>{contact.name} — {contact.relationship || "Authorized contact"}</option>
-                  ))}
-                </select>
-                <label style={{ display: "block", marginTop: 12 }}>
-                  <input type="checkbox" checked={pickup.verified}
-                    disabled={!pickup.contactId}
-                    onChange={(e) => setPickup((old) => ({ ...old, verified: e.target.checked }))} />
-                  I have checked this person's identity against the selected authorized pickup record.
-                </label>
-                <button type="button" onClick={handleCheckout}
-                  disabled={pickupBusy || !pickup.contactId || !pickup.verified}>Confirm Checkout</button>
-              </>
-            )}
-            <button type="button" style={{ marginLeft: 12 }} disabled={pickupBusy} onClick={() => setPickup(null)}>Cancel</button>
-          </div>
-        )}
+        <CareHandoffDialog
+          open={Boolean(handoff && isMorning && currentRoster && handoff.careSession === careSession)}
+          studentName={childName(handoff?.studentId)}
+          acknowledged={Boolean(handoff?.acknowledged)}
+          busy={handoffBusy}
+          onAcknowledge={(acknowledged) => setHandoff((previous) => previous ? { ...previous, acknowledged } : null)}
+          onConfirm={handleHandoff}
+          onCancel={() => setHandoff(null)}
+        />
+        <CarePickupDialog
+          open={Boolean(pickup && !isMorning && currentRoster && pickup.careSession === careSession)}
+          studentName={childName(pickup?.studentId)}
+          contacts={pickup?.contacts || []}
+          selectedContactId={pickup?.contactId || ""}
+          verified={Boolean(pickup?.verified)}
+          busy={pickupBusy}
+          onSelectContact={(contactId) => setPickup((previous) => previous ? { ...previous, contactId, verified: false } : null)}
+          onVerify={(verified) => setPickup((previous) => previous ? { ...previous, verified } : null)}
+          onConfirm={handleCheckout}
+          onCancel={() => setPickup(null)}
+        />
       </DashboardSection>
     </CrownLayout>
   );
