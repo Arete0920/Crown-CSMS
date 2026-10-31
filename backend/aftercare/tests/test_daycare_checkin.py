@@ -203,3 +203,100 @@ def test_unverified_guardian_cannot_be_the_only_pickup_clearance():
         check(d)
     assert error.value.code=="verified_pickup_authority_required"
     assert not DaycareAttendance.objects.exists()
+
+
+@pytest.mark.django_db(transaction=True)
+def test_postgresql_concurrent_arrivals_cannot_exceed_single_place():
+    """Two real DB connections race for one room place; exactly one admission."""
+    from concurrent.futures import ThreadPoolExecutor
+    from threading import Barrier
+    from django.db import connection, close_old_connections, connections
+    d=setup()
+    if connection.vendor != "postgresql":
+        pytest.skip("Concurrent row-lock proof requires PostgreSQL.")
+    d["room"].licensed_capacity=1
+    d["room"].save()
+    second=DaycareChild.objects.create(
+        school=d["school"],site=d["site"],household=d["family"],
+        first_name="Other",last_name="Synthetic",date_of_birth=d["child"].date_of_birth,
+        is_active=True)
+    DaycareGuardianAuthority.objects.create(
+        school=d["school"],child=second,guardian=d["guardian"],is_active=True,
+        can_pickup=True,custody_status="CLEAR",verified_by=d["director"],
+        verified_at=timezone.now()-timedelta(minutes=5))
+    DaycareEnrollment.objects.create(
+        school=d["school"],site=d["site"],room=d["room"],child=second,
+        program=d["program"],status="ACTIVE",readiness="READY",
+        start_date=timezone.localdate()-timedelta(days=5),weekdays=list(range(7)))
+    gate=Barrier(2)
+    def attempt(child_id):
+        close_old_connections()
+        try:
+            with connection.cursor() as cur:
+                cur.execute("SELECT pg_backend_pid()")
+                backend_pid=cur.fetchone()[0]
+            gate.wait(timeout=20)
+            try:
+                check(d,child_id=child_id)
+                return backend_pid,"admitted"
+            except CheckinRefused as error:
+                return backend_pid,error.code
+        finally:
+            connections.close_all()
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        left=pool.submit(attempt,d["child"].id)
+        right=pool.submit(attempt,second.id)
+        outcomes=[left.result(timeout=40),right.result(timeout=40)]
+    assert len({pid for pid,_ in outcomes})==2, outcomes
+    assert sorted(result for _,result in outcomes)==["admitted","capacity_exceeded"],outcomes
+    assert DaycareAttendance.objects.filter(school=d["school"],custody_release__isnull=True).count()==1
+    assert AuditLog.objects.filter(action="diadem.daycare.checkin").count()==1
+
+
+@pytest.mark.django_db(transaction=True)
+def test_postgresql_concurrent_staff_assignments_cannot_overlap():
+    """Two inserts for a shared employee must serialize even across different rooms."""
+    from concurrent.futures import ThreadPoolExecutor
+    from threading import Barrier
+    from django.db import connection, close_old_connections, connections
+    d=setup()
+    if connection.vendor != "postgresql":
+        pytest.skip("Concurrent row-lock proof requires PostgreSQL.")
+    d["coverage"].is_active=False
+    d["coverage"].save()
+    rooms=[]
+    for code in ("race-room-a","race-room-b"):
+        rooms.append(DaycareRoom.objects.create(
+            school=d["school"],site=d["site"],code=code,name=code,
+            licensed_capacity=4,max_children_per_staff=4,
+            policy_source="Synthetic reviewed room approval",
+            policy_verified_by=d["director"],
+            policy_verified_at=timezone.now()-timedelta(minutes=5),is_active=True))
+    at=timezone.now()
+    gate=Barrier(2)
+    def attempt(room_id):
+        close_old_connections()
+        try:
+            with connection.cursor() as cur:
+                cur.execute("SELECT pg_backend_pid()")
+                pid=cur.fetchone()[0]
+            gate.wait(timeout=20)
+            try:
+                DaycareRoomStaffCoverage.objects.create(
+                    school=d["school"],site=d["site"],room_id=room_id,staff=d["actor"],
+                    starts_at=at-timedelta(minutes=10),ends_at=at+timedelta(hours=1),
+                    is_qualified=True,qualification_evidence="Synthetic attested credential",
+                    verified_by=d["director"],
+                    verified_at=at-timedelta(minutes=5),is_active=True)
+                return pid,"assigned"
+            except ValidationError as error:
+                return pid,"overlapping" if "overlapping" in str(error) else str(error)
+        finally:
+            connections.close_all()
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        futures=[pool.submit(attempt,room.id) for room in rooms]
+        outcomes=[future.result(timeout=40) for future in futures]
+    assert len({pid for pid,_ in outcomes})==2,outcomes
+    assert sorted(result for _,result in outcomes)==["assigned","overlapping"],outcomes
+    assert DaycareRoomStaffCoverage.objects.filter(
+        school=d["school"],staff=d["actor"],is_active=True).count()==1
