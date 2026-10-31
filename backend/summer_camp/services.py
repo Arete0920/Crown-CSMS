@@ -342,6 +342,14 @@ def checkout_camper(
 
     when = when or timezone.now()
     checkout_day = camp_school_local_date(school_id, when)
+    # Share the same child-level lock as check-in, serializing admission and
+    # release across sessions and local dates. Do not require an active
+    # enrollment/student status to finish a previously started custody record.
+    child = Student.objects.select_for_update().filter(
+        pk=student_id, school_id=school_id,
+    ).first()
+    if child is None:
+        raise ValueError("A matching camp check-in is required before checkout.")
     # Never choose an arbitrary open row from inconsistent legacy records.
     # A prior LOCAL day may be released normally after identity verification;
     # older/future-dated or multiply-open custody requires supervisor review.
@@ -701,7 +709,7 @@ def roster_today(school_id):
         .order_by("date", "pk")
     )
     today_attendance = {}
-    older_open_keys = set()
+    open_student_ids = set()
     open_counts = {}
     open_rows = []
     for record in attendance_rows:
@@ -710,9 +718,8 @@ def roster_today(school_id):
             today_attendance[key] = record
         if record.checkout_time is None:
             open_rows.append(record)
+            open_student_ids.add(record.student_id)
             open_counts[record.student_id] = open_counts.get(record.student_id, 0) + 1
-            if record.date != today:
-                older_open_keys.add(key)
 
     # An earlier unresolved custody takes precedence over a new scheduled
     # arrival. Retain only a UNIQUE current registration for safe identity
@@ -762,20 +769,16 @@ def roster_today(school_id):
         }
 
     rows = []
-    represented_attendance_ids = set()
     for enrollment in enrollments:
-        key = (enrollment.session_id, enrollment.student_id)
-        # Do not offer a fresh scheduled admission over yesterday's open child.
-        if key in older_open_keys:
+        # Open custody from ANY session supersedes all fresh scheduled
+        # admissions for this child, even when the enrollment is in another
+        # Camp session. Render each open record explicitly below instead.
+        if enrollment.student_id in open_student_ids:
             continue
-        attendance = today_attendance.get(key)
-        if attendance:
-            represented_attendance_ids.add(attendance.id)
-        rows.append(row_for(enrollment, attendance))
+        key = (enrollment.session_id, enrollment.student_id)
+        rows.append(row_for(enrollment, today_attendance.get(key)))
 
     for attendance in open_rows:
-        if attendance.id in represented_attendance_ids:
-            continue
         key = (attendance.session_id, attendance.student_id)
         candidates = registered_for_open.get(key, [])
         enrollment = candidates[0] if len(candidates) == 1 else None
@@ -789,6 +792,7 @@ def roster_today(school_id):
             or attendance.date > today
             or open_counts.get(attendance.student_id, 0) > 1
             or len(candidates) != 1
+            or attendance.checkin_time is None
             or invalid_link
         )
         rows.append(row_for(
