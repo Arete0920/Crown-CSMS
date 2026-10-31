@@ -239,3 +239,13 @@ class AftercareMonthlyChargeRun(models.Model):
             models.Index(fields=["school_id", "year", "month"]),
             models.Index(fields=["school_fk", "year", "month"]),
         ]
+
+# Daycare/Preschool owns separate early-childhood identity; no K-12 Student required.
+from .daycare_models import (  # noqa: E402,F401
+    DaycareSite, DaycareRoom, DaycareChild, DaycareGuardianAuthority,
+    DaycareProgram, DaycareEnrollment,
+)
+
+from .daycare_checkin_models import DaycareRoomStaffCoverage, DaycareAttendance  # noqa: E402,F401
+
+from .daycare_release_models import DaycareRelease  # noqa: E402,F401
