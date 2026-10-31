@@ -385,3 +385,43 @@ class TestFinancialAidAwardListRationaleRedaction:
         assert len(payload["data"]) == 1
         assert payload["data"][0]["rationale"] is None
         assert b"Demonstrable need" not in response.content
+
+
+class TestFinancialAidAwardOwnershipConsistency:
+    def test_award_reads_exclude_foreign_application_but_preserve_unlinked_awards(self):
+        home = _school("Award Home Link")
+        foreign = _school("Award Foreign Link")
+        user = _user("award-link-scope")
+        role = "AID_AWARD_LINK_SCOPE_TEST"
+        _assign_role(user, home, role)
+        _grant(role, "financial_aid.view")
+
+        _own_application, owned_award = _seed_fa_data(home.id)
+        foreign_application, _foreign_award = _seed_fa_data(foreign.id)
+        inconsistent = AidAward.objects.create(
+            school_id=home.id,
+            application=foreign_application,
+            bucket=AidBucket.NEED,
+            amount="9000.00",
+            rationale="Synthetic mismatched association",
+        )
+        unlinked = AidAward.objects.create(
+            school_id=home.id,
+            application=None,
+            bucket=AidBucket.NEED,
+            amount="1000.00",
+        )
+        client = _client_for(user)
+        for path in ("/api/v1/financial-aid/awards/", "/api/financial-aid/awards/"):
+            response = client.get(path, HTTP_X_SCHOOL_ID=str(home.id))
+            assert response.status_code == 200
+            payload = response.json()
+            assert payload["ok"] is True
+            returned = {row["id"] for row in payload["data"]}
+            assert returned == {str(owned_award.id), str(unlinked.id)}
+            assert str(inconsistent.id) not in returned
+
+        metrics = client.get("/api/v1/financial-aid/metrics/", HTTP_X_SCHOOL_ID=str(home.id))
+        assert metrics.status_code == 200
+        assert metrics.json()["budget_awarded"] == "9000.00"
+        assert metrics.json()["avg_award"] == 4500
