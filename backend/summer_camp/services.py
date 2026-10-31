@@ -375,6 +375,8 @@ def checkout_camper(
         raise ValueError("Open camp custody belongs to a different session.")
     if attendance.date not in (checkout_day, checkout_day - timedelta(days=1)):
         raise ValueError("Older camp custody requires supervisor reconciliation.")
+    if camp_school_local_date(school_id, attendance.checkin_time) != attendance.date:
+        raise ValueError("Camp check-in date mismatch requires supervisor reconciliation.")
     if when < attendance.checkin_time:
         raise ValueError("Checkout cannot precede check-in.")
 
