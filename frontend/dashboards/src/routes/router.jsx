@@ -62,6 +62,7 @@ import AcademicSupportDashboard from "../pages/AcademicSupportDashboard.jsx";
 import FineArtsDashboard from "../pages/FineArtsDashboard.jsx";
 import LibraryDashboard from "../pages/LibraryDashboard.jsx";
 import ExtendedCareDashboard from "../pages/ExtendedCareDashboard.jsx";
+import DiademDirectorRosterPage from "../pages/DiademDirectorRosterPage.jsx";
 import SummerCampRosterPage from "../pages/SummerCampRosterPage.jsx";
 import RegistrarDashboard from "../pages/RegistrarDashboard.jsx";
 import CommunicationsDirectorDashboard from "../pages/CommunicationsDirectorDashboard.jsx";
@@ -185,6 +186,10 @@ const IS_SANDBOX = Boolean(import.meta.env.VITE_DEMO_MODE === "sandbox" || impor
 const IS_LAUNCH_PREVIEW = Boolean(import.meta.env.DEV || IS_SANDBOX || import.meta.env.VITE_LAUNCH_UI_TAKEOVER === '1');
 
 export const router = createBrowserRouter([
+  {
+    path: PATHS.DIADEM_DIRECTOR,
+    element: <AuthenticatedSchoolRouteGuard><RoleRouteGuard allowedRoles={["daycare_director", "daycare_staff"]}><DiademDirectorRosterPage /></RoleRouteGuard></AuthenticatedSchoolRouteGuard>,
+  },
   {
     path: '/',
     element: <RoleHomeRedirect />,
