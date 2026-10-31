@@ -17,8 +17,8 @@ pytestmark=pytest.mark.django_db
 
 def setup():
     school=School.objects.create(name="Synthetic childcare tenant",timezone="UTC")
-    actor=UserAccount.objects.create_user(username="care_staff_synthetic",password="test",school=school)
-    director=UserAccount.objects.create_user(username="care_director_synthetic",password="test",school=school)
+    actor=UserAccount.objects.create_user(username="care_staff_synthetic",email="care_staff@synthetic.invalid",password="test",school=school)
+    director=UserAccount.objects.create_user(username="care_director_synthetic",email="care_director@synthetic.invalid",password="test",school=school)
     UserRole.objects.create(school=school,user=actor,role_code="DAYCARE_STAFF")
     plan=Plan.objects.create(code="care_synthetic",name="Care synthetic")
     TenantSubscription.objects.create(school_id=school.pk,plan=plan)
