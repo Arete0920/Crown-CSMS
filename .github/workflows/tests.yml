@@ -311,6 +311,7 @@ jobs:
           backend/crown_api/tests/test_director_aid_posting_integrity.py
           backend/finance/tests/test_finance_settlement_authorization.py
           backend/finance/tests/test_finance_payer_authorization.py
+          backend/tests/test_51x51_evidence_026_aftercare.py::TestMonthlyBillingPostgresConcurrency
           --migrations --create-db --junitxml=finance-postgresql-junit.xml
       - name: Preserve PostgreSQL financial posting evidence
         if: always()
