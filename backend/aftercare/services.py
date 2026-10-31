@@ -341,6 +341,10 @@ def run_monthly_flat_billing(school_id, year: int, month: int) -> dict:
     for enrollment in enrollments:
         if enrollment.care_session not in ("AM", "PM"):
             raise ValueError("Invalid monthly enrollment care session.")
+        # Imported or legacy rows may bypass the API's canonical student guard.
+        # Fail the entire run before posting any finance obligation.
+        if enrollment.student_fk.school_id != school.id or not enrollment.student_fk.is_active:
+            raise ValueError("Monthly billing enrollment student is not active in this school.")
         key = (enrollment.student_fk_id, enrollment.care_session)
         if key in seen:
             raise ValueError("Duplicate monthly enrollment for student and care session.")

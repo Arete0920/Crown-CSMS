@@ -223,6 +223,26 @@ class TestModule026AttendanceAndBilling(TestCase):
         ).exists())
 
     @patch("aftercare.services.create_ledger_charge_aftercare")
+    def test_monthly_billing_rejects_foreign_student_before_any_charge(self, charge):
+        foreign_school = _school()
+        foreign_student = _student(foreign_school)
+        # This inconsistent legacy/import row is deliberately created outside the API.
+        _enroll(self.school, foreign_student, care_session="AM", monthly_rate="55.00")
+        with self.assertRaisesMessage(ValueError, "student is not active in this school"):
+            run_monthly_flat_billing(self.school.id, 2026, 6)
+        charge.assert_not_called()
+        self.assertFalse(AftercareMonthlyChargeRun.objects.filter(school_fk=self.school).exists())
+
+    @patch("aftercare.services.create_ledger_charge_aftercare")
+    def test_monthly_billing_rejects_inactive_student_before_any_charge(self, charge):
+        self.student.is_active = False
+        self.student.save(update_fields=["is_active"])
+        with self.assertRaisesMessage(ValueError, "student is not active in this school"):
+            run_monthly_flat_billing(self.school.id, 2026, 6)
+        charge.assert_not_called()
+        self.assertFalse(AftercareMonthlyChargeRun.objects.filter(school_fk=self.school).exists())
+
+    @patch("aftercare.services.create_ledger_charge_aftercare")
     def test_monthly_billing_rejects_inactive_tenant_without_charge(self, charge):
         self.school.is_active = False
         self.school.save(update_fields=["is_active"])
