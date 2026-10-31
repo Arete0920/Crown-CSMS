@@ -44,8 +44,8 @@ function liveGet(url) {
 }
 
 beforeEach(() => {
-  vi.stubGlobal("crypto", { randomUUID: vi.fn(() => "00000000-0000-4000-8000-000000000001") });
   vi.resetAllMocks();
+  vi.stubGlobal("crypto", { randomUUID: vi.fn(() => "00000000-0000-4000-8000-000000000001") });
   crownApiClient.get.mockImplementation(liveGet);
   crownApiClient.post.mockResolvedValue({ status: 201, data: {} });
 });
