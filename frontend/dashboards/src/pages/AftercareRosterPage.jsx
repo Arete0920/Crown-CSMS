@@ -152,11 +152,16 @@ export default function AftercareRosterPage({ careSession = "PM" }) {
                 )}
                 {roster.rows.map((row) => {
                   const hasCheckin = !!row.attendance;
-                  const hasCheckout = row.attendance?.checkout_time;
+                  const hasCheckout = Boolean(row.attendance?.checkout_time);
+                  const verifiedClosure = hasCheckout && (isMorning
+                    ? Boolean(row.attendance?.handoff_verified && row.attendance?.handoff_time)
+                    : Boolean(row.attendance?.pickup_verified));
                   const statusChip = !row.attendance
                     ? <span style={{ ...TAG.base, ...TAG.default }}>Not checked in</span>
-                    : row.attendance.checkout_time
-                      ? <span style={{ ...TAG.base, ...TAG.success }}>{isMorning ? "Handed off" : "Checked out"}</span>
+                    : hasCheckout
+                      ? verifiedClosure
+                        ? <span style={{ ...TAG.base, ...TAG.success }}>{isMorning ? "Handed off" : "Checked out"}</span>
+                        : <span role="alert" style={{ ...TAG.base, ...TAG.default }}>Unverified {isMorning ? "handoff" : "checkout"} — review</span>
                       : <span style={{ ...TAG.base, ...TAG.primary }}>Checked in</span>;
 
                   return (
@@ -179,6 +184,9 @@ export default function AftercareRosterPage({ careSession = "PM" }) {
                         )}
                         {hasCheckin && !hasCheckout && isMorning && (
                           <button style={BTN_PRIM} onClick={() => setHandoff({ studentId: row.student_id, acknowledged: false })} disabled={handoffBusy}>Acknowledge School Handoff</button>
+                        )}
+                        {hasCheckin && hasCheckout && !verifiedClosure && (
+                          <span>Supervisor review required; custody status is unverified.</span>
                         )}
                       </td>
                     </tr>

@@ -13,9 +13,12 @@ export function deriveSessionTotals(rows, careSession) {
   const scheduled = Array.isArray(rows) ? rows : [];
   const checkedIn = scheduled.filter((r) => Boolean(r.attendance?.checkin_time));
   const present = checkedIn.filter((r) => !r.attendance?.checkout_time);
-  const completed = checkedIn.filter((r) => careSession === "AM"
-    ? Boolean(r.attendance?.handoff_verified && r.attendance?.handoff_time)
-    : Boolean(r.attendance?.checkout_time && r.attendance?.pickup_verified));
+  const verifiedClosure = (r) => careSession === "AM"
+    ? Boolean(r.attendance?.checkout_time && r.attendance?.handoff_verified && r.attendance?.handoff_time)
+    : Boolean(r.attendance?.checkout_time && r.attendance?.pickup_verified);
+  const completed = checkedIn.filter(verifiedClosure);
+  // A recorded checkout without proof of transfer is neither supervised nor released.
+  const unverifiedClosures = checkedIn.filter((r) => r.attendance?.checkout_time && !verifiedClosure(r));
   const late = careSession === "PM"
     ? checkedIn.filter((r) => Number(r.attendance?.late_minutes || 0) > 0) : [];
   const lateFeeCents = careSession === "PM"
@@ -23,6 +26,7 @@ export function deriveSessionTotals(rows, careSession) {
   return {
     expected: scheduled.length, checkedIn: checkedIn.length,
     present: present.length, completed: completed.length,
+    unverifiedClosures: unverifiedClosures.length,
     awaitingArrival: scheduled.length - checkedIn.length,
     latePickups: late.length, lateFeeCents,
   };
@@ -82,6 +86,7 @@ export default function CareSessionDirectorDashboard({ careSession = "PM" }) {
     ["Checked In Today", totals.checkedIn],
     ["Currently Supervised", totals.present],
     [morning ? "School Handoffs" : "Authorized Checkouts", totals.completed],
+    ["Unverified Custody Closures", totals.unverifiedClosures],
     ["Awaiting Arrival", totals.awaitingArrival],
     ...(morning ? [] : [
       ["Late Pickup Events", totals.latePickups],
@@ -113,6 +118,9 @@ export default function CareSessionDirectorDashboard({ careSession = "PM" }) {
       {errors.length > 0 && <div role="alert">{errors.map((e) => <p key={e}>{e}</p>)}</div>}
       {!loading && <>
         <DashboardSection title="Today">
+          {totals?.unverifiedClosures > 0 && (
+            <p role="alert">Custody transfer is unverified for {totals.unverifiedClosures} care session(s). Review the roster and investigate; do not assume the children were handed off or released.</p>
+          )}
           {totals
             ? <div style={GRID}>{today.map(([label, value]) => <div key={label} style={PANEL}>
                 <div>{label}</div><strong style={{ fontSize: 24 }}>{value}</strong>
