@@ -131,6 +131,18 @@ def test_link_rejects_user_without_membership_in_bound_school():
         )
 
 
+def test_inactive_school_binding_does_not_authenticate():
+    tenant_id = uuid.uuid4()
+    object_id = uuid.uuid4()
+    school, user = _school_user("Inactive Entra School")
+    _bind(school=school, user=user, tenant_id=tenant_id, object_id=object_id)
+    school.is_active = False
+    school.save(update_fields=["is_active"])
+
+    with pytest.raises(MicrosoftIdentityError, match="not provisioned"):
+        get_user_from_claims({"tid": str(tenant_id), "oid": str(object_id)})
+
+
 def test_aad_authenticator_rejects_valid_but_unprovisioned_microsoft_identity():
     tenant_id = uuid.uuid4()
     object_id = uuid.uuid4()
@@ -145,4 +157,22 @@ def test_aad_authenticator_rejects_valid_but_unprovisioned_microsoft_identity():
         return_value={"tid": str(tenant_id), "oid": str(object_id)},
     ):
         with pytest.raises(AuthenticationFailed, match="not provisioned"):
+            authenticator.authenticate(request)
+
+
+def test_aad_authenticator_fails_closed_on_identity_store_error():
+    request = APIRequestFactory().get(
+        "/api/iam/me/",
+        HTTP_AUTHORIZATION="Bearer " + ("x" * 150),
+    )
+    authenticator = AADBearerAuthentication()
+
+    with patch(
+        "core.auth.authentication.decode_and_validate_bearer",
+        return_value={"tid": str(uuid.uuid4()), "oid": str(uuid.uuid4())},
+    ), patch(
+        "core.auth.authentication.get_user_from_claims",
+        side_effect=RuntimeError("synthetic identity store outage"),
+    ):
+        with pytest.raises(AuthenticationFailed, match="resolution unavailable"):
             authenticator.authenticate(request)
