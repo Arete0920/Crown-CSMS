@@ -7,7 +7,7 @@ from django.contrib.auth import get_user_model
 from django.utils import timezone
 from rest_framework.test import APIClient
 
-from core.models import School
+from core.models import CrownPermission, RolePermission, School, UserRole
 from households.models import Household, Student
 
 from .models import (
@@ -39,6 +39,10 @@ def staff_user(school):
     )
     user.set_unusable_password()
     user.save(update_fields=["password"])
+    UserRole.objects.create(user=user, school=school, role_code="SUPPORT")
+    for code in ("summer_camp.view", "summer_camp.edit"):
+        permission, _ = CrownPermission.objects.get_or_create(code=code)
+        RolePermission.objects.get_or_create(role_code="SUPPORT", permission=permission)
     return user
 
 
@@ -192,11 +196,6 @@ def test_api_contract_core_endpoints(staff_user, school, session, household_stud
             "student_id": str(student.id),
             "household_id": str(household.id),
             "registration_source": "EXISTING",
-            "form_status": "MISSING",
-            "payment_status": "DEPOSIT_DUE",
-            "health_status": "NEEDS_REVIEW",
-            "pickup_status": "MISSING",
-            "balance_due_cents": 10000,
         },
         format="json",
     )
@@ -213,14 +212,8 @@ def test_api_contract_core_endpoints(staff_user, school, session, household_stud
         {"session_id": str(session.id), "student_id": str(student.id)},
         format="json",
     )
-    assert checkin_resp.status_code == 201
-
-    checkout_resp = client.post(
-        "/api/v1/summer-camp/attendance/checkout/",
-        {"session_id": str(session.id), "student_id": str(student.id), "pickup_verified": True},
-        format="json",
-    )
-    assert checkout_resp.status_code == 200
+    # An incomplete application is not an authorization to admit a camper.
+    assert checkin_resp.status_code == 400
 
     incident_resp = client.post(
         "/api/v1/summer-camp/incidents/",
@@ -264,11 +257,20 @@ def test_wizard_setup_get_and_post(staff_user, school):
     post_resp = client.post(
         "/api/v1/summer-camp/wizard/setup/",
         {
-            "camp_name": "Summer Test Program",
-            "season_year": 2026,
-            "season_label": "Summer",
-            "allow_waitlist": True,
+            "config": {
+                "camp_name": "Summer Test Program",
+                "default_capacity": 48,
+                "default_staff_ratio": 12,
+                "billing_policy": "PER_SESSION",
+            },
+            "completed_steps": ["Program", "Registration", "Operations", "Review"],
+            "is_completed": True,
         },
         format="json",
     )
-    assert post_resp.status_code == 200
+    assert post_resp.status_code == 200, post_resp.json()
+    assert post_resp.json()["config"]["camp_name"] == "Summer Test Program"
+    saved_resp = client.get("/api/v1/summer-camp/wizard/setup/")
+    assert saved_resp.status_code == 200
+    assert saved_resp.json()["config"]["default_capacity"] == 48
+    assert saved_resp.json()["wizard"]["is_completed"] is True
