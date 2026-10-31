@@ -61,7 +61,7 @@ def summarize_financial_aid_rows(*, school_id, year_id, applications, awards):
             or not _same_id(award.get('academic_year__school_id'), school_id)
             or award.get('student__family_id') is None
             or award.get('decision_status') not in allowed_decisions
-            or not isinstance(award.get('awarded_cents'), int)
+            or type(award.get('awarded_cents')) is not int
             or award['awarded_cents'] < 0
         ):
             raise FinancialAidDashboardIntegrityError('Inconsistent aid award scope or amount')
@@ -75,15 +75,25 @@ def summarize_financial_aid_rows(*, school_id, year_id, applications, awards):
 
         # A linked ledger entry is additional evidence; validate it without
         # assuming that every historical accepted award was posted.
-        if award.get('ledger_entry_id') is not None and (
-            not _same_id(award.get('ledger_entry__school_id'), school_id)
-            or not _same_id(award.get('ledger_entry__academic_year_id'), year_id)
-            or not _same_id(award.get('ledger_entry__student_id'), award['student_id'])
-            or not _same_id(award.get('ledger_entry__family_id'), award['student__family_id'])
-            or award.get('ledger_entry__is_reversal') is not False
-            or award.get('ledger_entry__amount_cents') != -award['awarded_cents']
-        ):
-            raise FinancialAidDashboardIntegrityError('Award ledger linkage requires reconciliation')
+        if award.get('ledger_entry_id') is not None:
+            reversal_count = award.get('ledger_reversal_count')
+            if (
+                not _same_id(award.get('ledger_entry__school_id'), school_id)
+                or not _same_id(award.get('ledger_entry__academic_year_id'), year_id)
+                or not _same_id(award.get('ledger_entry__student_id'), award['student_id'])
+                or not _same_id(award.get('ledger_entry__family_id'), award['student__family_id'])
+                or not _same_id(award.get('ledger_entry__account__school_id'), school_id)
+                or award.get('ledger_entry__account__code') != 'AID'
+                or award.get('ledger_entry__source') != 'AID_AWARD'
+                or award.get('ledger_entry__is_reversal') is not False
+                or award.get('ledger_entry__reversal_of_id') is not None
+                or award.get('ledger_entry__amount_cents') != -award['awarded_cents']
+                or type(reversal_count) is not int
+                or reversal_count < 0 or reversal_count > 1
+                or award['decision_status'] == 'OFFERED'
+                or (award['decision_status'] == 'ACCEPTED' and reversal_count != 0)
+            ):
+                raise FinancialAidDashboardIntegrityError('Award ledger linkage requires reconciliation')
 
         if award['decision_status'] == 'ACCEPTED':
             if award['awarded_cents'] <= 0:
@@ -112,6 +122,7 @@ def financial_aid_live_payload(school_id):
     """
     from aid.models import AidApplication, AidAward
     from core.models import AcademicYear
+    from django.db.models import Count
     from .payload_contract import alert, build_dashboard_payload, metric
 
     current_years = list(
@@ -129,7 +140,10 @@ def financial_aid_live_payload(school_id):
     ).values('family_id', 'family__school_id', 'academic_year__school_id', 'status')
     awards = AidAward.objects.filter(
         school_id=school_id, academic_year_id=year_id
+    ).annotate(
+        ledger_reversal_count=Count('ledger_entry__reversals', distinct=True),
     ).values(
+        'ledger_reversal_count',
         'student_id', 'student__school_id', 'student__family_id',
         'student__family__school_id', 'academic_year__school_id',
         'aid_application_id', 'aid_application__school_id',
@@ -138,6 +152,8 @@ def financial_aid_live_payload(school_id):
         'ledger_entry__school_id', 'ledger_entry__academic_year_id',
         'ledger_entry__student_id', 'ledger_entry__family_id',
         'ledger_entry__amount_cents', 'ledger_entry__is_reversal',
+        'ledger_entry__source', 'ledger_entry__account__school_id',
+        'ledger_entry__account__code', 'ledger_entry__reversal_of_id',
     )
     facts = summarize_financial_aid_rows(
         school_id=school_id, year_id=year_id,
