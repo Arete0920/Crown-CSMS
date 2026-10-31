@@ -462,6 +462,10 @@ export const router = createBrowserRouter([
     ),
   },
   {
+    path: PATHS.JIREH_SGO,
+    element: <JirehSGODashboard />,
+  },
+  {
     path: PATHS.ATTENDANCE,
     element: (IS_LAUNCH_PREVIEW
       ? <CrownLaunchModulePage moduleKey="attendance" activePath="/attendance" />
