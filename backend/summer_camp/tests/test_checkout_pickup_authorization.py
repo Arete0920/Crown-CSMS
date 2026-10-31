@@ -92,7 +92,6 @@ def _assert_unchanged(case):
 
 
 def test_checkin_and_verified_pickup_span_utc_midnight_on_one_school_day():
-    """End-to-end custody continuity when UTC midnight is not school midnight."""
     case = _scenario("BoundaryIntegrated")
     case.attendance.delete()
     case.school.timezone = "America/Los_Angeles"
@@ -103,18 +102,14 @@ def test_checkin_and_verified_pickup_span_utc_midnight_on_one_school_day():
     case.enrollment.health_status = "APPROVED"
     case.enrollment.payment_status = "PAID_IN_FULL"
     case.enrollment.balance_due_cents = 0
-    case.enrollment.save(update_fields=[
-        "form_status", "health_status", "payment_status", "balance_due_cents",
-    ])
+    case.enrollment.save(update_fields=["form_status", "health_status", "payment_status", "balance_due_cents"])
     SummerCampStaffAssignment.objects.create(
         school=case.school, session=case.session,
         staff_user=case.verifier, role="COUNSELOR",
     )
-    start = datetime(2025, 9, 3, 23, 30, tzinfo=utc_timezone.utc)
+    start = datetime(2025, 9, 3, 22, 30, tzinfo=utc_timezone.utc)
     finish = datetime(2025, 9, 4, 0, 30, tzinfo=utc_timezone.utc)
-    admitted = checkin_camper(
-        case.school.id, case.student.id, case.session.id, when=start,
-    )
+    admitted = checkin_camper(case.school.id, case.student.id, case.session.id, when=start)
     assert admitted.date == DAY
     assert admitted.checkout_time is None
     released = checkout_camper(
