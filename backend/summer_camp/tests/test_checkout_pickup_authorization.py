@@ -141,6 +141,46 @@ def test_denied_pickups_never_write_checkout_fields():
         _assert_unchanged(case)
 
 
+def test_cancelled_enrollment_pickup_contact_is_invalid_after_re_registration():
+    case = _scenario("ReRegister")
+    case.enrollment.status = "CANCELLED"
+    case.enrollment.save(update_fields=["status"])
+    current = SummerCampEnrollment.objects.create(
+        school=case.school, session=case.session, student=case.student,
+        status="REGISTERED",
+    )
+    current_contact = SummerCampPickupContact.objects.create(
+        school=case.school, enrollment=current, name="New Authorized Contact",
+    )
+
+    with pytest.raises(ValueError, match="not authorized"):
+        _checkout(case, contact_id=case.contact.id)
+    _assert_unchanged(case)
+
+    released = _checkout(case, contact_id=current_contact.id)
+    assert released.pickup_contact_id == current_contact.id
+    assert released.pickup_verified_by_id == case.verifier.id
+
+
+def test_checkout_denied_without_one_unique_current_registration():
+    case = _scenario("NoCurrentRegistration")
+    case.enrollment.status = "CANCELLED"
+    case.enrollment.save(update_fields=["status"])
+    with pytest.raises(ValueError, match="One active camp registration"):
+        _checkout(case, contact_id=case.contact.id)
+    _assert_unchanged(case)
+
+    case.enrollment.status = "REGISTERED"
+    case.enrollment.save(update_fields=["status"])
+    SummerCampEnrollment.objects.create(
+        school=case.school, session=case.session, student=case.student,
+        status="REGISTERED",
+    )
+    with pytest.raises(ValueError, match="One active camp registration"):
+        _checkout(case, contact_id=case.contact.id)
+    _assert_unchanged(case)
+
+
 def test_missing_checkin_and_chronology_denied_before_mutation():
     case = _scenario("Chronology")
     with pytest.raises(ValueError, match="precede check-in"):

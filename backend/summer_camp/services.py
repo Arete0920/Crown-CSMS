@@ -248,15 +248,28 @@ def checkout_camper(
     if when < attendance.checkin_time:
         raise ValueError("Checkout cannot precede check-in.")
 
-    # SummerCampPickupContact belongs to a specific enrollment, not directly to
-    # the student. Require the entire same-school/session/student association.
+    # Contacts belong to a particular enrollment. A cancelled enrollment's
+    # contact cannot authorize release after the child is re-registered.
+    # Fail closed if no unique current registration exists; legacy data may
+    # contain more than one REGISTERED enrollment for the same child/session.
+    active_enrollment_ids = list(
+        SummerCampEnrollment.objects.select_for_update()
+        .filter(
+            school_id=school_id,
+            session_id=session_id,
+            student_id=student_id,
+            status="REGISTERED",
+        )
+        .values_list("id", flat=True)[:2]
+    )
+    if len(active_enrollment_ids) != 1:
+        raise ValueError("One active camp registration is required for checkout.")
+
     pickup_contact = SummerCampPickupContact.objects.filter(
         pk=pickup_contact_id,
         is_active=True,
         school_id=school_id,
-        enrollment__school_id=school_id,
-        enrollment__session_id=session_id,
-        enrollment__student_id=student_id,
+        enrollment_id=active_enrollment_ids[0],
     ).first()
     if pickup_contact is None:
         raise ValueError("Pickup contact is not authorized for this camper and session.")
