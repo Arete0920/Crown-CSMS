@@ -461,7 +461,6 @@ def test_unconfigured_school_timezone_blocks_custody_writes():
     assert not AftercareAttendance.objects.filter(school_fk=school).exists()
 
 
-
 def test_roster_preserves_checked_in_child_after_enrollment_deactivation(monkeypatch):
     """A child cannot disappear from custody visibility when the schedule changes."""
     from rest_framework.test import APIClient
