@@ -110,11 +110,27 @@ def _build_sds_files(*, school, sections, student_enrollments, teacher_assignmen
 
     users_rows = []
     roles_rows = []
+    usernames = {}
+
+    def register_username(username: str, sourced_id: str) -> None:
+        existing = usernames.get(username)
+        if existing and existing != sourced_id:
+            raise ValidationError(
+                {
+                    "detail": (
+                        f"Microsoft SDS export blocked: username {username} maps "
+                        "to more than one CROWN identity."
+                    ),
+                    "code": "sds_identity_ambiguous",
+                }
+            )
+        usernames[username] = sourced_id
 
     for student_id in sorted(student_by_id, key=str):
         student = student_by_id[student_id]
         username = _identity_username(student, kind="student")
         sourced_id = _student_user_id(student.id)
+        register_username(username, sourced_id)
         users_rows.append(
             (
                 sourced_id,
@@ -132,6 +148,7 @@ def _build_sds_files(*, school, sections, student_enrollments, teacher_assignmen
         staff = staff_by_id[staff_id]
         username = _identity_username(staff, kind="staff")
         sourced_id = _staff_user_id(staff.id)
+        register_username(username, sourced_id)
         users_rows.append(
             (
                 sourced_id,
@@ -253,6 +270,13 @@ def sds_v21_export(request):
         .select_related("course")
         .order_by("course__code", "id")
     )
+    if not sections:
+        raise ValidationError(
+            {
+                "detail": "Microsoft SDS export blocked: the selected term has no classes.",
+                "code": "sds_no_classes",
+            }
+        )
 
     student_enrollments = list(
         Enrollment.objects.filter(
