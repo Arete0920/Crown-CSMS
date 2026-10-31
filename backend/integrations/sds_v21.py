@@ -138,7 +138,6 @@ def _build_sds_files(*, school, sections, student_enrollments, teacher_assignmen
                 student.last_name,
                 student.first_name,
                 username,
-                username,
                 str(student.id),
             )
         )
@@ -155,7 +154,6 @@ def _build_sds_files(*, school, sections, student_enrollments, teacher_assignmen
                 username,
                 staff.last_name,
                 staff.first_name,
-                username,
                 username,
                 str(staff.id),
             )
@@ -203,7 +201,6 @@ def _build_sds_files(*, school, sections, student_enrollments, teacher_assignmen
                 "username",
                 "familyName",
                 "givenName",
-                "activeDirectoryMatchId",
                 "email",
                 "userNumber",
             ),
