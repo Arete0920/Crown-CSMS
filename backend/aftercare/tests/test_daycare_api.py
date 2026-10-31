@@ -31,7 +31,7 @@ def _checkin(d, client=None, **override):
 def _release(d, attendance, client=None, **override):
     payload = dict(
         site_id=str(d["site"].id), room_id=str(d["room"].id),
-        attendance_id=str(attendance.id), guardian_authority_id=str(d["authority"].id),
+        attendance_id=str(getattr(attendance, "id", attendance)), guardian_authority_id=str(d["authority"].id),
         request_key=str(uuid4()), identity_verified=True,
         identity_method="GOVERNMENT_PHOTO_ID",
     )
@@ -134,6 +134,26 @@ def test_inactive_school_may_release_existing_child_not_admit_another():
     d["school"].is_active = False
     d["school"].save(update_fields=["is_active"])
     released = _release(d, attendance)
-    assert released.status_code == 201, released.data
+    assert released.status_code == 201, getattr(released, "data", released.content)
     assert DaycareRelease.objects.filter(attendance=attendance).exists()
     assert _checkin(d).status_code in (403, 404)
+
+def test_inactive_school_rejects_foreign_school_custody_header():
+    d = setup()
+    admitted = _checkin(d)
+    assert admitted.status_code == 201
+    attendance = DaycareAttendance.objects.get(pk=admitted.data["attendance_id"])
+    d["school"].is_active = False
+    d["school"].save(update_fields=["is_active"])
+    foreign = School.objects.create(name="Other test organization")
+    client = _client(d["actor"])
+    response = client.post(
+        "/api/v1/aftercare/daycare/attendance/release/",
+        dict(site_id=str(d["site"].id), room_id=str(d["room"].id),
+             attendance_id=str(attendance.id),
+             guardian_authority_id=str(d["authority"].id),
+             request_key=str(uuid4()), identity_verified=True,
+             identity_method="GOVERNMENT_PHOTO_ID"),
+        format="json", HTTP_X_SCHOOL_ID=str(foreign.pk))
+    assert response.status_code in (403, 404)
+    assert not DaycareRelease.objects.exists()
