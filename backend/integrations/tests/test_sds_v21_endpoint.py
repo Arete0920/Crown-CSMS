@@ -20,6 +20,7 @@ from core.models import (
 )
 from households.models import Household, Student
 
+from crown_api.audit_models import AuditEvent
 from integrations.sds_v21 import SDS_FILENAMES, sds_v21_export
 
 
@@ -166,6 +167,13 @@ class SdsV21EndpointTest(TestCase):
                 (f"staff:{self.staff.id}", "teacher"),
             },
         )
+        event = AuditEvent.objects.get(action="microsoft.sds.exported")
+        self.assertEqual(event.school_id, self.school.id)
+        self.assertEqual(event.actor_id, self.operator.id)
+        self.assertEqual(event.object_id, self.term.id)
+        self.assertEqual(event.meta["classes"], 1)
+        self.assertEqual(event.meta["students"], 1)
+        self.assertEqual(event.meta["teachers"], 1)
 
     def test_authenticated_user_without_roster_grant_is_forbidden(self):
         unauthorized = User.objects.create_user(
