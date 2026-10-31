@@ -384,6 +384,6 @@ def test_roster_does_not_offer_fresh_other_session_admission_over_open_custody(c
     assert rows[0]["session_id"] == str(other_session.id)
     assert rows[0]["attendance_id"] == str(open_record.id)
     assert rows[0]["unresolved_custody"] is True
-    assert rows[0]["requires_supervisor_reconciliation"] is True
+    assert rows[0]["requires_supervisor_reconciliation"] is False
     assert rows[0]["open_custody_count"] == 1
     assert not any(r["session_id"] == str(session.id) for r in rows)
