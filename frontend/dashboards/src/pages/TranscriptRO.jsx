@@ -22,41 +22,61 @@ export function TranscriptRO() {
   );
 
   useEffect(() => {
+    let active = true;
     fetchStudents({ limit: 200 })
       .then((data) => {
-        const results = data?.results || [];
+        if (!active) return;
+        // StudentViewSet currently returns a top-level array. Preserve
+        // compatibility with pagination if the server enables it later.
+        const results = Array.isArray(data) ? data : data?.results;
+        if (!Array.isArray(results)) throw new Error("Invalid students response.");
         setStudents(results);
         if (results.length > 0) {
-          setSelectedStudentId((currentId) => currentId || results[0].id);
-          setLoadingTranscript(true);
+          setSelectedStudentId((currentId) => currentId || String(results[0].id));
         }
       })
-      .catch((err) => setError(`Failed to load students: ${err.message}`))
-      .finally(() => setLoadingStudents(false));
+      .catch((err) => { if (active) setError(`Failed to load students: ${err.message}`); })
+      .finally(() => { if (active) setLoadingStudents(false); });
+    return () => { active = false; };
   }, []);
 
   useEffect(() => {
-    if (!selectedStudentId) return;
+    let active = true;
+    setTranscript(null);
     setIssuance(null);
+    setError(null);
+    if (!selectedStudentId) {
+      setLoadingTranscript(false);
+      return () => { active = false; };
+    }
+    setLoadingTranscript(true);
     fetchTranscript(selectedStudentId)
       .then((data) => {
+        if (!active) return;
+        // Never render a document under a different selected student.
+        if (String(data?.student?.student_id || "") !== String(selectedStudentId)) {
+          throw new Error("Transcript student identity does not match selection.");
+        }
         setTranscript(data);
         setError(null);
       })
       .catch((err) => {
+        if (!active) return;
         setError(`Failed to load transcript: ${err.message}`);
         setTranscript(null);
       })
-      .finally(() => setLoadingTranscript(false));
+      .finally(() => { if (active) setLoadingTranscript(false); });
+    return () => { active = false; };
   }, [selectedStudentId]);
 
   const handleStudentChange = (event) => {
-    setLoadingTranscript(true);
+    setTranscript(null);
+    setIssuance(null);
     setSelectedStudentId(event.target.value);
   };
 
   const handleIssueOfficial = async () => {
-    if (!selectedStudentId || !canIssueOfficial) return;
+    if (!selectedStudentId || !canIssueOfficial || !transcript || loadingTranscript || issuing) return;
     setIssuing(true);
     setError(null);
     try {
@@ -104,7 +124,7 @@ export function TranscriptRO() {
             <button
               className="crown-btn crown-btn-primary"
               onClick={handleIssueOfficial}
-              disabled={!transcript || issuing}
+              disabled={!transcript || loadingTranscript || issuing}
             >
               {issuing ? "Issuing..." : "Issue Official PDF"}
             </button>
