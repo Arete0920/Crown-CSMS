@@ -84,7 +84,6 @@ class SdsV21ExportContractTest(SimpleTestCase):
                 "username",
                 "familyName",
                 "givenName",
-                "activeDirectoryMatchId",
                 "email",
                 "userNumber",
             ],
@@ -111,7 +110,7 @@ class SdsV21ExportContractTest(SimpleTestCase):
             {row["username"] for row in users},
             {"student@example.invalid", "teacher@example.invalid"},
         )
-        self.assertTrue(all(row["activeDirectoryMatchId"] == row["username"] for row in users))
+        self.assertTrue(all(row["email"] == row["username"] for row in users))
 
     def test_missing_domain_qualified_identity_fails_closed(self):
         with self.assertRaises(ValidationError) as error:
