@@ -26,7 +26,7 @@ async function mockTranscriptApis(page: Page) {
   await page.route('**/api/v1/students/**', async (route) => {
     const path = new URL(route.request().url()).pathname;
     if (path === '/api/v1/students/' || path === '/api/v1/students') {
-      return json(route, { results: [{ id: studentId, first_name: 'Jordan', last_name: 'Heritage', grade_level: '12' }] });
+      return json(route, [{ id: studentId, first_name: 'Jordan', last_name: 'Heritage', grade_level: '12' }]);
     }
     return route.continue();
   });
@@ -62,4 +62,16 @@ test('family transcript reader cannot issue official PDF', async ({ page }) => {
   await openTranscript(page, 'parent');
   await expect(page.getByRole('button', { name: 'Issue Official PDF' })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Print Working Copy' })).toBeVisible();
+});
+
+
+test('transcript rejects a response for a different student', async ({ page }) => {
+  await mockTranscriptApis(page);
+  await page.route(`**/api/v1/academics/transcript/${studentId}/`, (route) =>
+    json(route, { ...transcript, student: { ...transcript.student, student_id: '99999999-9999-4999-8999-999999999999' } }));
+  await launchHeritageRole(page, 'head_of_school');
+  await page.goto(`${frontendUrl}/transcript`, { waitUntil: 'networkidle' });
+  await expect(page.getByRole('alert')).toContainText('identity does not match selection');
+  await expect(page.getByRole('button', { name: 'Issue Official PDF' })).toBeDisabled();
+  await expect(page.getByRole('heading', { name: 'Academic Transcript' })).toHaveCount(0);
 });
