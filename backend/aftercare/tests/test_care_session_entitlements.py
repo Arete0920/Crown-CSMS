@@ -13,7 +13,7 @@ from django.utils import timezone
 from rest_framework.test import APIClient
 
 from aftercare.models import (
-    AftercareAttendance, AftercareEnrollment, AftercarePickupContact,
+    AftercareAttendance, AftercareEnrollment, AftercareIncident, AftercarePickupContact,
     AftercareProgramConfig,
 )
 from aftercare.services import school_local_date
@@ -397,3 +397,52 @@ def test_newer_custody_cannot_mask_older_unresolved_open_attendance(monkeypatch)
     newer.refresh_from_db()
     assert older.checkout_time is None and newer.checkout_time is None
     assert not older.pickup_verified and not newer.pickup_verified
+
+
+def test_inactive_child_incident_requires_open_same_school_attendance():
+    """Deactivation during care cannot suppress incident logs or permit historic writes."""
+    school, household, child, _operator, client = family()
+    module = grant(school, "PM")
+    now = timezone.now()
+    record = AftercareAttendance.objects.create(
+        school_fk=school, student_fk=child, care_session="PM",
+        date=school_local_date(school.id, now), checkin_time=now - timedelta(minutes=10),
+    )
+    child.is_active = False
+    child.save(update_fields=["is_active"])
+    module.status = "expired"
+    module.save(update_fields=["status"])
+    payload = {
+        "student_id": str(child.pk), "care_session": "PM",
+        "attendance_id": record.pk, "severity": "MINOR",
+        "description": "Synthetic child-safety note",
+    }
+    response = client.post(API + "incidents/", payload, format="json")
+    assert response.status_code == 201, response.data
+    assert AftercareIncident.objects.filter(
+        school_fk=school, student_fk=child, attendance_fk=record,
+    ).count() == 1
+
+    unlinked = dict(payload)
+    unlinked.pop("attendance_id")
+    assert client.post(API + "incidents/", unlinked, format="json").status_code == 400
+
+    # Open attendance for a different child never authorizes this child's note.
+    other = Student.objects.create(
+        school_id=school.id, household=household,
+        first_name="Other", last_name="Child", grade_level="4",
+    )
+    other_attendance = AftercareAttendance.objects.create(
+        school_fk=school, student_fk=other, care_session="PM",
+        date=school_local_date(school.id, now), checkin_time=now - timedelta(minutes=5),
+    )
+    mismatched = dict(payload, attendance_id=other_attendance.pk)
+    assert client.post(API + "incidents/", mismatched, format="json").status_code == 400
+
+    # A later reactivation of commercial access cannot reopen historic custody.
+    record.checkout_time = timezone.now()
+    record.save(update_fields=["checkout_time"])
+    module.status = "active"
+    module.save(update_fields=["status"])
+    assert client.post(API + "incidents/", payload, format="json").status_code == 400
+    assert AftercareIncident.objects.filter(school_fk=school, student_fk=child).count() == 1
