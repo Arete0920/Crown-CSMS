@@ -65,8 +65,8 @@ class MicrosoftTenantBinding(models.Model):
             ),
         ]
         indexes = [
-            models.Index(fields=["tenant_id", "is_active"]),
-            models.Index(fields=["school", "is_active"]),
+            models.Index(fields=["tenant_id", "is_active"], name="integration_tenant__ee9b98_idx"),
+            models.Index(fields=["school", "is_active"], name="integration_school__67d95b_idx"),
         ]
 
     def __str__(self) -> str:
@@ -104,8 +104,8 @@ class MicrosoftIdentityLink(models.Model):
             ),
         ]
         indexes = [
-            models.Index(fields=["object_id", "is_active"]),
-            models.Index(fields=["user", "is_active"]),
+            models.Index(fields=["object_id", "is_active"], name="integration_object__8e587f_idx"),
+            models.Index(fields=["user", "is_active"], name="integration_user_id_635f6e_idx"),
         ]
 
     def clean(self):
