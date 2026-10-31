@@ -212,3 +212,32 @@ def test_microsoft_binding_admin_disables_hard_delete():
 
     assert tenant_admin.has_delete_permission(None) is False
     assert identity_admin.has_delete_permission(None) is False
+
+
+def test_microsoft_tenant_binding_ids_are_immutable_after_creation():
+    school = School.objects.create(name="Immutable Tenant Binding School")
+    binding = MicrosoftTenantBinding.objects.create(
+        school=school,
+        tenant_id=uuid.uuid4(),
+        is_active=True,
+    )
+
+    binding.tenant_id = uuid.uuid4()
+    with pytest.raises(ValidationError, match="immutable"):
+        binding.save()
+
+
+def test_microsoft_identity_link_ids_are_immutable_after_creation():
+    tenant_id = uuid.uuid4()
+    object_id = uuid.uuid4()
+    school, user = _school_user("Immutable Identity Link School")
+    _, link = _bind(
+        school=school,
+        user=user,
+        tenant_id=tenant_id,
+        object_id=object_id,
+    )
+
+    link.object_id = uuid.uuid4()
+    with pytest.raises(ValidationError, match="immutable"):
+        link.save()
