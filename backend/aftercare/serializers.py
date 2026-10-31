@@ -26,6 +26,11 @@ class AftercareProgramConfigSerializer(serializers.ModelSerializer):
 class AftercareEnrollmentSerializer(serializers.ModelSerializer):
     student_id = serializers.UUIDField(source="student_fk_id")
 
+    def validate_monthly_rate(self, value):
+        if value is not None and (not value.is_finite() or value < 0):
+            raise serializers.ValidationError("Monthly rate must be nonnegative and finite.")
+        return value
+
     class Meta:
         model = AftercareEnrollment
         fields = [
