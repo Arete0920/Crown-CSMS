@@ -57,7 +57,7 @@ def test_decode_uses_normalized_tenant_for_jwks_and_issuer(
 @patch("core.auth.aad_jwt._get_jwks", return_value={"keys": [{"kid": "key-1"}]})
 @patch("jwt.get_unverified_header", return_value={"kid": "key-1"})
 @patch("jwt.algorithms.RSAAlgorithm.from_jwk", return_value="public-key")
-@patch("jwt.decode", return_value={"aud": "api://crown", "sub": "user"})
+@patch("jwt.decode", return_value={"aud": "api://crown", "sub": "user", "tid": "tenant-id"})
 def test_decode_requires_exact_configured_audience(
     decode_mock,
     _from_jwk,
