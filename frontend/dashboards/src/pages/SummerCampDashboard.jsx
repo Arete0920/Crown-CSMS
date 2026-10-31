@@ -21,10 +21,12 @@ function linkedChargesLabel(value) {
   // Ledger links record assessed obligations. They are not proof of payment,
   // settlement or cash receipts. Never fabricate a zero for missing data.
   if (!Number.isSafeInteger(value) || value < 0) return "Not available";
-  return `${(value / 100).toLocaleString(undefined, {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
-  })}`;
+  }).format(value / 100);
 }
 
 function MetricCard({ label, value }) {

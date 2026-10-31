@@ -376,7 +376,8 @@ describe('CrownDashboardTemplate data truth defaults', () => {
     expect(captured.modules).toHaveLength(0);
     expect(captured.activities[0].items).toEqual([]);
     expect(captured.communications).toHaveLength(0);
-    expect(captured.faith).toHaveLength(0);
+    expect(captured.faith).toHaveLength(1);
+    expect(captured.faith[0].faithCommunity).toEqual({ unverified: true });
     expect(screen.queryByText('Fabricated staffing alert')).toBeNull();
     expect(screen.queryByText('Call nine families with supposedly available places')).toBeNull();
     expect(JSON.stringify(captured)).not.toMatch(/79 registered|\\$4,200|92% complete/);
@@ -416,6 +417,8 @@ describe('CrownDashboardTemplate data truth defaults', () => {
     expect(captured.metrics[0].dataState).toBe('live');
     expect(captured.activities[0].items).toEqual([]);
     expect(captured.modules).toHaveLength(0);
+    expect(captured.faith).toHaveLength(1);
+    expect(captured.faith[0].faithCommunity).toEqual({ unverified: true });
   });
 
 });

@@ -21,6 +21,10 @@ import PropTypes from 'prop-types';
 import { BASE_COMMUNICATIONS, BASE_FAITH_COMMUNITY, BASE_NOTE } from '../../config/dashboardTemplates/_baseData.js';
 import useDashboardData from '../../hooks/useDashboardData.js';
 
+// Preserve a shared faith/community entry point without inventing school
+// prayer, celebration or announcement records when the source is not verified.
+const UNVERIFIED_FAITH_COMMUNITY = Object.freeze({ unverified: true });
+
 function getDefaultLastSyncLabel(dataState) {
   const state = String(dataState || '').toLowerCase();
   if (state === 'live') return 'Last synced just now';
@@ -183,7 +187,7 @@ function buildLiveDashboardConfig(config, payload, endpointConfig, loading, erro
         activities: [],
         statuses: [{ label: 'Operational source', state: 'Not available' }],
         communications: false,
-        faithCommunity: false,
+        faithCommunity: UNVERIFIED_FAITH_COMMUNITY,
         errorState: loading ? null : {
           title: 'Operational metrics unavailable',
           message: sourceLabel,
@@ -264,7 +268,7 @@ function buildLiveDashboardConfig(config, payload, endpointConfig, loading, erro
       // API payload metrics, queue and alerts are the only authorized
       // data. Template activities, trends, cards and notices are not live.
       activities: [], trendPanels: [], commandModules: [],
-      communications: false, faithCommunity: false,
+      communications: false, faithCommunity: UNVERIFIED_FAITH_COMMUNITY,
       sourceLabel: `${sourceLabel}; observed ${payload.meta.observed_at || payload.meta.observed_as_of || payload.meta.as_of}; window ${payload.meta.aggregation_window}`,
       lastSyncLabel: 'Verified API provenance; independent certification pending',
       statuses: [{ label: 'Live-data source', state: 'Verified API provenance; certification pending' }],
