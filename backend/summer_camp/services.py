@@ -342,6 +342,14 @@ def checkout_camper(
 
     when = when or timezone.now()
     checkout_day = camp_school_local_date(school_id, when)
+    # The requested session must actually belong to this school, including
+    # when historical enrollment or attendance rows have inconsistent tenant FKs.
+    # Lock session before student, matching check-in's lock acquisition order.
+    session = SummerCampSession.objects.select_for_update().filter(
+        pk=session_id, school_id=school_id,
+    ).first()
+    if session is None:
+        raise ValueError("Camp session does not belong to this school.")
     # Share the same child-level lock as check-in, serializing admission and
     # release across sessions and local dates. Do not require an active
     # enrollment/student status to finish a previously started custody record.
@@ -371,8 +379,8 @@ def checkout_camper(
         raise ValueError("A matching camp check-in is required before checkout.")
 
     attendance = open_records[0]
-    if attendance.session_id != session_id:
-        raise ValueError("Open camp custody belongs to a different session.")
+    if attendance.session_id != session.id or attendance.session.school_id != school_id:
+        raise ValueError("Open camp custody belongs to a different session or school.")
     if attendance.date not in (checkout_day, checkout_day - timedelta(days=1)):
         raise ValueError("Older camp custody requires supervisor reconciliation.")
     if camp_school_local_date(school_id, attendance.checkin_time) != attendance.date:

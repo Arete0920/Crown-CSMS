@@ -357,3 +357,24 @@ def test_inconsistent_local_custody_date_blocks_release_without_mutation():
     with pytest.raises(ValueError, match="check-in date mismatch"):
         _release(c, at=datetime(2025, 9, 4, 18, tzinfo=utc.utc))
     _unchanged(c)
+
+
+def test_cross_school_session_fk_never_authorizes_camp_release():
+    """Legacy mismatched tenant FKs cannot turn staff attestation into release."""
+    current = _case("ForeignSessionCurrent")
+    foreign = _case("ForeignSessionOther")
+    # Model foreign keys do not themselves enforce same-school ownership.
+    # Simulate a damaged legacy enrollment/attendance pointing to another
+    # school's session without changing the current student's school.
+    current.enrollment.session = foreign.session
+    current.enrollment.save(update_fields=["session"])
+    current.attendance.session = foreign.session
+    current.attendance.save(update_fields=["session"])
+    with pytest.raises(ValueError, match="Camp session does not belong to this school"):
+        checkout_camper(
+            current.school.id, current.child.id, foreign.session.id,
+            pickup_contact_id=current.pickup.id,
+            pickup_verified=True, when=DEPARTURE,
+            verified_by=current.actor,
+        )
+    _unchanged(current)
