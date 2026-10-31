@@ -256,3 +256,52 @@ def test_lookup_endpoints_deny_foreign_school_selector():
         HTTP_X_SCHOOL_ID=str(foreign.id),
     )
     assert r.status_code in (403, 404)
+
+
+def test_inactive_school_staff_can_identify_open_custody_but_cannot_admit():
+    d = setup()
+    admitted = _checkin(d)
+    assert admitted.status_code == 201
+    attendance_id = admitted.data["attendance_id"]
+    d["school"].is_active = False
+    d["school"].save(update_fields=["is_active"])
+    client = _client(d["actor"])
+
+    sites = client.get("/api/v1/aftercare/daycare/sites/")
+    assert sites.status_code == 200, getattr(sites, "data", None)
+    assert any(site["site_id"] == str(d["site"].id) for site in sites.data["sites"])
+    roster = client.get(f'/api/v1/aftercare/daycare/sites/{d["site"].id}/roster/')
+    assert roster.status_code == 200, getattr(roster, "data", None)
+    assert roster.data["rows"][0]["attendance_id"] == attendance_id
+    guardians = client.get(
+        f"/api/v1/aftercare/daycare/attendance/{attendance_id}/pickup-authorities/"
+    )
+    assert guardians.status_code == 200, getattr(guardians, "data", None)
+    assert guardians.data["recipients"][0]["guardian_authority_id"] == str(d["authority"].id)
+
+    # Admission and the schedule are never reopened by the custody exit exception.
+    assert client.get(
+        f'/api/v1/aftercare/daycare/sites/{d["site"].id}/scheduled/'
+    ).status_code in (403, 404)
+    assert _checkin(d, client).status_code in (403, 404)
+    assert DaycareAttendance.objects.count() == 1
+    assert DaycareRelease.objects.count() == 0
+
+
+def test_inactive_school_custody_reads_reject_cross_school_selector():
+    d = setup()
+    admitted = _checkin(d)
+    assert admitted.status_code == 201
+    d["school"].is_active = False
+    d["school"].save(update_fields=["is_active"])
+    foreign = School.objects.create(name="Foreign synthetic organization")
+    client = _client(d["actor"])
+    paths = [
+        "/api/v1/aftercare/daycare/sites/",
+        f'/api/v1/aftercare/daycare/sites/{d["site"].id}/roster/',
+        f'/api/v1/aftercare/daycare/attendance/{admitted.data["attendance_id"]}/pickup-authorities/',
+    ]
+    for path in paths:
+        response = client.get(path, HTTP_X_SCHOOL_ID=str(foreign.pk))
+        assert response.status_code in (403, 404), (path, response.status_code)
+    assert DaycareRelease.objects.count() == 0
