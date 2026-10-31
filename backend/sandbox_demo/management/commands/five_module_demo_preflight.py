@@ -94,7 +94,6 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         _require_isolated_local_database()
         from core.models import School
-        from django.db.models import Count
 
         findings: list[tuple[bool, str]] = []
 
