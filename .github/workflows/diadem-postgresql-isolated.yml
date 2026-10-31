@@ -60,11 +60,13 @@ jobs:
         run: python manage.py check --no-color
       - name: Reject untracked model changes
         run: python manage.py makemigrations --check --dry-run --no-input --no-color
-      - name: Run Diadem child safety tests on migrated PostgreSQL
+      - name: Certify Diadem plus Extended Care AM/PM on migrated PostgreSQL
         run: |
           python -m pytest -q -ra --migrations --create-db --maxfail=25 \
             backend/aftercare/tests/test_daycare_models.py \
             backend/aftercare/tests/test_daycare_policy.py \
             backend/aftercare/tests/test_daycare_checkin.py \
             backend/aftercare/tests/test_daycare_release_policy.py \
-            backend/aftercare/tests/test_daycare_release.py
+            backend/aftercare/tests/test_daycare_release.py \
+            backend/aftercare/tests/test_am_pm_migration.py \
+            backend/aftercare/tests/test_am_pm_sessions.py
