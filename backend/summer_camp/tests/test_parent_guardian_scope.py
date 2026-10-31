@@ -11,8 +11,8 @@ pytestmark = pytest.mark.django_db
 
 def test_linked_guardian_sees_only_own_child_without_cross_family_disclosure():
     school = School.objects.create(name="Parent Camp School")
-    families = [Household.objects.create(school=school, name=f"Family {i}") for i in (1, 2)]
-    children = [Student.objects.create(school=school, household=family,
+    families = [Household.objects.create(school_id=school.id, name=f"Family {i}") for i in (1, 2)]
+    children = [Student.objects.create(school_id=school.id, household=family,
                 first_name="Synthetic", last_name=f"Camper {i}", grade_level="4")
                 for i, family in enumerate(families)]
     program = SummerCampProgram.objects.create(school=school, name="Summer Program")
@@ -26,10 +26,10 @@ def test_linked_guardian_sees_only_own_child_without_cross_family_disclosure():
             school=school, session=session, student=child, household=child.household,
             status="REGISTERED",
         )
-    linked = UserAccount.objects.create_user(username="linked-parent", school=school, password="synthetic")
-    Guardian.objects.create(school=school, household=families[0],
+    linked = UserAccount.objects.create_user(username="linked-parent", email="linked-parent@example.test", school=school, password="synthetic")
+    Guardian.objects.create(school_id=school.id, household=families[0],
                            account=linked, first_name="Linked", last_name="Guardian")
-    unlinked = UserAccount.objects.create_user(username="other-parent", school=school, password="synthetic")
+    unlinked = UserAccount.objects.create_user(username="other-parent", email="other-parent@example.test", school=school, password="synthetic")
     client = APIClient()
     client.credentials(HTTP_X_SCHOOL_ID=str(school.id))
     client.force_authenticate(user=linked)
