@@ -10,7 +10,8 @@ STEPS = ["Program", "Registration", "Operations", "Review"]
 
 
 def _client(school, role=None, *grants, staff=False, foreign=None):
-    user = UserAccount.objects.create_user(username=f"camp-wizard-{uuid.uuid4().hex}",
+    login = f"camp-wizard-{uuid.uuid4().hex}"
+    user = UserAccount.objects.create_user(username=login, email=f"{login}@example.test",
                                            school=school, password="synthetic", is_staff=staff)
     if role:
         UserRole.objects.create(user=user, school=foreign or school, role_code=role)

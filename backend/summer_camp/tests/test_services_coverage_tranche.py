@@ -159,7 +159,7 @@ def test_form_and_staff_ratio_status(monkeypatch):
     )
     monkeypatch.setattr(services, "ensure_config", lambda school_id: SimpleNamespace(default_staff_ratio=5))
     staff_manager = MagicMock()
-    staff_manager.filter.return_value.values.return_value.distinct.return_value.count.return_value = 2
+    staff_manager.filter.return_value.exclude.return_value.values.return_value.distinct.return_value.count.return_value = 2
     monkeypatch.setattr(services.SummerCampStaffAssignment, "objects", staff_manager)
     result = services.compute_staff_ratio_status("school-1", "session-1")
     assert result["required_staff"] == 3

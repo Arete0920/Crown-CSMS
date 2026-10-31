@@ -50,13 +50,13 @@ def camp_case(django_user_model):
         school=school, enrollment=enrollment, name="Authorized Parent", is_active=True,
     )
     staff = django_user_model.objects.create_user(
-        username="synthetic-camp-checkin-staff", password="unused", school=school,
+        username="synthetic-camp-checkin-staff", email="camp-checkin-staff@example.test", password="unused", school=school,
     )
     assignment = SummerCampStaffAssignment.objects.create(
         school=school, session=session, staff_user=staff, role="COUNSELOR",
     )
     reviewer = django_user_model.objects.create_user(
-        username="synthetic-camp-credential-reviewer", password="unused", school=school,
+        username="synthetic-camp-credential-reviewer", email="camp-credential-reviewer@example.test", password="unused", school=school,
     )
     UserRole.objects.create(user=reviewer, school=school, role_code="HEAD_OF_SCHOOL")
     permission, _ = CrownPermission.objects.get_or_create(code="summer_camp.edit")
@@ -304,10 +304,10 @@ def test_credential_review_rejects_self_ungranted_inactive_and_foreign_reviewers
         "credential_verified_at", "credential_evidence_ref",
     ])
     ordinary = django_user_model.objects.create_user(
-        username="camp-review-ungranted", school=school, password="unused",
+        username="camp-review-ungranted", email="camp-review-ungranted@example.test", school=school, password="unused",
     )
     foreign = django_user_model.objects.create_user(
-        username="camp-review-foreign", school=foreign_school, password="unused",
+        username="camp-review-foreign", email="camp-review-foreign@example.test", school=foreign_school, password="unused",
     )
     inactive = django_user_model.objects.get(pk=original_actor_id)
     inactive.is_active = False

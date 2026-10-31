@@ -22,8 +22,8 @@ DEPARTURE = timezone.make_aware(datetime(2025, 9, 3, 15))
 
 
 def _child(school, label):
-    family = Household.objects.create(school=school, name=f"Family {label}")
-    return Student.objects.create(school=school, household=family, first_name="Camper",
+    family = Household.objects.create(school_id=school.id, name=f"Family {label}")
+    return Student.objects.create(school_id=school.id, household=family, first_name="Camper",
                                   last_name=label, grade_level="4")
 
 
@@ -43,7 +43,7 @@ def _case(label):
                                                      student=child, date=DAY, checkin_time=ARRIVAL)
     pickup = SummerCampPickupContact.objects.create(school=school, enrollment=enrollment,
                                                     name=f"Authorized {label}")
-    actor = UserAccount.objects.create_user(username=f"camp-actor-{label}", school=school,
+    actor = UserAccount.objects.create_user(username=f"camp-actor-{label}", email=f"camp-actor-{label}@example.test", school=school,
                                             password="synthetic", is_staff=True)
     UserRole.objects.create(user=actor, school=school, role_code="TEACHER")
     permission, _ = CrownPermission.objects.get_or_create(code="summer_camp.edit")
@@ -163,7 +163,7 @@ def test_integer_serializer_and_api_denial_never_write(monkeypatch):
 
 def test_foreign_ungranted_inactive_and_unauthenticated_staff_denied():
     c = _case("Reviewer")
-    ungranted = UserAccount.objects.create_user(username="camp-ungranted", school=c.school,
+    ungranted = UserAccount.objects.create_user(username="camp-ungranted", email="camp-ungranted@example.test", school=c.school,
                                                 password="synthetic", is_staff=True)
     foreign = _case("ForeignReviewer").actor
     for actor in (ungranted, foreign):
@@ -193,7 +193,7 @@ def test_school_civil_midnight_checkin_release_needs_approved_staff_evidence():
     c.enrollment.save(update_fields=["form_status", "health_status", "payment_status", "balance_due_cents"])
     assignment = SummerCampStaffAssignment.objects.create(school=c.school, session=c.session,
                                                            staff_user=c.actor, role="COUNSELOR")
-    reviewer = UserAccount.objects.create_user(username="camp-independent-reviewer",
+    reviewer = UserAccount.objects.create_user(username="camp-independent-reviewer", email="camp-independent-reviewer@example.test",
                                                school=c.school, password="synthetic")
     UserRole.objects.create(user=reviewer, school=c.school, role_code="HEAD_OF_SCHOOL")
     permission, _ = CrownPermission.objects.get_or_create(code="summer_camp.edit")

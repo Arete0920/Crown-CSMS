@@ -13,8 +13,8 @@ pytestmark = pytest.mark.django_db
 
 
 def _child(school, label):
-    household = Household.objects.create(school=school, name=f"Family {label}")
-    return Student.objects.create(school=school, household=household,
+    household = Household.objects.create(school_id=school.id, name=f"Family {label}")
+    return Student.objects.create(school_id=school.id, household=household,
                                   first_name="Synthetic", last_name=label, grade_level="4")
 
 
