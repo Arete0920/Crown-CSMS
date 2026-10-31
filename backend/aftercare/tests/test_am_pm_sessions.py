@@ -7,6 +7,7 @@ from django.utils import timezone
 from aftercare.models import AftercareAttendance, AftercareEnrollment, AftercarePickupContact
 from aftercare.services import checkin_student, checkout_student, handoff_student_to_school
 from core.models import CrownPermission, RolePermission, School, Staff, UserAccount, UserRole
+from subscriptions.models import SchoolModule
 from households.models import Household, Student
 
 pytestmark = pytest.mark.django_db
@@ -19,6 +20,11 @@ def at(hour, minute=0):
 
 def setup_family():
     school = School.objects.create(name="Extended Care Session Test")
+    for key in ("before_care", "after_care"):
+        SchoolModule.objects.create(
+            school=school, module_key=key, status="active",
+            expiry_date=timezone.now() + timezone.timedelta(days=30),
+        )
     household = Household.objects.create(school_id=school.id, name="One Household")
     child = Student.objects.create(
         school_id=school.id, household=household,
@@ -57,7 +63,7 @@ def test_one_child_has_independent_am_and_pm_attendance_and_handoff():
     assert AftercareAttendance.objects.filter(school_fk=school, student_fk=child, date=DAY).count() == 2
     contact = AftercarePickupContact.objects.create(school_fk=school, student_fk=child, name="Guardian")
     released = checkout_student(school.id, child.id, pickup_contact_id=contact.pk,
-                                pickup_name_freeform="", pickup_verified=True, when=at(17, 30))
+                                pickup_name_freeform="", pickup_verified=True, when=at(17, 30), verified_by=receiver)
     assert released.pk == pm.pk and released.pickup_verified
     assert released.handoff_time is None
 
@@ -69,7 +75,7 @@ def test_pm_cannot_be_implicitly_checked_in_by_am():
     contact = AftercarePickupContact.objects.create(school_fk=school, student_fk=child, name="Guardian")
     with pytest.raises(AftercareAttendance.DoesNotExist):
         checkout_student(school.id, child.id, pickup_contact_id=contact.pk,
-                         pickup_name_freeform="", pickup_verified=True, when=at(17, 30))
+                         pickup_name_freeform="", pickup_verified=True, when=at(17, 30), verified_by=receiver)
     assert AftercareAttendance.objects.filter(school_fk=school, student_fk=child).count() == 1
 
 
@@ -89,12 +95,12 @@ def test_am_handoff_rejects_invalid_receiver_and_replay():
 
 
 def test_am_checkout_denied_and_pm_legacy_default_preserved():
-    school, _household, child, _receiver = setup_family()
+    school, _household, child, receiver = setup_family()
     checkin_student(school.id, child.id, when=at(7, 15), care_session="AM")
     with pytest.raises(ValueError, match="school handoff"):
         checkout_student(school.id, child.id, pickup_contact_id=1,
                          pickup_name_freeform="", pickup_verified=True,
-                         when=at(8, 15), care_session="AM")
+                         when=at(8, 15), care_session="AM", verified_by=receiver)
     pm = checkin_student(school.id, child.id, when=at(15, 0))
     assert pm.care_session == "PM"
 
@@ -170,13 +176,13 @@ def test_handoff_endpoint_refuses_to_impersonate_another_staff_member(monkeypatc
 
 
 def test_completed_pm_session_cannot_be_reopened_by_duplicate_checkin():
-    school, _household, child, _receiver = setup_family()
+    school, _household, child, receiver = setup_family()
     checkin_student(school.id, child.id, when=at(15), care_session="PM")
     contact = AftercarePickupContact.objects.create(
         school_fk=school, student_fk=child, name="Authorized",
     )
     checkout_student(
-        school.id, child.id, contact.pk, "", True, when=at(17, 30),
+        school.id, child.id, contact.pk, "", True, when=at(17, 30), verified_by=receiver,
     )
     with pytest.raises(ValueError, match="already been closed"):
         checkin_student(school.id, child.id, when=at(17, 40), care_session="PM", note="override")
@@ -422,7 +428,7 @@ def test_pacific_pm_checkout_after_utc_midnight_uses_school_date_and_cutoff(monk
         lambda **kwargs: writes.append(kwargs) or "synthetic-ledger-1",
     )
     checked_out = checkout_student(
-        school.id, child.id, contact.pk, "", True, when=checked_out_at,
+        school.id, child.id, contact.pk, "", True, when=checked_out_at, verified_by=receiver,
     )
     assert checked_out.pk == attendance.pk
     assert checked_out.date == date(2026, 10, 30)

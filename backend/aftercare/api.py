@@ -10,6 +10,8 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
 from core.permissions import user_has_permission
+from .entitlements import (CARE_KEYS, disallowed_config_session, entitled_sessions,
+                           has_open_custody, visible_sessions)
 from households.models import Guardian, Student
 
 from .integrations import AftercareIntegrationError
@@ -55,7 +57,7 @@ class BoardSummaryResponseSerializer(serializers.Serializer):
     sessions_mtd = serializers.IntegerField()
     late_pickups_mtd = serializers.IntegerField()
     incidents_mtd = serializers.IntegerField()
-    unattributed_incidents_mtd = serializers.IntegerField()
+    unattributed_incidents_mtd = serializers.IntegerField(allow_null=True)
     late_fee_assessed_mtd = serializers.FloatField()
     # Legacy response key: null until actual settled receipts can be proven.
     late_fee_revenue_mtd = serializers.FloatField(allow_null=True)
@@ -78,6 +80,7 @@ class AftercareCheckoutRequestSerializer(serializers.Serializer):
 
 class AftercareIncidentCreateRequestSerializer(serializers.Serializer):
     student_id = serializers.UUIDField()
+    care_session = serializers.ChoiceField(choices=["AM", "PM"], required=False)
     severity = serializers.ChoiceField(choices=["MINOR", "MODERATE", "MAJOR"], default="MINOR")
     description = serializers.CharField(required=False, allow_blank=True)
     attendance_id = serializers.IntegerField(required=False, allow_null=True)
@@ -120,6 +123,13 @@ def _bad_request(exc):
     return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
 
 
+def _not_entitled(session=None):
+    return Response({
+        "detail": "Extended Care session is not enabled for this school.",
+        "code": "CARE_SESSION_NOT_ENABLED", "care_session": session,
+    }, status=status.HTTP_403_FORBIDDEN)
+
+
 @extend_schema(methods=["GET"], responses=AftercareProgramConfigSerializer)
 @extend_schema(methods=["PUT"], request=AftercareProgramConfigSerializer, responses=AftercareProgramConfigSerializer)
 @extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
@@ -129,14 +139,21 @@ def program_config(request):
     if request.method == "GET":
         if not _has_permission(request, "extended_care.view"):
             return _forbidden()
+        if not visible_sessions(school_id):
+            return _not_entitled()
         cfg = ensure_config(school_id)
         return Response(AftercareProgramConfigSerializer(cfg).data)
 
     if not _has_permission(request, "extended_care.edit"):
         return _forbidden()
+    if not entitled_sessions(school_id):
+        return _not_entitled()
     cfg = ensure_config(school_id)
     ser = AftercareProgramConfigSerializer(cfg, data=request.data, partial=True)
     ser.is_valid(raise_exception=True)
+    restricted = disallowed_config_session(ser, cfg, school_id)
+    if restricted:
+        return _not_entitled(restricted)
     ser.save()
     return Response(ser.data)
 
@@ -150,13 +167,32 @@ def enrollments(request):
     if request.method == "GET":
         if not _has_permission(request, "extended_care.view"):
             return _forbidden()
-        qs = AftercareEnrollment.objects.filter(school_fk_id=school_id).order_by("-created_at")[:500]
+        sessions = visible_sessions(school_id)
+        if not sessions:
+            return _not_entitled()
+        active = entitled_sessions(school_id)
+        rescue_ids = AftercareAttendance.objects.filter(
+            school_fk_id=school_id, care_session__in=set(sessions) - set(active),
+            checkin_time__isnull=False, checkout_time__isnull=True,
+        ).values("student_fk_id", "care_session")
+        rescue_pairs = list(rescue_ids)
+        active_rows = Q(care_session__in=active)
+        for pair in rescue_pairs:
+            active_rows |= Q(
+                student_fk_id=pair["student_fk_id"],
+                care_session=pair["care_session"],
+            )
+        qs = AftercareEnrollment.objects.filter(
+            active_rows, school_fk_id=school_id,
+        ).order_by("-created_at")[:500]
         return Response(AftercareEnrollmentSerializer(qs, many=True).data)
 
     if not _has_permission(request, "extended_care.edit"):
         return _forbidden()
     ser = AftercareEnrollmentSerializer(data=request.data)
     ser.is_valid(raise_exception=True)
+    if ser.validated_data.get("care_session", "PM") not in entitled_sessions(school_id):
+        return _not_entitled(ser.validated_data.get("care_session", "PM"))
     student_id = ser.validated_data["student_fk_id"]
     with transaction.atomic():
         # Serialize same-child enrollment creation to prevent duplicate schedules
@@ -192,13 +228,18 @@ def enrollments(request):
 def pickup_contacts(request, student_id):
     school_id = school_id_from_request(request, required=True)
     if not _canonical_student_exists(school_id=school_id, student_id=student_id):
-        return _bad_request("Student is not active in this school.")
+        if request.method != "GET" or not has_open_custody(
+            school_id, "PM", student_id=student_id,
+        ):
+            return _bad_request("Student is not active in this school.")
 
     if request.method == "GET":
-        if not (
-            _has_permission(request, "extended_care.view")
-            or _guardian_can_view_student(request, school_id=school_id, student_id=student_id)
-        ):
+        guardian = _guardian_can_view_student(request, school_id=school_id, student_id=student_id)
+        staff_allowed = _has_permission(request, "extended_care.view") and (
+            "PM" in entitled_sessions(school_id)
+            or has_open_custody(school_id, "PM", student_id=student_id)
+        )
+        if not (staff_allowed or guardian):
             return _forbidden()
         qs = AftercarePickupContact.objects.filter(
             school_fk_id=school_id, student_fk_id=student_id, is_active=True
@@ -207,6 +248,8 @@ def pickup_contacts(request, student_id):
 
     if not _has_permission(request, "extended_care.edit"):
         return _forbidden()
+    if "PM" not in entitled_sessions(school_id):
+        return _not_entitled("PM")
     ser = AftercarePickupContactSerializer(data=request.data)
     ser.is_valid(raise_exception=True)
     contact = ser.save(school_fk_id=school_id, student_fk_id=student_id)
@@ -240,15 +283,37 @@ def roster_today(request):
     requested_session = request.query_params.get("care_session", "PM")
     if requested_session not in ("AM", "PM"):
         return _bad_request("Invalid care session.")
-    enroll = [row for row in enroll_qs if row.care_session == requested_session and dow in (row.days_of_week or [])]
+    enabled = requested_session in entitled_sessions(school_id)
+    if not enabled and not has_open_custody(school_id, requested_session):
+        return _not_entitled(requested_session)
+    enroll = [row for row in enroll_qs if enabled and row.care_session == requested_session and dow in (row.days_of_week or [])]
     # Custody records must remain visible after an enrollment is suspended,
     # expired, deactivated, or its student profile has become inactive.
-    attendance_records = list(
-        AftercareAttendance.objects.filter(
-            school_fk_id=school_id, date=today, care_session=requested_session,
-        ).select_related("student_fk")
+    # Today's attendance plus ALL unfinished earlier custody must be visible,
+    # including stale records requiring supervisor reconciliation. Restrict
+    # carryovers to checked-in, still-open sessions; never treat old closed
+    # attendance as today's scheduled child.
+    attendance_qs = AftercareAttendance.objects.filter(
+        school_fk_id=school_id, care_session=requested_session,
+    ).filter(
+        Q(date=today)
+        | Q(date__lt=today, checkin_time__isnull=False, checkout_time__isnull=True)
     )
-    attendance_map = {row.student_fk_id: row for row in attendance_records if row.student_fk_id}
+    if not enabled:
+        # During a lapsed contract only unfinished custody may remain visible.
+        attendance_qs = attendance_qs.filter(checkout_time__isnull=True)
+    attendance_records = list(attendance_qs.select_related("student_fk"))
+    carryover_ids = {
+        row.student_fk_id for row in attendance_records
+        if row.student_fk_id and row.date < today and row.checkout_time is None
+    }
+    # An unresolved overnight custody record takes precedence over today's
+    # scheduled arrival. Never show a new "check in" action for that child.
+    enroll = [row for row in enroll if row.student_fk_id not in carryover_ids]
+    attendance_map = {
+        row.student_fk_id: row for row in attendance_records
+        if row.student_fk_id and row.date == today
+    }
     scheduled_student_ids = {row.student_fk_id for row in enroll}
     rows = [
         {
@@ -296,6 +361,9 @@ def checkin(request):
         return _forbidden()
     ser = AftercareCheckinRequestSerializer(data=request.data)
     ser.is_valid(raise_exception=True)
+    session = ser.validated_data["care_session"]
+    if session not in entitled_sessions(school_id):
+        return _not_entitled(session)
     try:
         attendance = checkin_student(
             school_id=school_id,
@@ -316,6 +384,10 @@ def checkout(request):
         return _forbidden()
     ser = AftercareCheckoutRequestSerializer(data=request.data)
     ser.is_valid(raise_exception=True)
+    if "PM" not in entitled_sessions(school_id) and not has_open_custody(
+        school_id, "PM", student_id=ser.validated_data["student_id"],
+    ):
+        return _not_entitled("PM")
     try:
         attendance = checkout_student(
             school_id=school_id,
@@ -324,6 +396,7 @@ def checkout(request):
             pickup_name_freeform=ser.validated_data.get("pickup_name_freeform", ""),
             pickup_verified=ser.validated_data["pickup_verified"],
             care_session=ser.validated_data["care_session"],
+            verified_by=request.user,
         )
     except (ValueError, AftercareAttendance.DoesNotExist) as exc:
         return _bad_request(exc)
@@ -350,6 +423,10 @@ def school_handoff(request):
         return _forbidden()
     serializer = AftercareHandoffRequestSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
+    if "AM" not in entitled_sessions(school_id) and not has_open_custody(
+        school_id, "AM", student_id=serializer.validated_data["student_id"],
+    ):
+        return _not_entitled("AM")
     try:
         # Authenticated staff self-attestation: another user's ID is never accepted.
         attendance = handoff_student_to_school(
@@ -368,13 +445,43 @@ def incidents(request):
     if request.method == "GET":
         if not _has_permission(request, "extended_care.view"):
             return _forbidden()
-        qs = AftercareIncident.objects.filter(school_fk_id=school_id).order_by("-occurred_at")[:300]
-        return Response(AftercareIncidentSerializer(qs, many=True).data)
+        sessions = visible_sessions(school_id)
+        if not sessions:
+            return _not_entitled()
+        active = entitled_sessions(school_id)
+        qs = AftercareIncident.objects.filter(school_fk_id=school_id).filter(
+            Q(attendance_fk__care_session__in=active)
+            | Q(
+                attendance_fk__care_session__in=set(sessions) - set(active),
+                attendance_fk__checkout_time__isnull=True,
+            )
+        )
+        if len(active) == 2:
+            qs = AftercareIncident.objects.filter(school_fk_id=school_id).filter(
+                Q(attendance_fk__care_session__in=active) | Q(attendance_fk__isnull=True)
+            )
+        return Response(AftercareIncidentSerializer(qs.order_by("-occurred_at")[:300], many=True).data)
 
     if not _has_permission(request, "extended_care.edit"):
         return _forbidden()
     ser = AftercareIncidentCreateRequestSerializer(data=request.data)
     ser.is_valid(raise_exception=True)
+    attendance_id = ser.validated_data.get("attendance_id")
+    incident_session = ser.validated_data.get("care_session", "PM")
+    if attendance_id is not None:
+        attendance = AftercareAttendance.objects.filter(
+            pk=attendance_id, school_fk_id=school_id,
+            student_fk_id=ser.validated_data["student_id"],
+        ).first()
+        if attendance is None:
+            return _bad_request("Incident attendance must belong to this student and school.")
+        if "care_session" in ser.validated_data and incident_session != attendance.care_session:
+            return _bad_request("Incident care session does not match the attendance record.")
+        incident_session = attendance.care_session
+    if incident_session not in entitled_sessions(school_id) and not has_open_custody(
+        school_id, incident_session, student_id=ser.validated_data["student_id"],
+    ):
+        return _not_entitled(incident_session)
     try:
         incident = record_incident(
             school_id=school_id,
@@ -446,6 +553,13 @@ def board_summary(request):
     care_session = request.query_params.get("care_session")
     if care_session is not None and care_session not in ("AM", "PM"):
         return _bad_request("Invalid care session.")
+    entitled = entitled_sessions(school_id)
+    if not entitled:
+        return _not_entitled()
+    if care_session is not None and care_session not in entitled:
+        return _not_entitled(care_session)
+    if care_session is None and len(entitled) == 1:
+        care_session = entitled[0]
     enrollments = (
         AftercareEnrollment.objects.filter(
             school_fk_id=school_id, student_fk__isnull=False,
@@ -462,7 +576,9 @@ def board_summary(request):
     )
     # An incident lacking an attendance link cannot reliably be attributed
     # to AM or PM; report it separately rather than copying it to both.
-    unattributed_incidents = incidents_qs.filter(attendance_fk__isnull=True).count()
+    unattributed_incidents = (
+        incidents_qs.filter(attendance_fk__isnull=True).count() if len(entitled) == 2 else None
+    )
     if care_session:
         enrollments = enrollments.filter(care_session=care_session)
         attendance_qs = attendance_qs.filter(care_session=care_session)
