@@ -289,11 +289,15 @@ def roster_today(request):
     enroll = [row for row in enroll_qs if enabled and row.care_session == requested_session and dow in (row.days_of_week or [])]
     # Custody records must remain visible after an enrollment is suspended,
     # expired, deactivated, or its student profile has become inactive.
+    # Today's attendance plus ALL unfinished earlier custody must be visible,
+    # including stale records requiring supervisor reconciliation. Restrict
+    # carryovers to checked-in, still-open sessions; never treat old closed
+    # attendance as today's scheduled child.
     attendance_qs = AftercareAttendance.objects.filter(
         school_fk_id=school_id, care_session=requested_session,
     ).filter(
-        Q(date=today) |
-        Q(date=today - timedelta(days=1), checkout_time__isnull=True)
+        Q(date=today)
+        | Q(date__lt=today, checkin_time__isnull=False, checkout_time__isnull=True)
     )
     if not enabled:
         # During a lapsed contract only unfinished custody may remain visible.
