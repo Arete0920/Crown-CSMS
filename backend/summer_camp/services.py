@@ -307,20 +307,74 @@ def checkout_camper(
     pickup_contact_id=None,
     pickup_verified=False,
     when=None,
+    verified_by=None,
 ):
-    when = when or timezone.now()
-    attendance = SummerCampAttendance.objects.get(
-        school_id=school_id,
-        student_id=student_id,
-        session_id=session_id,
-        date=when.date(),
-    )
-    attendance.checkout_time = when
-    attendance.pickup_contact_id = pickup_contact_id
-    attendance.pickup_verified = bool(pickup_verified)
-    attendance.save(update_fields=["checkout_time", "pickup_contact", "pickup_verified"])
-    return attendance
+    """Release a camper only to an authorized contact with attributable staff approval."""
+    from core.models import School
+    from core.permissions import user_has_permission
 
+    if pickup_verified is not True:
+        raise ValueError("Pickup identity must be verified before checkout.")
+    if type(pickup_contact_id) is not int or pickup_contact_id <= 0:
+        raise ValueError("An active authorized pickup contact is required.")
+    if not verified_by or not getattr(verified_by, "is_authenticated", False):
+        raise ValueError("A school-authorized staff verifier is required.")
+    if not getattr(verified_by, "is_active", False) or getattr(verified_by, "school_id", None) != school_id:
+        raise ValueError("A school-authorized staff verifier is required.")
+    school = School.objects.filter(pk=school_id, is_active=True).first()
+    if school is None or not user_has_permission(verified_by, "summer_camp.edit", school=school):
+        raise ValueError("A school-authorized staff verifier is required.")
+
+    when = when or timezone.now()
+    attendance = (
+        SummerCampAttendance.objects.select_for_update()
+        .filter(
+            school_id=school_id,
+            student_id=student_id,
+            session_id=session_id,
+            date=camp_school_local_date(school_id, when),
+        )
+        .first()
+    )
+    if attendance is None:
+        raise ValueError("A matching camp check-in is required before checkout.")
+    if attendance.checkout_time is not None:
+        raise ValueError("Camper has already been checked out.")
+    if when < attendance.checkin_time:
+        raise ValueError("Checkout cannot precede check-in.")
+
+    # Contacts belong to a particular enrollment. A cancelled enrollment's
+    # contact cannot authorize release after the child is re-registered.
+    # Fail closed if no unique current registration exists; legacy data may
+    # contain more than one REGISTERED enrollment for the same child/session.
+    active_enrollment_ids = list(
+        SummerCampEnrollment.objects.select_for_update()
+        .filter(
+            school_id=school_id,
+            session_id=session_id,
+            student_id=student_id,
+            status="REGISTERED",
+        )
+        .values_list("id", flat=True)[:2]
+    )
+    if len(active_enrollment_ids) != 1:
+        raise ValueError("One active camp registration is required for checkout.")
+
+    pickup_contact = SummerCampPickupContact.objects.filter(
+        pk=pickup_contact_id,
+        is_active=True,
+        school_id=school_id,
+        enrollment_id=active_enrollment_ids[0],
+    ).first()
+    if pickup_contact is None:
+        raise ValueError("Pickup contact is not authorized for this camper and session.")
+
+    attendance.checkout_time = when
+    attendance.pickup_contact = pickup_contact
+    attendance.pickup_verified = True
+    attendance.pickup_verified_by = verified_by
+    attendance.save(update_fields=["checkout_time", "pickup_contact", "pickup_verified", "pickup_verified_by"])
+    return attendance
 
 @transaction.atomic
 def assign_staff(school_id, session_id, staff_user_id, role, assigned_date=None):

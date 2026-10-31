@@ -50,7 +50,7 @@ class SummerCampAttendanceActionSerializer(serializers.Serializer):
     session_id = serializers.IntegerField()
     student_id = serializers.UUIDField()
     note = serializers.CharField(required=False, allow_blank=True)
-    pickup_contact_id = serializers.UUIDField(required=False, allow_null=True)
+    pickup_contact_id = serializers.IntegerField(min_value=1, required=False, allow_null=True)
     pickup_verified = serializers.BooleanField(required=False)
 
 
@@ -355,13 +355,21 @@ def attendance_checkout_view(request):
     serializer = SummerCampAttendanceActionSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
     payload = serializer.validated_data
-    attendance = checkout_camper(
-        school_id=school_id,
-        session_id=payload["session_id"],
-        student_id=payload["student_id"],
-        pickup_contact_id=payload.get("pickup_contact_id"),
-        pickup_verified=payload.get("pickup_verified", False),
-    )
+    try:
+        attendance = checkout_camper(
+            school_id=school_id,
+            session_id=payload["session_id"],
+            student_id=payload["student_id"],
+            pickup_contact_id=payload.get("pickup_contact_id"),
+            pickup_verified=payload.get("pickup_verified", False),
+            verified_by=request.user,
+        )
+    except ValueError:
+        # Do not expose whether a pupil, enrollment or contact exists.
+        return Response(
+            {"detail": "Checkout requires a valid check-in and verified authorized pickup."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
     return Response(
         {
             "attendance_id": str(attendance.id),

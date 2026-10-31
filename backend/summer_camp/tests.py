@@ -257,11 +257,20 @@ def test_wizard_setup_get_and_post(staff_user, school):
     post_resp = client.post(
         "/api/v1/summer-camp/wizard/setup/",
         {
-            "camp_name": "Summer Test Program",
-            "season_year": 2026,
-            "season_label": "Summer",
-            "allow_waitlist": True,
+            "config": {
+                "camp_name": "Summer Test Program",
+                "default_capacity": 48,
+                "default_staff_ratio": 12,
+                "billing_policy": "PER_SESSION",
+            },
+            "completed_steps": ["Program", "Registration", "Operations", "Review"],
+            "is_completed": True,
         },
         format="json",
     )
-    assert post_resp.status_code == 200
+    assert post_resp.status_code == 200, post_resp.json()
+    assert post_resp.json()["config"]["camp_name"] == "Summer Test Program"
+    saved_resp = client.get("/api/v1/summer-camp/wizard/setup/")
+    assert saved_resp.status_code == 200
+    assert saved_resp.json()["config"]["default_capacity"] == 48
+    assert saved_resp.json()["wizard"]["is_completed"] is True

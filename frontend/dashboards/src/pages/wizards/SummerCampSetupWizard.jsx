@@ -6,18 +6,14 @@ import { fetchSummerCampWizard, submitSummerCampWizard } from "../../api/summerC
 const STEPS = ["Program", "Registration", "Operations", "Review"];
 
 const defaults = {
-  camp_name: "",
-  season_year: new Date().getFullYear(),
-  season_label: "Summer",
-  registration_window_open: true,
-  allow_waitlist: true,
-  auto_promote_waitlist: true,
-  require_immunization_review: true,
-  pickup_authorization_required: true,
-  default_ratio_numerator: 1,
-  default_ratio_denominator: 12,
-  cancellation_policy: "",
+  camp_name: "Summer Camp",
+  default_capacity: 30,
+  default_staff_ratio: 10,
+  public_registration_enabled: false,
+  billing_policy: "PER_SESSION",
 };
+const CONFIG_KEYS = Object.keys(defaults);
+
 
 export default function SummerCampSetupWizard() {
   const [step, setStep] = useState(0);
@@ -34,7 +30,10 @@ export default function SummerCampSetupWizard() {
       try {
         const wizard = await fetchSummerCampWizard();
         if (!cancelled) {
-          setData((previous) => ({ ...previous, ...(wizard.config || {}) }));
+          setData((previous) => ({
+            ...previous,
+            ...Object.fromEntries(CONFIG_KEYS.filter((key) => wizard.config?.[key] !== undefined).map((key) => [key, wizard.config[key]])),
+          }));
           setError(null);
         }
       } catch (e) {
@@ -59,7 +58,7 @@ export default function SummerCampSetupWizard() {
     const { name, value, type, checked } = event.target;
     setData((previous) => ({
       ...previous,
-      [name]: type === "checkbox" ? checked : value,
+      [name]: type === "checkbox" ? checked : type === "number" ? Number(value) : value,
     }));
   }
 
@@ -67,7 +66,11 @@ export default function SummerCampSetupWizard() {
     setSaving(true);
     setError(null);
     try {
-      await submitSummerCampWizard(data);
+      await submitSummerCampWizard({
+        config: Object.fromEntries(CONFIG_KEYS.map((key) => [key, data[key]])),
+        completed_steps: STEPS.slice(0, step + 1),
+        is_completed: step === STEPS.length - 1,
+      });
       setSavedAt(new Date().toLocaleString());
     } catch (e) {
       setError(e.message);
@@ -100,41 +103,29 @@ export default function SummerCampSetupWizard() {
               <>
                 <label htmlFor="camp_name">Camp Name</label>
                 <input id="camp_name" name="camp_name" value={data.camp_name} onChange={updateField} style={{ display: "block", width: "100%", marginBottom: 10 }} />
-                <label htmlFor="season_year">Season Year</label>
-                <input id="season_year" name="season_year" type="number" value={data.season_year} onChange={updateField} style={{ display: "block", width: "100%", marginBottom: 10 }} />
-                <label htmlFor="season_label">Season Label</label>
-                <input id="season_label" name="season_label" value={data.season_label} onChange={updateField} style={{ display: "block", width: "100%", marginBottom: 10 }} />
               </>
             )}
 
             {step === 1 && (
               <>
                 <label style={{ display: "block", marginBottom: 8 }}>
-                  <input name="registration_window_open" type="checkbox" checked={data.registration_window_open} onChange={updateField} /> Registration Open
+                  <input name="public_registration_enabled" type="checkbox" checked={data.public_registration_enabled} onChange={updateField} /> Public Registration Enabled
                 </label>
-                <label style={{ display: "block", marginBottom: 8 }}>
-                  <input name="allow_waitlist" type="checkbox" checked={data.allow_waitlist} onChange={updateField} /> Allow Waitlist
-                </label>
-                <label style={{ display: "block", marginBottom: 8 }}>
-                  <input name="auto_promote_waitlist" type="checkbox" checked={data.auto_promote_waitlist} onChange={updateField} /> Auto Promote Waitlist
-                </label>
-                <label htmlFor="cancellation_policy">Cancellation Policy</label>
-                <textarea id="cancellation_policy" name="cancellation_policy" value={data.cancellation_policy} onChange={updateField} style={{ display: "block", width: "100%", minHeight: 120 }} />
+                <label htmlFor="billing_policy">Billing Policy</label>
+                <select id="billing_policy" name="billing_policy" value={data.billing_policy} onChange={updateField} style={{ display: "block", marginBottom: 10 }}>
+                  <option value="PER_SESSION">Per Session</option>
+                  <option value="PER_WEEK">Per Week</option>
+                  <option value="FULL_CAMP">Full Camp</option>
+                </select>
               </>
             )}
 
             {step === 2 && (
               <>
-                <label style={{ display: "block", marginBottom: 8 }}>
-                  <input name="require_immunization_review" type="checkbox" checked={data.require_immunization_review} onChange={updateField} /> Require Immunization Review
-                </label>
-                <label style={{ display: "block", marginBottom: 8 }}>
-                  <input name="pickup_authorization_required" type="checkbox" checked={data.pickup_authorization_required} onChange={updateField} /> Pickup Authorization Required
-                </label>
-                <label htmlFor="default_ratio_numerator">Default Ratio (numerator)</label>
-                <input id="default_ratio_numerator" name="default_ratio_numerator" type="number" value={data.default_ratio_numerator} onChange={updateField} style={{ display: "block", width: "100%", marginBottom: 10 }} />
-                <label htmlFor="default_ratio_denominator">Default Ratio (denominator)</label>
-                <input id="default_ratio_denominator" name="default_ratio_denominator" type="number" value={data.default_ratio_denominator} onChange={updateField} style={{ display: "block", width: "100%", marginBottom: 10 }} />
+                <label htmlFor="default_capacity">Default Session Capacity</label>
+                <input id="default_capacity" name="default_capacity" type="number" min="1" value={data.default_capacity} onChange={updateField} style={{ display: "block", width: "100%", marginBottom: 10 }} />
+                <label htmlFor="default_staff_ratio">Maximum Campers per Staff Member</label>
+                <input id="default_staff_ratio" name="default_staff_ratio" type="number" min="1" value={data.default_staff_ratio} onChange={updateField} style={{ display: "block", width: "100%", marginBottom: 10 }} />
               </>
             )}
 
