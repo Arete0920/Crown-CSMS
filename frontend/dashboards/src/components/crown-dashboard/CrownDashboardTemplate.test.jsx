@@ -357,5 +357,66 @@ describe('CrownDashboardTemplate data truth defaults', () => {
     expect(captured.metrics[0].value).toBe('12');
     expect(captured.metrics[0].dataState).toBe('fallback');
   });
+  it.each(['summerCamp', 'extendedCare'])('does not render unverified %s operational figures or notifications', (key) => {
+    mockUseDashboardData.mockReturnValue({
+      data: {
+        metrics: [{ label: 'Registered Campers', value: '79' }],
+        queue: ['Call nine families with supposedly available places'],
+        alerts: [{ title: 'Fabricated staffing alert', level: 'High' }],
+        meta: { served_from: 'sample' },
+      },
+      error: null, loading: false, source: 'live',
+      config: { endpoint: '/api/v1/dashboards/test/summary' },
+    });
+    render(<CrownDashboardTemplate roleKey="master_control" config={getDashboardTemplate(key)} />);
+    expect(captured.truthStatus[0].dataState).toBe('unavailable');
+    expect(captured.metrics).toHaveLength(4);
+    expect(captured.metrics.every((metric) => metric.value === 'Not available')).toBe(true);
+    expect(captured.metrics.every((metric) => metric.dataState === 'unavailable')).toBe(true);
+    expect(captured.modules).toHaveLength(0);
+    expect(captured.activities[0].items).toEqual([]);
+    expect(captured.communications).toHaveLength(0);
+    expect(captured.faith).toHaveLength(0);
+    expect(screen.queryByText('Fabricated staffing alert')).toBeNull();
+    expect(screen.queryByText('Call nine families with supposedly available places')).toBeNull();
+    expect(JSON.stringify(captured)).not.toMatch(/79 registered|\\$4,200|92% complete/);
+  });
+
+  it.each(['summerCamp', 'extendedCare'])('requires as-of time and aggregation window for %s live provenance', (key) => {
+    mockUseDashboardData.mockReturnValue({
+      data: { metrics: [{ label: 'Live only', value: '4' }], meta: { served_from: 'live_db' } },
+      error: null, loading: false, source: 'live',
+      config: { endpoint: '/api/v1/dashboards/test/summary' },
+    });
+    render(<CrownDashboardTemplate roleKey="master_control" config={getDashboardTemplate(key)} />);
+    expect(captured.truthStatus[0].dataState).toBe('unavailable');
+    expect(captured.metrics.every((metric) => metric.value === 'Not available')).toBe(true);
+  });
+
+  it.each(['summerCamp', 'extendedCare'])('accepts current verified %s metrics without template numbers', (key) => {
+    mockUseDashboardData.mockReturnValue({
+      data: {
+        metrics: [{ label: 'Verified campers or care attendance', value: '4' }],
+        queue: ['Review current source records'],
+        alerts: [],
+        meta: {
+          served_from: 'live_db',
+          observed_at: '2026-10-31T16:00:00Z',
+          aggregation_window: 'school-local-day:2026-10-31',
+        },
+      },
+      error: null, loading: false, source: 'live',
+      config: { endpoint: '/api/v1/dashboards/test/summary' },
+    });
+    render(<CrownDashboardTemplate roleKey="master_control" config={getDashboardTemplate(key)} />);
+    expect(captured.truthStatus[0].dataState).toBe('live');
+    expect(captured.truthStatus[0].sourceLabel).toContain('2026-10-31T16:00:00Z');
+    expect(captured.truthStatus[0].sourceLabel).toContain('school-local-day:2026-10-31');
+    expect(captured.metrics.map((metric) => metric.value)).toEqual(['4']);
+    expect(captured.metrics[0].dataState).toBe('live');
+    expect(captured.activities[0].items).toEqual([]);
+    expect(captured.modules).toHaveLength(0);
+  });
+
 });
 

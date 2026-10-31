@@ -1,17 +1,11 @@
-import { LIVE_NOTE } from './_baseData.js';
-
-const ENROLLMENT_TREND = [
-  { month: 'Apr', value: 48 },
-  { month: 'May', value: 61 },
-  { month: 'Jun', value: 73 },
-  { month: 'Jul', value: 79 },
-];
+const DATA_UNAVAILABLE = 'Not available';
+const DETAILS = 'Requires verified school-scoped operational records; the summary endpoint currently serves sample data.';
 
 export default {
   key: 'summerCamp',
   activePath: '/summer-camp-dashboard',
   schoolName: 'Heritage Christian Academy',
-  updatesCount: 3,
+  updatesCount: null,
   user: {
     initials: 'SC',
     name: 'Summer Camp Operations',
@@ -20,55 +14,26 @@ export default {
   eyebrow: 'CROWN Launch Preview',
   title: 'Summer program command center',
   subtitle: 'Heritage Christian Academy',
-  note: LIVE_NOTE,
-  dataSource: 'live_api',
+  note: 'Camp KPIs and trends are not certified. Sample summaries are excluded; use authenticated Camp records for operational decisions.',
+  dataState: 'unavailable',
+  sourceLabel: 'No verified school-scoped Summer Camp metrics are available.',
+  lastSyncLabel: 'No verified runtime sync',
+  dataSource: 'unverified',
+  requireVerifiedLiveProvenance: true,
   apiEndpoint: '/api/v1/dashboards/summer-camp/summary',
   liveDataKey: 'summerCamp',
-
   metrics: [
-    { label: 'Registered Campers', value: '79', detail: 'Capacity target is 84 students this cycle.', accent: 'blue' },
-    { label: 'Staffed Sessions', value: '11', detail: 'All morning blocks staffed; two afternoon swaps pending.', accent: 'emerald' },
-    { label: 'Waitlist Families', value: '9', detail: 'Priority callbacks due before noon.', accent: 'gold' },
-    { label: 'Transport Confirmed', value: '92%', detail: 'Route confirmations in final review window.', accent: 'navy' },
+    { label: 'Registered Campers', value: DATA_UNAVAILABLE, detail: DETAILS, accent: 'blue' },
+    { label: 'Staffed Sessions', value: DATA_UNAVAILABLE, detail: DETAILS, accent: 'emerald' },
+    { label: 'Waitlist Families', value: DATA_UNAVAILABLE, detail: DETAILS, accent: 'gold' },
+    { label: 'Transport Confirmed', value: DATA_UNAVAILABLE, detail: DETAILS, accent: 'navy' },
   ],
-
-  priorities: [
-    { title: 'Finalize counselor staffing swaps', detail: 'Two PM blocks still need confirmation today.', state: 'Today', tone: 'warn' },
-    { title: 'Call top 9 waitlist families', detail: 'Offer open seats before orientation packet lock.', state: 'Today', tone: 'warn' },
-    { title: 'Publish week-one route sheet', detail: 'Transportation lead requires approved roster export.', state: 'Ready', tone: 'good' },
-  ],
-  prioritiesTitle: 'Summer Camp priorities',
-
-  alerts: [
-    { title: 'Two afternoon sessions have unconfirmed counselors', detail: 'Resolve assignment before 2:00 PM staffing freeze.', tone: 'warn' },
-    { title: 'Route sheet is waiting on final roster export', detail: 'Enrollment cutoff closes in 4 hours.', tone: 'warn' },
-  ],
-
-  trendPanels: [
-    {
-      kicker: 'Enrollment momentum',
-      title: 'Camp registration trend',
-      chip: '79 registered',
-      trend: ENROLLMENT_TREND,
-    },
-  ],
-
-  activities: [
-    'Registration desk confirmed 7 new signups this week.',
-    'Transportation coordinator requested final roster export.',
-    'Counselor onboarding packets sent to all assigned staff.',
-  ],
-
-  quickActions: [
-    { label: 'Open Camp Roster', href: '/summer-camp-dashboard' },
-    { label: 'Staff Coverage', href: '/summer-camp-dashboard' },
-    { label: 'Family Outreach', href: '/communications-dashboard' },
-  ],
-
-  statuses: [
-    { label: 'Enrollment', state: '79 registered' },
-    { label: 'Staffing', state: '2 confirmations pending' },
-    { label: 'Transportation', state: '92% complete' },
-    { label: 'Waitlist', state: '9 families' },
-  ],
+  insight: { kicker: 'Data verification', title: 'Camp registration trend', chip: DATA_UNAVAILABLE, trend: [] },
+  priorities: [],
+  alerts: [],
+  commandModules: [],
+  trendPanels: [],
+  activities: [],
+  quickActions: [],
+  statuses: [{ label: 'Operational source', state: DATA_UNAVAILABLE }],
 };

@@ -150,6 +150,48 @@ function buildLiveDashboardConfig(config, payload, endpointConfig, loading, erro
     return config;
   }
 
+  // Safety-sensitive program dashboards may not display sample/snapshot KPIs
+  // or implied staffing, billing and custody alerts as operational truth.
+  // Require positive server provenance plus an observed-as-of and aggregation
+  // window before treating a response as verified live data.
+  if (config.requireVerifiedLiveProvenance) {
+    const meta = payload?.meta || {};
+    const servedFrom = String(meta.served_from || '').toLowerCase();
+    const asOf = meta.observed_at || meta.observed_as_of || meta.as_of;
+    const window = meta.aggregation_window;
+    const verified = source === 'live'
+      && (servedFrom === 'live' || servedFrom === 'live_db')
+      && typeof asOf === 'string' && !Number.isNaN(Date.parse(asOf))
+      && typeof window === 'string' && window.trim() !== '';
+    if (!verified) {
+      const state = loading ? 'loading' : 'unavailable';
+      const sourceLabel = 'Verified school-scoped program metrics unavailable; source, observed-as-of or aggregation window not established.';
+      return {
+        ...config,
+        dataState: state,
+        sourceLabel,
+        lastSyncLabel: loading ? 'Checking runtime provenance' : 'No verified runtime sync',
+        metrics: (Array.isArray(config.metrics) ? config.metrics : []).map((metric) => ({
+          label: metric.label, value: 'Not available',
+          detail: sourceLabel, accent: metric.accent,
+          dataState: state, sourceLabel,
+        })),
+        priorities: [],
+        alerts: [],
+        commandModules: [],
+        trendPanels: [],
+        activities: [],
+        statuses: [{ label: 'Operational source', state: 'Not available' }],
+        communications: false,
+        faithCommunity: false,
+        errorState: loading ? null : {
+          title: 'Operational metrics unavailable',
+          message: sourceLabel,
+        },
+      };
+    }
+  }
+
   const dataState = getDashboardDataState(source, payload, error, loading);
   const isLiveParent = dataState === 'live' && config.key === 'parent';
   const sourceLabel = getDashboardSourceLabel(dataState, endpointConfig?.endpoint, payload);
@@ -218,6 +260,15 @@ function buildLiveDashboardConfig(config, payload, endpointConfig, loading, erro
           message: sourceLabel,
         }
       : config.errorState,
+    ...(config.requireVerifiedLiveProvenance ? {
+      // API payload metrics, queue and alerts are the only authorized
+      // data. Template activities, trends, cards and notices are not live.
+      activities: [], trendPanels: [], commandModules: [],
+      communications: false, faithCommunity: false,
+      sourceLabel: `${sourceLabel}; observed ${payload.meta.observed_at || payload.meta.observed_as_of || payload.meta.as_of}; window ${payload.meta.aggregation_window}`,
+      lastSyncLabel: 'Verified API provenance; independent certification pending',
+      statuses: [{ label: 'Live-data source', state: 'Verified API provenance; certification pending' }],
+    } : {}),
   };
 }
 
