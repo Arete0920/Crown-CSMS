@@ -60,6 +60,15 @@ def _is_platform_operator_path(path: str) -> bool:
     )
 
 
+def _sgo_grantor_read_route(path, method):
+    if method != "GET":
+        return False
+    return path == "/api/v1/jireh-sgo/organizations" or bool(re.fullmatch(
+        r"/api/v1/jireh-sgo/organizations/[0-9a-fA-F]{8}-(?:[0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}/overview",
+        path,
+    ))
+
+
 def _record_tenant_decision(request, *, outcome: str, reason: str, required: bool = False) -> bool:
     """Persist tenant decisions; authorized overrides fail closed when evidence cannot persist."""
     try:
@@ -167,6 +176,17 @@ def enforce_tenant_context(request) -> None:
                 request,
                 {"detail": "School selector forbidden on global operations.",
                  "code": "platform_tenant_selector_forbidden"},
+                status=400,
+            )
+        return
+
+    # Independent grantor API: only exact read routes may omit school tenancy.
+    # Authorization is enforced again by active organization membership in the views.
+    if _sgo_grantor_read_route(normalized_path, request.method):
+        if "HTTP_X_SCHOOL_ID" in request.META or "HTTP_X_CROWN_SCHOOL_ID" in request.META:
+            raise _tenant_context_error(
+                request,
+                {"detail": "School selector forbidden for SGO.", "code": "sgo_school_selector_forbidden"},
                 status=400,
             )
         return
