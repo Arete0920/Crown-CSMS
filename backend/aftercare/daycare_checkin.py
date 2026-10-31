@@ -89,8 +89,10 @@ def checkin_child(*,school_id:UUID,actor_id:UUID,site_id:UUID,room_id:UUID,
             ).exclude(qualification_evidence="").values_list("staff_id",flat=True).distinct())
             if actor_id not in staff_ids:
                 raise CheckinRefused("room_staff_authority_required")
-            occupied=DaycareAttendance.objects.filter(school=school,room=room).count()
-            already=DaycareAttendance.objects.filter(school=school,child=child).exists()
+            occupied=DaycareAttendance.objects.filter(school=school,room=room,custody_release__isnull=True).count()
+            already=DaycareAttendance.objects.filter(school=school,child=child,custody_release__isnull=True).exists()
+            if not already and DaycareAttendance.objects.filter(school=school,child=child,care_date=day).exists():
+                raise CheckinRefused("repeat_same_day_requires_review")
             decision=checkin_decision(
                 school_id=school_id,site_id=site_id,program_code=program_code,local_date=day,
                 child=Child(child.id,school_id,child.household_id,site_id,child.is_active,child.linked_student_id),
