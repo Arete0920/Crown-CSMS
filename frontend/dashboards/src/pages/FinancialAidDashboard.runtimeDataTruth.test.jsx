@@ -126,6 +126,29 @@ describe('Financial Aid dashboard runtime data truth', () => {
     expect(screen.getByTestId('dashboard-error')).toBeTruthy();
   });
 
+  it('fails closed if a previous live financial-aid response remains after a refresh error', () => {
+    mockUseDashboardData.mockReturnValue({
+      data: {
+        metrics: [{ label: 'Aid Applications', value: '112' }],
+        queue: ['Release stale award batch'],
+        alerts: [{ title: 'Stale approval pending', level: 'High' }],
+        meta: { served_from: 'live' },
+      },
+      error: new Error('refresh failed'),
+      loading: false,
+      source: 'live',
+      config: { endpoint: '/api/v1/dashboards/financial-aid/summary' },
+    });
+    renderFinancialAid();
+    expect(captured.truth[0].dataState).toBe('error');
+    expect(captured.truth[0].sourceLabel).toContain('unavailable');
+    expect(captured.metrics).toEqual([]);
+    expect(captured.status[0].statuses.map((item) => item.label)).toEqual([
+      'Dashboard Data State', 'Dashboard Data Source',
+    ]);
+    expect(screen.getByTestId('dashboard-error')).toBeTruthy();
+  });
+
   it.each([
     ['missing provenance', {}],
     ['unknown provenance', { served_from: 'unknown' }],

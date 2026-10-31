@@ -60,6 +60,8 @@ function getDashboardDataState(source, payload, error, loading, dashboardKey) {
   if (loading) return 'loading';
   // A missing request source cannot inherit a stale payload's sample/live claim.
   if (source === 'none') return error ? 'error' : 'unavailable';
+  // A failed financial-aid refresh cannot retain an earlier live transport claim.
+  if (dashboardKey === 'financialAid' && source === 'live' && error) return 'error';
   if (servedFrom === 'sample') return 'sample';
   // A stored snapshot is not a live DB response; seeded sample snapshots
   // must retain sample provenance even when the transport request succeeded.
