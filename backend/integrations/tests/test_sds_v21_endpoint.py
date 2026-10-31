@@ -183,7 +183,7 @@ class SdsV21EndpointTest(TestCase):
     def test_other_school_selection_is_denied_by_school_scoped_permission(self):
         response = sds_v21_export(self._request(school=self.other_school))
 
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.status_code, 404)
 
     def test_foreign_or_invalid_term_cannot_be_exported(self):
         other_year = AcademicYear.objects.create(
