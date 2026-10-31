@@ -153,12 +153,14 @@ def test_pm_checkout_rejects_open_am_custody_without_rewriting_either_record():
 
 def test_am_handoff_rejects_prior_day_open_pm_custody():
     school, _household, child, receiver = setup_family()
+    # Create legitimate AM custody first, then simulate a malformed historical
+    # import that adds an overlapping previous-day PM record.
+    am = checkin_student(school.id, child.id, when=at(7, 15), care_session="AM")
     previous_day = DAY - timedelta(days=1)
     pm = AftercareAttendance.objects.create(
         school_fk=school, student_fk=child, date=previous_day,
         care_session="PM", checkin_time=at(15, 5) - timedelta(days=1),
     )
-    am = checkin_student(school.id, child.id, when=at(7, 15), care_session="AM")
     with pytest.raises(ValueError, match="supervisor reconciliation"):
         handoff_student_to_school(school.id, child.id, receiver, when=at(8, 25))
     am.refresh_from_db()
