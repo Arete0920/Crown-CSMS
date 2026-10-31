@@ -132,6 +132,47 @@ class FinancialAidEndpointsTests(APITestCase):
         for bucket, data in r.data["awards"]["by_bucket"].items():
             self.assertIsInstance(data["amount"], str)
 
+    def test_mismatched_award_application_school_excluded_from_summary_and_drilldown(self):
+        """An A-owned award linked to a B-owned application must not disclose B data."""
+        foreign_school = School.objects.create(name=f"FA Foreign Link {uuid.uuid4()}")
+        foreign_application = FinancialAidApplication.objects.create(
+            school_id=foreign_school.id,
+            household_id=uuid.uuid4(),
+            academic_year="2026-2027",
+            household_income="25000.00",
+            household_size=2,
+            status="decided",
+        )
+        mismatched_award = AidAward.objects.create(
+            school_id=self.school_id,
+            application=foreign_application,
+            bucket=AidBucket.NEED,
+            amount="9000.00",
+            rationale="Synthetic cross-tenant association",
+        )
+
+        summary = self.client.get(
+            "/api/v1/financial-aid/summary/?academic_year=2026-2027",
+            HTTP_X_SCHOOL_ID=str(self.school_id),
+        )
+        self.assertEqual(summary.status_code, 200)
+        self.assertEqual(summary.data["applications"]["total"], 1)
+        self.assertEqual(summary.data["awards"]["total"], 1)
+        self.assertEqual(summary.data["awards"]["total_amount"], "5000.00")
+        self.assertEqual(summary.data["awards"]["by_bucket"][AidBucket.NEED]["total"], 1)
+
+        drilldown = self.client.get(
+            "/api/v1/financial-aid/drilldown/?academic_year=2026-2027",
+            HTTP_X_SCHOOL_ID=str(self.school_id),
+        )
+        self.assertEqual(drilldown.status_code, 200)
+        self.assertEqual(drilldown.data["total"], 1)
+        self.assertEqual(len(drilldown.data["rows"]), 1)
+        self.assertNotIn(
+            str(mismatched_award.id),
+            [row["award_id"] for row in drilldown.data["rows"]],
+        )
+
     def test_drilldown_bucket_filter(self):
         r = self.client.get(
             "/api/v1/financial-aid/drilldown/?academic_year=2026-2027&bucket=need",
