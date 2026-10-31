@@ -129,10 +129,13 @@ def get_user_from_claims(claims: dict):
         raise MicrosoftIdentityError("Microsoft identity is linked to an inactive CROWN user")
 
     bound_school_ids = {link.binding.school_id for link in links}
+    member_school_ids = set(
+        user.roles.filter(school_id__in=bound_school_ids).values_list("school_id", flat=True)
+    )
     direct_school_id = getattr(user, "school_id", None)
     if direct_school_id in bound_school_ids:
-        return user
-    if user.roles.filter(school_id__in=bound_school_ids).exists():
+        member_school_ids.add(direct_school_id)
+    if bound_school_ids.issubset(member_school_ids):
         return user
 
     raise MicrosoftIdentityError("Microsoft identity link has no active CROWN school membership")
