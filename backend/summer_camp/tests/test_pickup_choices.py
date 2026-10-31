@@ -32,3 +32,27 @@ def test_pickup_choices_require_active_school_role_and_current_registration():
     registration.status = "CANCELLED"
     registration.save(update_fields=["status"])
     assert client.get(url).status_code == 404
+
+def test_pickup_choices_fail_closed_for_duplicate_and_foreign_enrollments():
+    home = School.objects.create(name="Synthetic Home Camp")
+    foreign = School.objects.create(name="Synthetic Foreign Camp")
+    family = Household.objects.create(school_id=home.id, name="Home Family")
+    child = Student.objects.create(school_id=home.id, household=family, first_name="Home", last_name="Child")
+    program = SummerCampProgram.objects.create(school=home, name="Home Program")
+    session = SummerCampSession.objects.create(school=home, program=program, name="Home Week", start_date=date(2026, 7, 1), end_date=date(2026, 7, 7), start_time=time(8), end_time=time(16), capacity=10)
+    one = SummerCampEnrollment.objects.create(school=home, student=child, household=family, session=session, status="REGISTERED")
+    user = UserAccount.objects.create_user(school=home, username="camp-dupe-test", email="camp-dupe-test@example.test", password="synthetic")
+    permission, _ = CrownPermission.objects.get_or_create(code="summer_camp.edit")
+    RolePermission.objects.get_or_create(role_code="HEAD_OF_SCHOOL", permission=permission)
+    UserRole.objects.create(user=user, school=home, role_code="HEAD_OF_SCHOOL")
+    client = APIClient()
+    client.force_authenticate(user=user)
+    client.credentials(HTTP_X_SCHOOL_ID=str(home.id))
+    url = f"/api/v1/summer-camp/enrollments/{one.id}/pickup-choices/"
+    assert client.get(url).status_code == 200
+    SummerCampEnrollment.objects.create(school=home, student=child, household=family, session=session, status="REGISTERED")
+    assert client.get(url).status_code == 409
+    foreign_client = APIClient()
+    foreign_client.force_authenticate(user=user)
+    foreign_client.credentials(HTTP_X_SCHOOL_ID=str(foreign.id))
+    assert foreign_client.get(url).status_code in (403, 404)
