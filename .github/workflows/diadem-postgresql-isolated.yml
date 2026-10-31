@@ -1,0 +1,70 @@
+name: Diadem PostgreSQL Certification (Isolated)
+
+# Temporary, source-pinned, non-deploying certification branch only.
+# No release, production, Azure or payment credentials are used.
+on:
+  push:
+    branches:
+      - ci/diadem-extended-care-20261031
+
+permissions:
+  contents: read
+
+concurrency:
+  group: diadem-postgresql-isolated-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  diadem-postgresql:
+    name: Diadem Django PostgreSQL safety contract
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: diadem_cert
+          POSTGRES_USER: diadem_cert
+          POSTGRES_PASSWORD: ephemeral-ci-only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U diadem_cert -d diadem_cert"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://diadem_cert:ephemeral-ci-only@localhost:5432/diadem_cert
+      DJANGO_SETTINGS_MODULE: crown_api.test_settings
+      DJANGO_SECRET_KEY: ephemeral-ci-only-diadem-certification-secret-key
+      CROWN_ENV: dev
+      ALLOWED_HOSTS: localhost,127.0.0.1,testserver
+      PYTHONPATH: ${{ github.workspace }}/backend
+    steps:
+      - name: Checkout isolated source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Setup Python 3.12
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+      - name: Pin and display exact source
+        run: |
+          git rev-parse HEAD
+          git rev-parse HEAD^{tree}
+          python --version
+      - name: Install canonical backend requirements
+        run: python -m pip install -r backend/requirements.txt
+      - name: Django system checks
+        run: python manage.py check --no-color
+      - name: Reject untracked model changes
+        run: python manage.py makemigrations --check --dry-run --no-input --no-color
+      - name: Run Diadem child safety tests on migrated PostgreSQL
+        run: |
+          python -m pytest -q -ra --migrations --create-db --maxfail=25 \
+            backend/aftercare/tests/test_daycare_models.py \
+            backend/aftercare/tests/test_daycare_policy.py \
+            backend/aftercare/tests/test_daycare_checkin.py \
+            backend/aftercare/tests/test_daycare_release_policy.py \
+            backend/aftercare/tests/test_daycare_release.py
