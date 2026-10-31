@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import logging
 
+import jwt
 from rest_framework.authentication import BaseAuthentication
 from rest_framework.exceptions import AuthenticationFailed
 
@@ -45,13 +46,13 @@ class AADBearerAuthentication(BaseAuthentication):
 
         try:
             claims = decode_and_validate_bearer(token)
+        except jwt.PyJWTError as exc:
+            logger.info("AADBearerAuthentication: Microsoft JWT rejected — %s", exc)
+            raise AuthenticationFailed("Microsoft token invalid.") from exc
         except Exception as exc:
-            logger.debug("AADBearerAuthentication: token rejected — %s", exc)
-            # Raise only for tokens that appear to be Microsoft-issued.
-            exc_text = f"{exc}"
-            if "matching JWKS" in exc_text or "InvalidTokenError" in type(exc).__name__:
-                raise AuthenticationFailed("Microsoft token invalid.") from exc
-            # Let other backends handle tokens/configuration this authenticator cannot classify.
+            logger.debug("AADBearerAuthentication: token not classified as Microsoft — %s", exc)
+            # Configuration/network errors and tokens this authenticator cannot classify
+            # may be handled by later authentication backends.
             return None
 
         # Once Microsoft cryptographic validation succeeds, identity resolution is
