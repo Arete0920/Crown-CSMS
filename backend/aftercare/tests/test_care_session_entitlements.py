@@ -206,7 +206,7 @@ def test_unentitled_config_write_cannot_change_other_session_settings():
     assert client.get(API + "config/").status_code == 200
 
 
-def test_guardian_can_read_historical_custody_after_contract_expires():
+def test_guardian_can_read_historical_custody_after_contract_expires_and_student_is_inactive():
     school, household, child, _staff, client = family()
     grant(school, "PM", status="expired")
     enrollment(school, child, "PM")
@@ -216,6 +216,8 @@ def test_guardian_can_read_historical_custody_after_contract_expires():
         checkin_time=timezone.now() - timedelta(hours=2),
         checkout_time=timezone.now() - timedelta(hours=1), pickup_verified=True,
     )
+    child.is_active = False
+    child.save(update_fields=["is_active"])
     parent = UserAccount.objects.create_user(
         username=f"care-parent-{uuid4().hex[:8]}",
         email=f"care-parent-{uuid4().hex}@example.test", password="test", school=school,
@@ -229,6 +231,11 @@ def test_guardian_can_read_historical_custody_after_contract_expires():
     assert history.status_code == 200
     assert len(history.data["attendance"]) == 1
     assert client.get(API + "roster/today/?care_session=PM").status_code == 403
+    unrelated = UserAccount.objects.create_user(
+        username=f"unrelated-guardian-{uuid4().hex[:8]}", password="test", school=school,
+    )
+    client.force_authenticate(user=unrelated)
+    assert client.get(API + f"parent/{child.id}/").status_code == 403
 
 
 def test_expired_diadem_subscription_never_unlocks_am_pm():
