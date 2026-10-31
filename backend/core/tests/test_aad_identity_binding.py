@@ -5,6 +5,7 @@ from unittest.mock import patch
 
 import pytest
 from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework.test import APIRequestFactory
 
@@ -120,7 +121,7 @@ def test_link_rejects_user_without_membership_in_bound_school():
         is_active=True,
     )
 
-    with pytest.raises(Exception, match="must belong to the bound CROWN school"):
+    with pytest.raises(ValidationError, match="must belong to the bound CROWN school"):
         MicrosoftIdentityLink.objects.create(
             binding=binding,
             user=user,
