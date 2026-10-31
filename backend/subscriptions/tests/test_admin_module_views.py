@@ -37,12 +37,10 @@ class AdminModuleCanonicalTenantTests(TestCase):
     def setUp(self):
         self.factory = RequestFactory()
         self.school = School.objects.create(name="Canonical Modules School")
-        self.staff = User.objects.create_user(
+        self.staff = User.objects.create_superuser(
             username="canonical-module-admin",
             email="canonical-module-admin@example.com",
             password="test-password",
-            is_staff=True,
-            school=None,
         )
 
     def _request(self, method, path, payload=None, with_context=True):
@@ -137,3 +135,77 @@ class AdminModuleCanonicalTenantTests(TestCase):
         )
         self.assertEqual(response.status_code, 400)
         self.assertEqual(_json(response)["code"], "TENANT_REQUIRED")
+
+    def test_school_staff_is_not_module_operator(self):
+        staff = User.objects.create_user(
+            username="school-only-module-staff",
+            email="school-only@example.invalid",
+            password="test",
+            is_staff=True,
+            school=self.school,
+        )
+        request = self._request("post", "/api/v1/admin/modules/activate/", {
+            "module_key": "before_care", "months": 12,
+        })
+        request.user = staff
+        response = activate_module(request)
+        self.assertEqual(response.status_code, 403)
+        self.assertFalse(SchoolModule.objects.filter(school=self.school, module_key="before_care").exists())
+
+    def test_unscoped_staff_without_superuser_cannot_start_trial(self):
+        staff = User.objects.create_user(
+            username="unscoped-staff",
+            email="staff-only@example.invalid",
+            password="test",
+            is_staff=True,
+        )
+        request = self._request("post", "/api/v1/admin/modules/trial/", {
+            "module_key": "after_care",
+        })
+        request.user = staff
+        response = start_trial(request)
+        self.assertEqual(response.status_code, 403)
+        self.assertFalse(SchoolModule.objects.filter(school=self.school, module_key="after_care").exists())
+
+    def test_trial_accepts_new_care_key_only_for_platform_operator(self):
+        from platform_ops.models import AuditEvent
+        response = start_trial(self._request("post", "/api/v1/admin/modules/trial/", {
+            "module_key": "before_care", "days": 7,
+        }))
+        self.assertEqual(response.status_code, 200)
+        mod = SchoolModule.objects.get(school=self.school, module_key="before_care")
+        self.assertTrue(mod.is_trial)
+        self.assertFalse(SchoolModule.objects.filter(school=self.school, module_key="after_care").exists())
+        self.assertEqual(AuditEvent.objects.get(action="subscription.module_trial_started").actor_user_id, self.staff.id)
+
+    def test_care_activation_rejects_unapproved_price_and_invalid_months(self):
+        from platform_ops.models import AuditEvent
+        for body in (
+            {"module_key": "before_care", "price_paid": 10, "months": 12},
+            {"module_key": "before_care", "months": 0},
+            {"module_key": "before_care", "months": True},
+            {"module_key": "before_care", "months": -1},
+        ):
+            response = activate_module(self._request("post", "/api/v1/admin/modules/activate/", body))
+            self.assertEqual(response.status_code, 400)
+        self.assertFalse(SchoolModule.objects.filter(school=self.school, module_key="before_care").exists())
+        self.assertEqual(AuditEvent.objects.count(), 0)
+
+    def test_invalid_trial_key_does_not_create_entitlement(self):
+        for body in (
+            {"module_key": "not-a-module", "days": 7},
+            {"module_key": "after_care", "days": 0},
+            {"module_key": "after_care", "days": True},
+        ):
+            response = start_trial(self._request("post", "/api/v1/admin/modules/trial/", body))
+            self.assertEqual(response.status_code, 400)
+        self.assertFalse(SchoolModule.objects.filter(school=self.school).exists())
+
+    def test_care_entitlement_audit_failure_rolls_back_activation(self):
+        from unittest.mock import patch
+        with patch("subscriptions.views.AuditEvent.objects.create", side_effect=RuntimeError("audit offline")):
+            with self.assertRaises(RuntimeError):
+                activate_module(self._request("post", "/api/v1/admin/modules/activate/", {
+                    "module_key": "before_care", "months": 12,
+                }))
+        self.assertFalse(SchoolModule.objects.filter(school=self.school, module_key="before_care").exists())

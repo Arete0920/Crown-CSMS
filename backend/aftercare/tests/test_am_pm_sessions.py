@@ -8,6 +8,7 @@ from aftercare.models import AftercareAttendance, AftercareEnrollment, Aftercare
 from aftercare.services import checkin_student, checkout_student, handoff_student_to_school
 from core.models import CrownPermission, RolePermission, School, Staff, UserAccount, UserRole
 from households.models import Household, Student
+from subscriptions.models import SchoolModule
 
 pytestmark = pytest.mark.django_db
 DAY = date(2025, 9, 3)
@@ -19,6 +20,11 @@ def at(hour, minute=0):
 
 def setup_family():
     school = School.objects.create(name="Extended Care Session Test")
+    for module in ("before_care", "after_care"):
+        SchoolModule.objects.create(
+            school=school, module_key=module, status="active",
+            expiry_date=timezone.now() + timezone.timedelta(days=30),
+        )
     household = Household.objects.create(school_id=school.id, name="One Household")
     child = Student.objects.create(
         school_id=school.id, household=household,
@@ -516,3 +522,65 @@ def test_roster_never_discloses_malformed_foreign_tenant_attendance(monkeypatch)
     assert response.data["unlinked_attendance_count"] == 1
     assert all(row["student_id"] != outsider.pk for row in response.data["rows"])
     assert "ForeignChild" not in str(response.data)
+
+
+@pytest.mark.parametrize(
+    ("disabled_session", "allowed_session"),
+    [("AM", "PM"), ("PM", "AM")],
+)
+def test_independent_care_license_restricts_operational_api(disabled_session, allowed_session):
+    """A paid AM SKU must never unlock PM operations, nor the reverse."""
+    from rest_framework.test import APIClient
+    from aftercare.models import AftercareProgramConfig
+
+    school, _household, child, receiver = setup_family()
+    read_permission, _ = CrownPermission.objects.get_or_create(code="extended_care.view")
+    RolePermission.objects.get_or_create(role_code="SUPPORT", permission=read_permission)
+    disabled_key = "before_care" if disabled_session == "AM" else "after_care"
+    SchoolModule.objects.filter(school=school, module_key=disabled_key).update(status="suspended")
+    client = APIClient()
+    client.force_authenticate(user=receiver)
+    client.credentials(HTTP_X_SCHOOL_ID=str(school.id))
+
+    assert client.get(f"/api/v1/aftercare/roster/today/?care_session={disabled_session}").status_code == 403
+    assert client.post("/api/v1/aftercare/attendance/checkin/", {
+        "student_id": str(child.pk), "care_session": disabled_session,
+    }, format="json").status_code == 403
+    assert not AftercareAttendance.objects.filter(school_fk=school).exists()
+    assert client.get(f"/api/v1/aftercare/board/summary/?care_session={disabled_session}").status_code == 403
+    assert client.get(f"/api/v1/aftercare/enrollments/?care_session={disabled_session}").status_code == 403
+
+    permitted = client.get("/api/v1/aftercare/enrollments/")
+    assert permitted.status_code == 200, permitted.data
+    assert {row["care_session"] for row in permitted.data} == {allowed_session}
+    summary = client.get("/api/v1/aftercare/board/summary/")
+    assert summary.status_code == 200, summary.data
+    assert summary.data["care_session"] == allowed_session
+    assert summary.data["unattributed_incidents_mtd"] == 0
+    assert client.get("/api/v1/aftercare/wizard/setup/").status_code == 200
+    assert AftercareProgramConfig.objects.filter(school_fk=school).exists()
+
+
+def test_no_entitlement_denies_custody_writes_and_configuration():
+    """Roles, a school record, and Diadem do not grant either care SKU."""
+    from rest_framework.test import APIClient
+    from aftercare.models import AftercareProgramConfig
+
+    school, _household, child, receiver = setup_family()
+    read_permission, _ = CrownPermission.objects.get_or_create(code="extended_care.view")
+    RolePermission.objects.get_or_create(role_code="SUPPORT", permission=read_permission)
+    SchoolModule.objects.filter(school=school).update(status="inactive")
+    client = APIClient()
+    client.force_authenticate(user=receiver)
+    client.credentials(HTTP_X_SCHOOL_ID=str(school.id))
+    assert client.get("/api/v1/aftercare/enrollments/").status_code == 403
+    assert client.get("/api/v1/aftercare/config/").status_code == 403
+    assert client.get("/api/v1/aftercare/wizard/setup/").status_code == 403
+    assert client.post("/api/v1/aftercare/attendance/checkin/", {
+        "student_id": str(child.pk), "care_session": "AM",
+    }, format="json").status_code == 403
+    assert client.post("/api/v1/aftercare/attendance/checkin/", {
+        "student_id": str(child.pk), "care_session": "PM",
+    }, format="json").status_code == 403
+    assert not AftercareAttendance.objects.filter(school_fk=school).exists()
+    assert not AftercareProgramConfig.objects.filter(school_fk=school).exists()

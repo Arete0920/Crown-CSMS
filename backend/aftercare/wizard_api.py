@@ -4,6 +4,7 @@ from rest_framework.response import Response
 
 from core.models import School
 from core.permissions import user_has_permission
+from subscriptions.gates import school_has_module
 
 from .serializers import AftercareProgramConfigSerializer
 from .services import ensure_config
@@ -28,6 +29,9 @@ def aftercare_setup_wizard(request):
     # Permission scope must match the canonical tenant used for config access.
     school = School.objects.filter(pk=school_id).first()
     if school is None:
+        return _forbidden()
+    if not (school_has_module(school_id, "before_care")
+            or school_has_module(school_id, "after_care")):
         return _forbidden()
 
     if request.method == "GET":

@@ -1,10 +1,12 @@
 import uuid
 
 import pytest
+from django.utils import timezone
 from rest_framework.test import APIClient
 
 from aftercare.models import AftercareProgramConfig
 from core.models import CrownPermission, RolePermission, School, UserAccount, UserRole
+from subscriptions.models import SchoolModule
 
 pytestmark = pytest.mark.django_db
 
@@ -22,6 +24,10 @@ def _user(school: School, suffix: str, *, is_staff: bool = False) -> UserAccount
 
 
 def _grant(user: UserAccount, school: School, role_code: str, *permission_codes: str) -> None:
+    SchoolModule.objects.get_or_create(
+        school=school, module_key="before_care",
+        defaults={"status": "active", "expiry_date": timezone.now() + timezone.timedelta(days=30)},
+    )
     UserRole.objects.create(user=user, school=school, role_code=role_code)
     for code in permission_codes:
         permission, _ = CrownPermission.objects.get_or_create(code=code)
