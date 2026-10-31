@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import CrownLayout from "../components/crown/CrownLayout.jsx";
 import DashboardSection from "../components/layout/DashboardSection.jsx";
-import { fetchRosterToday, checkinStudent, checkoutStudent, fetchPickupContacts } from "../api/aftercareApi.js";
+import { fetchRosterToday, checkinStudent, checkoutStudent, fetchPickupContacts, handoffToSchool } from "../api/aftercareApi.js";
 
 const TAG = {
   base: { display: "inline-block", padding: "2px 8px", borderRadius: 12, fontSize: 12, fontWeight: 600 },
@@ -15,7 +15,11 @@ const TD = { padding: "8px 12px", fontSize: 13, borderBottom: "1px solid var(--c
 const BTN_OUT = { cursor: "pointer", padding: "4px 10px", fontSize: 12, borderRadius: 4, border: "1px solid var(--crown-border)", background: "transparent" };
 const BTN_PRIM = { cursor: "pointer", padding: "4px 10px", fontSize: 12, borderRadius: 4, border: "none", background: "var(--crown-ok)", color: "var(--crown-surface)" };
 
-export default function AftercareRosterPage() {
+export default function AftercareRosterPage({ careSession = "PM" }) {
+  const isMorning = careSession === "AM";
+  const sessionLabel = isMorning ? "Before Care" : "After Care";
+  const [handoff, setHandoff] = useState(null);
+  const [handoffBusy, setHandoffBusy] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [roster, setRoster] = useState(null);
@@ -26,7 +30,7 @@ export default function AftercareRosterPage() {
     setLoading(true);
     setError(null);
     try {
-      const data = await fetchRosterToday();
+      const data = await fetchRosterToday(careSession);
       setRoster(data);
     } catch (e) {
       setError(e.message);
@@ -40,7 +44,7 @@ export default function AftercareRosterPage() {
 
     async function initialize() {
       try {
-        const data = await fetchRosterToday();
+        const data = await fetchRosterToday(careSession);
         if (!cancelled) {
           setRoster(data);
           setError(null);
@@ -60,11 +64,11 @@ export default function AftercareRosterPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [careSession]);
 
   async function handleCheckin(studentId) {
     try {
-      await checkinStudent({ student_id: studentId });
+      await checkinStudent({ student_id: studentId, care_session: careSession });
       await load();
     } catch (e) {
       alert(`Check-in failed: ${e.message}`);
@@ -103,12 +107,27 @@ export default function AftercareRosterPage() {
     }
   }
 
+  async function handleHandoff() {
+    if (!handoff?.acknowledged) return;
+    setHandoffBusy(true);
+    setError(null);
+    try {
+      await handoffToSchool({ student_id: handoff.studentId });
+      setHandoff(null);
+      await load();
+    } catch (e) {
+      setError("School handoff failed: " + e.message);
+    } finally {
+      setHandoffBusy(false);
+    }
+  }
+
   const rosterTitle = roster
-    ? `Today's Aftercare Roster - ${roster.date} (${roster.dow})`
-    : "Today's Aftercare Roster";
+    ? "Today's " + sessionLabel + " Roster - " + roster.date + " (" + roster.dow + ")"
+    : "Today's " + sessionLabel + " Roster";
 
   return (
-    <CrownLayout title="Aftercare Roster">
+    <CrownLayout title={sessionLabel + " Roster"}>
       <DashboardSection title={rosterTitle}>
         {loading && <span>Loading...</span>}
         {error && <div style={{ color: "var(--crown-danger)", background: "var(--crown-danger-bg)", padding: "10px 14px", borderRadius: 4, marginBottom: 12 }}>{error}</div>}
@@ -117,7 +136,7 @@ export default function AftercareRosterPage() {
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
                 <tr>
-                  <th style={TH}>Student ID</th>
+                  <th style={TH}>Child</th>
                   <th style={TH}>Billing</th>
                   <th style={TH}>Status</th>
                   <th style={TH}>Late Min</th>
@@ -137,12 +156,12 @@ export default function AftercareRosterPage() {
                   const statusChip = !row.attendance
                     ? <span style={{ ...TAG.base, ...TAG.default }}>Not checked in</span>
                     : row.attendance.checkout_time
-                      ? <span style={{ ...TAG.base, ...TAG.success }}>Checked out</span>
+                      ? <span style={{ ...TAG.base, ...TAG.success }}>{isMorning ? "Handed off" : "Checked out"}</span>
                       : <span style={{ ...TAG.base, ...TAG.primary }}>Checked in</span>;
 
                   return (
                     <tr key={row.student_id}>
-                      <td style={TD}>{row.student_id}</td>
+                      <td style={TD}>{row.student_name || row.student_id}</td>
                       <td style={TD}>{row.enrollment?.billing_model}</td>
                       <td style={TD}>{statusChip}</td>
                       <td style={TD}>{row.attendance?.late_minutes ?? "-"}</td>
@@ -155,8 +174,11 @@ export default function AftercareRosterPage() {
                         {!hasCheckin && (
                           <button style={BTN_OUT} onClick={() => handleCheckin(row.student_id)}>Check In</button>
                         )}
-                        {hasCheckin && !hasCheckout && (
+                        {hasCheckin && !hasCheckout && !isMorning && (
                           <button style={BTN_PRIM} onClick={() => beginCheckout(row.student_id)} disabled={pickupBusy}>Verify Pickup</button>
+                        )}
+                        {hasCheckin && !hasCheckout && isMorning && (
+                          <button style={BTN_PRIM} onClick={() => setHandoff({ studentId: row.student_id, acknowledged: false })} disabled={handoffBusy}>Acknowledge School Handoff</button>
                         )}
                       </td>
                     </tr>
@@ -164,6 +186,18 @@ export default function AftercareRosterPage() {
                 })}
               </tbody>
             </table>
+          </div>
+        )}
+        {handoff && (
+          <div role="dialog" aria-modal="true" aria-label="Confirm receiving staff handoff" style={{ border: "1px solid var(--crown-border)", padding: 16, marginTop: 16 }}>
+            <h3>School handoff for {handoff.studentId}</h3>
+            <p>The authenticated receiving staff member must personally confirm the child is physically in their care. This is a recorded staff attestation, not automated identity proof.</p>
+            <label style={{ display: "block", marginTop: 12 }}>
+              <input type="checkbox" checked={handoff.acknowledged} onChange={(e) => setHandoff((old) => ({ ...old, acknowledged: e.target.checked }))} />
+              I am the receiving staff member and acknowledge custody of this child.
+            </label>
+            <button type="button" onClick={handleHandoff} disabled={handoffBusy || !handoff.acknowledged}>Record School Handoff</button>
+            <button type="button" style={{ marginLeft: 12 }} disabled={handoffBusy} onClick={() => setHandoff(null)}>Cancel</button>
           </div>
         )}
         {pickup && (

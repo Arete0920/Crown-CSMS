@@ -25,6 +25,7 @@ from .tenant import school_id_from_request
 
 class RosterTodayRowSerializer(serializers.Serializer):
     student_id = serializers.UUIDField()
+    student_name = serializers.CharField()
     care_session = serializers.ChoiceField(choices=["AM", "PM"])
     enrollment = AftercareEnrollmentSerializer()
     attendance = AftercareAttendanceSerializer(allow_null=True)
@@ -237,6 +238,7 @@ def roster_today(request):
     rows = [
         {
             "student_id": row.student_fk_id,
+            "student_name": (row.student_fk.first_name + " " + row.student_fk.last_name).strip(),
             "care_session": row.care_session,
             "enrollment": AftercareEnrollmentSerializer(row).data,
             "attendance": (

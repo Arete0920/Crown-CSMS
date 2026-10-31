@@ -296,6 +296,12 @@ def test_am_pm_board_kpis_are_session_scoped_and_not_misleading(monkeypatch):
     pm_view = client.get("/api/v1/aftercare/board/summary/?care_session=PM")
     combined = client.get("/api/v1/aftercare/board/summary/")
     assert all(result.status_code == 200 for result in (am_view, pm_view, combined))
+    am_roster = client.get("/api/v1/aftercare/roster/today/?care_session=AM")
+    pm_roster = client.get("/api/v1/aftercare/roster/today/?care_session=PM")
+    assert am_roster.status_code == pm_roster.status_code == 200
+    assert len(am_roster.data["rows"]) == len(pm_roster.data["rows"]) == 1
+    assert am_roster.data["rows"][0]["student_name"] == "One Child"
+    assert pm_roster.data["rows"][0]["student_name"] == "One Child"
     assert am_view.data["care_session"] == "AM"
     assert pm_view.data["care_session"] == "PM"
     assert combined.data["care_session"] == "ALL"
