@@ -61,6 +61,13 @@ function getDashboardDataState(source, payload, error, loading) {
   // A missing request source cannot inherit a stale payload's sample/live claim.
   if (source === 'none') return error ? 'error' : 'unavailable';
   if (servedFrom === 'sample') return 'sample';
+  // A stored snapshot is not a live DB response; seeded sample snapshots
+  // must retain sample provenance even when the transport request succeeded.
+  if (servedFrom === 'snapshot') {
+    const original = String(payload?.meta?.snapshot_derived_from || '').toLowerCase();
+    const seedSource = String(payload?.meta?.seed_source || '').toLowerCase();
+    return (original === 'sample' || seedSource === 'sample-derived-snapshot') ? 'sample' : 'fallback';
+  }
   if (servedFrom === 'fallback' || servedFrom === 'stale_snapshot') return 'fallback';
   if (source === 'live') return 'live';
   if (source === 'fallback') return 'fallback';
@@ -81,19 +88,15 @@ function getDashboardSourceLabel(dataState, endpoint, payload) {
   }
 
   if (dataState === 'sample') {
+    if (servedFrom === 'snapshot') return `Sample-derived dashboard snapshot (not live; ${endpoint})`;
     return `Dashboard summary service sample (${endpoint})`;
   }
 
   if (dataState === 'fallback') {
+    if (servedFrom === 'snapshot') return `Dashboard snapshot service (not live; ${snapshotSource || endpoint})`;
     if (servedFrom === 'stale_snapshot') return `Stale dashboard snapshot (${endpoint})`;
     if (servedFrom === 'fallback') return `Dashboard summary service fallback (${endpoint})`;
     return `Frontend fallback dashboard data (${endpoint})`;
-  }
-
-  if (servedFrom === 'snapshot' && dataState === 'live') {
-    return snapshotSource
-      ? `Dashboard snapshot service (${snapshotSource})`
-      : 'Dashboard snapshot service';
   }
 
   if (dataState === 'live') {

@@ -124,6 +124,52 @@ describe('Financial Aid dashboard runtime data truth', () => {
     expect(screen.getByTestId('dashboard-error')).toBeTruthy();
   });
 
+  it('labels an API-served sample-derived snapshot as sample, never live', () => {
+    mockUseDashboardData.mockReturnValue({
+      data: {
+        metrics: [{ label: 'Aid Applications', value: '64' }],
+        queue: [],
+        alerts: [],
+        meta: {
+          served_from: 'snapshot',
+          snapshot_derived_from: 'sample',
+          seed_source: 'sample-derived-snapshot',
+          live_certified: false,
+          snapshot_source: 'sample-derived-snapshot',
+        },
+      },
+      error: null,
+      loading: false,
+      source: 'live',
+      config: { endpoint: '/api/v1/dashboards/financial-aid/summary' },
+    });
+    renderFinancialAid();
+    expect(captured.truth[0].dataState).toBe('sample');
+    expect(captured.truth[0].sourceLabel).toContain('Sample-derived dashboard snapshot');
+    expect(captured.truth[0].sourceLabel).toContain('not live');
+    expect(captured.metrics[0]).toMatchObject({ value: '64', dataState: 'sample' });
+  });
+
+  it('labels any other stored dashboard snapshot as non-live fallback', () => {
+    mockUseDashboardData.mockReturnValue({
+      data: {
+        metrics: [{ label: 'Aid Applications', value: '3' }],
+        queue: [],
+        alerts: [],
+        meta: { served_from: 'snapshot', snapshot_source: 'verified-school-snapshot', live_certified: false },
+      },
+      error: null,
+      loading: false,
+      source: 'live',
+      config: { endpoint: '/api/v1/dashboards/financial-aid/summary' },
+    });
+    renderFinancialAid();
+    expect(captured.truth[0].dataState).toBe('fallback');
+    expect(captured.truth[0].sourceLabel).toContain('Dashboard snapshot service');
+    expect(captured.truth[0].sourceLabel).toContain('not live');
+    expect(captured.metrics[0]).toMatchObject({ value: '3', dataState: 'fallback' });
+  });
+
   it('does not promote a stale snapshot to live status', () => {
     mockUseDashboardData.mockReturnValue({
       data: {
