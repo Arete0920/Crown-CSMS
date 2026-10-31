@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from django.db import transaction
 from django.db.models import Count, Max, Q, Sum
@@ -237,24 +238,49 @@ def mark_health_review_complete(school_id, enrollment_id, reviewer_id):
     return review
 
 
+def camp_school_local_date(school_id, stamp):
+    """Use the school's civil day for custody; misconfigured timezones fail closed."""
+    from core.models import School
+
+    if timezone.is_naive(stamp):
+        raise ValueError("Camp custody timestamps must contain timezone information.")
+    name = (
+        School.objects.filter(pk=school_id, is_active=True)
+        .values_list("timezone", flat=True)
+        .first()
+    )
+    if not name:
+        raise ValueError("An active school with a timezone is required for Camp.")
+    try:
+        return stamp.astimezone(ZoneInfo(name)).date()
+    except (ZoneInfoNotFoundError, ValueError, TypeError) as exc:
+        raise ValueError("A valid school timezone is required for Camp.") from exc
+
+
 @transaction.atomic
 def checkin_camper(school_id, student_id, session_id, when=None, note=""):
     """Admit only a currently cleared camper into an active school-owned session."""
     when = when or timezone.now()
+    attendance_day = camp_school_local_date(school_id, when)
     session = SummerCampSession.objects.select_for_update().filter(
         id=session_id, school_id=school_id, status="PUBLISHED",
-        start_date__lte=when.date(), end_date__gte=when.date(),
+        start_date__lte=attendance_day, end_date__gte=attendance_day,
     ).first()
     if session is None:
         raise ValueError("Camp session is not available for check-in.")
 
-    enrollment = SummerCampEnrollment.objects.select_for_update().filter(
-        school_id=school_id, session_id=session.id, student_id=student_id,
-        student__school_id=school_id, student__is_active=True,
-        status="REGISTERED",
-    ).first()
-    if enrollment is None:
-        raise ValueError("Camper does not have an active registration for this session.")
+    # Checkout already requires a unique current registration; admission
+    # must not pick an arbitrary row from ambiguous legacy enrollments.
+    active = list(
+        SummerCampEnrollment.objects.select_for_update().filter(
+            school_id=school_id, session_id=session.id, student_id=student_id,
+            student__school_id=school_id, student__is_active=True,
+            status="REGISTERED",
+        ).order_by("pk")[:2]
+    )
+    if len(active) != 1:
+        raise ValueError("Camper does not have exactly one active registration for this session.")
+    enrollment = active[0]
 
     # Recompute rather than trusting a readiness value cached at enrollment.
     readiness = compute_camper_readiness(school_id, enrollment.id)
@@ -263,13 +289,13 @@ def checkin_camper(school_id, student_id, session_id, when=None, note=""):
 
     if SummerCampAttendance.objects.filter(
         school_id=school_id, session_id=session.id,
-        student_id=student_id, date=when.date(),
+        student_id=student_id, date=attendance_day,
     ).exists():
         raise ValueError("Camper has already been checked in for this session and date.")
 
     return SummerCampAttendance.objects.create(
         school_id=school_id, student_id=student_id, session_id=session.id,
-        date=when.date(), checkin_time=when, notes=note,
+        date=attendance_day, checkin_time=when, notes=note,
     )
 
 

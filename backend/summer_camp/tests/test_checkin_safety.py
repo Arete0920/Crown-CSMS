@@ -1,5 +1,5 @@
 """Synthetic DB-backed negative and positive Summer Camp check-in safety tests."""
-from datetime import timedelta, time
+from datetime import date, datetime, timedelta, time, timezone as utc_timezone
 
 import pytest
 from django.utils import timezone
@@ -63,7 +63,7 @@ def _admit(case):
 def _assert_no_attendance(case):
     school, _other, student, session, _enrollment, when = case
     assert not SummerCampAttendance.objects.filter(
-        school=school, student=student, session=session, date=when.date(),
+        school=school, student=student, session=session,
     ).exists()
 
 
@@ -76,6 +76,45 @@ def test_ready_registered_camper_admitted_once(camp_case):
     assert SummerCampAttendance.objects.filter(
         school=camp_case[0], student=camp_case[2], session=camp_case[3],
     ).count() == 1
+
+
+def test_duplicate_current_registrations_are_denied_without_attendance(camp_case):
+    school, _foreign, student, session, enrollment, when = camp_case
+    SummerCampEnrollment.objects.create(
+        school=school, session=session, student=student,
+        household=enrollment.household, status="REGISTERED",
+        form_status="COMPLETE", health_status="APPROVED",
+        payment_status="PAID_IN_FULL", balance_due_cents=0,
+    )
+    with pytest.raises(ValueError, match="exactly one active registration"):
+        checkin_camper(school.id, student.id, session.id, when=when)
+    _assert_no_attendance(camp_case)
+
+
+def test_checkin_uses_school_civil_date_across_utc_midnight(camp_case):
+    school, _foreign, student, session, _enrollment, _when = camp_case
+    school.timezone = "Pacific/Auckland"
+    school.save(update_fields=["timezone"])
+    stamp = datetime(2026, 7, 1, 23, 30, tzinfo=utc_timezone.utc)
+    session.start_date = date(2026, 7, 2)
+    session.end_date = date(2026, 7, 2)
+    session.save(update_fields=["start_date", "end_date"])
+
+    attendance = checkin_camper(school.id, student.id, session.id, when=stamp)
+    assert attendance.date == date(2026, 7, 2)
+    assert attendance.checkin_time == stamp
+    assert not SummerCampAttendance.objects.filter(
+        school=school, session=session, student=student, date=date(2026, 7, 1),
+    ).exists()
+
+
+def test_invalid_school_timezone_cannot_create_attendance(camp_case):
+    school = camp_case[0]
+    school.timezone = "Invalid/SchoolTimeZone"
+    school.save(update_fields=["timezone"])
+    with pytest.raises(ValueError, match="valid school timezone"):
+        _admit(camp_case)
+    _assert_no_attendance(camp_case)
 
 
 @pytest.mark.parametrize("status", ["WAITLISTED", "CANCELLED"])
