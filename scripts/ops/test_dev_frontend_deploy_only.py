@@ -166,22 +166,59 @@ class DeployOnlyBoundaryTests(unittest.TestCase):
                 self._run_exact_main_guard(textwrap.dedent(source))
 
     def _run_exact_main_guard(self, source):
+        """Exercise the real workflow shell with a fake, exact-ref Git binary."""
         with tempfile.TemporaryDirectory() as temp_dir:
             git = Path(temp_dir) / 'git'
-            git.write_text('#!/bin/sh\n'
-                           'if [ "$1" = "fetch" ]; then exit 0; fi\n'
-                           'if [ "$1" = "rev-parse" ]; then printf "%s\\n" "$FAKE_CURRENT_MAIN_SHA"; exit 0; fi\n'
-                           'exit 88\n')
+            git.write_text(
+                '#!/bin/sh\n'
+                'if [ "$1" = "fetch" ]; then exit 0; fi\n'
+                'if [ "$1" = "rev-parse" ]; then\n'
+                '  case "$2" in\n'
+                '    HEAD) printf "%s\\n" "$FAKE_HEAD_SHA";;\n'
+                '    refs/remotes/origin/main) printf "%s\\n" "$FAKE_CURRENT_MAIN_SHA";;\n'
+                '    *) exit 88;;\n'
+                '  esac\n'
+                '  exit 0\n'
+                'fi\n'
+                'exit 88\n',
+                encoding='utf-8',
+            )
             git.chmod(0o755)
-            for current, expected_success in ((SHA, True), ('b' * 40, False)):
-                with self.subTest(current=current):
-                    env = dict(os.environ, PATH=temp_dir + os.pathsep + os.environ['PATH'],
-                               SOURCE_SHA=SHA, FAKE_CURRENT_MAIN_SHA=current)
-                    outcome = subprocess.run(['bash', '-c', source], env=env,
-                                             capture_output=True, text=True, check=False)
-                    self.assertEqual(outcome.returncode == 0, expected_success)
+            stale = 'b' * 40
+            cases = [
+                ('fresh current main', SHA, SHA, SHA, 'refs/heads/main', 'workflow_dispatch', True),
+                ('stale main tip', stale, SHA, SHA, 'refs/heads/main', 'workflow_dispatch', False),
+                ('mismatched checkout', SHA, stale, SHA, 'refs/heads/main', 'workflow_dispatch', False),
+                ('mismatched workflow SHA', SHA, SHA, stale, 'refs/heads/main', 'workflow_dispatch', False),
+                ('foreign ref', SHA, SHA, SHA, 'refs/heads/rc/old', 'workflow_dispatch', False),
+            ]
+            # The initial guard enforces workflow_dispatch. The later upload
+            # guard runs downstream and independently enforces current-main identity.
+            if 'GITHUB_EVENT_NAME' in source:
+                cases.append(('non-dispatch event', SHA, SHA, SHA, 'refs/heads/main', 'push', False))
+            for label, main, checkout, workflow, ref, event, expected_success in cases:
+                with self.subTest(scenario=label):
+                    env = dict(
+                        os.environ,
+                        PATH=temp_dir + os.pathsep + os.environ['PATH'],
+                        SOURCE_SHA=SHA,
+                        WORKFLOW_SHA=workflow,
+                        GITHUB_SHA=workflow,
+                        GITHUB_REF=ref,
+                        GITHUB_EVENT_NAME=event,
+                        FAKE_HEAD_SHA=checkout,
+                        FAKE_CURRENT_MAIN_SHA=main,
+                    )
+                    outcome = subprocess.run(
+                        ['bash', '-euo', 'pipefail', '-c', source],
+                        env=env, capture_output=True, text=True, check=False,
+                    )
+                    self.assertEqual(
+                        outcome.returncode == 0, expected_success,
+                        f'{label}: {outcome.stdout}{outcome.stderr}',
+                    )
                     if not expected_success:
-                        self.assertIn('stale ancestor', outcome.stderr)
+                        self.assertIn('BLOCKED:', outcome.stderr)
 
     def run_identity(self, actual=SHA, origin=ORIGIN, status=200, response_url=None):
         body = step('Verify deployed DEV frontend identity without writes')

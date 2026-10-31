@@ -52,6 +52,10 @@ on:
         description: "DEV preview deployment and read-only checks only; no CORS changes, browser writes or fixture creation"
         type: boolean
         default: true
+      dev_aid_wizard_preview:
+        description: "Explicitly expose only the draft aid setup UI in isolated DEV; no production or certification claim"
+        type: boolean
+        default: false
       dev_source_sha:
         description: "Full accepted source SHA already deployed to DEV (preview only)"
         type: string
@@ -376,7 +380,7 @@ jobs:
     secrets: inherit
 
   dev-certification-preview:
-    if: github.event_name == 'workflow_dispatch' && inputs.dev_certification_preview == true
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.dev_certification_preview == true
     name: Existing SWA DEV certification preview
     runs-on: ubuntu-latest
     environment: dev
@@ -409,13 +413,18 @@ jobs:
       - name: Require exact current protected main
         env:
           SOURCE_SHA: ${{ inputs.dev_source_sha }}
+          WORKFLOW_SHA: ${{ github.sha }}
         shell: bash
         run: |
           set -euo pipefail
+          if [[ "$GITHUB_EVENT_NAME" != "workflow_dispatch" || "$GITHUB_REF" != "refs/heads/main" ]]; then
+            echo 'BLOCKED: DEV preview requires protected-main workflow dispatch' >&2
+            exit 1
+          fi
           git fetch --no-tags origin refs/heads/main:refs/remotes/origin/main
           CURRENT_MAIN_SHA="$(git rev-parse refs/remotes/origin/main)"
-          if [[ "$SOURCE_SHA" != "$CURRENT_MAIN_SHA" ]]; then
-            echo 'BLOCKED: DEV preview must use exact current protected main, not a stale ancestor' >&2
+          if [[ "$SOURCE_SHA" != "$WORKFLOW_SHA" || "$(git rev-parse HEAD)" != "$SOURCE_SHA" || "$SOURCE_SHA" != "$CURRENT_MAIN_SHA" ]]; then
+            echo 'BLOCKED: DEV preview must use exact dispatch SHA and current protected main' >&2
             exit 1
           fi
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
@@ -433,6 +442,7 @@ jobs:
           VITE_DEPLOY_TAG: dev-certification-preview
           VITE_SANDBOX_MODE: '1'
           VITE_DEMO_MODE: sandbox
+          VITE_DEV_AID_WIZARD_PREVIEW: ${{ inputs.dev_aid_wizard_preview && '1' || '0' }}
           VITE_LAUNCH_UI_TAKEOVER: '1'
         run: |
           set -euo pipefail
@@ -470,13 +480,14 @@ jobs:
       - name: Recheck exact main before preview upload
         env:
           SOURCE_SHA: ${{ inputs.dev_source_sha }}
+          WORKFLOW_SHA: ${{ github.sha }}
         shell: bash
         run: |
           set -euo pipefail
           git fetch --no-tags origin refs/heads/main:refs/remotes/origin/main
           CURRENT_MAIN_SHA="$(git rev-parse refs/remotes/origin/main)"
-          if [[ "$SOURCE_SHA" != "$CURRENT_MAIN_SHA" ]]; then
-            echo 'BLOCKED: DEV preview must use exact current protected main, not a stale ancestor' >&2
+          if [[ "$GITHUB_REF" != "refs/heads/main" || "$SOURCE_SHA" != "$WORKFLOW_SHA" || "$(git rev-parse HEAD)" != "$SOURCE_SHA" || "$SOURCE_SHA" != "$CURRENT_MAIN_SHA" ]]; then
+            echo 'BLOCKED: DEV preview upload requires exact current-main dispatch source' >&2
             exit 1
           fi
       - name: Deploy preview on existing SWA only
@@ -490,12 +501,27 @@ jobs:
           output_location: ''
           skip_app_build: true
           deployment_environment: dev-certification
+      - name: Recheck current main before DEV CORS appsettings
+        if: toJSON(inputs.dev_deploy_only) == 'false'
+        env:
+          SOURCE_SHA: ${{ inputs.dev_source_sha }}
+          WORKFLOW_SHA: ${{ github.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin refs/heads/main:refs/remotes/origin/main
+          if [[ "$GITHUB_REF" != "refs/heads/main" || "$SOURCE_SHA" != "$WORKFLOW_SHA" || "$(git rev-parse HEAD)" != "$SOURCE_SHA" || "$(git rev-parse refs/remotes/origin/main)" != "$SOURCE_SHA" ]]; then
+            echo 'BLOCKED: DEV CORS configuration requires current protected main' >&2
+            exit 1
+          fi
       - name: Configure exact owned DEV preview origin
         if: toJSON(inputs.dev_deploy_only) == 'false'
         env:
           PREVIEW_URL: ${{ steps.preview.outputs.static_web_app_url }}
           WORKFLOW_SHA: ${{ github.sha }}
+          SOURCE_SHA: ${{ inputs.dev_source_sha }}
         run: |
+          set -euo pipefail
           python3 - <<'PYCODE'
           import json, os, subprocess
           from urllib.parse import urlsplit
@@ -520,6 +546,11 @@ jobs:
           print('Exact owned preview origin requires update' if changed else 'Exact owned preview origin already configured')
           PYCODE
           if [ -f appsettings.dev-preview.json ]; then
+            git fetch --no-tags origin refs/heads/main:refs/remotes/origin/main
+            if [[ "$GITHUB_REF" != "refs/heads/main" || "$SOURCE_SHA" != "$WORKFLOW_SHA" || "$(git rev-parse HEAD)" != "$SOURCE_SHA" || "$(git rev-parse refs/remotes/origin/main)" != "$SOURCE_SHA" ]]; then
+              echo 'BLOCKED: current main moved before DEV CORS write' >&2
+              exit 1
+            fi
             git show "$WORKFLOW_SHA:tools/appsettings_allowlist.keys.json" > appsettings.preview.allowlist.json
             git show "$WORKFLOW_SHA:tools/appsettings_allowlist.keys.json.sha256" > appsettings.preview.allowlist.json.sha256
             pwsh -NoProfile -File tools/appsettings_allowlist_gate.ps1 -AppSettingsJsonPath appsettings.dev-preview.json -AllowedKeysFile appsettings.preview.allowlist.json -AllowedKeySet dev
@@ -594,6 +625,19 @@ jobs:
         if: toJSON(inputs.dev_deploy_only) == 'false'
         working-directory: frontend/dashboards
         run: npx playwright install chromium --with-deps
+      - name: Recheck current main before DEV browser certification
+        if: toJSON(inputs.dev_deploy_only) == 'false'
+        env:
+          SOURCE_SHA: ${{ inputs.dev_source_sha }}
+          WORKFLOW_SHA: ${{ github.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin refs/heads/main:refs/remotes/origin/main
+          if [[ "$GITHUB_REF" != "refs/heads/main" || "$SOURCE_SHA" != "$WORKFLOW_SHA" || "$(git rev-parse HEAD)" != "$SOURCE_SHA" || "$(git rev-parse refs/remotes/origin/main)" != "$SOURCE_SHA" ]]; then
+            echo 'BLOCKED: DEV browser certification requires current protected main' >&2
+            exit 1
+          fi
       - name: Execute existing live certification against DEV preview
         id: dev-certification-evidence
         if: toJSON(inputs.dev_deploy_only) == 'false' && steps.dev-evidence-exporter.outcome == 'success'
@@ -610,7 +654,14 @@ jobs:
           CROWN_EVIDENCE_RUNTIME_SHA: ${{ inputs.dev_source_sha }}
           CROWN_EVIDENCE_TEST_SHA: ${{ inputs.dev_source_sha }}
           CROWN_EVIDENCE_EXPORTER_SHA: ${{ github.sha }}
+          SOURCE_SHA: ${{ inputs.dev_source_sha }}
         run: |
+          set -euo pipefail
+          git fetch --no-tags origin refs/heads/main:refs/remotes/origin/main
+          if [[ "$GITHUB_REF" != "refs/heads/main" || "$SOURCE_SHA" != "$GITHUB_SHA" || "$(git rev-parse HEAD)" != "$SOURCE_SHA" || "$(git rev-parse refs/remotes/origin/main)" != "$SOURCE_SHA" ]]; then
+            echo 'BLOCKED: DEV browser run requires current protected main' >&2
+            exit 1
+          fi
           test -n "$CROWN_LIVE_FRONTEND_URL"
           node scripts/run-dev-browser-evidence.mjs --suite certification
       - name: Upload DEV execution evidence
@@ -635,7 +686,14 @@ jobs:
           CROWN_EVIDENCE_RUNTIME_SHA: ${{ inputs.dev_source_sha }}
           CROWN_EVIDENCE_TEST_SHA: ${{ github.sha }}
           CROWN_EVIDENCE_EXPORTER_SHA: ${{ github.sha }}
+          SOURCE_SHA: ${{ inputs.dev_source_sha }}
         run: |
+          set -euo pipefail
+          git fetch --no-tags origin refs/heads/main:refs/remotes/origin/main
+          if [[ "$GITHUB_REF" != "refs/heads/main" || "$SOURCE_SHA" != "$GITHUB_SHA" || "$(git rev-parse HEAD)" != "$SOURCE_SHA" || "$(git rev-parse refs/remotes/origin/main)" != "$SOURCE_SHA" ]]; then
+            echo 'BLOCKED: DEV buyer test requires current protected main' >&2
+            exit 1
+          fi
           git show "$CROWN_REHEARSAL_TEST_SHA:frontend/dashboards/tests/certification/buyer-sandbox-browser-authority.spec.ts" > tests/certification/buyer-sandbox-browser-authority.spec.ts
           node scripts/run-dev-browser-evidence.mjs --suite buyer
       - name: Upload DEV buyer persistence evidence
@@ -662,11 +720,22 @@ jobs:
           SOURCE_SHA: ${{ inputs.dev_source_sha }}
           CROWN_DEV_TENANT_FIXTURE: ${{ runner.temp }}/crown-dev-tenant-fixtures.json
         run: |
+          set -euo pipefail
+          git fetch --no-tags origin refs/heads/main:refs/remotes/origin/main
+          if [[ "$GITHUB_REF" != "refs/heads/main" || "$SOURCE_SHA" != "$WORKFLOW_SHA" || "$(git rev-parse HEAD)" != "$SOURCE_SHA" || "$(git rev-parse refs/remotes/origin/main)" != "$SOURCE_SHA" ]]; then
+            echo 'BLOCKED: DEV tenant preparation requires current protected main' >&2
+            exit 1
+          fi
           git show "$WORKFLOW_SHA:scripts/release/prepare_dev_certification_tenants.py" > /tmp/prepare-dev-tenants.py
           git show "$WORKFLOW_SHA:scripts/release/test_prepare_dev_certification_tenants.py" > /tmp/test_prepare_dev_certification_tenants.py
           cp /tmp/prepare-dev-tenants.py /tmp/prepare_dev_certification_tenants.py
           python -m unittest discover -s /tmp -p test_prepare_dev_certification_tenants.py -v
           git show "$WORKFLOW_SHA:frontend/dashboards/tests/certification/production-tenant-isolation.spec.ts" > frontend/dashboards/tests/certification/production-tenant-isolation.spec.ts
+          git fetch --no-tags origin refs/heads/main:refs/remotes/origin/main
+          if [[ "$GITHUB_REF" != "refs/heads/main" || "$SOURCE_SHA" != "$WORKFLOW_SHA" || "$(git rev-parse HEAD)" != "$SOURCE_SHA" || "$(git rev-parse refs/remotes/origin/main)" != "$SOURCE_SHA" ]]; then
+            echo 'BLOCKED: current main moved before DEV tenant database mutation' >&2
+            exit 1
+          fi
           python - <<'PYCODE'
           import contextlib, io, json, os, runpy, subprocess, sys, urllib.request
           from urllib.parse import urlsplit
@@ -716,7 +785,15 @@ jobs:
           CROWN_EVIDENCE_RUNTIME_SHA: ${{ inputs.dev_source_sha }}
           CROWN_EVIDENCE_TEST_SHA: ${{ github.sha }}
           CROWN_EVIDENCE_EXPORTER_SHA: ${{ github.sha }}
-        run: node scripts/run-dev-browser-evidence.mjs --suite tenant-isolation
+          SOURCE_SHA: ${{ inputs.dev_source_sha }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin refs/heads/main:refs/remotes/origin/main
+          if [[ "$GITHUB_REF" != "refs/heads/main" || "$SOURCE_SHA" != "$GITHUB_SHA" || "$(git rev-parse HEAD)" != "$SOURCE_SHA" || "$(git rev-parse refs/remotes/origin/main)" != "$SOURCE_SHA" ]]; then
+            echo 'BLOCKED: DEV tenant browser run requires current protected main' >&2
+            exit 1
+          fi
+          node scripts/run-dev-browser-evidence.mjs --suite tenant-isolation
       - name: Upload two-tenant execution results
         if: always() && toJSON(inputs.dev_deploy_only) == 'false' && steps.preview.outcome == 'success' && steps.dev-tenant-evidence.outputs.evidence_valid == 'true'
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9

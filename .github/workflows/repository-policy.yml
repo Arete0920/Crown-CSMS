@@ -177,6 +177,7 @@ jobs:
         run: |
           python tools/verify_workflow_policy.py
           python tools/tests/test_workflow_policy.py
+          python tools/tests/test_dev_preview_workflow_authority.py
 
       - name: Enforce CI authoring contracts
         run: |
