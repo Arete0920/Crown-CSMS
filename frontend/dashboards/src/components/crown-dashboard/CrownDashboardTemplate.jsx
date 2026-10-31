@@ -54,7 +54,7 @@ function getAlertTone(level) {
   return 'warn';
 }
 
-function getDashboardDataState(source, payload, error, loading) {
+function getDashboardDataState(source, payload, error, loading, dashboardKey) {
   const servedFrom = String(payload?.meta?.served_from || '').toLowerCase();
 
   if (loading) return 'loading';
@@ -69,7 +69,14 @@ function getDashboardDataState(source, payload, error, loading) {
     return (original === 'sample' || seedSource === 'sample-derived-snapshot') ? 'sample' : 'fallback';
   }
   if (servedFrom === 'fallback' || servedFrom === 'stale_snapshot') return 'fallback';
-  if (source === 'live') return 'live';
+  if (source === 'live') {
+    // An HTTP 200 is not evidence that aid totals came from a live data service.
+    // Keep other dashboard source semantics unchanged.
+    if (dashboardKey === 'financialAid' && (
+      !['live', 'live_db'].includes(servedFrom) || payload?.meta?.live_certified === false
+    )) return 'unavailable';
+    return 'live';
+  }
   if (source === 'fallback') return 'fallback';
   return source || 'unavailable';
 }
@@ -157,7 +164,7 @@ function buildLiveDashboardConfig(config, payload, endpointConfig, loading, erro
     return config;
   }
 
-  const dataState = getDashboardDataState(source, payload, error, loading);
+  const dataState = getDashboardDataState(source, payload, error, loading, config.key);
   const isLiveParent = dataState === 'live' && config.key === 'parent';
   const sourceLabel = getDashboardSourceLabel(dataState, endpointConfig?.endpoint, payload);
   const fallbackMetrics = Array.isArray(config.metrics) ? config.metrics : [];

@@ -126,6 +126,35 @@ describe('Financial Aid dashboard runtime data truth', () => {
     expect(screen.getByTestId('dashboard-error')).toBeTruthy();
   });
 
+  it.each([
+    ['missing provenance', {}],
+    ['unknown provenance', { served_from: 'unknown' }],
+    ['explicit noncertification', { served_from: 'live', live_certified: false }],
+    ['explicit noncertification for live_db', { served_from: 'live_db', live_certified: false }],
+  ])('refuses to certify %s as live financial-aid figures', (_case, meta) => {
+    mockUseDashboardData.mockReturnValue({
+      data: {
+        metrics: [{ label: 'Aid Applications', value: '112' }],
+        queue: ['Approve payment batch'],
+        alerts: [{ title: 'Approval due', level: 'High' }],
+        meta,
+      },
+      error: null,
+      loading: false,
+      source: 'live',
+      config: { endpoint: '/api/v1/dashboards/financial-aid/summary' },
+    });
+    renderFinancialAid();
+    expect(captured.truth[0].dataState).toBe('unavailable');
+    expect(captured.truth[0].sourceLabel).toContain('unavailable');
+    expect(captured.metrics).toEqual([]);
+    expect(captured.activities[0].items).toEqual([]);
+    expect(captured.status[0].statuses.map((entry) => entry.label)).toEqual([
+      'Dashboard Data State', 'Dashboard Data Source',
+    ]);
+    expect(screen.getByTestId('dashboard-error')).toBeTruthy();
+  });
+
   it('labels an API-served sample-derived snapshot as sample, never live', () => {
     mockUseDashboardData.mockReturnValue({
       data: {
