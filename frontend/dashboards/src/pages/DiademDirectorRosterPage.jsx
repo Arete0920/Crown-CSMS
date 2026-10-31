@@ -5,7 +5,12 @@ import { crownApiClient } from "../api/client.js";
 
 const BASE = "/api/v1/aftercare/daycare";
 const newRequestKey = () => crypto.randomUUID();
-const friendlyError = (e) => e?.response?.data?.detail || e?.message || "Operation rejected. No custody transfer was recorded.";
+function friendlyError(e) {
+  const detail = e?.response?.data?.detail;
+  if (typeof detail === "string" && detail.trim()) return detail;
+  if (e?.response?.status >= 400) return "The server rejected the request. Refresh and verify the custody roster.";
+  return "Server outcome could not be confirmed. Refresh and verify custody status before retrying.";
+}
 
 export default function DiademDirectorRosterPage() {
   const [sites, setSites] = useState(null);
@@ -19,6 +24,7 @@ export default function DiademDirectorRosterPage() {
   const [notice, setNotice] = useState("");
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [writeStateUnknown, setWriteStateUnknown] = useState(false);
   const [refresh, setRefresh] = useState(0);
 
   useEffect(() => {
@@ -53,12 +59,13 @@ export default function DiademDirectorRosterPage() {
         setCandidates(scheduled.value.data);
       } else problems.push("Scheduled intake unavailable or unauthorized.");
       if (problems.length) setError(problems.join(" "));
+      else setWriteStateUnknown(false);
     }).finally(() => { if (live) setLoading(false); });
     return () => { live = false; };
   }, [siteId, sites]);
 
   async function checkin(row) {
-    if (busy || !siteId) return;
+    if (busy || writeStateUnknown || !siteId) return;
     setBusy(true); setError(""); setNotice("");
     try {
       await crownApiClient.post(`${BASE}/attendance/checkin/`, {
@@ -67,7 +74,10 @@ export default function DiademDirectorRosterPage() {
       });
       setNotice("Check-in was recorded. Refreshing authoritative custody roster.");
       setRefresh((n) => n + 1);
-    } catch (e) { setError(friendlyError(e)); }
+    } catch (e) {
+      setWriteStateUnknown(true);
+      setError("Check-in outcome needs verification. Refresh the live custody roster before any retry. " + friendlyError(e));
+    }
     finally { setBusy(false); }
   }
 
@@ -85,7 +95,7 @@ export default function DiademDirectorRosterPage() {
   }
 
   async function releaseChild() {
-    if (!pickup?.selected || !identityMethod || !attested || busy) return;
+    if (!pickup?.selected || !identityMethod || !attested || busy || writeStateUnknown) return;
     setBusy(true); setError(""); setNotice("");
     try {
       await crownApiClient.post(`${BASE}/attendance/release/`, {
@@ -97,7 +107,10 @@ export default function DiademDirectorRosterPage() {
       setPickup(null); setIdentityMethod(""); setAttested(false);
       setNotice("Verified release recorded. Reloading custody roster.");
       setRefresh((n) => n + 1);
-    } catch (e) { setError(friendlyError(e)); }
+    } catch (e) {
+      setWriteStateUnknown(true);
+      setError("Release outcome NOT CONFIRMED. Verify the roster and child's actual status before any retry. " + friendlyError(e));
+    }
     finally { setBusy(false); }
   }
 
@@ -114,6 +127,7 @@ export default function DiademDirectorRosterPage() {
         {loading && <p role="status">Loading authoritative records…</p>}
         {error && <p role="alert">{error}</p>}
         {notice && <p role="status">{notice}</p>}
+        {writeStateUnknown && <p role="alert">The previous custody write is unconfirmed. Further custody actions remain disabled until a successful roster refresh.</p>}
         {!loading && sites?.length === 0 && <p>No authorized childcare centers available.</p>}
       </DashboardSection>
       <DashboardSection title="Currently under staff supervision">
@@ -125,7 +139,7 @@ export default function DiademDirectorRosterPage() {
           </tr></thead><tbody>
             {roster.rows.map((row) => <tr key={row.attendance_id}>
               <td>{row.child_name}</td><td>{row.room_name}</td><td>{row.program_code}</td>
-              <td>{row.checked_in_at}</td><td><button type="button" disabled={busy}
+              <td>{row.checked_in_at}</td><td><button type="button" disabled={busy || writeStateUnknown}
                 onClick={() => selectPickup(row)}>Verify authorized pickup</button></td>
             </tr>)}
             {!roster.rows.length && <tr><td colSpan={5}>No open custody records.</td></tr>}
@@ -139,13 +153,13 @@ export default function DiademDirectorRosterPage() {
         </tr></thead><tbody>
           {candidates.rows.map((row) => <tr key={row.enrollment_id}>
             <td>{row.child_name}</td><td>{row.room_name}</td><td>{row.program_code}</td>
-            <td><button type="button" disabled={busy} onClick={() => checkin(row)}>Record check-in</button></td>
+            <td><button type="button" disabled={busy || writeStateUnknown} onClick={() => checkin(row)}>Record check-in</button></td>
           </tr>)}
           {!candidates.rows.length && <tr><td colSpan={4}>No authorized scheduled arrivals returned.</td></tr>}
         </tbody></table></div> : <p>Scheduled intake unavailable or loading.</p>}
       </DashboardSection>
       {pickup && <DashboardSection title="Verified physical custody handoff">
-        <div role="dialog" aria-modal="true" aria-label="Verify child release">
+        <div role="group" aria-label="Verify child release">
           <h3>{pickup.row.child_name}</h3>
           <p>Verify the actual recipient in person. Selecting a name is not proof of identity or permission to release a child.</p>
           <label htmlFor="diadem-recipient">Authorized pickup recipient</label>
@@ -168,7 +182,7 @@ export default function DiademDirectorRosterPage() {
             I personally verified this individual and am physically transferring custody to them.
           </label>
           <p>Release is final and auditable. Current authority will be rechecked by the server.</p>
-          <button type="button" disabled={busy || !pickup.selected || !identityMethod || !attested}
+          <button type="button" disabled={busy || writeStateUnknown || !pickup.selected || !identityMethod || !attested}
             onClick={releaseChild}>Record verified release</button>{" "}
           <button type="button" disabled={busy} onClick={() => setPickup(null)}>Cancel</button>
         </div>
