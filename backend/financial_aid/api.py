@@ -196,7 +196,7 @@ def financial_aid_metrics(request: HttpRequest):
                 "applications_in_review": in_review_count,
                 "applications_decided": decided_count,
                 "decisions_overdue": overdue_count,
-                "budget_awarded": str(budget_awarded),
+                "budget_awarded": str(budget_awarded.quantize(Decimal("0.01"))),
                 "avg_award": avg_award,
                 "needs_buckets": needs_buckets,
                 "alerts": alerts,

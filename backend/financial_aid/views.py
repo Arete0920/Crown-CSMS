@@ -74,7 +74,7 @@ class FinancialAidSummaryView(APIView):
             )
             awards_by_bucket[key] = {
                 "total": bucket_agg["count"] or 0,
-                "amount": str(bucket_agg["amount"] or Decimal("0.00")),
+                "amount": str((bucket_agg["amount"] or Decimal("0.00")).quantize(Decimal("0.01"))),
             }
 
         # Build response contract (frozen)
@@ -91,8 +91,8 @@ class FinancialAidSummaryView(APIView):
             },
             "awards": {
                 "total": awards_total_count,
-                "total_amount": str(awards_total_amount),
-                "avg_amount": str(avg_award_amount),
+                "total_amount": str(awards_total_amount.quantize(Decimal("0.01"))),
+                "avg_amount": str(avg_award_amount.quantize(Decimal("0.01"))),
                 "by_bucket": awards_by_bucket,
             },
         }
