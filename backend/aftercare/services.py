@@ -301,16 +301,27 @@ def record_incident(
 
 @transaction.atomic
 def run_monthly_flat_billing(school_id, year: int, month: int) -> dict:
-    if AftercareMonthlyChargeRun.objects.filter(school_fk_id=school_id, year=year, month=month).exists():
-        return {"status": "already_ran"}
+    """Bill both care sessions once per school/month under one transaction.
+
+    A canonical school row is locked *before* checking the month guard. Locking
+    the guard row alone cannot serialize the first run because it does not exist.
+    """
+    from core.models import School
 
     month_start = date(year, month, 1)
     next_month = 1 if month == 12 else month + 1
     next_year = year + 1 if month == 12 else year
     month_end = date(next_year, next_month, 1)
-    enrollments = (
+
+    school = School.objects.select_for_update().filter(pk=school_id, is_active=True).first()
+    if school is None:
+        raise ValueError("An active school is required for extended-care billing.")
+    if AftercareMonthlyChargeRun.objects.filter(school_fk=school, year=year, month=month).exists():
+        return {"status": "already_ran"}
+
+    enrollments = list(
         AftercareEnrollment.objects.filter(
-            school_fk_id=school_id,
+            school_fk=school,
             is_active=True,
             billing_model="FLAT_MONTHLY",
             start_date__lt=month_end,
@@ -318,14 +329,25 @@ def run_monthly_flat_billing(school_id, year: int, month: int) -> dict:
         )
         .filter(Q(end_date__isnull=True) | Q(end_date__gte=month_start))
         .select_related("student_fk")
+        .order_by("student_fk_id", "care_session", "start_date", "pk")
     )
+
+    # Legacy/imported overlapping enrollments could otherwise bill the same
+    # child and session twice. Fail before any finance obligation is created;
+    # an AM and a PM enrollment are two legitimately distinct services.
+    seen = set()
+    for enrollment in enrollments:
+        key = (enrollment.student_fk_id, enrollment.care_session)
+        if key in seen:
+            raise ValueError("Duplicate monthly enrollment for student and care session.")
+        seen.add(key)
 
     charged = 0
     for enrollment in enrollments:
         if not enrollment.monthly_rate:
             continue
         create_ledger_charge_aftercare(
-            school_id=school_id,
+            school_id=school.id,
             student_id=enrollment.student_fk_id,
             amount_cents=to_cents(enrollment.monthly_rate),
             description=f"Extended Care {enrollment.care_session} Monthly ({year}-{month:02d})",
@@ -333,7 +355,7 @@ def run_monthly_flat_billing(school_id, year: int, month: int) -> dict:
         charged += 1
 
     AftercareMonthlyChargeRun.objects.create(
-        school_fk_id=school_id,
+        school_fk=school,
         year=year,
         month=month,
         notes=f"charged={charged}",
