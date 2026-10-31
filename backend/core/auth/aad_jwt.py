@@ -9,14 +9,12 @@ from __future__ import annotations
 import json
 import logging
 import time
+import uuid
 
 import requests
 from django.conf import settings
-from django.contrib.auth import get_user_model
 
 logger = logging.getLogger(__name__)
-
-User = get_user_model()
 
 _JWKS_CACHE: dict = {"ts": 0, "jwks": None}
 
@@ -73,7 +71,7 @@ def decode_and_validate_bearer(token: str) -> dict:
 
     issuer = f"https://login.microsoftonline.com/{tenant}/v2.0"
 
-    return jwt.decode(
+    claims = jwt.decode(
         token,
         key=key,
         algorithms=["RS256"],
@@ -81,31 +79,55 @@ def decode_and_validate_bearer(token: str) -> dict:
         issuer=issuer,
         options={"verify_exp": True, "verify_aud": True},
     )
+    token_tenant = str(claims.get("tid") or "").strip().lower()
+    if token_tenant != tenant.lower():
+        raise jwt.InvalidTokenError("Microsoft token tenant mismatch")
+    return claims
 
 
-def get_or_create_user_from_claims(claims: dict):
-    """Map Entra claims to a Django user account."""
-    email = (
-        claims.get("preferred_username")
-        or claims.get("upn")
-        or claims.get("email")
+def _require_uuid_claim(claims: dict, name: str) -> uuid.UUID:
+    raw = str(claims.get(name) or "").strip()
+    if not raw:
+        raise ValueError(f"Microsoft token missing required {name} claim")
+    try:
+        return uuid.UUID(raw)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"Microsoft token has invalid {name} claim") from exc
+
+
+def get_user_from_claims(claims: dict):
+    """Resolve a pre-provisioned CROWN user from immutable Entra tid + oid."""
+    from integrations.models import MicrosoftIdentityLink
+
+    tenant_id = _require_uuid_claim(claims, "tid")
+    object_id = _require_uuid_claim(claims, "oid")
+
+    links = list(
+        MicrosoftIdentityLink.objects.filter(
+            binding__tenant_id=tenant_id,
+            binding__is_active=True,
+            object_id=object_id,
+            is_active=True,
+        )
+        .select_related("binding", "binding__school", "user")
+        .order_by("binding__school_id", "user_id")
     )
-    if not email:
-        raise ValueError("No email/username claim in Microsoft token")
+    if not links:
+        raise ValueError("Microsoft identity is not provisioned in CROWN")
 
-    roles: list[str] = claims.get("roles") or []
-    role = roles[0].lower() if roles else "staff"
+    user_ids = {link.user_id for link in links}
+    if len(user_ids) != 1:
+        raise ValueError("Microsoft identity binding is ambiguous across CROWN schools")
 
-    user, created = User.objects.get_or_create(
-        email=email,
-        defaults={
-            "username": email,
-            "role": role,
-        },
-    )
+    user = links[0].user
+    if not getattr(user, "is_active", False):
+        raise ValueError("Microsoft identity is linked to an inactive CROWN user")
 
-    if not created and roles and getattr(user, "role", None) != role:
-        user.role = role
-        user.save(update_fields=["role"])
+    bound_school_ids = {link.binding.school_id for link in links}
+    direct_school_id = getattr(user, "school_id", None)
+    if direct_school_id in bound_school_ids:
+        return user
+    if user.roles.filter(school_id__in=bound_school_ids).exists():
+        return user
 
-    return user
+    raise ValueError("Microsoft identity link has no active CROWN school membership")
