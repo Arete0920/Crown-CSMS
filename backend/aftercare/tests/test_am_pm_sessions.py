@@ -101,8 +101,29 @@ def test_am_checkout_denied_and_pm_legacy_default_preserved():
         checkout_student(school.id, child.id, pickup_contact_id=1,
                          pickup_name_freeform="", pickup_verified=True,
                          when=at(8, 15), care_session="AM", verified_by=receiver)
+    # An unclosed AM session cannot coexist with a new PM custody record.
+    with pytest.raises(ValueError, match="supervisor reconciliation"):
+        checkin_student(school.id, child.id, when=at(15, 0))
+    assert not AftercareAttendance.objects.filter(
+        school_fk=school, student_fk=child, care_session="PM",
+    ).exists()
+    handoff_student_to_school(school.id, child.id, receiver, when=at(8, 25))
     pm = checkin_student(school.id, child.id, when=at(15, 0))
     assert pm.care_session == "PM"
+
+
+def test_prior_day_open_pm_blocks_next_day_am_without_duplicate_custody():
+    school, _household, child, _receiver = setup_family()
+    checkin_student(school.id, child.id, when=at(15, 0), care_session="PM")
+    AftercareEnrollment.objects.filter(
+        school_fk=school, student_fk=child, care_session="AM",
+    ).update(days_of_week=["THU"])
+    next_morning = timezone.make_aware(datetime(2025, 9, 4, 7, 15))
+    with pytest.raises(ValueError, match="supervisor reconciliation"):
+        checkin_student(school.id, child.id, when=next_morning, care_session="AM")
+    assert not AftercareAttendance.objects.filter(
+        school_fk=school, student_fk=child, care_session="AM",
+    ).exists()
 
 
 def test_absent_am_does_not_block_pm():

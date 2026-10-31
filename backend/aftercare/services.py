@@ -141,8 +141,9 @@ def checkin_student(school_id, student_id, when: datetime | None = None, note: s
         raise ValueError("Invalid care session.")
     when = when or timezone.now()
     attendance_day = school_local_date(school_id, when)
-    # Serialize admissions for this student across days so yesterday's still-
-    # open custody cannot be hidden by a new admission into the same session.
+    # Serialize all AM/PM admissions for the same student. An unclosed
+    # session in either program, including one from an earlier school-local
+    # day, must be reconciled before another program can take custody.
     student = Student.objects.select_for_update().filter(
         pk=student_id, school_id=school_id, is_active=True,
     ).first()
@@ -151,8 +152,8 @@ def checkin_student(school_id, student_id, when: datetime | None = None, note: s
     _active_enrollment(school_id=school_id, student=student, on_date=attendance_day, care_session=care_session)
     if AftercareAttendance.objects.select_for_update().filter(
         school_fk_id=school_id, student_fk=student,
-        care_session=care_session, checkout_time__isnull=True,
-    ).exclude(date=attendance_day).exists():
+        checkout_time__isnull=True,
+    ).exclude(date=attendance_day, care_session=care_session).exists():
         raise ValueError("An earlier care session remains open; supervisor reconciliation required.")
     attendance, created = AftercareAttendance.objects.select_for_update().get_or_create(
         school_fk_id=school_id,
