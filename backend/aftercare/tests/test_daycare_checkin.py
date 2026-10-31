@@ -148,3 +148,58 @@ def test_adjacent_staff_room_assignment_allowed():
         verified_by=d["director"],verified_at=timezone.now()-timedelta(minutes=5),is_active=True,
     )
     assert later.pk
+
+def test_existing_shift_cannot_be_reassigned_to_other_staff_or_room():
+    from core.models import UserAccount
+    from django.core.exceptions import ValidationError
+    d=setup()
+    other=UserAccount.objects.create_user(
+        username="another_daycare_staff",password="synthetic",school=d["school"])
+    coverage=d["coverage"]
+    coverage.staff=other
+    with pytest.raises(ValidationError,match="identity is immutable"):
+        coverage.save()
+    coverage.refresh_from_db()
+    assert coverage.staff_id==d["actor"].id
+    another_room=DaycareRoom.objects.create(
+        school=d["school"],site=d["site"],code="extra-room",name="Extra Room",
+        licensed_capacity=4,max_children_per_staff=4,policy_source="Synthetic approved policy",
+        policy_verified_by=d["director"],policy_verified_at=timezone.now()-timedelta(minutes=5),
+        is_active=True)
+    coverage.room=another_room
+    with pytest.raises(ValidationError,match="identity is immutable"):
+        coverage.save()
+    coverage.refresh_from_db()
+    assert coverage.room_id==d["room"].id
+
+def test_revoking_staff_coverage_keeps_staff_identity():
+    d=setup()
+    coverage=d["coverage"]
+    coverage.is_active=False
+    coverage.save()
+    coverage.refresh_from_db()
+    assert coverage.staff_id==d["actor"].id
+    assert coverage.is_active is False
+    with pytest.raises(CheckinRefused):
+        check(d)
+
+def test_guardian_revocation_before_checkin_denies_entry():
+    d=setup()
+    d["authority"].is_active=False
+    d["authority"].save()
+    with pytest.raises(CheckinRefused) as error:
+        check(d)
+    assert error.value.code=="verified_pickup_authority_required"
+    assert not DaycareAttendance.objects.exists()
+    assert not AuditLog.objects.filter(action="diadem.daycare.checkin").exists()
+
+def test_unverified_guardian_cannot_be_the_only_pickup_clearance():
+    d=setup()
+    d["authority"].is_active=False
+    d["authority"].verified_by=None
+    d["authority"].verified_at=None
+    d["authority"].save()
+    with pytest.raises(CheckinRefused) as error:
+        check(d)
+    assert error.value.code=="verified_pickup_authority_required"
+    assert not DaycareAttendance.objects.exists()

@@ -84,13 +84,27 @@ def checkin_child(*,school_id:UUID,actor_id:UUID,site_id:UUID,room_id:UUID,
             if len(enrollments)!=1:
                 raise CheckinRefused("eligible_enrollment_required")
             enrollment=enrollments[0]
-            verified_pickup=DaycareGuardianAuthority.objects.filter(
-                school=school,child=child,guardian__school_id=school_id,
-                guardian__household_id=child.household_id,verified_by__school_id=school_id,
-                verified_by__is_active=True,verified_at__isnull=False,verified_at__lte=at,
-                is_active=True,can_pickup=True,custody_status="CLEAR"
-            ).filter(Q(effective_from__isnull=True)|Q(effective_from__lte=at),
-                     Q(effective_until__isnull=True)|Q(effective_until__gt=at)).exists()
+            # A plain .exists() allows an authorization to be revoked while
+            # admission proceeds. Lock each existing per-child authority row
+            # before evaluating current clearance, in canonical UUID order.
+            # No joins are used by the locking query (nullable approvers).
+            grants=list(
+                DaycareGuardianAuthority.objects.select_for_update()
+                .filter(school=school,child=child).order_by("pk")
+            )
+            verified_pickup=any(
+                grant.is_active and grant.can_pickup and grant.custody_status=="CLEAR"
+                and grant.guardian_id is not None
+                and grant.guardian.school_id==school_id
+                and grant.guardian.household_id==child.household_id
+                and grant.verified_by_id is not None
+                and grant.verified_by.school_id==school_id
+                and grant.verified_by.is_active
+                and grant.verified_at is not None and grant.verified_at<=at
+                and (grant.effective_from is None or grant.effective_from<=at)
+                and (grant.effective_until is None or grant.effective_until>at)
+                for grant in grants
+            )
             if not verified_pickup:
                 raise CheckinRefused("verified_pickup_authority_required")
             # Coverage writes lock staff accounts. Lock candidate accounts here
