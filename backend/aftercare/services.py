@@ -196,6 +196,7 @@ def checkout_student(
     pickup_verified: bool,
     when: datetime | None = None,
     care_session: str = "PM",
+    verified_by=None,
 ) -> AftercareAttendance:
     if care_session != "PM":
         raise ValueError("Morning care requires a verified school handoff, not pickup checkout.")
@@ -205,6 +206,20 @@ def checkout_student(
         raise ValueError("Pickup identity must be verified before checkout.")
     if pickup_contact_id is None:
         raise ValueError("An active authorized pickup contact is required before checkout.")
+
+    # The pickup attestation must identify a current authorized school actor.
+    # Validate before attendance or finance mutation, not after the release.
+    from core.models import School
+    from core.permissions import user_has_permission
+
+    verifier_error = "An active school-authorized pickup verifier is required."
+    if not verified_by or not getattr(verified_by, "is_authenticated", False):
+        raise ValueError(verifier_error)
+    if not getattr(verified_by, "is_active", False) or getattr(verified_by, "school_id", None) != school_id:
+        raise ValueError(verifier_error)
+    school = School.objects.filter(pk=school_id, is_active=True).first()
+    if school is None or not user_has_permission(verified_by, "extended_care.edit", school=school):
+        raise ValueError(verifier_error)
 
     when = when or timezone.now()
     attendance_day = school_local_date(school_id, when)
@@ -239,6 +254,7 @@ def checkout_student(
     # Record the canonical authorized contact; never trust a freeform name.
     attendance.pickup_name_freeform = pickup_contact.name
     attendance.pickup_verified = True
+    attendance.pickup_verified_by = verified_by
     # Late cutoff follows the original care-session date, not midnight rollover.
     fee = compute_late_fee(cfg, attendance.date, when)
     attendance.late_minutes = fee.late_minutes

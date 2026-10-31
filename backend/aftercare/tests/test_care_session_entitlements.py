@@ -133,7 +133,7 @@ def test_dual_entitlements_share_a_child_without_requiring_diadem():
 
 
 def test_expired_pm_cannot_start_new_custody_but_must_allow_authorized_pickup():
-    school, _household, child, _staff, client = family()
+    school, _household, child, operator, client = family()
     module = grant(school, "PM")
     enrollment(school, child, "PM")
     when = timezone.now()
@@ -164,6 +164,7 @@ def test_expired_pm_cannot_start_new_custody_but_must_allow_authorized_pickup():
     assert checked.status_code == 200, checked.data
     record.refresh_from_db()
     assert record.pickup_verified and record.checkout_time is not None
+    assert record.pickup_verified_by_id == operator.pk
     assert client.get(API + "roster/today/?care_session=PM").status_code == 403
 
 

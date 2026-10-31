@@ -152,11 +152,13 @@ class TestModule026AttendanceAndBilling(TestCase):
                                              late_fee_per_10_min="10.00", late_fee_cap="100.00")
         checkin_student(self.school.id, self.student.id, when=self.when)
         contact = AftercarePickupContact.objects.create(school_fk=self.school, student_fk=self.student, name="Parent")
+        verifier = _user(self.school, grants=("extended_care.edit",))
         attendance = checkout_student(self.school.id, self.student.id, pickup_contact_id=contact.id,
-                     pickup_name_freeform="Parent", pickup_verified=True,
+                     pickup_name_freeform="Parent", pickup_verified=True, verified_by=verifier,
                      when=timezone.make_aware(datetime(2026, 6, 15, 18, 31)))
         self.assertEqual(attendance.late_minutes, 31)
         self.assertEqual(attendance.late_fee_cents, 4000)
+        self.assertEqual(attendance.pickup_verified_by_id, verifier.id)
         self.assertEqual(attendance.late_fee_charge_id, "obligation-9001")
         self.assertEqual(charge.call_args.kwargs["student_id"], self.student.id)
 

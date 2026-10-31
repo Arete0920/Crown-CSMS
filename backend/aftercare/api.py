@@ -396,6 +396,7 @@ def checkout(request):
             pickup_name_freeform=ser.validated_data.get("pickup_name_freeform", ""),
             pickup_verified=ser.validated_data["pickup_verified"],
             care_session=ser.validated_data["care_session"],
+            verified_by=request.user,
         )
     except (ValueError, AftercareAttendance.DoesNotExist) as exc:
         return _bad_request(exc)
