@@ -254,6 +254,28 @@ def enforce_tenant_context(request) -> None:
         .only("id", "name", "is_active")
         .first()
     )
+    # Only an already-admitted child's custody release may continue for an
+    # inactive school. Never open admission, rosters, billing, or general APIs.
+    # Keep the canonical tenant and override checks above this narrow case;
+    # only an authenticated school-bound principal may reach the view, which
+    # independently requires explicit Daycare release RBAC and guardian proof.
+    is_daycare_custody_exit = (
+        request.method == "POST"
+        and normalized_path == "/api/v1/aftercare/daycare/attendance/release"
+    )
+    if (
+        school is None
+        and is_daycare_custody_exit
+        and context.principal_school_id is not None
+        and context.principal_school_id == context.school_id
+        and not context.override_requested
+        and context.actor_type != "anonymous"
+    ):
+        school = (
+            School.objects.filter(pk=context.school_id)
+            .only("id", "name", "is_active")
+            .first()
+        )
     if school is None:
         _record_tenant_decision(request, outcome="denied", reason="tenant_inactive_or_unknown")
         raise _tenant_context_error(
