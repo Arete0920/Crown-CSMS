@@ -161,9 +161,9 @@ function buildLiveDashboardConfig(config, payload, endpointConfig, loading, erro
   const payloadMetrics = Array.isArray(payload?.metrics) ? payload.metrics : [];
   // Never present cached Financial Aid values during loading as if they describe the request in flight.
   // Other dashboards retain their existing disclosed loading/fallback behavior.
-  const suppressMetrics = dataState === 'error' || dataState === 'unavailable'
+  const suppressStaleOperationalData = dataState === 'error' || dataState === 'unavailable'
     || (config.key === 'financialAid' && dataState === 'loading');
-  const metricInputs = suppressMetrics
+  const metricInputs = suppressStaleOperationalData
     ? [] // Never show stale operational metrics in an unavailable or sensitive loading state.
     : (dataState === 'live' ? payloadMetrics : (payloadMetrics.length > 0 ? payloadMetrics : fallbackMetrics));
   const metrics = metricInputs.map((item, index) => ({
@@ -202,12 +202,13 @@ function buildLiveDashboardConfig(config, payload, endpointConfig, loading, erro
     lastSyncLabel: config.lastSyncLabel || getDefaultLastSyncLabel(dataState),
     note: getDashboardNote(dataState, sourceLabel),
     metrics,
-    priorities: buildPriorityItems(payload?.queue, dataState, sourceLabel),
-    alerts: buildAlertItems(payload?.alerts, sourceLabel),
+    // Failed requests and sensitive loading states must not reuse cached tasks or alerts.
+    priorities: buildPriorityItems(suppressStaleOperationalData ? [] : payload?.queue, dataState, sourceLabel),
+    alerts: buildAlertItems(suppressStaleOperationalData ? [] : payload?.alerts, sourceLabel),
     statuses: [
       { label: 'Dashboard Data State', state: dataState },
       { label: 'Dashboard Data Source', state: sourceLabel },
-      ...(!isLiveParent && Array.isArray(config.statuses) ? config.statuses : []),
+      ...(!isLiveParent && !suppressStaleOperationalData && Array.isArray(config.statuses) ? config.statuses : []),
     ],
     // Parent examples name specific children and balances. Never juxtapose them with
     // live household records, especially when there are no linked students.
