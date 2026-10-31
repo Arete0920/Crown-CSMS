@@ -9,7 +9,6 @@ from rest_framework.exceptions import PermissionDenied
 from audit.models import AuditLog
 from core.models import School, UserAccount
 from core.permissions import user_has_permission
-from .daycare_checkin import require_entitlement
 from .daycare_checkin_models import DaycareAttendance, DaycareRoomStaffCoverage
 from .daycare_models import DaycareRoom, DaycareGuardianAuthority
 from .daycare_release_models import DaycareRelease
@@ -37,11 +36,13 @@ def release_child(*,school_id:UUID,actor_id:UUID,site_id:UUID,room_id:UUID,
                 raise PermissionDenied("Active Diadem staff tenant required.")
             if not user_has_permission(actor,"diadem.daycare.release",school=school):
                 raise PermissionDenied("Explicit custody release permission required.")
-            require_entitlement(school_id)
+            # Exit safety is independent of subscription and tenant billing status.
+            # The existing admission, explicit staff grant and recipient authority
+            # are still required. A suspended tenant cannot admit new children.
             if DaycareRelease.objects.filter(school=school,request_key=request_key).exists():
                 raise ReleaseRefused("request_already_consumed")
             room=DaycareRoom.objects.select_for_update().filter(
-                pk=room_id,school=school,site_id=site_id,is_active=True,site__is_active=True).first()
+                pk=room_id,school=school,site_id=site_id).first()
             if room is None:
                 raise ReleaseRefused("room_unavailable")
             # Lock the attendance itself, not the nullable reverse OneToOne join.
@@ -52,7 +53,7 @@ def release_child(*,school_id:UUID,actor_id:UUID,site_id:UUID,room_id:UUID,
                     school=school,attendance=attendance).exists():
                 raise ReleaseRefused("attendance_not_open")
             child=attendance.child
-            if not child.is_active or not child.household.is_active or child.site_id!=site_id:
+            if child.site_id!=site_id:
                 raise ReleaseRefused("child_unavailable")
             at=timezone.now()
             try:
