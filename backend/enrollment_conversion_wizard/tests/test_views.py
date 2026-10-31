@@ -14,6 +14,7 @@ from applications.views_admissions import (
 from households.models import Household
 from core.models import AcademicYear, CrownPermission, Family, RolePermission, School, UserRole
 from enrollment_conversion_wizard.models import EnrollmentConversionWizardSession
+from enrollment_conversion_wizard.permissions import can_manage_enrollment_conversion
 
 
 TEST_AUTH_SECRET = "TestAuthSecret-LocalOnly"
@@ -129,6 +130,38 @@ class EnrollmentConversionAuthTest(TestCase):
         school = _make_school()
         r = APIClient().post(BASE_URL, **_headers(school.id))
         self.assertEqual(r.status_code, 401)
+
+
+    def test_staff_bit_does_not_grant_enrollment_conversion(self):
+        school = _make_school()
+        user = _make_user()
+        user.is_staff = True
+        user.save(update_fields=["is_staff"])
+        self.assertFalse(can_manage_enrollment_conversion(user, school))
+
+    def test_superuser_bit_does_not_override_school_scope(self):
+        school = _make_school()
+        user = _make_user()
+        user.is_superuser = True
+        user.save(update_fields=["is_superuser"])
+        self.assertFalse(can_manage_enrollment_conversion(user, school))
+
+    def test_explicit_admin_view_is_scoped_to_its_own_school(self):
+        school = _make_school()
+        other_school = _make_school()
+        user = _make_user()
+        UserRole.objects.create(user=user, school=school, role_code="HEAD_OF_SCHOOL")
+        permission, _ = CrownPermission.objects.get_or_create(
+            code="admin.view", defaults={"description": "View administration dashboard"},
+        )
+        RolePermission.objects.get_or_create(
+            role_code="HEAD_OF_SCHOOL", permission=permission,
+        )
+        self.assertTrue(can_manage_enrollment_conversion(user, school))
+        self.assertFalse(can_manage_enrollment_conversion(user, other_school))
+        user.is_active = False
+        user.save(update_fields=["is_active"])
+        self.assertFalse(can_manage_enrollment_conversion(user, school))
 
 
 # ---------------------------------------------------------------------------
