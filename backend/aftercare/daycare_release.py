@@ -44,9 +44,12 @@ def release_child(*,school_id:UUID,actor_id:UUID,site_id:UUID,room_id:UUID,
                 pk=room_id,school=school,site_id=site_id,is_active=True,site__is_active=True).first()
             if room is None:
                 raise ReleaseRefused("room_unavailable")
+            # Lock the attendance itself, not the nullable reverse OneToOne join.
+            # PostgreSQL refuses FOR UPDATE on the nullable side of an outer join.
             attendance=DaycareAttendance.objects.select_for_update().filter(
-                id=attendance_id,school=school,site_id=site_id,room=room,custody_release__isnull=True).first()
-            if attendance is None:
+                id=attendance_id,school=school,site_id=site_id,room=room).first()
+            if attendance is None or DaycareRelease.objects.filter(
+                    school=school,attendance=attendance).exists():
                 raise ReleaseRefused("attendance_not_open")
             child=attendance.child
             if not child.is_active or not child.household.is_active or child.site_id!=site_id:
