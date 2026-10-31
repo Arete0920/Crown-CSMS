@@ -13,8 +13,6 @@ from academics.models import Course, Enrollment, Section, TeacherAssignment, Ter
 from core.models import (
     AcademicYear,
     CrownPermission,
-    Family,
-    GradeLevel,
     RolePermission,
     School,
     Staff,
