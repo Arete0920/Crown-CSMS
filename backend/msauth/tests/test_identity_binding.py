@@ -64,6 +64,7 @@ class MicrosoftSessionIdentityBindingTest(SimpleTestCase):
 
         with (
             patch("msauth.views.AZURE_TENANT_ID", str(self.tenant_id)),
+            patch("msauth.views._FRONTEND_BASE", ""),
             patch("msauth.views.ROLE_GROUP_MAP", {"admin": "group-admin"}),
             patch("msauth.views.OAuth2Session", side_effect=[exchange, graph]),
             patch("msauth.views.get_user_from_claims", return_value=user) as resolve,
