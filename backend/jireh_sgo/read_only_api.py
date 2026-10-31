@@ -1,10 +1,18 @@
 """Read-only grantor pilot: active SGO membership, aggregate noncash data only."""
 from django.db.models import Count, Q, Sum
 from rest_framework.decorators import api_view, permission_classes
+from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from .models import SGOApplication, SGOAward, SGOMembership, SGOProgram
 from .services import membership_for
+
+
+def _reject_school_selector(request):
+    # Standalone grantor authorization must never borrow a school selector.
+    # Enforce here even if tenant middleware is disabled by runtime settings.
+    if "HTTP_X_SCHOOL_ID" in request.META or "HTTP_X_CROWN_SCHOOL_ID" in request.META:
+        raise ValidationError({"detail": "School selector forbidden for SGO."})
 
 
 def private(data):
@@ -16,6 +24,7 @@ def private(data):
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def organizations(request):
+    _reject_school_selector(request)
     if not request.user.is_active:
         return Response({"detail": "Active SGO account required."}, status=403)
     members = SGOMembership.objects.select_related("organization").filter(
@@ -30,6 +39,7 @@ def organizations(request):
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def overview(request, organization_id):
+    _reject_school_selector(request)
     member = membership_for(request.user, organization_id)
     programs = SGOProgram.objects.filter(organization=member.organization)
     applications = SGOApplication.objects.filter(program__organization=member.organization)
