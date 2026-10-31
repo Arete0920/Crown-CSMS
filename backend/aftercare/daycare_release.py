@@ -26,17 +26,21 @@ def release_child(*,school_id:UUID,actor_id:UUID,site_id:UUID,room_id:UUID,
     ids=(school_id,actor_id,site_id,room_id,attendance_id,guardian_authority_id,request_key)
     if any(not isinstance(v,UUID) or v.int==0 for v in ids):
         raise ReleaseRefused("invalid_identity")
-    if type(identity_verified) is not bool or not identity_verified or identity_method not in IDENTITY_METHODS:
+    if (type(identity_verified) is not bool or not identity_verified or
+            not isinstance(identity_method, str) or identity_method not in IDENTITY_METHODS):
         raise ReleaseRefused("identity_attestation_required")
     try:
         with transaction.atomic():
-            school=School.objects.filter(pk=school_id,is_active=True).first()
+            school=School.objects.filter(pk=school_id).first()
             actor=UserAccount.objects.filter(pk=actor_id,school_id=school_id,is_active=True).first() if school else None
             if school is None or actor is None:
                 raise PermissionDenied("Active Diadem staff tenant required.")
             if not user_has_permission(actor,"diadem.daycare.release",school=school):
                 raise PermissionDenied("Explicit custody release permission required.")
-            # Exit safety is independent of subscription and tenant billing status.
+            # Exit safety is independent of subscription, tenant lifecycle,
+            # and School.is_active. This does not waive active staff, school-scoped
+            # release RBAC, on-duty coverage or verified recipient authority.
+            # The admission path still requires an active school and tenant.
             # The existing admission, explicit staff grant and recipient authority
             # are still required. A suspended tenant cannot admit new children.
             if DaycareRelease.objects.filter(school=school,request_key=request_key).exists():
