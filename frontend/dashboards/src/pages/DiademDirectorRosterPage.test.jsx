@@ -44,11 +44,12 @@ function liveGet(url) {
 }
 
 beforeEach(() => {
+  vi.stubGlobal("crypto", { randomUUID: vi.fn(() => "00000000-0000-4000-8000-000000000001") });
   vi.resetAllMocks();
   crownApiClient.get.mockImplementation(liveGet);
   crownApiClient.post.mockResolvedValue({ status: 201, data: {} });
 });
-afterEach(cleanup);
+afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 
 async function openPickup() {
   fireEvent.click(await screen.findByRole("button", { name: "Verify authorized pickup" }));
