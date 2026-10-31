@@ -358,3 +358,34 @@ def test_stale_open_custody_remains_visible_for_supervisor_reconciliation(monkey
         "pickup_verified": True, "care_session": "PM",
     }, format="json")
     assert release.status_code == 400
+
+
+def test_newer_custody_cannot_mask_older_unresolved_open_attendance(monkeypatch):
+    """Do not release one open session while another remains unresolved."""
+    school, _household, child, _operator, client = family()
+    grant(school, "PM")
+    enrollment(school, child, "PM")
+    now = timezone.now()
+    monkeypatch.setattr("aftercare.api.timezone.now", lambda: now)
+    today = school_local_date(school.id, now)
+    older = AftercareAttendance.objects.create(
+        school_fk=school, student_fk=child, care_session="PM",
+        date=today - timedelta(days=3), checkin_time=now - timedelta(days=3),
+    )
+    newer = AftercareAttendance.objects.create(
+        school_fk=school, student_fk=child, care_session="PM",
+        date=today, checkin_time=now - timedelta(minutes=5),
+    )
+    contact = AftercarePickupContact.objects.create(
+        school_fk=school, student_fk=child, name="Authorized Synthetic Guardian",
+    )
+    response = client.post(API + "attendance/checkout/", {
+        "student_id": str(child.pk), "care_session": "PM",
+        "pickup_contact_id": contact.pk, "pickup_verified": True,
+    }, format="json")
+    assert response.status_code == 400, response.data
+    assert "supervisor reconciliation" in response.data["detail"]
+    older.refresh_from_db()
+    newer.refresh_from_db()
+    assert older.checkout_time is None and newer.checkout_time is None
+    assert not older.pickup_verified and not newer.pickup_verified

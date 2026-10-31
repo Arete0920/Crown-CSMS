@@ -175,13 +175,18 @@ def _open_attendance_for_custody_release(school_id, student, session, at: dateti
     custody requires manual supervisor reconciliation, never silent checkout.
     """
     local_day = school_local_date(school_id, at)
-    records = list(
-        AftercareAttendance.objects.select_for_update().filter(
-            school_fk_id=school_id, student_fk=student, care_session=session,
-            date__in=(local_day, local_day - timedelta(days=1)),
-            checkout_time__isnull=True,
-        ).order_by("-date", "-pk")[:2]
+    # Do not permit a fresh release while an older or future-dated session
+    # remains open for this child. Those records require manual reconciliation.
+    eligible_dates = (local_day, local_day - timedelta(days=1))
+    open_sessions = AftercareAttendance.objects.select_for_update().filter(
+        school_fk_id=school_id, student_fk=student, care_session=session,
+        checkout_time__isnull=True,
     )
+    if open_sessions.exclude(date__in=eligible_dates).exists():
+        raise ValueError("Unresolved care custody requires supervisor reconciliation.")
+    records = list(open_sessions.filter(
+        date__in=eligible_dates,
+    ).order_by("-date", "-pk")[:2])
     if len(records) > 1:
         raise ValueError("Multiple open care sessions need supervisor reconciliation.")
     return records[0] if records else None
