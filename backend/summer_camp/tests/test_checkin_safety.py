@@ -10,7 +10,7 @@ from summer_camp.models import (
     SummerCampAttendance, SummerCampEnrollment, SummerCampFormRequirement, SummerCampPickupContact,
     SummerCampProgram, SummerCampSession, SummerCampStaffAssignment,
 )
-from summer_camp.services import checkin_camper, compute_camper_readiness
+from summer_camp.services import checkin_camper, compute_camper_readiness, compute_staff_ratio_status
 
 
 pytestmark = pytest.mark.django_db
@@ -51,6 +51,7 @@ def camp_case(django_user_model):
     )
     SummerCampStaffAssignment.objects.create(
         school=school, session=session, staff_user=staff, role="COUNSELOR",
+        credential_status=SummerCampStaffAssignment.CREDENTIAL_VERIFIED,
     )
     return school, other_school, student, session, enrollment, when
 
@@ -203,6 +204,20 @@ def test_api_incomplete_camper_returns_400_and_never_creates_attendance(camp_cas
     }
     assert not SummerCampAttendance.objects.filter(school=school, session=session, student=student).exists()
 
+
+
+@pytest.mark.parametrize("status", ["PENDING", "REVOKED", "EXPIRED", "APPROVED", "verified", ""])
+def test_unverified_staff_cannot_cover_ratio_or_admit_camper(camp_case, status):
+    school, _other, _student, session, _enrollment, _when = camp_case
+    assignment = SummerCampStaffAssignment.objects.get(school=school, session=session)
+    assignment.credential_status = status
+    assignment.save(update_fields=["credential_status"])
+    ratio = compute_staff_ratio_status(school.id, session.id)
+    assert ratio["assigned_staff"] == 0
+    assert ratio["coverage_status"] == "GAP"
+    with pytest.raises(ValueError, match="not cleared"):
+        _admit(camp_case)
+    _assert_no_attendance(camp_case)
 
 
 def test_inactive_or_foreign_staff_does_not_satisfy_camp_ratio(camp_case):

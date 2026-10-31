@@ -218,6 +218,8 @@ class SummerCampGroupAssignment(models.Model):
 
 
 class SummerCampStaffAssignment(models.Model):
+    # Only explicit clearance counts toward child supervision.
+    CREDENTIAL_VERIFIED = "VERIFIED"
     school = models.ForeignKey("core.School", on_delete=models.CASCADE, related_name="summer_camp_staff_assignments")
     session = models.ForeignKey(SummerCampSession, on_delete=models.CASCADE, related_name="staff_assignments")
     staff_user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="summer_camp_staff_assignments")

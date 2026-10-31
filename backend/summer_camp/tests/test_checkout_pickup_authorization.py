@@ -51,15 +51,11 @@ def _scenario(suffix):
     student = _student(school, suffix)
     session = _session(school, suffix)
     enrollment = SummerCampEnrollment.objects.create(
-        school=school, session=session, student=student, status="REGISTERED",
-    )
+        school=school, session=session, student=student, status="REGISTERED")
     attendance = SummerCampAttendance.objects.create(
-        school=school, session=session, student=student,
-        date=DAY, checkin_time=IN,
-    )
+        school=school, session=session, student=student, date=DAY, checkin_time=IN)
     contact = SummerCampPickupContact.objects.create(
-        school=school, enrollment=enrollment, name=f"Authorized {suffix}",
-    )
+        school=school, enrollment=enrollment, name=f"Authorized {suffix}")
     verifier = UserAccount.objects.create_user(
         username=f"camp-pickup-{suffix}", email=f"camp-pickup-{suffix.lower()}@example.test", password="synthetic",
         school=school, is_staff=True,
@@ -106,6 +102,7 @@ def test_checkin_and_verified_pickup_span_utc_midnight_on_one_school_day():
     SummerCampStaffAssignment.objects.create(
         school=case.school, session=case.session,
         staff_user=case.verifier, role="COUNSELOR",
+        credential_status=SummerCampStaffAssignment.CREDENTIAL_VERIFIED,
     )
     start = datetime(2025, 9, 3, 22, 30, tzinfo=utc_timezone.utc)
     finish = datetime(2025, 9, 4, 0, 30, tzinfo=utc_timezone.utc)
@@ -138,26 +135,17 @@ def test_verified_active_same_enrollment_pickup_succeeds():
 def test_denied_pickups_never_write_checkout_fields():
     case = _scenario("Denied")
     inactive = SummerCampPickupContact.objects.create(
-        school=case.school, enrollment=case.enrollment,
-        name="Inactive", is_active=False,
-    )
+        school=case.school, enrollment=case.enrollment, name="Inactive", is_active=False)
     other_student = _student(case.school, "DifferentChild")
     other_enrollment = SummerCampEnrollment.objects.create(
-        school=case.school, session=case.session,
-        student=other_student, status="REGISTERED",
-    )
+        school=case.school, session=case.session, student=other_student, status="REGISTERED")
     other_child = SummerCampPickupContact.objects.create(
-        school=case.school, enrollment=other_enrollment, name="Different Child",
-    )
+        school=case.school, enrollment=other_enrollment, name="Different Child")
     alternate_session = _session(case.school, "Alternate")
     alternate_enrollment = SummerCampEnrollment.objects.create(
-        school=case.school, session=alternate_session,
-        student=case.student, status="REGISTERED",
-    )
+        school=case.school, session=alternate_session, student=case.student, status="REGISTERED")
     other_session = SummerCampPickupContact.objects.create(
-        school=case.school, enrollment=alternate_enrollment,
-        name="Wrong Session",
-    )
+        school=case.school, enrollment=alternate_enrollment, name="Wrong Session")
     foreign = _scenario("Foreign").contact
 
     denied = [
@@ -181,12 +169,9 @@ def test_cancelled_enrollment_pickup_contact_is_invalid_after_re_registration():
     case.enrollment.status = "CANCELLED"
     case.enrollment.save(update_fields=["status"])
     current = SummerCampEnrollment.objects.create(
-        school=case.school, session=case.session, student=case.student,
-        status="REGISTERED",
-    )
+        school=case.school, session=case.session, student=case.student, status="REGISTERED")
     current_contact = SummerCampPickupContact.objects.create(
-        school=case.school, enrollment=current, name="New Authorized Contact",
-    )
+        school=case.school, enrollment=current, name="New Authorized Contact")
 
     with pytest.raises(ValueError, match="not authorized"):
         _checkout(case, contact_id=case.contact.id)
@@ -229,8 +214,7 @@ def test_missing_checkin_and_chronology_denied_before_mutation():
 def test_repeated_checkout_cannot_change_contact_or_release_time():
     case = _scenario("Repeat")
     second = SummerCampPickupContact.objects.create(
-        school=case.school, enrollment=case.enrollment, name="Second",
-    )
+        school=case.school, enrollment=case.enrollment, name="Second")
     _checkout(case, contact_id=case.contact.id)
     with pytest.raises(ValueError, match="already been checked out"):
         _checkout(case, contact_id=second.id, when=timezone.make_aware(datetime(2025, 9, 3, 15, 30)))

@@ -401,6 +401,7 @@ def compute_staff_ratio_status(school_id, session_id):
         SummerCampStaffAssignment.objects.filter(
             school_id=school_id, session_id=session_id,
             staff_user__school_id=school_id, staff_user__is_active=True,
+            credential_status=SummerCampStaffAssignment.CREDENTIAL_VERIFIED,
         ).values("staff_user_id").distinct().count()
     )
     return {
