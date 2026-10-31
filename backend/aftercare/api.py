@@ -29,14 +29,17 @@ class RosterTodayRowSerializer(serializers.Serializer):
     student_id = serializers.UUIDField()
     student_name = serializers.CharField()
     care_session = serializers.ChoiceField(choices=["AM", "PM"])
-    enrollment = AftercareEnrollmentSerializer()
+    enrollment = AftercareEnrollmentSerializer(allow_null=True)
     attendance = AftercareAttendanceSerializer(allow_null=True)
+    unscheduled = serializers.BooleanField()
 
 
 class RosterTodayResponseSerializer(serializers.Serializer):
     date = serializers.CharField()
     dow = serializers.CharField()
+    care_session = serializers.ChoiceField(choices=["AM", "PM"])
     rows = RosterTodayRowSerializer(many=True)
+    unlinked_attendance_count = serializers.IntegerField()
 
 
 class ParentViewResponseSerializer(serializers.Serializer):
@@ -226,6 +229,8 @@ def roster_today(request):
         AftercareEnrollment.objects.filter(
             school_fk_id=school_id,
             student_fk__isnull=False,
+            student_fk__school_id=school_id,
+            student_fk__is_active=True,
             is_active=True,
             start_date__lte=today,
         )
@@ -236,10 +241,15 @@ def roster_today(request):
     if requested_session not in ("AM", "PM"):
         return _bad_request("Invalid care session.")
     enroll = [row for row in enroll_qs if row.care_session == requested_session and dow in (row.days_of_week or [])]
-    attendance_map = {
-        (row.student_fk_id, row.care_session): row
-        for row in AftercareAttendance.objects.filter(school_fk_id=school_id, date=today, care_session=requested_session)
-    }
+    # Custody records must remain visible after an enrollment is suspended,
+    # expired, deactivated, or its student profile has become inactive.
+    attendance_records = list(
+        AftercareAttendance.objects.filter(
+            school_fk_id=school_id, date=today, care_session=requested_session,
+        ).select_related("student_fk")
+    )
+    attendance_map = {row.student_fk_id: row for row in attendance_records if row.student_fk_id}
+    scheduled_student_ids = {row.student_fk_id for row in enroll}
     rows = [
         {
             "student_id": row.student_fk_id,
@@ -247,13 +257,35 @@ def roster_today(request):
             "care_session": row.care_session,
             "enrollment": AftercareEnrollmentSerializer(row).data,
             "attendance": (
-                AftercareAttendanceSerializer(attendance_map[(row.student_fk_id, row.care_session)]).data
-                if (row.student_fk_id, row.care_session) in attendance_map else None
+                AftercareAttendanceSerializer(attendance_map[row.student_fk_id]).data
+                if row.student_fk_id in attendance_map else None
             ),
+            "unscheduled": False,
         }
         for row in enroll
     ]
-    return Response({"date": str(today), "dow": dow, "care_session": requested_session, "rows": rows})
+    unlinked_attendance_count = 0
+    for attendance in attendance_records:
+        if attendance.student_fk_id in scheduled_student_ids:
+            continue
+        student = attendance.student_fk
+        if student is None or student.school_id != school_id:
+            # Never disclose another tenant's student identity through a
+            # malformed historical attendance FK. Count for operator review.
+            unlinked_attendance_count += 1
+            continue
+        rows.append({
+            "student_id": student.pk,
+            "student_name": (student.first_name + " " + student.last_name).strip(),
+            "care_session": requested_session,
+            "enrollment": None,
+            "attendance": AftercareAttendanceSerializer(attendance).data,
+            "unscheduled": True,
+        })
+    return Response({
+        "date": str(today), "dow": dow, "care_session": requested_session,
+        "rows": rows, "unlinked_attendance_count": unlinked_attendance_count,
+    })
 
 
 @extend_schema(request=AftercareCheckinRequestSerializer, responses={201: AftercareAttendanceSerializer})

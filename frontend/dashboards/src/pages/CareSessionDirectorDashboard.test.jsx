@@ -9,7 +9,7 @@ describe("AM/PM care roster aggregates", () => {
   ];
   it("separates morning school handoff and ongoing supervision", () => {
     expect(deriveSessionTotals(rows, "AM")).toEqual({
-      expected: 3, checkedIn: 2, present: 1, completed: 1, unverifiedClosures: 0,
+      expected: 3, checkedIn: 2, present: 1, completed: 1, unverifiedClosures: 0, unscheduledAttendance: 0,
       awaitingArrival: 1, latePickups: 0, lateFeeCents: 0,
     });
   });
@@ -21,10 +21,11 @@ describe("AM/PM care roster aggregates", () => {
       checkin_time: "start", checkout_time: "end", pickup_verified: true,
       late_minutes: 11, late_fee_cents: 2000,
     } }], "PM")).toEqual({
-      expected: 1, checkedIn: 1, present: 0, completed: 1, unverifiedClosures: 0,
+      expected: 1, checkedIn: 1, present: 0, completed: 1, unverifiedClosures: 0, unscheduledAttendance: 0,
       awaitingArrival: 0, latePickups: 1, lateFeeCents: 2000,
     });
-  });  it("flags closed morning custody without a verified school handoff", () => {
+  });
+  it("flags closed morning custody without a verified school handoff", () => {
     expect(deriveSessionTotals([{ student_id: "a", attendance: {
       checkin_time: "start", checkout_time: "end", handoff_time: null, handoff_verified: false,
     } }], "AM")).toMatchObject({
@@ -36,6 +37,17 @@ describe("AM/PM care roster aggregates", () => {
       checkin_time: "start", checkout_time: "end", pickup_verified: false,
     } }], "PM")).toMatchObject({
       checkedIn: 1, present: 0, completed: 0, unverifiedClosures: 1,
+    });
+  });
+  it("preserves attendance without treating it as a scheduled arrival", () => {
+    expect(deriveSessionTotals([
+      { student_id: "scheduled", unscheduled: false, attendance: null },
+      { student_id: "withdrawn", unscheduled: true, attendance: {
+        checkin_time: "start", checkout_time: null,
+      } },
+    ], "AM")).toMatchObject({
+      expected: 1, checkedIn: 1, present: 1,
+      unscheduledAttendance: 1, awaitingArrival: 1,
     });
   });
 });

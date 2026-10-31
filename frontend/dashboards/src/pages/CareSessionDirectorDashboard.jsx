@@ -12,6 +12,8 @@ const MONEY = (cents) => "$" + (cents / 100).toFixed(2);
 export function deriveSessionTotals(rows, careSession) {
   const scheduled = Array.isArray(rows) ? rows : [];
   const checkedIn = scheduled.filter((r) => Boolean(r.attendance?.checkin_time));
+  const expected = scheduled.filter((r) => !r.unscheduled);
+  const unscheduledAttendance = checkedIn.filter((r) => r.unscheduled).length;
   const present = checkedIn.filter((r) => !r.attendance?.checkout_time);
   const verifiedClosure = (r) => careSession === "AM"
     ? Boolean(r.attendance?.checkout_time && r.attendance?.handoff_verified && r.attendance?.handoff_time)
@@ -24,10 +26,10 @@ export function deriveSessionTotals(rows, careSession) {
   const lateFeeCents = careSession === "PM"
     ? checkedIn.reduce((sum, r) => sum + Number(r.attendance?.late_fee_cents || 0), 0) : 0;
   return {
-    expected: scheduled.length, checkedIn: checkedIn.length,
+    expected: expected.length, checkedIn: checkedIn.length,
     present: present.length, completed: completed.length,
-    unverifiedClosures: unverifiedClosures.length,
-    awaitingArrival: scheduled.length - checkedIn.length,
+    unverifiedClosures: unverifiedClosures.length, unscheduledAttendance,
+    awaitingArrival: expected.filter((r) => !r.attendance?.checkin_time).length,
     latePickups: late.length, lateFeeCents,
   };
 }
@@ -58,7 +60,8 @@ export default function CareSessionDirectorDashboard({ careSession = "PM" }) {
       ]);
       if (!active) return;
       const problems = [];
-      if (rosterResult.status === "fulfilled" && Array.isArray(rosterResult.value?.rows)) {
+      if (rosterResult.status === "fulfilled" && rosterResult.value?.care_session === careSession
+          && Array.isArray(rosterResult.value?.rows)) {
         setRoster(rosterResult.value);
       } else {
         problems.push("Daily roster unavailable: " + (
@@ -87,6 +90,8 @@ export default function CareSessionDirectorDashboard({ careSession = "PM" }) {
     ["Currently Supervised", totals.present],
     [morning ? "School Handoffs" : "Authorized Checkouts", totals.completed],
     ["Unverified Custody Closures", totals.unverifiedClosures],
+    ["Attendance Without Active Schedule", totals.unscheduledAttendance],
+    ["Attendance Without Verified Student Link", roster?.unlinked_attendance_count ?? 0],
     ["Awaiting Arrival", totals.awaitingArrival],
     ...(morning ? [] : [
       ["Late Pickup Events", totals.latePickups],
@@ -120,6 +125,12 @@ export default function CareSessionDirectorDashboard({ careSession = "PM" }) {
         <DashboardSection title="Today">
           {totals?.unverifiedClosures > 0 && (
             <p role="alert">Custody transfer is unverified for {totals.unverifiedClosures} care session(s). Review the roster and investigate; do not assume the children were handed off or released.</p>
+          )}
+          {totals?.unscheduledAttendance > 0 && (
+            <p role="alert">{totals.unscheduledAttendance} attendance record(s) remain open to review despite missing active schedules. These records must not disappear from the custody roster.</p>
+          )}
+          {roster?.unlinked_attendance_count > 0 && (
+            <p role="alert">{roster.unlinked_attendance_count} historical attendance record(s) lack a verified same-school student link. Escalate for manual identity reconciliation.</p>
           )}
           {totals
             ? <div style={GRID}>{today.map(([label, value]) => <div key={label} style={PANEL}>

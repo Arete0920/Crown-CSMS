@@ -459,3 +459,61 @@ def test_unconfigured_school_timezone_blocks_custody_writes():
     with pytest.raises(ValueError, match="valid school timezone"):
         checkin_student(school.id, child.id, when=at(7, 15), care_session="AM")
     assert not AftercareAttendance.objects.filter(school_fk=school).exists()
+
+
+
+def test_roster_preserves_checked_in_child_after_enrollment_deactivation(monkeypatch):
+    """A child cannot disappear from custody visibility when the schedule changes."""
+    from rest_framework.test import APIClient
+    from aftercare import api
+
+    school, _household, child, receiver = setup_family()
+    permission, _ = CrownPermission.objects.get_or_create(code="extended_care.view")
+    RolePermission.objects.get_or_create(role_code="SUPPORT", permission=permission)
+    attendance = checkin_student(school.id, child.id, when=at(7, 15), care_session="AM")
+    AftercareEnrollment.objects.filter(
+        school_fk=school, student_fk=child, care_session="AM",
+    ).update(is_active=False)
+    monkeypatch.setattr(api.timezone, "now", lambda: at(8, 0))
+    client = APIClient()
+    client.force_authenticate(user=receiver)
+    client.credentials(HTTP_X_SCHOOL_ID=str(school.id))
+    response = client.get("/api/v1/aftercare/roster/today/?care_session=AM")
+    assert response.status_code == 200, response.data
+    assert response.data["unlinked_attendance_count"] == 0
+    assert len(response.data["rows"]) == 1
+    row = response.data["rows"][0]
+    assert row["student_id"] == child.pk
+    assert row["unscheduled"] is True
+    assert row["enrollment"] is None
+    assert row["attendance"]["id"] == attendance.pk
+    assert row["attendance"]["checkout_time"] is None
+
+
+def test_roster_never_discloses_malformed_foreign_tenant_attendance(monkeypatch):
+    """Corrupted cross-school historical FKs get a review count, never a name."""
+    from rest_framework.test import APIClient
+    from aftercare import api
+
+    school, _household, _child, receiver = setup_family()
+    foreign = School.objects.create(name="Foreign Family Private School")
+    household = Household.objects.create(school_id=foreign.pk, name="Private Foreign Family")
+    outsider = Student.objects.create(
+        school_id=foreign.pk, household=household,
+        first_name="Private", last_name="ForeignChild", grade_level="2",
+    )
+    AftercareAttendance.objects.create(
+        school_fk=school, student_fk=outsider, date=DAY,
+        care_session="AM", checkin_time=at(7, 15),
+    )
+    permission, _ = CrownPermission.objects.get_or_create(code="extended_care.view")
+    RolePermission.objects.get_or_create(role_code="SUPPORT", permission=permission)
+    monkeypatch.setattr(api.timezone, "now", lambda: at(8, 0))
+    client = APIClient()
+    client.force_authenticate(user=receiver)
+    client.credentials(HTTP_X_SCHOOL_ID=str(school.id))
+    response = client.get("/api/v1/aftercare/roster/today/?care_session=AM")
+    assert response.status_code == 200, response.data
+    assert response.data["unlinked_attendance_count"] == 1
+    assert all(row["student_id"] != outsider.pk for row in response.data["rows"])
+    assert "ForeignChild" not in str(response.data)

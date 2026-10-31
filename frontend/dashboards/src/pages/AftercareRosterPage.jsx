@@ -122,16 +122,18 @@ export default function AftercareRosterPage({ careSession = "PM" }) {
     }
   }
 
-  const rosterTitle = roster
-    ? "Today's " + sessionLabel + " Roster - " + roster.date + " (" + roster.dow + ")"
+  // A care-session switch must never temporarily display the previous session's children.
+  const currentRoster = roster?.care_session === careSession ? roster : null;
+  const rosterTitle = currentRoster
+    ? "Today's " + sessionLabel + " Roster - " + currentRoster.date + " (" + currentRoster.dow + ")"
     : "Today's " + sessionLabel + " Roster";
 
   return (
     <CrownLayout title={sessionLabel + " Roster"}>
       <DashboardSection title={rosterTitle}>
-        {loading && <span>Loading...</span>}
+        {(loading || (!currentRoster && !error)) && <span>Loading...</span>}
         {error && <div style={{ color: "var(--crown-danger)", background: "var(--crown-danger-bg)", padding: "10px 14px", borderRadius: 4, marginBottom: 12 }}>{error}</div>}
-        {!loading && !error && roster && (
+        {!loading && !error && currentRoster && (
           <div style={{ border: "1px solid var(--crown-border)", borderRadius: 4, overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
@@ -145,12 +147,12 @@ export default function AftercareRosterPage({ careSession = "PM" }) {
                 </tr>
               </thead>
               <tbody>
-                {roster.rows.length === 0 && (
+                {currentRoster.rows.length === 0 && (
                   <tr>
                     <td colSpan={6} style={{ ...TD, color: "var(--crown-muted)" }}>No students scheduled today.</td>
                   </tr>
                 )}
-                {roster.rows.map((row) => {
+                {currentRoster.rows.map((row) => {
                   const hasCheckin = !!row.attendance;
                   const hasCheckout = Boolean(row.attendance?.checkout_time);
                   const verifiedClosure = hasCheckout && (isMorning
@@ -166,7 +168,10 @@ export default function AftercareRosterPage({ careSession = "PM" }) {
 
                   return (
                     <tr key={row.student_id}>
-                      <td style={TD}>{row.student_name || row.student_id}</td>
+                      <td style={TD}>
+                        {row.student_name || row.student_id}
+                        {row.unscheduled && <div role="alert">Not on an active care schedule; review this custody record.</div>}
+                      </td>
                       <td style={TD}>{row.enrollment?.billing_model}</td>
                       <td style={TD}>{statusChip}</td>
                       <td style={TD}>{row.attendance?.late_minutes ?? "-"}</td>
@@ -176,7 +181,7 @@ export default function AftercareRosterPage({ careSession = "PM" }) {
                           : "-"}
                       </td>
                       <td style={TD}>
-                        {!hasCheckin && (
+                        {!hasCheckin && !row.unscheduled && (
                           <button style={BTN_OUT} onClick={() => handleCheckin(row.student_id)}>Check In</button>
                         )}
                         {hasCheckin && !hasCheckout && !isMorning && (
@@ -195,6 +200,9 @@ export default function AftercareRosterPage({ careSession = "PM" }) {
               </tbody>
             </table>
           </div>
+        )}
+        {currentRoster?.unlinked_attendance_count > 0 && (
+          <p role="alert">{currentRoster.unlinked_attendance_count} attendance record(s) cannot be linked to a verified student in this school. Escalate for manual custody reconciliation; identities from other schools are not displayed.</p>
         )}
         {handoff && (
           <div role="dialog" aria-modal="true" aria-label="Confirm receiving staff handoff" style={{ border: "1px solid var(--crown-border)", padding: 16, marginTop: 16 }}>
