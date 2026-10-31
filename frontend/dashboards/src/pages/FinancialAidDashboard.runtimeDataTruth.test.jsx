@@ -85,6 +85,25 @@ describe('Financial Aid dashboard runtime data truth', () => {
     expect(JSON.stringify(captured)).not.toMatch(/\$210K|\$42K|Compliance: Clean|Healthy|April disbursement batch/);
   });
 
+  it('withholds retained Financial Aid metrics while a fresh request is loading', () => {
+    mockUseDashboardData.mockReturnValue({
+      data: {
+        metrics: [{ label: 'Aid Applications', value: '112' }],
+        meta: { served_from: 'fallback' },
+      },
+      error: null,
+      loading: true,
+      source: 'fallback',
+      config: { endpoint: '/api/v1/dashboards/financial-aid/summary' },
+    });
+    renderFinancialAid();
+    expect(captured.truth[0].dataState).toBe('loading');
+    expect(captured.truth[0].sourceLabel).toContain('Loading dashboard');
+    expect(captured.metrics).toEqual([]);
+    expect(captured.activities[0].items).toEqual([]);
+    expect(screen.queryByTestId('dashboard-error')).toBeNull();
+  });
+
   it('fails closed when an old sample payload remains after an API error', () => {
     mockUseDashboardData.mockReturnValue({
       data: {

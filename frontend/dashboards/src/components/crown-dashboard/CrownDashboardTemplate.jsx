@@ -159,9 +159,12 @@ function buildLiveDashboardConfig(config, payload, endpointConfig, loading, erro
   const sourceLabel = getDashboardSourceLabel(dataState, endpointConfig?.endpoint, payload);
   const fallbackMetrics = Array.isArray(config.metrics) ? config.metrics : [];
   const payloadMetrics = Array.isArray(payload?.metrics) ? payload.metrics : [];
-  // A live response with no metrics must not turn configured example figures into live records.
-  const metricInputs = (dataState === 'error' || dataState === 'unavailable')
-    ? [] // Never re-display cached financial/operational values as current after an error.
+  // Never present cached Financial Aid values during loading as if they describe the request in flight.
+  // Other dashboards retain their existing disclosed loading/fallback behavior.
+  const suppressMetrics = dataState === 'error' || dataState === 'unavailable'
+    || (config.key === 'financialAid' && dataState === 'loading');
+  const metricInputs = suppressMetrics
+    ? [] // Never show stale operational metrics in an unavailable or sensitive loading state.
     : (dataState === 'live' ? payloadMetrics : (payloadMetrics.length > 0 ? payloadMetrics : fallbackMetrics));
   const metrics = metricInputs.map((item, index) => ({
     label: item.label,
