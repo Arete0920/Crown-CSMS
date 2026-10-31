@@ -10,6 +10,7 @@ from core.models import School, UserAccount
 from core.permissions import user_has_permission
 from subscriptions.models import Feature, TenantSubscription
 from subscriptions.services import EntitlementsService
+from tenants.models import TenantProfile
 from audit.models import AuditLog
 from .daycare_models import DaycareRoom, DaycareChild, DaycareEnrollment, DaycareGuardianAuthority
 from .daycare_checkin_models import DaycareAttendance, DaycareRoomStaffCoverage
@@ -21,14 +22,25 @@ class CheckinRefused(Exception):
         super().__init__(code)
 
 def require_entitlement(school_id):
-    try:
-        subscription=EntitlementsService.get_active_subscription(school_id)
-        if not subscription.plan.is_active or subscription.started_at > timezone.now():
-            raise PermissionError("Inactive subscription")
-        EntitlementsService.assert_enabled(school_id,"diadem.daycare")
-    except (PermissionError,Feature.DoesNotExist,TenantSubscription.DoesNotExist,
-            TenantSubscription.MultipleObjectsReturned):
-        raise PermissionDenied("Diadem Daycare entitlement required.") from None
+    """Require a provisioned, active tenant AND an enabled childcare license.
+
+    The tenant row lock serializes a suspension against ongoing admission or
+    release transactions. A missing TenantProfile never grants access.
+    """
+    with transaction.atomic():
+        tenant=TenantProfile.objects.select_for_update().filter(
+            school_id=school_id,status="active",school__is_active=True
+        ).first()
+        if tenant is None:
+            raise PermissionDenied("Active Diadem tenant required.")
+        try:
+            subscription=EntitlementsService.get_active_subscription(school_id)
+            if not subscription.plan.is_active or subscription.started_at > timezone.now():
+                raise PermissionError("Inactive subscription")
+            EntitlementsService.assert_enabled(school_id,"diadem.daycare")
+        except (PermissionError,Feature.DoesNotExist,TenantSubscription.DoesNotExist,
+                TenantSubscription.MultipleObjectsReturned):
+            raise PermissionDenied("Diadem Daycare entitlement required.") from None
 
 def checkin_child(*,school_id:UUID,actor_id:UUID,site_id:UUID,room_id:UUID,
                   child_id:UUID,program_code:str,request_key:UUID):
