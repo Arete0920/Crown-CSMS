@@ -793,7 +793,10 @@ def roster_today(school_id):
         if enrollment.student_id in open_student_ids:
             continue
         key = (enrollment.session_id, enrollment.student_id)
-        rows.append(row_for(enrollment, today_attendance.get(key)))
+        # An external camper without a canonical student ID cannot be linked
+        # to a NULL-student orphan custody event by session alone.
+        matched = today_attendance.get(key) if enrollment.student_id is not None else None
+        rows.append(row_for(enrollment, matched))
 
     for attendance in open_rows:
         key = (attendance.session_id, attendance.student_id)
