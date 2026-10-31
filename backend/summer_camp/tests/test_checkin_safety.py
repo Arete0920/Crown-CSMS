@@ -131,6 +131,9 @@ def test_unregistered_state_denied_without_attendance(camp_case, status):
 @pytest.mark.parametrize("field,value", [
     ("form_status", "MISSING"),
     ("health_status", "NEEDS_REVIEW"),
+    ("health_status", "NOT_REQUIRED"),
+    ("health_status", "REJECTED"),
+    ("health_status", "approved"),
     ("balance_due_cents", 100),
 ])
 def test_recomputed_clearances_fail_closed(camp_case, field, value):

@@ -469,7 +469,10 @@ def compute_camper_readiness(school_id, enrollment_id):
     if compute_form_status(school_id, enrollment_id) != "COMPLETE":
         blockers.append("MISSING_FORMS")
 
-    if enrollment.health_status == "NEEDS_REVIEW":
+    # Do not infer a health-review waiver from an unverified status value.
+    # A NOT_REQUIRED exception needs an explicit, authorized policy and audit
+    # path; absent that, only approved health clearance can admit a camper.
+    if enrollment.health_status != "APPROVED":
         blockers.append("HEALTH_REVIEW_REQUIRED")
 
     has_pickup_contact = SummerCampPickupContact.objects.filter(
