@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from decimal import Decimal
 from datetime import date, datetime, time, timedelta
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
@@ -363,16 +364,27 @@ def record_incident(
 
 @transaction.atomic
 def run_monthly_flat_billing(school_id, year: int, month: int) -> dict:
-    if AftercareMonthlyChargeRun.objects.filter(school_fk_id=school_id, year=year, month=month).exists():
-        return {"status": "already_ran"}
+    """Bill both care sessions once per school/month under one transaction.
+
+    A canonical school row is locked *before* checking the month guard. Locking
+    the guard row alone cannot serialize the first run because it does not exist.
+    """
+    from core.models import School
 
     month_start = date(year, month, 1)
     next_month = 1 if month == 12 else month + 1
     next_year = year + 1 if month == 12 else year
     month_end = date(next_year, next_month, 1)
-    enrollments = (
+
+    school = School.objects.select_for_update().filter(pk=school_id, is_active=True).first()
+    if school is None:
+        raise ValueError("An active school is required for extended-care billing.")
+    if AftercareMonthlyChargeRun.objects.filter(school_fk=school, year=year, month=month).exists():
+        return {"status": "already_ran"}
+
+    enrollments = list(
         AftercareEnrollment.objects.filter(
-            school_fk_id=school_id,
+            school_fk=school,
             is_active=True,
             billing_model="FLAT_MONTHLY",
             start_date__lt=month_end,
@@ -380,22 +392,49 @@ def run_monthly_flat_billing(school_id, year: int, month: int) -> dict:
         )
         .filter(Q(end_date__isnull=True) | Q(end_date__gte=month_start))
         .select_related("student_fk")
+        .order_by("student_fk_id", "care_session", "start_date", "pk")
     )
 
-    charged = 0
+    # Legacy/imported overlapping enrollments could otherwise bill the same
+    # child and session twice. Fail before any finance obligation is created;
+    # an AM and a PM enrollment are two legitimately distinct services.
+    seen = set()
+    payable = []
     for enrollment in enrollments:
-        if not enrollment.monthly_rate:
+        if enrollment.care_session not in ("AM", "PM"):
+            raise ValueError("Invalid monthly enrollment care session.")
+        # Imported or legacy rows may bypass the API's canonical student guard.
+        # Fail the entire run before posting any finance obligation.
+        if enrollment.student_fk.school_id != school.id or not enrollment.student_fk.is_active:
+            raise ValueError("Monthly billing enrollment student is not active in this school.")
+        key = (enrollment.student_fk_id, enrollment.care_session)
+        if key in seen:
+            raise ValueError("Duplicate monthly enrollment for student and care session.")
+        seen.add(key)
+        if enrollment.monthly_rate is None:
             continue
+        rate = Decimal(enrollment.monthly_rate)
+        if not rate.is_finite() or rate < 0:
+            raise ValueError("Monthly enrollment rate must be nonnegative and finite.")
+        if rate == 0:
+            continue
+        # Money is stored in decimal dollars at two places. Never convert
+        # through float, and validate every charge before creating any.
+        amount_cents = int(rate * 100)
+        payable.append((enrollment, amount_cents))
+
+    charged = 0
+    for enrollment, amount_cents in payable:
         create_ledger_charge_aftercare(
-            school_id=school_id,
+            school_id=school.id,
             student_id=enrollment.student_fk_id,
-            amount_cents=to_cents(enrollment.monthly_rate),
+            amount_cents=amount_cents,
             description=f"Extended Care {enrollment.care_session} Monthly ({year}-{month:02d})",
         )
         charged += 1
 
     AftercareMonthlyChargeRun.objects.create(
-        school_fk_id=school_id,
+        school_fk=school,
         year=year,
         month=month,
         notes=f"charged={charged}",

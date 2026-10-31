@@ -4,7 +4,7 @@ from datetime import date, datetime, time, timedelta
 from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
-from django.test import TestCase
+from django.test import TestCase, TransactionTestCase
 from django.utils import timezone
 from rest_framework.test import APIClient
 
@@ -173,6 +173,93 @@ class TestModule026AttendanceAndBilling(TestCase):
         self.assertEqual(AftercareMonthlyChargeRun.objects.filter(school_fk=self.school, year=2026, month=6).count(), 1)
 
 
+    @patch("aftercare.services.create_ledger_charge_aftercare", return_value="synthetic-posted-id")
+    def test_monthly_billing_separates_am_and_pm_without_duplicate_run(self, charge):
+        _enroll(self.school, self.student, care_session="AM", monthly_rate="75.00")
+        initial = run_monthly_flat_billing(self.school.id, 2026, 6)
+        repeat = run_monthly_flat_billing(self.school.id, 2026, 6)
+        self.assertEqual(initial, {"status": "ok", "charged": 2})
+        self.assertEqual(repeat, {"status": "already_ran"})
+        self.assertEqual(charge.call_count, 2)
+        self.assertEqual(
+            {call.kwargs["description"] for call in charge.call_args_list},
+            {"Extended Care AM Monthly (2026-06)", "Extended Care PM Monthly (2026-06)"},
+        )
+        self.assertEqual(AftercareMonthlyChargeRun.objects.filter(
+            school_fk=self.school, year=2026, month=6,
+        ).count(), 1)
+
+    @patch("aftercare.services.create_ledger_charge_aftercare", return_value="synthetic-posted-id")
+    def test_duplicate_active_session_fails_closed_before_any_charge(self, charge):
+        _enroll(self.school, self.student, care_session="PM", monthly_rate="175.00")
+        with self.assertRaisesMessage(
+            ValueError, "Duplicate monthly enrollment for student and care session.",
+        ):
+            run_monthly_flat_billing(self.school.id, 2026, 6)
+        charge.assert_not_called()
+        self.assertFalse(AftercareMonthlyChargeRun.objects.filter(school_fk=self.school).exists())
+
+    @patch("aftercare.services.create_ledger_charge_aftercare")
+    def test_negative_monthly_rate_blocks_all_charges(self, charge):
+        # An invalid AM row must prevent PM billing, not leave a partial run.
+        _enroll(self.school, self.student, care_session="AM", monthly_rate="-19.99")
+        with self.assertRaisesMessage(ValueError, "nonnegative and finite"):
+            run_monthly_flat_billing(self.school.id, 2026, 6)
+        charge.assert_not_called()
+        self.assertFalse(AftercareMonthlyChargeRun.objects.filter(school_fk=self.school).exists())
+
+    @patch("aftercare.services.create_ledger_charge_aftercare", return_value="synthetic-posted-id")
+    def test_fractional_monthly_decimal_billed_without_float_rounding(self, charge):
+        row = AftercareEnrollment.objects.get(
+            school_fk=self.school, student_fk=self.student, care_session="PM",
+        )
+        row.monthly_rate = "0.29"
+        row.save(update_fields=["monthly_rate"])
+        result = run_monthly_flat_billing(self.school.id, 2026, 6)
+        self.assertEqual(result["charged"], 1)
+        self.assertEqual(charge.call_args.kwargs["amount_cents"], 29)
+
+    def test_enrollment_api_rejects_negative_monthly_rate(self):
+        user = _user(self.school, grants=("extended_care.view", "extended_care.edit"))
+        payload = _payload(self.student)
+        payload["care_session"] = "AM"
+        payload["monthly_rate"] = "-0.01"
+        response = _client(user, self.school).post(AFTERCARE_URL, payload, format="json")
+        self.assertEqual(response.status_code, 400, response.data)
+        self.assertFalse(AftercareEnrollment.objects.filter(
+            school_fk=self.school, student_fk=self.student, care_session="AM",
+        ).exists())
+
+    @patch("aftercare.services.create_ledger_charge_aftercare")
+    def test_monthly_billing_rejects_foreign_student_before_any_charge(self, charge):
+        foreign_school = _school()
+        foreign_student = _student(foreign_school)
+        # This inconsistent legacy/import row is deliberately created outside the API.
+        _enroll(self.school, foreign_student, care_session="AM", monthly_rate="55.00")
+        with self.assertRaisesMessage(ValueError, "student is not active in this school"):
+            run_monthly_flat_billing(self.school.id, 2026, 6)
+        charge.assert_not_called()
+        self.assertFalse(AftercareMonthlyChargeRun.objects.filter(school_fk=self.school).exists())
+
+    @patch("aftercare.services.create_ledger_charge_aftercare")
+    def test_monthly_billing_rejects_inactive_student_before_any_charge(self, charge):
+        self.student.is_active = False
+        self.student.save(update_fields=["is_active"])
+        with self.assertRaisesMessage(ValueError, "student is not active in this school"):
+            run_monthly_flat_billing(self.school.id, 2026, 6)
+        charge.assert_not_called()
+        self.assertFalse(AftercareMonthlyChargeRun.objects.filter(school_fk=self.school).exists())
+
+    @patch("aftercare.services.create_ledger_charge_aftercare")
+    def test_monthly_billing_rejects_inactive_tenant_without_charge(self, charge):
+        self.school.is_active = False
+        self.school.save(update_fields=["is_active"])
+        with self.assertRaisesMessage(ValueError, "active school"):
+            run_monthly_flat_billing(self.school.id, 2026, 6)
+        charge.assert_not_called()
+        self.assertFalse(AftercareMonthlyChargeRun.objects.filter(school_fk=self.school).exists())
+
+
 class TestModule026IncidentBehavior(TestCase):
     @patch("aftercare.services.create_discipline_record_for_incident")
     def test_major_incident_links_discipline(self, bridge):
@@ -192,3 +279,56 @@ class TestModule026IncidentBehavior(TestCase):
         self.assertIsNone(incident.discipline_record_id)
         bridge.assert_not_called()
         self.assertEqual(AftercareIncident.objects.filter(school_fk=school).count(), 1)
+
+
+class TestMonthlyBillingPostgresConcurrency(TransactionTestCase):
+    """Proof on PostgreSQL: a second worker cannot race the first month's billing."""
+
+    def test_concurrent_first_runs_post_one_obligation(self):
+        from concurrent.futures import ThreadPoolExecutor
+        from threading import Barrier, Lock
+        from time import sleep
+
+        from django.db import close_old_connections, connection, connections
+
+        if connection.vendor != "postgresql":
+            self.skipTest("SELECT FOR UPDATE concurrency requires PostgreSQL.")
+
+        school = _school()
+        student = _student(school)
+        _enroll(school, student)
+        barrier = Barrier(2)
+        posted = []
+        posted_lock = Lock()
+
+        def synthetic_post(**kwargs):
+            with posted_lock:
+                posted.append(kwargs)
+            # Give the other worker time to attempt the same school/month.
+            sleep(0.15)
+            return "synthetic-obligation"
+
+        def worker():
+            close_old_connections()
+            try:
+                barrier.wait(timeout=15)
+                return run_monthly_flat_billing(school.id, 2026, 6)
+            finally:
+                connections.close_all()
+
+        with patch("aftercare.services.create_ledger_charge_aftercare", side_effect=synthetic_post):
+            with ThreadPoolExecutor(max_workers=2) as pool:
+                first = pool.submit(worker)
+                second = pool.submit(worker)
+                results = [first.result(timeout=30), second.result(timeout=30)]
+
+        self.assertEqual(
+            sorted(row["status"] for row in results),
+            ["already_ran", "ok"],
+        )
+        self.assertEqual(len(posted), 1)
+        self.assertEqual(
+            AftercareMonthlyChargeRun.objects.filter(
+                school_fk=school, year=2026, month=6,
+            ).count(), 1,
+        )
