@@ -312,7 +312,7 @@ def test_overnight_open_custody_suppresses_another_sessions_scheduled_roster():
     assert matching[0]["checkout_time"] is None
     assert not any(row["session_id"] == str(other_session.id) for row in matching)
 
-    with pytest.raises(ValueError, match="different session"):
+    with pytest.raises(ValueError, match="another session or school"):
         checkout_camper(
             c.school.id, c.child.id, other_session.id,
             pickup_contact_id=c.pickup.id, pickup_verified=True,
