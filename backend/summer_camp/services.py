@@ -719,6 +719,7 @@ def roster_today(school_id):
             open_count_by_child[attendance.student_id] = (
                 open_count_by_child.get(attendance.student_id, 0) + 1
             )
+    open_student_ids = set(open_count_by_child)
 
     def roster_row(enrollment, attendance):
         key = (enrollment.session_id, enrollment.student_id) if enrollment else (
@@ -750,6 +751,8 @@ def roster_today(school_id):
             "checkout_time": current.checkout_time.isoformat() if current and current.checkout_time else None,
             "pickup_verified": bool(current.pickup_verified) if current else False,
             "attendance_date": str(current.date) if current else None,
+            "attendance_id": str(current.id) if current else None,
+            "unresolved_custody": bool(current and current.checkout_time is None),
             "open_custody_count": open_count_by_child.get(key[1], 0),
             "requires_supervisor_reconciliation": manual_review,
             "form_status": enrollment.form_status if enrollment else "NOT_VERIFIED",
@@ -758,8 +761,11 @@ def roster_today(school_id):
             "pickup_status": enrollment.pickup_status if enrollment else "NOT_VERIFIED",
         }
 
-    rows = [roster_row(e, None) for e in enrollments]
-    included_keys = {(e.session_id, e.student_id) for e in enrollments}
+    # Open custody from any Camp session supersedes a new scheduled arrival
+    # for the same child. Retain the actual unresolved record below instead.
+    safe_new_arrivals = [e for e in enrollments if e.student_id not in open_student_ids]
+    rows = [roster_row(e, None) for e in safe_new_arrivals]
+    included_keys = {(e.session_id, e.student_id) for e in safe_new_arrivals}
     for key, records in grouped.items():
         if key in included_keys or not any(record.checkout_time is None for record in records):
             continue

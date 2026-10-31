@@ -359,3 +359,31 @@ def test_open_other_camp_session_blocks_checkin(camp_case):
     assert not SummerCampAttendance.objects.filter(
         school=school, student=student, session=session,
     ).exists()
+
+
+def test_roster_does_not_offer_fresh_other_session_admission_over_open_custody(camp_case, monkeypatch):
+    from summer_camp import services
+
+    school, _other_school, student, session, _enrollment, when = camp_case
+    school.timezone = "UTC"
+    school.save(update_fields=["timezone"])
+    other_session = SummerCampSession.objects.create(
+        school=school, program=session.program, name="Open Custody Other Session",
+        start_date=when.date() - timedelta(days=1),
+        end_date=when.date() + timedelta(days=1),
+        start_time=time(8), end_time=time(16), capacity=20, status="PUBLISHED",
+    )
+    open_record = SummerCampAttendance.objects.create(
+        school=school, student=student, session=other_session,
+        date=when.date(), checkin_time=when - timedelta(hours=1),
+    )
+    monkeypatch.setattr(services.timezone, "now", lambda: when)
+    custody = services.roster_today(school.id)
+    rows = [r for r in custody["rows"] if r["student_id"] == str(student.id)]
+    assert len(rows) == 1
+    assert rows[0]["session_id"] == str(other_session.id)
+    assert rows[0]["attendance_id"] == str(open_record.id)
+    assert rows[0]["unresolved_custody"] is True
+    assert rows[0]["requires_supervisor_reconciliation"] is True
+    assert rows[0]["open_custody_count"] == 1
+    assert not any(r["session_id"] == str(session.id) for r in rows)
