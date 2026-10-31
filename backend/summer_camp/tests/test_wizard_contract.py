@@ -89,6 +89,47 @@ def test_editor_round_trips_config_and_completion_without_duplicate_state():
     assert SummerCampConfigWizardState.objects.filter(school=school).count() == 1
 
 
+def test_reducing_steps_without_completion_flag_clears_saved_completion():
+    school = School.objects.create(name="Camp Wizard Completion Regression")
+    user = _user(school, "steps-reduction")
+    _grant(user, school, "HEAD_OF_SCHOOL", "summer_camp.view", "summer_camp.edit")
+    client = _client(user, school)
+
+    first = client.post(
+        URL,
+        {"config": {"camp_name": "First Camp"}, "completed_steps": STEPS, "is_completed": True},
+        format="json",
+    )
+    assert first.status_code == 200, first.data
+    assert first.data["wizard"]["is_completed"] is True
+
+    # The client updates an earlier step but does not resend is_completed.
+    reduced = client.post(
+        URL,
+        {"config": {"camp_name": "Revised Camp"}, "completed_steps": ["Program"]},
+        format="json",
+    )
+    assert reduced.status_code == 200, reduced.data
+    assert reduced.data["wizard"] == {"completed_steps": ["Program"], "is_completed": False}
+    readback = client.get(URL)
+    assert readback.status_code == 200
+    assert readback.data["config"]["camp_name"] == "Revised Camp"
+    assert readback.data["wizard"]["completed_steps"] == ["Program"]
+    assert readback.data["wizard"]["is_completed"] is False
+
+    # An inconsistent explicit completion request must fail without writes.
+    denied = client.post(
+        URL,
+        {"config": {"camp_name": "Must Not Persist"}, "completed_steps": ["Program"], "is_completed": True},
+        format="json",
+    )
+    assert denied.status_code == 400
+    assert client.get(URL).data["config"]["camp_name"] == "Revised Camp"
+    state = SummerCampConfigWizardState.objects.get(school=school)
+    assert state.completed_steps == ["Program"]
+    assert state.is_completed is False
+
+
 def test_foreign_school_role_does_not_authorize_requested_school():
     school = School.objects.create(name="Camp Wizard Requested")
     foreign = School.objects.create(name="Camp Wizard Foreign")

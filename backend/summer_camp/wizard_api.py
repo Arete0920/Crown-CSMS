@@ -106,6 +106,10 @@ def summer_camp_setup_wizard(request):
         )
         if "completed_steps" in payload.validated_data:
             state.completed_steps = payload.validated_data["completed_steps"]
+            # A shortened setup sequence invalidates any prior completion.
+            # Omitting is_completed must never retain a stale True value.
+            if state.completed_steps != list(WIZARD_STEPS):
+                state.is_completed = False
         if "is_completed" in payload.validated_data:
             state.is_completed = payload.validated_data["is_completed"]
         state.save()
