@@ -4,6 +4,7 @@ import csv
 import uuid
 import zipfile
 from io import BytesIO, StringIO
+from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
 from django.test import TestCase
@@ -174,6 +175,18 @@ class SdsV21EndpointTest(TestCase):
         self.assertEqual(event.meta["classes"], 1)
         self.assertEqual(event.meta["students"], 1)
         self.assertEqual(event.meta["teachers"], 1)
+
+    def test_export_fails_closed_when_audit_persistence_is_unavailable(self):
+        with patch(
+            "integrations.sds_v21.audit_log",
+            side_effect=RuntimeError("synthetic audit unavailable"),
+        ):
+            with self.assertRaises(RuntimeError):
+                sds_v21_export(self._request())
+
+        self.assertFalse(
+            AuditEvent.objects.filter(action="microsoft.sds.exported").exists()
+        )
 
     def test_authenticated_user_without_roster_grant_is_forbidden(self):
         unauthorized = User.objects.create_user(
