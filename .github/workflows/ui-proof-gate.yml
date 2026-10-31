@@ -40,7 +40,7 @@ jobs:
         run: npm ci
 
       - name: Verify crawler inventory and dashboard authorization contracts
-        run: npx vitest run tests/certification/crawler-coverage-contract.test.ts src/tests/sandboxRoutes.test.jsx --reporter=verbose
+        run: npx vitest run tests/certification/crawler-coverage-contract.test.ts src/tests/sandboxRoutes.test.jsx src/components/routing/devAidPreviewAccess.test.js src/routes/devAidPreviewGuardedRoute.test.jsx --reporter=verbose
 
       - name: Install Playwright browsers
         run: npx playwright install chromium --with-deps

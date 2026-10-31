@@ -1,4 +1,6 @@
 // @vitest-environment jsdom
+// @vitest-environment-options {"url":"https://yellow-forest-0eecc8b0f-devcertification.eastus2.7.azurestaticapps.net/"}
+/* global jsdom */
 // Actual wizardRoutes -> RoleRouteGuard -> ReleaseStateRoute composition.
 // All wizard components are synthetic stubs: no API calls, users, or writes.
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
@@ -28,7 +30,8 @@ beforeEach(() => {
   vi.stubEnv('VITE_DEV_AID_WIZARD_PREVIEW', '1');
   vi.stubEnv('VITE_SANDBOX_MODE', '1');
   vi.stubEnv('VITE_DEMO_MODE', 'sandbox');
-  vi.stubGlobal('location', { origin: DEV_AID_PREVIEW_ORIGIN });
+  jsdom.reconfigure({ url: `${DEV_AID_PREVIEW_ORIGIN}/` });
+  expect(window.location.origin).toBe(DEV_AID_PREVIEW_ORIGIN);
   sessionStorage.clear();
   localStorage.clear();
 });
@@ -36,7 +39,7 @@ beforeEach(() => {
 afterEach(() => {
   cleanup();
   delete globalThis.__CROWN_USER_ROLES__;
-  vi.unstubAllGlobals();
+  jsdom.reconfigure({ url: `${DEV_AID_PREVIEW_ORIGIN}/` });
   vi.unstubAllEnvs();
 });
 
@@ -80,7 +83,8 @@ describe('actual guarded DEV Financial Aid wizard route', () => {
   });
 
   it('redirects the authorized role when the page origin is not the exact DEV preview', async () => {
-    vi.stubGlobal('location', { origin: 'https://untrusted.invalid' });
+    jsdom.reconfigure({ url: 'https://untrusted.invalid/' });
+    expect(window.location.origin).toBe('https://untrusted.invalid');
     const router = renderWizard('/aid-setup', 'finance_admin');
     await waitFor(() => expect(router.state.location.pathname).toBe('/wizards'));
     expect(screen.getByTestId('draft-denied')).toBeTruthy();
