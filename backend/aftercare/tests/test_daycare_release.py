@@ -89,3 +89,24 @@ def test_released_child_frees_room_but_no_same_day_reentry():
     assert DaycareAttendance.objects.filter(room=d["room"],custody_release__isnull=True).count()==1
     with pytest.raises(CheckinRefused) as error:check(d)
     assert error.value.code=="repeat_same_day_requires_review"
+
+def test_suspended_tenant_must_still_permit_guarded_exit():
+    from tenants.models import TenantProfile
+    d=setup()
+    attendance=check(d)
+    tenant=TenantProfile.objects.get(school=d["school"])
+    tenant.status="suspended"
+    tenant.save(update_fields=["status"])
+    d["entitlement"].enabled=False
+    d["entitlement"].save(update_fields=["enabled"])
+    exit_record=release(d,attendance)
+    assert exit_record.attendance_id==attendance.id
+    with pytest.raises(PermissionDenied):
+        check(d)
+
+def test_archived_child_still_has_guarded_release():
+    d=setup()
+    attendance=check(d)
+    d["child"].is_active=False
+    d["child"].save()
+    assert release(d,attendance).attendance_id==attendance.id
