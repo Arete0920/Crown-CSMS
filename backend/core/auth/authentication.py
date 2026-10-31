@@ -45,10 +45,6 @@ class AADBearerAuthentication(BaseAuthentication):
 
         try:
             claims = decode_and_validate_bearer(token)
-            user   = get_user_from_claims(claims)
-        except MicrosoftIdentityError as exc:
-            logger.info("AADBearerAuthentication: Microsoft identity rejected — %s", exc)
-            raise AuthenticationFailed("Microsoft identity is not provisioned for CROWN.") from exc
         except Exception as exc:
             logger.debug("AADBearerAuthentication: token rejected — %s", exc)
             # Raise only for tokens that appear to be Microsoft-issued.
@@ -57,6 +53,18 @@ class AADBearerAuthentication(BaseAuthentication):
                 raise AuthenticationFailed("Microsoft token invalid.") from exc
             # Let other backends handle tokens/configuration this authenticator cannot classify.
             return None
+
+        # Once Microsoft cryptographic validation succeeds, identity resolution is
+        # authoritative. Never fall through to another authenticator on a mapping
+        # or persistence failure for the already-validated Microsoft principal.
+        try:
+            user = get_user_from_claims(claims)
+        except MicrosoftIdentityError as exc:
+            logger.info("AADBearerAuthentication: Microsoft identity rejected — %s", exc)
+            raise AuthenticationFailed("Microsoft identity is not provisioned for CROWN.") from exc
+        except Exception as exc:
+            logger.exception("AADBearerAuthentication: Microsoft identity resolution failed")
+            raise AuthenticationFailed("Microsoft identity resolution unavailable.") from exc
 
         # Tenant denials must not be swallowed by the token-validation fallback.
         return reconcile_authenticated_tenant(request, (user, claims))
