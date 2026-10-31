@@ -321,3 +321,39 @@ def test_inactive_child_still_has_authorized_pm_custody_release(monkeypatch):
     assert release.status_code == 200, release.data
     assert release.data["pickup_verified"] is True
 
+
+
+def test_stale_open_custody_remains_visible_for_supervisor_reconciliation(monkeypatch):
+    """Older open attendance must not disappear from the staff custody roster."""
+    school, _household, child, _staff, client = family()
+    module = grant(school, "PM")
+    enrollment(school, child, "PM")
+    stale_day = date(2026, 10, 25)
+    record = AftercareAttendance.objects.create(
+        school_fk=school, student_fk=child, care_session="PM",
+        date=stale_day,
+        checkin_time=datetime(2026, 10, 25, 15, 0, tzinfo=ZoneInfo("UTC")),
+    )
+    module.status = "expired"
+    module.save(update_fields=["status"])
+    current = datetime(2026, 10, 31, 15, 0, tzinfo=ZoneInfo("UTC"))
+    monkeypatch.setattr("aftercare.api.timezone.now", lambda: current)
+    response = client.get(API + "roster/today/?care_session=PM")
+    assert response.status_code == 200, response.data
+    assert len(response.data["rows"]) == 1
+    assert response.data["rows"][0]["attendance"]["date"] == str(stale_day)
+    assert response.data["rows"][0]["unscheduled"] is True
+    record.refresh_from_db()
+    assert record.checkout_time is None
+    assert client.post(API + "attendance/checkin/", {
+        "student_id": str(child.id), "care_session": "PM",
+    }, format="json").status_code == 403
+    # Old custody still requires supervisor reconciliation, not automatic release.
+    contact = AftercarePickupContact.objects.create(
+        school_fk=school, student_fk=child, name="Authorized Synthetic Guardian",
+    )
+    release = client.post(API + "attendance/checkout/", {
+        "student_id": str(child.pk), "pickup_contact_id": contact.pk,
+        "pickup_verified": True, "care_session": "PM",
+    }, format="json")
+    assert release.status_code == 400
