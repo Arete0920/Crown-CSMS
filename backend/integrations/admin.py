@@ -17,6 +17,7 @@ class MicrosoftTenantBindingAdmin(admin.ModelAdmin):
 
     def save_model(self, request, obj, form, change):
         super().save_model(request, obj, form, change)
+        request.tenant_school_id = obj.school_id
         audit_log(
             request=request,
             action="microsoft.tenant_binding.updated" if change else "microsoft.tenant_binding.created",
@@ -48,6 +49,7 @@ class MicrosoftIdentityLinkAdmin(admin.ModelAdmin):
 
     def save_model(self, request, obj, form, change):
         super().save_model(request, obj, form, change)
+        request.tenant_school_id = obj.binding.school_id
         audit_log(
             request=request,
             action="microsoft.identity_link.updated" if change else "microsoft.identity_link.created",
