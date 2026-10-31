@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import CrownLayout from "../components/crown/CrownLayout.jsx";
 import DashboardSection from "../components/layout/DashboardSection.jsx";
 import {
@@ -97,7 +97,6 @@ export default function SummerCampRosterPage() {
     };
   }, [selectedSession]);
 
-  const selectedSessionId = useMemo(() => Number(selectedSession), [selectedSession]);
 
   const selected = sessions.find((session) => String(session.id) === selectedSession);
   async function refresh() {
@@ -106,6 +105,14 @@ export default function SummerCampRosterPage() {
     ]);
     setRows(campRoster(roster, selectedSession));
     setToday(campToday(custody));
+  }
+  async function reloadRoster() {
+    if (busy || !selectedSession) return;
+    setLoading(true);
+    setError(null);
+    try { await refresh(); }
+    catch (e) { setError("Camp roster cannot be verified: " + e.message); }
+    finally { setLoading(false); }
   }
   async function checkin(row) {
     if (busy) return;
@@ -153,6 +160,7 @@ export default function SummerCampRosterPage() {
           <select
             id="summer-camp-session-select"
             value={selectedSession}
+            disabled={busy || loading}
             onChange={(event) => setSelectedSession(event.target.value)}
           >
             {sessions.map((session) => (
@@ -163,7 +171,8 @@ export default function SummerCampRosterPage() {
           </select>
         </div>
 
-        {loading && <span>Loading roster...</span>}
+        <button type="button" disabled={loading || busy || !selectedSession} onClick={() => { void reloadRoster(); }}>Refresh custody roster</button>
+        {loading && <span role="status">Loading roster...</span>}
         {error && (
           <div style={{ color: "var(--crown-danger)", background: "var(--crown-danger-bg)", padding: "10px 14px", borderRadius: 4 }}>
             {error}
@@ -202,7 +211,7 @@ export default function SummerCampRosterPage() {
           </table>
         )}
         {pickup && pickup.sessionId === selectedSession && (
-          <div role="dialog" aria-modal="true" aria-label="Verify Camp pickup">
+          <section role="region" aria-label="Verify Camp pickup">
             <p>Match the person to the current authorized pickup record before releasing the child.</p>
             {pickup.contacts.length === 0 && <p role="alert">No active authorized pickup contact; release blocked.</p>}
             <label htmlFor="camp-authorized-contact">Authorized person</label>
@@ -213,7 +222,7 @@ export default function SummerCampRosterPage() {
             <label><input type="checkbox" disabled={busy || !pickup.contactId} checked={pickup.verified} onChange={(event) => setPickup((old) => ({ ...old, verified: event.target.checked }))} /> I personally verified this pickup identity.</label>
             <button type="button" disabled={busy || !pickup.verified || !pickup.contactId} onClick={release}>Record verified release</button>
             <button type="button" disabled={busy} onClick={() => setPickup(null)}>Cancel</button>
-          </div>
+          </section>
         )}
       </DashboardSection>
     </CrownLayout>
