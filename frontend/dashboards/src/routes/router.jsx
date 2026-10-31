@@ -3,6 +3,7 @@ import { createBrowserRouter, Navigate } from "react-router";
 import RoleDashboardPage from "../pages/RoleDashboardPage.jsx";
 import BillingDashboard from "../pages/BillingDashboard.jsx";
 import FinancialAidDashboard from "../pages/FinancialAidDashboard.jsx";
+import JirehSGODashboard from "../pages/JirehSGODashboard.jsx";
 import { AcademicsDashboard } from "../pages/AcademicsDashboard.jsx";
 import { GradebookRO } from "../pages/GradebookRO.jsx";
 import { TranscriptRO } from "../pages/TranscriptRO.jsx";
