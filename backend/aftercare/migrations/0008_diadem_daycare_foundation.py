@@ -1,7 +1,8 @@
-"""Standalone Diadem schema branch from aftercare 0006.
+"""Standalone Diadem identity schema after accepted Extended Care AM/PM.
 
-Extended Care PR #569 independently owns 0007_care_session_am_pm. If both
-are accepted, add a no-op merge migration depending on both 0007 leaves.
+This migration intentionally depends on 0007_care_session_am_pm, preserving
+Extended Care's existing migration lineage without parallel 0007 leaves.
+Daycare check-in, staff grants and custody release follow in separate migrations.
 No existing AM/PM or attendance tables are altered here.
 """
 import uuid
