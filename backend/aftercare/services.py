@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import date, datetime, time
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from django.db import transaction
 from django.db.models import Q
@@ -28,13 +29,33 @@ def cents_to_amount(cents: int) -> float:
     return float(cents) / 100.0
 
 
-def combine_local(d: date, t: time | str) -> datetime:
+def care_timezone(school_id):
+    """Resolve a tenant's IANA timezone; invalid configuration fails closed."""
+    from core.models import School
+
+    name = School.objects.filter(pk=school_id, is_active=True).values_list("timezone", flat=True).first()
+    if not name:
+        raise ValueError("An active school with a configured timezone is required for extended care.")
+    try:
+        return ZoneInfo(name)
+    except (ZoneInfoNotFoundError, TypeError, ValueError) as exc:
+        raise ValueError("A valid school timezone is required for extended care.") from exc
+
+
+def school_local_date(school_id, stamp: datetime) -> date:
+    """Daily custody records belong to the school's civil day, not the UTC day."""
+    if timezone.is_naive(stamp):
+        raise ValueError("Extended-care timestamps must contain timezone information.")
+    return stamp.astimezone(care_timezone(school_id)).date()
+
+
+def combine_local(d: date, t: time | str, tz=None) -> datetime:
     if isinstance(t, str):
         try:
             t = time.fromisoformat(t)
         except ValueError as exc:
             raise ValueError(f"Invalid configured extended-care time: {t!r}") from exc
-    return timezone.make_aware(datetime.combine(d, t))
+    return timezone.make_aware(datetime.combine(d, t), timezone=tz or timezone.get_default_timezone())
 
 
 @dataclass
@@ -44,7 +65,10 @@ class LateFeeResult:
 
 
 def compute_late_fee(config: AftercareProgramConfig, attendance_date: date, checkout_dt: datetime) -> LateFeeResult:
-    cutoff_dt = combine_local(attendance_date, config.end_time)
+    # Legacy integer-only config tests use the Django timezone; canonical
+    # school configurations always use their explicit local operating timezone.
+    configured_tz = care_timezone(config.school_fk_id) if config.school_fk_id else timezone.get_default_timezone()
+    cutoff_dt = combine_local(attendance_date, config.end_time, tz=configured_tz)
     delta_sec = (checkout_dt - cutoff_dt).total_seconds()
     late_minutes = max(0, int(delta_sec // 60))
     grace = int(config.late_fee_grace_minutes)
@@ -115,12 +139,13 @@ def checkin_student(school_id, student_id, when: datetime | None = None, note: s
     if care_session not in ("AM", "PM"):
         raise ValueError("Invalid care session.")
     when = when or timezone.now()
+    attendance_day = school_local_date(school_id, when)
     student = _canonical_student(school_id=school_id, student_id=student_id)
-    _active_enrollment(school_id=school_id, student=student, on_date=when.date(), care_session=care_session)
+    _active_enrollment(school_id=school_id, student=student, on_date=attendance_day, care_session=care_session)
     attendance, created = AftercareAttendance.objects.select_for_update().get_or_create(
         school_fk_id=school_id,
         student_fk=student,
-        date=when.date(),
+        date=attendance_day,
         care_session=care_session,
         defaults={"checkin_time": when, "notes": note},
     )
@@ -152,11 +177,12 @@ def checkout_student(
         raise ValueError("An active authorized pickup contact is required before checkout.")
 
     when = when or timezone.now()
+    attendance_day = school_local_date(school_id, when)
     student = _canonical_student(school_id=school_id, student_id=student_id)
     attendance = AftercareAttendance.objects.select_for_update().get(
         school_fk_id=school_id,
         student_fk=student,
-        date=when.date(),
+        date=attendance_day,
         care_session="PM",
     )
     if attendance.checkout_time is not None:
@@ -179,7 +205,7 @@ def checkout_student(
     # Record the canonical authorized contact; never trust a freeform name.
     attendance.pickup_name_freeform = pickup_contact.name
     attendance.pickup_verified = True
-    fee = compute_late_fee(cfg, when.date(), when)
+    fee = compute_late_fee(cfg, attendance_day, when)
     attendance.late_minutes = fee.late_minutes
     attendance.late_fee_cents = fee.late_fee_cents
 
@@ -203,6 +229,7 @@ def handoff_student_to_school(school_id, student_id, receiving_user, when: datet
     from core.permissions import user_has_permission
 
     when = when or timezone.now()
+    attendance_day = school_local_date(school_id, when)
     if not getattr(receiving_user, "is_authenticated", False) or not getattr(receiving_user, "is_active", False):
         raise ValueError("An active receiving staff member is required.")
     if getattr(receiving_user, "school_id", None) != school_id:
@@ -217,7 +244,7 @@ def handoff_student_to_school(school_id, student_id, receiving_user, when: datet
         raise ValueError("Receiving staff member lacks school-scoped handoff authority.")
     student = _canonical_student(school_id=school_id, student_id=student_id)
     attendance = AftercareAttendance.objects.select_for_update().filter(
-        school_fk_id=school_id, student_fk=student, date=when.date(), care_session="AM",
+        school_fk_id=school_id, student_fk=student, date=attendance_day, care_session="AM",
     ).first()
     if attendance is None:
         raise ValueError("Morning check-in is required before handoff.")

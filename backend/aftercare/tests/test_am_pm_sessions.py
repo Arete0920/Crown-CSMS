@@ -397,3 +397,66 @@ def test_seeded_care_staff_roles_have_real_tenant_scoped_api_access(role_code):
     assert {row["care_session"] for row in response.data} == {"AM", "PM"}
     other_school = School.objects.create(name="Unrelated Role Check")
     assert not user_has_permission(operator, "extended_care.view", school=other_school)
+
+def test_pacific_pm_checkout_after_utc_midnight_uses_school_date_and_cutoff(monkeypatch):
+    """A normal 6:31pm Pacific pickup must not become tomorrow or 4h late."""
+    from zoneinfo import ZoneInfo
+
+    school, _household, child, receiver = setup_family()
+    school.timezone = "America/Los_Angeles"
+    school.save(update_fields=["timezone"])
+    AftercareEnrollment.objects.filter(school_fk=school).update(days_of_week=["FRI"])
+    local_tz = ZoneInfo("America/Los_Angeles")
+    checked_in_at = datetime(2026, 10, 30, 17, 15, tzinfo=local_tz)
+    checked_out_at = datetime(2026, 10, 30, 18, 31, tzinfo=local_tz)
+    assert checked_in_at.astimezone(ZoneInfo("UTC")).date() == date(2026, 10, 31)
+
+    attendance = checkin_student(school.id, child.id, when=checked_in_at, care_session="PM")
+    assert attendance.date == date(2026, 10, 30)
+    contact = AftercarePickupContact.objects.create(
+        school_fk=school, student_fk=child, name="Authorized Pickup",
+    )
+    writes = []
+    monkeypatch.setattr(
+        "aftercare.services.create_ledger_charge_aftercare",
+        lambda **kwargs: writes.append(kwargs) or "synthetic-ledger-1",
+    )
+    checked_out = checkout_student(
+        school.id, child.id, contact.pk, "", True, when=checked_out_at,
+    )
+    assert checked_out.pk == attendance.pk
+    assert checked_out.date == date(2026, 10, 30)
+    assert checked_out.late_minutes == 31
+    assert checked_out.late_fee_cents == 4000
+    assert len(writes) == 1 and writes[0]["amount_cents"] == 4000
+
+    # The same after-UTC-midnight instant is still October 30 for this school.
+    from rest_framework.test import APIClient
+    permission, _ = CrownPermission.objects.get_or_create(code="extended_care.view")
+    RolePermission.objects.get_or_create(role_code="SUPPORT", permission=permission)
+    monkeypatch.setattr(
+        "aftercare.api.timezone.now",
+        lambda: datetime(2026, 10, 31, 1, 45, tzinfo=ZoneInfo("UTC")),
+    )
+    client = APIClient()
+    client.force_authenticate(user=receiver)
+    client.credentials(HTTP_X_SCHOOL_ID=str(school.id))
+    roster = client.get("/api/v1/aftercare/roster/today/?care_session=PM")
+    assert roster.status_code == 200, roster.data
+    assert roster.data["date"] == "2026-10-30"
+    assert len(roster.data["rows"]) == 1
+    summary = client.get("/api/v1/aftercare/board/summary/?care_session=PM")
+    assert summary.status_code == 200, summary.data
+    assert summary.data["as_of"] == "2026-10-30"
+    assert summary.data["late_fee_assessed_mtd"] == 40.0
+    assert summary.data["late_fee_revenue_mtd"] is None
+
+
+def test_unconfigured_school_timezone_blocks_custody_writes():
+    school, _household, child, _receiver = setup_family()
+    school.timezone = "Not_A_Real/Timezone"
+    school.save(update_fields=["timezone"])
+    with pytest.raises(ValueError, match="valid school timezone"):
+        checkin_student(school.id, child.id, when=at(7, 15), care_session="AM")
+    assert not AftercareAttendance.objects.filter(school_fk=school).exists()
+

@@ -1,3 +1,5 @@
+from datetime import datetime, time, timedelta
+
 from django.db import transaction
 from django.db.models import Q, Sum
 from django.utils import timezone
@@ -19,7 +21,7 @@ from .serializers import (
     AftercarePickupContactSerializer,
     AftercareProgramConfigSerializer,
 )
-from .services import checkin_student, checkout_student, ensure_config, handoff_student_to_school, record_incident
+from .services import care_timezone, checkin_student, checkout_student, ensure_config, handoff_student_to_school, record_incident, school_local_date
 from .tenant import school_id_from_request
 
 
@@ -52,8 +54,8 @@ class BoardSummaryResponseSerializer(serializers.Serializer):
     incidents_mtd = serializers.IntegerField()
     unattributed_incidents_mtd = serializers.IntegerField()
     late_fee_assessed_mtd = serializers.FloatField()
-    # Legacy response key; this figure is an assessment, not cash receipts.
-    late_fee_revenue_mtd = serializers.FloatField()
+    # Legacy response key: null until actual settled receipts can be proven.
+    late_fee_revenue_mtd = serializers.FloatField(allow_null=True)
 
 
 class AftercareCheckinRequestSerializer(serializers.Serializer):
@@ -215,7 +217,10 @@ def roster_today(request):
     if not _has_permission(request, "extended_care.view"):
         return _forbidden()
 
-    today = timezone.now().date()
+    try:
+        today = school_local_date(school_id, timezone.now())
+    except ValueError as exc:
+        return _bad_request(exc)
     dow = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"][today.weekday()]
     enroll_qs = (
         AftercareEnrollment.objects.filter(
@@ -396,8 +401,16 @@ def board_summary(request):
     ):
         return _forbidden()
 
-    today = timezone.now().date()
+    try:
+        local_tz = care_timezone(school_id)
+        today = timezone.now().astimezone(local_tz).date()
+    except ValueError as exc:
+        return _bad_request(exc)
     month_start = today.replace(day=1)
+    # Use actual instant boundaries so incidents near UTC midnight are
+    # counted in the right tenant-local reporting month and day.
+    month_start_at = timezone.make_aware(datetime.combine(month_start, time.min), timezone=local_tz)
+    tomorrow_at = timezone.make_aware(datetime.combine(today + timedelta(days=1), time.min), timezone=local_tz)
     care_session = request.query_params.get("care_session")
     if care_session is not None and care_session not in ("AM", "PM"):
         return _bad_request("Invalid care session.")
@@ -412,7 +425,8 @@ def board_summary(request):
     )
     incidents_qs = AftercareIncident.objects.filter(
         school_fk_id=school_id,
-        occurred_at__date__range=(month_start, today),
+        occurred_at__gte=month_start_at,
+        occurred_at__lt=tomorrow_at,
     )
     # An incident lacking an attendance link cannot reliably be attributed
     # to AM or PM; report it separately rather than copying it to both.
@@ -439,6 +453,7 @@ def board_summary(request):
             "incidents_mtd": incidents_mtd,
             "unattributed_incidents_mtd": unattributed_incidents,
             "late_fee_assessed_mtd": float(late_fee_cents) / 100.0,
-            "late_fee_revenue_mtd": float(late_fee_cents) / 100.0,
+            # Assessment is not a settled payment; never report as revenue.
+            "late_fee_revenue_mtd": None,
         }
     )
