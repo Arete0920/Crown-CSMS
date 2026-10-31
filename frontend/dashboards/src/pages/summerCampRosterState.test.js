@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { campSessions, campRoster, campToday, currentCampCustody,
   campCanCheckIn, campCanVerifyPickup, campCustodyLabel, campPickupContacts,
-  duplicateCampRegistration } from "./summerCampRosterState.js";
+  duplicateCampRegistration, campOpenCustodyRows, campStudentHasOpenCustody } from "./summerCampRosterState.js";
 
 const child = { enrollment_id: "11", session_id: "4", student_id: "student-1",
   status: "REGISTERED", readiness_status: "READY" };
@@ -34,6 +34,23 @@ describe("Summer Camp live roster and custody", () => {
     expect(campCanCheckIn({ ...child, readiness_status: "BLOCKED" }, today.rows[0], session, today.date)).toBe(false);
     expect(duplicateCampRegistration(child, [child, { ...child, enrollment_id: "12" }])).toBe(true);
     expect(campCanCheckIn(child, today.rows[0], session, today.date, true)).toBe(false);
+  });
+
+  it("retains cross-session, cancelled and orphan custody for operator reconciliation", () => {
+    const other = { enrollment_id: null, session_id: "9", student_id: "student-1",
+      student_name: "Custody Child", session_name: "Prior Camp", attendance_id: "old-1",
+      checkin_time: "2026-07-02T23:55:00-04:00", checkout_time: null,
+      requires_supervisor_reconciliation: true };
+    const orphan = { enrollment_id: null, session_id: "10", student_id: null,
+      session_name: "Legacy Camp", attendance_id: "orphan-1", checkin_time: "08:00",
+      checkout_time: null, requires_supervisor_reconciliation: true };
+    const sample = { date: today.date, rows: [today.rows[0], other, orphan] };
+    expect(campOpenCustodyRows(sample)).toEqual([other, orphan]);
+    expect(campStudentHasOpenCustody(sample, "student-1")).toBe(true);
+    expect(campStudentHasOpenCustody(sample, "different-student")).toBe(false);
+    expect(campStudentHasOpenCustody(null, "student-1")).toBe(true);
+    expect(campCanCheckIn(child, today.rows[0], session, today.date,
+      campStudentHasOpenCustody(sample, child.student_id))).toBe(false);
   });
 
   it("requires an open attendance record for release and verified pickup for success label", () => {

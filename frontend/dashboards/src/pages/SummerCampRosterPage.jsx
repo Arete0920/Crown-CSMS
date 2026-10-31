@@ -10,7 +10,7 @@ import {
   fetchSummerCampSessionRoster,
 } from "../api/summerCampApi.js";
 
-import { campSessions, campRoster, campToday, currentCampCustody, campCanCheckIn, campCanVerifyPickup, campCustodyLabel, campPickupContacts, duplicateCampRegistration } from "./summerCampRosterState.js";
+import { campSessions, campRoster, campToday, currentCampCustody, campCanCheckIn, campCanVerifyPickup, campCustodyLabel, campPickupContacts, duplicateCampRegistration, campOpenCustodyRows, campStudentHasOpenCustody } from "./summerCampRosterState.js";
 
 const tableStyle = {
   width: "100%",
@@ -54,7 +54,10 @@ export default function SummerCampRosterPage() {
           setSelectedSession(String(sessionData[0].id));
         } else {
           const today = await fetchSummerCampRosterToday();
-          if (!cancelled) setRows(requireCampRows(today));
+          if (!cancelled) {
+            setRows(requireCampRows(today));
+            setToday(campToday(today));
+          }
         }
       } catch (e) {
         if (!cancelled) setError(e.message);
@@ -179,6 +182,32 @@ export default function SummerCampRosterPage() {
           </div>
         )}
 
+        {!loading && !error && today && campOpenCustodyRows(today).length > 0 && (
+          <section role="region" aria-label="Open Camp custody across sessions">
+            <h3>Open Camp custody across sessions</h3>
+            <p>These are school-reported open custody records, including prior-day,
+              other-session and cancelled registrations. No release is authorized by this list.</p>
+            <table style={tableStyle}>
+              <thead><tr><th style={thtdStyle}>Camper</th><th style={thtdStyle}>Session</th>
+                <th style={thtdStyle}>Check-in date</th><th style={thtdStyle}>Required action</th></tr></thead>
+              <tbody>
+                {campOpenCustodyRows(today).map((custody, index) => (
+                  <tr key={custody.attendance_id || `${custody.session_id}:${custody.student_id}:${index}`}>
+                    <td style={thtdStyle}>{custody.student_name || "Identity requires review"}</td>
+                    <td style={thtdStyle}>{custody.session_name || "Unlinked session"}</td>
+                    <td style={thtdStyle}>{custody.attendance_date || "Date unverified"}</td>
+                    <td style={thtdStyle}>
+                      {custody.requires_supervisor_reconciliation || custody.open_custody_count > 1
+                        ? "Supervisor reconciliation required"
+                        : "Open custody; verified pickup required"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </section>
+        )}
+
         {!loading && !error && (
           <table style={tableStyle}>
             <thead>
@@ -193,6 +222,7 @@ export default function SummerCampRosterPage() {
             <tbody>
               {rows.map((row) => { const custody = currentCampCustody(row, today, selectedSession);
                 const duplicate = duplicateCampRegistration(row, rows);
+                const admissionBlocked = duplicate || campStudentHasOpenCustody(today, row.student_id);
                 return (
                 <tr key={row.enrollment_id}>
                   <td style={thtdStyle}>{row.student_name}</td>
@@ -200,7 +230,7 @@ export default function SummerCampRosterPage() {
                   <td style={thtdStyle}>{row.status || "Not available"}</td>
                   <td style={thtdStyle}>{campCustodyLabel(custody)}</td>
                   <td style={thtdStyle}>
-                    <button type="button" disabled={busy || !campCanCheckIn(row, custody, selected, today?.date, duplicate)} onClick={() => checkin(row)} style={{ marginRight: 8 }}>
+                    <button type="button" disabled={busy || !campCanCheckIn(row, custody, selected, today?.date, admissionBlocked)} onClick={() => checkin(row)} style={{ marginRight: 8 }}>
                       Check in
                     </button>
                     <button type="button" disabled={busy || !campCanVerifyPickup(row, custody, duplicate)} onClick={() => beginPickup(row)}>Verify pickup</button>

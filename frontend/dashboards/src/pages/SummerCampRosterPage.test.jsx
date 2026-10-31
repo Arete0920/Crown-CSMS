@@ -103,6 +103,31 @@ describe("Summer Camp roster integrated custody UI", () => {
     expect(api.fetchCampPickupChoices).not.toHaveBeenCalled();
   });
 
+  it("shows unresolved custody beyond selected session without offering unverified actions", async () => {
+    api.fetchSummerCampSessionRoster.mockResolvedValue({
+      session_id: "7", rows: [{ ...registration, student_id: "student-1" }],
+    });
+    setCustody([
+      { ...attendance, enrollment_id: null, session_id: "8",
+        session_name: "Prior Camp Week", student_name: "Synthetic Camper",
+        attendance_id: "custody-previous", attendance_date: "2026-07-01",
+        requires_supervisor_reconciliation: true, open_custody_count: 1 },
+      { enrollment_id: null, session_id: "9", session_name: "Cancelled Camp",
+        attendance_id: "orphan-legacy", student_id: null,
+        student_name: "Identity requires review", checkin_time: "2026-07-01T08:00:00-04:00",
+        checkout_time: null, requires_supervisor_reconciliation: true },
+    ]);
+    render(<SummerCampRosterPage />);
+    const panel = await screen.findByRole("region", { name: "Open Camp custody across sessions" });
+    expect(within(panel).getByText("Prior Camp Week")).toBeTruthy();
+    expect(within(panel).getByText("Cancelled Camp")).toBeTruthy();
+    expect(within(panel).getAllByText("Supervisor reconciliation required")).toHaveLength(2);
+    expect(screen.getByRole("button", { name: "Check in" }).disabled).toBe(true);
+    expect(screen.getByRole("button", { name: "Verify pickup" }).disabled).toBe(true);
+    expect(api.checkoutSummerCamper).not.toHaveBeenCalled();
+    expect(api.checkinSummerCamper).not.toHaveBeenCalled();
+  });
+
   it("keeps session switching disabled while an authorized-contact lookup is pending", async () => {
     let finish;
     api.fetchCampPickupChoices.mockImplementation(() => new Promise(resolve => { finish = resolve; }));

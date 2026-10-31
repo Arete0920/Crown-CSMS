@@ -28,6 +28,22 @@ export function currentCampCustody(enrollment, today, sessionId) {
     String(row.enrollment_id) === String(enrollment.enrollment_id)) || null;
 }
 
+// Open custody is school-wide. A child may have an unresolved attendance
+// from a different Camp session or a cancelled/expired enrollment.
+export function campOpenCustodyRows(today) {
+  if (!today || !Array.isArray(today.rows)) return [];
+  return today.rows.filter((row) => row && !row.checkout_time &&
+    (Boolean(row.checkin_time) || row.unresolved_custody === true ||
+      row.requires_supervisor_reconciliation === true));
+}
+
+export function campStudentHasOpenCustody(today, studentId) {
+  // Invalid or missing custody evidence cannot authorize a new admission.
+  if (!today || !Array.isArray(today.rows) || !studentId) return true;
+  return campOpenCustodyRows(today).some((row) =>
+    row.student_id != null && String(row.student_id) === String(studentId));
+}
+
 export function duplicateCampRegistration(row, roster) {
   return roster.filter((item) =>
     item.status === "REGISTERED" &&
