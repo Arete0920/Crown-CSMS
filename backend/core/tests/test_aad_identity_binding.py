@@ -7,7 +7,6 @@ import pytest
 from django.contrib import admin
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
-from django.db import IntegrityError, transaction
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework.test import APIRequestFactory
 
@@ -122,13 +121,12 @@ def test_school_cannot_have_two_active_microsoft_tenant_bindings():
         is_active=True,
     )
 
-    with pytest.raises(IntegrityError):
-        with transaction.atomic():
-            MicrosoftTenantBinding.objects.create(
-                school=school,
-                tenant_id=uuid.uuid4(),
-                is_active=True,
-            )
+    with pytest.raises(ValidationError):
+        MicrosoftTenantBinding.objects.create(
+            school=school,
+            tenant_id=uuid.uuid4(),
+            is_active=True,
+        )
 
     inactive = MicrosoftTenantBinding.objects.create(
         school=school,
