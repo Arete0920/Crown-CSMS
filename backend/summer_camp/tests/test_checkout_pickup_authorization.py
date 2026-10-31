@@ -18,7 +18,7 @@ from summer_camp.models import (
     SummerCampSession,
     SummerCampStaffAssignment,
 )
-from summer_camp.services import checkin_camper, checkout_camper
+from summer_camp.services import checkin_camper, checkout_camper, verify_staff_credentials
 
 
 pytestmark = pytest.mark.django_db
@@ -99,10 +99,19 @@ def test_checkin_and_verified_pickup_span_utc_midnight_on_one_school_day():
     case.enrollment.payment_status = "PAID_IN_FULL"
     case.enrollment.balance_due_cents = 0
     case.enrollment.save(update_fields=["form_status", "health_status", "payment_status", "balance_due_cents"])
-    SummerCampStaffAssignment.objects.create(
+    assignment = SummerCampStaffAssignment.objects.create(
         school=case.school, session=case.session,
         staff_user=case.verifier, role="COUNSELOR",
-        credential_status=SummerCampStaffAssignment.CREDENTIAL_VERIFIED,
+    )
+    reviewer = UserAccount.objects.create_user(
+        username="camp-independent-credential-reviewer",
+        school=case.school, password="synthetic",
+    )
+    UserRole.objects.create(user=reviewer, school=case.school, role_code="HEAD_OF_SCHOOL")
+    permission, _ = CrownPermission.objects.get_or_create(code="summer_camp.edit")
+    RolePermission.objects.get_or_create(role_code="HEAD_OF_SCHOOL", permission=permission)
+    verify_staff_credentials(
+        case.school.id, assignment.id, reviewer, "synthetic-camp-release-credential-001",
     )
     start = datetime(2025, 9, 3, 22, 30, tzinfo=utc_timezone.utc)
     finish = datetime(2025, 9, 4, 0, 30, tzinfo=utc_timezone.utc)

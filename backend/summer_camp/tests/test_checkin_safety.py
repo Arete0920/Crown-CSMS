@@ -4,13 +4,16 @@ from datetime import date, datetime, timedelta, time, timezone as utc_timezone
 import pytest
 from django.utils import timezone
 
-from core.models import School
+from core.models import CrownPermission, RolePermission, School, UserRole
 from households.models import Household, Student
 from summer_camp.models import (
     SummerCampAttendance, SummerCampEnrollment, SummerCampFormRequirement, SummerCampPickupContact,
     SummerCampProgram, SummerCampSession, SummerCampStaffAssignment,
 )
-from summer_camp.services import checkin_camper, compute_camper_readiness, compute_staff_ratio_status
+from summer_camp.services import (
+    checkin_camper, compute_camper_readiness, compute_staff_ratio_status,
+    verify_staff_credentials,
+)
 
 
 pytestmark = pytest.mark.django_db
@@ -49,9 +52,17 @@ def camp_case(django_user_model):
     staff = django_user_model.objects.create_user(
         username="synthetic-camp-checkin-staff", password="unused", school=school,
     )
-    SummerCampStaffAssignment.objects.create(
+    assignment = SummerCampStaffAssignment.objects.create(
         school=school, session=session, staff_user=staff, role="COUNSELOR",
-        credential_status=SummerCampStaffAssignment.CREDENTIAL_VERIFIED,
+    )
+    reviewer = django_user_model.objects.create_user(
+        username="synthetic-camp-credential-reviewer", password="unused", school=school,
+    )
+    UserRole.objects.create(user=reviewer, school=school, role_code="HEAD_OF_SCHOOL")
+    permission, _ = CrownPermission.objects.get_or_create(code="summer_camp.edit")
+    RolePermission.objects.get_or_create(role_code="HEAD_OF_SCHOOL", permission=permission)
+    verify_staff_credentials(
+        school.id, assignment.id, reviewer, "synthetic-camp-credential-review-001",
     )
     return school, other_school, student, session, enrollment, when
 
@@ -248,4 +259,84 @@ def test_payment_pending_even_with_zero_balance_cannot_self_clear(camp_case):
     enrollment.save(update_fields=["payment_required_before_attendance", "payment_status"])
     with pytest.raises(ValueError, match="not cleared"):
         _admit(camp_case)
+    _assert_no_attendance(camp_case)
+
+
+def test_unreviewed_verified_status_cannot_count_as_qualified_staff(camp_case):
+    school, _other, _student, session, _enrollment, _when = camp_case
+    assignment = SummerCampStaffAssignment.objects.get(school=school, session=session)
+    assignment.credential_verified_by = None
+    assignment.credential_verified_at = None
+    assignment.credential_evidence_ref = ""
+    assignment.save(update_fields=[
+        "credential_verified_by", "credential_verified_at", "credential_evidence_ref",
+    ])
+    assert assignment.credential_status == SummerCampStaffAssignment.CREDENTIAL_VERIFIED
+    assert compute_staff_ratio_status(school.id, session.id)["assigned_staff"] == 0
+    with pytest.raises(ValueError, match="not cleared"):
+        _admit(camp_case)
+    _assert_no_attendance(camp_case)
+
+
+def test_unreviewed_credential_reference_and_timestamp_are_required(camp_case):
+    school, _other, _student, session, _enrollment, _when = camp_case
+    assignment = SummerCampStaffAssignment.objects.get(school=school, session=session)
+    assignment.credential_verified_at = None
+    assignment.save(update_fields=["credential_verified_at"])
+    assert compute_staff_ratio_status(school.id, session.id)["assigned_staff"] == 0
+    assignment.credential_verified_at = timezone.now()
+    assignment.credential_evidence_ref = ""
+    assignment.save(update_fields=["credential_verified_at", "credential_evidence_ref"])
+    assert compute_staff_ratio_status(school.id, session.id)["assigned_staff"] == 0
+    _assert_no_attendance(camp_case)
+
+
+def test_credential_review_rejects_self_ungranted_inactive_and_foreign_reviewers(camp_case, django_user_model):
+    school, foreign_school, _student, session, _enrollment, _when = camp_case
+    assignment = SummerCampStaffAssignment.objects.get(school=school, session=session)
+    original_actor_id = assignment.credential_verified_by_id
+    assignment.credential_status = SummerCampStaffAssignment.CREDENTIAL_PENDING
+    assignment.credential_verified_by = None
+    assignment.credential_verified_at = None
+    assignment.credential_evidence_ref = ""
+    assignment.save(update_fields=[
+        "credential_status", "credential_verified_by",
+        "credential_verified_at", "credential_evidence_ref",
+    ])
+    ordinary = django_user_model.objects.create_user(
+        username="camp-review-ungranted", school=school, password="unused",
+    )
+    foreign = django_user_model.objects.create_user(
+        username="camp-review-foreign", school=foreign_school, password="unused",
+    )
+    inactive = django_user_model.objects.get(pk=original_actor_id)
+    inactive.is_active = False
+    inactive.save(update_fields=["is_active"])
+    for actor in (ordinary, foreign, inactive, assignment.staff_user, None):
+        with pytest.raises(ValueError, match="reviewer|their own"):
+            verify_staff_credentials(school.id, assignment.id, actor, "synthetic-new-evidence-002")
+        assignment.refresh_from_db()
+        assert assignment.credential_status == SummerCampStaffAssignment.CREDENTIAL_PENDING
+        assert assignment.credential_verified_by_id is None
+        assert assignment.credential_verified_at is None
+    _assert_no_attendance(camp_case)
+
+
+def test_credential_review_cannot_reuse_revoked_reference(camp_case):
+    school, _other, _student, session, _enrollment, _when = camp_case
+    assignment = SummerCampStaffAssignment.objects.get(school=school, session=session)
+    reviewer = assignment.credential_verified_by
+    assignment.credential_status = SummerCampStaffAssignment.CREDENTIAL_REVOKED
+    assignment.save(update_fields=["credential_status"])
+    with pytest.raises(ValueError, match="new evidence"):
+        verify_staff_credentials(
+            school.id, assignment.id, reviewer, "synthetic-camp-credential-review-001",
+        )
+    assert compute_staff_ratio_status(school.id, session.id)["assigned_staff"] == 0
+    verified = verify_staff_credentials(
+        school.id, assignment.id, reviewer, "synthetic-camp-credential-review-renewal-002",
+    )
+    assert verified.credential_status == SummerCampStaffAssignment.CREDENTIAL_VERIFIED
+    assert verified.credential_evidence_ref.endswith("002")
+    assert compute_staff_ratio_status(school.id, session.id)["assigned_staff"] == 1
     _assert_no_attendance(camp_case)

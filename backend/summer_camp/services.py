@@ -388,6 +388,67 @@ def assign_staff(school_id, session_id, staff_user_id, role, assigned_date=None)
     return assignment
 
 
+@transaction.atomic
+def verify_staff_credentials(school_id, assignment_id, reviewer, evidence_ref):
+    """Record an explicit school-authorized, independently reviewed staff qualification.
+
+    This stores a reference to independently checked qualification evidence, not
+    the evidence itself. This internal service is not a public verification API.
+    A freeform status, reviewer ID, or untrusted client assertion is insufficient.
+    """
+    from core.models import School
+    from core.permissions import user_has_permission
+
+    school = School.objects.filter(pk=school_id, is_active=True).first()
+    if (
+        school is None
+        or reviewer is None
+        or not getattr(reviewer, "is_authenticated", False)
+        or not getattr(reviewer, "is_active", False)
+        or getattr(reviewer, "school_id", None) != school_id
+        or not user_has_permission(reviewer, "summer_camp.edit", school=school)
+    ):
+        raise ValueError("An authorized school credential reviewer is required.")
+    if not isinstance(evidence_ref, str) or not evidence_ref.strip() or len(evidence_ref.strip()) > 160:
+        raise ValueError("A bounded credential evidence reference is required.")
+
+    assignment = (
+        SummerCampStaffAssignment.objects.select_for_update()
+        .select_related("staff_user")
+        .filter(pk=assignment_id, school_id=school_id, session__school_id=school_id)
+        .first()
+    )
+    if (
+        assignment is None
+        or not assignment.staff_user.is_active
+        or assignment.staff_user.school_id != school_id
+    ):
+        raise ValueError("An active same-school camp staff assignment is required.")
+    if assignment.staff_user_id == reviewer.pk:
+        raise ValueError("Staff cannot verify their own camp credential.")
+    if assignment.credential_status not in (
+        SummerCampStaffAssignment.CREDENTIAL_PENDING,
+        SummerCampStaffAssignment.CREDENTIAL_VERIFIED,
+        SummerCampStaffAssignment.CREDENTIAL_REVOKED,
+    ):
+        raise ValueError("Unrecognized staff credential status; manual reconciliation required.")
+    reference = evidence_ref.strip()
+    if (
+        assignment.credential_status == SummerCampStaffAssignment.CREDENTIAL_REVOKED
+        and assignment.credential_evidence_ref == reference
+    ):
+        raise ValueError("Reverification after revocation requires new evidence.")
+    assignment.credential_status = SummerCampStaffAssignment.CREDENTIAL_VERIFIED
+    assignment.credential_verified_by = reviewer
+    assignment.credential_verified_at = timezone.now()
+    assignment.credential_evidence_ref = reference
+    assignment.save(update_fields=[
+        "credential_status", "credential_verified_by",
+        "credential_verified_at", "credential_evidence_ref",
+    ])
+    return assignment
+
+
 def compute_staff_ratio_status(school_id, session_id):
     session = SummerCampSession.objects.get(id=session_id, school_id=school_id)
     config = ensure_config(school_id)
@@ -402,7 +463,9 @@ def compute_staff_ratio_status(school_id, session_id):
             school_id=school_id, session_id=session_id,
             staff_user__school_id=school_id, staff_user__is_active=True,
             credential_status=SummerCampStaffAssignment.CREDENTIAL_VERIFIED,
-        ).values("staff_user_id").distinct().count()
+            credential_verified_by__school_id=school_id,
+            credential_verified_at__isnull=False,
+        ).exclude(credential_evidence_ref="").values("staff_user_id").distinct().count()
     )
     return {
         "session_id": str(session.id),

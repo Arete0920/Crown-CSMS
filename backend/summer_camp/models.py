@@ -218,13 +218,28 @@ class SummerCampGroupAssignment(models.Model):
 
 
 class SummerCampStaffAssignment(models.Model):
-    # Only explicit clearance counts toward child supervision.
+    # An unreviewed status string alone never establishes safe supervision.
+    CREDENTIAL_PENDING = "PENDING"
     CREDENTIAL_VERIFIED = "VERIFIED"
+    CREDENTIAL_REVOKED = "REVOKED"
+    CREDENTIAL_STATUS_CHOICES = [
+        (CREDENTIAL_PENDING, "Pending review"),
+        (CREDENTIAL_VERIFIED, "Verified"),
+        (CREDENTIAL_REVOKED, "Revoked"),
+    ]
     school = models.ForeignKey("core.School", on_delete=models.CASCADE, related_name="summer_camp_staff_assignments")
     session = models.ForeignKey(SummerCampSession, on_delete=models.CASCADE, related_name="staff_assignments")
     staff_user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="summer_camp_staff_assignments")
     role = models.CharField(max_length=64)
-    credential_status = models.CharField(max_length=64, default="PENDING")
+    credential_status = models.CharField(
+        max_length=64, choices=CREDENTIAL_STATUS_CHOICES, default=CREDENTIAL_PENDING,
+    )
+    credential_verified_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, null=True, blank=True,
+        related_name="summer_camp_staff_credentials_verified",
+    )
+    credential_verified_at = models.DateTimeField(null=True, blank=True)
+    credential_evidence_ref = models.CharField(max_length=160, blank=True, default="")
     assigned_date = models.DateField(default=timezone.now)
 
     class Meta:
