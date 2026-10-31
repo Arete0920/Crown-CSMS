@@ -181,4 +181,3 @@ class StandaloneCareEntitlementTests(TestCase):
         self.school.is_active = False
         self.school.save(update_fields=["is_active"])
         self.assertFalse(school_has_module(self.school.id, "after_care"))
-

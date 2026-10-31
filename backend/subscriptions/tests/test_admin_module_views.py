@@ -209,4 +209,3 @@ class AdminModuleCanonicalTenantTests(TestCase):
                     "module_key": "before_care", "months": 12,
                 }))
         self.assertFalse(SchoolModule.objects.filter(school=self.school, module_key="before_care").exists())
-
