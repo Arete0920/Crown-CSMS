@@ -9,7 +9,6 @@ class Migration(migrations.Migration):
     dependencies = [
         ("core", "0019_seed_summer_camp_permissions"),
         ("integrations", "0002_teamspreviewaudit"),
-        migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
