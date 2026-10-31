@@ -459,4 +459,3 @@ def test_unconfigured_school_timezone_blocks_custody_writes():
     with pytest.raises(ValueError, match="valid school timezone"):
         checkin_student(school.id, child.id, when=at(7, 15), care_session="AM")
     assert not AftercareAttendance.objects.filter(school_fk=school).exists()
-
