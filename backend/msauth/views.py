@@ -139,7 +139,6 @@ def microsoft_callback(request):
         logger.error("Microsoft profile returned no object id: %s", list(userinfo.keys()))
         return JsonResponse({"error": "Microsoft object ID not found"}, status=400)
 
-    email = userinfo.get("mail") or userinfo.get("userPrincipalName") or ""
     try:
         user = get_user_from_claims({"tid": AZURE_TENANT_ID, "oid": object_id})
     except MicrosoftIdentityError:
@@ -156,8 +155,8 @@ def microsoft_callback(request):
     resolved_role = _resolve_role_from_groups(user_group_ids)
     if not resolved_role:
         logger.warning(
-            "SSO login blocked — no authorized role group: %s groups=%s",
-            email, user_group_ids,
+            "SSO login blocked — no authorized navigation group for CROWN user=%s group_count=%s",
+            user.pk, len(user_group_ids),
         )
         return JsonResponse({"error": "No authorized role group found"}, status=403)
 
