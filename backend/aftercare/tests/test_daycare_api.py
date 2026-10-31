@@ -305,3 +305,18 @@ def test_inactive_school_custody_reads_reject_cross_school_selector():
         response = client.get(path, HTTP_X_SCHOOL_ID=str(foreign.pk))
         assert response.status_code in (403, 404), (path, response.status_code)
     assert DaycareRelease.objects.count() == 0
+
+
+def test_diadem_navigation_link_requires_explicit_school_scoped_role_grant():
+    d = setup()
+    client = _client(d["actor"])
+    response = client.get("/api/v1/nav/")
+    assert response.status_code == 200, getattr(response, "data", response.content)
+    visible = [item["href"] for group in response.json()["groups"] for item in group["items"]]
+    assert "/diadem/daycare" in visible
+    assert "/extended-care" not in visible
+    UserRole.objects.filter(user=d["actor"], school=d["school"]).delete()
+    response = client.get("/api/v1/nav/")
+    assert response.status_code == 200
+    after = [item["href"] for group in response.json()["groups"] for item in group["items"]]
+    assert "/diadem/daycare" not in after
