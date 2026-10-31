@@ -269,6 +269,13 @@ def checkin_camper(school_id, student_id, session_id, when=None, note=""):
     ).first()
     if session is None:
         raise ValueError("Camp session is not available for check-in.")
+    # Lock one canonical same-school child across every Camp session and local
+    # date; session-only locking cannot prevent concurrent double admission.
+    student = Student.objects.select_for_update().filter(
+        pk=student_id, school_id=school_id, is_active=True,
+    ).first()
+    if student is None:
+        raise ValueError("Camper does not have exactly one active registration for this session.")
 
     # Checkout already requires a unique current registration; admission
     # must not pick an arbitrary row from ambiguous legacy enrollments.
@@ -293,11 +300,10 @@ def checkin_camper(school_id, student_id, session_id, when=None, note=""):
         student_id=student_id, date=attendance_day,
     ).exists():
         raise ValueError("Camper has already been checked in for this session and date.")
-    # The session row is locked above. A school-local midnight must not
-    # allow a second attendance while the original custody remains open.
+    # Never admit a child while any school-owned Camp session retains open
+    # custody: school-local midnight and parallel sessions are both covered.
     if SummerCampAttendance.objects.filter(
-        school_id=school_id, session_id=session.id, student_id=student_id,
-        checkout_time__isnull=True,
+        school_id=school_id, student_id=student_id, checkout_time__isnull=True,
     ).exists():
         raise ValueError("Unresolved earlier Camp custody requires supervisor reconciliation.")
 
@@ -342,10 +348,16 @@ def checkout_camper(
     ).first()
     if session is None:
         raise ValueError("Camp session does not belong to this school.")
+    # The same lock order as admission (session, then child) serializes
+    # checkout with new check-ins, including another Camp session.
+    student = Student.objects.select_for_update().filter(
+        pk=student_id, school_id=school_id,
+    ).first()
+    if student is None:
+        raise ValueError("Camper does not belong to this school.")
     open_records = list(
         SummerCampAttendance.objects.select_for_update().filter(
-            school_id=school_id, session_id=session.id, student_id=student_id,
-            session__school_id=school_id, student__school_id=school_id,
+            school_id=school_id, student_id=student_id,
             checkout_time__isnull=True,
         ).order_by("date", "pk")[:2]
     )
@@ -360,6 +372,8 @@ def checkout_camper(
             raise ValueError("Camper has already been checked out.")
         raise ValueError("A matching camp check-in is required before checkout.")
     attendance = open_records[0]
+    if attendance.session_id != session.id or attendance.session.school_id != school_id:
+        raise ValueError("Open Camp custody belongs to another session or school.")
     if attendance.date not in (local_day, local_day - timedelta(days=1)):
         raise ValueError("Older or future-dated Camp custody requires supervisor reconciliation.")
     if camp_school_local_date(school_id, attendance.checkin_time) != attendance.date:
@@ -698,8 +712,13 @@ def roster_today(school_id):
         .select_related("session", "student").order_by("date", "pk")
     )
     grouped = {}
+    open_count_by_child = {}
     for attendance in attendance_rows:
         grouped.setdefault((attendance.session_id, attendance.student_id), []).append(attendance)
+        if attendance.checkout_time is None and attendance.student_id is not None:
+            open_count_by_child[attendance.student_id] = (
+                open_count_by_child.get(attendance.student_id, 0) + 1
+            )
 
     def roster_row(enrollment, attendance):
         key = (enrollment.session_id, enrollment.student_id) if enrollment else (
@@ -712,7 +731,7 @@ def roster_today(school_id):
         session = enrollment.session if enrollment else attendance.session
         student = enrollment.student if enrollment else attendance.student
         manual_review = bool(opened) and (
-            len(opened) > 1
+            open_count_by_child.get(key[1], 0) > 1
             or any(record.date not in release_days for record in opened)
             or enrollment is None or enrollment.status != "REGISTERED"
         )
@@ -731,7 +750,7 @@ def roster_today(school_id):
             "checkout_time": current.checkout_time.isoformat() if current and current.checkout_time else None,
             "pickup_verified": bool(current.pickup_verified) if current else False,
             "attendance_date": str(current.date) if current else None,
-            "open_custody_count": len(opened),
+            "open_custody_count": open_count_by_child.get(key[1], 0),
             "requires_supervisor_reconciliation": manual_review,
             "form_status": enrollment.form_status if enrollment else "NOT_VERIFIED",
             "health_status": enrollment.health_status if enrollment else "NOT_VERIFIED",
@@ -745,12 +764,14 @@ def roster_today(school_id):
         if key in included_keys or not any(record.checkout_time is None for record in records):
             continue
         record = next(record for record in records if record.checkout_time is None)
-        enrollment = (
+        # Never attribute old custody to an arbitrary duplicate enrollment.
+        candidates = list(
             SummerCampEnrollment.objects.filter(
                 school_id=school_id, session_id=record.session_id,
-                student_id=record.student_id,
-            ).select_related("session", "student").order_by("-pk").first()
+                student_id=record.student_id, status="REGISTERED",
+            ).select_related("session", "student").order_by("pk")[:2]
         )
+        enrollment = candidates[0] if len(candidates) == 1 else None
         rows.append(roster_row(enrollment, record))
         included_keys.add(key)
 
