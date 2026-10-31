@@ -92,6 +92,7 @@ def summarize_financial_aid_rows(*, school_id, year_id, applications, awards):
                 or reversal_count < 0 or reversal_count > 1
                 or award['decision_status'] == 'OFFERED'
                 or (award['decision_status'] == 'ACCEPTED' and reversal_count != 0)
+                or (award['decision_status'] == 'DECLINED' and reversal_count != 1)
             ):
                 raise FinancialAidDashboardIntegrityError('Award ledger linkage requires reconciliation')
 
