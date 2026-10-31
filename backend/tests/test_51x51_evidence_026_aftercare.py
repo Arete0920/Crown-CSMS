@@ -138,6 +138,9 @@ class TestModule026AttendanceAndBilling(TestCase):
 
     @patch("aftercare.services.create_ledger_charge_aftercare", return_value="obligation-9001")
     def test_checkout_computes_late_fee(self, charge):
+        # Existing synthetic fixtures use UTC timestamps; make that explicit.
+        self.school.timezone = "UTC"
+        self.school.save(update_fields=["timezone"])
         AftercareProgramConfig.objects.create(school_fk=self.school, start_time=time(15), end_time=time(18),
                                              late_fee_per_10_min="10.00", late_fee_cap="100.00")
         checkin_student(self.school.id, self.student.id, when=self.when)
