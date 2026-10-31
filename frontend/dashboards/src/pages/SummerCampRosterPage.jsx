@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import CrownLayout from "../components/crown/CrownLayout.jsx";
 import DashboardSection from "../components/layout/DashboardSection.jsx";
 import {
-  checkoutSummerCamper,
   checkinSummerCamper,
   fetchSummerCampRosterToday,
   fetchSummerCampSessions,
@@ -21,6 +20,14 @@ const thtdStyle = {
   textAlign: "left",
 };
 
+
+function requireCampRows(payload) {
+  if (!payload || !Array.isArray(payload.rows)) {
+    throw new Error("Unexpected Camp roster response");
+  }
+  return payload.rows;
+}
+
 export default function SummerCampRosterPage() {
   const [sessions, setSessions] = useState([]);
   const [selectedSession, setSelectedSession] = useState("");
@@ -35,12 +42,13 @@ export default function SummerCampRosterPage() {
       try {
         const sessionData = await fetchSummerCampSessions();
         if (cancelled) return;
-        setSessions(sessionData.results || []);
-        if ((sessionData.results || []).length > 0) {
-          setSelectedSession(String(sessionData.results[0].id));
+        if (!Array.isArray(sessionData)) throw new Error("Unexpected Camp sessions response");
+        setSessions(sessionData);
+        if (sessionData.length > 0) {
+          setSelectedSession(String(sessionData[0].id));
         } else {
           const today = await fetchSummerCampRosterToday();
-          if (!cancelled) setRows(today.results || []);
+          if (!cancelled) setRows(requireCampRows(today));
         }
       } catch (e) {
         if (!cancelled) setError(e.message);
@@ -64,7 +72,7 @@ export default function SummerCampRosterPage() {
       try {
         const roster = await fetchSummerCampSessionRoster(selectedSession);
         if (!cancelled) {
-          setRows(roster.results || []);
+          setRows(requireCampRows(roster));
           setError(null);
         }
       } catch (e) {
@@ -86,21 +94,11 @@ export default function SummerCampRosterPage() {
     await checkinSummerCamper({
       session_id: selectedSessionId,
       student_id: studentId,
-      method: "STAFF",
     });
     const roster = await fetchSummerCampSessionRoster(selectedSessionId);
-    setRows(roster.results || []);
+    setRows(requireCampRows(roster));
   }
 
-  async function onCheckout(studentId) {
-    await checkoutSummerCamper({
-      session_id: selectedSessionId,
-      student_id: studentId,
-      method: "STAFF",
-    });
-    const roster = await fetchSummerCampSessionRoster(selectedSessionId);
-    setRows(roster.results || []);
-  }
 
   return (
     <CrownLayout title="Summer Camp Roster">
@@ -133,7 +131,7 @@ export default function SummerCampRosterPage() {
               <tr>
                 <th style={thtdStyle}>Student</th>
                 <th style={thtdStyle}>Readiness</th>
-                <th style={thtdStyle}>Status</th>
+                <th style={thtdStyle}>Registration</th>
                 <th style={thtdStyle}>Actions</th>
               </tr>
             </thead>
@@ -141,15 +139,13 @@ export default function SummerCampRosterPage() {
               {rows.map((row) => (
                 <tr key={row.student_id}>
                   <td style={thtdStyle}>{row.student_name}</td>
-                  <td style={thtdStyle}>{row.readiness_state}</td>
-                  <td style={thtdStyle}>{row.attendance_status}</td>
+                  <td style={thtdStyle}>{row.readiness_status || "Not available"}</td>
+                  <td style={thtdStyle}>{row.status || "Not available"}</td>
                   <td style={thtdStyle}>
-                    <button type="button" onClick={() => onCheckin(row.student_id)} style={{ marginRight: 8 }}>
+                    <button type="button" disabled={!row.student_id || row.status !== "REGISTERED" || row.readiness_status !== "READY"} onClick={() => onCheckin(row.student_id)} style={{ marginRight: 8 }}>
                       Check in
                     </button>
-                    <button type="button" onClick={() => onCheckout(row.student_id)}>
-                      Check out
-                    </button>
+                    <span>Verified authorized pickup is required before release.</span>
                   </td>
                 </tr>
               ))}
