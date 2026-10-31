@@ -98,16 +98,19 @@ def _has_permission(request, code: str) -> bool:
     return user_has_permission(user, code, school=getattr(request, "school", None))
 
 
-def _guardian_can_view_student(request, *, school_id, student_id) -> bool:
+def _guardian_can_view_student(request, *, school_id, student_id, allow_inactive=False) -> bool:
     user = getattr(request, "user", None)
-    if not user or not getattr(user, "is_authenticated", False):
+    if not user or not getattr(user, "is_authenticated", False) or not getattr(user, "is_active", False):
         return False
+    # Historical custody remains available only to a linked, active guardian.
+    # All other guardian routes retain their active-student requirement.
+    student_filters = {} if allow_inactive else {"household__students__is_active": True}
     return Guardian.objects.filter(
         account=user,
         school_id=school_id,
         household__students__id=student_id,
         household__students__school_id=school_id,
-        household__students__is_active=True,
+        **student_filters,
     ).exists()
 
 
@@ -502,7 +505,9 @@ def incidents(request):
 @api_view(["GET"])
 def parent_view(request, student_id):
     school_id = school_id_from_request(request, required=True)
-    if not _guardian_can_view_student(request, school_id=school_id, student_id=student_id):
+    if not _guardian_can_view_student(
+        request, school_id=school_id, student_id=student_id, allow_inactive=True,
+    ):
         return _forbidden()
     # Preserve the PM-first legacy field while exposing the authoritative
     # full AM/PM enrollment set for family portals. One child is not two profiles.
