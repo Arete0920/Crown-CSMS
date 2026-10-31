@@ -170,8 +170,20 @@ def enrollments(request):
         sessions = visible_sessions(school_id)
         if not sessions:
             return _not_entitled()
+        active = entitled_sessions(school_id)
+        rescue_ids = AftercareAttendance.objects.filter(
+            school_fk_id=school_id, care_session__in=set(sessions) - set(active),
+            checkin_time__isnull=False, checkout_time__isnull=True,
+        ).values("student_fk_id", "care_session")
+        rescue_pairs = list(rescue_ids)
+        active_rows = Q(care_session__in=active)
+        for pair in rescue_pairs:
+            active_rows |= Q(
+                student_fk_id=pair["student_fk_id"],
+                care_session=pair["care_session"],
+            )
         qs = AftercareEnrollment.objects.filter(
-            school_fk_id=school_id, care_session__in=sessions,
+            active_rows, school_fk_id=school_id,
         ).order_by("-created_at")[:500]
         return Response(AftercareEnrollmentSerializer(qs, many=True).data)
 
@@ -415,12 +427,17 @@ def incidents(request):
         sessions = visible_sessions(school_id)
         if not sessions:
             return _not_entitled()
-        qs = AftercareIncident.objects.filter(
-            school_fk_id=school_id, attendance_fk__care_session__in=sessions,
+        active = entitled_sessions(school_id)
+        qs = AftercareIncident.objects.filter(school_fk_id=school_id).filter(
+            Q(attendance_fk__care_session__in=active)
+            | Q(
+                attendance_fk__care_session__in=set(sessions) - set(active),
+                attendance_fk__checkout_time__isnull=True,
+            )
         )
-        if len(entitled_sessions(school_id)) == 2:
+        if len(active) == 2:
             qs = AftercareIncident.objects.filter(school_fk_id=school_id).filter(
-                Q(attendance_fk__care_session__in=sessions) | Q(attendance_fk__isnull=True)
+                Q(attendance_fk__care_session__in=active) | Q(attendance_fk__isnull=True)
             )
         return Response(AftercareIncidentSerializer(qs.order_by("-occurred_at")[:300], many=True).data)
 
@@ -516,13 +533,12 @@ def board_summary(request):
     if care_session is not None and care_session not in ("AM", "PM"):
         return _bad_request("Invalid care session.")
     entitled = entitled_sessions(school_id)
-    visible = visible_sessions(school_id)
-    if not visible:
+    if not entitled:
         return _not_entitled()
-    if care_session is not None and care_session not in visible:
+    if care_session is not None and care_session not in entitled:
         return _not_entitled(care_session)
-    if care_session is None and len(visible) == 1:
-        care_session = visible[0]
+    if care_session is None and len(entitled) == 1:
+        care_session = entitled[0]
     enrollments = (
         AftercareEnrollment.objects.filter(
             school_fk_id=school_id, student_fk__isnull=False,
@@ -553,11 +569,6 @@ def board_summary(request):
     sessions = attendance_qs.count()
     late_pickups = attendance_qs.filter(late_minutes__gt=0).count()
     incidents_mtd = incidents_qs.count()
-    if care_session and care_session not in entitled:
-        # Historical custody continuity: no new enrollment or unlinked records.
-        attendance_qs = attendance_qs.filter(checkout_time__isnull=True)
-        enrollments = enrollments.none()
-        incidents_qs = incidents_qs.filter(attendance_fk__checkout_time__isnull=True)
     late_fee_cents = attendance_qs.aggregate(total=Sum("late_fee_cents"))["total"] or 0
     return Response(
         {
