@@ -22,12 +22,12 @@ class MicrosoftTenantBindingAdmin(admin.ModelAdmin):
     def save_model(self, request, obj, form, change):
         with transaction.atomic():
             super().save_model(request, obj, form, change)
-            request.tenant_school_id = obj.school_id
             audit_log(
                 request=request,
                 action="microsoft.tenant_binding.updated" if change else "microsoft.tenant_binding.created",
                 object_type="microsoft_tenant_binding",
                 object_id=obj.id,
+                school_id=obj.school_id,
                 meta={
                     "school_id": str(obj.school_id),
                     "tenant_id": str(obj.tenant_id),
@@ -58,12 +58,12 @@ class MicrosoftIdentityLinkAdmin(admin.ModelAdmin):
     def save_model(self, request, obj, form, change):
         with transaction.atomic():
             super().save_model(request, obj, form, change)
-            request.tenant_school_id = obj.binding.school_id
             audit_log(
                 request=request,
                 action="microsoft.identity_link.updated" if change else "microsoft.identity_link.created",
                 object_type="microsoft_identity_link",
                 object_id=obj.id,
+                school_id=obj.binding.school_id,
                 meta={
                     "school_id": str(obj.binding.school_id),
                     "tenant_id": str(obj.binding.tenant_id),
