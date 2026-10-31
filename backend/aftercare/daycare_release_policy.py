@@ -84,8 +84,12 @@ def release_decision(
         or staff.room_id != attendance.room_id
     ):
         return Decision(False, "scope_mismatch")
+    # An archived child can still be released from an existing, locked custody
+    # event. Child activation is an admission policy, not an exit requirement.
+    if type(child.active) is not bool:
+        return Decision(False, "child_state_unknown")
     if not all(type(flag) is bool and flag for flag in (
-        child.active, staff.active, staff.qualified_on_duty, staff.may_release,
+        staff.active, staff.qualified_on_duty, staff.may_release,
     )):
         return Decision(False, "staff_or_child_inactive")
     if type(attendance.released) is not bool:
@@ -114,6 +118,6 @@ def release_decision(
         return Decision(False, "authority_outside_window")
     if authority.effective_until is not None and at >= authority.effective_until:
         return Decision(False, "authority_outside_window")
-    if type(identity_verified) is not bool or not identity_verified or identity_method not in IDENTITY_METHODS:
+    if type(identity_verified) is not bool or not identity_verified or (not isinstance(identity_method, str) or identity_method not in IDENTITY_METHODS):
         return Decision(False, "identity_verification_required")
     return Decision(True, "authorized_release")
