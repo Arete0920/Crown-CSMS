@@ -46,6 +46,7 @@ class FinancialAidSummaryView(APIView):
         # Fetch awards for this school and year (must have application FK)
         awards_qs = AidAward.objects.filter(
             school_id=school_id,
+            application__school_id=school_id,
             application__academic_year=academic_year,
             application__isnull=False
         )
@@ -145,6 +146,7 @@ class FinancialAidDrilldownView(APIView):
         # Base queryset
         qs = AidAward.objects.filter(
             school_id=school_id,
+            application__school_id=school_id,
             application__isnull=False,
             application__academic_year=academic_year
         ).select_related("application").order_by("-created_at", "id")
