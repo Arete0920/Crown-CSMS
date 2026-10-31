@@ -4,10 +4,14 @@ from core.permissions import user_has_permission
 
 
 def can_manage_enrollment_conversion(user, school) -> bool:
-	if not getattr(user, "is_authenticated", False):
+	# Staff/superuser Django flags are not a tenant-specific enrollment grant.
+	# Require an explicit, active school-scoped role even for privileged users.
+	if (
+		school is None
+		or not getattr(user, "is_authenticated", False)
+		or not getattr(user, "is_active", False)
+	):
 		return False
-	if getattr(user, "is_superuser", False) or getattr(user, "is_staff", False):
-		return True
 
 	return user_has_permission(user, "admissions.edit", school=school) or user_has_permission(
 		user,
