@@ -9,7 +9,7 @@ from aftercare.daycare_checkin import checkin_child, CheckinRefused
 from aftercare.models import (DaycareSite,DaycareRoom,DaycareChild,DaycareProgram,
     DaycareEnrollment,DaycareGuardianAuthority,DaycareAttendance,DaycareRoomStaffCoverage)
 from audit.models import AuditLog
-from core.models import School, UserAccount, UserRole
+from core.models import School, UserAccount, UserRole, CrownPermission, RolePermission
 from households.models import Household, Guardian
 from subscriptions.models import Plan, Feature, TenantSubscription, EntitlementOverride
 from tenants.models import TenantProfile
@@ -20,10 +20,19 @@ def setup():
     actor=UserAccount.objects.create_user(username="care_staff_synthetic",email="care_staff@synthetic.invalid",password="test",school=school)
     director=UserAccount.objects.create_user(username="care_director_synthetic",email="care_director@synthetic.invalid",password="test",school=school)
     UserRole.objects.create(school=school,user=actor,role_code="DAYCARE_STAFF")
+    # TransactionTestCase flushes migration-seeded reference rows. Reconstruct
+    # only this synthetic staff actor's explicit grants for isolated DB tests.
+    for code in ("diadem.daycare.checkin","diadem.daycare.release"):
+        permission, _ = CrownPermission.objects.get_or_create(
+            code=code,defaults={"description":"Synthetic childcare test authorization"})
+        RolePermission.objects.get_or_create(role_code="DAYCARE_STAFF",permission=permission)
     plan=Plan.objects.create(code="care_synthetic",name="Care synthetic")
     TenantSubscription.objects.create(school_id=school.pk,plan=plan)
     TenantProfile.objects.create(school=school,slug="diadem-synthetic-tenant",status="active")
-    feature=Feature.objects.get(key="diadem.daycare")
+    feature, _ = Feature.objects.get_or_create(
+        key="diadem.daycare",
+        defaults={"name":"Diadem Daycare and Preschool",
+                  "description":"Synthetic default-off entitlement"})
     entitlement=EntitlementOverride.objects.create(school_id=school.pk,feature=feature,enabled=True)
     site=DaycareSite.objects.create(school=school,code="center",name="Synthetic Center",is_active=True)
     now=timezone.now()
