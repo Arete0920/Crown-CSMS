@@ -70,22 +70,40 @@ def test_accepted_award_must_have_positive_face_value():
 def test_legacy_unlinked_application_is_allowed_but_not_certified_as_cash():
     assert facts([], [award(aid_application_id=None)])['accepted_without_ledger_count'] == 1
 
+def linked_legacy_ledger_fields():
+    """A valid posted award, including every field enforced by the read model."""
+    return dict(
+        ledger_entry_id='entry',
+        ledger_entry__school_id=S,
+        ledger_entry__academic_year_id=Y,
+        ledger_entry__student_id=STUDENT,
+        ledger_entry__family_id=F,
+        ledger_entry__amount_cents=-12500,
+        ledger_entry__is_reversal=False,
+        ledger_entry__source='AID_AWARD',
+        ledger_entry__account__school_id=S,
+        ledger_entry__account__code='AID',
+        ledger_entry__reversal_of_id=None,
+        ledger_reversal_count=0,
+    )
+
+
 def test_linked_legacy_ledger_requires_exact_record_match():
-    fields = dict(ledger_entry_id='entry', ledger_entry__school_id=S,
-        ledger_entry__academic_year_id=Y, ledger_entry__student_id=STUDENT,
-        ledger_entry__family_id=F, ledger_entry__amount_cents=-12500,
-        ledger_entry__is_reversal=False)
+    fields = linked_legacy_ledger_fields()
     assert facts([], [award(**fields)])['accepted_without_ledger_count'] == 0
 
 @pytest.mark.parametrize('bad', [
     {'ledger_entry__school_id': T}, {'ledger_entry__academic_year_id': T},
     {'ledger_entry__student_id': T}, {'ledger_entry__family_id': T},
-    {'ledger_entry__amount_cents': -12499}, {'ledger_entry__is_reversal': True}])
+    {'ledger_entry__amount_cents': -12499}, {'ledger_entry__is_reversal': True},
+    {'ledger_entry__source': 'PAYMENT'},
+    {'ledger_entry__account__school_id': T},
+    {'ledger_entry__account__code': 'TUITION'},
+    {'ledger_entry__reversal_of_id': 'other-entry'},
+    {'ledger_reversal_count': 1},
+])
 def test_inconsistent_legacy_ledger_fails_closed(bad):
-    fields = dict(ledger_entry_id='entry', ledger_entry__school_id=S,
-        ledger_entry__academic_year_id=Y, ledger_entry__student_id=STUDENT,
-        ledger_entry__family_id=F, ledger_entry__amount_cents=-12500,
-        ledger_entry__is_reversal=False)
+    fields = linked_legacy_ledger_fields()
     fields.update(bad)
     with pytest.raises(FinancialAidDashboardIntegrityError):
         facts([], [award(**fields)])
