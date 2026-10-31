@@ -111,6 +111,7 @@ def get_user_from_claims(claims: dict):
         MicrosoftIdentityLink.objects.filter(
             binding__tenant_id=tenant_id,
             binding__is_active=True,
+            binding__school__is_active=True,
             object_id=object_id,
             is_active=True,
         )
