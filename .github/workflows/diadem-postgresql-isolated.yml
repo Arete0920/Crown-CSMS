@@ -80,3 +80,8 @@ jobs:
           cd frontend/dashboards
           npm ci --ignore-scripts
           npm run build
+
+      - name: Verify Diadem custody interaction controls
+        run: |
+          cd frontend/dashboards
+          npm exec -- vitest run src/pages/DiademDirectorRosterPage.test.jsx --reporter=verbose
