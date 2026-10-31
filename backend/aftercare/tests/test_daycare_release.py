@@ -110,3 +110,22 @@ def test_archived_child_still_has_guarded_release():
     d["child"].is_active=False
     d["child"].save()
     assert release(d,attendance).attendance_id==attendance.id
+
+def test_inactive_school_still_allows_guarded_exit():
+    d=setup()
+    attendance=check(d)
+    d["school"].is_active=False
+    d["school"].save(update_fields=["is_active"])
+    event=release(d,attendance)
+    assert event.attendance_id==attendance.id
+    assert AuditLog.objects.filter(action="diadem.daycare.release",object_id=str(event.id)).exists()
+    with pytest.raises(PermissionDenied):
+        check(d)
+
+@pytest.mark.parametrize("invalid_method",[None,123,[],{}])
+def test_malformed_release_method_denied_without_writing(invalid_method):
+    d=setup()
+    attendance=check(d)
+    with pytest.raises(ReleaseRefused):
+        release(d,attendance,identity_method=invalid_method)
+    assert not DaycareRelease.objects.exists()
