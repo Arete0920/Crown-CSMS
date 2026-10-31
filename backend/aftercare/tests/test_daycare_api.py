@@ -200,3 +200,56 @@ def test_site_directory_denies_foreign_tenant_selection():
     foreign = School.objects.create(name="Foreign synthetic daycare")
     r = _client(d["actor"]).get("/api/v1/aftercare/daycare/sites/", HTTP_X_SCHOOL_ID=str(foreign.pk))
     assert r.status_code in (403, 404)
+
+def test_scheduled_candidates_are_scoped_and_not_yet_attendance():
+    d = setup()
+    client = _client(d["actor"])
+    response = client.get(f'/api/v1/aftercare/daycare/sites/{d["site"].id}/scheduled/')
+    assert response.status_code == 200, getattr(response, "data", None)
+    assert len(response.data["rows"]) == 1
+    assert response.data["rows"][0]["child_id"] == str(d["child"].id)
+    assert not DaycareAttendance.objects.exists()
+    assert _checkin(d).status_code == 201
+    after = client.get(f'/api/v1/aftercare/daycare/sites/{d["site"].id}/scheduled/')
+    assert after.status_code == 200
+    assert after.data["rows"] == []
+
+
+def test_pickup_candidates_only_for_open_custody_and_verified_guardian():
+    d = setup()
+    admitted = _checkin(d)
+    assert admitted.status_code == 201
+    attendance_id = admitted.data["attendance_id"]
+    client = _client(d["actor"])
+    url = f'/api/v1/aftercare/daycare/attendance/{attendance_id}/pickup-authorities/'
+    response = client.get(url)
+    assert response.status_code == 200, getattr(response, "data", None)
+    assert response.data["recipients"] == [{
+        "guardian_authority_id": str(d["authority"].id),
+        "guardian_name": "Synthetic Guardian",
+    }]
+    d["authority"].is_active = False
+    d["authority"].save()
+    assert client.get(url).data["recipients"] == []
+    d["authority"].is_active = True
+    d["authority"].save()
+    assert _release(d, DaycareAttendance.objects.get(pk=attendance_id)).status_code == 201
+    assert client.get(url).status_code == 404
+
+
+def test_lookup_endpoints_deny_foreign_school_selector():
+    d = setup()
+    foreign = School.objects.create(name="Foreign fictional center")
+    client = _client(d["actor"])
+    r = client.get(
+        f'/api/v1/aftercare/daycare/sites/{d["site"].id}/scheduled/',
+        HTTP_X_SCHOOL_ID=str(foreign.id),
+    )
+    assert r.status_code in (403, 404)
+    admitted = _checkin(d)
+    assert admitted.status_code == 201
+    r = client.get(
+        f'/api/v1/aftercare/daycare/attendance/{admitted.data["attendance_id"]}/pickup-authorities/',
+        HTTP_X_SCHOOL_ID=str(foreign.id),
+    )
+    assert r.status_code in (403, 404)
