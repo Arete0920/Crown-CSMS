@@ -71,11 +71,11 @@ class SdsV21EndpointTest(TestCase):
             school=self.school,
             role_code="REGISTRAR",
         )
-        permission = CrownPermission.objects.create(
+        permission, _ = CrownPermission.objects.get_or_create(
             code="rosters.edit",
-            description="Edit class rosters",
+            defaults={"description": "Edit class rosters"},
         )
-        RolePermission.objects.create(
+        RolePermission.objects.get_or_create(
             role_code="REGISTRAR",
             permission=permission,
         )
