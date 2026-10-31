@@ -165,6 +165,101 @@ class WorkflowPolicyTests(unittest.TestCase):
             self.assertNotIn(f"Write-Host {secret_bearing_body}", script)
         self.assertIn('return $resp', script)
 
+    def test_dev_smoke_is_read_only_exact_source_precheck(self):
+        import yaml
+
+        path = ROOT / ".github/workflows/dev-smoke.yml"
+        raw = path.read_text(encoding="utf-8")
+        workflow = yaml.safe_load(raw)
+        self.assertEqual(workflow["permissions"], {"contents": "read"})
+        self.assertEqual(workflow["concurrency"]["group"], "dev-smoke")
+        self.assertEqual(list(workflow["jobs"]), ["dev-smoke"])
+        steps = workflow["jobs"]["dev-smoke"]["steps"]
+        gate = next(step for step in steps if step.get("name") == "Require protected main dispatch")
+        self.assertIn('"$EXPECTED_REF" != "refs/heads/main"', gate["run"])
+        self.assertIn("EXPECTED_SHA", gate["run"])
+        self.assertIn("40-character commit SHA", gate["run"])
+        self.assertEqual(gate["env"]["EXPECTED_SHA"], "$"+"{{ github.sha }}")
+        probe = next(step for step in steps if "Verify exact DEV source" in step.get("name", ""))
+        self.assertIn('verify_dev_owner_runtime.py --expected-sha "$EXPECTED_SHA"', probe["run"])
+        self.assertEqual(probe["env"]["EXPECTED_SHA"], "$"+"{{ github.sha }}")
+        for forbidden in (
+            "DEV_OPS_SECRET", "OPS_SECRET", "golden_path.ps1", "SkipSeed",
+            "skip_seed", "api/billing/", "api/director/actions/", "-X POST",
+            "Invoke-RestMethod", "secrets.",
+        ):
+            self.assertNotIn(forbidden, raw, forbidden)
+
+    def test_dev_smoke_current_main_guard_rejects_stale_reruns(self):
+        """Read-only smoke must never certify historic main dispatch as current."""
+        import os
+        import shutil
+        import subprocess
+        import yaml
+
+        if shutil.which("bash") is None:
+            self.skipTest("Bash is required for current-main smoke regression")
+        workflow = yaml.safe_load(
+            (ROOT / ".github/workflows/dev-smoke.yml").read_text(encoding="utf-8")
+        )
+        steps = workflow["jobs"]["dev-smoke"]["steps"]
+        names = [step.get("name", "") for step in steps]
+        gate_name = "Verify dispatch source is current protected main"
+        smoke_name = "Verify exact DEV source, health and anonymous access without writes"
+        self.assertLess(names.index("Require protected main dispatch"), names.index(gate_name))
+        self.assertLess(names.index(gate_name), names.index(smoke_name))
+        self.assertEqual(steps[0]["with"]["ref"], "$"+"{{ github.sha }}")
+        gate = steps[names.index(gate_name)]
+        self.assertEqual(gate["env"]["EXPECTED_SHA"], "$"+"{{ github.sha }}")
+        self.assertIn(
+            "git fetch --no-tags origin refs/heads/main:refs/remotes/origin/main",
+            gate["run"],
+        )
+        self.assertIn('"$SOURCE_SHA" != "$EXPECTED_SHA"', gate["run"])
+        self.assertIn('"$CURRENT_MAIN_SHA" != "$EXPECTED_SHA"', gate["run"])
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            fake_git = root / "git"
+            fake_git.write_text(
+                '#!/bin/sh\n'
+                'if [ "$1" = "fetch" ]; then exit 0; fi\n'
+                'if [ "$1" = "rev-parse" ]; then\n'
+                '  case "$2" in\n'
+                '    HEAD) printf "%s\\n" "$FAKE_HEAD_SHA";;\n'
+                '    refs/remotes/origin/main) printf "%s\\n" "$FAKE_MAIN_SHA";;\n'
+                '    *) exit 3;;\n'
+                '  esac\n'
+                '  exit 0\n'
+                'fi\n'
+                'exit 4\n',
+                encoding="utf-8",
+            )
+            fake_git.chmod(0o755)
+            current, older = "a" * 40, "b" * 40
+
+            def run(head, live_main, expected):
+                env = dict(
+                    os.environ,
+                    PATH=str(root) + os.pathsep + os.environ.get("PATH", ""),
+                    FAKE_HEAD_SHA=head,
+                    FAKE_MAIN_SHA=live_main,
+                    EXPECTED_SHA=expected,
+                )
+                return subprocess.run(
+                    ["bash", "-e", "-c", gate["run"]],
+                    cwd=root, env=env, capture_output=True, text=True, check=False,
+                )
+
+            self.assertEqual(run(current, current, current).returncode, 0)
+            for bad in (
+                run(older, current, older),   # historic main dispatch, now stale
+                run(older, current, current), # incorrect checked-out SHA
+                run(current, older, current), # main moves during queued run
+            ):
+                self.assertNotEqual(bad.returncode, 0, bad.stdout + bad.stderr)
+                self.assertIn("Stale DEV precheck source", bad.stderr)
+
     def test_repository_policy_invokes_complete_scan_unconditionally(self):
         import yaml
         workflow = yaml.safe_load((ROOT / ".github/workflows/repository-policy.yml").read_text())

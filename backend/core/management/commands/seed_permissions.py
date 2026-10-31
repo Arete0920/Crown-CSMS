@@ -123,6 +123,11 @@ ROLE_PERMISSIONS: dict = {
     "SUPPORT": ["health.view", "metrics.view", "academic_support.view", "student_services.view"],
     "PARENT": ["parent.view"],
     "STUDENT": ["student.view", "service.self"],
+    # Operator-facing Extended Care roles must map to real server-side grants.
+    # These authorize existing shared AM/PM operations only; commercial
+    # entitlements and session-specific staff separation remain separate gates.
+    "AFTERCARE_STAFF": ["extended_care.view", "extended_care.edit"],
+    "EXTENDED_CARE_MANAGER": ["extended_care.view", "extended_care.edit"],
     "head_of_school": [
         "support.view", "support.manage",
         "households.view", "guardians.view",
@@ -162,6 +167,8 @@ ROLE_PERMISSIONS: dict = {
         "facilities.view", "facilities.edit", "transportation.view", "transportation.edit", "security.view", "integrity.view", "metrics.view", "director.actions",
         "marketing.view", "advancement.view", "advancement.edit", "crownpass.scan", "crownpass.manage", "pd.edit", "hr.view", "hr.edit", "safety.view",
         "safety.edit", "classroom.view", "service.manage", "service.approve", "integrations.view", "integrations.run", "survey.view", "survey.edit"],
+    "aftercare_staff": ["extended_care.view", "extended_care.edit"],
+    "extended_care_manager": ["extended_care.view", "extended_care.edit"],
     "finance_admin": ["finance.view", "finance.edit", "billing.view", "integrity.view"],
     "admissions_manager": ["admissions.view", "admissions.edit", "academics.view", "registrar.view"],
     "advancement_officer": ["advancement.view", "advancement.edit", "crownpass.scan", "crownpass.manage"], "hr_manager": ["hr.view", "hr.edit"],

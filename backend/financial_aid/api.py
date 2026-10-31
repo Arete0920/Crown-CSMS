@@ -57,13 +57,14 @@ def _app_to_dict(a: FinancialAidApplication) -> dict:
     }
 
 
-def _award_to_dict(w: AidAward) -> dict:
+def _award_to_dict(w: AidAward, *, include_rationale: bool = False) -> dict:
     return {
         "id": str(w.id),
         "school_id": str(w.school_id),
         "bucket": w.bucket,
         "amount": str(w.amount),
-        "rationale": w.rationale,
+        # Award rationale is case-sensitive; a basic aid reader may not see it.
+        "rationale": w.rationale if include_rationale else None,
         "approved_by_user_id": str(w.approved_by_user_id) if w.approved_by_user_id else None,
         "application_id": str(w.application_id) if w.application_id else None,
         "created_at": w.created_at.isoformat() if w.created_at else None,
@@ -96,7 +97,16 @@ def aid_awards(request):
         return permission_error
 
     qs = AidAward.objects.filter(school_id=sid).select_related("application").order_by("-created_at")
-    return _envelope([_award_to_dict(w) for w in qs], status=200)
+    # Keep the stable response contract but redact the sensitive rationale
+    # unless this reader also holds the school-scoped rationale-specific grant.
+    school = School.objects.get(pk=sid)
+    include_rationale = user_has_permission(
+        request.user, "financial_aid.view_rationale", school=school
+    )
+    return _envelope(
+        [_award_to_dict(w, include_rationale=include_rationale) for w in qs],
+        status=200,
+    )
 
 
 @api_view(["POST"])
