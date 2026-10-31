@@ -39,8 +39,10 @@ exist. It does not create users.
   domain-qualified email/username.
 - Teachers are exported from active `core.Staff` records that have an
   `academics.TeacherAssignment` in a selected section.
-- The normalized domain-qualified value is emitted as both `username` and
-  `activeDirectoryMatchId`.
+- The normalized domain-qualified value is emitted as `username` and `email`.
+  The first Microsoft test flow must explicitly match SDS `Username` to Microsoft
+  Entra `UserPrincipalName`; this release does not invent a separate immutable
+  Microsoft identifier.
 - If a required identity is missing or if two CROWN identities resolve to the
   same cloud username, export fails. It does not guess.
 
