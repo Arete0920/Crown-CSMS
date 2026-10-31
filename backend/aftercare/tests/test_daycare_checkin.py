@@ -111,3 +111,40 @@ def test_missing_tenant_profile_blocks_checkin():
     with pytest.raises(PermissionDenied):
         check(d)
     assert not DaycareAttendance.objects.exists()
+
+def test_overlapping_staff_room_assignment_rejected():
+    from aftercare.models import DaycareRoomStaffCoverage, DaycareRoom
+    from django.core.exceptions import ValidationError
+    d=setup()
+    other=DaycareRoom.objects.create(
+        school=d["school"],site=d["site"],code="second-room",name="Second Room",
+        licensed_capacity=4,max_children_per_staff=4,policy_source="Synthetic approved policy",
+        policy_verified_by=d["director"],policy_verified_at=timezone.now()-timedelta(minutes=5),
+        is_active=True,
+    )
+    now=timezone.now()
+    with pytest.raises(ValidationError,match="overlapping"):
+        DaycareRoomStaffCoverage.objects.create(
+            school=d["school"],site=d["site"],room=other,staff=d["actor"],
+            starts_at=now-timedelta(minutes=20),ends_at=now+timedelta(minutes=20),
+            is_qualified=True,qualification_evidence="Synthetic qualification",
+            verified_by=d["director"],verified_at=now-timedelta(minutes=5),is_active=True,
+        )
+    assert DaycareRoomStaffCoverage.objects.filter(staff=d["actor"]).count()==1
+
+def test_adjacent_staff_room_assignment_allowed():
+    from aftercare.models import DaycareRoomStaffCoverage, DaycareRoom
+    d=setup()
+    other=DaycareRoom.objects.create(
+        school=d["school"],site=d["site"],code="later-room",name="Later Room",
+        licensed_capacity=4,max_children_per_staff=4,policy_source="Synthetic approved policy",
+        policy_verified_by=d["director"],policy_verified_at=timezone.now()-timedelta(minutes=5),
+        is_active=True,
+    )
+    later=DaycareRoomStaffCoverage.objects.create(
+        school=d["school"],site=d["site"],room=other,staff=d["actor"],
+        starts_at=d["coverage"].ends_at,ends_at=d["coverage"].ends_at+timedelta(hours=1),
+        is_qualified=True,qualification_evidence="Synthetic qualification",
+        verified_by=d["director"],verified_at=timezone.now()-timedelta(minutes=5),is_active=True,
+    )
+    assert later.pk
