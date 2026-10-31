@@ -33,10 +33,13 @@ export default function AftercareSetupWizard() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
+  const [loadError, setLoadError] = useState(null);
   const [success, setSuccess] = useState(false);
 
   // Form state
   const [cfg, setCfg] = useState({
+    before_start_time: "07:00:00",
+    before_end_time: "08:30:00",
     start_time: "15:00:00",
     end_time: "18:00:00",
     late_fee_per_10_min: "10.00",
@@ -70,8 +73,8 @@ export default function AftercareSetupWizard() {
             Object.entries(remote).filter(([k]) => k in prev).map(([k, v]) => [k, String(v)])
           ),
         }));
-      } catch {
-        // pre-population failure is non-fatal; user can type values manually
+      } catch (e) {
+        setLoadError(e.message || "Saved configuration could not be loaded.");
       } finally {
         setLoading(false);
       }
@@ -80,10 +83,26 @@ export default function AftercareSetupWizard() {
   }, []);
 
   async function save() {
+    if (loadError) {
+      setError("Load the saved configuration before changing program settings.");
+      return;
+    }
     setSaving(true);
     setError(null);
     try {
       await submitWizardConfig({ config: cfg });
+      const result = await fetchWizardConfig();
+      if (!result?.config) throw new Error("Saved configuration readback failed.");
+      const sameValue = (key, submitted, persisted) => {
+        if (key.endsWith("_time")) return String(submitted).slice(0, 5) === String(persisted).slice(0, 5);
+        if (submitted !== "" && persisted !== "" && !Number.isNaN(Number(submitted)) && !Number.isNaN(Number(persisted))) {
+          return Number(submitted) === Number(persisted);
+        }
+        return String(submitted) === String(persisted);
+      };
+      if (Object.entries(cfg).some(([key, value]) => !sameValue(key, value, result.config[key]))) {
+        throw new Error("Saved configuration values did not match the requested settings.");
+      }
       setSuccess(true);
     } catch (e) {
       setError(e.message);
@@ -100,6 +119,10 @@ export default function AftercareSetupWizard() {
     );
   }
 
+  if (loadError) {
+    return <Box sx={{ p: 4 }}><Alert severity="error">Could not load the saved program settings: {loadError}. Refresh to retry; changes cannot be saved safely yet.</Alert></Box>;
+  }
+
   if (success) {
     return (
       <Box sx={{ p: 4 }}>
@@ -112,8 +135,10 @@ export default function AftercareSetupWizard() {
   const panel0 = (
     <Box>
       <Typography variant="subtitle2" sx={{ mb: 2 }}>Program Hours & Late Fee Policy</Typography>
-      <Field label="Start Time (HH:MM:SS)" value={cfg.start_time} onChange={set("start_time")} />
-      <Field label="End Time (HH:MM:SS)" value={cfg.end_time} onChange={set("end_time")} />
+      <Field label="Before Care Start Time (HH:MM:SS)" value={cfg.before_start_time} onChange={set("before_start_time")} />
+      <Field label="Before Care School Handoff Time (HH:MM:SS)" value={cfg.before_end_time} onChange={set("before_end_time")} />
+      <Field label="After Care Start Time (HH:MM:SS)" value={cfg.start_time} onChange={set("start_time")} />
+      <Field label="After Care End Time (HH:MM:SS)" value={cfg.end_time} onChange={set("end_time")} />
       <Field label="Late Fee per 10 min ($)" value={cfg.late_fee_per_10_min} onChange={set("late_fee_per_10_min")} type="number" />
       <Field label="Grace Minutes (no charge window)" value={cfg.late_fee_grace_minutes} onChange={set("late_fee_grace_minutes")} type="number" />
       <Field label="Late Fee Cap ($)" value={cfg.late_fee_cap} onChange={set("late_fee_cap")} type="number" />
