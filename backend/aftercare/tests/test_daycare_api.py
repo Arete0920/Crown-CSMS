@@ -68,8 +68,28 @@ def test_unauthenticated_cannot_read_or_mutate():
         c.get(f'/api/v1/aftercare/daycare/sites/{d["site"].id}/roster/'),
         _release(d, uuid4(), c),
     ):
-        assert response.status_code in (401, 403)
+        # Canonical tenant middleware rejects missing school context first.
+        assert response.status_code == 400
+        assert response.json()["code"] == "missing_tenant"
+    # With a valid school selector, tenant resolution succeeds but DRF must
+    # independently reject the unauthenticated caller.
+    header = {"HTTP_X_SCHOOL_ID": str(d["school"].id)}
+    for response in (
+        c.post("/api/v1/aftercare/daycare/attendance/checkin/",
+            dict(site_id=str(d["site"].id),room_id=str(d["room"].id),
+                 child_id=str(d["child"].id),program_code="DAYCARE",
+                 request_key=str(uuid4())),format="json",**header),
+        c.get(f'/api/v1/aftercare/daycare/sites/{d["site"].id}/roster/',**header),
+        c.post("/api/v1/aftercare/daycare/attendance/release/",
+            dict(site_id=str(d["site"].id),room_id=str(d["room"].id),
+                 attendance_id=str(uuid4()),
+                 guardian_authority_id=str(d["authority"].id),
+                 request_key=str(uuid4()),identity_verified=True,
+                 identity_method="GOVERNMENT_PHOTO_ID"),format="json",**header),
+    ):
+        assert response.status_code in (401,403)
     assert not DaycareAttendance.objects.exists()
+    assert not DaycareRelease.objects.exists()
 
 
 def test_actor_impersonation_and_extra_fields_rejected():
