@@ -129,6 +129,7 @@ describe('Financial Aid dashboard runtime data truth', () => {
   it.each([
     ['missing provenance', {}],
     ['unknown provenance', { served_from: 'unknown' }],
+    ['unverified database transport', { served_from: 'database' }],
     ['explicit noncertification', { served_from: 'live', live_certified: false }],
     ['explicit noncertification for live_db', { served_from: 'live_db', live_certified: false }],
   ])('refuses to certify %s as live financial-aid figures', (_case, meta) => {
@@ -218,13 +219,13 @@ describe('Financial Aid dashboard runtime data truth', () => {
     expect(captured.metrics[0].dataState).toBe('fallback');
   });
 
-  it('displays authenticated live metrics only from the returned API payload', () => {
+  it.each(['live', 'live_db'])('displays explicitly sourced %s metrics (synthetic API contract)', (servedFrom) => {
     mockUseDashboardData.mockReturnValue({
       data: {
         metrics: [{ label: 'Aid Applications', value: '2', secondary: 'Verified synthetic school' }],
         queue: [],
         alerts: [],
-        meta: { served_from: 'database' },
+        meta: { served_from: servedFrom },
       },
       error: null,
       loading: false,
