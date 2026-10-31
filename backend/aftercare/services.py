@@ -341,7 +341,11 @@ def record_incident(
     attendance_id: int | None = None,
     parent_notified: bool = False,
 ) -> AftercareIncident:
-    student = _canonical_student(school_id=school_id, student_id=student_id)
+    # A deactivated student may still be physically in custody. Permit
+    # incident reporting only against that exact still-open school attendance.
+    student = Student.objects.filter(pk=student_id, school_id=school_id).first()
+    if student is None:
+        raise ValueError("Student does not belong to this school.")
     attendance = None
     if attendance_id is not None:
         attendance = AftercareAttendance.objects.filter(
@@ -351,6 +355,10 @@ def record_incident(
         ).first()
         if attendance is None:
             raise ValueError("Attendance record does not belong to this student and school.")
+    if not student.is_active and (
+        attendance is None or attendance.checkin_time is None or attendance.checkout_time is not None
+    ):
+        raise ValueError("Inactive student incidents require open same-school care attendance.")
 
     incident = AftercareIncident.objects.create(
         school_fk_id=school_id,
