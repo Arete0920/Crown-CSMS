@@ -1114,7 +1114,7 @@ def _build_enrollment_continuity(data: AdmissionsSubmitData, fee_policy: Any) ->
             {
                 "key": "enrollment_fee",
                 "title": "Enrollment Fee",
-                "status": "pending" if _enrollment_fee_required() else "not_required",
+                "status": "not_quoted",
                 "amount": None,
                 "currency": APPLICATION_FEE_CURRENCY,
             },
