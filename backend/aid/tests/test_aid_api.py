@@ -515,9 +515,13 @@ class TestAdminApproveAward(TestCase):
         from django.core.exceptions import ValidationError
 
         before = self._financial_state()
+        # Django TestClient re-raises unhandled view errors by default. Verify
+        # the actual generic HTTP response instead of raising in the harness.
+        self.client.raise_request_exception = False
         with patch("aid.api_views.approve_award", side_effect=ValidationError("Unrelated synthetic validation")):
             response = _json_post(self.client, self.url, {"reason": "Internal failure"}, self.school)
         self.assertEqual(response.status_code, 500, response.content)
+        self.assertNotEqual(response.status_code, 409)
         self.assertEqual(self._financial_state(), before)
 
     def test_invalid_json_returns_400_without_financial_writes(self):
