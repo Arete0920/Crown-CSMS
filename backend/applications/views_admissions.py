@@ -1425,7 +1425,11 @@ def _resolve_finance_payer_user(*, school: Any, guardians: list[dict[str, Any]])
 
 def _create_application_fee_finance_records(*, school: Any, data: AdmissionsSubmitData, application_ids: list[str], correlation_id: str, fee_policy: Any) -> dict[str, Any]:
     fee_status = _build_application_fee_status(data, fee_policy)
-    if not fee_status["required"]:
+    # A published schedule may waive the first child but charge additional
+    # children. Do not create a zero-dollar invoice for a one-child family.
+    if Decimal(fee_status["total_amount"]) == 0:
+        fee_status["required"] = False
+        fee_status["status"] = "not_required"
         fee_status["finance"] = {"state": "not_applicable"}
         return fee_status
 
@@ -1457,6 +1461,10 @@ def _create_application_fee_finance_records(*, school: Any, data: AdmissionsSubm
     for child_index, app_id in enumerate(application_ids or [str(uuid.uuid4())], start=1):
         discounted_fee = fee_policy.amount_for_child(child_index)
         fee_cents = int((discounted_fee * 100).quantize(Decimal("1")))
+        if fee_cents == 0:
+            # Zero-fee children stay in the household quote but must not create
+            # finance obligations or invoice lines.
+            continue
         amount_cents_total += fee_cents
         reference = f"admissions_fee:{app_id}"
         obligation = FinanceObligation.objects.filter(
