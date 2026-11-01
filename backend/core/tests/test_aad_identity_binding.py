@@ -8,6 +8,7 @@ import pytest
 from django.contrib import admin
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
+from django.db.models.deletion import ProtectedError
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework.test import APIRequestFactory
 
@@ -249,6 +250,28 @@ def test_microsoft_binding_admin_disables_hard_delete():
 
     assert tenant_admin.has_delete_permission(None) is False
     assert identity_admin.has_delete_permission(None) is False
+
+
+def test_microsoft_identity_evidence_survives_parent_delete_attempts():
+    tenant_id = uuid.uuid4()
+    object_id = uuid.uuid4()
+    school, user = _school_user("Protected Microsoft Evidence School")
+    binding, link = _bind(
+        school=school,
+        user=user,
+        tenant_id=tenant_id,
+        object_id=object_id,
+    )
+
+    with pytest.raises(ProtectedError):
+        user.delete()
+    with pytest.raises(ProtectedError):
+        binding.delete()
+    with pytest.raises(ProtectedError):
+        school.delete()
+
+    assert MicrosoftTenantBinding.objects.filter(pk=binding.pk).exists()
+    assert MicrosoftIdentityLink.objects.filter(pk=link.pk).exists()
 
 
 def test_microsoft_tenant_binding_ids_are_immutable_after_creation():
