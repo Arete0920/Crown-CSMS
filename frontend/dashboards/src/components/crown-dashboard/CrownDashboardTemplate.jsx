@@ -20,6 +20,9 @@ import { useMemo } from 'react';
 import PropTypes from 'prop-types';
 import { BASE_COMMUNICATIONS, BASE_FAITH_COMMUNITY, BASE_NOTE } from '../../config/dashboardTemplates/_baseData.js';
 import useDashboardData from '../../hooks/useDashboardData.js';
+import { getSelectedSchoolId } from '../../utils/authClient.js';
+
+const UNVERIFIED_FAITH_COMMUNITY = Object.freeze({ unverified: true });
 
 function getDefaultLastSyncLabel(dataState) {
   const state = String(dataState || '').toLowerCase();
@@ -166,6 +169,59 @@ function buildLiveDashboardConfig(config, payload, endpointConfig, loading, erro
     return config;
   }
 
+  const requireVerifiedLiveProvenance = config.requireVerifiedLiveProvenance
+    && ['summerCamp', 'extendedCare'].includes(config.key);
+  const programTemplateSafety = requireVerifiedLiveProvenance ? {
+    // The summary API does not supply these template-backed operational claims.
+    activities: [], trendPanels: [], commandModules: [], operations: [],
+    insight: {}, decisionPanel: null, rightRailSections: [], moduleSection: null,
+    heroMessage: null, updatesCount: null,
+    communications: false, faithCommunity: UNVERIFIED_FAITH_COMMUNITY,
+  } : {};
+
+  // Safety-sensitive program dashboards may not display sample/snapshot KPIs
+  // or implied staffing, billing and custody alerts as operational truth.
+  // Require positive server provenance plus an observed-as-of and aggregation
+  // window before treating a response as verified live data.
+  if (requireVerifiedLiveProvenance) {
+    const meta = payload?.meta || {};
+    const servedFrom = String(meta.served_from || '').toLowerCase();
+    const asOf = meta.observed_at || meta.observed_as_of || meta.as_of;
+    const window = meta.aggregation_window;
+    // This comparison only rejects missing/mismatched scope. Authorization
+    // remains enforced by the authenticated endpoint, never by client metadata.
+    const selectedSchoolId = getSelectedSchoolId();
+    const verified = !loading && !error && source === 'live'
+      && selectedSchoolId !== '' && meta.school_id === selectedSchoolId
+      && meta.live_certified !== false
+      && (servedFrom === 'live' || servedFrom === 'live_db')
+      && typeof asOf === 'string' && !Number.isNaN(Date.parse(asOf))
+      && typeof window === 'string' && window.trim() !== '';
+    if (!verified) {
+      const state = loading ? 'loading' : 'unavailable';
+      const sourceLabel = 'Verified school-scoped program metrics unavailable; current request, school scope, source, observed-as-of or aggregation window not established.';
+      return {
+        ...config,
+        dataState: state,
+        sourceLabel,
+        lastSyncLabel: loading ? 'Checking runtime provenance' : 'No verified runtime sync',
+        metrics: (Array.isArray(config.metrics) ? config.metrics : []).map((metric) => ({
+          label: metric.label, value: 'Not available',
+          detail: sourceLabel, accent: metric.accent,
+          dataState: state, sourceLabel,
+        })),
+        ...programTemplateSafety,
+        priorities: [],
+        alerts: [],
+        statuses: [{ label: 'Operational source', state: 'Not available' }],
+        errorState: loading ? null : {
+          title: 'Operational metrics unavailable',
+          message: sourceLabel,
+        },
+      };
+    }
+  }
+
   const dataState = getDashboardDataState(source, payload, error, loading, config.key);
   const isLiveParent = dataState === 'live' && config.key === 'parent';
   const sourceLabel = getDashboardSourceLabel(dataState, endpointConfig?.endpoint, payload);
@@ -238,6 +294,14 @@ function buildLiveDashboardConfig(config, payload, endpointConfig, loading, erro
           message: sourceLabel,
         }
       : (dataState === 'loading' ? null : config.errorState),
+    ...(requireVerifiedLiveProvenance ? {
+      // API payload metrics, queue and alerts are the only authorized
+      // data. Template activities, trends, cards and notices are not live.
+      ...programTemplateSafety,
+      sourceLabel: `${sourceLabel}; observed ${payload.meta.observed_at || payload.meta.observed_as_of || payload.meta.as_of}; window ${payload.meta.aggregation_window}`,
+      lastSyncLabel: 'Verified API provenance; independent certification pending',
+      statuses: [{ label: 'Live-data source', state: 'Verified API provenance; certification pending' }],
+    } : {}),
   };
 }
 
@@ -478,7 +542,8 @@ export default function CrownDashboardTemplate({ config, roleKey }) {
   // Rich layout: any dashboard with commandModules gets priorities/alerts/flip-cards/trends.
   const isSchoolAdminCommandCenter = effectiveConfig.key === 'schoolAdministrator';
   const isRichLayout = isSchoolAdminCommandCenter || commandModules.length > 0
-    || (effectiveConfig.key === 'parent' && dataState === 'live');
+    || (effectiveConfig.key === 'parent' && dataState === 'live')
+    || (effectiveConfig.requireVerifiedLiveProvenance && ['summerCamp', 'extendedCare'].includes(effectiveConfig.key));
 
   return (
     <CrownDashboardShell

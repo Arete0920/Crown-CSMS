@@ -286,6 +286,7 @@ class EnrollmentConversionWizardIntegrityTests(TestCase):
 
     def test_commit_uses_guarded_audited_enrollment_service(self):
         app = _application(self.school, self.year)
+        canonical = _link_ready_canonical_application(app)
         session_id = self._loaded_session(app)
 
         response = self.client.post(
@@ -298,6 +299,12 @@ class EnrollmentConversionWizardIntegrityTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data["converted"], 1)
         self.assertEqual(response.data["selected"], 1)
+        self.assertTrue(
+            ApplicationEvent.objects.filter(
+                application=canonical,
+                event_type="enrollment_confirmed",
+            ).exists()
+        )
         app.refresh_from_db()
         self.assertEqual(app.status, AdmissionsApplication.STATUS_ENROLLED)
         self.assertTrue(
