@@ -80,6 +80,21 @@ def create_club(school_id, payload: dict):
 
 
 @transaction.atomic
+def update_club(school_id, club_id, payload: dict):
+    club = SummerCampClub.objects.select_for_update().filter(
+        pk=club_id, school_id=school_id,
+    ).first()
+    if club is None:
+        raise ValueError("Club catalog item is unavailable.")
+    for key in ("code", "name", "category", "description", "is_active"):
+        if key in payload:
+            setattr(club, key, payload[key])
+    club.full_clean()
+    club.save()
+    return club
+
+
+@transaction.atomic
 def create_club_offering(school_id, payload: dict):
     """Schedule a reusable club inside one school-owned Camp session."""
     incoming = dict(payload)
@@ -99,6 +114,67 @@ def create_club_offering(school_id, payload: dict):
         **incoming,
     )
     offering.full_clean()
+    offering.save()
+    return offering
+
+
+@transaction.atomic
+def update_club_offering(school_id, offering_id, payload: dict):
+    offering = (
+        SummerCampClubOffering.objects.select_for_update()
+        .select_related("club", "session")
+        .filter(pk=offering_id, school_id=school_id)
+        .first()
+    )
+    if offering is None:
+        raise ValueError("Club offering is unavailable.")
+
+    incoming = dict(payload)
+    has_selections = SummerCampClubSelection.objects.filter(
+        offering=offering, status__in=["ENROLLED", "WAITLISTED"],
+    ).exists()
+    immutable_when_selected = {
+        "session_id", "club_id", "weekdays", "start_time", "end_time",
+    }
+    if has_selections and immutable_when_selected.intersection(incoming):
+        raise ValueError("Scheduled club details cannot change after camper selection.")
+
+    if "session_id" in incoming:
+        session = SummerCampSession.objects.filter(
+            pk=incoming.pop("session_id"), school_id=school_id,
+        ).first()
+        if session is None:
+            raise ValueError("Club offering session is unavailable.")
+        offering.session = session
+    if "club_id" in incoming:
+        club = SummerCampClub.objects.filter(
+            pk=incoming.pop("club_id"), school_id=school_id, is_active=True,
+        ).first()
+        if club is None:
+            raise ValueError("Club catalog item is unavailable.")
+        offering.club = club
+    if "instructor_id" in incoming:
+        offering.instructor_id = incoming.pop("instructor_id")
+
+    if "capacity" in incoming:
+        enrolled_count = SummerCampClubSelection.objects.filter(
+            offering=offering, status="ENROLLED",
+        ).count()
+        if incoming["capacity"] < enrolled_count:
+            raise ValueError("Club capacity cannot be lower than enrolled selections.")
+    if "waitlist_capacity" in incoming:
+        waitlisted_count = SummerCampClubSelection.objects.filter(
+            offering=offering, status="WAITLISTED",
+        ).count()
+        if incoming["waitlist_capacity"] < waitlisted_count:
+            raise ValueError("Club waitlist capacity cannot be lower than current waitlist.")
+
+    for key in (
+        "weekdays", "start_time", "end_time", "location", "capacity",
+        "waitlist_capacity", "optional_charge_cents", "status",
+    ):
+        if key in incoming:
+            setattr(offering, key, incoming[key])
     offering.save()
     return offering
 
