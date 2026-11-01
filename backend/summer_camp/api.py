@@ -262,10 +262,7 @@ def clubs_view(request):
     serializer.is_valid(raise_exception=True)
     try:
         club = create_club(school_id, serializer.validated_data)
-    except (ValueError, Exception) as exc:
-        from django.core.exceptions import ValidationError as DjangoValidationError
-        if not isinstance(exc, DjangoValidationError):
-            raise
+    except DjangoValidationError:
         return Response(
             {"detail": "Club catalog item is invalid or already exists."},
             status=status.HTTP_400_BAD_REQUEST,
@@ -299,10 +296,7 @@ def club_offerings_view(request):
     serializer.is_valid(raise_exception=True)
     try:
         offering = create_club_offering(school_id, serializer.validated_data)
-    except (ValueError, Exception) as exc:
-        from django.core.exceptions import ValidationError as DjangoValidationError
-        if not isinstance(exc, (ValueError, DjangoValidationError)):
-            raise
+    except (ValueError, DjangoValidationError):
         return Response(
             {"detail": "Club offering is invalid for this school or session."},
             status=status.HTTP_400_BAD_REQUEST,
