@@ -331,6 +331,7 @@ class TestAdminRecommendAward(TestCase):
     def test_missing_application_returns_404(self):
         r = _json_post(self.client, self.url, {
             "application_id": 999999999,  # integer PK (AidApplication auto-pk)
+            "student_id": str(self.student.id),
             "bucket": AidAward.TYPE_NEED,
             "gross_tuition_cents": 10_000_00,
         }, self.school)
