@@ -46,16 +46,22 @@ def get_admissions_fee_policy(*, school, term: str) -> AdmissionsFeePolicy | Non
     if not school or not term:
         return None
 
+    codes = (FIRST_CHILD_FEE_CODE, ADDITIONAL_CHILD_FEE_CODE)
+    # A school may publish tuition, activity and admissions schedules for the
+    # same term. Select only schedules containing BOTH admissions fee lines.
+    # Two complete candidates are ambiguous and must fail closed.
     schedules = list(
         FeeSchedule.objects.filter(
-            school_id=school.pk, term=term, is_active=True
-        ).only("id")[:2]
+            school_id=school.pk, term=term, is_active=True,
+            lines__code=FIRST_CHILD_FEE_CODE,
+        ).filter(
+            lines__code=ADDITIONAL_CHILD_FEE_CODE,
+        ).distinct().only("id")[:2]
     )
     if len(schedules) != 1:
         return None
 
     schedule = schedules[0]
-    codes = (FIRST_CHILD_FEE_CODE, ADDITIONAL_CHILD_FEE_CODE)
     lines = list(
         FeeLine.objects.filter(fee_schedule=schedule, code__in=codes)
         .values("code", "amount_cents", "kind", "frequency", "is_required")
