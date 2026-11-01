@@ -8,6 +8,13 @@
 
 const TOKEN_KEY = "crown.jwt.access";
 const SCHOOL_KEY = "crown.school.id";
+export const SCHOOL_CONTEXT_CHANGE_EVENT = "crown:school-context-changed";
+
+function notifySchoolContextChanged() {
+  if (typeof window !== "undefined" && typeof window.dispatchEvent === "function") {
+    window.dispatchEvent(new window.Event(SCHOOL_CONTEXT_CHANGE_EVENT));
+  }
+}
 const DEFAULT_TIMEOUT_MS = 15000;
 const AUTH_STORAGE_KEYS = [
   "crown.jwt.access", "crown.jwt.refresh", "crown_auth_token", "access_token",
@@ -33,6 +40,7 @@ export function clearBrowserAuthState() {
       // Storage may be blocked; never prevent a logout/redirect.
     }
   }
+  notifySchoolContextChanged();
 }
 
 function expireBrowserSession() {
@@ -168,6 +176,7 @@ export function getSelectedSchoolId() {
 }
 
 export function setSelectedSchoolId(schoolId) {
+  const previous = getSelectedSchoolId();
   try {
     const value = String(schoolId || "").trim();
     if (value) sessionStorage.setItem(SCHOOL_KEY, value);
@@ -175,6 +184,7 @@ export function setSelectedSchoolId(schoolId) {
   } catch (error) {
     console.error(error);
   }
+  if (getSelectedSchoolId() !== previous) notifySchoolContextChanged();
 }
 
 export function clearSelectedSchoolId() {

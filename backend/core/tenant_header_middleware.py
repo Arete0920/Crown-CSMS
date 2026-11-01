@@ -275,8 +275,9 @@ def enforce_tenant_context(request) -> None:
         .first()
     )
     # An already-admitted child's custody must remain resolvable after a
-    # school is deactivated. Admit no new children: only the exact release POST
-    # and school-bound GET of an existing site's open-custody roster continue.
+    # school is deactivated. Admit no new children: allow only verified release,
+    # exact school-bound open-custody rosters and the narrowly restricted
+    # unresolved-custody site directory needed to find those roster URLs.
     # The DRF views still require active, explicitly authorized Diadem staff,
     # current staff coverage for room rosters, and verified release authority.
     is_diadem_release = (
@@ -291,9 +292,17 @@ def enforce_tenant_context(request) -> None:
             normalized_path,
         ) is not None
     )
+    is_diadem_custody_directory = (
+        request.method == "GET"
+        and normalized_path == "/api/v1/aftercare/daycare/sites"
+    )
     if (
         school is None
-        and (is_diadem_release or is_diadem_open_custody_roster)
+        and (
+            is_diadem_release
+            or is_diadem_open_custody_roster
+            or is_diadem_custody_directory
+        )
         and context.principal_school_id is not None
         and context.principal_school_id == context.school_id
         and not context.override_requested
