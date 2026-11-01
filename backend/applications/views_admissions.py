@@ -371,6 +371,170 @@ def _enrollment_fee_config() -> dict[str, Any]:
     }
 
 
+def _is_graph_email_configured() -> bool:
+    return bool(
+        (
+            os.getenv("GRAPH_TENANT_ID")
+            and os.getenv("GRAPH_CLIENT_ID")
+            and os.getenv("GRAPH_CLIENT_SECRET")
+        )
+        or (
+            os.getenv("AZURE_TENANT_ID")
+            and os.getenv("AZURE_CLIENT_ID")
+            and os.getenv("AZURE_CLIENT_SECRET")
+        )
+    )
+
+
+def _is_sharepoint_configured() -> bool:
+    return bool(os.getenv("M365_SHAREPOINT_SITE_ID") or os.getenv("M365_DEFAULT_DRIVE_ID"))
+
+
+def _is_sms_configured() -> bool:
+    return str(os.getenv("COMMS_SMS_ENABLED", "0")).strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _build_contract_m365_handoff(*, application_ids: list[str]) -> dict[str, Any]:
+    return {
+        "enabled": _is_graph_email_configured() and _is_sharepoint_configured(),
+        "provider": "microsoft_365",
+        "template": {
+            "name": "Enrollment Contract Standard",
+            "autopopulate_fields": [
+                "guardian_names",
+                "guardian_emails",
+                "student_names",
+                "campus",
+                "start_term",
+                "fees_per_child",
+                "discount_schedule",
+                "financial_aid_intent",
+                "contract_totals",
+            ],
+        },
+        "channels": {
+            "outlook_email": _is_graph_email_configured(),
+            "sharepoint_packet": _is_sharepoint_configured(),
+            "teams_notification": _is_graph_email_configured(),
+        },
+        "application_ids": application_ids,
+    }
+
+
+def _decision_deadline_iso() -> str:
+    return (timezone.now() + timedelta(hours=24)).isoformat()
+
+
+def _queue_outbox_message(*, outbox_model: Any, idempotency_key: str, school_id: str, channel: str, to_value: str, subject: str, body: str) -> None:
+    outbox_model.objects.get_or_create(
+        idempotency_key=idempotency_key,
+        defaults={
+            "school_id": school_id,
+            "channel": channel,
+            "to": to_value,
+            "subject": subject,
+            "body": body,
+        },
+    )
+
+
+def _queue_guardian_messages(
+    *,
+    outbox_model: Any,
+    school_value: str,
+    app_ref: str,
+    guardian: dict[str, Any],
+    guardian_index: int,
+    email_enabled: bool,
+    sms_enabled: bool,
+    stage_token: str,
+) -> tuple[int, int]:
+    email = str(guardian.get("email") or "").strip().lower()
+    phone = str(guardian.get("phone") or "").strip()
+    email_queued = 0
+    sms_queued = 0
+
+    if email and email_enabled:
+        _queue_outbox_message(
+            outbox_model=outbox_model,
+            idempotency_key=f"admissions:{app_ref}:{stage_token}:guardian:{guardian_index}:email",
+            school_id=school_value,
+            channel="EMAIL",
+            to_value=email,
+            subject="Admissions Update: Application Received",
+            body=(
+                "Your application was received. Review and decision target is within 24 hours. "
+                "You will continue to receive updates by email and text."
+            ),
+        )
+        email_queued = 1
+
+    if phone and sms_enabled:
+        _queue_outbox_message(
+            outbox_model=outbox_model,
+            idempotency_key=f"admissions:{app_ref}:{stage_token}:guardian:{guardian_index}:sms",
+            school_id=school_value,
+            channel="SMS",
+            to_value=phone,
+            subject="",
+            body="CROWN Admissions: your application was received. Review and decision target is within 24 hours.",
+        )
+        sms_queued = 1
+
+    return email_queued, sms_queued
+
+
+def _queue_family_communications(
+    *,
+    school_id: Any,
+    guardians: list[dict[str, Any]],
+    application_ids: list[str],
+    correlation_id: str,
+    stage_token: str = "application_submitted",
+) -> dict[str, Any]:
+    email_enabled = _is_graph_email_configured()
+    sms_enabled = _is_sms_configured()
+    summary: dict[str, Any] = {
+        "email": {"queued": 0, "enabled": email_enabled},
+        "sms": {"queued": 0, "enabled": sms_enabled},
+        "status": "not_configured",
+        "correlation_id": correlation_id,
+    }
+
+    try:
+        from comms.models import OutboxMessage  # noqa: PLC0415
+    except Exception:
+        summary["status"] = "outbox_unavailable"
+        return summary
+
+    app_ref = application_ids[0] if application_ids else "unknown"
+    school_value = str(school_id)
+
+    for index, guardian in enumerate(guardians or []):
+        email_queued, sms_queued = _queue_guardian_messages(
+            outbox_model=OutboxMessage,
+            school_value=school_value,
+            app_ref=app_ref,
+            guardian=guardian,
+            guardian_index=index,
+            email_enabled=email_enabled,
+            sms_enabled=sms_enabled,
+            stage_token=stage_token,
+        )
+        summary["email"]["queued"] += email_queued
+        summary["sms"]["queued"] += sms_queued
+
+    has_queued = summary["email"]["queued"] > 0 or summary["sms"]["queued"] > 0
+    if has_queued:
+        summary["status"] = "queued"
+    elif summary["email"]["enabled"] or summary["sms"]["enabled"]:
+        summary["status"] = "enabled_no_recipients"
+    else:
+        summary["status"] = "not_configured"
+
+    return summary
+
+
 def _assessment_interview_config() -> dict[str, Any]:
     return {
         "required": ADMISSIONS_ASSESSMENT_REQUIRED,
