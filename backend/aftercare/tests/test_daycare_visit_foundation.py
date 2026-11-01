@@ -2,14 +2,16 @@
 
 No re-entry endpoint or service activation is included in this slice.
 """
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone as datetime_timezone
+from uuid import uuid4
 
 import pytest
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, connection, transaction
+from django.db.migrations.executor import MigrationExecutor
 from django.utils import timezone
 
-from aftercare.models import DaycareAttendance, DaycareReentryAuthorization
+from aftercare.models import DaycareAttendance, DaycareReentryAuthorization, DaycareRelease
 from aftercare.daycare_checkin import CheckinRefused
 from aftercare.tests.test_daycare_checkin import setup, check
 from aftercare.tests.test_daycare_release import release
@@ -154,3 +156,77 @@ def test_database_rejects_visit_without_approval_even_when_orm_is_bypassed():
     first.refresh_from_db()
     assert first.visit_number == 1
     assert first.reentry_approval_id is None
+
+
+@pytest.mark.django_db(transaction=True)
+def test_postgresql_preexisting_custody_survives_visit_migration():
+    """Rehearse 0011 -> 0012 with old-model child custody rows and audit IDs.
+
+    This modifies *only* an ephemeral PostgreSQL test database, restores
+    the latest migration state in finally, and never connects to Azure.
+    """
+    if connection.vendor != "postgresql":
+        pytest.skip("Real PostgreSQL migration replay only.")
+    assert connection.settings_dict["HOST"] in {"localhost", "127.0.0.1"}
+    assert str(connection.settings_dict["NAME"]).startswith("test_")
+
+    previous = ("aftercare", "0011_aftercare_pickup_verified_by")
+    updated = ("aftercare", "0012_diadem_visit_reentry_foundation")
+    original_executor = MigrationExecutor(connection)
+    final_targets = original_executor.loader.graph.leaf_nodes()
+    try:
+        original_executor.migrate([previous])
+        historical_apps = MigrationExecutor(connection).loader.project_state(
+            [previous]
+        ).apps
+        HistoricalAttendance = historical_apps.get_model(
+            "aftercare", "DaycareAttendance"
+        )
+        HistoricalRelease = historical_apps.get_model(
+            "aftercare", "DaycareRelease"
+        )
+        data = setup()
+        checked_in_at = datetime(2026, 11, 1, 12, 0, tzinfo=datetime_timezone.utc)
+        old_row = HistoricalAttendance.objects.create(
+            school_id=data["school"].id, site_id=data["site"].id,
+            room_id=data["room"].id, child_id=data["child"].id,
+            program_id=data["program"].id, enrollment_id=data["enrollment"].id,
+            actor_id=data["actor"].id, care_date=checked_in_at.date(),
+            checked_in_at=checked_in_at, request_key=uuid4(),
+        )
+        old_release = HistoricalRelease.objects.create(
+            school_id=data["school"].id, site_id=data["site"].id,
+            room_id=data["room"].id, child_id=data["child"].id,
+            attendance_id=old_row.id, guardian_authority_id=data["authority"].id,
+            actor_id=data["actor"].id,
+            released_at=checked_in_at + timedelta(minutes=10),
+            identity_method="GOVERNMENT_PHOTO_ID", identity_verified=True,
+            guardian_name_snapshot="Synthetic Guardian", request_key=uuid4(),
+        )
+        audit = AuditLog.objects.create(
+            user_id=data["actor"].id, action="diadem.daycare.release",
+            model="DaycareRelease", object_id=str(old_release.pk),
+            metadata={"school_id": str(data["school"].id), "synthetic": True},
+        )
+        historical_ids = (old_row.id, old_release.id, audit.pk)
+        assert not hasattr(old_row, "visit_number")
+        assert HistoricalAttendance.objects.count() == 1
+        assert HistoricalRelease.objects.count() == 1
+
+        MigrationExecutor(connection).migrate([updated])
+        accepted_row = DaycareAttendance.objects.get(pk=historical_ids[0])
+        accepted_release = DaycareRelease.objects.get(pk=historical_ids[1])
+        accepted_audit = AuditLog.objects.get(pk=historical_ids[2])
+        assert accepted_row.visit_number == 1
+        assert accepted_row.reentry_approval_id is None
+        assert accepted_row.child_id == data["child"].id
+        assert accepted_row.checked_in_at == checked_in_at
+        assert accepted_release.attendance_id == accepted_row.pk
+        assert accepted_release.guardian_authority_id == data["authority"].id
+        assert accepted_release.released_at == checked_in_at + timedelta(minutes=10)
+        assert accepted_audit.object_id == str(accepted_release.pk)
+        assert DaycareAttendance.objects.count() == 1
+        assert DaycareRelease.objects.count() == 1
+        assert DaycareReentryAuthorization.objects.count() == 0
+    finally:
+        MigrationExecutor(connection).migrate(final_targets)
