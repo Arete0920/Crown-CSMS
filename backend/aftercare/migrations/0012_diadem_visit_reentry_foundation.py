@@ -18,7 +18,7 @@ class Migration(migrations.Migration):
     operations = [
         migrations.AddField(
             model_name="daycareattendance", name="visit_number",
-            field=models.PositiveIntegerField(default=1, editable=False),
+            field=models.PositiveIntegerField(default=1, db_default=1, editable=False),
         ),
         migrations.CreateModel(
             name="DaycareReentryAuthorization",

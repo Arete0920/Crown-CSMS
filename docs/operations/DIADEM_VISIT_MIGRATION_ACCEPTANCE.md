@@ -5,7 +5,7 @@ activation, approval for real custody records, or an operational re-entry route.
 
 ## Invariants
 
-- Existing DaycareAttendance rows remain immutable with visit_number=1.
+- Existing DaycareAttendance rows remain immutable with visit_number=1. PostgreSQL retains a database default of 1 for pre-0012 application inserts during a reviewed rollout.
 - Existing DaycareRelease attendance OneToOne and audit rows remain unchanged.
 - Database CHECK constraints require visit 1 without a re-entry approval,
   visit 2+ with an approval, and a fixed reviewed authorization reason.

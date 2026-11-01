@@ -228,5 +228,25 @@ def test_postgresql_preexisting_custody_survives_visit_migration():
         assert DaycareAttendance.objects.count() == 1
         assert DaycareRelease.objects.count() == 1
         assert DaycareReentryAuthorization.objects.count() == 0
+
+        # The pre-0012 application model omits visit_number entirely.
+        # PostgreSQL must retain a persistent database default so an older
+        # still-running image can write a new first admission during rollout.
+        legacy_child = type(data["child"]).objects.create(
+            school=data["school"], site=data["site"],
+            household=data["family"], first_name="Legacy",
+            last_name="Synthetic", date_of_birth=data["child"].date_of_birth,
+            is_active=True,
+        )
+        old_image_row = HistoricalAttendance.objects.create(
+            school_id=data["school"].id, site_id=data["site"].id,
+            room_id=data["room"].id, child_id=legacy_child.pk,
+            program_id=data["program"].id, enrollment_id=data["enrollment"].id,
+            actor_id=data["actor"].id, care_date=checked_in_at.date(),
+            checked_in_at=checked_in_at, request_key=uuid4(),
+        )
+        migrated_old_image_row = DaycareAttendance.objects.get(pk=old_image_row.pk)
+        assert migrated_old_image_row.visit_number == 1
+        assert migrated_old_image_row.reentry_approval_id is None
     finally:
         MigrationExecutor(connection).migrate(final_targets)

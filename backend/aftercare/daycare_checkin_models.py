@@ -82,7 +82,7 @@ class DaycareAttendance(DaycareScopedRecord):
     request_key=models.UUIDField(default=uuid.uuid4)
     # A visit is an immutable admission-to-release custody episode. Historical
     # records all remain visit 1; a new same-day episode needs director approval.
-    visit_number=models.PositiveIntegerField(default=1,editable=False)
+    visit_number=models.PositiveIntegerField(default=1,db_default=1,editable=False)
     reentry_approval=models.OneToOneField(
         "aftercare.DaycareReentryAuthorization",on_delete=models.PROTECT,
         null=True,blank=True,related_name="admitted_visit")
