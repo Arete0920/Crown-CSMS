@@ -234,8 +234,13 @@ export async function authenticatedFetch(input, init = {}) {
       typeof input === "string"
       && /^\/api\/platform\/(?:overview|schools(?:\/list)?)$/.test(input)
     );
-    if (omitSchoolContext && !isPlatformOperatorRequest) {
-      throw new Error("Schoolless requests are restricted to explicit platform endpoints.");
+    const isSgoGrantorRead = (
+      typeof input === "string"
+      && String(requestInit.method || "GET").toUpperCase() === "GET"
+      && /^\/api\/v1\/jireh-sgo\/organizations(?:\/[0-9a-fA-F]{8}-(?:[0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}\/overview)?\/?$/.test(input)
+    );
+    if (omitSchoolContext && !isPlatformOperatorRequest && !isSgoGrantorRead) {
+      throw new Error("Schoolless requests are restricted to explicit authorized endpoints.");
     }
     if (omitSchoolContext) {
       headers.delete("X-School-Id");

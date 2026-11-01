@@ -29,6 +29,7 @@ from crown_api.auth_views import login, refresh, me
 from crown_api.dev_token_views import dev_token
 from crown_api.system_views import whoami
 from solomon.guidance_views import guidance_view
+from jireh_sgo.read_only_api import organizations as sgo_organizations, overview as sgo_overview
 
 
 logger = logging.getLogger(__name__)
@@ -124,6 +125,8 @@ urlpatterns = [
     path("api/v1/little-lambs/", include("aftercare.urls")),
     path("api/little-lambs/", include("aftercare.urls")),
     # Canonical API. Specific dashboard routes must precede each broad alias.
+    path("api/v1/jireh-sgo/organizations/", sgo_organizations, name="sgo-organizations"),
+    path("api/v1/jireh-sgo/organizations/<uuid:organization_id>/overview/", sgo_overview, name="sgo-overview"),
     path("api/v1/dashboards/", include("crown_api.dashboards.urls")),
     path("api/v1/", include("crown_api.api_v1_urls")),
     # Back-compat alias: /api/dashboards/* mirrors /api/v1/dashboards/*.
