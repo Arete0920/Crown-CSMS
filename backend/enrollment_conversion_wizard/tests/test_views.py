@@ -5,9 +5,16 @@ from django.contrib.auth import get_user_model
 from django.test import TestCase
 from rest_framework.test import APIClient
 
-from admissions.models import AdmissionsApplication
+from admissions.models import AdmissionsApplication, AdmissionsAuditEvent
+from applications.models import Application, ApplicationEvent, ApplicationStatus
+from applications.views_admissions import (
+    CONTRACT_COUNTERSIGNED, DEPOSIT_PAID, ENROLLMENT_STATE_EVENT_TYPE,
+    ENROLLMENT_CONFIRMED_EVENT_TYPE,
+)
+from households.models import Household
 from core.models import AcademicYear, CrownPermission, Family, RolePermission, School, UserRole
 from enrollment_conversion_wizard.models import EnrollmentConversionWizardSession
+from enrollment_conversion_wizard.permissions import can_manage_enrollment_conversion
 
 
 TEST_AUTH_SECRET = "TestAuthSecret-LocalOnly"
@@ -63,6 +70,28 @@ def _make_application(school, ay, status="ACCEPTED"):
     )
 
 
+def _link_canonical(legacy, *, ready=True):
+    household = Household.objects.create(
+        school_id=legacy.school_id, name=f"Conversion Test Household {uuid.uuid4().hex[:6]}"
+    )
+    canonical = Application.objects.create(
+        school_id=legacy.school_id, household=household, status=ApplicationStatus.DECIDED
+    )
+    ApplicationEvent.objects.create(
+        school_id=legacy.school_id, application=canonical,
+        event_type="decision_made", payload={"decision": "accepted"},
+    )
+    if ready:
+        ApplicationEvent.objects.create(
+            school_id=legacy.school_id, application=canonical,
+            event_type=ENROLLMENT_STATE_EVENT_TYPE,
+            payload={"contract_status": CONTRACT_COUNTERSIGNED, "deposit_status": DEPOSIT_PAID},
+        )
+    legacy.notes_internal = f"canonical_application_id={canonical.id}"
+    legacy.save(update_fields=["notes_internal", "updated_at"])
+    return canonical
+
+
 def _advance_to_configured(client, school_id):
     r = client.post(BASE_URL, **_headers(school_id))
     sid = r.data["session_id"]
@@ -101,6 +130,53 @@ class EnrollmentConversionAuthTest(TestCase):
         school = _make_school()
         r = APIClient().post(BASE_URL, **_headers(school.id))
         self.assertEqual(r.status_code, 401)
+
+
+    def test_staff_bit_does_not_grant_enrollment_conversion(self):
+        school = _make_school()
+        user = _make_user()
+        user.is_staff = True
+        user.save(update_fields=["is_staff"])
+        self.assertFalse(can_manage_enrollment_conversion(user, school))
+
+    def test_superuser_bit_does_not_override_school_scope(self):
+        school = _make_school()
+        user = _make_user()
+        user.is_superuser = True
+        user.save(update_fields=["is_superuser"])
+        self.assertFalse(can_manage_enrollment_conversion(user, school))
+
+    def test_read_only_admin_permission_cannot_commit_enrollment(self):
+        school = _make_school()
+        user = _make_user()
+        role_code = "ENROLLMENT_READ_ONLY_TEST"
+        UserRole.objects.create(user=user, school=school, role_code=role_code)
+        permission, _ = CrownPermission.objects.get_or_create(
+            code="admin.view", defaults={"description": "View administration dashboard"},
+        )
+        RolePermission.objects.get_or_create(role_code=role_code, permission=permission)
+        self.assertFalse(can_manage_enrollment_conversion(user, school))
+
+    def test_explicit_admin_view_is_scoped_to_its_own_school(self):
+        school = _make_school()
+        other_school = _make_school()
+        user = _make_user()
+        UserRole.objects.create(user=user, school=school, role_code="HEAD_OF_SCHOOL")
+        permission, _ = CrownPermission.objects.get_or_create(
+            code="admin.view", defaults={"description": "View administration dashboard"},
+        )
+        RolePermission.objects.get_or_create(
+            role_code="HEAD_OF_SCHOOL", permission=permission,
+        )
+        action, _ = CrownPermission.objects.get_or_create(
+            code="director.actions", defaults={"description": "Execute director-level actions"},
+        )
+        RolePermission.objects.get_or_create(role_code="HEAD_OF_SCHOOL", permission=action)
+        self.assertTrue(can_manage_enrollment_conversion(user, school))
+        self.assertFalse(can_manage_enrollment_conversion(user, other_school))
+        user.is_active = False
+        user.save(update_fields=["is_active"])
+        self.assertFalse(can_manage_enrollment_conversion(user, school))
 
 
 # ---------------------------------------------------------------------------
@@ -225,8 +301,8 @@ class EnrollmentConversionCommitTest(TestCase):
     def test_commit_converts_applications(self):
         school = _make_school()
         ay = _make_academic_year(school)
-        _make_application(school, ay, status="ACCEPTED")
-        _make_application(school, ay, status="ACCEPTED")
+        _link_canonical(_make_application(school, ay, status="ACCEPTED"))
+        _link_canonical(_make_application(school, ay, status="ACCEPTED"))
         c = _client_for(school)
         sid = _advance_to_loaded(c, school.id)
         r = c.post(
@@ -253,7 +329,7 @@ class EnrollmentConversionCommitTest(TestCase):
     def test_commit_is_idempotent(self):
         school = _make_school()
         ay = _make_academic_year(school)
-        _make_application(school, ay, status="ACCEPTED")
+        _link_canonical(_make_application(school, ay, status="ACCEPTED"))
         c = _client_for(school)
         sid = _advance_to_committed(c, school.id)
         r2 = c.post(
@@ -264,6 +340,8 @@ class EnrollmentConversionCommitTest(TestCase):
         )
         self.assertEqual(r2.status_code, 200)
         self.assertEqual(r2.data["status"], EnrollmentConversionWizardSession.STATUS_COMMITTED)
+        self.assertEqual(r2.data["converted"], 1)
+        self.assertEqual(r2.data["selected"], 1)
 
 
 # ---------------------------------------------------------------------------
@@ -274,7 +352,7 @@ class EnrollmentConversionVerifyTest(TestCase):
     def test_verify_ok(self):
         school = _make_school()
         ay = _make_academic_year(school)
-        _make_application(school, ay, status="ACCEPTED")
+        _link_canonical(_make_application(school, ay, status="ACCEPTED"))
         c = _client_for(school)
         sid = _advance_to_committed(c, school.id)
         r = c.get(f"{BASE_URL}{sid}/verify/", **_headers(school.id))
@@ -289,3 +367,77 @@ class EnrollmentConversionVerifyTest(TestCase):
         sid = r.data["session_id"]
         r2 = c.get(f"{BASE_URL}{sid}/verify/", **_headers(school.id))
         self.assertEqual(r2.status_code, 400)
+
+
+class EnrollmentConversionCanonicalGateTest(TestCase):
+    def test_unlinked_cohort_is_rejected_without_enrollment(self):
+        school = _make_school()
+        year = _make_academic_year(school)
+        app = _make_application(school, year)
+        client = _client_for(school)
+        sid = _advance_to_loaded(client, school.id)
+        response = client.post(f"{BASE_URL}{sid}/commit/", {"confirm": True}, format="json", **_headers(school.id))
+        self.assertEqual(response.status_code, 409)
+        app.refresh_from_db()
+        self.assertEqual(app.status, AdmissionsApplication.STATUS_ACCEPTED)
+        self.assertFalse(AdmissionsAuditEvent.objects.filter(school=school, action="STATUS_ENROLLED").exists())
+
+    def test_unready_member_blocks_entire_cohort_without_partial_conversion(self):
+        school = _make_school()
+        year = _make_academic_year(school)
+        first = _make_application(school, year)
+        second = _make_application(school, year)
+        ready = _link_canonical(first)
+        unready = _link_canonical(second, ready=False)
+        client = _client_for(school)
+        sid = _advance_to_loaded(client, school.id)
+        response = client.post(f"{BASE_URL}{sid}/commit/", {"confirm": True}, format="json", **_headers(school.id))
+        self.assertEqual(response.status_code, 409)
+        first.refresh_from_db()
+        second.refresh_from_db()
+        self.assertEqual(first.status, AdmissionsApplication.STATUS_ACCEPTED)
+        self.assertEqual(second.status, AdmissionsApplication.STATUS_ACCEPTED)
+        self.assertFalse(AdmissionsAuditEvent.objects.filter(school=school, action="STATUS_ENROLLED").exists())
+        self.assertFalse(ApplicationEvent.objects.filter(application__in=[ready, unready], event_type=ENROLLMENT_CONFIRMED_EVENT_TYPE).exists())
+
+    def test_ready_cohort_creates_canonical_confirmation_and_retries_receipt(self):
+        school = _make_school()
+        year = _make_academic_year(school)
+        app = _make_application(school, year)
+        canonical = _link_canonical(app)
+        client = _client_for(school)
+        sid = _advance_to_loaded(client, school.id)
+        url = f"{BASE_URL}{sid}/commit/"
+        first = client.post(url, {"confirm": True}, format="json", **_headers(school.id))
+        second = client.post(url, {"confirm": True}, format="json", **_headers(school.id))
+        self.assertEqual(first.status_code, 200)
+        self.assertEqual(second.status_code, 200)
+        self.assertEqual(first.data["converted"], 1)
+        self.assertEqual(second.data["converted"], 1)
+        self.assertEqual(ApplicationEvent.objects.filter(application=canonical, event_type=ENROLLMENT_CONFIRMED_EVENT_TYPE).count(), 1)
+        self.assertEqual(AdmissionsAuditEvent.objects.filter(school=school, action="STATUS_ENROLLED").count(), 1)
+
+    def test_zero_cohort_and_string_confirmation_fail_closed(self):
+        school = _make_school()
+        _make_academic_year(school)
+        client = _client_for(school)
+        sid = _advance_to_loaded(client, school.id)
+        url = f"{BASE_URL}{sid}/commit/"
+        self.assertEqual(client.post(url, {"confirm": "false"}, format="json", **_headers(school.id)).status_code, 400)
+        self.assertEqual(client.post(url, {"confirm": True}, format="json", **_headers(school.id)).status_code, 409)
+        session = EnrollmentConversionWizardSession.objects.get(id=sid)
+        self.assertEqual(session.status, EnrollmentConversionWizardSession.STATUS_APPLICANTS_LOADED)
+
+    def test_loaded_cohort_cannot_be_reconfigured(self):
+        school = _make_school()
+        _make_academic_year(school)
+        client = _client_for(school)
+        sid = _advance_to_loaded(client, school.id)
+        response = client.post(
+            f"{BASE_URL}{sid}/configure/",
+            {"academic_year_label": "2099-2100", "from_status": "ACCEPTED"},
+            format="json", **_headers(school.id),
+        )
+        self.assertEqual(response.status_code, 409)
+        session = EnrollmentConversionWizardSession.objects.get(id=sid)
+        self.assertEqual(session.academic_year_label, "2026-2027")
