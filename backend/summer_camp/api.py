@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from django.db import transaction
 from django.db.models import Q
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema
@@ -8,6 +9,7 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
 from core.permissions import user_has_permission
+from crown_api.audit import audit_log
 from households.models import Guardian
 from .models import (
     SummerCampClub,
@@ -456,11 +458,23 @@ def club_selections_view(request):
     ):
         return Response({"detail": "Forbidden"}, status=status.HTTP_403_FORBIDDEN)
     try:
-        selection = select_club(
-            school_id,
-            serializer.validated_data["enrollment_id"],
-            serializer.validated_data["offering_id"],
-        )
+        with transaction.atomic():
+            selection = select_club(
+                school_id,
+                serializer.validated_data["enrollment_id"],
+                serializer.validated_data["offering_id"],
+            )
+            audit_log(
+                request=request,
+                action="summer_camp.club_selection.created",
+                object_type="summer_camp_club_selection",
+                meta={
+                    "selection_id": selection.id,
+                    "enrollment_id": selection.enrollment_id,
+                    "offering_id": selection.offering_id,
+                    "status": selection.status,
+                },
+            )
     except ValueError:
         return Response(
             {"detail": "Club selection denied: registration, schedule, or capacity is invalid."},
@@ -489,7 +503,19 @@ def club_selection_cancel_view(request, selection_id):
         ):
             return Response({"detail": "Forbidden"}, status=status.HTTP_403_FORBIDDEN)
     try:
-        cancelled, promoted = cancel_club_selection(school_id, selection_id)
+        with transaction.atomic():
+            cancelled, promoted = cancel_club_selection(school_id, selection_id)
+            audit_log(
+                request=request,
+                action="summer_camp.club_selection.cancelled",
+                object_type="summer_camp_club_selection",
+                meta={
+                    "selection_id": cancelled.id,
+                    "enrollment_id": cancelled.enrollment_id,
+                    "offering_id": cancelled.offering_id,
+                    "promoted_selection_id": promoted.id if promoted else None,
+                },
+            )
     except ValueError:
         return Response(
             {"detail": "Club selection is unavailable or already cancelled."},
