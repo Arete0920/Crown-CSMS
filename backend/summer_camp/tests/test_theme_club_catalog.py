@@ -444,3 +444,94 @@ def test_guardian_selection_list_requires_owned_enrollment_filter(monkeypatch):
     response = api.club_selections_view(scoped)
     assert response.status_code == 200
     assert [row["id"] for row in response.data] == [selection.id]
+
+
+def test_create_and_update_offering_reject_invalid_or_inactive_instructor():
+    school, _h, _s, session, _enrollment = _school_case("Instructor")
+    club = _club(school, "music")
+    foreign = School.objects.create(name="Foreign Instructor School")
+    foreign_user = UserAccount.objects.create_user(
+        username=f"foreign-club-instructor-{uuid4().hex[:8]}",
+        password="unused",
+        school=foreign,
+    )
+    inactive = UserAccount.objects.create_user(
+        username=f"inactive-club-instructor-{uuid4().hex[:8]}",
+        password="unused",
+        school=school,
+        is_active=False,
+    )
+    for instructor_id in (foreign_user.id, inactive.id, uuid4()):
+        with pytest.raises(ValueError, match="active member of this school"):
+            create_club_offering(
+                school.id,
+                {
+                    "session_id": session.id,
+                    "club_id": club.id,
+                    "instructor_id": instructor_id,
+                    "weekdays": [2],
+                    "start_time": time(9),
+                    "end_time": time(10),
+                    "capacity": 5,
+                    "status": "PUBLISHED",
+                },
+            )
+    assert not SummerCampClubOffering.objects.filter(school=school, club=club).exists()
+
+    valid = UserAccount.objects.create_user(
+        username=f"valid-club-instructor-{uuid4().hex[:8]}",
+        password="unused",
+        school=school,
+    )
+    offering = create_club_offering(
+        school.id,
+        {
+            "session_id": session.id,
+            "club_id": club.id,
+            "instructor_id": valid.id,
+            "weekdays": [2],
+            "start_time": time(9),
+            "end_time": time(10),
+            "capacity": 5,
+            "status": "PUBLISHED",
+        },
+    )
+    with pytest.raises(ValueError, match="active member of this school"):
+        update_club_offering(
+            school.id, offering.id, {"instructor_id": foreign_user.id}
+        )
+    offering.refresh_from_db()
+    assert offering.instructor_id == valid.id
+
+
+def test_guardian_cannot_discover_offering_after_catalog_item_is_inactive(monkeypatch):
+    school, household, _student, session, enrollment = _school_case("InactiveClub")
+    club = _club(school, "inactive-club")
+    offering = _offering(school, session, club, capacity=3, waitlist=0)
+    parent = UserAccount.objects.create_user(
+        username=f"inactive-club-parent-{uuid4().hex[:8]}",
+        password="unused",
+        school=school,
+    )
+    Guardian.objects.create(
+        school_id=school.id,
+        household=household,
+        account=parent,
+        first_name="Taylor",
+        last_name="Guardian",
+        is_primary=True,
+    )
+    club.is_active = False
+    club.save(update_fields=["is_active"])
+
+    factory = APIRequestFactory()
+    monkeypatch.setattr(api, "school_id_from_request", lambda request, required=True: school.id)
+    request = factory.get(
+        f"/api/v1/summer-camp/club-offerings/?enrollment_id={enrollment.id}"
+    )
+    request.school = school
+    force_authenticate(request, user=parent)
+    response = api.club_offerings_view(request)
+    assert response.status_code == 200
+    assert response.data == []
+    assert offering.status == "PUBLISHED"
