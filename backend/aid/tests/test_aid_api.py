@@ -452,11 +452,151 @@ class TestAdminApproveAward(TestCase):
 
     def test_idempotent_second_call_returns_200(self):
         _json_post(self.client, self.url, {"reason": "First"}, self.school)
+        before = self._financial_state()
         r = _json_post(self.client, self.url, {"reason": "Second"}, self.school)
         self.assertEqual(r.status_code, 200)
+        self.assertEqual(self._financial_state(), before)
         # Budget should NOT be double-decremented
         self.budget.refresh_from_db()
         self.assertEqual(self.budget.awarded_cents, 50_000)
+
+    @staticmethod
+    def _financial_state():
+        from aid.models import AidAuditEvent
+        from core.models import LedgerEntry
+        from ledger.models import Credit, LedgerAccount, Payment
+
+        models = (
+            AidAward, AidBudgetTracker, AidAuditEvent, LedgerEntry,
+            LedgerAccount, Credit, Payment, ChartAccount,
+        )
+        return {
+            model._meta.label: list(model.objects.order_by("pk").values())
+            for model in models
+        }
+
+    def test_accepted_retry_changed_student_returns_409_without_writes(self):
+        first = _json_post(self.client, self.url, {"reason": "Initial"}, self.school)
+        self.assertEqual(first.status_code, 200, first.content)
+        second_student = _make_student(
+            self.school, self.family, first_name="Second", number="S002",
+        )
+        AidAward.objects.filter(pk=self.award.pk).update(student=second_student)
+        before = self._financial_state()
+
+        response = _json_post(self.client, self.url, {"reason": "Unsafe replay"}, self.school)
+        self.assertEqual(response.status_code, 409, response.content)
+        self.assertEqual(
+            response.json()["error"], "Award posting requires controlled reconciliation.",
+        )
+        self.assertEqual(self._financial_state(), before)
+
+    def test_accepted_retry_changed_year_returns_409_without_writes(self):
+        first = _json_post(self.client, self.url, {"reason": "Initial"}, self.school)
+        self.assertEqual(first.status_code, 200, first.content)
+        next_year = AcademicYear.objects.create(
+            school=self.school, name="2027-28",
+            start_date=date(2027, 8, 1), end_date=date(2028, 5, 31),
+        )
+        AidAward.objects.filter(pk=self.award.pk).update(academic_year=next_year)
+        before = self._financial_state()
+
+        response = _json_post(self.client, self.url, {"reason": "Unsafe replay"}, self.school)
+        self.assertEqual(response.status_code, 409, response.content)
+        self.assertEqual(
+            response.json()["error"], "Award posting requires controlled reconciliation.",
+        )
+        self.assertEqual(self._financial_state(), before)
+
+
+
+    def test_unrelated_service_validation_error_is_not_masked_as_financial_409(self):
+        from unittest.mock import patch
+        from django.core.exceptions import ValidationError
+
+        before = self._financial_state()
+        # Django TestClient re-raises unhandled view errors by default. Verify
+        # the actual generic HTTP response instead of raising in the harness.
+        self.client.raise_request_exception = False
+        with patch("aid.api_views.approve_award", side_effect=ValidationError("Unrelated synthetic validation")):
+            response = _json_post(self.client, self.url, {"reason": "Internal failure"}, self.school)
+        self.assertEqual(response.status_code, 500, response.content)
+        self.assertNotEqual(response.status_code, 409)
+        self.assertEqual(self._financial_state(), before)
+
+    def test_invalid_json_returns_400_without_financial_writes(self):
+        before = self._financial_state()
+        response = self.client.post(
+            self.url, data='{"reason":', content_type="application/json",
+            HTTP_X_SCHOOL_ID=str(self.school.id),
+        )
+        self.assertEqual(response.status_code, 400, response.content)
+        self.assertEqual(self._financial_state(), before)
+
+
+    def test_non_object_json_returns_400_without_financial_writes(self):
+        before = self._financial_state()
+        for payload in ("[]", "null", '"reason"'):
+            with self.subTest(payload=payload):
+                response = self.client.post(
+                    self.url, data=payload, content_type="application/json",
+                    HTTP_X_SCHOOL_ID=str(self.school.id),
+                )
+                self.assertEqual(response.status_code, 400, response.content)
+                self.assertEqual(self._financial_state(), before)
+
+    def test_invalid_reason_type_returns_400_without_financial_writes(self):
+        before = self._financial_state()
+        for reason in (None, [], {"nested": "no"}):
+            with self.subTest(reason=repr(reason)):
+                response = _json_post(self.client, self.url, {"reason": reason}, self.school)
+                self.assertEqual(response.status_code, 400, response.content)
+                self.assertEqual(self._financial_state(), before)
+
+    def test_foreign_tenant_award_is_404_without_financial_writes(self):
+        other_school = _make_school("Other approval tenant")
+        other_year = _make_ay(other_school)
+        other_family = _make_family(other_school)
+        other_student = _make_student(other_school, other_family)
+        other_award = _make_award(other_school, other_year, other_student)
+        before = self._financial_state()
+        response = _json_post(
+            self.client, f"/api/aid/admin/awards/{other_award.pk}/approve/",
+            {"reason": "Not our award"}, self.school,
+        )
+        self.assertEqual(response.status_code, 404, response.content)
+        self.assertEqual(self._financial_state(), before)
+
+    def test_unprivileged_replay_is_403_without_financial_writes(self):
+        first = _json_post(self.client, self.url, {"reason": "Initial"}, self.school)
+        self.assertEqual(first.status_code, 200, first.content)
+        other_student = _make_student(
+            self.school, self.family, first_name="Second", number="S002",
+        )
+        AidAward.objects.filter(pk=self.award.pk).update(student=other_student)
+        unprivileged = UserAccount.objects.create_user(
+            username="unprivileged-approval",
+            password="test-only",
+            school=self.school,
+            is_staff=True,
+        )
+        self.client.force_login(unprivileged)
+        before = self._financial_state()
+        response = _json_post(self.client, self.url, {"reason": "Unprivileged replay"}, self.school)
+        self.assertEqual(response.status_code, 403, response.content)
+        self.assertEqual(self._financial_state(), before)
+
+    def test_declined_award_is_controlled_conflict_without_financial_writes(self):
+        AidAward.objects.filter(pk=self.award.pk).update(
+            decision_status=AidAward.DECISION_DECLINED,
+        )
+        before = self._financial_state()
+        response = _json_post(self.client, self.url, {"reason": "Unsafe reinstatement"}, self.school)
+        self.assertEqual(response.status_code, 409, response.content)
+        self.assertEqual(
+            response.json()["error"], "Award posting requires controlled reconciliation.",
+        )
+        self.assertEqual(self._financial_state(), before)
 
     def test_budget_overrun_returns_409(self):
         # Award amount exceeds remaining budget
