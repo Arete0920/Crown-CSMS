@@ -269,4 +269,3 @@ def daycare_sites(request):
         {"site_id": str(site.pk), "name": site.name, "is_active": site.is_active}
         for site in sites.order_by("name", "pk")
     ]})
-

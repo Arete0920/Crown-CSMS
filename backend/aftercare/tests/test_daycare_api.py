@@ -295,4 +295,3 @@ def test_deactivated_school_may_inspect_existing_custody_but_not_new_admit():
     assert roster.status_code == 200
     assert roster.data["children_present"] == 1
     assert _checkin(d, c).status_code in (403, 404)
-
