@@ -61,9 +61,9 @@ export function fetchAdmissionsDrilldown(params = {}) {
   return fetchAdmissionsEndpoint("/api/v1/admissions/drilldown/", params);
 }
 
-export function fetchAdmissionsPublicConfig({ schoolId = "", term = "" } = {}) {
+export function fetchAdmissionsPublicConfig({ schoolId = "", campus = "", term = "" } = {}) {
   return fetchAdmissionsEndpoint("/api/v1/admissions/public-config/", {
-    ...(schoolId && term ? { school_id: schoolId, term } : {}),
+    ...(term && (schoolId || campus) ? { ...(schoolId ? { school_id: schoolId } : {}), ...(campus ? { campus } : {}), term } : {}),
   });
 }
 
