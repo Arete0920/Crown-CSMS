@@ -5,11 +5,12 @@ from uuid import uuid4
 from django.test import TestCase
 from rest_framework.test import APIClient
 
-from aid.models import AidApplication, AidAward, AidBudgetTracker, AidFinancialProfile
+from aid.models import AidApplication, AidAuditEvent, AidAward, AidBudgetTracker, AidFinancialProfile
 from core.models import (
-    AcademicYear, CrownPermission, Family, Guardian, RolePermission,
+    AcademicYear, CrownPermission, Family, Guardian, LedgerEntry, RolePermission,
     School, Student, UserAccount, UserRole,
 )
+from ledger.models import Credit, Payment
 
 
 class AidSensitiveAccessTests(TestCase):
@@ -208,3 +209,174 @@ class AidSensitiveAccessTests(TestCase):
         }) for student_id in (self.other_student.id, uuid4())]
         self.assertEqual([response.status_code for response in responses], [404, 404])
         self.assertEqual(responses[0].json(), responses[1].json())
+
+    def _linked_parent(self):
+        guardian = Guardian.objects.create(
+            school=self.school, family=self.family, first_name="Privacy",
+            last_name="Parent", email="privacy-parent@example.invalid", relationship="MOTHER",
+        )
+        parent = UserAccount.objects.create_user(
+            username="aid-privacy-parent", password="test-only",
+            email=guardian.email, school=self.school, guardian=guardian,
+        )
+        UserRole.objects.create(user=parent, school=self.school, role_code="PARENT")
+        self.client.force_authenticate(user=parent)
+        return parent
+
+    def _populate_confidential_aid_fields(self):
+        self.application.notes_internal = "CONFIDENTIAL_STAFF_NOTE"
+        self.application.household_size = 4
+        self.application.income_annual_cents = 6000000
+        self.application.assets_cents = 1000000
+        self.application.liabilities_cents = 500000
+        for field in (
+            "statement_of_faith_score", "church_involvement_score",
+            "family_values_survey_score", "pastoral_reference_score", "pog_preassessment_score",
+        ):
+            setattr(self.application, field, 85)
+        self.application.save()
+        self.award.aid_application = self.application
+        self.award.recommended_award_cents = 45000
+        self.award.mas_score = 85
+        self.award.mas_modifier_bps = 500
+        self.award.explanation_json = {"rationale": "CONFIDENTIAL_REVIEW_RATIONALE"}
+        self.award.save()
+
+    def _assert_family_response_contract(self, response):
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(set(data), {"application", "awards"})
+        self.assertEqual(set(data["application"]), {
+            "id", "family_id", "academic_year_id", "status", "submitted_at",
+            "created_at", "updated_at",
+        })
+        self.assertEqual(data["application"]["id"], self.application.id)
+        self.assertEqual(data["application"]["family_id"], str(self.family.id))
+        self.assertEqual(data["application"]["academic_year_id"], str(self.year.id))
+        self.assertEqual(data["application"]["status"], AidApplication.STATUS_SUBMITTED)
+        self.assertIsNone(data["application"]["submitted_at"])
+        self.assertEqual(len(data["awards"]), 1)
+        award = data["awards"][0]
+        self.assertEqual(set(award), {
+            "id", "student_id", "academic_year_id", "aid_application_id",
+            "award_type", "awarded_cents", "decision_status", "decided_at", "created_at",
+        })
+        self.assertEqual(award["id"], self.award.id)
+        self.assertEqual(award["student_id"], str(self.student.id))
+        self.assertEqual(award["academic_year_id"], str(self.year.id))
+        self.assertEqual(award["aid_application_id"], self.application.id)
+        self.assertEqual(award["award_type"], self.award.award_type)
+        self.assertEqual(award["awarded_cents"], 50000)
+        self.assertIsInstance(award["awarded_cents"], int)
+        self.assertEqual(award["decision_status"], AidAward.DECISION_OFFERED)
+        self.assertIsNone(award["decided_at"])
+        self.assertNotIn("CONFIDENTIAL_STAFF_NOTE", response.content.decode())
+        self.assertNotIn("CONFIDENTIAL_REVIEW_RATIONALE", response.content.decode())
+
+    def _family_params(self):
+        return {"student_id": str(self.student.id), "academic_year_id": str(self.year.id)}
+
+    def test_family_status_allowlists_fields_for_guardians_on_both_aliases(self):
+        self._populate_confidential_aid_fields()
+        self._linked_parent()
+        for prefix in ("/api/aid", "/api/v1/aid"):
+            with self.subTest(prefix=prefix):
+                self._assert_family_response_contract(
+                    self._get(f"{prefix}/family/status/", self._family_params()),
+                )
+
+    def test_family_status_uses_same_allowlist_for_aid_staff(self):
+        self._populate_confidential_aid_fields()
+        self._grant()
+        for prefix in ("/api/aid", "/api/v1/aid"):
+            with self.subTest(prefix=prefix):
+                self._assert_family_response_contract(
+                    self._get(f"{prefix}/family/status/", self._family_params()),
+                )
+
+    def test_staff_overview_and_review_retain_separate_responses(self):
+        self._populate_confidential_aid_fields()
+        self._grant()
+        overview = self._get(
+            "/api/aid/admin/overview/", {"academic_year_id": str(self.year.id)},
+        )
+        self.assertEqual(overview.status_code, 200)
+        data = overview.json()
+        self.assertEqual(data["applications"][0]["notes_internal"], "CONFIDENTIAL_STAFF_NOTE")
+        self.assertEqual(data["applications"][0]["income_annual_cents"], 6000000)
+        self.assertEqual(data["awards"][0]["recommended_award_cents"], 45000)
+        self.assertEqual(data["awards"][0]["mas_score"], 85)
+        profile = AidFinancialProfile.objects.create(
+            school=self.school, academic_year=self.year, family=self.family,
+        )
+        self.application.financial_profile = profile
+        self.application.save(update_fields=["financial_profile"])
+        review = self._get(f"/api/aid/admin/applications/{self.application.id}/review/")
+        self.assertEqual(review.status_code, 200)
+        self.assertEqual(review.json()["financial_profile"]["id"], profile.id)
+        self.assertIn("review_signals", review.json())
+
+    def test_family_status_preserves_null_application_and_empty_awards(self):
+        self._linked_parent()
+        year = AcademicYear.objects.create(
+            school=self.school, name="2027-2028",
+            start_date=date(2027, 8, 1), end_date=date(2028, 5, 31),
+        )
+        for prefix in ("/api/aid", "/api/v1/aid"):
+            with self.subTest(prefix=prefix):
+                response = self._get(f"{prefix}/family/status/", {
+                    "student_id": str(self.student.id), "academic_year_id": str(year.id),
+                })
+                self.assertEqual(response.status_code, 200)
+                self.assertEqual(response.json(), {"application": None, "awards": []})
+
+    def test_family_status_still_scopes_awards_to_selected_student_and_year(self):
+        self._populate_confidential_aid_fields()
+        self._linked_parent()
+        sibling = Student.objects.create(
+            school=self.school, family=self.family, student_number="AID-SIBLING",
+            first_name="Sibling", last_name="Student", dob=date(2014, 1, 1),
+        )
+        year = AcademicYear.objects.create(
+            school=self.school, name="2027-2028",
+            start_date=date(2027, 8, 1), end_date=date(2028, 5, 31),
+        )
+        for student, academic_year in ((sibling, self.year), (self.student, year)):
+            AidAward.objects.create(
+                school=self.school, academic_year=academic_year, student=student,
+                awarded_cents=75000, decision_status=AidAward.DECISION_OFFERED,
+            )
+        for prefix in ("/api/aid", "/api/v1/aid"):
+            with self.subTest(prefix=prefix):
+                self._assert_family_response_contract(
+                    self._get(f"{prefix}/family/status/", self._family_params()),
+                )
+
+    def test_family_status_keeps_wrong_family_and_unlinked_guardian_denials_on_both_aliases(self):
+        parent = self._linked_parent()
+        for prefix in ("/api/aid", "/api/v1/aid"):
+            with self.subTest(prefix=prefix, identity="wrong_family"):
+                response = self._get(f"{prefix}/family/status/", {
+                    "student_id": str(self.other_student.id), "academic_year_id": str(self.year.id),
+                })
+                self.assertEqual(response.status_code, 404)
+                self.assertEqual(response.json(), {"detail": "Not found."})
+        parent.guardian = None
+        parent.save(update_fields=["guardian"])
+        for prefix in ("/api/aid", "/api/v1/aid"):
+            with self.subTest(prefix=prefix, identity="unlinked"):
+                response = self._get(f"{prefix}/family/status/", self._family_params())
+                self.assertEqual(response.status_code, 404)
+                self.assertEqual(response.json(), {"detail": "Not found."})
+
+    def test_family_status_does_not_change_financial_or_aid_records(self):
+        self._populate_confidential_aid_fields()
+        self._linked_parent()
+        models = (AidApplication, AidAward, AidBudgetTracker, AidAuditEvent, LedgerEntry, Credit, Payment)
+        before = [list(model.objects.order_by("pk").values()) for model in models]
+        for prefix in ("/api/aid", "/api/v1/aid"):
+            self._assert_family_response_contract(
+                self._get(f"{prefix}/family/status/", self._family_params()),
+            )
+        after = [list(model.objects.order_by("pk").values()) for model in models]
+        self.assertEqual(after, before)
