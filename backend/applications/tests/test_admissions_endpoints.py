@@ -729,6 +729,9 @@ class AdmissionsEndpointsTests(APITestCase):
         response = self.client.post("/api/v1/admissions/submit/", payload, format="json")
         self.assertEqual(response.status_code, 201, response.data)
         self.assertEqual(response.data["application_fee"]["total_amount"], "0.00")
+        app_checklist = {row["key"]: row for row in response.data["enrollment_continuity"]["checklist"]}
+        self.assertEqual(app_checklist["application_fee"]["status"], "not_required")
+        self.assertEqual(app_checklist["application_fee"]["amount"], "0.00")
         self.assertEqual(response.data["application_fee"]["finance"]["state"], "not_applicable")
         self.assertEqual(FinanceInvoice.objects.filter(school=self.school).count(), before_invoices)
         self.assertEqual(FinanceObligation.objects.filter(school=self.school).count(), before_obligations)
@@ -763,6 +766,8 @@ class AdmissionsEndpointsTests(APITestCase):
         self.assertEqual(response.status_code, 201, response.data)
         fee = response.data["application_fee"]
         self.assertEqual(fee["total_amount"], "185.00")
+        app_checklist = {row["key"]: row for row in response.data["enrollment_continuity"]["checklist"]}
+        self.assertEqual(app_checklist["application_fee"]["amount"], "185.00")
         self.assertEqual(
             [row["application_fee"] for row in fee["per_child_schedule"]],
             ["85.00", "50.00", "50.00"],
