@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
 
@@ -60,6 +61,29 @@ INCIDENT_SEVERITY_CHOICES = [
     ("CRITICAL", "Critical"),
 ]
 
+CLUB_CATEGORY_CHOICES = [
+    ("STEM", "STEM"),
+    ("ARTS", "Arts"),
+    ("SPORTS", "Sports"),
+    ("COOKING", "Cooking"),
+    ("LEADERSHIP", "Leadership"),
+    ("SERVICE", "Service"),
+    ("FAITH", "Faith"),
+    ("READING", "Reading"),
+    ("OTHER", "Other"),
+]
+
+CLUB_OFFERING_STATUS_CHOICES = [
+    ("DRAFT", "Draft"),
+    ("PUBLISHED", "Published"),
+]
+
+CLUB_SELECTION_STATUS_CHOICES = [
+    ("ENROLLED", "Enrolled"),
+    ("WAITLISTED", "Waitlisted"),
+    ("CANCELLED", "Cancelled"),
+]
+
 
 class SummerCampProgramConfig(models.Model):
     school = models.OneToOneField(
@@ -99,6 +123,11 @@ class SummerCampSession(models.Model):
     school = models.ForeignKey("core.School", on_delete=models.CASCADE, related_name="summer_camp_sessions")
     program = models.ForeignKey(SummerCampProgram, on_delete=models.CASCADE, related_name="sessions")
     name = models.CharField(max_length=180)
+    theme_title = models.CharField(max_length=180, blank=True)
+    theme_story = models.TextField(blank=True)
+    scripture_reference = models.CharField(max_length=120, blank=True)
+    virtue_focus = models.CharField(max_length=120, blank=True)
+    special_event = models.CharField(max_length=180, blank=True)
     start_date = models.DateField()
     end_date = models.DateField()
     start_time = models.TimeField()
@@ -215,6 +244,114 @@ class SummerCampGroupAssignment(models.Model):
 
     class Meta:
         unique_together = [("group", "enrollment")]
+
+
+class SummerCampClub(models.Model):
+    """Reusable elective/activity catalog for Camp sessions within one tenant."""
+
+    school = models.ForeignKey("core.School", on_delete=models.CASCADE, related_name="summer_camp_clubs")
+    code = models.SlugField(max_length=72)
+    name = models.CharField(max_length=160)
+    category = models.CharField(max_length=24, choices=CLUB_CATEGORY_CHOICES, default="OTHER")
+    description = models.TextField(blank=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["school", "code"], name="camp_club_school_code_uq"),
+        ]
+        indexes = [models.Index(fields=["school", "is_active"], name="camp_club_school_active_idx")]
+
+
+class SummerCampClubOffering(models.Model):
+    """Session-specific scheduled offering of a reusable club."""
+
+    school = models.ForeignKey("core.School", on_delete=models.CASCADE, related_name="summer_camp_club_offerings")
+    session = models.ForeignKey(SummerCampSession, on_delete=models.CASCADE, related_name="club_offerings")
+    club = models.ForeignKey(SummerCampClub, on_delete=models.PROTECT, related_name="offerings")
+    weekdays = models.JSONField(default=list)
+    start_time = models.TimeField()
+    end_time = models.TimeField()
+    location = models.CharField(max_length=120, blank=True)
+    instructor = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="summer_camp_club_offerings",
+    )
+    capacity = models.PositiveIntegerField(default=0)
+    waitlist_capacity = models.PositiveIntegerField(default=0)
+    optional_charge_cents = models.PositiveIntegerField(default=0)
+    status = models.CharField(max_length=16, choices=CLUB_OFFERING_STATUS_CHOICES, default="DRAFT")
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["session", "club", "start_time"],
+                name="camp_club_offering_session_time_uq",
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["school", "session", "status"], name="camp_offer_school_session_idx"),
+        ]
+
+    def clean(self):
+        super().clean()
+        if self.session_id and self.session.school_id != self.school_id:
+            raise ValidationError("Club offering session belongs to another school.")
+        if self.club_id and self.club.school_id != self.school_id:
+            raise ValidationError("Club offering catalog item belongs to another school.")
+        if self.instructor_id and getattr(self.instructor, "school_id", None) != self.school_id:
+            raise ValidationError("Club instructor belongs to another school.")
+        if (
+            not isinstance(self.weekdays, list)
+            or len(self.weekdays) > 7
+            or len(set(self.weekdays)) != len(self.weekdays)
+            or any(type(day) is not int or not 0 <= day <= 6 for day in self.weekdays)
+        ):
+            raise ValidationError("Club weekdays must be unique integers in 0..6.")
+        if self.start_time and self.end_time and self.start_time >= self.end_time:
+            raise ValidationError("Club offering end_time must be after start_time.")
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        return super().save(*args, **kwargs)
+
+
+class SummerCampClubSelection(models.Model):
+    """Enrollment-scoped club choice with explicit seat/waitlist state."""
+
+    school = models.ForeignKey("core.School", on_delete=models.CASCADE, related_name="summer_camp_club_selections")
+    offering = models.ForeignKey(SummerCampClubOffering, on_delete=models.PROTECT, related_name="selections")
+    enrollment = models.ForeignKey(SummerCampEnrollment, on_delete=models.PROTECT, related_name="club_selections")
+    status = models.CharField(max_length=16, choices=CLUB_SELECTION_STATUS_CHOICES, default="ENROLLED")
+    waitlist_position = models.PositiveIntegerField(null=True, blank=True)
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["offering", "enrollment"], name="camp_club_selection_uq"),
+        ]
+        indexes = [
+            models.Index(fields=["school", "offering", "status"], name="camp_select_school_offer_idx"),
+        ]
+
+    def clean(self):
+        super().clean()
+        if self.offering_id and self.offering.school_id != self.school_id:
+            raise ValidationError("Club selection offering belongs to another school.")
+        if self.enrollment_id and self.enrollment.school_id != self.school_id:
+            raise ValidationError("Club selection enrollment belongs to another school.")
+        if (
+            self.offering_id
+            and self.enrollment_id
+            and self.offering.session_id != self.enrollment.session_id
+        ):
+            raise ValidationError("Club selection must use the enrollment's camp session.")
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        return super().save(*args, **kwargs)
 
 
 class SummerCampStaffAssignment(models.Model):
