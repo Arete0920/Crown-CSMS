@@ -66,13 +66,13 @@ def club(school, code="stem"):
 
 def offering(
     school, session, catalog, *, start=time(10), end=time(11),
-    capacity=1, waitlist=1, weekdays=None, instructor_id=None,
+    capacity=1, waitlist=1, weekdays=None, instructor_id=None, optional_charge_cents=0,
 ):
     payload = {
         "session_id": session.id, "club_id": catalog.id,
         "weekdays": weekdays or [0, 2, 4], "start_time": start, "end_time": end,
         "location": "Room 101", "capacity": capacity,
-        "waitlist_capacity": waitlist, "optional_charge_cents": 2500,
+        "waitlist_capacity": waitlist, "optional_charge_cents": optional_charge_cents,
         "status": "PUBLISHED",
     }
     if instructor_id is not None:
@@ -177,6 +177,19 @@ def test_capacity_waitlist_saturation_and_promotion_are_deterministic():
     assert cancelled.status == "CANCELLED"
     assert promoted.id == queued.id
     assert (queued.status, queued.waitlist_position) == ("ENROLLED", None)
+
+
+def test_paid_club_selection_fails_closed_without_canonical_finance_bridge():
+    school, _h, _s, session, enrollment = case("Paid")
+    scheduled = offering(
+        school, session, club(school, "paid-addon"),
+        capacity=5, waitlist=0, optional_charge_cents=2500,
+    )
+    with pytest.raises(ValueError, match="canonical finance integration"):
+        select_club(school.id, enrollment.id, scheduled.id)
+    assert not SummerCampClubSelection.objects.filter(
+        school=school, offering=scheduled, enrollment=enrollment,
+    ).exists()
 
 
 def test_schedule_conflict_denied_but_adjacent_activity_allowed():
