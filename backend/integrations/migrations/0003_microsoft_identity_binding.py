@@ -24,7 +24,7 @@ class Migration(migrations.Migration):
                 (
                     "school",
                     models.ForeignKey(
-                        on_delete=django.db.models.deletion.CASCADE,
+                        on_delete=django.db.models.deletion.PROTECT,
                         related_name="microsoft_tenant_bindings",
                         to="core.school",
                     ),
@@ -56,7 +56,7 @@ class Migration(migrations.Migration):
                 (
                     "binding",
                     models.ForeignKey(
-                        on_delete=django.db.models.deletion.CASCADE,
+                        on_delete=django.db.models.deletion.PROTECT,
                         related_name="identity_links",
                         to="integrations.microsofttenantbinding",
                     ),
@@ -64,7 +64,7 @@ class Migration(migrations.Migration):
                 (
                     "user",
                     models.ForeignKey(
-                        on_delete=django.db.models.deletion.CASCADE,
+                        on_delete=django.db.models.deletion.PROTECT,
                         related_name="microsoft_identity_links",
                         to=settings.AUTH_USER_MODEL,
                     ),
