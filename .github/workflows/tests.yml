@@ -139,7 +139,7 @@ jobs:
 
   pytest-internal:
     name: pytest-internal
-    needs: [tenant-fixtures, backend-coverage, finance-postgresql, diadem-postgresql]
+    needs: [tenant-fixtures, backend-coverage, finance-postgresql, diadem-scope, diadem-postgresql]
     if: ${{ always() }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -150,11 +150,25 @@ jobs:
           COVERAGE_RESULT: ${{ needs['backend-coverage'].result }}
           FINANCE_RESULT: ${{ needs['finance-postgresql'].result }}
           DIADEM_RESULT: ${{ needs['diadem-postgresql'].result }}
+          DIADEM_SCOPE_RESULT: ${{ needs['diadem-scope'].result }}
+          DIADEM_REQUIRED: ${{ needs['diadem-scope'].outputs.required }}
         shell: bash
         run: |
-          if [ "$TENANT_RESULT" != "success" ] || [ "$COVERAGE_RESULT" != "success" ] || [ "$FINANCE_RESULT" != "success" ] || [ "$DIADEM_RESULT" != "success" ]; then
-            echo "::error::Tenant regression, full backend coverage, PostgreSQL finance proof and Diadem safety proof must succeed."
-            echo "tenant-fixtures=$TENANT_RESULT backend-coverage=$COVERAGE_RESULT finance-postgresql=$FINANCE_RESULT diadem-postgresql=$DIADEM_RESULT"
+          if [ "$TENANT_RESULT" != "success" ] || [ "$COVERAGE_RESULT" != "success" ] || [ "$FINANCE_RESULT" != "success" ]; then
+            echo "::error::Tenant regression, full backend coverage and PostgreSQL finance proof must succeed."
+            echo "tenant-fixtures=$TENANT_RESULT backend-coverage=$COVERAGE_RESULT finance-postgresql=$FINANCE_RESULT"
+            exit 1
+          fi
+          if [ "$DIADEM_SCOPE_RESULT" != "success" ] || { [ "$DIADEM_REQUIRED" != "true" ] && [ "$DIADEM_REQUIRED" != "false" ]; }; then
+            echo "::error::Diadem scope classification must succeed, with an explicit true/false result."
+            exit 1
+          fi
+          if [ "$DIADEM_REQUIRED" = "true" ] && [ "$DIADEM_RESULT" != "success" ]; then
+            echo "::error::Applicable PostgreSQL custody, locking and staff-safety proof must succeed."
+            exit 1
+          fi
+          if [ "$DIADEM_REQUIRED" = "false" ] && [ "$DIADEM_RESULT" != "skipped" ]; then
+            echo "::error::Non-applicable Diadem job must be explicitly skipped."
             exit 1
           fi
 
@@ -324,7 +338,43 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
+  diadem-scope:
+    name: Diadem PostgreSQL safety scope
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      required: ${{ steps.scope.outputs.required }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+      - name: Determine if custody safety PostgreSQL proof is required
+        id: scope
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          python - <<'PYTHON'
+          import os
+          import re
+          import subprocess
+          base = os.environ.get('BASE_SHA', '')
+          required = True  # Fail closed on an unknown diff, including manual dispatch.
+          if os.environ['EVENT_NAME'] != 'workflow_dispatch' and re.fullmatch(r'[0-9a-f]{40}', base) and set(base) != {'0'}:
+              proc = subprocess.run(['git', 'diff', '--name-only', '-z', base, 'HEAD'], capture_output=True)
+              if proc.returncode == 0:
+                  changed = proc.stdout.decode('utf-8', errors='replace').split('\0')
+                  roots = ('backend/aftercare/', 'backend/core/', 'backend/tenants/', 'backend/subscriptions/', 'backend/households/', 'backend/audit/', 'backend/crown_api/')
+                  exact = {'backend/requirements.txt', 'backend/conftest.py', 'backend/tests/conftest.py', 'pytest.ini', '.github/workflows/tests.yml'}
+                  required = any(path in exact or path.startswith(roots) for path in changed)
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as out:
+              out.write('required=' + str(required).lower() + '\n')
+          print('Diadem PostgreSQL proof required:', required)
+          PYTHON
+
   diadem-postgresql:
+    needs: diadem-scope
+    if: needs.diadem-scope.outputs.required == 'true'
     name: Diadem Django PostgreSQL safety contract
     runs-on: ubuntu-latest
     timeout-minutes: 35
