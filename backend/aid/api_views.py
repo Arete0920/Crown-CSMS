@@ -13,6 +13,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
 from django.utils import timezone
+from django.core.exceptions import ValidationError
 from django.db.models import Sum
 
 from aid.models import AidApplication, AidAward, AidPolicy, AidBudgetTracker, AidFinancialProfile
@@ -418,6 +419,15 @@ def admin_approve_award(request, award_id):
     except AidBudgetTracker.DoesNotExist:
         return Response(
             {"error": "No budget tracker found for this bucket. Create one before approving."},
+            status=status.HTTP_409_CONFLICT,
+        )
+    except ValidationError:
+        logger.warning(
+            "admin_approve_award: posting conflict requiring controlled reconciliation",
+            extra={"award_id": award_id},
+        )
+        return Response(
+            {"error": "Award posting requires controlled reconciliation."},
             status=status.HTTP_409_CONFLICT,
         )
 

@@ -328,6 +328,55 @@ class TestAdminApproveAward(TestCase):
         self.budget.refresh_from_db()
         self.assertEqual(self.budget.awarded_cents, 50_000)
 
+    @staticmethod
+    def _financial_state():
+        from aid.models import AidAuditEvent
+        from core.models import LedgerEntry
+        from ledger.models import Credit, LedgerAccount, Payment
+
+        models = (
+            AidAward, AidBudgetTracker, AidAuditEvent, LedgerEntry,
+            LedgerAccount, Credit, Payment, ChartAccount,
+        )
+        return {
+            model._meta.label: list(model.objects.order_by("pk").values())
+            for model in models
+        }
+
+    def test_accepted_retry_changed_student_returns_409_without_writes(self):
+        first = _json_post(self.client, self.url, {"reason": "Initial"}, self.school)
+        self.assertEqual(first.status_code, 200, first.content)
+        second_student = _make_student(
+            self.school, self.family, first_name="Second", number="S002",
+        )
+        AidAward.objects.filter(pk=self.award.pk).update(student=second_student)
+        before = self._financial_state()
+
+        response = _json_post(self.client, self.url, {"reason": "Unsafe replay"}, self.school)
+        self.assertEqual(response.status_code, 409, response.content)
+        self.assertEqual(
+            response.json()["error"], "Award posting requires controlled reconciliation.",
+        )
+        self.assertEqual(self._financial_state(), before)
+
+    def test_accepted_retry_changed_year_returns_409_without_writes(self):
+        first = _json_post(self.client, self.url, {"reason": "Initial"}, self.school)
+        self.assertEqual(first.status_code, 200, first.content)
+        next_year = AcademicYear.objects.create(
+            school=self.school, name="2027-28",
+            start_date=date(2027, 8, 1), end_date=date(2028, 5, 31),
+        )
+        AidAward.objects.filter(pk=self.award.pk).update(academic_year=next_year)
+        before = self._financial_state()
+
+        response = _json_post(self.client, self.url, {"reason": "Unsafe replay"}, self.school)
+        self.assertEqual(response.status_code, 409, response.content)
+        self.assertEqual(
+            response.json()["error"], "Award posting requires controlled reconciliation.",
+        )
+        self.assertEqual(self._financial_state(), before)
+
+
     def test_budget_overrun_returns_409(self):
         # Award amount exceeds remaining budget
         overrun_award = _make_award(self.school, self.ay, self.student, awarded_cents=999_999_999)
