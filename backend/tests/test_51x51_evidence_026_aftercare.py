@@ -15,13 +15,20 @@ from aftercare.models import (
 from aftercare.services import checkin_student, checkout_student, record_incident, run_monthly_flat_billing
 from core.models import CrownPermission, RolePermission, School, UserRole
 from households.models import Household, Student
+from subscriptions.models import SchoolModule
 
 AFTERCARE_URL = "/api/v1/aftercare/enrollments/"
 ROSTER_URL = "/api/v1/aftercare/roster/today/"
 
 
 def _school():
-    return School.objects.create(name=f"M026 {uuid.uuid4().hex[:8]}")
+    school = School.objects.create(name=f"M026 {uuid.uuid4().hex[:8]}")
+    for key in ("before_care", "after_care"):
+        SchoolModule.objects.create(
+            school=school, module_key=key, status="active",
+            expiry_date=timezone.now() + timezone.timedelta(days=30),
+        )
+    return school
 
 
 def _student(school):
@@ -145,11 +152,13 @@ class TestModule026AttendanceAndBilling(TestCase):
                                              late_fee_per_10_min="10.00", late_fee_cap="100.00")
         checkin_student(self.school.id, self.student.id, when=self.when)
         contact = AftercarePickupContact.objects.create(school_fk=self.school, student_fk=self.student, name="Parent")
+        verifier = _user(self.school, grants=("extended_care.edit",))
         attendance = checkout_student(self.school.id, self.student.id, pickup_contact_id=contact.id,
-                     pickup_name_freeform="Parent", pickup_verified=True,
+                     pickup_name_freeform="Parent", pickup_verified=True, verified_by=verifier,
                      when=timezone.make_aware(datetime(2026, 6, 15, 18, 31)))
         self.assertEqual(attendance.late_minutes, 31)
         self.assertEqual(attendance.late_fee_cents, 4000)
+        self.assertEqual(attendance.pickup_verified_by_id, verifier.id)
         self.assertEqual(attendance.late_fee_charge_id, "obligation-9001")
         self.assertEqual(charge.call_args.kwargs["student_id"], self.student.id)
 
@@ -162,7 +171,6 @@ class TestModule026AttendanceAndBilling(TestCase):
         charge.assert_called_once()
         self.assertEqual(charge.call_args.kwargs["student_id"], self.student.id)
         self.assertEqual(AftercareMonthlyChargeRun.objects.filter(school_fk=self.school, year=2026, month=6).count(), 1)
-
 
 
     @patch("aftercare.services.create_ledger_charge_aftercare", return_value="synthetic-posted-id")

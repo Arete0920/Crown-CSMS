@@ -1,5 +1,5 @@
 """Synthetic, DB-backed AM/PM extended-care contract and release regressions."""
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 
 import pytest
 from django.utils import timezone
@@ -7,6 +7,7 @@ from django.utils import timezone
 from aftercare.models import AftercareAttendance, AftercareEnrollment, AftercarePickupContact
 from aftercare.services import checkin_student, checkout_student, handoff_student_to_school
 from core.models import CrownPermission, RolePermission, School, Staff, UserAccount, UserRole
+from subscriptions.models import SchoolModule
 from households.models import Household, Student
 
 pytestmark = pytest.mark.django_db
@@ -19,6 +20,11 @@ def at(hour, minute=0):
 
 def setup_family():
     school = School.objects.create(name="Extended Care Session Test")
+    for key in ("before_care", "after_care"):
+        SchoolModule.objects.create(
+            school=school, module_key=key, status="active",
+            expiry_date=timezone.now() + timezone.timedelta(days=30),
+        )
     household = Household.objects.create(school_id=school.id, name="One Household")
     child = Student.objects.create(
         school_id=school.id, household=household,
@@ -57,7 +63,7 @@ def test_one_child_has_independent_am_and_pm_attendance_and_handoff():
     assert AftercareAttendance.objects.filter(school_fk=school, student_fk=child, date=DAY).count() == 2
     contact = AftercarePickupContact.objects.create(school_fk=school, student_fk=child, name="Guardian")
     released = checkout_student(school.id, child.id, pickup_contact_id=contact.pk,
-                                pickup_name_freeform="", pickup_verified=True, when=at(17, 30))
+                                pickup_name_freeform="", pickup_verified=True, when=at(17, 30), verified_by=receiver)
     assert released.pk == pm.pk and released.pickup_verified
     assert released.handoff_time is None
 
@@ -69,7 +75,7 @@ def test_pm_cannot_be_implicitly_checked_in_by_am():
     contact = AftercarePickupContact.objects.create(school_fk=school, student_fk=child, name="Guardian")
     with pytest.raises(AftercareAttendance.DoesNotExist):
         checkout_student(school.id, child.id, pickup_contact_id=contact.pk,
-                         pickup_name_freeform="", pickup_verified=True, when=at(17, 30))
+                         pickup_name_freeform="", pickup_verified=True, when=at(17, 30), verified_by=receiver)
     assert AftercareAttendance.objects.filter(school_fk=school, student_fk=child).count() == 1
 
 
@@ -89,14 +95,78 @@ def test_am_handoff_rejects_invalid_receiver_and_replay():
 
 
 def test_am_checkout_denied_and_pm_legacy_default_preserved():
-    school, _household, child, _receiver = setup_family()
+    school, _household, child, receiver = setup_family()
     checkin_student(school.id, child.id, when=at(7, 15), care_session="AM")
     with pytest.raises(ValueError, match="school handoff"):
         checkout_student(school.id, child.id, pickup_contact_id=1,
                          pickup_name_freeform="", pickup_verified=True,
-                         when=at(8, 15), care_session="AM")
+                         when=at(8, 15), care_session="AM", verified_by=receiver)
+    # An unclosed AM session cannot coexist with a new PM custody record.
+    with pytest.raises(ValueError, match="supervisor reconciliation"):
+        checkin_student(school.id, child.id, when=at(15, 0))
+    assert not AftercareAttendance.objects.filter(
+        school_fk=school, student_fk=child, care_session="PM",
+    ).exists()
+    handoff_student_to_school(school.id, child.id, receiver, when=at(8, 25))
     pm = checkin_student(school.id, child.id, when=at(15, 0))
     assert pm.care_session == "PM"
+
+
+def test_prior_day_open_pm_blocks_next_day_am_without_duplicate_custody():
+    school, _household, child, _receiver = setup_family()
+    checkin_student(school.id, child.id, when=at(15, 0), care_session="PM")
+    AftercareEnrollment.objects.filter(
+        school_fk=school, student_fk=child, care_session="AM",
+    ).update(days_of_week=["THU"])
+    next_morning = timezone.make_aware(datetime(2025, 9, 4, 7, 15))
+    with pytest.raises(ValueError, match="supervisor reconciliation"):
+        checkin_student(school.id, child.id, when=next_morning, care_session="AM")
+    assert not AftercareAttendance.objects.filter(
+        school_fk=school, student_fk=child, care_session="AM",
+    ).exists()
+
+
+def test_pm_checkout_rejects_open_am_custody_without_rewriting_either_record():
+    school, _household, child, receiver = setup_family()
+    am = checkin_student(school.id, child.id, when=at(7, 15), care_session="AM")
+    # Deliberately bypass admission guards to model a malformed legacy import.
+    pm = AftercareAttendance.objects.create(
+        school_fk=school, student_fk=child, date=DAY,
+        care_session="PM", checkin_time=at(15, 5),
+    )
+    contact = AftercarePickupContact.objects.create(
+        school_fk=school, student_fk=child, name="Authorized Pickup",
+    )
+    with pytest.raises(ValueError, match="supervisor reconciliation"):
+        checkout_student(
+            school.id, child.id, pickup_contact_id=contact.pk,
+            pickup_name_freeform="", pickup_verified=True,
+            when=at(17, 0), verified_by=receiver,
+        )
+    am.refresh_from_db()
+    pm.refresh_from_db()
+    assert am.checkout_time is None and pm.checkout_time is None
+    assert pm.pickup_contact_fk_id is None
+    assert pm.pickup_verified_by_id is None
+    assert pm.late_fee_charge_id is None
+
+
+def test_am_handoff_rejects_prior_day_open_pm_custody():
+    school, _household, child, receiver = setup_family()
+    # Create legitimate AM custody first, then simulate a malformed historical
+    # import that adds an overlapping previous-day PM record.
+    am = checkin_student(school.id, child.id, when=at(7, 15), care_session="AM")
+    previous_day = DAY - timedelta(days=1)
+    pm = AftercareAttendance.objects.create(
+        school_fk=school, student_fk=child, date=previous_day,
+        care_session="PM", checkin_time=at(15, 5) - timedelta(days=1),
+    )
+    with pytest.raises(ValueError, match="supervisor reconciliation"):
+        handoff_student_to_school(school.id, child.id, receiver, when=at(8, 25))
+    am.refresh_from_db()
+    pm.refresh_from_db()
+    assert am.checkout_time is None and pm.checkout_time is None
+    assert am.handoff_recipient_id is None and am.handoff_verified is False
 
 
 def test_absent_am_does_not_block_pm():
@@ -170,13 +240,13 @@ def test_handoff_endpoint_refuses_to_impersonate_another_staff_member(monkeypatc
 
 
 def test_completed_pm_session_cannot_be_reopened_by_duplicate_checkin():
-    school, _household, child, _receiver = setup_family()
+    school, _household, child, receiver = setup_family()
     checkin_student(school.id, child.id, when=at(15), care_session="PM")
     contact = AftercarePickupContact.objects.create(
         school_fk=school, student_fk=child, name="Authorized",
     )
     checkout_student(
-        school.id, child.id, contact.pk, "", True, when=at(17, 30),
+        school.id, child.id, contact.pk, "", True, when=at(17, 30), verified_by=receiver,
     )
     with pytest.raises(ValueError, match="already been closed"):
         checkin_student(school.id, child.id, when=at(17, 40), care_session="PM", note="override")
@@ -258,6 +328,8 @@ def test_am_pm_board_kpis_are_session_scoped_and_not_misleading(monkeypatch):
     monkeypatch.setattr(api.timezone, "now", lambda: at(17, 30))
 
     am = checkin_student(school.id, child.id, when=at(7, 30), care_session="AM")
+    # A same-child PM admission requires an authorized, recorded AM school handoff.
+    handoff_student_to_school(school.id, child.id, director, when=at(8, 25))
     pm = checkin_student(school.id, child.id, when=at(15, 30), care_session="PM")
     pm.late_minutes = 15
     pm.late_fee_cents = 500
@@ -320,6 +392,7 @@ def test_guardian_reads_both_care_enrollments_but_pickup_only_contact_cannot():
 
     school, household, child, _receiver = setup_family()
     am = checkin_student(school.id, child.id, when=at(7, 15), care_session="AM")
+    handoff_student_to_school(school.id, child.id, _receiver, when=at(8, 25))
     pm = checkin_student(school.id, child.id, when=at(15, 5), care_session="PM")
 
     guardian_user = UserAccount.objects.create_user(
@@ -422,7 +495,7 @@ def test_pacific_pm_checkout_after_utc_midnight_uses_school_date_and_cutoff(monk
         lambda **kwargs: writes.append(kwargs) or "synthetic-ledger-1",
     )
     checked_out = checkout_student(
-        school.id, child.id, contact.pk, "", True, when=checked_out_at,
+        school.id, child.id, contact.pk, "", True, when=checked_out_at, verified_by=receiver,
     )
     assert checked_out.pk == attendance.pk
     assert checked_out.date == date(2026, 10, 30)
