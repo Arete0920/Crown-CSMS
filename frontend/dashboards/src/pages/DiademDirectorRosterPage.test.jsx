@@ -3,6 +3,7 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import DiademDirectorRosterPage from "./DiademDirectorRosterPage.jsx";
 import { crownApiClient } from "../api/client.js";
+import { getSelectedSchoolId, setSelectedSchoolId } from "../utils/authClient.js";
 
 vi.mock("../api/client.js", () => ({
   crownApiClient: { get: vi.fn() },
@@ -22,11 +23,12 @@ const roster = { site_id: site, as_of: "2026-11-01T12:00:00Z", children_present:
 
 beforeEach(() => {
   vi.resetAllMocks();
+  sessionStorage.setItem("crown.school.id", "synthetic-school-a");
   crownApiClient.get.mockImplementation(async (url) =>
     url.endsWith("/sites/") ? { data: { sites: [{ site_id: site, name: "Synthetic Center", is_active: true }] } } :
       { data: roster });
 });
-afterEach(cleanup);
+afterEach(() => { cleanup(); sessionStorage.clear(); });
 
 it("displays source-backed open custody without any release or check-in controls", async () => {
   render(<DiademDirectorRosterPage />);
@@ -79,4 +81,22 @@ it("never displays old site identities while switching to another center", async
   resolveSecond({ data: { ...roster, site_id: second, rows: [], children_present: 0 } });
   await waitFor(() => expect(screen.getByText(/0 open custody record/)).toBeTruthy());
   expect(screen.queryByText(child)).toBeNull();
+});
+
+it("clears the previous school's child roster immediately when tenant context changes", async () => {
+  crownApiClient.get.mockImplementation(async (url) => {
+    if (url.endsWith("/sites/")) {
+      return { data: { sites: getSelectedSchoolId() === "synthetic-school-a"
+        ? [{ site_id: site, name: "Synthetic Center", is_active: true }]
+        : [] } };
+    }
+    return { data: roster };
+  });
+  render(<DiademDirectorRosterPage />);
+  expect(await screen.findByText(child)).toBeTruthy();
+  const { act } = await import("@testing-library/react");
+  act(() => { setSelectedSchoolId("synthetic-school-b"); });
+  expect(screen.queryByText(child)).toBeNull();
+  await waitFor(() => expect(screen.getByText("No authorized childcare centers available.")).toBeTruthy());
+  expect(crownApiClient.get.mock.calls.filter(([url]) => url.endsWith("/sites/")).length).toBe(2);
 });

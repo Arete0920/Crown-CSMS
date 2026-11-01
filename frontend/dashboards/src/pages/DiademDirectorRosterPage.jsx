@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import CrownLayout from "../components/crown/CrownLayout.jsx";
 import DashboardSection from "../components/layout/DashboardSection.jsx";
 import { crownApiClient } from "../api/client.js";
+import { getSelectedSchoolId, SCHOOL_CONTEXT_CHANGE_EVENT } from "../utils/authClient.js";
 
 const BASE = "/api/v1/aftercare/daycare";
 
@@ -12,58 +13,85 @@ export default function DiademDirectorRosterPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [refresh, setRefresh] = useState(0);
+  const [schoolContext, setSchoolContext] = useState(getSelectedSchoolId);
+  const [directoryScope, setDirectoryScope] = useState(null);
+  const [rosterScope, setRosterScope] = useState(null);
+  const currentSites = directoryScope === schoolContext ? sites : null;
+
+  useEffect(() => {
+    const onSchoolChange = () => setSchoolContext(getSelectedSchoolId());
+    window.addEventListener(SCHOOL_CONTEXT_CHANGE_EVENT, onSchoolChange);
+    window.addEventListener("focus", onSchoolChange);
+    window.addEventListener("storage", onSchoolChange);
+    return () => {
+      window.removeEventListener(SCHOOL_CONTEXT_CHANGE_EVENT, onSchoolChange);
+      window.removeEventListener("focus", onSchoolChange);
+      window.removeEventListener("storage", onSchoolChange);
+    };
+  }, []);
 
   useEffect(() => {
     let live = true;
     setSites(null);
     setRoster(null);
     setSiteId("");
+    setDirectoryScope(null);
+    setRosterScope(null);
     setError("");
     setLoading(true);
+    if (!schoolContext) {
+      setError("Select an authenticated school before opening childcare records.");
+      setLoading(false);
+      return () => { live = false; };
+    }
     crownApiClient.get(`${BASE}/sites/`).then(({ data }) => {
-      if (!live) return;
+      if (!live || getSelectedSchoolId() !== schoolContext) return;
       if (!Array.isArray(data?.sites)) throw new Error("Invalid Diadem site response.");
+      setDirectoryScope(schoolContext);
       setSites(data.sites);
       setSiteId((current) => data.sites.some((site) => site.site_id === current) ? current : data.sites[0]?.site_id || "");
-    }).catch((err) => { if (live) setError(err.message || "Site directory unavailable."); })
-      .finally(() => { if (live) setLoading(false); });
+    }).catch((err) => { if (live && getSelectedSchoolId() === schoolContext) setError(err.message || "Site directory unavailable."); })
+      .finally(() => { if (live && getSelectedSchoolId() === schoolContext) setLoading(false); });
     return () => { live = false; };
-  }, [refresh]);
+  }, [refresh, schoolContext]);
 
   useEffect(() => {
-    if (!sites || !siteId) return;
+    if (!currentSites || !siteId || !schoolContext) return;
     let live = true;
     setRoster(null);
+    setRosterScope(null);
     setError("");
     setLoading(true);
     crownApiClient.get(`${BASE}/sites/${encodeURIComponent(siteId)}/roster/`)
       .then(({ data }) => {
-        if (!live) return;
+        if (!live || getSelectedSchoolId() !== schoolContext) return;
         if (data?.site_id !== siteId || !Array.isArray(data?.rows) || data.children_present !== data.rows.length)
           throw new Error("Diadem roster failed site-scoping validation.");
+        setRosterScope(schoolContext);
         setRoster(data);
-      }).catch((err) => { if (live) setError(err.message || "Care roster unavailable."); })
-      .finally(() => { if (live) setLoading(false); });
+      }).catch((err) => { if (live && getSelectedSchoolId() === schoolContext) setError(err.message || "Care roster unavailable."); })
+      .finally(() => { if (live && getSelectedSchoolId() === schoolContext) setLoading(false); });
     return () => { live = false; };
-  }, [siteId, sites]);
+  }, [siteId, currentSites, schoolContext]);
 
-  const currentRoster = siteId && roster?.site_id === siteId
-    && sites?.some((site) => site.site_id === siteId) ? roster : null;
+  const currentRoster = schoolContext && rosterScope === schoolContext
+    && siteId && roster?.site_id === siteId
+    && currentSites?.some((site) => site.site_id === siteId) ? roster : null;
 
   return (
     <CrownLayout title="Diadem Daycare & Preschool" subtitle="Live childcare custody roster — operational certification pending">
       <DashboardSection title="Center and classroom">
         <p>Source: authenticated, school-scoped Diadem services. No demo enrollment or attendance numbers are substituted.</p>
         <label htmlFor="diadem-site">Care center</label>{" "}
-        <select id="diadem-site" value={siteId} disabled={!sites?.length || loading}
+        <select id="diadem-site" value={siteId} disabled={!currentSites?.length || loading}
           onChange={(event) => setSiteId(event.target.value)}>
           {!siteId && <option value="">No center selected</option>}
-          {sites?.map((site) => <option key={site.site_id} value={site.site_id}>{site.name}{site.is_active ? "" : " (inactive)"}</option>)}
+          {currentSites?.map((site) => <option key={site.site_id} value={site.site_id}>{site.name}{site.is_active ? "" : " (inactive)"}</option>)}
         </select>{" "}
         <button type="button" disabled={loading} onClick={() => setRefresh((n) => n + 1)}>Refresh</button>
         {loading && <p role="status">Loading live Diadem records…</p>}
         {error && <p role="alert">{error}</p>}
-        {!loading && sites?.length === 0 && <p>No authorized childcare centers available.</p>}
+        {!loading && currentSites?.length === 0 && <p>No authorized childcare centers available.</p>}
       </DashboardSection>
       <DashboardSection title="Children currently in care">
         {currentRoster ? <>
