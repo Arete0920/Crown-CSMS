@@ -14,6 +14,15 @@ urlpatterns = [
     path("sessions/<int:session_id>/", api.session_detail_view, name="summer_camp_session_detail"),
     path("sessions/<int:session_id>/roster/", api.session_roster_view, name="summer_camp_session_roster"),
 
+    path("clubs/", api.clubs_view, name="summer_camp_clubs"),
+    path("club-offerings/", api.club_offerings_view, name="summer_camp_club_offerings"),
+    path("club-selections/", api.club_selections_view, name="summer_camp_club_selections"),
+    path(
+        "club-selections/<int:selection_id>/cancel/",
+        api.club_selection_cancel_view,
+        name="summer_camp_club_selection_cancel",
+    ),
+
     path("enrollments/", api.enrollments_view, name="summer_camp_enrollments"),
     path("enrollments/<int:enrollment_id>/pickup-choices/", pickup_choices.pickup_choices, name="camp_pickup_choices"),
 
