@@ -158,6 +158,12 @@ class AftercareAttendance(models.Model):
     )
     pickup_name_freeform = models.CharField(max_length=120, blank=True)
     pickup_verified = models.BooleanField(default=False)
+    # Preserve the approving operator's identity for all new custody releases.
+    # Existing attendance records may predate this audit field.
+    pickup_verified_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, null=True, blank=True,
+        related_name="verified_aftercare_pickups",
+    )
     late_minutes = models.IntegerField(default=0)
     late_fee_cents = models.IntegerField(default=0)
     late_fee_charge_id = models.CharField(max_length=64, null=True, blank=True)

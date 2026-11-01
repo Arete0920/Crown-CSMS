@@ -76,7 +76,11 @@ def _authed_client(username='batch5-remaining-dashboard-summary', *, school_id=N
 
 @override_settings(TENANT_HEADER_REQUIRED=False, CROWN_ENV='development')
 @pytest.mark.django_db
-@pytest.mark.parametrize(('dashboard_key', 'expected_metric_labels'), REMAINING_BATCH5_DASHBOARDS)
+# Camp/Care now require explicit grants and canonical live data; covered by
+# test_program_live_dashboards.py rather than the historical sample contract.
+@pytest.mark.parametrize(('dashboard_key', 'expected_metric_labels'), [
+    item for item in REMAINING_BATCH5_DASHBOARDS if item[0] not in {'summer-camp', 'extended-care'}
+])
 def test_remaining_batch5_dashboard_serves_sample_payload_in_development(
     dashboard_key,
     expected_metric_labels,
