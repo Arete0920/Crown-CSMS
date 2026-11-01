@@ -1062,11 +1062,11 @@ def _application_fee_status_value(fee_required: bool, waiver_requested: bool) ->
 
 
 def _build_enrollment_continuity(data: AdmissionsSubmitData, fee_policy: Any) -> dict[str, Any]:
-    fee_required = _application_fee_required(fee_policy)
-    waiver_requested = bool(data.application_fee.get("waiverRequested"))
-    fee_status = _application_fee_status_value(fee_required, waiver_requested)
-
     fee_rows = _fee_rows_for_household(data, [], fee_policy)
+    family_total = sum((Decimal(row["application_fee"]) for row in fee_rows), Decimal("0.00"))
+    fee_required = family_total > 0
+    waiver_requested = fee_required and bool(data.application_fee.get("waiverRequested"))
+    fee_status = _application_fee_status_value(fee_required, waiver_requested)
 
     return {
         "phase": "admissions_to_enrollment",
@@ -1085,7 +1085,7 @@ def _build_enrollment_continuity(data: AdmissionsSubmitData, fee_policy: Any) ->
                 "key": "application_fee",
                 "title": "Application Fee",
                 "status": fee_status,
-                "amount": str(fee_policy.amount_for_child(1)),
+                "amount": str(family_total),
                 "currency": APPLICATION_FEE_CURRENCY,
             },
             {
