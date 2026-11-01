@@ -5,6 +5,7 @@ import pytest
 from django.utils import timezone
 
 from core.models import CrownPermission, RolePermission, School, UserRole
+from subscriptions.models import SchoolModule
 from households.models import Household, Student
 from summer_camp.models import (
     SummerCampAttendance, SummerCampEnrollment, SummerCampFormRequirement, SummerCampPickupContact,
@@ -23,6 +24,7 @@ pytestmark = pytest.mark.django_db
 def camp_case(django_user_model):
     when = timezone.now().replace(hour=10, minute=0, second=0, microsecond=0)
     school = School.objects.create(name="Safe Camp Checkin")
+    SchoolModule.objects.create(school=school, module_key="little_lambs", status="active", expiry_date=timezone.now() + timedelta(days=30))
     other_school = School.objects.create(name="Unrelated Camp")
     household = Household.objects.create(school_id=school.id, name="Synthetic Family")
     student = Student.objects.create(

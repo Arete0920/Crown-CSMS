@@ -1,5 +1,8 @@
 """Camp setup access, persistence, completion and payload guard regressions."""
 import uuid
+from datetime import timedelta
+from django.utils import timezone
+from subscriptions.models import SchoolModule
 import pytest
 from rest_framework.test import APIClient
 from core.models import CrownPermission, RolePermission, School, UserAccount, UserRole
@@ -13,6 +16,7 @@ def _client(school, role=None, *grants, staff=False, foreign=None):
     login = f"camp-wizard-{uuid.uuid4().hex}"
     user = UserAccount.objects.create_user(username=login, email=f"{login}@example.test",
                                            school=school, password="synthetic", is_staff=staff)
+    SchoolModule.objects.get_or_create(school=school, module_key="little_lambs", defaults={"status": "active", "expiry_date": timezone.now() + timedelta(days=30)})
     if role:
         UserRole.objects.create(user=user, school=foreign or school, role_code=role)
         for grant in grants:

@@ -8,6 +8,7 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
 from core.permissions import user_has_permission
+from .entitlements import camp_entitlement_error
 from households.models import Guardian
 from .models import (
     SummerCampEnrollment,
@@ -129,6 +130,9 @@ def _require_role(request, allowed: set[str]) -> bool:
 @api_view(["GET", "PUT"])
 def config_view(request):
     school_id = school_id_from_request(request, required=True)
+    denied = camp_entitlement_error(school_id)
+    if denied is not None:
+        return denied
 
     if request.method == "GET":
         if not _require_role(request, VIEW_ROLES):
@@ -151,6 +155,9 @@ def config_view(request):
 @api_view(["GET", "POST"])
 def programs_view(request):
     school_id = school_id_from_request(request, required=True)
+    denied = camp_entitlement_error(school_id)
+    if denied is not None:
+        return denied
 
     if request.method == "GET":
         if not _require_role(request, VIEW_ROLES):
@@ -172,6 +179,9 @@ def programs_view(request):
 @api_view(["GET", "PUT"])
 def program_detail_view(request, program_id):
     school_id = school_id_from_request(request, required=True)
+    denied = camp_entitlement_error(school_id)
+    if denied is not None:
+        return denied
 
     if not _require_role(request, VIEW_ROLES):
         return Response({"detail": "Forbidden"}, status=status.HTTP_403_FORBIDDEN)
@@ -194,6 +204,9 @@ def program_detail_view(request, program_id):
 @api_view(["GET", "POST"])
 def sessions_view(request):
     school_id = school_id_from_request(request, required=True)
+    denied = camp_entitlement_error(school_id)
+    if denied is not None:
+        return denied
 
     if request.method == "GET":
         if not _require_role(request, VIEW_ROLES):
@@ -215,6 +228,9 @@ def sessions_view(request):
 @api_view(["GET", "PUT"])
 def session_detail_view(request, session_id):
     school_id = school_id_from_request(request, required=True)
+    denied = camp_entitlement_error(school_id)
+    if denied is not None:
+        return denied
 
     if not _require_role(request, VIEW_ROLES):
         return Response({"detail": "Forbidden"}, status=status.HTTP_403_FORBIDDEN)
@@ -237,6 +253,9 @@ def session_detail_view(request, session_id):
 @api_view(["GET", "POST"])
 def enrollments_view(request):
     school_id = school_id_from_request(request, required=True)
+    denied = camp_entitlement_error(school_id)
+    if denied is not None:
+        return denied
 
     if request.method == "GET":
         if not _require_role(request, VIEW_ROLES):
@@ -279,6 +298,9 @@ def enrollments_view(request):
 @api_view(["GET"])
 def session_roster_view(request, session_id):
     school_id = school_id_from_request(request, required=True)
+    denied = camp_entitlement_error(school_id)
+    if denied is not None:
+        return denied
     if not _require_role(request, VIEW_ROLES):
         return Response({"detail": "Forbidden"}, status=status.HTTP_403_FORBIDDEN)
 
@@ -315,6 +337,9 @@ def session_roster_view(request, session_id):
 @api_view(["GET"])
 def roster_today_view(request):
     school_id = school_id_from_request(request, required=True)
+    denied = camp_entitlement_error(school_id)
+    if denied is not None:
+        return denied
     if not _require_role(request, VIEW_ROLES):
         return Response({"detail": "Forbidden"}, status=status.HTTP_403_FORBIDDEN)
     return Response(roster_today(school_id))
@@ -324,6 +349,9 @@ def roster_today_view(request):
 @api_view(["POST"])
 def attendance_checkin_view(request):
     school_id = school_id_from_request(request, required=True)
+    denied = camp_entitlement_error(school_id)
+    if denied is not None:
+        return denied
     if not _require_role(request, EDIT_ROLES):
         return Response({"detail": "Forbidden"}, status=status.HTTP_403_FORBIDDEN)
 
@@ -349,6 +377,9 @@ def attendance_checkin_view(request):
 @api_view(["POST"])
 def attendance_checkout_view(request):
     school_id = school_id_from_request(request, required=True)
+    denied = camp_entitlement_error(school_id)
+    if denied is not None:
+        return denied
     if not _require_role(request, EDIT_ROLES):
         return Response({"detail": "Forbidden"}, status=status.HTTP_403_FORBIDDEN)
 
@@ -384,6 +415,9 @@ def attendance_checkout_view(request):
 @api_view(["GET", "POST"])
 def incidents_view(request):
     school_id = school_id_from_request(request, required=True)
+    denied = camp_entitlement_error(school_id)
+    if denied is not None:
+        return denied
     if not _require_role(request, VIEW_ROLES):
         return Response({"detail": "Forbidden"}, status=status.HTTP_403_FORBIDDEN)
 
@@ -414,6 +448,9 @@ def incidents_view(request):
 @api_view(["GET"])
 def missing_forms_view(request):
     school_id = school_id_from_request(request, required=True)
+    denied = camp_entitlement_error(school_id)
+    if denied is not None:
+        return denied
     if not _require_role(request, VIEW_ROLES):
         return Response({"detail": "Forbidden"}, status=status.HTTP_403_FORBIDDEN)
     return Response({"rows": missing_forms(school_id)})
@@ -423,6 +460,9 @@ def missing_forms_view(request):
 @api_view(["GET"])
 def health_review_queue_view(request):
     school_id = school_id_from_request(request, required=True)
+    denied = camp_entitlement_error(school_id)
+    if denied is not None:
+        return denied
     if not _require_role(request, VIEW_ROLES):
         return Response({"detail": "Forbidden"}, status=status.HTTP_403_FORBIDDEN)
     return Response({"rows": health_review_queue(school_id)})
@@ -432,6 +472,9 @@ def health_review_queue_view(request):
 @api_view(["GET"])
 def parent_student_view(request, student_id):
     school_id = school_id_from_request(request, required=True)
+    denied = camp_entitlement_error(school_id)
+    if denied is not None:
+        return denied
     user = getattr(request, "user", None)
     owns_student = bool(
         user and getattr(user, "is_authenticated", False)
@@ -452,6 +495,9 @@ def parent_student_view(request, student_id):
 @api_view(["GET"])
 def board_summary_view(request):
     school_id = school_id_from_request(request, required=True)
+    denied = camp_entitlement_error(school_id)
+    if denied is not None:
+        return denied
     if not _require_role(request, VIEW_ROLES):
         return Response({"detail": "Forbidden"}, status=status.HTTP_403_FORBIDDEN)
     return Response(board_summary(school_id))
