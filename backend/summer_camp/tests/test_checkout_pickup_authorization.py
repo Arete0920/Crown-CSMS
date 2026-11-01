@@ -1,5 +1,6 @@
 """Camp pickup authorization, audit retention, replay, and school-day regressions."""
-from datetime import date, datetime, time, timezone as utc
+from datetime import date, datetime, time, timedelta, timezone as utc
+from subscriptions.models import SchoolModule
 from types import SimpleNamespace
 from uuid import uuid4
 import pytest
@@ -36,6 +37,7 @@ def _session(school, label):
 
 def _case(label):
     school = School.objects.create(name=f"Camp Release {label}")
+    SchoolModule.objects.create(school=school, module_key="little_lambs", status="active", expiry_date=timezone.now() + timedelta(days=30))
     child, session = _child(school, label), _session(school, label)
     enrollment = SummerCampEnrollment.objects.create(school=school, session=session,
                                                      student=child, status="REGISTERED")

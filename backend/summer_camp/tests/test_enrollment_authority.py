@@ -1,5 +1,7 @@
 """Camp registration tenant isolation, capacity, fee and authority regressions."""
-from datetime import date, time
+from datetime import date, time, timedelta
+from django.utils import timezone
+from subscriptions.models import SchoolModule
 from types import SimpleNamespace
 from uuid import uuid4
 import pytest
@@ -57,6 +59,7 @@ def test_duplicates_and_waitlist_overcapacity_denied():
 
 def test_api_denies_cross_school_registration_without_writes(monkeypatch):
     school, foreign = School.objects.create(name="API Own"), School.objects.create(name="API Foreign")
+    SchoolModule.objects.create(school=school, module_key="little_lambs", status="active", expiry_date=timezone.now() + timedelta(days=30))
     child, session = _child(foreign, "Foreign"), _session(school)
     monkeypatch.setattr(api, "school_id_from_request", lambda request, required=True: school.id)
     monkeypatch.setattr(api, "_require_role", lambda request, roles: True)
