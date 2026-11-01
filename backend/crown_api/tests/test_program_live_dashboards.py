@@ -13,6 +13,7 @@ from core.models import CrownPermission, RolePermission, School, UserAccount, Us
 from crown_api.dashboards import program_live_payloads as live, views
 from crown_api.dashboards.models import DashboardSnapshot
 from crown_api.dashboards.payload_contract import build_dashboard_payload, validate_dashboard_payload
+from crown_api.jwt_utils import build_access_token
 from households.models import Household, Student
 from ledger.models import Charge, LedgerAccount, Payment
 from summer_camp.models import (
@@ -41,6 +42,14 @@ def client(user=None):
     if user:
         result.force_login(user)
     return result
+
+
+def bearer_client(user, school_claim):
+    token = build_access_token(user_id=str(user.id), email=user.email,
+        role="PROGRAM_READER_TEST", school_id=school_claim)
+    api = client()
+    api.credentials(HTTP_AUTHORIZATION="Bearer " + token)
+    return api
 
 
 def actor(school, *, grants=True, **flags):
@@ -177,6 +186,41 @@ def test_ambiguous_role_membership_cannot_use_superuser_override_for_program_dat
     for membership in (school, foreign):
         UserRole.objects.create(user=user, school=membership, role_code="PROGRAM_READER_TEST")
     assert get(school, key, user).status_code in (403, 404)
+
+
+@pytest.mark.parametrize("key", KEYS)
+@pytest.mark.parametrize("role_only", [False, True])
+def test_native_bearer_accepts_current_persisted_operator_binding(school, key, role_only):
+    if role_only:
+        user = UserAccount.objects.create_user(username="bearer-role-bound", school=None)
+        UserRole.objects.create(user=user, school=school, role_code="PROGRAM_READER_TEST")
+    else:
+        user = actor(school)
+    api = bearer_client(user, None if role_only else str(school.id))
+    response = api.get(url(key), HTTP_X_SCHOOL_ID=str(school.id))
+    assert response.status_code == 200
+    assert response.json()["meta"]["served_from"] == "live_db"
+
+
+@pytest.mark.parametrize("key", KEYS)
+@pytest.mark.parametrize("binding", ["foreign", "ambiguous", "revoked_grant"])
+def test_native_bearer_school_and_role_claims_cannot_replace_persisted_authority(school, key, binding, monkeypatch):
+    foreign = School.objects.create(name="Synthetic persisted token boundary")
+    if binding == "foreign":
+        user = actor(foreign, is_staff=True, is_superuser=True)
+        UserRole.objects.create(user=user, school=school, role_code="PROGRAM_READER_TEST")
+    elif binding == "ambiguous":
+        user = UserAccount.objects.create_user(username="bearer-ambiguous", school=None,
+                                               is_staff=True, is_superuser=True)
+        for membership in (school, foreign):
+            UserRole.objects.create(user=user, school=membership, role_code="PROGRAM_READER_TEST")
+    else:
+        user = actor(school, grants=False)
+    builder = Mock(side_effect=AssertionError("Unpermitted bearer must not read program data"))
+    monkeypatch.setattr(views, "build_program_live_payload", builder)
+    api = bearer_client(user, str(school.id))
+    assert api.get(url(key), HTTP_X_SCHOOL_ID=str(school.id)).status_code in (403, 404)
+    builder.assert_not_called()
 
 
 @pytest.mark.parametrize("key", KEYS)

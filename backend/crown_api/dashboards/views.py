@@ -309,7 +309,8 @@ class DashboardSummaryView(APIView):
                 raise ValidationError({'detail': 'Invalid X-School-Id (must be a UUID).'})
             from households.scoping import get_request_school_id
             from core.models import School
-            from crown_api.tenant import CANONICAL_TENANT_ATTR
+            from django.contrib.auth import get_user_model
+            from crown_api.tenant import CANONICAL_TENANT_ATTR, _principal_school_id
 
             bound = getattr(request, 'school', None)
             if bound is not None and str(bound.id) != str(selected):
@@ -327,10 +328,16 @@ class DashboardSummaryView(APIView):
             if (resolved != selected
                     or getattr(context, 'principal_school_id', None) != selected):
                 raise NotFound({'detail': 'Not found.'})
+            # Native token authentication may copy signed school/role claims onto
+            # the request user. Program authority must use persisted identity,
+            # including current role memberships, rather than a stale claim.
+            principal = get_user_model().objects.filter(pk=user.pk, is_active=True).first()
+            if principal is None or _principal_school_id(principal) != selected:
+                raise NotFound({'detail': 'Not found.'})
             school = School.objects.filter(pk=selected, is_active=True).first()
             if school is None:
                 raise NotFound({'detail': 'Not found.'})
-            if not user_has_permission(user, PROGRAM_PERMISSIONS[key], school=school):
+            if not user_has_permission(principal, PROGRAM_PERMISSIONS[key], school=school):
                 return Response({'detail': 'Forbidden.'}, status=status.HTTP_403_FORBIDDEN)
             try:
                 payload = build_program_live_payload(key, school)
