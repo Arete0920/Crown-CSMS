@@ -717,6 +717,39 @@ class AdmissionsEndpointsTests(APITestCase):
         self.assertIsNone(items["enrollment_fee"]["amount"])
         self.assertEqual(response.data["fee_config"]["amount"], "85.00")
 
+    def test_free_first_child_does_not_create_zero_dollar_invoice(self):
+        self.client.force_authenticate(user=None)
+        FeeLine.objects.filter(
+            fee_schedule=self.fee_schedule, code="admissions_first_child"
+        ).update(amount_cents=0)
+        before_invoices = FinanceInvoice.objects.filter(school=self.school).count()
+        before_obligations = FinanceObligation.objects.filter(school=self.school).count()
+        response = self.client.post("/api/v1/admissions/submit/", self._submit_payload(), format="json")
+        self.assertEqual(response.status_code, 201, response.data)
+        self.assertEqual(response.data["application_fee"]["total_amount"], "0.00")
+        self.assertEqual(response.data["application_fee"]["finance"]["state"], "not_applicable")
+        self.assertEqual(FinanceInvoice.objects.filter(school=self.school).count(), before_invoices)
+        self.assertEqual(FinanceObligation.objects.filter(school=self.school).count(), before_obligations)
+
+    def test_free_first_child_paid_second_child_creates_one_invoice_line(self):
+        self.client.force_authenticate(user=None)
+        FeeLine.objects.filter(
+            fee_schedule=self.fee_schedule, code="admissions_first_child"
+        ).update(amount_cents=0)
+        payload = self._submit_payload()
+        payload["students"].append({**payload["students"][0], "firstName": "Blair"})
+        response = self.client.post("/api/v1/admissions/submit/", payload, format="json")
+        self.assertEqual(response.status_code, 201, response.data)
+        fee = response.data["application_fee"]
+        self.assertEqual(fee["total_amount"], "50.00")
+        self.assertEqual([row["application_fee"] for row in fee["per_child_schedule"]], ["0.00", "50.00"])
+        finance = fee["finance"]
+        self.assertEqual(finance["state"], "invoiced")
+        invoice = FinanceInvoice.objects.get(pk=finance["invoice_id"], school=self.school)
+        self.assertEqual(invoice.total_cents, 5000)
+        self.assertEqual(invoice.lines.count(), 1)
+        self.assertEqual(FinanceObligation.objects.filter(school=self.school).count(), 1)
+
     def test_three_child_quote_matches_invoice_and_obligations(self):
         self.client.force_authenticate(user=None)
         payload = self._submit_payload()
