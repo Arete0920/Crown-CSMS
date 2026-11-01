@@ -10,6 +10,9 @@ from rest_framework.response import Response
 from core.permissions import user_has_permission
 from households.models import Guardian
 from .models import (
+    SummerCampClub,
+    SummerCampClubOffering,
+    SummerCampClubSelection,
     SummerCampEnrollment,
     SummerCampIncident,
     SummerCampProgram,
@@ -17,6 +20,12 @@ from .models import (
     SummerCampSession,
 )
 from .serializers import (
+    SummerCampClubCreateSerializer,
+    SummerCampClubOfferingCreateSerializer,
+    SummerCampClubOfferingSerializer,
+    SummerCampClubSelectionCreateSerializer,
+    SummerCampClubSelectionSerializer,
+    SummerCampClubSerializer,
     SummerCampEnrollmentSerializer,
     SummerCampIncidentSerializer,
     SummerCampProgramConfigSerializer,
@@ -25,8 +34,11 @@ from .serializers import (
 )
 from .services import (
     board_summary,
+    cancel_club_selection,
     checkin_camper,
     checkout_camper,
+    create_club,
+    create_club_offering,
     compute_camper_readiness,
     create_health_review,
     create_ledger_charge_summer_camp,
@@ -40,6 +52,7 @@ from .services import (
     parent_student_summary,
     record_incident,
     roster_today,
+    select_club,
     update_program,
     update_session,
 )
@@ -230,6 +243,140 @@ def session_detail_view(request, session_id):
     serializer.is_valid(raise_exception=True)
     session = update_session(school_id, session_id, serializer.validated_data)
     return Response(SummerCampSessionSerializer(session).data)
+
+
+@extend_schema(methods=["GET"], responses=SummerCampClubSerializer(many=True))
+@extend_schema(methods=["POST"], request=SummerCampClubCreateSerializer, responses=SummerCampClubSerializer)
+@api_view(["GET", "POST"])
+def clubs_view(request):
+    school_id = school_id_from_request(request, required=True)
+    if request.method == "GET":
+        if not _require_role(request, VIEW_ROLES):
+            return Response({"detail": "Forbidden"}, status=status.HTTP_403_FORBIDDEN)
+        clubs = SummerCampClub.objects.filter(school_id=school_id).order_by("name", "pk")
+        return Response(SummerCampClubSerializer(clubs, many=True).data)
+
+    if not _require_role(request, EDIT_ROLES):
+        return Response({"detail": "Forbidden"}, status=status.HTTP_403_FORBIDDEN)
+    serializer = SummerCampClubCreateSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    try:
+        club = create_club(school_id, serializer.validated_data)
+    except (ValueError, Exception) as exc:
+        from django.core.exceptions import ValidationError as DjangoValidationError
+        if not isinstance(exc, DjangoValidationError):
+            raise
+        return Response(
+            {"detail": "Club catalog item is invalid or already exists."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    return Response(SummerCampClubSerializer(club).data, status=status.HTTP_201_CREATED)
+
+
+@extend_schema(methods=["GET"], responses=SummerCampClubOfferingSerializer(many=True))
+@extend_schema(
+    methods=["POST"],
+    request=SummerCampClubOfferingCreateSerializer,
+    responses=SummerCampClubOfferingSerializer,
+)
+@api_view(["GET", "POST"])
+def club_offerings_view(request):
+    school_id = school_id_from_request(request, required=True)
+    if request.method == "GET":
+        if not _require_role(request, VIEW_ROLES):
+            return Response({"detail": "Forbidden"}, status=status.HTTP_403_FORBIDDEN)
+        query = SummerCampClubOffering.objects.filter(school_id=school_id).select_related("club")
+        session_id = request.query_params.get("session_id")
+        if session_id:
+            query = query.filter(session_id=session_id)
+        return Response(
+            SummerCampClubOfferingSerializer(query.order_by("session_id", "start_time", "pk"), many=True).data
+        )
+
+    if not _require_role(request, EDIT_ROLES):
+        return Response({"detail": "Forbidden"}, status=status.HTTP_403_FORBIDDEN)
+    serializer = SummerCampClubOfferingCreateSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    try:
+        offering = create_club_offering(school_id, serializer.validated_data)
+    except (ValueError, Exception) as exc:
+        from django.core.exceptions import ValidationError as DjangoValidationError
+        if not isinstance(exc, (ValueError, DjangoValidationError)):
+            raise
+        return Response(
+            {"detail": "Club offering is invalid for this school or session."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    return Response(
+        SummerCampClubOfferingSerializer(offering).data,
+        status=status.HTTP_201_CREATED,
+    )
+
+
+@extend_schema(methods=["GET"], responses=SummerCampClubSelectionSerializer(many=True))
+@extend_schema(
+    methods=["POST"],
+    request=SummerCampClubSelectionCreateSerializer,
+    responses=SummerCampClubSelectionSerializer,
+)
+@api_view(["GET", "POST"])
+def club_selections_view(request):
+    school_id = school_id_from_request(request, required=True)
+    if request.method == "GET":
+        if not _require_role(request, VIEW_ROLES):
+            return Response({"detail": "Forbidden"}, status=status.HTTP_403_FORBIDDEN)
+        query = SummerCampClubSelection.objects.filter(school_id=school_id).select_related(
+            "offering", "offering__club", "enrollment"
+        )
+        enrollment_id = request.query_params.get("enrollment_id")
+        offering_id = request.query_params.get("offering_id")
+        if enrollment_id:
+            query = query.filter(enrollment_id=enrollment_id)
+        if offering_id:
+            query = query.filter(offering_id=offering_id)
+        return Response(
+            SummerCampClubSelectionSerializer(query.order_by("-created_at", "pk"), many=True).data
+        )
+
+    if not _require_role(request, EDIT_ROLES):
+        return Response({"detail": "Forbidden"}, status=status.HTTP_403_FORBIDDEN)
+    serializer = SummerCampClubSelectionCreateSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    try:
+        selection = select_club(
+            school_id,
+            serializer.validated_data["enrollment_id"],
+            serializer.validated_data["offering_id"],
+        )
+    except ValueError:
+        return Response(
+            {"detail": "Club selection denied: registration, schedule, or capacity is invalid."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    return Response(
+        SummerCampClubSelectionSerializer(selection).data,
+        status=status.HTTP_201_CREATED,
+    )
+
+
+@extend_schema(request=None, responses=OpenApiTypes.OBJECT)
+@api_view(["POST"])
+def club_selection_cancel_view(request, selection_id):
+    school_id = school_id_from_request(request, required=True)
+    if not _require_role(request, EDIT_ROLES):
+        return Response({"detail": "Forbidden"}, status=status.HTTP_403_FORBIDDEN)
+    try:
+        cancelled, promoted = cancel_club_selection(school_id, selection_id)
+    except ValueError:
+        return Response(
+            {"detail": "Club selection is unavailable or already cancelled."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    return Response({
+        "selection_id": cancelled.id,
+        "status": cancelled.status,
+        "promoted_selection_id": promoted.id if promoted else None,
+    })
 
 
 @extend_schema(methods=["GET"], responses=SummerCampEnrollmentSerializer(many=True))
