@@ -163,6 +163,23 @@ def test_foreign_school_even_with_target_grant_and_override_bit_is_rejected(scho
 
 
 @pytest.mark.parametrize("key", KEYS)
+def test_unambiguous_canonical_role_membership_can_bind_operator_without_direct_school(school, key):
+    user = UserAccount.objects.create_user(username="role-bound", school=None)
+    UserRole.objects.create(user=user, school=school, role_code="PROGRAM_READER_TEST")
+    assert get(school, key, user).status_code == 200
+
+
+@pytest.mark.parametrize("key", KEYS)
+def test_ambiguous_role_membership_cannot_use_superuser_override_for_program_data(school, key):
+    user = UserAccount.objects.create_user(username="ambiguous-operator", school=None,
+                                          is_staff=True, is_superuser=True)
+    foreign = School.objects.create(name="Synthetic ambiguous role school")
+    for membership in (school, foreign):
+        UserRole.objects.create(user=user, school=membership, role_code="PROGRAM_READER_TEST")
+    assert get(school, key, user).status_code in (403, 404)
+
+
+@pytest.mark.parametrize("key", KEYS)
 def test_missing_invalid_conflicting_and_inactive_tenant_context(school, key):
     user = actor(school)
     api = client(user)

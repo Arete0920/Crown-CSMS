@@ -309,12 +309,18 @@ class DashboardSummaryView(APIView):
                 raise ValidationError({'detail': 'Invalid X-School-Id (must be a UUID).'})
             from households.scoping import get_request_school_id
             from core.models import School
+            from crown_api.tenant import CANONICAL_TENANT_ATTR
 
             bound = getattr(request, 'school', None)
             if bound is not None and str(bound.id) != str(selected):
                 raise NotFound({'detail': 'Not found.'})
-            if (str(getattr(user, 'school_id', '')) != str(selected)
-                    or get_request_school_id(request) != selected):
+            resolved = get_request_school_id(request)
+            context = getattr(request, CANONICAL_TENANT_ATTR, None)
+            # Canonical resolution also recognizes a single-school UserRole
+            # membership when the direct school FK is unset. Override authority
+            # alone must never authorize a foreign or ambiguous principal.
+            if (resolved != selected
+                    or getattr(context, 'principal_school_id', None) != selected):
                 raise NotFound({'detail': 'Not found.'})
             school = School.objects.filter(pk=selected, is_active=True).first()
             if school is None:
