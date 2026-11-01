@@ -564,6 +564,36 @@ class AdmissionsEndpointsTests(APITestCase):
             before_applicants + 1,
         )
 
+    def test_durable_replay_survives_cache_clear_without_duplicate_invoice(self):
+        self.client.force_authenticate(user=None)
+        key = "durable-admissions-replay"
+        payload = self._submit_payload()
+        first = self.client.post("/api/v1/admissions/submit/", payload, format="json", HTTP_IDEMPOTENCY_KEY=key)
+        self.assertEqual(first.status_code, 201, first.data)
+        before_invoices = FinanceInvoice.objects.filter(school_id=self.school_id).count()
+        before_obligations = FinanceObligation.objects.filter(school_id=self.school_id).count()
+        cache.clear()
+        second = self.client.post("/api/v1/admissions/submit/", payload, format="json", HTTP_IDEMPOTENCY_KEY=key)
+        self.assertEqual(second.status_code, 200, second.data)
+        self.assertEqual(second["X-Idempotent-Replay"], "true")
+        self.assertEqual(second.data["application_ids"], first.data["application_ids"])
+        self.assertEqual(FinanceInvoice.objects.filter(school_id=self.school_id).count(), before_invoices)
+        self.assertEqual(FinanceObligation.objects.filter(school_id=self.school_id).count(), before_obligations)
+
+    def test_durable_idempotency_key_rejects_changed_payload_without_invoice(self):
+        self.client.force_authenticate(user=None)
+        key = "durable-admissions-conflict"
+        payload = self._submit_payload()
+        first = self.client.post("/api/v1/admissions/submit/", payload, format="json", HTTP_IDEMPOTENCY_KEY=key)
+        self.assertEqual(first.status_code, 201, first.data)
+        before_invoices = FinanceInvoice.objects.filter(school_id=self.school_id).count()
+        changed = self._submit_payload()
+        changed["students"][0]["firstName"] = "Different"
+        second = self.client.post("/api/v1/admissions/submit/", changed, format="json", HTTP_IDEMPOTENCY_KEY=key)
+        self.assertEqual(second.status_code, 409, second.data)
+        self.assertEqual(second.data["code"], "idempotency_conflict")
+        self.assertEqual(FinanceInvoice.objects.filter(school_id=self.school_id).count(), before_invoices)
+
     def test_submit_validation_error_includes_correlation(self):
         """Validation errors should include a correlation id in both header and body."""
         self.client.force_authenticate(user=None)
