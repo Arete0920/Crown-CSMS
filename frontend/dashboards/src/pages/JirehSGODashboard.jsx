@@ -17,8 +17,10 @@ const money = (cents) => new Intl.NumberFormat("en-US", {
 export default function JirehSGODashboard() {
   const token = getAccessToken();
   const [organizations, setOrganizations] = useState(null);
+  const [membershipToken, setMembershipToken] = useState(null);
   const [organizationId, setOrganizationId] = useState("");
   const [overview, setOverview] = useState(null);
+  const [overviewToken, setOverviewToken] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -26,8 +28,10 @@ export default function JirehSGODashboard() {
     // A previous member's grantor records must not remain visible when a
     // session ends or the authenticated principal changes.
     setOrganizations(null);
+    setMembershipToken(null);
     setOrganizationId("");
     setOverview(null);
+    setOverviewToken(null);
     setError("");
     setLoading(false);
     if (!token) return;
@@ -38,6 +42,7 @@ export default function JirehSGODashboard() {
       if (!Array.isArray(data.organizations) || data.funds_status !== "NONCASH_ONLY")
         throw new Error("Unexpected grantor scope.");
       setOrganizations(data.organizations);
+      setMembershipToken(token);
       setOrganizationId(data.organizations[0]?.id || "");
       setError("");
     }).catch(() => {
@@ -47,9 +52,14 @@ export default function JirehSGODashboard() {
   }, [token]);
 
   useEffect(() => {
-    if (!token || !organizationId) { setOverview(null); return; }
+    if (!token || !organizationId || membershipToken !== token) {
+      setOverview(null);
+      setOverviewToken(null);
+      return;
+    }
     let live = true;
     setOverview(null);
+    setOverviewToken(null);
     setLoading(true);
     loadGrantor("/api/v1/jireh-sgo/organizations/" + encodeURIComponent(organizationId) + "/overview/")
       .then((data) => {
@@ -58,12 +68,13 @@ export default function JirehSGODashboard() {
             data.funds_status !== "NONCASH_ONLY" || !Array.isArray(data.programs))
           throw new Error("Grantor context mismatch.");
         setOverview(data);
+        setOverviewToken(token);
         setError("");
       }).catch(() => {
         if (live) { setOverview(null); setError("Grantor data unavailable. No figures displayed."); }
       }).finally(() => { if (live) setLoading(false); });
     return () => { live = false; };
-  }, [token, organizationId]);
+  }, [token, organizationId, membershipToken]);
 
   return <main style={{ maxWidth: 1100, margin: "0 auto", padding: "2rem" }}>
     <h1>Jireh SGO — Grantor Overview</h1>
@@ -72,8 +83,8 @@ export default function JirehSGODashboard() {
     {!token && <p role="alert">Authorized SGO sign-in is required.</p>}
     {token && loading && <p role="status">Verifying grantor membership and records…</p>}
     {token && error && <p role="alert">{error}</p>}
-    {token && organizations?.length === 0 && !error && <p>No active SGO membership is assigned.</p>}
-    {token && organizations?.length > 0 && <section aria-label="SGO membership">
+    {token && membershipToken === token && organizations?.length === 0 && !error && <p>No active SGO membership is assigned.</p>}
+    {token && membershipToken === token && organizations?.length > 0 && <section aria-label="SGO membership">
       <label htmlFor="sgo-organization">Grantor organization</label>
       <select id="sgo-organization" value={organizationId}
         onChange={(event) => setOrganizationId(event.target.value)}>
@@ -82,7 +93,7 @@ export default function JirehSGODashboard() {
         </option>)}
       </select>
     </section>}
-    {token && overview && !loading && <>
+    {token && membershipToken === token && overviewToken === token && overview && !loading && <>
       <section aria-label="Noncash aggregate totals">
         <h2>{overview.organization.name}</h2>
         <p>Authorized role: {overview.role}</p>
