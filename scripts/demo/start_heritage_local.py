@@ -184,7 +184,11 @@ def main() -> int:
     parser.add_argument("--no-browser", action="store_true")
     parser.add_argument("--skip-install", action="store_true", help="Use already-installed dependencies.")
     parser.add_argument("--prepare-only", action="store_true")
+    parser.add_argument("--five-module-preflight", action="store_true",
+                        help="After preparation, run the strict isolated five-module demo audit.")
     args = parser.parse_args()
+    if args.five_module_preflight and not args.prepare_only:
+        parser.error("--five-module-preflight requires --prepare-only")
     if sys.version_info < (3, 11):
         print("Python 3.11 or newer is required.", file=sys.stderr)
         return 1
@@ -195,6 +199,9 @@ def main() -> int:
         env = local_environment()
         npm = npm_command()
         python = prepare(env, npm, args.skip_install)
+        if args.five_module_preflight:
+            run([str(python), str(ROOT / "backend/manage.py"),
+                 "five_module_demo_preflight", "--strict"], env)
         if args.prepare_only:
             print("Heritage is prepared. Start again to open the demo.")
             return 0
