@@ -19,6 +19,7 @@ from applications.models import (
 )
 from core.models import AcademicYear, CrownPermission, RolePermission, School, UserRole
 from finance.models import FinanceInvoice, FinanceObligation
+from fee_schedule_wizard.models import FeeSchedule, FeeLine
 from households.models import Household
 
 
@@ -64,6 +65,20 @@ class AdmissionsEndpointsTests(APITestCase):
             end_date="2030-05-31",
             is_current=True,
         )
+
+        self.fee_schedule = FeeSchedule.objects.create(
+            school=self.school, name="Admissions 2026", term="2026-2027",
+            effective_date="2026-08-01", is_active=True,
+        )
+        for code, cents in (
+            ("admissions_first_child", 8500),
+            ("admissions_additional_child", 5000),
+        ):
+            FeeLine.objects.create(
+                fee_schedule=self.fee_schedule, code=code, label=code,
+                amount_cents=cents, kind="fee", frequency="one_time",
+                is_required=True,
+            )
 
         # Create test applications with a range of statuses
         self.app_draft = Application.objects.create(
@@ -549,6 +564,36 @@ class AdmissionsEndpointsTests(APITestCase):
             before_applicants + 1,
         )
 
+    def test_durable_replay_survives_cache_clear_without_duplicate_invoice(self):
+        self.client.force_authenticate(user=None)
+        key = "durable-admissions-replay"
+        payload = self._submit_payload()
+        first = self.client.post("/api/v1/admissions/submit/", payload, format="json", HTTP_IDEMPOTENCY_KEY=key)
+        self.assertEqual(first.status_code, 201, first.data)
+        before_invoices = FinanceInvoice.objects.filter(school_id=self.school_id).count()
+        before_obligations = FinanceObligation.objects.filter(school_id=self.school_id).count()
+        cache.clear()
+        second = self.client.post("/api/v1/admissions/submit/", payload, format="json", HTTP_IDEMPOTENCY_KEY=key)
+        self.assertEqual(second.status_code, 200, second.data)
+        self.assertEqual(second["X-Idempotent-Replay"], "true")
+        self.assertEqual(second.data["application_ids"], first.data["application_ids"])
+        self.assertEqual(FinanceInvoice.objects.filter(school_id=self.school_id).count(), before_invoices)
+        self.assertEqual(FinanceObligation.objects.filter(school_id=self.school_id).count(), before_obligations)
+
+    def test_durable_idempotency_key_rejects_changed_payload_without_invoice(self):
+        self.client.force_authenticate(user=None)
+        key = "durable-admissions-conflict"
+        payload = self._submit_payload()
+        first = self.client.post("/api/v1/admissions/submit/", payload, format="json", HTTP_IDEMPOTENCY_KEY=key)
+        self.assertEqual(first.status_code, 201, first.data)
+        before_invoices = FinanceInvoice.objects.filter(school_id=self.school_id).count()
+        changed = self._submit_payload()
+        changed["students"][0]["firstName"] = "Different"
+        second = self.client.post("/api/v1/admissions/submit/", changed, format="json", HTTP_IDEMPOTENCY_KEY=key)
+        self.assertEqual(second.status_code, 409, second.data)
+        self.assertEqual(second.data["code"], "idempotency_conflict")
+        self.assertEqual(FinanceInvoice.objects.filter(school_id=self.school_id).count(), before_invoices)
+
     def test_submit_validation_error_includes_correlation(self):
         """Validation errors should include a correlation id in both header and body."""
         self.client.force_authenticate(user=None)
@@ -662,6 +707,178 @@ class AdmissionsEndpointsTests(APITestCase):
         self.assertIn("record_completion", checklist_keys)
         self.assertIn("family_partnership_conversation", checklist_keys)
         self.assertIn("decision_and_enrollment_next_steps", checklist_keys)
+
+    def test_enrollment_continuity_does_not_quote_unconfigured_enrollment_fee(self):
+        self.client.force_authenticate(user=None)
+        response = self.client.post("/api/v1/admissions/submit/", self._submit_payload(), format="json")
+        self.assertEqual(response.status_code, 201, response.data)
+        items = {row["key"]: row for row in response.data["enrollment_continuity"]["checklist"]}
+        self.assertEqual(items["enrollment_fee"]["status"], "not_quoted")
+        self.assertIsNone(items["enrollment_fee"]["amount"])
+        self.assertEqual(response.data["fee_config"]["amount"], "85.00")
+
+    def test_free_first_child_does_not_create_zero_dollar_invoice(self):
+        self.client.force_authenticate(user=None)
+        FeeLine.objects.filter(
+            fee_schedule=self.fee_schedule, code="admissions_first_child"
+        ).update(amount_cents=0)
+        before_invoices = FinanceInvoice.objects.filter(school=self.school).count()
+        before_obligations = FinanceObligation.objects.filter(school=self.school).count()
+        payload = self._submit_payload()
+        payload["applicationFee"] = {"policyAccepted": False, "waiverRequested": False}
+        response = self.client.post("/api/v1/admissions/submit/", payload, format="json")
+        self.assertEqual(response.status_code, 201, response.data)
+        self.assertEqual(response.data["application_fee"]["total_amount"], "0.00")
+        app_checklist = {row["key"]: row for row in response.data["enrollment_continuity"]["checklist"]}
+        self.assertEqual(app_checklist["application_fee"]["status"], "not_required")
+        self.assertEqual(app_checklist["application_fee"]["amount"], "0.00")
+        self.assertEqual(response.data["application_fee"]["finance"]["state"], "not_applicable")
+        self.assertEqual(FinanceInvoice.objects.filter(school=self.school).count(), before_invoices)
+        self.assertEqual(FinanceObligation.objects.filter(school=self.school).count(), before_obligations)
+
+    def test_free_first_child_paid_second_child_creates_one_invoice_line(self):
+        self.client.force_authenticate(user=None)
+        FeeLine.objects.filter(
+            fee_schedule=self.fee_schedule, code="admissions_first_child"
+        ).update(amount_cents=0)
+        payload = self._submit_payload()
+        payload["students"].append({**payload["students"][0], "firstName": "Blair"})
+        response = self.client.post("/api/v1/admissions/submit/", payload, format="json")
+        self.assertEqual(response.status_code, 201, response.data)
+        fee = response.data["application_fee"]
+        self.assertEqual(fee["total_amount"], "50.00")
+        self.assertEqual([row["application_fee"] for row in fee["per_child_schedule"]], ["0.00", "50.00"])
+        finance = fee["finance"]
+        self.assertEqual(finance["state"], "invoiced")
+        invoice = FinanceInvoice.objects.get(pk=finance["invoice_id"], school=self.school)
+        self.assertEqual(invoice.total_cents, 5000)
+        self.assertEqual(invoice.lines.count(), 1)
+        self.assertEqual(FinanceObligation.objects.filter(school=self.school).count(), 1)
+
+    def test_three_child_quote_matches_invoice_and_obligations(self):
+        self.client.force_authenticate(user=None)
+        payload = self._submit_payload()
+        payload["students"].extend([
+            {**payload["students"][0], "firstName": "Blair"},
+            {**payload["students"][0], "firstName": "Casey"},
+        ])
+        response = self.client.post("/api/v1/admissions/submit/", payload, format="json")
+        self.assertEqual(response.status_code, 201, response.data)
+        fee = response.data["application_fee"]
+        self.assertEqual(fee["total_amount"], "185.00")
+        app_checklist = {row["key"]: row for row in response.data["enrollment_continuity"]["checklist"]}
+        self.assertEqual(app_checklist["application_fee"]["amount"], "185.00")
+        self.assertEqual(
+            [row["application_fee"] for row in fee["per_child_schedule"]],
+            ["85.00", "50.00", "50.00"],
+        )
+        finance = fee["finance"]
+        self.assertEqual(finance["state"], "invoiced")
+        invoice = FinanceInvoice.objects.get(pk=finance["invoice_id"], school=self.school)
+        self.assertEqual(invoice.subtotal_cents, 18500)
+        self.assertEqual(invoice.total_cents, 18500)
+        obligations = FinanceObligation.objects.filter(
+            school=self.school, pk__in=finance["obligation_ids"]
+        )
+        self.assertEqual(obligations.count(), 3)
+        self.assertEqual(sum(ob.amount_cents for ob in obligations), 18500)
+        self.assertEqual(
+            sorted(ob.amount_cents for ob in obligations), [5000, 5000, 8500]
+        )
+
+    def test_submission_rejects_unconfigured_fee_policy(self):
+        self.client.force_authenticate(user=None)
+        self.fee_schedule.is_active = False
+        self.fee_schedule.save(update_fields=["is_active"])
+        before = FinanceObligation.objects.filter(school=self.school).count()
+        r = self.client.post("/api/v1/admissions/submit/", self._submit_payload(), format="json")
+        self.assertEqual(r.status_code, 409, r.data)
+        self.assertEqual(r.data["code"], "fee_policy_unavailable")
+        self.assertEqual(FinanceObligation.objects.filter(school=self.school).count(), before)
+
+    def test_other_active_fee_schedule_does_not_hide_admissions_quote(self):
+        other = FeeSchedule.objects.create(
+            school=self.school, name="Tuition and activities", term="2026-2027",
+            effective_date="2026-08-01", is_active=True,
+        )
+        FeeLine.objects.create(
+            fee_schedule=other, code="activity_fee", label="Activity fee",
+            amount_cents=1200, kind="fee", frequency="one_time", is_required=True,
+        )
+        response = self.client.get(
+            "/api/v1/admissions/public-config/",
+            {"school_id": str(self.school_id), "term": "2026-2027"},
+        )
+        self.assertEqual(response.status_code, 200, response.data)
+        self.assertEqual(response.data["application_fee"]["amount"], "85.00")
+
+    def test_two_complete_active_admissions_schedules_fail_closed(self):
+        duplicate = FeeSchedule.objects.create(
+            school=self.school, name="Conflicting admissions", term="2026-2027",
+            effective_date="2026-08-01", is_active=True,
+        )
+        for code, cents in (("admissions_first_child", 9900),
+                            ("admissions_additional_child", 4900)):
+            FeeLine.objects.create(
+                fee_schedule=duplicate, code=code, label=code,
+                amount_cents=cents, kind="fee", frequency="one_time",
+                is_required=True,
+            )
+        response = self.client.get(
+            "/api/v1/admissions/public-config/",
+            {"school_id": str(self.school_id), "term": "2026-2027"},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(response.data["application_fee"]["configured"])
+
+    def test_public_config_canonical_first_and_additional_fees(self):
+        self.client.force_authenticate(user=None)
+        r = self.client.get(
+            "/api/v1/admissions/public-config/",
+            {"school_id": str(self.school_id), "term": "2026-2027"},
+        )
+        self.assertEqual(r.status_code, 200, r.data)
+        fee = r.data["application_fee"]
+        self.assertTrue(fee["configured"])
+        self.assertEqual(fee["amount"], "85.00")
+        self.assertEqual(fee["additional_child_amount"], "50.00")
+
+    def test_public_config_exact_campus_quote(self):
+        self.client.force_authenticate(user=None)
+        response = self.client.get(
+            "/api/v1/admissions/public-config/",
+            {"campus": self.school.name, "term": "2026-2027"},
+        )
+        self.assertEqual(response.status_code, 200)
+        fee = response.data["application_fee"]
+        self.assertEqual(fee["school_id"], str(self.school.id))
+        self.assertEqual(fee["amount"], "85.00")
+        self.assertEqual(fee["additional_child_amount"], "50.00")
+
+    def test_public_quote_rejects_mismatched_school_and_campus(self):
+        self.client.force_authenticate(user=None)
+        response = self.client.get(
+            "/api/v1/admissions/public-config/",
+            {"school_id": str(self.school.id), "campus": "Other Campus", "term": "2026-2027"},
+        )
+        self.assertEqual(response.status_code, 409)
+        self.assertEqual(response.data["code"], "school_mismatch")
+
+    def test_stale_quote_blocks_obligations(self):
+        self.client.force_authenticate(user=None)
+        payload = self._submit_payload()
+        payload["applicationFee"].update({
+            "quoteScheduleId": str(self.fee_schedule.id),
+            "quoteSchoolId": str(self.school.id),
+            "quoteTerm": "2026-2027",
+            "quoteFirstAmount": "85.00",
+            "quoteAdditionalAmount": "49.00",
+        })
+        before = FinanceObligation.objects.filter(school=self.school).count()
+        response = self.client.post("/api/v1/admissions/submit/", payload, format="json")
+        self.assertEqual(response.status_code, 409)
+        self.assertEqual(response.data["code"], "stale_fee_quote")
+        self.assertEqual(FinanceObligation.objects.filter(school=self.school).count(), before)
 
     def test_public_config_allows_missing_tenant_header(self):
         """Public config must be reachable without X-School-Id for public funnel bootstrap."""

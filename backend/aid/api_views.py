@@ -22,11 +22,13 @@ from aid.serializers import (
     AidAwardWithExplanationSerializer,
     AidBudgetTrackerSerializer,
     AidFinancialProfileSerializer,
+    FamilyAidApplicationSerializer,
+    FamilyAidAwardSerializer,
 )
 from aid.services.award_engine import recommend_award
 from aid.services.profile_service import build_engine_application, build_review_signals, carry_forward_profile
-from aid.services.ledger_bridge import AidBudgetError, approve_award
-from core.models import AcademicYear, LedgerEntry
+from aid.services.ledger_bridge import AidApprovalConflictError, AidBudgetError, approve_award
+from core.models import AcademicYear, LedgerEntry, Student
 from core.permissions import CrownModulePermission, user_has_permission
 from households.scoping import MissingSchoolContext, get_request_school_id
 from drf_spectacular.utils import extend_schema
@@ -316,6 +318,7 @@ def admin_recommend_award(request):
 
     Required body fields:
       application_id      (int PK of AidApplication to evaluate)
+      student_id          (UUID PK of the student receiving the award)
       bucket              (award_type: NEED|MISSION|MERIT|HARDSHIP|MARKETING)
       gross_tuition_cents (int, gross tuition for this student/year)
 
@@ -326,14 +329,23 @@ def admin_recommend_award(request):
     school_id = get_request_school_id(request)
 
     application_id = request.data.get("application_id")
+    student_id = request.data.get("student_id")
     bucket = request.data.get("bucket")
     gross_tuition_cents_raw = request.data.get("gross_tuition_cents")
 
-    if not application_id or not bucket or gross_tuition_cents_raw is None:
+    if not application_id or not student_id or not bucket or gross_tuition_cents_raw is None:
         return Response(
-            {"detail": "application_id, bucket, and gross_tuition_cents are required"},
+            {"detail": "application_id, student_id, bucket, and gross_tuition_cents are required"},
             status=status.HTTP_400_BAD_REQUEST,
         )
+
+    if not isinstance(bucket, str) or bucket not in dict(AidAward.TYPE_CHOICES):
+        return Response({"detail": "Invalid award bucket"}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        student_pk = UUID(str(student_id))
+    except (TypeError, ValueError, AttributeError):
+        return Response({"detail": "student_id must be a valid UUID"}, status=status.HTTP_400_BAD_REQUEST)
 
     try:
         gross_tuition_cents = int(gross_tuition_cents_raw)
@@ -344,9 +356,23 @@ def admin_recommend_award(request):
         return Response({"detail": "gross_tuition_cents must be > 0"}, status=status.HTTP_400_BAD_REQUEST)
 
     try:
-        app = AidApplication.objects.get(pk=application_id, school_id=school_id)
+        app = AidApplication.objects.get(
+            pk=application_id,
+            school_id=school_id,
+            family__school_id=school_id,
+            academic_year__school_id=school_id,
+        )
     except (AidApplication.DoesNotExist, ValueError, TypeError):
         return Response({"detail": "AidApplication not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    student = Student.objects.filter(
+        pk=student_pk,
+        school_id=school_id,
+        family_id=app.family_id,
+    ).first()
+    if student is None:
+        # Do not disclose whether an unrelated student exists in this or another tenant.
+        return Response({"detail": "Student not found for application"}, status=status.HTTP_404_NOT_FOUND)
 
     try:
         policy = AidPolicy.objects.get(school_id=school_id, academic_year=app.academic_year)
@@ -362,7 +388,7 @@ def admin_recommend_award(request):
     award = AidAward.objects.create(
         school=app.school,
         academic_year=app.academic_year,
-        student=app.family.students.first(),  # one student per application (common case)
+        student=student,
         aid_application=app,
         award_type=bucket,
         awarded_cents=rec.recommended_award_cents,
@@ -397,7 +423,11 @@ def admin_approve_award(request, award_id):
     409 if bucket budget would be exceeded.
     """
     school_id = get_request_school_id(request)
+    if not isinstance(request.data, dict):
+        return Response({"detail": "Request body must be an object."}, status=status.HTTP_400_BAD_REQUEST)
     reason = request.data.get("reason", "")
+    if not isinstance(reason, str):
+        return Response({"detail": "reason must be a string."}, status=status.HTTP_400_BAD_REQUEST)
 
     try:
         award = AidAward.objects.get(pk=award_id, school_id=school_id)
@@ -416,6 +446,16 @@ def admin_approve_award(request, award_id):
     except AidBudgetTracker.DoesNotExist:
         return Response(
             {"error": "No budget tracker found for this bucket. Create one before approving."},
+            status=status.HTTP_409_CONFLICT,
+        )
+
+    except AidApprovalConflictError:
+        logger.warning(
+            "admin_approve_award: posting conflict requiring controlled reconciliation",
+            extra={"award_id": award_id},
+        )
+        return Response(
+            {"error": "Award posting requires controlled reconciliation."},
             status=status.HTTP_409_CONFLICT,
         )
 
@@ -490,8 +530,8 @@ def family_aid_status(request):
     ).order_by("-created_at")
 
     return Response({
-        "application": AidApplicationSerializer(application).data if application else None,
-        "awards": AidAwardSerializer(awards, many=True).data,
+        "application": FamilyAidApplicationSerializer(application).data if application else None,
+        "awards": FamilyAidAwardSerializer(awards, many=True).data,
     })
 
 

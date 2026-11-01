@@ -336,7 +336,7 @@ def test_aad_post_validation_boundary_reconciles_and_preserves_tenant_denials(
     decode = Mock(return_value={"sub": str(records.user.pk)})
     resolve_user = Mock(return_value=records.user)
     monkeypatch.setattr("core.auth.authentication.decode_and_validate_bearer", decode)
-    monkeypatch.setattr("core.auth.authentication.get_or_create_user_from_claims", resolve_user)
+    monkeypatch.setattr("core.auth.authentication.get_user_from_claims", resolve_user)
     if case == "support_audit_failure":
         UserRole.objects.create(user=records.user, school=records.school_a, role_code="SUPPORT")
         monkeypatch.setattr(

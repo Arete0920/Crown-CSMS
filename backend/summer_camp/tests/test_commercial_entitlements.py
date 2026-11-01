@@ -12,7 +12,7 @@ ROOT = "/api/v1/summer-camp/"
 
 def setup():
     school = School.objects.create(name="Camp Entitlement " + uuid4().hex[:8])
-    actor = UserAccount.objects.create_user(username="camp"+uuid4().hex, school=school, password="synthetic")
+    actor = UserAccount.objects.create_user(username="camp"+uuid4().hex, email=f"camp-{uuid4().hex}@example.invalid", school=school, password="synthetic")
     UserRole.objects.create(user=actor, school=school, role_code="HEAD_OF_SCHOOL")
     for code in ("summer_camp.view", "summer_camp.edit"):
         perm, _ = CrownPermission.objects.get_or_create(code=code)
@@ -83,6 +83,6 @@ def test_care_entitlements_are_not_a_diadem_camp_license():
 def test_entitlement_does_not_grant_role_access():
     school, _, client = setup()
     license(school)
-    outsider = UserAccount.objects.create_user(username="outsider"+uuid4().hex,school=school,password="synthetic",is_staff=True)
+    outsider = UserAccount.objects.create_user(username="outsider"+uuid4().hex,email=f"outsider-{uuid4().hex}@example.invalid",school=school,password="synthetic",is_staff=True)
     client.force_authenticate(user=outsider)
     assert client.get(ROOT+"config/").status_code == 403

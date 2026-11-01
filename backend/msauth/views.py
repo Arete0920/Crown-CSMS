@@ -18,23 +18,24 @@ import os
 import secrets
 
 from django.conf import settings
-from django.contrib.auth import get_user_model, login, logout
+from django.contrib.auth import login, logout
 from django.http import JsonResponse, HttpResponseRedirect
 from django.shortcuts import redirect
 from django.views.decorators.csrf import csrf_exempt
 
 from authlib.integrations.requests_client import OAuth2Session
 
+from core.auth.aad_jwt import MicrosoftIdentityError, get_user_from_claims
+
 logger = logging.getLogger(__name__)
 
-User = get_user_model()
 
 # ---------------------------------------------------------------------------
 # Azure AD env-driven config
 # ---------------------------------------------------------------------------
 AZURE_CLIENT_ID     = os.getenv("AZURE_CLIENT_ID", "")
 AZURE_CLIENT_SECRET = os.getenv("AZURE_CLIENT_SECRET", "")
-AZURE_TENANT_ID     = os.getenv("AZURE_TENANT_ID", "")
+AZURE_TENANT_ID     = str(getattr(settings, "AAD_TENANT_ID", "") or "").strip()
 AZURE_REDIRECT_URI  = os.getenv("AZURE_REDIRECT_URI", "")
 
 _AUTHORITY    = f"https://login.microsoftonline.com/{AZURE_TENANT_ID}"
@@ -132,47 +133,42 @@ def microsoft_callback(request):
         logger.exception("Microsoft Graph call failed")
         return JsonResponse({"error": "Graph API error"}, status=502)
 
-    # ---- Resolve email -------------------------------------------------
-    email = userinfo.get("mail") or userinfo.get("userPrincipalName")
-    if not email:
-        logger.error("Microsoft profile returned no email: %s", list(userinfo.keys()))
-        return JsonResponse({"error": "Email not found in Microsoft profile"}, status=400)
+    # ---- Resolve immutable Microsoft identity --------------------------
+    object_id = str(userinfo.get("id") or "").strip()
+    if not object_id:
+        logger.error("Microsoft profile returned no object id: %s", list(userinfo.keys()))
+        return JsonResponse({"error": "Microsoft object ID not found"}, status=400)
 
-    # ---- Resolve group-based role --------------------------------------
+    try:
+        user = get_user_from_claims({"tid": AZURE_TENANT_ID, "oid": object_id})
+    except MicrosoftIdentityError:
+        logger.warning("SSO login blocked — immutable Microsoft identity is not provisioned")
+        return JsonResponse({"error": "User not provisioned in CROWN"}, status=403)
+    except Exception:
+        logger.exception("SSO login blocked — invalid Microsoft tenant/object identity")
+        return JsonResponse({"error": "Invalid Microsoft identity configuration"}, status=503)
+
+    # ---- Resolve group-based navigation hint ---------------------------
     user_group_ids = {
         g["id"] for g in groups_resp.get("value", []) if "id" in g
     }
     resolved_role = _resolve_role_from_groups(user_group_ids)
     if not resolved_role:
         logger.warning(
-            "SSO login blocked — no authorized role group: %s groups=%s",
-            email, user_group_ids,
+            "SSO login blocked — no authorized navigation group for CROWN user=%s group_count=%s",
+            user.pk, len(user_group_ids),
         )
         return JsonResponse({"error": "No authorized role group found"}, status=403)
 
-    # ---- Lookup provisioned user ---------------------------------------
-    try:
-        user = User.objects.get(email__iexact=email)
-    except User.DoesNotExist:
-        logger.warning("SSO login blocked — email not provisioned: %s", email)
-        return JsonResponse({"error": "User not provisioned in CROWN"}, status=403)
-    except Exception:
-        logger.exception("DB error looking up user by email")
-        return JsonResponse({"error": "Internal error"}, status=500)
-
-    # ---- Sync role if Entra groups diverge from DB --------------------
-    if getattr(user, "role", None) != resolved_role:
-        try:
-            user.role = resolved_role
-            user.save(update_fields=["role"])
-            logger.info("Role updated for %s: %s", email, resolved_role)
-        except Exception:
-            logger.exception("Failed to sync role for %s", email)
+    # Entra groups are an admission/navigation hint only. CROWN authorization
+    # remains owned by persisted UserRole / permission grants and is never
+    # mutated from Microsoft group or token role data.
+    request.session["crown_display_role"] = resolved_role
 
     # ---- Create session ------------------------------------------------
     user.backend = "django.contrib.auth.backends.ModelBackend"
     login(request, user)
-    logger.info("SSO login: %s → /dash/%s", email, resolved_role)
+    logger.info("SSO login: user=%s → /dash/%s", user.pk, resolved_role)
 
     return HttpResponseRedirect(_frontend_url(f"/dash/{resolved_role}"))
 
@@ -194,6 +190,7 @@ def me_view(request):
     return JsonResponse({
         "authenticated": True,
         "email":     getattr(request.user, "email", ""),
-        "role":      str(getattr(request.user, "role", "") or ""),
+        # Display/navigation hint only; backend authorization uses CROWN grants.
+        "role":      str(request.session.get("crown_display_role", "") or ""),
         "school_id": str(getattr(request.user, "school_id", "") or ""),
     })
