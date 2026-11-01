@@ -436,6 +436,7 @@ jobs:
             backend/aftercare/tests/test_daycare_checkin.py \
             backend/aftercare/tests/test_daycare_release_policy.py \
             backend/aftercare/tests/test_daycare_release.py \
+            backend/aftercare/tests/test_daycare_visit_foundation.py \
             backend/aftercare/tests/test_am_pm_migration.py \
             backend/aftercare/tests/test_am_pm_sessions.py \
             backend/aftercare/tests/test_daycare_api.py \
@@ -450,6 +451,7 @@ jobs:
               "test_postgresql_concurrent_arrivals_cannot_exceed_single_place",
               "test_postgresql_concurrent_staff_assignments_cannot_overlap",
               "test_postgresql_simultaneous_custody_release_has_one_winner",
+              "test_postgresql_preexisting_custody_survives_visit_migration",
           ]
           for name in names:
               case = cases.get(name)

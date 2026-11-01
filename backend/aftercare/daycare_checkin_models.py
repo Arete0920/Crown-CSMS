@@ -1,5 +1,6 @@
 """Daycare staffing coverage and immutable check-in storage, independent of K12 attendance."""
 import uuid
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
@@ -79,15 +80,26 @@ class DaycareAttendance(DaycareScopedRecord):
     care_date=models.DateField(db_index=True)
     checked_in_at=models.DateTimeField()
     request_key=models.UUIDField(default=uuid.uuid4)
+    # A visit is an immutable admission-to-release custody episode. Historical
+    # records all remain visit 1; a new same-day episode needs director approval.
+    visit_number=models.PositiveIntegerField(default=1,db_default=1,editable=False)
+    reentry_approval=models.OneToOneField(
+        "aftercare.DaycareReentryAuthorization",on_delete=models.PROTECT,
+        null=True,blank=True,related_name="admitted_visit")
     class Meta:
         constraints=[
-            models.UniqueConstraint(fields=["school","child","care_date"],name="dia_attendance_child_day_uq"),
+            models.UniqueConstraint(fields=["school","child","care_date","visit_number"],name="dia_attendance_visit_uq"),
             models.UniqueConstraint(fields=["school","request_key"],name="dia_attendance_retry_uq"),
+            models.CheckConstraint(
+                condition=(models.Q(visit_number=1,reentry_approval__isnull=True)
+                           | models.Q(visit_number__gt=1,reentry_approval__isnull=False)),
+                name="dia_attendance_visit_shape_ck",
+            ),
         ]
         indexes=[models.Index(fields=["school","room","care_date"],name="dia_attendance_room_idx")]
     def clean(self):
         super().clean()
-        self._require_same_school("site","room","child","program","enrollment","actor")
+        self._require_same_school("site","room","child","program","enrollment","actor","reentry_approval")
         if (self.site_id and self.room_id and self.room.site_id != self.site_id
             or self.site_id and self.child_id and self.child.site_id != self.site_id
             or self.site_id and self.program_id and self.program.site_id != self.site_id
@@ -98,7 +110,99 @@ class DaycareAttendance(DaycareScopedRecord):
             raise ValidationError("Attendance references are not from one care enrollment.")
         if self.checked_in_at and timezone.is_naive(self.checked_in_at):
             raise ValidationError("Check-in time must be timezone-aware.")
+        if type(self.visit_number) is not int or self.visit_number < 1:
+            raise ValidationError("Custody visit number must be a positive integer.")
+        if self.visit_number == 1 and self.reentry_approval_id is not None:
+            raise ValidationError("First check-in cannot consume re-entry approval.")
+        if self.visit_number > 1:
+            if not self.reentry_approval_id:
+                raise ValidationError("Re-entry requires a stored director authorization.")
+            approval=self.reentry_approval
+            previous=approval.previous_attendance
+            from .daycare_release_models import DaycareRelease
+            prior_release_at=DaycareRelease.objects.filter(
+                school_id=self.school_id,attendance_id=previous.pk
+            ).values_list("released_at",flat=True).first()
+            if (approval.school_id!=self.school_id or approval.site_id!=self.site_id
+                or approval.child_id!=self.child_id or approval.care_date!=self.care_date
+                or previous.visit_number+1!=self.visit_number
+                or previous.school_id!=self.school_id or previous.child_id!=self.child_id
+                or previous.site_id!=self.site_id or approval.director_id==self.actor_id
+                or prior_release_at is None or self.checked_in_at is None
+                or self.checked_in_at<=prior_release_at
+                or not (approval.approved_at<=self.checked_in_at<approval.expires_at)):
+                raise ValidationError("Re-entry approval does not match this released visit.")
+            try:
+                local_day=timezone.localtime(
+                    self.checked_in_at,ZoneInfo(self.school.timezone)
+                ).date()
+            except (ZoneInfoNotFoundError,TypeError,ValueError) as exc:
+                raise ValidationError("Re-entry requires a valid school timezone.") from exc
+            if local_day!=self.care_date:
+                raise ValidationError("Re-entry must occur on its original local care date.")
     def save(self,*args,**kwargs):
         if not self._state.adding:
             raise ValidationError("Check-in is immutable; audited release workflow required.")
+        return super().save(*args,**kwargs)
+
+
+class DaycareReentryAuthorization(DaycareScopedRecord):
+    """Append-only, time-bounded director authorization for one prior released visit.
+
+    This is not a release event, a custody override, or a replacement for
+    active enrollment, guardian clearance, staff coverage and room policy.
+    The next attendance links to this record through a unique OneToOne key.
+    """
+    REASONS=[
+        ("SCHEDULED_RETURN","Scheduled same-day return"),
+        ("DIRECTOR_REVIEWED","Director-reviewed same-day exception"),
+    ]
+    site=models.ForeignKey("aftercare.DaycareSite",on_delete=models.PROTECT,related_name="reentry_authorizations")
+    child=models.ForeignKey("aftercare.DaycareChild",on_delete=models.PROTECT,related_name="reentry_authorizations")
+    previous_attendance=models.ForeignKey(
+        "aftercare.DaycareAttendance",on_delete=models.PROTECT,related_name="subsequent_reentry_authorizations")
+    director=models.ForeignKey(settings.AUTH_USER_MODEL,on_delete=models.PROTECT,related_name="diadem_reentry_authorizations")
+    care_date=models.DateField()
+    reason_code=models.CharField(max_length=24,choices=REASONS)
+    approved_at=models.DateTimeField()
+    expires_at=models.DateTimeField()
+    request_key=models.UUIDField(default=uuid.uuid4)
+    class Meta:
+        constraints=[
+            models.UniqueConstraint(fields=["school","request_key"],name="dia_reentry_request_uq"),
+            models.CheckConstraint(condition=models.Q(expires_at__gt=models.F("approved_at")),
+                                   name="dia_reentry_window_ck"),
+            models.CheckConstraint(
+                condition=models.Q(reason_code__in=["SCHEDULED_RETURN","DIRECTOR_REVIEWED"]),
+                name="dia_reentry_reason_ck",
+            ),
+        ]
+        indexes=[models.Index(fields=["school","child","care_date"],name="dia_reentry_child_day_idx")]
+
+    def clean(self):
+        super().clean()
+        self._require_same_school("site","child","previous_attendance","director")
+        previous=self.previous_attendance
+        if (previous.child_id!=self.child_id or previous.site_id!=self.site_id
+            or previous.care_date!=self.care_date or self.child.site_id!=self.site_id):
+            raise ValidationError("Director re-entry authorization must match the prior custody visit.")
+        if (not self.director.is_active or not self.director.roles.filter(
+            school_id=self.school_id,role_code="DAYCARE_DIRECTOR").exists()):
+            raise ValidationError("Active, explicitly assigned Diadem director required.")
+        if (self.approved_at is None or self.expires_at is None
+            or timezone.is_naive(self.approved_at) or timezone.is_naive(self.expires_at)
+            or self.expires_at<=self.approved_at):
+            raise ValidationError("Re-entry authorization requires a valid aware expiry window.")
+        from .daycare_release_models import DaycareRelease
+        previous_release_at=DaycareRelease.objects.filter(
+            school_id=self.school_id,attendance_id=self.previous_attendance_id
+        ).values_list("released_at",flat=True).first()
+        if previous_release_at is None:
+            raise ValidationError("Director cannot authorize an unreleased custody visit.")
+        if self.approved_at<previous_release_at:
+            raise ValidationError("Re-entry approval cannot precede the custody release.")
+
+    def save(self,*args,**kwargs):
+        if not self._state.adding:
+            raise ValidationError("Director re-entry authorization is append-only.")
         return super().save(*args,**kwargs)
