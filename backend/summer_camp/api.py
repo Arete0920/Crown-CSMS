@@ -355,7 +355,9 @@ def club_offerings_view(request):
             if enrollment_session_id is None:
                 return Response({"detail": "Forbidden"}, status=status.HTTP_403_FORBIDDEN)
             query = query.filter(
-                session_id=enrollment_session_id, status="PUBLISHED",
+                session_id=enrollment_session_id,
+                status="PUBLISHED",
+                club__is_active=True,
             )
         elif session_id:
             query = query.filter(session_id=session_id)
