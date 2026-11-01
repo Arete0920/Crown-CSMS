@@ -337,11 +337,27 @@ def club_detail_view(request, club_id):
 def club_offerings_view(request):
     school_id = school_id_from_request(request, required=True)
     if request.method == "GET":
-        if not _require_role(request, VIEW_ROLES):
-            return Response({"detail": "Forbidden"}, status=status.HTTP_403_FORBIDDEN)
         query = SummerCampClubOffering.objects.filter(school_id=school_id).select_related("club")
         session_id = request.query_params.get("session_id")
-        if session_id:
+        enrollment_id = request.query_params.get("enrollment_id")
+        if not _require_role(request, VIEW_ROLES):
+            if not enrollment_id or not _guardian_owns_enrollment(
+                request, school_id, enrollment_id
+            ):
+                return Response({"detail": "Forbidden"}, status=status.HTTP_403_FORBIDDEN)
+            enrollment_session_id = (
+                SummerCampEnrollment.objects.filter(
+                    pk=enrollment_id, school_id=school_id, status="REGISTERED",
+                )
+                .values_list("session_id", flat=True)
+                .first()
+            )
+            if enrollment_session_id is None:
+                return Response({"detail": "Forbidden"}, status=status.HTTP_403_FORBIDDEN)
+            query = query.filter(
+                session_id=enrollment_session_id, status="PUBLISHED",
+            )
+        elif session_id:
             query = query.filter(session_id=session_id)
         return Response(
             SummerCampClubOfferingSerializer(query.order_by("session_id", "start_time", "pk"), many=True).data
