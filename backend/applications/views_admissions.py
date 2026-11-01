@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import timedelta
-from decimal import Decimal, ROUND_HALF_UP
+from decimal import Decimal, ROUND_HALF_UP, InvalidOperation
 import logging
 import os
 import uuid
@@ -631,6 +631,28 @@ def _validate_application_fee(data: AdmissionsSubmitData, fee_policy: Any) -> st
     if not policy_accepted and not waiver_requested:
         return "applicationFee.policyAccepted or applicationFee.waiverRequested is required"
     return None
+
+
+def _fee_quote_matches(data: AdmissionsSubmitData, fee_policy: Any) -> bool:
+    quote = data.application_fee
+    schedule_id = str(quote.get("quoteScheduleId") or "").strip()
+    # Backwards-compatible legacy API clients do not yet send a quote token.
+    # The server always computes its own price; a supplied token must match.
+    if not schedule_id:
+        return True
+    if (
+        schedule_id != fee_policy.schedule_id
+        or str(quote.get("quoteSchoolId") or "") != fee_policy.school_id
+        or str(quote.get("quoteTerm") or "") != fee_policy.term
+    ):
+        return False
+    try:
+        return (
+            Decimal(str(quote.get("quoteFirstAmount"))) == fee_policy.amount_for_child(1)
+            and Decimal(str(quote.get("quoteAdditionalAmount"))) == fee_policy.amount_for_child(2)
+        )
+    except (InvalidOperation, ValueError, TypeError):
+        return False
 
 
 def _validate_submit_data(data: AdmissionsSubmitData, fee_policy: Any) -> str | None:
@@ -1304,8 +1326,10 @@ def _build_application_fee_status(data: AdmissionsSubmitData, fee_policy: Any) -
     fee_required = _application_fee_required(fee_policy)
     status = _application_fee_status_value(fee_required, waiver_requested)
     config = _application_fee_config(fee_policy)
+    family_total = sum((fee_policy.amount_for_child(i) for i in range(1, len(data.students) + 1)), Decimal("0.00"))
     return {
         **config,
+        "total_amount": str(family_total),
         "policy_accepted": policy_accepted,
         "waiver_requested": waiver_requested,
         "status": status,
@@ -1396,10 +1420,8 @@ def _resolve_finance_payer_user(*, school: Any, guardians: list[dict[str, Any]])
     return payer
 
 
-def _create_application_fee_finance_records(*, school: Any, data: AdmissionsSubmitData, application_ids: list[str], correlation_id: str, fee_policy: Any = None) -> dict[str, Any]:
+def _create_application_fee_finance_records(*, school: Any, data: AdmissionsSubmitData, application_ids: list[str], correlation_id: str, fee_policy: Any) -> dict[str, Any]:
     fee_status = _build_application_fee_status(data, fee_policy)
-    if fee_policy is not None:
-        fee_status.update({"required": fee_policy.required, "amount": str(fee_policy.amount_for_child(1)), "schedule_id": fee_policy.schedule_id, "status": _application_fee_status_value(fee_policy.required, bool(data.application_fee.get("waiverRequested")))})
     if not fee_status["required"]:
         fee_status["finance"] = {"state": "not_applicable"}
         return fee_status
@@ -1487,13 +1509,6 @@ def _create_application_fee_finance_records(*, school: Any, data: AdmissionsSubm
         "collection_path": PAYMENT_INTENT_ENDPOINT,
     }
     fee_status["per_child_schedule"] = _fee_rows_for_household(data, application_ids, fee_policy)
-    if fee_policy is not None:
-        for row in fee_status["per_child_schedule"]:
-            amount = fee_policy.amount_for_child(row["child_index"])
-            old = Decimal(row["application_fee"])
-            row["application_fee"] = str(amount)
-            row["total"] = str(Decimal(row["total"]) - old + amount)
-            row["discount_percent"] = 0
     fee_status["payment_handoff"] = _build_payment_handoff(
         invoice_id=invoice.id,
         amount_cents=amount_cents_total,
@@ -2839,22 +2854,42 @@ def _build_drilldown_rows(apps, applicants_qs, stage_facts: dict, stage_filter: 
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def admissions_public_config(request):
-    # Public callers must identify a unique school and a school year to obtain a quote.
-    # Never expose a deployment-global tuition or application fee.
+    # A public quote is available only for an unambiguous active school and term.
+    # Campus-only applicants receive the school's UUID after exact name resolution.
     school_id = str(request.query_params.get("school_id") or "").strip()
+    campus = str(request.query_params.get("campus") or "").strip()
     term = str(request.query_params.get("term") or "").strip()
-    if not school_id or not term:
-        return Response({"application_fee": _application_fee_config(), "assessment_interview": _assessment_interview_config()})
-    try:
-        school = School.objects.filter(pk=uuid.UUID(school_id), is_active=True).first()
-    except (ValueError, AttributeError):
-        return Response({"detail": "Invalid school identifier.", "code": "invalid_school"}, status=400)
-    if school is None:
-        return Response({"detail": "School not found.", "code": "school_not_found"}, status=404)
+    if not term or (not school_id and not campus):
+        response = Response({
+            "application_fee": _application_fee_config(),
+            "assessment_interview": _assessment_interview_config(),
+        })
+        response["Cache-Control"] = "no-store"
+        return response
+
+    if school_id:
+        try:
+            school = School.objects.filter(pk=uuid.UUID(school_id), is_active=True).only("id", "name").first()
+        except (ValueError, AttributeError):
+            return Response({"detail": "Invalid school identifier.", "code": "invalid_school"}, status=400)
+        if school is None:
+            return Response({"detail": "School not found.", "code": "school_not_found"}, status=404)
+        if campus and school.name.casefold() != campus.casefold():
+            return Response({"detail": "School and campus do not match.", "code": "school_mismatch"}, status=409)
+    else:
+        matches = list(School.objects.filter(name__iexact=campus, is_active=True).only("id", "name")[:2])
+        if len(matches) != 1:
+            return Response({
+                "detail": "An unambiguous school selection is required.",
+                "code": "school_ambiguous" if matches else "school_not_found",
+            }, status=409 if matches else 404)
+        school = matches[0]
+
     fee_policy = get_admissions_fee_policy(school=school, term=term)
-    if fee_policy is None:
-        return Response({"application_fee": _application_fee_config(), "assessment_interview": _assessment_interview_config()})
-    response = Response({"application_fee": _application_fee_config(fee_policy), "assessment_interview": _assessment_interview_config()})
+    response = Response({
+        "application_fee": _application_fee_config(fee_policy),
+        "assessment_interview": _assessment_interview_config(),
+    })
     response["Cache-Control"] = "no-store"
     return response
 
@@ -2909,34 +2944,30 @@ def _resolve_school(request):
 
 def _resolve_school_for_submit(request: Any, payload: dict[str, Any]):
     school, tenant_error = _resolve_school(request)
+    inquiry = payload.get("inquiry") or {}
+    campus = str(inquiry.get("campus") or "").strip()
+
     if school is not None:
+        if not school.is_active or (campus and school.name.casefold() != campus.casefold()):
+            return None, Response({"detail": "School and campus do not match.", "code": "school_mismatch"}, status=409)
         return school, None
 
     error_code = (tenant_error.data or {}).get("code") if hasattr(tenant_error, "data") else None
     if error_code == "invalid_tenant_header":
         return None, tenant_error
-
-    inquiry = payload.get("inquiry") or {}
-    campus = str(inquiry.get("campus") or "").strip()
     if not campus:
         return None, _validation_error(
             "Missing required header: X-School-Id. Provide inquiry.campus for public submit routing.",
             code="missing_tenant",
         )
 
-    school = School.objects.filter(name__iexact=campus).only("id", "name").first()
-    if school is None:
-        school = School.objects.filter(name__icontains=campus).only("id", "name").first()
-
-    if school is None:
-        return None, Response(
-            {
-                "detail": f"Unable to resolve school for campus '{campus}'.",
-                "code": "invalid_tenant",
-            },
-            status=404,
-        )
-
+    matches = list(School.objects.filter(name__iexact=campus, is_active=True).only("id", "name")[:2])
+    if len(matches) != 1:
+        return None, Response({
+            "detail": "An unambiguous active school is required.",
+            "code": "school_ambiguous" if matches else "invalid_tenant",
+        }, status=409 if matches else 404)
+    school = matches[0]
     request.school = school
     request.school_id = str(school.id)
     return school, None
@@ -3292,6 +3323,9 @@ def _admissions_submit_impl(request):
     school, tenant_error = _resolve_school_for_submit(request, payload)
     if tenant_error is not None:
         return _attach_correlation(tenant_error, correlation_id)
+    # Serialize same-school admissions writes across workers. This also guards
+    # fee-obligation references against concurrent direct submission retries.
+    School.objects.select_for_update().get(pk=school.pk)
 
     inquiry_lead = None
     if "inquiry_id" in payload or "continuation_token" in payload:
@@ -3326,6 +3360,8 @@ def _admissions_submit_impl(request):
     fee_policy = get_admissions_fee_policy(school=school, term=submit_data.start_term)
     if fee_policy is None:
         return _attach_correlation(Response({"detail": "Admissions fees are not configured for this school and term.", "code": "fee_policy_unavailable"}, status=409), correlation_id)
+    if not _fee_quote_matches(submit_data, fee_policy):
+        return _attach_correlation(Response({"detail": "The quoted fee schedule has changed. Refresh before submitting.", "code": "stale_fee_quote"}, status=409), correlation_id)
     validation_error = _validate_submit_data(submit_data, fee_policy)
     if validation_error:
         return _attach_correlation(
@@ -3429,10 +3465,12 @@ def _admissions_submit_impl(request):
 
     if idempotency_key and inquiry_lead is None:
         # Keep replay window short but long enough for user retries and browser retransmits.
-        cache.set(
-            _cache_key_for_submit(school.pk, idempotency_key),
-            response_payload,
-            timeout=10 * 60,
+        transaction.on_commit(
+            lambda: cache.set(
+                _cache_key_for_submit(school.pk, idempotency_key),
+                response_payload,
+                timeout=10 * 60,
+            )
         )
 
     response = _attach_correlation(Response(response_payload, status=201), correlation_id)
