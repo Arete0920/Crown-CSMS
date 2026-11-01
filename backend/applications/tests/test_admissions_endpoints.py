@@ -724,7 +724,9 @@ class AdmissionsEndpointsTests(APITestCase):
         ).update(amount_cents=0)
         before_invoices = FinanceInvoice.objects.filter(school=self.school).count()
         before_obligations = FinanceObligation.objects.filter(school=self.school).count()
-        response = self.client.post("/api/v1/admissions/submit/", self._submit_payload(), format="json")
+        payload = self._submit_payload()
+        payload["applicationFee"] = {"policyAccepted": False, "waiverRequested": False}
+        response = self.client.post("/api/v1/admissions/submit/", payload, format="json")
         self.assertEqual(response.status_code, 201, response.data)
         self.assertEqual(response.data["application_fee"]["total_amount"], "0.00")
         self.assertEqual(response.data["application_fee"]["finance"]["state"], "not_applicable")
