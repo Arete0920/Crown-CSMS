@@ -717,6 +717,35 @@ class AdmissionsEndpointsTests(APITestCase):
         self.assertIsNone(items["enrollment_fee"]["amount"])
         self.assertEqual(response.data["fee_config"]["amount"], "85.00")
 
+    def test_three_child_quote_matches_invoice_and_obligations(self):
+        self.client.force_authenticate(user=None)
+        payload = self._submit_payload()
+        payload["students"].extend([
+            {**payload["students"][0], "firstName": "Blair"},
+            {**payload["students"][0], "firstName": "Casey"},
+        ])
+        response = self.client.post("/api/v1/admissions/submit/", payload, format="json")
+        self.assertEqual(response.status_code, 201, response.data)
+        fee = response.data["application_fee"]
+        self.assertEqual(fee["total_amount"], "185.00")
+        self.assertEqual(
+            [row["application_fee"] for row in fee["per_child_schedule"]],
+            ["85.00", "50.00", "50.00"],
+        )
+        finance = fee["finance"]
+        self.assertEqual(finance["state"], "invoiced")
+        invoice = FinanceInvoice.objects.get(pk=finance["invoice_id"], school=self.school)
+        self.assertEqual(invoice.subtotal_cents, 18500)
+        self.assertEqual(invoice.total_cents, 18500)
+        obligations = FinanceObligation.objects.filter(
+            school=self.school, pk__in=finance["obligation_ids"]
+        )
+        self.assertEqual(obligations.count(), 3)
+        self.assertEqual(sum(ob.amount_cents for ob in obligations), 18500)
+        self.assertEqual(
+            sorted(ob.amount_cents for ob in obligations), [5000, 5000, 8500]
+        )
+
     def test_submission_rejects_unconfigured_fee_policy(self):
         self.client.force_authenticate(user=None)
         self.fee_schedule.is_active = False
