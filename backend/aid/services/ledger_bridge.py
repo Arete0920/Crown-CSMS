@@ -19,7 +19,7 @@ from django.core.exceptions import ValidationError
 from django.db import transaction
 
 from aid.models import AidAuditEvent, AidAward, AidBudgetTracker
-from core.models import HouseholdFamilyLink
+from core.models import HouseholdFamilyLink, LedgerEntry
 from households.models import Household
 from ledger.models import Credit, LedgerAccount
 from ledger.services import post_account_credit
@@ -27,6 +27,10 @@ from ledger.services import post_account_credit
 
 class AidBudgetError(Exception):
     """Raised when an award would exceed the remaining bucket budget."""
+
+
+class AidApprovalConflictError(ValidationError):
+    """Known financial-integrity conflict; never a general validation failure."""
 
 
 def _award_credit_reference(award: AidAward) -> str:
@@ -57,10 +61,41 @@ def _ensure_student_account_credit(*, award: AidAward, actor_user):
     Idempotently dual-write an accepted Aid award into Student Accounts.
 
     Household identity is resolved only through the existing canonical
-    HouseholdFamilyLink. Missing/ambiguous mappings are recorded as migration
-    exceptions and do not break the still-active legacy posting path.
+    HouseholdFamilyLink. Before a Credit exists, missing/ambiguous mappings
+    defer projection with an audit event. Reusing a Credit requires a unique
+    mapping to its original household; unverifiable history is never repaired.
     """
+    # The award lock held by both callers serializes approval/decline. Bind
+    # projection and replay to the original posting, even when no Credit exists
+    # yet; an accepted row alone is not proof of its current financial facts.
+    original = award.ledger_entry
+    if (
+        original is None
+        or award.awarded_cents <= 0
+        or original.school_id != award.school_id
+        or original.student_id != award.student_id
+        or original.family_id != award.student.family_id
+        or original.academic_year_id != award.academic_year_id
+        or original.source != LedgerEntry.SOURCE_AID_AWARD
+        or original.family.school_id != award.school_id
+        or original.account.school_id != award.school_id
+        or original.account.code != "AID"
+        or original.amount_cents != -int(award.awarded_cents)
+        or original.is_reversal
+        or original.reversal_of_id is not None
+        or original.reversals.exists()
+    ):
+        raise AidApprovalConflictError("Legacy aid entry requires controlled reconciliation")
+
     reference = _award_credit_reference(award)
+    household_ids = list(
+        HouseholdFamilyLink.objects.filter(
+            school=award.school,
+            family=award.student.family,
+        )
+        .values_list("household_id", flat=True)
+        .distinct()
+    )
     existing = Credit.objects.filter(
         school_id=award.school_id,
         source=Credit.SOURCE_FINANCIAL_AID,
@@ -76,22 +111,16 @@ def _ensure_student_account_credit(*, award: AidAward, actor_user):
         if (
             existing.is_void
             or existing.amount != expected_amount
+            or len(household_ids) != 1
+            or existing.account.household_id != household_ids[0]
             or existing.account.school_id != award.school_id
             or existing.account.household.school_id != award.school_id
         ):
-            raise ValidationError(
+            raise AidApprovalConflictError(
                 "Existing financial aid credit requires controlled reconciliation"
             )
         return existing
 
-    household_ids = list(
-        HouseholdFamilyLink.objects.filter(
-            school=award.school,
-            family=award.student.family,
-        )
-        .values_list("household_id", flat=True)
-        .distinct()
-    )
     if len(household_ids) != 1:
         reason = "household_family_link_missing" if not household_ids else "household_family_link_ambiguous"
         _log_credit_deferred_once(award=award, actor_user=actor_user, reason=reason)
@@ -197,14 +226,17 @@ def approve_award(
         or award.student.family.school_id != award.school_id
         or award.academic_year.school_id != award.school_id
     ):
-        raise ValidationError("Award student/family/year school mismatch")
+        raise AidApprovalConflictError("Award student/family/year school mismatch")
+
+    if award.decision_status == AidAward.DECISION_DECLINED:
+        raise AidApprovalConflictError("Declined aid award requires controlled reinstatement")
 
     # Retry-safe migration behavior: an already-approved award does not consume
     # budget again, but can repair a previously missing Student Accounts credit
     # after its household-family mapping becomes available.
     if award.decision_status == AidAward.DECISION_ACCEPTED:
         if award.ledger_entry_id is None:
-            raise ValidationError("Accepted award without legacy posting requires controlled reconciliation")
+            raise AidApprovalConflictError("Accepted award without legacy posting requires controlled reconciliation")
         _ensure_student_account_credit(award=award, actor_user=actor_user)
         return award
 

@@ -27,7 +27,7 @@ from aid.serializers import (
 )
 from aid.services.award_engine import recommend_award
 from aid.services.profile_service import build_engine_application, build_review_signals, carry_forward_profile
-from aid.services.ledger_bridge import AidBudgetError, approve_award
+from aid.services.ledger_bridge import AidApprovalConflictError, AidBudgetError, approve_award
 from core.models import AcademicYear, LedgerEntry, Student
 from core.permissions import CrownModulePermission, user_has_permission
 from households.scoping import MissingSchoolContext, get_request_school_id
@@ -423,7 +423,11 @@ def admin_approve_award(request, award_id):
     409 if bucket budget would be exceeded.
     """
     school_id = get_request_school_id(request)
+    if not isinstance(request.data, dict):
+        return Response({"detail": "Request body must be an object."}, status=status.HTTP_400_BAD_REQUEST)
     reason = request.data.get("reason", "")
+    if not isinstance(reason, str):
+        return Response({"detail": "reason must be a string."}, status=status.HTTP_400_BAD_REQUEST)
 
     try:
         award = AidAward.objects.get(pk=award_id, school_id=school_id)
@@ -442,6 +446,16 @@ def admin_approve_award(request, award_id):
     except AidBudgetTracker.DoesNotExist:
         return Response(
             {"error": "No budget tracker found for this bucket. Create one before approving."},
+            status=status.HTTP_409_CONFLICT,
+        )
+
+    except AidApprovalConflictError:
+        logger.warning(
+            "admin_approve_award: posting conflict requiring controlled reconciliation",
+            extra={"award_id": award_id},
+        )
+        return Response(
+            {"error": "Award posting requires controlled reconciliation."},
             status=status.HTTP_409_CONFLICT,
         )
 
