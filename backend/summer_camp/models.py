@@ -301,8 +301,11 @@ class SummerCampClubOffering(models.Model):
             raise ValidationError("Club offering session belongs to another school.")
         if self.club_id and self.club.school_id != self.school_id:
             raise ValidationError("Club offering catalog item belongs to another school.")
-        if self.instructor_id and getattr(self.instructor, "school_id", None) != self.school_id:
-            raise ValidationError("Club instructor belongs to another school.")
+        if self.instructor_id:
+            if getattr(self.instructor, "school_id", None) != self.school_id:
+                raise ValidationError("Club instructor belongs to another school.")
+            if not getattr(self.instructor, "is_active", False):
+                raise ValidationError("Club instructor must be active.")
         if (
             not isinstance(self.weekdays, list)
             or len(self.weekdays) > 7
@@ -355,6 +358,10 @@ class SummerCampClubSelection(models.Model):
             and self.offering.session_id != self.enrollment.session_id
         ):
             raise ValidationError("Club selection must use the enrollment's camp session.")
+        if self.status == "WAITLISTED" and not self.waitlist_position:
+            raise ValidationError("Waitlisted club selection requires a positive waitlist position.")
+        if self.status != "WAITLISTED" and self.waitlist_position is not None:
+            raise ValidationError("Only waitlisted club selections may have a waitlist position.")
 
     def save(self, *args, **kwargs):
         self.full_clean()
