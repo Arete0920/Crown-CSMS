@@ -2838,13 +2838,25 @@ def _build_drilldown_rows(apps, applicants_qs, stage_facts: dict, stage_filter: 
 
 @api_view(["GET"])
 @permission_classes([AllowAny])
-def admissions_public_config(_request):
-    return Response(
-        {
-            "application_fee": _application_fee_config(),
-            "assessment_interview": _assessment_interview_config(),
-        }
-    )
+def admissions_public_config(request):
+    # Public callers must identify a unique school and a school year to obtain a quote.
+    # Never expose a deployment-global tuition or application fee.
+    school_id = str(request.query_params.get("school_id") or "").strip()
+    term = str(request.query_params.get("term") or "").strip()
+    if not school_id or not term:
+        return Response({"application_fee": _application_fee_config(), "assessment_interview": _assessment_interview_config()})
+    try:
+        school = School.objects.filter(pk=uuid.UUID(school_id), is_active=True).first()
+    except (ValueError, AttributeError):
+        return Response({"detail": "Invalid school identifier.", "code": "invalid_school"}, status=400)
+    if school is None:
+        return Response({"detail": "School not found.", "code": "school_not_found"}, status=404)
+    fee_policy = get_admissions_fee_policy(school=school, term=term)
+    if fee_policy is None:
+        return Response({"application_fee": _application_fee_config(), "assessment_interview": _assessment_interview_config()})
+    response = Response({"application_fee": _application_fee_config(fee_policy), "assessment_interview": _assessment_interview_config()})
+    response["Cache-Control"] = "no-store"
+    return response
 
 
 def _resolve_school(request):
