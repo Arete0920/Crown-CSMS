@@ -2,6 +2,7 @@ from copy import deepcopy
 import os
 
 from django.conf import settings
+from django.db import DatabaseError
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.exceptions import NotFound, ValidationError
@@ -30,6 +31,7 @@ from .live_personas import (
 )
 from .models import DashboardSnapshot
 from .payload_contract import validate_dashboard_payload
+from .program_live_payloads import PROGRAM_PERMISSIONS, build_program_live_payload, validate_program_payload
 from .sample_payloads import SAMPLE_PAYLOAD_BUILDERS
 from .batch5_extra_payloads import BATCH5_EXTRA_PAYLOAD_BUILDERS
 import uuid as _uuid
@@ -291,6 +293,44 @@ class DashboardSummaryView(APIView):
             )
 
         school_id = _school_id_from_request(request)
+
+        if key in PROGRAM_PERMISSIONS:
+            # Program records never use staff/superuser tenant overrides, samples
+            # or stored snapshots. Establish scope and grants before reading them.
+            raw = request.META.get('HTTP_X_SCHOOL_ID', '').strip()
+            if not raw:
+                raise ValidationError({'detail': 'X-School-Id header is required.'})
+            try:
+                selected = _uuid.UUID(raw)
+                alias = request.META.get('HTTP_X_CROWN_SCHOOL_ID')
+                if alias and _uuid.UUID(alias.strip()) != selected:
+                    raise NotFound({'detail': 'Not found.'})
+            except (ValueError, AttributeError):
+                raise ValidationError({'detail': 'Invalid X-School-Id (must be a UUID).'})
+            from households.scoping import get_request_school_id
+            from core.models import School
+
+            bound = getattr(request, 'school', None)
+            if bound is not None and str(bound.id) != str(selected):
+                raise NotFound({'detail': 'Not found.'})
+            if (str(getattr(user, 'school_id', '')) != str(selected)
+                    or get_request_school_id(request) != selected):
+                raise NotFound({'detail': 'Not found.'})
+            school = School.objects.filter(pk=selected, is_active=True).first()
+            if school is None:
+                raise NotFound({'detail': 'Not found.'})
+            if not user_has_permission(user, PROGRAM_PERMISSIONS[key], school=school):
+                return Response({'detail': 'Forbidden.'}, status=status.HTTP_403_FORBIDDEN)
+            try:
+                payload = build_program_live_payload(key, school)
+                validate_program_payload(payload, school)
+                if payload['dashboard_key'] != key:
+                    raise ValueError('Mismatched program payload.')
+            except (DatabaseError, ValueError, TypeError, KeyError):
+                return Response({'code': 'program_dashboard_unavailable',
+                                 'detail': 'Authoritative program metrics are unavailable.'},
+                                status=status.HTTP_503_SERVICE_UNAVAILABLE)
+            return Response(payload, status=status.HTTP_200_OK)
 
         if key in STAFF_ONLY_DASHBOARDS:
             if not getattr(user, 'is_staff', False) and not getattr(user, 'is_superuser', False):
