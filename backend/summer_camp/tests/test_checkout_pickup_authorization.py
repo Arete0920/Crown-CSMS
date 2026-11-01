@@ -207,3 +207,310 @@ def test_school_civil_midnight_checkin_release_needs_approved_staff_evidence():
     assert release.pk == attendance.pk and release.date == DAY
     assert release.checkout_time == departed and release.pickup_contact_id == c.pickup.id
     assert release.pickup_verified_by_id == c.actor.id
+
+
+def test_real_school_local_midnight_allows_verified_overnight_pickup():
+    from summer_camp.services import roster_today
+    from unittest.mock import patch
+
+    c = _case("RealLocalMidnight")
+    c.school.timezone = "America/Los_Angeles"
+    c.school.save(update_fields=["timezone"])
+    # 23:55 local Sep 3 -> 00:05 local Sep 4; UTC days both Sep 4.
+    arrived = datetime(2025, 9, 4, 6, 55, tzinfo=utc.utc)
+    departed = datetime(2025, 9, 4, 7, 5, tzinfo=utc.utc)
+    c.attendance.checkin_time = arrived
+    c.attendance.save(update_fields=["checkin_time"])
+    with patch("summer_camp.services.timezone.now", return_value=departed):
+        before = roster_today(c.school.id)
+    assert before["date"] == "2025-09-04"
+    open_record = [r for r in before["rows"] if r["attendance_id"] == str(c.attendance.id)]
+    assert len(open_record) == 1
+    assert open_record[0]["unresolved_custody"] is True
+    assert open_record[0]["checkout_time"] is None
+    released = _release(c, at=departed)
+    assert released.id == c.attendance.id
+    assert released.pickup_verified_by_id == c.actor.id
+    assert released.pickup_contact_id == c.pickup.id
+
+
+def test_open_custody_beyond_previous_day_is_visible_but_not_releasable():
+    from summer_camp.services import roster_today
+    from unittest.mock import patch
+
+    c = _case("StaleCustody")
+    c.school.timezone = "America/Los_Angeles"
+    c.school.save(update_fields=["timezone"])
+    later = datetime(2025, 9, 6, 18, tzinfo=utc.utc)
+    with patch("summer_camp.services.timezone.now", return_value=later):
+        data = roster_today(c.school.id)
+    rows = [r for r in data["rows"] if r["attendance_id"] == str(c.attendance.id)]
+    assert len(rows) == 1
+    assert rows[0]["unresolved_custody"]
+    assert rows[0]["requires_supervisor_reconciliation"]
+    with pytest.raises(ValueError, match="Older camp custody"):
+        _release(c, at=later)
+    _unchanged(c)
+
+
+def test_multiple_open_camp_sessions_require_supervisor_reconciliation():
+    c = _case("AmbiguousCustody")
+    other_session = _session(c.school, "AmbiguousSecond")
+    SummerCampAttendance.objects.create(
+        school=c.school, session=other_session, student=c.child,
+        date=DAY, checkin_time=ARRIVAL,
+    )
+    with pytest.raises(ValueError, match="Multiple open camp custody"):
+        _release(c)
+    _unchanged(c)
+
+
+def test_camp_roster_uses_school_local_day_not_utc_day():
+    from summer_camp.services import roster_today
+    from unittest.mock import patch
+
+    c = _case("LocalDayRoster")
+    c.school.timezone = "America/Los_Angeles"
+    c.school.save(update_fields=["timezone"])
+    c.session.status = "PUBLISHED"
+    c.session.save(update_fields=["status"])
+    # UTC Sep 4 at 00:30 is Sep 3 at 17:30 in Los Angeles.
+    instant = datetime(2025, 9, 4, 0, 30, tzinfo=utc.utc)
+    with patch("summer_camp.services.timezone.now", return_value=instant):
+        roster = roster_today(c.school.id)
+    assert roster["date"] == "2025-09-03"
+    rows = [r for r in roster["rows"] if r["attendance_id"] == str(c.attendance.id)]
+    assert len(rows) == 1
+    assert rows[0]["student_id"] == str(c.child.id)
+
+
+
+def test_overnight_open_custody_suppresses_another_sessions_scheduled_roster():
+    """A child may have a new registration without being released from yesterday."""
+    from unittest.mock import patch
+    from summer_camp.services import roster_today
+
+    c = _case("CrossSessionRollover")
+    c.school.timezone = "America/Los_Angeles"
+    c.school.save(update_fields=["timezone"])
+    other_session = _session(c.school, "NextDay")
+    other_session.start_date = date(2025, 9, 4)
+    other_session.end_date = date(2025, 9, 4)
+    other_session.status = "PUBLISHED"
+    other_session.save(update_fields=["start_date", "end_date", "status"])
+    SummerCampEnrollment.objects.create(
+        school=c.school, session=other_session, student=c.child, status="REGISTERED",
+    )
+    current = datetime(2025, 9, 4, 17, tzinfo=utc.utc)  # 10 AM local
+    with patch("summer_camp.services.timezone.now", return_value=current):
+        roster = roster_today(c.school.id)
+
+    matching = [row for row in roster["rows"] if row["student_id"] == str(c.child.id)]
+    assert len(matching) == 1
+    assert matching[0]["session_id"] == str(c.session.id)
+    assert matching[0]["attendance_id"] == str(c.attendance.id)
+    assert matching[0]["unresolved_custody"] is True
+    assert matching[0]["checkout_time"] is None
+    assert not any(row["session_id"] == str(other_session.id) for row in matching)
+
+    with pytest.raises(ValueError, match="different session"):
+        checkout_camper(
+            c.school.id, c.child.id, other_session.id,
+            pickup_contact_id=c.pickup.id, pickup_verified=True,
+            when=current, verified_by=c.actor,
+        )
+    _unchanged(c)
+
+
+def test_cancelled_enrollment_cannot_hide_unresolved_camp_child_custody():
+    """No active registration must not erase an existing child custody record."""
+    from unittest.mock import patch
+    from summer_camp.services import roster_today
+
+    c = _case("CancelledOpenCustody")
+    c.school.timezone = "America/Los_Angeles"
+    c.school.save(update_fields=["timezone"])
+    c.enrollment.status = "CANCELLED"
+    c.enrollment.save(update_fields=["status"])
+    current = datetime(2025, 9, 4, 17, tzinfo=utc.utc)
+    with patch("summer_camp.services.timezone.now", return_value=current):
+        roster = roster_today(c.school.id)
+
+    matching = [row for row in roster["rows"] if row["attendance_id"] == str(c.attendance.id)]
+    assert len(matching) == 1
+    assert matching[0]["unresolved_custody"] is True
+    assert matching[0]["requires_supervisor_reconciliation"] is True
+    assert matching[0]["enrollment_id"] is None
+    assert matching[0]["checkout_time"] is None
+    _unchanged(c)
+
+
+def test_inconsistent_local_custody_date_blocks_release_without_mutation():
+    """Malformed historical attendance is a supervisor hold, not a free checkout."""
+    c = _case("InconsistentLocalDay")
+    c.school.timezone = "America/Los_Angeles"
+    c.school.save(update_fields=["timezone"])
+    # 00:30 UTC on Sep 4 is still Sep 3 at the school.
+    c.attendance.checkin_time = datetime(2025, 9, 4, 0, 30, tzinfo=utc.utc)
+    c.attendance.date = date(2025, 9, 4)  # Deliberately wrong civil date.
+    c.attendance.save(update_fields=["checkin_time", "date"])
+    with pytest.raises(ValueError, match="check-in date mismatch"):
+        _release(c, at=datetime(2025, 9, 4, 18, tzinfo=utc.utc))
+    _unchanged(c)
+
+
+def test_cross_school_session_fk_never_authorizes_camp_release():
+    """Legacy mismatched tenant FKs cannot turn staff attestation into release."""
+    current = _case("ForeignSessionCurrent")
+    foreign = _case("ForeignSessionOther")
+    # Model foreign keys do not themselves enforce same-school ownership.
+    # Simulate a damaged legacy enrollment/attendance pointing to another
+    # school's session without changing the current student's school.
+    current.enrollment.session = foreign.session
+    current.enrollment.save(update_fields=["session"])
+    current.attendance.session = foreign.session
+    current.attendance.save(update_fields=["session"])
+    with pytest.raises(ValueError, match="Camp session does not belong to this school"):
+        checkout_camper(
+            current.school.id, current.child.id, foreign.session.id,
+            pickup_contact_id=current.pickup.id,
+            pickup_verified=True, when=DEPARTURE,
+            verified_by=current.actor,
+        )
+    _unchanged(current)
+
+
+def test_camp_roster_contract_exposes_status_and_school_custody_counts():
+    """Keep the existing staff pickup UI contract consistent across custody PRs."""
+    from unittest.mock import patch
+    from summer_camp.services import roster_today
+
+    c = _case("RosterContract")
+    c.school.timezone = "UTC"
+    c.school.save(update_fields=["timezone"])
+    present = datetime(2025, 9, 3, 12, tzinfo=utc.utc)
+    with patch("summer_camp.services.timezone.now", return_value=present):
+        roster = roster_today(c.school.id)
+    matching = [row for row in roster["rows"] if row["student_id"] == str(c.child.id)]
+    assert len(matching) == 1
+    assert matching[0]["status"] == "REGISTERED"
+    assert matching[0]["open_custody_count"] == 1
+    assert matching[0]["unresolved_custody"] is True
+    assert matching[0]["requires_supervisor_reconciliation"] is False
+    assert roster["unresolved_custody_count"] == 0
+
+    c.enrollment.status = "CANCELLED"
+    c.enrollment.save(update_fields=["status"])
+    with patch("summer_camp.services.timezone.now", return_value=present):
+        cancelled = roster_today(c.school.id)
+    hold = [row for row in cancelled["rows"] if row["attendance_id"] == str(c.attendance.id)]
+    assert len(hold) == 1
+    assert hold[0]["status"] == "UNLINKED_CUSTODY"
+    assert hold[0]["open_custody_count"] == 1
+    assert hold[0]["requires_supervisor_reconciliation"] is True
+    assert cancelled["unresolved_custody_count"] == 1
+
+
+def test_orphan_null_student_custody_does_not_hide_external_camp_enrollments():
+    """Orphan records need attention, not suppression of all external campers."""
+    from unittest.mock import patch
+    from summer_camp.services import roster_today
+
+    c = _case("ExternalOrphan")
+    c.school.timezone = "UTC"
+    c.school.save(update_fields=["timezone"])
+    external = SummerCampEnrollment.objects.create(
+        school=c.school, session=c.session, student=None, status="REGISTERED",
+    )
+    orphan = SummerCampAttendance.objects.create(
+        school=c.school, session=c.session, student=None,
+        date=DAY, checkin_time=ARRIVAL,
+    )
+    present = datetime(2025, 9, 3, 12, tzinfo=utc.utc)
+    with patch("summer_camp.services.timezone.now", return_value=present):
+        roster = roster_today(c.school.id)
+    enrolled = [row for row in roster["rows"] if row["enrollment_id"] == str(external.id)]
+    assert len(enrolled) == 1
+    assert enrolled[0]["status"] == "REGISTERED"
+    assert enrolled[0]["student_name"] == "External Camper"
+    assert enrolled[0]["student_id"] is None
+    orphans = [row for row in roster["rows"] if row["attendance_id"] == str(orphan.id)]
+    assert len(orphans) == 1
+    assert orphans[0]["requires_supervisor_reconciliation"] is True
+    assert orphans[0]["unresolved_custody"] is True
+
+
+def test_camp_school_local_midnight_checkout_and_replay():
+    c = _case("RealLocalMidnight")
+    c.school.timezone = "America/Los_Angeles"
+    c.school.save(update_fields=["timezone"])
+    c.attendance.checkin_time = datetime(2025, 9, 4, 6, 55, tzinfo=utc.utc)
+    c.attendance.save(update_fields=["checkin_time"])
+    released_at = datetime(2025, 9, 4, 7, 5, tzinfo=utc.utc)
+    from summer_camp.services import roster_today
+    released = _release(c, at=released_at)
+    assert released.pk == c.attendance.pk
+    assert released.checkout_time == released_at
+    assert released.pickup_verified_by_id == c.actor.id
+    with pytest.raises(ValueError, match="already been checked out"):
+        _release(c, at=released_at)
+
+
+def test_multiple_open_camp_custody_records_fail_closed():
+    c = _case("AmbiguousCustody")
+    SummerCampAttendance.objects.create(
+        school=c.school, session=c.session, student=c.child,
+        date=DAY.replace(day=2), checkin_time=ARRIVAL - timezone.timedelta(days=1),
+    )
+    with pytest.raises(ValueError, match="Multiple open camp custody"):
+        _release(c)
+    _unchanged(c)
+    assert SummerCampAttendance.objects.filter(
+        school=c.school, session=c.session, student=c.child,
+        checkout_time__isnull=True,
+    ).count() == 2
+
+
+def test_old_unresolved_camp_custody_remains_visible_without_auto_release(monkeypatch):
+    from summer_camp import services
+    c = _case("OldCustody")
+    c.school.timezone = "America/Los_Angeles"
+    c.school.save(update_fields=["timezone"])
+    present = datetime(2025, 9, 8, 15, tzinfo=utc.utc)
+    monkeypatch.setattr(services.timezone, "now", lambda: present)
+    roster = services.roster_today(c.school.id)
+    records = [row for row in roster["rows"] if row["student_id"] == str(c.child.id)]
+    assert len(records) == 1
+    assert records[0]["checkin_time"] is not None
+    assert records[0]["requires_supervisor_reconciliation"] is True
+    assert records[0]["open_custody_count"] == 1
+    with pytest.raises(ValueError, match="supervisor reconciliation"):
+        _release(c, at=present)
+    _unchanged(c)
+
+
+def test_camp_roster_uses_school_civil_date_during_utc_rollover(monkeypatch):
+    from summer_camp import services
+    c = _case("UtcRolloverRoster")
+    c.school.timezone = "America/Los_Angeles"
+    c.school.save(update_fields=["timezone"])
+    at = datetime(2025, 9, 4, 0, 30, tzinfo=utc.utc)
+    monkeypatch.setattr(services.timezone, "now", lambda: at)
+    roster = services.roster_today(c.school.id)
+    assert roster["date"] == "2025-09-03"
+    assert any(row["student_id"] == str(c.child.id) for row in roster["rows"])
+
+
+def test_camp_open_custody_after_registration_cancellation_still_visible(monkeypatch):
+    from summer_camp import services
+    c = _case("CancelledCustody")
+    c.enrollment.status = "CANCELLED"
+    c.enrollment.save(update_fields=["status"])
+    monkeypatch.setattr(services.timezone, "now", lambda: DEPARTURE)
+    roster = services.roster_today(c.school.id)
+    matching = [row for row in roster["rows"] if row["student_id"] == str(c.child.id)]
+    assert len(matching) == 1
+    assert matching[0]["requires_supervisor_reconciliation"] is True
+    with pytest.raises(ValueError, match="One active camp registration"):
+        _release(c)
+    _unchanged(c)

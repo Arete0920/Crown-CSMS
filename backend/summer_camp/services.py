@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import timedelta
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from django.db import transaction
@@ -269,6 +270,14 @@ def checkin_camper(school_id, student_id, session_id, when=None, note=""):
     if session is None:
         raise ValueError("Camp session is not available for check-in.")
 
+    # Serialize all Camp admissions for the same child across sessions and
+    # school-local dates, not just the unique row for one session/day.
+    student = Student.objects.select_for_update().filter(
+        pk=student_id, school_id=school_id, is_active=True,
+    ).first()
+    if student is None:
+        raise ValueError("Camper does not have exactly one active registration for this session.")
+
     # Checkout already requires a unique current registration; admission
     # must not pick an arbitrary row from ambiguous legacy enrollments.
     active = list(
@@ -292,6 +301,12 @@ def checkin_camper(school_id, student_id, session_id, when=None, note=""):
         student_id=student_id, date=attendance_day,
     ).exists():
         raise ValueError("Camper has already been checked in for this session and date.")
+
+    if SummerCampAttendance.objects.filter(
+        school_id=school_id, student_id=student_id,
+        checkout_time__isnull=True,
+    ).exists():
+        raise ValueError("An unresolved camp custody record must be reconciled before new check-in.")
 
     return SummerCampAttendance.objects.create(
         school_id=school_id, student_id=student_id, session_id=session.id,
@@ -326,20 +341,50 @@ def checkout_camper(
         raise ValueError("A school-authorized staff verifier is required.")
 
     when = when or timezone.now()
-    attendance = (
-        SummerCampAttendance.objects.select_for_update()
-        .filter(
-            school_id=school_id,
-            student_id=student_id,
-            session_id=session_id,
-            date=camp_school_local_date(school_id, when),
-        )
-        .first()
-    )
-    if attendance is None:
+    checkout_day = camp_school_local_date(school_id, when)
+    # The requested session must actually belong to this school, including
+    # when historical enrollment or attendance rows have inconsistent tenant FKs.
+    # Lock session before student, matching check-in's lock acquisition order.
+    session = SummerCampSession.objects.select_for_update().filter(
+        pk=session_id, school_id=school_id,
+    ).first()
+    if session is None:
+        raise ValueError("Camp session does not belong to this school.")
+    # Share the same child-level lock as check-in, serializing admission and
+    # release across sessions and local dates. Do not require an active
+    # enrollment/student status to finish a previously started custody record.
+    child = Student.objects.select_for_update().filter(
+        pk=student_id, school_id=school_id,
+    ).first()
+    if child is None:
         raise ValueError("A matching camp check-in is required before checkout.")
-    if attendance.checkout_time is not None:
-        raise ValueError("Camper has already been checked out.")
+    # Never choose an arbitrary open row from inconsistent legacy records.
+    # A prior LOCAL day may be released normally after identity verification;
+    # older/future-dated or multiply-open custody requires supervisor review.
+    open_records = list(
+        SummerCampAttendance.objects.select_for_update().filter(
+            school_id=school_id, student_id=student_id,
+            checkout_time__isnull=True,
+        ).order_by("-date", "-pk")[:2]
+    )
+    if len(open_records) > 1:
+        raise ValueError("Multiple open camp custody records require supervisor reconciliation.")
+    if not open_records:
+        if SummerCampAttendance.objects.filter(
+            school_id=school_id, student_id=student_id, session_id=session_id,
+            date__in=(checkout_day, checkout_day - timedelta(days=1)),
+            checkout_time__isnull=False,
+        ).exists():
+            raise ValueError("Camper has already been checked out.")
+        raise ValueError("A matching camp check-in is required before checkout.")
+
+    attendance = open_records[0]
+    if attendance.session_id != session.id or attendance.session.school_id != school_id:
+        raise ValueError("Open camp custody belongs to a different session or school.")
+    if attendance.date not in (checkout_day, checkout_day - timedelta(days=1)):
+        raise ValueError("Older camp custody requires supervisor reconciliation.")
+    if camp_school_local_date(school_id, attendance.checkin_time) != attendance.date:
+        raise ValueError("Camp check-in date mismatch requires supervisor reconciliation.")
     if when < attendance.checkin_time:
         raise ValueError("Checkout cannot precede check-in.")
 
@@ -653,42 +698,134 @@ def parent_student_summary(school_id, student_id):
 
 
 def roster_today(school_id):
-    today = timezone.now().date()
-    enrollments = SummerCampEnrollment.objects.filter(
-        school_id=school_id,
-        status="REGISTERED",
-        session__start_date__lte=today,
-        session__end_date__gte=today,
-    ).select_related("session", "student")
-    attendance = {
-        (a.session_id, a.student_id): a
-        for a in SummerCampAttendance.objects.filter(school_id=school_id, date=today)
-    }
+    """School-civil-day roster plus every open child-custody record.
+
+    Expired sessions, cancelled enrollment and old unresolved check-ins must not
+    make a child disappear from an authorized operator's custody view.
+    """
+    today = camp_school_local_date(school_id, timezone.now())
+    enrollments = list(
+        SummerCampEnrollment.objects.filter(
+            school_id=school_id,
+            status="REGISTERED",
+            session__start_date__lte=today,
+            session__end_date__gte=today,
+        ).select_related("session", "student")
+    )
+    attendance_rows = list(
+        SummerCampAttendance.objects.filter(school_id=school_id)
+        .filter(Q(date=today) | Q(checkout_time__isnull=True))
+        .select_related("session", "student")
+        .order_by("date", "pk")
+    )
+    today_attendance = {}
+    open_student_ids = set()
+    open_counts = {}
+    open_rows = []
+    for record in attendance_rows:
+        key = (record.session_id, record.student_id)
+        if record.date == today:
+            today_attendance[key] = record
+        if record.checkout_time is None:
+            open_rows.append(record)
+            # Orphaned custody must remain visible for supervisor handling,
+            # but must never suppress unrelated external (student-less) enrollments.
+            if record.student_id is not None:
+                open_student_ids.add(record.student_id)
+                open_counts[record.student_id] = open_counts.get(record.student_id, 0) + 1
+
+    # An earlier unresolved custody takes precedence over a new scheduled
+    # arrival. Retain only a UNIQUE current registration for safe identity
+    # display; never guess which legacy duplicate enrollment owns a contact.
+    registered_for_open = {}
+    if open_rows:
+        candidate_enrollments = SummerCampEnrollment.objects.filter(
+            school_id=school_id, status="REGISTERED",
+            session_id__in={row.session_id for row in open_rows},
+            student_id__in={row.student_id for row in open_rows if row.student_id},
+        ).select_related("session", "student")
+        for enrollment in candidate_enrollments:
+            key = (enrollment.session_id, enrollment.student_id)
+            registered_for_open.setdefault(key, []).append(enrollment)
+
+    def row_for(enrollment, attendance, *, unresolved=False, supervisor=False):
+        session = enrollment.session if enrollment else attendance.session
+        student = enrollment.student if enrollment else attendance.student
+        valid_session = bool(session and session.school_id == school_id)
+        valid_student = bool(student and student.school_id == school_id)
+        return {
+            "enrollment_id": str(enrollment.id) if enrollment else None,
+            "session_id": str(session.id) if valid_session else None,
+            "session_name": session.name if valid_session else "Unlinked Camp Session",
+            "student_id": str(student.id) if valid_student else None,
+            "student_name": (
+                f"{student.first_name} {student.last_name}" if valid_student else (
+                    "External Camper" if enrollment and enrollment.student_id is None else "Unlinked Camper"
+                )
+            ),
+            "status": enrollment.status if enrollment else "UNLINKED_CUSTODY",
+            "open_custody_count": open_counts.get(student.id, 0) if valid_student else 0,
+            "readiness_status": enrollment.readiness_status if enrollment else "BLOCKED",
+            "readiness_blockers": (
+                enrollment.readiness_blockers if enrollment else ["UNRESOLVED_CUSTODY"]
+            ),
+            "checkin_time": attendance.checkin_time.isoformat() if attendance else None,
+            "checkout_time": (
+                attendance.checkout_time.isoformat()
+                if attendance and attendance.checkout_time else None
+            ),
+            "pickup_verified": bool(attendance.pickup_verified) if attendance else False,
+            "form_status": enrollment.form_status if enrollment else None,
+            "health_status": enrollment.health_status if enrollment else None,
+            "payment_status": enrollment.payment_status if enrollment else None,
+            "pickup_status": enrollment.pickup_status if enrollment else None,
+            "attendance_id": str(attendance.id) if attendance else None,
+            "attendance_date": str(attendance.date) if attendance else None,
+            "unresolved_custody": unresolved,
+            "requires_supervisor_reconciliation": supervisor,
+        }
+
     rows = []
-    for e in enrollments:
-        key = (e.session_id, e.student_id)
-        a = attendance.get(key)
-        rows.append(
-            {
-                "enrollment_id": str(e.id),
-                "session_id": str(e.session_id),
-                "session_name": e.session.name,
-                "student_id": str(e.student_id) if e.student_id else None,
-                "student_name": (
-                    f"{e.student.first_name} {e.student.last_name}" if e.student else "External Camper"
-                ),
-                "readiness_status": e.readiness_status,
-                "readiness_blockers": e.readiness_blockers,
-                "checkin_time": a.checkin_time.isoformat() if a else None,
-                "checkout_time": a.checkout_time.isoformat() if a and a.checkout_time else None,
-                "pickup_verified": bool(a.pickup_verified) if a else False,
-                "form_status": e.form_status,
-                "health_status": e.health_status,
-                "payment_status": e.payment_status,
-                "pickup_status": e.pickup_status,
-            }
+    for enrollment in enrollments:
+        # Open custody from ANY session supersedes all fresh scheduled
+        # admissions for this child, even when the enrollment is in another
+        # Camp session. Render each open record explicitly below instead.
+        if enrollment.student_id in open_student_ids:
+            continue
+        key = (enrollment.session_id, enrollment.student_id)
+        # An external camper without a canonical student ID cannot be linked
+        # to a NULL-student orphan custody event by session alone.
+        matched = today_attendance.get(key) if enrollment.student_id is not None else None
+        rows.append(row_for(enrollment, matched))
+
+    for attendance in open_rows:
+        key = (attendance.session_id, attendance.student_id)
+        candidates = registered_for_open.get(key, [])
+        enrollment = candidates[0] if len(candidates) == 1 else None
+        invalid_link = (
+            attendance.session.school_id != school_id
+            or not attendance.student
+            or attendance.student.school_id != school_id
         )
+        needs_supervisor = (
+            attendance.date < today - timedelta(days=1)
+            or attendance.date > today
+            or open_counts.get(attendance.student_id, 0) > 1
+            or len(candidates) != 1
+            or attendance.checkin_time is None
+            or invalid_link
+        )
+        rows.append(row_for(
+            enrollment, attendance, unresolved=True,
+            supervisor=needs_supervisor,
+        ))
+
     return {
         "date": str(today),
         "rows": rows,
+        # Contract used by the verified pickup UI. Count supervisor holds
+        # separately from safe current-day attended/releasable rows.
+        "unresolved_custody_count": sum(
+            1 for row in rows if row["requires_supervisor_reconciliation"]
+        ),
     }

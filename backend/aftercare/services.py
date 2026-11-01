@@ -429,7 +429,9 @@ def run_monthly_flat_billing(school_id, year: int, month: int) -> dict:
             raise ValueError("Duplicate monthly enrollment for student and care session.")
         seen.add(key)
         if enrollment.monthly_rate is None:
-            continue
+            # Missing is not the same as explicitly free. Refuse to mark the
+            # month billed when an enrollment has no configured price.
+            raise ValueError("Monthly enrollment rate must be set before billing.")
         rate = Decimal(enrollment.monthly_rate)
         if not rate.is_finite() or rate < 0:
             raise ValueError("Monthly enrollment rate must be nonnegative and finite.")

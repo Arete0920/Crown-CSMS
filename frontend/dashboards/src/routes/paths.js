@@ -30,6 +30,7 @@ export const PATHS = {
   BILLING_DASHBOARD: '/billing-dashboard',
   FINANCIAL_AID: '/financial-aid',
   FINANCIAL_AID_DASHBOARD: '/financial-aid-dashboard',
+  JIREH_SGO: '/jireh-sgo',
   PAYMENTS: '/finance/payment-methods',
   LEDGER: '/finance/bank-reconciliation',
 

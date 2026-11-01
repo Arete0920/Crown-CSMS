@@ -5,7 +5,7 @@ import django.db.models.deletion
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("aftercare", "0007_care_session_am_pm"),
+        ("aftercare", "0010_diadem_custody_release"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 

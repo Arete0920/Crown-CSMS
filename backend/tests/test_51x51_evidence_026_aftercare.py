@@ -200,6 +200,33 @@ class TestModule026AttendanceAndBilling(TestCase):
         self.assertFalse(AftercareMonthlyChargeRun.objects.filter(school_fk=self.school).exists())
 
     @patch("aftercare.services.create_ledger_charge_aftercare")
+    def test_missing_monthly_rate_does_not_close_month_or_partially_post(self, charge):
+        # A correctly priced PM record cannot mask an unpriced AM enrollment.
+        _enroll(self.school, self.student, care_session="AM", monthly_rate=None)
+        with self.assertRaisesMessage(ValueError, "Monthly enrollment rate must be set"):
+            run_monthly_flat_billing(self.school.id, 2026, 6)
+        charge.assert_not_called()
+        self.assertFalse(AftercareMonthlyChargeRun.objects.filter(
+            school_fk=self.school, year=2026, month=6,
+        ).exists())
+
+    @patch("aftercare.services.create_ledger_charge_aftercare")
+    def test_explicitly_free_zero_rate_still_closes_month(self, charge):
+        row = AftercareEnrollment.objects.get(
+            school_fk=self.school, student_fk=self.student, care_session="PM",
+        )
+        row.monthly_rate = "0.00"
+        row.save(update_fields=["monthly_rate"])
+        self.assertEqual(
+            run_monthly_flat_billing(self.school.id, 2026, 6),
+            {"status": "ok", "charged": 0},
+        )
+        charge.assert_not_called()
+        self.assertEqual(AftercareMonthlyChargeRun.objects.filter(
+            school_fk=self.school, year=2026, month=6,
+        ).count(), 1)
+
+    @patch("aftercare.services.create_ledger_charge_aftercare")
     def test_negative_monthly_rate_blocks_all_charges(self, charge):
         # An invalid AM row must prevent PM billing, not leave a partial run.
         _enroll(self.school, self.student, care_session="AM", monthly_rate="-19.99")
