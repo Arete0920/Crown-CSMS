@@ -9,7 +9,7 @@ from copy import deepcopy
 from threading import Barrier
 
 from django.db import close_old_connections, connection, connections
-from django.test import TransactionTestCase
+from django.test import TransactionTestCase, override_settings
 from rest_framework.test import APIClient
 
 from applications.models import AdmissionsSubmissionReceipt, Application, Applicant
@@ -92,6 +92,7 @@ class AdmissionsSubmissionPostgresConcurrencyTests(TransactionTestCase):
                 is_required=True,
             )
 
+    @override_settings(DEBUG=True)
     def test_two_workers_same_key_persist_only_one_household_invoice(self):
         barrier = Barrier(2)
         request_payload = _admissions_payload()
