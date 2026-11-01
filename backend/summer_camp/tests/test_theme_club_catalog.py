@@ -221,6 +221,21 @@ def test_published_offering_validation_and_selected_schedule_immutability():
     ).location == "Innovation Lab"
 
 
+def test_selection_model_rejects_inconsistent_waitlist_state():
+    school, _h, _s, session, enrollment = case("WaitlistState")
+    scheduled = offering(school, session, club(school, "state"), capacity=2)
+    with pytest.raises(ValidationError, match="waitlist position"):
+        SummerCampClubSelection.objects.create(
+            school=school, offering=scheduled, enrollment=enrollment,
+            status="WAITLISTED", waitlist_position=None,
+        )
+    with pytest.raises(ValidationError, match="Only waitlisted"):
+        SummerCampClubSelection.objects.create(
+            school=school, offering=scheduled, enrollment=enrollment,
+            status="ENROLLED", waitlist_position=1,
+        )
+
+
 def test_staff_api_requires_explicit_school_scoped_view_and_edit(monkeypatch):
     school, _h, _s, _session, _enrollment = case("Api")
     user = UserAccount.objects.create_user(
