@@ -29,6 +29,10 @@ class AidBudgetError(Exception):
     """Raised when an award would exceed the remaining bucket budget."""
 
 
+class AidApprovalConflictError(ValidationError):
+    """Known financial-integrity conflict; never a general validation failure."""
+
+
 def _award_credit_reference(award: AidAward) -> str:
     return f"aid_award:{award.id}"
 
@@ -80,7 +84,7 @@ def _ensure_student_account_credit(*, award: AidAward, actor_user):
         or original.reversal_of_id is not None
         or original.reversals.exists()
     ):
-        raise ValidationError("Legacy aid entry requires controlled reconciliation")
+        raise AidApprovalConflictError("Legacy aid entry requires controlled reconciliation")
 
     reference = _award_credit_reference(award)
     household_ids = list(
@@ -111,7 +115,7 @@ def _ensure_student_account_credit(*, award: AidAward, actor_user):
             or existing.account.school_id != award.school_id
             or existing.account.household.school_id != award.school_id
         ):
-            raise ValidationError(
+            raise AidApprovalConflictError(
                 "Existing financial aid credit requires controlled reconciliation"
             )
         return existing
@@ -221,14 +225,17 @@ def approve_award(
         or award.student.family.school_id != award.school_id
         or award.academic_year.school_id != award.school_id
     ):
-        raise ValidationError("Award student/family/year school mismatch")
+        raise AidApprovalConflictError("Award student/family/year school mismatch")
+
+    if award.decision_status == AidAward.DECISION_DECLINED:
+        raise AidApprovalConflictError("Declined aid award requires controlled reinstatement")
 
     # Retry-safe migration behavior: an already-approved award does not consume
     # budget again, but can repair a previously missing Student Accounts credit
     # after its household-family mapping becomes available.
     if award.decision_status == AidAward.DECISION_ACCEPTED:
         if award.ledger_entry_id is None:
-            raise ValidationError("Accepted award without legacy posting requires controlled reconciliation")
+            raise AidApprovalConflictError("Accepted award without legacy posting requires controlled reconciliation")
         _ensure_student_account_credit(award=award, actor_user=actor_user)
         return award
 
