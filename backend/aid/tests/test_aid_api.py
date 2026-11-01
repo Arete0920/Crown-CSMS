@@ -229,6 +229,7 @@ class TestAdminRecommendAward(TestCase):
     def test_success_returns_201_with_award_and_explanation(self):
         r = _json_post(self.client, self.url, {
             "application_id": str(self.app.id),
+            "student_id": str(self.student.id),
             "bucket": AidAward.TYPE_NEED,
             "gross_tuition_cents": 10_000_00,
         }, self.school)
@@ -242,6 +243,7 @@ class TestAdminRecommendAward(TestCase):
     def test_created_award_stores_engine_outputs(self):
         r = _json_post(self.client, self.url, {
             "application_id": str(self.app.id),
+            "student_id": str(self.student.id),
             "bucket": AidAward.TYPE_NEED,
             "gross_tuition_cents": 10_000_00,
         }, self.school)
@@ -249,11 +251,78 @@ class TestAdminRecommendAward(TestCase):
         self.assertIsNotNone(award_data.get("mas_score"))
         self.assertIn("mas_modifier_bps", award_data)
 
+    def test_second_child_is_explicit_award_recipient(self):
+        other = _make_student(self.school, self.family, first_name="Blair", number="S002")
+        response = _json_post(self.client, self.url, {
+            "application_id": str(self.app.id),
+            "student_id": str(other.id),
+            "bucket": AidAward.TYPE_NEED,
+            "gross_tuition_cents": 10_000_00,
+        }, self.school)
+        self.assertEqual(response.status_code, 201, response.content)
+        award = AidAward.objects.get(pk=response.json()["award"]["id"])
+        self.assertEqual(award.student_id, other.id)
+
+    def test_student_from_another_family_is_not_awarded(self):
+        unrelated_family = _make_family(self.school, "Unrelated")
+        unrelated = _make_student(self.school, unrelated_family, number="S003")
+        response = _json_post(self.client, self.url, {
+            "application_id": str(self.app.id),
+            "student_id": str(unrelated.id),
+            "bucket": AidAward.TYPE_NEED,
+            "gross_tuition_cents": 10_000_00,
+        }, self.school)
+        self.assertEqual(response.status_code, 404)
+        self.assertFalse(AidAward.objects.filter(student=unrelated).exists())
+
+    def test_student_from_another_school_is_not_awarded(self):
+        foreign_school = _make_school("Foreign School")
+        foreign_family = _make_family(foreign_school)
+        foreign = _make_student(foreign_school, foreign_family, number="S001")
+        response = _json_post(self.client, self.url, {
+            "application_id": str(self.app.id),
+            "student_id": str(foreign.id),
+            "bucket": AidAward.TYPE_NEED,
+            "gross_tuition_cents": 10_000_00,
+        }, self.school)
+        self.assertEqual(response.status_code, 404)
+        self.assertFalse(AidAward.objects.filter(student=foreign).exists())
+
+    def test_missing_student_id_is_rejected(self):
+        response = _json_post(self.client, self.url, {
+            "application_id": str(self.app.id),
+            "bucket": AidAward.TYPE_NEED,
+            "gross_tuition_cents": 10_000_00,
+        }, self.school)
+        self.assertEqual(response.status_code, 400)
+        self.assertFalse(AidAward.objects.filter(aid_application=self.app).exists())
+
+    def test_malformed_student_id_is_rejected(self):
+        response = _json_post(self.client, self.url, {
+            "application_id": str(self.app.id),
+            "student_id": "not-a-uuid",
+            "bucket": AidAward.TYPE_NEED,
+            "gross_tuition_cents": 10_000_00,
+        }, self.school)
+        self.assertEqual(response.status_code, 400)
+        self.assertFalse(AidAward.objects.filter(aid_application=self.app).exists())
+
+    def test_invalid_award_bucket_is_rejected(self):
+        response = _json_post(self.client, self.url, {
+            "application_id": str(self.app.id),
+            "student_id": str(self.student.id),
+            "bucket": "INVALID",
+            "gross_tuition_cents": 10_000_00,
+        }, self.school)
+        self.assertEqual(response.status_code, 400)
+        self.assertFalse(AidAward.objects.filter(aid_application=self.app).exists())
+
     def test_missing_policy_returns_404(self):
         # No policy for this school/year → 404
         AidPolicy.objects.filter(school=self.school, academic_year=self.ay).delete()
         r = _json_post(self.client, self.url, {
             "application_id": str(self.app.id),
+            "student_id": str(self.student.id),
             "bucket": AidAward.TYPE_NEED,
             "gross_tuition_cents": 10_000_00,
         }, self.school)
@@ -270,6 +339,7 @@ class TestAdminRecommendAward(TestCase):
     def test_missing_required_fields_returns_400(self):
         r = _json_post(self.client, self.url, {
             "application_id": str(self.app.id),
+            "student_id": str(self.student.id),
             # missing bucket and gross_tuition_cents
         }, self.school)
         self.assertEqual(r.status_code, 400)
@@ -277,6 +347,7 @@ class TestAdminRecommendAward(TestCase):
     def test_zero_tuition_returns_400(self):
         r = _json_post(self.client, self.url, {
             "application_id": str(self.app.id),
+            "student_id": str(self.student.id),
             "bucket": AidAward.TYPE_NEED,
             "gross_tuition_cents": 0,
         }, self.school)
@@ -286,6 +357,7 @@ class TestAdminRecommendAward(TestCase):
         self.client.logout()
         r = _json_post(self.client, self.url, {
             "application_id": str(self.app.id),
+            "student_id": str(self.student.id),
             "bucket": AidAward.TYPE_NEED,
             "gross_tuition_cents": 10_000_00,
         }, self.school)
