@@ -318,7 +318,7 @@ class TestAdminRecommendAward(TestCase):
         self.assertFalse(AidAward.objects.filter(aid_application=self.app).exists())
 
     def test_non_string_award_bucket_returns_400(self):
-        for invalid_bucket in ([], {}):
+        for invalid_bucket in (["NEED"], {"value": "NEED"}):
             with self.subTest(bucket=repr(invalid_bucket)):
                 response = _json_post(self.client, self.url, {
                     "application_id": str(self.app.id),
