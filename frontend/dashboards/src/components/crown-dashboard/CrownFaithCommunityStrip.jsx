@@ -19,6 +19,20 @@ function ActionControl({ href, className, children }) {
 }
 
 export default function CrownFaithCommunityStrip({ faithCommunity = {} }) {
+  if (faithCommunity.unverified === true) {
+    return (
+      <section className="launch-dashboard-grid launch-faith-community-strip" aria-label="Faith and Community">
+        <CrownCard className="launch-faith-card launch-faith-card--devotion">
+          <div className="launch-section-kicker">Faith and community</div>
+          <h2 className="launch-faith-title">Devotion and prayer</h2>
+          <p className="launch-faith-empty">
+            Prayer requests, announcements and celebrations are not available without a verified school source.
+          </p>
+        </CrownCard>
+      </section>
+    );
+  }
+
   const devotion = faithCommunity.devotion || {};
   const prayers = Array.isArray(faithCommunity.prayerRequests) ? faithCommunity.prayerRequests : [];
   const announcements = Array.isArray(faithCommunity.announcements) ? faithCommunity.announcements : [];
