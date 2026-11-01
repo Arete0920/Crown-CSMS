@@ -312,10 +312,13 @@ def _promote_club_waitlist_locked(offering):
         .order_by("waitlist_position", "created_at", "pk")
     )
     for candidate in candidates:
-        if candidate.enrollment.status != "REGISTERED":
+        enrollment = SummerCampEnrollment.objects.select_for_update().get(
+            pk=candidate.enrollment_id, school_id=offering.school_id,
+        )
+        if enrollment.status != "REGISTERED":
             continue
         if _club_schedule_conflicts(
-            candidate.enrollment, offering, exclude_selection_id=candidate.id,
+            enrollment, offering, exclude_selection_id=candidate.id,
         ):
             continue
         candidate.status = "ENROLLED"
