@@ -252,5 +252,7 @@ from .daycare_models import (  # noqa: E402,F401
     DaycareProgram, DaycareEnrollment,
 )
 
-from .daycare_checkin_models import DaycareRoomStaffCoverage, DaycareAttendance  # noqa: E402,F401
+from .daycare_checkin_models import (  # noqa: E402,F401
+    DaycareRoomStaffCoverage, DaycareAttendance, DaycareReentryAuthorization,
+)
 from .daycare_release_models import DaycareRelease  # noqa: E402,F401
