@@ -1,6 +1,6 @@
-﻿// @vitest-environment jsdom
-import { render, screen } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+// @vitest-environment jsdom
+import { cleanup, render, screen } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import CrownDashboardTemplate from './CrownDashboardTemplate.jsx';
 import { BASE_NOTE } from '../../config/dashboardTemplates/_baseData.js';
 import { getDashboardTemplate } from '../../config/dashboardTemplates/index.js';
@@ -40,7 +40,6 @@ vi.mock('./CrownQuickActions.jsx', () => ({ default: (props) => { captured.actio
 vi.mock('./CrownDashboardActivityFeed.jsx', () => ({ default: (props) => { captured.activities.push(props); return null; } }));
 vi.mock('./CrownDashboardStatusPanel.jsx', () => ({ default: (props) => { captured.statuses.push(props); return null; } }));
 vi.mock('./CrownModuleSection.jsx', () => ({ default: () => null }));
-vi.mock('./CrownDashboardErrorState.jsx', () => ({ default: () => null }));
 vi.mock('./CrownDashboardRightRail.jsx', () => ({ default: () => null }));
 vi.mock('./CrownFaithCommunityStrip.jsx', () => ({ default: (props) => { captured.faith.push(props); return null; } }));
 vi.mock('./CrownDashboardCommunicationsStrip.jsx', () => ({
@@ -80,7 +79,9 @@ vi.mock('react-router', () => ({
 }));
 
 describe('CrownDashboardTemplate data truth defaults', () => {
+  afterEach(() => { cleanup(); localStorage.clear(); });
   beforeEach(() => {
+    localStorage.setItem('schoolId', 'school-a');
     captured.metrics = [];
     captured.modules = [];
     captured.communications = [];
@@ -424,6 +425,157 @@ describe('CrownDashboardTemplate data truth defaults', () => {
     expect(screen.queryByText('Release stale award')).toBeNull();
     expect(screen.queryByText('Stale disbursement action')).toBeNull();
     expect(screen.queryByText('Healthy')).toBeNull();
+  });
+
+  it.each(['summerCamp', 'extendedCare'])('does not render unverified %s operational figures or notifications', (key) => {
+    mockUseDashboardData.mockReturnValue({
+      data: {
+        metrics: [{ label: 'Registered Campers', value: '79' }],
+        queue: ['Call nine families with supposedly available places'],
+        alerts: [{ title: 'Fabricated staffing alert', level: 'High' }],
+        meta: { served_from: 'sample' },
+      },
+      error: null, loading: false, source: 'live',
+      config: { endpoint: '/api/v1/dashboards/test/summary' },
+    });
+    render(<CrownDashboardTemplate roleKey="master_control" config={getDashboardTemplate(key)} />);
+    expect(captured.truthStatus[0].dataState).toBe('unavailable');
+    expect(captured.metrics).toHaveLength(4);
+    expect(captured.metrics.every((metric) => metric.value === 'Not available')).toBe(true);
+    expect(captured.metrics.every((metric) => metric.dataState === 'unavailable')).toBe(true);
+    expect(captured.modules).toHaveLength(0);
+    expect(captured.activities[0].items).toEqual([]);
+    expect(captured.communications).toHaveLength(0);
+    expect(captured.faith).toHaveLength(1);
+    expect(captured.faith[0].faithCommunity).toEqual({ unverified: true });
+    expect(screen.queryByText('Fabricated staffing alert')).toBeNull();
+    expect(screen.queryByText('Call nine families with supposedly available places')).toBeNull();
+    expect(JSON.stringify(captured)).not.toMatch(/79 registered|\\$4,200|92% complete/);
+  });
+
+  it.each(['summerCamp', 'extendedCare'])('requires as-of time and aggregation window for %s live provenance', (key) => {
+    mockUseDashboardData.mockReturnValue({
+      data: { metrics: [{ label: 'Live only', value: '4' }], meta: { served_from: 'live_db' } },
+      error: null, loading: false, source: 'live',
+      config: { endpoint: '/api/v1/dashboards/test/summary' },
+    });
+    render(<CrownDashboardTemplate roleKey="master_control" config={getDashboardTemplate(key)} />);
+    expect(captured.truthStatus[0].dataState).toBe('unavailable');
+    expect(captured.metrics.every((metric) => metric.value === 'Not available')).toBe(true);
+  });
+
+  it.each(['summerCamp', 'extendedCare'])('accepts current verified %s metrics without template numbers', (key) => {
+    mockUseDashboardData.mockReturnValue({
+      data: {
+        metrics: [{ label: 'Verified campers or care attendance', value: '4' }],
+        queue: ['Review current source records'],
+        alerts: [],
+        meta: {
+          school_id: 'school-a',
+          served_from: 'live_db',
+          observed_at: '2026-10-31T16:00:00Z',
+          aggregation_window: 'school-local-day:2026-10-31',
+        },
+      },
+      error: null, loading: false, source: 'live',
+      config: { endpoint: '/api/v1/dashboards/test/summary' },
+    });
+    render(<CrownDashboardTemplate roleKey="master_control" config={getDashboardTemplate(key)} />);
+    expect(captured.truthStatus[0].dataState).toBe('live');
+    expect(captured.truthStatus[0].sourceLabel).toContain('2026-10-31T16:00:00Z');
+    expect(captured.truthStatus[0].sourceLabel).toContain('school-local-day:2026-10-31');
+    expect(captured.metrics.map((metric) => metric.value)).toEqual(['4']);
+    expect(captured.metrics[0].dataState).toBe('live');
+    expect(captured.activities[0].items).toEqual([]);
+    expect(captured.modules).toHaveLength(0);
+    expect(captured.faith).toHaveLength(1);
+    expect(captured.faith[0].faithCommunity).toEqual({ unverified: true });
+  });
+
+  describe.each(['summerCamp', 'extendedCare'])('%s current-request provenance', (key) => {
+    const meta = {
+      school_id: 'school-a', served_from: 'live_db',
+      observed_at: '2026-10-31T16:00:00Z', aggregation_window: 'school-local-day:2026-10-31',
+    };
+    const response = (overrides = {}) => ({
+      data: {
+        metrics: [{ label: 'Current enrollment', value: '7' }],
+        queue: ['Current operational task'], alerts: [{ title: 'Current safety alert', level: 'High' }], meta,
+      },
+      error: null, loading: false, source: 'live', config: { endpoint: '/api/v1/dashboards/test/summary' },
+      ...overrides,
+    });
+    const renderProgram = () => render(<CrownDashboardTemplate roleKey="master_control" config={getDashboardTemplate(key)} />);
+
+    it.each([
+      ['sample', { served_from: 'sample' }], ['snapshot', { served_from: 'snapshot' }],
+      ['fallback', { served_from: 'fallback' }], ['stale', { served_from: 'stale' }],
+      ['stale snapshot', { served_from: 'stale_snapshot' }],
+      ['missing source', { served_from: undefined }],
+      ['missing observed time', { observed_at: undefined }], ['invalid time', { observed_at: 'invalid' }],
+      ['missing window', { aggregation_window: undefined }], ['blank window', { aggregation_window: '  ' }],
+      ['invalid window type', { aggregation_window: {} }], ['missing scope', { school_id: undefined }],
+      ['foreign scope', { school_id: 'school-b' }], ['uncertified', { live_certified: false }],
+    ])('rejects %s even with otherwise valid metadata', (_name, invalid) => {
+      const result = response();
+      result.data = { ...result.data, meta: { ...meta, ...invalid } };
+      mockUseDashboardData.mockReturnValue(result);
+      renderProgram();
+      expect(captured.truthStatus[0].dataState).toBe('unavailable');
+      expect(captured.metrics.map((item) => item.value)).toEqual(Array(4).fill('Not available'));
+      expect(screen.queryByText('Current operational task')).toBeNull();
+      expect(screen.queryByText('Current safety alert')).toBeNull();
+      expect(screen.getByRole('heading', { name: 'Operational metrics unavailable' })).toBeTruthy();
+    });
+
+    it.each([
+      ['loading', { loading: true }, 'loading'],
+      ['failed with stale live source', { error: new Error('Forbidden') }, 'unavailable'],
+      ['failed transport', { source: 'none', error: new Error('Unauthorized') }, 'unavailable'],
+      ['fallback transport', { source: 'fallback' }, 'unavailable'],
+    ])('removes previously verified figures while %s', (_name, next, state) => {
+      mockUseDashboardData.mockReturnValue(response());
+      const view = renderProgram();
+      expect(captured.metrics.map((item) => item.value)).toEqual(['7']);
+      expect(screen.getByText('Current operational task')).toBeTruthy();
+      expect(screen.getByText('Current safety alert')).toBeTruthy();
+      captured.metrics = []; captured.truthStatus = []; captured.statuses = [];
+      mockUseDashboardData.mockReturnValue(response(next));
+      view.rerender(<CrownDashboardTemplate roleKey="master_control" config={getDashboardTemplate(key)} />);
+      expect(captured.truthStatus[0].dataState).toBe(state);
+      expect(captured.metrics.map((item) => item.value)).toEqual(Array(4).fill('Not available'));
+      expect(screen.queryByText('Current operational task')).toBeNull();
+      expect(screen.queryByText('Current safety alert')).toBeNull();
+      expect(captured.statuses[0].statuses).toEqual([{ label: 'Operational source', state: 'Not available' }]);
+    });
+
+    it('requires an active school context', () => {
+      localStorage.clear();
+      mockUseDashboardData.mockReturnValue(response());
+      renderProgram();
+      expect(captured.truthStatus[0].dataState).toBe('unavailable');
+    });
+
+    it.each(['live', 'live_db'])('renders only API metrics from %s and no template operational claims', (served_from) => {
+      const result = response();
+      result.data = { ...result.data, meta: { ...meta, served_from }, metrics: [] };
+      mockUseDashboardData.mockReturnValue(result);
+      render(<CrownDashboardTemplate roleKey="master_control" config={{
+        ...getDashboardTemplate(key),
+        activities: ['Invented child activity'], statuses: [{ label: 'Staff', state: 'Invented staffing' }],
+        operations: [{ area: 'Invented child record', owner: 'Example' }],
+        commandModules: [{ key: 'fake', title: 'Invented module' }],
+        insight: { title: 'Invented trend' }, trendPanels: [{ title: 'Invented trend' }],
+        moduleSection: { title: 'Invented section' },
+      }} />);
+      expect(captured.truthStatus[0].dataState).toBe('live');
+      expect(captured.metrics).toEqual([]);
+      expect(captured.modules).toEqual([]);
+      expect(captured.activities[0].items).toEqual([]);
+      expect(captured.insights).toEqual([]);
+      expect(JSON.stringify(captured)).not.toContain('Invented');
+      expect(screen.queryByText('Invented child record')).toBeNull();
+    });
   });
 
 });
