@@ -22,6 +22,8 @@ from aid.serializers import (
     AidAwardWithExplanationSerializer,
     AidBudgetTrackerSerializer,
     AidFinancialProfileSerializer,
+    FamilyAidApplicationSerializer,
+    FamilyAidAwardSerializer,
 )
 from aid.services.award_engine import recommend_award
 from aid.services.profile_service import build_engine_application, build_review_signals, carry_forward_profile
@@ -490,8 +492,8 @@ def family_aid_status(request):
     ).order_by("-created_at")
 
     return Response({
-        "application": AidApplicationSerializer(application).data if application else None,
-        "awards": AidAwardSerializer(awards, many=True).data,
+        "application": FamilyAidApplicationSerializer(application).data if application else None,
+        "awards": FamilyAidAwardSerializer(awards, many=True).data,
     })
 
 
