@@ -625,7 +625,8 @@ def _validate_student(student: dict[str, Any], index: int) -> str | None:
 
 
 def _validate_application_fee(data: AdmissionsSubmitData, fee_policy: Any) -> str | None:
-    if not _application_fee_required(fee_policy):
+    # Fee acknowledgment is required only when this household owes an amount.
+    if not any(fee_policy.amount_for_child(i) > 0 for i in range(1, len(data.students) + 1)):
         return None
     policy_accepted = bool(data.application_fee.get("policyAccepted"))
     waiver_requested = bool(data.application_fee.get("waiverRequested"))
@@ -1326,10 +1327,10 @@ def _build_application_fee_status_card(*, application_fee: dict[str, Any]) -> di
 def _build_application_fee_status(data: AdmissionsSubmitData, fee_policy: Any) -> dict[str, Any]:
     waiver_requested = bool(data.application_fee.get("waiverRequested"))
     policy_accepted = bool(data.application_fee.get("policyAccepted"))
-    fee_required = _application_fee_required(fee_policy)
-    status = _application_fee_status_value(fee_required, waiver_requested)
     config = _application_fee_config(fee_policy)
     family_total = sum((fee_policy.amount_for_child(i) for i in range(1, len(data.students) + 1)), Decimal("0.00"))
+    fee_required = family_total > 0
+    status = _application_fee_status_value(fee_required, waiver_requested)
     return {
         **config,
         "total_amount": str(family_total),
