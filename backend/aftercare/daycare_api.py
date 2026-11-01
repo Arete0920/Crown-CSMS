@@ -197,6 +197,8 @@ def _visible_staff_room_ids(request, school, at):
     room_ids = set(qualified.values_list("room_id", flat=True))
     if not room_ids:
         raise PermissionDenied("Current verified room assignment required.")
+    if len(room_ids) != 1:
+        raise PermissionDenied("Simultaneous coverage of multiple rooms requires director review.")
     if DaycareRoomStaffCoverage.objects.filter(
         school=school, staff=request.user, is_active=True,
         starts_at__lte=at, ends_at__gt=at,
@@ -263,6 +265,14 @@ def daycare_sites(request):
     )
     room_ids = _visible_staff_room_ids(request, school, timezone.now())
     sites = DaycareSite.objects.filter(school=school)
+    if not school.is_active:
+        # An inactive school's directory exists only to locate unresolved
+        # custody. Do not disclose empty/former centers, and never open
+        # admissions, unrelated reads or general school functionality.
+        open_custody_site_ids = DaycareAttendance.objects.filter(
+            school=school, custody_release__isnull=True
+        ).values("site_id")
+        sites = sites.filter(pk__in=open_custody_site_ids)
     if room_ids is not None:
         sites = sites.filter(care_rooms__id__in=room_ids).distinct()
     return Response({"sites": [

@@ -4,7 +4,7 @@ from uuid import uuid4
 import pytest
 from rest_framework.test import APIClient
 from core.models import School, UserAccount, UserRole
-from aftercare.models import DaycareAttendance, DaycareRelease, DaycareSite
+from aftercare.models import DaycareAttendance, DaycareRelease, DaycareSite, DaycareRoomStaffCoverage
 from audit.models import AuditLog
 from aftercare.tests.test_daycare_checkin import setup
 
@@ -290,8 +290,90 @@ def test_deactivated_school_may_inspect_existing_custody_but_not_new_admit():
     d["school"].is_active = False
     d["school"].save(update_fields=["is_active"])
     sites = c.get("/api/v1/aftercare/daycare/sites/")
-    assert sites.status_code == 404  # Inactive-school middleware admits only the exact custody roster and release routes.
+    assert sites.status_code == 200, getattr(sites, "data", None)
+    assert sites.data["sites"] == [{
+        "site_id": str(d["site"].id),
+        "name": d["site"].name,
+        "is_active": True,
+    }]
     roster = c.get(f"/api/v1/aftercare/daycare/sites/{d['site'].id}/roster/")
     assert roster.status_code == 200
     assert roster.data["children_present"] == 1
     assert _checkin(d, c).status_code in (403, 404)
+
+def test_inactive_school_site_directory_lists_only_unresolved_custody():
+    d = setup()
+    c = _client(d["actor"])
+    d["school"].is_active = False
+    d["school"].save(update_fields=["is_active"])
+    # An inactive organization with no open child custody has no visible sites.
+    before = c.get("/api/v1/aftercare/daycare/sites/")
+    assert before.status_code == 200
+    assert before.data["sites"] == []
+    # Restore activity solely to create a valid synthetic admission.
+    d["school"].is_active = True
+    d["school"].save(update_fields=["is_active"])
+    checked = _checkin(d, c)
+    assert checked.status_code == 201
+    d["school"].is_active = False
+    d["school"].save(update_fields=["is_active"])
+    open_sites = c.get("/api/v1/aftercare/daycare/sites/")
+    assert open_sites.status_code == 200
+    assert [s["site_id"] for s in open_sites.data["sites"]] == [str(d["site"].id)]
+    released = _release(d, checked.data["attendance_id"], c)
+    assert released.status_code == 201
+    finished = c.get("/api/v1/aftercare/daycare/sites/")
+    assert finished.status_code == 200
+    assert finished.data["sites"] == []
+    # The emergency directory never expands normal school operations.
+    assert _checkin(d, c).status_code in (403, 404)
+
+
+def test_inactive_directory_denies_foreign_school_and_unauthenticated_users():
+    d = setup()
+    d["school"].is_active = False
+    d["school"].save(update_fields=["is_active"])
+    foreign = School.objects.create(name="Foreign childcare organization")
+    staff = _client(d["actor"])
+    denied = staff.get(
+        "/api/v1/aftercare/daycare/sites/",
+        HTTP_X_SCHOOL_ID=str(foreign.id),
+    )
+    assert denied.status_code in (403, 404)
+    anonymous = APIClient().get(
+        "/api/v1/aftercare/daycare/sites/",
+        HTTP_X_SCHOOL_ID=str(d["school"].id),
+    )
+    assert anonymous.status_code in (401, 403, 404)
+    assert not DaycareAttendance.objects.exists()
+
+
+def test_directory_and_roster_reject_conflicting_live_staff_room_coverage():
+    # A second simultaneous qualified room should be impossible through normal
+    # model writes. Guard read authorization too, for legacy data anomalies.
+    from unittest.mock import patch
+    from aftercare.daycare_api import _visible_staff_room_ids
+    d = setup()
+    c = _client(d["actor"])
+    # Force an anomalous second room ID in the qualified assignment query,
+    # without injecting invalid childcare records into the DB.
+    original_filter = DaycareRoomStaffCoverage.objects.filter
+
+    def mock_filter(*args, **kwargs):
+        qs = original_filter(*args, **kwargs)
+        if kwargs.get("staff") == d["actor"] and kwargs.get("is_qualified") is True:
+            return _DuplicateQualifiedRoomIds(qs)
+        return qs
+
+    class _DuplicateQualifiedRoomIds:
+        def __init__(self, qs):
+            self.qs = qs
+        def exclude(self, **kwargs):
+            return self
+        def values_list(self, *args, **kwargs):
+            return [d["room"].id, uuid4()]
+
+    with patch.object(DaycareRoomStaffCoverage.objects, "filter", side_effect=mock_filter):
+        response = c.get("/api/v1/aftercare/daycare/sites/")
+    assert response.status_code == 403
+    assert not DaycareAttendance.objects.exists()

@@ -47,6 +47,9 @@ export default function DiademDirectorRosterPage() {
     return () => { live = false; };
   }, [siteId, sites]);
 
+  const currentRoster = siteId && roster?.site_id === siteId
+    && sites?.some((site) => site.site_id === siteId) ? roster : null;
+
   return (
     <CrownLayout title="Diadem Daycare & Preschool" subtitle="Live childcare custody roster — operational certification pending">
       <DashboardSection title="Center and classroom">
@@ -63,17 +66,17 @@ export default function DiademDirectorRosterPage() {
         {!loading && sites?.length === 0 && <p>No authorized childcare centers available.</p>}
       </DashboardSection>
       <DashboardSection title="Children currently in care">
-        {roster ? <>
-          <p role="status">{roster.children_present} open custody record(s). Observed at {roster.as_of}.</p>
+        {currentRoster ? <>
+          <p role="status">{currentRoster.children_present} open custody record(s). Observed at {currentRoster.as_of}.</p>
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead><tr><th scope="col">Child</th><th scope="col">Room</th><th scope="col">Program</th><th scope="col">Checked in</th><th scope="col">Custody status</th></tr></thead>
               <tbody>
-                {roster.rows.map((row) => <tr key={row.attendance_id}>
+                {currentRoster.rows.map((row) => <tr key={row.attendance_id}>
                   <td>{row.child_name}</td><td>{row.room_name}</td><td>{row.program_code}</td>
                   <td>{row.checked_in_at}</td><td>Awaiting verified release</td>
                 </tr>)}
-                {roster.rows.length === 0 && <tr><td colSpan={5}>No open custody records returned for this center.</td></tr>}
+                {currentRoster.rows.length === 0 && <tr><td colSpan={5}>No open custody records returned for this center.</td></tr>}
               </tbody>
             </table>
           </div>

@@ -60,3 +60,23 @@ it("refreshes server evidence without creating any custody action", async () => 
   await waitFor(() => expect(crownApiClient.get).toHaveBeenCalledWith("/api/v1/aftercare/daycare/sites/"));
   expect(crownApiClient.get.mock.calls.filter(([url]) => url.endsWith("/sites/")).length).toBe(2);
 });
+
+it("never displays old site identities while switching to another center", async () => {
+  const second = "22222222-2222-4222-8222-222222222222";
+  let resolveSecond;
+  crownApiClient.get.mockImplementation(async (url) => {
+    if (url.endsWith("/sites/")) return { data: { sites: [
+      { site_id: site, name: "Synthetic Center", is_active: true },
+      { site_id: second, name: "Other Center", is_active: true },
+    ] } };
+    if (url.includes(second)) return new Promise((done) => { resolveSecond = done; });
+    return { data: roster };
+  });
+  render(<DiademDirectorRosterPage />);
+  expect(await screen.findByText(child)).toBeTruthy();
+  fireEvent.change(screen.getByLabelText("Care center"), { target: { value: second } });
+  expect(screen.queryByText(child)).toBeNull();
+  resolveSecond({ data: { ...roster, site_id: second, rows: [], children_present: 0 } });
+  await waitFor(() => expect(screen.getByText(/0 open custody record/)).toBeTruthy());
+  expect(screen.queryByText(child)).toBeNull();
+});
