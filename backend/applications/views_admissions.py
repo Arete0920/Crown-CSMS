@@ -3,6 +3,8 @@ from __future__ import annotations
 # pyright: reportMissingImports=false, reportMissingModuleSource=false, reportMissingTypeStubs=false, reportMissingParameterType=false, reportMissingTypeArgument=false, reportUnknownMemberType=false, reportUnknownVariableType=false, reportUnknownArgumentType=false, reportUnknownParameterType=false, reportAttributeAccessIssue=false, reportOptionalMemberAccess=false, reportIndexIssue=false, reportGeneralTypeIssues=false
 
 from dataclasses import dataclass
+import hashlib
+import json
 from datetime import timedelta
 from decimal import Decimal, ROUND_HALF_UP, InvalidOperation
 import logging
@@ -29,6 +31,7 @@ from .models import (
     Applicant,
     ApplicationEvent,
     ApplicationChecklistItem,
+    AdmissionsSubmissionReceipt,
     ApplicationChecklistDocument,
     ChecklistItemStatus,
     EnrollmentContract,
@@ -3323,9 +3326,27 @@ def _admissions_submit_impl(request):
     school, tenant_error = _resolve_school_for_submit(request, payload)
     if tenant_error is not None:
         return _attach_correlation(tenant_error, correlation_id)
-    # Serialize same-school admissions writes across workers. This also guards
-    # fee-obligation references against concurrent direct submission retries.
+    # Serialize same-school submissions across PostgreSQL workers and keep
+    # durable receipts/financial obligations in the same database transaction.
     School.objects.select_for_update().get(pk=school.pk)
+    idempotency_key = _idempotency_key(request)
+    request_hash = hashlib.sha256(
+        json.dumps(payload, sort_keys=True, separators=(",", ":"), default=str).encode("utf-8")
+    ).hexdigest()
+    if idempotency_key:
+        existing_receipt = AdmissionsSubmissionReceipt.objects.filter(
+            school_id=school.pk, idempotency_key=idempotency_key,
+        ).first()
+        if existing_receipt:
+            if existing_receipt.request_hash != request_hash:
+                return _attach_correlation(Response({
+                    "detail": "Idempotency key was already used for a different submission.",
+                    "code": "idempotency_conflict",
+                }, status=409), correlation_id)
+            replay = Response(existing_receipt.response_payload, status=200)
+            replay["X-Idempotent-Replay"] = "true"
+            replay["Cache-Control"] = "no-store"
+            return _attach_correlation(replay, correlation_id)
 
     inquiry_lead = None
     if "inquiry_id" in payload or "continuation_token" in payload:
@@ -3347,14 +3368,6 @@ def _admissions_submit_impl(request):
     abuse_error = _enforce_submit_abuse_controls(request, school.pk, payload, correlation_id)
     if abuse_error is not None:
         return abuse_error
-
-    idempotency_key = _idempotency_key(request)
-    if idempotency_key and inquiry_lead is None:
-        cached_response = cache.get(_cache_key_for_submit(school.pk, idempotency_key))
-        if cached_response:
-            replay = Response(cached_response, status=200)
-            replay["X-Idempotent-Replay"] = "true"
-            return _attach_correlation(replay, correlation_id)
 
     submit_data = _extract_submit_data(payload)
     fee_policy = get_admissions_fee_policy(school=school, term=submit_data.start_term)
@@ -3463,14 +3476,12 @@ def _admissions_submit_impl(request):
         response_payload["inquiry_id"] = str(inquiry_lead.id)
         save_submission_receipt(inquiry_lead, response_payload)
 
-    if idempotency_key and inquiry_lead is None:
-        # Keep replay window short but long enough for user retries and browser retransmits.
-        transaction.on_commit(
-            lambda: cache.set(
-                _cache_key_for_submit(school.pk, idempotency_key),
-                response_payload,
-                timeout=10 * 60,
-            )
+    if idempotency_key:
+        AdmissionsSubmissionReceipt.objects.create(
+            school_id=school.pk,
+            idempotency_key=idempotency_key,
+            request_hash=request_hash,
+            response_payload=response_payload,
         )
 
     response = _attach_correlation(Response(response_payload, status=201), correlation_id)
