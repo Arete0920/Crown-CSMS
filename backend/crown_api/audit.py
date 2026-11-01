@@ -77,6 +77,7 @@ def audit_log(
     object_type: Optional[str] = None,
     object_id: Optional[uuid.UUID] = None,
     meta: Optional[dict] = None,
+    school_id: Optional[uuid.UUID] = None,
 ) -> AuditEvent:
     """
     Minimal audit helper. Safe defaults. No secrets in meta.
@@ -86,7 +87,7 @@ def audit_log(
 
     evt = AuditEvent.objects.create(
         ts=timezone.now(),
-        school_id=_get_school_id_from_request(request),
+        school_id=_coerce_uuid(school_id) if school_id is not None else _get_school_id_from_request(request),
         actor_id=actor_id,
         actor_role=_get_user_role(request),
         action=str(action).strip(),

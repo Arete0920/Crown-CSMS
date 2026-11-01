@@ -32,7 +32,7 @@ def test_decode_rejects_missing_tenant_configuration_before_jwks(jwks_mock):
 @patch("core.auth.aad_jwt._get_jwks", return_value={"keys": [{"kid": "key-1"}]})
 @patch("jwt.get_unverified_header", return_value={"kid": "key-1"})
 @patch("jwt.algorithms.RSAAlgorithm.from_jwk", return_value="public-key")
-@patch("jwt.decode", return_value={"aud": "api://crown", "sub": "user"})
+@patch("jwt.decode", return_value={"aud": "api://crown", "sub": "user", "tid": "tenant-id"})
 def test_decode_uses_normalized_tenant_for_jwks_and_issuer(
     decode_mock,
     _from_jwk,
@@ -57,7 +57,7 @@ def test_decode_uses_normalized_tenant_for_jwks_and_issuer(
 @patch("core.auth.aad_jwt._get_jwks", return_value={"keys": [{"kid": "key-1"}]})
 @patch("jwt.get_unverified_header", return_value={"kid": "key-1"})
 @patch("jwt.algorithms.RSAAlgorithm.from_jwk", return_value="public-key")
-@patch("jwt.decode", return_value={"aud": "api://crown", "sub": "user"})
+@patch("jwt.decode", return_value={"aud": "api://crown", "sub": "user", "tid": "tenant-id"})
 def test_decode_requires_exact_configured_audience(
     decode_mock,
     _from_jwk,
@@ -119,4 +119,19 @@ def test_decode_rejects_foreign_issuer(
     _jwks,
 ):
     with pytest.raises(jwt.InvalidIssuerError):
+        decode_and_validate_bearer("token")
+
+
+@override_settings(AAD_TENANT_ID="tenant-id", AAD_API_AUDIENCE="api://crown")
+@patch("core.auth.aad_jwt._get_jwks", return_value={"keys": [{"kid": "key-1"}]})
+@patch("jwt.get_unverified_header", return_value={"kid": "key-1"})
+@patch("jwt.algorithms.RSAAlgorithm.from_jwk", return_value="public-key")
+@patch("jwt.decode", return_value={"aud": "api://crown", "sub": "user", "tid": "other-tenant"})
+def test_decode_rejects_tid_that_does_not_match_configured_tenant(
+    _decode,
+    _from_jwk,
+    _header,
+    _jwks,
+):
+    with pytest.raises(jwt.InvalidTokenError, match="tenant mismatch"):
         decode_and_validate_bearer("token")

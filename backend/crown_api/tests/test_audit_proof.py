@@ -198,3 +198,19 @@ def test_audit_log_falls_back_to_header_for_unbound_legacy_request():
 
     event = audit_log(request=request, action="tenant.legacy")
     assert event.school_id == school_id
+
+
+def test_audit_log_explicit_school_scope_overrides_request_tenant():
+    request_factory = RequestFactory()
+    request_school_id = uuid.uuid4()
+    explicit_school_id = uuid.uuid4()
+    request = request_factory.get("/admin/integrations/")
+    request.crown_tenant = SimpleNamespace(school_id=request_school_id)
+
+    event = audit_log(
+        request=request,
+        action="microsoft.binding.provisioned",
+        school_id=explicit_school_id,
+    )
+
+    assert event.school_id == explicit_school_id
