@@ -11,6 +11,7 @@ from django.test import override_settings
 from rest_framework.test import APIClient
 
 from core.models import School
+from fee_schedule_wizard.models import FeeSchedule, FeeLine
 
 pytestmark = pytest.mark.django_db
 User = get_user_model()
@@ -121,6 +122,17 @@ def test_044_security_log_presence_on_protected_failure_configuration():
 
 def test_045_admissions_submit_idempotency_replay_contract():
     school = School.objects.create(name="Release Readiness Replay School")
+    schedule = FeeSchedule.objects.create(
+        school=school, name="Release admissions test fees", term="Fall 2026",
+        effective_date="2026-08-01", is_active=True,
+    )
+    for code, cents in (("admissions_first_child", 8500), ("admissions_additional_child", 5000)):
+        FeeLine.objects.create(
+            fee_schedule=schedule, code=code, label=code,
+            amount_cents=cents, kind=FeeLine.KIND_FEE,
+            frequency=FeeLine.FREQ_ONE_TIME, is_required=True,
+        )
+
     client = APIClient()
     payload = _admissions_submit_payload(campus_name=school.name)
     idem = f"release-replay-{uuid.uuid4().hex}"
