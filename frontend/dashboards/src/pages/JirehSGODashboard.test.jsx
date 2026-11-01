@@ -54,6 +54,26 @@ describe("Standalone Jireh SGO read-only grantor UI", () => {
     expect(screen.queryByText("Noncash commitments:")).toBeNull();
   });
 
+  it("hides prior member data immediately when authenticated identity changes", async () => {
+    const view = render(<JirehSGODashboard />);
+    expect(await screen.findByText("Synthetic Grant Program")).toBeTruthy();
+    getAccessToken.mockReturnValue("second-synthetic-session");
+    authenticatedFetch.mockImplementation(async (url) =>
+      url.endsWith("/organizations/")
+        ? response({ organizations: [{ id: "org-2", name: "Second SGO", role: "VIEWER" }],
+            funds_status: "NONCASH_ONLY" })
+        : response({ organization: { id: "org-2", name: "Second SGO" },
+            role: "VIEWER", funds_status: "NONCASH_ONLY",
+            programs: [{ id: "p2", name: "Second Grant Program", year: 2027,
+              source: "PRIVATE", policy_version: "POLICY_2027_V1",
+              applications: 0, eligible: 0, unreviewed: 0, noncash_committed_cents: 0 }],
+            totals: { programs: 1, applications: 0, noncash_committed_cents: 0 } }));
+    view.rerender(<JirehSGODashboard />);
+    expect(screen.queryByText("Synthetic Grant Program")).toBeNull();
+    expect(screen.queryByText("Synthetic SGO")).toBeNull();
+    expect(await screen.findByText("Second Grant Program")).toBeTruthy();
+  });
+
   it("does not show data from a mismatched organization", async () => {
     authenticatedFetch.mockImplementation(async (url) =>
       url.endsWith("/organizations/")
