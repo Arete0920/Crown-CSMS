@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from datetime import timedelta
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
+from django.contrib.auth import get_user_model
 from django.db import transaction
 from django.db.models import Count, Max, Q, Sum
 from django.utils import timezone
@@ -106,11 +107,18 @@ def create_club_offering(school_id, payload: dict):
     club = SummerCampClub.objects.filter(pk=club_id, school_id=school_id, is_active=True).first()
     if session is None or club is None:
         raise ValueError("Camp club offering references an unavailable session or catalog item.")
+    instructor = None
+    if instructor_id is not None:
+        instructor = get_user_model().objects.filter(
+            pk=instructor_id, school_id=school_id, is_active=True,
+        ).first()
+        if instructor is None:
+            raise ValueError("Club instructor is not an active member of this school.")
     offering = SummerCampClubOffering(
         school_id=school_id,
         session=session,
         club=club,
-        instructor_id=instructor_id,
+        instructor=instructor,
         **incoming,
     )
     offering.full_clean()
@@ -154,7 +162,16 @@ def update_club_offering(school_id, offering_id, payload: dict):
             raise ValueError("Club catalog item is unavailable.")
         offering.club = club
     if "instructor_id" in incoming:
-        offering.instructor_id = incoming.pop("instructor_id")
+        instructor_id = incoming.pop("instructor_id")
+        if instructor_id is None:
+            offering.instructor = None
+        else:
+            instructor = get_user_model().objects.filter(
+                pk=instructor_id, school_id=school_id, is_active=True,
+            ).first()
+            if instructor is None:
+                raise ValueError("Club instructor is not an active member of this school.")
+            offering.instructor = instructor
 
     if "capacity" in incoming:
         enrolled_count = SummerCampClubSelection.objects.filter(
