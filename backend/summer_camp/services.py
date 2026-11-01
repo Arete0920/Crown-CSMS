@@ -13,6 +13,9 @@ from households.models import Student
 from .models import (
     SummerCampAttendance,
     SummerCampBillingLedgerLink,
+    SummerCampClub,
+    SummerCampClubOffering,
+    SummerCampClubSelection,
     SummerCampEnrollment,
     SummerCampFormRequirement,
     SummerCampHealthReview,
@@ -63,6 +66,196 @@ def update_session(school_id, session_id, payload: dict):
         setattr(session, key, value)
     session.save()
     return session
+
+
+@transaction.atomic
+def create_club(school_id, payload: dict):
+    """Create one reusable school-scoped club/activity catalog item."""
+    incoming = dict(payload)
+    incoming.pop("school", None)
+    club = SummerCampClub(school_id=school_id, **incoming)
+    club.full_clean()
+    club.save()
+    return club
+
+
+@transaction.atomic
+def create_club_offering(school_id, payload: dict):
+    """Schedule a reusable club inside one school-owned Camp session."""
+    incoming = dict(payload)
+    incoming.pop("school", None)
+    session_id = incoming.pop("session_id", None) or incoming.pop("session", None)
+    club_id = incoming.pop("club_id", None) or incoming.pop("club", None)
+    instructor_id = incoming.pop("instructor_id", None)
+    session = SummerCampSession.objects.filter(pk=session_id, school_id=school_id).first()
+    club = SummerCampClub.objects.filter(pk=club_id, school_id=school_id, is_active=True).first()
+    if session is None or club is None:
+        raise ValueError("Camp club offering references an unavailable session or catalog item.")
+    offering = SummerCampClubOffering(
+        school_id=school_id,
+        session=session,
+        club=club,
+        instructor_id=instructor_id,
+        **incoming,
+    )
+    offering.full_clean()
+    offering.save()
+    return offering
+
+
+def _club_schedule_conflicts(enrollment, offering, *, exclude_selection_id=None):
+    """Return True when this enrollment already holds an overlapping enrolled club."""
+    selections = (
+        SummerCampClubSelection.objects.filter(
+            school_id=offering.school_id,
+            enrollment=enrollment,
+            status="ENROLLED",
+        )
+        .select_related("offering")
+        .order_by("pk")
+    )
+    if exclude_selection_id is not None:
+        selections = selections.exclude(pk=exclude_selection_id)
+    requested_days = set(offering.weekdays or [])
+    for selection in selections:
+        current = selection.offering
+        if current.session_id != offering.session_id:
+            continue
+        if not requested_days.intersection(current.weekdays or []):
+            continue
+        if current.start_time < offering.end_time and offering.start_time < current.end_time:
+            return True
+    return False
+
+
+def _next_club_waitlist_position(offering):
+    current_max = (
+        SummerCampClubSelection.objects.filter(
+            offering=offering, status="WAITLISTED",
+        ).aggregate(max_pos=Max("waitlist_position"))["max_pos"]
+        or 0
+    )
+    return int(current_max) + 1
+
+
+@transaction.atomic
+def select_club(school_id, enrollment_id, offering_id):
+    """Enroll or waitlist a registered camper without overselling a club seat."""
+    offering = (
+        SummerCampClubOffering.objects.select_for_update()
+        .select_related("club", "session")
+        .filter(
+            pk=offering_id,
+            school_id=school_id,
+            status="PUBLISHED",
+            club__is_active=True,
+        )
+        .first()
+    )
+    if offering is None:
+        raise ValueError("Club offering is unavailable.")
+    enrollment = (
+        SummerCampEnrollment.objects.select_for_update()
+        .filter(
+            pk=enrollment_id,
+            school_id=school_id,
+            session_id=offering.session_id,
+            status="REGISTERED",
+        )
+        .first()
+    )
+    if enrollment is None:
+        raise ValueError("Club selection requires a registered camper in this session.")
+    if _club_schedule_conflicts(enrollment, offering):
+        raise ValueError("Club selection conflicts with an existing enrolled activity.")
+
+    existing = SummerCampClubSelection.objects.select_for_update().filter(
+        offering=offering, enrollment=enrollment,
+    ).first()
+    if existing is not None and existing.status != "CANCELLED":
+        raise ValueError("Camper already has a selection for this club offering.")
+
+    enrolled_count = SummerCampClubSelection.objects.filter(
+        offering=offering, status="ENROLLED",
+    ).count()
+    if enrolled_count < offering.capacity:
+        selection_status = "ENROLLED"
+        waitlist_position = None
+    else:
+        waitlisted_count = SummerCampClubSelection.objects.filter(
+            offering=offering, status="WAITLISTED",
+        ).count()
+        if waitlisted_count >= offering.waitlist_capacity:
+            raise ValueError("Club offering and waitlist have no remaining capacity.")
+        selection_status = "WAITLISTED"
+        waitlist_position = _next_club_waitlist_position(offering)
+
+    if existing is None:
+        selection = SummerCampClubSelection(
+            school_id=school_id,
+            offering=offering,
+            enrollment=enrollment,
+        )
+    else:
+        selection = existing
+    selection.status = selection_status
+    selection.waitlist_position = waitlist_position
+    selection.save()
+    return selection
+
+
+def _promote_club_waitlist_locked(offering):
+    """Promote the first non-conflicting waitlisted camper into an open seat."""
+    enrolled_count = SummerCampClubSelection.objects.filter(
+        offering=offering, status="ENROLLED",
+    ).count()
+    if enrolled_count >= offering.capacity:
+        return None
+
+    candidates = list(
+        SummerCampClubSelection.objects.select_for_update()
+        .filter(offering=offering, status="WAITLISTED")
+        .select_related("enrollment")
+        .order_by("waitlist_position", "created_at", "pk")
+    )
+    for candidate in candidates:
+        if candidate.enrollment.status != "REGISTERED":
+            continue
+        if _club_schedule_conflicts(
+            candidate.enrollment, offering, exclude_selection_id=candidate.id,
+        ):
+            continue
+        candidate.status = "ENROLLED"
+        candidate.waitlist_position = None
+        candidate.save(update_fields=["status", "waitlist_position"])
+        return candidate
+    return None
+
+
+@transaction.atomic
+def cancel_club_selection(school_id, selection_id):
+    """Cancel one club choice and promote the next eligible waitlisted camper."""
+    offering_id = (
+        SummerCampClubSelection.objects.filter(pk=selection_id, school_id=school_id)
+        .values_list("offering_id", flat=True)
+        .first()
+    )
+    if offering_id is None:
+        raise ValueError("Club selection does not exist.")
+    offering = SummerCampClubOffering.objects.select_for_update().get(
+        pk=offering_id, school_id=school_id,
+    )
+    selection = SummerCampClubSelection.objects.select_for_update().filter(
+        pk=selection_id, school_id=school_id, offering=offering,
+    ).first()
+    if selection is None or selection.status == "CANCELLED":
+        raise ValueError("Club selection is already cancelled or unavailable.")
+    freed_seat = selection.status == "ENROLLED"
+    selection.status = "CANCELLED"
+    selection.waitlist_position = None
+    selection.save(update_fields=["status", "waitlist_position"])
+    promoted = _promote_club_waitlist_locked(offering) if freed_seat else None
+    return selection, promoted
 
 
 def compute_session_capacity(school_id, session_id) -> CapacityState:
