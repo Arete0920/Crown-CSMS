@@ -1791,8 +1791,8 @@ function getFeeSummaryText(feeStatus) {
   return `Application fee due: ${feeStatus.currency || "USD"} ${feeStatus.amount || "0"}.`;
 }
 
-function FeeSelectionPanel({ feeConfig, applicationFee, onToggleFee }) {
-  if (!feeConfig.configured || !feeConfig.required) {
+function FeeSelectionPanel({ feeConfig, applicationFee, onToggleFee, feeDue }) {
+  if (!feeConfig.configured || !feeDue) {
     return null;
   }
 
@@ -1828,6 +1828,7 @@ function SubmitPendingPanel({
   feeConfig,
   applicationFee,
   toggleApplicationFee,
+  feeDue,
   attestations,
   toggleAttestation,
   submitError,
@@ -1854,6 +1855,7 @@ function SubmitPendingPanel({
           feeConfig={feeConfig}
           applicationFee={applicationFee}
           onToggleFee={toggleApplicationFee}
+          feeDue={feeDue}
         />
         <label style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <input
@@ -1954,7 +1956,9 @@ function StepSubmit({
   const attestations = context.attestations || {};
   const feeConfig = normalizeFeeConfig(admissionsPublicConfig?.application_fee || FALLBACK_FEE_CONFIG);
   const applicationFee = context.applicationFee || { policyAccepted: !feeConfig.required, waiverRequested: false };
-  const feeSatisfied = !feeConfig.required || applicationFee.policyAccepted || applicationFee.waiverRequested;
+  const feeDue = feeConfig.configured && Array.isArray(context.students) && context.students.length > 0
+    && (Number(feeConfig.amount) + Math.max(0, context.students.length - 1) * Number(feeConfig.additional_child_amount)) > 0;
+  const feeSatisfied = !feeDue || applicationFee.policyAccepted || applicationFee.waiverRequested;
   const canFinalize = Boolean(
     feeConfig.configured &&
     attestations.informationAccurate &&
@@ -1974,7 +1978,7 @@ function StepSubmit({
   }, []);
 
   useEffect(() => {
-    if (feeConfig.configured && !feeConfig.required) {
+    if (feeConfig.configured && !feeDue) {
       setContext((prev) => ({
         ...prev,
         applicationFee: {
@@ -1983,7 +1987,7 @@ function StepSubmit({
         },
       }));
     }
-  }, [feeConfig.required, setContext]);
+  }, [feeConfig.configured, feeDue, setContext]);
 
   function toggleAttestation(name) {
     setContext((prev) => ({
@@ -2094,6 +2098,7 @@ function StepSubmit({
             feeConfig={feeConfig}
             applicationFee={applicationFee}
             toggleApplicationFee={toggleApplicationFee}
+            feeDue={feeDue}
             attestations={attestations}
             toggleAttestation={toggleAttestation}
             submitError={submitError}
