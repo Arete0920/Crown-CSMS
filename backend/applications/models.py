@@ -282,3 +282,27 @@ class EnrollmentContract(TimeStampedModel):
 
     def __str__(self) -> str:
         return f"Contract v{self.version} ({self.status})"
+
+
+class AdmissionsSubmissionReceipt(TimeStampedModel):
+    """Durable replay record for a successful, school-scoped admissions submission.
+
+    An idempotency key is never shared across schools. The stored request digest
+    prevents the same key from being reused with different family information.
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    school_id = models.UUIDField(db_index=True)
+    idempotency_key = models.CharField(max_length=256)
+    request_hash = models.CharField(max_length=64)
+    response_payload = models.JSONField(default=dict)
+
+    class Meta:
+        db_table = "admissions_submission_receipt"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["school_id", "idempotency_key"],
+                name="uniq_admissions_receipt_school_key",
+            ),
+        ]
+
