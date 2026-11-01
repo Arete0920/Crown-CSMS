@@ -34,6 +34,11 @@ export default {
   commandModules: [],
   trendPanels: [],
   activities: [],
-  quickActions: [],
+  quickActions: [
+    { label: 'Attendance Log', href: '/extended-care-dashboard' },
+    { label: 'Send Invoices', href: '/billing-dashboard' },
+    { label: 'Health Log', href: '/health-office-dashboard' },
+    { label: 'Summer Planning', href: '/extended-care-dashboard' },
+  ],
   statuses: [{ label: 'Operational source', state: DATA_UNAVAILABLE }],
 };

@@ -70,9 +70,9 @@ export default function SummerCampDashboard() {
     <CrownLayout title="Summer Camp Dashboard">
       <DashboardSection title="Summer Camp Board Summary">
         <p>These are school-scoped registration and linked-charge records, not payment or settlement totals.</p>
-        {loading && <span>Loading...</span>}
+        {loading && <span role="status">Loading...</span>}
         {error && (
-          <div style={{ color: "var(--crown-danger)", background: "var(--crown-danger-bg)", padding: "10px 14px", borderRadius: 4 }}>
+          <div role="alert" style={{ color: "var(--crown-danger)", background: "var(--crown-danger-bg)", padding: "10px 14px", borderRadius: 4 }}>
             {error}
           </div>
         )}

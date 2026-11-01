@@ -44,7 +44,7 @@ describe("Summer Camp board finance truth", () => {
     expect(screen.queryByText("Gross Revenue")).toBeNull();
   });
 
-  it.each([null, undefined, -1, "12500", 12.5])(
+  it.each([null, undefined, -1, "12500", 12.5, NaN, Infinity, Number.MAX_SAFE_INTEGER + 1])(
     "does not convert missing or invalid charges (%s) into zero cash",
     async (amount) => {
       vi.mocked(fetchSummerCampBoardSummary).mockResolvedValue({

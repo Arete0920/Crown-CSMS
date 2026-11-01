@@ -34,6 +34,10 @@ export default {
   commandModules: [],
   trendPanels: [],
   activities: [],
-  quickActions: [],
+  quickActions: [
+    { label: 'Open Camp Roster', href: '/summer-camp-dashboard' },
+    { label: 'Staff Coverage', href: '/summer-camp-dashboard' },
+    { label: 'Family Outreach', href: '/communications-dashboard' },
+  ],
   statuses: [{ label: 'Operational source', state: DATA_UNAVAILABLE }],
 };
