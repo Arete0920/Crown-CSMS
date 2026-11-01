@@ -104,7 +104,6 @@ function formatCurrency(value, currency = "USD") {
 
 function buildHouseholdFeePreview({ context, feeConfig }) {
   const students = Array.isArray(context?.students) ? context.students : [];
-  const aidIntent = String(context?.financialAidInterest?.intent || "").trim().toLowerCase();
   const appFeeAmount = Number(feeConfig?.amount || DEFAULT_APPLICATION_FEE_AMOUNT);
   const enrollmentFeeAmount = Number(DEFAULT_ENROLLMENT_FEE_AMOUNT);
 
