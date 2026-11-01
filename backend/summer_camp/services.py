@@ -247,6 +247,11 @@ def select_club(school_id, enrollment_id, offering_id):
     )
     if offering is None:
         raise ValueError("Club offering is unavailable.")
+    if offering.optional_charge_cents:
+        # A selectable paid add-on must create a canonical finance obligation.
+        # That bridge is not yet implemented for club electives, so fail closed
+        # rather than recording an unbilled financial commitment.
+        raise ValueError("Paid club offerings require canonical finance integration.")
     enrollment = (
         SummerCampEnrollment.objects.select_for_update()
         .filter(
