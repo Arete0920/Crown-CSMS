@@ -1,5 +1,11 @@
 """Local demo route evidence must adapt as unmerged modules become available."""
 from pathlib import Path
+import importlib.util
+import subprocess
+import sys
+from unittest.mock import patch
+
+import pytest
 
 from django.test import SimpleTestCase
 
@@ -45,3 +51,54 @@ class FiveModuleRouteEvidenceTests(SimpleTestCase):
         self.assertTrue(result["Extended Care"])
         self.assertTrue(result["Summer Camp"])
         self.assertTrue(all(isinstance(ready, bool) for ready in result.values()))
+
+def _load_heritage_launcher():
+    path = Path(__file__).resolve().parents[3] / "scripts" / "demo" / "start_heritage_local.py"
+    spec = importlib.util.spec_from_file_location("heritage_launcher_preflight", path)
+    launcher = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(launcher)
+    return launcher
+
+
+def test_launcher_runs_strict_audit_with_same_isolated_environment():
+    launcher = _load_heritage_launcher()
+    python = Path("isolated-demo") / "python.exe"
+    env = {
+        "CROWN_ENV": "local",
+        "DJANGO_DEBUG": "true",
+        "DATABASE_URL": "sqlite:///fictional/heritage.sqlite3",
+    }
+    argv = ["start_heritage_local.py", "--prepare-only", "--five-module-preflight"]
+    with patch.object(sys, "argv", argv), \
+         patch.object(launcher, "available_ports"), \
+         patch.object(launcher, "local_environment", return_value=env), \
+         patch.object(launcher, "npm_command", return_value=["npm"]), \
+         patch.object(launcher, "prepare", return_value=python), \
+         patch.object(launcher, "run") as run_command:
+        assert launcher.main() == 0
+    run_command.assert_called_once_with(
+        [str(python), str(launcher.ROOT / "backend/manage.py"),
+         "five_module_demo_preflight", "--strict"],
+        env,
+    )
+
+
+def test_launcher_strict_audit_failure_returns_nonzero_without_starting_servers():
+    launcher = _load_heritage_launcher()
+    argv = ["start_heritage_local.py", "--prepare-only", "--five-module-preflight"]
+    with patch.object(sys, "argv", argv), \
+         patch.object(launcher, "available_ports"), \
+         patch.object(launcher, "local_environment", return_value={"CROWN_ENV": "local"}), \
+         patch.object(launcher, "npm_command", return_value=["npm"]), \
+         patch.object(launcher, "prepare", return_value=Path("isolated-demo/python.exe")), \
+         patch.object(launcher, "run",
+                      side_effect=subprocess.CalledProcessError(1, ["five_module_demo_preflight"])):
+        assert launcher.main() == 1
+
+
+def test_launcher_rejects_strict_audit_without_prepare_only():
+    launcher = _load_heritage_launcher()
+    with patch.object(sys, "argv", ["start_heritage_local.py", "--five-module-preflight"]):
+        with pytest.raises(SystemExit) as exc:
+            launcher.main()
+    assert exc.value.code == 2
