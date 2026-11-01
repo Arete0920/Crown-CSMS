@@ -22,7 +22,19 @@ activation, approval for real custody records, or an operational re-entry route.
 - Live custody and the release path remain fail-closed for all missing/expired
   or cross-tenant authorizations.
 
-## PostgreSQL migration and restore acceptance (not yet certified)
+## PostgreSQL migration and restore acceptance (exact-head CI required)
+
+The Diadem PostgreSQL 16 job now performs a real `pg_dump` of the
+disposable pre-0012 synthetic test database, restores that archive via
+`pg_restore` to a freshly created local test database, checks custody,
+release and audit IDs/counts/relationships, migrates the restored clone to
+0012, and verifies visit-one defaults with no manufactured approvals.
+The clone is dropped in a `finally` block. The JUnit gate requires this
+test to execute and pass, not skip. No Azure database is contacted.
+
+**Do not mark acceptance PASS until the exact-head GitHub job completes
+successfully.** Synthetic CI restoration does not certify real-world backups
+or authorize a hosted rollout.
 
 1. On a **disposable synthetic PostgreSQL 16 clone**, back up the
    pre-migration schema and synthetic data. Do not migrate live child records.
@@ -38,7 +50,7 @@ activation, approval for real custody records, or an operational re-entry route.
 5. Run check-in, release, tenant, RBAC, roster and PostgreSQL simultaneous
    admission, staffing and release race tests on the exact commit. Verify the
    full backend suite and repository-policy/release-authority CI gates.
-6. Verify a restore **from backup** to a fresh disposable database, including
+6. Verify exact-head CI proof of a restore **from backup** to a fresh disposable database, including
    counts, IDs and release audit, before considering the migration accepted.
    A database down-migration is not a substitute for restore certification.
 7. Do not deploy or enable re-entry; a subsequent reviewed change must

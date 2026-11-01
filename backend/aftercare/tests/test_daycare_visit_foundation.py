@@ -4,6 +4,13 @@ No re-entry endpoint or service activation is included in this slice.
 """
 from datetime import datetime, timedelta, timezone as datetime_timezone
 from uuid import uuid4
+from pathlib import Path
+from tempfile import TemporaryDirectory
+from urllib.parse import urlsplit, urlunsplit
+import os
+import shutil
+import subprocess
+import sys
 
 import pytest
 from django.core.exceptions import ValidationError
@@ -158,6 +165,100 @@ def test_database_rejects_visit_without_approval_even_when_orm_is_bypassed():
     assert first.reentry_approval_id is None
 
 
+
+def _verify_local_postgresql_backup_restore(
+    *, attendance_id, release_id, audit_id, school_id,
+    attendance_count, release_count, audit_count,
+):
+    """Restore a pre-0012 synthetic custody dump into a *fresh* local test DB."""
+    assert connection.vendor == "postgresql"
+    db_name = str(connection.settings_dict["NAME"])
+    host = str(connection.settings_dict["HOST"] or "localhost")
+    port = str(connection.settings_dict["PORT"] or "5432")
+    user = str(connection.settings_dict["USER"])
+    assert host in {"localhost", "127.0.0.1"}
+    assert db_name.startswith("test_")
+    dsn = urlsplit(os.environ.get("DATABASE_URL", ""))
+    assert dsn.scheme in {"postgresql", "postgres"}
+    assert dsn.hostname in {"localhost", "127.0.0.1"}
+    assert dsn.username == user
+    assert dsn.path.lstrip("/") and db_name.endswith(dsn.path.lstrip("/"))
+    assert os.environ.get("DJANGO_SETTINGS_MODULE") == "crown_api.test_settings"
+
+    installed = Path(f"/usr/lib/postgresql/{connection.pg_version // 10000}/bin")
+    def cli(name):
+        exact = installed / name
+        if exact.is_file():
+            return str(exact)
+        other = shutil.which(name)
+        assert other, f"PostgreSQL client executable required: {name}"
+        return other
+
+    env = {**os.environ, "PGHOST": host, "PGPORT": port, "PGUSER": user,
+           "PGPASSWORD": str(connection.settings_dict["PASSWORD"])}
+    def run(*args, process_env=None):
+        return subprocess.run(
+            list(args), env=process_env or env, check=True,
+            capture_output=True, text=True, timeout=240,
+        )
+
+    clone = f"test_diadem_restore_{uuid4().hex[:12]}"
+    assert clone != db_name and clone.startswith("test_diadem_restore_")
+    def scalar(sql):
+        return run(cli("psql"), "-X", "-A", "-t", "-d", clone, "-c", sql).stdout.strip()
+
+    attendance_table = connection.ops.quote_name(DaycareAttendance._meta.db_table)
+    release_table = connection.ops.quote_name(DaycareRelease._meta.db_table)
+    audit_table = connection.ops.quote_name(AuditLog._meta.db_table)
+    attendance_id, release_id = str(attendance_id), str(release_id)
+    audit_id, school_id = str(audit_id), str(school_id)
+    created = False
+    with TemporaryDirectory(prefix="diadem-test-restore-") as folder:
+        archive = str(Path(folder) / "before-0012.dump")
+        try:
+            run(cli("pg_dump"), "-Fc", "-d", db_name, "-f", archive)
+            assert Path(archive).stat().st_size > 0
+            run(cli("createdb"), "--maintenance-db=postgres", clone)
+            created = True
+            run(cli("pg_restore"), "--exit-on-error", "--no-owner", "--no-acl",
+                "-d", clone, archive)
+
+            def verify():
+                assert scalar(f"SELECT count(*) FROM {attendance_table}") == str(attendance_count)
+                assert scalar(f"SELECT count(*) FROM {release_table}") == str(release_count)
+                assert scalar(f"SELECT count(*) FROM {audit_table}") == str(audit_count)
+                assert scalar(
+                    f"SELECT school_id FROM {attendance_table} WHERE id='{attendance_id}'"
+                ) == school_id
+                assert scalar(
+                    f"SELECT attendance_id FROM {release_table} WHERE id='{release_id}'"
+                ) == attendance_id
+                assert scalar(
+                    f"SELECT object_id FROM {audit_table} WHERE id='{audit_id}'"
+                ) == release_id
+
+            verify()
+            clone_dsn = urlunsplit((dsn.scheme, dsn.netloc, "/" + clone,
+                                   dsn.query, dsn.fragment))
+            run(sys.executable, "manage.py", "migrate", "aftercare", "0012",
+                "--noinput", "--no-color",
+                process_env={**env, "DATABASE_URL": clone_dsn})
+            verify()
+            assert scalar(
+                f"SELECT visit_number FROM {attendance_table} WHERE id='{attendance_id}'"
+            ) == "1"
+            assert scalar(
+                f"SELECT reentry_approval_id IS NULL FROM {attendance_table} "
+                f"WHERE id='{attendance_id}'"
+            ) == "t"
+            assert scalar(
+                "SELECT count(*) FROM aftercare_daycarereentryauthorization"
+            ) == "0"
+        finally:
+            if created:
+                run(cli("dropdb"), "--if-exists", "--force",
+                    "--maintenance-db=postgres", clone)
+
 @pytest.mark.django_db(transaction=True)
 def test_postgresql_preexisting_custody_survives_visit_migration():
     """Rehearse 0011 -> 0012 with old-model child custody rows and audit IDs.
@@ -212,6 +313,13 @@ def test_postgresql_preexisting_custody_survives_visit_migration():
         assert not hasattr(old_row, "visit_number")
         assert HistoricalAttendance.objects.count() == 1
         assert HistoricalRelease.objects.count() == 1
+        _verify_local_postgresql_backup_restore(
+            attendance_id=old_row.pk, release_id=old_release.pk,
+            audit_id=audit.pk, school_id=data["school"].pk,
+            attendance_count=HistoricalAttendance.objects.count(),
+            release_count=HistoricalRelease.objects.count(),
+            audit_count=AuditLog.objects.count(),
+        )
 
         MigrationExecutor(connection).migrate([updated])
         accepted_row = DaycareAttendance.objects.get(pk=historical_ids[0])
