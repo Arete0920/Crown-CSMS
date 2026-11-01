@@ -290,8 +290,7 @@ def test_deactivated_school_may_inspect_existing_custody_but_not_new_admit():
     d["school"].is_active = False
     d["school"].save(update_fields=["is_active"])
     sites = c.get("/api/v1/aftercare/daycare/sites/")
-    assert sites.status_code == 200, getattr(sites, "data", None)
-    assert sites.data["sites"][0]["site_id"] == str(d["site"].id)
+    assert sites.status_code == 404  # Inactive-school middleware admits only the exact custody roster and release routes.
     roster = c.get(f"/api/v1/aftercare/daycare/sites/{d['site'].id}/roster/")
     assert roster.status_code == 200
     assert roster.data["children_present"] == 1
