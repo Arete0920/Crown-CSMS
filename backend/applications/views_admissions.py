@@ -705,7 +705,7 @@ def _create_admissions_submission_records(school_id: Any, data: AdmissionsSubmit
                 "documents": data.documents,
                 "financial_aid_interest": data.financial_aid_interest,
                 "application_fee": {
-                    "configured_amount": str(APPLICATION_FEE_USD),
+                    "configured_amount": None,
                     "currency": APPLICATION_FEE_CURRENCY,
                     "policy_accepted": bool(data.application_fee.get("policyAccepted")),
                     "waiver_requested": bool(data.application_fee.get("waiverRequested")),
@@ -1035,17 +1035,17 @@ def _application_fee_status_value(fee_required: bool, waiver_requested: bool) ->
     return "not_required"
 
 
-def _build_enrollment_continuity(data: AdmissionsSubmitData) -> dict[str, Any]:
-    fee_required = _application_fee_required()
+def _build_enrollment_continuity(data: AdmissionsSubmitData, fee_policy: Any) -> dict[str, Any]:
+    fee_required = _application_fee_required(fee_policy)
     waiver_requested = bool(data.application_fee.get("waiverRequested"))
     fee_status = _application_fee_status_value(fee_required, waiver_requested)
 
-    fee_rows = _fee_rows_for_household(data, [])
+    fee_rows = _fee_rows_for_household(data, [], fee_policy)
 
     return {
         "phase": "admissions_to_enrollment",
         "fee_program": {
-            "application_fee": _application_fee_config(),
+            "application_fee": _application_fee_config(fee_policy),
             "financial_aid_fee": _financial_aid_fee_config(data),
             "enrollment_fee": _enrollment_fee_config(),
             "per_child_schedule": fee_rows,
@@ -1059,7 +1059,7 @@ def _build_enrollment_continuity(data: AdmissionsSubmitData) -> dict[str, Any]:
                 "key": "application_fee",
                 "title": "Application Fee",
                 "status": fee_status,
-                "amount": str(APPLICATION_FEE_USD),
+                "amount": str(fee_policy.amount_for_child(1)),
                 "currency": APPLICATION_FEE_CURRENCY,
             },
             {
@@ -1093,7 +1093,7 @@ def _build_enrollment_continuity(data: AdmissionsSubmitData) -> dict[str, Any]:
                 "key": "enrollment_fee",
                 "title": "Enrollment Fee",
                 "status": "pending" if _enrollment_fee_required() else "not_required",
-                "amount": str(ENROLLMENT_FEE_USD),
+                "amount": None,
                 "currency": APPLICATION_FEE_CURRENCY,
             },
             {
@@ -1258,8 +1258,9 @@ def _build_family_affordability_profile(
     data: AdmissionsSubmitData,
     application_ids: list[str],
     application_fee: dict[str, Any],
+    fee_policy: Any,
 ) -> dict[str, Any]:
-    rows = cast(list[dict[str, Any]], application_fee.get("per_child_schedule") or _fee_rows_for_household(data, application_ids))
+    rows = cast(list[dict[str, Any]], application_fee.get("per_child_schedule") or _fee_rows_for_household(data, application_ids, fee_policy))
 
     def _sum_amount(field: str) -> str:
         total = Decimal("0.00")
@@ -1279,7 +1280,7 @@ def _build_family_affordability_profile(
             "enrollment_fee_total": _sum_amount("enrollment_fee"),
             "total_estimated": _sum_amount("total"),
         },
-        "discount_policy": _application_fee_config().get("discount_policy"),
+        "discount_policy": _application_fee_config(fee_policy).get("discount_policy"),
     }
 
 
@@ -1297,12 +1298,12 @@ def _build_application_fee_status_card(*, application_fee: dict[str, Any]) -> di
     }
 
 
-def _build_application_fee_status(data: AdmissionsSubmitData) -> dict[str, Any]:
+def _build_application_fee_status(data: AdmissionsSubmitData, fee_policy: Any) -> dict[str, Any]:
     waiver_requested = bool(data.application_fee.get("waiverRequested"))
     policy_accepted = bool(data.application_fee.get("policyAccepted"))
-    fee_required = _application_fee_required()
+    fee_required = _application_fee_required(fee_policy)
     status = _application_fee_status_value(fee_required, waiver_requested)
-    config = _application_fee_config()
+    config = _application_fee_config(fee_policy)
     return {
         **config,
         "policy_accepted": policy_accepted,
@@ -1396,7 +1397,7 @@ def _resolve_finance_payer_user(*, school: Any, guardians: list[dict[str, Any]])
 
 
 def _create_application_fee_finance_records(*, school: Any, data: AdmissionsSubmitData, application_ids: list[str], correlation_id: str, fee_policy: Any = None) -> dict[str, Any]:
-    fee_status = _build_application_fee_status(data)
+    fee_status = _build_application_fee_status(data, fee_policy)
     if fee_policy is not None:
         fee_status.update({"required": fee_policy.required, "amount": str(fee_policy.amount_for_child(1)), "schedule_id": fee_policy.schedule_id, "status": _application_fee_status_value(fee_policy.required, bool(data.application_fee.get("waiverRequested")))})
     if not fee_status["required"]:
@@ -1429,7 +1430,7 @@ def _create_application_fee_finance_records(*, school: Any, data: AdmissionsSubm
     obligation_rows = []
     amount_cents_total = 0
     for child_index, app_id in enumerate(application_ids or [str(uuid.uuid4())], start=1):
-        discounted_fee = fee_policy.amount_for_child(child_index) if fee_policy is not None else _apply_child_discount(APPLICATION_FEE_USD, child_index)
+        discounted_fee = fee_policy.amount_for_child(child_index)
         fee_cents = int((discounted_fee * 100).quantize(Decimal("1")))
         amount_cents_total += fee_cents
         reference = f"admissions_fee:{app_id}"
@@ -1461,7 +1462,7 @@ def _create_application_fee_finance_records(*, school: Any, data: AdmissionsSubm
             {
                 "child_index": child_index,
                 "application_id": app_id,
-                "discount_percent": 0 if fee_policy is not None else _child_discount_percent(child_index),
+                "discount_percent": 0,
                 "amount": str(discounted_fee),
                 "obligation_id": obligation.id,
             }
@@ -1485,7 +1486,7 @@ def _create_application_fee_finance_records(*, school: Any, data: AdmissionsSubm
         "invoice_id": invoice.id,
         "collection_path": PAYMENT_INTENT_ENDPOINT,
     }
-    fee_status["per_child_schedule"] = _fee_rows_for_household(data, application_ids)
+    fee_status["per_child_schedule"] = _fee_rows_for_household(data, application_ids, fee_policy)
     if fee_policy is not None:
         for row in fee_status["per_child_schedule"]:
             amount = fee_policy.amount_for_child(row["child_index"])
@@ -3313,7 +3314,7 @@ def _admissions_submit_impl(request):
     fee_policy = get_admissions_fee_policy(school=school, term=submit_data.start_term)
     if fee_policy is None:
         return _attach_correlation(Response({"detail": "Admissions fees are not configured for this school and term.", "code": "fee_policy_unavailable"}, status=409), correlation_id)
-    validation_error = _validate_submit_data(submit_data)
+    validation_error = _validate_submit_data(submit_data, fee_policy)
     if validation_error:
         return _attach_correlation(
             _validation_error(validation_error, correlation_id=correlation_id),
@@ -3379,7 +3380,7 @@ def _admissions_submit_impl(request):
         },
         "documents_lifecycle": _build_document_lifecycle(submit_data.documents),
         "assessment_interview": _build_assessment_interview_status(submit_data),
-        "enrollment_continuity": _build_enrollment_continuity(submit_data),
+        "enrollment_continuity": _build_enrollment_continuity(submit_data, fee_policy),
         "post_admission_lifecycle": _build_post_admission_lifecycle(submit_data),
         "communications_dispatch": communications_dispatch,
         "reviewer_summary": _build_reviewer_summary(submit_data, applicants),
@@ -3387,6 +3388,7 @@ def _admissions_submit_impl(request):
             data=submit_data,
             application_ids=application_ids,
             application_fee=application_fee,
+            fee_policy=fee_policy,
         ),
         "application_fee": application_fee,
         "application_fee_status_card": _build_application_fee_status_card(application_fee=application_fee),
@@ -3394,7 +3396,7 @@ def _admissions_submit_impl(request):
             data=submit_data,
             application_fee=application_fee,
         ),
-        "fee_config": _application_fee_config(),
+        "fee_config": _application_fee_config(fee_policy),
         "checklist_hub": {
             "path": "/admissions/checklist",
             "application_id": application_ids[0] if application_ids else None,
