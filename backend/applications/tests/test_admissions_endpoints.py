@@ -678,6 +678,15 @@ class AdmissionsEndpointsTests(APITestCase):
         self.assertIn("family_partnership_conversation", checklist_keys)
         self.assertIn("decision_and_enrollment_next_steps", checklist_keys)
 
+    def test_enrollment_continuity_does_not_quote_unconfigured_enrollment_fee(self):
+        self.client.force_authenticate(user=None)
+        response = self.client.post("/api/v1/admissions/submit/", self._submit_payload(), format="json")
+        self.assertEqual(response.status_code, 201, response.data)
+        items = {row["key"]: row for row in response.data["enrollment_continuity"]["checklist"]}
+        self.assertEqual(items["enrollment_fee"]["status"], "not_quoted")
+        self.assertIsNone(items["enrollment_fee"]["amount"])
+        self.assertEqual(response.data["fee_config"]["amount"], "85.00")
+
     def test_submission_rejects_unconfigured_fee_policy(self):
         self.client.force_authenticate(user=None)
         self.fee_schedule.is_active = False
