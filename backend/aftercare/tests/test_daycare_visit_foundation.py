@@ -6,6 +6,7 @@ from datetime import timedelta
 
 import pytest
 from django.core.exceptions import ValidationError
+from django.db import IntegrityError, connection, transaction
 from django.utils import timezone
 
 from aftercare.models import DaycareAttendance, DaycareReentryAuthorization
@@ -133,3 +134,23 @@ def test_reentry_requires_chronological_handoff_and_local_care_day():
         )
     assert DaycareAttendance.objects.count()==1
     assert AuditLog.objects.filter(action="diadem.daycare.checkin").count()==1
+
+
+def test_database_rejects_visit_without_approval_even_when_orm_is_bypassed():
+    # Deliberately exercise only the disposable test database. Production
+    # custody writes never use raw SQL; this proves the migration CHECK guard.
+    data = setup()
+    first = check(data)
+    table = connection.ops.quote_name(DaycareAttendance._meta.db_table)
+    pk_column = connection.ops.quote_name(DaycareAttendance._meta.pk.column)
+    pk_value = DaycareAttendance._meta.pk.get_db_prep_value(first.pk, connection)
+    with pytest.raises(IntegrityError):
+        with transaction.atomic():
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    f"UPDATE {table} SET visit_number = 2 WHERE {pk_column} = %s",
+                    [pk_value],
+                )
+    first.refresh_from_db()
+    assert first.visit_number == 1
+    assert first.reentry_approval_id is None

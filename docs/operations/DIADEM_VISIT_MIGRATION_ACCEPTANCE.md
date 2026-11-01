@@ -7,6 +7,8 @@ activation, approval for real custody records, or an operational re-entry route.
 
 - Existing DaycareAttendance rows remain immutable with visit_number=1.
 - Existing DaycareRelease attendance OneToOne and audit rows remain unchanged.
+- Database CHECK constraints require visit 1 without a re-entry approval,
+  visit 2+ with an approval, and a fixed reviewed authorization reason.
 - A newly recorded admission to the same school/child/care date can use a
   higher visit number only when it references a matching, append-only
   DaycareReentryAuthorization for the immediately preceding released visit.

@@ -44,6 +44,7 @@ class Migration(migrations.Migration):
                 "constraints": [
                     models.UniqueConstraint(fields=["school", "request_key"], name="dia_reentry_request_uq"),
                     models.CheckConstraint(condition=models.Q(expires_at__gt=models.F("approved_at")), name="dia_reentry_window_ck"),
+                    models.CheckConstraint(condition=models.Q(reason_code__in=["SCHEDULED_RETURN","DIRECTOR_REVIEWED"]), name="dia_reentry_reason_ck"),
                 ],
                 "indexes": [models.Index(fields=["school", "child", "care_date"], name="dia_reentry_child_day_idx")],
             },
@@ -60,6 +61,14 @@ class Migration(migrations.Migration):
             constraint=models.UniqueConstraint(
                 fields=["school", "child", "care_date", "visit_number"],
                 name="dia_attendance_visit_uq",
+            ),
+        ),
+        migrations.AddConstraint(
+            model_name="daycareattendance",
+            constraint=models.CheckConstraint(
+                condition=(models.Q(visit_number=1,reentry_approval__isnull=True)
+                           | models.Q(visit_number__gt=1,reentry_approval__isnull=False)),
+                name="dia_attendance_visit_shape_ck",
             ),
         ),
     ]
