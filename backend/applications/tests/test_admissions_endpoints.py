@@ -19,6 +19,7 @@ from applications.models import (
 )
 from core.models import AcademicYear, CrownPermission, RolePermission, School, UserRole
 from finance.models import FinanceInvoice, FinanceObligation
+from fee_schedule_wizard.models import FeeSchedule, FeeLine
 from households.models import Household
 
 
@@ -64,6 +65,20 @@ class AdmissionsEndpointsTests(APITestCase):
             end_date="2030-05-31",
             is_current=True,
         )
+
+        self.fee_schedule = FeeSchedule.objects.create(
+            school=self.school, name="Admissions 2026", term="2026-2027",
+            effective_date="2026-08-01", is_active=True,
+        )
+        for code, cents in (
+            ("admissions_first_child", 8500),
+            ("admissions_additional_child", 5000),
+        ):
+            FeeLine.objects.create(
+                fee_schedule=self.fee_schedule, code=code, label=code,
+                amount_cents=cents, kind="fee", frequency="one_time",
+                is_required=True,
+            )
 
         # Create test applications with a range of statuses
         self.app_draft = Application.objects.create(
@@ -662,6 +677,28 @@ class AdmissionsEndpointsTests(APITestCase):
         self.assertIn("record_completion", checklist_keys)
         self.assertIn("family_partnership_conversation", checklist_keys)
         self.assertIn("decision_and_enrollment_next_steps", checklist_keys)
+
+    def test_submission_rejects_unconfigured_fee_policy(self):
+        self.client.force_authenticate(user=None)
+        self.fee_schedule.is_active = False
+        self.fee_schedule.save(update_fields=["is_active"])
+        before = FinanceObligation.objects.filter(school=self.school).count()
+        r = self.client.post("/api/v1/admissions/submit/", self._submit_payload(), format="json")
+        self.assertEqual(r.status_code, 409, r.data)
+        self.assertEqual(r.data["code"], "fee_policy_unavailable")
+        self.assertEqual(FinanceObligation.objects.filter(school=self.school).count(), before)
+
+    def test_public_config_canonical_first_and_additional_fees(self):
+        self.client.force_authenticate(user=None)
+        r = self.client.get(
+            "/api/v1/admissions/public-config/",
+            {"school_id": str(self.school_id), "term": "2026-2027"},
+        )
+        self.assertEqual(r.status_code, 200, r.data)
+        fee = r.data["application_fee"]
+        self.assertTrue(fee["configured"])
+        self.assertEqual(fee["amount"], "85.00")
+        self.assertEqual(fee["additional_child_amount"], "50.00")
 
     def test_public_config_allows_missing_tenant_header(self):
         """Public config must be reachable without X-School-Id for public funnel bootstrap."""
