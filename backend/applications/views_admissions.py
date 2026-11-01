@@ -204,8 +204,6 @@ SOURCES = [
     "other",
 ]
 
-APPLICATION_FEE_USD = Decimal("85.00")
-ENROLLMENT_FEE_USD = Decimal(str(os.getenv("ADMISSIONS_ENROLLMENT_FEE_USD", "250.00")))
 APPLICATION_FEE_CURRENCY = "USD"
 PAYMENT_INTENT_ENDPOINT = "/api/finance/payments/intent/"
 SUBMIT_IP_RATE_LIMIT = 30
@@ -285,77 +283,63 @@ CHECKLIST_REQUIRED_ITEMS: list[ChecklistRequiredItemDef] = [
 ]
 
 
-def _application_fee_required() -> bool:
-    return APPLICATION_FEE_USD > Decimal("0")
+def _application_fee_required(fee_policy: Any) -> bool:
+    return bool(fee_policy and fee_policy.required)
 
 
 def _financial_aid_interest_is_applying(data: "AdmissionsSubmitData") -> bool:
-    # Admissions records intent only; Jireh application submission is a separate action.
+    # Admissions records intent only. Jireh has a separate household application.
     intent = str((data.financial_aid_interest or {}).get("intent") or "").strip().lower()
     return intent == "applying"
 
 
-def _enrollment_fee_required() -> bool:
-    return ENROLLMENT_FEE_USD > Decimal("0")
-
-
-def _child_discount_percent(child_index: int) -> int:
-    if child_index <= 1:
-        return 0
-    if child_index == 2:
-        return 25
-    if child_index == 3:
-        return 50
-    if child_index == 4:
-        return 75
-    return 100
-
-
-def _apply_child_discount(base_amount: Decimal, child_index: int) -> Decimal:
-    discount_percent = Decimal(_child_discount_percent(child_index))
-    multiplier = Decimal("1") - (discount_percent / Decimal("100"))
-    discounted = (base_amount * multiplier).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
-    return max(discounted, Decimal("0.00"))
-
-
-def _fee_rows_for_household(data: "AdmissionsSubmitData", application_ids: list[str]) -> list[dict[str, Any]]:
+def _fee_rows_for_household(
+    data: "AdmissionsSubmitData", application_ids: list[str], fee_policy: Any,
+) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     student_count = max(len(application_ids), len(data.students or []))
     for child_index in range(1, student_count + 1):
         app_id = application_ids[child_index - 1] if child_index - 1 < len(application_ids) else None
-        app_fee = _apply_child_discount(APPLICATION_FEE_USD, child_index) if _application_fee_required() else Decimal("0.00")
-        # Jireh is assessed once per family at Jireh submission, not per child here.
-        aid_fee = Decimal("0.00")
-        enrollment_fee = _apply_child_discount(ENROLLMENT_FEE_USD, child_index) if _enrollment_fee_required() else Decimal("0.00")
-        rows.append(
-            {
-                "child_index": child_index,
-                "application_id": app_id,
-                "discount_percent": _child_discount_percent(child_index),
-                "application_fee": str(app_fee),
-                "financial_aid_fee": str(aid_fee),
-                "enrollment_fee": str(enrollment_fee),
-                "total": str((app_fee + aid_fee + enrollment_fee).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)),
-            }
-        )
+        app_fee = fee_policy.amount_for_child(child_index)
+        # Financial Aid is one later Jireh family application, not a child charge.
+        # No standard enrollment deposit or unconfigured enrollment fee is due here.
+        rows.append({
+            "child_index": child_index,
+            "application_id": app_id,
+            "discount_percent": 0,
+            "application_fee": str(app_fee),
+            "financial_aid_fee": "0.00",
+            "enrollment_fee": "0.00",
+            "total": str(app_fee),
+        })
     return rows
 
 
-def _application_fee_config() -> dict[str, Any]:
+def _application_fee_config(fee_policy: Any = None) -> dict[str, Any]:
+    if fee_policy is None:
+        return {
+            "configured": False,
+            "required": False,
+            "amount": None,
+            "additional_child_amount": None,
+            "currency": APPLICATION_FEE_CURRENCY,
+            "pricing_rule": "first_child_plus_additional_children",
+            "schedule_id": None,
+            "school_id": None,
+            "term": None,
+            "status": "unconfigured",
+        }
     return {
-        "required": _application_fee_required(),
-        "amount": str(APPLICATION_FEE_USD),
+        "configured": True,
+        "required": fee_policy.required,
+        "amount": str(fee_policy.amount_for_child(1)),
+        "additional_child_amount": str(fee_policy.amount_for_child(2)),
         "currency": APPLICATION_FEE_CURRENCY,
-        "discount_policy": {
-            "description": "2nd child 25% off, 3rd child 50% off, 4th child 75% off, 5th+ free",
-            "tiers": [
-                {"child_index": 1, "discount_percent": 0},
-                {"child_index": 2, "discount_percent": 25},
-                {"child_index": 3, "discount_percent": 50},
-                {"child_index": 4, "discount_percent": 75},
-                {"child_index": 5, "discount_percent": 100, "applies_to": "and_above"},
-            ],
-        },
+        "pricing_rule": "first_child_plus_additional_children",
+        "schedule_id": fee_policy.schedule_id,
+        "school_id": fee_policy.school_id,
+        "term": fee_policy.term,
+        "status": "configured",
     }
 
 
@@ -374,175 +358,14 @@ def _financial_aid_fee_config(data: "AdmissionsSubmitData") -> dict[str, Any]:
 
 
 def _enrollment_fee_config() -> dict[str, Any]:
+    # Enrollment happens later; no generic $250 charge or deposit may be quoted.
     return {
-        "required": _enrollment_fee_required(),
-        "amount": str(ENROLLMENT_FEE_USD),
+        "required": False,
+        "amount": None,
         "currency": APPLICATION_FEE_CURRENCY,
+        "status": "not_quoted",
+        "billing_stage": "after_acceptance",
     }
-
-
-def _is_graph_email_configured() -> bool:
-    return bool(
-        (
-            os.getenv("GRAPH_TENANT_ID")
-            and os.getenv("GRAPH_CLIENT_ID")
-            and os.getenv("GRAPH_CLIENT_SECRET")
-        )
-        or (
-            os.getenv("AZURE_TENANT_ID")
-            and os.getenv("AZURE_CLIENT_ID")
-            and os.getenv("AZURE_CLIENT_SECRET")
-        )
-    )
-
-
-def _is_sharepoint_configured() -> bool:
-    return bool(os.getenv("M365_SHAREPOINT_SITE_ID") or os.getenv("M365_DEFAULT_DRIVE_ID"))
-
-
-def _is_sms_configured() -> bool:
-    return str(os.getenv("COMMS_SMS_ENABLED", "0")).strip().lower() in {"1", "true", "yes", "on"}
-
-
-def _build_contract_m365_handoff(*, application_ids: list[str]) -> dict[str, Any]:
-    return {
-        "enabled": _is_graph_email_configured() and _is_sharepoint_configured(),
-        "provider": "microsoft_365",
-        "template": {
-            "name": "Enrollment Contract Standard",
-            "autopopulate_fields": [
-                "guardian_names",
-                "guardian_emails",
-                "student_names",
-                "campus",
-                "start_term",
-                "fees_per_child",
-                "discount_schedule",
-                "financial_aid_intent",
-                "contract_totals",
-            ],
-        },
-        "channels": {
-            "outlook_email": _is_graph_email_configured(),
-            "sharepoint_packet": _is_sharepoint_configured(),
-            "teams_notification": _is_graph_email_configured(),
-        },
-        "application_ids": application_ids,
-    }
-
-
-def _decision_deadline_iso() -> str:
-    return (timezone.now() + timedelta(hours=24)).isoformat()
-
-
-def _queue_outbox_message(*, outbox_model: Any, idempotency_key: str, school_id: str, channel: str, to_value: str, subject: str, body: str) -> None:
-    outbox_model.objects.get_or_create(
-        idempotency_key=idempotency_key,
-        defaults={
-            "school_id": school_id,
-            "channel": channel,
-            "to": to_value,
-            "subject": subject,
-            "body": body,
-        },
-    )
-
-
-def _queue_guardian_messages(
-    *,
-    outbox_model: Any,
-    school_value: str,
-    app_ref: str,
-    guardian: dict[str, Any],
-    guardian_index: int,
-    email_enabled: bool,
-    sms_enabled: bool,
-    stage_token: str,
-) -> tuple[int, int]:
-    email = str(guardian.get("email") or "").strip().lower()
-    phone = str(guardian.get("phone") or "").strip()
-    email_queued = 0
-    sms_queued = 0
-
-    if email and email_enabled:
-        _queue_outbox_message(
-            outbox_model=outbox_model,
-            idempotency_key=f"admissions:{app_ref}:{stage_token}:guardian:{guardian_index}:email",
-            school_id=school_value,
-            channel="EMAIL",
-            to_value=email,
-            subject="Admissions Update: Application Received",
-            body=(
-                "Your application was received. Review and decision target is within 24 hours. "
-                "You will continue to receive updates by email and text."
-            ),
-        )
-        email_queued = 1
-
-    if phone and sms_enabled:
-        _queue_outbox_message(
-            outbox_model=outbox_model,
-            idempotency_key=f"admissions:{app_ref}:{stage_token}:guardian:{guardian_index}:sms",
-            school_id=school_value,
-            channel="SMS",
-            to_value=phone,
-            subject="",
-            body="CROWN Admissions: your application was received. Review and decision target is within 24 hours.",
-        )
-        sms_queued = 1
-
-    return email_queued, sms_queued
-
-
-def _queue_family_communications(
-    *,
-    school_id: Any,
-    guardians: list[dict[str, Any]],
-    application_ids: list[str],
-    correlation_id: str,
-    stage_token: str = "application_submitted",
-) -> dict[str, Any]:
-    email_enabled = _is_graph_email_configured()
-    sms_enabled = _is_sms_configured()
-    summary: dict[str, Any] = {
-        "email": {"queued": 0, "enabled": email_enabled},
-        "sms": {"queued": 0, "enabled": sms_enabled},
-        "status": "not_configured",
-        "correlation_id": correlation_id,
-    }
-
-    try:
-        from comms.models import OutboxMessage  # noqa: PLC0415
-    except Exception:
-        summary["status"] = "outbox_unavailable"
-        return summary
-
-    app_ref = application_ids[0] if application_ids else "unknown"
-    school_value = str(school_id)
-
-    for index, guardian in enumerate(guardians or []):
-        email_queued, sms_queued = _queue_guardian_messages(
-            outbox_model=OutboxMessage,
-            school_value=school_value,
-            app_ref=app_ref,
-            guardian=guardian,
-            guardian_index=index,
-            email_enabled=email_enabled,
-            sms_enabled=sms_enabled,
-            stage_token=stage_token,
-        )
-        summary["email"]["queued"] += email_queued
-        summary["sms"]["queued"] += sms_queued
-
-    has_queued = summary["email"]["queued"] > 0 or summary["sms"]["queued"] > 0
-    if has_queued:
-        summary["status"] = "queued"
-    elif summary["email"]["enabled"] or summary["sms"]["enabled"]:
-        summary["status"] = "enabled_no_recipients"
-    else:
-        summary["status"] = "not_configured"
-
-    return summary
 
 
 def _assessment_interview_config() -> dict[str, Any]:
@@ -798,8 +621,8 @@ def _validate_student(student: dict[str, Any], index: int) -> str | None:
     return None
 
 
-def _validate_application_fee(data: AdmissionsSubmitData) -> str | None:
-    if not _application_fee_required():
+def _validate_application_fee(data: AdmissionsSubmitData, fee_policy: Any) -> str | None:
+    if not _application_fee_required(fee_policy):
         return None
     policy_accepted = bool(data.application_fee.get("policyAccepted"))
     waiver_requested = bool(data.application_fee.get("waiverRequested"))
@@ -810,7 +633,7 @@ def _validate_application_fee(data: AdmissionsSubmitData) -> str | None:
     return None
 
 
-def _validate_submit_data(data: AdmissionsSubmitData) -> str | None:
+def _validate_submit_data(data: AdmissionsSubmitData, fee_policy: Any) -> str | None:
     if not data.campus:
         return "inquiry.campus is required"
     if not data.start_term:
@@ -831,7 +654,7 @@ def _validate_submit_data(data: AdmissionsSubmitData) -> str | None:
         error = _validate_student(student, index)
         if error:
             return error
-    return _validate_application_fee(data)
+    return _validate_application_fee(data, fee_policy)
 
 
 def _create_admissions_submission_records(school_id: Any, data: AdmissionsSubmitData, *, inquiry_lead=None):
