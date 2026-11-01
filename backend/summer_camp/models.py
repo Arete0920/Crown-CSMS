@@ -312,6 +312,13 @@ class SummerCampClubOffering(models.Model):
             raise ValidationError("Club weekdays must be unique integers in 0..6.")
         if self.start_time and self.end_time and self.start_time >= self.end_time:
             raise ValidationError("Club offering end_time must be after start_time.")
+        if self.status == "PUBLISHED":
+            if not self.club_id or not self.club.is_active:
+                raise ValidationError("Published club offering requires an active catalog item.")
+            if not self.weekdays:
+                raise ValidationError("Published club offering requires at least one weekday.")
+            if self.capacity <= 0:
+                raise ValidationError("Published club offering requires positive capacity.")
 
     def save(self, *args, **kwargs):
         self.full_clean()
