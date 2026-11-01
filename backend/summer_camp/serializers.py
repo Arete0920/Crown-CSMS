@@ -136,6 +136,7 @@ class SummerCampClubCreateSerializer(serializers.Serializer):
         default="OTHER",
     )
     description = serializers.CharField(required=False, allow_blank=True)
+    is_active = serializers.BooleanField(default=True)
 
 
 class SummerCampClubOfferingCreateSerializer(serializers.Serializer):
@@ -161,7 +162,9 @@ class SummerCampClubOfferingCreateSerializer(serializers.Serializer):
         return value
 
     def validate(self, attrs):
-        if attrs["start_time"] >= attrs["end_time"]:
+        start_time = attrs.get("start_time")
+        end_time = attrs.get("end_time")
+        if start_time is not None and end_time is not None and start_time >= end_time:
             raise serializers.ValidationError("end_time must be after start_time.")
         return attrs
 
