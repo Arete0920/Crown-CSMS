@@ -79,6 +79,7 @@ def _ensure_student_account_credit(*, award: AidAward, actor_user):
         or original.source != LedgerEntry.SOURCE_AID_AWARD
         or original.family.school_id != award.school_id
         or original.account.school_id != award.school_id
+        or original.account.code != "AID"
         or original.amount_cents != -int(award.awarded_cents)
         or original.is_reversal
         or original.reversal_of_id is not None

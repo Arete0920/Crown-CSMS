@@ -46,7 +46,7 @@ def _financial_snapshot():
 @pytest.mark.parametrize("linked", [False, True])
 @pytest.mark.parametrize("drift", [
     "student", "recipient", "family", "year", "amount", "source",
-    "entry_school", "account_school", "reversal", "reversed_entry",
+    "entry_school", "account_school", "account_code", "reversal", "reversed_entry",
 ])
 def test_accepted_replay_rejects_posting_drift_without_writes(replay, linked, drift):
     school, award = _fixture(linked=linked)
@@ -84,6 +84,13 @@ def test_accepted_replay_rejects_posting_drift_without_writes(replay, linked, dr
             LedgerEntry.objects.filter(pk=original.pk).update(school=other)
         else:
             ChartAccount.objects.filter(pk=original.account_id).update(school=other)
+    elif drift == "account_code":
+        unrelated_account = ChartAccount.objects.create(
+            school=school, code="TUITION", name="Tuition", account_type="INCOME",
+        )
+        # An original AID posting reclassified within the same tenant is not a
+        # valid accepted-award replay, even though the account school matches.
+        LedgerEntry.objects.filter(pk=original.pk).update(account=unrelated_account)
     elif drift == "reversal":
         LedgerEntry.objects.filter(pk=original.pk).update(is_reversal=True)
     else:
