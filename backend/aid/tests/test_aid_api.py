@@ -533,6 +533,26 @@ class TestAdminApproveAward(TestCase):
         self.assertEqual(response.status_code, 400, response.content)
         self.assertEqual(self._financial_state(), before)
 
+
+    def test_non_object_json_returns_400_without_financial_writes(self):
+        before = self._financial_state()
+        for payload in ("[]", "null", '"reason"'):
+            with self.subTest(payload=payload):
+                response = self.client.post(
+                    self.url, data=payload, content_type="application/json",
+                    HTTP_X_SCHOOL_ID=str(self.school.id),
+                )
+                self.assertEqual(response.status_code, 400, response.content)
+                self.assertEqual(self._financial_state(), before)
+
+    def test_invalid_reason_type_returns_400_without_financial_writes(self):
+        before = self._financial_state()
+        for reason in (None, [], {"nested": "no"}):
+            with self.subTest(reason=repr(reason)):
+                response = _json_post(self.client, self.url, {"reason": reason}, self.school)
+                self.assertEqual(response.status_code, 400, response.content)
+                self.assertEqual(self._financial_state(), before)
+
     def test_foreign_tenant_award_is_404_without_financial_writes(self):
         other_school = _make_school("Other approval tenant")
         other_year = _make_ay(other_school)

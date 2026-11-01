@@ -423,7 +423,11 @@ def admin_approve_award(request, award_id):
     409 if bucket budget would be exceeded.
     """
     school_id = get_request_school_id(request)
+    if not isinstance(request.data, dict):
+        return Response({"detail": "Request body must be an object."}, status=status.HTTP_400_BAD_REQUEST)
     reason = request.data.get("reason", "")
+    if not isinstance(reason, str):
+        return Response({"detail": "reason must be a string."}, status=status.HTTP_400_BAD_REQUEST)
 
     try:
         award = AidAward.objects.get(pk=award_id, school_id=school_id)
