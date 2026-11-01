@@ -17,6 +17,18 @@ const valueStyle = {
   marginBottom: 4,
 };
 
+function linkedChargesLabel(value) {
+  // Ledger links record assessed obligations. They are not proof of payment,
+  // settlement or cash receipts. Never fabricate a zero for missing data.
+  if (!Number.isSafeInteger(value) || value < 0) return "Not available";
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(value / 100);
+}
+
 function MetricCard({ label, value }) {
   return (
     <div style={cardStyle}>
@@ -57,16 +69,17 @@ export default function SummerCampDashboard() {
   return (
     <CrownLayout title="Summer Camp Dashboard">
       <DashboardSection title="Summer Camp Board Summary">
-        {loading && <span>Loading...</span>}
+        <p>These are school-scoped registration and linked-charge records, not payment or settlement totals.</p>
+        {loading && <span role="status">Loading...</span>}
         {error && (
-          <div style={{ color: "var(--crown-danger)", background: "var(--crown-danger-bg)", padding: "10px 14px", borderRadius: 4 }}>
+          <div role="alert" style={{ color: "var(--crown-danger)", background: "var(--crown-danger-bg)", padding: "10px 14px", borderRadius: 4 }}>
             {error}
           </div>
         )}
         {!loading && !error && summary && (
           <>
             <div style={{ marginBottom: 12, color: "var(--crown-muted)", fontSize: 13 }}>
-              As of {summary.as_of}
+              Reporting date: {summary.as_of}
             </div>
             <div
               style={{
@@ -80,11 +93,11 @@ export default function SummerCampDashboard() {
               <MetricCard label="Waitlist Count" value={summary.waitlist_count} />
               <MetricCard label="Missing Forms" value={summary.missing_forms} />
               <MetricCard label="Health Reviews" value={summary.health_review_count} />
-              <MetricCard label="Outstanding Balances" value={summary.outstanding_balances} />
+              <MetricCard label="Enrollments with balance due" value={summary.outstanding_balances} />
               <MetricCard label="Incidents MTD" value={summary.incidents_mtd} />
               <MetricCard
-                label="Gross Revenue"
-                value={`$${((summary.gross_revenue_cents || 0) / 100).toLocaleString()}`}
+                label="Ledger-linked charges (not collected)"
+                value={linkedChargesLabel(summary.gross_revenue_cents)}
               />
             </div>
           </>

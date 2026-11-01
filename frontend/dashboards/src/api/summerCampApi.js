@@ -83,3 +83,7 @@ export async function fetchSummerCampParentSummary(studentId) {
 export async function fetchSummerCampBoardSummary() {
   return requestJson("/board/summary/");
 }
+
+export function fetchCampPickupChoices(id) {
+  return requestJson("/enrollments/" + encodeURIComponent(id) + "/pickup-choices/");
+}
