@@ -2028,6 +2028,14 @@ function StepSubmit({
     try {
       const submitPayload = {
         ...context,
+        applicationFee: {
+          ...applicationFee,
+          quoteScheduleId: admissionsPublicConfig?.application_fee?.schedule_id,
+          quoteSchoolId: admissionsPublicConfig?.application_fee?.school_id,
+          quoteTerm: admissionsPublicConfig?.application_fee?.term,
+          quoteFirstAmount: admissionsPublicConfig?.application_fee?.amount,
+          quoteAdditionalAmount: admissionsPublicConfig?.application_fee?.additional_child_amount,
+        },
         demoChecklistAutoComplete: IS_SANDBOX_FLOW,
         ...(inquiryReceipt ? { inquiry_id: inquiryReceipt.inquiry_id, continuation_token: inquiryReceipt.continuation_token } : {}),
       };
@@ -2035,7 +2043,7 @@ function StepSubmit({
       if (requestIdentity.current?.fingerprint !== fingerprint) requestIdentity.current = { fingerprint, key: createInquiryRequestKey() };
       const response = await submitAdmissionsIntake(submitPayload, {
         idempotencyKey: requestIdentity.current.key,
-        schoolId: inquiryReceipt?.school_id || new URLSearchParams(globalThis.location?.search || '').get('school_id') || '',
+        schoolId: admissionsPublicConfig?.application_fee?.school_id || inquiryReceipt?.school_id || new URLSearchParams(globalThis.location?.search || '').get('school_id') || '',
       });
       if (inquiryReceipt) clearAdmissionsInquiry(inquiryReceipt.school_id);
       const checklistHub = response?.checklist_hub;
@@ -2179,12 +2187,13 @@ export default function ProspectiveFamilyAdmissionsWizard() {
   useEffect(() => {
     let mounted = true;
     setAdmissionsPublicConfig({ application_fee: FALLBACK_FEE_CONFIG });
-    if (!quoteSchoolId || !quoteTerm) return () => { mounted = false; };
-    fetchAdmissionsPublicConfig({ schoolId: quoteSchoolId, term: quoteTerm })
+    if ((!quoteSchoolId && !quoteCampus) || !quoteTerm) return () => { mounted = false; };
+    fetchAdmissionsPublicConfig({ schoolId: quoteSchoolId, campus: quoteCampus, term: quoteTerm })
       .then((data) => {
         if (!mounted) return;
         const fee = data?.application_fee;
-        if (fee?.school_id !== String(quoteSchoolId) || fee?.term !== quoteTerm) return;
+        if (!fee?.school_id || fee?.term !== quoteTerm) return;
+        if (quoteSchoolId && fee.school_id !== String(quoteSchoolId)) return;
         setAdmissionsPublicConfig({ ...data, application_fee: fee });
       })
       .catch(() => {
