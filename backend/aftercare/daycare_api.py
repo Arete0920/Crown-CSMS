@@ -10,6 +10,7 @@ activate childcare licensing or authorize production operations.
 from __future__ import annotations
 
 from uuid import UUID
+from django.db.models import F
 
 from django.utils import timezone
 from rest_framework import serializers, status
@@ -22,7 +23,7 @@ from core.models import School
 from core.permissions import user_has_permission
 from .daycare_checkin import CheckinRefused, checkin_child
 from .daycare_release import ReleaseRefused, release_child
-from .daycare_models import DaycareSite
+from .daycare_models import DaycareSite, DaycareRoom
 from .daycare_checkin_models import DaycareAttendance, DaycareRoomStaffCoverage
 
 
@@ -172,6 +173,38 @@ def daycare_release(request):
     }, status=status.HTTP_201_CREATED)
 
 
+def _visible_staff_room_ids(request, school, at):
+    """Return read-authorized room IDs; None means an explicit director grant.
+
+    Staff visibility follows *the same* verified, current assignment for site
+    discovery and custody rosters. A conflicting active room assignment fails
+    closed, including when only one shift is marked qualified. Never trust the
+    selected site or a client-supplied staff ID to authorize an operation.
+    """
+    if request.user.roles.filter(
+        school=school, role_code="DAYCARE_DIRECTOR"
+    ).exists():
+        return None
+
+    qualified = DaycareRoomStaffCoverage.objects.filter(
+        school=school, site__school=school, room__school=school,
+        room__site_id=F("site_id"), staff=request.user,
+        is_active=True, is_qualified=True, room__is_active=True,
+        starts_at__lte=at, ends_at__gt=at,
+        verified_at__isnull=False, verified_at__lte=at,
+        verified_by__school=school, verified_by__is_active=True,
+    ).exclude(qualification_evidence="")
+    room_ids = set(qualified.values_list("room_id", flat=True))
+    if not room_ids:
+        raise PermissionDenied("Current verified room assignment required.")
+    if DaycareRoomStaffCoverage.objects.filter(
+        school=school, staff=request.user, is_active=True,
+        starts_at__lte=at, ends_at__gt=at,
+    ).exclude(room_id__in=room_ids).exists():
+        raise PermissionDenied("Conflicting care-room assignments require director review.")
+    return room_ids
+
+
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def daycare_open_roster(request, site_id):
@@ -187,21 +220,13 @@ def daycare_open_roster(request, site_id):
     if site is None:
         raise NotFound()
     now = timezone.now()
-    director = request.user.roles.filter(
-        school=school, role_code="DAYCARE_DIRECTOR"
-    ).exists()
-    if director:
-        room_ids = None
-    else:
-        room_ids = list(DaycareRoomStaffCoverage.objects.filter(
-            school=school, site=site, staff=request.user, is_active=True,
-            is_qualified=True, verified_at__isnull=False, verified_at__lte=now,
-            verified_by__school=school, verified_by__is_active=True,
-            starts_at__lte=now, ends_at__gt=now,
-            room__is_active=True,
-        ).exclude(qualification_evidence="").values_list("room_id", flat=True))
-        if not room_ids:
-            raise PermissionDenied("Current verified room assignment required.")
+    room_ids = _visible_staff_room_ids(request, school, now)
+    # A staff member on another site's shift cannot obtain an empty-but-valid
+    # response for this site or probe which children are present there.
+    if room_ids is not None and not DaycareRoom.objects.filter(
+        school=school, site=site, pk__in=room_ids
+    ).exists():
+        raise PermissionDenied("Current verified site assignment required.")
     qs = DaycareAttendance.objects.filter(
         school=school, site=site, custody_release__isnull=True
     ).select_related("child", "room", "program").order_by("room__code", "child__last_name", "child__first_name", "pk")
@@ -223,3 +248,25 @@ def daycare_open_roster(request, site_id):
         "children_present": len(rows),
         "rows": rows,
     })
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def daycare_sites(request):
+    """Discover only school-owned centers with explicit Diadem view permission.
+
+    On-duty staff see sites for their currently verified room coverage; a
+    director may see all their school's sites, including inactive locations
+    for pending custody reconciliation. This endpoint is read-only.
+    """
+    school = _staff_scope(
+        request, "diadem.daycare.view", allow_inactive_school=True
+    )
+    room_ids = _visible_staff_room_ids(request, school, timezone.now())
+    sites = DaycareSite.objects.filter(school=school)
+    if room_ids is not None:
+        sites = sites.filter(care_rooms__id__in=room_ids).distinct()
+    return Response({"sites": [
+        {"site_id": str(site.pk), "name": site.name, "is_active": site.is_active}
+        for site in sites.order_by("name", "pk")
+    ]})
+

@@ -150,6 +150,20 @@ class TestNavPermissionFiltering:
         assert "/admin" not in hrefs
 
 
+
+    def test_diadem_permission_navigation_is_separate_from_extended_care(self):
+        school = _school("Diadem nav")
+        user = _user("daycare", school)
+        _assign_role(user, school, "DAYCARE_STAFF")
+        _grant("DAYCARE_STAFF", "diadem.daycare.view")
+        client = Client()
+        client.force_login(user)
+        response = client.get("/api/v1/nav/", HTTP_X_SCHOOL_ID=str(school.id))
+        assert response.status_code == 200
+        links = _nav_flat_hrefs(json.loads(response.content))
+        assert "/diadem/daycare" in links
+        assert "/extended-care" not in links
+
 class TestNavResponseShape:
     def _response(self, label):
         school = _school(f"Shape School {label}")

@@ -4,7 +4,7 @@ from uuid import uuid4
 import pytest
 from rest_framework.test import APIClient
 from core.models import School, UserAccount, UserRole
-from aftercare.models import DaycareAttendance, DaycareRelease
+from aftercare.models import DaycareAttendance, DaycareRelease, DaycareSite
 from audit.models import AuditLog
 from aftercare.tests.test_daycare_checkin import setup
 
@@ -206,3 +206,94 @@ def test_inactive_school_rejects_foreign_school_custody_header():
         format="json", HTTP_X_SCHOOL_ID=str(foreign.pk))
     assert response.status_code in (403, 404)
     assert not DaycareRelease.objects.exists()
+
+def test_site_directory_restricts_school_and_current_staff_assignment():
+    d = setup()
+    foreign = School.objects.create(name="Foreign childcare center")
+    DaycareSite.objects.create(school=foreign, code="foreign", name="Foreign Site")
+    extra = DaycareSite.objects.create(
+        school=d["school"], code="other", name="Other Same-School Site"
+    )
+    c = _client(d["actor"])
+    directory = c.get("/api/v1/aftercare/daycare/sites/")
+    assert directory.status_code == 200, getattr(directory, "data", None)
+    assert directory.data == {"sites": [{
+        "site_id": str(d["site"].id),
+        "name": d["site"].name,
+        "is_active": True,
+    }]}
+    # School ownership alone is insufficient for staff to read a different site.
+    assert c.get(f"/api/v1/aftercare/daycare/sites/{extra.id}/roster/").status_code == 403
+    assert c.get(
+        "/api/v1/aftercare/daycare/sites/",
+        HTTP_X_SCHOOL_ID=str(foreign.id),
+    ).status_code == 404
+
+
+def test_site_directory_denies_unverified_staff_and_legacy_school_grants():
+    d = setup()
+    c = _client(d["actor"])
+    d["coverage"].is_active = False
+    d["coverage"].save(update_fields=["is_active"])
+    assert c.get("/api/v1/aftercare/daycare/sites/").status_code == 403
+    assert c.get(
+        f"/api/v1/aftercare/daycare/sites/{d['site'].id}/roster/"
+    ).status_code == 403
+    # Restoring a shift never grants access to a user without a Diadem role.
+    d["coverage"].is_active = True
+    d["coverage"].save(update_fields=["is_active"])
+    UserRole.objects.filter(user=d["actor"]).delete()
+    assert c.get("/api/v1/aftercare/daycare/sites/").status_code == 403
+
+
+def test_site_directory_requires_authentication_and_does_not_write_custody():
+    d = setup()
+    unauthenticated = APIClient()
+    response = unauthenticated.get("/api/v1/aftercare/daycare/sites/")
+    assert response.status_code in (400, 401, 403)
+    response = unauthenticated.get(
+        "/api/v1/aftercare/daycare/sites/",
+        HTTP_X_SCHOOL_ID=str(d["school"].id),
+    )
+    assert response.status_code in (401, 403)
+    assert not DaycareAttendance.objects.exists()
+    assert not DaycareRelease.objects.exists()
+
+
+def test_director_directory_and_roster_do_not_require_classroom_shift():
+    from core.models import CrownPermission, RolePermission
+    d = setup()
+    UserRole.objects.create(
+        school=d["school"], user=d["director"], role_code="DAYCARE_DIRECTOR"
+    )
+    permission, _ = CrownPermission.objects.get_or_create(
+        code="diadem.daycare.view",
+        defaults={"description": "Synthetic Diadem view permission"},
+    )
+    RolePermission.objects.get_or_create(
+        role_code="DAYCARE_DIRECTOR", permission=permission
+    )
+    c = _client(d["director"])
+    sites = c.get("/api/v1/aftercare/daycare/sites/")
+    assert sites.status_code == 200
+    assert sites.data["sites"][0]["site_id"] == str(d["site"].id)
+    roster = c.get(f"/api/v1/aftercare/daycare/sites/{d['site'].id}/roster/")
+    assert roster.status_code == 200
+    assert roster.data["children_present"] == 0
+
+
+def test_deactivated_school_may_inspect_existing_custody_but_not_new_admit():
+    d = setup()
+    c = _client(d["actor"])
+    attendance = _checkin(d, c)
+    assert attendance.status_code == 201
+    d["school"].is_active = False
+    d["school"].save(update_fields=["is_active"])
+    sites = c.get("/api/v1/aftercare/daycare/sites/")
+    assert sites.status_code == 200, getattr(sites, "data", None)
+    assert sites.data["sites"][0]["site_id"] == str(d["site"].id)
+    roster = c.get(f"/api/v1/aftercare/daycare/sites/{d['site'].id}/roster/")
+    assert roster.status_code == 200
+    assert roster.data["children_present"] == 1
+    assert _checkin(d, c).status_code in (403, 404)
+

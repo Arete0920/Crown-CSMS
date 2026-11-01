@@ -43,6 +43,7 @@ NAV_ITEMS: List[NavItem] = [
     NavItem(group="Academics", label="Registrar",             href="/registrar",        permission="registrar.view"),
     NavItem(group="Academics", label="Academic Support",      href="/academic-support", permission="academic_support.view"),
     NavItem(group="Academics", label="Library",               href="/library",          permission="library.view"),
+    NavItem(group="Academics", label="Diadem Daycare",         href="/diadem/daycare",   permission="diadem.daycare.view"),
     NavItem(group="Academics", label="Extended Care",         href="/extended-care",    permission="extended_care.view"),
     NavItem(group="Academics", label="PD / Staff Dev",        href="/pd",               permission="pd.view"),
     NavItem(group="Academics", label="Communications",        href="/communications-director", permission="communications.view"),
