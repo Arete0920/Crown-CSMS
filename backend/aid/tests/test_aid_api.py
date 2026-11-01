@@ -329,6 +329,51 @@ class TestAdminRecommendAward(TestCase):
                 self.assertEqual(response.status_code, 400, response.content)
                 self.assertFalse(AidAward.objects.filter(aid_application=self.app).exists())
 
+    def test_rejected_recommendations_leave_financial_records_unchanged(self):
+        """Invalid students/buckets must not change awards, budgets, ledger or audits."""
+        from aid.models import AidAuditEvent, AidFinancialProfile
+        from core.models import LedgerEntry
+        from ledger.models import Credit, Payment
+
+        _make_award(self.school, self.ay, self.student)
+        _make_budget(self.school, self.ay)
+        wrong_family = _make_family(self.school, "Other Family")
+        wrong_student = _make_student(self.school, wrong_family, number="REJ-2")
+        foreign_school = _make_school("Other Tenant")
+        foreign_family = _make_family(foreign_school)
+        foreign_student = _make_student(foreign_school, foreign_family, number="REJ-3")
+        foreign_app = _make_application(foreign_school, _make_ay(foreign_school), foreign_family)
+
+        financial_models = (
+            AidApplication, AidAward, AidBudgetTracker, AidPolicy, AidFinancialProfile,
+            AidAuditEvent, LedgerEntry, Credit, Payment, ChartAccount,
+        )
+
+        def financial_state():
+            return {m._meta.label: list(m.objects.order_by("pk").values()) for m in financial_models}
+
+        baseline = financial_state()
+        valid = {
+            "application_id": self.app.id,
+            "student_id": str(self.student.id),
+            "bucket": AidAward.TYPE_NEED,
+            "gross_tuition_cents": 10_000_00,
+        }
+        cases = (
+            ("missing student", {"student_id": None}, 400),
+            ("malformed UUID", {"student_id": "not-a-uuid"}, 400),
+            ("wrong family", {"student_id": str(wrong_student.id)}, 404),
+            ("other school student", {"student_id": str(foreign_student.id)}, 404),
+            ("other school application", {"application_id": foreign_app.id}, 404),
+            ("bad bucket", {"bucket": "INVALID"}, 400),
+            ("non-string bucket", {"bucket": ["NEED"]}, 400),
+        )
+        for label, override, status_code in cases:
+            with self.subTest(case=label):
+                response = _json_post(self.client, self.url, {**valid, **override}, self.school)
+                self.assertEqual(response.status_code, status_code, response.content)
+                self.assertEqual(financial_state(), baseline)
+
     def test_missing_policy_returns_404(self):
         # No policy for this school/year → 404
         AidPolicy.objects.filter(school=self.school, academic_year=self.ay).delete()
