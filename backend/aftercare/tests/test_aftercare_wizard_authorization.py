@@ -5,6 +5,8 @@ from rest_framework.test import APIClient
 
 from aftercare.models import AftercareProgramConfig
 from core.models import CrownPermission, RolePermission, School, UserAccount, UserRole
+from subscriptions.models import SchoolModule
+from django.utils import timezone
 
 pytestmark = pytest.mark.django_db
 
@@ -57,6 +59,10 @@ def test_django_staff_flag_does_not_bypass_wizard_permission():
 
 def test_view_permission_allows_get_but_not_post():
     school = School.objects.create(name="Wizard Viewer")
+    SchoolModule.objects.create(
+        school=school, module_key="after_care", status="active",
+        expiry_date=timezone.now() + timezone.timedelta(days=30),
+    )
     user = _user(school, "viewer")
     _grant(user, school, "wizard_viewer", "extended_care.view")
 
@@ -73,6 +79,10 @@ def test_view_permission_allows_get_but_not_post():
 
 def test_edit_permission_updates_only_canonical_school_config():
     school = School.objects.create(name="Wizard Editor")
+    SchoolModule.objects.create(
+        school=school, module_key="after_care", status="active",
+        expiry_date=timezone.now() + timezone.timedelta(days=30),
+    )
     user = _user(school, "editor")
     _grant(user, school, "wizard_editor", "extended_care.edit")
 
