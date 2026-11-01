@@ -756,6 +756,41 @@ class AdmissionsEndpointsTests(APITestCase):
         self.assertEqual(r.data["code"], "fee_policy_unavailable")
         self.assertEqual(FinanceObligation.objects.filter(school=self.school).count(), before)
 
+    def test_other_active_fee_schedule_does_not_hide_admissions_quote(self):
+        other = FeeSchedule.objects.create(
+            school=self.school, name="Tuition and activities", term="2026-2027",
+            effective_date="2026-08-01", is_active=True,
+        )
+        FeeLine.objects.create(
+            fee_schedule=other, code="activity_fee", label="Activity fee",
+            amount_cents=1200, kind="fee", frequency="one_time", is_required=True,
+        )
+        response = self.client.get(
+            "/api/v1/admissions/public-config/",
+            {"school_id": str(self.school_id), "term": "2026-2027"},
+        )
+        self.assertEqual(response.status_code, 200, response.data)
+        self.assertEqual(response.data["application_fee"]["amount"], "85.00")
+
+    def test_two_complete_active_admissions_schedules_fail_closed(self):
+        duplicate = FeeSchedule.objects.create(
+            school=self.school, name="Conflicting admissions", term="2026-2027",
+            effective_date="2026-08-01", is_active=True,
+        )
+        for code, cents in (("admissions_first_child", 9900),
+                            ("admissions_additional_child", 4900)):
+            FeeLine.objects.create(
+                fee_schedule=duplicate, code=code, label=code,
+                amount_cents=cents, kind="fee", frequency="one_time",
+                is_required=True,
+            )
+        response = self.client.get(
+            "/api/v1/admissions/public-config/",
+            {"school_id": str(self.school_id), "term": "2026-2027"},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(response.data["application_fee"]["configured"])
+
     def test_public_config_canonical_first_and_additional_fees(self):
         self.client.force_authenticate(user=None)
         r = self.client.get(
