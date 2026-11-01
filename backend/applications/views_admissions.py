@@ -35,6 +35,7 @@ from .models import (
     EnrollmentContractStatus,
 )
 from .aid_projection import build_award_summary_by_household
+from .fee_policy import get_admissions_fee_policy
 
 
 logger = logging.getLogger(__name__)
@@ -1571,8 +1572,10 @@ def _resolve_finance_payer_user(*, school: Any, guardians: list[dict[str, Any]])
     return payer
 
 
-def _create_application_fee_finance_records(*, school: Any, data: AdmissionsSubmitData, application_ids: list[str], correlation_id: str) -> dict[str, Any]:
+def _create_application_fee_finance_records(*, school: Any, data: AdmissionsSubmitData, application_ids: list[str], correlation_id: str, fee_policy: Any = None) -> dict[str, Any]:
     fee_status = _build_application_fee_status(data)
+    if fee_policy is not None:
+        fee_status.update({"required": fee_policy.required, "amount": str(fee_policy.amount_for_child(1)), "schedule_id": fee_policy.schedule_id})
     if not fee_status["required"]:
         fee_status["finance"] = {"state": "not_applicable"}
         return fee_status
@@ -1603,7 +1606,7 @@ def _create_application_fee_finance_records(*, school: Any, data: AdmissionsSubm
     obligation_rows = []
     amount_cents_total = 0
     for child_index, app_id in enumerate(application_ids or [str(uuid.uuid4())], start=1):
-        discounted_fee = _apply_child_discount(APPLICATION_FEE_USD, child_index)
+        discounted_fee = fee_policy.amount_for_child(child_index) if fee_policy is not None else _apply_child_discount(APPLICATION_FEE_USD, child_index)
         fee_cents = int((discounted_fee * 100).quantize(Decimal("1")))
         amount_cents_total += fee_cents
         reference = f"admissions_fee:{app_id}"
@@ -1635,7 +1638,7 @@ def _create_application_fee_finance_records(*, school: Any, data: AdmissionsSubm
             {
                 "child_index": child_index,
                 "application_id": app_id,
-                "discount_percent": _child_discount_percent(child_index),
+                "discount_percent": 0 if fee_policy is not None else _child_discount_percent(child_index),
                 "amount": str(discounted_fee),
                 "obligation_id": obligation.id,
             }
@@ -1660,6 +1663,13 @@ def _create_application_fee_finance_records(*, school: Any, data: AdmissionsSubm
         "collection_path": PAYMENT_INTENT_ENDPOINT,
     }
     fee_status["per_child_schedule"] = _fee_rows_for_household(data, application_ids)
+    if fee_policy is not None:
+        for row in fee_status["per_child_schedule"]:
+            amount = fee_policy.amount_for_child(row["child_index"])
+            old = Decimal(row["application_fee"])
+            row["application_fee"] = str(amount)
+            row["total"] = str(Decimal(row["total"]) - old + amount)
+            row["discount_percent"] = 0
     fee_status["payment_handoff"] = _build_payment_handoff(
         invoice_id=invoice.id,
         amount_cents=amount_cents_total,
@@ -3477,6 +3487,9 @@ def _admissions_submit_impl(request):
             return _attach_correlation(replay, correlation_id)
 
     submit_data = _extract_submit_data(payload)
+    fee_policy = get_admissions_fee_policy(school=school, term=submit_data.start_term)
+    if fee_policy is None:
+        return _attach_correlation(Response({"detail": "Admissions fees are not configured for this school and term.", "code": "fee_policy_unavailable"}, status=409), correlation_id)
     validation_error = _validate_submit_data(submit_data)
     if validation_error:
         return _attach_correlation(
@@ -3504,6 +3517,7 @@ def _admissions_submit_impl(request):
 
     application_fee = _create_application_fee_finance_records(
         school=school,
+        fee_policy=fee_policy,
         data=submit_data,
         application_ids=application_ids,
         correlation_id=correlation_id,
