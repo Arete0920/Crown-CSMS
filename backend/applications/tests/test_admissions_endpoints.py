@@ -700,6 +700,43 @@ class AdmissionsEndpointsTests(APITestCase):
         self.assertEqual(fee["amount"], "85.00")
         self.assertEqual(fee["additional_child_amount"], "50.00")
 
+    def test_public_config_exact_campus_quote(self):
+        self.client.force_authenticate(user=None)
+        response = self.client.get(
+            "/api/v1/admissions/public-config/",
+            {"campus": self.school.name, "term": "2026-2027"},
+        )
+        self.assertEqual(response.status_code, 200)
+        fee = response.data["application_fee"]
+        self.assertEqual(fee["school_id"], str(self.school.id))
+        self.assertEqual(fee["amount"], "85.00")
+        self.assertEqual(fee["additional_child_amount"], "50.00")
+
+    def test_public_quote_rejects_mismatched_school_and_campus(self):
+        self.client.force_authenticate(user=None)
+        response = self.client.get(
+            "/api/v1/admissions/public-config/",
+            {"school_id": str(self.school.id), "campus": "Other Campus", "term": "2026-2027"},
+        )
+        self.assertEqual(response.status_code, 409)
+        self.assertEqual(response.data["code"], "school_mismatch")
+
+    def test_stale_quote_blocks_obligations(self):
+        self.client.force_authenticate(user=None)
+        payload = self._submit_payload()
+        payload["applicationFee"].update({
+            "quoteScheduleId": str(self.fee_schedule.id),
+            "quoteSchoolId": str(self.school.id),
+            "quoteTerm": "2026-2027",
+            "quoteFirstAmount": "85.00",
+            "quoteAdditionalAmount": "49.00",
+        })
+        before = FinanceObligation.objects.filter(school=self.school).count()
+        response = self.client.post("/api/v1/admissions/submit/", payload, format="json")
+        self.assertEqual(response.status_code, 409)
+        self.assertEqual(response.data["code"], "stale_fee_quote")
+        self.assertEqual(FinanceObligation.objects.filter(school=self.school).count(), before)
+
     def test_public_config_allows_missing_tenant_header(self):
         """Public config must be reachable without X-School-Id for public funnel bootstrap."""
         self.client.force_authenticate(user=None)
