@@ -72,58 +72,29 @@ const INTERVIEW_MODE_OPTIONS = [
   "No preference",
 ];
 
-const DEFAULT_APPLICATION_FEE_AMOUNT = Number(import.meta.env.VITE_ADMISSIONS_APPLICATION_FEE_USD || "85");
-const DEFAULT_FINANCIAL_AID_FEE_AMOUNT = Number(import.meta.env.VITE_ADMISSIONS_FINANCIAL_AID_FEE_USD || "35");
-const DEFAULT_ENROLLMENT_FEE_AMOUNT = Number(import.meta.env.VITE_ADMISSIONS_ENROLLMENT_FEE_USD || "250");
 const FALLBACK_FEE_CONFIG = {
-  required: Number.isFinite(DEFAULT_APPLICATION_FEE_AMOUNT) && DEFAULT_APPLICATION_FEE_AMOUNT > 0,
-  amount: Number.isFinite(DEFAULT_APPLICATION_FEE_AMOUNT) ? DEFAULT_APPLICATION_FEE_AMOUNT : 0,
+  configured: false,
+  required: false,
+  amount: null,
+  additional_child_amount: null,
   currency: "USD",
 };
 
-function feeDiscountPercentForChild(childIndex) {
-  if (childIndex <= 1) return 0;
-  if (childIndex === 2) return 25;
-  if (childIndex === 3) return 50;
-  if (childIndex === 4) return 75;
-  return 100;
-}
-
-function applyFeeDiscount(amount, childIndex) {
-  const numeric = Number(amount || 0);
-  const percent = feeDiscountPercentForChild(childIndex);
-  const discounted = numeric * (1 - (percent / 100));
-  return Math.max(0, Number(discounted.toFixed(2)));
-}
-
 function formatCurrency(value, currency = "USD") {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency,
-  }).format(Number(value || 0));
+  return new Intl.NumberFormat("en-US", { style: "currency", currency }).format(Number(value));
 }
 
 function buildHouseholdFeePreview({ context, feeConfig }) {
+  if (!feeConfig.configured) return [];
   const students = Array.isArray(context?.students) ? context.students : [];
-  const aidIntent = String(context?.financialAidInterest?.intent || "").trim().toLowerCase();
-  const appFeeAmount = Number(feeConfig?.amount || DEFAULT_APPLICATION_FEE_AMOUNT);
-  const aidFeeAmount = Number(DEFAULT_FINANCIAL_AID_FEE_AMOUNT);
-  const enrollmentFeeAmount = Number(DEFAULT_ENROLLMENT_FEE_AMOUNT);
-
   return students.map((student, index) => {
     const childIndex = index + 1;
-    const discountPercent = feeDiscountPercentForChild(childIndex);
-    const applicationFee = applyFeeDiscount(appFeeAmount, childIndex);
-    const financialAidFee = aidIntent === "applying" ? applyFeeDiscount(aidFeeAmount, childIndex) : 0;
-    const enrollmentFee = applyFeeDiscount(enrollmentFeeAmount, childIndex);
+    const applicationFee = childIndex === 1 ? feeConfig.amount : feeConfig.additional_child_amount;
     return {
       childIndex,
       studentName: `${String(student?.firstName || "").trim()} ${String(student?.lastName || "").trim()}`.trim() || `Child ${childIndex}`,
-      discountPercent,
       applicationFee,
-      financialAidFee,
-      enrollmentFee,
-      total: Number((applicationFee + financialAidFee + enrollmentFee).toFixed(2)),
+      total: applicationFee,
     };
   });
 }
@@ -1685,20 +1656,25 @@ function StepReview({ context, ...props }) {
       <div className="crown-card" style={{ padding: 12, marginBottom: 12, border: "1px solid var(--crown-border)" }}>
         <p style={{ margin: "0 0 8px 0", fontWeight: 600 }}>Fee Schedule (Application, Financial Aid, Enrollment)</p>
         <div style={{ color: "var(--crown-muted)", fontSize: 13, marginBottom: 8 }}>
-          Multi-child discounts: 2nd child 25% off, 3rd child 50% off, 4th child 75% off, 5th+ free.
+          Application fees are school- and term-specific. Financial-aid application charges are assessed separately once per household in Jireh. No enrollment deposit is included.
         </div>
+        {!feeConfig.configured && <p role="alert">Application fees are not configured for this school and term. Submission is unavailable until the school publishes its fee schedule.</p>}
         <div style={{ display: "grid", gap: 8 }}>
           {summary.feeRows.map((row) => (
             <div key={`fee-row-${row.childIndex}`} style={{ border: "1px solid var(--crown-border)", borderRadius: 8, padding: 10 }}>
               <div style={{ fontWeight: 600 }}>{row.studentName} (Child {row.childIndex})</div>
-              <div style={{ color: "var(--crown-muted)", fontSize: 13, marginTop: 4 }}>Discount: {row.discountPercent}%</div>
               <div style={{ color: "var(--crown-muted)", fontSize: 13 }}>Application fee: {formatCurrency(row.applicationFee, summary.feeCurrency)}</div>
-              <div style={{ color: "var(--crown-muted)", fontSize: 13 }}>Financial aid fee: {formatCurrency(row.financialAidFee, summary.feeCurrency)}</div>
-              <div style={{ color: "var(--crown-muted)", fontSize: 13 }}>Enrollment fee: {formatCurrency(row.enrollmentFee, summary.feeCurrency)}</div>
               <div style={{ marginTop: 4 }}>Total: <strong>{formatCurrency(row.total, summary.feeCurrency)}</strong></div>
             </div>
           ))}
         </div>
+        {String(summary.financialAidInterest?.intent || "").trim().toLowerCase() === "applying" && (
+          <p style={{ color: "var(--crown-muted)", fontSize: 13, marginTop: 10 }}>
+            Jireh financial-aid application fee: separate, one fee per household. Amount is determined
+            by the school's Jireh fee policy and is not due with this admissions submission.
+            It is not included in the estimates above.
+          </p>
+        )}
       </div>
 
     </StepFrame>
@@ -1744,12 +1720,18 @@ function getSubmitBlockReason({ submitting, preflightStatus, canFinalize }) {
 }
 
 function normalizeFeeConfig(rawConfig) {
-  const amount = Number(rawConfig?.amount);
-  const fallbackAmount = Number(FALLBACK_FEE_CONFIG.amount || 0);
+  const configured = rawConfig?.configured === true;
+  const first = rawConfig?.amount;
+  const additional = rawConfig?.additional_child_amount;
+  const valid = configured && first !== null && additional !== null
+    && Number.isFinite(Number(first)) && Number.isFinite(Number(additional))
+    && Number(first) >= 0 && Number(additional) >= 0;
   return {
-    required: Boolean(rawConfig?.required),
-    amount: Number.isFinite(amount) ? amount : fallbackAmount,
-    currency: String(rawConfig?.currency || FALLBACK_FEE_CONFIG.currency || "USD"),
+    configured: valid,
+    required: valid && Boolean(rawConfig.required),
+    amount: valid ? Number(first) : null,
+    additional_child_amount: valid ? Number(additional) : null,
+    currency: String(rawConfig?.currency || "USD"),
   };
 }
 
@@ -1809,15 +1791,15 @@ function getFeeSummaryText(feeStatus) {
   return `Application fee due: ${feeStatus.currency || "USD"} ${feeStatus.amount || "0"}.`;
 }
 
-function FeeSelectionPanel({ feeConfig, applicationFee, onToggleFee }) {
-  if (!feeConfig.required) {
+function FeeSelectionPanel({ feeConfig, applicationFee, onToggleFee, feeDue }) {
+  if (!feeConfig.configured || !feeDue) {
     return null;
   }
 
   return (
     <div className="crown-card" style={{ padding: 10, border: "1px solid var(--crown-border)", marginBottom: 6 }}>
       <p style={{ margin: "0 0 8px 0", fontWeight: 600 }}>
-        Application fee: {feeConfig.currency} {feeConfig.amount.toFixed(2)}
+        Application fee: {feeConfig.currency} {feeConfig.amount.toFixed(2)} for the first child; {feeConfig.currency} {feeConfig.additional_child_amount.toFixed(2)} for each additional child.
       </p>
       <label style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
         <input
@@ -1846,6 +1828,7 @@ function SubmitPendingPanel({
   feeConfig,
   applicationFee,
   toggleApplicationFee,
+  feeDue,
   attestations,
   toggleAttestation,
   submitError,
@@ -1872,6 +1855,7 @@ function SubmitPendingPanel({
           feeConfig={feeConfig}
           applicationFee={applicationFee}
           onToggleFee={toggleApplicationFee}
+          feeDue={feeDue}
         />
         <label style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <input
@@ -1972,8 +1956,11 @@ function StepSubmit({
   const attestations = context.attestations || {};
   const feeConfig = normalizeFeeConfig(admissionsPublicConfig?.application_fee || FALLBACK_FEE_CONFIG);
   const applicationFee = context.applicationFee || { policyAccepted: !feeConfig.required, waiverRequested: false };
-  const feeSatisfied = !feeConfig.required || applicationFee.policyAccepted || applicationFee.waiverRequested;
+  const feeDue = feeConfig.configured && Array.isArray(context.students) && context.students.length > 0
+    && (Number(feeConfig.amount) + Math.max(0, context.students.length - 1) * Number(feeConfig.additional_child_amount)) > 0;
+  const feeSatisfied = !feeDue || applicationFee.policyAccepted || applicationFee.waiverRequested;
   const canFinalize = Boolean(
+    feeConfig.configured &&
     attestations.informationAccurate &&
     attestations.missionPartnershipUnderstood &&
     feeSatisfied
@@ -1991,7 +1978,7 @@ function StepSubmit({
   }, []);
 
   useEffect(() => {
-    if (!feeConfig.required) {
+    if (feeConfig.configured && !feeDue) {
       setContext((prev) => ({
         ...prev,
         applicationFee: {
@@ -2000,7 +1987,7 @@ function StepSubmit({
         },
       }));
     }
-  }, [feeConfig.required, setContext]);
+  }, [feeConfig.configured, feeDue, setContext]);
 
   function toggleAttestation(name) {
     setContext((prev) => ({
@@ -2020,6 +2007,10 @@ function StepSubmit({
   }
 
   async function handleFinalize() {
+    if (!feeConfig.configured) {
+      setSubmitError("Fee schedule unavailable. Verify school and term before submitting.");
+      return;
+    }
     if (inquiryReceipt && inquiryStartStatus !== 'ready') {
       setSubmitError('Your saved inquiry must be connected before submitting. Retry the connection above.');
       return;
@@ -2041,6 +2032,14 @@ function StepSubmit({
     try {
       const submitPayload = {
         ...context,
+        applicationFee: {
+          ...applicationFee,
+          quoteScheduleId: admissionsPublicConfig?.application_fee?.schedule_id,
+          quoteSchoolId: admissionsPublicConfig?.application_fee?.school_id,
+          quoteTerm: admissionsPublicConfig?.application_fee?.term,
+          quoteFirstAmount: admissionsPublicConfig?.application_fee?.amount,
+          quoteAdditionalAmount: admissionsPublicConfig?.application_fee?.additional_child_amount,
+        },
         demoChecklistAutoComplete: IS_SANDBOX_FLOW,
         ...(inquiryReceipt ? { inquiry_id: inquiryReceipt.inquiry_id, continuation_token: inquiryReceipt.continuation_token } : {}),
       };
@@ -2048,7 +2047,7 @@ function StepSubmit({
       if (requestIdentity.current?.fingerprint !== fingerprint) requestIdentity.current = { fingerprint, key: createInquiryRequestKey() };
       const response = await submitAdmissionsIntake(submitPayload, {
         idempotencyKey: requestIdentity.current.key,
-        schoolId: inquiryReceipt?.school_id || new URLSearchParams(globalThis.location?.search || '').get('school_id') || '',
+        schoolId: admissionsPublicConfig?.application_fee?.school_id || inquiryReceipt?.school_id || new URLSearchParams(globalThis.location?.search || '').get('school_id') || '',
       });
       if (inquiryReceipt) clearAdmissionsInquiry(inquiryReceipt.school_id);
       const checklistHub = response?.checklist_hub;
@@ -2099,6 +2098,7 @@ function StepSubmit({
             feeConfig={feeConfig}
             applicationFee={applicationFee}
             toggleApplicationFee={toggleApplicationFee}
+            feeDue={feeDue}
             attestations={attestations}
             toggleAttestation={toggleAttestation}
             submitError={submitError}
@@ -2186,23 +2186,26 @@ export default function ProspectiveFamilyAdmissionsWizard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const quoteSchoolId = inquiryReceipt?.school_id || querySchool;
+  const quoteTerm = String(draftContext?.inquiry?.startTerm || "").trim();
+  const quoteCampus = String(draftContext?.inquiry?.campus || "").trim();
   useEffect(() => {
     let mounted = true;
-    fetchAdmissionsPublicConfig()
+    setAdmissionsPublicConfig({ application_fee: FALLBACK_FEE_CONFIG });
+    if ((!quoteSchoolId && !quoteCampus) || !quoteTerm) return () => { mounted = false; };
+    fetchAdmissionsPublicConfig({ schoolId: quoteSchoolId, campus: quoteCampus, term: quoteTerm })
       .then((data) => {
-        if (!mounted || !data) return;
-        setAdmissionsPublicConfig((prev) => ({
-          ...prev,
-          ...data,
-        }));
+        if (!mounted) return;
+        const fee = data?.application_fee;
+        if (!fee?.school_id || fee?.term !== quoteTerm) return;
+        if (quoteSchoolId && fee.school_id !== String(quoteSchoolId)) return;
+        setAdmissionsPublicConfig({ ...data, application_fee: fee });
       })
       .catch(() => {
-        // Keep fallback fee config when public config endpoint is unavailable.
+        if (mounted) setAdmissionsPublicConfig({ application_fee: FALLBACK_FEE_CONFIG });
       });
-    return () => {
-      mounted = false;
-    };
-  }, []);
+    return () => { mounted = false; };
+  }, [quoteSchoolId, quoteTerm, quoteCampus]);
 
   useEffect(() => {
     if (!loaded || !IS_DEMO_PREFILL_MODE) return;
