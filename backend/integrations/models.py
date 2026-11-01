@@ -48,7 +48,7 @@ class MicrosoftTenantBinding(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     school = models.ForeignKey(
         "core.School",
-        on_delete=models.CASCADE,
+        on_delete=models.PROTECT,
         related_name="microsoft_tenant_bindings",
     )
     tenant_id = models.UUIDField()
@@ -97,12 +97,12 @@ class MicrosoftIdentityLink(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     binding = models.ForeignKey(
         MicrosoftTenantBinding,
-        on_delete=models.CASCADE,
+        on_delete=models.PROTECT,
         related_name="identity_links",
     )
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
+        on_delete=models.PROTECT,
         related_name="microsoft_identity_links",
     )
     object_id = models.UUIDField()
