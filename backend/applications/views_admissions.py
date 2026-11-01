@@ -1575,7 +1575,7 @@ def _resolve_finance_payer_user(*, school: Any, guardians: list[dict[str, Any]])
 def _create_application_fee_finance_records(*, school: Any, data: AdmissionsSubmitData, application_ids: list[str], correlation_id: str, fee_policy: Any = None) -> dict[str, Any]:
     fee_status = _build_application_fee_status(data)
     if fee_policy is not None:
-        fee_status.update({"required": fee_policy.required, "amount": str(fee_policy.amount_for_child(1)), "schedule_id": fee_policy.schedule_id})
+        fee_status.update({"required": fee_policy.required, "amount": str(fee_policy.amount_for_child(1)), "schedule_id": fee_policy.schedule_id, "status": _application_fee_status_value(fee_policy.required, bool(data.application_fee.get("waiverRequested")))})
     if not fee_status["required"]:
         fee_status["finance"] = {"state": "not_applicable"}
         return fee_status
