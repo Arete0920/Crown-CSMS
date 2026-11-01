@@ -274,15 +274,26 @@ def enforce_tenant_context(request) -> None:
         .only("id", "name", "is_active")
         .first()
     )
-    # An existing checked-in child must remain releasable even if the
-    # school's commercial/operational status changes. This exception allows
-    # ONLY the exact authenticated custody-release POST; no new admissions.
-    # The view and service still require school-bound staff, current coverage,
-    # explicit release permission and independently verified recipient identity.
+    # An already-admitted child's custody must remain resolvable after a
+    # school is deactivated. Admit no new children: only the exact release POST
+    # and school-bound GET of an existing site's open-custody roster continue.
+    # The DRF views still require active, explicitly authorized Diadem staff,
+    # current staff coverage for room rosters, and verified release authority.
+    is_diadem_release = (
+        request.method == "POST"
+        and normalized_path == "/api/v1/aftercare/daycare/attendance/release"
+    )
+    is_diadem_open_custody_roster = (
+        request.method == "GET"
+        and re.fullmatch(
+            r"/api/v1/aftercare/daycare/sites/"
+            r"[0-9a-fA-F]{8}-(?:[0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}/roster",
+            normalized_path,
+        ) is not None
+    )
     if (
         school is None
-        and request.method == "POST"
-        and normalized_path == "/api/v1/aftercare/daycare/attendance/release"
+        and (is_diadem_release or is_diadem_open_custody_roster)
         and context.principal_school_id is not None
         and context.principal_school_id == context.school_id
         and not context.override_requested

@@ -158,6 +158,32 @@ def test_inactive_school_may_release_existing_child_not_admit_another():
     assert DaycareRelease.objects.filter(attendance=attendance).exists()
     assert _checkin(d).status_code in (403, 404)
 
+def test_inactive_school_allows_only_verified_open_custody_roster_and_release():
+    d = setup()
+    c = _client(d["actor"])
+    admitted = _checkin(d, c)
+    assert admitted.status_code == 201, admitted.data
+    attendance = DaycareAttendance.objects.get(pk=admitted.data["attendance_id"])
+    d["school"].is_active = False
+    d["school"].save(update_fields=["is_active"])
+
+    # Staff must be able to identify an already-admitted child for safe release,
+    # even when ordinary school reads and new admissions have been disabled.
+    roster_url = f'/api/v1/aftercare/daycare/sites/{d["site"].id}/roster/'
+    roster = c.get(roster_url)
+    assert roster.status_code == 200, getattr(roster, "data", None)
+    assert roster.data["children_present"] == 1
+    assert roster.data["rows"][0]["attendance_id"] == str(attendance.pk)
+    assert c.get("/api/v1/aftercare/roster/today/").status_code == 404
+    assert _checkin(d, c).status_code in (403, 404)
+
+    finished = _release(d, attendance, c)
+    assert finished.status_code == 201, getattr(finished, "data", None)
+    after = c.get(roster_url)
+    assert after.status_code == 200
+    assert after.data["children_present"] == 0
+
+
 def test_inactive_school_rejects_foreign_school_custody_header():
     d = setup()
     admitted = _checkin(d)
