@@ -107,8 +107,10 @@ class AdmissionsSubmissionPostgresConcurrencyTests(TransactionTestCase):
                     deepcopy(request_payload),
                     format="json",
                     HTTP_IDEMPOTENCY_KEY=key,
+                    HTTP_X_SCHOOL_ID=str(self.school.pk),
                 )
-                return response.status_code, dict(response.data), response.get("X-Idempotent-Replay")
+                body = response.json()
+                return response.status_code, body, response.get("X-Idempotent-Replay")
             finally:
                 connections.close_all()
 
@@ -117,6 +119,7 @@ class AdmissionsSubmissionPostgresConcurrencyTests(TransactionTestCase):
             second = pool.submit(post_from_separate_connection)
             results = [first.result(timeout=90), second.result(timeout=90)]
 
+        # Show the actual server responses if routing, auth or concurrency fails.
         self.assertEqual(sorted(result[0] for result in results), [200, 201], results)
         self.assertEqual(
             [result[2] for result in results].count("true"), 1, results,
