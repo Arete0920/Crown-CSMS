@@ -73,7 +73,6 @@ const INTERVIEW_MODE_OPTIONS = [
 ];
 
 const DEFAULT_APPLICATION_FEE_AMOUNT = Number(import.meta.env.VITE_ADMISSIONS_APPLICATION_FEE_USD || "85");
-const DEFAULT_FINANCIAL_AID_FEE_AMOUNT = Number(import.meta.env.VITE_ADMISSIONS_FINANCIAL_AID_FEE_USD || "35");
 const DEFAULT_ENROLLMENT_FEE_AMOUNT = Number(import.meta.env.VITE_ADMISSIONS_ENROLLMENT_FEE_USD || "250");
 const FALLBACK_FEE_CONFIG = {
   required: Number.isFinite(DEFAULT_APPLICATION_FEE_AMOUNT) && DEFAULT_APPLICATION_FEE_AMOUNT > 0,
@@ -107,14 +106,13 @@ function buildHouseholdFeePreview({ context, feeConfig }) {
   const students = Array.isArray(context?.students) ? context.students : [];
   const aidIntent = String(context?.financialAidInterest?.intent || "").trim().toLowerCase();
   const appFeeAmount = Number(feeConfig?.amount || DEFAULT_APPLICATION_FEE_AMOUNT);
-  const aidFeeAmount = Number(DEFAULT_FINANCIAL_AID_FEE_AMOUNT);
   const enrollmentFeeAmount = Number(DEFAULT_ENROLLMENT_FEE_AMOUNT);
 
   return students.map((student, index) => {
     const childIndex = index + 1;
     const discountPercent = feeDiscountPercentForChild(childIndex);
     const applicationFee = applyFeeDiscount(appFeeAmount, childIndex);
-    const financialAidFee = aidIntent === "applying" ? applyFeeDiscount(aidFeeAmount, childIndex) : 0;
+    const financialAidFee = 0; // Jireh is a separate household-level application, not an admissions charge.
     const enrollmentFee = applyFeeDiscount(enrollmentFeeAmount, childIndex);
     return {
       childIndex,
@@ -1685,7 +1683,7 @@ function StepReview({ context, ...props }) {
       <div className="crown-card" style={{ padding: 12, marginBottom: 12, border: "1px solid var(--crown-border)" }}>
         <p style={{ margin: "0 0 8px 0", fontWeight: 600 }}>Fee Schedule (Application, Financial Aid, Enrollment)</p>
         <div style={{ color: "var(--crown-muted)", fontSize: 13, marginBottom: 8 }}>
-          Multi-child discounts: 2nd child 25% off, 3rd child 50% off, 4th child 75% off, 5th+ free.
+          The displayed child discounts apply to the admissions application and enrollment estimates only. Jireh financial-aid fees are assessed separately, once per household, when a Jireh application is submitted.
         </div>
         <div style={{ display: "grid", gap: 8 }}>
           {summary.feeRows.map((row) => (
@@ -1693,12 +1691,18 @@ function StepReview({ context, ...props }) {
               <div style={{ fontWeight: 600 }}>{row.studentName} (Child {row.childIndex})</div>
               <div style={{ color: "var(--crown-muted)", fontSize: 13, marginTop: 4 }}>Discount: {row.discountPercent}%</div>
               <div style={{ color: "var(--crown-muted)", fontSize: 13 }}>Application fee: {formatCurrency(row.applicationFee, summary.feeCurrency)}</div>
-              <div style={{ color: "var(--crown-muted)", fontSize: 13 }}>Financial aid fee: {formatCurrency(row.financialAidFee, summary.feeCurrency)}</div>
               <div style={{ color: "var(--crown-muted)", fontSize: 13 }}>Enrollment fee: {formatCurrency(row.enrollmentFee, summary.feeCurrency)}</div>
               <div style={{ marginTop: 4 }}>Total: <strong>{formatCurrency(row.total, summary.feeCurrency)}</strong></div>
             </div>
           ))}
         </div>
+        {String(summary.financialAidInterest?.intent || "").trim().toLowerCase() === "applying" && (
+          <p style={{ color: "var(--crown-muted)", fontSize: 13, marginTop: 10 }}>
+            Jireh financial-aid application fee: separate, one fee per household. Amount is determined
+            by the school's Jireh fee policy and is not due with this admissions submission.
+            It is not included in the estimates above.
+          </p>
+        )}
       </div>
 
     </StepFrame>
