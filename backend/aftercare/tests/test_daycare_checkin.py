@@ -220,9 +220,9 @@ def test_postgresql_concurrent_arrivals_cannot_exceed_single_place():
     from concurrent.futures import ThreadPoolExecutor
     from threading import Barrier
     from django.db import connection, close_old_connections, connections
-    d=setup()
     if connection.vendor != "postgresql":
         pytest.skip("Concurrent row-lock proof requires PostgreSQL.")
+    d=setup()
     d["room"].licensed_capacity=1
     d["room"].save()
     second=DaycareChild.objects.create(
@@ -268,9 +268,9 @@ def test_postgresql_concurrent_staff_assignments_cannot_overlap():
     from concurrent.futures import ThreadPoolExecutor
     from threading import Barrier
     from django.db import connection, close_old_connections, connections
-    d=setup()
     if connection.vendor != "postgresql":
         pytest.skip("Concurrent row-lock proof requires PostgreSQL.")
+    d=setup()
     d["coverage"].is_active=False
     d["coverage"].save()
     rooms=[]
