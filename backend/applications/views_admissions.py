@@ -204,7 +204,6 @@ SOURCES = [
 ]
 
 APPLICATION_FEE_USD = Decimal("85.00")
-FINANCIAL_AID_FEE_USD = Decimal(str(os.getenv("ADMISSIONS_FINANCIAL_AID_FEE_USD", "35.00")))
 ENROLLMENT_FEE_USD = Decimal(str(os.getenv("ADMISSIONS_ENROLLMENT_FEE_USD", "250.00")))
 APPLICATION_FEE_CURRENCY = "USD"
 PAYMENT_INTENT_ENDPOINT = "/api/finance/payments/intent/"
@@ -289,9 +288,10 @@ def _application_fee_required() -> bool:
     return APPLICATION_FEE_USD > Decimal("0")
 
 
-def _financial_aid_fee_required(data: "AdmissionsSubmitData") -> bool:
+def _financial_aid_interest_is_applying(data: "AdmissionsSubmitData") -> bool:
+    # Admissions records intent only; Jireh application submission is a separate action.
     intent = str((data.financial_aid_interest or {}).get("intent") or "").strip().lower()
-    return FINANCIAL_AID_FEE_USD > Decimal("0") and intent == "applying"
+    return intent == "applying"
 
 
 def _enrollment_fee_required() -> bool:
@@ -323,7 +323,8 @@ def _fee_rows_for_household(data: "AdmissionsSubmitData", application_ids: list[
     for child_index in range(1, student_count + 1):
         app_id = application_ids[child_index - 1] if child_index - 1 < len(application_ids) else None
         app_fee = _apply_child_discount(APPLICATION_FEE_USD, child_index) if _application_fee_required() else Decimal("0.00")
-        aid_fee = _apply_child_discount(FINANCIAL_AID_FEE_USD, child_index) if _financial_aid_fee_required(data) else Decimal("0.00")
+        # Jireh is assessed once per family at Jireh submission, not per child here.
+        aid_fee = Decimal("0.00")
         enrollment_fee = _apply_child_discount(ENROLLMENT_FEE_USD, child_index) if _enrollment_fee_required() else Decimal("0.00")
         rows.append(
             {
@@ -358,10 +359,16 @@ def _application_fee_config() -> dict[str, Any]:
 
 
 def _financial_aid_fee_config(data: "AdmissionsSubmitData") -> dict[str, Any]:
+    # This is an admissions-intent notice, not a Jireh fee quote or payment demand.
+    # Never use an unscoped environment variable as a tenant's Jireh price.
     return {
-        "required": _financial_aid_fee_required(data),
-        "amount": str(FINANCIAL_AID_FEE_USD),
+        "required": False,
+        "amount": None,
         "currency": APPLICATION_FEE_CURRENCY,
+        "scope": "family",
+        "billing_stage": "jireh_application",
+        "status": "awaiting_jireh_application" if _financial_aid_interest_is_applying(data) else "not_required",
+        "payable_now": False,
     }
 
 
@@ -1234,9 +1241,11 @@ def _build_enrollment_continuity(data: AdmissionsSubmitData) -> dict[str, Any]:
             {
                 "key": "financial_aid_fee",
                 "title": "Financial Aid Fee",
-                "status": "pending" if _financial_aid_fee_required(data) else "not_required",
-                "amount": str(FINANCIAL_AID_FEE_USD),
+                "status": "awaiting_jireh_application" if _financial_aid_interest_is_applying(data) else "not_required",
+                "amount": None,
                 "currency": APPLICATION_FEE_CURRENCY,
+                "scope": "family",
+                "billing_stage": "jireh_application",
             },
             {
                 "key": "tour_or_interview",
