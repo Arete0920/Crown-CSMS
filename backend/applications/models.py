@@ -305,4 +305,3 @@ class AdmissionsSubmissionReceipt(TimeStampedModel):
                 name="uniq_admissions_receipt_school_key",
             ),
         ]
-
