@@ -339,7 +339,7 @@ def admin_recommend_award(request):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    if bucket not in dict(AidAward.TYPE_CHOICES):
+    if not isinstance(bucket, str) or bucket not in dict(AidAward.TYPE_CHOICES):
         return Response({"detail": "Invalid award bucket"}, status=status.HTTP_400_BAD_REQUEST)
 
     try:

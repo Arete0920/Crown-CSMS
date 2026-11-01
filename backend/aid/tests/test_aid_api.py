@@ -317,6 +317,18 @@ class TestAdminRecommendAward(TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertFalse(AidAward.objects.filter(aid_application=self.app).exists())
 
+    def test_non_string_award_bucket_returns_400(self):
+        for invalid_bucket in ([], {}):
+            with self.subTest(bucket=repr(invalid_bucket)):
+                response = _json_post(self.client, self.url, {
+                    "application_id": str(self.app.id),
+                    "student_id": str(self.student.id),
+                    "bucket": invalid_bucket,
+                    "gross_tuition_cents": 10_000_00,
+                }, self.school)
+                self.assertEqual(response.status_code, 400, response.content)
+                self.assertFalse(AidAward.objects.filter(aid_application=self.app).exists())
+
     def test_missing_policy_returns_404(self):
         # No policy for this school/year → 404
         AidPolicy.objects.filter(school=self.school, academic_year=self.ay).delete()
