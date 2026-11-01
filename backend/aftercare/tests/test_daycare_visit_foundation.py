@@ -238,15 +238,24 @@ def test_postgresql_preexisting_custody_survives_visit_migration():
             last_name="Synthetic", date_of_birth=data["child"].date_of_birth,
             is_active=True,
         )
+        legacy_enrollment = type(data["enrollment"]).objects.create(
+            school=data["school"], site=data["site"], room=data["room"],
+            child=legacy_child, program=data["program"], status="ACTIVE",
+            readiness="READY",
+            start_date=checked_in_at.date() - timedelta(days=5),
+            weekdays=list(range(7)),
+        )
         old_image_row = HistoricalAttendance.objects.create(
             school_id=data["school"].id, site_id=data["site"].id,
             room_id=data["room"].id, child_id=legacy_child.pk,
-            program_id=data["program"].id, enrollment_id=data["enrollment"].id,
+            program_id=data["program"].id, enrollment_id=legacy_enrollment.pk,
             actor_id=data["actor"].id, care_date=checked_in_at.date(),
             checked_in_at=checked_in_at, request_key=uuid4(),
         )
         migrated_old_image_row = DaycareAttendance.objects.get(pk=old_image_row.pk)
         assert migrated_old_image_row.visit_number == 1
         assert migrated_old_image_row.reentry_approval_id is None
+        assert migrated_old_image_row.child_id == legacy_child.pk
+        assert migrated_old_image_row.enrollment_id == legacy_enrollment.pk
     finally:
         MigrationExecutor(connection).migrate(final_targets)
