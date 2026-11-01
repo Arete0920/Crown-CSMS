@@ -7,6 +7,7 @@ from django.core.exceptions import ValidationError
 from rest_framework.test import APIRequestFactory, force_authenticate
 
 from core.models import CrownPermission, RolePermission, School, UserAccount, UserRole
+from crown_api.audit_models import AuditEvent
 from households.models import Guardian, Household, Student
 from summer_camp import api
 from summer_camp.models import (
@@ -102,6 +103,7 @@ def parent_for(school, household, label):
 def request(factory, method, path, user, school, data=None):
     req = getattr(factory, method)(path, data or {}, format="json")
     req.school = school
+    req.tenant_school_id = school.id
     force_authenticate(req, user=user)
     return req
 
@@ -294,6 +296,12 @@ def test_guardian_discovery_selection_and_cancel_are_household_scoped(monkeypatc
     assert api.club_selection_cancel_view(
         own_cancel, selected.data["id"]
     ).data["status"] == "CANCELLED"
+    actions = list(
+        AuditEvent.objects.filter(school_id=school.id).order_by("ts")
+        .values_list("action", flat=True)
+    )
+    assert "summer_camp.club_selection.created" in actions
+    assert "summer_camp.club_selection.cancelled" in actions
 
 
 def test_guardian_lists_only_owned_selection_and_inactive_club_is_hidden(monkeypatch):
