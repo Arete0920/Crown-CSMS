@@ -274,6 +274,23 @@ def enforce_tenant_context(request) -> None:
         .only("id", "name", "is_active")
         .first()
     )
+    # An existing checked-in child must remain releasable even if the
+    # school's commercial/operational status changes. This exception allows
+    # ONLY the exact authenticated custody-release POST; no new admissions.
+    # The view and service still require school-bound staff, current coverage,
+    # explicit release permission and independently verified recipient identity.
+    if (
+        school is None
+        and request.method == "POST"
+        and normalized_path == "/api/v1/aftercare/daycare/attendance/release"
+        and context.principal_school_id is not None
+        and context.principal_school_id == context.school_id
+        and not context.override_requested
+        and context.actor_type != "anonymous"
+    ):
+        school = School.objects.filter(pk=context.school_id).only(
+            "id", "name", "is_active"
+        ).first()
     if school is None:
         _record_tenant_decision(request, outcome="denied", reason="tenant_inactive_or_unknown")
         raise _tenant_context_error(
