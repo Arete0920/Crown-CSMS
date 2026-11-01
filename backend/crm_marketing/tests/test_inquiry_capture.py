@@ -14,6 +14,7 @@ from applications.models import Application, Applicant
 from core.models import CrownPermission, RolePermission, School, UserAccount, UserRole
 from crm_marketing.models import CampaignTouchpoint, MarketingCampaign, MarketingLead
 from households.models import Household
+from fee_schedule_wizard.models import FeeSchedule, FeeLine
 
 
 pytestmark = pytest.mark.django_db
@@ -238,6 +239,17 @@ def test_capability_start_is_idempotent_and_rejects_other_school_nonce_and_expir
 
 
 def test_inquiry_to_multichild_application_preserves_source_and_real_times(school):
+    schedule = FeeSchedule.objects.create(
+        school=school, name="Inquiry admissions test fees", term="2027-2028",
+        effective_date="2027-08-01", is_active=True,
+    )
+    for code, cents in (("admissions_first_child", 8500), ("admissions_additional_child", 5000)):
+        FeeLine.objects.create(
+            fee_schedule=schedule, code=code, label=code,
+            amount_cents=cents, kind=FeeLine.KIND_FEE,
+            frequency=FeeLine.FREQ_ONE_TIME, is_required=True,
+        )
+
     campaign = MarketingCampaign.objects.create(school=school, name="Fall visits", status="active")
     receipt = _capture(school, campaign_id=str(campaign.id)).data
     lead = MarketingLead.objects.get(id=receipt["inquiry_id"])
