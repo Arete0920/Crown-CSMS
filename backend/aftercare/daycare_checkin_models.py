@@ -1,5 +1,6 @@
 """Daycare staffing coverage and immutable check-in storage, independent of K12 attendance."""
 import uuid
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
@@ -113,14 +114,27 @@ class DaycareAttendance(DaycareScopedRecord):
                 raise ValidationError("Re-entry requires a stored director authorization.")
             approval=self.reentry_approval
             previous=approval.previous_attendance
+            from .daycare_release_models import DaycareRelease
+            prior_release_at=DaycareRelease.objects.filter(
+                school_id=self.school_id,attendance_id=previous.pk
+            ).values_list("released_at",flat=True).first()
             if (approval.school_id!=self.school_id or approval.site_id!=self.site_id
                 or approval.child_id!=self.child_id or approval.care_date!=self.care_date
                 or previous.visit_number+1!=self.visit_number
                 or previous.school_id!=self.school_id or previous.child_id!=self.child_id
                 or previous.site_id!=self.site_id or approval.director_id==self.actor_id
-                or self.checked_in_at is None or not (approval.approved_at<=self.checked_in_at<approval.expires_at)
-                or not hasattr(previous,"custody_release")):
+                or prior_release_at is None or self.checked_in_at is None
+                or self.checked_in_at<=prior_release_at
+                or not (approval.approved_at<=self.checked_in_at<approval.expires_at)):
                 raise ValidationError("Re-entry approval does not match this released visit.")
+            try:
+                local_day=timezone.localtime(
+                    self.checked_in_at,ZoneInfo(self.school.timezone)
+                ).date()
+            except (ZoneInfoNotFoundError,TypeError,ValueError) as exc:
+                raise ValidationError("Re-entry requires a valid school timezone.") from exc
+            if local_day!=self.care_date:
+                raise ValidationError("Re-entry must occur on its original local care date.")
     def save(self,*args,**kwargs):
         if not self._state.adding:
             raise ValidationError("Check-in is immutable; audited release workflow required.")
@@ -171,10 +185,13 @@ class DaycareReentryAuthorization(DaycareScopedRecord):
             or self.expires_at<=self.approved_at):
             raise ValidationError("Re-entry authorization requires a valid aware expiry window.")
         from .daycare_release_models import DaycareRelease
-        if not DaycareRelease.objects.filter(
+        previous_release_at=DaycareRelease.objects.filter(
             school_id=self.school_id,attendance_id=self.previous_attendance_id
-        ).exists():
+        ).values_list("released_at",flat=True).first()
+        if previous_release_at is None:
             raise ValidationError("Director cannot authorize an unreleased custody visit.")
+        if self.approved_at<previous_release_at:
+            raise ValidationError("Re-entry approval cannot precede the custody release.")
 
     def save(self,*args,**kwargs):
         if not self._state.adding:
