@@ -314,7 +314,12 @@ class DashboardSummaryView(APIView):
             bound = getattr(request, 'school', None)
             if bound is not None and str(bound.id) != str(selected):
                 raise NotFound({'detail': 'Not found.'})
-            resolved = get_request_school_id(request)
+            try:
+                resolved = get_request_school_id(request)
+            except NotFound as exc:
+                # Preserve the generic dashboard's existing non-disclosing
+                # not-found response while using canonical tenant validation.
+                raise NotFound({'detail': 'Not found.'}) from exc
             context = getattr(request, CANONICAL_TENANT_ATTR, None)
             # Canonical resolution also recognizes a single-school UserRole
             # membership when the direct school FK is unset. Override authority
