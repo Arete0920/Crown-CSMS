@@ -8,7 +8,7 @@ from django.core.exceptions import ValidationError
 from rest_framework.test import APIRequestFactory, force_authenticate
 
 from core.models import CrownPermission, RolePermission, School, UserAccount, UserRole
-from households.models import Household, Student
+from households.models import Guardian, Household, Student
 from summer_camp import api
 from summer_camp.models import (
     SummerCampClub,
@@ -23,6 +23,7 @@ from summer_camp.services import (
     create_club,
     create_club_offering,
     select_club,
+    update_club_offering,
 )
 
 pytestmark = pytest.mark.django_db
@@ -297,3 +298,149 @@ def test_club_api_requires_explicit_school_scoped_view_and_edit_grants(monkeypat
     assert response.status_code == 201
     assert response.data["code"] == "stem"
     assert SummerCampClub.objects.filter(school=school, code="stem").count() == 1
+
+
+def test_offering_update_refuses_schedule_or_capacity_breakage_after_selection():
+    school, _h, _s, session, enrollment = _school_case("Update")
+    club = _club(school, "maker")
+    offering = _offering(
+        school, session, club, start=time(9), end=time(10), capacity=2, waitlist=1,
+    )
+    select_club(school.id, enrollment.id, offering.id)
+
+    with pytest.raises(ValueError, match="cannot change after camper selection"):
+        update_club_offering(
+            school.id, offering.id, {"start_time": time(9, 30)}
+        )
+    with pytest.raises(ValueError, match="cannot be lower than enrolled selections"):
+        update_club_offering(
+            school.id, offering.id, {"capacity": 0}
+        )
+
+    updated = update_club_offering(
+        school.id, offering.id, {"location": "Innovation Lab"}
+    )
+    assert updated.location == "Innovation Lab"
+    assert updated.start_time == time(9)
+
+
+def test_linked_guardian_can_discover_select_and_cancel_only_own_enrollment(monkeypatch):
+    school, household, _student, session, enrollment = _school_case("Parent")
+    other = _second_enrollment(school, session, "OtherFamily")
+    club = _club(school, "service")
+    offering = _offering(
+        school, session, club, capacity=3, waitlist=1, weekdays=[1, 3],
+    )
+
+    parent = UserAccount.objects.create_user(
+        username=f"camp-parent-{uuid4().hex[:8]}",
+        password="unused",
+        school=school,
+    )
+    Guardian.objects.create(
+        school_id=school.id,
+        household=household,
+        account=parent,
+        first_name="Pat",
+        last_name="Guardian",
+        is_primary=True,
+    )
+
+    factory = APIRequestFactory()
+    monkeypatch.setattr(api, "school_id_from_request", lambda request, required=True: school.id)
+
+    own_offerings = factory.get(
+        f"/api/v1/summer-camp/club-offerings/?enrollment_id={enrollment.id}"
+    )
+    own_offerings.school = school
+    force_authenticate(own_offerings, user=parent)
+    own_response = api.club_offerings_view(own_offerings)
+    assert own_response.status_code == 200
+    assert [row["id"] for row in own_response.data] == [offering.id]
+
+    foreign_offerings = factory.get(
+        f"/api/v1/summer-camp/club-offerings/?enrollment_id={other.id}"
+    )
+    foreign_offerings.school = school
+    force_authenticate(foreign_offerings, user=parent)
+    assert api.club_offerings_view(foreign_offerings).status_code == 403
+
+    own_select = factory.post(
+        "/api/v1/summer-camp/club-selections/",
+        {"enrollment_id": enrollment.id, "offering_id": offering.id},
+        format="json",
+    )
+    own_select.school = school
+    force_authenticate(own_select, user=parent)
+    selected_response = api.club_selections_view(own_select)
+    assert selected_response.status_code == 201
+    own_selection_id = selected_response.data["id"]
+
+    foreign_select = factory.post(
+        "/api/v1/summer-camp/club-selections/",
+        {"enrollment_id": other.id, "offering_id": offering.id},
+        format="json",
+    )
+    foreign_select.school = school
+    force_authenticate(foreign_select, user=parent)
+    assert api.club_selections_view(foreign_select).status_code == 403
+
+    other_selection = select_club(school.id, other.id, offering.id)
+    foreign_cancel = factory.post(
+        f"/api/v1/summer-camp/club-selections/{other_selection.id}/cancel/",
+        {},
+        format="json",
+    )
+    foreign_cancel.school = school
+    force_authenticate(foreign_cancel, user=parent)
+    assert api.club_selection_cancel_view(
+        foreign_cancel, other_selection.id
+    ).status_code == 403
+
+    own_cancel = factory.post(
+        f"/api/v1/summer-camp/club-selections/{own_selection_id}/cancel/",
+        {},
+        format="json",
+    )
+    own_cancel.school = school
+    force_authenticate(own_cancel, user=parent)
+    cancelled = api.club_selection_cancel_view(own_cancel, own_selection_id)
+    assert cancelled.status_code == 200
+    assert cancelled.data["status"] == "CANCELLED"
+
+
+def test_guardian_selection_list_requires_owned_enrollment_filter(monkeypatch):
+    school, household, _student, session, enrollment = _school_case("ParentList")
+    club = _club(school, "reading-club")
+    offering = _offering(school, session, club, capacity=5, waitlist=0)
+    selection = select_club(school.id, enrollment.id, offering.id)
+
+    parent = UserAccount.objects.create_user(
+        username=f"camp-parent-list-{uuid4().hex[:8]}",
+        password="unused",
+        school=school,
+    )
+    Guardian.objects.create(
+        school_id=school.id,
+        household=household,
+        account=parent,
+        first_name="Casey",
+        last_name="Guardian",
+        is_primary=True,
+    )
+    factory = APIRequestFactory()
+    monkeypatch.setattr(api, "school_id_from_request", lambda request, required=True: school.id)
+
+    unscoped = factory.get("/api/v1/summer-camp/club-selections/")
+    unscoped.school = school
+    force_authenticate(unscoped, user=parent)
+    assert api.club_selections_view(unscoped).status_code == 403
+
+    scoped = factory.get(
+        f"/api/v1/summer-camp/club-selections/?enrollment_id={enrollment.id}"
+    )
+    scoped.school = school
+    force_authenticate(scoped, user=parent)
+    response = api.club_selections_view(scoped)
+    assert response.status_code == 200
+    assert [row["id"] for row in response.data] == [selection.id]
