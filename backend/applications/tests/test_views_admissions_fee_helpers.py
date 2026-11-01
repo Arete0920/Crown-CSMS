@@ -186,3 +186,25 @@ def test_contract_m365_handoff_requires_email_and_sharepoint(monkeypatch):
     assert payload["provider"] == "microsoft_365"
     assert payload["application_ids"] == ["app-1", "app-2"]
     assert "guardian_names" in payload["template"]["autopopulate_fields"]
+
+
+def test_heritage_canonical_upfront_fee_math():
+    from applications.fee_policy import AdmissionsFeePolicy
+
+    policy = AdmissionsFeePolicy(
+        school_id="test-school", term="2026-2027", schedule_id="test-schedule",
+        first_child_cents=8500, additional_child_cents=5000,
+    )
+    assert [policy.amount_for_child(i) for i in range(1, 6)] == [
+        Decimal("85.00"), Decimal("50.00"), Decimal("50.00"),
+        Decimal("50.00"), Decimal("50.00"),
+    ]
+    assert sum(policy.amount_for_child(i) for i in range(1, 4)) == Decimal("185.00")
+    assert policy.required is True
+
+
+def test_admissions_fee_policy_requires_school_and_term():
+    from applications.fee_policy import get_admissions_fee_policy
+
+    assert get_admissions_fee_policy(school=None, term="2026-2027") is None
+    assert get_admissions_fee_policy(school=SimpleNamespace(pk="school-uuid"), term="") is None
