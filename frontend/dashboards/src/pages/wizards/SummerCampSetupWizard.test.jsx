@@ -115,3 +115,19 @@ it("does not verify a save if the server returns inconsistent wizard progress", 
   expect(screen.queryByText(/Saved and verified against server records/)).toBeNull();
   expect(screen.queryByRole("button", { name: "Save Setup" })).toBeNull();
 });
+
+it("allows correction of invalid local input without sending a write or forcing a reload", async () => {
+  render(<SummerCampSetupWizard />);
+  const name = await screen.findByLabelText("Camp Name");
+  fireEvent.change(name, { target: { value: "   " } });
+  fireEvent.click(screen.getByRole("button", { name: "Save Setup" }));
+  expect(screen.getByRole("alert").textContent).toMatch(/Nothing was submitted/);
+  expect(submitSummerCampWizard).not.toHaveBeenCalled();
+  expect(screen.getByRole("button", { name: "Save Setup" })).toBeTruthy();
+  fireEvent.change(name, { target: { value: "Corrected synthetic name" } });
+  fireEvent.click(screen.getByRole("button", { name: "Save Setup" }));
+  // A deliberately unchanged server readback must still fail closed.
+  await screen.findByRole("alert");
+  expect(submitSummerCampWizard).toHaveBeenCalledTimes(1);
+  expect(screen.queryByText(/Saved and verified against server records/)).toBeNull();
+});
