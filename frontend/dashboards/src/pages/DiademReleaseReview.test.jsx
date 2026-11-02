@@ -19,6 +19,7 @@ const show = () => { const released = vi.fn(); render(
 beforeEach(() => {
   vi.resetAllMocks();
   sessionStorage.setItem("crown.school.id", "synthetic-school-a");
+  sessionStorage.setItem("access_token", "synthetic-test-access-token");
   crownApiClient.get.mockResolvedValue({ data: candidate });
   crownApiClient.post.mockResolvedValue({ data: { status: "released", attendance_id: attendanceId } });
 });
