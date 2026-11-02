@@ -8,6 +8,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from urllib.parse import urlsplit, urlunsplit
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -185,14 +186,26 @@ def _verify_local_postgresql_backup_restore(
     assert dsn.path.lstrip("/") and db_name.endswith(dsn.path.lstrip("/"))
     assert os.environ.get("DJANGO_SETTINGS_MODULE") == "crown_api.test_settings"
 
-    installed = Path(f"/usr/lib/postgresql/{connection.pg_version // 10000}/bin")
-    def cli(name):
+    server_major = connection.pg_version // 10000
+    installed = Path(f"/usr/lib/postgresql/{server_major}/bin")
+    clients = {}
+    for name in ("pg_dump", "pg_restore", "psql", "createdb", "dropdb"):
         exact = installed / name
-        if exact.is_file():
-            return str(exact)
-        other = shutil.which(name)
-        assert other, f"PostgreSQL client executable required: {name}"
-        return other
+        executable = str(exact) if exact.is_file() else shutil.which(name)
+        assert executable, f"PostgreSQL client executable required: {name}"
+        version = subprocess.run(
+            [executable, "--version"], check=True, capture_output=True,
+            text=True, timeout=10,
+        ).stdout.strip()
+        match = re.search(r"\(PostgreSQL\) (\d+)\.", version)
+        assert match and int(match.group(1)) == server_major, (
+            f"{name} must match PostgreSQL server major {server_major}; "
+            f"selected {executable}: {version}"
+        )
+        clients[name] = executable
+
+    def cli(name):
+        return clients[name]
 
     env = {**os.environ, "PGHOST": host, "PGPORT": port, "PGUSER": user,
            "PGPASSWORD": str(connection.settings_dict["PASSWORD"])}
@@ -258,6 +271,11 @@ def _verify_local_postgresql_backup_restore(
             if created:
                 run(cli("dropdb"), "--if-exists", "--force",
                     "--maintenance-db=postgres", clone)
+                remaining = run(
+                    cli("psql"), "-X", "-A", "-t", "-d", "postgres",
+                    "-c", f"SELECT count(*) FROM pg_database WHERE datname='{clone}'",
+                ).stdout.strip()
+                assert remaining == "0", "Disposable restore database was not removed"
 
 @pytest.mark.django_db(transaction=True)
 def test_postgresql_preexisting_custody_survives_visit_migration():

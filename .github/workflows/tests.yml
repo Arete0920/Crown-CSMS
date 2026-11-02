@@ -376,7 +376,8 @@ jobs:
     needs: diadem-scope
     if: needs.diadem-scope.outputs.required == 'true'
     name: Diadem Django PostgreSQL safety contract
-    runs-on: ubuntu-latest
+    # PostgreSQL 16 service requires matching dump/restore clients.
+    runs-on: ubuntu-24.04
     timeout-minutes: 35
     services:
       postgres:
