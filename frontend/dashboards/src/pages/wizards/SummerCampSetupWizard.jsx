@@ -3,6 +3,8 @@ import CrownLayout from "../../components/crown/CrownLayout.jsx";
 import DashboardSection from "../../components/layout/DashboardSection.jsx";
 import { fetchSummerCampWizard, submitSummerCampWizard } from "../../api/summerCampApi.js";
 
+import { CAMP_SETUP_KEYS, readCampSetup, verifyCampSetupReadback } from "./campSetupReadback.js";
+
 const STEPS = ["Program", "Registration", "Operations", "Review"];
 
 const defaults = {
@@ -12,7 +14,7 @@ const defaults = {
   public_registration_enabled: false,
   billing_policy: "PER_SESSION",
 };
-const CONFIG_KEYS = Object.keys(defaults);
+const CONFIG_KEYS = CAMP_SETUP_KEYS;
 
 
 export default function SummerCampSetupWizard() {
@@ -22,6 +24,7 @@ export default function SummerCampSetupWizard() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [savedAt, setSavedAt] = useState("");
+  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -30,10 +33,8 @@ export default function SummerCampSetupWizard() {
       try {
         const wizard = await fetchSummerCampWizard();
         if (!cancelled) {
-          setData((previous) => ({
-            ...previous,
-            ...Object.fromEntries(CONFIG_KEYS.filter((key) => wizard.config?.[key] !== undefined).map((key) => [key, wizard.config[key]])),
-          }));
+          setData(readCampSetup(wizard));
+          setLoaded(true);
           setError(null);
         }
       } catch (e) {
@@ -55,6 +56,7 @@ export default function SummerCampSetupWizard() {
   }, [data.camp_name, step]);
 
   function updateField(event) {
+    setSavedAt("");
     const { name, value, type, checked } = event.target;
     setData((previous) => ({
       ...previous,
@@ -63,17 +65,25 @@ export default function SummerCampSetupWizard() {
   }
 
   async function saveWizard() {
+    if (!loaded || saving) return;
+    setSavedAt("");
     setSaving(true);
     setError(null);
     try {
-      await submitSummerCampWizard({
+      const submitted = {
         config: Object.fromEntries(CONFIG_KEYS.map((key) => [key, data[key]])),
         completed_steps: STEPS.slice(0, step + 1),
         is_completed: step === STEPS.length - 1,
-      });
+      };
+      submitted.config.camp_name = submitted.config.camp_name.trim();
+      readCampSetup(submitted);
+      await submitSummerCampWizard(submitted);
+      const readback = await fetchSummerCampWizard();
+      setData(verifyCampSetupReadback(readback, submitted));
       setSavedAt(new Date().toLocaleString());
     } catch (e) {
-      setError(e.message);
+      setLoaded(false);
+      setError(`${e.message} Reload this page to verify the current server state before saving again.`);
     } finally {
       setSaving(false);
     }
@@ -92,13 +102,15 @@ export default function SummerCampSetupWizard() {
 
         {loading && <span>Loading wizard...</span>}
         {error && (
-          <div style={{ color: "var(--crown-danger)", background: "var(--crown-danger-bg)", padding: "10px 14px", borderRadius: 4, marginBottom: 10 }}>
+          <div role="alert" style={{ color: "var(--crown-danger)", background: "var(--crown-danger-bg)", padding: "10px 14px", borderRadius: 4, marginBottom: 10 }}>
             {error}
           </div>
         )}
 
-        {!loading && (
+        {!loading && loaded && (
           <form onSubmit={(event) => event.preventDefault()}>
+            <fieldset disabled={saving}>
+              <legend>Camp configuration</legend>
             {step === 0 && (
               <>
                 <label htmlFor="camp_name">Camp Name</label>
@@ -130,9 +142,13 @@ export default function SummerCampSetupWizard() {
             )}
 
             {step === 3 && (
-              <pre style={{ background: "var(--crown-surface-muted)", border: "1px solid var(--crown-border)", borderRadius: 6, padding: 12, overflowX: "auto" }}>
-                {JSON.stringify(data, null, 2)}
-              </pre>
+              <dl>
+                <dt>Camp name</dt><dd>{data.camp_name}</dd>
+                <dt>Session capacity</dt><dd>{data.default_capacity}</dd>
+                <dt>Maximum campers per staff member</dt><dd>{data.default_staff_ratio}</dd>
+                <dt>Public registration</dt><dd>{data.public_registration_enabled ? "Enabled in configuration" : "Disabled"}</dd>
+                <dt>Billing policy</dt><dd>{{ PER_SESSION: "Per session", PER_WEEK: "Per week", FULL_CAMP: "Full camp" }[data.billing_policy]}</dd>
+              </dl>
             )}
 
             <div style={{ marginTop: 16, display: "flex", gap: 8 }}>
@@ -147,9 +163,10 @@ export default function SummerCampSetupWizard() {
               </button>
             </div>
 
+            </fieldset>
             {savedAt && (
               <div style={{ marginTop: 10, color: "var(--crown-success)" }}>
-                Saved at {savedAt}
+                Saved and verified against server records at {savedAt}
               </div>
             )}
           </form>
