@@ -1,4 +1,6 @@
-from datetime import date, time
+from datetime import date, time, timedelta
+from django.utils import timezone
+from subscriptions.models import SchoolModule
 import pytest
 from rest_framework.test import APIClient
 from core.models import School, UserAccount, UserRole, CrownPermission, RolePermission
@@ -9,6 +11,7 @@ pytestmark = pytest.mark.django_db
 
 def test_pickup_choices_require_active_school_role_and_current_registration():
     school = School.objects.create(name="Synthetic Camp Pickup School")
+    SchoolModule.objects.create(school=school, module_key="little_lambs", status="active", expiry_date=timezone.now() + timedelta(days=30))
     family = Household.objects.create(school_id=school.id, name="Synthetic Family")
     child = Student.objects.create(school_id=school.id, household=family, first_name="Synthetic", last_name="Child")
     program = SummerCampProgram.objects.create(school=school, name="Summer")
@@ -35,6 +38,7 @@ def test_pickup_choices_require_active_school_role_and_current_registration():
 
 def test_pickup_choices_fail_closed_for_duplicate_and_foreign_enrollments():
     home = School.objects.create(name="Synthetic Home Camp")
+    SchoolModule.objects.create(school=home, module_key="little_lambs", status="active", expiry_date=timezone.now() + timedelta(days=30))
     foreign = School.objects.create(name="Synthetic Foreign Camp")
     family = Household.objects.create(school_id=home.id, name="Home Family")
     child = Student.objects.create(school_id=home.id, household=family, first_name="Home", last_name="Child")
