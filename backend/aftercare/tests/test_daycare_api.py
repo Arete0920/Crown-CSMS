@@ -211,7 +211,11 @@ def test_real_bearer_can_release_inactive_custody_without_reopening_school_opera
     d["school"].is_active = False
     d["school"].save(update_fields=["is_active"])
 
-    assert client.get("/api/v1/nav/").status_code == 404
+    # Inactive-school general navigation must remain inaccessible. The
+    # request-layer guard may fail closed with 400 or inactive-tenant 404.
+    nav = client.get("/api/v1/nav/")
+    assert nav.status_code in (400, 404)
+    assert "detail" in nav.json()
     assert client.get("/api/v1/aftercare/roster/today/").status_code == 404
     assert _checkin(d, client).status_code == 404
     released = _release(d, admitted.data["attendance_id"], client)
