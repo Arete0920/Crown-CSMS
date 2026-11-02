@@ -14,12 +14,16 @@ from core.permissions import user_has_permission
 
 from .models import SummerCampEnrollment, SummerCampPickupContact
 from .tenant import school_id_from_request
+from .entitlements import camp_entitlement_error
 
 
 @extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["GET"])
 def pickup_choices(request, enrollment_id):
     school_id = school_id_from_request(request, required=True)
+    denied = camp_entitlement_error(school_id)
+    if denied is not None:
+        return denied
     school = School.objects.filter(pk=school_id, is_active=True).first()
     user = getattr(request, "user", None)
     if not (
