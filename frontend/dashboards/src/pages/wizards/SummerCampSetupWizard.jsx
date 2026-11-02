@@ -3,9 +3,9 @@ import CrownLayout from "../../components/crown/CrownLayout.jsx";
 import DashboardSection from "../../components/layout/DashboardSection.jsx";
 import { fetchSummerCampWizard, submitSummerCampWizard } from "../../api/summerCampApi.js";
 
-import { CAMP_SETUP_KEYS, readCampSetup, verifyCampSetupReadback } from "./campSetupReadback.js";
+import { CAMP_SETUP_KEYS, CAMP_WIZARD_STEPS, readCampSetup, readCampWizardState, verifyCampSetupReadback } from "./campSetupReadback.js";
 
-const STEPS = ["Program", "Registration", "Operations", "Review"];
+const STEPS = CAMP_WIZARD_STEPS;
 
 const defaults = {
   camp_name: "Summer Camp",
@@ -33,7 +33,12 @@ export default function SummerCampSetupWizard() {
       try {
         const wizard = await fetchSummerCampWizard();
         if (!cancelled) {
-          setData(readCampSetup(wizard));
+          const config = readCampSetup(wizard);
+          const progress = readCampWizardState(wizard);
+          setData(config);
+          // Reopen at the last persisted step instead of silently restarting
+          // from Program and overwriting valid completion progress on Save.
+          setStep(Math.max(0, progress.completed_steps.length - 1));
           setLoaded(true);
           setError(null);
         }
