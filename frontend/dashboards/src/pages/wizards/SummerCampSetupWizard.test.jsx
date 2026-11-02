@@ -62,3 +62,56 @@ it("freezes editing while save readback is pending", async () => {
   await waitFor(() => expect(fetchSummerCampWizard).toHaveBeenCalledTimes(2));
   expect(screen.getByRole("group", { name: "Camp configuration" }).disabled).toBe(true);
 });
+
+it("resumes at persisted completion and does not accidentally reset wizard progress", async () => {
+  const allSteps = ["Program", "Registration", "Operations", "Review"];
+  fetchSummerCampWizard.mockResolvedValue({
+    ...response(), wizard: { completed_steps: allSteps, is_completed: true },
+  });
+  render(<SummerCampSetupWizard />);
+  expect(await screen.findByText("Camp name")).toBeTruthy();
+  fireEvent.click(screen.getByRole("button", { name: "Save Setup" }));
+  await screen.findByText(/Saved and verified against server records/);
+  expect(submitSummerCampWizard).toHaveBeenCalledWith({
+    config, completed_steps: allSteps, is_completed: true,
+  });
+});
+
+it("clears the verified-save indicator when moving to another wizard step", async () => {
+  render(<SummerCampSetupWizard />);
+  fireEvent.click(await screen.findByRole("button", { name: "Save Setup" }));
+  await screen.findByText(/Saved and verified against server records/);
+  fireEvent.click(screen.getByRole("button", { name: "Next" }));
+  expect(screen.queryByText(/Saved and verified against server records/)).toBeNull();
+});
+
+it("never claims persistence after a failed POST", async () => {
+  submitSummerCampWizard.mockRejectedValue(new Error("HTTP 500"));
+  render(<SummerCampSetupWizard />);
+  fireEvent.click(await screen.findByRole("button", { name: "Save Setup" }));
+  await screen.findByRole("alert");
+  expect(screen.queryByText(/Saved and verified against server records/)).toBeNull();
+  expect(screen.queryByRole("button", { name: "Save Setup" })).toBeNull();
+  expect(fetchSummerCampWizard).toHaveBeenCalledTimes(1);
+});
+
+it("fails closed when initial wizard progress is malformed", async () => {
+  fetchSummerCampWizard.mockResolvedValue({
+    ...response(), wizard: { completed_steps: ["Operations"], is_completed: false },
+  });
+  render(<SummerCampSetupWizard />);
+  await screen.findByRole("alert");
+  expect(screen.queryByRole("button", { name: "Save Setup" })).toBeNull();
+  expect(submitSummerCampWizard).not.toHaveBeenCalled();
+});
+
+it("does not verify a save if the server returns inconsistent wizard progress", async () => {
+  fetchSummerCampWizard.mockResolvedValueOnce(response()).mockResolvedValue({
+    ...response(), wizard: { completed_steps: ["Program", "Registration"], is_completed: false },
+  });
+  render(<SummerCampSetupWizard />);
+  fireEvent.click(await screen.findByRole("button", { name: "Save Setup" }));
+  await screen.findByRole("alert");
+  expect(screen.queryByText(/Saved and verified against server records/)).toBeNull();
+  expect(screen.queryByRole("button", { name: "Save Setup" })).toBeNull();
+});
