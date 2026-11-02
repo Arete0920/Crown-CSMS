@@ -131,3 +131,30 @@ it("allows correction of invalid local input without sending a write or forcing 
   expect(submitSummerCampWizard).toHaveBeenCalledTimes(1);
   expect(screen.queryByText(/Saved and verified against server records/)).toBeNull();
 });
+
+it("saves all editable fields and completed review only after matching persisted readback", async () => {
+  const updated = {
+    camp_name: "Fictional Adventure Camp", default_capacity: 24,
+    default_staff_ratio: 6, public_registration_enabled: true, billing_policy: "PER_WEEK",
+  };
+  const allSteps = ["Program", "Registration", "Operations", "Review"];
+  fetchSummerCampWizard.mockResolvedValueOnce(response()).mockResolvedValueOnce({
+    config: updated, wizard: { completed_steps: allSteps, is_completed: true },
+  });
+  render(<SummerCampSetupWizard />);
+  fireEvent.change(await screen.findByLabelText("Camp Name"), { target: { value: updated.camp_name } });
+  fireEvent.click(screen.getByRole("button", { name: "Next" }));
+  fireEvent.click(screen.getByLabelText("Public Registration Enabled"));
+  fireEvent.change(screen.getByLabelText("Billing Policy"), { target: { value: updated.billing_policy } });
+  fireEvent.click(screen.getByRole("button", { name: "Next" }));
+  fireEvent.change(screen.getByLabelText("Default Session Capacity"), { target: { value: "24" } });
+  fireEvent.change(screen.getByLabelText("Maximum Campers per Staff Member"), { target: { value: "6" } });
+  fireEvent.click(screen.getByRole("button", { name: "Next" }));
+  expect(screen.getByText(updated.camp_name)).toBeTruthy();
+  fireEvent.click(screen.getByRole("button", { name: "Save Setup" }));
+  await screen.findByText(/Saved and verified against server records/);
+  expect(submitSummerCampWizard).toHaveBeenCalledWith({
+    config: updated, completed_steps: allSteps, is_completed: true,
+  });
+  expect(fetchSummerCampWizard).toHaveBeenCalledTimes(2);
+});
