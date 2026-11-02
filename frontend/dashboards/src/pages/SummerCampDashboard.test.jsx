@@ -66,3 +66,11 @@ describe("Summer Camp board finance truth", () => {
     expect(screen.getByText("Ledger-linked charges (not collected)")).toBeTruthy();
   });
 });
+
+it("keeps operational links available when summary loading fails", async () => {
+  vi.mocked(fetchSummerCampBoardSummary).mockRejectedValue(new Error("Summary unavailable"));
+  render(<SummerCampDashboard />);
+  await screen.findByRole("alert");
+  expect(screen.getByRole("link", { name: "Configure camp" }).getAttribute("href")).toBe("/summer-camp-dashboard/setup");
+  expect(screen.getByRole("link", { name: "Open attendance and authorized pickup" }).getAttribute("href")).toBe("/summer-camp-dashboard/roster");
+});
