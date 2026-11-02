@@ -11,9 +11,12 @@ const CONFIG_KEYS = [
 ] as const;
 
 function isWizardResponse(response: { url(): string; request(): { method(): string } }, method: string) {
-  return response.url().startsWith(BACKEND) &&
-    new URL(response.url()).pathname === WIZARD &&
-    response.request().method() === method;
+  const url = new URL(response.url());
+  // The Heritage preview proxies browser /api requests to :8000, so their
+  // browser-observed origin is :4173. Some developer builds use the direct
+  // backend origin. Both paths must still perform the real HTTP transaction.
+  return [new URL(FRONTEND).origin, new URL(BACKEND).origin].includes(url.origin) &&
+    url.pathname === WIZARD && response.request().method() === method;
 }
 
 async function openHeadOfSchool(page: Page) {
