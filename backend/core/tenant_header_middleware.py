@@ -6,6 +6,7 @@ import re
 
 from django.conf import settings
 from django.http import JsonResponse
+from rest_framework.authentication import get_authorization_header
 from rest_framework.exceptions import APIException
 
 from core.models import School
@@ -154,7 +155,8 @@ def enforce_tenant_context(request) -> None:
     """Apply the same tenant contract before views and after late bearer auth.
 
     Authentication policy belongs to the existing middleware/authenticator chain.
-    This guard neither authenticates requests nor relaxes its early denials.
+    Exact custody-resolution routes may defer inactive-school resolution until
+    the existing bearer authenticator supplies a validated principal.
     """
     if request.method == "OPTIONS":
         return
@@ -296,13 +298,28 @@ def enforce_tenant_context(request) -> None:
         request.method == "GET"
         and normalized_path == "/api/v1/aftercare/daycare/sites"
     )
+    is_diadem_custody_resolution = (
+        is_diadem_release
+        or is_diadem_open_custody_roster
+        or is_diadem_custody_directory
+    )
     if (
         school is None
-        and (
-            is_diadem_release
-            or is_diadem_open_custody_roster
-            or is_diadem_custody_directory
-        )
+        and is_diadem_custody_resolution
+        and context.actor_type == "anonymous"
+    ):
+        authorization = get_authorization_header(request).split()
+        if len(authorization) == 2 and authorization[0].lower() == b"bearer":
+            # Django middleware runs before DRF bearer authentication. Do not
+            # bind an inactive school or trust token claims here. The existing
+            # DRF authenticator revalidates tenant scope, and these exact views
+            # require authenticated school-bound staff, grants and custody policy.
+            clear_tenant_school_binding(request)
+            clear_current_school()
+            return
+    if (
+        school is None
+        and is_diadem_custody_resolution
         and context.principal_school_id is not None
         and context.principal_school_id == context.school_id
         and not context.override_requested

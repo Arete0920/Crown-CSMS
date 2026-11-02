@@ -17,6 +17,23 @@ def _client(user):
     return client
 
 
+def _bearer_client(user, *, school_id=None, expired=False):
+    from datetime import timedelta
+    from django.utils import timezone
+    from rest_framework_simplejwt.tokens import AccessToken
+
+    token = AccessToken.for_user(user)
+    token["school_id"] = str(user.school_id)
+    if expired:
+        token.set_exp(from_time=timezone.now() - timedelta(hours=1), lifetime=timedelta(seconds=1))
+    client = APIClient()
+    client.credentials(
+        HTTP_AUTHORIZATION=f"Bearer {token}",
+        HTTP_X_SCHOOL_ID=str(school_id or user.school_id),
+    )
+    return client
+
+
 def _checkin(d, client=None, **override):
     payload = dict(
         site_id=str(d["site"].id), room_id=str(d["room"].id),
@@ -160,6 +177,94 @@ def test_inactive_school_may_release_existing_child_not_admit_another():
     assert released.status_code == 201, getattr(released, "data", released.content)
     assert DaycareRelease.objects.filter(attendance=attendance).exists()
     assert _checkin(d).status_code in (403, 404)
+
+
+@pytest.mark.parametrize("read", ["directory", "roster"])
+def test_real_bearer_reaches_inactive_school_open_custody_reads(read):
+    d = setup()
+    client = _bearer_client(d["actor"])
+    admitted = _checkin(d, client)
+    assert admitted.status_code == 201, admitted.data
+    d["school"].is_active = False
+    d["school"].save(update_fields=["is_active"])
+    url = "/api/v1/aftercare/daycare/sites/"
+    if read == "roster":
+        url += f'{d["site"].pk}/roster/'
+
+    response = client.get(url)
+    assert response.status_code == 200, getattr(response, "data", response.content)
+    if read == "directory":
+        assert [site["site_id"] for site in response.data["sites"]] == [str(d["site"].pk)]
+    else:
+        assert response.data["children_present"] == 1
+        assert response.data["rows"][0]["attendance_id"] == admitted.data["attendance_id"]
+    assert DaycareAttendance.objects.count() == 1
+    assert not DaycareRelease.objects.exists()
+    assert AuditLog.objects.filter(action="diadem.daycare.checkin").count() == 1
+
+
+def test_real_bearer_can_release_inactive_custody_without_reopening_school_operations():
+    d = setup()
+    client = _bearer_client(d["actor"])
+    admitted = _checkin(d, client)
+    assert admitted.status_code == 201, admitted.data
+    d["school"].is_active = False
+    d["school"].save(update_fields=["is_active"])
+
+    assert client.get("/api/v1/nav/").status_code == 404
+    assert client.get("/api/v1/aftercare/roster/today/").status_code == 404
+    assert _checkin(d, client).status_code == 404
+    released = _release(d, admitted.data["attendance_id"], client)
+    assert released.status_code == 201, getattr(released, "data", released.content)
+    assert DaycareAttendance.objects.count() == 1
+    assert DaycareRelease.objects.count() == 1
+    assert AuditLog.objects.filter(action="diadem.daycare.release").count() == 1
+    assert client.get("/api/v1/aftercare/daycare/sites/").data["sites"] == []
+
+
+@pytest.mark.parametrize("denial", ["expired", "invalid", "role_revoked", "permission_revoked"])
+def test_inactive_custody_bearer_deferral_does_not_grant_authority(denial):
+    from core.models import RolePermission
+
+    d = setup()
+    assert _checkin(d).status_code == 201
+    d["school"].is_active = False
+    d["school"].save(update_fields=["is_active"])
+    client = _bearer_client(d["actor"], expired=denial == "expired")
+    if denial == "invalid":
+        client.credentials(
+            HTTP_AUTHORIZATION="Bearer invalid.signature.token",
+            HTTP_X_SCHOOL_ID=str(d["school"].pk),
+        )
+    elif denial == "role_revoked":
+        d["actor"].roles.all().delete()
+    elif denial == "permission_revoked":
+        RolePermission.objects.filter(
+            role_code="DAYCARE_STAFF", permission__code="diadem.daycare.view",
+        ).delete()
+
+    response = client.get("/api/v1/aftercare/daycare/sites/")
+    assert response.status_code == (401 if denial in {"expired", "invalid"} else 403)
+    assert "sites" not in response.data
+    assert DaycareAttendance.objects.count() == 1
+    assert not DaycareRelease.objects.exists()
+    assert AuditLog.objects.filter(action="diadem.daycare.checkin").count() == 1
+
+
+@pytest.mark.parametrize("superuser", [False, True])
+def test_inactive_custody_bearer_never_accepts_foreign_school_override(superuser):
+    d = setup()
+    assert _checkin(d).status_code == 201
+    d["actor"].is_superuser = superuser
+    d["actor"].save(update_fields=["is_superuser"])
+    foreign = School.objects.create(name="Foreign inactive childcare tenant", is_active=False)
+    response = _bearer_client(d["actor"], school_id=foreign.pk).get(
+        "/api/v1/aftercare/daycare/sites/",
+    )
+    assert response.status_code == 404
+    assert DaycareAttendance.objects.count() == 1
+    assert not DaycareRelease.objects.exists()
+
 
 def test_inactive_school_allows_only_verified_open_custody_roster_and_release():
     d = setup()
