@@ -98,6 +98,7 @@ export const PATHS = {
   FINE_ARTS: '/fine-arts',
   LIBRARY: '/library',
   DIADEM_DIRECTOR: '/diadem/daycare',
+  DIADEM_SETUP: '/diadem/daycare/setup',
   EXTENDED_CARE: '/extended-care',
   BEFORECARE_DIRECTOR: '/before-care/dashboard',
   AFTERCARE_DIRECTOR: '/after-care/dashboard',

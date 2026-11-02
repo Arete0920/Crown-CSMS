@@ -19,7 +19,7 @@ from django.db import IntegrityError, connection, transaction
 from django.db.migrations.executor import MigrationExecutor
 from django.utils import timezone
 
-from aftercare.models import DaycareAttendance, DaycareReentryAuthorization, DaycareRelease
+from aftercare.models import DaycareAttendance, DaycareReentryAuthorization, DaycareRelease, DaycareSite, DaycareRoom
 from aftercare.daycare_checkin import CheckinRefused
 from aftercare.tests.test_daycare_checkin import setup, check
 from aftercare.tests.test_daycare_release import release
@@ -277,6 +277,38 @@ def _verify_local_postgresql_backup_restore(
                 ).stdout.strip()
                 assert remaining == "0", "Disposable restore database was not removed"
 
+def _historical_custody_fixture(apps):
+    """Build old-schema records without importing newer model fields/validation.
+
+    Migration replay must remain genuine when later setup fields are added.
+    Use historical foreign-key IDs, never current-model instances across app states.
+    """
+    def create(app, model, **values):
+        return apps.get_model(app, model).objects.create(**values)
+    school = create("core", "School", name="Synthetic historical childcare", timezone="UTC")
+    actor = create("core", "UserAccount", username=f"historic-{uuid4().hex}", school_id=school.pk, is_active=True)
+    family = create("households", "Household", school_id=school.pk, name="Historical family")
+    guardian = create("households", "Guardian", school_id=school.pk, household_id=family.pk,
+                      first_name="Synthetic", last_name="Guardian")
+    site = create("aftercare", "DaycareSite", school_id=school.pk, code="historic", name="Historical center", is_active=True)
+    room = create("aftercare", "DaycareRoom", school_id=school.pk, site_id=site.pk,
+                  code="historic", name="Historical room", licensed_capacity=4,
+                  max_children_per_staff=4, policy_source="Synthetic reviewed historical policy",
+                  policy_verified_by_id=actor.pk, policy_verified_at=timezone.now(), is_active=True)
+    child = create("aftercare", "DaycareChild", school_id=school.pk, site_id=site.pk,
+                   household_id=family.pk, first_name="Historical", last_name="Synthetic",
+                   date_of_birth=datetime(2024, 1, 1).date(), is_active=True)
+    program = create("aftercare", "DaycareProgram", school_id=school.pk, site_id=site.pk,
+                     code="DAYCARE", name="Historical program", is_active=True)
+    enrollment = create("aftercare", "DaycareEnrollment", school_id=school.pk, site_id=site.pk,
+                        room_id=room.pk, child_id=child.pk, program_id=program.pk,
+                        status="ACTIVE", readiness="READY", start_date=datetime(2026, 1, 1).date(), weekdays=list(range(7)))
+    authority = create("aftercare", "DaycareGuardianAuthority", school_id=school.pk,
+                       child_id=child.pk, guardian_id=guardian.pk, is_active=True, can_pickup=True,
+                       custody_status="CLEAR", verified_by_id=actor.pk, verified_at=timezone.now())
+    return locals()
+
+
 @pytest.mark.django_db(transaction=True)
 def test_postgresql_preexisting_custody_survives_visit_migration():
     """Rehearse 0011 -> 0012 with old-model child custody rows and audit IDs.
@@ -304,7 +336,7 @@ def test_postgresql_preexisting_custody_survives_visit_migration():
         HistoricalRelease = historical_apps.get_model(
             "aftercare", "DaycareRelease"
         )
-        data = setup()
+        data = _historical_custody_fixture(historical_apps)
         checked_in_at = datetime(2026, 11, 1, 12, 0, tzinfo=datetime_timezone.utc)
         old_row = HistoricalAttendance.objects.create(
             school_id=data["school"].id, site_id=data["site"].id,
@@ -383,5 +415,17 @@ def test_postgresql_preexisting_custody_survives_visit_migration():
         assert migrated_old_image_row.reentry_approval_id is None
         assert migrated_old_image_row.child_id == legacy_child.pk
         assert migrated_old_image_row.enrollment_id == legacy_enrollment.pk
+        # Later additive setup fields preserve accepted custody and never
+        # guess a historical center's operating mode, jurisdiction or policy.
+        MigrationExecutor(connection).migrate(final_targets)
+        site = DaycareSite.objects.get(pk=data["site"].pk)
+        room = DaycareRoom.objects.get(pk=data["room"].pk)
+        assert site.operating_mode == site.jurisdiction == ""
+        assert site.is_active and room.is_active
+        assert room.proposed_min_age_months is room.proposed_max_age_months is None
+        assert room.proposed_policy_from is room.proposed_policy_until is None
+        assert DaycareAttendance.objects.count() == 2
+        assert DaycareRelease.objects.get(pk=historical_ids[1]).attendance_id == historical_ids[0]
+        assert AuditLog.objects.get(pk=historical_ids[2]).object_id == str(historical_ids[1])
     finally:
         MigrationExecutor(connection).migrate(final_targets)

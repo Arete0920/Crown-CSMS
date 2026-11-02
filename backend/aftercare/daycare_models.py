@@ -73,6 +73,12 @@ class DaycareSite(DaycareScopedRecord):
     name = models.CharField(max_length=160)
     is_active = models.BooleanField(default=False)
 
+    # Blank means historical/unknown, never an inferred operating or legal mode.
+    operating_mode = models.CharField(max_length=16, blank=True, default="", choices=[
+        ("STANDALONE", "Standalone childcare"), ("INTEGRATED", "CROWN integrated"),
+    ])
+    jurisdiction = models.CharField(max_length=16, blank=True, default="")
+
     class Meta:
         constraints = [
             models.UniqueConstraint(fields=["school", "code"], name="dia_site_school_code_uq"),
@@ -91,6 +97,10 @@ class DaycareRoom(DaycareScopedRecord):
     licensed_capacity = models.PositiveIntegerField(null=True, blank=True)
     max_children_per_staff = models.PositiveIntegerField(null=True, blank=True)
     policy_source = models.CharField(max_length=255, blank=True, default="")
+    proposed_min_age_months = models.PositiveIntegerField(null=True, blank=True)
+    proposed_max_age_months = models.PositiveIntegerField(null=True, blank=True)
+    proposed_policy_from = models.DateField(null=True, blank=True)
+    proposed_policy_until = models.DateField(null=True, blank=True)
     policy_verified_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.PROTECT, null=True, blank=True,
         related_name="daycare_room_policy_approvals",
@@ -117,6 +127,13 @@ class DaycareRoom(DaycareScopedRecord):
     def clean(self):
         super().clean()
         self._require_same_school("site")
+        low, high = self.proposed_min_age_months, self.proposed_max_age_months
+        if (low is None) != (high is None) or (low is not None and low > high):
+            raise ValidationError("Proposed age bounds must be a complete, ordered pair.")
+        if (self.proposed_policy_until is not None and
+                (self.proposed_policy_from is None or
+                 self.proposed_policy_until < self.proposed_policy_from)):
+            raise ValidationError("Proposed policy dates must be ordered.")
         if self.is_active:
             if (not self.site.is_active or not self.licensed_capacity or
                     not self.max_children_per_staff or not self.policy_source.strip() or
