@@ -588,5 +588,93 @@ class DevMigrationBoundaryTests(unittest.TestCase):
             self.assertIn('"$(git rev-parse HEAD)" != "$EXPECTED_DEV_SHA"', steps[index - 1]["run"])
 
 
+    def test_inventory_plan_is_observation_only_and_normal_apply_still_rejects_diadem(self):
+        plan = [
+            (SimpleNamespace(app_label="aftercare", name="0012_diadem_visit_reentry_foundation"), False),
+            (SimpleNamespace(app_label="aftercare", name="0013_daycare_setup_proposals"), False),
+        ]
+        expected = ["aftercare.0012_diadem_visit_reentry_foundation",
+                    "aftercare.0013_daycare_setup_proposals"]
+        self.assertEqual(
+            self._execute([plan], check_only=True, plan_validator=migration.validate_inventory_plan),
+            expected,
+        )
+        self.assertEqual(self.events, ["lock", "identity", "plan", "unlock"])
+        with self.assertRaises(migration.UnreviewedPlan):
+            migration.validate_plan(plan)  # The DEV deployment is still blocked.
+        with self.assertRaises(migration.UnreviewedPlan):
+            migration.validate_inventory_plan([(plan[0][0], True)])
+        for invalid in (SimpleNamespace(app_label="unsafe;DROP", name="0001"),
+                        SimpleNamespace(app_label="aftercare", name="bad\nprivate-password")):
+            with self.assertRaisesRegex(migration.Blocked, "identifier_invalid"):
+                migration.validate_inventory_plan([(invalid, False)])
+        with self.assertRaisesRegex(migration.Blocked, "too_large"):
+            migration.validate_inventory_plan([plan[0]] * 513)
+
+    def test_inventory_cli_collects_plan_without_approval_or_database_writes(self):
+        output = io.StringIO()
+        pending = ["aftercare.0012_diadem_visit_reentry_foundation",
+                   "aftercare.0013_daycare_setup_proposals"]
+        with patch.object(migration, "validate_source") as source, patch.object(
+            migration, "load_dev_settings", return_value=(URL, "synthetic-secret", "crown", False)
+        ) as settings, patch.object(
+            migration, "migrate_on_dev", return_value=pending
+        ) as runner, contextlib.redirect_stdout(output):
+            self.assertEqual(migration.main(["--expected-sha", SHA, "--inspect-all-migrations"]), 0)
+        source.assert_called_once_with(SHA)
+        settings.assert_called_once_with()
+        runner.assert_called_once_with(
+            URL, "synthetic-secret", "crown", SHA, check_only=True, inventory_only=True,
+            hosted_blacklist_enabled=False,
+        )
+        packet = json.loads(output.getvalue().splitlines()[-1])
+        self.assertEqual(packet["status"], "COLLECTED")
+        self.assertEqual(packet["mode"], "inventory_all_read_only")
+        self.assertEqual(packet["pending_migrations"], pending)
+        self.assertEqual(packet["remaining_pending"], 2)
+        self.assertFalse(packet["schema_change_authorized"])
+        self.assertFalse(packet["operational_certified"])
+        self.assertNotIn("private-password", output.getvalue())
+        for flags in (
+            ["--inspect-all-migrations", "--check-only"],
+            ["--inspect-all-migrations", "--inspect-reviewed-legacy-refresh"],
+            ["--inspect-all-migrations", "--apply-reviewed-blacklist",
+             "--confirm-dev-blacklist", "migrate-dev-blacklist"],
+        ):
+            with self.subTest(flags=flags), patch.object(migration, "load_dev_settings") as read, \
+                 contextlib.redirect_stdout(io.StringIO()):
+                self.assertEqual(migration.main(["--expected-sha", SHA, *flags]), 1)
+                read.assert_not_called()
+
+    def test_inventory_preserves_hosted_blacklist_setting_without_database_access(self):
+        def stopped():
+            self.assertEqual(os.environ["CROWN_SIMPLEJWT_BLACKLIST_ENABLED"], "false")
+            raise RuntimeError("stop before database access")
+
+        with patch.dict(os.environ, {}, clear=True), patch.dict(
+            "sys.modules", {"django": SimpleNamespace(setup=stopped)}
+        ), patch.object(migration.Path, "is_file", return_value=True):
+            with self.assertRaisesRegex(RuntimeError, "stop before database access"):
+                migration.migrate_on_dev(URL, "synthetic-secret", "crown", SHA,
+                                         check_only=True, inventory_only=True,
+                                         hosted_blacklist_enabled=False)
+        with self.assertRaisesRegex(migration.Blocked, "conflicting_dev_migration_modes"):
+            migration.migrate_on_dev(URL, "synthetic-secret", "crown", SHA,
+                                     inventory_only=True, check_only=False)
+
+    def test_dev_inventory_workflow_does_not_dispatch_a_schema_change(self):
+        import yaml
+        workflow = yaml.safe_load(
+            (migration.ROOT / ".github/workflows/dev-blacklist-database-inventory.yml").read_text()
+        )
+        steps = workflow["jobs"]["inspect"]["steps"]
+        target = next(s for s in steps
+                      if s.get("name") == "Inspect all pending DEV migrations without applying")
+        self.assertEqual(target["if"], "inputs.inspect_migration_plan")
+        self.assertIn("--inspect-all-migrations", target["run"])
+        self.assertNotIn("--apply-", target["run"])
+        self.assertNotIn("migrate_with_lock", target["run"])
+
+
 if __name__ == "__main__":
     unittest.main()
