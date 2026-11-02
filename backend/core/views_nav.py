@@ -11,14 +11,14 @@ from collections import defaultdict
 
 from django.http import JsonResponse
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import IsAuthenticated
 
 from core.nav_registry import NAV_ITEMS
 from core.permissions import user_has_permission
 
 
 @api_view(["GET"])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticated])
 def nav_view(request):
     """
     Returns grouped nav items the authenticated user is permitted to see.

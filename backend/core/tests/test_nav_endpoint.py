@@ -109,10 +109,10 @@ class TestNavPermissionFiltering:
         assert response.status_code == 401
         assert "groups" not in response.json()
 
-    def test_anonymous_navigation_keeps_empty_compatibility_response(self):
+    def test_anonymous_navigation_requires_authentication(self):
         response = Client().get("/api/v1/nav/", HTTP_X_SCHOOL_ID=str(_school().pk))
-        assert response.status_code == 200
-        assert response.json()["groups"] == []
+        assert response.status_code == 401
+        assert "groups" not in response.json()
 
     def test_parent_does_not_see_finance_admissions_billing_integrity(self):
         school = _school("Parent Nav School")
