@@ -3,6 +3,8 @@ import CrownLayout from "../components/crown/CrownLayout.jsx";
 import DashboardSection from "../components/layout/DashboardSection.jsx";
 import { fetchSummerCampBoardSummary } from "../api/summerCampApi.js";
 
+import { PATHS } from "../routes/paths.js";
+
 const cardStyle = {
   border: "1px solid var(--crown-border)",
   borderRadius: 6,
@@ -68,6 +70,12 @@ export default function SummerCampDashboard() {
 
   return (
     <CrownLayout title="Summer Camp Dashboard">
+      <DashboardSection title="Camp operations">
+        <nav aria-label="Camp workflow" style={{ display: "flex", flexWrap: "wrap", gap: 16 }}>
+          <a href={PATHS.SUMMER_CAMP_SETUP}>Configure camp</a>
+          <a href={PATHS.SUMMER_CAMP_ROSTER}>Open attendance and authorized pickup</a>
+        </nav>
+      </DashboardSection>
       <DashboardSection title="Summer Camp Board Summary">
         <p>These are school-scoped registration and linked-charge records, not payment or settlement totals.</p>
         {loading && <span role="status">Loading...</span>}
