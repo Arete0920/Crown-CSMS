@@ -55,6 +55,13 @@ export default function SummerCampSetupWizard() {
     return data.camp_name.trim().length > 0;
   }, [data.camp_name, step]);
 
+  function changeStep(direction) {
+    // A successful readback applies only to the configuration and wizard
+    // progress actually submitted, not to a subsequently selected step.
+    setSavedAt("");
+    setStep((current) => Math.max(0, Math.min(STEPS.length - 1, current + direction)));
+  }
+
   function updateField(event) {
     setSavedAt("");
     const { name, value, type, checked } = event.target;
@@ -152,10 +159,10 @@ export default function SummerCampSetupWizard() {
             )}
 
             <div style={{ marginTop: 16, display: "flex", gap: 8 }}>
-              <button type="button" onClick={() => setStep((current) => Math.max(0, current - 1))} disabled={step === 0}>
+              <button type="button" onClick={() => changeStep(-1)} disabled={step === 0}>
                 Back
               </button>
-              <button type="button" onClick={() => setStep((current) => Math.min(STEPS.length - 1, current + 1))} disabled={!canGoNext || step === STEPS.length - 1}>
+              <button type="button" onClick={() => changeStep(1)} disabled={!canGoNext || step === STEPS.length - 1}>
                 Next
               </button>
               <button type="button" onClick={saveWizard} disabled={saving}>
