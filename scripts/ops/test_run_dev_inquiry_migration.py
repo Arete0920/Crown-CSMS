@@ -615,7 +615,12 @@ class DevMigrationBoundaryTests(unittest.TestCase):
         output = io.StringIO()
         pending = ["aftercare.0012_diadem_visit_reentry_foundation",
                    "aftercare.0013_daycare_setup_proposals"]
-        with patch.object(migration, "validate_source") as source, patch.object(
+        # Explicitly exercise ordinary terminal output. In GitHub Actions
+        # the helper must emit ::add-mask:: directives before redacted JSON;
+        # those commands are expected to contain the values being masked.
+        with patch.dict(os.environ, {"GITHUB_ACTIONS": "false"}), patch.object(
+            migration, "validate_source"
+        ) as source, patch.object(
             migration, "load_dev_settings", return_value=(URL, "synthetic-secret", "crown", False)
         ) as settings, patch.object(
             migration, "migrate_on_dev", return_value=pending
@@ -645,6 +650,28 @@ class DevMigrationBoundaryTests(unittest.TestCase):
                  contextlib.redirect_stdout(io.StringIO()):
                 self.assertEqual(migration.main(["--expected-sha", SHA, *flags]), 1)
                 read.assert_not_called()
+
+    def test_inventory_actions_output_masks_only_commands_and_not_evidence(self):
+        output = io.StringIO()
+        with patch.dict(os.environ, {"GITHUB_ACTIONS": "true"}), patch.object(
+            migration, "validate_source"
+        ), patch.object(
+            migration, "load_dev_settings",
+            return_value=(URL, "synthetic-secret", "crown", False)
+        ), patch.object(
+            migration, "migrate_on_dev", return_value=[]
+        ), contextlib.redirect_stdout(output):
+            self.assertEqual(
+                migration.main(["--expected-sha", SHA, "--inspect-all-migrations"]), 0
+            )
+        lines = output.getvalue().splitlines()
+        self.assertEqual(lines[:2], ["::add-mask::" + URL, "::add-mask::synthetic-secret"])
+        packet = json.loads(lines[-1])
+        self.assertEqual(packet["mode"], "inventory_all_read_only")
+        self.assertEqual(packet["pending_migrations"], [])
+        self.assertNotIn(URL, lines[-1])
+        self.assertNotIn("synthetic-secret", lines[-1])
+        self.assertNotIn("private-password", lines[-1])
 
     def test_inventory_preserves_hosted_blacklist_setting_without_database_access(self):
         def stopped():
