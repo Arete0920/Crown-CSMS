@@ -63,6 +63,57 @@ class TestNavTenantEnforcement:
 
 
 class TestNavPermissionFiltering:
+    def test_real_bearer_diadem_navigation_rechecks_role_authority(self):
+        from rest_framework_simplejwt.tokens import AccessToken
+
+        school = _school("Bearer Diadem navigation")
+        user = _user("bearer-daycare", school)
+        _assign_role(user, school, "DAYCARE_STAFF")
+        _grant("DAYCARE_STAFF", "diadem.daycare.view")
+        headers = {
+            "HTTP_X_SCHOOL_ID": str(school.pk),
+            "HTTP_AUTHORIZATION": f"Bearer {AccessToken.for_user(user)}",
+        }
+        client = Client()
+        response = client.get("/api/v1/nav/", **headers)
+        assert response.status_code == 200
+        links = _nav_flat_hrefs(response.json())
+        assert "/diadem/daycare" in links
+        assert "/extended-care" not in links
+
+        user.roles.all().delete()
+        response = client.get("/api/v1/nav/", **headers)
+        assert response.status_code == 200
+        assert response.json()["groups"] == []
+
+    def test_real_bearer_navigation_rejects_foreign_school(self):
+        from rest_framework_simplejwt.tokens import AccessToken
+
+        school, foreign = _school("Bearer nav A"), _school("Bearer nav B")
+        user = _user("bearer-nav-cross", school)
+        _assign_role(user, school, "DAYCARE_STAFF")
+        _grant("DAYCARE_STAFF", "diadem.daycare.view")
+        response = Client().get(
+            "/api/v1/nav/", HTTP_X_SCHOOL_ID=str(foreign.pk),
+            HTTP_AUTHORIZATION=f"Bearer {AccessToken.for_user(user)}",
+        )
+        assert response.status_code == 404
+        assert response.json()["code"] == "tenant_access_denied"
+
+    def test_invalid_bearer_does_not_receive_navigation(self):
+        school = _school("Invalid bearer navigation")
+        response = Client().get(
+            "/api/v1/nav/", HTTP_X_SCHOOL_ID=str(school.pk),
+            HTTP_AUTHORIZATION="Bearer invalid.signature.token",
+        )
+        assert response.status_code == 401
+        assert "groups" not in response.json()
+
+    def test_anonymous_navigation_requires_authentication(self):
+        response = Client().get("/api/v1/nav/", HTTP_X_SCHOOL_ID=str(_school().pk))
+        assert response.status_code == 401
+        assert "groups" not in response.json()
+
     def test_parent_does_not_see_finance_admissions_billing_integrity(self):
         school = _school("Parent Nav School")
         parent = _user("parent1")
@@ -149,6 +200,20 @@ class TestNavPermissionFiltering:
         assert "/finance" not in hrefs
         assert "/admin" not in hrefs
 
+
+
+    def test_diadem_permission_navigation_is_separate_from_extended_care(self):
+        school = _school("Diadem nav")
+        user = _user("daycare", school)
+        _assign_role(user, school, "DAYCARE_STAFF")
+        _grant("DAYCARE_STAFF", "diadem.daycare.view")
+        client = Client()
+        client.force_login(user)
+        response = client.get("/api/v1/nav/", HTTP_X_SCHOOL_ID=str(school.id))
+        assert response.status_code == 200
+        links = _nav_flat_hrefs(json.loads(response.content))
+        assert "/diadem/daycare" in links
+        assert "/extended-care" not in links
 
 class TestNavResponseShape:
     def _response(self, label):

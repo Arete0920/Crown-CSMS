@@ -22,7 +22,7 @@ def setup():
     UserRole.objects.create(school=school,user=actor,role_code="DAYCARE_STAFF")
     # TransactionTestCase flushes migration-seeded reference rows. Reconstruct
     # only this synthetic staff actor's explicit grants for isolated DB tests.
-    for code in ("diadem.daycare.checkin","diadem.daycare.release"):
+    for code in ("diadem.daycare.view","diadem.daycare.checkin","diadem.daycare.release"):
         permission, _ = CrownPermission.objects.get_or_create(
             code=code,defaults={"description":"Synthetic childcare test authorization"})
         RolePermission.objects.get_or_create(role_code="DAYCARE_STAFF",permission=permission)

@@ -1,5 +1,7 @@
 """Parent Camp API must require a linked guardian and same-school child."""
-from datetime import date, time
+from datetime import date, time, timedelta
+from django.utils import timezone
+from subscriptions.models import SchoolModule
 import pytest
 from rest_framework.test import APIClient
 from core.models import School, UserAccount
@@ -11,6 +13,7 @@ pytestmark = pytest.mark.django_db
 
 def test_linked_guardian_sees_only_own_child_without_cross_family_disclosure():
     school = School.objects.create(name="Parent Camp School")
+    SchoolModule.objects.create(school=school, module_key="little_lambs", status="active", expiry_date=timezone.now() + timedelta(days=30))
     families = [Household.objects.create(school_id=school.id, name=f"Family {i}") for i in (1, 2)]
     children = [Student.objects.create(school_id=school.id, household=family,
                 first_name="Synthetic", last_name=f"Camper {i}", grade_level="4")
