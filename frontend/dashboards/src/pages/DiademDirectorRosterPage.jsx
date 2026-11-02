@@ -96,7 +96,7 @@ export default function DiademDirectorRosterPage() {
       <DashboardSection title="Children currently in care">
         {currentRoster ? <>
           <p role="status">{currentRoster.children_present} open custody record(s). Observed at {currentRoster.as_of}.</p>
-          <div style={{ overflowX: "auto" }}>
+          <div role="region" aria-label="Children in care roster" tabIndex={0} style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead><tr><th scope="col">Child</th><th scope="col">Room</th><th scope="col">Program</th><th scope="col">Checked in</th><th scope="col">Custody status</th></tr></thead>
               <tbody>

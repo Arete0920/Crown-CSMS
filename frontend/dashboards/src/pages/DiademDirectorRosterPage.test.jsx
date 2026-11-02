@@ -37,6 +37,7 @@ it("displays source-backed open custody without any release or check-in controls
   expect(crownApiClient.get).toHaveBeenCalledWith("/api/v1/aftercare/daycare/sites/");
   expect(crownApiClient.get).toHaveBeenCalledWith(`/api/v1/aftercare/daycare/sites/${site}/roster/`);
   expect(screen.queryByRole("button", { name: /release|check in/i })).toBeNull();
+  expect(screen.getByRole("region", { name: "Children in care roster" }).getAttribute("tabindex")).toBe("0");
 });
 
 it("fails closed on a mismatched site or inconsistent custody count", async () => {

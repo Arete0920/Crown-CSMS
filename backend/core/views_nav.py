@@ -10,13 +10,15 @@
 from collections import defaultdict
 
 from django.http import JsonResponse
-from django.views.decorators.http import require_http_methods
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny
 
 from core.nav_registry import NAV_ITEMS
 from core.permissions import user_has_permission
 
 
-@require_http_methods(["GET"])
+@api_view(["GET"])
+@permission_classes([AllowAny])
 def nav_view(request):
     """
     Returns grouped nav items the authenticated user is permitted to see.
