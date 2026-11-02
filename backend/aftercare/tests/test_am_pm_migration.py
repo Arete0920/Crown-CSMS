@@ -14,6 +14,7 @@ POST = ("aftercare", "0007_care_session_am_pm")
 @pytest.mark.django_db(transaction=True)
 def test_existing_pm_record_survives_session_unique_constraint_migration():
     executor = MigrationExecutor(connection)
+    final_targets = executor.loader.graph.leaf_nodes()
     executor.migrate([PRE])
     try:
         apps = executor.loader.project_state([PRE]).apps
@@ -59,4 +60,4 @@ def test_existing_pm_record_survives_session_unique_constraint_migration():
         ).count() == 2
     finally:
         # Do not leave the test DB schema at an old migration after a failure.
-        MigrationExecutor(connection).migrate([POST])
+        MigrationExecutor(connection).migrate(final_targets)
