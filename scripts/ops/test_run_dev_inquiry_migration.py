@@ -639,6 +639,8 @@ class DevMigrationBoundaryTests(unittest.TestCase):
         self.assertEqual(packet["remaining_pending"], 2)
         self.assertFalse(packet["schema_change_authorized"])
         self.assertFalse(packet["operational_certified"])
+        self.assertEqual(packet["inventory_scope"], "enabled_django_app_graph")
+        self.assertFalse(packet["optional_blacklist_graph_included"])
         self.assertNotIn("private-password", output.getvalue())
         for flags in (
             ["--inspect-all-migrations", "--check-only"],
@@ -676,6 +678,10 @@ class DevMigrationBoundaryTests(unittest.TestCase):
     def test_inventory_preserves_hosted_blacklist_setting_without_database_access(self):
         def stopped():
             self.assertEqual(os.environ["CROWN_SIMPLEJWT_BLACKLIST_ENABLED"], "false")
+            target = migration.urlsplit(os.environ["DATABASE_URL"])
+            options = dict(migration.parse_qsl(target.query))
+            self.assertEqual(options["sslmode"], "verify-full")
+            self.assertEqual(options["options"], "-c default_transaction_read_only=on")
             raise RuntimeError("stop before database access")
 
         with patch.dict(os.environ, {}, clear=True), patch.dict(

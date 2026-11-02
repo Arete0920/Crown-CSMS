@@ -285,6 +285,11 @@ def migrate_on_dev(database_url, secret, database_name, source_sha, *,
     if not ca_bundle.is_file():
         raise Blocked("trusted_database_ca_unavailable")
     options = {"sslmode": "verify-full", "sslrootcert": str(ca_bundle), "connect_timeout": 15}
+    if inventory_only:
+        # Enforce read-only at the PostgreSQL connection boundary, not just
+        # through Python's no-migration command path. A future accidental
+        # write then fails closed at the database.
+        options["options"] = "-c default_transaction_read_only=on"
     # Enforce verified TLS before Django loads any application ready() hooks.
     runner_url = urlsplit(database_url)._replace(query=urlencode(options)).geturl()
     # Credentials live only in this process; never write them to artifacts or
@@ -334,6 +339,10 @@ def migrate_on_dev(database_url, secret, database_name, source_sha, *,
             cursor.execute("SELECT ssl FROM pg_stat_ssl WHERE pid = pg_backend_pid()")
             if cursor.fetchone() != (True,):
                 raise Blocked("database_tls_not_verified")
+            if inventory_only:
+                cursor.execute("SHOW transaction_read_only")
+                if cursor.fetchone() != ("on",):
+                    raise Blocked("inventory_database_not_read_only")
             cursor.execute("SET lock_timeout = '15s'")
             cursor.execute("SET statement_timeout = '300s'")
 
@@ -518,7 +527,11 @@ def main(argv=None):
                 remaining_pending=len(applied["remaining"]),
             )
         elif args.inspect_all_migrations:
+            # Django's plan is limited to installed applications for the
+            # effective runtime flags. Disabled optional apps are not included.
             result.update(pending_migrations=applied, remaining_pending=len(applied),
+                          inventory_scope="enabled_django_app_graph",
+                          optional_blacklist_graph_included=hosted_blacklist_enabled,
                           schema_change_authorized=False, operational_certified=False)
         elif args.check_only or args.inspect_reviewed_legacy_refresh:
             result.update(reviewed_pending_migrations=applied, remaining_pending=len(applied))
