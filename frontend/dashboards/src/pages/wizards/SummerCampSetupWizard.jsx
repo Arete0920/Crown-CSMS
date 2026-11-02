@@ -79,16 +79,23 @@ export default function SummerCampSetupWizard() {
   async function saveWizard() {
     if (!loaded || saving) return;
     setSavedAt("");
+    // Invalid edits have not touched the server. Keep the form available
+    // for correction instead of claiming an uncertain network write.
+    const submitted = {
+      config: Object.fromEntries(CONFIG_KEYS.map((key) => [key, data[key]])),
+      completed_steps: STEPS.slice(0, step + 1),
+      is_completed: step === STEPS.length - 1,
+    };
+    submitted.config.camp_name = submitted.config.camp_name.trim();
+    try {
+      readCampSetup(submitted);
+    } catch {
+      setError("Correct the camp name, positive whole-number capacity and staff ratio, and registration/billing settings. Nothing was submitted.");
+      return;
+    }
     setSaving(true);
     setError(null);
     try {
-      const submitted = {
-        config: Object.fromEntries(CONFIG_KEYS.map((key) => [key, data[key]])),
-        completed_steps: STEPS.slice(0, step + 1),
-        is_completed: step === STEPS.length - 1,
-      };
-      submitted.config.camp_name = submitted.config.camp_name.trim();
-      readCampSetup(submitted);
       await submitSummerCampWizard(submitted);
       const readback = await fetchSummerCampWizard();
       setData(verifyCampSetupReadback(readback, submitted));
