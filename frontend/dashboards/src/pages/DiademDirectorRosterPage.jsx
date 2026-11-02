@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import CrownLayout from "../components/crown/CrownLayout.jsx";
 import DashboardSection from "../components/layout/DashboardSection.jsx";
 import { crownApiClient } from "../api/client.js";
+import DiademReleaseReview from "./DiademReleaseReview.jsx";
 import { getSelectedSchoolId, SCHOOL_CONTEXT_CHANGE_EVENT } from "../utils/authClient.js";
 
 const BASE = "/api/v1/aftercare/daycare";
@@ -10,6 +11,8 @@ export default function DiademDirectorRosterPage() {
   const [sites, setSites] = useState(null);
   const [siteId, setSiteId] = useState("");
   const [roster, setRoster] = useState(null);
+  const [review, setReview] = useState(null);
+  const [releaseMessage, setReleaseMessage] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [refresh, setRefresh] = useState(0);
@@ -19,7 +22,7 @@ export default function DiademDirectorRosterPage() {
   const currentSites = directoryScope === schoolContext ? sites : null;
 
   useEffect(() => {
-    const onSchoolChange = () => setSchoolContext(getSelectedSchoolId());
+    const onSchoolChange = () => { setReview(null); setReleaseMessage(""); setSchoolContext(getSelectedSchoolId()); };
     window.addEventListener(SCHOOL_CONTEXT_CHANGE_EVENT, onSchoolChange);
     window.addEventListener("focus", onSchoolChange);
     window.addEventListener("storage", onSchoolChange);
@@ -34,6 +37,8 @@ export default function DiademDirectorRosterPage() {
     let live = true;
     setSites(null);
     setRoster(null);
+    setReview(null);
+    setReleaseMessage("");
     setSiteId("");
     setDirectoryScope(null);
     setRosterScope(null);
@@ -59,6 +64,7 @@ export default function DiademDirectorRosterPage() {
     if (!currentSites || !siteId || !schoolContext) return;
     let live = true;
     setRoster(null);
+    setReview(null);
     setRosterScope(null);
     setError("");
     setLoading(true);
@@ -84,7 +90,7 @@ export default function DiademDirectorRosterPage() {
         <p>Source: authenticated, school-scoped Diadem services. No demo enrollment or attendance numbers are substituted.</p>
         <label htmlFor="diadem-site">Care center</label>{" "}
         <select id="diadem-site" value={siteId} disabled={!currentSites?.length || loading}
-          onChange={(event) => setSiteId(event.target.value)}>
+          onChange={(event) => { setReview(null); setReleaseMessage(""); setSiteId(event.target.value); }}>
           {!siteId && <option value="">No center selected</option>}
           {currentSites?.map((site) => <option key={site.site_id} value={site.site_id}>{site.name}{site.is_active ? "" : " (inactive)"}</option>)}
         </select>{" "}
@@ -98,18 +104,24 @@ export default function DiademDirectorRosterPage() {
           <p role="status">{currentRoster.children_present} open custody record(s). Observed at {currentRoster.as_of}.</p>
           <div role="region" aria-label="Children in care roster" tabIndex={0} style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
-              <thead><tr><th scope="col">Child</th><th scope="col">Room</th><th scope="col">Program</th><th scope="col">Checked in</th><th scope="col">Custody status</th></tr></thead>
+              <thead><tr><th scope="col">Child</th><th scope="col">Room</th><th scope="col">Program</th><th scope="col">Checked in</th><th scope="col">Custody status</th><th scope="col">Pickup action</th></tr></thead>
               <tbody>
                 {currentRoster.rows.map((row) => <tr key={row.attendance_id}>
                   <td>{row.child_name}</td><td>{row.room_name}</td><td>{row.program_code}</td>
                   <td>{row.checked_in_at}</td><td>Awaiting verified release</td>
+                  <td><button type="button" onClick={() => setReview(row)}>Review pickup</button></td>
                 </tr>)}
-                {currentRoster.rows.length === 0 && <tr><td colSpan={5}>No open custody records returned for this center.</td></tr>}
+                {currentRoster.rows.length === 0 && <tr><td colSpan={6}>No open custody records returned for this center.</td></tr>}
               </tbody>
             </table>
           </div>
+          {review && currentRoster.rows.some((row) => row.attendance_id === review.attendance_id) &&
+            <DiademReleaseReview key={`${schoolContext}:${siteId}:${review.attendance_id}`}
+              siteId={siteId} attendance={review} onCancel={() => setReview(null)}
+              onReleased={() => { setReview(null); setReleaseMessage("Server-confirmed handoff; refreshing custody roster."); setRefresh((n) => n + 1); }} />}
         </> : <p>{loading ? "Loading roster…" : "No verified roster available."}</p>}
-        <p>Check-in and release remain restricted to authorized staff and are not activated by this read-only screen.</p>
+        {releaseMessage && currentSites && <p role="status">{releaseMessage}</p>}
+        <p>Only authorized staff can confirm verified release. New admission remains separately gated.</p>
       </DashboardSection>
     </CrownLayout>
   );

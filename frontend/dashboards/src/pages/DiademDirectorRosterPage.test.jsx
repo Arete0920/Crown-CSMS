@@ -6,7 +6,7 @@ import { crownApiClient } from "../api/client.js";
 import { getSelectedSchoolId, setSelectedSchoolId } from "../utils/authClient.js";
 
 vi.mock("../api/client.js", () => ({
-  crownApiClient: { get: vi.fn() },
+  crownApiClient: { get: vi.fn(), post: vi.fn() },
 }));
 vi.mock("../components/crown/CrownLayout.jsx", () => ({
   default: ({ children }) => <main>{children}</main>,
@@ -30,13 +30,14 @@ beforeEach(() => {
 });
 afterEach(() => { cleanup(); sessionStorage.clear(); });
 
-it("displays source-backed open custody without any release or check-in controls", async () => {
+it("displays source-backed open custody without automatically releasing a child", async () => {
   render(<DiademDirectorRosterPage />);
   expect(await screen.findByText(child)).toBeTruthy();
   expect(screen.getByText(/1 open custody record/)).toBeTruthy();
   expect(crownApiClient.get).toHaveBeenCalledWith("/api/v1/aftercare/daycare/sites/");
   expect(crownApiClient.get).toHaveBeenCalledWith(`/api/v1/aftercare/daycare/sites/${site}/roster/`);
-  expect(screen.queryByRole("button", { name: /release|check in/i })).toBeNull();
+  expect(screen.getByRole("button", { name: "Review pickup" })).toBeTruthy();
+  expect(crownApiClient.post).not.toHaveBeenCalled();
   expect(screen.getByRole("region", { name: "Children in care roster" }).getAttribute("tabindex")).toBe("0");
 });
 
