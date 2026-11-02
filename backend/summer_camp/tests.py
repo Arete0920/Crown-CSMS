@@ -10,6 +10,8 @@ from rest_framework.test import APIClient
 from core.models import CrownPermission, RolePermission, School, UserRole
 from households.models import Household, Student
 
+from subscriptions.models import SchoolModule
+
 from .models import (
     SummerCampEnrollment,
     SummerCampPickupContact,
@@ -24,7 +26,9 @@ pytestmark = pytest.mark.django_db
 
 @pytest.fixture
 def school():
-    return School.objects.create(name="Summer School")
+    school = School.objects.create(name="Summer School")
+    SchoolModule.objects.create(school=school, module_key="little_lambs", status="active", expiry_date=timezone.now() + timedelta(days=30))
+    return school
 
 
 @pytest.fixture

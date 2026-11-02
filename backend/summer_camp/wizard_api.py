@@ -12,6 +12,7 @@ from .models import SummerCampConfigWizardState
 from .serializers import SummerCampProgramConfigSerializer
 from .services import ensure_config
 from .tenant import school_id_from_request
+from .entitlements import camp_entitlement_error
 
 
 WIZARD_STEPS = ("Program", "Registration", "Operations", "Review")
@@ -64,6 +65,9 @@ def _has_school_grant(request, school, permission):
 @api_view(["GET", "POST"])
 def summer_camp_setup_wizard(request):
     school_id = school_id_from_request(request, required=True)
+    denied = camp_entitlement_error(school_id)
+    if denied is not None:
+        return denied
     school = School.objects.filter(pk=school_id, is_active=True).first()
     if school is None:
         return _forbidden()
