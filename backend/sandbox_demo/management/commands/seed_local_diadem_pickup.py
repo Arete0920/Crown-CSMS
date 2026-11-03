@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import secrets
 from datetime import timedelta
 from pathlib import Path
@@ -54,6 +55,8 @@ def require_local_demo():
     _require_isolated_local_database()
     if os.environ.get("VITE_LOCAL_DEMO") != "1" or os.environ.get("DJANGO_ENV") != "local":
         raise CommandError("Diadem pickup evidence is restricted to the isolated local Heritage launcher.")
+    if not re.fullmatch(r"[0-9a-f]{40}", os.environ.get("BUILD_SHA", "")):
+        raise CommandError("Diadem pickup proof requires an exact 40-character local source revision.")
 
 
 def local_token(user, school):
@@ -213,6 +216,8 @@ def verify_scenario():
         raise CommandError("Refusing unverified Diadem scenario manifest.")
     if data.get("school_id") != SANDBOX_SCHOOLS["heritage-core"].id:
         raise CommandError("Diadem scenario does not belong to the fictional Heritage tenant.")
+    if data.get("source_sha") != os.environ["BUILD_SHA"]:
+        raise CommandError("Diadem pickup proof manifest source mismatch; regenerate the fictional scenario.")
     approved = data["cases"]["approved"]["attendance_id"]
     denied = [
         data["cases"]["revoked"]["attendance_id"],

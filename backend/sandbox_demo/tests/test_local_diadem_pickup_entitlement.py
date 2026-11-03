@@ -1,4 +1,5 @@
 """Fictional Diadem pickup seed must preserve existing entitlement decisions."""
+import json
 import pytest
 from django.core.management.base import CommandError
 
@@ -78,3 +79,36 @@ def test_direct_scenario_entrypoints_require_explicit_local_launcher_flags(monke
             pickup.build_scenario()
         else:
             pickup.verify_scenario()
+
+
+@pytest.mark.parametrize("source", ["", "not-a-commit", "A" * 40])
+def test_local_custody_proof_requires_pinned_source_sha(monkeypatch, source):
+    """Fake local flags alone must never authorize an unpinned custody proof."""
+    from sandbox_demo.management.commands import seed_local_diadem_pickup as pickup
+
+    monkeypatch.setattr(pickup, "_require_isolated_local_database", lambda: None)
+    monkeypatch.setenv("VITE_LOCAL_DEMO", "1")
+    monkeypatch.setenv("DJANGO_ENV", "local")
+    monkeypatch.setenv("BUILD_SHA", source)
+    with pytest.raises(CommandError, match="exact 40-character local source revision"):
+        pickup.build_scenario()
+
+
+def test_diadem_readback_rejects_manifest_from_other_source_before_custody_lookup(monkeypatch, tmp_path):
+    """An older fictional manifest must not certify a newly built local application."""
+    from sandbox_demo.catalog import SANDBOX_SCHOOLS
+    from sandbox_demo.management.commands import seed_local_diadem_pickup as pickup
+
+    manifest = tmp_path / "stale-diadem-pickup.json"
+    manifest.write_text(json.dumps({
+        "fictional_only": True,
+        "school_id": SANDBOX_SCHOOLS["heritage-core"].id,
+        "source_sha": "a" * 40,
+    }), encoding="utf-8")
+    monkeypatch.setattr(pickup, "_require_isolated_local_database", lambda: None)
+    monkeypatch.setattr(pickup, "MANIFEST", manifest)
+    monkeypatch.setenv("VITE_LOCAL_DEMO", "1")
+    monkeypatch.setenv("DJANGO_ENV", "local")
+    monkeypatch.setenv("BUILD_SHA", "b" * 40)
+    with pytest.raises(CommandError, match="manifest source mismatch"):
+        pickup.verify_scenario()
