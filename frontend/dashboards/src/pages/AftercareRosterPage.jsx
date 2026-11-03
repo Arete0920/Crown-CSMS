@@ -38,6 +38,7 @@ export default function AftercareRosterPage({ careSession = "PM" }) {
   const [pickupBusy, setPickupBusy] = useState(false);
   const [checkinBusyId, setCheckinBusyId] = useState(null);
   const [custodyWarning, setCustodyWarning] = useState("");
+  const [unconfirmedScope, setUnconfirmedScope] = useState(null);
   // A manual custody readback must not outrun an unresolved prior staff write.
   const [custodyWritePending, setCustodyWritePending] = useState(false);
   // Keep the request marker outside render state: a remote custody write may
@@ -55,8 +56,10 @@ export default function AftercareRosterPage({ careSession = "PM" }) {
       const current = identityRef.current;
       if (current.school === next.school && current.token === next.token) return;
       if (operationInFlightRef.current) {
+        const pending = operationInFlightRef.current;
+        setUnconfirmedScope({ school: pending.identity.school, careSession: pending.careSession });
         setCustodyWarning(
-          "A care operation was in flight when the staff session changed. Its outcome is unconfirmed. Review the refreshed live custody roster before any further handoff or check-in; do not retry automatically."
+          "A care operation was in flight when the staff session changed. Its outcome is unconfirmed. Return to the originating school and care session for explicit custody reconciliation; do not retry automatically."
         );
       }
       identityRef.current = next;
@@ -101,6 +104,13 @@ export default function AftercareRosterPage({ careSession = "PM" }) {
   }
 
   useEffect(() => {
+    if (sessionRef.current !== careSession && operationInFlightRef.current) {
+      const pending = operationInFlightRef.current;
+      setUnconfirmedScope({ school: pending.identity.school, careSession: pending.careSession });
+      setCustodyWarning(
+        "A custody operation remained in flight when the care session changed. Its outcome is unconfirmed. Return to the originating school and care session for reconciliation."
+      );
+    }
     sessionRef.current = careSession;
     const scope = identity;
     setLoading(true);
@@ -150,7 +160,7 @@ export default function AftercareRosterPage({ careSession = "PM" }) {
 
   async function handleCheckin(studentId) {
     if (custodyWarning || operationInFlightRef.current || checkinInFlightRef.current || sessionRef.current !== careSession || !sameIdentity() || rosterScope !== identity) return;
-    const attempt = { operation: "checkin", identity };
+    const attempt = { operation: "checkin", identity, careSession };
     operationInFlightRef.current = attempt;
     setCustodyWritePending(true);
     checkinInFlightRef.current = true;
@@ -192,7 +202,7 @@ export default function AftercareRosterPage({ careSession = "PM" }) {
   async function handleCheckout() {
     if (custodyWarning || operationInFlightRef.current || isMorning || pickup?.careSession !== careSession || !pickup?.contactId || !pickup.verified
         || !sameIdentity() || rosterScope !== identity) return;
-    const attempt = { operation: "checkout", identity };
+    const attempt = { operation: "checkout", identity, careSession };
     operationInFlightRef.current = attempt;
     setCustodyWritePending(true);
     setPickupBusy(true);
@@ -221,7 +231,7 @@ export default function AftercareRosterPage({ careSession = "PM" }) {
   async function handleHandoff() {
     if (custodyWarning || operationInFlightRef.current || !isMorning || handoff?.careSession !== careSession || !handoff?.acknowledged
         || !sameIdentity() || rosterScope !== identity) return;
-    const attempt = { operation: "school_handoff", identity };
+    const attempt = { operation: "school_handoff", identity, careSession };
     operationInFlightRef.current = attempt;
     setCustodyWritePending(true);
     setHandoffBusy(true);
@@ -243,11 +253,15 @@ export default function AftercareRosterPage({ careSession = "PM" }) {
     }
   }
 
+  // Only the originating school's matching care-session read can resolve a write.
+  const affectedScopeMatches = !unconfirmedScope || (
+    unconfirmedScope.school === identity.school && unconfirmedScope.careSession === careSession
+  );
   // This is an explicit human-triggered reconcile, not an automatic retry.
   // Reading the current roster cannot itself certify who received the child.
   async function reconcileAfterIdentityChange() {
     const scope = identity;
-    if (!custodyWarning || operationInFlightRef.current || !sameIdentity(scope) || loading) return;
+    if (!custodyWarning || !affectedScopeMatches || operationInFlightRef.current || !sameIdentity(scope) || loading) return;
     setLoading(true);
     try {
       const fresh = await fetchRosterToday(careSession);
@@ -259,6 +273,7 @@ export default function AftercareRosterPage({ careSession = "PM" }) {
       setRoster(fresh);
       setError(null);
       setCustodyWarning("");
+      setUnconfirmedScope(null);
     } catch (error) {
       if (sameIdentity(scope)) {
         setError("Custody reconciliation failed: " + error.message);
@@ -282,7 +297,8 @@ export default function AftercareRosterPage({ careSession = "PM" }) {
         {custodyWarning && <div role="alert">
           <p>{custodyWarning}</p>
           {custodyWritePending && <p role="status">The previous custody write is still pending; do not reconcile from an earlier roster snapshot.</p>}
-          <button type="button" disabled={loading || custodyWritePending || !sameIdentity()}
+          {!affectedScopeMatches && <p role="status">Return to the originating school and care session before resolving the unconfirmed custody operation.</p>}
+          <button type="button" disabled={loading || custodyWritePending || !affectedScopeMatches || !sameIdentity()}
             onClick={reconcileAfterIdentityChange}>Review current custody before continuing</button>
         </div>}
         {(loading || (!currentRoster && !error)) && <span>Loading...</span>}

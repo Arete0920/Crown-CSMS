@@ -220,3 +220,50 @@ it("requires an explicit authorized readback before clearing a custody outcome w
   await waitFor(() => expect(screen.queryByText(/outcome is unconfirmed/i)).toBeNull());
   expect(api.checkinStudent).toHaveBeenCalledTimes(1);
 });
+
+it("cannot clear an unresolved AM custody operation using the PM roster", async () => {
+  let settle;
+  api.fetchRosterToday.mockImplementation(async (session) => ({
+    care_session: session, date: "2026-10-30", dow: "FRI",
+    rows: session === "AM" ? rows : [], unlinked_attendance_count: 0,
+  }));
+  api.checkinStudent.mockImplementation(() => new Promise((resolve) => { settle = resolve; }));
+  const view = render(<AftercareRosterPage careSession="AM" />);
+  await screen.findByText("Synthetic Child");
+  fireEvent.click(screen.getByRole("button", { name: "Check In" }));
+  await waitFor(() => expect(api.checkinStudent).toHaveBeenCalledTimes(1));
+  view.rerender(<AftercareRosterPage careSession="PM" />);
+  await waitFor(() => expect(screen.getByText(/originating school and care session before resolving/i)).toBeTruthy());
+  const button = screen.getByRole("button", { name: "Review current custody before continuing" });
+  expect(button.disabled).toBe(true);
+  settle({ id: 1 });
+  await waitFor(() => expect(screen.queryByText(/previous custody write is still pending/i)).toBeNull());
+  expect(button.disabled).toBe(true);
+  const reads = api.fetchRosterToday.mock.calls.length;
+  fireEvent.click(button);
+  expect(api.fetchRosterToday).toHaveBeenCalledTimes(reads);
+  view.rerender(<AftercareRosterPage careSession="AM" />);
+  await waitFor(() => expect(screen.getByRole("button", { name: "Review current custody before continuing" }).disabled).toBe(false));
+  fireEvent.click(screen.getByRole("button", { name: "Review current custody before continuing" }));
+  await waitFor(() => expect(screen.queryByText(/outcome is unconfirmed/i)).toBeNull());
+  expect(api.checkinStudent).toHaveBeenCalledTimes(1);
+});
+
+it("cannot resolve an ambiguous custody write by reading a different school", async () => {
+  let settle;
+  api.checkinStudent.mockImplementation(() => new Promise((resolve) => { settle = resolve; }));
+  render(<AftercareRosterPage careSession="AM" />);
+  await screen.findByText("Synthetic Child");
+  fireEvent.click(screen.getByRole("button", { name: "Check In" }));
+  await waitFor(() => expect(api.checkinStudent).toHaveBeenCalledTimes(1));
+  setSelectedSchoolId("another-fictional-school");
+  await waitFor(() => expect(screen.getByText(/originating school and care session before resolving/i)).toBeTruthy());
+  settle({ id: 1 });
+  await waitFor(() => expect(screen.queryByText(/previous custody write is still pending/i)).toBeNull());
+  expect(screen.getByRole("button", { name: "Review current custody before continuing" }).disabled).toBe(true);
+  setSelectedSchoolId("fictional-care-school");
+  await waitFor(() => expect(screen.getByRole("button", { name: "Review current custody before continuing" }).disabled).toBe(false));
+  fireEvent.click(screen.getByRole("button", { name: "Review current custody before continuing" }));
+  await waitFor(() => expect(screen.queryByText(/outcome is unconfirmed/i)).toBeNull());
+  expect(api.checkinStudent).toHaveBeenCalledTimes(1);
+});
