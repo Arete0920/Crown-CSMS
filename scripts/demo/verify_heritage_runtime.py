@@ -166,8 +166,6 @@ def main() -> int:
             evidence["checks"]["six_role_buyer_browser_routes_and_mobile"] = True
             evidence["browser_route_count"] = report.get("routeCount")
 
-            # Certify a complete fictional family aid POST, authenticated GET,
-            # and browser reload on the same isolated local runtime.
             # Reuse the existing real-browser attendance/classwork regression.
             # A saved response alone cannot certify that reload restored the mark.
             browser_env["CERT_FRONTEND_URL"] = "http://127.0.0.1:4173"
@@ -187,6 +185,19 @@ def main() -> int:
             )
             evidence["checks"]["teacher_attendance_and_classwork_persist_after_reload"] = True
             evidence["checks"]["fictional_jireh_family_application_browser_submission_and_reload"] = True
+
+            # Real Camp role session, persisted POST/GET/read-after-reload, and
+            # controlled failure cases. The spec restores prior fictional state.
+            browser_env["CROWN_LOCAL_CAMP_E2E"] = "1"
+            subprocess.run(
+                launcher.npm_command() + [
+                    "run", "test:e2e", "--",
+                    "tests/e2e/summer-camp-local-readback.spec.ts",
+                    "--workers=1", "--reporter=line",
+                ],
+                cwd=launcher.FRONTEND, env=browser_env, timeout=600, check=True,
+            )
+            evidence["checks"]["summer_camp_authenticated_browser_save_readback"] = True
             # Actual authenticated Diadem pickup: fictional local SQLite only.
             # No browser API stubs; one signed staff identity exercises real custody.
             subprocess.run(

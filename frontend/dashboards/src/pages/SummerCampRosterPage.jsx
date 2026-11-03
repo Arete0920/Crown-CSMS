@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import CrownLayout from "../components/crown/CrownLayout.jsx";
 import DashboardSection from "../components/layout/DashboardSection.jsx";
+import SummerCampDemoRegistration from "./SummerCampDemoRegistration.jsx";
 import {
   checkinSummerCamper,
   checkoutSummerCamper,
@@ -175,6 +176,8 @@ export default function SummerCampRosterPage() {
         </div>
 
         <button type="button" disabled={loading || busy || !selectedSession} onClick={() => { void reloadRoster(); }}>Refresh custody roster</button>
+        <SummerCampDemoRegistration key={selectedSession} session={selected} rows={rows}
+          disabled={busy || loading || Boolean(error)} onSaved={reloadRoster} />
         {loading && <span role="status">Loading roster...</span>}
         {error && (
           <div style={{ color: "var(--crown-danger)", background: "var(--crown-danger-bg)", padding: "10px 14px", borderRadius: 4 }}>

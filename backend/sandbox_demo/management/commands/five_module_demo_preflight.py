@@ -82,6 +82,13 @@ def _model_count(app_label: str, model_name: str, **filters) -> tuple[int | None
         return None, f"schema or query is not ready ({type(exc).__name__})"
 
 
+def camp_entitlement_evidence(school_id) -> bool:
+    """Use the same DB-backed module gate as the real Camp API, not route presence."""
+    from subscriptions.gates import school_has_module
+
+    return bool(school_has_module(school_id, "little_lambs"))
+
+
 class Command(BaseCommand):
     help = "Read-only five-module Heritage local demo acceptance inventory."
 
@@ -125,15 +132,43 @@ class Command(BaseCommand):
                    error or f"fictional records={count}")
             return count or 0
 
-        require_count(
-            "Jireh Financial Aid applications", "financial_aid",
-            "FinancialAidApplication", school_id=school.id,
-        )
-        require_count("Jireh Financial Aid awards", "financial_aid", "AidAward", school_id=school.id)
+        # Jireh Setup operates on canonical aid models, not legacy financial_aid
+        # rows. An award must be from this school's same-year, same-family
+        # application for a school-owned student; no unrelated award suffices.
+        from django.db.models import F
 
         require_count(
-            "Jireh SGO noncash applications", "jireh_sgo",
+            "Jireh canonical applications", "aid", "AidApplication",
+            school_id=school.id, family__school_id=school.id,
+            academic_year__school_id=school.id,
+            status__in=("SUBMITTED", "UNDER_REVIEW", "NEEDS_INFO", "APPROVED"),
+        )
+        require_count(
+            "Jireh canonical offered awards", "aid", "AidAward",
+            school_id=school.id, student__school_id=school.id,
+            student__family__school_id=school.id,
+            academic_year__school_id=school.id,
+            aid_application__isnull=False,
+            aid_application__school_id=school.id,
+            aid_application__family_id=F("student__family_id"),
+            aid_application__academic_year_id=F("academic_year_id"),
+            decision_status__in=("OFFERED", "ACCEPTED"),
+            awarded_cents__gt=0,
+        )
+
+        # An SGO belongs to its grantor organization, not the school.
+        # School-linked application data alone is insufficient partner evidence:
+        # the grantor and at least one member capable of the read-only
+        # organization overview must still be active.
+        require_count(
+            "Jireh SGO active-grantor noncash applications", "jireh_sgo",
             "SGOApplication", school_key=school.id,
+            program__organization__active=True,
+            program__organization__memberships__active=True,
+            program__organization__memberships__user__is_active=True,
+            program__organization__memberships__role__in=(
+                "VIEWER", "REVIEWER", "ADMIN",
+            ),
         )
         for session in ("AM", "PM"):
             require_count(
@@ -145,6 +180,15 @@ class Command(BaseCommand):
         require_count(
             "Diadem Daycare active enrollments", "aftercare",
             "DaycareEnrollment", school_id=school.id, status="ACTIVE",
+        )
+        # Even complete fictional session records are not operational proof
+        # if the school would receive MODULE_NOT_ENABLED from the Camp API.
+        entitlement_active = camp_entitlement_evidence(school.id)
+        record(
+            "Summer Camp entitlement",
+            entitlement_active,
+            "authorized for fictional school" if entitlement_active
+            else "missing, inactive, suspended or expired; Camp API access is denied",
         )
         try:
             from summer_camp.models import SummerCampSession, SummerCampEnrollment
