@@ -35,10 +35,20 @@ export default function DiademReleaseReview({ siteId, attendance, onCancel, onRe
       setError("Authenticated school and staff session required.");
       return () => { active = false; };
     }
+    const failChangedSession = () => {
+      if (!active) return;
+      setScope(null); setOptions(null); setStatus("");
+      setSelected(""); setAttested(false); setLocked(true);
+      setError("Staff session or school context changed while checking pickup authority. Close this review, refresh custody, and reverify before any handoff. No release request was sent.");
+    };
     crownApiClient.get(
       `${BASE}/sites/${siteId}/attendance/${attendance.attendance_id}/release-authorities/`
     ).then(({ data }) => {
-      if (!active || !sameContext(context)) return;
+      if (!active) return;
+      if (!sameContext(context)) {
+        failChangedSession();
+        return;
+      }
       if (data?.site_id !== siteId || data.attendance_id !== attendance.attendance_id ||
           !["candidates_only", "overnight_director_review_required"].includes(data.status) ||
           !Array.isArray(data.options) || !data.options.every(
@@ -46,9 +56,12 @@ export default function DiademReleaseReview({ siteId, attendance, onCancel, onRe
           )) throw new Error("Pickup evidence failed custody scope verification.");
       setScope(context); setOptions(data.options); setStatus(data.status);
     }).catch((err) => {
-      if (active && sameContext(context)) {
-        setError(err.message || "Pickup evidence unavailable."); setLocked(true);
+      if (!active) return;
+      if (!sameContext(context)) {
+        failChangedSession();
+        return;
       }
+      setError(err.message || "Pickup evidence unavailable."); setLocked(true);
     });
     return () => { active = false; };
   }, [siteId, attendance.attendance_id]);

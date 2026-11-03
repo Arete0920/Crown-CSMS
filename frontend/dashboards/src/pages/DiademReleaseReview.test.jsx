@@ -79,6 +79,32 @@ it("does not show stale recipient information after tenant switch", async () => 
   expect(crownApiClient.post).not.toHaveBeenCalled();
 });
 
+it("rejects a stale successful pickup candidate response and stops the loading indicator", async () => {
+  let complete;
+  crownApiClient.get.mockImplementation(() => new Promise((resolve) => { complete = resolve; }));
+  show();
+  expect(screen.getByText(/Checking current pickup authority/)).toBeTruthy();
+  setAccessToken("rotated-while-loading");
+  complete({ data: candidate });
+  const alert = await screen.findByRole("alert");
+  expect(alert.textContent).toMatch(/session or school context changed while checking pickup authority/i);
+  expect(screen.queryByText(/Checking current pickup authority/)).toBeNull();
+  expect(screen.queryByText("Synthetic Guardian")).toBeNull();
+  expect(crownApiClient.post).not.toHaveBeenCalled();
+});
+
+it("rejects a stale failed pickup candidate response and stops the loading indicator", async () => {
+  let fail;
+  crownApiClient.get.mockImplementation(() => new Promise((_, reject) => { fail = reject; }));
+  show();
+  setAccessToken("rotated-before-candidate-failure");
+  fail(new Error("Synthetic candidate service unavailable"));
+  const alert = await screen.findByRole("alert");
+  expect(alert.textContent).toMatch(/session or school context changed while checking pickup authority/i);
+  expect(screen.queryByText(/Checking current pickup authority/)).toBeNull();
+  expect(crownApiClient.post).not.toHaveBeenCalled();
+});
+
 it("fails closed with explicit guidance when staff credentials change before confirmation", async () => {
   const released = show();
   await screen.findByText("Synthetic Guardian");
