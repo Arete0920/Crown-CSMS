@@ -93,7 +93,15 @@ export default function JirehSGODashboard() {
       navigationScope="standalone"
       title="Jireh SGO"
       subtitle="Standalone scholarship grantor workspace — noncash pilot"
-      right={<button type="button" disabled={!token || loading} onClick={() => setRefresh((value) => value + 1)}>
+      right={<button type="button" disabled={!token || loading} onClick={() => {
+        setOrganizations(null);
+        setMembershipToken(null);
+        setOverview(null);
+        setOverviewToken(null);
+        setError("");
+        setLoading(true);
+        setRefresh((value) => value + 1);
+      }}>
         Refresh grantor records
       </button>}
     >
@@ -118,6 +126,7 @@ export default function JirehSGODashboard() {
           <Col span={12}><CrownCard title="Organization and authorization">
             <p><strong>{currentOverview.organization.name}</strong></p>
             <p>Authorized role: {currentOverview.role}</p>
+            <p>Operational status: {currentOverview.status === "PILOT_SOURCE_ONLY" ? "Source-only pilot (not certified)" : "Unverified"}</p>
             <p>Source: authenticated Jireh SGO program overview. Aggregates represent recorded noncash activity only.</p>
           </CrownCard></Col>
           <Col span={4}><CrownMetricCard label="Programs" value={count(currentOverview.totals?.programs)} /></Col>
