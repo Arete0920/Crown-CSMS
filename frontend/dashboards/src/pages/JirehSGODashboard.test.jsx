@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import JirehSGODashboard from "./JirehSGODashboard.jsx";
 import { authenticatedFetch, getAccessToken } from "../utils/authClient.js";
 
@@ -85,4 +85,37 @@ describe("Standalone Jireh SGO read-only grantor UI", () => {
     await waitFor(() => expect(screen.getByRole("alert").textContent).toMatch(/unavailable/i));
     expect(screen.queryByText("Foreign")).toBeNull();
   });
+  it("uses the standalone Crown shell without school-scoped nav calls", async () => {
+    render(<JirehSGODashboard />);
+    expect(await screen.findByText("Synthetic Grant Program")).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Jireh SGO", level: 1 })).toBeTruthy();
+    expect(screen.queryByText("Sign In Required")).toBeNull();
+    expect(screen.queryByRole("button", { name: /toggle navigation/i })).toBeNull();
+    expect(screen.getByRole("region", { name: "SGO programs" }).getAttribute("tabindex")).toBe("0");
+    expect(authenticatedFetch.mock.calls.every(([url]) => url.startsWith("/api/v1/jireh-sgo/"))).toBe(true);
+  });
+
+  it("does not reinterpret invalid or missing aggregate finance evidence as zero dollars", async () => {
+    authenticatedFetch.mockImplementation(async (url) =>
+      url.endsWith("/organizations/")
+        ? response({ organizations: [{ id: "org-1", name: "Synthetic SGO", role: "VIEWER" }], funds_status: "NONCASH_ONLY" })
+        : response({ organization: { id: "org-1", name: "Synthetic SGO" },
+          role: "VIEWER", funds_status: "NONCASH_ONLY",
+          programs: [{ id: "p1", name: "Synthetic Grant Program", year: 2027,
+            applications: null, eligible: -1, unreviewed: 0, noncash_committed_cents: null }],
+          totals: { programs: 1, applications: null, noncash_committed_cents: null } }));
+    render(<JirehSGODashboard />);
+    expect(await screen.findByText("Synthetic Grant Program")).toBeTruthy();
+    expect(screen.getAllByText("Unavailable").length).toBeGreaterThan(0);
+    expect(screen.queryByText("$0.00")).toBeNull();
+  });
+
+  it("refreshes only organization-scoped read-only records", async () => {
+    render(<JirehSGODashboard />);
+    expect(await screen.findByText("Synthetic Grant Program")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Refresh grantor records" }));
+    await waitFor(() => expect(authenticatedFetch.mock.calls.filter(([url]) => url.endsWith("/organizations/")).length).toBe(2));
+    expect(authenticatedFetch.mock.calls.every(([, opts]) => opts?.omitSchoolContext === true && opts?.method === "GET")).toBe(true);
+  });
+
 });
