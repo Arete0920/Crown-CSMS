@@ -2,7 +2,7 @@
 
 **Status:** Local development and fictional Heritage demonstration only; not a production or Azure release certification.
 **Authority:** [Engineering setup](engineering/DEV_SETUP.md), [current release status](CURRENT_RELEASE_STATUS.md), and exact current GitHub `main`.
-**Last reviewed:** October 9, 2026. The documented commands have not been executed on the owner's Windows laptop by this review.
+**Last reviewed:** November 2, 2026 (source documentation only; owner laptop execution not independently verified).
 
 ## Choose the correct local workflow
 
@@ -32,7 +32,7 @@ The launcher creates an isolated local `.venv`, SQLite database, synthetic Herit
 
 Use **fictional data only**. The passwordless sandbox is for the same computer; do not port-forward it or expose it on a public network. External payment processing is not part of this demo. Do not assume that every optional integration works offline.
 
-If you are starting from an old copied ZIP instead of an active checkout, obtain the intended source first and record its exact SHA. The separate `Start-Heritage.cmd` downloader intentionally pins revision `5e49157f440c549b9394f3cea7259c09d409b6bd`: that historical demo is **not** current-`main` proof. Its existing README documents Linux rehearsal and explicitly states native Windows execution has not been verified.
+If you are starting from an old copied ZIP instead of an active checkout, obtain the intended source first and record its exact SHA. The sales starter in this candidate branch pins immutable source revision `a1bf22fc1e520eba149ce943edcd747dbf75c1e5`, rather than tracking moving `main`. Check `HERITAGE-SALES-MANIFEST.json` inside the audited ZIP, then execute `py -3.12 scripts/demo/start_heritage_local.py --prepare-only --five-module-preflight` from the extracted source folder. The five-module preflight alone is not browser or Windows-laptop certification; inspect the exact-head Windows Actions run and exercise real saved/reloaded workflows and denials on the demonstration laptop. Rebuild and recertify after accepted source merges; never silently substitute unmerged PRs.
 
 ### B. Validate general source development without launching Azure
 
