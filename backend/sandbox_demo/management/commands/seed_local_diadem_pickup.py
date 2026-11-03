@@ -37,6 +37,19 @@ from sandbox_demo.management.commands.five_module_demo_preflight import (
 MANIFEST = LOCAL_DB.parent / "diadem-pickup-session.json"
 
 
+def ensure_local_diadem_entitlement(school, feature):
+    """Seed only an absent fictional grant; never undo an operator denial."""
+    override, created = EntitlementOverride.objects.get_or_create(
+        school_id=school.pk, feature=feature, defaults={"enabled": True}
+    )
+    if not created and override.enabled is not True:
+        raise CommandError(
+            "The fictional Diadem entitlement is not explicitly enabled. "
+            "Reconcile the existing local authorization before running pickup proof."
+        )
+    return override
+
+
 def require_local_demo():
     _require_isolated_local_database()
     if os.environ.get("VITE_LOCAL_DEMO") != "1" or os.environ.get("DJANGO_ENV") != "local":
@@ -79,9 +92,7 @@ def build_scenario():
     feature, _ = Feature.objects.get_or_create(
         key="diadem.daycare", defaults={"name": "Diadem Daycare", "description": "Local fictional proof"}
     )
-    EntitlementOverride.objects.update_or_create(
-        school_id=school.pk, feature=feature, defaults={"enabled": True}
-    )
+    ensure_local_diadem_entitlement(school, feature)
     for role, codes in (
         ("DAYCARE_STAFF", ("diadem.daycare.view", "diadem.daycare.checkin", "diadem.daycare.release")),
         ("DAYCARE_DIRECTOR", ("diadem.daycare.view", "diadem.daycare.release")),
