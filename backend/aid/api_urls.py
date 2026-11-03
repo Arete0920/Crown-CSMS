@@ -15,6 +15,7 @@ Phase 7.5 admin + family endpoints:
 
 from django.urls import path
 from . import api_views
+from .family_demo_intake import family_demo_intake
 
 urlpatterns = [
     # Existing director persona endpoints
@@ -31,4 +32,5 @@ urlpatterns = [
 
     # Phase 7.5: Family portal
     path("family/status/", api_views.family_aid_status, name="aid_family_status"),
+    path("family/demo-intake/", family_demo_intake, name="aid_family_demo_intake"),
 ]
