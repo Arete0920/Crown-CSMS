@@ -192,3 +192,59 @@ def test_local_preflight_does_not_accept_legacy_financial_aid_as_canonical_jireh
     call_command("five_module_demo_preflight", stdout=output)
     assert "PASS Jireh canonical applications:" in output.getvalue()
     assert "PASS Jireh canonical offered awards:" in output.getvalue()
+
+
+@pytest.mark.django_db
+def test_local_preflight_sgo_requires_active_grantor_and_member(monkeypatch):
+    from io import StringIO
+    from uuid import UUID, uuid4
+
+    from django.core.management import call_command
+    from core.models import School, UserAccount
+    from jireh_sgo.models import (
+        SGOApplication, SGOMembership, SGOOrganization, SGOProgram,
+    )
+    from sandbox_demo.catalog import SANDBOX_SCHOOLS
+    from sandbox_demo.management.commands import five_module_demo_preflight as module
+
+    school = School.objects.create(
+        pk=UUID(SANDBOX_SCHOOLS["heritage-core"].id),
+        name="Heritage Christian Academy",
+        timezone="America/New_York",
+    )
+    org = SGOOrganization.objects.create(
+        legal_name="Fictional independent grantor", state_of_domicile="DE",
+        active=False,
+    )
+    program = SGOProgram.objects.create(
+        organization=org, name="Fictional scholarship pilot",
+        code="fictional-scholarship", calendar_year=2027,
+        funding_source="PRIVATE", eligibility_rule_version="POLICY_2027_V1",
+    )
+    SGOApplication.objects.create(
+        program=program, school_key=school.id, student_key=uuid4(),
+    )
+    monkeypatch.setattr(module, "_require_isolated_local_database", lambda: None)
+
+    def output():
+        stream = StringIO()
+        call_command("five_module_demo_preflight", stdout=stream)
+        return stream.getvalue()
+
+    assert "FAIL Jireh SGO active-grantor noncash applications:" in output()
+    org.active = True
+    org.save(update_fields=["active"])
+    assert "FAIL Jireh SGO active-grantor noncash applications:" in output()
+
+    reviewer = UserAccount.objects.create_user(
+        username="fictional-grantor-reviewer", password="synthetic",
+        is_active=True,
+    )
+    membership = SGOMembership.objects.create(
+        organization=org, user=reviewer,
+        role=SGOMembership.VIEWER, active=True,
+    )
+    assert "PASS Jireh SGO active-grantor noncash applications:" in output()
+    membership.active = False
+    membership.save(update_fields=["active"])
+    assert "FAIL Jireh SGO active-grantor noncash applications:" in output()

@@ -156,9 +156,19 @@ class Command(BaseCommand):
             awarded_cents__gt=0,
         )
 
+        # An SGO belongs to its grantor organization, not the school.
+        # School-linked application data alone is insufficient partner evidence:
+        # the grantor and at least one member capable of the read-only
+        # organization overview must still be active.
         require_count(
-            "Jireh SGO noncash applications", "jireh_sgo",
+            "Jireh SGO active-grantor noncash applications", "jireh_sgo",
             "SGOApplication", school_key=school.id,
+            program__organization__active=True,
+            program__organization__memberships__active=True,
+            program__organization__memberships__user__is_active=True,
+            program__organization__memberships__role__in=(
+                "VIEWER", "REVIEWER", "ADMIN",
+            ),
         )
         for session in ("AM", "PM"):
             require_count(
