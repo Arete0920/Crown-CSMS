@@ -74,3 +74,13 @@ it("keeps operational links available when summary loading fails", async () => {
   expect(screen.getByRole("link", { name: "Configure camp" }).getAttribute("href")).toBe("/summer-camp-dashboard/setup");
   expect(screen.getByRole("link", { name: "Open attendance and authorized pickup" }).getAttribute("href")).toBe("/summer-camp-dashboard/roster");
 });
+
+it("identifies registration rows rather than incorrectly counting them as unique campers", async () => {
+  vi.mocked(fetchSummerCampBoardSummary).mockResolvedValue({
+    ...baseSummary, registered_campers: 3,
+  });
+  render(<SummerCampDashboard />);
+  expect(await screen.findByText("Registration records")).toBeTruthy();
+  expect(screen.getByText("3")).toBeTruthy();
+  expect(screen.queryByText("Registered Campers")).toBeNull();
+});
