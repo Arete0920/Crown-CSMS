@@ -179,3 +179,27 @@ def test_conflicting_existing_fixture_identity_refuses_and_rolls_back(
     assert not Household.objects.filter(
         pk=fixed_id("family"), school_id=HERITAGE_ID
     ).exists()
+def test_direct_canonical_offer_entrypoint_enforces_local_boundary(monkeypatch, settings):
+    from core.models import Family as CoreFamily, School
+    from sandbox_demo import heritage_module_samples as samples
+
+    with _setup_local(monkeypatch, settings):
+        school = School.objects.get(pk=HERITAGE_ID)
+        def deny_nonlocal():
+            raise CommandError("Direct canonical offer forbidden outside isolated local SQLite")
+        monkeypatch.setattr(samples, "_require_isolated_local_database", deny_nonlocal)
+        with pytest.raises(CommandError, match="isolated local SQLite"):
+            samples._seed_canonical_offered_jireh(school)
+    assert not CoreFamily.objects.filter(pk=fixed_id("canonical-aid-family")).exists()
+
+
+def test_direct_canonical_offer_rejects_foreign_school_before_write(monkeypatch, settings):
+    from core.models import Family as CoreFamily, School
+    from sandbox_demo.heritage_module_samples import _seed_canonical_offered_jireh
+
+    with _setup_local(monkeypatch, settings):
+        foreign = School.objects.create(name="Foreign Synthetic School")
+        with pytest.raises(CommandError, match="active fictional Heritage school"):
+            _seed_canonical_offered_jireh(foreign)
+    assert not CoreFamily.objects.filter(pk=fixed_id("canonical-aid-family")).exists()
+

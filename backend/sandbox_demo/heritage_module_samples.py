@@ -63,6 +63,7 @@ def _ensure(model, label: str, defaults: dict, identity: dict):
     return obj, created
 
 
+@transaction.atomic
 def _seed_canonical_offered_jireh(school) -> tuple[int, int]:
     """Create one fictional canonical OFFERED aid record, never a payment.
 
@@ -70,6 +71,13 @@ def _seed_canonical_offered_jireh(school) -> tuple[int, int]:
     financial_aid summary models. Do not substitute a row-count placeholder
     for the canonical family's own-year, own-student award lineage.
     """
+    # The nested helper is importable: the command/outer seeder guard alone
+    # cannot authorize direct writes. Check the exact tenant before any query.
+    require_local_demo()
+    if (school.pk != HERITAGE_ID
+            or school.name != SANDBOX_SCHOOLS["heritage-core"].name
+            or not school.is_active):
+        raise CommandError("Canonical Jireh preview requires the active fictional Heritage school.")
     from core.models import AcademicYear, Family, Student
     from aid.models import AidApplication, AidAward
 
