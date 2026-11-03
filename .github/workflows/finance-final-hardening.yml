@@ -30,7 +30,9 @@ on:
 
 concurrency:
   group: finance-final-hardening-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: false
+  # Cancel only superseded PR-head runs; preserve all protected-main evidence.
+  # The latest PR head still has to pass every Finance job and evidence upload.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
