@@ -22,8 +22,10 @@ def verify(*, download: bool = False):
     with zipfile.ZipFile(package) as archive:
         if archive.testzip() is not None:
             raise RuntimeError("Starter ZIP failed CRC verification.")
-        if set(archive.namelist()) != {*STARTER_FILES, "HERITAGE-SALES-MANIFEST.json"}:
-            raise RuntimeError("Unexpected ZIP entries.")
+        names = archive.namelist()
+        if (len(names) != len(STARTER_FILES) + 1
+                or set(names) != {*STARTER_FILES, "HERITAGE-SALES-MANIFEST.json"}):
+            raise RuntimeError("Unexpected or duplicate ZIP entries.")
         manifest = json.loads(archive.read("HERITAGE-SALES-MANIFEST.json"))
         source_url = f"https://github.com/Arete0920/Crown-CSMS/archive/{sha}.zip"
         if (manifest.get("source_sha") != sha
