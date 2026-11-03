@@ -49,7 +49,7 @@ describe("Jireh SGO interactive fictional intake", () => {
       throw new Error("unexpected fictional endpoint: " + url);
     });
     render(<JirehSGOIntakePage />);
-    expect(await screen.findByLabelText("Partner SGO and program")).toBeTruthy();
+    expect((await screen.findByLabelText("Partner SGO and program")).style.maxWidth).toBe("100%");
     const submit = screen.getByRole("button", { name: "Submit fictional application" });
     expect(submit.disabled).toBe(true);
     fireEvent.click(screen.getByRole("checkbox"));
