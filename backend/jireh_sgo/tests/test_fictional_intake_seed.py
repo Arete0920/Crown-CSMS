@@ -3,6 +3,7 @@ from pathlib import Path
 import tempfile
 
 from django.contrib.auth import get_user_model
+from django.db import connection
 from django.core.management import call_command
 from django.core.management.base import CommandError
 from django.test import TestCase, override_settings
@@ -18,6 +19,10 @@ from jireh_sgo.models import (
     CROWN_DEMO_MODE=False, CROWN_SGO_FICTIONAL_INTAKE_ENABLED=True,
 )
 class FictionalSGOLocalSeedTests(TestCase):
+    def setUp(self):
+        if connection.vendor != "sqlite":
+            self.skipTest("Fictional SGO seed is restricted to isolated SQLite.")
+
     def test_two_partner_programs_separate_grants_and_repeatable_local_credentials(self):
         with tempfile.TemporaryDirectory() as root:
             target = Path(root) / "sgo-credentials.txt"
