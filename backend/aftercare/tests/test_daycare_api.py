@@ -603,10 +603,13 @@ def test_release_candidates_inactive_school_route_cannot_bypass_method_or_scope(
     assert bearer.get(valid_url).status_code == 200
     assert bearer.post(valid_url, {}, format="json").status_code in (404, 405)
     assert bearer.get(valid_url + "extra/").status_code == 404
-    assert bearer.get(
-        valid_url,
-        HTTP_X_SCHOOL_ID=str(School.objects.create(name="Foreign disabled scope").id),
-    ).status_code == 404
+    # APIClient.credentials() stores the default bearer and tenant headers.
+    # Passing HTTP_X_SCHOOL_ID to .get() on the same client may be overridden
+    # by those saved credentials. Construct a fresh signed-bearer client with
+    # the foreign school header as its effective transport identity.
+    foreign = School.objects.create(name="Foreign disabled scope")
+    foreign_bearer = _bearer_client(d["actor"], school_id=foreign.pk)
+    assert foreign_bearer.get(valid_url).status_code == 404
     assert not DaycareRelease.objects.exists()
 
 
