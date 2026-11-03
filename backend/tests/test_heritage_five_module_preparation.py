@@ -6,6 +6,7 @@ fixtures, signed-staff custody or Windows browser workflows.
 from __future__ import annotations
 
 import importlib.util
+import inspect
 from pathlib import Path
 
 import pytest
@@ -32,6 +33,26 @@ def local_env(state: Path):
         "VITE_LOCAL_DEMO": "1",
         "DATABASE_URL": "sqlite:///" + (state / "heritage.sqlite3").as_posix(),
     }
+
+
+def test_sgo_seed_stays_opt_in_and_runs_once():
+    """Guard cross-PR launcher integration against double credential rotation.
+
+    #616 currently seeds SGO in ordinary prepare, while #615 seeds it in the
+    explicit five-module path. The integrated launcher must preserve only the
+    opt-in invocation and never enable SGO from ordinary local_environment.
+    """
+    launcher = load_launcher()
+    default_environment = inspect.getsource(launcher.local_environment)
+    normal_preparation = inspect.getsource(launcher.prepare)
+    opt_in_preparation = inspect.getsource(launcher.seed_five_module_fixtures)
+
+    # Do not enable partner-family/processor endpoints in the basic demo.
+    assert "CROWN_SGO_FICTIONAL_INTAKE_ENABLED" not in default_environment
+    # Do not call a password-rotating SGO seeder during ordinary preparation.
+    assert "seed_fictional_sgo_intake" not in normal_preparation
+    # One and only one seeder invocation in explicitly guarded preparation.
+    assert opt_in_preparation.count('"seed_fictional_sgo_intake"') == 1
 
 
 def test_strict_preparation_runs_existing_three_seeders_in_order(monkeypatch, tmp_path):
