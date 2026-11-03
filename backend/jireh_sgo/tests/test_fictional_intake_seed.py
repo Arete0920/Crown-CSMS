@@ -1,5 +1,6 @@
 """Local fictional partner seed must be gated, isolated, repeatable and off-repo."""
 from pathlib import Path
+from uuid import uuid4
 import tempfile
 from unittest.mock import patch
 from django.contrib.auth import get_user_model
@@ -7,6 +8,7 @@ from django.db import connection
 from django.core.management import call_command
 from django.core.management.base import CommandError
 from django.test import TestCase, override_settings
+from rest_framework.test import APIClient
 from jireh_sgo.models import ( SGOApplication, SGOAward, SGOFamilyGrant, SGOMembership, SGOOrganization, SGOProcessorAssignment, SGOProgram, )
 from crown_api.management.commands.seed_fictional_sgo_intake import HERITAGE_SCHOOL
 @override_settings( CROWN_ENV="local", DJANGO_ENV="local", DEBUG=True, CROWN_DEMO_MODE=False, CROWN_SGO_FICTIONAL_INTAKE_ENABLED=True, )
@@ -76,6 +78,72 @@ class FictionalSGOLocalSeedTests(TestCase):
             self.assertFalse(target.exists())
             self.assertFalse(SGOOrganization.objects.exists())
             self.assertFalse(get_user_model().objects.filter( username__startswith="sgo_demo_", ).exists())
+    @patch("crown_api.management.commands.seed_fictional_sgo_intake._require_isolated_local_database")
+    def test_seeded_credentials_obtain_jwt_and_scope_family_processor(self, guard):
+        """Exercise the real SimpleJWT route, not force_authenticate or mocked login."""
+        with tempfile.TemporaryDirectory() as root:
+            target = Path(root) / "accounts.txt"
+            call_command("seed_fictional_sgo_intake", credentials_file=str(target))
+            lines = target.read_text(encoding="utf-8").splitlines()
+            def accounts(label):
+                return [line.split(": ", 1)[1].split(" / ", 1)
+                        for line in lines if line.startswith(label + ": ")]
+            families, processors, partners = (accounts("Family login"),
+                                              accounts("Processor login"),
+                                              accounts("Partner SGO admin (no automatic processor rights)"))
+            self.assertEqual((len(families), len(processors), len(partners)), (2, 2, 2))
+            def signed_client(pair):
+                client = APIClient()
+                token = client.post("/api/v1/auth/token/",
+                                    {"username": pair[0], "password": pair[1]},
+                                    format="json")
+                self.assertEqual(token.status_code, 200, token.data)
+                self.assertTrue(token.data.get("access"))
+                client.credentials(HTTP_AUTHORIZATION=f"Bearer {token.data['access']}")
+                return client
+
+            delaware = signed_client(families[0])
+            programs = delaware.get("/api/v1/jireh-sgo/family/programs/")
+            self.assertEqual(programs.status_code, 200, programs.data)
+            self.assertEqual(len(programs.data["programs"]), 1)
+            selected = programs.data["programs"][0]
+            self.assertIsNone(selected["application_id"])
+            submitted = delaware.post("/api/v1/jireh-sgo/family/submit/", {
+                "program_id": selected["id"], "grade_level": "K",
+                "consent": True, "consent_version": selected["consent_version"],
+                "submission_key": str(uuid4()),
+            }, format="json")
+            self.assertEqual(submitted.status_code, 201, submitted.data)
+            application_id = submitted.data["application"]["id"]
+            self.assertEqual(delaware.get(
+                f"/api/v1/jireh-sgo/family/applications/{application_id}/"
+            ).status_code, 200)
+            self.assertEqual(SGOApplication.objects.count(), 3)
+            self.assertFalse(SGOAward.objects.exists())
+
+            pennsylvania = signed_client(families[1])
+            self.assertEqual(pennsylvania.get(
+                f"/api/v1/jireh-sgo/family/applications/{application_id}/"
+            ).status_code, 403)
+            self.assertEqual(len(pennsylvania.get(
+                "/api/v1/jireh-sgo/family/programs/"
+            ).data["programs"]), 1)
+            processor = signed_client(processors[0])
+            queue = processor.get(
+                f"/api/v1/jireh-sgo/processor/programs/{selected['id']}/queue/"
+            )
+            self.assertEqual(queue.status_code, 200)
+            self.assertEqual([row["id"] for row in queue.data["applications"]],
+                             [application_id])
+            partner = signed_client(partners[0])
+            self.assertEqual(partner.get(
+                "/api/v1/jireh-sgo/family/programs/"
+            ).data["programs"], [])
+            self.assertEqual(partner.get(
+                f"/api/v1/jireh-sgo/processor/programs/{selected['id']}/queue/"
+            ).status_code, 403)
+            self.assertEqual(guard.call_count, 1)
+
     def test_hosted_and_disabled_seed_fail_closed_without_side_effects(self):
         with tempfile.TemporaryDirectory() as root:
             target = Path(root) / "sgo-credentials.txt"
