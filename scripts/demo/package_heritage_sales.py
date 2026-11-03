@@ -74,6 +74,42 @@ def require_exact_candidate_checkout(source_sha: str) -> None:
         raise RuntimeError("Candidate package checkout has modified tracked files")
 
 
+def archive_name(source_sha: str, *, five_module_candidate: bool = False) -> str:
+    """Use distinct filenames so an uncertified candidate cannot replace a basic ZIP."""
+    if five_module_candidate:
+        return f"CROWN-Heritage-Five-Module-UNCERTIFIED-{source_sha[:12]}.zip"
+    return f"CROWN-Heritage-Sales-Demo-{source_sha[:12]}.zip"
+
+
+def render_readme(source_sha: str, *, five_module_candidate: bool = False) -> bytes:
+    """Do not redistribute the outdated basic-demo README with a five-module pin."""
+    if not five_module_candidate:
+        return (ROOT / "HERITAGE-LOCAL-DEMO-README.txt").read_bytes()
+    return (
+        "CROWN HERITAGE FIVE-MODULE LOCAL DEMO - UNCERTIFIED CANDIDATE\n"
+        f"Exact source SHA: {source_sha}\n"
+        "\n"
+        "This ZIP is a TEST CANDIDATE ONLY. It does not certify browser journeys,\n"
+        "the downloaded build, an SGO partnership, Azure, payments or physical laptops.\n"
+        "\n"
+        "1. On Windows install Python 3.12 and Node.js 24 with npm.\n"
+        "2. Extract the ZIP into a writable folder; run Start-Heritage.cmd.\n"
+        "3. The installer downloads the immutable source SHA above, then invokes\n"
+        "   scripts/demo/start_heritage_local.py --five-module-demo explicitly.\n"
+        "4. The launcher fails closed if required Camp, Diadem, Care, Financial Aid\n"
+        "   or SGO sources, fictional seed data, or strict preflight are missing.\n"
+        "5. If the local servers start, open http://localhost:4173/sandbox.\n"
+        "   For fictional SGO use http://localhost:4173/jireh-sgo/sign-in and the\n"
+        "   locally generated private sgo-credentials.txt; never distribute it.\n"
+        "\n"
+        "Only fictional local test data. Do not enter real child/family information.\n"
+        "Do not open loopback ports to the internet or activate external payments.\n"
+        "An approved exact-SHA Windows and browser evidence bundle, and an owner\n"
+        "laptop rehearsal, are required before any release certification.\n"
+        "\n"
+    ).encode("utf-8")
+
+
 def build(
     output_directory: Path | None = None, *, source_sha: str | None = None,
     five_module_candidate: bool = False,
@@ -84,11 +120,12 @@ def build(
         raise RuntimeError("Source SHA overrides require an explicit five-module candidate")
     sha = source_sha if source_sha is not None else pinned_revision()
     installer_bytes = render_installer(sha, five_module_candidate=five_module_candidate)
+    readme_bytes = render_readme(sha, five_module_candidate=five_module_candidate)
     if five_module_candidate:
         require_exact_candidate_checkout(sha)
     output_directory = output_directory or ROOT / ".local-backups" / "heritage-sales"
     output_directory.mkdir(parents=True, exist_ok=True)
-    target = output_directory / f"CROWN-Heritage-Sales-Demo-{sha[:12]}.zip"
+    target = output_directory / archive_name(sha, five_module_candidate=five_module_candidate)
     manifest = {
         "product": "CROWN Heritage Christian Academy local sales demo",
         "repository": "Arete0920/Crown-CSMS",
@@ -110,7 +147,11 @@ def build(
             info = zipfile.ZipInfo(name, date_time=(2026, 10, 15, 0, 0, 0))
             info.compress_type = zipfile.ZIP_DEFLATED
             info.external_attr = 0o100644 << 16
-            payload = installer_bytes if name == "Install-and-Start-Heritage.py" else source.read_bytes()
+            payload = (
+                installer_bytes if name == "Install-and-Start-Heritage.py" else
+                readme_bytes if name == "HERITAGE-LOCAL-DEMO-README.txt" else
+                source.read_bytes()
+            )
             archive.writestr(info, payload, compress_type=zipfile.ZIP_DEFLATED, compresslevel=9)
         info = zipfile.ZipInfo("HERITAGE-SALES-MANIFEST.json", date_time=(2026, 10, 15, 0, 0, 0))
         info.compress_type = zipfile.ZIP_DEFLATED

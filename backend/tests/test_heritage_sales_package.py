@@ -222,3 +222,30 @@ def test_source_override_cannot_silently_build_basic_demo(tmp_path):
     packager = loader()
     with pytest.raises(RuntimeError, match="explicit five-module candidate"):
         packager.build(tmp_path, source_sha="a" * 40)
+
+
+def test_candidate_and_basic_archives_coexist_with_same_sha(monkeypatch, tmp_path):
+    """An uncertified candidate cannot silently replace the legacy sales ZIP."""
+    packager = loader()
+    sha = packager.pinned_revision()
+    monkeypatch.setattr(packager, "require_exact_candidate_checkout", lambda s: None)
+    basic = packager.build(tmp_path)
+    original_bytes = basic.read_bytes()
+    candidate = packager.build(tmp_path, source_sha=sha, five_module_candidate=True)
+    assert basic != candidate
+    assert basic.is_file() and candidate.is_file()
+    assert basic.read_bytes() == original_bytes
+    assert "UNCERTIFIED" in candidate.name
+    with zipfile.ZipFile(candidate) as archive:
+        content = archive.read("HERITAGE-LOCAL-DEMO-README.txt").decode("utf-8")
+        assert f"Exact source SHA: {sha}" in content
+        assert "TEST CANDIDATE ONLY" in content
+        assert "start_heritage_local.py --five-module-demo" in content
+        assert "Unmerged Camp PR" not in content
+        assert "FIVE_MODULE_LAUNCH = True" in archive.read(
+            "Install-and-Start-Heritage.py"
+        ).decode("utf-8")
+    with zipfile.ZipFile(basic) as archive:
+        assert archive.read("HERITAGE-LOCAL-DEMO-README.txt") == (
+            ROOT / "HERITAGE-LOCAL-DEMO-README.txt"
+        ).read_bytes()

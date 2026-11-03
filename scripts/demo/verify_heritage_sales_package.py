@@ -10,7 +10,8 @@ import subprocess
 import tempfile
 import zipfile
 
-from package_heritage_sales import ROOT, STARTER_FILES, pinned_revision, render_installer
+from package_heritage_sales import (ROOT, STARTER_FILES, pinned_revision, render_installer,
+                                    archive_name, render_readme)
 
 # Exact Git blobs, rather than a downloaded marker alone, bind core runtime
 # bytes to the immutable revision advertised in the starter manifest.
@@ -68,9 +69,13 @@ def verify(
         raise RuntimeError("Five-module audit requires explicit tested-source SHA")
     sha = source_sha if source_sha is not None else pinned_revision()
     expected_installer = render_installer(sha, five_module_candidate=five_module_candidate)
+    expected_readme = render_readme(sha, five_module_candidate=five_module_candidate)
     distribution = ROOT / ".local-backups" / "heritage-sales"
-    package = distribution / f"CROWN-Heritage-Sales-Demo-{sha[:12]}.zip"
-    report = distribution / "heritage-starter-audit.json"
+    package = distribution / archive_name(sha, five_module_candidate=five_module_candidate)
+    report = distribution / (
+        "heritage-five-module-candidate-audit.json" if five_module_candidate
+        else "heritage-starter-audit.json"
+    )
     report.unlink(missing_ok=True)  # A failed rerun must not leave stale PASS evidence.
     if not package.is_file():
         raise RuntimeError("Build the exact ZIP before auditing it.")
@@ -96,7 +101,11 @@ def verify(
         # the integrity of runnable installer code. Compare EVERY starter file
         # with the checked-out source before calling runpy on any code.
         for name in STARTER_FILES:
-            expected = expected_installer if name == "Install-and-Start-Heritage.py" else (ROOT / name).read_bytes()
+            expected = (
+                expected_installer if name == "Install-and-Start-Heritage.py" else
+                expected_readme if name == "HERITAGE-LOCAL-DEMO-README.txt" else
+                (ROOT / name).read_bytes()
+            )
             if archive.read(name) != expected:
                 raise RuntimeError(f"Bundled {name} differs from the reviewed source template.")
         # Execute the audited template only after full byte comparison, never
