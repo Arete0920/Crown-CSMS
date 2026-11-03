@@ -28,6 +28,7 @@ from aid.models import (
 from aid.serializers import FamilyAidApplicationSerializer, FamilyAidAwardSerializer
 from core.models import AcademicYear, Family, Guardian, Student
 from households.scoping import get_request_school_id
+from sandbox_demo.heritage_module_samples import HERITAGE_ID
 from sandbox_demo.management.commands.five_module_demo_preflight import (
     _require_isolated_local_database,
 )
@@ -267,6 +268,9 @@ def family_demo_intake(request):
         return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
 
     school_id = get_request_school_id(request)
+    # A local SQLite path alone does not authorize a second school's fictional data.
+    if str(school_id) != str(HERITAGE_ID):
+        return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
     family = _linked_family(request, school_id)
     if family is None:
         return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)

@@ -17,6 +17,8 @@ from core.models import (
     School, Student, UserAccount, UserRole,
 )
 
+from sandbox_demo.heritage_module_samples import HERITAGE_ID
+
 URL = "/api/v1/aid/family/demo-intake/"
 
 
@@ -39,8 +41,8 @@ class FictionalFamilyAidIntakeTests(TestCase):
         guard.start()
         self.addCleanup(guard.stop)
         self.schools = [
-            School.objects.create(name="Fictional School " + str(index))
-            for index in (1, 2)
+            School.objects.create(id=HERITAGE_ID, name="Fictional School 1"),
+            School.objects.create(name="Fictional School 2"),
         ]
         self.parents = []
         self.students = []
@@ -142,17 +144,15 @@ class FictionalFamilyAidIntakeTests(TestCase):
         self.assertNotIn("income_annual_cents", state.json()["applications"][0])
         self.assertNotIn("financial_profile", state.json()["applications"][0])
 
-    def test_two_unrelated_schools_have_separate_records_and_readback(self):
+    def test_foreign_school_in_same_local_sqlite_cannot_submit_or_read(self):
         first = self.submit(0)
-        second = self.submit(1)
         self.assertEqual(first.status_code, 201, first.content)
-        self.assertEqual(second.status_code, 201, second.content)
         first_id = first.json()["application"]["id"]
-        second_id = second.json()["application"]["id"]
-        self.assertNotEqual(first_id, second_id)
+        self.assertEqual(self.submit(1).status_code, 404)
+        self.assertEqual(self.get_state(1).status_code, 404)
         self.assertEqual([str(item["id"]) for item in self.get_state(0).json()["applications"]], [str(first_id)])
-        self.assertEqual([str(item["id"]) for item in self.get_state(1).json()["applications"]], [str(second_id)])
-        self.assertEqual(AidApplication.objects.count(), 2)
+        self.assertEqual(AidApplication.objects.count(), 1)
+        self.assertFalse(AidFinancialProfile.objects.filter(school=self.schools[1]).exists())
 
     def test_duplicate_requests_and_session_changes_do_not_duplicate(self):
         self.assertEqual(self.submit().status_code, 201)
