@@ -26,7 +26,7 @@ const CUSTODY_BARRIER_EVENT = "crown:extended-care-custody-changed";
 // Never persist a staff bearer token or child identity in this marker.
 let memoryCustodyBarrier = null;
 let custodyMarkerSequence = 0;
-const custodyMessage = "A prior custody operation has an unconfirmed outcome. Return to its originating school and care session for explicit reconciliation; do not retry automatically.";
+const custodyMessage = "A prior custody operation has an outcome that is unconfirmed. Return to its originating school and care session for explicit reconciliation; do not retry automatically.";
 
 function readCustodyBarrier() {
   try {
