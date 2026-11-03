@@ -25,9 +25,9 @@ class FictionalSGOLocalSeedTests(TestCase):
             target = Path(root) / "sgo-credentials.txt"
             call_command("seed_fictional_sgo_intake", credentials_file=str(target))
             self.assertTrue(target.is_file())
-            for model in (SGOOrganization, SGOProgram, SGOFamilyGrant, SGOProcessorAssignment, SGOMembership, SGOApplication):
+            for model in (SGOOrganization, SGOProgram, SGOFamilyGrant, SGOProcessorAssignment, SGOMembership):
                 self.assertEqual(model.objects.count(), 2)
-            self.assertEqual(SGOApplication.objects.filter(school_key=HERITAGE_SCHOOL).count(), 2)
+            self.assertEqual(SGOApplication.objects.count(), 0)  # Seeding grants is not a family submission.
             self.assertFalse(SGOAward.objects.exists())
             self.assertFalse(SGOApplication.objects.filter(student_key__in=SGOFamilyGrant.objects.values("student_key")).exists())
             first = target.read_text(encoding="utf-8")
@@ -46,7 +46,7 @@ class FictionalSGOLocalSeedTests(TestCase):
             self.assertFalse(SGOMembership.objects.filter(user=family_b).exists())
             self.assertFalse(SGOProcessorAssignment.objects.filter(user=family_a).exists())
             call_command("seed_fictional_sgo_intake", credentials_file=str(target))
-            for model in (SGOOrganization, SGOProgram, SGOFamilyGrant, SGOProcessorAssignment, SGOMembership, SGOApplication):
+            for model in (SGOOrganization, SGOProgram, SGOFamilyGrant, SGOProcessorAssignment, SGOMembership):
                 self.assertEqual(model.objects.count(), 2)
             self.assertFalse(SGOAward.objects.exists())
             self.assertNotEqual(target.read_text(encoding="utf-8"), first)
@@ -118,7 +118,7 @@ class FictionalSGOLocalSeedTests(TestCase):
             self.assertEqual(delaware.get(
                 f"/api/v1/jireh-sgo/family/applications/{application_id}/"
             ).status_code, 200)
-            self.assertEqual(SGOApplication.objects.count(), 3)
+            self.assertEqual(SGOApplication.objects.count(), 1)  # First real authorized POST.
             self.assertFalse(SGOAward.objects.exists())
 
             pennsylvania = signed_client(families[1])
