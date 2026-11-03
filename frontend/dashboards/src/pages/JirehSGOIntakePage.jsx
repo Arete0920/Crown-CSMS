@@ -99,6 +99,7 @@ export default function JirehSGOIntakePage() {
       throw new Error("Processor scope mismatch.");
     }
     if (getAccessToken() === token) setQueue(result.applications);
+    return result.applications;
   }, [authorized, processorProgram, token]);
   useEffect(() => {
     let live = true;
@@ -127,8 +128,12 @@ export default function JirehSGOIntakePage() {
       const proof = await sgoRequest("/family/applications/" + result.application.id + "/");
       if (proof.application?.id !== result.application.id
         || proof.application?.program_id !== family.id
+        || proof.application?.status !== "SUBMITTED"
         || proof.application?.status !== result.application.status
-        || proof.application?.revision !== result.application.revision) throw new Error("Stale readback");
+        || proof.application?.revision !== result.application.revision
+        || proof.application?.grade_level !== grade
+        || proof.application?.consent_version !== family.consent_version
+        || proof.application?.funds_status !== "NONCASH_ONLY") throw new Error("Stale submission readback");
       if (getAccessToken() !== token) return;
       setApplication(proof.application);
       setCorrectionGrade(proof.application.grade_level);
@@ -157,10 +162,32 @@ export default function JirehSGOIntakePage() {
           expected_revision: application.revision, grade_level: correctionGrade, correction_key: key,
         }},
       );
-      if (getAccessToken() !== token || result.application?.program_id !== family?.id) return;
-      setApplication(result.application);
+      if (getAccessToken() !== token) return;
+      const written = result.application;
+      if (written?.id !== application.id || written?.program_id !== family?.id
+          || written?.status !== "RESUBMITTED"
+          || written?.revision !== application.revision + 1
+          || written?.grade_level !== correctionGrade
+          || written?.funds_status !== "NONCASH_ONLY") {
+        throw new Error("Correction response did not match the selected application.");
+      }
+      const readback = await sgoRequest(
+        "/family/applications/" + encodeURIComponent(application.id) + "/",
+      );
+      const persisted = readback.application;
+      if (persisted?.id !== written.id || persisted?.program_id !== family.id
+          || persisted?.status !== written.status
+          || persisted?.revision !== written.revision
+          || persisted?.grade_level !== correctionGrade
+          || persisted?.consent_version !== written.consent_version
+          || persisted?.funds_status !== "NONCASH_ONLY") {
+        throw new Error("Correction was not independently verified.");
+      }
+      if (getAccessToken() !== token) return;
+      setApplication(persisted);
+      setCorrectionGrade(persisted.grade_level);
       setCorrectionKey("");
-      setNotice("Correction saved and resubmitted for partner review.");
+      setNotice("Correction saved, read back and resubmitted for partner review.");
     } catch {
       if (getAccessToken() === token) setError("Correction not confirmed. Reload to check revision before retry.");
     } finally {
@@ -185,10 +212,27 @@ export default function JirehSGOIntakePage() {
           expected_revision: item.revision, reason, request_key: key,
         }},
       );
-      if (getAccessToken() !== token || result.application?.program_id !== processor.id) return;
+      if (getAccessToken() !== token) return;
+      const written = result.application;
+      if (written?.id !== item.id || written?.program_id !== processor.id
+          || written?.status !== "CORRECTION_REQUESTED"
+          || written?.revision !== item.revision + 1
+          || written?.correction_reason !== reason
+          || written?.funds_status !== "NONCASH_ONLY") {
+        throw new Error("Processor write response did not match the selected case.");
+      }
+      const rows = await refreshQueue();
+      const persisted = rows?.find((row) => row.id === item.id);
+      if (persisted?.program_id !== processor.id
+          || persisted?.status !== written.status
+          || persisted?.revision !== written.revision
+          || persisted?.correction_reason !== reason
+          || persisted?.funds_status !== "NONCASH_ONLY") {
+        throw new Error("Processor queue did not verify the correction.");
+      }
+      if (getAccessToken() !== token) return;
       setProcessorRetry(null);
-      await refreshQueue();
-      setNotice("Nonbinding verification correction request recorded. No award decision was made.");
+      setNotice("Nonbinding verification correction request recorded and read back. No award decision was made.");
     } catch {
       if (getAccessToken() === token) {
         setError("Correction request not confirmed. Refresh the queue before retrying.");
@@ -217,7 +261,7 @@ export default function JirehSGOIntakePage() {
         <h3>1. Family: select an authorized partner program</h3>
         {families.length === 0 ? <p>No fictional family grants. SGO membership does not confer family access.</p> : <>
           <label htmlFor="family-program">Partner SGO and program</label>{" "}
-          <select id="family-program" value={familyProgram}
+          <select id="family-program" disabled={pending} value={familyProgram}
             onChange={(e) => { setFamilyProgram(e.target.value); setConsent(false); setError(""); }}>
             {families.map((p) => <option key={p.id} value={p.id}>{p.organization} — {p.name} ({p.calendar_year})</option>)}
           </select>
@@ -261,14 +305,14 @@ export default function JirehSGOIntakePage() {
         <h3>2. Delegated processor: verification and corrections</h3>
         {processors.length === 0 ? <p>No delegated processor assignment. SGO ADMIN/REVIEWER is not a processor grant.</p> : <>
           <label htmlFor="processor-program">Assigned partner program</label>{" "}
-          <select id="processor-program" value={processorProgram}
+          <select id="processor-program" disabled={pending} value={processorProgram}
             onChange={(e) => { setProcessorProgram(e.target.value); setProcessorRetry(null); }}>
             {processors.map((p) => <option key={p.id} value={p.id}>{p.organization} — {p.name}</option>)}
           </select>{" "}
           <button type="button" onClick={() => refreshQueue().catch(() => setError("Queue unavailable."))}>Refresh queue</button>
           <p>Scope: verification support only. No award, eligibility determination, or disbursement authority.</p>
           <label htmlFor="sgo-reason">Non-sensitive correction reason</label>{" "}
-          <select id="sgo-reason" value={reason} onChange={(e) => { setReason(e.target.value); setProcessorRetry(null); }}>
+          <select id="sgo-reason" disabled={pending} value={reason} onChange={(e) => { setReason(e.target.value); setProcessorRetry(null); }}>
             {reasons.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
           </select>
           {queue.length === 0 ? <p>No submitted fictional applications in this program.</p> : <table>
