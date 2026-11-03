@@ -44,3 +44,37 @@ def test_only_absent_fictional_grant_may_be_created():
     created = ensure_local_diadem_entitlement(school, feature)
     assert created.enabled is True
     assert EntitlementOverride.objects.filter(school_id=school.pk, feature=feature).count() == 1
+
+
+@pytest.mark.parametrize("operation", ["build", "verify"])
+def test_direct_scenario_entrypoints_refuse_nonlocal_database_before_io(monkeypatch, operation):
+    """Direct imports cannot skip the command-level local SQLite guard."""
+    from sandbox_demo.management.commands import seed_local_diadem_pickup as pickup
+
+    calls = []
+    def deny_nonlocal():
+        calls.append("checked")
+        raise CommandError("Nonlocal database is forbidden")
+
+    monkeypatch.setattr(pickup, "_require_isolated_local_database", deny_nonlocal)
+    with pytest.raises(CommandError, match="Nonlocal database is forbidden"):
+        if operation == "build":
+            pickup.build_scenario()
+        else:
+            pickup.verify_scenario()
+    assert calls == ["checked"]
+
+
+@pytest.mark.parametrize("operation", ["build", "verify"])
+def test_direct_scenario_entrypoints_require_explicit_local_launcher_flags(monkeypatch, operation):
+    """The guarded helper rejects missing local-launcher flags before DB access."""
+    from sandbox_demo.management.commands import seed_local_diadem_pickup as pickup
+
+    monkeypatch.setattr(pickup, "_require_isolated_local_database", lambda: None)
+    monkeypatch.delenv("VITE_LOCAL_DEMO", raising=False)
+    monkeypatch.delenv("DJANGO_ENV", raising=False)
+    with pytest.raises(CommandError, match="restricted to the isolated local Heritage launcher"):
+        if operation == "build":
+            pickup.build_scenario()
+        else:
+            pickup.verify_scenario()
