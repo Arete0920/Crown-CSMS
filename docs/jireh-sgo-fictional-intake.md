@@ -28,13 +28,13 @@ Use a *fresh reviewed and merged local source revision*, not an outdated install
 
 1. From repo root, run `py scripts/demo/start_heritage_local.py --prepare-only` (or `python` on POSIX). The script installs dependencies if necessary, migrates the isolated Heritage SQLite database, runs the current Heritage seed and proof gate, and seeds two synthetic partner SGOs.
 2. Read `.local-backups/heritage-demo/sgo-credentials.txt` locally. Account passwords are generated anew on preparation and written to a mode-0600 file **outside Git**. The six accounts are fictional partner admin, family, and delegated processor accounts for each of Delaware and Pennsylvania. Never copy this file into a PR or transcript.
-3. Start `py scripts/demo/start_heritage_local.py`. Open `http://localhost:4173/jireh-sgo/intake` (the launcher also opens the usual sandbox page). Sign in through the application's existing login flow using the synthetic Delaware family account.
+3. Start `py scripts/demo/start_heritage_local.py`. Open `http://localhost:4173/jireh-sgo/sign-in` (the launcher also opens the usual sandbox page). Use the **dedicated local fictional SGO sign-in** (existing SimpleJWT endpoint and clearing prior school-session context). The regular Heritage `/login` is a passwordless school-role selector and **cannot authenticate fictional SGO accounts**. Enter Delaware family credentials from the private local file to reach `/jireh-sgo/intake`.
 4. Select the Delaware fictional partner and program; select grade, affirm the displayed demonstration consent version, submit, and verify the **saved application ID, revision, and consent date**. Reload or sign out and back in: the application should read back from the database.
-5. Sign out and sign in as `sgo_demo_de_processor`. Open the same intake route; select Delaware, refresh its case queue, and request a non-sensitive correction. This records a request, **not a scholarship decision**.
-6. Sign back in as `sgo_demo_de_family`, reload the same case, update or confirm the fictional grade, and resubmit. Verify status `RESUBMITTED` and incremented revision.
+5. Select **Switch fictional SGO account** and sign in as `sgo_demo_de_processor`. Open the same intake route; select Delaware, refresh its case queue, and request a non-sensitive correction. This records a request, **not a scholarship decision**.
+6. Switch accounts and sign back in as `sgo_demo_de_family`, reload the same case, update or confirm the fictional grade, and resubmit. Verify status `RESUBMITTED` and incremented revision.
 7. Repeat with the Pennsylvania family and processor. The Delaware accounts must not list or access Pennsylvania records (and vice versa). The partner ADMIN account alone must not submit family intake or operate the processor queue.
 
-If this local demo cannot authenticate the seeded accounts through the existing login flow, **do not claim a certified demonstration**. Diagnose the existing login/sandbox role-routing contract without enabling unauthenticated endpoints.
+If the dedicated local SGO sign-in cannot authenticate the seeded accounts against the existing JWT endpoint, **do not claim a certified demonstration**. Diagnose the existing authentication contract without enabling unauthenticated or school-bypassing API access.
 
 ## HTTP contract
 
