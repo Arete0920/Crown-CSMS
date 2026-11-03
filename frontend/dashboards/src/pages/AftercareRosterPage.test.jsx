@@ -274,14 +274,13 @@ it("blocks duplicate AM check-in after an ambiguous write rejection until fresh 
   await screen.findByText("Synthetic Child");
   fireEvent.click(screen.getByRole("button", { name: "Check In" }));
   await waitFor(() => expect(screen.getByText(/outcome is unconfirmed/i)).toBeTruthy());
-  expect(screen.getByRole("button", { name: "Check In" }).disabled).toBe(true);
-  fireEvent.click(screen.getByRole("button", { name: "Check In" }));
+  expect(screen.queryByRole("button", { name: "Check In" })).toBeNull();
   expect(api.checkinStudent).toHaveBeenCalledTimes(1);
 
   api.fetchRosterToday.mockRejectedValueOnce(new Error("forbidden readback"));
   fireEvent.click(screen.getByRole("button", { name: "Review current custody before continuing" }));
   await waitFor(() => expect(screen.getAllByRole("alert").some((el) => /Custody reconciliation failed/.test(el.textContent))).toBe(true));
-  expect(screen.getByRole("button", { name: "Check In" }).disabled).toBe(true);
+  expect(screen.queryByRole("button", { name: "Check In" })).toBeNull();
   expect(api.checkinStudent).toHaveBeenCalledTimes(1);
 
   api.fetchRosterToday.mockResolvedValueOnce({
@@ -315,7 +314,7 @@ it("blocks PM pickup replay after uncertain checkout and closes the stale dialog
   fireEvent.click(screen.getByRole("button", { name: "Confirm Checkout" }));
   await waitFor(() => expect(screen.getByText(/outcome is unconfirmed/i)).toBeTruthy());
   expect(screen.queryByRole("dialog", { name: /Verify Authorized Pickup/ })).toBeNull();
-  expect(screen.getByRole("button", { name: "Verify Pickup" }).disabled).toBe(true);
+  expect(screen.queryByRole("button", { name: "Verify Pickup" })).toBeNull();
   expect(api.checkoutStudent).toHaveBeenCalledTimes(1);
 });
 
@@ -334,7 +333,7 @@ it("blocks repeated AM handoff after uncertain server response", async () => {
   fireEvent.click(screen.getByRole("button", { name: "Record School Handoff" }));
   await waitFor(() => expect(screen.getByText(/outcome is unconfirmed/i)).toBeTruthy());
   expect(screen.queryByRole("dialog", { name: /Confirm School Handoff/ })).toBeNull();
-  expect(screen.getByRole("button", { name: "Acknowledge School Handoff" }).disabled).toBe(true);
+  expect(screen.queryByRole("button", { name: "Acknowledge School Handoff" })).toBeNull();
   expect(api.handoffToSchool).toHaveBeenCalledTimes(1);
 });
 
