@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { CareHandoffDialog, CarePickupDialog } from "../components/care/CareCustodyDialogs.jsx";
 import AftercareRosterPage from "./AftercareRosterPage.jsx";
 import * as api from "../api/aftercareApi.js";
@@ -106,8 +106,7 @@ describe("care roster tenant and staff-session isolation", () => {
   it("immediately hides previous staff children after same-school credential change", async () => {
     render(<AftercareRosterPage careSession="AM" />);
     expect(await screen.findByText("Synthetic Child")).toBeTruthy();
-    setAccessToken("another-staff-same-school");
-    fireEvent.focus(window);
+    act(() => setAccessToken("another-staff-same-school"));
     expect(screen.queryByText("Synthetic Child")).toBeNull();
     expect(screen.queryByRole("button", { name: "Check In" })).toBeNull();
     expect(api.checkinStudent).not.toHaveBeenCalled();
@@ -151,8 +150,7 @@ it("shows unconfirmed custody and blocks repeat action after staff token switche
   await screen.findByText("Synthetic Child");
   fireEvent.click(screen.getByRole("button", { name: "Check In" }));
   await waitFor(() => expect(api.checkinStudent).toHaveBeenCalledTimes(1));
-  setAccessToken("second-staff-while-checkin-pending");
-  fireEvent.focus(window);
+  act(() => setAccessToken("second-staff-while-checkin-pending"));
   const warning = screen.getByRole("alert");
   expect(warning.textContent).toMatch(/outcome is unconfirmed/i);
   expect(screen.queryByText("Synthetic Child")).toBeNull();
@@ -170,8 +168,7 @@ it("blocks reconciliation until the prior staff custody write has settled", asyn
   fireEvent.click(screen.getByRole("button", { name: "Check In" }));
   await waitFor(() => expect(api.checkinStudent).toHaveBeenCalledTimes(1));
 
-  setAccessToken("replacement-staff-token");
-  fireEvent.focus(window);
+  act(() => setAccessToken("replacement-staff-token"));
   const reconcile = screen.getByRole("button", { name: "Review current custody before continuing" });
   expect(reconcile.disabled).toBe(true);
   expect(screen.getByText(/previous custody write is still pending/i)).toBeTruthy();
@@ -208,8 +205,7 @@ it("requires an explicit authorized readback before clearing a custody outcome w
   await screen.findByText("Synthetic Child");
   fireEvent.click(screen.getByRole("button", { name: "Check In" }));
   await waitFor(() => expect(api.checkinStudent).toHaveBeenCalledTimes(1));
-  setAccessToken("second-staff-while-checkin-pending");
-  fireEvent.focus(window);
+  act(() => setAccessToken("second-staff-while-checkin-pending"));
   finish({ id: 1 });
   await waitFor(() => expect(screen.getByRole("alert")).toBeTruthy());
   api.fetchRosterToday.mockRejectedValueOnce(new Error("Unauthorized staff"));

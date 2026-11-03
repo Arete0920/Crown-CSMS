@@ -147,6 +147,7 @@ export default function AftercareRosterPage({ careSession = "PM" }) {
   // Keep the request marker outside render state: a remote custody write may
   // finish even if its originating staff session changes before response.
   const operationInFlightRef = useRef(null);
+  const blockedStaffTokenRef = useRef(null);
   const checkinInFlightRef = useRef(false);
   const sessionRef = useRef(careSession);
   const mountedRef = useRef(false);
@@ -178,6 +179,9 @@ export default function AftercareRosterPage({ careSession = "PM" }) {
       const current = identityRef.current;
       if (current.school === next.school && current.token === next.token) return;
       scopeEpochRef.current += 1;
+      if (current.token !== next.token && readCustodyBarrier()) {
+        blockedStaffTokenRef.current = next.token;
+      }
       if (operationInFlightRef.current) {
         const pending = operationInFlightRef.current;
         setUnconfirmedScope({ school: pending.identity.school, careSession: pending.careSession });
@@ -255,6 +259,12 @@ export default function AftercareRosterPage({ careSession = "PM" }) {
     let cancelled = false;
     if (!sameIdentity(scope)) {
       setError("Authenticated school and staff session required before opening care records.");
+      setLoading(false);
+      return () => { cancelled = true; };
+    }
+    if (readCustodyBarrier() && blockedStaffTokenRef.current === scope.token) {
+      // A newly authenticated staff member must explicitly reconcile the old
+      // request; token notification must never initiate its custody readback.
       setLoading(false);
       return () => { cancelled = true; };
     }
@@ -459,6 +469,7 @@ export default function AftercareRosterPage({ careSession = "PM" }) {
       setRoster(fresh);
       setError(null);
       finalizeCustodyBarrier(marker, true);
+      blockedStaffTokenRef.current = null;
       setCustodyWarning("");
       setUnconfirmedScope(null);
     } catch (error) {
