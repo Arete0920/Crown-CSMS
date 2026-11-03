@@ -77,6 +77,30 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
         with:
           python-version: '3.12'
+      - name: Reject incomplete module source before installs, migrations or build
+        shell: pwsh
+        run: |
+          # This uses only Python's standard library. A pre-integration PR
+          # must fail here, NOT after preparing a disposable database.
+          $evidence = Join-Path $env:GITHUB_WORKSPACE ".local-backups/heritage-demo"
+          New-Item -ItemType Directory -Force -Path $evidence | Out-Null
+          $log = Join-Path $evidence "five-module-source-preflight.log"
+          $PSNativeCommandUseErrorActionPreference = $false
+          & python -c "from scripts.demo.start_heritage_local import require_five_module_sources; require_five_module_sources()" *> $log
+          $exitCode = $LASTEXITCODE
+          Get-Content -Path $log | ForEach-Object { Write-Host $_ }
+          $result = [ordered]@{
+            schema_version = 1
+            evidence_scope = "before_install_migrate_build"
+            checkout_sha = $env:GITHUB_SHA
+            source_dependencies_passed = ($exitCode -eq 0)
+            browser_acceptance_performed = $false
+            release_certified = $false
+          }
+          $result | ConvertTo-Json -Depth 3 | Set-Content -Encoding utf8 (Join-Path $evidence "five-module-source-preflight.json")
+          if ($exitCode -ne 0) {
+            throw "Five-module source prerequisites are missing; integrate governed module PRs before Windows preparation."
+          }
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
         with:
           node-version: '24'
@@ -163,6 +187,7 @@ jobs:
           name: heritage-windows-rehearsal
           path: |
             .local-backups/heritage-demo/*.log
+            .local-backups/heritage-demo/five-module-source-preflight.json
             .local-backups/heritage-demo/five-module-preflight.json
             .local-backups/heritage-demo/rehearsal-result.json
             .local-backups/heritage-demo/buyer-browser-authority.json
