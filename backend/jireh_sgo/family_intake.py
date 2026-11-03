@@ -76,7 +76,7 @@ def _processor_assignment(user, program_id):
     return assignment
 
 
-def serialize_intake(intake):
+def serialize_intake(intake, *, authority="FAMILY_APPLICANT"):
     """A deliberately minimal, non-PII family/processor readback shape."""
     program = intake.application.program
     return {
@@ -94,7 +94,7 @@ def serialize_intake(intake):
         "correction_reason": (
             intake.requested_reason if intake.status == SGOFamilyIntake.CORRECTION_REQUESTED else None
         ),
-        "authority": "SGO_PARTNER_ONLY",
+        "authority": authority,
         "funds_status": "NONCASH_ONLY",
     }
 
@@ -169,6 +169,8 @@ def correct_family_application(*, user, application_id, expected_revision, grade
             and intake.status == SGOFamilyIntake.RESUBMITTED
             and intake.revision == revision + 1 and intake.grade_level == grade):
         return intake, False
+    if SGOFamilyIntake.objects.filter(last_correction_key=key).exclude(pk=intake.pk).exists():
+        raise IntakeConflict("Correction idempotency key belongs to another case.")
     if intake.status != SGOFamilyIntake.CORRECTION_REQUESTED or intake.revision != revision:
         raise IntakeConflict("Only a current, explicitly requested correction may be resubmitted.")
     if intake.application.eligibility != SGOApplication.UNREVIEWED or SGOAward.objects.filter(
@@ -223,6 +225,8 @@ def request_processor_correction(
             and intake.status == SGOFamilyIntake.CORRECTION_REQUESTED
             and intake.revision == revision + 1 and intake.requested_reason == reason):
         return intake, False
+    if SGOFamilyIntake.objects.filter(last_processor_key=key).exclude(pk=intake.pk).exists():
+        raise IntakeConflict("Processor idempotency key belongs to another case.")
     if intake.status not in (SGOFamilyIntake.SUBMITTED, SGOFamilyIntake.RESUBMITTED):
         raise IntakeConflict("Application is not awaiting a processor verification request.")
     if intake.revision != revision:
