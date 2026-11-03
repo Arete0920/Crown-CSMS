@@ -140,3 +140,55 @@ def test_camp_preflight_requires_real_school_entitlement():
     foreign_module.status = "inactive"
     foreign_module.save(update_fields=["status"])
     assert camp_entitlement_evidence(other.id) is False
+
+
+@pytest.mark.django_db
+def test_local_preflight_does_not_accept_legacy_financial_aid_as_canonical_jireh(monkeypatch):
+    from datetime import date
+    from io import StringIO
+    from uuid import UUID, uuid4
+
+    from django.core.management import call_command
+    from core.models import AcademicYear, Family, School, Student
+    from financial_aid.models import FinancialAidApplication, AidAward as LegacyAidAward
+    from aid.models import AidApplication, AidAward as CanonicalAidAward
+    from sandbox_demo.catalog import SANDBOX_SCHOOLS
+    from sandbox_demo.management.commands import five_module_demo_preflight as module
+
+    school = School.objects.create(
+        pk=UUID(SANDBOX_SCHOOLS["heritage-core"].id),
+        name="Heritage Christian Academy", timezone="America/New_York",
+    )
+    legacy = FinancialAidApplication.objects.create(
+        school_id=school.id, household_id=uuid4(), academic_year="2026-27",
+    )
+    LegacyAidAward.objects.create(
+        school_id=school.id, application=legacy, bucket="need", amount=1200,
+    )
+    monkeypatch.setattr(module, "_require_isolated_local_database", lambda: None)
+    output = StringIO()
+    call_command("five_module_demo_preflight", stdout=output)
+    assert "FAIL Jireh canonical applications:" in output.getvalue()
+    assert "FAIL Jireh canonical offered awards:" in output.getvalue()
+
+    year = AcademicYear.objects.create(
+        school=school, name="2026-2027",
+        start_date=date(2026, 8, 15), end_date=date(2027, 6, 5),
+    )
+    family = Family.objects.create(school=school, family_name="Fictional Jireh household")
+    student = Student.objects.create(
+        school=school, family=family, student_number="FICT-JIREH-001",
+        first_name="Fictional", last_name="Learner", dob=date(2014, 2, 2),
+    )
+    application = AidApplication.objects.create(
+        school=school, academic_year=year, family=family, status="SUBMITTED",
+    )
+    CanonicalAidAward.objects.create(
+        school=school, academic_year=year, student=student,
+        aid_application=application, awarded_cents=120000,
+        decision_status="OFFERED",
+    )
+    output = StringIO()
+    call_command("five_module_demo_preflight", stdout=output)
+    assert "PASS Jireh canonical applications:" in output.getvalue()
+    assert "PASS Jireh canonical offered awards:" in output.getvalue()

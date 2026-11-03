@@ -132,11 +132,29 @@ class Command(BaseCommand):
                    error or f"fictional records={count}")
             return count or 0
 
+        # Jireh Setup operates on canonical aid models, not legacy financial_aid
+        # rows. An award must be from this school's same-year, same-family
+        # application for a school-owned student; no unrelated award suffices.
+        from django.db.models import F
+
         require_count(
-            "Jireh Financial Aid applications", "financial_aid",
-            "FinancialAidApplication", school_id=school.id,
+            "Jireh canonical applications", "aid", "AidApplication",
+            school_id=school.id, family__school_id=school.id,
+            academic_year__school_id=school.id,
+            status__in=("SUBMITTED", "UNDER_REVIEW", "NEEDS_INFO", "APPROVED"),
         )
-        require_count("Jireh Financial Aid awards", "financial_aid", "AidAward", school_id=school.id)
+        require_count(
+            "Jireh canonical offered awards", "aid", "AidAward",
+            school_id=school.id, student__school_id=school.id,
+            student__family__school_id=school.id,
+            academic_year__school_id=school.id,
+            aid_application__isnull=False,
+            aid_application__school_id=school.id,
+            aid_application__family_id=F("student__family_id"),
+            aid_application__academic_year_id=F("academic_year_id"),
+            decision_status__in=("OFFERED", "ACCEPTED"),
+            awarded_cents__gt=0,
+        )
 
         require_count(
             "Jireh SGO noncash applications", "jireh_sgo",
