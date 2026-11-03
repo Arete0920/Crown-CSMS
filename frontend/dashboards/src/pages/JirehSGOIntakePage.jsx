@@ -61,6 +61,7 @@ export default function JirehSGOIntakePage() {
     setSubmissionKey("");
     setCorrectionKey("");
     setProcessorKey("");
+    setPending(false);
     if (!token || !local) return () => { live = false; };
     Promise.all([
       sgoRequest("/family/programs/"),
@@ -107,16 +108,16 @@ export default function JirehSGOIntakePage() {
   }, [authorized, family?.id, family?.application_id, token]);
 
   const refreshQueue = useCallback(async () => {
-    if (!authorized || !processor) return;
+    if (!authorized || !processorProgram) return;
     const result = await sgoRequest(
-      "/processor/programs/" + encodeURIComponent(processor.id) + "/queue/",
+      "/processor/programs/" + encodeURIComponent(processorProgram) + "/queue/",
     );
     if (result.authority !== "PROCESSOR_VERIFICATION_ONLY"
-        || result.program_id !== processor.id || !Array.isArray(result.applications)) {
+        || result.program_id !== processorProgram || !Array.isArray(result.applications)) {
       throw new Error("Processor scope mismatch.");
     }
     if (getAccessToken() === token) setQueue(result.applications);
-  }, [authorized, processor?.id, token]);
+  }, [authorized, processorProgram, token]);
 
   useEffect(() => {
     let live = true;
