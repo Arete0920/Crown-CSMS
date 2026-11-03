@@ -148,6 +148,7 @@ def test_explicit_five_module_launch_must_complete_strict_audit_before_servers(m
     monkeypatch.setattr(launcher.sys, "argv", ["start_heritage_local.py", "--five-module-demo"])
     monkeypatch.setattr(launcher, "available_ports", lambda: None)
     monkeypatch.setattr(launcher, "require_five_module_sources", lambda: None)
+    monkeypatch.setattr(launcher, "source_sha", lambda: "a" * 40)
     monkeypatch.setattr(launcher, "npm_command", lambda: ["npm"])
     env = local_env(tmp_path)
     python = tmp_path / "python"
@@ -167,6 +168,66 @@ def test_explicit_five_module_launch_must_complete_strict_audit_before_servers(m
     monkeypatch.setattr(launcher.subprocess, "Popen", forbid_server)
     assert launcher.main() == 1
     assert calls == [("seed", python), ("audit", ["five_module_demo_preflight", "--strict"])]
+
+
+
+@pytest.mark.parametrize(("mode", "stale_marker"), [
+    (["--five-module-demo"], "seed.complete"),
+    (["--five-module-demo"], "relationships.complete"),
+    (["--prepare-only", "--five-module-preflight"], "seed.complete"),
+    (["--prepare-only", "--five-module-preflight"], "relationships.complete"),
+])
+def test_opt_in_rejects_stale_marker_before_local_setup(
+    monkeypatch, tmp_path, capsys, mode, stale_marker,
+):
+    launcher = load_launcher()
+    monkeypatch.setattr(launcher, "STATE", tmp_path)
+    (tmp_path / "heritage.sqlite3").write_bytes(b"fictional-test-only")
+    for name in ("seed.complete", "relationships.complete"):
+        (tmp_path / name).write_text("a" * 40, encoding="utf-8")
+    (tmp_path / stale_marker).write_text("b" * 40, encoding="utf-8")
+    monkeypatch.setattr(launcher.sys, "argv", ["start_heritage_local.py", *mode])
+    monkeypatch.setattr(launcher, "source_sha", lambda: "a" * 40)
+    monkeypatch.setattr(launcher, "require_five_module_sources", lambda: None)
+    monkeypatch.setattr(launcher, "local_environment", lambda: pytest.fail("No secrets or installs on stale data"))
+    assert launcher.main() == 1
+    assert "another source revision" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize("missing", ["seed.complete", "relationships.complete"])
+def test_existing_db_refuses_incomplete_provenance(monkeypatch, tmp_path, missing):
+    launcher = load_launcher()
+    monkeypatch.setattr(launcher, "STATE", tmp_path)
+    (tmp_path / "heritage.sqlite3").write_bytes(b"fictional-test-only")
+    existing = "relationships.complete" if missing == "seed.complete" else "seed.complete"
+    (tmp_path / existing).write_text("a" * 40, encoding="utf-8")
+    with pytest.raises(RuntimeError, match="incomplete seed markers"):
+        launcher.require_fresh_five_module_source("a" * 40)
+
+
+def test_marker_without_db_refused(monkeypatch, tmp_path):
+    launcher = load_launcher()
+    monkeypatch.setattr(launcher, "STATE", tmp_path)
+    (tmp_path / "seed.complete").write_text("a" * 40, encoding="utf-8")
+    with pytest.raises(RuntimeError, match="without local database"):
+        launcher.require_fresh_five_module_source("a" * 40)
+
+
+def test_fresh_revision_or_matching_completed_markers_allowed(monkeypatch, tmp_path):
+    launcher = load_launcher()
+    monkeypatch.setattr(launcher, "STATE", tmp_path)
+    assert launcher.require_fresh_five_module_source("a" * 40) is None
+    (tmp_path / "heritage.sqlite3").write_bytes(b"fictional-test-only")
+    for name in ("seed.complete", "relationships.complete"):
+        (tmp_path / name).write_text("a" * 40 + "\n", encoding="utf-8")
+    assert launcher.require_fresh_five_module_source("a" * 40) is None
+
+
+def test_malformed_source_sha_refused(monkeypatch, tmp_path):
+    launcher = load_launcher()
+    monkeypatch.setattr(launcher, "STATE", tmp_path)
+    with pytest.raises(RuntimeError, match="exact source SHA"):
+        launcher.require_fresh_five_module_source("unknown")
 
 
 def test_default_prepare_does_not_activate_five_module_fixtures(monkeypatch, tmp_path):
@@ -192,6 +253,7 @@ def test_successful_opt_in_launch_preserves_strict_sequence(monkeypatch, tmp_pat
     )
     monkeypatch.setattr(launcher, "available_ports", lambda: None)
     monkeypatch.setattr(launcher, "require_five_module_sources", lambda: None)
+    monkeypatch.setattr(launcher, "source_sha", lambda: "a" * 40)
     monkeypatch.setattr(launcher, "npm_command", lambda: ["npm"])
     monkeypatch.setattr(launcher, "preview_command", lambda: ["vite", "preview"])
     env = local_env(tmp_path)

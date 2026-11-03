@@ -137,6 +137,35 @@ def wait_ready(url: str, process: subprocess.Popen, timeout: int = 90) -> None:
     raise RuntimeError(f"Timed out waiting for {url}. Read the demo logs.")
 
 
+def require_fresh_five_module_source(commit_sha: str) -> None:
+    """Fail closed on stale local fixture provenance in opt-in demos only.
+
+    These marker checks are prerequisites, not full database certification.
+    """
+    if not re.fullmatch(r"[0-9a-f]{40}", commit_sha):
+        raise RuntimeError("Five-module demo requires an exact source SHA.")
+    database = STATE / "heritage.sqlite3"
+    seed = STATE / "seed.complete"
+    relationships = STATE / "relationships.complete"
+    if not database.exists() and (seed.exists() or relationships.exists()):
+        raise RuntimeError("Heritage seed marker exists without local database; use a fresh isolated folder.")
+    if database.exists() and not database.is_file():
+        raise RuntimeError("Heritage local database path is not a regular file.")
+    if database.exists() and (not seed.is_file() or not relationships.is_file()):
+        raise RuntimeError("Heritage database has incomplete seed markers; use a fresh isolated folder.")
+    for marker in (seed, relationships):
+        if not marker.exists():
+            continue
+        if not marker.is_file():
+            raise RuntimeError("Heritage source marker is not a regular file.")
+        try:
+            actual = marker.read_text(encoding="utf-8").strip()
+        except (OSError, UnicodeError) as exc:
+            raise RuntimeError("Cannot inspect Heritage source marker.") from exc
+        if actual != commit_sha:
+            raise RuntimeError("Heritage data was seeded using another source revision; use a fresh isolated folder.")
+
+
 def prepare(env: dict[str, str], npm: list[str], skip_install: bool) -> Path:
     python = ROOT / ".venv" / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
     create_venv = not python.exists()
@@ -279,6 +308,8 @@ def main() -> int:
     if args.five_module_preflight or args.five_module_demo:
         try:
             require_five_module_sources()
+            # Before creating keys, installing packages, migrating, or seeding.
+            require_fresh_five_module_source(source_sha())
         except RuntimeError as exc:
             print(f"Heritage could not start: {exc}", file=sys.stderr)
             return 1

@@ -73,6 +73,7 @@ def test_launcher_runs_strict_audit_with_same_isolated_environment(tmp_path):
     with patch.object(sys, "argv", argv), \
          patch.object(launcher, "STATE", tmp_path), \
          patch.object(launcher, "require_five_module_sources"), \
+         patch.object(launcher, "source_sha", return_value="a" * 40), \
          patch.object(launcher, "available_ports"), \
          patch.object(launcher, "local_environment", return_value=env), \
          patch.object(launcher, "npm_command", return_value=["npm"]), \
@@ -96,6 +97,7 @@ def test_launcher_strict_audit_failure_returns_nonzero_without_starting_servers(
     with patch.object(sys, "argv", argv), \
          patch.object(launcher, "STATE", tmp_path), \
          patch.object(launcher, "require_five_module_sources"), \
+         patch.object(launcher, "source_sha", return_value="a" * 40), \
          patch.object(launcher, "available_ports"), \
          patch.object(launcher, "local_environment", return_value=env), \
          patch.object(launcher, "npm_command", return_value=["npm"]), \
