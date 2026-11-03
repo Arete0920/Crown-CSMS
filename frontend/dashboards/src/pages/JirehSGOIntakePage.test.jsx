@@ -61,11 +61,12 @@ describe("Jireh SGO interactive fictional intake", () => {
         && JSON.parse(opts.body).consent_version === "DEMO_CONSENT_V1",
     )).toBe(true));
     expect(await screen.findByText(/Persistent application readback/)).toBeTruthy();
-    const savedStatus = screen.getByText((_, element) =>
-      element?.tagName === "P"
-      && element.textContent.startsWith("Status:")
-      && element.textContent.includes("SUBMITTED"));
-    expect(savedStatus.textContent).toContain("revision: 1");
+    await waitFor(() => expect(screen.getByText((_, element) =>
+      element?.tagName === "P" && element.textContent.includes("Status:")
+      && element.textContent.includes("SUBMITTED")
+      && element.textContent.includes("revision: 1"))).toBeTruthy());
+    expect(authenticatedFetch.mock.calls.some(([url]) =>
+      url.endsWith("/family/applications/" + APP + "/"))).toBe(true);
   });
   it("conceals previous family case when signed-in principal changes", async () => {
     authenticatedFetch.mockImplementation(async (url) => {

@@ -73,7 +73,8 @@ export default function JirehSGOIntakePage() {
   const authorized = !!token && local && loadedToken === token;
   useEffect(() => {
     let live = true;
-    setApplication(null);
+    setApplication((previous) => previous?.id === family?.application_id
+      && previous?.program_id === family?.id ? previous : null);
     setSubmissionKey("");
     setCorrectionKey("");
     if (!authorized || !family?.application_id) return () => { live = false; };
@@ -123,10 +124,16 @@ export default function JirehSGOIntakePage() {
         },
       });
       if (getAccessToken() !== token || result.application?.program_id !== family.id) return;
-      setApplication(result.application);
-      setCorrectionGrade(result.application.grade_level);
+      const proof = await sgoRequest("/family/applications/" + result.application.id + "/");
+      if (proof.application?.id !== result.application.id
+        || proof.application?.program_id !== family.id
+        || proof.application?.status !== result.application.status
+        || proof.application?.revision !== result.application.revision) throw new Error("Stale readback");
+      if (getAccessToken() !== token) return;
+      setApplication(proof.application);
+      setCorrectionGrade(proof.application.grade_level);
       setFamilies((previous) => previous.map((item) =>
-        item.id === family.id ? { ...item, application_id: result.application.id } : item));
+        item.id === family.id ? { ...item, application_id: proof.application.id } : item));
       setSubmissionKey("");
       setNotice("Saved. The submitted fictional application was read back from the server.");
     } catch {
