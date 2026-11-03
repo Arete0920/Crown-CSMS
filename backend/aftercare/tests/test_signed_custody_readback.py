@@ -51,10 +51,11 @@ def _fictional_school(label):
         email=f"fictional-care-login-{label.lower()}@example.test",
         password="unused-test-only", school=school, staff=staff,
     )
-    UserRole.objects.create(user=user, school=school, role_code="SUPPORT")
+    # An ordinary care operator must NOT have SUPPORT's cross-school override.
+    UserRole.objects.create(user=user, school=school, role_code="AFTERCARE_STAFF")
     for code in ("extended_care.view", "extended_care.edit"):
         permission, _ = CrownPermission.objects.get_or_create(code=code)
-        RolePermission.objects.get_or_create(role_code="SUPPORT", permission=permission)
+        RolePermission.objects.get_or_create(role_code="AFTERCARE_STAFF", permission=permission)
     return school, child, user
 
 
