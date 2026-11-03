@@ -200,11 +200,11 @@ class FictionalFamilyAidIntakeTests(TestCase):
 
     def test_unlinked_guardian_teacher_and_other_user_denied(self):
         teacher = UserAccount.objects.create_user(
-            username="fictional-teacher", password="test-only", school=self.schools[0]
+            username="fictional-teacher", email="fictional-teacher@example.invalid", password="test-only", school=self.schools[0]
         )
         UserRole.objects.create(user=teacher, school=self.schools[0], role_code="TEACHER")
         unlinked = UserAccount.objects.create_user(
-            username="fictional-unlinked", password="test-only", school=self.schools[0]
+            username="fictional-unlinked", email="fictional-unlinked@example.invalid", password="test-only", school=self.schools[0]
         )
         UserRole.objects.create(user=unlinked, school=self.schools[0], role_code="PARENT")
         for user in (teacher, unlinked):
@@ -232,7 +232,7 @@ class FictionalFamilyAidIntakeTests(TestCase):
         self.assertEqual(submitted.status_code, 201)
         app = AidApplication.objects.get(pk=submitted.json()["application"]["id"])
         officer = UserAccount.objects.create_user(
-            username="fictional-aid-officer", password="test-only", school=self.schools[0]
+            username="fictional-aid-officer", email="fictional-aid-officer@example.invalid", password="test-only", school=self.schools[0]
         )
         UserRole.objects.create(user=officer, school=self.schools[0], role_code="AID_DIRECTOR")
         grant, _ = CrownPermission.objects.get_or_create(code="financial_aid.view")
