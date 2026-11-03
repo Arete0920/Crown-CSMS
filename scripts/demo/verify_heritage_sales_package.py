@@ -49,11 +49,26 @@ def verify(*, download: bool = False):
                     raise RuntimeError("Downloaded source marker does not match SHA.")
                 if not (installed / "scripts/demo/start_heritage_local.py").is_file():
                     raise RuntimeError("Downloaded source does not contain the launcher.")
+                # Repeat installs must reuse the exact same immutable source.
+                again = starter["install_source"](
+                    destination=directory / f"Heritage-{sha[:12]}"
+                )
+                if again != installed:
+                    raise RuntimeError("Repeat installer did not reuse the same source.")
+                # An existing folder with the wrong identity must fail closed.
+                marker = installed / "HERITAGE_SOURCE_COMMIT.txt"
+                marker.write_text("0" * 40 + "\\n", encoding="utf-8")
+                try:
+                    starter["install_source"](destination=installed)
+                except RuntimeError:
+                    pass
+                else:
+                    raise RuntimeError("Installer reused a source folder with wrong identity.")
     evidence = {
         "source_sha": sha,
         "zip_crc": "PASS",
         "manifest_and_bundled_installer": "PASS",
-        "downloaded_source_identity": "PASS" if download else "NOT_RUN",
+        "downloaded_source_identity_and_reinstall": "PASS" if download else "NOT_RUN",
         "five_module_browser_acceptance": "NOT_RUN_BY_THIS_SCRIPT",
         "physical_laptop_acceptance": "NOT_RUN_BY_THIS_SCRIPT",
     }
