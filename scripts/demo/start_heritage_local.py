@@ -228,7 +228,8 @@ def seed_five_module_fixtures(env: dict[str, str], python: Path) -> None:
     # Never fabricate childcare readiness, release authority or awarded funds.
     # The explicit local-only module seeder supplies an unposted Jireh OFFERED
     # sample, AM/PM records and a deliberately BLOCKED daycare enrollment.
-    run(manage + ["seed_heritage_module_samples", "--fictional-local-only"], env)
+    run(manage + ["seed_heritage_module_samples", "--fictional-local-only",
+                  "--enable-fictional-care-entitlements"], env)
 
     # Camp setup is a separate guarded fictional fixture and deliberately
     # leaves missing health, forms and pickup authority as BLOCKED.

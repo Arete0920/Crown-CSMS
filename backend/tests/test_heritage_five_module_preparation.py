@@ -69,7 +69,8 @@ def test_strict_preparation_runs_existing_three_seeders_in_order(monkeypatch, tm
     assert len(commands) == 3
     assert env["CROWN_SGO_FICTIONAL_INTAKE_ENABLED"] == "true"
     assert all(cmd[:2] == manage and process_env is env for cmd, process_env in commands)
-    assert commands[0][0][2:] == ["seed_heritage_module_samples", "--fictional-local-only"]
+    assert commands[0][0][2:] == ["seed_heritage_module_samples", "--fictional-local-only",
+                                 "--enable-fictional-care-entitlements"]
     assert commands[1][0][2:] == [
         "shell", "--command",
         "from sandbox_demo.services import seed_local_heritage_camp; seed_local_heritage_camp()",
@@ -118,7 +119,8 @@ def test_missing_seed_command_cannot_claim_success(monkeypatch, tmp_path):
     with pytest.raises(FileNotFoundError, match="missing governed seeder"):
         launcher.seed_five_module_fixtures(local_env(tmp_path), tmp_path / "python")
     assert len(calls) == 1
-    assert calls[0][-2:] == ["seed_heritage_module_samples", "--fictional-local-only"]
+    assert calls[0][-3:] == ["seed_heritage_module_samples", "--fictional-local-only",
+                           "--enable-fictional-care-entitlements"]
 
 
 
