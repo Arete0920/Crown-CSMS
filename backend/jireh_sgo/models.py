@@ -178,6 +178,7 @@ class SGOFamilyIntake(models.Model):
     )
     grant = models.OneToOneField(SGOFamilyGrant, on_delete=models.PROTECT, related_name="intake")
     grade_level = models.CharField(max_length=2, choices=GRADES)
+    initial_grade_level = models.CharField(max_length=2, choices=GRADES)
     status = models.CharField(max_length=24, choices=STATES, default=SUBMITTED)
     consent_version = models.CharField(max_length=80)
     consented_at = models.DateTimeField(default=timezone.now)
@@ -203,6 +204,7 @@ class SGOFamilyIntake(models.Model):
         if self.pk and not self._state.adding:
             original = type(self).objects.filter(pk=self.pk).values(
                 "application_id", "grant_id", "consent_version", "submission_key", "consented_at",
+                "initial_grade_level",
             ).first()
             if original and any(getattr(self, name) != value for name, value in original.items()):
                 raise ValidationError("Family intake identity and original consent are immutable.")
