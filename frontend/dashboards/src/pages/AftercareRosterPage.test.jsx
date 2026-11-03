@@ -376,3 +376,25 @@ it("rejects an old reconciliation read after leaving and returning to the same s
   await waitFor(() => expect(screen.queryByText(/outcome is unconfirmed/i)).toBeNull());
   expect(api.checkinStudent).toHaveBeenCalledTimes(1);
 });
+
+it("holds custody actions when a confirmed POST is followed by failed roster readback", async () => {
+  api.fetchRosterToday.mockResolvedValueOnce({
+    care_session: "AM", date: "2026-10-30", dow: "FRI", rows,
+    unlinked_attendance_count: 0,
+  }).mockRejectedValueOnce(new Error("readback unavailable"));
+  render(<AftercareRosterPage careSession="AM" />);
+  await screen.findByText("Synthetic Child");
+  fireEvent.click(screen.getByRole("button", { name: "Check In" }));
+  await waitFor(() => expect(screen.getByText(/outcome is unconfirmed/i)).toBeTruthy());
+  expect(api.checkinStudent).toHaveBeenCalledTimes(1);
+  expect(screen.queryByRole("button", { name: "Check In" })).toBeNull();
+  api.fetchRosterToday.mockResolvedValueOnce({
+    care_session: "AM", date: "2026-10-30", dow: "FRI",
+    rows: [{ ...rows[0], attendance: { checkin_time: "2026-10-30T08:00:00Z", checkout_time: null } }],
+    unlinked_attendance_count: 0,
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Review current custody before continuing" }));
+  await waitFor(() => expect(screen.queryByText(/outcome is unconfirmed/i)).toBeNull());
+  expect(screen.getByText("Checked in")).toBeTruthy();
+  expect(api.checkinStudent).toHaveBeenCalledTimes(1);
+});

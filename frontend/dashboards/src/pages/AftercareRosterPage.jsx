@@ -87,21 +87,23 @@ export default function AftercareRosterPage({ careSession = "PM" }) {
   async function load() {
     const scope = identity;
     const epoch = scopeEpochRef.current;
-    if (scopeEpochRef.current !== epoch || sessionRef.current !== careSession || !sameIdentity(scope)) return;
+    if (scopeEpochRef.current !== epoch || sessionRef.current !== careSession || !sameIdentity(scope)) return false;
     setLoading(true);
     setError(null);
     setRoster(null);
     setRosterScope(null);
     try {
       const data = await fetchRosterToday(careSession);
-      if (scopeEpochRef.current !== epoch || sessionRef.current !== careSession || !sameIdentity(scope)) return;
+      if (scopeEpochRef.current !== epoch || sessionRef.current !== careSession || !sameIdentity(scope)) return false;
       if (data?.care_session !== careSession || !Array.isArray(data?.rows)) {
         throw new Error("Roster API returned an invalid care session.");
       }
       setRosterScope(scope);
       setRoster(data);
+      return true;
     } catch (e) {
       if (scopeEpochRef.current === epoch && sessionRef.current === careSession && sameIdentity(scope)) setError(e.message);
+      return false;
     } finally {
       if (scopeEpochRef.current === epoch && sessionRef.current === careSession && sameIdentity(scope)) setLoading(false);
     }
@@ -187,7 +189,7 @@ export default function AftercareRosterPage({ careSession = "PM" }) {
     setError(null);
     try {
       await checkinStudent({ student_id: studentId, care_session: careSession });
-      if (scopeEpochRef.current === attempt.epoch) await load();
+      if (scopeEpochRef.current === attempt.epoch && !await load()) requireCustodyReadback(attempt);
     } catch (e) {
       requireCustodyReadback(attempt);
       if (sessionRef.current === careSession && sameIdentity()) setError(`Check-in failed: ${e.message}`);
@@ -236,7 +238,7 @@ export default function AftercareRosterPage({ careSession = "PM" }) {
       });
       if (scopeEpochRef.current === attempt.epoch && sessionRef.current === careSession && sameIdentity()) {
         setPickup(null);
-        await load();
+        if (!await load()) requireCustodyReadback(attempt);
       }
     } catch (e) {
       requireCustodyReadback(attempt);
@@ -262,7 +264,7 @@ export default function AftercareRosterPage({ careSession = "PM" }) {
       await handoffToSchool({ student_id: handoff.studentId });
       if (scopeEpochRef.current === attempt.epoch && sessionRef.current === careSession && sameIdentity()) {
         setHandoff(null);
-        await load();
+        if (!await load()) requireCustodyReadback(attempt);
       }
     } catch (e) {
       requireCustodyReadback(attempt);
