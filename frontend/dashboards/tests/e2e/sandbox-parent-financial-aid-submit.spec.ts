@@ -27,15 +27,16 @@ test("local fictional family submits canonical school aid and reads persisted st
   expect(source.students.length).toBeGreaterThan(0);
   expect(source.academic_years.length).toBeGreaterThan(0);
 
-  // A local demo can be re-run without resetting the database. Existing records
-  // must be visible, not fabricated into another application.
-  if (source.applications.some(
-    (item: { academic_year_id: string }) => String(item.academic_year_id) === String(source.academic_years[0].id)
-  )) {
-    await expect(page.getByText(/duplicate submission is disabled/i)).toBeVisible();
-    await expect(page.getByTestId("jireh-saved-applications")).toContainText("SUBMITTED");
-    return;
-  }
+  // This acceptance spec MUST exercise a new POST, not silently pass when
+  // old fictional records are already present. Rehearse from a clean local
+  // database; existing application readback has separate backend coverage.
+  expect(
+    source.applications.some(
+      (item: { academic_year_id: string }) =>
+        String(item.academic_year_id) === String(source.academic_years[0].id)
+    ),
+    "Fresh isolated buyer rehearsal must begin without this family's aid application",
+  ).toBe(false);
 
   const firstStudent = source.students[0] as { id: string; name: string };
   await page.getByLabel(firstStudent.name).check();
