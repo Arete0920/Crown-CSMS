@@ -258,3 +258,65 @@ class FictionalFamilyAidIntakeTests(TestCase):
         self.assertNotIn("ledger_entry_id", exposed)
         self.assertNotIn("explanation_json", exposed)
         self.assertEqual(AidAward.objects.count(), 1)
+
+    def test_administrative_wizard_commits_fictional_offered_award_for_parent_application(self):
+        submitted = self.submit()
+        self.assertEqual(submitted.status_code, 201, submitted.content)
+        app = AidApplication.objects.get(pk=submitted.json()["application"]["id"])
+        officer = UserAccount.objects.create_user(
+            username="fictional-wizard-officer",
+            password="test-only",
+            school=self.schools[0],
+            email="fictional-wizard-officer@example.invalid",
+        )
+        UserRole.objects.create(user=officer, school=self.schools[0], role_code="AID_DIRECTOR")
+        for code in ("financial_aid.view", "financial_aid.edit"):
+            grant, _ = CrownPermission.objects.get_or_create(code=code)
+            RolePermission.objects.get_or_create(role_code="AID_DIRECTOR", permission=grant)
+        client, headers = self.client_for(officer)
+        base = "/api/v1/aid-wizard/sessions/"
+        created = client.post(base, {}, format="json", **headers)
+        self.assertEqual(created.status_code, 201, created.content)
+        session_url = base + str(created.json()["session_id"]) + "/"
+
+        configured = client.post(
+            session_url + "configure/",
+            {"aid_year": self.years[0].name},
+            format="json", **headers
+        )
+        self.assertEqual(configured.status_code, 200, configured.content)
+        buckets = client.post(
+            session_url + "buckets/", {"buckets": ["need"]},
+            format="json", **headers
+        )
+        self.assertEqual(buckets.status_code, 200, buckets.content)
+        awards = client.post(
+            session_url + "awards/",
+            {"awards": [{
+                "application_id": app.id,
+                "student_id": str(self.students[0].id),
+                "bucket": "need",
+                "amount": "250.00",
+                "rationale": "Fictional case only",
+            }]},
+            format="json", **headers
+        )
+        self.assertEqual(awards.status_code, 200, awards.content)
+        committed = client.post(
+            session_url + "commit/", {"confirm": True},
+            format="json", **headers
+        )
+        self.assertEqual(committed.status_code, 200, committed.content)
+        self.assertEqual(committed.json()["awards_created"], 1)
+        award = AidAward.objects.get(aid_application=app, student=self.students[0])
+        self.assertEqual(award.decision_status, AidAward.DECISION_OFFERED)
+        self.assertIsNone(award.ledger_entry_id)
+        family_readback = self.get_state()
+        self.assertEqual(family_readback.status_code, 200, family_readback.content)
+        family_awards = family_readback.json()["applications"][0]["awards"]
+        self.assertEqual(len(family_awards), 1)
+        self.assertEqual(str(family_awards[0]["id"]), str(award.id))
+        self.assertEqual(family_awards[0]["decision_status"], AidAward.DECISION_OFFERED)
+        self.assertNotIn("explanation_json", family_awards[0])
+        self.assertNotIn("ledger_entry_id", family_awards[0])
+        self.assertEqual(AidAward.objects.count(), 1)
