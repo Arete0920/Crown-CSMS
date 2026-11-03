@@ -72,6 +72,13 @@ afterEach(() => {
 });
 
 describe("Fictional parent Financial Aid saved-record truth", () => {
+  it("does not expose local fictional intake outside the explicit local demo build", () => {
+    vi.stubEnv("VITE_LOCAL_DEMO", "0");
+    render(<ParentFinancialAidPreparationPage />);
+    expect(screen.queryByTestId("jireh-family-demo")).toBeNull();
+    expect(apiFetch).not.toHaveBeenCalled();
+  });
+
   it("confirms submission only after matching canonical authenticated GET readback", async () => {
     arrange(snapshot([saved]));
     await submitFictionalApplication();
