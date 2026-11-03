@@ -2,15 +2,17 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import JirehSGODashboard from "./JirehSGODashboard.jsx";
-import { authenticatedFetch, getAccessToken } from "../utils/authClient.js";
+import { authenticatedFetch, getAccessToken, getSelectedSchoolId } from "../utils/authClient.js";
 
 vi.mock("../utils/authClient.js", () => ({
   authenticatedFetch: vi.fn(),
   getAccessToken: vi.fn(),
+  getSelectedSchoolId: vi.fn(),
 }));
 const response = (data) => ({ json: async () => data });
 beforeEach(() => {
   getAccessToken.mockReturnValue("synthetic");
+  getSelectedSchoolId.mockReturnValue("synthetic-school-a");
   authenticatedFetch.mockImplementation(async (url) =>
     url.endsWith("/organizations/")
       ? response({ organizations: [{ id: "org-1", name: "Synthetic SGO", role: "VIEWER" }],
@@ -93,6 +95,7 @@ describe("Standalone Jireh SGO read-only grantor UI", () => {
     expect(screen.queryByRole("button", { name: /toggle navigation/i })).toBeNull();
     expect(screen.getByRole("region", { name: "SGO programs" }).getAttribute("tabindex")).toBe("0");
     expect(authenticatedFetch.mock.calls.every(([url]) => url.startsWith("/api/v1/jireh-sgo/"))).toBe(true);
+    expect(getSelectedSchoolId).not.toHaveBeenCalled();
   });
 
   it("does not reinterpret invalid or missing aggregate finance evidence as zero dollars", async () => {
