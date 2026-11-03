@@ -167,7 +167,17 @@ def _submission_fields(data, *, family, school_id):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    case = _FICTIONAL_SCENARIOS.get(data.get("scenario"))
+    permitted = {
+        "fictional_acknowledged", "scenario", "household_size",
+        "academic_year_id", "student_ids",
+    }
+    if set(data) - permitted:
+        return None, Response(
+            {"detail": "Unsupported fields. Do not submit financial or personal information."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    scenario_code = data.get("scenario")
+    case = _FICTIONAL_SCENARIOS.get(scenario_code) if type(scenario_code) is str else None
     if case is None:
         return None, Response(
             {"detail": "Select one of the fixed fictional scenarios."},
