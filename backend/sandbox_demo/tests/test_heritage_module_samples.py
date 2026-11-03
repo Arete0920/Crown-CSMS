@@ -36,6 +36,9 @@ def test_local_module_samples_are_idempotent_and_do_not_authorize_custody(
     monkeypatch, settings,
 ):
     from financial_aid.models import FinancialAidApplication, AidAward
+    from aid.models import AidApplication as CanonicalAidApplication
+    from aid.models import AidAward as CanonicalAidAward
+    from aid.models import AidAuditEvent as CanonicalAidAuditEvent
     from aftercare.models import AftercareEnrollment
     from aftercare.daycare_models import (
         DaycareSite, DaycareRoom, DaycareEnrollment, DaycareGuardianAuthority,
@@ -45,6 +48,30 @@ def test_local_module_samples_are_idempotent_and_do_not_authorize_custody(
         second = seed_heritage_module_samples()
     assert first == second
     assert all(value == 1 for value in first.values())
+    canonical = CanonicalAidApplication.objects.get(
+        school_id=HERITAGE_ID, family_id=fixed_id("canonical-aid-family"),
+    )
+    assert canonical.status == CanonicalAidApplication.STATUS_SUBMITTED
+    offered = CanonicalAidAward.objects.get(
+        school_id=HERITAGE_ID, aid_application=canonical,
+        student_id=fixed_id("canonical-aid-student"),
+    )
+    assert offered.decision_status == CanonicalAidAward.DECISION_OFFERED
+    assert offered.awarded_cents == 25000
+    assert offered.ledger_entry_id is None
+    assert offered.decided_by_id is None
+    assert CanonicalAidAuditEvent.objects.filter(
+        school_id=HERITAGE_ID,
+        entity_type=CanonicalAidAuditEvent.ENTITY_AWARD,
+        entity_id=str(offered.pk),
+        action="AWARD_OFFERED",
+    ).count() == 1
+    assert CanonicalAidAuditEvent.objects.filter(
+        school_id=HERITAGE_ID,
+        entity_type=CanonicalAidAuditEvent.ENTITY_AWARD,
+        entity_id=str(offered.pk),
+        action__in=("AWARD_ACCEPTED", "LEDGER_POSTED"),
+    ).count() == 0
     assert FinancialAidApplication.objects.filter(
         school_id=HERITAGE_ID, pk=fixed_id("aid-application")
     ).count() == 1
@@ -80,6 +107,33 @@ def test_local_module_samples_are_idempotent_and_do_not_authorize_custody(
     assert not DaycareGuardianAuthority.objects.filter(
         child_id=enrollment.child_id, is_active=True
     ).exists()
+
+
+def test_canonical_jireh_award_tampering_aborts_reseed_and_rolls_back(
+    monkeypatch, settings,
+):
+    from aid.models import AidAward as CanonicalAidAward
+    from aid.models import AidAuditEvent as CanonicalAidAuditEvent
+
+    with _setup_local(monkeypatch, settings):
+        seed_heritage_module_samples()
+        award = CanonicalAidAward.objects.get(
+            school_id=HERITAGE_ID,
+            student_id=fixed_id("canonical-aid-student"),
+        )
+        award.decision_status = CanonicalAidAward.DECISION_ACCEPTED
+        award.save(update_fields=["decision_status"])
+        with pytest.raises(CommandError, match="unposted offered award"):
+            seed_heritage_module_samples()
+    assert CanonicalAidAward.objects.filter(
+        pk=award.pk, decision_status=CanonicalAidAward.DECISION_ACCEPTED,
+    ).exists()
+    assert CanonicalAidAuditEvent.objects.filter(
+        school_id=HERITAGE_ID,
+        entity_type=CanonicalAidAuditEvent.ENTITY_AWARD,
+        entity_id=str(award.pk),
+        action="AWARD_OFFERED",
+    ).count() == 1
 
 
 def test_explicit_opt_in_required_before_database_seed(monkeypatch, settings):
