@@ -63,8 +63,14 @@ def local_token(user, school):
     return str(token)
 
 
-@transaction.atomic
 def build_scenario():
+    """Validate the local-only boundary before even opening a DB transaction."""
+    require_local_demo()
+    return _build_scenario_transaction()
+
+
+@transaction.atomic
+def _build_scenario_transaction():
     spec = SANDBOX_SCHOOLS["heritage-core"]
     school = School.objects.filter(pk=UUID(spec.id), name=spec.name, is_active=True).first()
     if school is None:
@@ -198,6 +204,8 @@ def build_scenario():
 
 
 def verify_scenario():
+    # Keep the readback helper as protected as the management command itself.
+    require_local_demo()
     if not MANIFEST.is_file():
         raise CommandError("No local Diadem pickup browser scenario manifest.")
     data = json.loads(MANIFEST.read_text(encoding="utf-8"))
