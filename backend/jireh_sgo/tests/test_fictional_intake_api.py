@@ -3,6 +3,7 @@ from uuid import uuid4
 from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
+from django.db import connection
 from django.test import override_settings
 from rest_framework.test import APITestCase
 
@@ -19,6 +20,8 @@ from jireh_sgo.models import (
 )
 class FictionalSGOIntakeAPITests(APITestCase):
     def setUp(self):
+        if connection.vendor != "sqlite":
+            self.skipTest("Fictional SGO intake is intentionally disabled outside isolated SQLite.")
         User = get_user_model()
         self.family_a = User.objects.create_user(username="fictional-family-a", password="x")
         self.family_b = User.objects.create_user(username="fictional-family-b", password="x")
