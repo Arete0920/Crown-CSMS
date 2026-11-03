@@ -9,10 +9,16 @@
 const TOKEN_KEY = "crown.jwt.access";
 const SCHOOL_KEY = "crown.school.id";
 export const SCHOOL_CONTEXT_CHANGE_EVENT = "crown:school-context-changed";
+export const AUTH_CONTEXT_CHANGE_EVENT = "crown:auth-context-changed";
 
 function notifySchoolContextChanged() {
   if (typeof window !== "undefined" && typeof window.dispatchEvent === "function") {
     window.dispatchEvent(new window.Event(SCHOOL_CONTEXT_CHANGE_EVENT));
+  }
+}
+function notifyAuthContextChanged() {
+  if (typeof window !== "undefined" && typeof window.dispatchEvent === "function") {
+    window.dispatchEvent(new window.Event(AUTH_CONTEXT_CHANGE_EVENT));
   }
 }
 const DEFAULT_TIMEOUT_MS = 15000;
@@ -41,6 +47,7 @@ export function clearBrowserAuthState() {
     }
   }
   notifySchoolContextChanged();
+  notifyAuthContextChanged();
 }
 
 function expireBrowserSession() {
@@ -204,12 +211,14 @@ export function getAccessToken() {
 }
 
 export function setAccessToken(token) {
+  const previous = getAccessToken();
   try {
     if (token) sessionStorage.setItem(TOKEN_KEY, token);
     else sessionStorage.removeItem(TOKEN_KEY);
   } catch (error) {
     console.error(error);
   }
+  if (getAccessToken() !== previous) notifyAuthContextChanged();
 }
 
 export function clearAccessToken() {
