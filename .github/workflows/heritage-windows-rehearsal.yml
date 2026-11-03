@@ -70,6 +70,9 @@ jobs:
           .\.venv\Scripts\python.exe -m pytest -q
           backend/academics/tests/test_classroom_experience.py
           -k "heritage_board_bearer_renewal or board_bearer_cannot_read_foreign_household"
+      - name: Verify fictional Jireh family aid backend contract (isolated SQLite)
+        shell: pwsh
+        run: .\\.venv\\Scripts\\python.exe -m pytest -q backend/aid/tests/test_family_demo_intake.py
       - name: Install Playwright Chromium for full buyer browser certification
         shell: pwsh
         working-directory: frontend/dashboards
