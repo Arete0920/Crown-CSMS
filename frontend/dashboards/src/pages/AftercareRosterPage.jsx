@@ -32,6 +32,8 @@ export default function AftercareRosterPage({ careSession = "PM" }) {
     school: getSelectedSchoolId(), token: getAccessToken(),
   }));
   const identityRef = useRef(identity);
+  // Monotonic scope generation rejects responses from school/token/session ABA switches.
+  const scopeEpochRef = useRef(0);
   const sameIdentity = (scope = identity) => Boolean(scope.school && scope.token)
     && scope.school === getSelectedSchoolId() && scope.token === getAccessToken();
   const [pickup, setPickup] = useState(null);
@@ -55,6 +57,7 @@ export default function AftercareRosterPage({ careSession = "PM" }) {
       const next = { school: getSelectedSchoolId(), token: getAccessToken() };
       const current = identityRef.current;
       if (current.school === next.school && current.token === next.token) return;
+      scopeEpochRef.current += 1;
       if (operationInFlightRef.current) {
         const pending = operationInFlightRef.current;
         setUnconfirmedScope({ school: pending.identity.school, careSession: pending.careSession });
@@ -83,28 +86,31 @@ export default function AftercareRosterPage({ careSession = "PM" }) {
 
   async function load() {
     const scope = identity;
-    if (sessionRef.current !== careSession || !sameIdentity(scope)) return;
+    const epoch = scopeEpochRef.current;
+    if (scopeEpochRef.current !== epoch || sessionRef.current !== careSession || !sameIdentity(scope)) return;
     setLoading(true);
     setError(null);
     setRoster(null);
     setRosterScope(null);
     try {
       const data = await fetchRosterToday(careSession);
-      if (sessionRef.current !== careSession || !sameIdentity(scope)) return;
+      if (scopeEpochRef.current !== epoch || sessionRef.current !== careSession || !sameIdentity(scope)) return;
       if (data?.care_session !== careSession || !Array.isArray(data?.rows)) {
         throw new Error("Roster API returned an invalid care session.");
       }
       setRosterScope(scope);
       setRoster(data);
     } catch (e) {
-      if (sessionRef.current === careSession && sameIdentity(scope)) setError(e.message);
+      if (scopeEpochRef.current === epoch && sessionRef.current === careSession && sameIdentity(scope)) setError(e.message);
     } finally {
-      if (sessionRef.current === careSession && sameIdentity(scope)) setLoading(false);
+      if (scopeEpochRef.current === epoch && sessionRef.current === careSession && sameIdentity(scope)) setLoading(false);
     }
   }
 
   useEffect(() => {
-    if (sessionRef.current !== careSession && operationInFlightRef.current) {
+    const switchedCareSession = sessionRef.current !== careSession;
+    if (switchedCareSession) scopeEpochRef.current += 1;
+    if (switchedCareSession && operationInFlightRef.current) {
       const pending = operationInFlightRef.current;
       setUnconfirmedScope({ school: pending.identity.school, careSession: pending.careSession });
       setCustodyWarning(
@@ -113,6 +119,7 @@ export default function AftercareRosterPage({ careSession = "PM" }) {
     }
     sessionRef.current = careSession;
     const scope = identity;
+    const epoch = scopeEpochRef.current;
     setLoading(true);
     setRoster(null);
     setRosterScope(null);
@@ -136,17 +143,17 @@ export default function AftercareRosterPage({ careSession = "PM" }) {
         if (data?.care_session !== careSession || !Array.isArray(data?.rows)) {
           throw new Error("Roster API returned an invalid care session.");
         }
-        if (!cancelled && sameIdentity(scope)) {
+        if (!cancelled && scopeEpochRef.current === epoch && sameIdentity(scope)) {
           setRosterScope(scope);
           setRoster(data);
           setError(null);
         }
       } catch (e) {
-        if (!cancelled && sameIdentity(scope)) {
+        if (!cancelled && scopeEpochRef.current === epoch && sameIdentity(scope)) {
           setError(e.message);
         }
       } finally {
-        if (!cancelled && sameIdentity(scope)) {
+        if (!cancelled && scopeEpochRef.current === epoch && sameIdentity(scope)) {
           setLoading(false);
         }
       }
@@ -158,9 +165,21 @@ export default function AftercareRosterPage({ careSession = "PM" }) {
     };
   }, [careSession, identity]);
 
+  // Rejected writes may have committed remotely before a timeout or connection loss.
+  // Never expose a retry until a new, explicitly requested authorized roster read.
+  function requireCustodyReadback(attempt) {
+    setUnconfirmedScope({ school: attempt.identity.school, careSession: attempt.careSession });
+    setCustodyWarning(
+      "A custody write did not return a confirmed result. Its outcome is unconfirmed. " +
+      "Return to the originating school and care session for explicit custody reconciliation; do not retry automatically."
+    );
+    setPickup(null);
+    setHandoff(null);
+  }
+
   async function handleCheckin(studentId) {
     if (custodyWarning || operationInFlightRef.current || checkinInFlightRef.current || sessionRef.current !== careSession || !sameIdentity() || rosterScope !== identity) return;
-    const attempt = { operation: "checkin", identity, careSession };
+    const attempt = { operation: "checkin", identity, careSession, epoch: scopeEpochRef.current };
     operationInFlightRef.current = attempt;
     setCustodyWritePending(true);
     checkinInFlightRef.current = true;
@@ -168,8 +187,9 @@ export default function AftercareRosterPage({ careSession = "PM" }) {
     setError(null);
     try {
       await checkinStudent({ student_id: studentId, care_session: careSession });
-      await load();
+      if (scopeEpochRef.current === attempt.epoch) await load();
     } catch (e) {
+      requireCustodyReadback(attempt);
       if (sessionRef.current === careSession && sameIdentity()) setError(`Check-in failed: ${e.message}`);
     } finally {
       if (operationInFlightRef.current === attempt) {
@@ -185,24 +205,25 @@ export default function AftercareRosterPage({ careSession = "PM" }) {
 
   async function beginCheckout(studentId) {
     if (custodyWarning || operationInFlightRef.current || sessionRef.current !== careSession || isMorning || !sameIdentity() || rosterScope !== identity) return;
+    const epoch = scopeEpochRef.current;
     setPickupBusy(true);
     setError(null);
     try {
       const contacts = await fetchPickupContacts(studentId);
-      if (sessionRef.current !== careSession || !sameIdentity()) return;
+      if (scopeEpochRef.current !== epoch || sessionRef.current !== careSession || !sameIdentity()) return;
       setPickup({ studentId, careSession, contacts: Array.isArray(contacts) ? contacts.filter((c) => c.is_active) : [],
                   contactId: "", verified: false });
     } catch (e) {
-      if (sessionRef.current === careSession && sameIdentity()) setError(`Cannot load authorized pickup contacts: ${e.message}`);
+      if (scopeEpochRef.current === epoch && sessionRef.current === careSession && sameIdentity()) setError(`Cannot load authorized pickup contacts: ${e.message}`);
     } finally {
-      if (sessionRef.current === careSession && sameIdentity()) setPickupBusy(false);
+      if (scopeEpochRef.current === epoch && sessionRef.current === careSession && sameIdentity()) setPickupBusy(false);
     }
   }
 
   async function handleCheckout() {
     if (custodyWarning || operationInFlightRef.current || isMorning || pickup?.careSession !== careSession || !pickup?.contactId || !pickup.verified
         || !sameIdentity() || rosterScope !== identity) return;
-    const attempt = { operation: "checkout", identity, careSession };
+    const attempt = { operation: "checkout", identity, careSession, epoch: scopeEpochRef.current };
     operationInFlightRef.current = attempt;
     setCustodyWritePending(true);
     setPickupBusy(true);
@@ -213,43 +234,45 @@ export default function AftercareRosterPage({ careSession = "PM" }) {
         pickup_verified: true,
         care_session: careSession,
       });
-      if (sameIdentity()) {
+      if (scopeEpochRef.current === attempt.epoch && sessionRef.current === careSession && sameIdentity()) {
         setPickup(null);
         await load();
       }
     } catch (e) {
-      if (sameIdentity()) setError(`Check-out failed: ${e.message}`);
+      requireCustodyReadback(attempt);
+      if (scopeEpochRef.current === attempt.epoch && sessionRef.current === careSession && sameIdentity()) setError(`Check-out failed: ${e.message}`);
     } finally {
       if (operationInFlightRef.current === attempt) {
         operationInFlightRef.current = null;
         setCustodyWritePending(false);
       }
-      if (sameIdentity()) setPickupBusy(false);
+      if (scopeEpochRef.current === attempt.epoch && sessionRef.current === careSession && sameIdentity()) setPickupBusy(false);
     }
   }
 
   async function handleHandoff() {
     if (custodyWarning || operationInFlightRef.current || !isMorning || handoff?.careSession !== careSession || !handoff?.acknowledged
         || !sameIdentity() || rosterScope !== identity) return;
-    const attempt = { operation: "school_handoff", identity, careSession };
+    const attempt = { operation: "school_handoff", identity, careSession, epoch: scopeEpochRef.current };
     operationInFlightRef.current = attempt;
     setCustodyWritePending(true);
     setHandoffBusy(true);
     setError(null);
     try {
       await handoffToSchool({ student_id: handoff.studentId });
-      if (sameIdentity()) {
+      if (scopeEpochRef.current === attempt.epoch && sessionRef.current === careSession && sameIdentity()) {
         setHandoff(null);
         await load();
       }
     } catch (e) {
-      if (sameIdentity()) setError("School handoff failed: " + e.message);
+      requireCustodyReadback(attempt);
+      if (scopeEpochRef.current === attempt.epoch && sessionRef.current === careSession && sameIdentity()) setError("School handoff failed: " + e.message);
     } finally {
       if (operationInFlightRef.current === attempt) {
         operationInFlightRef.current = null;
         setCustodyWritePending(false);
       }
-      if (sameIdentity()) setHandoffBusy(false);
+      if (scopeEpochRef.current === attempt.epoch && sessionRef.current === careSession && sameIdentity()) setHandoffBusy(false);
     }
   }
 
@@ -261,11 +284,12 @@ export default function AftercareRosterPage({ careSession = "PM" }) {
   // Reading the current roster cannot itself certify who received the child.
   async function reconcileAfterIdentityChange() {
     const scope = identity;
+    const epoch = scopeEpochRef.current;
     if (!custodyWarning || !affectedScopeMatches || operationInFlightRef.current || !sameIdentity(scope) || loading) return;
     setLoading(true);
     try {
       const fresh = await fetchRosterToday(careSession);
-      if (!sameIdentity(scope) || sessionRef.current !== careSession) return;
+      if (scopeEpochRef.current !== epoch || !sameIdentity(scope) || sessionRef.current !== careSession) return;
       if (fresh?.care_session !== careSession || !Array.isArray(fresh.rows)) {
         throw new Error("Invalid care roster from the server.");
       }
@@ -275,11 +299,11 @@ export default function AftercareRosterPage({ careSession = "PM" }) {
       setCustodyWarning("");
       setUnconfirmedScope(null);
     } catch (error) {
-      if (sameIdentity(scope)) {
+      if (scopeEpochRef.current === epoch && sameIdentity(scope)) {
         setError("Custody reconciliation failed: " + error.message);
       }
     } finally {
-      if (sameIdentity(scope)) setLoading(false);
+      if (scopeEpochRef.current === epoch && sameIdentity(scope)) setLoading(false);
     }
   }
 
