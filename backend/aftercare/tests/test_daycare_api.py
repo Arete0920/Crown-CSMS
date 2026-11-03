@@ -486,3 +486,145 @@ def test_directory_and_roster_reject_conflicting_live_staff_room_coverage():
         response = c.get("/api/v1/aftercare/daycare/sites/")
     assert response.status_code == 403
     assert not DaycareAttendance.objects.exists()
+
+
+def _release_authorities(d, attendance_id, client=None, *, site_id=None, **headers):
+    return (client or _client(d["actor"])).get(
+        "/api/v1/aftercare/daycare/sites/"
+        f"{site_id or d['site'].id}/attendance/{attendance_id}/release-authorities/",
+        **headers,
+    )
+
+
+def test_release_candidates_are_current_scoped_and_observational():
+    d = setup()
+    admitted = _checkin(d)
+    assert admitted.status_code == 201, admitted.data
+    attendance_id = admitted.data["attendance_id"]
+    response = _release_authorities(d, attendance_id)
+    assert response.status_code == 200, getattr(response, "data", None)
+    assert response.data["site_id"] == str(d["site"].id)
+    assert response.data["attendance_id"] == attendance_id
+    assert response.data["status"] == "candidates_only"
+    assert response.data["options"] == [{
+        "authority_id": str(d["authority"].id),
+        "guardian_name": "Synthetic Guardian",
+    }]
+    assert not DaycareRelease.objects.exists()
+    assert not AuditLog.objects.filter(action="diadem.daycare.release").exists()
+    assert _release(d, attendance_id).status_code == 201
+    assert _release_authorities(d, attendance_id).status_code == 404
+
+
+@pytest.mark.parametrize("restriction", [
+    "revoked", "custody_restricted", "verification_revoked",
+    "authority_expired", "authority_not_started",
+])
+def test_release_candidates_exclude_unverified_or_out_of_window_guardians(restriction):
+    from datetime import timedelta
+    from django.utils import timezone
+    d = setup()
+    admitted = _checkin(d)
+    assert admitted.status_code == 201
+    authority = d["authority"]
+    if restriction == "revoked":
+        authority.is_active = False
+    elif restriction == "custody_restricted":
+        authority.is_active = False
+        authority.custody_status = "RESTRICTED"
+    elif restriction == "verification_revoked":
+        authority.is_active = False
+        authority.verified_by = None
+        authority.verified_at = None
+    elif restriction == "authority_expired":
+        authority.effective_until = timezone.now() - timedelta(seconds=1)
+    else:
+        authority.effective_from = timezone.now() + timedelta(hours=1)
+    authority.save()
+    response = _release_authorities(d, admitted.data["attendance_id"])
+    assert response.status_code == 200
+    assert response.data["options"] == []
+    assert not DaycareRelease.objects.exists()
+
+
+def test_release_candidates_require_release_grant_and_current_staff_assignment():
+    from core.models import RolePermission
+    d = setup()
+    admitted = _checkin(d)
+    assert admitted.status_code == 201
+    row = admitted.data["attendance_id"]
+    other_site = DaycareSite.objects.create(
+        school=d["school"], name="Other center", code="other"
+    )
+    assert _release_authorities(d, row, site_id=other_site.id).status_code == 404
+    assert _release_authorities(d, uuid4()).status_code == 404
+    d["coverage"].is_active = False
+    d["coverage"].save()
+    assert _release_authorities(d, row).status_code == 403
+    d["coverage"].is_active = True
+    d["coverage"].save()
+    RolePermission.objects.filter(
+        role_code="DAYCARE_STAFF", permission__code="diadem.daycare.release"
+    ).delete()
+    assert _release_authorities(d, row).status_code == 403
+    assert not DaycareRelease.objects.exists()
+
+
+def test_release_candidates_preserve_inactive_school_custody_exit():
+    d = setup()
+    admitted = _checkin(d)
+    assert admitted.status_code == 201
+    d["school"].is_active = False
+    d["school"].save(update_fields=["is_active"])
+    response = _release_authorities(
+        d, admitted.data["attendance_id"], _bearer_client(d["actor"])
+    )
+    assert response.status_code == 200, getattr(response, "data", None)
+    assert [item["authority_id"] for item in response.data["options"]] == [
+        str(d["authority"].id)
+    ]
+    assert not DaycareRelease.objects.exists()
+
+
+def test_release_candidates_inactive_school_route_cannot_bypass_method_or_scope():
+    d = setup()
+    admitted = _checkin(d)
+    assert admitted.status_code == 201
+    row = admitted.data["attendance_id"]
+    d["school"].is_active = False
+    d["school"].save(update_fields=["is_active"])
+    valid_url = (
+        f"/api/v1/aftercare/daycare/sites/{d['site'].id}/"
+        f"attendance/{row}/release-authorities/"
+    )
+    bearer = _bearer_client(d["actor"])
+    # Only the exact candidate GET can reach its guarded view. A matching
+    # prefix, a different verb, or a foreign school must fail closed.
+    assert bearer.get(valid_url).status_code == 200
+    assert bearer.post(valid_url, {}, format="json").status_code in (404, 405)
+    assert bearer.get(valid_url + "extra/").status_code == 404
+    # APIClient.credentials() stores the default bearer and tenant headers.
+    # Passing HTTP_X_SCHOOL_ID to .get() on the same client may be overridden
+    # by those saved credentials. Construct a fresh signed-bearer client with
+    # the foreign school header as its effective transport identity.
+    foreign = School.objects.create(name="Foreign disabled scope")
+    foreign_bearer = _bearer_client(d["actor"], school_id=foreign.pk)
+    assert foreign_bearer.get(valid_url).status_code == 404
+    assert not DaycareRelease.objects.exists()
+
+
+def test_release_candidates_deny_anonymous_and_foreign_school_context():
+    d = setup()
+    admitted = _checkin(d)
+    assert admitted.status_code == 201
+    row = admitted.data["attendance_id"]
+    url = (f"/api/v1/aftercare/daycare/sites/{d['site'].id}/"
+           f"attendance/{row}/release-authorities/")
+    anonymous = APIClient().get(url, HTTP_X_SCHOOL_ID=str(d["school"].id))
+    assert anonymous.status_code in (401, 403)
+    foreign = School.objects.create(name="Foreign care organization")
+    response = _release_authorities(
+        d, row, _client(d["actor"]), HTTP_X_SCHOOL_ID=str(foreign.id)
+    )
+    assert response.status_code == 404
+    assert not DaycareRelease.objects.exists()

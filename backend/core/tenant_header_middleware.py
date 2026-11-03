@@ -298,10 +298,26 @@ def enforce_tenant_context(request) -> None:
         request.method == "GET"
         and normalized_path == "/api/v1/aftercare/daycare/sites"
     )
+    # Inactive-school custody resolution must also permit a narrowly scoped
+    # pickup-candidate GET. The downstream view still requires authenticated,
+    # school-bound staff, release RBAC, room visibility, and open attendance.
+    # Never use a path prefix or permit other HTTP methods here.
+    is_diadem_release_candidates = (
+        request.method == "GET"
+        and re.fullmatch(
+            r"/api/v1/aftercare/daycare/sites/"
+            r"[0-9a-fA-F]{8}-(?:[0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}"
+            r"/attendance/"
+            r"[0-9a-fA-F]{8}-(?:[0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}"
+            r"/release-authorities",
+            normalized_path,
+        ) is not None
+    )
     is_diadem_custody_resolution = (
         is_diadem_release
         or is_diadem_open_custody_roster
         or is_diadem_custody_directory
+        or is_diadem_release_candidates
     )
     if (
         school is None
