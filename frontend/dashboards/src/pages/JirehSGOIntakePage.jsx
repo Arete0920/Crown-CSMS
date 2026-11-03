@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import CrownLayout from "../components/crown/CrownLayout.jsx";
-import { authenticatedFetch, getAccessToken } from "../utils/authClient.js";
+import { authenticatedFetch, clearBrowserAuthState, getAccessToken } from "../utils/authClient.js";
 
 const base = "/api/v1/jireh-sgo";
 const grades = ["K", ...Array.from({ length: 12 }, (_, i) => String(i + 1))];
@@ -219,8 +219,14 @@ export default function JirehSGOIntakePage() {
     <p role="note">Synthetic records only. No live family information, documents, eligibility decisions,
       donor funds, scholarships, or payments.</p>
     <p><a href="/jireh-sgo">Return to SGO overview</a></p>
+    {local && <p>
+      <button type="button" disabled={pending} onClick={() => {
+        clearBrowserAuthState();
+        globalThis.location.assign("/jireh-sgo/sign-in");
+      }}>Switch fictional SGO account</button>
+    </p>}
     {!local && <p role="alert">The fictional intake workflow is disabled outside the local demo.</p>}
-    {local && !token && <p role="alert">Sign in with a synthetic family or processor account.</p>}
+    {local && !token && <p role="alert">Use <a href="/jireh-sgo/sign-in">fictional SGO sign-in</a> to authenticate as an authorized family or processor.</p>}
     {error && <p role="alert">{error}</p>}
     {notice && <p role="status">{notice}</p>}
     {local && token && !authorized && !error && <p role="status">Verifying fictional program grants…</p>}
