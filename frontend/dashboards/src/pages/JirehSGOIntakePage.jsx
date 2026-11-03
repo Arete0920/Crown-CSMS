@@ -10,7 +10,7 @@ const reasons = [
 ];
 const card = {
   border: "1px solid var(--crown-border)", borderRadius: 8,
-  background: "var(--crown-surface)", padding: "1rem", marginBottom: "1rem",
+  background: "var(--crown-surface)", padding: "1rem", marginBottom: "1rem", overflowX: "auto",
 };
 async function sgoRequest(path, { method = "GET", data } = {}) {
   const response = await authenticatedFetch(base + path, {
@@ -257,18 +257,18 @@ export default function JirehSGOIntakePage() {
     {notice && <p role="status">{notice}</p>}
     {local && token && !authorized && !error && <p role="status">Verifying fictional program grants…</p>}
     {authorized && <>
-      <section style={card} aria-label="Family application">
+      <section style={card} aria-label="Family application" tabIndex={0}>
         <h3>1. Family: select an authorized partner program</h3>
         {families.length === 0 ? <p>No fictional family grants. SGO membership does not confer family access.</p> : <>
           <label htmlFor="family-program">Partner SGO and program</label>{" "}
-          <select id="family-program" disabled={pending} value={familyProgram}
+          <select id="family-program" style={{ maxWidth: "100%" }} disabled={pending} value={familyProgram}
             onChange={(e) => { setFamilyProgram(e.target.value); setConsent(false); setError(""); }}>
             {families.map((p) => <option key={p.id} value={p.id}>{p.organization} — {p.name} ({p.calendar_year})</option>)}
           </select>
           {family && <p>Program policy: {family.policy_version}. Consent version: {family.consent_version}.</p>}
           {family && !family.application_id && !application && <form onSubmit={submit}>
             <label htmlFor="sgo-grade">Fictional grade level</label>{" "}
-            <select id="sgo-grade" value={grade} onChange={(e) => {
+            <select id="sgo-grade" style={{ maxWidth: "100%" }} value={grade} onChange={(e) => {
               setGrade(e.target.value); setSubmissionKey("");
             }}>
               {grades.map((g) => <option key={g} value={g}>{g}</option>)}
@@ -284,7 +284,7 @@ export default function JirehSGOIntakePage() {
             {application.status === "CORRECTION_REQUESTED" && <form onSubmit={correct}>
               <p>Processor requested: {application.correction_reason}. No partner decision has been issued.</p>
               <label htmlFor="correct-grade">Correct or confirm fictional grade</label>{" "}
-              <select id="correct-grade" value={correctionGrade}
+              <select id="correct-grade" style={{ maxWidth: "100%" }} value={correctionGrade}
                 onChange={(e) => { setCorrectionGrade(e.target.value); setCorrectionKey(""); }}>
                 {grades.map((g) => <option key={g} value={g}>{g}</option>)}
               </select>{" "}
@@ -301,18 +301,18 @@ export default function JirehSGOIntakePage() {
           </div>}
         </>}
       </section>
-      <section style={card} aria-label="Processor verification queue">
+      <section style={card} aria-label="Processor verification queue" tabIndex={0}>
         <h3>2. Delegated processor: verification and corrections</h3>
         {processors.length === 0 ? <p>No delegated processor assignment. SGO ADMIN/REVIEWER is not a processor grant.</p> : <>
           <label htmlFor="processor-program">Assigned partner program</label>{" "}
-          <select id="processor-program" disabled={pending} value={processorProgram}
+          <select id="processor-program" style={{ maxWidth: "100%" }} disabled={pending} value={processorProgram}
             onChange={(e) => { setProcessorProgram(e.target.value); setProcessorRetry(null); }}>
             {processors.map((p) => <option key={p.id} value={p.id}>{p.organization} — {p.name}</option>)}
           </select>{" "}
           <button type="button" onClick={() => refreshQueue().catch(() => setError("Queue unavailable."))}>Refresh queue</button>
           <p>Scope: verification support only. No award, eligibility determination, or disbursement authority.</p>
           <label htmlFor="sgo-reason">Non-sensitive correction reason</label>{" "}
-          <select id="sgo-reason" disabled={pending} value={reason} onChange={(e) => { setReason(e.target.value); setProcessorRetry(null); }}>
+          <select id="sgo-reason" style={{ maxWidth: "100%" }} disabled={pending} value={reason} onChange={(e) => { setReason(e.target.value); setProcessorRetry(null); }}>
             {reasons.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
           </select>
           {queue.length === 0 ? <p>No submitted fictional applications in this program.</p> : <table>
