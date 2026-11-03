@@ -1,8 +1,10 @@
 """Regression contract for the local-only fictional school Jireh parent workflow."""
 from datetime import date
 from unittest import skipUnless
+from unittest.mock import patch
 
 from django.conf import settings
+from django.core.management.base import CommandError
 from django.test import TestCase, override_settings
 from rest_framework.test import APIClient
 
@@ -30,6 +32,12 @@ URL = "/api/v1/aid/family/demo-intake/"
 )
 class FictionalFamilyAidIntakeTests(TestCase):
     def setUp(self):
+        # Disposable Django SQLite test database substitutes for the exact
+        # Heritage path only within this test harness. The endpoint itself
+        # enforces the real canonical file path in normal operation.
+        guard = patch("aid.family_demo_intake._require_isolated_local_database")
+        guard.start()
+        self.addCleanup(guard.stop)
         self.schools = [
             School.objects.create(name="Fictional School " + str(index))
             for index in (1, 2)
@@ -215,6 +223,17 @@ class FictionalFamilyAidIntakeTests(TestCase):
         self.assertIn(client.get(URL, HTTP_X_SCHOOL_ID=str(self.schools[0].pk)).status_code, (401, 403))
         self.assertIn(client.post(URL, self.payload(), format="json", HTTP_X_SCHOOL_ID=str(self.schools[0].pk)).status_code, (401, 403))
         self.assertEqual(AidApplication.objects.count(), 0)
+
+
+    def test_non_heritage_sqlite_rejected_before_read_or_write(self):
+        with patch(
+            "aid.family_demo_intake._require_isolated_local_database",
+            side_effect=CommandError("not isolated Heritage SQLite"),
+        ):
+            self.assertEqual(self.get_state().status_code, 404)
+            self.assertEqual(self.submit().status_code, 404)
+        self.assertFalse(AidApplication.objects.exists())
+        self.assertFalse(AidFinancialProfile.objects.exists())
 
     @override_settings(CROWN_ENV="dev")
     def test_disabled_outside_local_is_fail_closed(self):

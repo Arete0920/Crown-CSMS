@@ -10,6 +10,7 @@ from __future__ import annotations
 from uuid import UUID
 
 from django.conf import settings
+from django.core.management.base import CommandError
 from django.db import transaction
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
@@ -27,6 +28,9 @@ from aid.models import (
 from aid.serializers import FamilyAidApplicationSerializer, FamilyAidAwardSerializer
 from core.models import AcademicYear, Family, Guardian, Student
 from households.scoping import get_request_school_id
+from sandbox_demo.management.commands.five_module_demo_preflight import (
+    _require_isolated_local_database,
+)
 
 
 # Values are invented examples, in cents. No actual household financial inputs
@@ -49,14 +53,20 @@ _MAX_STUDENTS = 12
 
 
 def _local_demo_enabled() -> bool:
-    database = settings.DATABASES["default"]
-    return bool(
+    if not (
         settings.DEBUG
         and getattr(settings, "CROWN_ENV", "") == "local"
         and getattr(settings, "CROWN_SANDBOX_ALLOW_OPEN_SESSION", False)
         and not getattr(settings, "CROWN_DEMO_MODE", False)
-        and database["ENGINE"].endswith(".sqlite3")
-    )
+    ):
+        return False
+    # Local/debug flags and SQLite alone do not prove the database disposable.
+    # Reuse the exact canonical Heritage file boundary required by demo seeding.
+    try:
+        _require_isolated_local_database()
+    except CommandError:
+        return False
+    return True
 
 
 def _linked_family(request, school_id):
