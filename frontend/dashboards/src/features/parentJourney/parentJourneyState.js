@@ -63,7 +63,8 @@ export function canAccessParentJourneyStage(stage, overview) {
   const applications = getApplications(overview);
 
   if (!applications.length) {
-    return stage === "status";
+    // A new household may apply for school aid before admissions begins.
+    return stage === "status" || stage === "aid";
   }
 
   switch (stage) {
