@@ -575,10 +575,17 @@ def seed_local_heritage_camp() -> dict[str, int]:
     if camper.school_id != school.id or camper.household.school_id != school.id:
         raise RuntimeError("Fictional Camp camper and household have inconsistent school scope.")
 
-    SchoolModule.objects.get_or_create(
+    camp_module, _ = SchoolModule.objects.get_or_create(
         school=school, module_key="little_lambs",
         defaults={"status": "active", "expiry_date": timezone.now() + timedelta(days=365)},
     )
+    # The local launcher may create a missing fictional entitlement, but
+    # must never undo an operator's existing suspension or expiration.
+    if not (camp_module.is_active or camp_module.is_trial):
+        raise RuntimeError(
+            "Fictional Camp entitlement is inactive or expired. "
+            "Reconcile the local module authorization before starting the demo."
+        )
     program, _ = SummerCampProgram.objects.get_or_create(
         school=school,
         name="Heritage Fictional Camp Operations",
@@ -597,6 +604,11 @@ def seed_local_heritage_camp() -> dict[str, int]:
         raise RuntimeError("Duplicate fictional Camp sessions require manual reconciliation.")
     if matches:
         session = matches[0]
+        if session.status != "PUBLISHED":
+            raise RuntimeError(
+                "Existing fictional Camp session is not published. "
+                "Review its status in the local Camp workflow."
+            )
         if session.start_date > today or session.end_date < today:
             # Update only our named synthetic session, retaining its PK and
             # registrations. Never rewrite an unrelated operator session.
@@ -617,6 +629,14 @@ def seed_local_heritage_camp() -> dict[str, int]:
     ))
     if len(registrations) > 1:
         raise RuntimeError("Duplicate fictional Camp registrations require manual reconciliation.")
+    if registrations and (
+        registrations[0].status != "REGISTERED"
+        or registrations[0].household_id != camper.household_id
+    ):
+        raise RuntimeError(
+            "Existing fictional Camp registration is not active or has changed household. "
+            "Review it in the local Camp workflow before demonstrating custody."
+        )
     if not registrations:
         SummerCampEnrollment.objects.create(
             school=school, session=session, student=camper, household=camper.household,
@@ -626,7 +646,17 @@ def seed_local_heritage_camp() -> dict[str, int]:
             readiness_status="BLOCKED", readiness_blockers=["MISSING_FORMS", "HEALTH_REVIEW_REQUIRED", "PICKUP_CONTACT_MISSING", "STAFF_REVIEW_REQUIRED"],
             payment_required_before_attendance=False, balance_due_cents=0,
         )
-    return {"fictional_camp_sessions": 1, "fictional_camp_registrations": 1}
+    # Report actual database state, not an optimistic constant.
+    return {
+        "fictional_camp_sessions": SummerCampSession.objects.filter(
+            pk=session.pk, school=school, status="PUBLISHED",
+            start_date__lte=today, end_date__gte=today,
+        ).count(),
+        "fictional_camp_registrations": SummerCampEnrollment.objects.filter(
+            school=school, session=session, student=camper, household=camper.household,
+            status="REGISTERED",
+        ).count(),
+    }
 
 
 def assert_flagship_proof() -> list[dict]:
