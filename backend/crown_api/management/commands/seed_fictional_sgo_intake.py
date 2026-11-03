@@ -12,6 +12,9 @@ from jireh_sgo.models import (
     SGOFamilyGrant, SGOMembership, SGOOrganization, SGOProcessorAssignment,
 )
 from jireh_sgo.services import create_program
+from sandbox_demo.management.commands.five_module_demo_preflight import (
+    _require_isolated_local_database,
+)
 
 PARTNERS = (
     ("de", "Fictional Delaware SGO (demo)", "DE"),
@@ -46,6 +49,9 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         if not fictional_intake_enabled():
             raise CommandError("Fictional intake seeding requires explicitly enabled, nonhosted local mode.")
+        # Local environment flags alone do not prove a database is disposable.
+        # Validate the exact isolated Heritage SQLite target before any writes.
+        _require_isolated_local_database()
 
         lines = [
             "# CROWN fictional SGO local demo accounts. Never use for live families or partners.",

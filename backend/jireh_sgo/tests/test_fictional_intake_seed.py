@@ -1,6 +1,7 @@
 """Local fictional partner seed must be gated, isolated, repeatable and off-repo."""
 from pathlib import Path
 import tempfile
+from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
 from django.db import connection
@@ -23,7 +24,11 @@ class FictionalSGOLocalSeedTests(TestCase):
         if connection.vendor != "sqlite":
             self.skipTest("Fictional SGO seed is restricted to isolated SQLite.")
 
-    def test_two_partner_programs_separate_grants_and_repeatable_local_credentials(self):
+    @patch("crown_api.management.commands.seed_fictional_sgo_intake._require_isolated_local_database")
+    def test_two_partner_programs_separate_grants_and_repeatable_local_credentials(self, guard):
+        # This unit test uses Django's disposable test SQLite database, not
+        # the exact on-disk Heritage path checked by the real command.
+        self.assertIsNotNone(guard)
         with tempfile.TemporaryDirectory() as root:
             target = Path(root) / "sgo-credentials.txt"
             call_command("seed_fictional_sgo_intake", credentials_file=str(target))
@@ -56,6 +61,18 @@ class FictionalSGOLocalSeedTests(TestCase):
             self.assertEqual(SGOProcessorAssignment.objects.count(), 2)
             self.assertEqual(SGOMembership.objects.count(), 2)
             self.assertNotEqual(target.read_text(encoding="utf-8"), first)
+            self.assertEqual(guard.call_count, 2)
+
+    def test_local_mode_alone_cannot_seed_a_non_heritage_database(self):
+        with tempfile.TemporaryDirectory() as root:
+            target = Path(root) / "sgo-credentials.txt"
+            with self.assertRaisesRegex(CommandError, "isolated Heritage local SQLite"):
+                call_command("seed_fictional_sgo_intake", credentials_file=str(target))
+            self.assertFalse(target.exists())
+            self.assertFalse(SGOOrganization.objects.exists())
+            self.assertFalse(get_user_model().objects.filter(
+                username__startswith="sgo_demo_",
+            ).exists())
 
     def test_hosted_and_disabled_seed_fail_closed_without_side_effects(self):
         with tempfile.TemporaryDirectory() as root:

@@ -64,8 +64,11 @@ describe("Jireh SGO interactive fictional intake", () => {
         && JSON.parse(opts.body).consent_version === "DEMO_CONSENT_V1",
     )).toBe(true));
     expect(await screen.findByText(/Persistent application readback/)).toBeTruthy();
-    expect(screen.getByText(/Status:/).textContent).toContain("SUBMITTED");
-    expect(screen.getByText(/Status:/).textContent).toContain("revision: 1");
+    const savedStatus = screen.getByText((_, element) =>
+      element?.tagName === "P"
+      && element.textContent.startsWith("Status:")
+      && element.textContent.includes("SUBMITTED"));
+    expect(savedStatus.textContent).toContain("revision: 1");
   });
 
   it("conceals previous family case when signed-in principal changes", async () => {
