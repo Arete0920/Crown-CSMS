@@ -52,7 +52,7 @@ def local_environment() -> dict[str, str]:
         "DJANGO_ALLOWED_HOSTS": "localhost,127.0.0.1,testserver",
         "DATABASE_URL": "sqlite:///" + (STATE / "heritage.sqlite3").as_posix(),
         "CROWN_SANDBOX_ALLOW_OPEN_SESSION": "true", "CROWN_DEMO_MODE": "false",
-        "CROWN_DEV_OPEN_API": "false", "TENANT_HEADER_REQUIRED": "true",
+        "CROWN_DEV_OPEN_API": "false", "TENANT_HEADER_REQUIRED": "true", "CROWN_SGO_FICTIONAL_INTAKE_ENABLED": "true",
         "BUILD_SHA": sha, "VITE_BUILD_SHA": sha, "GITHUB_SHA": sha,
         "VITE_API_BASE": "http://127.0.0.1:8000",
         "VITE_API_BASE_URL": "", "VITE_LOCAL_DEMO": "1",
@@ -165,6 +165,9 @@ def prepare(env: dict[str, str], npm: list[str], skip_install: bool) -> Path:
     if not relationships.exists():
         run(manage + ["shell", "--command", "from sandbox_demo.services import seed_local_heritage_relationships; seed_local_heritage_relationships()"], env)
         relationships.write_text(env["BUILD_SHA"], encoding="utf-8")
+    sgo_credentials = STATE / "sgo-credentials.txt"
+    run(manage + ["seed_fictional_sgo_intake", "--credentials-file", str(sgo_credentials)], env)
+    print(f"Fictional SGO sign-in credentials: {sgo_credentials}", flush=True)
     run(npm + ["run", "build"], env, FRONTEND)
     return python
 
