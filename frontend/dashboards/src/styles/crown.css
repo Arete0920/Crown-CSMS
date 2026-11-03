@@ -158,7 +158,8 @@ body {
   .crown-sidebar.is-open { display: block; position: fixed; inset: 0 auto 0 0; z-index: 103; overflow-y: auto; }
   .crown-sidebar-close { display: block; }
   .crown-sidebar-backdrop { display: block; position: fixed; inset: 0; z-index: 102; background: color-mix(in srgb, var(--crown-primary-deep) 40%, transparent); }
-  .crown-main    { padding: 56px 16px 16px; }
+  .crown-main    { padding: 16px; }
+  .crown-app:has(.crown-sidebar-toggle) .crown-main { padding-top: 56px; }
   .crown-col-8,
   .crown-col-6,
   .crown-col-4,

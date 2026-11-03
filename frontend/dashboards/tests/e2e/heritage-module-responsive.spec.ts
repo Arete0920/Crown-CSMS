@@ -1,6 +1,5 @@
 import { expect, test, type Page, type TestInfo } from "@playwright/test";
 import { readFileSync } from "node:fs";
-
 const required = process.env.CROWN_REQUIRE_SGO_BROWSER_PROOF === "1";
 async function login(page: Page, role: string) {
   await page.goto("/login");
@@ -49,6 +48,7 @@ for (const [width, height] of [[1440, 900], [1024, 768], [390, 844]]) {
       expect(username).toBe("sgo_demo_de_" + role);
       await page.getByLabel("Synthetic account username").fill(username); await page.getByLabel("Synthetic account password").fill(password);
       await page.getByRole("button", { name: "Sign in to fictional SGO" }).click(); await page.waitForURL("**/jireh-sgo/intake");
+      await expect(page.getByLabel(role === "family" ? "Partner SGO and program" : "Assigned partner program")).toBeVisible();
       await inspect(page, "/jireh-sgo/intake", info); await expect(page.locator("aside")).toHaveCount(0);
     }
     expect(errors).toEqual([]);

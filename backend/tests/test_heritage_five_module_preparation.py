@@ -108,7 +108,6 @@ def test_missing_seed_command_cannot_claim_success(monkeypatch, tmp_path):
     assert calls[0][-3:] == ["seed_heritage_module_samples", "--fictional-local-only",
                            "--enable-fictional-care-entitlements"]
 
-
 def test_missing_five_module_source_fails_before_install_or_database_mutation(monkeypatch, tmp_path, capsys):
     launcher = load_launcher()
     monkeypatch.setattr(launcher, "ROOT", tmp_path)
