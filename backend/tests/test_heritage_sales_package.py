@@ -194,3 +194,31 @@ def test_source_stamped_candidate_audit_accepts_exact_reviewed_template(monkeypa
     assert proof["release_certified"] is False
     assert proof["downloaded_source_critical_git_blobs"] == "NOT_RUN"
     assert proof["five_module_browser_acceptance"] == "NOT_RUN_BY_THIS_SCRIPT"
+
+
+def test_source_stamped_candidate_rejects_dirty_tracked_checkout(monkeypatch, tmp_path):
+    """Matching HEAD is insufficient when reviewed tracked files differ."""
+    packager = loader()
+    from types import SimpleNamespace
+    candidate_sha = "a" * 40
+    observed = []
+
+    def fake_git_run(command, **kwargs):
+        observed.append(command)
+        if command[1:3] == ["rev-parse", "HEAD"]:
+            return SimpleNamespace(stdout=candidate_sha + "\n")
+        if command[1:3] == ["status", "--porcelain"]:
+            return SimpleNamespace(stdout=" M Install-and-Start-Heritage.py\n")
+        pytest.fail(f"Unexpected Git invocation: {command}")
+
+    monkeypatch.setattr(packager.subprocess, "run", fake_git_run)
+    with pytest.raises(RuntimeError, match="modified tracked files"):
+        packager.build(tmp_path, source_sha=candidate_sha, five_module_candidate=True)
+    assert len(observed) == 2
+    assert list(tmp_path.iterdir()) == []
+
+
+def test_source_override_cannot_silently_build_basic_demo(tmp_path):
+    packager = loader()
+    with pytest.raises(RuntimeError, match="explicit five-module candidate"):
+        packager.build(tmp_path, source_sha="a" * 40)

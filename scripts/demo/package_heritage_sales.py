@@ -63,6 +63,15 @@ def require_exact_candidate_checkout(source_sha: str) -> None:
         raise RuntimeError("Cannot establish exact Git checkout for candidate packaging") from exc
     if result.stdout.strip() != source_sha:
         raise RuntimeError("Candidate package source SHA does not match checked-out Git HEAD")
+    try:
+        tracked = subprocess.run(
+            ["git", "status", "--porcelain", "--untracked-files=no"],
+            cwd=ROOT, capture_output=True, check=True, text=True, timeout=15,
+        )
+    except (OSError, subprocess.CalledProcessError, subprocess.TimeoutExpired) as exc:
+        raise RuntimeError("Cannot verify clean tracked Git checkout for candidate packaging") from exc
+    if tracked.stdout.strip():
+        raise RuntimeError("Candidate package checkout has modified tracked files")
 
 
 def build(
@@ -71,6 +80,8 @@ def build(
 ) -> Path:
     if five_module_candidate and source_sha is None:
         raise RuntimeError("Five-module candidate packaging requires an explicit source SHA")
+    if source_sha is not None and not five_module_candidate:
+        raise RuntimeError("Source SHA overrides require an explicit five-module candidate")
     sha = source_sha if source_sha is not None else pinned_revision()
     installer_bytes = render_installer(sha, five_module_candidate=five_module_candidate)
     if five_module_candidate:
