@@ -38,7 +38,6 @@ export default function DiademDirectorRosterPage() {
     setSites(null);
     setRoster(null);
     setReview(null);
-    setReleaseMessage("");
     setSiteId("");
     setDirectoryScope(null);
     setRosterScope(null);
@@ -94,7 +93,7 @@ export default function DiademDirectorRosterPage() {
           {!siteId && <option value="">No center selected</option>}
           {currentSites?.map((site) => <option key={site.site_id} value={site.site_id}>{site.name}{site.is_active ? "" : " (inactive)"}</option>)}
         </select>{" "}
-        <button type="button" disabled={loading} onClick={() => setRefresh((n) => n + 1)}>Refresh</button>
+        <button type="button" disabled={loading} onClick={() => { setReleaseMessage(""); setRefresh((n) => n + 1); }}>Refresh</button>
         {loading && <p role="status">Loading live Diadem records…</p>}
         {error && <p role="alert">{error}</p>}
         {!loading && currentSites?.length === 0 && <p>No authorized childcare centers available.</p>}
@@ -118,7 +117,7 @@ export default function DiademDirectorRosterPage() {
           {review && currentRoster.rows.some((row) => row.attendance_id === review.attendance_id) &&
             <DiademReleaseReview key={`${schoolContext}:${siteId}:${review.attendance_id}`}
               siteId={siteId} attendance={review} onCancel={() => setReview(null)}
-              onReleased={() => { setReview(null); setReleaseMessage("Server-confirmed handoff; refreshing custody roster."); setRefresh((n) => n + 1); }} />}
+              onReleased={() => { setReview(null); setReleaseMessage("Server-confirmed handoff. Verify the refreshed custody roster before proceeding."); setRefresh((n) => n + 1); }} />}
         </> : <p>{loading ? "Loading roster…" : "No verified roster available."}</p>}
         {releaseMessage && currentSites && <p role="status">{releaseMessage}</p>}
         <p>Only authorized staff can confirm verified release. New admission remains separately gated.</p>
