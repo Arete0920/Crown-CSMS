@@ -609,7 +609,7 @@ def compute_camper_readiness(school_id, enrollment_id):
 
 
 def board_summary(school_id):
-    today = timezone.now().date()
+    today = camp_school_local_date(school_id, timezone.now())
     session_count = SummerCampSession.objects.filter(school_id=school_id).count()
     registered = SummerCampEnrollment.objects.filter(school_id=school_id, status="REGISTERED").count()
     waitlisted = SummerCampEnrollment.objects.filter(school_id=school_id, status="WAITLISTED").count()
