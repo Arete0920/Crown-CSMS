@@ -56,6 +56,16 @@ jobs:
           PIN_SHA="$(PYTHONPATH=scripts/demo python -c 'from package_heritage_sales import pinned_revision; print(pinned_revision())')"
           git fetch --no-tags --depth=1 origin "$PIN_SHA"
           python scripts/demo/verify_heritage_sales_package.py --download
+      - name: Exercise source-stamped five-module candidate contract (NOT certified)
+        shell: bash
+        run: |
+          set -euo pipefail
+          CHECKOUT_SHA="$(git rev-parse HEAD)"
+          test "$CHECKOUT_SHA" = "$GITHUB_SHA"
+          python scripts/demo/package_heritage_sales.py --source-sha "$CHECKOUT_SHA" --five-module-candidate
+          python scripts/demo/verify_heritage_sales_package.py --source-sha "$CHECKOUT_SHA" --five-module-candidate
+          # Never upload this candidate: the existing upload path only includes
+          # the historical source-audited basic ZIP, not this unaccepted build.
       - name: Upload explicitly uncertified QA candidate
         if: success()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
