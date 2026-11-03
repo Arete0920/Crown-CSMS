@@ -106,7 +106,7 @@ def test_sale_audit_rejects_swapped_executable_or_instructions_without_execution
     # The verification must reject a modified ZIP before executing an
     # installer extracted from that ZIP (or any installer at all).
     with patch.object(auditor.runpy, "run_path", side_effect=AssertionError("untrusted ZIP executed")) as run_path:
-        with pytest.raises(RuntimeError, match="differs from the checked-out source"):
+        with pytest.raises(RuntimeError, match="differs from the reviewed source template"):
             auditor.verify(download=False)
         run_path.assert_not_called()
     assert not (destination / "heritage-starter-audit.json").exists()

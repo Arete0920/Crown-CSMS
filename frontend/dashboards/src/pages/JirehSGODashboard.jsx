@@ -1,4 +1,8 @@
 import { useEffect, useState } from "react";
+import CrownLayout from "../components/crown/CrownLayout.jsx";
+import CrownCard from "../components/crown/CrownCard.jsx";
+import CrownMetricCard from "../components/crown/CrownMetricCard.jsx";
+import { CrownGrid, Col } from "../components/crown/CrownGrid.jsx";
 import { authenticatedFetch, getAccessToken } from "../utils/authClient.js";
 
 async function loadGrantor(url) {
@@ -10,9 +14,10 @@ async function loadGrantor(url) {
   return data;
 }
 
-const money = (cents) => new Intl.NumberFormat("en-US", {
-  style: "currency", currency: "USD",
-}).format(Number(cents || 0) / 100);
+const money = (cents) => Number.isSafeInteger(cents) && cents >= 0
+  ? new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(cents / 100)
+  : "Unavailable";
+const count = (value) => Number.isSafeInteger(value) && value >= 0 ? value : "Unavailable";
 
 export default function JirehSGODashboard() {
   const token = getAccessToken();
@@ -23,6 +28,7 @@ export default function JirehSGODashboard() {
   const [overviewToken, setOverviewToken] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [refresh, setRefresh] = useState(0);
 
   useEffect(() => {
     // A previous member's grantor records must not remain visible when a
@@ -49,7 +55,7 @@ export default function JirehSGODashboard() {
       if (live) { setOverview(null); setOrganizations([]); setError("SGO membership could not be verified."); }
     }).finally(() => { if (live) setLoading(false); });
     return () => { live = false; };
-  }, [token]);
+  }, [token, refresh]);
 
   useEffect(() => {
     if (!token || !organizationId || membershipToken !== token) {
@@ -76,45 +82,76 @@ export default function JirehSGODashboard() {
     return () => { live = false; };
   }, [token, organizationId, membershipToken]);
 
-  return <main style={{ maxWidth: 1100, margin: "0 auto", padding: "2rem" }}>
-    <h1>Jireh SGO — Grantor Overview</h1>
-    <p>Standalone, noncash pilot workspace. No settlement or payments enabled.</p>
-    <p role="note">Commitments are not funded, cleared, allocated, or paid.</p>
-    {!token && <p role="alert">Authorized SGO sign-in is required.</p>}
-    {token && loading && <p role="status">Verifying grantor membership and records…</p>}
-    {token && error && <p role="alert">{error}</p>}
-    {token && membershipToken === token && organizations?.length === 0 && !error && <p>No active SGO membership is assigned.</p>}
-    {token && membershipToken === token && organizations?.length > 0 && <section aria-label="SGO membership">
-      <label htmlFor="sgo-organization">Grantor organization</label>
-      <select id="sgo-organization" value={organizationId}
-        onChange={(event) => setOrganizationId(event.target.value)}>
-        {organizations.map((organization) => <option key={organization.id} value={organization.id}>
-          {organization.name} ({organization.role})
-        </option>)}
-      </select>
-    </section>}
-    {token && membershipToken === token && overviewToken === token && overview && !loading && <>
-      <section aria-label="Noncash aggregate totals">
-        <h2>{overview.organization.name}</h2>
-        <p>Authorized role: {overview.role}</p>
-        <p>Programs: {overview.totals.programs}; applications: {overview.totals.applications}</p>
-        <p>Noncash commitments: {money(overview.totals.noncash_committed_cents)}</p>
-      </section>
-      <section aria-label="SGO programs">
-        <h2>Versioned programs</h2>
-        {overview.programs.length === 0 ? <p>No versioned programs yet.</p> : <table>
-          <thead><tr><th scope="col">Program</th><th scope="col">Year</th>
-          <th scope="col">Source</th><th scope="col">Policy</th>
-          <th scope="col">Applications</th><th scope="col">Eligible</th>
-          <th scope="col">Unreviewed</th><th scope="col">Noncash committed</th></tr></thead>
-          <tbody>{overview.programs.map((row) => <tr key={row.id}>
-            <th scope="row">{row.name}</th><td>{row.year}</td><td>{row.source}</td>
-            <td>{row.policy_version}</td><td>{row.applications}</td>
-            <td>{row.eligible}</td><td>{row.unreviewed}</td>
-            <td>{money(row.noncash_committed_cents)}</td>
-          </tr>)}</tbody>
-        </table>}
-      </section>
-    </>}
-  </main>;
+  // Keep page contents hidden during session changes, even before effects run.
+  const verifiedMembership = Boolean(token && membershipToken === token && organizations?.length);
+  const currentOrganization = verifiedMembership && organizations.some((organization) => String(organization.id) === String(organizationId));
+  const currentOverview = currentOrganization && overviewToken === token && !loading
+    && overview?.organization?.id === organizationId ? overview : null;
+
+  return (
+    <CrownLayout
+      navigationScope="standalone"
+      title="Jireh SGO"
+      subtitle="Standalone scholarship grantor workspace — noncash pilot"
+      right={<button type="button" disabled={!token || loading} onClick={() => {
+        setOrganizations(null);
+        setMembershipToken(null);
+        setOverview(null);
+        setOverviewToken(null);
+        setError("");
+        setLoading(true);
+        setRefresh((value) => value + 1);
+      }}>
+        Refresh grantor records
+      </button>}
+    >
+      <p>Authenticated organization-scoped records. No school tenant is selected or inferred.</p>
+      <p role="note">Commitments are not funded, cleared, allocated, or paid. No settlement or payments are enabled.</p>
+      {!token && <p role="alert">Authorized SGO sign-in is required.</p>}
+      {token && loading && <p role="status">Verifying grantor membership and records…</p>}
+      {token && error && <p role="alert">{error}</p>}
+      {token && membershipToken === token && organizations?.length === 0 && !error &&
+        <p role="status">No active SGO membership is assigned.</p>}
+      {verifiedMembership && <CrownCard title="Grantor membership">
+        <label htmlFor="sgo-organization">Grantor organization</label>{" "}
+        <select id="sgo-organization" value={organizationId} disabled={loading}
+          onChange={(event) => { setOverview(null); setOverviewToken(null); setError(""); setOrganizationId(event.target.value); }}>
+          {organizations.map((organization) => <option key={organization.id} value={organization.id}>
+            {organization.name} ({organization.role})
+          </option>)}
+        </select>
+      </CrownCard>}
+      {currentOverview && <>
+        <CrownGrid>
+          <Col span={12}><CrownCard title="Organization and authorization">
+            <p><strong>{currentOverview.organization.name}</strong></p>
+            <p>Authorized role: {currentOverview.role}</p>
+            <p>Operational status: {currentOverview.status === "PILOT_SOURCE_ONLY" ? "Source-only pilot (not certified)" : "Unverified"}</p>
+            <p>Source: authenticated Jireh SGO program overview. Aggregates represent recorded noncash activity only.</p>
+          </CrownCard></Col>
+          <Col span={4}><CrownMetricCard label="Programs" value={count(currentOverview.totals?.programs)} /></Col>
+          <Col span={4}><CrownMetricCard label="Applications" value={count(currentOverview.totals?.applications)} /></Col>
+          <Col span={4}><CrownMetricCard label="Noncash commitments" value={money(currentOverview.totals?.noncash_committed_cents)} hint="Not payments or settled funds" /></Col>
+          <Col span={12}><CrownCard title="Versioned programs">
+            {currentOverview.programs.length === 0
+              ? <p>No versioned programs yet.</p>
+              : <div role="region" aria-label="SGO programs" tabIndex={0} style={{ overflowX: "auto" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                  <thead><tr><th scope="col">Program</th><th scope="col">Year</th>
+                    <th scope="col">Source</th><th scope="col">Policy</th>
+                    <th scope="col">Applications</th><th scope="col">Eligible</th>
+                    <th scope="col">Unreviewed</th><th scope="col">Noncash committed</th></tr></thead>
+                  <tbody>{currentOverview.programs.map((row) => <tr key={row.id}>
+                    <th scope="row">{row.name}</th><td>{row.year ?? "Unavailable"}</td>
+                    <td>{row.source || "Unavailable"}</td><td>{row.policy_version || "Unavailable"}</td>
+                    <td>{count(row.applications)}</td><td>{count(row.eligible)}</td>
+                    <td>{count(row.unreviewed)}</td><td>{money(row.noncash_committed_cents)}</td>
+                  </tr>)}</tbody>
+                </table>
+              </div>}
+          </CrownCard></Col>
+        </CrownGrid>
+      </>}
+    </CrownLayout>
+  );
 }
