@@ -109,6 +109,44 @@ def test_local_module_samples_are_idempotent_and_do_not_authorize_custody(
     ).exists()
 
 
+
+@pytest.mark.parametrize("tamper", [
+    "ready_enrollment", "cancelled_enrollment", "activated_room",
+])
+def test_diadem_blocked_sample_reseed_refuses_changed_custody_posture(
+    monkeypatch, settings, tamper,
+):
+    """Do not silently accept a changed fictional daycare readiness state."""
+    from aftercare.daycare_models import DaycareEnrollment, DaycareRoom
+
+    with _setup_local(monkeypatch, settings):
+        seed_heritage_module_samples()
+        if tamper == "ready_enrollment":
+            DaycareEnrollment.objects.filter(
+                pk=fixed_id("daycare-blocked-enrollment"),
+            ).update(readiness="READY")
+        elif tamper == "cancelled_enrollment":
+            DaycareEnrollment.objects.filter(
+                pk=fixed_id("daycare-blocked-enrollment"),
+            ).update(status="CANCELLED")
+        else:
+            DaycareRoom.objects.filter(
+                pk=fixed_id("daycare-room-unapproved"),
+            ).update(is_active=True)
+
+        with pytest.raises(CommandError, match="Diadem blocked sample changed"):
+            seed_heritage_module_samples()
+
+    enrollment = DaycareEnrollment.objects.get(pk=fixed_id("daycare-blocked-enrollment"))
+    room = DaycareRoom.objects.get(pk=fixed_id("daycare-room-unapproved"))
+    if tamper == "ready_enrollment":
+        assert enrollment.readiness == "READY"
+    elif tamper == "cancelled_enrollment":
+        assert enrollment.status == "CANCELLED"
+    else:
+        assert room.is_active
+
+
 @pytest.mark.parametrize("next_state", ["UNDER_REVIEW", "NEEDS_INFO"])
 def test_canonical_jireh_review_progress_preserves_offered_evidence(
     monkeypatch, settings, next_state,

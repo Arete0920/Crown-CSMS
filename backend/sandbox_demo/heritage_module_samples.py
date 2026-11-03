@@ -182,7 +182,7 @@ def seed_heritage_module_samples() -> dict[str, int]:
     from aftercare.models import AftercareEnrollment, AftercareProgramConfig
     from aftercare.daycare_models import (
         DaycareSite, DaycareRoom, DaycareProgram, DaycareChild,
-        DaycareEnrollment,
+        DaycareEnrollment, DaycareGuardianAuthority,
     )
 
     school = School.objects.select_for_update().filter(
@@ -276,9 +276,26 @@ def seed_heritage_module_samples() -> dict[str, int]:
         "start_date": SAMPLE_START, "weekdays": [0, 1, 2, 3, 4],
     }, {"school_id": HERITAGE_ID, "site_id": site.pk,
         "child_id": child.pk, "program_id": program.pk})
-    if enrollment.readiness == "READY" and not room.is_active:
+    # This seed is a BLOCKED training fixture, not a grant of childcare
+    # readiness. Never silently count a changed record as the original sample.
+    if (
+        not site.is_active
+        or not program.is_active
+        or not child.is_active
+        or room.is_active
+        or room.licensed_capacity is not None
+        or room.max_children_per_staff is not None
+        or room.policy_verified_by_id is not None
+        or room.policy_verified_at is not None
+        or enrollment.status != "ACTIVE"
+        or enrollment.readiness != "BLOCKED"
+        or enrollment.room_id != room.pk
+        or DaycareGuardianAuthority.objects.filter(
+            child=child, is_active=True,
+        ).exists()
+    ):
         raise CommandError(
-            "Unapproved training room cannot support ready custody."
+            "Fictional Diadem blocked sample changed; manual reconciliation required."
         )
     return {
         "canonical_jireh_applications": canonical_jireh_app_count,
