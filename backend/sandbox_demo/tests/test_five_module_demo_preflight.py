@@ -60,22 +60,27 @@ def _load_heritage_launcher():
     return launcher
 
 
-def test_launcher_runs_strict_audit_with_same_isolated_environment():
+def test_launcher_runs_strict_audit_with_same_isolated_environment(tmp_path):
     launcher = _load_heritage_launcher()
     python = Path("isolated-demo") / "python.exe"
     env = {
         "CROWN_ENV": "local",
+        "BUILD_SHA": "a" * 40,
         "DJANGO_DEBUG": "true",
         "DATABASE_URL": "sqlite:///fictional/heritage.sqlite3",
     }
     argv = ["start_heritage_local.py", "--prepare-only", "--five-module-preflight"]
     with patch.object(sys, "argv", argv), \
+         patch.object(launcher, "STATE", tmp_path), \
+         patch.object(launcher, "require_five_module_sources"), \
          patch.object(launcher, "available_ports"), \
          patch.object(launcher, "local_environment", return_value=env), \
          patch.object(launcher, "npm_command", return_value=["npm"]), \
          patch.object(launcher, "prepare", return_value=python), \
+         patch.object(launcher, "seed_five_module_fixtures") as seeding, \
          patch.object(launcher, "run") as run_command:
         assert launcher.main() == 0
+    seeding.assert_called_once_with(env, python)
     run_command.assert_called_once_with(
         [str(python), str(launcher.ROOT / "backend/manage.py"),
          "five_module_demo_preflight", "--strict"],
@@ -83,17 +88,28 @@ def test_launcher_runs_strict_audit_with_same_isolated_environment():
     )
 
 
-def test_launcher_strict_audit_failure_returns_nonzero_without_starting_servers():
+def test_launcher_strict_audit_failure_returns_nonzero_without_starting_servers(tmp_path):
     launcher = _load_heritage_launcher()
     argv = ["start_heritage_local.py", "--prepare-only", "--five-module-preflight"]
+    env = {"CROWN_ENV": "local", "BUILD_SHA": "a" * 40}
+    python = Path("isolated-demo/python.exe")
     with patch.object(sys, "argv", argv), \
+         patch.object(launcher, "STATE", tmp_path), \
+         patch.object(launcher, "require_five_module_sources"), \
          patch.object(launcher, "available_ports"), \
-         patch.object(launcher, "local_environment", return_value={"CROWN_ENV": "local"}), \
+         patch.object(launcher, "local_environment", return_value=env), \
          patch.object(launcher, "npm_command", return_value=["npm"]), \
-         patch.object(launcher, "prepare", return_value=Path("isolated-demo/python.exe")), \
+         patch.object(launcher, "prepare", return_value=python), \
+         patch.object(launcher, "seed_five_module_fixtures") as seeding, \
          patch.object(launcher, "run",
-                      side_effect=subprocess.CalledProcessError(1, ["five_module_demo_preflight"])):
+                      side_effect=subprocess.CalledProcessError(1, ["five_module_demo_preflight"])) as audit:
         assert launcher.main() == 1
+    seeding.assert_called_once_with(env, python)
+    audit.assert_called_once_with(
+        [str(python), str(launcher.ROOT / "backend/manage.py"),
+         "five_module_demo_preflight", "--strict"],
+        env,
+    )
 
 
 def test_launcher_rejects_strict_audit_without_prepare_only():
