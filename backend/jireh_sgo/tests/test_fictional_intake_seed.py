@@ -7,7 +7,8 @@ from django.db import connection
 from django.core.management import call_command
 from django.core.management.base import CommandError
 from django.test import TestCase, override_settings
-from jireh_sgo.models import ( SGOApplication, SGOFamilyGrant, SGOMembership, SGOOrganization, SGOProcessorAssignment, SGOProgram, )
+from jireh_sgo.models import ( SGOApplication, SGOAward, SGOFamilyGrant, SGOMembership, SGOOrganization, SGOProcessorAssignment, SGOProgram, )
+from crown_api.management.commands.seed_fictional_sgo_intake import HERITAGE_SCHOOL
 @override_settings( CROWN_ENV="local", DJANGO_ENV="local", DEBUG=True, CROWN_DEMO_MODE=False, CROWN_SGO_FICTIONAL_INTAKE_ENABLED=True, )
 class FictionalSGOLocalSeedTests(TestCase):
     def setUp(self):
@@ -22,12 +23,11 @@ class FictionalSGOLocalSeedTests(TestCase):
             target = Path(root) / "sgo-credentials.txt"
             call_command("seed_fictional_sgo_intake", credentials_file=str(target))
             self.assertTrue(target.is_file())
-            self.assertEqual(SGOOrganization.objects.count(), 2)
-            self.assertEqual(SGOProgram.objects.count(), 2)
-            self.assertEqual(SGOFamilyGrant.objects.count(), 2)
-            self.assertEqual(SGOProcessorAssignment.objects.count(), 2)
-            self.assertEqual(SGOMembership.objects.count(), 2)
-            self.assertEqual(SGOApplication.objects.count(), 0)
+            for model in (SGOOrganization, SGOProgram, SGOFamilyGrant, SGOProcessorAssignment, SGOMembership, SGOApplication):
+                self.assertEqual(model.objects.count(), 2)
+            self.assertEqual(SGOApplication.objects.filter(school_key=HERITAGE_SCHOOL).count(), 2)
+            self.assertFalse(SGOAward.objects.exists())
+            self.assertFalse(SGOApplication.objects.filter(student_key__in=SGOFamilyGrant.objects.values("student_key")).exists())
             first = target.read_text(encoding="utf-8")
             self.assertIn("sgo_demo_de_family", first)
             self.assertIn("sgo_demo_pa_processor", first)
@@ -44,11 +44,9 @@ class FictionalSGOLocalSeedTests(TestCase):
             self.assertFalse(SGOMembership.objects.filter(user=family_b).exists())
             self.assertFalse(SGOProcessorAssignment.objects.filter(user=family_a).exists())
             call_command("seed_fictional_sgo_intake", credentials_file=str(target))
-            self.assertEqual(SGOOrganization.objects.count(), 2)
-            self.assertEqual(SGOProgram.objects.count(), 2)
-            self.assertEqual(SGOFamilyGrant.objects.count(), 2)
-            self.assertEqual(SGOProcessorAssignment.objects.count(), 2)
-            self.assertEqual(SGOMembership.objects.count(), 2)
+            for model in (SGOOrganization, SGOProgram, SGOFamilyGrant, SGOProcessorAssignment, SGOMembership, SGOApplication):
+                self.assertEqual(model.objects.count(), 2)
+            self.assertFalse(SGOAward.objects.exists())
             self.assertNotEqual(target.read_text(encoding="utf-8"), first)
             self.assertEqual(guard.call_count, 2)
     @patch("crown_api.management.commands.seed_fictional_sgo_intake._require_isolated_local_database")

@@ -1,14 +1,15 @@
 """Seed two strictly fictional partner SGOs into the isolated local Heritage database."""
 import secrets
 from pathlib import Path
-from uuid import NAMESPACE_URL, uuid5
+from uuid import UUID, NAMESPACE_URL, uuid5
 from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 from jireh_sgo.family_intake_api import fictional_intake_enabled
 from jireh_sgo.models import ( SGOFamilyGrant, SGOMembership, SGOOrganization, SGOProcessorAssignment, )
-from jireh_sgo.services import create_program
+from jireh_sgo.services import create_application, create_program
 from sandbox_demo.management.commands.five_module_demo_preflight import ( _require_isolated_local_database, )
+HERITAGE_SCHOOL = UUID("19801b59-8c05-4c84-9312-5d792e4e839d")
 PARTNERS = ( ("de", "Fictional Delaware SGO (demo)", "DE"), ("pa", "Fictional Pennsylvania SGO (demo)", "PA"), )
 def _make_user(username):
     User = get_user_model()
@@ -51,6 +52,8 @@ class Command(BaseCommand):
             program = create_program( user=partner, organization_id=org.id, name=f"{state} Synthetic Scholarship Intake 2027", code=f"fictional-{code}-2027", calendar_year=2027,
                 funding_source="PRIVATE", rule_version="DEMO_POLICY_2027_V1",
             )
+            create_application(user=partner, organization_id=org.id, program_id=program.id,
+                student_key=uuid5(NAMESPACE_URL, f"crown-fictional-sgo-{code}-inventory"), school_key=HERITAGE_SCHOOL)
             student = uuid5(NAMESPACE_URL, f"crown-fictional-sgo-{code}-student")
             school = uuid5(NAMESPACE_URL, f"crown-fictional-sgo-{code}-school")
             grant, _ = SGOFamilyGrant.objects.get_or_create( program=program, student_key=student, defaults={ "user": family, "school_key": school,
