@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, request as isolatedRequest, type Page } from "@playwright/test";
 
 // This suite is deliberately opt-in and pinned to the local Heritage launcher.
 // It must never change hosted, production, or real-school configurations.
@@ -41,6 +41,72 @@ test.describe("Camp setup — isolated local Heritage acceptance", () => {
     const payload = await catalog.json();
     expect(payload.schools?.map((school: { key: string }) => school.key)).toEqual(["heritage-core"]);
     await openHeadOfSchool(page);
+  });
+
+  test("real fictional registration persists after reload while clearance and unauthorized admission stay denied", async ({ page, request }, testInfo) => {
+    expect(process.env.CROWN_EXPECTED_FRONTEND_SHA).toMatch(/^[0-9a-f]{40}$/);
+    const build = await request.get(FRONTEND + "/build.json");
+    const identity = await build.json();
+    expect(identity.build_sha).toBe(process.env.CROWN_EXPECTED_FRONTEND_SHA);
+    expect(identity.deploy_tag).toBe("heritage-local");
+    await page.goto(FRONTEND + "/summer-camp-dashboard/roster");
+    const panel = page.getByRole("region", { name: "Fictional Camp registration" });
+    await expect(panel).toBeVisible();
+    const option = panel.getByRole("option", { name: "Avery Reed (Grade 7)", exact: true });
+    await expect(option).toHaveCount(1);
+    const student = await option.getAttribute("value");
+    expect(student).toMatch(/^[0-9a-f-]{36}$/);
+    await panel.getByLabel("Camper").selectOption(student!);
+    const post = page.waitForResponse((response) => new URL(response.url()).pathname === "/api/v1/summer-camp/enrollments/" && response.request().method() === "POST");
+    const get = page.waitForResponse((response) => new URL(response.url()).pathname === "/api/v1/summer-camp/enrollments/" && response.request().method() === "GET");
+    await panel.getByRole("button", { name: "Save fictional registration" }).click();
+    const posted = await post;
+    expect(posted.status()).toBe(201);
+    const saved = await posted.json();
+    expect(saved).toMatchObject({ student, status: "REGISTERED", readiness_status: "BLOCKED", health_status: "NEEDS_REVIEW", pickup_status: "MISSING", payment_status: "NOT_BILLED", balance_due_cents: 0 });
+    expect((await get).status()).toBe(200);
+    await expect(panel.getByRole("status")).toContainText("Registration saved and verified");
+    const headers = { Authorization: (await posted.request().headerValue("authorization"))!, "X-School-Id": (await posted.request().headerValue("x-school-id"))! };
+    expect(headers.Authorization).toMatch(/^Bearer /);
+    const readback = await request.get(BACKEND + `/api/v1/summer-camp/enrollments/?session_id=${saved.session}`, { headers });
+    expect(readback.status()).toBe(200);
+    const canonical = (await readback.json()).filter((item: { id: number }) => item.id === saved.id);
+    expect(canonical).toHaveLength(1);
+    expect(canonical[0]).toMatchObject({ ...saved, readiness_blockers: expect.arrayContaining([
+      "HEALTH_REVIEW_REQUIRED", "PICKUP_CONTACT_MISSING", "STAFF_REVIEW_REQUIRED",
+    ]) });
+    await page.reload();
+    const row = page.locator("tbody tr").filter({ has: page.getByRole("cell", { name: "Avery Reed", exact: true }) });
+    await expect(row).toHaveCount(1);
+    await expect(row).toContainText("BLOCKED");
+    const payload = { session_id: saved.session, student_id: student };
+    expect((await request.post(BACKEND + "/api/v1/summer-camp/attendance/checkin/", { headers, data: payload })).status()).toBe(400);
+    expect((await request.post(BACKEND + "/api/v1/summer-camp/enrollments/", { headers, data: payload })).status()).toBe(400);
+    const forged = await request.post(BACKEND + "/api/v1/summer-camp/enrollments/", { headers, data: { ...payload, health_status: "APPROVED" } });
+    expect(forged.status()).toBe(400);
+    expect(JSON.stringify(await forged.json())).toContain("cannot be set during registration");
+    const foreign = await request.post(BACKEND + "/api/v1/summer-camp/enrollments/", {
+      headers: { ...headers, "X-School-Id": "22222222-2222-4222-8222-222222222222" }, data: payload,
+    });
+    expect([400, 403, 404]).toContain(foreign.status());
+    const parent = await isolatedRequest.newContext();
+    try {
+      const login = await parent.post(BACKEND + "/api/v1/sandbox/session/", { data: { role: "parent", school: "heritage-core" } });
+      expect(login.status()).toBe(201);
+      const denied = await parent.post(BACKEND + "/api/v1/summer-camp/enrollments/", {
+        headers: { Authorization: `Bearer ${(await login.json()).access}`, "X-School-Id": headers["X-School-Id"] }, data: payload,
+      });
+      expect(denied.status()).toBe(403);
+    } finally { await parent.dispose(); }
+    const final = await request.get(BACKEND + `/api/v1/summer-camp/enrollments/?session_id=${saved.session}`, { headers });
+    expect(final.status()).toBe(200);
+    expect((await final.json()).filter((item: { id: number }) => item.id === saved.id)).toEqual(canonical);
+    await testInfo.attach("real-camp-registration-readback", {
+      contentType: "application/json", body: Buffer.from(JSON.stringify({ source_sha: identity.build_sha,
+        enrollment_id: saved.id, session_id: saved.session, student_id: student,
+        registration_reload_verified: true, readiness: "BLOCKED", denied_clearance: true,
+        denied_checkin: true, denied_parent: true, denied_foreign_school: true, balance_due_cents: 0 })),
+    });
   });
 
   test("real authorized POST and independent GET persist across a reload", async ({ page, request }) => {
