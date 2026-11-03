@@ -109,7 +109,6 @@ def test_local_module_samples_are_idempotent_and_do_not_authorize_custody(
     ).exists()
 
 
-
 @pytest.mark.parametrize("session,tamper", [
     ("AM", "inactive"), ("PM", "start_date"), ("AM", "paid_rate"),
     ("PM", "end_date"),
