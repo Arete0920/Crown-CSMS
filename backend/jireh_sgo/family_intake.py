@@ -211,7 +211,7 @@ def request_processor_correction(
     _principal(user)
     revision = _revision(expected_revision)
     key = _uuid4(request_key, "request_key")
-    if reason not in dict(SGOFamilyIntake.REASONS):
+    if not isinstance(reason, str) or reason not in dict(SGOFamilyIntake.REASONS):
         raise ValidationError({"reason": "Select an approved non-sensitive correction reason."})
     intake = SGOFamilyIntake.objects.select_related(
         "application__program__organization"
