@@ -10,7 +10,7 @@ function errorMessage(error) {
   return error instanceof Error ? error.message : "The request could not be completed.";
 }
 
-export default function ParentFinancialAidPreparationPage() {
+function LocalFictionalFinancialAidPage() {
   const [record, setRecord] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -237,7 +237,15 @@ export default function ParentFinancialAidPreparationPage() {
           ) : null}
         </section>
       </main>
-      <ParentJourneyOverviewPage focus="aid" />
     </>
   );
+}
+
+// Retain the established production/DEV aid status surface. The fictional
+// application form is exclusively a local packaged-demo experience; the
+// backend separately enforces its local sandbox and guardian authorization.
+export default function ParentFinancialAidPreparationPage() {
+  return import.meta.env.VITE_LOCAL_DEMO === "1"
+    ? <LocalFictionalFinancialAidPage />
+    : <ParentJourneyOverviewPage focus="aid" />;
 }
