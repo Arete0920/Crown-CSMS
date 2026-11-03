@@ -8,7 +8,7 @@ import tempfile
 import urllib.request
 import zipfile
 
-SOURCE_SHA = "16a32adff2ccb5af18bf2482feaab40122903017"
+SOURCE_SHA = "a1bf22fc1e520eba149ce943edcd747dbf75c1e5"
 SOURCE_URL = f"https://github.com/Arete0920/Crown-CSMS/archive/{SOURCE_SHA}.zip"
 ROOT = Path(__file__).resolve().parent
 DESTINATION = ROOT / f"Heritage-{SOURCE_SHA[:12]}"
@@ -35,7 +35,8 @@ def install_source(destination=DESTINATION, source_url=SOURCE_URL):
                     raise RuntimeError("The source archive contains an unsafe path.")
             bundle.extractall(unpack)
         roots = list(unpack.iterdir())
-        if len(roots) != 1 or not (roots[0] / "scripts/demo/start_heritage_local.py").is_file():
+        if (len(roots) != 1 or roots[0].name != f"Crown-CSMS-{SOURCE_SHA}"
+                or not (roots[0] / "scripts/demo/start_heritage_local.py").is_file()):
             raise RuntimeError("The download is not the expected CROWN source archive.")
         (roots[0] / "HERITAGE_SOURCE_COMMIT.txt").write_text(SOURCE_SHA + "\n")
         roots[0].rename(destination)
