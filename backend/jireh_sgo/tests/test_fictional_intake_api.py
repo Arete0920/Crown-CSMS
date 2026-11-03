@@ -274,6 +274,89 @@ class FictionalSGOIntakeAPITests(APITestCase):
                 "/api/v1/jireh-sgo/family/programs/",
             ).status_code, 200)
 
+    def test_reused_processor_idempotency_key_for_different_partner_case_is_conflict(self):
+        first = self._submit_a()
+        app_a = first.data["application"]["id"]
+        self.client.force_authenticate(user=self.family_b)
+        second = self.client.post(
+            "/api/v1/jireh-sgo/family/submit/",
+            self._data(program=self.program_b), format="json",
+        )
+        self.assertEqual(second.status_code, 201)
+        app_b = second.data["application"]["id"]
+        # Give one processor two explicit program assignments, but never cross
+        # tenant rights by default. This exercises same-actor cross-case replay.
+        SGOProcessorAssignment.objects.create(
+            user=self.processor_a, program=self.program_b, active=True,
+        )
+        self.client.force_authenticate(user=self.processor_a)
+        key = str(uuid4())
+        data = {"expected_revision": 1, "reason": "GRADE_UNVERIFIED", "request_key": key}
+        self.assertEqual(self.client.post(
+            self._request_url(app_a), data, format="json",
+        ).status_code, 200)
+        self.assertEqual(self.client.post(
+            self._request_url(app_b), data, format="json",
+        ).status_code, 409)
+        self.assertEqual(SGOFamilyIntake.objects.get(
+            application_id=app_b,
+        ).status, SGOFamilyIntake.SUBMITTED)
+        self.assertEqual(SGOAuditEvent.objects.filter(
+            action=SGOAuditEvent.INTAKE_CORRECTION_REQUESTED,
+        ).count(), 1)
+
+    def test_reused_family_correction_idempotency_key_for_different_case_is_conflict(self):
+        first = self._submit_a()
+        app_a = first.data["application"]["id"]
+        self.client.force_authenticate(user=self.processor_a)
+        self.assertEqual(self.client.post(
+            self._request_url(app_a),
+            {"expected_revision": 1, "reason": "GRADE_UNVERIFIED",
+             "request_key": str(uuid4())}, format="json",
+        ).status_code, 200)
+        self.client.force_authenticate(user=self.family_a)
+        key = str(uuid4())
+        self.assertEqual(self.client.post(
+            self._correction_url(app_a),
+            {"expected_revision": 2, "grade_level": "1", "correction_key": key},
+            format="json",
+        ).status_code, 200)
+        self.client.force_authenticate(user=self.family_b)
+        second = self.client.post(
+            "/api/v1/jireh-sgo/family/submit/",
+            self._data(program=self.program_b), format="json",
+        )
+        self.assertEqual(second.status_code, 201)
+        app_b = second.data["application"]["id"]
+        self.client.force_authenticate(user=self.processor_b)
+        self.assertEqual(self.client.post(
+            self._request_url(app_b),
+            {"expected_revision": 1, "reason": "GRADE_UNVERIFIED",
+             "request_key": str(uuid4())}, format="json",
+        ).status_code, 200)
+        self.client.force_authenticate(user=self.family_b)
+        self.assertEqual(self.client.post(
+            self._correction_url(app_b),
+            {"expected_revision": 2, "grade_level": "2", "correction_key": key},
+            format="json",
+        ).status_code, 409)
+        self.assertEqual(SGOFamilyIntake.objects.get(
+            application_id=app_b,
+        ).status, SGOFamilyIntake.CORRECTION_REQUESTED)
+
+    def test_processor_case_readback_never_claims_partner_award_authority(self):
+        created = self._submit_a()
+        self.assertEqual(created.status_code, 201)
+        self.client.force_authenticate(user=self.processor_a)
+        response = self.client.get(
+            f"/api/v1/jireh-sgo/processor/programs/{self.program_a.id}/queue/",
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["authority"], "PROCESSOR_VERIFICATION_ONLY")
+        self.assertEqual(response.data["applications"][0]["authority"],
+                         "PROCESSOR_VERIFICATION_ONLY")
+        self.assertFalse(SGOAward.objects.exists())
+
     def test_processor_cannot_act_after_review(self):
         created = self._submit_a()
         app_id = created.data["application"]["id"]
