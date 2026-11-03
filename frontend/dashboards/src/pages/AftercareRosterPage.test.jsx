@@ -4,6 +4,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import { CareHandoffDialog, CarePickupDialog } from "../components/care/CareCustodyDialogs.jsx";
 import AftercareRosterPage from "./AftercareRosterPage.jsx";
 import * as api from "../api/aftercareApi.js";
+import { getAccessToken, setAccessToken, setSelectedSchoolId } from "../utils/authClient.js";
 
 vi.mock("../api/aftercareApi.js", () => ({
   fetchRosterToday: vi.fn(),
@@ -25,6 +26,8 @@ const rows = [{
   unscheduled: false,
 }];
 beforeEach(() => {
+  sessionStorage.setItem("crown.school.id", "fictional-care-school");
+  setAccessToken("fictional-care-staff-access");
   api.fetchRosterToday.mockResolvedValue({
     care_session: "AM", date: "2026-10-30", dow: "FRI", rows,
     unlinked_attendance_count: 0,
@@ -33,6 +36,7 @@ beforeEach(() => {
 });
 afterEach(() => {
   cleanup();
+  sessionStorage.clear();
   vi.resetAllMocks();
 });
 
@@ -94,5 +98,47 @@ describe("care custody dialog safety and consistency", () => {
     expect(api.checkinStudent).toHaveBeenCalledTimes(1);
     finish({ id: 1 });
     await waitFor(() => expect(api.fetchRosterToday).toHaveBeenCalledTimes(2));
+  });
+});
+
+describe("care roster tenant and staff-session isolation", () => {
+  it("immediately hides previous staff children after same-school credential change", async () => {
+    render(<AftercareRosterPage careSession="AM" />);
+    expect(await screen.findByText("Synthetic Child")).toBeTruthy();
+    setAccessToken("another-staff-same-school");
+    fireEvent.focus(window);
+    expect(screen.queryByText("Synthetic Child")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Check In" })).toBeNull();
+    expect(api.checkinStudent).not.toHaveBeenCalled();
+  });
+
+  it("does not render a late old-session roster response after a school switch", async () => {
+    let finishOld;
+    api.fetchRosterToday.mockImplementationOnce(() => new Promise((resolve) => { finishOld = resolve; }))
+      .mockResolvedValue({
+        care_session: "AM", date: "2026-10-30", dow: "FRI", rows: [],
+        unlinked_attendance_count: 0,
+      });
+    render(<AftercareRosterPage careSession="AM" />);
+    await waitFor(() => expect(api.fetchRosterToday).toHaveBeenCalledTimes(1));
+    setSelectedSchoolId("fictional-other-school");
+    await waitFor(() => expect(api.fetchRosterToday).toHaveBeenCalledTimes(2));
+    finishOld({
+      care_session: "AM", date: "2026-10-30", dow: "FRI", rows,
+      unlinked_attendance_count: 0,
+    });
+    await waitFor(() => expect(screen.getByText("No students scheduled today.")).toBeTruthy());
+    expect(screen.queryByText("Synthetic Child")).toBeNull();
+    expect(api.checkinStudent).not.toHaveBeenCalled();
+  });
+
+  it("blocks an AM check-in after its staff session expires or switches", async () => {
+    render(<AftercareRosterPage careSession="AM" />);
+    await screen.findByText("Synthetic Child");
+    sessionStorage.removeItem("crown.jwt.access");
+    fireEvent.focus(window);
+    expect(getAccessToken()).toBe("");
+    expect(screen.queryByText("Synthetic Child")).toBeNull();
+    expect(api.checkinStudent).not.toHaveBeenCalled();
   });
 });

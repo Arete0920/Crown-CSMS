@@ -3,6 +3,9 @@ import CrownLayout from "../components/crown/CrownLayout.jsx";
 import DashboardSection from "../components/layout/DashboardSection.jsx";
 import { CareHandoffDialog, CarePickupDialog } from "../components/care/CareCustodyDialogs.jsx";
 import { fetchRosterToday, checkinStudent, checkoutStudent, fetchPickupContacts, handoffToSchool } from "../api/aftercareApi.js";
+import {
+  getAccessToken, getSelectedSchoolId, SCHOOL_CONTEXT_CHANGE_EVENT,
+} from "../utils/authClient.js";
 
 const TAG = {
   base: { display: "inline-block", padding: "2px 8px", borderRadius: 12, fontSize: 12, fontWeight: 600 },
@@ -24,34 +27,74 @@ export default function AftercareRosterPage({ careSession = "PM" }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [roster, setRoster] = useState(null);
+  const [rosterScope, setRosterScope] = useState(null);
+  const [identity, setIdentity] = useState(() => ({
+    school: getSelectedSchoolId(), token: getAccessToken(),
+  }));
+  const identityRef = useRef(identity);
+  const sameIdentity = (scope = identity) => Boolean(scope.school && scope.token)
+    && scope.school === getSelectedSchoolId() && scope.token === getAccessToken();
   const [pickup, setPickup] = useState(null);
   const [pickupBusy, setPickupBusy] = useState(false);
   const [checkinBusyId, setCheckinBusyId] = useState(null);
   const checkinInFlightRef = useRef(false);
   const sessionRef = useRef(careSession);
 
+  // Existing authentication transport notifies on school changes; the
+  // auth-token change event is also supported once its producer is installed.
+  // Focus/storage catch external identity changes without granting access.
+  useEffect(() => {
+    const reconcileIdentity = () => {
+      const next = { school: getSelectedSchoolId(), token: getAccessToken() };
+      const current = identityRef.current;
+      if (current.school === next.school && current.token === next.token) return;
+      identityRef.current = next;
+      setIdentity(next);
+      setRoster(null);
+      setRosterScope(null);
+      setPickup(null);
+      setHandoff(null);
+      setError(null);
+      setCheckinBusyId(null);
+    };
+    for (const name of [SCHOOL_CONTEXT_CHANGE_EVENT, "crown:auth-context-changed", "focus", "storage"]) {
+      window.addEventListener(name, reconcileIdentity);
+    }
+    return () => {
+      for (const name of [SCHOOL_CONTEXT_CHANGE_EVENT, "crown:auth-context-changed", "focus", "storage"]) {
+        window.removeEventListener(name, reconcileIdentity);
+      }
+    };
+  }, []);
+
   async function load() {
-    if (sessionRef.current !== careSession) return;
+    const scope = identity;
+    if (sessionRef.current !== careSession || !sameIdentity(scope)) return;
     setLoading(true);
     setError(null);
+    setRoster(null);
+    setRosterScope(null);
     try {
       const data = await fetchRosterToday(careSession);
-      if (sessionRef.current !== careSession) return;
+      if (sessionRef.current !== careSession || !sameIdentity(scope)) return;
       if (data?.care_session !== careSession || !Array.isArray(data?.rows)) {
         throw new Error("Roster API returned an invalid care session.");
       }
+      setRosterScope(scope);
       setRoster(data);
     } catch (e) {
-      if (sessionRef.current === careSession) setError(e.message);
+      if (sessionRef.current === careSession && sameIdentity(scope)) setError(e.message);
     } finally {
-      if (sessionRef.current === careSession) setLoading(false);
+      if (sessionRef.current === careSession && sameIdentity(scope)) setLoading(false);
     }
   }
 
   useEffect(() => {
     sessionRef.current = careSession;
+    const scope = identity;
     setLoading(true);
     setRoster(null);
+    setRosterScope(null);
     setError(null);
     setPickup(null);
     setHandoff(null);
@@ -60,6 +103,11 @@ export default function AftercareRosterPage({ careSession = "PM" }) {
     setCheckinBusyId(null);
     checkinInFlightRef.current = false;
     let cancelled = false;
+    if (!sameIdentity(scope)) {
+      setError("Authenticated school and staff session required before opening care records.");
+      setLoading(false);
+      return () => { cancelled = true; };
+    }
 
     async function initialize() {
       try {
@@ -67,16 +115,17 @@ export default function AftercareRosterPage({ careSession = "PM" }) {
         if (data?.care_session !== careSession || !Array.isArray(data?.rows)) {
           throw new Error("Roster API returned an invalid care session.");
         }
-        if (!cancelled) {
+        if (!cancelled && sameIdentity(scope)) {
+          setRosterScope(scope);
           setRoster(data);
           setError(null);
         }
       } catch (e) {
-        if (!cancelled) {
+        if (!cancelled && sameIdentity(scope)) {
           setError(e.message);
         }
       } finally {
-        if (!cancelled) {
+        if (!cancelled && sameIdentity(scope)) {
           setLoading(false);
         }
       }
@@ -86,10 +135,10 @@ export default function AftercareRosterPage({ careSession = "PM" }) {
     return () => {
       cancelled = true;
     };
-  }, [careSession]);
+  }, [careSession, identity]);
 
   async function handleCheckin(studentId) {
-    if (checkinInFlightRef.current || sessionRef.current !== careSession) return;
+    if (checkinInFlightRef.current || sessionRef.current !== careSession || !sameIdentity() || rosterScope !== identity) return;
     checkinInFlightRef.current = true;
     setCheckinBusyId(studentId);
     setError(null);
@@ -97,9 +146,9 @@ export default function AftercareRosterPage({ careSession = "PM" }) {
       await checkinStudent({ student_id: studentId, care_session: careSession });
       await load();
     } catch (e) {
-      if (sessionRef.current === careSession) setError(`Check-in failed: ${e.message}`);
+      if (sessionRef.current === careSession && sameIdentity()) setError(`Check-in failed: ${e.message}`);
     } finally {
-      if (sessionRef.current === careSession) {
+      if (sessionRef.current === careSession && sameIdentity()) {
         checkinInFlightRef.current = false;
         setCheckinBusyId(null);
       }
@@ -107,23 +156,24 @@ export default function AftercareRosterPage({ careSession = "PM" }) {
   }
 
   async function beginCheckout(studentId) {
-    if (sessionRef.current !== careSession || isMorning) return;
+    if (sessionRef.current !== careSession || isMorning || !sameIdentity() || rosterScope !== identity) return;
     setPickupBusy(true);
     setError(null);
     try {
       const contacts = await fetchPickupContacts(studentId);
-      if (sessionRef.current !== careSession) return;
+      if (sessionRef.current !== careSession || !sameIdentity()) return;
       setPickup({ studentId, careSession, contacts: Array.isArray(contacts) ? contacts.filter((c) => c.is_active) : [],
                   contactId: "", verified: false });
     } catch (e) {
-      if (sessionRef.current === careSession) setError(`Cannot load authorized pickup contacts: ${e.message}`);
+      if (sessionRef.current === careSession && sameIdentity()) setError(`Cannot load authorized pickup contacts: ${e.message}`);
     } finally {
-      if (sessionRef.current === careSession) setPickupBusy(false);
+      if (sessionRef.current === careSession && sameIdentity()) setPickupBusy(false);
     }
   }
 
   async function handleCheckout() {
-    if (isMorning || pickup?.careSession !== careSession || !pickup?.contactId || !pickup.verified) return;
+    if (isMorning || pickup?.careSession !== careSession || !pickup?.contactId || !pickup.verified
+        || !sameIdentity() || rosterScope !== identity) return;
     setPickupBusy(true);
     try {
       await checkoutStudent({
@@ -132,32 +182,38 @@ export default function AftercareRosterPage({ careSession = "PM" }) {
         pickup_verified: true,
         care_session: careSession,
       });
-      setPickup(null);
-      await load();
+      if (sameIdentity()) {
+        setPickup(null);
+        await load();
+      }
     } catch (e) {
-      setError(`Check-out failed: ${e.message}`);
+      if (sameIdentity()) setError(`Check-out failed: ${e.message}`);
     } finally {
-      setPickupBusy(false);
+      if (sameIdentity()) setPickupBusy(false);
     }
   }
 
   async function handleHandoff() {
-    if (!isMorning || handoff?.careSession !== careSession || !handoff?.acknowledged) return;
+    if (!isMorning || handoff?.careSession !== careSession || !handoff?.acknowledged
+        || !sameIdentity() || rosterScope !== identity) return;
     setHandoffBusy(true);
     setError(null);
     try {
       await handoffToSchool({ student_id: handoff.studentId });
-      setHandoff(null);
-      await load();
+      if (sameIdentity()) {
+        setHandoff(null);
+        await load();
+      }
     } catch (e) {
-      setError("School handoff failed: " + e.message);
+      if (sameIdentity()) setError("School handoff failed: " + e.message);
     } finally {
-      setHandoffBusy(false);
+      if (sameIdentity()) setHandoffBusy(false);
     }
   }
 
   // A care-session switch must never temporarily display the previous session's children.
-  const currentRoster = roster?.care_session === careSession ? roster : null;
+  const currentRoster = sameIdentity() && rosterScope === identity && roster?.care_session === careSession
+    ? roster : null;
   const rosterTitle = currentRoster
     ? "Today's " + sessionLabel + " Roster - " + currentRoster.date + " (" + currentRoster.dow + ")"
     : "Today's " + sessionLabel + " Roster";
