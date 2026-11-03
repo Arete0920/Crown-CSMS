@@ -1,8 +1,27 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { apiFetch } from "../lib/api";
+import {
+  getAccessToken,
+  getSelectedSchoolId,
+  SCHOOL_CONTEXT_CHANGE_EVENT,
+} from "../utils/authClient";
 import ParentJourneyOverviewPage from "../features/parentJourney/ParentJourneyOverviewPage.jsx";
 
 const ENDPOINT = "/api/v1/aid/family/demo-intake/";
+// Shared token-change event added by the separate Diadem auth-hardening PR.
+// This listener is compatible with that PR and does not modify shared auth code.
+const AUTH_CONTEXT_CHANGE_EVENT = "crown:auth-context-changed";
+const UNKNOWN_WRITE_MESSAGE =
+  "The fictional submission may have been accepted, but its saved status could not be verified. " +
+  "Refresh the application status before proceeding. Do not submit it again.";
+
+function identitySnapshot() {
+  return { school: getSelectedSchoolId(), token: getAccessToken() };
+}
+
+function identityMatches(left, right) {
+  return left?.school === right?.school && left?.token === right?.token;
+}
 
 function errorMessage(error) {
   const data = error?.response?.data;
@@ -21,10 +40,41 @@ function LocalFictionalFinancialAidPage() {
   const [scenario, setScenario] = useState("");
   const [householdSize, setHouseholdSize] = useState("3");
   const [acknowledged, setAcknowledged] = useState(false);
+  const [needsReconciliation, setNeedsReconciliation] = useState(false);
 
-  async function load() {
+  const mountedRef = useRef(false);
+  const revisionRef = useRef(0);
+  const identityRef = useRef(identitySnapshot());
+  const syncIdentityRef = useRef(() => {});
+
+  function current(origin, revision) {
+    return mountedRef.current
+      && revisionRef.current === revision
+      && identityMatches(origin, identityRef.current)
+      && identityMatches(origin, identitySnapshot());
+  }
+
+  function discardStale(origin, revision) {
+    if (current(origin, revision)) return false;
+    // The event may not exist on older feature branches; a response boundary
+    // still notices the changed token/school and clears the old household.
+    syncIdentityRef.current();
+    return true;
+  }
+
+  async function readback(origin, revision) {
     const response = await apiFetch(ENDPOINT);
     const data = await response.json();
+    if (discardStale(origin, revision)) return null;
+    if (
+      data?.demo_only !== true
+      || !Array.isArray(data.academic_years)
+      || !Array.isArray(data.students)
+      || !Array.isArray(data.scenarios)
+      || !Array.isArray(data.applications)
+    ) {
+      throw new Error("The fictional Financial Aid readback returned an invalid contract.");
+    }
     setRecord(data);
     setYearId((previous) =>
       data.academic_years.some((year) => year.id === previous)
@@ -38,30 +88,69 @@ function LocalFictionalFinancialAidPage() {
   }
 
   useEffect(() => {
-    let active = true;
-    apiFetch(ENDPOINT)
-      .then((response) => response.json())
-      .then((data) => {
-        if (!active) return;
-        setRecord(data);
-        setYearId(data.academic_years[0]?.id || "");
-        setScenario(data.scenarios[0]?.id || "");
+    mountedRef.current = true;
+
+    async function reload(origin, revision) {
+      setLoading(true);
+      try {
+        const data = await readback(origin, revision);
+        if (!data || discardStale(origin, revision)) return;
         setSelectedStudents(data.students.length === 1 ? [data.students[0].id] : []);
         setLoading(false);
-      })
-      .catch((failure) => {
-        if (!active) return;
+      } catch (failure) {
+        if (discardStale(origin, revision)) return;
         setError(errorMessage(failure));
         setLoading(false);
-      });
-    return () => { active = false; };
+      }
+    }
+
+    function syncIdentity() {
+      const next = identitySnapshot();
+      if (identityMatches(identityRef.current, next)) return;
+      identityRef.current = next;
+      revisionRef.current += 1;
+      setRecord(null);
+      setYearId("");
+      setScenario("");
+      setSelectedStudents([]);
+      setHouseholdSize("3");
+      setAcknowledged(false);
+      setConfirmation("");
+      setError("");
+      setSaving(false);
+      setNeedsReconciliation(false);
+      void reload(next, revisionRef.current);
+    }
+
+    syncIdentityRef.current = syncIdentity;
+    void reload(identityRef.current, revisionRef.current);
+    window.addEventListener(SCHOOL_CONTEXT_CHANGE_EVENT, syncIdentity);
+    window.addEventListener(AUTH_CONTEXT_CHANGE_EVENT, syncIdentity);
+    window.addEventListener("storage", syncIdentity);
+    window.addEventListener("focus", syncIdentity);
+    window.addEventListener("pageshow", syncIdentity);
+    return () => {
+      mountedRef.current = false;
+      revisionRef.current += 1;
+      syncIdentityRef.current = () => {};
+      window.removeEventListener(SCHOOL_CONTEXT_CHANGE_EVENT, syncIdentity);
+      window.removeEventListener(AUTH_CONTEXT_CHANGE_EVENT, syncIdentity);
+      window.removeEventListener("storage", syncIdentity);
+      window.removeEventListener("focus", syncIdentity);
+      window.removeEventListener("pageshow", syncIdentity);
+    };
   }, []);
 
+  function clearSuccess() {
+    setConfirmation("");
+  }
+
   function toggleStudent(studentId) {
-    setSelectedStudents((current) =>
-      current.includes(studentId)
-        ? current.filter((id) => id !== studentId)
-        : [...current, studentId]
+    clearSuccess();
+    setSelectedStudents((currentStudents) =>
+      currentStudents.includes(studentId)
+        ? currentStudents.filter((id) => id !== studentId)
+        : [...currentStudents, studentId]
     );
   }
 
@@ -71,52 +160,87 @@ function LocalFictionalFinancialAidPage() {
 
   async function submit(event) {
     event.preventDefault();
-    if (saving || existing) return;
+    if (saving || existing || needsReconciliation) return;
+    const origin = identitySnapshot();
+    const revision = revisionRef.current;
+    if (discardStale(origin, revision)) return;
+
+    const requestedYear = yearId;
+    const requestedStudents = [...selectedStudents].map(String);
     setError("");
     setConfirmation("");
     setSaving(true);
+    let accepted = false;
     try {
       const response = await apiFetch(ENDPOINT, {
         method: "POST",
         body: JSON.stringify({
-          academic_year_id: yearId,
-          student_ids: selectedStudents,
+          academic_year_id: requestedYear,
+          student_ids: requestedStudents,
           household_size: Number(householdSize),
           scenario,
           fictional_acknowledged: acknowledged,
         }),
       });
       const result = await response.json();
+      if (discardStale(origin, revision)) return;
       const submitted = result?.application;
       if (result?.demo_only !== true || !submitted?.id) {
         throw new Error("The fictional submission did not return a verifiable application.");
       }
+      accepted = true;
 
-      // A successful POST alone is not proof of persisted or scoped family state.
-      // Confirm the canonical application through a separate authenticated GET.
-      const refreshed = await load();
-      const saved = Array.isArray(refreshed?.applications)
-        ? refreshed.applications.find((application) => String(application.id) === String(submitted.id))
-        : null;
+      // A POST response is not proof of saved or correctly scoped family data.
+      // Do not present success until a separate read verifies all identifiers.
+      const refreshed = await readback(origin, revision);
+      if (!refreshed || discardStale(origin, revision)) return;
+      const saved = refreshed.applications.find(
+        (application) => String(application.id) === String(submitted.id)
+      );
       const savedStudents = Array.isArray(saved?.student_ids) ? saved.student_ids.map(String) : [];
-      const requestedStudents = selectedStudents.map(String);
       if (
         !saved
         || saved.status !== "SUBMITTED"
         || !saved.submitted_at
-        || String(saved.academic_year_id) !== String(yearId)
+        || String(saved.academic_year_id) !== String(requestedYear)
         || savedStudents.length !== requestedStudents.length
         || !requestedStudents.every((id) => savedStudents.includes(id))
       ) {
-        throw new Error(
-          "The server accepted the fictional submission, but independent saved-record verification failed. Refresh the application status before proceeding."
-        );
+        throw new Error("Independent saved-record verification failed.");
       }
+      setNeedsReconciliation(false);
       setConfirmation("Fictional application #" + saved.id + " submitted and independently verified.");
     } catch (failure) {
-      setError(errorMessage(failure));
+      if (discardStale(origin, revision)) return;
+      if (accepted) {
+        setNeedsReconciliation(true);
+        setError(UNKNOWN_WRITE_MESSAGE);
+      } else {
+        setError(errorMessage(failure));
+      }
     } finally {
-      setSaving(false);
+      if (!discardStale(origin, revision)) setSaving(false);
+    }
+  }
+
+  async function refreshStatus() {
+    const origin = identitySnapshot();
+    const revision = revisionRef.current;
+    if (discardStale(origin, revision) || saving) return;
+    setError("");
+    setConfirmation("");
+    try {
+      const data = await readback(origin, revision);
+      if (!data || discardStale(origin, revision)) return;
+      if (needsReconciliation) {
+        const found = data.applications.some(
+          (application) => String(application.academic_year_id) === String(yearId)
+        );
+        if (found) setNeedsReconciliation(false);
+        else setError(UNKNOWN_WRITE_MESSAGE);
+      }
+    } catch (failure) {
+      if (!discardStale(origin, revision)) setError(errorMessage(failure));
     }
   }
 
@@ -147,7 +271,7 @@ function LocalFictionalFinancialAidPage() {
               <form onSubmit={submit}>
                 <div className="learning-record-detail-block">
                   <label htmlFor="jireh-demo-year">Financial Aid year</label>
-                  <select id="jireh-demo-year" value={yearId} onChange={(event) => setYearId(event.target.value)} disabled={saving || Boolean(existing)} required>
+                  <select id="jireh-demo-year" value={yearId} onChange={(event) => { clearSuccess(); setYearId(event.target.value); }} disabled={saving} required>
                     {record.academic_years.map((year) => <option key={year.id} value={year.id}>{year.name}</option>)}
                   </select>
                 </div>
@@ -170,7 +294,7 @@ function LocalFictionalFinancialAidPage() {
                   <label htmlFor="jireh-demo-size">Fictional household size</label>
                   <input
                     id="jireh-demo-size" type="number" min="1" max="20" step="1"
-                    value={householdSize} onChange={(event) => setHouseholdSize(event.target.value)}
+                    value={householdSize} onChange={(event) => { clearSuccess(); setHouseholdSize(event.target.value); }}
                     disabled={Boolean(existing) || saving} required
                   />
                 </div>
@@ -178,7 +302,7 @@ function LocalFictionalFinancialAidPage() {
                   <label htmlFor="jireh-demo-scenario">Fictional financial scenario</label>
                   <select
                     id="jireh-demo-scenario" value={scenario}
-                    onChange={(event) => setScenario(event.target.value)}
+                    onChange={(event) => { clearSuccess(); setScenario(event.target.value); }}
                     disabled={Boolean(existing) || saving} required
                   >
                     {record.scenarios.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
@@ -189,7 +313,7 @@ function LocalFictionalFinancialAidPage() {
                   <label style={{ display: "block", margin: "16px 0" }}>
                     <input
                       type="checkbox" checked={acknowledged}
-                      onChange={(event) => setAcknowledged(event.target.checked)}
+                      onChange={(event) => { clearSuccess(); setAcknowledged(event.target.checked); }}
                       disabled={saving}
                     />
                     {" "}I confirm all application information is fictional demonstration data.
@@ -200,12 +324,13 @@ function LocalFictionalFinancialAidPage() {
                 ) : (
                   <button
                     type="submit"
-                    disabled={saving || !acknowledged || !yearId || !scenario || selectedStudents.length === 0}
+                    disabled={saving || needsReconciliation || !acknowledged || !yearId || !scenario || selectedStudents.length === 0}
                   >
                     {saving ? "Submitting fictional application…" : "Submit fictional Financial Aid application"}
                   </button>
                 )}
               </form>
+              {needsReconciliation ? <p role="status">Submission outcome unresolved. Refresh the saved status before proceeding; do not submit again.</p> : null}
               <section aria-label="Saved Jireh applications" data-testid="jireh-saved-applications">
                 <h2>Saved applications and offered awards</h2>
                 {record.applications.length === 0 ? <p>No school Financial Aid applications submitted yet.</p> : null}
@@ -228,11 +353,7 @@ function LocalFictionalFinancialAidPage() {
                   </article>
                 ))}
               </section>
-              <button type="button" disabled={saving} onClick={() => {
-                setError("");
-                setConfirmation("");
-                load().catch((failure) => setError(errorMessage(failure)));
-              }}>Refresh saved status</button>
+              <button type="button" disabled={saving} onClick={refreshStatus}>Refresh saved status</button>
             </>
           ) : null}
         </section>
