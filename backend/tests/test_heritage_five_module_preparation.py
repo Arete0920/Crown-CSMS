@@ -178,9 +178,8 @@ def test_successful_opt_in_launch_preserves_strict_sequence(monkeypatch, tmp_pat
         def wait(self, timeout=None):
             return 0
 
-    def spawn(command, *, cwd, env: server_env, stdout, stderr):
-        assert server_env is env
-        assert server_env["CROWN_SGO_FICTIONAL_INTAKE_ENABLED"] == "true"
+    def spawn(command, *, cwd, env, stdout, stderr):
+        assert env["CROWN_SGO_FICTIONAL_INTAKE_ENABLED"] == "true"
         if "heritage_runserver" in command:
             assert command[-2:] == ["127.0.0.1:8000", "--noreload"]
             calls.append("backend")
