@@ -62,8 +62,14 @@ async function submitFictionalApplication() {
   fireEvent.click(submit);
 }
 
-beforeEach(() => vi.clearAllMocks());
-afterEach(() => cleanup());
+beforeEach(() => {
+  vi.clearAllMocks();
+  vi.stubEnv("VITE_LOCAL_DEMO", "1");
+});
+afterEach(() => {
+  cleanup();
+  vi.unstubAllEnvs();
+});
 
 describe("Fictional parent Financial Aid saved-record truth", () => {
   it("confirms submission only after matching canonical authenticated GET readback", async () => {
