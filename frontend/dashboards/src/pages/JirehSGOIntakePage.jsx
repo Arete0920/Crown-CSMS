@@ -214,7 +214,7 @@ export default function JirehSGOIntakePage() {
     }
   }
 
-  return <CrownLayout title="Jireh SGO | Fictional Application Intake"
+  return <CrownLayout navigationScope="standalone" title="Jireh SGO | Fictional Application Intake"
     subtitle="Local sandbox only — partner SGOs retain program and award authority">
     <p role="note">Synthetic records only. No live family information, documents, eligibility decisions,
       donor funds, scholarships, or payments.</p>
