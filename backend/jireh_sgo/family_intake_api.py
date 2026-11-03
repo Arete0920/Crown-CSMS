@@ -133,7 +133,7 @@ def processor_program_list(request):
 def processor_application_queue(request, program_id):
     _guard(request)
     rows = processor_queue(user=request.user, program_id=program_id)
-    return private({"applications": [serialize_intake(intake) for intake in rows],
+    return private({"applications": [serialize_intake(intake, authority="PROCESSOR_VERIFICATION_ONLY") for intake in rows],
                     "program_id": str(program_id), "authority": "PROCESSOR_VERIFICATION_ONLY",
                     "funds_status": "NONCASH_ONLY"})
 
@@ -148,4 +148,4 @@ def processor_request_correction(request, application_id):
         expected_revision=data.get("expected_revision"),
         reason=data.get("reason"), request_key=data.get("request_key"),
     )
-    return private({"application": serialize_intake(intake), "changed": changed})
+    return private({"application": serialize_intake(intake, authority="PROCESSOR_VERIFICATION_ONLY"), "changed": changed})
