@@ -35,6 +35,38 @@ permissions:
   contents: read
 
 jobs:
+  # Supply a reproducible, source-audited QA starter even when the full
+  # five-module data/browser gate remains red. This is NOT a release artifact.
+  source-audited-candidate:
+    name: Source-audited Windows starter candidate (NOT five-module certified)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: '3.12'
+      - name: Assemble starter and check independent source identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          python scripts/demo/package_heritage_sales.py
+          PIN_SHA="$(PYTHONPATH=scripts/demo python -c 'from package_heritage_sales import pinned_revision; print(pinned_revision())')"
+          git fetch --no-tags --depth=1 origin "$PIN_SHA"
+          python scripts/demo/verify_heritage_sales_package.py --download
+      - name: Upload explicitly uncertified QA candidate
+        if: success()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: heritage-source-audited-UNCERTIFIED-candidate
+          path: |
+            .local-backups/heritage-sales/CROWN-Heritage-Sales-Demo-*.zip
+            .local-backups/heritage-sales/heritage-starter-audit.json
+          if-no-files-found: error
+          retention-days: 7
+
   windows-local-demo:
     runs-on: windows-latest
     timeout-minutes: 65
@@ -96,7 +128,7 @@ jobs:
         if: success()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
-          name: heritage-five-module-starter
+          name: heritage-windows-buyer-rehearsed-candidate
           path: |
             .local-backups/heritage-sales/CROWN-Heritage-Sales-Demo-*.zip
             .local-backups/heritage-sales/heritage-starter-audit.json
