@@ -138,3 +138,69 @@ def test_default_prepare_does_not_activate_five_module_fixtures(monkeypatch, tmp
                         lambda *args: pytest.fail("Default launcher must not provision five-module fixtures"))
     assert launcher.main() == 0
     assert "CROWN_SGO_FICTIONAL_INTAKE_ENABLED" not in env
+
+def test_successful_opt_in_launch_preserves_strict_sequence(monkeypatch, tmp_path):
+    """Source-only launch-order proof; does not claim real browser acceptance."""
+    launcher = load_launcher()
+    monkeypatch.setattr(launcher, "STATE", tmp_path)
+    monkeypatch.setattr(
+        launcher.sys, "argv",
+        ["start_heritage_local.py", "--five-module-demo", "--no-browser"],
+    )
+    monkeypatch.setattr(launcher, "available_ports", lambda: None)
+    monkeypatch.setattr(launcher, "npm_command", lambda: ["npm"])
+    monkeypatch.setattr(launcher, "preview_command", lambda: ["vite", "preview"])
+    env = local_env(tmp_path)
+    python = tmp_path / "python"
+    monkeypatch.setattr(launcher, "local_environment", lambda: env)
+    monkeypatch.setattr(launcher, "prepare", lambda *args: python)
+    calls = []
+
+    def seed(process_env, executable):
+        assert process_env is env
+        assert executable == python
+        assert "CROWN_SGO_FICTIONAL_INTAKE_ENABLED" not in env
+        process_env["CROWN_SGO_FICTIONAL_INTAKE_ENABLED"] = "true"
+        calls.append("seed")
+
+    def audit(command, process_env):
+        assert process_env is env
+        assert command[-2:] == ["five_module_demo_preflight", "--strict"]
+        calls.append("strict")
+
+    class FakeServer:
+        def __init__(self, name):
+            self.name = name
+        def poll(self):
+            return None
+        def terminate(self):
+            calls.append("stop-" + self.name)
+        def wait(self, timeout=None):
+            return 0
+
+    def spawn(command, *, cwd, env: server_env, stdout, stderr):
+        assert server_env is env
+        assert server_env["CROWN_SGO_FICTIONAL_INTAKE_ENABLED"] == "true"
+        if "heritage_runserver" in command:
+            assert command[-2:] == ["127.0.0.1:8000", "--noreload"]
+            calls.append("backend")
+            return FakeServer("backend")
+        assert command == ["vite", "preview"]
+        calls.append("frontend")
+        return FakeServer("frontend")
+
+    def ready(url, process, **kwargs):
+        assert process.name in ("backend", "frontend")
+        assert url.startswith("http://127.0.0.1:") or url.startswith("http://localhost:")
+        calls.append("ready-" + process.name)
+
+    monkeypatch.setattr(launcher, "seed_five_module_fixtures", seed)
+    monkeypatch.setattr(launcher, "run", audit)
+    monkeypatch.setattr(launcher.subprocess, "Popen", spawn)
+    monkeypatch.setattr(launcher, "wait_ready", ready)
+    monkeypatch.setattr(launcher.time, "sleep", lambda *_: (_ for _ in ()).throw(KeyboardInterrupt()))
+    assert launcher.main() == 0
+    assert calls == [
+        "seed", "strict", "backend", "frontend",
+        "ready-backend", "ready-frontend", "stop-frontend", "stop-backend",
+    ]
