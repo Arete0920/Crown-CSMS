@@ -114,6 +114,7 @@ describe("Standalone Jireh SGO read-only grantor UI", () => {
     render(<JirehSGODashboard />);
     expect(await screen.findByText("Synthetic Grant Program")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Refresh grantor records" }));
+    expect(screen.queryByText("Synthetic Grant Program")).toBeNull();
     await waitFor(() => expect(authenticatedFetch.mock.calls.filter(([url]) => url.endsWith("/organizations/")).length).toBe(2));
     expect(authenticatedFetch.mock.calls.every(([, opts]) => opts?.omitSchoolContext === true && opts?.method === "GET")).toBe(true);
   });
