@@ -1,5 +1,5 @@
 CROWN HERITAGE LOCAL DEMO
-Revised October 15, 2026
+Updated November 2, 2026 — five-module refresh pending full acceptance
 
 START ON A DEMO COMPUTER
 1. Install Python 3.12 and Node.js 24 with npm if missing.
@@ -24,6 +24,45 @@ Azure, Microsoft sign-in, and cloud database credentials are unnecessary.
 Payments in the demonstrated flow are local manual demo entries; no external
 payment is processed. Internet is required for initial installation.
 Full offline operation of every integration has not been verified.
+
+FIVE-MODULE RELEASE SCOPE AND VERIFICATION (NOVEMBER 2)
+The immutable source pin for this candidate is
+a1bf22fc1e520eba149ce943edcd747dbf75c1e5.
+Verify that HERITAGE-SALES-MANIFEST.json has this exact source_sha before
+using a candidate. This identifies the application source, not PR head.
+Unmerged Camp PR #611 and Diadem pickup PR #612 are NOT included and cannot
+be demonstrated as implemented features. A dashboard route alone does not
+constitute full workflow acceptance. No real family/childcare records.
+
+The canonical Windows GitHub Actions job must pass a STRICT five-module
+fictional-data preflight, verify ZIP and source-download identity, and pass
+the existing browser buyer rehearsal before its distributable ZIP artifact
+is accepted. The preflight checks routes and synthetic record availability;
+it does NOT prove five-module browser completion, permission boundaries,
+persisted edits or safe failure behavior. Those workflows require separate
+browser tests and actual laptop rehearsal. Until both pass, label this ZIP
+a CANDIDATE, not a certified interactive five-module demonstration.
+
+For a reproducible strict check after starter extraction and first source
+download, open PowerShell in the extracted Heritage-<12 digit SHA> source
+folder (not the parent folder containing Start-Heritage.cmd):
+  py -3.12 scripts/demo/start_heritage_local.py --prepare-only --five-module-preflight
+The command must exit 0; save its output. If it fails, NO-GO. This does
+not replace a real browser workflow rehearsal. Perform it in the isolated
+fictional Heritage database only; do not alter a real school database.
+Then run Start-Heritage.cmd from the parent starter folder, or run
+  py -3.12 scripts/demo/start_heritage_local.py
+from the source folder. Confirm http://localhost:4173/sandbox and inspect
+the actual workflows with authorized personas, save/reload and denial tests.
+
+The release acceptance checklist is: Diadem Daycare center/room setup and
+custody checks; Extended Care AM/PM enrollment and attendance; Summer Camp
+session, registration and saved state; Jireh Financial Aid application,
+recommendation and persisted state; Jireh SGO organization/case visibility
+and denied unauthorized operations. Do NOT claim SGO family submission or
+processor case-management workflows without actual implementation and tests.
+A functional gap in any module blocks the FULL five-module certification;
+it must be disclosed instead of being represented by a dashboard tour.
 
 STOP AND RESTART
 Press Ctrl+C in the startup window to stop both servers. Saved fictional data
