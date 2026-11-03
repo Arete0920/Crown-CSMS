@@ -217,6 +217,50 @@ def test_canonical_jireh_review_progress_preserves_offered_evidence(
     ).count() == 1
 
 
+@pytest.mark.parametrize("tamper", ["accepted_audit", "removed_offer", "duplicate_offer"])
+def test_canonical_jireh_reseed_rejects_changed_financial_audit_history(
+    monkeypatch, settings, tamper,
+):
+    """An offered row is not proof that acceptance or posting never occurred."""
+    from aid.models import AidAward, AidAuditEvent
+
+    with _setup_local(monkeypatch, settings):
+        seed_heritage_module_samples()
+        award = AidAward.objects.get(
+            school_id=HERITAGE_ID,
+            student_id=fixed_id("canonical-aid-student"),
+        )
+        offer_events = AidAuditEvent.objects.filter(
+            school_id=HERITAGE_ID,
+            entity_type=AidAuditEvent.ENTITY_AWARD,
+            entity_id=str(award.pk),
+            action="AWARD_OFFERED",
+        )
+        if tamper == "removed_offer":
+            offer_events.delete()
+        else:
+            AidAuditEvent.log(
+                school=award.school,
+                entity_type=AidAuditEvent.ENTITY_AWARD,
+                entity_id=award.pk,
+                action=("AWARD_ACCEPTED" if tamper == "accepted_audit" else "AWARD_OFFERED"),
+                details={"awarded_cents": 25000, "award_type": AidAward.TYPE_NEED},
+            )
+        with pytest.raises(CommandError, match="offer audit history changed"):
+            seed_heritage_module_samples()
+
+    award.refresh_from_db()
+    assert award.decision_status == AidAward.DECISION_OFFERED
+    assert award.ledger_entry_id is None
+    assert AidAuditEvent.objects.filter(
+        school_id=HERITAGE_ID,
+        entity_type=AidAuditEvent.ENTITY_AWARD,
+        entity_id=str(award.pk),
+        action="AWARD_OFFERED",
+    ).count() == (0 if tamper == "removed_offer" else
+                 2 if tamper == "duplicate_offer" else 1)
+
+
 def test_canonical_jireh_award_tampering_aborts_reseed_and_rolls_back(
     monkeypatch, settings,
 ):

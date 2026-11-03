@@ -79,7 +79,7 @@ def _seed_canonical_offered_jireh(school) -> tuple[int, int]:
             or not school.is_active):
         raise CommandError("Canonical Jireh preview requires the active fictional Heritage school.")
     from core.models import AcademicYear, Family, Student
-    from aid.models import AidApplication, AidAward
+    from aid.models import AidApplication, AidAward, AidAuditEvent
 
     years = list(
         AcademicYear.objects.filter(
@@ -152,6 +152,21 @@ def _seed_canonical_offered_jireh(school) -> tuple[int, int]:
     ):
         raise CommandError(
             "Fictional Jireh sample is no longer an unposted offered award."
+        )
+    # Current state alone cannot prove that an offer was never accepted or
+    # posted: legacy callers may mutate fields after a financial decision.
+    # Preserve the immutable local sample's single canonical offer event.
+    audit_events = list(AidAuditEvent.objects.filter(
+        school=school,
+        entity_type=AidAuditEvent.ENTITY_AWARD,
+        entity_id=str(award.pk),
+    ).values_list("action", "details_json")[:2])
+    if audit_events != [(
+        "AWARD_OFFERED",
+        {"awarded_cents": 25000, "award_type": AidAward.TYPE_NEED},
+    )]:
+        raise CommandError(
+            "Fictional Jireh offer audit history changed; manual reconciliation required."
         )
     return (
         AidApplication.objects.filter(
