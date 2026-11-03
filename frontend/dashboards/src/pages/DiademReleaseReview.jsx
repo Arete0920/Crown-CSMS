@@ -54,7 +54,12 @@ export default function DiademReleaseReview({ siteId, attendance, onCancel, onRe
 
   async function submit(event) {
     event.preventDefault();
-    if (attempted.current || busy || locked || !sameContext(scope) || !attested ||
+    if (!sameContext(scope)) {
+      setLocked(true);
+      setError("Staff session or school context changed. Close this review, refresh the custody roster, and reverify the recipient. No release request was sent.");
+      return;
+    }
+    if (attempted.current || busy || locked || !attested ||
         status !== "candidates_only" || !attendance.room_id ||
         !options?.some((item) => item.authority_id === selected) ||
         !METHODS.some(([code]) => code === method)) return;

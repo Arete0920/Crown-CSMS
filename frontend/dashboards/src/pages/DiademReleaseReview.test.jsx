@@ -3,7 +3,7 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import DiademReleaseReview from "./DiademReleaseReview.jsx";
 import { crownApiClient } from "../api/client.js";
-import { setSelectedSchoolId } from "../utils/authClient.js";
+import { setAccessToken, setSelectedSchoolId } from "../utils/authClient.js";
 
 vi.mock("../api/client.js", () => ({ crownApiClient: { get: vi.fn(), post: vi.fn() } }));
 const site = "11111111-1111-4111-8111-111111111111";
@@ -77,6 +77,20 @@ it("does not show stale recipient information after tenant switch", async () => 
   await waitFor(() => expect(crownApiClient.get).toHaveBeenCalledTimes(1));
   expect(screen.queryByText("Synthetic Guardian")).toBeNull();
   expect(crownApiClient.post).not.toHaveBeenCalled();
+});
+
+it("fails closed with explicit guidance when staff credentials change before confirmation", async () => {
+  const released = show();
+  await screen.findByText("Synthetic Guardian");
+  fireEvent.change(screen.getByLabelText("Verified pickup recipient"), { target: { value: authority } });
+  fireEvent.change(screen.getByLabelText("Identity verification method"), { target: { value: "GOVERNMENT_PHOTO_ID" } });
+  fireEvent.click(screen.getByRole("checkbox"));
+  setAccessToken("rotated-staff-access-token");
+  fireEvent.click(screen.getByRole("button", { name: "Confirm verified handoff" }));
+  expect(screen.getByRole("alert").textContent).toMatch(/staff session or school context changed/i);
+  expect(crownApiClient.post).not.toHaveBeenCalled();
+  expect(released).not.toHaveBeenCalled();
+  expect(screen.getByRole("button", { name: "Confirm verified handoff" }).disabled).toBe(true);
 });
 
 it("does not retry ambiguous release responses", async () => {
