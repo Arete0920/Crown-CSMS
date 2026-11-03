@@ -55,6 +55,14 @@ jobs:
           node --version
           npm --version
           python scripts/demo/start_heritage_local.py --prepare-only
+      - name: Run strict fictional five-module source and data preflight
+        shell: pwsh
+        run: python scripts/demo/start_heritage_local.py --prepare-only --five-module-preflight
+      - name: Build and audit deliverable Heritage starter
+        shell: pwsh
+        run: |
+          python scripts/demo/package_heritage_sales.py
+          python scripts/demo/verify_heritage_sales_package.py --download
       - name: Verify guarded Heritage listener boundary
         shell: pwsh
         run: .\.venv\Scripts\python.exe -m pytest -q backend/crown_api/tests/test_heritage_runserver.py
@@ -78,6 +86,16 @@ jobs:
         shell: pwsh
         run: |
           python scripts/demo/verify_heritage_runtime.py --browser
+      - name: Upload audited Windows Heritage starter ZIP
+        if: success()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: heritage-five-module-starter
+          path: |
+            .local-backups/heritage-sales/CROWN-Heritage-Sales-Demo-*.zip
+            .local-backups/heritage-sales/heritage-starter-audit.json
+          if-no-files-found: error
+          retention-days: 7
       - name: Upload local rehearsal evidence
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
