@@ -230,7 +230,7 @@ def checkout_student(
     verifier_error = "An active school-authorized pickup verifier is required."
     if not verified_by or not getattr(verified_by, "is_authenticated", False):
         raise ValueError(verifier_error)
-    if not getattr(verified_by, "is_active", False) or getattr(verified_by, "school_id", None) != school_id:
+    if not getattr(verified_by, "is_active", False) or str(getattr(verified_by, "school_id", None)) != str(school_id):
         raise ValueError(verifier_error)
     school = School.objects.filter(pk=school_id, is_active=True).first()
     if school is None or not user_has_permission(verified_by, "extended_care.edit", school=school):
@@ -298,7 +298,7 @@ def handoff_student_to_school(school_id, student_id, receiving_user, when: datet
     attendance_day = school_local_date(school_id, when)
     if not getattr(receiving_user, "is_authenticated", False) or not getattr(receiving_user, "is_active", False):
         raise ValueError("An active receiving staff member is required.")
-    if getattr(receiving_user, "school_id", None) != school_id:
+    if str(getattr(receiving_user, "school_id", None)) != str(school_id):
         raise ValueError("Receiving staff member must belong to this school.")
     staff_id = getattr(receiving_user, "staff_id", None)
     if not staff_id or not Staff.objects.filter(

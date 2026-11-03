@@ -12,6 +12,7 @@ from rest_framework_simplejwt.tokens import AccessToken
 
 from aftercare.models import AftercareAttendance, AftercareEnrollment, AftercarePickupContact
 from core.models import CrownPermission, RolePermission, School, Staff, UserAccount, UserRole
+from crown_api.jwt_utils import build_access_token
 from households.models import Household, Student
 from subscriptions.models import SchoolModule
 
@@ -59,9 +60,13 @@ def _fictional_school(label):
     return school, child, user
 
 
-def _signed_client(user, school):
-    token = AccessToken.for_user(user)
-    token["school_id"] = str(user.school_id)
+def _signed_client(user, school, token_kind):
+    if token_kind == "heritage":
+        token = build_access_token(user_id=str(user.pk), email=user.email,
+                                   role="aftercare_staff", school_id=str(user.school_id))
+    else:
+        token = AccessToken.for_user(user)
+        token["school_id"] = str(user.school_id)
     client = APIClient()
     client.credentials(
         HTTP_AUTHORIZATION=f"Bearer {token}",
@@ -80,7 +85,8 @@ def _row(response, child):
     return matches[0]
 
 
-def test_signed_two_school_custody_readback_isolation_and_verified_release(monkeypatch):
+@pytest.mark.parametrize("token_kind", ["simplejwt", "heritage"])
+def test_signed_two_school_custody_readback_isolation_and_verified_release(monkeypatch, token_kind):
     """A's signed staff proves custody through real Django writes and reads.
 
     B's signed staff cannot view or mutate A's child. A's two care sessions
@@ -88,8 +94,8 @@ def test_signed_two_school_custody_readback_isolation_and_verified_release(monke
     """
     school_a, child_a, staff_a = _fictional_school("A")
     school_b, child_b, staff_b = _fictional_school("B")
-    client_a = _signed_client(staff_a, school_a)
-    client_b = _signed_client(staff_b, school_b)
+    client_a = _signed_client(staff_a, school_a, token_kind)
+    client_b = _signed_client(staff_b, school_b, token_kind)
 
     # Fix a synthetic school-local Wednesday with real Eastern AM/PM hours.
     clock = [datetime(2025, 9, 3, 12, 0, tzinfo=dt_timezone.utc)]
@@ -104,7 +110,7 @@ def test_signed_two_school_custody_readback_isolation_and_verified_release(monke
     assert "Child A" not in str(am_b.data)
 
     # A's bearer cannot select B or write to B, regardless of header spoofing.
-    wrong = _signed_client(staff_a, school_b)
+    wrong = _signed_client(staff_a, school_b, token_kind)
     denied = wrong.get(ROSTER, {"care_session": "AM"})
     assert denied.status_code in (400, 403, 404)
     assert "Child B" not in str(getattr(denied, "data", denied.content))
@@ -179,4 +185,13 @@ def test_signed_two_school_custody_readback_isolation_and_verified_release(monke
     assert own.status_code == 201, getattr(own, "data", None)
     assert _row(client_b.get(ROSTER, {"care_session": "AM"}), child_b)["attendance"]["checkin_time"]
     assert AftercareAttendance.objects.filter(school_fk=school_b).count() == 1
+    assert AftercareAttendance.objects.filter(school_fk=school_a).count() == 2
+
+    # Previously issued staff bearers must lose all custody authority on revocation.
+    staff_a.is_active = False
+    staff_a.save(update_fields=["is_active"])
+    assert client_a.get(ROSTER, {"care_session": "AM"}).status_code in (401, 403)
+    assert client_a.post(CHECKIN, {
+        "student_id": str(child_a.pk), "care_session": "PM",
+    }, format="json").status_code in (401, 403)
     assert AftercareAttendance.objects.filter(school_fk=school_a).count() == 2
