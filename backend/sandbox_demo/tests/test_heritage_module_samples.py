@@ -48,9 +48,21 @@ def test_local_module_samples_are_idempotent_and_do_not_authorize_custody(
     assert FinancialAidApplication.objects.filter(
         school_id=HERITAGE_ID, pk=fixed_id("aid-application")
     ).count() == 1
-    assert AidAward.objects.filter(
-        school_id=HERITAGE_ID, pk=fixed_id("aid-unapproved-sample"),
-        amount=0, approved_by_user_id__isnull=True
+    application = FinancialAidApplication.objects.get(
+        school_id=HERITAGE_ID, pk=fixed_id("aid-application")
+    )
+    assert application.status == "in_review"
+    award = AidAward.objects.get(
+        school_id=HERITAGE_ID, application=application
+    )
+    assert award.approved_by_user_id is None
+    assert award.amount >= 0
+    assert "Need Index" in award.rationale
+    from financial_aid.models import AidAuditEvent
+    assert AidAuditEvent.objects.filter(
+        school_id=HERITAGE_ID,
+        entity_id=application.pk,
+        event_type="APPLICATION_READY_FOR_REVIEW",
     ).count() == 1
     assert AftercareEnrollment.objects.filter(
         school_fk_id=HERITAGE_ID, is_active=True, care_session__in=["AM", "PM"],
