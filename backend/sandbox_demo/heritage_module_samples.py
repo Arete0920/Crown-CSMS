@@ -63,6 +63,102 @@ def _ensure(model, label: str, defaults: dict, identity: dict):
     return obj, created
 
 
+def _seed_canonical_offered_jireh(school) -> tuple[int, int]:
+    """Create one fictional canonical OFFERED aid record, never a payment.
+
+    Jireh setup reads aid.AidApplication/AidAward, not the alternate
+    financial_aid summary models. Do not substitute a row-count placeholder
+    for the canonical family's own-year, own-student award lineage.
+    """
+    from core.models import AcademicYear, Family, Student
+    from aid.models import AidApplication, AidAward
+
+    years = list(
+        AcademicYear.objects.filter(
+            school=school, is_current=True,
+        ).order_by("id")[:2]
+    )
+    if len(years) != 1:
+        raise CommandError("Canonical fictional Heritage academic year is ambiguous.")
+    year = years[0]
+    family, _ = _ensure(Family, "canonical-aid-family", {
+        "school": school, "family_name": "Fictional Jireh Review Family",
+        "status": "ACTIVE",
+    }, {"school_id": HERITAGE_ID,
+        "family_name": "Fictional Jireh Review Family"})
+    student, _ = _ensure(Student, "canonical-aid-student", {
+        "school": school, "family": family,
+        "student_number": "HCA-FICTIONAL-JIREH-01",
+        "first_name": "Sample", "last_name": "Jireh",
+        "dob": date(2014, 3, 12), "status": "APPLICANT",
+    }, {"school_id": HERITAGE_ID, "family_id": family.pk,
+        "student_number": "HCA-FICTIONAL-JIREH-01"})
+
+    apps = list(AidApplication.objects.filter(
+        school=school, academic_year=year, family=family,
+    ).order_by("id")[:2])
+    if len(apps) > 1:
+        raise CommandError("Ambiguous canonical fictional Jireh applications.")
+    if apps:
+        canonical_app = apps[0]
+    else:
+        canonical_app = AidApplication.objects.create(
+            school=school, academic_year=year, family=family,
+            status=AidApplication.STATUS_DRAFT,
+            household_size=4, income_annual_cents=5500000,
+            notes_internal="FICTIONAL HERITAGE QA application; not real eligibility.",
+        )
+        canonical_app.set_status(
+            AidApplication.STATUS_SUBMITTED,
+            details={"fictional_local_only": True, "event": "sample_intake"},
+        )
+    if canonical_app.status not in (
+        AidApplication.STATUS_SUBMITTED,
+        AidApplication.STATUS_UNDER_REVIEW,
+        AidApplication.STATUS_NEEDS_INFO,
+    ):
+        raise CommandError("Canonical fictional Jireh application changed state.")
+
+    awards = list(AidAward.objects.filter(
+        school=school, academic_year=year, student=student,
+        aid_application=canonical_app,
+    ).order_by("id")[:2])
+    if len(awards) > 1:
+        raise CommandError("Ambiguous canonical fictional Jireh offers.")
+    if awards:
+        award = awards[0]
+    else:
+        award = AidAward.objects.create(
+            school=school, academic_year=year, student=student,
+            aid_application=canonical_app,
+            award_type=AidAward.TYPE_NEED,
+            awarded_cents=25000, recommended_award_cents=25000,
+            decision_status=AidAward.DECISION_OFFERED,
+        )
+        award.mark_offered()  # Writes the normal AWARD_OFFERED audit event.
+    if (
+        award.decision_status != AidAward.DECISION_OFFERED
+        or award.awarded_cents != 25000
+        or award.ledger_entry_id is not None
+        or award.decided_by_id is not None
+    ):
+        raise CommandError(
+            "Fictional Jireh sample is no longer an unposted offered award."
+        )
+    return (
+        AidApplication.objects.filter(
+            school=school, pk=canonical_app.pk,
+            status=AidApplication.STATUS_SUBMITTED,
+        ).count(),
+        AidAward.objects.filter(
+            school=school, pk=award.pk, academic_year=year,
+            student=student, aid_application=canonical_app,
+            decision_status=AidAward.DECISION_OFFERED,
+            ledger_entry__isnull=True, awarded_cents__gt=0,
+        ).count(),
+    )
+
+
 @transaction.atomic
 def seed_heritage_module_samples() -> dict[str, int]:
     """Seed bounded, idempotent samples without authorizing childcare actions."""
@@ -86,6 +182,9 @@ def seed_heritage_module_samples() -> dict[str, int]:
             "adding module samples."
         )
 
+    canonical_jireh_app_count, canonical_jireh_offer_count = (
+        _seed_canonical_offered_jireh(school)
+    )
     household, _ = _ensure(Household, "family", {
         "school_id": HERITAGE_ID, "name": "Fictional Five-Module QA Household",
     }, {"school_id": HERITAGE_ID})
@@ -170,6 +269,8 @@ def seed_heritage_module_samples() -> dict[str, int]:
             "Unapproved training room cannot support ready custody."
         )
     return {
+        "canonical_jireh_applications": canonical_jireh_app_count,
+        "canonical_jireh_offered_awards": canonical_jireh_offer_count,
         "financial_aid_applications": FinancialAidApplication.objects.filter(
             pk=application.pk, school_id=school.pk).count(),
         "financial_aid_sample_awards": AidAward.objects.filter(
