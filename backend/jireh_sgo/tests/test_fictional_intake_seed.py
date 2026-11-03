@@ -9,7 +9,7 @@ from django.core.management import call_command
 from django.core.management.base import CommandError
 from django.test import TestCase, override_settings
 from rest_framework.test import APIClient
-from jireh_sgo.models import ( SGOApplication, SGOAward, SGOFamilyGrant, SGOMembership, SGOOrganization, SGOProcessorAssignment, SGOProgram, )
+from jireh_sgo.models import ( SGOApplication, SGOAward, SGOFamilyGrant, SGOFamilyIntake, SGOMembership, SGOOrganization, SGOProcessorAssignment, SGOProgram, )
 from crown_api.management.commands.seed_fictional_sgo_intake import HERITAGE_SCHOOL
 @override_settings( CROWN_ENV="local", DJANGO_ENV="local", DEBUG=True, CROWN_DEMO_MODE=False, CROWN_SGO_FICTIONAL_INTAKE_ENABLED=True, )
 class FictionalSGOLocalSeedTests(TestCase):
@@ -27,7 +27,12 @@ class FictionalSGOLocalSeedTests(TestCase):
             self.assertTrue(target.is_file())
             for model in (SGOOrganization, SGOProgram, SGOFamilyGrant, SGOProcessorAssignment, SGOMembership):
                 self.assertEqual(model.objects.count(), 2)
-            self.assertEqual(SGOApplication.objects.count(), 0)  # Seeding grants is not a family submission.
+            # The parent seeder intentionally creates one Heritage-linked inventory
+            # application per partner; these are NOT submitted family intakes.
+            self.assertEqual(SGOApplication.objects.count(), 2)
+            self.assertEqual(
+                SGOApplication.objects.filter(school_key=HERITAGE_SCHOOL).count(), 2
+            )
             self.assertFalse(SGOAward.objects.exists())
             self.assertFalse(SGOApplication.objects.filter(student_key__in=SGOFamilyGrant.objects.values("student_key")).exists())
             first = target.read_text(encoding="utf-8")
@@ -49,6 +54,10 @@ class FictionalSGOLocalSeedTests(TestCase):
             for model in (SGOOrganization, SGOProgram, SGOFamilyGrant, SGOProcessorAssignment, SGOMembership):
                 self.assertEqual(model.objects.count(), 2)
             self.assertFalse(SGOAward.objects.exists())
+            self.assertEqual(SGOApplication.objects.count(), 2)
+            self.assertFalse(SGOApplication.objects.filter(
+                student_key__in=SGOFamilyGrant.objects.values("student_key")
+            ).exists())
             self.assertNotEqual(target.read_text(encoding="utf-8"), first)
             self.assertEqual(guard.call_count, 2)
     @patch("crown_api.management.commands.seed_fictional_sgo_intake._require_isolated_local_database")
@@ -118,7 +127,10 @@ class FictionalSGOLocalSeedTests(TestCase):
             self.assertEqual(delaware.get(
                 f"/api/v1/jireh-sgo/family/applications/{application_id}/"
             ).status_code, 200)
-            self.assertEqual(SGOApplication.objects.count(), 1)  # First real authorized POST.
+            # Two synthetic inventory rows remain separate from the one
+            # authorized family submission, without creating a grantor award.
+            self.assertEqual(SGOApplication.objects.count(), 3)
+            self.assertEqual(SGOFamilyIntake.objects.count(), 1)
             self.assertFalse(SGOAward.objects.exists())
 
             pennsylvania = signed_client(families[1])
