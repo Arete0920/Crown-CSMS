@@ -77,6 +77,15 @@ afterEach(() => {
 });
 
 describe("Fictional parent Financial Aid saved-record truth", () => {
+  it("uses the shared role-scoped CROWN parent shell without exposing administration", async () => {
+    arrange(snapshot());
+    render(<ParentFinancialAidPreparationPage />);
+    expect(screen.getByRole("navigation", { name: "Primary" })).toBeTruthy();
+    expect(screen.getByRole("main")).toBeTruthy();
+    expect(screen.getByTestId("jireh-family-demo").tagName).toBe("SECTION");
+    expect(screen.queryByRole("link", { name: "Platform Control" })).toBeNull();
+  });
+
   it("does not expose local fictional intake outside the explicit local demo build", () => {
     vi.stubEnv("VITE_LOCAL_DEMO", "0");
     render(<ParentFinancialAidPreparationPage />);

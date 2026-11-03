@@ -6,6 +6,8 @@ import {
   SCHOOL_CONTEXT_CHANGE_EVENT,
 } from "../utils/authClient";
 import ParentJourneyOverviewPage from "../features/parentJourney/ParentJourneyOverviewPage.jsx";
+import CrownDashboardShell from "../components/crown-dashboard/CrownDashboardShell.jsx";
+import { getDashboardTemplate } from "../config/dashboardTemplates/index.js";
 
 const ENDPOINT = "/api/v1/aid/family/demo-intake/";
 // Shared token-change event added by the separate Diadem auth-hardening PR.
@@ -30,6 +32,7 @@ function errorMessage(error) {
 }
 
 function LocalFictionalFinancialAidPage() {
+  const parentShell = getDashboardTemplate("parent");
   const [record, setRecord] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -249,8 +252,13 @@ function LocalFictionalFinancialAidPage() {
   }
 
   return (
-    <>
-      <main className="crown-dashboard learning-workflow-page" data-testid="jireh-family-demo">
+    <CrownDashboardShell
+      activePath="/parent/financial-aid"
+      schoolName={parentShell.schoolName}
+      user={parentShell.user}
+      updatesCount={parentShell.updatesCount}
+    >
+      <section className="crown-dashboard learning-workflow-page" data-testid="jireh-family-demo">
         <header className="crown-dashboard-hero">
           <div>
             <p className="crown-eyebrow">Jireh Financial Aid · school application</p>
@@ -361,8 +369,8 @@ function LocalFictionalFinancialAidPage() {
             </>
           ) : null}
         </section>
-      </main>
-    </>
+      </section>
+    </CrownDashboardShell>
   );
 }
 
