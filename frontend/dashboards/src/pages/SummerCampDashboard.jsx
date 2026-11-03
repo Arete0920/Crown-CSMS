@@ -96,7 +96,7 @@ export default function SummerCampDashboard() {
                 gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
               }}
             >
-              <MetricCard label="Registered Campers" value={summary.registered_campers} />
+              <MetricCard label="Registration records" value={summary.registered_campers} />
               <MetricCard label="Sessions" value={summary.sessions} />
               <MetricCard label="Waitlist Count" value={summary.waitlist_count} />
               <MetricCard label="Missing Forms" value={summary.missing_forms} />
