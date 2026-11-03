@@ -513,17 +513,17 @@ export default function AftercareRosterPage({ careSession = "PM" }) {
         {currentRoster?.unlinked_attendance_count > 0 && (
           <p role="alert">{currentRoster.unlinked_attendance_count} attendance record(s) cannot be linked to a verified student in this school. Escalate for manual custody reconciliation; identities from other schools are not displayed.</p>
         )}
-        <CareHandoffDialog
-          open={Boolean(handoff && isMorning && currentRoster && !custodyWarning && !readCustodyBarrier() && handoff.careSession === careSession)}
+        {!custodyWarning && !readCustodyBarrier() && <CareHandoffDialog
+          open={Boolean(handoff && isMorning && currentRoster && handoff.careSession === careSession)}
           studentName={childName(handoff?.studentId)}
           acknowledged={Boolean(handoff?.acknowledged)}
           busy={handoffBusy}
           onAcknowledge={(acknowledged) => setHandoff((previous) => previous ? { ...previous, acknowledged } : null)}
           onConfirm={handleHandoff}
           onCancel={() => setHandoff(null)}
-        />
-        <CarePickupDialog
-          open={Boolean(pickup && !isMorning && currentRoster && !custodyWarning && !readCustodyBarrier() && pickup.careSession === careSession)}
+        />}
+        {!custodyWarning && !readCustodyBarrier() && <CarePickupDialog
+          open={Boolean(pickup && !isMorning && currentRoster && pickup.careSession === careSession)}
           studentName={childName(pickup?.studentId)}
           contacts={pickup?.contacts || []}
           selectedContactId={pickup?.contactId || ""}
@@ -533,7 +533,7 @@ export default function AftercareRosterPage({ careSession = "PM" }) {
           onVerify={(verified) => setPickup((previous) => previous ? { ...previous, verified } : null)}
           onConfirm={handleCheckout}
           onCancel={() => setPickup(null)}
-        />
+        />}
       </DashboardSection>
     </CrownLayout>
   );
