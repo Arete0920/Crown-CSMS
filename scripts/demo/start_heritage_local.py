@@ -199,14 +199,8 @@ def prepare(env: dict[str, str], npm: list[str], skip_install: bool) -> Path:
     return python
 
 
-def seed_five_module_fixtures(env: dict[str, str], python: Path) -> None:
-    """Explicit local-only fixture integration, never a production or custody grant.
-
-    Invoked only by --prepare-only --five-module-preflight after the ordinary
-    Heritage seed. Each seeder also verifies the exact local SQLite boundary.
-    The ordinary sales-demo launch remains unchanged until integrated source
-    and all five functional browser journeys have been certified.
-    """
+def enable_five_module_runtime(env: dict[str, str]) -> None:
+    """Activate only an explicitly selected, exact local Heritage environment."""
     expected_database = "sqlite:///" + (STATE / "heritage.sqlite3").as_posix()
     if (
         env.get("DJANGO_ENV") != "local"
@@ -224,6 +218,11 @@ def seed_five_module_fixtures(env: dict[str, str], python: Path) -> None:
     # Heritage SQLite guard above; the default launcher never enables it.
     # The same scoped environment is then used by the SGO seeder and demo server.
     env["CROWN_SGO_FICTIONAL_INTAKE_ENABLED"] = "true"
+
+
+def seed_five_module_fixtures(env: dict[str, str], python: Path) -> None:
+    """Explicit guarded preparation; verification must never seed credentials again."""
+    enable_five_module_runtime(env)
     manage = [str(python), str(ROOT / "backend/manage.py")]
 
     # Never fabricate childcare readiness, release authority or awarded funds.

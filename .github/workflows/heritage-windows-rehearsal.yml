@@ -86,7 +86,7 @@ jobs:
           New-Item -ItemType Directory -Force -Path $evidence | Out-Null
           $log = Join-Path $evidence "five-module-source-preflight.log"
           $PSNativeCommandUseErrorActionPreference = $false
-          & python -c "from scripts.demo.start_heritage_local import require_five_module_sources; require_five_module_sources()" *> $log
+          & python -c "from scripts.demo.start_heritage_local import require_five_module_sources; from scripts.demo.verify_heritage_runtime import require_five_module_browser_sources; require_five_module_sources(); require_five_module_browser_sources()" *> $log
           $exitCode = $LASTEXITCODE
           Get-Content -Path $log | ForEach-Object { Write-Host $_ }
           $result = [ordered]@{
@@ -169,7 +169,7 @@ jobs:
       - name: Launch servers and verify local role-based demo
         shell: pwsh
         run: |
-          python scripts/demo/verify_heritage_runtime.py --browser
+          python scripts/demo/verify_heritage_runtime.py --browser --five-module
       - name: Upload audited Windows Heritage starter ZIP
         if: success()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
