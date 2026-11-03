@@ -2,8 +2,10 @@ from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema
 """Synthetic-only Jireh SGO APIs; no public enrollment or partner production access."""
 import os
+from pathlib import Path
 from uuid import UUID
 from django.conf import settings
+from sandbox_demo.management.commands.five_module_demo_preflight import LOCAL_DB
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.exceptions import NotFound, ValidationError
 from rest_framework.permissions import IsAuthenticated
@@ -22,6 +24,7 @@ def fictional_intake_enabled():
         and not os.getenv("AZURE_ENVIRONMENT")
         # Never point the fictional intake flag at a connected production DB.
         and settings.DATABASES["default"]["ENGINE"] == "django.db.backends.sqlite3"
+        and Path(str(settings.DATABASES["default"].get("NAME", ""))).resolve() == LOCAL_DB.resolve()
     )
 def _guard(request):
     _reject_school_selector(request)

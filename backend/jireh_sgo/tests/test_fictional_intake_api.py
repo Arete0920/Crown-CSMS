@@ -1,7 +1,9 @@
 """End-to-end persistence, explicit authority and two-SGO isolation in local synthetic intake."""
 from uuid import uuid4
+from pathlib import Path
 from unittest.mock import patch
 from django.contrib.auth import get_user_model
+from django.conf import settings
 from django.db import connection
 from django.test import override_settings
 from rest_framework.test import APITestCase
@@ -11,6 +13,9 @@ class FictionalSGOIntakeAPITests(APITestCase):
     def setUp(self):
         if connection.vendor != "sqlite":
             self.skipTest("Fictional SGO intake is intentionally disabled outside isolated SQLite.")
+        self.demo_db_patch = patch("jireh_sgo.family_intake_api.LOCAL_DB", Path(str(settings.DATABASES["default"]["NAME"])).resolve())
+        self.demo_db_patch.start()
+        self.addCleanup(self.demo_db_patch.stop)
         User = get_user_model()
         self.family_a = User.objects.create_user(username="fictional-family-a", password="x")
         self.family_b = User.objects.create_user(username="fictional-family-b", password="x")
@@ -169,6 +174,14 @@ class FictionalSGOIntakeAPITests(APITestCase):
         from jireh_sgo.family_intake_api import fictional_intake_enabled
         with patch("jireh_sgo.family_intake_api.settings.DATABASES", { "default": {"ENGINE": "django.db.backends.postgresql"} }):
             self.assertFalse(fictional_intake_enabled())
+    def test_different_local_sqlite_path_denies_family_intake_without_writes(self):
+        from jireh_sgo.family_intake_api import fictional_intake_enabled
+        self.client.force_authenticate(user=self.family_a)
+        with patch("jireh_sgo.family_intake_api.LOCAL_DB", Path("/not-heritage-demo.sqlite3")):
+            self.assertFalse(fictional_intake_enabled())
+            self.assertNotEqual(self.client.get("/api/v1/jireh-sgo/family/programs/").status_code, 200)
+            self.assertNotEqual(self.client.post("/api/v1/jireh-sgo/family/submit/", self._data(), format="json").status_code, 201)
+        self.assertFalse(SGOApplication.objects.exists())
     def test_reused_processor_idempotency_key_for_different_partner_case_is_conflict(self):
         first = self._submit_a()
         app_a = first.data["application"]["id"]
