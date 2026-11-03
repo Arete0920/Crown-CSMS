@@ -72,49 +72,66 @@ For a fresh rehearsal, extract this ZIP into a new folder and use a private
 browser window. Preserve the old folder if its saved records are needed.
 Avoid resetting during a presentation.
 
-DEMO RUN ORDER (ABOUT 40-50 MINUTES)
-1. School Administrator: show Heritage context, dashboard, registrar,
-   attendance, gradebook, communications, and an administrative exception action.
-   Open classroom operations from the expandable section when needed.
-2. Parent, seeded accepted Jordan Reed scenario: open Admissions Status and
-   accept the demo enrollment agreement. Show the completed student handoff,
-   family billing, attendance, progress, and communications. Do this before
-   submitting a new application; admissions status follows the newest application.
-3. Parent, new Avery Reed application: use the prefilled application wizard.
-   Set the primary guardian email to parent.reed@heritage.example.org.
-   Show draft saving, document-readiness acknowledgements, submission, and the
-   exact persisted application in Admissions Status. The implemented document
-   step is a readiness checklist; binary document upload is not claimed.
-4. Admissions Director: review and accept the seeded Carter applicant; demonstrate
-   canonical-ready conversion in the pipeline. This is a separate seeded scenario,
-   not a claim that the new Avery application was approved in the previous step.
-5. Finance Director: show the Reed family obligation, apply a manual demo payment,
-   reload, and show reconciliation, allocation history, void handling, and refund
-   controls. The action is idempotent; a completed payment remains completed.
-6. Teacher: show assigned classes, record attendance, create/save/reopen a lesson
-   plan, link a curriculum resource, and create persisted classwork. Open the
-   classroom records section for assignments and feedback.
-7. Student: show schedule, assignments, progress, attendance, communications,
-   and Student Work. Demonstrate denial of administrative or finance access.
+FIVE-MODULE FUNCTIONAL REHEARSAL (45 MINUTES; CANDIDATE ONLY)
+These are required acceptance checks, not claims that all workflows exist.
+Use only fictional Heritage data, document exact role and visible URL,
+and record the outcome. Do not bypass a missing control or permission gate.
 
-Use /sandbox to select the next persona. Role switching creates a fresh protected
-demo session. Narrate the source labels on dashboards: some cards contain
-explicitly labeled sample or fallback summaries alongside actual local records.
+1. Diadem Daycare (10 min)
+   Visit /diadem/daycare/setup and /diadem/daycare. Under an authorized
+   director persona, inspect site and room setup; create or change only
+   disposable synthetic configuration, then reload and verify stored state.
+   Inspect actual roster and custody controls and expected denial cases.
+   Pickup review and audited release changes from draft PR #612 are NOT
+   present in this pinned release; do not demonstrate them as available.
+
+2. Extended Care / Beforecare / Aftercare (9 min)
+   Visit /before-care/dashboard and /after-care/dashboard and their roster
+   pages. Verify separately scoped AM and PM enrollment, attendance, roles,
+   saved/reloaded changes, stale-action rejection and forbidden-role denial.
+   Do not claim draft PR #613 staff-isolation hardening is included.
+
+3. Summer Camp (8 min)
+   Visit /summer-camp-dashboard/setup and /summer-camp-dashboard/roster.
+   Check school-scoped sessions and synthetic registrations, perform an
+   authorized existing action if available, verify reload and a denied
+   cross-school or unauthorized action. Draft PR #611 workflows are NOT
+   included; a read-only tour cannot pass an interactive workflow gate.
+
+4. Jireh Financial Aid (9 min)
+   Visit /parent/financial-aid and /financial-aid with appropriate separate
+   roles. Verify available family preparation, application, student-specific
+   recommendation and award state; exercise an authorized save/reload, input
+   validation and role denial. Do not claim that any award was actually paid.
+
+5. Jireh SGO (9 min)
+   Visit /jireh-sgo. Verify school/organization membership, program
+   visibility and noncash application aggregates; verify unauthorized access
+   is denied. At this pinned source, family-facing SGO intake and delegated
+   processor case management are NOT demonstrated as complete. These are
+   outstanding functional gaps and block full five-module certification.
+
+Use /sandbox to change demo personas. Some dashboard cards may display
+explicitly labeled examples or fallback summaries, not persisted records.
+A route loading successfully does not satisfy save/reload or authorization.
+Stop the presentation as a full functional certification if a required flow
+is unavailable; disclose the scope instead of improvising a dashboard tour.
 
 SCHOOL PROFILE
 Heritage Christian Academy; PK-12; school year 2026-2027.
-The baseline seed has 700 students. Scenario-specific records can increase live
-counts. The baseline profile is not a promise that every displayed aggregate
-equals 700 after transactions. Tuition installments run August through July.
+Seed counts, scenario records and displayed aggregates can differ between
+source revisions and after demo transactions. Verify them in the isolated
+local database; do not promise fixed enrollment or tuition totals.
 
-VERIFICATION
-The final runtime revision passed eight browser authority checks covering six
-roles, 34 route visits, and mobile entry. Sixteen saved-action checks passed with
-independent pristine fixtures, including reload persistence and role denials.
-Fifty-two focused frontend checks, 55 Parent360 checks, 10 identity/seed/launcher
-checks, and the five launcher checks passed. First creation from an empty SQLite
-database and a manual demo payment passed. The pinned source download, extraction,
-source identity, and repeat-install reuse were tested on Linux.
+VERIFICATION STATUS — NOVEMBER 2 CANDIDATE
+The earlier October 15 Heritage distribution had historical test evidence
+for a broader school buyer walkthrough. That evidence belongs to the older
+source revision; none of its numeric pass counts certifies this new pin,
+the five-module workflows, or the owner's physical Windows laptop.
+For this candidate, accept only current exact-head Windows CI evidence,
+a passing strict local five-module preflight, package/download identity
+verification, and separately evidenced real-browser five-module actions.
+No production, Azure, payment or real-school certification is claimed.
 
 LIMITS
 Native Windows/macOS execution still needs a check on the actual demo computer.
@@ -129,11 +146,12 @@ SALES HANDOFF CONTROL
 1. Inspect HERITAGE-SALES-MANIFEST.json; confirm its source_sha matches the
    released certification/approval record before distributing the package.
 2. Extract the ZIP and run Start-Heritage.cmd on the actual Windows laptop.
-3. Demonstrate all six personas and at least one saved/reloaded school workflow.
+3. Rehearse all five module workflows with saved/reloaded changes where
+   implemented, expected role denials, and an explicit record of gaps.
 4. Keep the laptop local; do not share localhost via port-forwarding or expose
    the open-session local sandbox on the public internet.
-5. Give sales staff this README and the canonical buyer walkthrough script:
-   docs/sandbox/CROWN_BUYER_DEMO_PRESENTER_SCRIPT_20260818.md.
+5. Give sales staff this README and the five-module acceptance evidence.
+   The older buyer presenter script is supplemental historical material only.
 6. If startup, a protected route, seed integrity, or role denial fails: NO-GO.
    Record the build SHA and failure; never bypass authorization to present.
 7. The Windows runner proves CI execution, not the physical sales laptops.
