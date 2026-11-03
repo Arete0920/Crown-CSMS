@@ -169,6 +169,8 @@ def correct_family_application(*, user, application_id, expected_revision, grade
             and intake.status == SGOFamilyIntake.RESUBMITTED
             and intake.revision == revision + 1 and intake.grade_level == grade):
         return intake, False
+    if intake.last_correction_key == key:
+        raise IntakeConflict("Correction idempotency key cannot start a new revision.")
     if SGOFamilyIntake.objects.filter(last_correction_key=key).exclude(pk=intake.pk).exists():
         raise IntakeConflict("Correction idempotency key belongs to another case.")
     if intake.status != SGOFamilyIntake.CORRECTION_REQUESTED or intake.revision != revision:
@@ -225,6 +227,8 @@ def request_processor_correction(
             and intake.status == SGOFamilyIntake.CORRECTION_REQUESTED
             and intake.revision == revision + 1 and intake.requested_reason == reason):
         return intake, False
+    if intake.last_processor_key == key:
+        raise IntakeConflict("Processor idempotency key cannot start a new revision.")
     if SGOFamilyIntake.objects.filter(last_processor_key=key).exclude(pk=intake.pk).exists():
         raise IntakeConflict("Processor idempotency key belongs to another case.")
     if intake.status not in (SGOFamilyIntake.SUBMITTED, SGOFamilyIntake.RESUBMITTED):
