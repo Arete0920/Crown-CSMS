@@ -109,6 +109,37 @@ def test_local_module_samples_are_idempotent_and_do_not_authorize_custody(
     ).exists()
 
 
+
+@pytest.mark.parametrize("next_state", ["UNDER_REVIEW", "NEEDS_INFO"])
+def test_canonical_jireh_review_progress_preserves_offered_evidence(
+    monkeypatch, settings, next_state,
+):
+    """Re-seeding a legitimate review state must not report zero canonical apps."""
+    from aid.models import AidApplication, AidAward, AidAuditEvent
+
+    with _setup_local(monkeypatch, settings):
+        initial = seed_heritage_module_samples()
+        app = AidApplication.objects.get(
+            school_id=HERITAGE_ID, family_id=fixed_id("canonical-aid-family"),
+        )
+        app.set_status(next_state, details={"fictional_local_only": True})
+        repeated = seed_heritage_module_samples()
+        app.refresh_from_db()
+
+    assert repeated == initial
+    assert repeated["canonical_jireh_applications"] == 1
+    assert app.status == next_state
+    offered = AidAward.objects.get(school_id=HERITAGE_ID, aid_application=app)
+    assert offered.decision_status == AidAward.DECISION_OFFERED
+    assert offered.ledger_entry_id is None
+    assert AidAuditEvent.objects.filter(
+        school_id=HERITAGE_ID,
+        entity_type=AidAuditEvent.ENTITY_AWARD,
+        entity_id=str(offered.pk),
+        action="AWARD_OFFERED",
+    ).count() == 1
+
+
 def test_canonical_jireh_award_tampering_aborts_reseed_and_rolls_back(
     monkeypatch, settings,
 ):

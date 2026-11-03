@@ -156,7 +156,11 @@ def _seed_canonical_offered_jireh(school) -> tuple[int, int]:
     return (
         AidApplication.objects.filter(
             school=school, pk=canonical_app.pk,
-            status=AidApplication.STATUS_SUBMITTED,
+            status__in=(
+                AidApplication.STATUS_SUBMITTED,
+                AidApplication.STATUS_UNDER_REVIEW,
+                AidApplication.STATUS_NEEDS_INFO,
+            ),
         ).count(),
         AidAward.objects.filter(
             school=school, pk=award.pk, academic_year=year,
