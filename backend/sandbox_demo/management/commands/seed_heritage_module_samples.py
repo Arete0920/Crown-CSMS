@@ -16,6 +16,10 @@ class Command(BaseCommand):
             "--fictional-local-only", action="store_true",
             help="Confirm disposable canonical Heritage local SQLite only.",
         )
+        parser.add_argument(
+            "--enable-fictional-care-entitlements", action="store_true",
+            help="Explicitly create missing 30-day local AM/PM demo entitlements; never override disabled records.",
+        )
 
     def handle(self, *args, **options):
         if not options["fictional_local_only"]:
@@ -23,7 +27,9 @@ class Command(BaseCommand):
                 "Refusing writes without --fictional-local-only."
             )
         require_local_demo()
-        results = seed_heritage_module_samples()
+        results = seed_heritage_module_samples(
+            enable_care_entitlements=options["enable_fictional_care_entitlements"],
+        )
         for key, value in results.items():
             self.stdout.write(f"{key}: {value}")
         self.stdout.write(self.style.SUCCESS(

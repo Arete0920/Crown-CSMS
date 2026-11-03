@@ -107,6 +107,10 @@ def test_local_module_samples_are_idempotent_and_do_not_authorize_custody(
     assert not DaycareGuardianAuthority.objects.filter(
         child_id=enrollment.child_id, is_active=True
     ).exists()
+    from subscriptions.models import SchoolModule
+    assert not SchoolModule.objects.filter(
+        school_id=HERITAGE_ID, module_key__in=("before_care", "after_care"),
+    ).exists()
 
 
 @pytest.mark.parametrize("session,tamper", [
@@ -293,11 +297,12 @@ def test_canonical_jireh_award_tampering_aborts_reseed_and_rolls_back(
     ).count() == 1
 
 
-def test_explicit_opt_in_required_before_database_seed(monkeypatch, settings):
+@pytest.mark.parametrize("extra", [[], ["--enable-fictional-care-entitlements"]])
+def test_explicit_opt_in_required_before_database_seed(monkeypatch, settings, extra):
     from financial_aid.models import FinancialAidApplication
     with _setup_local(monkeypatch, settings):
         with pytest.raises(CommandError, match="--fictional-local-only"):
-            call_command("seed_heritage_module_samples")
+            call_command("seed_heritage_module_samples", *extra)
     assert not FinancialAidApplication.objects.filter(
         pk=fixed_id("aid-application")
     ).exists()
@@ -361,3 +366,57 @@ def test_direct_canonical_offer_rejects_foreign_school_before_write(monkeypatch,
         with pytest.raises(CommandError, match="active fictional Heritage school"):
             _seed_canonical_offered_jireh(foreign)
     assert not CoreFamily.objects.filter(pk=fixed_id("canonical-aid-family")).exists()
+
+
+def test_care_entitlements_require_explicit_flag_and_replay_never_renews(monkeypatch, settings):
+    from subscriptions.models import SchoolModule
+    with _setup_local(monkeypatch, settings):
+        call_command("seed_heritage_module_samples", "--fictional-local-only",
+                     "--enable-fictional-care-entitlements")
+        modules = list(SchoolModule.objects.filter(school_id=HERITAGE_ID).order_by("module_key"))
+        assert [row.module_key for row in modules] == ["after_care", "before_care"]
+        original = [(row.pk, row.expiry_date, row.status) for row in modules]
+        assert all(row.is_active and row.activated_by_id is None for row in modules)
+        seed_heritage_module_samples(enable_care_entitlements=True)
+        repeated = list(SchoolModule.objects.filter(school_id=HERITAGE_ID).order_by("module_key"))
+        assert [(row.pk, row.expiry_date, row.status) for row in repeated] == original
+
+
+@pytest.mark.parametrize("status,days", [
+    ("inactive", 30), ("active", -1), ("trial", -1),
+    ("active", None), ("trial", None),
+])
+def test_care_opt_in_never_overrides_disabled_or_expired_and_rolls_back(monkeypatch, settings, status, days):
+    from datetime import timedelta
+    from django.utils import timezone
+    from subscriptions.models import SchoolModule
+    from households.models import Student
+    with _setup_local(monkeypatch, settings):
+        existing = SchoolModule.objects.create(
+            school_id=HERITAGE_ID, module_key="after_care", status=status,
+            expiry_date=timezone.now() + timedelta(days=days) if days is not None else None,
+        )
+        original_expiry = existing.expiry_date
+        with pytest.raises(CommandError, match="disabled or expired"):
+            seed_heritage_module_samples(enable_care_entitlements=True)
+        existing.refresh_from_db()
+        assert existing.status == status and existing.expiry_date == original_expiry
+        # AM is attempted first: no partial entitlement or module seed survives.
+        assert SchoolModule.objects.filter(school_id=HERITAGE_ID).count() == 1
+        assert not Student.objects.filter(pk=fixed_id("extended-care-student")).exists()
+
+
+def test_care_opt_in_keeps_hosted_and_exact_path_guards(monkeypatch, settings):
+    from subscriptions.models import SchoolModule
+    from sandbox_demo import heritage_module_samples as samples
+    with _setup_local(monkeypatch, settings):
+        monkeypatch.setenv("WEBSITE_SITE_NAME", "hosted-must-deny")
+        with pytest.raises(CommandError, match="canonical local Heritage"):
+            seed_heritage_module_samples(enable_care_entitlements=True)
+        monkeypatch.delenv("WEBSITE_SITE_NAME")
+        def refuse_path():
+            raise CommandError("Foreign SQLite path denied")
+        monkeypatch.setattr(samples, "_require_isolated_local_database", refuse_path)
+        with pytest.raises(CommandError, match="Foreign SQLite path denied"):
+            seed_heritage_module_samples(enable_care_entitlements=True)
+    assert not SchoolModule.objects.filter(school_id=HERITAGE_ID).exists()

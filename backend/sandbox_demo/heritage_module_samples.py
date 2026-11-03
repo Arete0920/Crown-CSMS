@@ -9,12 +9,13 @@ from __future__ import annotations
 
 import os
 import uuid
-from datetime import date
+from datetime import date, timedelta
 from decimal import Decimal
 
 from django.conf import settings
 from django.core.management.base import CommandError
 from django.db import transaction
+from django.utils import timezone
 
 from sandbox_demo.catalog import SANDBOX_SCHOOLS
 from sandbox_demo.management.commands.five_module_demo_preflight import (
@@ -187,7 +188,7 @@ def _seed_canonical_offered_jireh(school) -> tuple[int, int]:
 
 
 @transaction.atomic
-def seed_heritage_module_samples() -> dict[str, int]:
+def seed_heritage_module_samples(*, enable_care_entitlements: bool = False) -> dict[str, int]:
     """Seed bounded, idempotent samples without authorizing childcare actions."""
     require_local_demo()
     from core.models import School
@@ -208,6 +209,23 @@ def seed_heritage_module_samples() -> dict[str, int]:
             "Run the existing fictional Heritage flagship seed before "
             "adding module samples."
         )
+
+    care_enabled = {}
+    if enable_care_entitlements:
+        # This separate CLI opt-in is available only after the exact local DB
+        # and canonical tenant guards above. No production licensing or charges.
+        from subscriptions.models import SchoolModule
+        for session, key in (("am", "before_care"), ("pm", "after_care")):
+            module, created = SchoolModule.objects.get_or_create(
+                school=school, module_key=key,
+                defaults={"status": "active", "expiry_date": timezone.now() + timedelta(days=30)},
+            )
+            if not created and not (module.is_active or module.is_trial):
+                raise CommandError(
+                    "Existing care entitlement is disabled or expired; manual reconciliation required."
+                )
+            # Preserve existing active/trial terms; reseeding never renews them.
+            care_enabled[f"fictional_care_{session}_entitlement"] = 1
 
     canonical_jireh_app_count, canonical_jireh_offer_count = (
         _seed_canonical_offered_jireh(school)
@@ -330,6 +348,7 @@ def seed_heritage_module_samples() -> dict[str, int]:
             "Fictional Diadem blocked sample changed; manual reconciliation required."
         )
     return {
+        **care_enabled,
         "canonical_jireh_applications": canonical_jireh_app_count,
         "canonical_jireh_offered_awards": canonical_jireh_offer_count,
         "financial_aid_applications": FinancialAidApplication.objects.filter(
