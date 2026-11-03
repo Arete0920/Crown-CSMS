@@ -3,7 +3,6 @@ import CrownLayout from "../components/crown/CrownLayout.jsx";
 import {
   clearBrowserAuthState, jwtLogin, setAccessToken,
 } from "../utils/authClient.js";
-
 /**
  * Separate fictional SGO identity entry point. The protected Heritage sandbox
  * login is role-session based and must never accept generic SGO credentials.
@@ -14,7 +13,6 @@ export default function JirehSGOLoginPage() {
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-
   async function signIn(event) {
     event.preventDefault();
     if (!local || busy || !username.trim() || !password) return;
@@ -36,7 +34,6 @@ export default function JirehSGOLoginPage() {
       setBusy(false);
     }
   }
-
   return <CrownLayout navigationScope="standalone"
     title="Jireh SGO | Local Fictional Sign-In"
     subtitle="Independent partner programs — synthetic accounts only">

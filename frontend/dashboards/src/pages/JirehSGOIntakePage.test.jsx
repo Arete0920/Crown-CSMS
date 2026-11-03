@@ -3,7 +3,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import JirehSGOIntakePage from "./JirehSGOIntakePage.jsx";
 import { authenticatedFetch, getAccessToken } from "../utils/authClient.js";
-
 vi.mock("../utils/authClient.js", () => ({
   authenticatedFetch: vi.fn(),
   getAccessToken: vi.fn(),
@@ -25,7 +24,6 @@ const saved = {
   grade_level: "K", consent_version: "DEMO_CONSENT_V1",
   consented_at: "2026-11-02T12:00:00Z", funds_status: "NONCASH_ONLY",
 };
-
 beforeEach(() => {
   vi.stubEnv("VITE_LOCAL_DEMO", "1");
   vi.stubGlobal("crypto", { randomUUID: () => "2eaceaaa-cdd8-4fce-a66a-cf4938bd742b" });
@@ -37,7 +35,6 @@ afterEach(() => {
   vi.unstubAllEnvs();
   vi.unstubAllGlobals();
 });
-
 describe("Jireh SGO interactive fictional intake", () => {
   it("submits explicitly consented application and shows persisted readback", async () => {
     authenticatedFetch.mockImplementation(async (url) => {
@@ -70,7 +67,6 @@ describe("Jireh SGO interactive fictional intake", () => {
       && element.textContent.includes("SUBMITTED"));
     expect(savedStatus.textContent).toContain("revision: 1");
   });
-
   it("conceals previous family case when signed-in principal changes", async () => {
     authenticatedFetch.mockImplementation(async (url) => {
       if (url.endsWith("/family/programs/")) {
@@ -94,7 +90,6 @@ describe("Jireh SGO interactive fictional intake", () => {
     expect(screen.queryByText(/Persistent application readback/)).toBeNull();
     expect(await screen.findByText(/No fictional family grants/)).toBeTruthy();
   });
-
   it("records a delegated correction request without any award workflow", async () => {
     let status = "SUBMITTED";
     getAccessToken.mockReturnValue("processor-session-a");

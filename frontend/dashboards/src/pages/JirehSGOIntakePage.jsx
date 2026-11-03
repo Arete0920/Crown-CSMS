@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import CrownLayout from "../components/crown/CrownLayout.jsx";
 import { authenticatedFetch, clearBrowserAuthState, getAccessToken } from "../utils/authClient.js";
-
 const base = "/api/v1/jireh-sgo";
 const grades = ["K", ...Array.from({ length: 12 }, (_, i) => String(i + 1))];
 const reasons = [
@@ -13,7 +12,6 @@ const card = {
   border: "1px solid var(--crown-border)", borderRadius: 8,
   background: "var(--crown-surface)", padding: "1rem", marginBottom: "1rem",
 };
-
 async function sgoRequest(path, { method = "GET", data } = {}) {
   const response = await authenticatedFetch(base + path, {
     method, omitSchoolContext: true, cache: "no-store",
@@ -24,17 +22,14 @@ async function sgoRequest(path, { method = "GET", data } = {}) {
   });
   return response.json();
 }
-
 export default function JirehSGOIntakePage() {
   const token = getAccessToken();
   const local = import.meta.env.VITE_LOCAL_DEMO === "1";
   const [loadedToken, setLoadedToken] = useState(null);
-  const [families, setFamilies] = useState([]);
-  const [processors, setProcessors] = useState([]);
+  const [families, setFamilies] = useState([]), [processors, setProcessors] = useState([]);
   const [familyProgram, setFamilyProgram] = useState("");
   const [processorProgram, setProcessorProgram] = useState("");
-  const [grade, setGrade] = useState("K");
-  const [correctionGrade, setCorrectionGrade] = useState("K");
+  const [grade, setGrade] = useState("K"), [correctionGrade, setCorrectionGrade] = useState("K");
   const [consent, setConsent] = useState(false);
   const [application, setApplication] = useState(null);
   const [queue, setQueue] = useState([]);
@@ -43,25 +38,14 @@ export default function JirehSGOIntakePage() {
   const [correctionKey, setCorrectionKey] = useState("");
   const [processorRetry, setProcessorRetry] = useState(null);
   const [pending, setPending] = useState(false);
-  const [error, setError] = useState("");
-  const [notice, setNotice] = useState("");
-
+  const [error, setError] = useState(""), [notice, setNotice] = useState("");
   useEffect(() => {
     let live = true;
-    setLoadedToken(null);
-    setFamilies([]);
-    setProcessors([]);
-    setFamilyProgram("");
-    setProcessorProgram("");
-    setApplication(null);
-    setQueue([]);
-    setError("");
-    setNotice("");
-    setConsent(false);
-    setSubmissionKey("");
-    setCorrectionKey("");
-    setProcessorRetry(null);
-    setPending(false);
+    setLoadedToken(null); setFamilies([]); setProcessors([]);
+    setFamilyProgram(""); setProcessorProgram(""); setApplication(null); setQueue([]);
+    setError(""); setNotice("");
+    setConsent(false); setSubmissionKey(""); setCorrectionKey("");
+    setProcessorRetry(null); setPending(false);
     if (!token || !local) return () => { live = false; };
     Promise.all([
       sgoRequest("/family/programs/"),
@@ -84,11 +68,9 @@ export default function JirehSGOIntakePage() {
     });
     return () => { live = false; };
   }, [token, local]);
-
   const family = families.find((item) => item.id === familyProgram);
   const processor = processors.find((item) => item.id === processorProgram);
   const authorized = !!token && local && loadedToken === token;
-
   useEffect(() => {
     let live = true;
     setApplication(null);
@@ -106,7 +88,6 @@ export default function JirehSGOIntakePage() {
       });
     return () => { live = false; };
   }, [authorized, family?.id, family?.application_id, token]);
-
   const refreshQueue = useCallback(async () => {
     if (!authorized || !processorProgram) return;
     const result = await sgoRequest(
@@ -118,7 +99,6 @@ export default function JirehSGOIntakePage() {
     }
     if (getAccessToken() === token) setQueue(result.applications);
   }, [authorized, processorProgram, token]);
-
   useEffect(() => {
     let live = true;
     setQueue([]);
@@ -129,15 +109,12 @@ export default function JirehSGOIntakePage() {
     }
     return () => { live = false; };
   }, [authorized, processor?.id, refreshQueue]);
-
   async function submit(event) {
     event.preventDefault();
     if (!authorized || !family || !consent || pending) return;
     const key = submissionKey || crypto.randomUUID();
     setSubmissionKey(key);
-    setPending(true);
-    setError("");
-    setNotice("");
+    setPending(true); setError(""); setNotice("");
     try {
       const result = await sgoRequest("/family/submit/", {
         method: "POST", data: {
@@ -160,15 +137,12 @@ export default function JirehSGOIntakePage() {
       if (getAccessToken() === token) setPending(false);
     }
   }
-
   async function correct(event) {
     event.preventDefault();
     if (!authorized || !application || pending) return;
     const key = correctionKey || crypto.randomUUID();
     setCorrectionKey(key);
-    setPending(true);
-    setError("");
-    setNotice("");
+    setPending(true); setError(""); setNotice("");
     try {
       const result = await sgoRequest(
         "/family/applications/" + encodeURIComponent(application.id) + "/correct/",
@@ -186,7 +160,6 @@ export default function JirehSGOIntakePage() {
       if (getAccessToken() === token) setPending(false);
     }
   }
-
   async function requestCorrection(item) {
     if (!authorized || !processor || pending) return;
     // A retry key is bound to the exact case, revision and correction reason.
@@ -197,9 +170,7 @@ export default function JirehSGOIntakePage() {
       && processorRetry?.reason === reason
     ) ? processorRetry.key : crypto.randomUUID();
     setProcessorRetry({ applicationId: item.id, revision: item.revision, reason, key });
-    setPending(true);
-    setError("");
-    setNotice("");
+    setPending(true); setError(""); setNotice("");
     try {
       const result = await sgoRequest(
         "/processor/applications/" + encodeURIComponent(item.id) + "/request-correction/",
@@ -219,11 +190,9 @@ export default function JirehSGOIntakePage() {
       if (getAccessToken() === token) setPending(false);
     }
   }
-
   return <CrownLayout navigationScope="standalone" title="Jireh SGO | Fictional Application Intake"
     subtitle="Local sandbox only — partner SGOs retain program and award authority">
-    <p role="note">Synthetic records only. No live family information, documents, eligibility decisions,
-      donor funds, scholarships, or payments.</p>
+    <p role="note">Synthetic records only. No live family information, documents, eligibility decisions, donor funds, scholarships, or payments.</p>
     <p><a href="/jireh-sgo">Return to SGO overview</a></p>
     {local && <p>
       <button type="button" disabled={pending} onClick={() => {
@@ -243,9 +212,7 @@ export default function JirehSGOIntakePage() {
           <label htmlFor="family-program">Partner SGO and program</label>{" "}
           <select id="family-program" value={familyProgram}
             onChange={(e) => { setFamilyProgram(e.target.value); setConsent(false); setError(""); }}>
-            {families.map((p) => <option key={p.id} value={p.id}>
-              {p.organization} — {p.name} ({p.calendar_year})
-            </option>)}
+            {families.map((p) => <option key={p.id} value={p.id}>{p.organization} — {p.name} ({p.calendar_year})</option>)}
           </select>
           {family && <p>Program policy: {family.policy_version}. Consent version: {family.consent_version}.</p>}
           {family && !family.application_id && !application && <form onSubmit={submit}>
@@ -255,16 +222,13 @@ export default function JirehSGOIntakePage() {
             }}>
               {grades.map((g) => <option key={g} value={g}>{g}</option>)}
             </select>
-            <p><label><input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} />
-              {" "}I consent to submitting this fictional application to the selected partner SGO
-              under the displayed demo consent version.</label></p>
+            <p><label><input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} />{" "}I consent to submitting this fictional application to the selected partner SGO under the displayed demo consent version.</label></p>
             <button type="submit" disabled={!consent || pending}>Submit fictional application</button>
           </form>}
           {application?.program_id === family?.id && <div>
             <h4>Persistent application readback</h4>
             <p>Application: <code>{application.id}</code></p>
-            <p>Status: <strong>{application.status}</strong>; revision: {application.revision};
-              grade: {application.grade_level}</p>
+            <p>Status: <strong>{application.status}</strong>; revision: {application.revision}; grade: {application.grade_level}</p>
             <p>Consent recorded: {application.consented_at}</p>
             {application.status === "CORRECTION_REQUESTED" && <form onSubmit={correct}>
               <p>Processor requested: {application.correction_reason}. No partner decision has been issued.</p>
@@ -294,9 +258,7 @@ export default function JirehSGOIntakePage() {
             onChange={(e) => { setProcessorProgram(e.target.value); setProcessorRetry(null); }}>
             {processors.map((p) => <option key={p.id} value={p.id}>{p.organization} — {p.name}</option>)}
           </select>{" "}
-          <button type="button" onClick={() => refreshQueue().catch(() => setError("Queue unavailable."))}>
-            Refresh queue
-          </button>
+          <button type="button" onClick={() => refreshQueue().catch(() => setError("Queue unavailable."))}>Refresh queue</button>
           <p>Scope: verification support only. No award, eligibility determination, or disbursement authority.</p>
           <label htmlFor="sgo-reason">Non-sensitive correction reason</label>{" "}
           <select id="sgo-reason" value={reason} onChange={(e) => { setReason(e.target.value); setProcessorRetry(null); }}>
