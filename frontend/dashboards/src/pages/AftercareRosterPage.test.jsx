@@ -161,6 +161,37 @@ it("shows unconfirmed custody and blocks repeat action after staff token switche
   expect(screen.getByRole("button", { name: "Review current custody before continuing" }).disabled).toBe(false);
 });
 
+it("blocks reconciliation until the prior staff custody write has settled", async () => {
+  let finishWrite;
+  api.checkinStudent.mockImplementation(() => new Promise((resolve) => { finishWrite = resolve; }));
+  render(<AftercareRosterPage careSession="AM" />);
+  await screen.findByText("Synthetic Child");
+  fireEvent.click(screen.getByRole("button", { name: "Check In" }));
+  await waitFor(() => expect(api.checkinStudent).toHaveBeenCalledTimes(1));
+
+  setAccessToken("replacement-staff-token");
+  fireEvent.focus(window);
+  const reconcile = screen.getByRole("button", { name: "Review current custody before continuing" });
+  expect(reconcile.disabled).toBe(true);
+  expect(screen.getByText(/previous custody write is still pending/i)).toBeTruthy();
+  const readsBefore = api.fetchRosterToday.mock.calls.length;
+  fireEvent.click(reconcile);
+  expect(api.fetchRosterToday).toHaveBeenCalledTimes(readsBefore);
+
+  finishWrite({ id: 99 });
+  await waitFor(() => expect(reconcile.disabled).toBe(false));
+  expect(screen.getByText(/outcome is unconfirmed/i)).toBeTruthy();
+  expect(api.fetchRosterToday).toHaveBeenCalledTimes(readsBefore);
+  api.fetchRosterToday.mockResolvedValueOnce({
+    care_session: "AM", date: "2026-10-30", dow: "FRI",
+    rows: [], unlinked_attendance_count: 0,
+  });
+  fireEvent.click(reconcile);
+  await waitFor(() => expect(api.fetchRosterToday).toHaveBeenCalledTimes(readsBefore + 1));
+  await waitFor(() => expect(screen.queryByText(/outcome is unconfirmed/i)).toBeNull());
+  expect(api.checkinStudent).toHaveBeenCalledTimes(1);
+});
+
 it("requires an explicit authorized readback before clearing a custody outcome warning", async () => {
   let finish;
   api.checkinStudent.mockImplementation(() => new Promise((resolve) => { finish = resolve; }));
