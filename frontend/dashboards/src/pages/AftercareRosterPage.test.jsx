@@ -142,3 +142,45 @@ describe("care roster tenant and staff-session isolation", () => {
     expect(api.checkinStudent).not.toHaveBeenCalled();
   });
 });
+
+it("shows unconfirmed custody and blocks repeat action after staff token switches during a pending check-in", async () => {
+  let settle;
+  api.checkinStudent.mockImplementation(() => new Promise((resolve) => { settle = resolve; }));
+  render(<AftercareRosterPage careSession="AM" />);
+  await screen.findByText("Synthetic Child");
+  fireEvent.click(screen.getByRole("button", { name: "Check In" }));
+  await waitFor(() => expect(api.checkinStudent).toHaveBeenCalledTimes(1));
+  setAccessToken("second-staff-while-checkin-pending");
+  fireEvent.focus(window);
+  const warning = screen.getByRole("alert");
+  expect(warning.textContent).toMatch(/outcome is unconfirmed/i);
+  expect(screen.queryByText("Synthetic Child")).toBeNull();
+  settle({ id: 99 });
+  await waitFor(() => expect(screen.getByRole("alert").textContent).toMatch(/do not retry automatically/i));
+  expect(api.checkinStudent).toHaveBeenCalledTimes(1);
+  expect(screen.getByRole("button", { name: "Review current custody before continuing" }).disabled).toBe(false);
+});
+
+it("requires an explicit authorized readback before clearing a custody outcome warning", async () => {
+  let finish;
+  api.checkinStudent.mockImplementation(() => new Promise((resolve) => { finish = resolve; }));
+  render(<AftercareRosterPage careSession="AM" />);
+  await screen.findByText("Synthetic Child");
+  fireEvent.click(screen.getByRole("button", { name: "Check In" }));
+  await waitFor(() => expect(api.checkinStudent).toHaveBeenCalledTimes(1));
+  setAccessToken("second-staff-while-checkin-pending");
+  fireEvent.focus(window);
+  finish({ id: 99 });
+  await waitFor(() => expect(screen.getByRole("alert")).toBeTruthy());
+  api.fetchRosterToday.mockRejectedValueOnce(new Error("Unauthorized staff"));
+  fireEvent.click(screen.getByRole("button", { name: "Review current custody before continuing" }));
+  await waitFor(() => expect(screen.getAllByRole("alert").some((el) => /Custody reconciliation failed/.test(el.textContent))).toBe(true));
+  expect(screen.getByText(/outcome is unconfirmed/i)).toBeTruthy();
+  api.fetchRosterToday.mockResolvedValueOnce({
+    care_session: "AM", date: "2026-10-30", dow: "FRI",
+    rows: [], unlinked_attendance_count: 0,
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Review current custody before continuing" }));
+  await waitFor(() => expect(screen.queryByText(/outcome is unconfirmed/i)).toBeNull());
+  expect(api.checkinStudent).toHaveBeenCalledTimes(1);
+});

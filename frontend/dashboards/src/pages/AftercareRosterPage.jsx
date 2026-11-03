@@ -37,6 +37,10 @@ export default function AftercareRosterPage({ careSession = "PM" }) {
   const [pickup, setPickup] = useState(null);
   const [pickupBusy, setPickupBusy] = useState(false);
   const [checkinBusyId, setCheckinBusyId] = useState(null);
+  const [custodyWarning, setCustodyWarning] = useState("");
+  // Keep the request marker outside render state: a remote custody write may
+  // finish even if its originating staff session changes before response.
+  const operationInFlightRef = useRef(null);
   const checkinInFlightRef = useRef(false);
   const sessionRef = useRef(careSession);
 
@@ -48,6 +52,11 @@ export default function AftercareRosterPage({ careSession = "PM" }) {
       const next = { school: getSelectedSchoolId(), token: getAccessToken() };
       const current = identityRef.current;
       if (current.school === next.school && current.token === next.token) return;
+      if (operationInFlightRef.current) {
+        setCustodyWarning(
+          "A care operation was in flight when the staff session changed. Its outcome is unconfirmed. Review the refreshed live custody roster before any further handoff or check-in; do not retry automatically."
+        );
+      }
       identityRef.current = next;
       setIdentity(next);
       setRoster(null);
@@ -138,7 +147,9 @@ export default function AftercareRosterPage({ careSession = "PM" }) {
   }, [careSession, identity]);
 
   async function handleCheckin(studentId) {
-    if (checkinInFlightRef.current || sessionRef.current !== careSession || !sameIdentity() || rosterScope !== identity) return;
+    if (custodyWarning || checkinInFlightRef.current || sessionRef.current !== careSession || !sameIdentity() || rosterScope !== identity) return;
+    const attempt = { operation: "checkin", identity };
+    operationInFlightRef.current = attempt;
     checkinInFlightRef.current = true;
     setCheckinBusyId(studentId);
     setError(null);
@@ -148,6 +159,7 @@ export default function AftercareRosterPage({ careSession = "PM" }) {
     } catch (e) {
       if (sessionRef.current === careSession && sameIdentity()) setError(`Check-in failed: ${e.message}`);
     } finally {
+      if (operationInFlightRef.current === attempt) operationInFlightRef.current = null;
       if (sessionRef.current === careSession && sameIdentity()) {
         checkinInFlightRef.current = false;
         setCheckinBusyId(null);
@@ -156,7 +168,7 @@ export default function AftercareRosterPage({ careSession = "PM" }) {
   }
 
   async function beginCheckout(studentId) {
-    if (sessionRef.current !== careSession || isMorning || !sameIdentity() || rosterScope !== identity) return;
+    if (custodyWarning || sessionRef.current !== careSession || isMorning || !sameIdentity() || rosterScope !== identity) return;
     setPickupBusy(true);
     setError(null);
     try {
@@ -172,8 +184,10 @@ export default function AftercareRosterPage({ careSession = "PM" }) {
   }
 
   async function handleCheckout() {
-    if (isMorning || pickup?.careSession !== careSession || !pickup?.contactId || !pickup.verified
+    if (custodyWarning || isMorning || pickup?.careSession !== careSession || !pickup?.contactId || !pickup.verified
         || !sameIdentity() || rosterScope !== identity) return;
+    const attempt = { operation: "checkout", identity };
+    operationInFlightRef.current = attempt;
     setPickupBusy(true);
     try {
       await checkoutStudent({
@@ -189,13 +203,16 @@ export default function AftercareRosterPage({ careSession = "PM" }) {
     } catch (e) {
       if (sameIdentity()) setError(`Check-out failed: ${e.message}`);
     } finally {
+      if (operationInFlightRef.current === attempt) operationInFlightRef.current = null;
       if (sameIdentity()) setPickupBusy(false);
     }
   }
 
   async function handleHandoff() {
-    if (!isMorning || handoff?.careSession !== careSession || !handoff?.acknowledged
+    if (custodyWarning || !isMorning || handoff?.careSession !== careSession || !handoff?.acknowledged
         || !sameIdentity() || rosterScope !== identity) return;
+    const attempt = { operation: "school_handoff", identity };
+    operationInFlightRef.current = attempt;
     setHandoffBusy(true);
     setError(null);
     try {
@@ -207,7 +224,33 @@ export default function AftercareRosterPage({ careSession = "PM" }) {
     } catch (e) {
       if (sameIdentity()) setError("School handoff failed: " + e.message);
     } finally {
+      if (operationInFlightRef.current === attempt) operationInFlightRef.current = null;
       if (sameIdentity()) setHandoffBusy(false);
+    }
+  }
+
+  // This is an explicit human-triggered reconcile, not an automatic retry.
+  // Reading the current roster cannot itself certify who received the child.
+  async function reconcileAfterIdentityChange() {
+    const scope = identity;
+    if (!custodyWarning || !sameIdentity(scope) || loading) return;
+    setLoading(true);
+    try {
+      const fresh = await fetchRosterToday(careSession);
+      if (!sameIdentity(scope) || sessionRef.current !== careSession) return;
+      if (fresh?.care_session !== careSession || !Array.isArray(fresh.rows)) {
+        throw new Error("Invalid care roster from the server.");
+      }
+      setRosterScope(scope);
+      setRoster(fresh);
+      setError(null);
+      setCustodyWarning("");
+    } catch (error) {
+      if (sameIdentity(scope)) {
+        setError("Custody reconciliation failed: " + error.message);
+      }
+    } finally {
+      if (sameIdentity(scope)) setLoading(false);
     }
   }
 
@@ -222,6 +265,11 @@ export default function AftercareRosterPage({ careSession = "PM" }) {
   return (
     <CrownLayout title={sessionLabel + " Roster"}>
       <DashboardSection title={rosterTitle}>
+        {custodyWarning && <div role="alert">
+          <p>{custodyWarning}</p>
+          <button type="button" disabled={loading || !sameIdentity()}
+            onClick={reconcileAfterIdentityChange}>Review current custody before continuing</button>
+        </div>}
         {(loading || (!currentRoster && !error)) && <span>Loading...</span>}
         {error && <div role="alert" style={{ color: "var(--crown-danger)", background: "var(--crown-danger-bg)", padding: "10px 14px", borderRadius: 4, marginBottom: 12 }}>{error}</div>}
         {!loading && !error && currentRoster && (
@@ -273,13 +321,13 @@ export default function AftercareRosterPage({ careSession = "PM" }) {
                       </td>
                       <td style={TD}>
                         {!hasCheckin && !row.unscheduled && (
-                          <button type="button" style={BTN_OUT} disabled={Boolean(checkinBusyId) || loading} onClick={() => handleCheckin(row.student_id)}>{checkinBusyId === row.student_id ? "Checking In..." : "Check In"}</button>
+                          <button type="button" style={BTN_OUT} disabled={Boolean(checkinBusyId) || loading || Boolean(custodyWarning)} onClick={() => handleCheckin(row.student_id)}>{checkinBusyId === row.student_id ? "Checking In..." : "Check In"}</button>
                         )}
                         {hasCheckin && !hasCheckout && !isMorning && (
-                          <button style={BTN_PRIM} onClick={() => beginCheckout(row.student_id)} disabled={pickupBusy}>Verify Pickup</button>
+                          <button style={BTN_PRIM} onClick={() => beginCheckout(row.student_id)} disabled={pickupBusy || Boolean(custodyWarning)}>Verify Pickup</button>
                         )}
                         {hasCheckin && !hasCheckout && isMorning && (
-                          <button style={BTN_PRIM} onClick={() => setHandoff({ studentId: row.student_id, careSession, acknowledged: false })} disabled={handoffBusy}>Acknowledge School Handoff</button>
+                          <button style={BTN_PRIM} onClick={() => setHandoff({ studentId: row.student_id, careSession, acknowledged: false })} disabled={handoffBusy || Boolean(custodyWarning)}>Acknowledge School Handoff</button>
                         )}
                         {hasCheckin && hasCheckout && !verifiedClosure && (
                           <span>Supervisor review required; custody status is unverified.</span>
