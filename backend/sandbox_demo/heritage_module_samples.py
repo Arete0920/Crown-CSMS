@@ -69,7 +69,8 @@ def seed_heritage_module_samples() -> dict[str, int]:
     require_local_demo()
     from core.models import School
     from households.models import Household, Student
-    from financial_aid.models import FinancialAidApplication, AidAward, AidBucket
+    from financial_aid.models import FinancialAidApplication, AidAward
+    from financial_aid.workflows import process_financial_aid_application
     from aftercare.models import AftercareEnrollment, AftercareProgramConfig
     from aftercare.daycare_models import (
         DaycareSite, DaycareRoom, DaycareProgram, DaycareChild,
@@ -95,15 +96,24 @@ def seed_heritage_module_samples() -> dict[str, int]:
 
     application, _ = _ensure(FinancialAidApplication, "aid-application", {
         "school_id": HERITAGE_ID, "household_id": household.pk,
-        "academic_year": "2026-27", "status": "draft",
-        "household_income": Decimal("0.00"), "household_size": 1,
+        "academic_year": "2026-27", "status": "submitted",
+        "household_income": Decimal("55000.00"), "household_size": 4,
     }, {"school_id": HERITAGE_ID, "household_id": household.pk})
-    _ensure(AidAward, "aid-unapproved-sample", {
-        "school_id": HERITAGE_ID, "application": application,
-        "bucket": AidBucket.NEED, "amount": Decimal("0.00"),
-        "rationale": "FICTIONAL ZERO-DOLLAR REVIEW SAMPLE; not approved, paid or posted.",
-        "approved_by_user_id": None,
-    }, {"school_id": HERITAGE_ID, "application_id": application.pk})
+    # Use the actual governed recommendation workflow, not an arbitrary
+    # zero-dollar award row fabricated merely to pass the count preflight.
+    # This produces a provisional recommendation and matching aid audit
+    # entries, never a committee-approved award or ledger/payment posting.
+    if application.status == "submitted":
+        result = process_financial_aid_application(application_id=application.pk)
+        if result.get("status") != "success":
+            raise CommandError("Synthetic financial aid recommendation was not accepted.")
+    elif application.status != "in_review":
+        raise CommandError("Synthetic aid application has unexpected status.")
+    provisional = AidAward.objects.filter(
+        school_id=HERITAGE_ID, application=application,
+    )
+    if provisional.count() != 1 or provisional.first().approved_by_user_id is not None:
+        raise CommandError("Synthetic aid recommendation provenance is invalid.")
 
     AftercareProgramConfig.objects.get_or_create(school_fk=school)
     for care_session in ("AM", "PM"):
