@@ -38,6 +38,8 @@ export default function AftercareRosterPage({ careSession = "PM" }) {
   const [pickupBusy, setPickupBusy] = useState(false);
   const [checkinBusyId, setCheckinBusyId] = useState(null);
   const [custodyWarning, setCustodyWarning] = useState("");
+  // A manual custody readback must not outrun an unresolved prior staff write.
+  const [custodyWritePending, setCustodyWritePending] = useState(false);
   // Keep the request marker outside render state: a remote custody write may
   // finish even if its originating staff session changes before response.
   const operationInFlightRef = useRef(null);
@@ -147,9 +149,10 @@ export default function AftercareRosterPage({ careSession = "PM" }) {
   }, [careSession, identity]);
 
   async function handleCheckin(studentId) {
-    if (custodyWarning || checkinInFlightRef.current || sessionRef.current !== careSession || !sameIdentity() || rosterScope !== identity) return;
+    if (custodyWarning || operationInFlightRef.current || checkinInFlightRef.current || sessionRef.current !== careSession || !sameIdentity() || rosterScope !== identity) return;
     const attempt = { operation: "checkin", identity };
     operationInFlightRef.current = attempt;
+    setCustodyWritePending(true);
     checkinInFlightRef.current = true;
     setCheckinBusyId(studentId);
     setError(null);
@@ -159,7 +162,10 @@ export default function AftercareRosterPage({ careSession = "PM" }) {
     } catch (e) {
       if (sessionRef.current === careSession && sameIdentity()) setError(`Check-in failed: ${e.message}`);
     } finally {
-      if (operationInFlightRef.current === attempt) operationInFlightRef.current = null;
+      if (operationInFlightRef.current === attempt) {
+        operationInFlightRef.current = null;
+        setCustodyWritePending(false);
+      }
       if (sessionRef.current === careSession && sameIdentity()) {
         checkinInFlightRef.current = false;
         setCheckinBusyId(null);
@@ -168,7 +174,7 @@ export default function AftercareRosterPage({ careSession = "PM" }) {
   }
 
   async function beginCheckout(studentId) {
-    if (custodyWarning || sessionRef.current !== careSession || isMorning || !sameIdentity() || rosterScope !== identity) return;
+    if (custodyWarning || operationInFlightRef.current || sessionRef.current !== careSession || isMorning || !sameIdentity() || rosterScope !== identity) return;
     setPickupBusy(true);
     setError(null);
     try {
@@ -184,10 +190,11 @@ export default function AftercareRosterPage({ careSession = "PM" }) {
   }
 
   async function handleCheckout() {
-    if (custodyWarning || isMorning || pickup?.careSession !== careSession || !pickup?.contactId || !pickup.verified
+    if (custodyWarning || operationInFlightRef.current || isMorning || pickup?.careSession !== careSession || !pickup?.contactId || !pickup.verified
         || !sameIdentity() || rosterScope !== identity) return;
     const attempt = { operation: "checkout", identity };
     operationInFlightRef.current = attempt;
+    setCustodyWritePending(true);
     setPickupBusy(true);
     try {
       await checkoutStudent({
@@ -203,16 +210,20 @@ export default function AftercareRosterPage({ careSession = "PM" }) {
     } catch (e) {
       if (sameIdentity()) setError(`Check-out failed: ${e.message}`);
     } finally {
-      if (operationInFlightRef.current === attempt) operationInFlightRef.current = null;
+      if (operationInFlightRef.current === attempt) {
+        operationInFlightRef.current = null;
+        setCustodyWritePending(false);
+      }
       if (sameIdentity()) setPickupBusy(false);
     }
   }
 
   async function handleHandoff() {
-    if (custodyWarning || !isMorning || handoff?.careSession !== careSession || !handoff?.acknowledged
+    if (custodyWarning || operationInFlightRef.current || !isMorning || handoff?.careSession !== careSession || !handoff?.acknowledged
         || !sameIdentity() || rosterScope !== identity) return;
     const attempt = { operation: "school_handoff", identity };
     operationInFlightRef.current = attempt;
+    setCustodyWritePending(true);
     setHandoffBusy(true);
     setError(null);
     try {
@@ -224,7 +235,10 @@ export default function AftercareRosterPage({ careSession = "PM" }) {
     } catch (e) {
       if (sameIdentity()) setError("School handoff failed: " + e.message);
     } finally {
-      if (operationInFlightRef.current === attempt) operationInFlightRef.current = null;
+      if (operationInFlightRef.current === attempt) {
+        operationInFlightRef.current = null;
+        setCustodyWritePending(false);
+      }
       if (sameIdentity()) setHandoffBusy(false);
     }
   }
@@ -233,7 +247,7 @@ export default function AftercareRosterPage({ careSession = "PM" }) {
   // Reading the current roster cannot itself certify who received the child.
   async function reconcileAfterIdentityChange() {
     const scope = identity;
-    if (!custodyWarning || !sameIdentity(scope) || loading) return;
+    if (!custodyWarning || operationInFlightRef.current || !sameIdentity(scope) || loading) return;
     setLoading(true);
     try {
       const fresh = await fetchRosterToday(careSession);
@@ -267,7 +281,8 @@ export default function AftercareRosterPage({ careSession = "PM" }) {
       <DashboardSection title={rosterTitle}>
         {custodyWarning && <div role="alert">
           <p>{custodyWarning}</p>
-          <button type="button" disabled={loading || !sameIdentity()}
+          {custodyWritePending && <p role="status">The previous custody write is still pending; do not reconcile from an earlier roster snapshot.</p>}
+          <button type="button" disabled={loading || custodyWritePending || !sameIdentity()}
             onClick={reconcileAfterIdentityChange}>Review current custody before continuing</button>
         </div>}
         {(loading || (!currentRoster && !error)) && <span>Loading...</span>}
@@ -321,13 +336,13 @@ export default function AftercareRosterPage({ careSession = "PM" }) {
                       </td>
                       <td style={TD}>
                         {!hasCheckin && !row.unscheduled && (
-                          <button type="button" style={BTN_OUT} disabled={Boolean(checkinBusyId) || loading || Boolean(custodyWarning)} onClick={() => handleCheckin(row.student_id)}>{checkinBusyId === row.student_id ? "Checking In..." : "Check In"}</button>
+                          <button type="button" style={BTN_OUT} disabled={Boolean(checkinBusyId) || custodyWritePending || loading || Boolean(custodyWarning)} onClick={() => handleCheckin(row.student_id)}>{checkinBusyId === row.student_id ? "Checking In..." : "Check In"}</button>
                         )}
                         {hasCheckin && !hasCheckout && !isMorning && (
-                          <button style={BTN_PRIM} onClick={() => beginCheckout(row.student_id)} disabled={pickupBusy || Boolean(custodyWarning)}>Verify Pickup</button>
+                          <button style={BTN_PRIM} onClick={() => beginCheckout(row.student_id)} disabled={pickupBusy || custodyWritePending || Boolean(custodyWarning)}>Verify Pickup</button>
                         )}
                         {hasCheckin && !hasCheckout && isMorning && (
-                          <button style={BTN_PRIM} onClick={() => setHandoff({ studentId: row.student_id, careSession, acknowledged: false })} disabled={handoffBusy || Boolean(custodyWarning)}>Acknowledge School Handoff</button>
+                          <button style={BTN_PRIM} onClick={() => setHandoff({ studentId: row.student_id, careSession, acknowledged: false })} disabled={handoffBusy || custodyWritePending || Boolean(custodyWarning)}>Acknowledge School Handoff</button>
                         )}
                         {hasCheckin && hasCheckout && !verifiedClosure && (
                           <span>Supervisor review required; custody status is unverified.</span>
