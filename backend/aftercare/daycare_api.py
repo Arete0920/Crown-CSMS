@@ -10,7 +10,8 @@ activate childcare licensing or authorize production operations.
 from __future__ import annotations
 
 from uuid import UUID
-from django.db.models import F
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+from django.db.models import F, Q
 
 from django.utils import timezone
 from rest_framework import serializers, status
@@ -23,7 +24,7 @@ from core.models import School
 from core.permissions import user_has_permission
 from .daycare_checkin import CheckinRefused, checkin_child
 from .daycare_release import ReleaseRefused, release_child
-from .daycare_models import DaycareSite, DaycareRoom
+from .daycare_models import DaycareSite, DaycareRoom, DaycareGuardianAuthority
 from .daycare_checkin_models import DaycareAttendance, DaycareRoomStaffCoverage
 
 
@@ -250,6 +251,71 @@ def daycare_open_roster(request, site_id):
         "children_present": len(rows),
         "rows": rows,
     })
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def daycare_release_authorities(request, site_id, attendance_id):
+    """Read only current pickup candidates for one school-bound custody row.
+
+    Candidate visibility never constitutes release authority. The existing
+    POST service revalidates child, actor, room, staffing, recipient and time
+    under database locks before writing its audited custody record.
+    """
+    school = _staff_scope(
+        request, "diadem.daycare.release", allow_inactive_school=True
+    )
+    now = timezone.now()
+    room_ids = _visible_staff_room_ids(request, school, now)
+    attendance = DaycareAttendance.objects.select_related(
+        "child", "room"
+    ).filter(
+        pk=attendance_id, school=school, site_id=site_id,
+        custody_release__isnull=True,
+    ).first()
+    if attendance is None or (
+        room_ids is not None and attendance.room_id not in room_ids
+    ):
+        raise NotFound()
+
+    try:
+        local_day = timezone.localtime(now, ZoneInfo(school.timezone)).date()
+    except (TypeError, ValueError, ZoneInfoNotFoundError):
+        raise PermissionDenied("Childcare timezone must be verified.") from None
+    result = {
+        "site_id": str(site_id),
+        "attendance_id": str(attendance.pk),
+        "as_of": now.isoformat(),
+        "status": "candidates_only",
+        "options": [],
+    }
+    if attendance.care_date != local_day:
+        # Ordinary pickup must never bypass the existing after-midnight guard.
+        result["status"] = "overnight_director_review_required"
+        return Response(result)
+
+    authorities = DaycareGuardianAuthority.objects.filter(
+        school=school, child=attendance.child,
+        guardian__school_id=school.pk,
+        guardian__household_id=attendance.child.household_id,
+        is_active=True, can_pickup=True, custody_status="CLEAR",
+        verified_by__school_id=school.pk, verified_by__is_active=True,
+        verified_at__isnull=False, verified_at__lte=now,
+    ).filter(
+        Q(effective_from__isnull=True) | Q(effective_from__lte=now)
+    ).filter(
+        Q(effective_until__isnull=True) | Q(effective_until__gt=now)
+    ).select_related("guardian").order_by(
+        "guardian__last_name", "guardian__first_name", "pk"
+    )
+    result["options"] = [{
+        "authority_id": str(authority.pk),
+        "guardian_name": (
+            f"{authority.guardian.first_name} {authority.guardian.last_name}"
+        ).strip(),
+    } for authority in authorities]
+    return Response(result)
+
 
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
