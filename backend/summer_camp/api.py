@@ -100,7 +100,7 @@ class SummerCampBoardSummarySerializer(serializers.Serializer):
     health_review_count = serializers.IntegerField()
     outstanding_balances = serializers.IntegerField()
     incidents_mtd = serializers.IntegerField()
-    gross_revenue_cents = serializers.IntegerField()
+    gross_revenue_cents = serializers.IntegerField(allow_null=True)
 
 
 class SummerCampGenericResponse(serializers.Serializer):

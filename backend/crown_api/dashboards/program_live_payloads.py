@@ -1,7 +1,6 @@
 """Read-only program projections. No custody mutations or settlement inference."""
 from datetime import datetime, time, timedelta
 from decimal import Decimal
-from uuid import UUID
 from zoneinfo import ZoneInfo
 
 from django.db.models import Q
@@ -9,11 +8,11 @@ from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 
 from aftercare.models import AftercareAttendance, AftercareEnrollment, AftercareProgramConfig
-from ledger.models import Charge
 from summer_camp.models import (
-    SummerCampAttendance, SummerCampBillingLedgerLink, SummerCampEnrollment,
-    SummerCampIncident, SummerCampProgramConfig,
+    SummerCampAttendance, SummerCampEnrollment, SummerCampIncident,
+    SummerCampProgramConfig,
 )
+from summer_camp.services import verified_camp_ledger_total_cents
 from .payload_contract import build_dashboard_payload, metric, validate_dashboard_payload
 
 
@@ -69,33 +68,10 @@ def validate_program_payload(payload, school):
 
 
 def _assessed_camp_charges(school):
-    links = list(SummerCampBillingLedgerLink.objects.filter(
-        school=school,
-    ).exclude(status="CANCELLED").values("charge_id", "amount_cents", "enrollment__student__household_id", "enrollment__school_id", "enrollment__session__school_id", "enrollment__session__program__school_id", "enrollment__student__school_id"))
-    if not links:
+    total_cents = verified_camp_ledger_total_cents(school.id)
+    if total_cents is None:
         return UNAVAILABLE
-    try:
-        ids = {UUID(row["charge_id"]) for row in links}
-    except (ValueError, TypeError, AttributeError):
-        return UNAVAILABLE
-    charges = {row.id: row for row in Charge.objects.filter(
-        id__in=ids, school_id=school.id, account__school_id=school.id,
-        account__household__school_id=school.id, is_void=False,
-    ).select_related("account")}
-    for link in links:
-        charge = charges.get(UUID(link["charge_id"]))
-        amount = link["amount_cents"]
-        if (any(link[field] != school.id for field in (
-                "enrollment__school_id", "enrollment__session__school_id",
-                "enrollment__session__program__school_id", "enrollment__student__school_id"))
-                or charge is None or type(amount) is not int or amount < 0
-                or charge.amount < 0 or not charge.amount.is_finite()
-                or charge.amount * 100 != amount
-                or charge.account.household_id != link["enrollment__student__household_id"]):
-            return UNAVAILABLE
-    # Multiple enrollment links to the same ledger fact cannot multiply money.
-    total = sum((charge.amount for charge in charges.values()), Decimal("0"))
-    return f"${total:,.2f}"
+    return f"${Decimal(total_cents) / 100:,.2f}"
 
 
 def _camp(school, windows):

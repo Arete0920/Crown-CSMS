@@ -183,6 +183,19 @@ def main() -> int:
                 cwd=launcher.FRONTEND, env=browser_env, timeout=600, check=True,
             )
             evidence["checks"]["teacher_attendance_and_classwork_persist_after_reload"] = True
+
+            # Real Camp role session, persisted POST/GET/read-after-reload, and
+            # controlled failure cases. The spec restores prior fictional state.
+            browser_env["CROWN_LOCAL_CAMP_E2E"] = "1"
+            subprocess.run(
+                launcher.npm_command() + [
+                    "run", "test:e2e", "--",
+                    "tests/e2e/summer-camp-local-readback.spec.ts",
+                    "--workers=1", "--reporter=line",
+                ],
+                cwd=launcher.FRONTEND, env=browser_env, timeout=600, check=True,
+            )
+            evidence["checks"]["summer_camp_authenticated_browser_save_readback"] = True
             # Actual authenticated Diadem pickup: fictional local SQLite only.
             # No browser API stubs; one signed staff identity exercises real custody.
             subprocess.run(
