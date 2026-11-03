@@ -17,6 +17,12 @@ class FictionalSGOLocalSeedTests(TestCase):
     def setUp(self):
         if connection.vendor != "sqlite":
             self.skipTest("Fictional SGO seed is restricted to isolated SQLite.")
+        # Apply a disposable test-only path substitution. Runtime remains
+        # restricted to the canonical Heritage SQLite file.
+        test_database = Path(str(settings.DATABASES["default"]["NAME"])).resolve()
+        self.local_api_path_patch = patch("jireh_sgo.family_intake_api.LOCAL_DB", test_database)
+        self.local_api_path_patch.start()
+        self.addCleanup(self.local_api_path_patch.stop)
     @patch("crown_api.management.commands.seed_fictional_sgo_intake._require_isolated_local_database")
     def test_two_partner_programs_separate_grants_and_repeatable_local_credentials(self, guard):
         # This unit test uses Django's disposable test SQLite database, not
@@ -102,18 +108,18 @@ class FictionalSGOLocalSeedTests(TestCase):
     def test_local_mode_alone_cannot_seed_a_non_heritage_database(self):
         with tempfile.TemporaryDirectory() as root:
             target = Path(root) / "sgo-credentials.txt"
-            with self.assertRaisesRegex(CommandError, "isolated Heritage local SQLite"):
-                call_command("seed_fictional_sgo_intake", credentials_file=str(target))
+            # Test path denial with no seeder-path mock and no credential writes.
+            with patch("jireh_sgo.family_intake_api.LOCAL_DB", Path(root) / "not-heritage.sqlite3"):
+                from jireh_sgo.family_intake_api import fictional_intake_enabled
+                self.assertFalse(fictional_intake_enabled())
+                with self.assertRaisesRegex(CommandError, "Fictional intake seeding requires"):
+                    call_command("seed_fictional_sgo_intake", credentials_file=str(target))
             self.assertFalse(target.exists())
             self.assertFalse(SGOOrganization.objects.exists())
             self.assertFalse(get_user_model().objects.filter( username__startswith="sgo_demo_", ).exists())
     @patch("crown_api.management.commands.seed_fictional_sgo_intake._require_isolated_local_database")
     def test_seeded_credentials_obtain_jwt_and_scope_family_processor(self, guard):
         """Exercise real SimpleJWT against Django's disposable test SQLite."""
-        test_db_path = Path(str(settings.DATABASES["default"]["NAME"])).resolve()
-        api_db_patch = patch("jireh_sgo.family_intake_api.LOCAL_DB", test_db_path)
-        api_db_patch.start()
-        self.addCleanup(api_db_patch.stop)
         with tempfile.TemporaryDirectory() as root:
             target = Path(root) / "accounts.txt"
             call_command("seed_fictional_sgo_intake", credentials_file=str(target))
