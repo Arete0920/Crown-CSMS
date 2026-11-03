@@ -1,0 +1,176 @@
+"""Add strictly fictional Heritage module samples to a prepared LOCAL demo.
+
+This fills only the Financial Aid, AM/PM Extended Care and Diadem sample-data
+inventory. Camp and partner-SGO fixtures have separately maintained owners.
+Sample childcare enrollment is deliberately BLOCKED: this seeder never
+attests custody, approves room capacity/ratios, or grants staff permissions.
+"""
+from __future__ import annotations
+
+import os
+import uuid
+from datetime import date
+from decimal import Decimal
+
+from django.conf import settings
+from django.core.management.base import CommandError
+from django.db import transaction
+
+from sandbox_demo.catalog import SANDBOX_SCHOOLS
+from sandbox_demo.management.commands.five_module_demo_preflight import (
+    _require_isolated_local_database,
+)
+
+# Never accept a caller-redefined CROWN_DEMO_SCHOOL_ID as authority to seed.
+HERITAGE_ID = uuid.UUID("19801b59-8c05-4c84-9312-5d792e4e839d")
+NAMESPACE = uuid.UUID("6f4445a7-1dcc-42dd-87ac-3cfe5fa4e9e1")
+SAMPLE_START = date(2026, 8, 1)
+
+
+def fixed_id(label: str) -> uuid.UUID:
+    return uuid.uuid5(NAMESPACE, f"heritage-local-only:v1:{label}")
+
+
+def require_local_demo() -> None:
+    """Fail before database reads/writes on a hosted, foreign or ambiguous DB."""
+    _require_isolated_local_database()
+    if (
+        not settings.DEBUG
+        or getattr(settings, "CROWN_ENV", None) != "local"
+        or str(SANDBOX_SCHOOLS["heritage-core"].id) != str(HERITAGE_ID)
+        or os.environ.get("DJANGO_ENV") != "local"
+        or os.environ.get("CROWN_DEMO_MODE", "").lower() != "false"
+        or not bool(getattr(settings, "CROWN_SANDBOX_ALLOW_OPEN_SESSION", False))
+        or any(os.environ.get(name) for name in (
+            "WEBSITE_SITE_NAME", "AZURE_CLIENT_ID", "IDENTITY_ENDPOINT",
+        ))
+    ):
+        raise CommandError(
+            "Fictional sample seeding is restricted to canonical local Heritage, "
+            "with hosted integrations disabled."
+        )
+
+
+def _ensure(model, label: str, defaults: dict, identity: dict):
+    """Stable sample identity; reject mismatched ownership, never overwrite edits."""
+    obj, created = model.objects.get_or_create(pk=fixed_id(label), defaults=defaults)
+    for field, expected in identity.items():
+        if getattr(obj, field) != expected:
+            raise CommandError(
+                f"Existing synthetic {label} has conflicting ownership; "
+                "no seed writes committed."
+            )
+    return obj, created
+
+
+@transaction.atomic
+def seed_heritage_module_samples() -> dict[str, int]:
+    """Seed bounded, idempotent samples without authorizing childcare actions."""
+    require_local_demo()
+    from core.models import School
+    from households.models import Household, Student
+    from financial_aid.models import FinancialAidApplication, AidAward, AidBucket
+    from aftercare.models import AftercareEnrollment, AftercareProgramConfig
+    from aftercare.daycare_models import (
+        DaycareSite, DaycareRoom, DaycareProgram, DaycareChild,
+        DaycareEnrollment,
+    )
+
+    school = School.objects.select_for_update().filter(
+        pk=HERITAGE_ID, is_active=True
+    ).first()
+    if school is None or school.name != SANDBOX_SCHOOLS["heritage-core"].name:
+        raise CommandError(
+            "Run the existing fictional Heritage flagship seed before "
+            "adding module samples."
+        )
+
+    household, _ = _ensure(Household, "family", {
+        "school_id": HERITAGE_ID, "name": "Fictional Five-Module QA Household",
+    }, {"school_id": HERITAGE_ID})
+    student, _ = _ensure(Student, "extended-care-student", {
+        "school_id": HERITAGE_ID, "household": household,
+        "first_name": "Sample", "last_name": "Learner", "grade_level": "3",
+    }, {"school_id": HERITAGE_ID, "household_id": household.pk})
+
+    application, _ = _ensure(FinancialAidApplication, "aid-application", {
+        "school_id": HERITAGE_ID, "household_id": household.pk,
+        "academic_year": "2026-27", "status": "draft",
+        "household_income": Decimal("0.00"), "household_size": 1,
+    }, {"school_id": HERITAGE_ID, "household_id": household.pk})
+    _ensure(AidAward, "aid-unapproved-sample", {
+        "school_id": HERITAGE_ID, "application": application,
+        "bucket": AidBucket.NEED, "amount": Decimal("0.00"),
+        "rationale": "FICTIONAL ZERO-DOLLAR REVIEW SAMPLE; not approved, paid or posted.",
+        "approved_by_user_id": None,
+    }, {"school_id": HERITAGE_ID, "application_id": application.pk})
+
+    AftercareProgramConfig.objects.get_or_create(school_fk=school)
+    for care_session in ("AM", "PM"):
+        identity = dict(
+            school_fk=school, student_fk=student,
+            care_session=care_session, start_date=SAMPLE_START,
+        )
+        matches = list(AftercareEnrollment.objects.filter(
+            **identity
+        ).order_by("id")[:2])
+        if len(matches) > 1:
+            raise CommandError(
+                "Ambiguous duplicate fictional extended-care enrollment."
+            )
+        if not matches:
+            AftercareEnrollment.objects.create(
+                **identity, end_date=None,
+                days_of_week=["MON", "TUE", "WED", "THU", "FRI"],
+                billing_model="FLAT_MONTHLY", monthly_rate=Decimal("0.00"),
+                is_active=True,
+            )
+
+    site, _ = _ensure(DaycareSite, "daycare-site", {
+        "school": school, "code": "fictional-qa",
+        "name": "Fictional QA Daycare Center",
+        "is_active": True, "operating_mode": "INTEGRATED", "jurisdiction": "",
+    }, {"school_id": HERITAGE_ID})
+    # Do not assert legally verified capacity, staff ratios, or pickup grants.
+    room, _ = _ensure(DaycareRoom, "daycare-room-unapproved", {
+        "school": school, "site": site, "code": "policy-pending",
+        "name": "Training Room - Policy Pending", "is_active": False,
+        "licensed_capacity": None, "max_children_per_staff": None,
+        "policy_source": "",
+    }, {"school_id": HERITAGE_ID, "site_id": site.pk})
+    program, _ = _ensure(DaycareProgram, "daycare-program", {
+        "school": school, "site": site, "code": "DAYCARE",
+        "name": "Fictional Daycare Program", "is_active": True,
+    }, {"school_id": HERITAGE_ID, "site_id": site.pk})
+    child, _ = _ensure(DaycareChild, "daycare-child", {
+        "school": school, "site": site, "household": household,
+        "first_name": "Sample", "last_name": "Preschooler",
+        "date_of_birth": date(2023, 1, 1), "is_active": True,
+    }, {"school_id": HERITAGE_ID, "site_id": site.pk,
+        "household_id": household.pk})
+    enrollment, _ = _ensure(DaycareEnrollment, "daycare-blocked-enrollment", {
+        "school": school, "site": site, "child": child,
+        "program": program, "room": room,
+        "status": "ACTIVE", "readiness": "BLOCKED",
+        "start_date": SAMPLE_START, "weekdays": [0, 1, 2, 3, 4],
+    }, {"school_id": HERITAGE_ID, "site_id": site.pk,
+        "child_id": child.pk, "program_id": program.pk})
+    if enrollment.readiness == "READY" and not room.is_active:
+        raise CommandError(
+            "Unapproved training room cannot support ready custody."
+        )
+    return {
+        "financial_aid_applications": FinancialAidApplication.objects.filter(
+            pk=application.pk, school_id=school.pk).count(),
+        "financial_aid_sample_awards": AidAward.objects.filter(
+            school_id=school.pk, application=application).count(),
+        "extended_care_am_enrollments": AftercareEnrollment.objects.filter(
+            school_fk=school, care_session="AM", student_fk=student,
+            is_active=True).count(),
+        "extended_care_pm_enrollments": AftercareEnrollment.objects.filter(
+            school_fk=school, care_session="PM", student_fk=student,
+            is_active=True).count(),
+        "diadem_blocked_active_enrollments": DaycareEnrollment.objects.filter(
+            pk=enrollment.pk, school=school, status="ACTIVE",
+            readiness="BLOCKED").count(),
+    }
