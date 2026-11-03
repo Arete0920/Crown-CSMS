@@ -91,6 +91,80 @@ describe("Jireh SGO interactive fictional intake", () => {
     expect(screen.queryByText(/Persistent application readback/)).toBeNull();
     expect(await screen.findByText(/No fictional family grants/)).toBeTruthy();
   });
+  it("confirms a family correction only after independent saved-state readback", async () => {
+    const requested = { ...saved, status: "CORRECTION_REQUESTED", revision: 2,
+      correction_reason: "GRADE_UNVERIFIED" };
+    const resubmitted = { ...saved, status: "RESUBMITTED", revision: 3, grade_level: "2" };
+    authenticatedFetch.mockImplementation(async (url) => {
+      if (url.endsWith("/family/programs/")) return response({
+        programs: [{ ...FAMILY, application_id: APP }], synthetic_only: true, funds_status: "NONCASH_ONLY",
+      });
+      if (url.endsWith("/processor/programs/")) return response({
+        programs: [], authority: "PROCESSOR_VERIFICATION_ONLY", funds_status: "NONCASH_ONLY",
+      });
+      if (url.endsWith("/correct/")) return response({ application: resubmitted, changed: true });
+      if (url.includes("/family/applications/")) {
+        return response({ application: authenticatedFetch.mock.calls.some(([u]) => u.endsWith("/correct/"))
+          ? resubmitted : requested });
+      }
+      throw new Error("unexpected endpoint " + url);
+    });
+    render(<JirehSGOIntakePage />);
+    expect(await screen.findByRole("button", { name: "Save correction and resubmit" })).toBeTruthy();
+    fireEvent.change(screen.getByLabelText("Correct or confirm fictional grade"), { target: { value: "2" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save correction and resubmit" }));
+    expect(await screen.findByText(/Correction saved, read back and resubmitted/)).toBeTruthy();
+    await waitFor(() => expect(screen.getByText((_, el) => el?.tagName === "P"
+      && el.textContent.includes("RESUBMITTED") && el.textContent.includes("revision: 3"))).toBeTruthy());
+    expect(authenticatedFetch.mock.calls.filter(([url]) =>
+      url.endsWith("/family/applications/" + APP + "/")).length).toBeGreaterThanOrEqual(2);
+  });
+  it("does not confirm correction when independent readback is stale", async () => {
+    const requested = { ...saved, status: "CORRECTION_REQUESTED", revision: 2,
+      correction_reason: "GRADE_UNVERIFIED" };
+    const resubmitted = { ...saved, status: "RESUBMITTED", revision: 3, grade_level: "2" };
+    authenticatedFetch.mockImplementation(async (url) => {
+      if (url.endsWith("/family/programs/")) return response({
+        programs: [{ ...FAMILY, application_id: APP }], synthetic_only: true, funds_status: "NONCASH_ONLY",
+      });
+      if (url.endsWith("/processor/programs/")) return response({
+        programs: [], authority: "PROCESSOR_VERIFICATION_ONLY", funds_status: "NONCASH_ONLY",
+      });
+      if (url.endsWith("/correct/")) return response({ application: resubmitted, changed: true });
+      if (url.includes("/family/applications/")) return response({ application: requested });
+      throw new Error("unexpected endpoint " + url);
+    });
+    render(<JirehSGOIntakePage />);
+    expect(await screen.findByRole("button", { name: "Save correction and resubmit" })).toBeTruthy();
+    fireEvent.change(screen.getByLabelText("Correct or confirm fictional grade"), { target: { value: "2" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save correction and resubmit" }));
+    expect(await screen.findByText(/Correction not confirmed/)).toBeTruthy();
+    expect(screen.queryByText(/Correction saved, read back and resubmitted/)).toBeNull();
+  });
+  it("does not claim processor success when the independent queue remains stale", async () => {
+    const processor = { id: PID, organization: "Fictional SGO A", name: "Synthetic 2027" };
+    getAccessToken.mockReturnValue("processor-session-a");
+    authenticatedFetch.mockImplementation(async (url) => {
+      if (url.endsWith("/family/programs/")) return response({
+        programs: [], synthetic_only: true, funds_status: "NONCASH_ONLY",
+      });
+      if (url.endsWith("/processor/programs/")) return response({
+        programs: [processor], authority: "PROCESSOR_VERIFICATION_ONLY", funds_status: "NONCASH_ONLY",
+      });
+      if (url.endsWith("/queue/")) return response({
+        applications: [saved], program_id: PID, authority: "PROCESSOR_VERIFICATION_ONLY",
+      });
+      if (url.endsWith("/request-correction/")) return response({
+        application: { ...saved, status: "CORRECTION_REQUESTED", revision: 2,
+          correction_reason: "GRADE_UNVERIFIED" }, changed: true,
+      });
+      throw new Error("unexpected endpoint " + url);
+    });
+    render(<JirehSGOIntakePage />);
+    fireEvent.click(await screen.findByRole("button", { name: "Request correction" }));
+    expect(await screen.findByText(/Correction request not confirmed/)).toBeTruthy();
+    expect(screen.queryByText(/Nonbinding verification correction request recorded and read back/)).toBeNull();
+  });
   it("records a delegated correction request without any award workflow", async () => {
     let status = "SUBMITTED";
     getAccessToken.mockReturnValue("processor-session-a");
