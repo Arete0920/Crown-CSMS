@@ -397,3 +397,48 @@ it("holds custody actions when a confirmed POST is followed by failed roster rea
   expect(screen.getByText("Checked in")).toBeTruthy();
   expect(api.checkinStudent).toHaveBeenCalledTimes(1);
 });
+
+it("retains a pending AM custody barrier after real route unmount and PM mount", async () => {
+  let settle;
+  api.fetchRosterToday.mockImplementation(async (session) => ({
+    care_session: session, date: "2026-10-30", dow: "FRI",
+    rows: session === "AM" ? rows : [{ ...rows[0], care_session: "PM" }],
+    unlinked_attendance_count: 0,
+  }));
+  api.checkinStudent.mockImplementationOnce(() => new Promise((resolve) => { settle = resolve; }));
+  const first = render(<AftercareRosterPage careSession="AM" />);
+  await screen.findByText("Synthetic Child");
+  fireEvent.click(screen.getByRole("button", { name: "Check In" }));
+  await waitFor(() => expect(api.checkinStudent).toHaveBeenCalledTimes(1));
+  first.unmount();
+  const pm = render(<AftercareRosterPage careSession="PM" />);
+  await waitFor(() => expect(screen.getByText(/outcome is unconfirmed/i)).toBeTruthy());
+  expect(screen.getByText(/originating school and care session before resolving/i)).toBeTruthy();
+  const button = screen.getByRole("button", { name: "Review current custody before continuing" });
+  expect(button.disabled).toBe(true);
+  expect(screen.queryByRole("button", { name: "Check In" })).toBeNull();
+  settle({ id: 1 });
+  await waitFor(() => expect(screen.queryByText(/previous custody write is still pending/i)).toBeNull());
+  expect(screen.getByText(/outcome is unconfirmed/i)).toBeTruthy();
+  expect(button.disabled).toBe(true);
+  pm.unmount();
+  render(<AftercareRosterPage careSession="AM" />);
+  await waitFor(() => expect(screen.getByRole("button", { name: "Review current custody before continuing" }).disabled).toBe(false));
+  fireEvent.click(screen.getByRole("button", { name: "Review current custody before continuing" }));
+  await waitFor(() => expect(screen.queryByText(/outcome is unconfirmed/i)).toBeNull());
+  expect(api.checkinStudent).toHaveBeenCalledTimes(1);
+});
+
+it("retains an uncertain check-in barrier across component remount and school switch", async () => {
+  api.checkinStudent.mockRejectedValueOnce(new Error("ambiguous server response"));
+  const first = render(<AftercareRosterPage careSession="AM" />);
+  await screen.findByText("Synthetic Child");
+  fireEvent.click(screen.getByRole("button", { name: "Check In" }));
+  await waitFor(() => expect(screen.getByText(/outcome is unconfirmed/i)).toBeTruthy());
+  first.unmount();
+  setSelectedSchoolId("unrelated-school-b");
+  render(<AftercareRosterPage careSession="AM" />);
+  await waitFor(() => expect(screen.getByText(/originating school and care session before resolving/i)).toBeTruthy());
+  expect(screen.getByRole("button", { name: "Review current custody before continuing" }).disabled).toBe(true);
+  expect(api.checkinStudent).toHaveBeenCalledTimes(1);
+});
