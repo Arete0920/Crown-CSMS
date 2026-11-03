@@ -204,4 +204,3 @@ def test_direct_canonical_offer_rejects_foreign_school_before_write(monkeypatch,
         with pytest.raises(CommandError, match="active fictional Heritage school"):
             _seed_canonical_offered_jireh(foreign)
     assert not CoreFamily.objects.filter(pk=fixed_id("canonical-aid-family")).exists()
-
