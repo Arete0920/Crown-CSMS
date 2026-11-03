@@ -164,10 +164,10 @@ export default function AftercareRosterPage({ careSession = "PM" }) {
     } finally {
       if (operationInFlightRef.current === attempt) {
         operationInFlightRef.current = null;
+        checkinInFlightRef.current = false;
         setCustodyWritePending(false);
       }
       if (sessionRef.current === careSession && sameIdentity()) {
-        checkinInFlightRef.current = false;
         setCheckinBusyId(null);
       }
     }
