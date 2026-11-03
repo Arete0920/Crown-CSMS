@@ -50,10 +50,15 @@ folder (not the parent folder containing Start-Heritage.cmd):
 The command must exit 0; save its output. If it fails, NO-GO. This does
 not replace a real browser workflow rehearsal. Perform it in the isolated
 fictional Heritage database only; do not alter a real school database.
-Then run Start-Heritage.cmd from the parent starter folder, or run
-  py -3.12 scripts/demo/start_heritage_local.py
-from the source folder. Confirm http://localhost:4173/sandbox and inspect
-the actual workflows with authorized personas, save/reload and denial tests.
+For an explicitly authorized, reviewed and assembled five-module source
+checkout (NOT the older pinned candidate), launch its opt-in functional demo:
+  py -3.12 scripts/demo/start_heritage_local.py --five-module-demo
+That command must successfully seed all fictional modules and pass strict
+preflight before starting the servers; if either fails, do not present a
+five-module demo. The default Start-Heritage.cmd remains a basic demo,
+not an automatic five-module certification.
+Confirm http://localhost:4173/sandbox and inspect actual workflows with
+authorized personas, save/reload and denial tests.
 
 The release acceptance checklist is: Diadem Daycare center/room setup and
 custody checks; Extended Care AM/PM enrollment and attendance; Summer Camp
