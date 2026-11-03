@@ -249,3 +249,23 @@ def test_candidate_and_basic_archives_coexist_with_same_sha(monkeypatch, tmp_pat
         assert archive.read("HERITAGE-LOCAL-DEMO-README.txt") == (
             ROOT / "HERITAGE-LOCAL-DEMO-README.txt"
         ).read_bytes()
+
+
+def test_windows_upload_is_bound_to_tested_source_instead_of_historical_basic_zip():
+    """A passing browser run must never publish the old basic-demo archive."""
+    import yaml
+    steps = yaml.safe_load((ROOT / ".github/workflows/heritage-windows-rehearsal.yml").read_text())["jobs"]["windows-local-demo"]["steps"]
+    build = next(step for step in steps if "package_heritage_sales.py" in step.get("run", ""))
+    assert build.get("id") == "tested_package"
+    commands = build["run"]
+    assert "$checkoutSha = git rev-parse HEAD" in commands
+    assert "$checkoutSha -ne $env:GITHUB_SHA" in commands
+    assert "package_heritage_sales.py --source-sha $checkoutSha --five-module-candidate" in commands
+    assert "verify_heritage_sales_package.py --source-sha $checkoutSha --five-module-candidate --download" in commands
+    assert 'archive=.local-backups/heritage-sales/CROWN-Heritage-Five-Module-UNCERTIFIED-$($checkoutSha.Substring(0,12)).zip' in commands
+    upload = next(step for step in steps if step.get("with", {}).get("name") == "heritage-windows-buyer-rehearsed-candidate")
+    assert upload["if"] == "success()"
+    assert upload["with"]["path"].splitlines() == [
+        "${{ steps.tested_package.outputs.archive }}",
+        ".local-backups/heritage-sales/heritage-five-module-candidate-audit.json",
+    ]

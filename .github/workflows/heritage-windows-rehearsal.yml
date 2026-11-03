@@ -146,17 +146,18 @@ jobs:
           if ($exitCode -ne 0) {
             throw "Strict five-module preflight failed ($exitCode); see uploaded non-certification evidence."
           }
-      - name: Build and audit deliverable Heritage starter
+      - name: Build and audit source-stamped Heritage candidate
+        id: tested_package
         shell: pwsh
         run: |
-          # GitHub checkout uses a shallow PR merge checkout. Retrieve the
-          # immutable main source commit explicitly for independent blob proof.
-          git fetch --no-tags --depth=1 origin a1bf22fc1e520eba149ce943edcd747dbf75c1e5
-          if ($LASTEXITCODE -ne 0) { throw 'Could not fetch pinned source revision' }
-          python scripts/demo/package_heritage_sales.py
+          $checkoutSha = git rev-parse HEAD
+          if ($LASTEXITCODE -ne 0) { throw 'Could not identify tested source' }
+          if ($checkoutSha -ne $env:GITHUB_SHA) { throw 'Checkout differs from workflow source' }
+          python scripts/demo/package_heritage_sales.py --source-sha $checkoutSha --five-module-candidate
           if ($LASTEXITCODE -ne 0) { throw 'Starter package build failed' }
-          python scripts/demo/verify_heritage_sales_package.py --download
+          python scripts/demo/verify_heritage_sales_package.py --source-sha $checkoutSha --five-module-candidate --download
           if ($LASTEXITCODE -ne 0) { throw 'Starter source identity audit failed' }
+          "archive=.local-backups/heritage-sales/CROWN-Heritage-Five-Module-UNCERTIFIED-$($checkoutSha.Substring(0,12)).zip" >> $env:GITHUB_OUTPUT
       - name: Verify guarded Heritage listener boundary
         shell: pwsh
         run: .\.venv\Scripts\python.exe -m pytest -q backend/crown_api/tests/test_heritage_runserver.py
@@ -186,8 +187,8 @@ jobs:
         with:
           name: heritage-windows-buyer-rehearsed-candidate
           path: |
-            .local-backups/heritage-sales/CROWN-Heritage-Sales-Demo-*.zip
-            .local-backups/heritage-sales/heritage-starter-audit.json
+            ${{ steps.tested_package.outputs.archive }}
+            .local-backups/heritage-sales/heritage-five-module-candidate-audit.json
           if-no-files-found: error
           retention-days: 7
       - name: Upload local rehearsal evidence
