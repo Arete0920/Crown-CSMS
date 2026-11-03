@@ -151,40 +151,45 @@ def test_extended_care_sample_reseed_rejects_mutated_enrollment(
 
 
 @pytest.mark.parametrize("tamper", [
-    "ready_enrollment", "cancelled_enrollment", "activated_room",
+    "incomplete_enrollment", "cancelled_enrollment", "changed_room_capacity",
 ])
 def test_diadem_blocked_sample_reseed_refuses_changed_custody_posture(
     monkeypatch, settings, tamper,
 ):
-    """Do not silently accept a changed fictional daycare readiness state."""
+    """Reject valid ORM state changes without bypassing childcare custody checks."""
     from aftercare.daycare_models import DaycareEnrollment, DaycareRoom
 
     with _setup_local(monkeypatch, settings):
         seed_heritage_module_samples()
-        if tamper == "ready_enrollment":
-            DaycareEnrollment.objects.filter(
+        if tamper == "incomplete_enrollment":
+            enrollment = DaycareEnrollment.objects.get(
                 pk=fixed_id("daycare-blocked-enrollment"),
-            ).update(readiness="READY")
+            )
+            enrollment.readiness = "INCOMPLETE"
+            enrollment.save(update_fields=["readiness"])
         elif tamper == "cancelled_enrollment":
-            DaycareEnrollment.objects.filter(
+            enrollment = DaycareEnrollment.objects.get(
                 pk=fixed_id("daycare-blocked-enrollment"),
-            ).update(status="CANCELLED")
+            )
+            enrollment.status = "CANCELLED"
+            enrollment.save(update_fields=["status"])
         else:
-            DaycareRoom.objects.filter(
-                pk=fixed_id("daycare-room-unapproved"),
-            ).update(is_active=True)
+            room = DaycareRoom.objects.get(pk=fixed_id("daycare-room-unapproved"))
+            room.licensed_capacity = 12
+            room.save(update_fields=["licensed_capacity"])
 
         with pytest.raises(CommandError, match="Diadem blocked sample changed"):
             seed_heritage_module_samples()
 
     enrollment = DaycareEnrollment.objects.get(pk=fixed_id("daycare-blocked-enrollment"))
     room = DaycareRoom.objects.get(pk=fixed_id("daycare-room-unapproved"))
-    if tamper == "ready_enrollment":
-        assert enrollment.readiness == "READY"
+    if tamper == "incomplete_enrollment":
+        assert enrollment.readiness == "INCOMPLETE"
     elif tamper == "cancelled_enrollment":
         assert enrollment.status == "CANCELLED"
     else:
-        assert room.is_active
+        assert room.licensed_capacity == 12
+        assert room.is_active is False
 
 
 @pytest.mark.parametrize("next_state", ["UNDER_REVIEW", "NEEDS_INFO"])
