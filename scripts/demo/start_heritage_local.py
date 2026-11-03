@@ -217,7 +217,7 @@ def main() -> int:
             processes.append(subprocess.Popen(command, cwd=cwd, env=env, stdout=log, stderr=subprocess.STDOUT))
         wait_ready("http://127.0.0.1:8000/api/v1/sandbox/catalog/", processes[0])
         wait_ready(URL, processes[1])
-        print(f"\nHeritage demo ready: {URL}\nChoose a role; no password is required.\nFictional data only. External payments are disabled.\nKeep this window open. Press Ctrl+C to stop.\nLogs: {STATE}", flush=True)
+        print(f"\nHeritage demo ready: {URL}\nJireh SGO fictional sign-in: http://localhost:4173/jireh-sgo/sign-in\nChoose a role; no password is required.\nFictional data only. External payments are disabled.\nKeep this window open. Press Ctrl+C to stop.\nLogs: {STATE}", flush=True)
         if not args.no_browser:
             webbrowser.open(URL)
         while all(process.poll() is None for process in processes):
