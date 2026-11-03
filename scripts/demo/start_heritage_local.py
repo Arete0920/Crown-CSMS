@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import ast
 import hashlib
 import os
 from pathlib import Path
@@ -217,6 +218,39 @@ def seed_five_module_fixtures(env: dict[str, str], python: Path) -> None:
     ], env)
 
 
+
+def require_five_module_sources(root: Path = ROOT) -> None:
+    """Detect missing reviewed source before dependency installs or migrations.
+
+    The static check does NOT certify seed behavior, custody, or the browser.
+    """
+    required = (
+        "backend/sandbox_demo/management/commands/seed_heritage_module_samples.py",
+        "backend/crown_api/management/commands/seed_fictional_sgo_intake.py",
+        "backend/sandbox_demo/management/commands/five_module_demo_preflight.py",
+    )
+    missing = [name for name in required if not (root / name).is_file()]
+    camp_source = root / "backend/sandbox_demo/services.py"
+    if not camp_source.is_file():
+        missing.append("backend/sandbox_demo/services.py [Camp seeder]")
+    else:
+        try:
+            tree = ast.parse(camp_source.read_text(encoding="utf-8"), filename=str(camp_source))
+        except (OSError, SyntaxError, UnicodeError) as exc:
+            raise RuntimeError("Five-module Camp fixture source cannot be inspected.") from exc
+        if not any(
+            isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+            and node.name == "seed_local_heritage_camp"
+            for node in tree.body
+        ):
+            missing.append("backend/sandbox_demo/services.py::seed_local_heritage_camp")
+    if missing:
+        raise RuntimeError(
+            "Five-module demonstration source is incomplete; integrate the existing "
+            "module PRs before preparing or certifying Windows: " + ", ".join(missing)
+        )
+
+
 def stop(process: subprocess.Popen) -> None:
     if process.poll() is None:
         process.terminate()
@@ -241,6 +275,12 @@ def main() -> int:
         parser.error("--five-module-preflight requires --prepare-only")
     if args.five_module_preflight and args.five_module_demo:
         parser.error("Choose --five-module-preflight or --five-module-demo, not both")
+    if args.five_module_preflight or args.five_module_demo:
+        try:
+            require_five_module_sources()
+        except RuntimeError as exc:
+            print(f"Heritage could not start: {exc}", file=sys.stderr)
+            return 1
     if sys.version_info < (3, 11):
         print("Python 3.11 or newer is required.", file=sys.stderr)
         return 1

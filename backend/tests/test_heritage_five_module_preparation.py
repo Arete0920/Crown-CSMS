@@ -100,11 +100,54 @@ def test_missing_seed_command_cannot_claim_success(monkeypatch, tmp_path):
     assert calls[0][-2:] == ["seed_heritage_module_samples", "--fictional-local-only"]
 
 
+
+def test_missing_five_module_source_fails_before_install_or_database_mutation(monkeypatch, tmp_path, capsys):
+    launcher = load_launcher()
+    monkeypatch.setattr(launcher, "ROOT", tmp_path)
+    monkeypatch.setattr(
+        launcher.sys, "argv",
+        ["start_heritage_local.py", "--prepare-only", "--five-module-preflight"],
+    )
+    monkeypatch.setattr(
+        launcher, "local_environment",
+        lambda: pytest.fail("Missing source must stop before creating local credentials"),
+    )
+    monkeypatch.setattr(
+        launcher, "prepare",
+        lambda *_: pytest.fail("Missing source must stop before installs and migrations"),
+    )
+    assert launcher.main() == 1
+    error = capsys.readouterr().err
+    assert "Five-module demonstration source is incomplete" in error
+    assert "seed_heritage_module_samples.py" in error
+    assert "seed_fictional_sgo_intake.py" in error
+
+
+def test_source_prerequisite_rejects_camp_placeholder_but_accepts_declared_fixture(tmp_path):
+    launcher = load_launcher()
+    paths = [
+        "backend/sandbox_demo/management/commands/seed_heritage_module_samples.py",
+        "backend/crown_api/management/commands/seed_fictional_sgo_intake.py",
+        "backend/sandbox_demo/management/commands/five_module_demo_preflight.py",
+        "backend/sandbox_demo/services.py",
+    ]
+    for relative in paths:
+        target = tmp_path / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text("def other(): pass\n", encoding="utf-8")
+    with pytest.raises(RuntimeError, match="seed_local_heritage_camp"):
+        launcher.require_five_module_sources(tmp_path)
+    (tmp_path / "backend/sandbox_demo/services.py").write_text(
+        "def seed_local_heritage_camp():\n    return None\n", encoding="utf-8"
+    )
+    launcher.require_five_module_sources(tmp_path)
+
 def test_explicit_five_module_launch_must_complete_strict_audit_before_servers(monkeypatch, tmp_path):
     launcher = load_launcher()
     monkeypatch.setattr(launcher, "STATE", tmp_path)
     monkeypatch.setattr(launcher.sys, "argv", ["start_heritage_local.py", "--five-module-demo"])
     monkeypatch.setattr(launcher, "available_ports", lambda: None)
+    monkeypatch.setattr(launcher, "require_five_module_sources", lambda: None)
     monkeypatch.setattr(launcher, "npm_command", lambda: ["npm"])
     env = local_env(tmp_path)
     python = tmp_path / "python"
@@ -148,6 +191,7 @@ def test_successful_opt_in_launch_preserves_strict_sequence(monkeypatch, tmp_pat
         ["start_heritage_local.py", "--five-module-demo", "--no-browser"],
     )
     monkeypatch.setattr(launcher, "available_ports", lambda: None)
+    monkeypatch.setattr(launcher, "require_five_module_sources", lambda: None)
     monkeypatch.setattr(launcher, "npm_command", lambda: ["npm"])
     monkeypatch.setattr(launcher, "preview_command", lambda: ["vite", "preview"])
     env = local_env(tmp_path)
