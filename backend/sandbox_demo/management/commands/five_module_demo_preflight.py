@@ -82,6 +82,13 @@ def _model_count(app_label: str, model_name: str, **filters) -> tuple[int | None
         return None, f"schema or query is not ready ({type(exc).__name__})"
 
 
+def camp_entitlement_evidence(school_id) -> bool:
+    """Use the same DB-backed module gate as the real Camp API, not route presence."""
+    from subscriptions.gates import school_has_module
+
+    return bool(school_has_module(school_id, "little_lambs"))
+
+
 class Command(BaseCommand):
     help = "Read-only five-module Heritage local demo acceptance inventory."
 
@@ -145,6 +152,15 @@ class Command(BaseCommand):
         require_count(
             "Diadem Daycare active enrollments", "aftercare",
             "DaycareEnrollment", school_id=school.id, status="ACTIVE",
+        )
+        # Even complete fictional session records are not operational proof
+        # if the school would receive MODULE_NOT_ENABLED from the Camp API.
+        entitlement_active = camp_entitlement_evidence(school.id)
+        record(
+            "Summer Camp entitlement",
+            entitlement_active,
+            "authorized for fictional school" if entitlement_active
+            else "missing, inactive, suspended or expired; Camp API access is denied",
         )
         try:
             from summer_camp.models import SummerCampSession, SummerCampEnrollment
