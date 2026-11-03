@@ -2,13 +2,49 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 from pathlib import Path
 import runpy
+import subprocess
 import tempfile
 import zipfile
 
 from package_heritage_sales import ROOT, STARTER_FILES, pinned_revision
+
+# Exact Git blobs, rather than a downloaded marker alone, bind core runtime
+# bytes to the immutable revision advertised in the starter manifest.
+SOURCE_BLOB_PATHS = (
+    "scripts/demo/start_heritage_local.py",
+    "backend/manage.py",
+    "backend/requirements.txt",
+    "backend/sandbox_demo/services.py",
+    "backend/sandbox_demo/management/commands/five_module_demo_preflight.py",
+    "backend/aftercare/daycare_api.py",
+    "backend/summer_camp/models.py",
+    "backend/jireh_sgo/read_only_api.py",
+    "frontend/dashboards/package-lock.json",
+    "frontend/dashboards/src/routes/router.jsx",
+    "frontend/dashboards/src/pages/JirehSGODashboard.jsx",
+)
+
+
+def verify_source_git_blobs(downloaded_source: Path, sha: str) -> None:
+    """Require critical extracted files to equal Git objects at the pin.
+
+    CI must check out the repository with enough history for `git show`.
+    This is a selected-file identity check, not a comprehensive binary audit.
+    """
+    for relative in SOURCE_BLOB_PATHS:
+        expected = subprocess.run(
+            ["git", "-C", str(ROOT), "show", f"{sha}:{relative}"],
+            capture_output=True, check=True,
+        ).stdout
+        downloaded_file = downloaded_source / relative
+        if (not downloaded_file.is_file()
+                or hashlib.sha256(downloaded_file.read_bytes()).digest()
+                != hashlib.sha256(expected).digest()):
+            raise RuntimeError(f"Downloaded source blob mismatch at {relative}")
 
 
 def verify(*, download: bool = False):
@@ -51,6 +87,7 @@ def verify(*, download: bool = False):
                     raise RuntimeError("Downloaded source marker does not match SHA.")
                 if not (installed / "scripts/demo/start_heritage_local.py").is_file():
                     raise RuntimeError("Downloaded source does not contain the launcher.")
+                verify_source_git_blobs(installed, sha)
                 # Repeat installs must reuse the exact same immutable source.
                 again = starter["install_source"](
                     destination=directory / f"Heritage-{sha[:12]}"
@@ -70,6 +107,7 @@ def verify(*, download: bool = False):
         "source_sha": sha,
         "zip_crc": "PASS",
         "manifest_and_bundled_installer": "PASS",
+        "downloaded_source_critical_git_blobs": "PASS" if download else "NOT_RUN",
         "downloaded_source_identity_and_reinstall": "PASS" if download else "NOT_RUN",
         "five_module_browser_acceptance": "NOT_RUN_BY_THIS_SCRIPT",
         "physical_laptop_acceptance": "NOT_RUN_BY_THIS_SCRIPT",
@@ -85,5 +123,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
     try:
         verify(download=args.download)
-    except (OSError, RuntimeError, zipfile.BadZipFile, ValueError, KeyError) as exc:
+    except (OSError, RuntimeError, subprocess.CalledProcessError,
+            zipfile.BadZipFile, ValueError, KeyError) as exc:
         parser.exit(1, f"Heritage starter audit failed: {exc}\n")
