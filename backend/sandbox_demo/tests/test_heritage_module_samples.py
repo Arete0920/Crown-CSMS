@@ -109,7 +109,6 @@ def test_local_module_samples_are_idempotent_and_do_not_authorize_custody(
     ).exists()
 
 
-
 @pytest.mark.parametrize("tamper", [
     "ready_enrollment", "cancelled_enrollment", "activated_room",
 ])
