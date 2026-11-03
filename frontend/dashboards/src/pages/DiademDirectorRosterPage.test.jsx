@@ -3,7 +3,7 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import DiademDirectorRosterPage from "./DiademDirectorRosterPage.jsx";
 import { crownApiClient } from "../api/client.js";
-import { getSelectedSchoolId, setSelectedSchoolId } from "../utils/authClient.js";
+import { getAccessToken, getSelectedSchoolId, setAccessToken, setSelectedSchoolId } from "../utils/authClient.js";
 
 vi.mock("../api/client.js", () => ({
   crownApiClient: { get: vi.fn(), post: vi.fn() },
@@ -24,6 +24,7 @@ const roster = { site_id: site, as_of: "2026-11-01T12:00:00Z", children_present:
 beforeEach(() => {
   vi.resetAllMocks();
   sessionStorage.setItem("crown.school.id", "synthetic-school-a");
+  setAccessToken("synthetic-staff-access-token");
   crownApiClient.get.mockImplementation(async (url) =>
     url.endsWith("/sites/") ? { data: { sites: [{ site_id: site, name: "Synthetic Center", is_active: true }] } } :
       { data: roster });
@@ -179,4 +180,22 @@ it("clears the previous school's child roster immediately when tenant context ch
   expect(screen.queryByText(child)).toBeNull();
   await waitFor(() => expect(screen.getByText("No authorized childcare centers available.")).toBeTruthy());
   expect(crownApiClient.get.mock.calls.filter(([url]) => url.endsWith("/sites/")).length).toBe(2);
+});
+
+it("removes previous staff custody after a same-school access-token rotation", async () => {
+  crownApiClient.get.mockImplementation(async (url) => {
+    if (getAccessToken() !== "synthetic-staff-access-token")
+      throw new Error("New staff session is not authorized for this roster.");
+    if (url.endsWith("/sites/")) return { data: {
+      sites: [{ site_id: site, name: "Synthetic Center", is_active: true }],
+    } };
+    return { data: roster };
+  });
+  render(<DiademDirectorRosterPage />);
+  expect(await screen.findByText(child)).toBeTruthy();
+  const { act } = await import("@testing-library/react");
+  act(() => { setAccessToken("other-staff-same-school-access-token"); });
+  expect(screen.queryByText(child)).toBeNull();
+  expect((await screen.findByRole("alert")).textContent).toMatch(/not authorized for this roster/i);
+  expect(crownApiClient.post).not.toHaveBeenCalled();
 });

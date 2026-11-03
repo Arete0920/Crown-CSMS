@@ -3,7 +3,10 @@ import CrownLayout from "../components/crown/CrownLayout.jsx";
 import DashboardSection from "../components/layout/DashboardSection.jsx";
 import { crownApiClient } from "../api/client.js";
 import DiademReleaseReview from "./DiademReleaseReview.jsx";
-import { getSelectedSchoolId, SCHOOL_CONTEXT_CHANGE_EVENT } from "../utils/authClient.js";
+import {
+  getAccessToken, getSelectedSchoolId, AUTH_CONTEXT_CHANGE_EVENT,
+  SCHOOL_CONTEXT_CHANGE_EVENT,
+} from "../utils/authClient.js";
 
 const BASE = "/api/v1/aftercare/daycare";
 
@@ -16,25 +19,40 @@ export default function DiademDirectorRosterPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [refresh, setRefresh] = useState(0);
-  const [schoolContext, setSchoolContext] = useState(getSelectedSchoolId);
+  // Treat authenticated staff identity and school as one cache boundary.
+  // Never render the raw access token in a React key or DOM attribute.
+  const [identity, setIdentity] = useState(() => ({
+    school: getSelectedSchoolId(), token: getAccessToken(),
+  }));
+  const schoolContext = identity.school;
+  const identityCurrent = Boolean(identity.school && identity.token)
+    && getSelectedSchoolId() === identity.school && getAccessToken() === identity.token;
   const [directoryScope, setDirectoryScope] = useState(null);
   const [rosterScope, setRosterScope] = useState(null);
-  const currentSites = directoryScope === schoolContext ? sites : null;
+  const currentSites = identityCurrent && directoryScope === identity ? sites : null;
 
   useEffect(() => {
-    const onSchoolChange = () => { setReview(null); setReleaseMessage(""); setSchoolContext(getSelectedSchoolId()); };
-    window.addEventListener(SCHOOL_CONTEXT_CHANGE_EVENT, onSchoolChange);
-    window.addEventListener("focus", onSchoolChange);
-    window.addEventListener("storage", onSchoolChange);
+    const onIdentityChange = () => {
+      const nextSchool = getSelectedSchoolId(), nextToken = getAccessToken();
+      setIdentity((previous) => previous.school === nextSchool && previous.token === nextToken
+        ? previous : { school: nextSchool, token: nextToken });
+      setReview(null);
+      setReleaseMessage("");
+    };
+    for (const name of [SCHOOL_CONTEXT_CHANGE_EVENT, AUTH_CONTEXT_CHANGE_EVENT, "focus", "storage"]) {
+      window.addEventListener(name, onIdentityChange);
+    }
     return () => {
-      window.removeEventListener(SCHOOL_CONTEXT_CHANGE_EVENT, onSchoolChange);
-      window.removeEventListener("focus", onSchoolChange);
-      window.removeEventListener("storage", onSchoolChange);
+      for (const name of [SCHOOL_CONTEXT_CHANGE_EVENT, AUTH_CONTEXT_CHANGE_EVENT, "focus", "storage"]) {
+        window.removeEventListener(name, onIdentityChange);
+      }
     };
   }, []);
 
   useEffect(() => {
     let live = true;
+    const sameIdentity = () => getSelectedSchoolId() === identity.school
+      && getAccessToken() === identity.token;
     setSites(null);
     setRoster(null);
     setReview(null);
@@ -43,25 +61,27 @@ export default function DiademDirectorRosterPage() {
     setRosterScope(null);
     setError("");
     setLoading(true);
-    if (!schoolContext) {
-      setError("Select an authenticated school before opening childcare records.");
+    if (!identity.school || !identity.token || !sameIdentity()) {
+      setError("Select an authenticated school and staff session before opening childcare records.");
       setLoading(false);
       return () => { live = false; };
     }
     crownApiClient.get(`${BASE}/sites/`).then(({ data }) => {
-      if (!live || getSelectedSchoolId() !== schoolContext) return;
+      if (!live || !sameIdentity()) return;
       if (!Array.isArray(data?.sites)) throw new Error("Invalid Diadem site response.");
-      setDirectoryScope(schoolContext);
+      setDirectoryScope(identity);
       setSites(data.sites);
       setSiteId((current) => data.sites.some((site) => site.site_id === current) ? current : data.sites[0]?.site_id || "");
-    }).catch((err) => { if (live && getSelectedSchoolId() === schoolContext) setError(err.message || "Site directory unavailable."); })
-      .finally(() => { if (live && getSelectedSchoolId() === schoolContext) setLoading(false); });
+    }).catch((err) => { if (live && sameIdentity()) setError(err.message || "Site directory unavailable."); })
+      .finally(() => { if (live && sameIdentity()) setLoading(false); });
     return () => { live = false; };
-  }, [refresh, schoolContext]);
+  }, [refresh, schoolContext, identity]);
 
   useEffect(() => {
-    if (!currentSites || !siteId || !schoolContext) return;
+    if (!currentSites || !siteId || !identityCurrent) return;
     let live = true;
+    const sameIdentity = () => getSelectedSchoolId() === identity.school
+      && getAccessToken() === identity.token;
     setRoster(null);
     setReview(null);
     setRosterScope(null);
@@ -69,17 +89,17 @@ export default function DiademDirectorRosterPage() {
     setLoading(true);
     crownApiClient.get(`${BASE}/sites/${encodeURIComponent(siteId)}/roster/`)
       .then(({ data }) => {
-        if (!live || getSelectedSchoolId() !== schoolContext) return;
+        if (!live || !sameIdentity()) return;
         if (data?.site_id !== siteId || !Array.isArray(data?.rows) || data.children_present !== data.rows.length)
           throw new Error("Diadem roster failed site-scoping validation.");
-        setRosterScope(schoolContext);
+        setRosterScope(identity);
         setRoster(data);
-      }).catch((err) => { if (live && getSelectedSchoolId() === schoolContext) setError(err.message || "Care roster unavailable."); })
-      .finally(() => { if (live && getSelectedSchoolId() === schoolContext) setLoading(false); });
+      }).catch((err) => { if (live && sameIdentity()) setError(err.message || "Care roster unavailable."); })
+      .finally(() => { if (live && sameIdentity()) setLoading(false); });
     return () => { live = false; };
-  }, [siteId, currentSites, schoolContext]);
+  }, [siteId, currentSites, schoolContext, identity, identityCurrent]);
 
-  const currentRoster = schoolContext && rosterScope === schoolContext
+  const currentRoster = identityCurrent && rosterScope === identity
     && siteId && roster?.site_id === siteId
     && currentSites?.some((site) => site.site_id === siteId) ? roster : null;
 

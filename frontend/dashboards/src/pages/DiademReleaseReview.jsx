@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import CrownLayout from "../components/crown/CrownLayout.jsx";
 import { crownApiClient } from "../api/client.js";
 import { getAccessToken, getSelectedSchoolId } from "../utils/authClient.js";
 
