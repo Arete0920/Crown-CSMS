@@ -51,6 +51,25 @@ class FictionalSGOLocalSeedTests(TestCase):
             self.assertEqual(SGOMembership.objects.count(), 2)
             self.assertNotEqual(target.read_text(encoding="utf-8"), first)
             self.assertEqual(guard.call_count, 2)
+    @patch("crown_api.management.commands.seed_fictional_sgo_intake._require_isolated_local_database")
+    def test_seed_never_reactivates_revoked_partner_or_grants(self, guard):
+        with tempfile.TemporaryDirectory() as root:
+            target = Path(root) / "credentials.txt"
+            call_command("seed_fictional_sgo_intake", credentials_file=str(target))
+            for model in (SGOOrganization, SGOMembership, SGOFamilyGrant, SGOProcessorAssignment):
+                with self.subTest(model=model.__name__):
+                    record = model.objects.order_by("pk").first()
+                    record.active = False
+                    record.save(update_fields=["active"])
+                    original = target.read_bytes()
+                    with self.assertRaisesRegex(CommandError, "manual reconciliation"):
+                        call_command("seed_fictional_sgo_intake", credentials_file=str(target))
+                    record.refresh_from_db()
+                    self.assertFalse(record.active)
+                    self.assertEqual(target.read_bytes(), original)
+                    self.assertEqual(model.objects.count(), 2)
+                    record.active = True
+                    record.save(update_fields=["active"])
     def test_local_mode_alone_cannot_seed_a_non_heritage_database(self):
         with tempfile.TemporaryDirectory() as root:
             target = Path(root) / "sgo-credentials.txt"
