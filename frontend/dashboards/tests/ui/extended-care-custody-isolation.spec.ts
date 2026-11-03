@@ -73,7 +73,7 @@ test.describe("Extended Care fictional custody browser isolation (mocked API)", 
         if (school !== SCHOOL_A && school !== SCHOOL_B) return json(route, { detail: "Unknown fictional school" }, 403);
         return json(route, careRoster(school, session,
           school === SCHOOL_A && committed
-            ? { checkin_time: "2026-11-03T08:05:00Z", checkout_time: null } : null));
+            ? { id: 17, date: "2026-11-03", checkin_time: "2026-11-03T08:05:00Z", checkout_time: null } : null));
       }
       if (url.pathname.endsWith("/attendance/checkin/") && request.method() === "POST") {
         checkins += 1;
@@ -124,7 +124,7 @@ test.describe("Extended Care fictional custody browser isolation (mocked API)", 
     await setupStaff(page);
     let checkoutCalls = 0;
     let stage: "open" | "unverified" | "verified" = "open";
-    const checkedIn = { checkin_time: "2026-11-03T15:05:00Z", checkout_time: null };
+    const checkedIn = { id: 27, date: "2026-11-03", checkin_time: "2026-11-03T15:05:00Z", checkout_time: null };
 
     await page.route("**/api/v1/aftercare/**", async route => {
       const request = route.request();
@@ -133,7 +133,7 @@ test.describe("Extended Care fictional custody browser isolation (mocked API)", 
       if (school !== SCHOOL_A) return json(route, { detail: "Wrong school" }, 403);
       if (path.endsWith("/roster/today/")) {
         const attendance = stage === "open" ? checkedIn
-          : { ...checkedIn, checkout_time: "2026-11-03T17:05:00Z", pickup_verified: stage === "verified" };
+          : { ...checkedIn, checkout_time: "2026-11-03T17:05:00Z", pickup_verified: stage === "verified", pickup_contact_id: 7 };
         return json(route, {
           date: "2026-11-03", dow: "TUE", care_session: "PM",
           rows: [{ student_id: CHILD_A, student_name: "Fictional Child A", care_session: "PM",
