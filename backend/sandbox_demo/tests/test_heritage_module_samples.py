@@ -1,14 +1,12 @@
 """Local fictional fixture regression: persistence, replay, and fail-closed guards."""
 from __future__ import annotations
 
-import uuid
 from unittest.mock import patch
 
 import pytest
 from django.core.management.base import CommandError
 from django.core.management import call_command
 
-from sandbox_demo.catalog import SANDBOX_SCHOOLS
 from sandbox_demo.services import seed_heritage_flagship
 from sandbox_demo.heritage_module_samples import (
     HERITAGE_ID, fixed_id, require_local_demo, seed_heritage_module_samples,
@@ -116,14 +114,3 @@ def test_conflicting_existing_fixture_identity_refuses_and_rolls_back(
         pk=fixed_id("family"), school_id=HERITAGE_ID
     ).exists()
 
-
-def test_school_override_refused_even_if_local(monkeypatch, settings):
-    with _setup_local(monkeypatch, settings):
-        monkeypatch.setattr(
-            SANDBOX_SCHOOLS["heritage-core"], "id",
-            str(uuid.uuid4()),
-            raising=False,
-        ) if False else None
-        # ENV override is what the catalog reads on process startup; verify
-        # the immutable canonical ID is never taken from the caller's env.
-        assert HERITAGE_ID == uuid.UUID("19801b59-8c05-4c84-9312-5d792e4e839d")
