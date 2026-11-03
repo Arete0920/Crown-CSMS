@@ -42,14 +42,12 @@ class Command(BaseCommand):
             processor, processor_secret = _make_user(f"sgo_demo_{code}_processor")
             org, _ = SGOOrganization.objects.get_or_create( legal_name=legal_name, state_of_domicile=state, defaults={"active": True}, )
             if not org.active:
-                org.active = True
-                org.save(update_fields=["active"])
+                raise CommandError("Inactive fictional partner requires manual reconciliation.")
             member, _ = SGOMembership.objects.get_or_create( organization=org, user=partner, defaults={"role": SGOMembership.ADMIN, "active": True}, )
             if member.role != SGOMembership.ADMIN:
                 raise CommandError("Fictional partner membership role mismatch.")
             if not member.active:
-                member.active = True
-                member.save(update_fields=["active"])
+                raise CommandError("Inactive fictional partner membership requires manual reconciliation.")
             program = create_program( user=partner, organization_id=org.id, name=f"{state} Synthetic Scholarship Intake 2027", code=f"fictional-{code}-2027", calendar_year=2027,
                 funding_source="PRIVATE", rule_version="DEMO_POLICY_2027_V1",
             )
@@ -62,12 +60,10 @@ class Command(BaseCommand):
             if (grant.user_id != family.id or grant.school_key != school or grant.consent_version != "DEMO_CONSENT_V1"):
                 raise CommandError("Existing fictional applicant grant differs; manual reconciliation required.")
             if not grant.active:
-                grant.active = True
-                grant.save(update_fields=["active"])
+                raise CommandError("Revoked fictional family grant requires manual reconciliation.")
             assignment, _ = SGOProcessorAssignment.objects.get_or_create( program=program, user=processor, defaults={"active": True}, )
             if not assignment.active:
-                assignment.active = True
-                assignment.save(update_fields=["active"])
+                raise CommandError("Revoked fictional processor assignment requires manual reconciliation.")
             lines.extend([ f"", f"[{legal_name}]", f"Family login: {family.username} / {family_secret}", f"Processor login: {processor.username} / {processor_secret}",
                 f"Partner SGO admin (no automatic processor rights): {partner.username} / {partner_secret}",
                 f"Fictional program: {program.id}",
