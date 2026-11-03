@@ -4,6 +4,7 @@ import RoleDashboardPage from "../pages/RoleDashboardPage.jsx";
 import BillingDashboard from "../pages/BillingDashboard.jsx";
 import FinancialAidDashboard from "../pages/FinancialAidDashboard.jsx";
 import JirehSGODashboard from "../pages/JirehSGODashboard.jsx";
+import JirehSGOIntakePage from "../pages/JirehSGOIntakePage.jsx";
 import { AcademicsDashboard } from "../pages/AcademicsDashboard.jsx";
 import { GradebookRO } from "../pages/GradebookRO.jsx";
 import { TranscriptRO } from "../pages/TranscriptRO.jsx";
@@ -466,6 +467,10 @@ export const router = createBrowserRouter([
   {
     path: PATHS.JIREH_SGO,
     element: <JirehSGODashboard />,
+  },
+  {
+    path: "/jireh-sgo/intake",
+    element: <JirehSGOIntakePage />,
   },
   {
     path: PATHS.ATTENDANCE,
