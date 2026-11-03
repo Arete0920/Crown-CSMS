@@ -26,6 +26,9 @@ def fictional_intake_enabled():
         and getattr(settings, "DJANGO_ENV", "") == "local"
         and not os.getenv("WEBSITE_HOSTNAME")
         and not os.getenv("WEBSITE_INSTANCE_ID")
+        and not os.getenv("AZURE_ENVIRONMENT")
+        # Never point the fictional intake flag at a connected production DB.
+        and settings.DATABASES["default"]["ENGINE"] == "django.db.backends.sqlite3"
     )
 
 
