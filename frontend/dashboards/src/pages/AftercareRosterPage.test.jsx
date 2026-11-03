@@ -184,12 +184,17 @@ it("blocks reconciliation until the prior staff custody write has settled", asyn
   expect(api.fetchRosterToday).toHaveBeenCalledTimes(readsBefore);
   api.fetchRosterToday.mockResolvedValueOnce({
     care_session: "AM", date: "2026-10-30", dow: "FRI",
-    rows: [], unlinked_attendance_count: 0,
+    rows: [{ ...rows[0], student_id: "synthetic-child-2", student_name: "New Staff Student" }],
+    unlinked_attendance_count: 0,
   });
   fireEvent.click(reconcile);
   await waitFor(() => expect(api.fetchRosterToday).toHaveBeenCalledTimes(readsBefore + 1));
   await waitFor(() => expect(screen.queryByText(/outcome is unconfirmed/i)).toBeNull());
   expect(api.checkinStudent).toHaveBeenCalledTimes(1);
+  // A completed old-session request must not leave an orphaned check-in lock.
+  expect(await screen.findByText("New Staff Student")).toBeTruthy();
+  fireEvent.click(screen.getByRole("button", { name: "Check In" }));
+  await waitFor(() => expect(api.checkinStudent).toHaveBeenCalledTimes(2));
 });
 
 it("requires an explicit authorized readback before clearing a custody outcome warning", async () => {
