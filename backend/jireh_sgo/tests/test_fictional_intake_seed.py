@@ -4,6 +4,7 @@ from uuid import NAMESPACE_URL, uuid4, uuid5
 import tempfile
 from unittest.mock import patch
 from django.contrib.auth import get_user_model
+from django.conf import settings
 from django.db import connection
 from django.core.management import call_command
 from django.core.management.base import CommandError
@@ -108,7 +109,11 @@ class FictionalSGOLocalSeedTests(TestCase):
             self.assertFalse(get_user_model().objects.filter( username__startswith="sgo_demo_", ).exists())
     @patch("crown_api.management.commands.seed_fictional_sgo_intake._require_isolated_local_database")
     def test_seeded_credentials_obtain_jwt_and_scope_family_processor(self, guard):
-        """Exercise the real SimpleJWT route, not force_authenticate or mocked login."""
+        """Exercise real SimpleJWT against Django's disposable test SQLite."""
+        test_db_path = Path(str(settings.DATABASES["default"]["NAME"])).resolve()
+        api_db_patch = patch("jireh_sgo.family_intake_api.LOCAL_DB", test_db_path)
+        api_db_patch.start()
+        self.addCleanup(api_db_patch.stop)
         with tempfile.TemporaryDirectory() as root:
             target = Path(root) / "accounts.txt"
             call_command("seed_fictional_sgo_intake", credentials_file=str(target))
