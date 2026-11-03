@@ -93,6 +93,26 @@ it("fails closed with explicit guidance when staff credentials change before con
   expect(screen.getByRole("button", { name: "Confirm verified handoff" }).disabled).toBe(true);
 });
 
+it("keeps custody unconfirmed and allows cancel when identity changes during a pending POST", async () => {
+  let resolvePost;
+  crownApiClient.post.mockImplementation(() => new Promise((resolve) => { resolvePost = resolve; }));
+  const released = show();
+  await screen.findByText("Synthetic Guardian");
+  fireEvent.change(screen.getByLabelText("Verified pickup recipient"), { target: { value: authority } });
+  fireEvent.change(screen.getByLabelText("Identity verification method"), { target: { value: "GOVERNMENT_PHOTO_ID" } });
+  fireEvent.click(screen.getByRole("checkbox"));
+  fireEvent.click(screen.getByRole("button", { name: "Confirm verified handoff" }));
+  await waitFor(() => expect(crownApiClient.post).toHaveBeenCalledTimes(1));
+  expect(screen.getByRole("button", { name: "Cancel review" }).disabled).toBe(true);
+  setAccessToken("new-staff-access-token-after-submit");
+  resolvePost({ data: { status: "released", attendance_id: attendanceId } });
+  expect((await screen.findByRole("alert")).textContent).toMatch(/handoff outcome is unconfirmed/i);
+  await waitFor(() => expect(screen.getByRole("button", { name: "Cancel review" }).disabled).toBe(false));
+  expect(screen.getByRole("button", { name: "Confirm verified handoff" }).disabled).toBe(true);
+  expect(released).not.toHaveBeenCalled();
+  expect(crownApiClient.post).toHaveBeenCalledTimes(1);
+});
+
 it("does not retry ambiguous release responses", async () => {
   crownApiClient.post.mockResolvedValue({ data: { status: "released", attendance_id: "other" } });
   const released = show();

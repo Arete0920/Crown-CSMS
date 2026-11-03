@@ -11,6 +11,8 @@ const METHODS = [
 ];
 const sameContext = (context) => Boolean(context?.school && context.token) &&
   context.school === getSelectedSchoolId() && context.token === getAccessToken();
+const SESSION_UNCONFIRMED =
+  "Staff session or school context changed while release was pending. Handoff outcome is unconfirmed. Close this review, refresh custody, and reverify before any further action. Do not retry automatically.";
 
 export default function DiademReleaseReview({ siteId, attendance, onCancel, onReleased }) {
   const [options, setOptions] = useState(null);
@@ -71,17 +73,21 @@ export default function DiademReleaseReview({ siteId, attendance, onCancel, onRe
         attendance_id: attendance.attendance_id, guardian_authority_id: selected,
         identity_method: method, identity_verified: true, request_key: crypto.randomUUID(),
       });
-      if (!sameContext(scope)) return;
+      if (!sameContext(scope)) {
+        setLocked(true);
+        setError(SESSION_UNCONFIRMED);
+        return;
+      }
       if (data?.status !== "released" || data.attendance_id !== attendance.attendance_id)
         throw new Error("Server custody confirmation did not match the selected attendance.");
       onReleased();
     } catch (err) {
-      if (sameContext(scope)) {
-        setLocked(true);
-        setError(`Release not confirmed: ${err.message || "request failed"}. Refresh and reverify current custody; do not retry automatically.`);
-      }
+      setLocked(true);
+      setError(sameContext(scope)
+        ? `Release not confirmed: ${err.message || "request failed"}. Refresh and reverify current custody; do not retry automatically.`
+        : SESSION_UNCONFIRMED);
     } finally {
-      if (sameContext(scope)) setBusy(false);
+      setBusy(false);
     }
   }
 
