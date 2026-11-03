@@ -1,6 +1,6 @@
 """Local fictional partner seed must be gated, isolated, repeatable and off-repo."""
 from pathlib import Path
-from uuid import uuid4
+from uuid import NAMESPACE_URL, uuid4, uuid5
 import tempfile
 from unittest.mock import patch
 from django.contrib.auth import get_user_model
@@ -9,7 +9,7 @@ from django.core.management import call_command
 from django.core.management.base import CommandError
 from django.test import TestCase, override_settings
 from rest_framework.test import APIClient
-from jireh_sgo.models import ( SGOApplication, SGOAward, SGOFamilyGrant, SGOFamilyIntake, SGOMembership, SGOOrganization, SGOProcessorAssignment, SGOProgram, )
+from jireh_sgo.models import ( SGOApplication, SGOAuditEvent, SGOAward, SGOFamilyGrant, SGOFamilyIntake, SGOMembership, SGOOrganization, SGOProcessorAssignment, SGOProgram, )
 from crown_api.management.commands.seed_fictional_sgo_intake import HERITAGE_SCHOOL
 @override_settings( CROWN_ENV="local", DJANGO_ENV="local", DEBUG=True, CROWN_DEMO_MODE=False, CROWN_SGO_FICTIONAL_INTAKE_ENABLED=True, )
 class FictionalSGOLocalSeedTests(TestCase):
@@ -33,6 +33,21 @@ class FictionalSGOLocalSeedTests(TestCase):
             self.assertEqual(
                 SGOApplication.objects.filter(school_key=HERITAGE_SCHOOL).count(), 2
             )
+            # Fixed UUIDs identify admin-created inventory only. No family
+            # consent or submission exists until an authenticated family POST.
+            inventory_students = {
+                uuid5(NAMESPACE_URL, f"crown-fictional-sgo-{code}-inventory")
+                for code in ("de", "pa")
+            }
+            self.assertEqual(
+                set(SGOApplication.objects.values_list("student_key", flat=True)),
+                inventory_students,
+            )
+            self.assertFalse(SGOFamilyIntake.objects.exists())
+            self.assertEqual(
+                SGOAuditEvent.objects.filter(action=SGOAuditEvent.APPLICATION_CREATED).count(), 2
+            )
+            self.assertFalse(SGOAuditEvent.objects.filter(action=SGOAuditEvent.INTAKE_SUBMITTED).exists())
             self.assertFalse(SGOAward.objects.exists())
             self.assertFalse(SGOApplication.objects.filter(student_key__in=SGOFamilyGrant.objects.values("student_key")).exists())
             first = target.read_text(encoding="utf-8")
@@ -55,6 +70,10 @@ class FictionalSGOLocalSeedTests(TestCase):
                 self.assertEqual(model.objects.count(), 2)
             self.assertFalse(SGOAward.objects.exists())
             self.assertEqual(SGOApplication.objects.count(), 2)
+            self.assertFalse(SGOFamilyIntake.objects.exists())
+            self.assertEqual(
+                SGOAuditEvent.objects.filter(action=SGOAuditEvent.APPLICATION_CREATED).count(), 2
+            )
             self.assertFalse(SGOApplication.objects.filter(
                 student_key__in=SGOFamilyGrant.objects.values("student_key")
             ).exists())
@@ -131,6 +150,21 @@ class FictionalSGOLocalSeedTests(TestCase):
             # authorized family submission, without creating a grantor award.
             self.assertEqual(SGOApplication.objects.count(), 3)
             self.assertEqual(SGOFamilyIntake.objects.count(), 1)
+            intake = SGOFamilyIntake.objects.select_related(
+                "application", "grant__user"
+            ).get(application_id=application_id)
+            self.assertEqual(intake.status, SGOFamilyIntake.SUBMITTED)
+            self.assertEqual(intake.grant.user.username, families[0][0])
+            self.assertEqual(intake.application.program_id, intake.grant.program_id)
+            self.assertEqual(intake.application.student_key, intake.grant.student_key)
+            self.assertEqual(intake.application.school_key, intake.grant.school_key)
+            self.assertEqual(
+                SGOAuditEvent.objects.filter(
+                    action=SGOAuditEvent.INTAKE_SUBMITTED,
+                    subject_key=application_id,
+                    actor__username=families[0][0],
+                ).count(), 1
+            )
             self.assertFalse(SGOAward.objects.exists())
 
             pennsylvania = signed_client(families[1])
