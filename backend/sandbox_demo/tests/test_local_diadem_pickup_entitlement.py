@@ -15,7 +15,7 @@ pytestmark = pytest.mark.django_db
 @pytest.mark.parametrize("existing", [False, None])
 def test_denied_or_unset_existing_override_is_not_activated(existing):
     school = School.objects.create(name="Fictional denied Diadem school")
-    feature = Feature.objects.create(key="diadem.daycare", name="Fictional childcare")
+    feature = Feature.objects.get_or_create(key="diadem.daycare", defaults={"name": "Fictional childcare"})[0]
     original = EntitlementOverride.objects.create(
         school_id=school.pk, feature=feature, enabled=existing,
     )
@@ -28,7 +28,7 @@ def test_denied_or_unset_existing_override_is_not_activated(existing):
 
 def test_explicit_existing_grant_is_preserved():
     school = School.objects.create(name="Fictional authorized Diadem school")
-    feature = Feature.objects.create(key="diadem.daycare", name="Fictional childcare")
+    feature = Feature.objects.get_or_create(key="diadem.daycare", defaults={"name": "Fictional childcare"})[0]
     original = EntitlementOverride.objects.create(
         school_id=school.pk, feature=feature, enabled=True, limit_int=3,
     )
@@ -41,7 +41,7 @@ def test_explicit_existing_grant_is_preserved():
 
 def test_only_absent_fictional_grant_may_be_created():
     school = School.objects.create(name="Fictional new Diadem school")
-    feature = Feature.objects.create(key="diadem.daycare", name="Fictional childcare")
+    feature = Feature.objects.get_or_create(key="diadem.daycare", defaults={"name": "Fictional childcare"})[0]
     created = ensure_local_diadem_entitlement(school, feature)
     assert created.enabled is True
     assert EntitlementOverride.objects.filter(school_id=school.pk, feature=feature).count() == 1
