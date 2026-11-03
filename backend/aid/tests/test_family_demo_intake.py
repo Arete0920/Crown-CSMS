@@ -1,7 +1,8 @@
 """Regression contract for the local-only fictional school Jireh parent workflow."""
 from datetime import date
-from uuid import uuid4
+from unittest import skipUnless
 
+from django.conf import settings
 from django.test import TestCase, override_settings
 from rest_framework.test import APIClient
 
@@ -17,6 +18,10 @@ from core.models import (
 URL = "/api/v1/aid/family/demo-intake/"
 
 
+@skipUnless(
+    settings.DATABASES["default"]["ENGINE"].endswith(".sqlite3"),
+    "Local-only fictional aid intake requires SQLite; run dedicated sandbox acceptance.",
+)
 @override_settings(
     DEBUG=True,
     CROWN_ENV="local",
