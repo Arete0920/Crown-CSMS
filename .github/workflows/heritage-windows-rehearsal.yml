@@ -89,7 +89,29 @@ jobs:
           python scripts/demo/start_heritage_local.py --prepare-only
       - name: Run strict fictional five-module source and data preflight
         shell: pwsh
-        run: python scripts/demo/start_heritage_local.py --prepare-only --five-module-preflight
+        run: |
+          # Preserve the true result on failure; never mark a browser run certified.
+          $evidence = Join-Path $env:GITHUB_WORKSPACE ".local-backups/heritage-demo"
+          New-Item -ItemType Directory -Force -Path $evidence | Out-Null
+          $log = Join-Path $evidence "five-module-preflight.log"
+          # GitHub's pwsh error preference must not skip our failure evidence.
+          $PSNativeCommandUseErrorActionPreference = $false
+          & python scripts/demo/start_heritage_local.py --prepare-only --five-module-preflight *> $log
+          $exitCode = $LASTEXITCODE
+          Get-Content -Path $log | ForEach-Object { Write-Host $_ }
+          $result = [ordered]@{
+            schema_version = 1
+            evidence_scope = "five_module_source_and_data_preflight_only"
+            checkout_sha = $env:GITHUB_SHA
+            preflight_exit_code = $exitCode
+            preflight_passed = ($exitCode -eq 0)
+            browser_acceptance_performed = $false
+            release_certified = $false
+          }
+          $result | ConvertTo-Json -Depth 4 | Set-Content -Encoding utf8 (Join-Path $evidence "five-module-preflight.json")
+          if ($exitCode -ne 0) {
+            throw "Strict five-module preflight failed ($exitCode); see uploaded non-certification evidence."
+          }
       - name: Build and audit deliverable Heritage starter
         shell: pwsh
         run: |
@@ -141,6 +163,7 @@ jobs:
           name: heritage-windows-rehearsal
           path: |
             .local-backups/heritage-demo/*.log
+            .local-backups/heritage-demo/five-module-preflight.json
             .local-backups/heritage-demo/rehearsal-result.json
             .local-backups/heritage-demo/buyer-browser-authority.json
           if-no-files-found: error
