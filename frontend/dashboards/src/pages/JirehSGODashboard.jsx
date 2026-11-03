@@ -80,9 +80,6 @@ export default function JirehSGODashboard() {
     <h1>Jireh SGO — Grantor Overview</h1>
     <p>Standalone, noncash pilot workspace. No settlement or payments enabled.</p>
     <p role="note">Commitments are not funded, cleared, allocated, or paid.</p>
-    {import.meta.env.VITE_LOCAL_DEMO === "1" && <p>
-      <a href="/jireh-sgo/intake">Open functional fictional family intake and processor verification</a>
-    </p>}
     {!token && <p role="alert">Authorized SGO sign-in is required.</p>}
     {token && loading && <p role="status">Verifying grantor membership and records…</p>}
     {token && error && <p role="alert">{error}</p>}
