@@ -135,6 +135,32 @@ class FictionalSGOLocalSeedTests(TestCase):
             self.assertEqual(queue.status_code, 200)
             self.assertEqual([row["id"] for row in queue.data["applications"]],
                              [application_id])
+            correction = processor.post(
+                f"/api/v1/jireh-sgo/processor/applications/{application_id}/request-correction/",
+                {"expected_revision": 1, "reason": "GRADE_UNVERIFIED",
+                 "request_key": str(uuid4())}, format="json",
+            )
+            self.assertEqual(correction.status_code, 200, correction.data)
+            self.assertEqual(correction.data["application"]["status"], "CORRECTION_REQUESTED")
+            pending = delaware.get(
+                f"/api/v1/jireh-sgo/family/applications/{application_id}/"
+            )
+            self.assertEqual(pending.status_code, 200, pending.data)
+            self.assertEqual(pending.data["application"]["revision"], 2)
+            amended = delaware.post(
+                f"/api/v1/jireh-sgo/family/applications/{application_id}/correct/",
+                {"expected_revision": 2, "grade_level": "2",
+                 "correction_key": str(uuid4())}, format="json",
+            )
+            self.assertEqual(amended.status_code, 200, amended.data)
+            self.assertEqual(amended.data["application"]["status"], "RESUBMITTED")
+            persisted = delaware.get(
+                f"/api/v1/jireh-sgo/family/applications/{application_id}/"
+            )
+            self.assertEqual(persisted.status_code, 200, persisted.data)
+            self.assertEqual((persisted.data["application"]["revision"],
+                              persisted.data["application"]["grade_level"]), (3, "2"))
+            self.assertFalse(SGOAward.objects.exists())
             partner = signed_client(partners[0])
             self.assertEqual(partner.get(
                 "/api/v1/jireh-sgo/family/programs/"
