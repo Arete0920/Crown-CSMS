@@ -1,5 +1,8 @@
 """Contract for a minimal immutable Heritage Windows sales starter."""
 import ast
+from unittest.mock import patch
+
+import pytest
 import importlib.util
 import json
 from pathlib import Path
@@ -57,3 +60,53 @@ def test_starter_rejects_cross_repo_and_archive_traversal():
     assert "member.external_attr" in source
     assert "Arete0920/Crown-CSMS" in source
     assert 'HERITAGE_SOURCE_COMMIT.txt' in source
+
+
+def _audit_fixture(monkeypatch, tmp_path):
+    """Build the real starter in a disposable output and redirect audit paths."""
+    import importlib
+
+    monkeypatch.syspath_prepend(str(ROOT / "scripts" / "demo"))
+    auditor = importlib.import_module("verify_heritage_sales_package")
+    packager = loader()
+    for name in packager.STARTER_FILES:
+        (tmp_path / name).write_bytes((ROOT / name).read_bytes())
+    destination = tmp_path / ".local-backups" / "heritage-sales"
+    archive = packager.build(destination)
+    monkeypatch.setattr(auditor, "ROOT", tmp_path)
+    return auditor, archive, destination
+
+
+def test_sale_audit_accepts_unchanged_starter_without_executing_zip_entry(monkeypatch, tmp_path):
+    auditor, archive, destination = _audit_fixture(monkeypatch, tmp_path)
+    result = auditor.verify(download=False)
+    assert result["source_sha"] == loader().pinned_revision()
+    assert result["manifest_and_bundled_installer"] == "PASS"
+    assert result["downloaded_source_identity_and_reinstall"] == "NOT_RUN"
+    assert (destination / "heritage-starter-audit.json").is_file()
+    assert archive.is_file()
+
+
+@pytest.mark.parametrize("changed", [
+    "Install-and-Start-Heritage.py",
+    "Start-Heritage.cmd",
+    "HERITAGE-LOCAL-DEMO-README.txt",
+])
+def test_sale_audit_rejects_swapped_executable_or_instructions_without_execution(
+    monkeypatch, tmp_path, changed,
+):
+    auditor, archive, destination = _audit_fixture(monkeypatch, tmp_path)
+    with zipfile.ZipFile(archive) as original:
+        entries = [(x.filename, original.read(x.filename)) for x in original.infolist()]
+    with zipfile.ZipFile(archive, "w") as altered:
+        for name, content in entries:
+            if name == changed:
+                content += b"\n# untrusted substituted ZIP entry\n"
+            altered.writestr(name, content)
+    # The verification must reject a modified ZIP before executing an
+    # installer extracted from that ZIP (or any installer at all).
+    with patch.object(auditor.runpy, "run_path", side_effect=AssertionError("untrusted ZIP executed")) as run_path:
+        with pytest.raises(RuntimeError, match="differs from the checked-out source"):
+            auditor.verify(download=False)
+        run_path.assert_not_called()
+    assert not (destination / "heritage-starter-audit.json").exists()

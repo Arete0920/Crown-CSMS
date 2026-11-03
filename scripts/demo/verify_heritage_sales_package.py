@@ -71,15 +71,20 @@ def verify(*, download: bool = False):
                 or manifest.get("external_payments") is not False
                 or manifest.get("production_certified") is not False):
             raise RuntimeError("ZIP manifest does not match the approved sandbox contract.")
-        with tempfile.TemporaryDirectory(prefix="heritage-package-audit-") as temp:
-            directory = Path(temp)
-            archive.extractall(directory)  # Exact four-entry allowlist above.
-            starter = runpy.run_path(str(directory / "Install-and-Start-Heritage.py"))
-            if starter["SOURCE_SHA"] != sha or starter["SOURCE_URL"] != source_url:
-                raise RuntimeError("Bundled installer and manifest disagree.")
-            if starter["DESTINATION"].name != f"Heritage-{sha[:12]}":
-                raise RuntimeError("Bundled installer destination does not match SHA.")
-            if download:
+        # ZIP CRC and an internally consistent manifest do not establish
+        # the integrity of runnable installer code. Compare EVERY starter file
+        # with the checked-out source before calling runpy on any code.
+        for name in STARTER_FILES:
+            if archive.read(name) != (ROOT / name).read_bytes():
+                raise RuntimeError(f"Bundled {name} differs from the checked-out source.")
+        starter = runpy.run_path(str(ROOT / "Install-and-Start-Heritage.py"))
+        if starter["SOURCE_SHA"] != sha or starter["SOURCE_URL"] != source_url:
+            raise RuntimeError("Bundled installer and manifest disagree.")
+        if starter["DESTINATION"].name != f"Heritage-{sha[:12]}":
+            raise RuntimeError("Bundled installer destination does not match SHA.")
+        if download:
+            with tempfile.TemporaryDirectory(prefix="heritage-package-audit-") as temp:
+                directory = Path(temp)
                 installed = starter["install_source"](
                     destination=directory / f"Heritage-{sha[:12]}"
                 )
@@ -88,13 +93,11 @@ def verify(*, download: bool = False):
                 if not (installed / "scripts/demo/start_heritage_local.py").is_file():
                     raise RuntimeError("Downloaded source does not contain the launcher.")
                 verify_source_git_blobs(installed, sha)
-                # Repeat installs must reuse the exact same immutable source.
                 again = starter["install_source"](
                     destination=directory / f"Heritage-{sha[:12]}"
                 )
                 if again != installed:
                     raise RuntimeError("Repeat installer did not reuse the same source.")
-                # An existing folder with the wrong identity must fail closed.
                 marker = installed / "HERITAGE_SOURCE_COMMIT.txt"
                 marker.write_text("0" * 40 + "\\n", encoding="utf-8")
                 try:

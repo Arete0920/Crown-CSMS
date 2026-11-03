@@ -8,10 +8,13 @@
 
 CROWN currently runs locally. No Azure subscription, resource group, cloud database, or deployment credential is needed for the local Heritage demonstration. **Do not mistake successful GitHub CI or an older demo snapshot for proof of local Windows operation.**
 
-Two toolchain contracts coexist:
+The current backend and dashboard setup requires the same supported toolchain for development and the local Heritage demo:
 
-- **General development:** Python 3.12 and Node.js 20 LTS, as specified in `engineering/DEV_SETUP.md`.
-- **Heritage local demonstration launcher:** Python 3.11+ and Node.js **22.12+**, enforced by `scripts/demo/start_heritage_local.py`. Python 3.12 is the tested Python target. Use Node.js 22.12+ for this path; don't assume Node 20 can run the launcher.
+- **Python:** 3.12. The packaged Heritage starter rejects Python versions below 3.12.
+- **Node.js:** 22.22.2+ on the Node 22 line, 24.15.0+ on Node 24, or Node 26+. The repository's default is **Node 22.23.3** (`.nvmrc`); the frontend `package.json` engines and Heritage launcher enforce this range. Node 20 and Node 22.12 are not supported for this frontend.
+- **npm:** Use the version bundled with a compatible Node.js installation.
+
+These version requirements reflect the executable launcher and `frontend/dashboards/package.json`. The physical Windows laptop still requires its own successful preparation and browser rehearsal.
 
 Install Git, Python and Node.js using their official installers. Work from a normal writable, **trusted** local directory. PowerShell and the standard Windows command prompt are sufficient; no editor or Azure connection is required.
 
@@ -36,7 +39,7 @@ If you are starting from an old copied ZIP instead of an active checkout, obtain
 
 ### B. Validate general source development without launching Azure
 
-For the canonical Python 3.12 / Node 20 development toolchain:
+For Python 3.12 and a supported Node.js 22/24/26 runtime:
 
 ```powershell
 py -3.12 -m venv .venv
