@@ -187,6 +187,28 @@ def main() -> int:
             )
             evidence["checks"]["teacher_attendance_and_classwork_persist_after_reload"] = True
             evidence["checks"]["fictional_jireh_family_application_browser_submission_and_reload"] = True
+            # Actual authenticated Diadem pickup: fictional local SQLite only.
+            # No browser API stubs; one signed staff identity exercises real custody.
+            subprocess.run(
+                [str(python), str(ROOT / "backend/manage.py"), "seed_local_diadem_pickup"],
+                cwd=ROOT, env=env, timeout=120, check=True,
+            )
+            browser_env["CROWN_DIADEM_PICKUP_MANIFEST"] = str(state / "diadem-pickup-session.json")
+            browser_env["CROWN_REQUIRE_DIADEM_PICKUP_PROOF"] = "1"
+            subprocess.run(
+                launcher.npm_command() + [
+                    "run", "test:e2e", "--",
+                    "tests/e2e/diadem-local-pickup.spec.ts",
+                    "--workers=1", "--reporter=line",
+                ],
+                cwd=launcher.FRONTEND, env=browser_env, timeout=600, check=True,
+            )
+            subprocess.run(
+                [str(python), str(ROOT / "backend/manage.py"), "seed_local_diadem_pickup", "--verify"],
+                cwd=ROOT, env=env, timeout=120, check=True,
+            )
+            evidence["checks"]["diadem_signed_staff_browser_release_and_denials"] = True
+            evidence["checks"]["diadem_release_single_audit_and_denial_persistence"] = True
         evidence["result"] = "PASS"
         print("Heritage Windows runner rehearsal passed: exact local build, frontend, backend, six buyer sessions, Board least privilege, and finance denials." + (" Full buyer browser and teacher attendance/classwork reload certification passed." if args.browser else " Browser journey not executed."))
         return 0
