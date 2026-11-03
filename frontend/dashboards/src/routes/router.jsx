@@ -63,6 +63,8 @@ import AcademicSupportDashboard from "../pages/AcademicSupportDashboard.jsx";
 import FineArtsDashboard from "../pages/FineArtsDashboard.jsx";
 import LibraryDashboard from "../pages/LibraryDashboard.jsx";
 import ExtendedCareDashboard from "../pages/ExtendedCareDashboard.jsx";
+import DiademDirectorRosterPage from "../pages/DiademDirectorRosterPage.jsx";
+import DiademSetupPage from "../pages/DiademSetupPage.jsx";
 import SummerCampRosterPage from "../pages/SummerCampRosterPage.jsx";
 import RegistrarDashboard from "../pages/RegistrarDashboard.jsx";
 import CommunicationsDirectorDashboard from "../pages/CommunicationsDirectorDashboard.jsx";
@@ -882,6 +884,24 @@ export const router = createBrowserRouter([
   {
     path: PATHS.LIBRARY,
     element: <AuthenticatedSchoolRouteGuard><LibraryDashboard /></AuthenticatedSchoolRouteGuard>,
+  },
+  {
+    path: PATHS.DIADEM_SETUP,
+    element: (
+      <AuthenticatedSchoolRouteGuard>
+        <RoleRouteGuard allowedRoles={["daycare_director"]}><DiademSetupPage /></RoleRouteGuard>
+      </AuthenticatedSchoolRouteGuard>
+    ),
+  },
+  {
+    path: PATHS.DIADEM_DIRECTOR,
+    element: (
+      <AuthenticatedSchoolRouteGuard>
+        <RoleRouteGuard allowedRoles={["daycare_director", "daycare_staff"]}>
+          <DiademDirectorRosterPage />
+        </RoleRouteGuard>
+      </AuthenticatedSchoolRouteGuard>
+    ),
   },
   {
     path: PATHS.EXTENDED_CARE,

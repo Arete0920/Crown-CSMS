@@ -135,14 +135,14 @@ jobs:
           set -euo pipefail
           umask 077
           python scripts/ops/read_dev_blacklist_state.py --expected-sha "$SHA" > dev-blacklist-state.json
-      - name: Inspect pending DEV migrations without applying
+      - name: Inspect all pending DEV migrations without applying
         if: inputs.inspect_migration_plan
         env:
           SHA: ${{ inputs.expected_sha }}
-        # Keep stdout attached to Actions: the runner emits credential masking
-        # commands before its redacted JSON. Never redirect raw stdout to artifacts.
-        # A blocked plan fails the run and reports pending identifiers in the log.
-        run: python scripts/ops/run_dev_inquiry_migration.py --expected-sha "$SHA" --inspect-reviewed-legacy-refresh
+        # No schema change: this displays the full pending Django migration graph,
+        # not an allowlist. Existing exact-source, TLS and identity checks apply.
+        # Masking commands must stay on Actions stdout, never in stored artifacts.
+        run: python scripts/ops/run_dev_inquiry_migration.py --expected-sha "$SHA" --inspect-all-migrations
       - name: Preserve redacted evidence
         if: always() && hashFiles('dev-blacklist-state.json') != ''
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
