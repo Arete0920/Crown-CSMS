@@ -200,6 +200,23 @@ describe("Fictional parent Financial Aid saved-record truth", () => {
     expect(posts).toBe(1);
   });
 
+  it("blocks a repeated POST when the initial write response is lost", async () => {
+    let posts = 0;
+    apiFetch.mockImplementation((_path, options = {}) => {
+      if (options.method === "POST") {
+        posts += 1;
+        return Promise.reject(new Error("Network disconnected after request"));
+      }
+      return Promise.resolve(jsonResponse(snapshot()));
+    });
+    await submitFictionalApplication();
+    await waitFor(() => expect(screen.getByRole("alert").textContent).toContain(
+      "may have been accepted"
+    ));
+    expect(screen.getByRole("button", { name: "Submit fictional Financial Aid application" }).disabled).toBe(true);
+    expect(posts).toBe(1);
+  });
+
   it("never presents a saved confirmation after identity rotates during GET readback", async () => {
     let resolveReadback;
     const readback = new Promise((resolve) => { resolveReadback = resolve; });
