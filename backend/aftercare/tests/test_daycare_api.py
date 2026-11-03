@@ -586,6 +586,30 @@ def test_release_candidates_preserve_inactive_school_custody_exit():
     assert not DaycareRelease.objects.exists()
 
 
+def test_release_candidates_inactive_school_route_cannot_bypass_method_or_scope():
+    d = setup()
+    admitted = _checkin(d)
+    assert admitted.status_code == 201
+    row = admitted.data["attendance_id"]
+    d["school"].is_active = False
+    d["school"].save(update_fields=["is_active"])
+    valid_url = (
+        f"/api/v1/aftercare/daycare/sites/{d['site'].id}/"
+        f"attendance/{row}/release-authorities/"
+    )
+    bearer = _bearer_client(d["actor"])
+    # Only the exact candidate GET can reach its guarded view. A matching
+    # prefix, a different verb, or a foreign school must fail closed.
+    assert bearer.get(valid_url).status_code == 200
+    assert bearer.post(valid_url, {}, format="json").status_code in (404, 405)
+    assert bearer.get(valid_url + "extra/").status_code == 404
+    assert bearer.get(
+        valid_url,
+        HTTP_X_SCHOOL_ID=str(School.objects.create(name="Foreign disabled scope").id),
+    ).status_code == 404
+    assert not DaycareRelease.objects.exists()
+
+
 def test_release_candidates_deny_anonymous_and_foreign_school_context():
     d = setup()
     admitted = _checkin(d)
