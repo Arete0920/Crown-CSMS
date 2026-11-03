@@ -1,0 +1,160 @@
+// @vitest-environment jsdom
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import SummerCampSetupWizard from "./SummerCampSetupWizard.jsx";
+import { fetchSummerCampWizard, submitSummerCampWizard } from "../../api/summerCampApi.js";
+
+vi.mock("../../api/summerCampApi.js", () => ({
+  fetchSummerCampWizard: vi.fn(), submitSummerCampWizard: vi.fn(),
+}));
+vi.mock("../../components/crown/CrownLayout.jsx", () => ({
+  default: ({ children }) => <main>{children}</main>,
+}));
+vi.mock("../../components/layout/DashboardSection.jsx", () => ({
+  default: ({ children }) => <section>{children}</section>,
+}));
+const config = { camp_name: "Synthetic Camp", default_capacity: 20,
+  default_staff_ratio: 8, public_registration_enabled: false, billing_policy: "PER_SESSION" };
+const response = () => ({ config: { ...config },
+  wizard: { completed_steps: ["Program"], is_completed: false } });
+beforeEach(() => {
+  vi.resetAllMocks();
+  fetchSummerCampWizard.mockResolvedValue(response());
+  submitSummerCampWizard.mockResolvedValue({ status: "ok" });
+});
+afterEach(cleanup);
+
+it("withholds editing when the initial read fails", async () => {
+  fetchSummerCampWizard.mockRejectedValue(new Error("Unavailable"));
+  render(<SummerCampSetupWizard />);
+  await screen.findByRole("alert");
+  expect(screen.queryByRole("button", { name: "Save Setup" })).toBeNull();
+  expect(submitSummerCampWizard).not.toHaveBeenCalled();
+});
+it("verifies a save using a separate GET and clears success after an edit", async () => {
+  render(<SummerCampSetupWizard />);
+  fireEvent.click(await screen.findByRole("button", { name: "Save Setup" }));
+  await screen.findByText(/Saved and verified against server records/);
+  expect(fetchSummerCampWizard).toHaveBeenCalledTimes(2);
+  expect(submitSummerCampWizard).toHaveBeenCalledWith({
+    config, completed_steps: ["Program"], is_completed: false,
+  });
+  fireEvent.change(screen.getByLabelText("Camp Name"), { target: { value: "Changed" } });
+  expect(screen.queryByText(/Saved and verified against server records/)).toBeNull();
+});
+it.each(["mismatch", "unavailable"])("does not claim success for %s readback", async (kind) => {
+  fetchSummerCampWizard.mockResolvedValueOnce(response());
+  if (kind === "mismatch") fetchSummerCampWizard.mockResolvedValue({
+    ...response(), config: { ...config, default_capacity: 99 },
+  });
+  else fetchSummerCampWizard.mockRejectedValue(new Error("Readback unavailable"));
+  render(<SummerCampSetupWizard />);
+  fireEvent.click(await screen.findByRole("button", { name: "Save Setup" }));
+  await screen.findByRole("alert");
+  expect(screen.queryByText(/Saved and verified against server records/)).toBeNull();
+  expect(screen.queryByRole("button", { name: "Save Setup" })).toBeNull();
+  expect(submitSummerCampWizard).toHaveBeenCalledTimes(1);
+});
+it("freezes editing while save readback is pending", async () => {
+  fetchSummerCampWizard.mockResolvedValueOnce(response()).mockImplementation(() => new Promise(() => {}));
+  render(<SummerCampSetupWizard />);
+  fireEvent.click(await screen.findByRole("button", { name: "Save Setup" }));
+  await waitFor(() => expect(fetchSummerCampWizard).toHaveBeenCalledTimes(2));
+  expect(screen.getByRole("group", { name: "Camp configuration" }).disabled).toBe(true);
+});
+
+it("resumes at persisted completion and does not accidentally reset wizard progress", async () => {
+  const allSteps = ["Program", "Registration", "Operations", "Review"];
+  fetchSummerCampWizard.mockResolvedValue({
+    ...response(), wizard: { completed_steps: allSteps, is_completed: true },
+  });
+  render(<SummerCampSetupWizard />);
+  expect(await screen.findByText("Camp name")).toBeTruthy();
+  fireEvent.click(screen.getByRole("button", { name: "Save Setup" }));
+  await screen.findByText(/Saved and verified against server records/);
+  expect(submitSummerCampWizard).toHaveBeenCalledWith({
+    config, completed_steps: allSteps, is_completed: true,
+  });
+});
+
+it("clears the verified-save indicator when moving to another wizard step", async () => {
+  render(<SummerCampSetupWizard />);
+  fireEvent.click(await screen.findByRole("button", { name: "Save Setup" }));
+  await screen.findByText(/Saved and verified against server records/);
+  fireEvent.click(screen.getByRole("button", { name: "Next" }));
+  expect(screen.queryByText(/Saved and verified against server records/)).toBeNull();
+});
+
+it("never claims persistence after a failed POST", async () => {
+  submitSummerCampWizard.mockRejectedValue(new Error("HTTP 500"));
+  render(<SummerCampSetupWizard />);
+  fireEvent.click(await screen.findByRole("button", { name: "Save Setup" }));
+  await screen.findByRole("alert");
+  expect(screen.queryByText(/Saved and verified against server records/)).toBeNull();
+  expect(screen.queryByRole("button", { name: "Save Setup" })).toBeNull();
+  expect(fetchSummerCampWizard).toHaveBeenCalledTimes(1);
+});
+
+it("fails closed when initial wizard progress is malformed", async () => {
+  fetchSummerCampWizard.mockResolvedValue({
+    ...response(), wizard: { completed_steps: ["Operations"], is_completed: false },
+  });
+  render(<SummerCampSetupWizard />);
+  await screen.findByRole("alert");
+  expect(screen.queryByRole("button", { name: "Save Setup" })).toBeNull();
+  expect(submitSummerCampWizard).not.toHaveBeenCalled();
+});
+
+it("does not verify a save if the server returns inconsistent wizard progress", async () => {
+  fetchSummerCampWizard.mockResolvedValueOnce(response()).mockResolvedValue({
+    ...response(), wizard: { completed_steps: ["Program", "Registration"], is_completed: false },
+  });
+  render(<SummerCampSetupWizard />);
+  fireEvent.click(await screen.findByRole("button", { name: "Save Setup" }));
+  await screen.findByRole("alert");
+  expect(screen.queryByText(/Saved and verified against server records/)).toBeNull();
+  expect(screen.queryByRole("button", { name: "Save Setup" })).toBeNull();
+});
+
+it("allows correction of invalid local input without sending a write or forcing a reload", async () => {
+  render(<SummerCampSetupWizard />);
+  const name = await screen.findByLabelText("Camp Name");
+  fireEvent.change(name, { target: { value: "   " } });
+  fireEvent.click(screen.getByRole("button", { name: "Save Setup" }));
+  expect(screen.getByRole("alert").textContent).toMatch(/Nothing was submitted/);
+  expect(submitSummerCampWizard).not.toHaveBeenCalled();
+  expect(screen.getByRole("button", { name: "Save Setup" })).toBeTruthy();
+  fireEvent.change(name, { target: { value: "Corrected synthetic name" } });
+  fireEvent.click(screen.getByRole("button", { name: "Save Setup" }));
+  // A deliberately unchanged server readback must still fail closed.
+  await screen.findByRole("alert");
+  expect(submitSummerCampWizard).toHaveBeenCalledTimes(1);
+  expect(screen.queryByText(/Saved and verified against server records/)).toBeNull();
+});
+
+it("saves all editable fields and completed review only after matching persisted readback", async () => {
+  const updated = {
+    camp_name: "Fictional Adventure Camp", default_capacity: 24,
+    default_staff_ratio: 6, public_registration_enabled: true, billing_policy: "PER_WEEK",
+  };
+  const allSteps = ["Program", "Registration", "Operations", "Review"];
+  fetchSummerCampWizard.mockResolvedValueOnce(response()).mockResolvedValueOnce({
+    config: updated, wizard: { completed_steps: allSteps, is_completed: true },
+  });
+  render(<SummerCampSetupWizard />);
+  fireEvent.change(await screen.findByLabelText("Camp Name"), { target: { value: updated.camp_name } });
+  fireEvent.click(screen.getByRole("button", { name: "Next" }));
+  fireEvent.click(screen.getByLabelText("Public Registration Enabled"));
+  fireEvent.change(screen.getByLabelText("Billing Policy"), { target: { value: updated.billing_policy } });
+  fireEvent.click(screen.getByRole("button", { name: "Next" }));
+  fireEvent.change(screen.getByLabelText("Default Session Capacity"), { target: { value: "24" } });
+  fireEvent.change(screen.getByLabelText("Maximum Campers per Staff Member"), { target: { value: "6" } });
+  fireEvent.click(screen.getByRole("button", { name: "Next" }));
+  expect(screen.getByText(updated.camp_name)).toBeTruthy();
+  fireEvent.click(screen.getByRole("button", { name: "Save Setup" }));
+  await screen.findByText(/Saved and verified against server records/);
+  expect(submitSummerCampWizard).toHaveBeenCalledWith({
+    config: updated, completed_steps: allSteps, is_completed: true,
+  });
+  expect(fetchSummerCampWizard).toHaveBeenCalledTimes(2);
+});

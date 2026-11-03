@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import timedelta
+from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from django.db import transaction
@@ -608,8 +608,80 @@ def compute_camper_readiness(school_id, enrollment_id):
     }
 
 
+def verified_camp_ledger_total_cents(school_id):
+    """Deduplicate, cross-check and scope recorded Camp charge obligations.
+
+    None means there is no independently verified financial total. Neither
+    a Camp registration payment flag nor a ledger link alone proves cash.
+    """
+    from uuid import UUID
+    from ledger.models import Charge
+
+    links = list(
+        SummerCampBillingLedgerLink.objects.filter(school_id=school_id)
+        .exclude(status="CANCELLED")
+        .values(
+            "charge_id", "amount_cents", "enrollment__school_id",
+            "enrollment__session__school_id",
+            "enrollment__session__program__school_id",
+            "enrollment__student__school_id",
+            "enrollment__student__household__school_id",
+            "enrollment__student__household_id",
+        )
+    )
+    if not links:
+        return None
+    try:
+        charge_ids = {UUID(row["charge_id"]) for row in links}
+    except (ValueError, TypeError, AttributeError):
+        return None
+
+    charges = {
+        charge.id: charge for charge in Charge.objects.filter(
+            id__in=charge_ids, school_id=school_id,
+            account__school_id=school_id,
+            account__household__school_id=school_id, is_void=False,
+        ).select_related("account")
+    }
+    for row in links:
+        charge = charges.get(UUID(row["charge_id"]))
+        cents = row["amount_cents"]
+        if (
+            any(row[field] != school_id for field in (
+                "enrollment__school_id",
+                "enrollment__session__school_id",
+                "enrollment__session__program__school_id",
+                "enrollment__student__school_id",
+                "enrollment__student__household__school_id",
+            ))
+            or charge is None
+            or type(cents) is not int or cents < 0
+            or charge.amount < 0 or not charge.amount.is_finite()
+            or charge.amount * 100 != cents
+            or charge.account.household_id != row["enrollment__student__household_id"]
+        ):
+            return None
+    # Multiple links to a single ledger fact must never multiply obligations.
+    return sum(int(charge.amount * 100) for charge in charges.values())
+
+
 def board_summary(school_id):
-    today = timezone.now().date()
+    """Report the school's local civil month, never the server's UTC month."""
+    from core.models import School
+
+    observed = timezone.now()
+    today = camp_school_local_date(school_id, observed)
+    # The custody helper validates the school's active timezone. Preserve
+    # that same timezone when defining the local-month incident boundary.
+    zone_name = School.objects.filter(
+        pk=school_id, is_active=True,
+    ).values_list("timezone", flat=True).first()
+    if not zone_name:
+        raise ValueError("An active school with a timezone is required for Camp.")
+    try:
+        month_start = datetime(today.year, today.month, 1, tzinfo=ZoneInfo(zone_name))
+    except (TypeError, ValueError, ZoneInfoNotFoundError) as exc:
+        raise ValueError("A valid school timezone is required for Camp.") from exc
     session_count = SummerCampSession.objects.filter(school_id=school_id).count()
     registered = SummerCampEnrollment.objects.filter(school_id=school_id, status="REGISTERED").count()
     waitlisted = SummerCampEnrollment.objects.filter(school_id=school_id, status="WAITLISTED").count()
@@ -621,15 +693,10 @@ def board_summary(school_id):
     ).count()
     incidents_mtd = SummerCampIncident.objects.filter(
         school_id=school_id,
-        created_at__date__year=today.year,
-        created_at__date__month=today.month,
+        created_at__gte=month_start,
+        created_at__lte=observed,
     ).count()
-    gross_revenue_cents = (
-        SummerCampBillingLedgerLink.objects.filter(school_id=school_id)
-        .exclude(status="CANCELLED")
-        .aggregate(total=Sum("amount_cents"))["total"]
-        or 0
-    )
+    gross_revenue_cents = verified_camp_ledger_total_cents(school_id)
 
     return {
         "as_of": str(today),
