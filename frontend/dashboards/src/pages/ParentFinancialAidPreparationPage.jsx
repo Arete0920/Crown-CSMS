@@ -171,7 +171,9 @@ function LocalFictionalFinancialAidPage() {
     setConfirmation("");
     setSaving(true);
     let accepted = false;
+    let attempted = false;
     try {
+      attempted = true;
       const response = await apiFetch(ENDPOINT, {
         method: "POST",
         body: JSON.stringify({
@@ -212,7 +214,9 @@ function LocalFictionalFinancialAidPage() {
       setConfirmation("Fictional application #" + saved.id + " submitted and independently verified.");
     } catch (failure) {
       if (discardStale(origin, revision)) return;
-      if (accepted) {
+      // A transport error or server failure after dispatch can mean the
+      // server committed despite the missing response. Never auto-retry.
+      if (accepted || (attempted && (!Number.isInteger(failure?.status) || failure.status >= 500))) {
         setNeedsReconciliation(true);
         setError(UNKNOWN_WRITE_MESSAGE);
       } else {
