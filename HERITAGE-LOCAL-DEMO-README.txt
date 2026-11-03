@@ -44,7 +44,7 @@ browser tests and actual laptop rehearsal. Until both pass, label this ZIP
 a CANDIDATE, not a certified interactive five-module demonstration.
 
 For a reproducible strict check after starter extraction and first source
-download, open PowerShell in the extracted Heritage-<12 digit SHA> source
+download, open PowerShell in the extracted Heritage-<12-character SHA> source
 folder (not the parent folder containing Start-Heritage.cmd):
   py -3.12 scripts/demo/start_heritage_local.py --prepare-only --five-module-preflight
 The command must exit 0; save its output. If it fails, NO-GO. This does
