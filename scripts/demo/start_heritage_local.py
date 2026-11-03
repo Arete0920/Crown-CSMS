@@ -165,6 +165,9 @@ def prepare(env: dict[str, str], npm: list[str], skip_install: bool) -> Path:
     if not relationships.exists():
         run(manage + ["shell", "--command", "from sandbox_demo.services import seed_local_heritage_relationships; seed_local_heritage_relationships()"], env)
         relationships.write_text(env["BUILD_SHA"], encoding="utf-8")
+    # Fictional Camp fixtures depend on the local household crosswalk above.
+    # This helper refuses nonlocal databases and never enables payment processing.
+    run(manage + ["shell", "--command", "from sandbox_demo.services import seed_local_heritage_camp; seed_local_heritage_camp()"], env)
     run(npm + ["run", "build"], env, FRONTEND)
     return python
 
