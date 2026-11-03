@@ -242,8 +242,8 @@ test.describe.serial("SGO partner-processor fictional browser acceptance", () =>
       api(response, "GET", API + "/processor/programs/"),
     );
     await login(page, "de", "partner");
-    expect((await partnerFamily.json()).programs).toEqual([]);
-    expect((await partnerProcessor.json()).programs).toEqual([]);
+    expect((await (await partnerFamily).json()).programs).toEqual([]);
+    expect((await (await partnerProcessor).json()).programs).toEqual([]);
     await expect(page.getByText(/No fictional family grants/)).toBeVisible();
     await expect(page.getByText(/No delegated processor assignment/)).toBeVisible();
     await expect(page.getByRole("button", { name: "Submit fictional application" })).toHaveCount(0);
