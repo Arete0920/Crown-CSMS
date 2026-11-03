@@ -41,7 +41,7 @@ export default function JirehSGOIntakePage() {
   const [reason, setReason] = useState(reasons[0][0]);
   const [submissionKey, setSubmissionKey] = useState("");
   const [correctionKey, setCorrectionKey] = useState("");
-  const [processorKey, setProcessorKey] = useState("");
+  const [processorRetry, setProcessorRetry] = useState(null);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
@@ -60,7 +60,7 @@ export default function JirehSGOIntakePage() {
     setConsent(false);
     setSubmissionKey("");
     setCorrectionKey("");
-    setProcessorKey("");
+    setProcessorRetry(null);
     setPending(false);
     if (!token || !local) return () => { live = false; };
     Promise.all([
@@ -189,8 +189,14 @@ export default function JirehSGOIntakePage() {
 
   async function requestCorrection(item) {
     if (!authorized || !processor || pending) return;
-    const key = processorKey || crypto.randomUUID();
-    setProcessorKey(key);
+    // A retry key is bound to the exact case, revision and correction reason.
+    // Never reuse a failed case's UUID for a different family or program.
+    const key = (
+      processorRetry?.applicationId === item.id
+      && processorRetry?.revision === item.revision
+      && processorRetry?.reason === reason
+    ) ? processorRetry.key : crypto.randomUUID();
+    setProcessorRetry({ applicationId: item.id, revision: item.revision, reason, key });
     setPending(true);
     setError("");
     setNotice("");
@@ -202,7 +208,7 @@ export default function JirehSGOIntakePage() {
         }},
       );
       if (getAccessToken() !== token || result.application?.program_id !== processor.id) return;
-      setProcessorKey("");
+      setProcessorRetry(null);
       await refreshQueue();
       setNotice("Nonbinding verification correction request recorded. No award decision was made.");
     } catch {
@@ -285,7 +291,7 @@ export default function JirehSGOIntakePage() {
         {processors.length === 0 ? <p>No delegated processor assignment. SGO ADMIN/REVIEWER is not a processor grant.</p> : <>
           <label htmlFor="processor-program">Assigned partner program</label>{" "}
           <select id="processor-program" value={processorProgram}
-            onChange={(e) => { setProcessorProgram(e.target.value); setProcessorKey(""); }}>
+            onChange={(e) => { setProcessorProgram(e.target.value); setProcessorRetry(null); }}>
             {processors.map((p) => <option key={p.id} value={p.id}>{p.organization} — {p.name}</option>)}
           </select>{" "}
           <button type="button" onClick={() => refreshQueue().catch(() => setError("Queue unavailable."))}>
@@ -293,7 +299,7 @@ export default function JirehSGOIntakePage() {
           </button>
           <p>Scope: verification support only. No award, eligibility determination, or disbursement authority.</p>
           <label htmlFor="sgo-reason">Non-sensitive correction reason</label>{" "}
-          <select id="sgo-reason" value={reason} onChange={(e) => { setReason(e.target.value); setProcessorKey(""); }}>
+          <select id="sgo-reason" value={reason} onChange={(e) => { setReason(e.target.value); setProcessorRetry(null); }}>
             {reasons.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
           </select>
           {queue.length === 0 ? <p>No submitted fictional applications in this program.</p> : <table>
