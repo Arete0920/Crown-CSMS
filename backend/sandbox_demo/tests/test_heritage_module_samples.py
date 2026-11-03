@@ -109,7 +109,6 @@ def test_local_module_samples_are_idempotent_and_do_not_authorize_custody(
     ).exists()
 
 
-
 @pytest.mark.parametrize("next_state", ["UNDER_REVIEW", "NEEDS_INFO"])
 def test_canonical_jireh_review_progress_preserves_offered_evidence(
     monkeypatch, settings, next_state,
