@@ -56,10 +56,10 @@ Run from the repository:
 cd backend
 python manage.py check
 python manage.py makemigrations --check --dry-run
-python -m pytest jireh_sgo/tests/test_services.py jireh_sgo/tests/test_read_only_api.py jireh_sgo/tests/test_fictional_intake_api.py -q
+python -m pytest jireh_sgo/tests/test_services.py jireh_sgo/tests/test_read_only_api.py jireh_sgo/tests/test_fictional_intake_api.py jireh_sgo/tests/test_fictional_intake_seed.py -q
 cd ../frontend/dashboards
 npm ci
-npm test -- src/pages/JirehSGOIntakePage.test.jsx src/pages/JirehSGODashboard.test.jsx
+npm test -- src/pages/JirehSGOIntakePage.test.jsx src/pages/JirehSGOLoginPage.test.jsx src/pages/JirehSGODashboard.test.jsx
 npm run build
 ```
 
