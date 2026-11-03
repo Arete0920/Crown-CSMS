@@ -101,10 +101,11 @@ describe("Fictional parent Financial Aid saved-record truth", () => {
     await submitFictionalApplication();
     await waitFor(() => {
       expect(screen.getByRole("alert").textContent).toContain(
-        "independent saved-record verification failed",
+        "may have been accepted",
       );
     });
     expect(screen.queryByTestId("jireh-submit-confirmation")).toBeNull();
+    expect(apiFetch.mock.calls.filter(([, options]) => options?.method === "POST")).toHaveLength(1);
   });
 
   it("does not claim success when a submitted application is still a draft on GET", async () => {
@@ -112,10 +113,11 @@ describe("Fictional parent Financial Aid saved-record truth", () => {
     await submitFictionalApplication();
     await waitFor(() => {
       expect(screen.getByRole("alert").textContent).toContain(
-        "independent saved-record verification failed",
+        "may have been accepted",
       );
     });
     expect(screen.queryByTestId("jireh-submit-confirmation")).toBeNull();
+    expect(apiFetch.mock.calls.filter(([, options]) => options?.method === "POST")).toHaveLength(1);
   });
 
   it("does not claim success when the readback has a foreign student reference", async () => {
@@ -123,10 +125,11 @@ describe("Fictional parent Financial Aid saved-record truth", () => {
     await submitFictionalApplication();
     await waitFor(() => {
       expect(screen.getByRole("alert").textContent).toContain(
-        "independent saved-record verification failed",
+        "may have been accepted",
       );
     });
     expect(screen.queryByTestId("jireh-submit-confirmation")).toBeNull();
+    expect(apiFetch.mock.calls.filter(([, options]) => options?.method === "POST")).toHaveLength(1);
   });
   it("drops an old-school GET resolving after a school context switch", async () => {
     let resolveOld;
