@@ -22,8 +22,9 @@ const BTN_PRIM = { cursor: "pointer", padding: "4px 10px", fontSize: 12, borderR
 
 const CUSTODY_BARRIER_KEY = "crown.extended-care.unconfirmed-custody";
 const CUSTODY_BARRIER_EVENT = "crown:extended-care-custody-changed";
-// Fallback retains the barrier within this tab when browser storage is blocked.
-// Never persist a staff bearer token or child identity in this marker.
+// Preserve tab-local custody uncertainty if browser storage is blocked.
+// Persist only the scoped operation and opaque student row ID required for
+// post-write verification. Never persist names, contacts or staff credentials.
 let memoryCustodyBarrier = null;
 let custodyMarkerSequence = 0;
 const custodyMessage = "A prior custody operation's outcome is unconfirmed. Return to its originating school and care session for explicit reconciliation; do not retry automatically.";
@@ -34,7 +35,9 @@ function readCustodyBarrier() {
     if (!raw) return null;
     const value = JSON.parse(raw);
     if (value && typeof value.school === "string" && ["AM", "PM"].includes(value.careSession)
-      && ["pending", "unconfirmed"].includes(value.status) && typeof value.id === "string") return value;
+      && ["pending", "unconfirmed"].includes(value.status) && typeof value.id === "string"
+      && ["checkin", "checkout", "school_handoff"].includes(value.operation)
+      && typeof value.studentId === "string" && value.studentId) return value;
     // A malformed marker must not silently enable a new custody write.
     return { school: "", careSession: "", status: "pending", id: "invalid" };
   } catch {
@@ -53,12 +56,14 @@ function updateCustodyBarrier(next) {
   window.dispatchEvent(new Event(CUSTODY_BARRIER_EVENT));
 }
 
-function beginCustodyBarrier(identity, careSession) {
+function beginCustodyBarrier(identity, careSession, operation, studentId) {
   if (readCustodyBarrier()) return null;
   const marker = {
     id: String(++custodyMarkerSequence) + "-" + String(Date.now()),
     school: identity.school,
     careSession,
+    operation,
+    studentId: String(studentId),
     status: "pending",
   };
   updateCustodyBarrier(marker);
@@ -69,6 +74,21 @@ function finalizeCustodyBarrier(marker, confirmed) {
   const current = readCustodyBarrier();
   if (!current || current.id !== marker?.id) return;
   updateCustodyBarrier(confirmed ? null : { ...current, status: "unconfirmed" });
+}
+
+// A valid 200 response is not proof of the original child's custody state.
+// Match the specific scoped operation to the authoritative roster transition.
+function rosterConfirmsCustody(marker, roster) {
+  if (!marker || roster?.care_session !== marker.careSession || !Array.isArray(roster?.rows)) return false;
+  const row = roster.rows.find((entry) => String(entry.student_id) === marker.studentId);
+  const attendance = row?.attendance;
+  if (!attendance) return false;
+  if (marker.operation === "checkin") return Boolean(attendance.checkin_time);
+  if (marker.operation === "checkout") return Boolean(attendance.checkout_time && attendance.pickup_verified);
+  if (marker.operation === "school_handoff") {
+    return Boolean(attendance.checkout_time && attendance.handoff_verified && attendance.handoff_time);
+  }
+  return false;
 }
 
 export default function AftercareRosterPage({ careSession = "PM" }) {
@@ -174,7 +194,7 @@ export default function AftercareRosterPage({ careSession = "PM" }) {
       }
       setRosterScope(scope);
       setRoster(data);
-      return true;
+      return data;
     } catch (e) {
       if (mountedRef.current && scopeEpochRef.current === epoch && sessionRef.current === careSession && sameIdentity(scope)) setError(e.message);
       return false;
@@ -256,7 +276,7 @@ export default function AftercareRosterPage({ careSession = "PM" }) {
 
   async function handleCheckin(studentId) {
     if (custodyWarning || readCustodyBarrier() || operationInFlightRef.current || checkinInFlightRef.current || sessionRef.current !== careSession || !sameIdentity() || rosterScope !== identity) return;
-    const marker = beginCustodyBarrier(identity, careSession);
+    const marker = beginCustodyBarrier(identity, careSession, "checkin", studentId);
     if (!marker) return;
     const attempt = { operation: "checkin", identity, careSession, epoch: scopeEpochRef.current, marker };
     operationInFlightRef.current = attempt;
@@ -266,8 +286,8 @@ export default function AftercareRosterPage({ careSession = "PM" }) {
     setError(null);
     try {
       await checkinStudent({ student_id: studentId, care_session: careSession });
-      const confirmed = mountedRef.current && scopeEpochRef.current === attempt.epoch && await load();
-      if (confirmed) finalizeCustodyBarrier(marker, true);
+      const fresh = mountedRef.current && scopeEpochRef.current === attempt.epoch && await load();
+      if (rosterConfirmsCustody(marker, fresh)) finalizeCustodyBarrier(marker, true);
       else requireCustodyReadback(attempt);
     } catch (e) {
       requireCustodyReadback(attempt);
@@ -304,7 +324,7 @@ export default function AftercareRosterPage({ careSession = "PM" }) {
   async function handleCheckout() {
     if (custodyWarning || readCustodyBarrier() || operationInFlightRef.current || isMorning || pickup?.careSession !== careSession || !pickup?.contactId || !pickup.verified
         || !sameIdentity() || rosterScope !== identity) return;
-    const marker = beginCustodyBarrier(identity, careSession);
+    const marker = beginCustodyBarrier(identity, careSession, "checkout", pickup.studentId);
     if (!marker) return;
     const attempt = { operation: "checkout", identity, careSession, epoch: scopeEpochRef.current, marker };
     operationInFlightRef.current = attempt;
@@ -319,7 +339,8 @@ export default function AftercareRosterPage({ careSession = "PM" }) {
       });
       if (scopeEpochRef.current === attempt.epoch && sessionRef.current === careSession && sameIdentity()) {
         setPickup(null);
-        if (mountedRef.current && await load()) finalizeCustodyBarrier(marker, true);
+        const fresh = mountedRef.current && await load();
+        if (rosterConfirmsCustody(marker, fresh)) finalizeCustodyBarrier(marker, true);
         else requireCustodyReadback(attempt);
       } else requireCustodyReadback(attempt);
     } catch (e) {
@@ -337,7 +358,7 @@ export default function AftercareRosterPage({ careSession = "PM" }) {
   async function handleHandoff() {
     if (custodyWarning || readCustodyBarrier() || operationInFlightRef.current || !isMorning || handoff?.careSession !== careSession || !handoff?.acknowledged
         || !sameIdentity() || rosterScope !== identity) return;
-    const marker = beginCustodyBarrier(identity, careSession);
+    const marker = beginCustodyBarrier(identity, careSession, "school_handoff", handoff.studentId);
     if (!marker) return;
     const attempt = { operation: "school_handoff", identity, careSession, epoch: scopeEpochRef.current, marker };
     operationInFlightRef.current = attempt;
@@ -348,7 +369,8 @@ export default function AftercareRosterPage({ careSession = "PM" }) {
       await handoffToSchool({ student_id: handoff.studentId });
       if (scopeEpochRef.current === attempt.epoch && sessionRef.current === careSession && sameIdentity()) {
         setHandoff(null);
-        if (mountedRef.current && await load()) finalizeCustodyBarrier(marker, true);
+        const fresh = mountedRef.current && await load();
+        if (rosterConfirmsCustody(marker, fresh)) finalizeCustodyBarrier(marker, true);
         else requireCustodyReadback(attempt);
       } else requireCustodyReadback(attempt);
     } catch (e) {
@@ -380,14 +402,15 @@ export default function AftercareRosterPage({ careSession = "PM" }) {
       if (fresh?.care_session !== careSession || !Array.isArray(fresh.rows)) {
         throw new Error("Invalid care roster from the server.");
       }
+      const marker = readCustodyBarrier();
+      if (!marker || marker.status !== "unconfirmed" || marker.school !== scope.school
+        || marker.careSession !== careSession || !rosterConfirmsCustody(marker, fresh)) {
+        throw new Error("Fresh roster does not confirm the original custody transition; escalate for supervisor review.");
+      }
       setRosterScope(scope);
       setRoster(fresh);
       setError(null);
-      const marker = readCustodyBarrier();
-      if (marker && marker.status === "unconfirmed"
-        && marker.school === scope.school && marker.careSession === careSession) {
-        finalizeCustodyBarrier(marker, true);
-      }
+      finalizeCustodyBarrier(marker, true);
       setCustodyWarning("");
       setUnconfirmedScope(null);
     } catch (error) {

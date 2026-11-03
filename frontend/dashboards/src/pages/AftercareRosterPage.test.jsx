@@ -17,6 +17,7 @@ vi.mock("../components/crown/CrownLayout.jsx", () => ({
   default: ({ children }) => <main>{children}</main>,
 }));
 
+const verifiedCheckin = { checkin_time: "2026-10-30T08:00:00Z", checkout_time: null };
 const rows = [{
   student_id: "synthetic-child-1",
   student_name: "Synthetic Child",
@@ -94,7 +95,7 @@ describe("care custody dialog safety and consistency", () => {
     render(<AftercareRosterPage careSession="AM" />);
     await screen.findByText("Synthetic Child");
     fireEvent.click(screen.getByRole("button", { name: "Check In" }));
-    await waitFor(() => expect(screen.getByRole("button", { name: "Checking In..." }).disabled).toBe(true));
+    await waitFor(() => expect(screen.queryByRole("button", { name: "Checking In..." })).toBeNull());
     expect(api.checkinStudent).toHaveBeenCalledTimes(1);
     finish({ id: 1 });
     await waitFor(() => expect(api.fetchRosterToday).toHaveBeenCalledTimes(2));
@@ -184,7 +185,10 @@ it("blocks reconciliation until the prior staff custody write has settled", asyn
   expect(api.fetchRosterToday).toHaveBeenCalledTimes(readsBefore);
   api.fetchRosterToday.mockResolvedValueOnce({
     care_session: "AM", date: "2026-10-30", dow: "FRI",
-    rows: [{ ...rows[0], student_id: "synthetic-child-2", student_name: "New Staff Student" }],
+    rows: [
+      { ...rows[0], attendance: verifiedCheckin },
+      { ...rows[0], student_id: "synthetic-child-2", student_name: "New Staff Student" },
+    ],
     unlinked_attendance_count: 0,
   });
   fireEvent.click(reconcile);
@@ -214,7 +218,7 @@ it("requires an explicit authorized readback before clearing a custody outcome w
   expect(screen.getByText(/outcome is unconfirmed/i)).toBeTruthy();
   api.fetchRosterToday.mockResolvedValueOnce({
     care_session: "AM", date: "2026-10-30", dow: "FRI",
-    rows: [], unlinked_attendance_count: 0,
+    rows: [{ ...rows[0], attendance: verifiedCheckin }], unlinked_attendance_count: 0,
   });
   fireEvent.click(screen.getByRole("button", { name: "Review current custody before continuing" }));
   await waitFor(() => expect(screen.queryByText(/outcome is unconfirmed/i)).toBeNull());
@@ -223,9 +227,11 @@ it("requires an explicit authorized readback before clearing a custody outcome w
 
 it("cannot clear an unresolved AM custody operation using the PM roster", async () => {
   let settle;
+  let completed = false;
   api.fetchRosterToday.mockImplementation(async (session) => ({
     care_session: session, date: "2026-10-30", dow: "FRI",
-    rows: session === "AM" ? rows : [], unlinked_attendance_count: 0,
+    rows: session === "AM" ? (completed ? [{ ...rows[0], attendance: verifiedCheckin }] : rows) : [],
+    unlinked_attendance_count: 0,
   }));
   api.checkinStudent.mockImplementation(() => new Promise((resolve) => { settle = resolve; }));
   const view = render(<AftercareRosterPage careSession="AM" />);
@@ -236,6 +242,7 @@ it("cannot clear an unresolved AM custody operation using the PM roster", async 
   await waitFor(() => expect(screen.getByText(/originating school and care session before resolving/i)).toBeTruthy());
   const button = screen.getByRole("button", { name: "Review current custody before continuing" });
   expect(button.disabled).toBe(true);
+  completed = true;
   settle({ id: 1 });
   await waitFor(() => expect(screen.queryByText(/previous custody write is still pending/i)).toBeNull());
   expect(button.disabled).toBe(true);
@@ -262,7 +269,12 @@ it("cannot resolve an ambiguous custody write by reading a different school", as
   await waitFor(() => expect(screen.queryByText(/previous custody write is still pending/i)).toBeNull());
   expect(screen.getByRole("button", { name: "Review current custody before continuing" }).disabled).toBe(true);
   setSelectedSchoolId("fictional-care-school");
+  await waitFor(() => expect(screen.getByText("Synthetic Child")).toBeTruthy());
   await waitFor(() => expect(screen.getByRole("button", { name: "Review current custody before continuing" }).disabled).toBe(false));
+  api.fetchRosterToday.mockResolvedValueOnce({
+    care_session: "AM", date: "2026-10-30", dow: "FRI",
+    rows: [{ ...rows[0], attendance: verifiedCheckin }], unlinked_attendance_count: 0,
+  });
   fireEvent.click(screen.getByRole("button", { name: "Review current custody before continuing" }));
   await waitFor(() => expect(screen.queryByText(/outcome is unconfirmed/i)).toBeNull());
   expect(api.checkinStudent).toHaveBeenCalledTimes(1);
@@ -339,12 +351,15 @@ it("blocks repeated AM handoff after uncertain server response", async () => {
 
 it("rejects an old reconciliation read after leaving and returning to the same school", async () => {
   let settleWrite;
+  let completed = false;
   const home = "fictional-care-school";
   const away = "unrelated-fictional-school";
   const foreignRows = [{ ...rows[0], student_id: "other-child", student_name: "Unrelated School Child" }];
   api.fetchRosterToday.mockImplementation(async (session) => ({
     care_session: session, date: "2026-10-30", dow: "FRI",
-    rows: getSelectedSchoolId() === home ? rows : foreignRows, unlinked_attendance_count: 0,
+    rows: getSelectedSchoolId() === home
+      ? (completed ? [{ ...rows[0], attendance: verifiedCheckin }] : rows)
+      : foreignRows, unlinked_attendance_count: 0,
   }));
   api.checkinStudent.mockImplementationOnce(() => new Promise((resolve) => { settleWrite = resolve; }));
   render(<AftercareRosterPage careSession="AM" />);
@@ -353,6 +368,7 @@ it("rejects an old reconciliation read after leaving and returning to the same s
   setSelectedSchoolId(away);
   await waitFor(() => expect(screen.getByText(/outcome is unconfirmed/i)).toBeTruthy());
   setSelectedSchoolId(home);
+  completed = true;
   settleWrite({ id: 1 });
   const reconcile = screen.getByRole("button", { name: "Review current custody before continuing" });
   await waitFor(() => expect(reconcile.disabled).toBe(false));
@@ -370,7 +386,7 @@ it("rejects an old reconciliation read after leaving and returning to the same s
   await waitFor(() => expect(screen.getByRole("button", { name: "Review current custody before continuing" }).disabled).toBe(false));
   expect(screen.getByText(/outcome is unconfirmed/i)).toBeTruthy();
   expect(screen.queryByText("Unrelated School Child")).toBeNull();
-  expect(screen.getByRole("button", { name: "Check In" }).disabled).toBe(true);
+  expect(screen.queryByRole("button", { name: "Check In" })).toBeNull();
   fireEvent.click(screen.getByRole("button", { name: "Review current custody before continuing" }));
   await waitFor(() => expect(screen.queryByText(/outcome is unconfirmed/i)).toBeNull());
   expect(api.checkinStudent).toHaveBeenCalledTimes(1);
@@ -400,9 +416,12 @@ it("holds custody actions when a confirmed POST is followed by failed roster rea
 
 it("retains a pending AM custody barrier after real route unmount and PM mount", async () => {
   let settle;
+  let completed = false;
   api.fetchRosterToday.mockImplementation(async (session) => ({
     care_session: session, date: "2026-10-30", dow: "FRI",
-    rows: session === "AM" ? rows : [{ ...rows[0], care_session: "PM" }],
+    rows: session === "AM"
+      ? (completed ? [{ ...rows[0], attendance: verifiedCheckin }] : rows)
+      : [{ ...rows[0], care_session: "PM" }],
     unlinked_attendance_count: 0,
   }));
   api.checkinStudent.mockImplementationOnce(() => new Promise((resolve) => { settle = resolve; }));
@@ -417,6 +436,7 @@ it("retains a pending AM custody barrier after real route unmount and PM mount",
   const button = screen.getByRole("button", { name: "Review current custody before continuing" });
   expect(button.disabled).toBe(true);
   expect(screen.queryByRole("button", { name: "Check In" })).toBeNull();
+  completed = true;
   settle({ id: 1 });
   await waitFor(() => expect(screen.queryByText(/previous custody write is still pending/i)).toBeNull());
   expect(screen.getByText(/outcome is unconfirmed/i)).toBeTruthy();
@@ -441,4 +461,62 @@ it("retains an uncertain check-in barrier across component remount and school sw
   await waitFor(() => expect(screen.getByText(/originating school and care session before resolving/i)).toBeTruthy());
   expect(screen.getByRole("button", { name: "Review current custody before continuing" }).disabled).toBe(true);
   expect(api.checkinStudent).toHaveBeenCalledTimes(1);
+});
+
+it("keeps the custody barrier when the correct roster shows no custody transition", async () => {
+  api.checkinStudent.mockRejectedValueOnce(new Error("uncertain response"));
+  render(<AftercareRosterPage careSession="AM" />);
+  await screen.findByText("Synthetic Child");
+  fireEvent.click(screen.getByRole("button", { name: "Check In" }));
+  await waitFor(() => expect(screen.getByText(/outcome is unconfirmed/i)).toBeTruthy());
+  const marker = JSON.parse(sessionStorage.getItem("crown.extended-care.unconfirmed-custody"));
+  expect(marker).toMatchObject({ school: "fictional-care-school", careSession: "AM",
+    operation: "checkin", studentId: "synthetic-child-1" });
+  expect(JSON.stringify(marker)).not.toContain("fictional-care-staff-access");
+  expect(JSON.stringify(marker)).not.toContain("Synthetic Child");
+  fireEvent.click(screen.getByRole("button", { name: "Review current custody before continuing" }));
+  await waitFor(() => expect(screen.getAllByRole("alert").some((el) =>
+    /roster does not confirm the original custody transition/.test(el.textContent))).toBe(true));
+  expect(screen.getByText(/outcome is unconfirmed/i)).toBeTruthy();
+  expect(sessionStorage.getItem("crown.extended-care.unconfirmed-custody")).toBeTruthy();
+  expect(api.checkinStudent).toHaveBeenCalledTimes(1);
+});
+
+it("requires verified PM pickup in the authoritative roster before reconciliation", async () => {
+  const attendance = { checkin_time: "2026-10-30T15:00:00Z", checkout_time: null };
+  api.fetchRosterToday.mockResolvedValue({
+    care_session: "PM", date: "2026-10-30", dow: "FRI",
+    rows: [{ ...rows[0], care_session: "PM", attendance }], unlinked_attendance_count: 0,
+  });
+  api.fetchPickupContacts.mockResolvedValue([{ id: 7, name: "Fictional Guardian", is_active: true }]);
+  api.checkoutStudent.mockRejectedValueOnce(new Error("uncertain checkout"));
+  render(<AftercareRosterPage careSession="PM" />);
+  await screen.findByText("Synthetic Child");
+  fireEvent.click(screen.getByRole("button", { name: "Verify Pickup" }));
+  const select = await screen.findByRole("combobox", { name: "Authorized pickup contact" });
+  fireEvent.mouseDown(select);
+  fireEvent.click(await screen.findByRole("option", { name: /Fictional Guardian/ }));
+  fireEvent.click(screen.getByRole("checkbox"));
+  fireEvent.click(screen.getByRole("button", { name: "Confirm Checkout" }));
+  await waitFor(() => expect(screen.getByText(/outcome is unconfirmed/i)).toBeTruthy());
+  api.fetchRosterToday.mockResolvedValueOnce({
+    care_session: "PM", date: "2026-10-30", dow: "FRI",
+    rows: [{ ...rows[0], care_session: "PM",
+      attendance: { ...attendance, checkout_time: "2026-10-30T18:00:00Z", pickup_verified: false } }],
+    unlinked_attendance_count: 0,
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Review current custody before continuing" }));
+  await waitFor(() => expect(screen.getAllByRole("alert").some((el) =>
+    /roster does not confirm the original custody transition/.test(el.textContent))).toBe(true));
+  expect(screen.getByText(/outcome is unconfirmed/i)).toBeTruthy();
+  api.fetchRosterToday.mockResolvedValueOnce({
+    care_session: "PM", date: "2026-10-30", dow: "FRI",
+    rows: [{ ...rows[0], care_session: "PM",
+      attendance: { ...attendance, checkout_time: "2026-10-30T18:00:00Z", pickup_verified: true } }],
+    unlinked_attendance_count: 0,
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Review current custody before continuing" }));
+  await waitFor(() => expect(screen.queryByText(/outcome is unconfirmed/i)).toBeNull());
+  expect(screen.getByText("Checked out")).toBeTruthy();
+  expect(api.checkoutStudent).toHaveBeenCalledTimes(1);
 });
