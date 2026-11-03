@@ -9,7 +9,7 @@ import pytest
 
 from django.test import SimpleTestCase
 
-from sandbox_demo.management.commands.five_module_demo_preflight import frontend_route_evidence
+from sandbox_demo.management.commands.five_module_demo_preflight import frontend_route_evidence, camp_entitlement_evidence
 
 
 class FiveModuleRouteEvidenceTests(SimpleTestCase):
@@ -102,3 +102,41 @@ def test_launcher_rejects_strict_audit_without_prepare_only():
         with pytest.raises(SystemExit) as exc:
             launcher.main()
     assert exc.value.code == 2
+
+
+@pytest.mark.django_db
+def test_camp_preflight_requires_real_school_entitlement():
+    from datetime import timedelta
+
+    from django.utils import timezone
+    from core.models import School
+    from subscriptions.models import SchoolModule
+
+    school = School.objects.create(name="Fictional entitlement gate test")
+    other = School.objects.create(name="Foreign fictional school")
+    assert camp_entitlement_evidence(school.id) is False
+
+    foreign_module = SchoolModule.objects.create(
+        school=other, module_key="little_lambs", status="active",
+        expiry_date=timezone.now() + timedelta(days=30),
+    )
+    assert camp_entitlement_evidence(school.id) is False
+    assert camp_entitlement_evidence(other.id) is True
+
+    own_module = SchoolModule.objects.create(
+        school=school, module_key="little_lambs", status="active",
+        expiry_date=timezone.now() + timedelta(days=30),
+    )
+    assert camp_entitlement_evidence(school.id) is True
+    for status in ("inactive", "suspended", "expired"):
+        own_module.status = status
+        own_module.save(update_fields=["status"])
+        assert camp_entitlement_evidence(school.id) is False
+    own_module.status = "active"
+    own_module.expiry_date = timezone.now() - timedelta(days=1)
+    own_module.save(update_fields=["status", "expiry_date"])
+    assert camp_entitlement_evidence(school.id) is False
+
+    foreign_module.status = "inactive"
+    foreign_module.save(update_fields=["status"])
+    assert camp_entitlement_evidence(other.id) is False
