@@ -169,6 +169,50 @@ def prepare(env: dict[str, str], npm: list[str], skip_install: bool) -> Path:
     return python
 
 
+def seed_five_module_fixtures(env: dict[str, str], python: Path) -> None:
+    """Explicit local-only fixture integration, never a production or custody grant.
+
+    Invoked only by --prepare-only --five-module-preflight after the ordinary
+    Heritage seed. Each seeder also verifies the exact local SQLite boundary.
+    The ordinary sales-demo launch remains unchanged until integrated source
+    and all five functional browser journeys have been certified.
+    """
+    expected_database = "sqlite:///" + (STATE / "heritage.sqlite3").as_posix()
+    if (
+        env.get("DJANGO_ENV") != "local"
+        or env.get("CROWN_ENV") != "local"
+        or env.get("DJANGO_DEBUG") != "true"
+        or env.get("CROWN_DEMO_MODE") != "false"
+        or env.get("CROWN_SANDBOX_ALLOW_OPEN_SESSION") != "true"
+        or env.get("VITE_LOCAL_DEMO") != "1"
+        or env.get("DATABASE_URL") != expected_database
+    ):
+        raise RuntimeError(
+            "Five-module fictional preparation requires the exact isolated Heritage local settings."
+        )
+    manage = [str(python), str(ROOT / "backend/manage.py")]
+
+    # Never fabricate childcare readiness, release authority or awarded funds.
+    # The explicit local-only module seeder supplies an unposted Jireh OFFERED
+    # sample, AM/PM records and a deliberately BLOCKED daycare enrollment.
+    run(manage + ["seed_heritage_module_samples", "--fictional-local-only"], env)
+
+    # Camp setup is a separate guarded fictional fixture and deliberately
+    # leaves missing health, forms and pickup authority as BLOCKED.
+    run(manage + [
+        "shell", "--command",
+        "from sandbox_demo.services import seed_local_heritage_camp; seed_local_heritage_camp()",
+    ], env)
+
+    # SGO seed uses independent partner organizations, grant-scoped fictional
+    # applicants and delegated processors; it never accepts or posts an award.
+    # Credentials remain in the ignored per-machine state directory.
+    run(manage + [
+        "seed_fictional_sgo_intake", "--credentials-file",
+        str(STATE / "sgo-credentials.txt"),
+    ], env)
+
+
 def stop(process: subprocess.Popen) -> None:
     if process.poll() is None:
         process.terminate()
@@ -200,6 +244,7 @@ def main() -> int:
         npm = npm_command()
         python = prepare(env, npm, args.skip_install)
         if args.five_module_preflight:
+            seed_five_module_fixtures(env, python)
             run([str(python), str(ROOT / "backend/manage.py"),
                  "five_module_demo_preflight", "--strict"], env)
         if args.prepare_only:
