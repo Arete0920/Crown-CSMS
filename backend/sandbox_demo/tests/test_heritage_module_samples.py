@@ -125,4 +125,3 @@ def test_conflicting_existing_fixture_identity_refuses_and_rolls_back(
     assert not Household.objects.filter(
         pk=fixed_id("family"), school_id=HERITAGE_ID
     ).exists()
-
