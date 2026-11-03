@@ -110,3 +110,87 @@ def test_sale_audit_rejects_swapped_executable_or_instructions_without_execution
             auditor.verify(download=False)
         run_path.assert_not_called()
     assert not (destination / "heritage-starter-audit.json").exists()
+
+
+def test_source_stamped_candidate_keeps_legacy_starter_unmodified(monkeypatch, tmp_path):
+    """A reviewed source SHA is supplied at packaging, not committed into itself."""
+    packager = loader()
+    candidate_sha = "a" * 40
+    legacy_pin = packager.pinned_revision()
+    assert candidate_sha != legacy_pin
+
+    monkeypatch.setattr(
+        packager, "require_exact_candidate_checkout",
+        lambda sha: None if sha == candidate_sha else pytest.fail("Unexpected source revision"),
+    )
+    zip_path = packager.build(tmp_path, source_sha=candidate_sha, five_module_candidate=True)
+    with zipfile.ZipFile(zip_path) as archive:
+        manifest = json.loads(archive.read("HERITAGE-SALES-MANIFEST.json"))
+        entry = archive.read("Install-and-Start-Heritage.py").decode("utf-8")
+        assert manifest["source_sha"] == candidate_sha
+        assert manifest["five_module_candidate"] is True
+        assert manifest["release_certified"] is False
+        assert manifest["production_certified"] is False
+        assert f'SOURCE_SHA = "{candidate_sha}"' in entry
+        assert "FIVE_MODULE_LAUNCH = True" in entry
+        assert 'command.append("--five-module-demo")' in entry
+    assert f'SOURCE_SHA = "{legacy_pin}"' in (ROOT / "Install-and-Start-Heritage.py").read_text()
+    assert "FIVE_MODULE_LAUNCH = False" in (ROOT / "Install-and-Start-Heritage.py").read_text()
+
+
+def test_source_stamped_candidate_requires_real_checkout_identity(monkeypatch, tmp_path):
+    packager = loader()
+    candidate_sha = "a" * 40
+    from types import SimpleNamespace
+    monkeypatch.setattr(
+        packager.subprocess, "run",
+        lambda *args, **kwargs: SimpleNamespace(stdout="b" * 40 + "\\n"),
+    )
+    with pytest.raises(RuntimeError, match="does not match checked-out Git HEAD"):
+        packager.build(tmp_path, source_sha=candidate_sha, five_module_candidate=True)
+    assert list(tmp_path.iterdir()) == []
+
+
+def test_source_stamped_candidate_requires_explicit_sha(tmp_path):
+    packager = loader()
+    with pytest.raises(RuntimeError, match="explicit source SHA"):
+        packager.build(tmp_path, five_module_candidate=True)
+    with pytest.raises(RuntimeError, match="40-character source SHA"):
+        packager.render_installer("not-a-source-sha", five_module_candidate=True)
+
+
+def test_stamped_candidate_audit_rejects_modified_installer_before_execution(monkeypatch, tmp_path):
+    """Fail closed on a forged candidate even when the manifest claims its SHA."""
+    packager = loader()
+    monkeypatch.setattr(packager, "require_exact_candidate_checkout", lambda sha: None)
+    candidate_sha = "a" * 40
+    auditor, archive, destination = _audit_fixture(monkeypatch, tmp_path)
+    # _audit_fixture exercises the unchanged legacy ZIP contract. Build a separate
+    # source-stamped archive into the same disposable output directory.
+    archive = packager.build(destination, source_sha=candidate_sha, five_module_candidate=True)
+    with zipfile.ZipFile(archive) as source:
+        contents = [(info.filename, source.read(info.filename)) for info in source.infolist()]
+    with zipfile.ZipFile(archive, "w") as rewritten:
+        for filename, payload in contents:
+            if filename == "Install-and-Start-Heritage.py":
+                payload += b"\\n# forbidden post-stamp code substitution\\n"
+            rewritten.writestr(filename, payload)
+    with patch.object(auditor.runpy, "run_path", side_effect=AssertionError("tampered installer executed")) as runner:
+        with pytest.raises(RuntimeError, match="differs from the reviewed source template"):
+            auditor.verify(source_sha=candidate_sha, five_module_candidate=True)
+        runner.assert_not_called()
+    assert not (destination / "heritage-starter-audit.json").exists()
+
+
+def test_source_stamped_candidate_audit_accepts_exact_reviewed_template(monkeypatch, tmp_path):
+    packager = loader()
+    monkeypatch.setattr(packager, "require_exact_candidate_checkout", lambda sha: None)
+    candidate_sha = "a" * 40
+    auditor, _legacy_archive, destination = _audit_fixture(monkeypatch, tmp_path)
+    packager.build(destination, source_sha=candidate_sha, five_module_candidate=True)
+    proof = auditor.verify(source_sha=candidate_sha, five_module_candidate=True)
+    assert proof["source_sha"] == candidate_sha
+    assert proof["five_module_candidate"] is True
+    assert proof["release_certified"] is False
+    assert proof["downloaded_source_critical_git_blobs"] == "NOT_RUN"
+    assert proof["five_module_browser_acceptance"] == "NOT_RUN_BY_THIS_SCRIPT"

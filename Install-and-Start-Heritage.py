@@ -9,6 +9,8 @@ import urllib.request
 import zipfile
 
 SOURCE_SHA = "a1bf22fc1e520eba149ce943edcd747dbf75c1e5"
+# Only a separately source-stamped release candidate may enable guarded five-module mode.
+FIVE_MODULE_LAUNCH = False
 SOURCE_URL = f"https://github.com/Arete0920/Crown-CSMS/archive/{SOURCE_SHA}.zip"
 ROOT = Path(__file__).resolve().parent
 DESTINATION = ROOT / f"Heritage-{SOURCE_SHA[:12]}"
@@ -49,7 +51,10 @@ def main():
     if not shutil.which("node"):
         raise RuntimeError("Install Node.js 24 with npm, then double-click the starter again.")
     source = install_source()
-    return subprocess.call([sys.executable, str(source / "scripts/demo/start_heritage_local.py")], cwd=source)
+    command = [sys.executable, str(source / "scripts/demo/start_heritage_local.py")]
+    if FIVE_MODULE_LAUNCH:
+        command.append("--five-module-demo")
+    return subprocess.call(command, cwd=source)
 
 
 if __name__ == "__main__":

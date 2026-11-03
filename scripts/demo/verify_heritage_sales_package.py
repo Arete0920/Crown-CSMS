@@ -10,7 +10,7 @@ import subprocess
 import tempfile
 import zipfile
 
-from package_heritage_sales import ROOT, STARTER_FILES, pinned_revision
+from package_heritage_sales import ROOT, STARTER_FILES, pinned_revision, render_installer
 
 # Exact Git blobs, rather than a downloaded marker alone, bind core runtime
 # bytes to the immutable revision advertised in the starter manifest.
@@ -27,15 +27,28 @@ SOURCE_BLOB_PATHS = (
     "frontend/dashboards/src/routes/router.jsx",
     "frontend/dashboards/src/pages/JirehSGODashboard.jsx",
 )
+FIVE_MODULE_SOURCE_BLOB_PATHS = (
+    "backend/sandbox_demo/management/commands/seed_heritage_module_samples.py",
+    "backend/crown_api/management/commands/seed_fictional_sgo_intake.py",
+    "backend/jireh_sgo/family_intake_api.py",
+    "backend/aid/family_demo_intake.py",
+    "frontend/dashboards/tests/e2e/summer-camp-local-readback.spec.ts",
+    "frontend/dashboards/tests/e2e/extended-care-local-custody.spec.ts",
+    "frontend/dashboards/tests/e2e/jireh-sgo-local-intake.spec.ts",
+    "frontend/dashboards/tests/e2e/sandbox-parent-financial-aid-submit.spec.ts",
+)
 
 
-def verify_source_git_blobs(downloaded_source: Path, sha: str) -> None:
+def verify_source_git_blobs(
+    downloaded_source: Path, sha: str, *, five_module_candidate: bool = False,
+) -> None:
     """Require critical extracted files to equal Git objects at the pin.
 
     CI must check out the repository with enough history for `git show`.
     This is a selected-file identity check, not a comprehensive binary audit.
     """
-    for relative in SOURCE_BLOB_PATHS:
+    paths = SOURCE_BLOB_PATHS + (FIVE_MODULE_SOURCE_BLOB_PATHS if five_module_candidate else ())
+    for relative in paths:
         expected = subprocess.run(
             ["git", "-C", str(ROOT), "show", f"{sha}:{relative}"],
             capture_output=True, check=True,
@@ -47,8 +60,14 @@ def verify_source_git_blobs(downloaded_source: Path, sha: str) -> None:
             raise RuntimeError(f"Downloaded source blob mismatch at {relative}")
 
 
-def verify(*, download: bool = False):
-    sha = pinned_revision()
+def verify(
+    *, download: bool = False, source_sha: str | None = None,
+    five_module_candidate: bool = False,
+):
+    if five_module_candidate and source_sha is None:
+        raise RuntimeError("Five-module audit requires explicit tested-source SHA")
+    sha = source_sha if source_sha is not None else pinned_revision()
+    expected_installer = render_installer(sha, five_module_candidate=five_module_candidate)
     distribution = ROOT / ".local-backups" / "heritage-sales"
     package = distribution / f"CROWN-Heritage-Sales-Demo-{sha[:12]}.zip"
     report = distribution / "heritage-starter-audit.json"
@@ -69,43 +88,53 @@ def verify(*, download: bool = False):
                 or manifest.get("launch") != "Start-Heritage.cmd"
                 or manifest.get("entry") != "http://localhost:4173/sandbox"
                 or manifest.get("external_payments") is not False
-                or manifest.get("production_certified") is not False):
+                or manifest.get("production_certified") is not False
+                or manifest.get("release_certified") is not False
+                or manifest.get("five_module_candidate") is not five_module_candidate):
             raise RuntimeError("ZIP manifest does not match the approved sandbox contract.")
         # ZIP CRC and an internally consistent manifest do not establish
         # the integrity of runnable installer code. Compare EVERY starter file
         # with the checked-out source before calling runpy on any code.
         for name in STARTER_FILES:
-            if archive.read(name) != (ROOT / name).read_bytes():
-                raise RuntimeError(f"Bundled {name} differs from the checked-out source.")
-        starter = runpy.run_path(str(ROOT / "Install-and-Start-Heritage.py"))
-        if starter["SOURCE_SHA"] != sha or starter["SOURCE_URL"] != source_url:
-            raise RuntimeError("Bundled installer and manifest disagree.")
-        if starter["DESTINATION"].name != f"Heritage-{sha[:12]}":
-            raise RuntimeError("Bundled installer destination does not match SHA.")
-        if download:
-            with tempfile.TemporaryDirectory(prefix="heritage-package-audit-") as temp:
-                directory = Path(temp)
-                installed = starter["install_source"](
-                    destination=directory / f"Heritage-{sha[:12]}"
-                )
-                if (installed / "HERITAGE_SOURCE_COMMIT.txt").read_text(encoding="utf-8").strip() != sha:
-                    raise RuntimeError("Downloaded source marker does not match SHA.")
-                if not (installed / "scripts/demo/start_heritage_local.py").is_file():
-                    raise RuntimeError("Downloaded source does not contain the launcher.")
-                verify_source_git_blobs(installed, sha)
-                again = starter["install_source"](
-                    destination=directory / f"Heritage-{sha[:12]}"
-                )
-                if again != installed:
-                    raise RuntimeError("Repeat installer did not reuse the same source.")
-                marker = installed / "HERITAGE_SOURCE_COMMIT.txt"
-                marker.write_text("0" * 40 + "\\n", encoding="utf-8")
-                try:
-                    starter["install_source"](destination=installed)
-                except RuntimeError:
-                    pass
-                else:
-                    raise RuntimeError("Installer reused a source folder with wrong identity.")
+            expected = expected_installer if name == "Install-and-Start-Heritage.py" else (ROOT / name).read_bytes()
+            if archive.read(name) != expected:
+                raise RuntimeError(f"Bundled {name} differs from the reviewed source template.")
+        # Execute the audited template only after full byte comparison, never
+        # arbitrary installer code taken from the archive before verification.
+        with tempfile.TemporaryDirectory(prefix="heritage-reviewed-installer-") as temp:
+            installer = Path(temp) / "Install-and-Start-Heritage.py"
+            installer.write_bytes(expected_installer)
+            starter = runpy.run_path(str(installer))
+            if starter["SOURCE_SHA"] != sha or starter["SOURCE_URL"] != source_url:
+                raise RuntimeError("Bundled installer and manifest disagree.")
+            if starter["FIVE_MODULE_LAUNCH"] is not five_module_candidate:
+                raise RuntimeError("Bundled installer launch mode differs from manifest.")
+            if starter["DESTINATION"].name != f"Heritage-{sha[:12]}":
+                raise RuntimeError("Bundled installer destination does not match SHA.")
+            if download:
+                with tempfile.TemporaryDirectory(prefix="heritage-package-audit-") as src_temp:
+                    directory = Path(src_temp)
+                    installed = starter["install_source"](
+                        destination=directory / f"Heritage-{sha[:12]}"
+                    )
+                    if (installed / "HERITAGE_SOURCE_COMMIT.txt").read_text(encoding="utf-8").strip() != sha:
+                        raise RuntimeError("Downloaded source marker does not match SHA.")
+                    if not (installed / "scripts/demo/start_heritage_local.py").is_file():
+                        raise RuntimeError("Downloaded source does not contain the launcher.")
+                    verify_source_git_blobs(installed, sha, five_module_candidate=five_module_candidate)
+                    again = starter["install_source"](
+                        destination=directory / f"Heritage-{sha[:12]}"
+                    )
+                    if again != installed:
+                        raise RuntimeError("Repeat installer did not reuse the same source.")
+                    marker = installed / "HERITAGE_SOURCE_COMMIT.txt"
+                    marker.write_text("0" * 40 + "\\n", encoding="utf-8")
+                    try:
+                        starter["install_source"](destination=installed)
+                    except RuntimeError:
+                        pass
+                    else:
+                        raise RuntimeError("Installer reused a source folder with wrong identity.")
     evidence = {
         "source_sha": sha,
         "zip_crc": "PASS",
@@ -114,6 +143,8 @@ def verify(*, download: bool = False):
         "downloaded_source_identity_and_reinstall": "PASS" if download else "NOT_RUN",
         "five_module_browser_acceptance": "NOT_RUN_BY_THIS_SCRIPT",
         "physical_laptop_acceptance": "NOT_RUN_BY_THIS_SCRIPT",
+        "five_module_candidate": five_module_candidate,
+        "release_certified": False,
     }
     report.write_text(json.dumps(evidence, indent=2) + "\n", encoding="utf-8")
     print(json.dumps(evidence, indent=2))
@@ -123,9 +154,13 @@ def verify(*, download: bool = False):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--download", action="store_true")
+    parser.add_argument("--source-sha", help="Exact checkout SHA of source-stamped candidate")
+    parser.add_argument("--five-module-candidate", action="store_true",
+                        help="Audit a guarded five-module candidate; never marks certified")
     args = parser.parse_args()
     try:
-        verify(download=args.download)
+        verify(download=args.download, source_sha=args.source_sha,
+               five_module_candidate=args.five_module_candidate)
     except (OSError, RuntimeError, subprocess.CalledProcessError,
             zipfile.BadZipFile, ValueError, KeyError) as exc:
         parser.exit(1, f"Heritage starter audit failed: {exc}\n")
