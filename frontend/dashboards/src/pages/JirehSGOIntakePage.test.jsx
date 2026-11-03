@@ -179,10 +179,11 @@ describe("Jireh SGO interactive fictional intake", () => {
       }
       if (url.endsWith("/request-correction/")) {
         status = "CORRECTION_REQUESTED";
-        return response({ application: { ...saved, revision: 2, status }, changed: true });
+        return response({ application: { ...saved, revision: 2, status, correction_reason: "GRADE_UNVERIFIED" }, changed: true });
       }
       if (url.endsWith("/queue/")) return response({
-        applications: [{ ...saved, revision: status === "SUBMITTED" ? 1 : 2, status }],
+        applications: [{ ...saved, revision: status === "SUBMITTED" ? 1 : 2, status,
+          correction_reason: status === "CORRECTION_REQUESTED" ? "GRADE_UNVERIFIED" : null }],
         program_id: PID, authority: "PROCESSOR_VERIFICATION_ONLY",
       });
       throw new Error("unexpected fictional endpoint " + url);
