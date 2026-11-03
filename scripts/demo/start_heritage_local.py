@@ -190,6 +190,10 @@ def seed_five_module_fixtures(env: dict[str, str], python: Path) -> None:
         raise RuntimeError(
             "Five-module fictional preparation requires the exact isolated Heritage local settings."
         )
+    # This opt-in setting is only available after the exact local-only
+    # Heritage SQLite guard above; the default launcher never enables it.
+    # The same scoped environment is then used by the SGO seeder and demo server.
+    env["CROWN_SGO_FICTIONAL_INTAKE_ENABLED"] = "true"
     manage = [str(python), str(ROOT / "backend/manage.py")]
 
     # Never fabricate childcare readiness, release authority or awarded funds.
@@ -230,9 +234,13 @@ def main() -> int:
     parser.add_argument("--prepare-only", action="store_true")
     parser.add_argument("--five-module-preflight", action="store_true",
                         help="After preparation, run the strict isolated five-module demo audit.")
+    parser.add_argument("--five-module-demo", action="store_true",
+                        help="Explicit local-only five-module seed and strict audit before opening the demo.")
     args = parser.parse_args()
     if args.five_module_preflight and not args.prepare_only:
         parser.error("--five-module-preflight requires --prepare-only")
+    if args.five_module_preflight and args.five_module_demo:
+        parser.error("Choose --five-module-preflight or --five-module-demo, not both")
     if sys.version_info < (3, 11):
         print("Python 3.11 or newer is required.", file=sys.stderr)
         return 1
@@ -243,7 +251,9 @@ def main() -> int:
         env = local_environment()
         npm = npm_command()
         python = prepare(env, npm, args.skip_install)
-        if args.five_module_preflight:
+        if args.five_module_preflight or args.five_module_demo:
+            # A failed seeder or strict audit aborts BEFORE starting any server.
+            # Never claim a complete five-module demo on route presence alone.
             seed_five_module_fixtures(env, python)
             run([str(python), str(ROOT / "backend/manage.py"),
                  "five_module_demo_preflight", "--strict"], env)
