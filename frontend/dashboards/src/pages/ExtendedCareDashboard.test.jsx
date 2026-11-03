@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { RouterProvider, createMemoryRouter } from "react-router";
 import ExtendedCareDashboard from "./ExtendedCareDashboard.jsx";
 import { PATHS } from "../routes/paths.js";
@@ -31,13 +31,13 @@ describe("Extended Care dashboard presentation and navigation", () => {
   it.each([
     ["Open Before Care Director", PATHS.BEFORECARE_DIRECTOR, "Before Care route reached"],
     ["Open After Care Director", PATHS.AFTERCARE_DIRECTOR, "After Care route reached"],
-  ])("navigates %s through its actual route link", (label, expectedPath, destination) => {
+  ])("navigates %s through its actual route link", async (label, expectedPath, destination) => {
     const router = careRoutes();
     render(<RouterProvider router={router} />);
     const link = screen.getByRole("link", { name: label });
     expect(link.getAttribute("href")).toBe(expectedPath);
     fireEvent.click(link);
-    expect(router.state.location.pathname).toBe(expectedPath);
-    expect(screen.getByText(destination)).toBeTruthy();
+    await waitFor(() => expect(router.state.location.pathname).toBe(expectedPath));
+    expect(await screen.findByText(destination)).toBeTruthy();
   });
 });
