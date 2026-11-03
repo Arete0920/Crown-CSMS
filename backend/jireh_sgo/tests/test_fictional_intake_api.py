@@ -1,5 +1,6 @@
 """End-to-end persistence, explicit authority and two-SGO isolation in local synthetic intake."""
 from uuid import uuid4
+from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
 from django.test import override_settings
@@ -273,6 +274,15 @@ class FictionalSGOIntakeAPITests(APITestCase):
             self.assertNotEqual(self.client.get(
                 "/api/v1/jireh-sgo/family/programs/",
             ).status_code, 200)
+        with patch.dict("os.environ", {"AZURE_ENVIRONMENT": "dev"}):
+            self.assertNotEqual(self.client.get(
+                "/api/v1/jireh-sgo/family/programs/",
+            ).status_code, 200)
+        from jireh_sgo.family_intake_api import fictional_intake_enabled
+        with patch("jireh_sgo.family_intake_api.settings.DATABASES", {
+            "default": {"ENGINE": "django.db.backends.postgresql"}
+        }):
+            self.assertFalse(fictional_intake_enabled())
 
     def test_reused_processor_idempotency_key_for_different_partner_case_is_conflict(self):
         first = self._submit_a()
