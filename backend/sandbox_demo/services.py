@@ -540,6 +540,95 @@ def seed_local_heritage_relationships() -> None:
     )
 
 
+
+@transaction.atomic
+def seed_local_heritage_camp() -> dict[str, int]:
+    """Create the current Camp scenario only in the isolated fictional Heritage SQLite demo.
+
+    Never provision any customer tenant, modify an unrelated session, or mark a child
+    ready for custody release. Existing demonstration edits to configuration are left intact.
+    """
+    from datetime import time, timedelta
+
+    from django.utils import timezone
+
+    from core.models import StudentIdentityLink
+    from subscriptions.models import SchoolModule
+    from summer_camp.models import SummerCampEnrollment, SummerCampProgram, SummerCampSession
+    from summer_camp.services import camp_school_local_date
+    from sandbox_demo.management.commands.five_module_demo_preflight import _require_isolated_local_database
+
+    _require_isolated_local_database()
+    if not getattr(settings, "CROWN_SANDBOX_ALLOW_OPEN_SESSION", False):
+        raise RuntimeError("The fictional Heritage Camp seed requires an isolated local sandbox session.")
+
+    spec = SANDBOX_SCHOOLS["heritage-core"]
+    school = School.objects.get(pk=uuid.UUID(spec.id), is_active=True)
+    if school.name != spec.name:
+        raise RuntimeError("The local Heritage school identity does not match the fictional catalog.")
+    link = StudentIdentityLink.objects.select_related("compatibility_student__household").get(
+        school=school,
+        core_student__student_number="HCA-PARENT-JORDAN",
+        verification_status=StudentIdentityLink.STATUS_VERIFIED,
+    )
+    camper = link.compatibility_student
+    if camper.school_id != school.id or camper.household.school_id != school.id:
+        raise RuntimeError("Fictional Camp camper and household have inconsistent school scope.")
+
+    SchoolModule.objects.get_or_create(
+        school=school, module_key="little_lambs",
+        defaults={"status": "active", "expiry_date": timezone.now() + timedelta(days=365)},
+    )
+    program, _ = SummerCampProgram.objects.get_or_create(
+        school=school,
+        name="Heritage Fictional Camp Operations",
+        defaults={
+            "program_type": "DAY_CAMP",
+            "description": "Fictional, local-only Camp operations demonstration. No payments.",
+            "grade_band": "5-8",
+            "location": "Heritage demo room",
+        },
+    )
+    today = camp_school_local_date(school.id, timezone.now())
+    matches = list(SummerCampSession.objects.filter(
+        school=school, program=program, name="Fictional Camp Active Session"
+    ))
+    if len(matches) > 1:
+        raise RuntimeError("Duplicate fictional Camp sessions require manual reconciliation.")
+    if matches:
+        session = matches[0]
+        if session.start_date > today or session.end_date < today:
+            # Update only our named synthetic session, retaining its PK and
+            # registrations. Never rewrite an unrelated operator session.
+            session.start_date = today
+            session.end_date = today + timedelta(days=30)
+            session.save(update_fields=["start_date", "end_date"])
+    else:
+        session = SummerCampSession.objects.create(
+            school=school, program=program, name="Fictional Camp Active Session",
+            start_date=today, end_date=today + timedelta(days=30),
+            start_time=time(8), end_time=time(15),
+            capacity=20, waitlist_capacity=5, status="PUBLISHED",
+            price_cents=0, deposit_cents=0,
+        )
+
+    registrations = list(SummerCampEnrollment.objects.filter(
+        school=school, session=session, student=camper
+    ))
+    if len(registrations) > 1:
+        raise RuntimeError("Duplicate fictional Camp registrations require manual reconciliation.")
+    if not registrations:
+        SummerCampEnrollment.objects.create(
+            school=school, session=session, student=camper, household=camper.household,
+            status="REGISTERED", registration_source="EXISTING",
+            form_status="MISSING", payment_status="NOT_BILLED",
+            health_status="NEEDS_REVIEW", pickup_status="MISSING",
+            readiness_status="BLOCKED", readiness_blockers=["MISSING_FORMS", "HEALTH_REVIEW_REQUIRED", "PICKUP_CONTACT_MISSING", "STAFF_REVIEW_REQUIRED"],
+            payment_required_before_attendance=False, balance_due_cents=0,
+        )
+    return {"fictional_camp_sessions": 1, "fictional_camp_registrations": 1}
+
+
 def assert_flagship_proof() -> list[dict]:
     school = ensure_demo_school(SANDBOX_SCHOOLS["heritage-core"])
     metrics = proof_metrics(school)
