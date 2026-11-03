@@ -28,6 +28,7 @@ FIVE_MODULE_BROWSER_SOURCES = (
     "tests/e2e/sandbox-parent-financial-aid-submit.spec.ts",
     "tests/e2e/extended-care-local-custody.spec.ts",
     "tests/e2e/jireh-sgo-local-intake.spec.ts",
+    "tests/e2e/heritage-module-responsive.spec.ts",
 )
 UPSTREAM_BROWSER_CHECKS = (
     "six_role_buyer_browser_routes_and_mobile",
@@ -71,10 +72,11 @@ def complete_five_module_browser_checks(browser_env: dict[str, str], evidence: d
         "CROWN_SGO_LOCAL_CREDENTIALS": str((launcher.STATE / "sgo-credentials.txt").resolve()),
     })
     subprocess.run(
-        launcher.npm_command() + ["run", "test:e2e", "--", *FIVE_MODULE_BROWSER_SOURCES[-2:],
+        launcher.npm_command() + ["run", "test:e2e", "--", *FIVE_MODULE_BROWSER_SOURCES[4:],
                                   "--workers=1", "--reporter=line"],
         cwd=launcher.FRONTEND, env=scoped, timeout=600, check=True,
     )
+    evidence["checks"]["five_module_responsive_real_role_browser_audit"] = True
     evidence["checks"]["extended_care_real_am_pm_browser_custody_and_reload"] = True
     evidence["checks"]["jireh_sgo_independent_partners_submission_correction_and_resubmission"] = True
 

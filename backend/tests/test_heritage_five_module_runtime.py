@@ -67,7 +67,7 @@ def test_stale_fixture_source_blocks_runtime_before_key_preparation(runtime, mon
     assert runtime.main() == 1
 
 
-@pytest.mark.parametrize("index", range(6))
+@pytest.mark.parametrize("index", range(7))
 def test_each_missing_browser_source_blocks_completion(runtime, monkeypatch, index):
     (runtime.launcher.FRONTEND / runtime.FIVE_MODULE_BROWSER_SOURCES[index]).unlink()
     monkeypatch.setattr(runtime.subprocess, "run", lambda *a, **kw: pytest.fail("No browser with incomplete source"))
@@ -135,6 +135,7 @@ def test_success_runs_care_and_sgo_once_with_required_proof_flags(runtime, monke
     assert command == ["npm", "run", "test:e2e", "--",
                        "tests/e2e/extended-care-local-custody.spec.ts",
                        "tests/e2e/jireh-sgo-local-intake.spec.ts",
+                       "tests/e2e/heritage-module-responsive.spec.ts",
                        "--workers=1", "--reporter=line"]
     assert options["env"]["CROWN_REQUIRE_CARE_BROWSER_PROOF"] == "1"
     assert options["env"]["CROWN_REQUIRE_SGO_BROWSER_PROOF"] == "1"

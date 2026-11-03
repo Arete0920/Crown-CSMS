@@ -11,9 +11,7 @@ from pathlib import Path
 
 import pytest
 
-
 ROOT = Path(__file__).resolve().parents[2]
-
 
 def load_launcher():
     script = ROOT / "scripts" / "demo" / "start_heritage_local.py"
@@ -21,7 +19,6 @@ def load_launcher():
     launcher = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(launcher)
     return launcher
-
 
 def local_env(state: Path):
     return {
@@ -34,10 +31,8 @@ def local_env(state: Path):
         "DATABASE_URL": "sqlite:///" + (state / "heritage.sqlite3").as_posix(),
     }
 
-
 def test_sgo_seed_stays_opt_in_and_runs_once():
     """Guard cross-PR launcher integration against double credential rotation.
-
     #616 currently seeds SGO in ordinary prepare, while #615 seeds it in the
     explicit five-module path. The integrated launcher must preserve only the
     opt-in invocation and never enable SGO from ordinary local_environment.
@@ -46,14 +41,12 @@ def test_sgo_seed_stays_opt_in_and_runs_once():
     default_environment = inspect.getsource(launcher.local_environment)
     normal_preparation = inspect.getsource(launcher.prepare)
     opt_in_preparation = inspect.getsource(launcher.seed_five_module_fixtures)
-
     # Do not enable partner-family/processor endpoints in the basic demo.
     assert "CROWN_SGO_FICTIONAL_INTAKE_ENABLED" not in default_environment
     # Do not call a password-rotating SGO seeder during ordinary preparation.
     assert "seed_fictional_sgo_intake" not in normal_preparation
     # One and only one seeder invocation in explicitly guarded preparation.
     assert opt_in_preparation.count('"seed_fictional_sgo_intake"') == 1
-
 
 def test_strict_preparation_runs_existing_three_seeders_in_order(monkeypatch, tmp_path):
     launcher = load_launcher()
@@ -62,9 +55,7 @@ def test_strict_preparation_runs_existing_three_seeders_in_order(monkeypatch, tm
     env = local_env(tmp_path)
     commands = []
     monkeypatch.setattr(launcher, "run", lambda cmd, process_env: commands.append((cmd, process_env)))
-
     launcher.seed_five_module_fixtures(env, python)
-
     manage = [str(python), str(ROOT / "backend" / "manage.py")]
     assert len(commands) == 3
     assert env["CROWN_SGO_FICTIONAL_INTAKE_ENABLED"] == "true"
@@ -79,7 +70,6 @@ def test_strict_preparation_runs_existing_three_seeders_in_order(monkeypatch, tm
         "seed_fictional_sgo_intake", "--credentials-file",
         str(tmp_path / "sgo-credentials.txt"),
     ]
-
 
 @pytest.mark.parametrize(("key", "value"), [
     ("DJANGO_ENV", "dev"),
@@ -99,29 +89,24 @@ def test_nonlocal_or_ambiguous_configuration_blocks_all_fixture_writes(
     monkeypatch.setattr(launcher, "run", lambda cmd, env: commands.append(cmd))
     env = local_env(tmp_path)
     env[key] = value
-
     with pytest.raises(RuntimeError, match="exact isolated Heritage local settings"):
         launcher.seed_five_module_fixtures(env, tmp_path / "python")
     assert commands == []
     assert "CROWN_SGO_FICTIONAL_INTAKE_ENABLED" not in env
 
-
 def test_missing_seed_command_cannot_claim_success(monkeypatch, tmp_path):
     launcher = load_launcher()
     monkeypatch.setattr(launcher, "STATE", tmp_path)
     calls = []
-
     def failing_run(command, env):
         calls.append(command)
         raise FileNotFoundError("missing governed seeder")
-
     monkeypatch.setattr(launcher, "run", failing_run)
     with pytest.raises(FileNotFoundError, match="missing governed seeder"):
         launcher.seed_five_module_fixtures(local_env(tmp_path), tmp_path / "python")
     assert len(calls) == 1
     assert calls[0][-3:] == ["seed_heritage_module_samples", "--fictional-local-only",
                            "--enable-fictional-care-entitlements"]
-
 
 
 def test_missing_five_module_source_fails_before_install_or_database_mutation(monkeypatch, tmp_path, capsys):
@@ -144,7 +129,6 @@ def test_missing_five_module_source_fails_before_install_or_database_mutation(mo
     assert "Five-module demonstration source is incomplete" in error
     assert "seed_heritage_module_samples.py" in error
     assert "seed_fictional_sgo_intake.py" in error
-
 
 def test_source_prerequisite_rejects_camp_placeholder_but_accepts_declared_fixture(tmp_path):
     launcher = load_launcher()
@@ -193,7 +177,6 @@ def test_explicit_five_module_launch_must_complete_strict_audit_before_servers(m
     assert calls == [("seed", python), ("audit", ["five_module_demo_preflight", "--strict"])]
 
 
-
 @pytest.mark.parametrize(("mode", "stale_marker"), [
     (["--five-module-demo"], "seed.complete"),
     (["--five-module-demo"], "relationships.complete"),
@@ -216,7 +199,6 @@ def test_opt_in_rejects_stale_marker_before_local_setup(
     assert launcher.main() == 1
     assert "another source revision" in capsys.readouterr().err
 
-
 @pytest.mark.parametrize("missing", ["seed.complete", "relationships.complete"])
 def test_existing_db_refuses_incomplete_provenance(monkeypatch, tmp_path, missing):
     launcher = load_launcher()
@@ -226,7 +208,6 @@ def test_existing_db_refuses_incomplete_provenance(monkeypatch, tmp_path, missin
     (tmp_path / existing).write_text("a" * 40, encoding="utf-8")
     with pytest.raises(RuntimeError, match="incomplete seed markers"):
         launcher.require_fresh_five_module_source("a" * 40)
-
 
 def test_marker_without_db_refused(monkeypatch, tmp_path):
     launcher = load_launcher()
@@ -284,19 +265,16 @@ def test_successful_opt_in_launch_preserves_strict_sequence(monkeypatch, tmp_pat
     monkeypatch.setattr(launcher, "local_environment", lambda: env)
     monkeypatch.setattr(launcher, "prepare", lambda *args: python)
     calls = []
-
     def seed(process_env, executable):
         assert process_env is env
         assert executable == python
         assert "CROWN_SGO_FICTIONAL_INTAKE_ENABLED" not in env
         process_env["CROWN_SGO_FICTIONAL_INTAKE_ENABLED"] = "true"
         calls.append("seed")
-
     def audit(command, process_env):
         assert process_env is env
         assert command[-2:] == ["five_module_demo_preflight", "--strict"]
         calls.append("strict")
-
     class FakeServer:
         def __init__(self, name):
             self.name = name
@@ -306,7 +284,6 @@ def test_successful_opt_in_launch_preserves_strict_sequence(monkeypatch, tmp_pat
             calls.append("stop-" + self.name)
         def wait(self, timeout=None):
             return 0
-
     def spawn(command, *, cwd, env, stdout, stderr):
         assert env["CROWN_SGO_FICTIONAL_INTAKE_ENABLED"] == "true"
         if "heritage_runserver" in command:
@@ -316,12 +293,10 @@ def test_successful_opt_in_launch_preserves_strict_sequence(monkeypatch, tmp_pat
         assert command == ["vite", "preview"]
         calls.append("frontend")
         return FakeServer("frontend")
-
     def ready(url, process, **kwargs):
         assert process.name in ("backend", "frontend")
         assert url.startswith("http://127.0.0.1:") or url.startswith("http://localhost:")
         calls.append("ready-" + process.name)
-
     monkeypatch.setattr(launcher, "seed_five_module_fixtures", seed)
     monkeypatch.setattr(launcher, "run", audit)
     monkeypatch.setattr(launcher.subprocess, "Popen", spawn)
