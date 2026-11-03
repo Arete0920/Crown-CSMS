@@ -46,6 +46,7 @@ def test_strict_preparation_runs_existing_three_seeders_in_order(monkeypatch, tm
 
     manage = [str(python), str(ROOT / "backend" / "manage.py")]
     assert len(commands) == 3
+    assert env["CROWN_SGO_FICTIONAL_INTAKE_ENABLED"] == "true"
     assert all(cmd[:2] == manage and process_env is env for cmd, process_env in commands)
     assert commands[0][0][2:] == ["seed_heritage_module_samples", "--fictional-local-only"]
     assert commands[1][0][2:] == [
@@ -80,6 +81,7 @@ def test_nonlocal_or_ambiguous_configuration_blocks_all_fixture_writes(
     with pytest.raises(RuntimeError, match="exact isolated Heritage local settings"):
         launcher.seed_five_module_fixtures(env, tmp_path / "python")
     assert commands == []
+    assert "CROWN_SGO_FICTIONAL_INTAKE_ENABLED" not in env
 
 
 def test_missing_seed_command_cannot_claim_success(monkeypatch, tmp_path):
@@ -96,3 +98,43 @@ def test_missing_seed_command_cannot_claim_success(monkeypatch, tmp_path):
         launcher.seed_five_module_fixtures(local_env(tmp_path), tmp_path / "python")
     assert len(calls) == 1
     assert calls[0][-2:] == ["seed_heritage_module_samples", "--fictional-local-only"]
+
+
+def test_explicit_five_module_launch_must_complete_strict_audit_before_servers(monkeypatch, tmp_path):
+    launcher = load_launcher()
+    monkeypatch.setattr(launcher, "STATE", tmp_path)
+    monkeypatch.setattr(launcher.sys, "argv", ["start_heritage_local.py", "--five-module-demo"])
+    monkeypatch.setattr(launcher, "available_ports", lambda: None)
+    monkeypatch.setattr(launcher, "npm_command", lambda: ["npm"])
+    env = local_env(tmp_path)
+    python = tmp_path / "python"
+    monkeypatch.setattr(launcher, "local_environment", lambda: env)
+    monkeypatch.setattr(launcher, "prepare", lambda *args: python)
+    calls = []
+    def seed(process_env, executable):
+        calls.append(("seed", executable))
+        process_env["CROWN_SGO_FICTIONAL_INTAKE_ENABLED"] = "true"
+    def audit(command, process_env):
+        calls.append(("audit", command[-2:]))
+        raise RuntimeError("synthetic audit failure")
+    monkeypatch.setattr(launcher, "seed_five_module_fixtures", seed)
+    monkeypatch.setattr(launcher, "run", audit)
+    def forbid_server(*args, **kwargs):
+        pytest.fail("No server may launch before strict five-module audit passes")
+    monkeypatch.setattr(launcher.subprocess, "Popen", forbid_server)
+    assert launcher.main() == 1
+    assert calls == [("seed", python), ("audit", ["five_module_demo_preflight", "--strict"])]
+
+
+def test_default_prepare_does_not_activate_five_module_fixtures(monkeypatch, tmp_path):
+    launcher = load_launcher()
+    monkeypatch.setattr(launcher.sys, "argv", ["start_heritage_local.py", "--prepare-only"])
+    monkeypatch.setattr(launcher, "available_ports", lambda: None)
+    monkeypatch.setattr(launcher, "npm_command", lambda: ["npm"])
+    env = local_env(tmp_path)
+    monkeypatch.setattr(launcher, "local_environment", lambda: env)
+    monkeypatch.setattr(launcher, "prepare", lambda *args: tmp_path / "python")
+    monkeypatch.setattr(launcher, "seed_five_module_fixtures",
+                        lambda *args: pytest.fail("Default launcher must not provision five-module fixtures"))
+    assert launcher.main() == 0
+    assert "CROWN_SGO_FICTIONAL_INTAKE_ENABLED" not in env
