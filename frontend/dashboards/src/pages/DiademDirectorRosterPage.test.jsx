@@ -199,3 +199,23 @@ it("removes previous staff custody after a same-school access-token rotation", a
   expect((await screen.findByRole("alert")).textContent).toMatch(/not authorized for this roster/i);
   expect(crownApiClient.post).not.toHaveBeenCalled();
 });
+
+it("keeps interrupted custody outcome unconfirmed when staff switch during a pending POST", async () => {
+  let settle;
+  configurePickupFlow(() => new Promise((resolve) => { settle = resolve; }));
+  const authorizedGet = crownApiClient.get.getMockImplementation();
+  crownApiClient.get.mockImplementation((url) => getAccessToken() === "synthetic-staff-access-token"
+    ? authorizedGet(url)
+    : Promise.reject(new Error("New identity lacks the previous roster grant")));
+  render(<DiademDirectorRosterPage />);
+  await performPickupReview();
+  await waitFor(() => expect(crownApiClient.post).toHaveBeenCalledTimes(1));
+  const { act } = await import("@testing-library/react");
+  act(() => { setAccessToken("different-staff-session"); });
+  expect(screen.queryByText(child)).toBeNull();
+  expect((await screen.findByRole("alert")).textContent).toMatch(/handoff outcome is unconfirmed/i);
+  settle({ data: { status: "released", attendance_id: attendanceId } });
+  await waitFor(() => expect(crownApiClient.post).toHaveBeenCalledTimes(1));
+  expect(screen.queryByText(/Server-confirmed handoff/)).toBeNull();
+  expect(screen.getByText(/Do not retry automatically/)).toBeTruthy();
+});

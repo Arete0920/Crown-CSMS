@@ -34,10 +34,13 @@ export default function DiademDirectorRosterPage() {
   useEffect(() => {
     const onIdentityChange = () => {
       const nextSchool = getSelectedSchoolId(), nextToken = getAccessToken();
+      if (identity.school === nextSchool && identity.token === nextToken) return;
       setIdentity((previous) => previous.school === nextSchool && previous.token === nextToken
         ? previous : { school: nextSchool, token: nextToken });
       setReview(null);
-      setReleaseMessage("");
+      setReleaseMessage(review
+        ? "Pickup review interrupted by staff identity change. Handoff outcome is unconfirmed: refresh and reverify live custody before any further action. Do not retry automatically."
+        : "");
     };
     for (const name of [SCHOOL_CONTEXT_CHANGE_EVENT, AUTH_CONTEXT_CHANGE_EVENT, "focus", "storage"]) {
       window.addEventListener(name, onIdentityChange);
@@ -47,7 +50,7 @@ export default function DiademDirectorRosterPage() {
         window.removeEventListener(name, onIdentityChange);
       }
     };
-  }, []);
+  }, [identity, review]);
 
   useEffect(() => {
     let live = true;
@@ -139,7 +142,7 @@ export default function DiademDirectorRosterPage() {
               siteId={siteId} attendance={review} onCancel={() => setReview(null)}
               onReleased={() => { setReview(null); setReleaseMessage("Server-confirmed handoff. Verify the refreshed custody roster before proceeding."); setRefresh((n) => n + 1); }} />}
         </> : <p>{loading ? "Loading roster…" : "No verified roster available."}</p>}
-        {releaseMessage && currentSites && <p role="status">{releaseMessage}</p>}
+        {releaseMessage && <p role={releaseMessage.startsWith("Pickup review interrupted") ? "alert" : "status"}>{releaseMessage}</p>}
         <p>Only authorized staff can confirm verified release. New admission remains separately gated.</p>
       </DashboardSection>
     </CrownLayout>
