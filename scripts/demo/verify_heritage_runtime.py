@@ -166,6 +166,8 @@ def main() -> int:
             evidence["checks"]["six_role_buyer_browser_routes_and_mobile"] = True
             evidence["browser_route_count"] = report.get("routeCount")
 
+            # Certify a complete fictional family aid POST, authenticated GET,
+            # and browser reload on the same isolated local runtime.
             # Reuse the existing real-browser attendance/classwork regression.
             # A saved response alone cannot certify that reload restored the mark.
             browser_env["CERT_FRONTEND_URL"] = "http://127.0.0.1:4173"
@@ -178,11 +180,13 @@ def main() -> int:
                 launcher.npm_command() + [
                     "run", "test:e2e", "--",
                     "tests/e2e/sandbox-teacher-attendance-assignment.spec.ts",
+                    "tests/e2e/sandbox-parent-financial-aid-submit.spec.ts",
                     "--workers=1", "--reporter=line",
                 ],
                 cwd=launcher.FRONTEND, env=browser_env, timeout=600, check=True,
             )
             evidence["checks"]["teacher_attendance_and_classwork_persist_after_reload"] = True
+            evidence["checks"]["fictional_jireh_family_application_browser_submission_and_reload"] = True
         evidence["result"] = "PASS"
         print("Heritage Windows runner rehearsal passed: exact local build, frontend, backend, six buyer sessions, Board least privilege, and finance denials." + (" Full buyer browser and teacher attendance/classwork reload certification passed." if args.browser else " Browser journey not executed."))
         return 0
