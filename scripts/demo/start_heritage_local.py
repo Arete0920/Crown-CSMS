@@ -219,11 +219,12 @@ def seed_five_module_fixtures(env: dict[str, str], python: Path) -> None:
 
 
 
-def require_five_module_sources(root: Path = ROOT) -> None:
+def require_five_module_sources(root: Path | None = None) -> None:
     """Detect missing reviewed source before dependency installs or migrations.
 
     The static check does NOT certify seed behavior, custody, or the browser.
     """
+    root = ROOT if root is None else root
     required = (
         "backend/sandbox_demo/management/commands/seed_heritage_module_samples.py",
         "backend/crown_api/management/commands/seed_fictional_sgo_intake.py",
