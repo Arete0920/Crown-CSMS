@@ -216,10 +216,11 @@ def enforce_tenant_context(request) -> None:
     # fictional-intake paths in a verified, explicitly enabled LOCAL runtime.
     # View-level grants still enforce actor/program authorization.
     is_sgo_intake = _sgo_fictional_intake_route(normalized_path, request.method)
+    allowed_fictional_intake = False
     if is_sgo_intake:
         from jireh_sgo.family_intake_api import fictional_intake_enabled
-    if (_sgo_grantor_read_route(normalized_path, request.method)
-            or (is_sgo_intake and fictional_intake_enabled())):
+        allowed_fictional_intake = fictional_intake_enabled()
+    if _sgo_grantor_read_route(normalized_path, request.method) or allowed_fictional_intake:
         if "HTTP_X_SCHOOL_ID" in request.META or "HTTP_X_CROWN_SCHOOL_ID" in request.META:
             raise _tenant_context_error(
                 request,
