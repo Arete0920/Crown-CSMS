@@ -87,8 +87,32 @@ export default function ParentFinancialAidPreparationPage() {
         }),
       });
       const result = await response.json();
-      await load();
-      setConfirmation("Fictional application #" + result.application.id + " submitted and saved.");
+      const submitted = result?.application;
+      if (result?.demo_only !== true || !submitted?.id) {
+        throw new Error("The fictional submission did not return a verifiable application.");
+      }
+
+      // A successful POST alone is not proof of persisted or scoped family state.
+      // Confirm the canonical application through a separate authenticated GET.
+      const refreshed = await load();
+      const saved = Array.isArray(refreshed?.applications)
+        ? refreshed.applications.find((application) => String(application.id) === String(submitted.id))
+        : null;
+      const savedStudents = Array.isArray(saved?.student_ids) ? saved.student_ids.map(String) : [];
+      const requestedStudents = selectedStudents.map(String);
+      if (
+        !saved
+        || saved.status !== "SUBMITTED"
+        || !saved.submitted_at
+        || String(saved.academic_year_id) !== String(yearId)
+        || savedStudents.length !== requestedStudents.length
+        || !requestedStudents.every((id) => savedStudents.includes(id))
+      ) {
+        throw new Error(
+          "The server accepted the fictional submission, but independent saved-record verification failed. Refresh the application status before proceeding."
+        );
+      }
+      setConfirmation("Fictional application #" + saved.id + " submitted and independently verified.");
     } catch (failure) {
       setError(errorMessage(failure));
     } finally {
@@ -123,7 +147,7 @@ export default function ParentFinancialAidPreparationPage() {
               <form onSubmit={submit}>
                 <div className="learning-record-detail-block">
                   <label htmlFor="jireh-demo-year">Financial Aid year</label>
-                  <select id="jireh-demo-year" value={yearId} onChange={(event) => setYearId(event.target.value)} required>
+                  <select id="jireh-demo-year" value={yearId} onChange={(event) => setYearId(event.target.value)} disabled={saving || Boolean(existing)} required>
                     {record.academic_years.map((year) => <option key={year.id} value={year.id}>{year.name}</option>)}
                   </select>
                 </div>
@@ -204,8 +228,9 @@ export default function ParentFinancialAidPreparationPage() {
                   </article>
                 ))}
               </section>
-              <button type="button" onClick={() => {
+              <button type="button" disabled={saving} onClick={() => {
                 setError("");
+                setConfirmation("");
                 load().catch((failure) => setError(errorMessage(failure)));
               }}>Refresh saved status</button>
             </>
