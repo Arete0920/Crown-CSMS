@@ -109,6 +109,48 @@ def test_local_module_samples_are_idempotent_and_do_not_authorize_custody(
     ).exists()
 
 
+
+@pytest.mark.parametrize("session,tamper", [
+    ("AM", "inactive"), ("PM", "start_date"), ("AM", "paid_rate"),
+    ("PM", "end_date"),
+])
+def test_extended_care_sample_reseed_rejects_mutated_enrollment(
+    monkeypatch, settings, session, tamper,
+):
+    """Never re-create altered AM/PM records or imply nonzero fees are demo-safe."""
+    from aftercare.models import AftercareEnrollment
+
+    changes = {
+        "inactive": {"is_active": False},
+        "start_date": {"start_date": "2026-08-02"},
+        "paid_rate": {"monthly_rate": "10.00"},
+        "end_date": {"end_date": "2026-08-15"},
+    }
+    with _setup_local(monkeypatch, settings):
+        seed_heritage_module_samples()
+        target = AftercareEnrollment.objects.get(
+            school_fk_id=HERITAGE_ID, care_session=session,
+            student_fk_id=fixed_id("extended-care-student"),
+        )
+        AftercareEnrollment.objects.filter(pk=target.pk).update(**changes[tamper])
+        with pytest.raises(CommandError, match="Extended Care sample changed"):
+            seed_heritage_module_samples()
+
+    mutated = AftercareEnrollment.objects.get(pk=target.pk)
+    assert not AftercareEnrollment.objects.filter(
+        school_fk_id=HERITAGE_ID, care_session=session,
+        student_fk_id=fixed_id("extended-care-student"),
+    ).exclude(pk=target.pk).exists()
+    if tamper == "inactive":
+        assert not mutated.is_active
+    elif tamper == "start_date":
+        assert str(mutated.start_date) == "2026-08-02"
+    elif tamper == "paid_rate":
+        assert str(mutated.monthly_rate) == "10.00"
+    else:
+        assert str(mutated.end_date) == "2026-08-15"
+
+
 @pytest.mark.parametrize("tamper", [
     "ready_enrollment", "cancelled_enrollment", "activated_room",
 ])

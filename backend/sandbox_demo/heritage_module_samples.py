@@ -232,14 +232,31 @@ def seed_heritage_module_samples() -> dict[str, int]:
             school_fk=school, student_fk=student,
             care_session=care_session, start_date=SAMPLE_START,
         )
+        # This learner is reserved for the fictional AM/PM sample. Do not
+        # create a replacement if an earlier sample's start date was edited.
         matches = list(AftercareEnrollment.objects.filter(
-            **identity
+            school_fk=school, student_fk=student, care_session=care_session,
         ).order_by("id")[:2])
         if len(matches) > 1:
             raise CommandError(
                 "Ambiguous duplicate fictional extended-care enrollment."
             )
-        if not matches:
+        if matches:
+            existing = matches[0]
+            if (
+                existing.start_date != SAMPLE_START
+                or existing.end_date is not None
+                or not existing.is_active
+                or existing.days_of_week != ["MON", "TUE", "WED", "THU", "FRI"]
+                or existing.billing_model != "FLAT_MONTHLY"
+                or existing.monthly_rate != Decimal("0.00")
+                or existing.prepaid_sessions_balance != 0
+                or existing.dropin_daily_rate is not None
+            ):
+                raise CommandError(
+                    "Fictional Extended Care sample changed; manual reconciliation required."
+                )
+        else:
             AftercareEnrollment.objects.create(
                 **identity, end_date=None,
                 days_of_week=["MON", "TUE", "WED", "THU", "FRI"],
