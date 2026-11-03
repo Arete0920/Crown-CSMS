@@ -367,6 +367,39 @@ class FictionalSGOIntakeAPITests(APITestCase):
                          "PROCESSOR_VERIFICATION_ONLY")
         self.assertFalse(SGOAward.objects.exists())
 
+    def test_old_idempotency_keys_cannot_start_a_later_revision_on_same_case(self):
+        created = self._submit_a()
+        app_id = created.data["application"]["id"]
+        processor_key = str(uuid4())
+        family_key = str(uuid4())
+        self.client.force_authenticate(user=self.processor_a)
+        processor_url = self._request_url(app_id)
+        self.assertEqual(self.client.post(
+            processor_url, {"expected_revision": 1, "reason": "GRADE_UNVERIFIED",
+                            "request_key": processor_key}, format="json",
+        ).status_code, 200)
+        self.client.force_authenticate(user=self.family_a)
+        family_url = self._correction_url(app_id)
+        self.assertEqual(self.client.post(
+            family_url, {"expected_revision": 2, "grade_level": "1",
+                         "correction_key": family_key}, format="json",
+        ).status_code, 200)
+        self.client.force_authenticate(user=self.processor_a)
+        self.assertEqual(self.client.post(
+            processor_url, {"expected_revision": 3, "reason": "GRADE_UNVERIFIED",
+                            "request_key": processor_key}, format="json",
+        ).status_code, 409)
+        self.assertEqual(self.client.post(
+            processor_url, {"expected_revision": 3, "reason": "GRADE_UNVERIFIED",
+                            "request_key": str(uuid4())}, format="json",
+        ).status_code, 200)
+        self.client.force_authenticate(user=self.family_a)
+        self.assertEqual(self.client.post(
+            family_url, {"expected_revision": 4, "grade_level": "2",
+                         "correction_key": family_key}, format="json",
+        ).status_code, 409)
+        self.assertEqual(SGOFamilyIntake.objects.get(application_id=app_id).revision, 4)
+
     def test_processor_cannot_act_after_review(self):
         created = self._submit_a()
         app_id = created.data["application"]["id"]
