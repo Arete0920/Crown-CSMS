@@ -176,8 +176,17 @@ test.describe("Extended Care fictional custody browser isolation (mocked API)", 
   test("same-tab staff replacement event immediately removes old child's actions without focus", async ({ page }) => {
     await setupStaff(page);
     await page.route("**/api/v1/aftercare/**", route => {
-      const url = new URL(route.request().url());
-      if (url.pathname.endsWith("/roster/today/")) return json(route, careRoster(SCHOOL_A, "AM"));
+      const request = route.request();
+      const url = new URL(request.url());
+      const token = request.headers().authorization || "";
+      if (url.pathname.endsWith("/roster/today/")) {
+        // The second authenticated staff member is authorized but has a
+        // distinct roster. An identity change must never revive staff A's child.
+        if (token !== "Bearer fictional-care-staff-A-token") {
+          return json(route, { ...careRoster(SCHOOL_A, "AM"), rows: [] });
+        }
+        return json(route, careRoster(SCHOOL_A, "AM"));
+      }
       return json(route, { detail: "Not available" }, 403);
     });
     await page.goto(AM, { waitUntil: "domcontentloaded" });
