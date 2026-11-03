@@ -111,9 +111,9 @@ export default function AftercareRosterPage({ careSession = "PM" }) {
       const marker = readCustodyBarrier();
       setUnconfirmedScope(marker ? { school: marker.school, careSession: marker.careSession } : null);
       setCustodyWritePending(marker?.status === "pending");
-      // The originating component keeps its own in-flight status. A newly
-      // mounted route must immediately display the persisted custody warning.
-      if (!operationInFlightRef.current) setCustodyWarning(marker ? custodyMessage : "");
+      // Propagate both lock and unlock notifications, including the originating
+      // page: a confirmed write must not leave a stale warning after readback.
+      setCustodyWarning(marker ? custodyMessage : "");
     };
     window.addEventListener(CUSTODY_BARRIER_EVENT, syncBarrier);
     syncBarrier();
