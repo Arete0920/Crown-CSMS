@@ -22,6 +22,23 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
+        migrations.AlterField(
+            model_name="sgoauditevent",
+            name="action",
+            field=models.CharField(
+                max_length=70,
+                choices=[
+                    ("PROGRAM_CREATED", "PROGRAM_CREATED"),
+                    ("APPLICATION_CREATED", "APPLICATION_CREATED"),
+                    ("ELIGIBILITY_ATTESTED", "ELIGIBILITY_ATTESTED"),
+                    ("AWARD_COMMITTED_NONCASH", "AWARD_COMMITTED_NONCASH"),
+                    ("AWARD_CANCELLED_NONCASH", "AWARD_CANCELLED_NONCASH"),
+                    ("INTAKE_SUBMITTED", "INTAKE_SUBMITTED"),
+                    ("INTAKE_CORRECTION_REQUESTED", "INTAKE_CORRECTION_REQUESTED"),
+                    ("INTAKE_RESUBMITTED", "INTAKE_RESUBMITTED"),
+                ],
+            ),
+        ),
         migrations.CreateModel(
             name="SGOFamilyGrant",
             fields=[
