@@ -112,11 +112,11 @@ class HostedBuyerWorkspaceContract(TestCase):
         self.assertEqual(self.enter(invite).data["code"], "sandbox_buyer_principal_unprovisioned")
 
     def test_hosted_scope_cannot_implicitly_expand_empty_or_foreign_packs(self):
-        for roles, packs in (
-            ([], ["heritage-core"]),
-            (["teacher"], []),
-            (["teacher"], ["heritage-core", "other-school"]),
-            (["teacher"], ["other-school"]),
+        for roles, packs, expected_code in (
+            ([], ["heritage-core"], "sandbox_buyer_invite_scope_invalid"),
+            (["teacher"], [], "sandbox_buyer_invite_scope_invalid"),
+            (["teacher"], ["heritage-core", "other-school"], "sandbox_buyer_invite_scope_invalid"),
+            (["teacher"], ["other-school"], "sandbox_invite_school_not_allowed"),
         ):
             invite = self.make_invite(roles=roles)
             invite.allowed_seed_packs = packs
@@ -124,7 +124,7 @@ class HostedBuyerWorkspaceContract(TestCase):
             self.make_workspace(invite)
             response = self.enter(invite)
             self.assertEqual(response.status_code, 403)
-            self.assertEqual(response.data["code"], "sandbox_buyer_invite_scope_invalid")
+            self.assertEqual(response.data["code"], expected_code)
             self.assertIsNone(SandboxInvite.objects.get(pk=invite.pk).last_used_at)
 
     def test_wrong_invite_role_and_unknown_school_are_denied(self):
