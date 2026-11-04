@@ -89,7 +89,7 @@ export default function WizardHub() {
               <div
                 style={{
                   fontSize: 12,
-                  color: "var(--crown-muted, #42566e)",
+                  color: "var(--crown-muted)",
                   fontFamily: "var(--crown-font-mono)",
                   marginBottom: 12,
                 }}
@@ -104,7 +104,7 @@ export default function WizardHub() {
                   Open wizard →
                 </Link>
               ) : (
-                <span style={{ fontSize: 13, color: "var(--crown-muted, #42566e)" }}>
+                <span style={{ fontSize: 13, color: "var(--crown-muted)" }}>
                   (path not in manifest)
                 </span>
               )}
