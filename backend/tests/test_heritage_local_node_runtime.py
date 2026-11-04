@@ -75,3 +75,12 @@ def test_npm_command_requires_node_and_npm(monkeypatch):
     monkeypatch.setattr(launcher.shutil, "which", lambda _command: None)
     with pytest.raises(RuntimeError, match="with npm"):
         launcher.npm_command()
+
+
+@pytest.mark.parametrize("inherited", ["true", "false", ""])
+def test_ordinary_heritage_launcher_never_enables_fictional_sgo(monkeypatch, tmp_path, inherited):
+    launcher = load_launcher()
+    monkeypatch.setattr(launcher, "STATE", tmp_path)
+    monkeypatch.setattr(launcher, "source_sha", lambda: "a" * 40)
+    monkeypatch.setenv("CROWN_SGO_FICTIONAL_INTAKE_ENABLED", inherited)
+    assert launcher.local_environment().get("CROWN_SGO_FICTIONAL_INTAKE_ENABLED") is None

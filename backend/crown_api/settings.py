@@ -170,6 +170,11 @@ CROWN_DEMO_MODE = _env_bool("CROWN_DEMO_MODE", default=False)
 _assert_not_prod_true("CROWN_DEMO_MODE", CROWN_DEMO_MODE)
 CROWN_DEMO_KEY = os.getenv("CROWN_DEMO_KEY", "").strip()
 
+# Explicit fictional SGO application writes: local demo ONLY, default disabled.
+# API additionally verifies both local runtime markers and absence of Azure markers.
+CROWN_SGO_FICTIONAL_INTAKE_ENABLED = _env_bool("CROWN_SGO_FICTIONAL_INTAKE_ENABLED", default=False)
+_assert_not_prod_true("CROWN_SGO_FICTIONAL_INTAKE_ENABLED", CROWN_SGO_FICTIONAL_INTAKE_ENABLED)
+
 # Tenant header enforcement
 # When True, TenantHeaderRequiredMiddleware requires X-School-Id on /api/v1/* routes.
 TENANT_HEADER_REQUIRED = _env_bool("TENANT_HEADER_REQUIRED", default=True)
