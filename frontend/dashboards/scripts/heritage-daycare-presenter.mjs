@@ -1,5 +1,4 @@
 // Private local operator handoff, never a public login or a permission grant.
-import { chromium } from "@playwright/test";
 import { fileURLToPath } from "node:url";
 import { resolve } from "node:path";
 
@@ -67,6 +66,9 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
     const check = process.argv.includes("--check");
     // Windows acceptance must exercise a visible window, just like the presenter.
     const headless = check && process.platform !== "win32";
+    // Browser dependency is loaded only after strict local/source/custody preflight.
+    // Pure Node guard tests must not require frontend packages on backend-only CI.
+    const { chromium } = await import("@playwright/test");
     browser = await chromium.launch({ headless });
     const page = await browser.newPage();
     await enterPresenter(page, scenario, process.env.BUILD_SHA);
