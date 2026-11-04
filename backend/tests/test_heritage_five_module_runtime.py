@@ -60,14 +60,12 @@ def test_stale_fixture_source_blocks_runtime_before_key_preparation(runtime, mon
     monkeypatch.setattr(runtime.launcher, "local_environment", lambda: pytest.fail("No keys for stale fixtures"))
     assert runtime.main() == 1
 
-
 @pytest.mark.parametrize("index", range(7))
 def test_each_missing_browser_source_blocks_completion(runtime, monkeypatch, index):
     (runtime.launcher.FRONTEND / runtime.FIVE_MODULE_BROWSER_SOURCES[index]).unlink()
     monkeypatch.setattr(runtime.subprocess, "run", lambda *a, **kw: pytest.fail("No browser with incomplete source"))
     with pytest.raises(RuntimeError, match="browser sources are missing"):
         runtime.complete_five_module_browser_checks({}, evidence(runtime))
-
 
 @pytest.mark.parametrize(("key", "value"), [
     ("DJANGO_ENV", "production"), ("CROWN_ENV", "dev"),
@@ -82,7 +80,6 @@ def test_runtime_activation_keeps_exact_local_guard(runtime, monkeypatch, key, v
     with pytest.raises(RuntimeError, match="exact isolated Heritage"):
         runtime.prepare_five_module_verification(env, Path("python"))
     assert "CROWN_SGO_FICTIONAL_INTAKE_ENABLED" not in env
-
 
 def test_verification_requires_existing_credentials_and_never_seeds(runtime, monkeypatch):
     calls = []
@@ -100,13 +97,11 @@ def test_verification_requires_existing_credentials_and_never_seeds(runtime, mon
     assert calls[0][1]["check"] is True
     assert "seed_fictional_sgo_intake" not in str(calls)
 
-
 def test_verification_never_creates_an_absent_database(runtime, monkeypatch):
     monkeypatch.setattr(runtime.subprocess, "run", lambda *a, **kw: pytest.fail("No empty-database creation"))
     with pytest.raises(RuntimeError, match="prepared Heritage SQLite database"):
         runtime.prepare_five_module_verification(local_env(runtime), Path("python"))
     assert not (runtime.launcher.STATE / "heritage.sqlite3").exists()
-
 
 @pytest.mark.parametrize("index", range(6))
 def test_module_proof_cannot_be_replaced_by_other_green_checks(runtime, monkeypatch, index):
@@ -116,7 +111,6 @@ def test_module_proof_cannot_be_replaced_by_other_green_checks(runtime, monkeypa
     with pytest.raises(RuntimeError, match="upstream browser proof is incomplete"):
         runtime.complete_five_module_browser_checks({}, proof)
     assert proof["result"] == "FAIL"
-
 
 def test_success_runs_care_and_sgo_once_with_required_proof_flags(runtime, monkeypatch):
     calls = []
@@ -139,7 +133,6 @@ def test_success_runs_care_and_sgo_once_with_required_proof_flags(runtime, monke
     assert proof["checks"]["five_module_responsive_real_role_browser_audit"] is True
     assert proof["checks"]["extended_care_real_am_pm_browser_custody_and_reload"] is True
     assert proof["checks"]["jireh_sgo_independent_partners_submission_correction_and_resubmission"] is True
-
 
 @pytest.mark.parametrize("failure_call", [1, 2])
 def test_failed_browser_does_not_record_module_success(runtime, monkeypatch, failure_call):

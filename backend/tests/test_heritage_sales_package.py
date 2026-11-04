@@ -5,6 +5,8 @@ from unittest.mock import patch
 import pytest
 import importlib.util
 import json
+import os
+import subprocess
 from pathlib import Path
 import runpy
 import tempfile
@@ -65,7 +67,6 @@ def test_starter_rejects_cross_repo_and_archive_traversal():
 def _audit_fixture(monkeypatch, tmp_path):
     """Build the real starter in a disposable output and redirect audit paths."""
     import importlib
-
     monkeypatch.syspath_prepend(str(ROOT / "scripts" / "demo"))
     auditor = importlib.import_module("verify_heritage_sales_package")
     packager = loader()
@@ -76,7 +77,6 @@ def _audit_fixture(monkeypatch, tmp_path):
     monkeypatch.setattr(auditor, "ROOT", tmp_path)
     return auditor, archive, destination
 
-
 def test_sale_audit_accepts_unchanged_starter_without_executing_zip_entry(monkeypatch, tmp_path):
     auditor, archive, destination = _audit_fixture(monkeypatch, tmp_path)
     result = auditor.verify(download=False)
@@ -85,7 +85,6 @@ def test_sale_audit_accepts_unchanged_starter_without_executing_zip_entry(monkey
     assert result["downloaded_source_identity_and_reinstall"] == "NOT_RUN"
     assert (destination / "heritage-starter-audit.json").is_file()
     assert archive.is_file()
-
 
 @pytest.mark.parametrize("changed", [
     "Install-and-Start-Heritage.py",
@@ -111,18 +110,14 @@ def test_sale_audit_rejects_swapped_executable_or_instructions_without_execution
         run_path.assert_not_called()
     assert not (destination / "heritage-starter-audit.json").exists()
 
-
 def test_source_stamped_candidate_keeps_legacy_starter_unmodified(monkeypatch, tmp_path):
     """A reviewed source SHA is supplied at packaging, not committed into itself."""
     packager = loader()
     candidate_sha = "a" * 40
     legacy_pin = packager.pinned_revision()
     assert candidate_sha != legacy_pin
-
-    monkeypatch.setattr(
-        packager, "require_exact_candidate_checkout",
-        lambda sha: None if sha == candidate_sha else pytest.fail("Unexpected source revision"),
-    )
+    monkeypatch.setattr(packager, "require_exact_candidate_checkout",
+                       lambda sha: None if sha == candidate_sha else pytest.fail("Unexpected source revision"))
     zip_path = packager.build(tmp_path, source_sha=candidate_sha, five_module_candidate=True)
     with zipfile.ZipFile(zip_path) as archive:
         manifest = json.loads(archive.read("HERITAGE-SALES-MANIFEST.json"))
@@ -137,7 +132,6 @@ def test_source_stamped_candidate_keeps_legacy_starter_unmodified(monkeypatch, t
     assert f'SOURCE_SHA = "{legacy_pin}"' in (ROOT / "Install-and-Start-Heritage.py").read_text()
     assert "FIVE_MODULE_LAUNCH = False" in (ROOT / "Install-and-Start-Heritage.py").read_text()
 
-
 def test_source_stamped_candidate_requires_real_checkout_identity(monkeypatch, tmp_path):
     packager = loader()
     candidate_sha = "a" * 40
@@ -150,14 +144,12 @@ def test_source_stamped_candidate_requires_real_checkout_identity(monkeypatch, t
         packager.build(tmp_path, source_sha=candidate_sha, five_module_candidate=True)
     assert list(tmp_path.iterdir()) == []
 
-
 def test_source_stamped_candidate_requires_explicit_sha(tmp_path):
     packager = loader()
     with pytest.raises(RuntimeError, match="explicit source SHA"):
         packager.build(tmp_path, five_module_candidate=True)
     with pytest.raises(RuntimeError, match="40-character source SHA"):
         packager.render_installer("not-a-source-sha", five_module_candidate=True)
-
 
 def test_stamped_candidate_audit_rejects_modified_installer_before_execution(monkeypatch, tmp_path):
     """Fail closed on a forged candidate even when the manifest claims its SHA."""
@@ -181,7 +173,6 @@ def test_stamped_candidate_audit_rejects_modified_installer_before_execution(mon
         runner.assert_not_called()
     assert not (destination / "heritage-starter-audit.json").exists()
 
-
 def test_source_stamped_candidate_audit_accepts_exact_reviewed_template(monkeypatch, tmp_path):
     packager = loader()
     monkeypatch.setattr(packager, "require_exact_candidate_checkout", lambda sha: None)
@@ -195,14 +186,12 @@ def test_source_stamped_candidate_audit_accepts_exact_reviewed_template(monkeypa
     assert proof["downloaded_source_critical_git_blobs"] == "NOT_RUN"
     assert proof["five_module_browser_acceptance"] == "NOT_RUN_BY_THIS_SCRIPT"
 
-
 def test_source_stamped_candidate_rejects_dirty_tracked_checkout(monkeypatch, tmp_path):
     """Matching HEAD is insufficient when reviewed tracked files differ."""
     packager = loader()
     from types import SimpleNamespace
     candidate_sha = "a" * 40
     observed = []
-
     def fake_git_run(command, **kwargs):
         observed.append(command)
         if command[1:3] == ["rev-parse", "HEAD"]:
@@ -217,12 +206,10 @@ def test_source_stamped_candidate_rejects_dirty_tracked_checkout(monkeypatch, tm
     assert len(observed) == 2
     assert list(tmp_path.iterdir()) == []
 
-
 def test_source_override_cannot_silently_build_basic_demo(tmp_path):
     packager = loader()
     with pytest.raises(RuntimeError, match="explicit five-module candidate"):
         packager.build(tmp_path, source_sha="a" * 40)
-
 
 def test_candidate_and_basic_archives_coexist_with_same_sha(monkeypatch, tmp_path):
     """An uncertified candidate cannot silently replace the legacy sales ZIP."""
@@ -242,14 +229,9 @@ def test_candidate_and_basic_archives_coexist_with_same_sha(monkeypatch, tmp_pat
         assert "TEST CANDIDATE ONLY" in content
         assert "start_heritage_local.py --five-module-demo" in content
         assert "Unmerged Camp PR" not in content
-        assert "FIVE_MODULE_LAUNCH = True" in archive.read(
-            "Install-and-Start-Heritage.py"
-        ).decode("utf-8")
+        assert "FIVE_MODULE_LAUNCH = True" in archive.read("Install-and-Start-Heritage.py").decode("utf-8")
     with zipfile.ZipFile(basic) as archive:
-        assert archive.read("HERITAGE-LOCAL-DEMO-README.txt") == (
-            ROOT / "HERITAGE-LOCAL-DEMO-README.txt"
-        ).read_bytes()
-
+        assert archive.read("HERITAGE-LOCAL-DEMO-README.txt") == (ROOT / "HERITAGE-LOCAL-DEMO-README.txt").read_bytes()
 
 def test_windows_upload_is_bound_to_tested_source_instead_of_historical_basic_zip():
     """A passing browser run must never publish the old basic-demo archive."""
@@ -269,3 +251,23 @@ def test_windows_upload_is_bound_to_tested_source_instead_of_historical_basic_zi
         "${{ steps.tested_package.outputs.archive }}",
         ".local-backups/heritage-sales/heritage-five-module-candidate-audit.json",
     ]
+
+@pytest.mark.parametrize("variables,expected", [
+    ({"VITE_BUILD_SHA": "a" * 40, "GITHUB_SHA": "b" * 40}, "a" * 40),
+    ({"BUILD_SHA": "a" * 40, "GITHUB_SHA": "b" * 40}, "a" * 40),
+    ({"GITHUB_SHA": "a" * 40}, "a" * 40),
+    ({"VITE_BUILD_SHA": "invalid", "GITHUB_SHA": "a" * 40}, None),
+    ({}, None),
+])
+def test_gitless_frontend_build_identity(tmp_path, variables, expected):
+    env = {k: v for k, v in os.environ.items() if k not in {"VITE_BUILD_SHA", "BUILD_SHA", "GITHUB_SHA", "GIT_DIR", "GIT_WORK_TREE"}}
+    env.update(variables)
+    result = subprocess.run(["node", str(ROOT / "frontend/dashboards/scripts/write-build-json.mjs")], cwd=tmp_path, env=env, capture_output=True, text=True)
+    target = tmp_path / "dist/build.json"
+    if expected:
+        assert result.returncode == 0, result.stderr
+        data = json.loads(target.read_text())
+        assert (data["build_sha"], data["build_sha_short"]) == (expected, expected[:7])
+    else:
+        assert result.returncode != 0 and "Build provenance" in result.stderr
+        assert not target.exists()
