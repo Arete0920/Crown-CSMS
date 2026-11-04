@@ -158,6 +158,9 @@ jobs:
           python scripts/demo/verify_heritage_sales_package.py --source-sha $checkoutSha --five-module-candidate --download
           if ($LASTEXITCODE -ne 0) { throw 'Starter source identity audit failed' }
           "archive=.local-backups/heritage-sales/CROWN-Heritage-Five-Module-UNCERTIFIED-$($checkoutSha.Substring(0,12)).zip" >> $env:GITHUB_OUTPUT
+      - name: Verify canonical frontend visual tokens
+        working-directory: frontend/dashboards
+        run: npm run check:visual-system
       - name: Verify guarded Heritage listener boundary
         shell: pwsh
         run: .\.venv\Scripts\python.exe -m pytest -q backend/crown_api/tests/test_heritage_runserver.py
@@ -173,6 +176,9 @@ jobs:
           .\.venv\Scripts\python.exe -m pytest -q
           backend/academics/tests/test_classroom_experience.py
           -k "heritage_board_bearer_renewal or board_bearer_cannot_read_foreign_household"
+      - name: Verify fictional Jireh family aid backend contract (isolated SQLite)
+        shell: pwsh
+        run: .\\.venv\\Scripts\\python.exe -m pytest -q backend/aid/tests/test_family_demo_intake.py
       - name: Install Playwright Chromium for full buyer browser certification
         shell: pwsh
         working-directory: frontend/dashboards

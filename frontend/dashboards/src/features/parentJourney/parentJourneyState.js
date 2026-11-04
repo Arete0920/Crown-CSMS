@@ -63,7 +63,8 @@ export function canAccessParentJourneyStage(stage, overview) {
   const applications = getApplications(overview);
 
   if (!applications.length) {
-    return stage === "status";
+    // A new household may apply for school aid before admissions begins.
+    return stage === "status" || stage === "aid";
   }
 
   switch (stage) {
@@ -81,12 +82,10 @@ export function canAccessParentJourneyStage(stage, overview) {
       });
 
     case "aid":
-      return applications.some((application) => {
-        const aidStatus = application?.financial_aid_status || "";
-
-        return aidStatus !== "Not Applying"
-          || ["submitted", "in_review", "accepted", "enrolled"].includes(application?.lifecycle_stage);
-      });
+      // Family aid entry is available before admissions lifecycle milestones.
+      // The API separately verifies the canonical parent/guardian/school link.
+      // Do not redirect a new household away from its first aid application.
+      return true;
 
     case "status":
       return true;
