@@ -82,6 +82,23 @@ def complete_five_module_browser_checks(browser_env: dict[str, str], evidence: d
     evidence["checks"]["jireh_sgo_independent_partners_submission_correction_and_resubmission"] = True
 
 
+def require_consumed_presenter_denial(python: Path, env: dict[str, str]) -> None:
+    """A generic launch/network failure is not proof of consumed-custody denial."""
+    result = subprocess.run(
+        [str(python), str(ROOT / "scripts/demo/start_heritage_local.py"), "--daycare-presenter-check"],
+        cwd=ROOT, env=env, timeout=120, capture_output=True, text=True,
+    )
+    records = []
+    for line in (result.stdout + result.stderr).splitlines():
+        try:
+            records.append(json.loads(line))
+        except ValueError:
+            continue
+    if result.returncode != 1 or not any(isinstance(r, dict) and r.get("presenter_entry") == "DENIED"
+            and r.get("reason") == "PRESENTER_CUSTODY_CONSUMED" for r in records):
+        raise RuntimeError("Consumed presenter replay did not provide the required denial proof.")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--browser', action='store_true', help='Run the full six-persona Playwright buyer journey against the started stack.')
@@ -273,10 +290,8 @@ def main() -> int:
             evidence["checks"]["summer_camp_authenticated_browser_save_readback"] = True
             # Actual authenticated Diadem pickup: fictional local SQLite only.
             # No browser API stubs; one signed staff identity exercises real custody.
-            subprocess.run(
-                [str(python), str(ROOT / "backend/manage.py"), "seed_local_diadem_pickup"],
-                cwd=ROOT, env=env, timeout=120, check=True,
-            )
+            # The explicit presenter owns exclusive first-use preparation. Never
+            # overwrite its existing manifest by running the ordinary seeder here.
             browser_env["CROWN_DIADEM_PICKUP_MANIFEST"] = str(state / "diadem-pickup-session.json")
             # Exercise the actual human command, including Django source/identity
             # guards and visible Windows Chromium, before the custody journey.
@@ -292,6 +307,8 @@ def main() -> int:
                 ],
                 cwd=launcher.FRONTEND, env=browser_env, timeout=600, check=True,
             )
+            require_consumed_presenter_denial(python, env)
+            evidence["checks"]["diadem_consumed_presenter_replay_denied"] = True
             subprocess.run(
                 [str(python), str(ROOT / "backend/manage.py"), "seed_local_diadem_pickup", "--verify"],
                 cwd=ROOT, env=env, timeout=120, check=True,

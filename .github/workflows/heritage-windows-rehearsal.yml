@@ -167,18 +167,16 @@ jobs:
       - name: Verify immutable sales-starter ZIP contract
         shell: pwsh
         run: .\.venv\Scripts\python.exe -m pytest -q backend/tests/test_heritage_sales_package.py
-      - name: Verify synthetic Heritage fixture and launcher integrity
+      - name: Verify fixture, Board, Financial Aid and presenter backend contracts (isolated SQLite)
         shell: pwsh
-        run: .\.venv\Scripts\python.exe -m pytest -q backend/sandbox_demo/test_seed_realism.py
-      - name: Verify Heritage Board cross-tenant bearer regressions
-        shell: pwsh
+        # One pytest process preserves every prior selector and avoids repeating
+        # the full disposable database migration for each contract group.
         run: >
           .\.venv\Scripts\python.exe -m pytest -q
-          backend/academics/tests/test_classroom_experience.py
-          -k "heritage_board_bearer_renewal or board_bearer_cannot_read_foreign_household"
-      - name: Verify fictional Jireh family aid backend contract (isolated SQLite)
-        shell: pwsh
-        run: .\\.venv\\Scripts\\python.exe -m pytest -q backend/aid/tests/test_family_demo_intake.py
+          backend/sandbox_demo/test_seed_realism.py
+          backend/academics/tests/test_classroom_experience.py::test_heritage_board_bearer_renewal_preserves_foreign_tenant_denials
+          backend/aid/tests/test_family_demo_intake.py
+          backend/tests/test_heritage_daycare_presenter.py
       - name: Install Playwright Chromium for full buyer browser certification
         shell: pwsh
         working-directory: frontend/dashboards

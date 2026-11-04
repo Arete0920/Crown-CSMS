@@ -27,9 +27,11 @@ export async function verifyPresenter(scenario, sha, fetcher = fetch) {
   if (health.build_sha !== sha || health.env !== "local" || health.db !== "ok")
     throw new Error("Presenter backend source or environment mismatch.");
   const roster = await get(backend + "/api/v1/aftercare/daycare/sites/" + scenario.site_id + "/roster/", true);
-  if (roster.site_id !== scenario.site_id || !roster.rows?.some(row =>
-    row.attendance_id === scenario.cases.approved.attendance_id))
-    throw new Error("Presenter custody scenario is unavailable or already released.");
+  if (roster.site_id !== scenario.site_id || !Array.isArray(roster.rows))
+    throw new Error("Presenter custody readback has invalid scope or shape.");
+  if (!roster.rows.some(row => row.attendance_id === scenario.cases.approved.attendance_id))
+    throw Object.assign(new Error("Presenter custody scenario is unavailable or already released."),
+      { code: "PRESENTER_CUSTODY_CONSUMED" });
   const authorities = await get(backend + "/api/v1/aftercare/daycare/sites/" + scenario.site_id +
     "/attendance/" + scenario.cases.approved.attendance_id + "/release-authorities/", true);
   if (authorities.attendance_id !== scenario.cases.approved.attendance_id ||
@@ -77,8 +79,10 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
       await browser.close();
     }
     else await new Promise(done => browser.on("disconnected", done));
-  } catch {
+  } catch (error) {
     console.error("Presenter entry refused. Check local source, staff authorization, expiry and unconsumed scenario; no credentials were printed.");
+    console.error(JSON.stringify({ presenter_entry: "DENIED", reason:
+      error?.code === "PRESENTER_CUSTODY_CONSUMED" ? error.code : "PRESENTER_VERIFICATION_FAILED" }));
     await browser?.close();
     process.exitCode = 1;
   }

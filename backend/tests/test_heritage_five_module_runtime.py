@@ -1,9 +1,37 @@
 """Fail-closed orchestration tests; subprocess mocks are not browser certification."""
 import importlib.util
+import inspect
 from pathlib import Path
 import subprocess
 
 import pytest
+
+
+@pytest.mark.parametrize("returncode,record,accepted", [
+    (1, {"presenter_entry": "DENIED", "reason": "PRESENTER_CUSTODY_CONSUMED"}, True),
+    (0, {"presenter_entry": "DENIED", "reason": "PRESENTER_CUSTODY_CONSUMED"}, False),
+    (-9, {"presenter_entry": "DENIED", "reason": "PRESENTER_CUSTODY_CONSUMED"}, False),
+    (1, {"presenter_entry": "DENIED", "reason": "PRESENTER_VERIFICATION_FAILED"}, False),
+    (1, {"presenter_entry": "PASS", "reason": "PRESENTER_CUSTODY_CONSUMED"}, False),
+    (1, None, False),
+])
+def test_presenter_replay_requires_specific_consumed_denial(runtime, monkeypatch, returncode, record, accepted):
+    import json
+    result = subprocess.CompletedProcess([], returncode, stdout="not JSON\n", stderr=json.dumps(record))
+    monkeypatch.setattr(runtime.subprocess, "run", lambda *a, **kw: result)
+    if accepted:
+        runtime.require_consumed_presenter_denial(Path("python"), {})
+    else:
+        with pytest.raises(RuntimeError, match="required denial proof"):
+            runtime.require_consumed_presenter_denial(Path("python"), {})
+
+
+def test_verifier_never_replaces_existing_presenter_scenario(runtime):
+    source = inspect.getsource(runtime.main)
+    assert source.count('"seed_local_diadem_pickup"') == 1
+    assert '"seed_local_diadem_pickup", "--verify"' in source
+    assert '"--daycare-presenter-check"' in source
+    assert "require_consumed_presenter_denial(python, env)" in source
 
 @pytest.fixture
 def runtime(monkeypatch, tmp_path):

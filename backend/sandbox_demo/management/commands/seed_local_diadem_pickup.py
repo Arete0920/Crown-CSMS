@@ -303,8 +303,11 @@ class Command(BaseCommand):
                 raise CommandError("Install the supported local Node runtime first.")
             data = presenter_scenario()
             script = LOCAL_DB.parents[2] / "frontend/dashboards/scripts/heritage-daycare-presenter.mjs"
-            subprocess.run([node, str(script), *(["--check"] if options.get("presenter_check") else [])],
-                           input=json.dumps(data), text=True, check=True)
+            try:
+                subprocess.run([node, str(script), *(["--check"] if options.get("presenter_check") else [])],
+                               input=json.dumps(data), text=True, check=True)
+            except subprocess.CalledProcessError:
+                raise CommandError("Private staff browser entry refused; existing state retained.") from None
             return
         if options["verify"]:
             scenario = verify_scenario()

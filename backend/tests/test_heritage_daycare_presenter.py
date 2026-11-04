@@ -117,7 +117,7 @@ def test_node_preflight_requires_source_authenticated_roster_and_current_guardia
       };
       if(f==='none') {await verifyPresenter(s,sha,fake); assert.equal(calls.length,4);
         for(const c of calls.slice(2)) assert.equal(c.options.headers.Authorization,'Bearer '+s.staff_access);
-      } else await assert.rejects(verifyPresenter(s,sha,fake));
+      } else await assert.rejects(verifyPresenter(s,sha,fake), f==='released'?{code:'PRESENTER_CUSTODY_CONSUMED'}:undefined);
     '''
     result = subprocess.run(["node", "--input-type=module", "-e", program, script.as_uri()],
                             input=json.dumps({"scenario": scenario[0], "sha": SHA, "failure": failure}),
