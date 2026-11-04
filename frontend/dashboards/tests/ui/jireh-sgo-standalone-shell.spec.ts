@@ -59,6 +59,8 @@ for (const viewport of [{ width: 1366, height: 900 }, { width: 390, height: 844 
     await expect(page.getByText("Source-only pilot (not certified)")).toBeVisible();
     await expect(page.getByText("$50.00", { exact: true })).toHaveCount(2);
     await expect(page.locator(".crown-sidebar")).toHaveCount(0);
+    await expect(page.locator(".crown-standalone-brand-mark")).toHaveCount(1);
+    await expect(page.getByRole("img", { name: /CROWN.*Christian School Management Solution/i })).toBeVisible();
     await expect(page.getByRole("button", { name: /toggle navigation/i })).toHaveCount(0);
     const programTable = page.getByRole("region", { name: "SGO programs" });
     await expect(programTable).toBeVisible();
