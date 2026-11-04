@@ -178,11 +178,13 @@ def main() -> int:
                 launcher.npm_command() + [
                     "run", "test:e2e", "--",
                     "tests/e2e/sandbox-teacher-attendance-assignment.spec.ts",
+                    "tests/e2e/sandbox-parent-financial-aid-submit.spec.ts",
                     "--workers=1", "--reporter=line",
                 ],
                 cwd=launcher.FRONTEND, env=browser_env, timeout=600, check=True,
             )
             evidence["checks"]["teacher_attendance_and_classwork_persist_after_reload"] = True
+            evidence["checks"]["fictional_jireh_family_application_browser_submission_and_reload"] = True
 
             # Real Camp role session, persisted POST/GET/read-after-reload, and
             # controlled failure cases. The spec restores prior fictional state.
