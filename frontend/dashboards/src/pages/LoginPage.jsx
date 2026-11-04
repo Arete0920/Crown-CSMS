@@ -535,6 +535,13 @@ export default function LoginPage() {
           margin-bottom: 14px;
         }
 
+        /* Native form controls must inherit the same product typography as the page. */
+        .login-root button,
+        .login-root input,
+        .login-root select {
+          font-family: inherit;
+        }
+
         .field-grid {
           display: grid;
           grid-template-columns: 1fr;
