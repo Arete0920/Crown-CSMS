@@ -121,4 +121,4 @@ def hosted_buyer_session(invite, *, persona_key: str, guidance: str, tour: str |
             "guidance": guidance,
             "tour": tour or persona.tour_title,
         },
-    }, principal
+    }, principal, ttl

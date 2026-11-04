@@ -357,7 +357,7 @@ class SandboxSessionView(APIView):
             # Never create a session on the shared Heritage tenant for an
             # emailed evaluator. No seeding or principal creation on GET/POST.
             try:
-                session, sandbox_user = hosted_buyer_session(
+                session, sandbox_user, hosted_ttl = hosted_buyer_session(
                     invite, persona_key=role, guidance=guidance, tour=tour
                 )
             except BuyerWorkspaceDenied as exc:
@@ -393,6 +393,10 @@ class SandboxSessionView(APIView):
             sandbox_user,
             backend="django.contrib.auth.backends.ModelBackend",
         )
+        if hosted_buyer_mode():
+            # Django's session cookie must not outlive the invitation-capped
+            # access token and silently extend browser authorization.
+            django_request.session.set_expiry(hosted_ttl)
         get_token(django_request)
 
         SandboxEvent.objects.create(

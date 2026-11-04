@@ -189,12 +189,23 @@ class HostedBuyerWorkspaceContract(TestCase):
     def test_access_expiration_cannot_exceed_invite_expiry(self):
         invite = self.make_invite(expiry=timezone.now() + timedelta(seconds=70))
         self.make_workspace(invite)
-        result = self.enter(invite)
+        client = APIClient()
+        result = client.post(
+            reverse("sandbox-session"),
+            {"invite_id": invite.id, "role": "teacher",
+             "school": "heritage-core", "track": "school"},
+            format="json",
+        )
         self.assertEqual(result.status_code, 201)
         claims = decode_access(result.data["access"])
         self.assertTrue(claims.ok)
         self.assertLessEqual(claims.payload["exp"], int(invite.expires_at.timestamp()))
         self.assertLessEqual(claims.payload["exp"] - claims.payload["iat"], 900)
+        # Django session authentication is also bound, not left at default
+        # weeks-long expiry after the short signed buyer token expires.
+        expiry = client.session.get_expiry_age()
+        self.assertGreater(expiry, 0)
+        self.assertLessEqual(expiry, 70)
 
     def test_invite_and_school_mappings_are_one_to_one(self):
         first, second = self.make_invite(), self.make_invite()
