@@ -15,6 +15,7 @@ test("invited family and processor perform persisted Jireh journeys with cross-b
   expect((await (await page.request.get(frontend + "/build.json")).json()).build_sha).toBe(fixture.source_sha);
   expect((await (await page.request.get(backend + "/api/health/")).json()).build_sha).toBe(fixture.source_sha);
   async function login(buyer: number, role: string, path: string) {
+    await page.context().clearCookies();
     const response = await page.request.post(backend + "/api/v1/sandbox/session/", {
       data: { invite_id: fixture.invites[buyer], role, school: "heritage-core", track: "school" },
     });
