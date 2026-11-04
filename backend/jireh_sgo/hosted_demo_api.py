@@ -72,7 +72,7 @@ def _processor_intake(workspace, user, application_id):
     intake = SGOFamilyIntake.objects.select_related(
         "application__program__organization", "grant"
     ).filter(
-        application_id=application_id, grant__school_key=workspace.school_id,
+        application_id=application_id, grant__active=True, grant__school_key=workspace.school_id,
         grant__student_key__in=demo_student_ids(workspace),
     ).first()
     if intake is None:
@@ -193,7 +193,7 @@ def hosted_processor_queue(request, program_id):
     )
     program = _processor_program(workspace, request.user, program_id)
     rows = processor_queue(user=request.user, program_id=program.pk).filter(
-        grant__school_key=workspace.school_id,
+        grant__school_key=workspace.school_id, grant__active=True,
         grant__student_key__in=demo_student_ids(workspace),
         application__school_key=workspace.school_id,
     )

@@ -34,7 +34,7 @@ def _require_existing_dev_runtime(expected_sha):
         raise CommandError("Exact deployed source identity is required.")
     if (
         str(getattr(settings, "CROWN_ENV", "") or "").lower() != "dev"
-        or str(getattr(settings, "DJANGO_ENV", "") or "").lower() not in {"", "dev"}
+        or str(getattr(settings, "DJANGO_ENV", "") or "").lower() not in {"", "dev", "development"}
         or str(environ.get("AZURE_ENVIRONMENT", "") or "").lower() not in {"", "dev"}
         or environ.get("WEBSITE_HOSTNAME", "").strip().lower() != _AZURE_DEV_HOST
         or settings.DEBUG
