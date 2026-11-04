@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import CrownLayout from "../components/crown/CrownLayout.jsx";
 import { authenticatedFetch, clearBrowserAuthState, getAccessToken } from "../utils/authClient.js";
-const base = "/api/v1/jireh-sgo";
+const hostedDemo = () => import.meta.env.VITE_LOCAL_DEMO !== "1" && import.meta.env.VITE_HOSTED_JIREH_DEMO === "1";
 const grades = ["K", ...Array.from({ length: 12 }, (_, i) => String(i + 1))];
 const reasons = [
   ["GRADE_UNVERIFIED", "Confirm grade level"],
@@ -13,8 +13,10 @@ const card = {
   background: "var(--crown-surface)", padding: "1rem", marginBottom: "1rem", overflowX: "auto",
 };
 async function sgoRequest(path, { method = "GET", data } = {}) {
+  const hosted = hostedDemo();
+  const base = hosted ? "/api/v1/buyer-demo/jireh/sgo" : "/api/v1/jireh-sgo";
   const response = await authenticatedFetch(base + path, {
-    method, omitSchoolContext: true, cache: "no-store",
+    method, omitSchoolContext: !hosted, cache: "no-store",
     ...(data === undefined ? {} : {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
@@ -25,6 +27,8 @@ async function sgoRequest(path, { method = "GET", data } = {}) {
 export default function JirehSGOIntakePage() {
   const token = getAccessToken();
   const local = import.meta.env.VITE_LOCAL_DEMO === "1";
+  const hosted = hostedDemo();
+  const enabled = local || hosted;
   const [loadedToken, setLoadedToken] = useState(null);
   const [families, setFamilies] = useState([]), [processors, setProcessors] = useState([]);
   const [familyProgram, setFamilyProgram] = useState("");
@@ -46,12 +50,21 @@ export default function JirehSGOIntakePage() {
     setError(""); setNotice("");
     setConsent(false); setSubmissionKey(""); setCorrectionKey("");
     setProcessorRetry(null); setPending(false);
-    if (!token || !local) return () => { live = false; };
-    Promise.all([
+    if (!token || !enabled) return () => { live = false; };
+    Promise.allSettled([
       sgoRequest("/family/programs/"),
       sgoRequest("/processor/programs/"),
-    ]).then(([family, processor]) => {
+    ]).then((results) => {
       if (!live) return;
+      if (!results.some((item) => item.status === "fulfilled")) throw new Error("No fictional grants.");
+      const [family, processor] = results.map((item, index) => {
+        if (item.status === "fulfilled") return item.value;
+        // Hosted family and processor personas have separate API permissions.
+        // Only a role-specific 404 can be empty; revocation/network errors deny.
+        if (!hosted || item.reason?.status !== 404) throw item.reason;
+        return { programs: [], synthetic_only: true, funds_status: "NONCASH_ONLY",
+          ...(index === 1 ? { authority: "PROCESSOR_VERIFICATION_ONLY" } : {}) };
+      });
       if (!family.synthetic_only || family.funds_status !== "NONCASH_ONLY"
           || !Array.isArray(family.programs)
           || processor.authority !== "PROCESSOR_VERIFICATION_ONLY"
@@ -67,10 +80,10 @@ export default function JirehSGOIntakePage() {
       if (live) setError("Fictional partner-program access could not be verified.");
     });
     return () => { live = false; };
-  }, [token, local]);
+  }, [token, enabled, hosted]);
   const family = families.find((item) => item.id === familyProgram);
   const processor = processors.find((item) => item.id === processorProgram);
-  const authorized = !!token && local && loadedToken === token;
+  const authorized = !!token && enabled && loadedToken === token;
   useEffect(() => {
     let live = true;
     setApplication((previous) => previous?.id === family?.application_id
@@ -242,20 +255,21 @@ export default function JirehSGOIntakePage() {
     }
   }
   return <CrownLayout navigationScope="standalone" title="Jireh SGO | Fictional Application Intake"
-    subtitle="Local sandbox only — partner SGOs retain program and award authority">
+    subtitle="Fictional demonstration — partner SGOs retain program and award authority">
     <p role="note">Synthetic records only. No live family information, documents, eligibility decisions, donor funds, scholarships, or payments.</p>
-    <p><a href="/jireh-sgo">Return to SGO overview</a></p>
+    <p><a href={hosted ? "/sandbox" : "/jireh-sgo"}>{hosted ? "Return to invited demo" : "Return to SGO overview"}</a></p>
     {local && <p>
       <button type="button" disabled={pending} onClick={() => {
         clearBrowserAuthState();
         globalThis.location.assign("/jireh-sgo/sign-in");
       }}>Switch fictional SGO account</button>
     </p>}
-    {!local && <p role="alert">The fictional intake workflow is disabled outside the local demo.</p>}
+    {!enabled && <p role="alert">The fictional intake workflow is disabled outside an explicitly enabled demo.</p>}
     {local && !token && <p role="alert">Use <a href="/jireh-sgo/sign-in">fictional SGO sign-in</a> to authenticate as an authorized family or processor.</p>}
+    {hosted && !token && <p role="alert">Return to the invited demo to start an authorized session.</p>}
     {error && <p role="alert">{error}</p>}
     {notice && <p role="status">{notice}</p>}
-    {local && token && !authorized && !error && <p role="status">Verifying fictional program grants…</p>}
+    {enabled && token && !authorized && !error && <p role="status">Verifying fictional program grants…</p>}
     {authorized && <>
       <section style={card} aria-label="Family application" tabIndex={0}>
         <h3>1. Family: select an authorized partner program</h3>
@@ -263,7 +277,7 @@ export default function JirehSGOIntakePage() {
           <label htmlFor="family-program">Partner SGO and program</label>{" "}
           <select id="family-program" style={{ maxWidth: "100%" }} disabled={pending} value={familyProgram}
             onChange={(e) => { setFamilyProgram(e.target.value); setConsent(false); setError(""); }}>
-            {families.map((p) => <option key={p.id} value={p.id}>{p.organization} — {p.name} ({p.calendar_year})</option>)}
+            {families.map((p) => <option key={p.id} value={p.id}>{p.organization} — {p.name}{p.calendar_year ? ` (${p.calendar_year})` : ""}</option>)}
           </select>
           {family && <p>Program policy: {family.policy_version}. Consent version: {family.consent_version}.</p>}
           {family && !family.application_id && !application && <form onSubmit={submit}>
