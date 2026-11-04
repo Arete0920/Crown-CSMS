@@ -173,6 +173,7 @@ CROWN_DEMO_KEY = os.getenv("CROWN_DEMO_KEY", "").strip()
 # Explicit fictional SGO application writes: local demo ONLY, default disabled.
 # API additionally verifies both local runtime markers and absence of Azure markers.
 CROWN_SGO_FICTIONAL_INTAKE_ENABLED = _env_bool("CROWN_SGO_FICTIONAL_INTAKE_ENABLED", default=False)
+CROWN_HOSTED_JIREH_DEMO_ENABLED = _env_bool("CROWN_HOSTED_JIREH_DEMO_ENABLED", default=False)
 _assert_not_prod_true("CROWN_SGO_FICTIONAL_INTAKE_ENABLED", CROWN_SGO_FICTIONAL_INTAKE_ENABLED)
 
 # Tenant header enforcement

@@ -21,22 +21,95 @@ launcher = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(launcher)
 
 
+FIVE_MODULE_BROWSER_SOURCES = (
+    "tests/e2e/sandbox-teacher-attendance-assignment.spec.ts",
+    "tests/e2e/summer-camp-local-readback.spec.ts",
+    "tests/e2e/diadem-local-pickup.spec.ts",
+    "tests/e2e/sandbox-parent-financial-aid-submit.spec.ts",
+    "tests/e2e/extended-care-local-custody.spec.ts",
+    "tests/e2e/jireh-sgo-local-intake.spec.ts",
+    "tests/e2e/heritage-module-responsive.spec.ts",
+)
+UPSTREAM_BROWSER_CHECKS = (
+    "six_role_buyer_browser_routes_and_mobile",
+    "teacher_attendance_and_classwork_persist_after_reload",
+    "summer_camp_authenticated_browser_save_readback",
+    "diadem_signed_staff_browser_release_and_denials",
+    "diadem_release_single_audit_and_denial_persistence",
+    "fictional_jireh_family_application_browser_submission_and_reload",
+)
+
+
+def require_five_module_browser_sources() -> None:
+    missing = [path for path in FIVE_MODULE_BROWSER_SOURCES if not (launcher.FRONTEND / path).is_file()]
+    if missing:
+        raise RuntimeError("Five-module browser sources are missing: " + ", ".join(missing))
+
+
+def prepare_five_module_verification(env: dict[str, str], python: Path) -> None:
+    """Verify prepared data without reseeding or rotating fictional credentials."""
+    launcher.enable_five_module_runtime(env)
+    if not (launcher.STATE / "heritage.sqlite3").is_file():
+        raise RuntimeError("Five-module verification requires a prepared Heritage SQLite database.")
+    if not (launcher.STATE / "sgo-credentials.txt").is_file():
+        raise RuntimeError("Prepare fictional SGO credentials through the guarded five-module launcher first.")
+    subprocess.run(
+        [str(python), str(ROOT / "backend/manage.py"), "five_module_demo_preflight", "--strict"],
+        cwd=ROOT, env=env, timeout=120, check=True,
+    )
+
+
+def complete_five_module_browser_checks(browser_env: dict[str, str], evidence: dict) -> None:
+    """Run after the existing #611/#612/#620 proof blocks, preserving each journey."""
+    missing = [name for name in UPSTREAM_BROWSER_CHECKS if evidence["checks"].get(name) is not True]
+    if missing:
+        raise RuntimeError("Five-module upstream browser proof is incomplete: " + ", ".join(missing))
+    require_five_module_browser_sources()
+    scoped = dict(browser_env)
+    scoped.update({
+        "CROWN_CARE_LOCAL_E2E": "1", "CROWN_REQUIRE_CARE_BROWSER_PROOF": "1",
+        "CROWN_SGO_LOCAL_E2E": "1", "CROWN_REQUIRE_SGO_BROWSER_PROOF": "1",
+        "CROWN_SGO_LOCAL_CREDENTIALS": str((launcher.STATE / "sgo-credentials.txt").resolve()),
+    })
+    for sources in (FIVE_MODULE_BROWSER_SOURCES[4:6], FIVE_MODULE_BROWSER_SOURCES[6:]):
+        subprocess.run(
+            launcher.npm_command() + ["run", "test:e2e", "--", *sources,
+                                      "--workers=1", "--reporter=line"],
+            cwd=launcher.FRONTEND, env=scoped, timeout=600, check=True,
+        )
+    evidence["checks"]["five_module_responsive_real_role_browser_audit"] = True
+    evidence["checks"]["extended_care_real_am_pm_browser_custody_and_reload"] = True
+    evidence["checks"]["jireh_sgo_independent_partners_submission_correction_and_resubmission"] = True
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--browser', action='store_true', help='Run the full six-persona Playwright buyer journey against the started stack.')
+    parser.add_argument('--five-module', action='store_true', help='Require all five real module browser journeys on prepared, exact-source local data.')
     args = parser.parse_args()
+    if args.five_module and not args.browser:
+        parser.error("--five-module requires --browser")
     state = launcher.STATE
     state.mkdir(parents=True, exist_ok=True)
     evidence = {"source_sha": launcher.source_sha(), "platform": sys.platform, "checks": {}, "result": "FAIL"}
+    evidence["evidence_scope"] = "five_module_browser" if args.five_module else "heritage_role_rehearsal"
+    evidence["release_certified"] = False
     processes = []
     files = []
     opener = build_opener(ProxyHandler({}))
     try:
+        if args.five_module:
+            launcher.require_five_module_sources()
+            require_five_module_browser_sources()
+            launcher.require_fresh_five_module_source(evidence["source_sha"])
         launcher.available_ports()
         env = launcher.local_environment()
         python = ROOT / ".venv" / ("Scripts/python.exe" if sys.platform == "win32" else "bin/python")
         if not python.is_file():
             raise RuntimeError("Run start_heritage_local.py --prepare-only before this rehearsal")
+        if args.five_module:
+            prepare_five_module_verification(env, python)
+            evidence["checks"]["strict_five_module_data_preflight"] = True
         for name, command, cwd in (
             ("backend", [str(python), str(ROOT / "backend/manage.py"), "heritage_runserver", "127.0.0.1:8000", "--noreload"], ROOT),
             ("frontend", launcher.preview_command(), launcher.FRONTEND),
@@ -220,8 +293,14 @@ def main() -> int:
             )
             evidence["checks"]["diadem_signed_staff_browser_release_and_denials"] = True
             evidence["checks"]["diadem_release_single_audit_and_denial_persistence"] = True
+        if args.five_module:
+            complete_five_module_browser_checks(browser_env, evidence)
+            evidence["five_module_browser_passed"] = True
         evidence["result"] = "PASS"
-        print("Heritage Windows runner rehearsal passed: exact local build, frontend, backend, six buyer sessions, Board least privilege, and finance denials." + (" Full buyer browser and teacher attendance/classwork reload certification passed." if args.browser else " Browser journey not executed."))
+        if args.five_module:
+            print("Five-module Heritage browser acceptance passed. Package/source identity and owner release certification remain separate gates.")
+        else:
+            print("Heritage Windows runner rehearsal passed: exact local build, frontend, backend, six buyer sessions, Board least privilege, and finance denials." + (" Full buyer browser and teacher attendance/classwork reload certification passed." if args.browser else " Browser journey not executed."))
         return 0
     except Exception as exc:
         evidence["error"] = str(exc)
