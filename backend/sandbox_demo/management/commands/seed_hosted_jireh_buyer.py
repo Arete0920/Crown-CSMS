@@ -128,39 +128,40 @@ class Command(BaseCommand):
                 workspace=workspace, family=family, guardian=guardian,
             )
 
-            organization = SGOOrganization.objects.create(
-                legal_name="Fictional External Delaware SGO (buyer test)",
-                state_of_domicile="DE", active=True,
-            )
-            partner = SandboxBuyerSGOPartner.objects.create(
-                workspace=workspace, organization=organization,
-            )
-            program = SGOProgram.objects.create(
-                organization=organization, name="Fictional Partner 2026",
-                code="fictional-partner", calendar_year=2026,
-                funding_source=SGOProgram.PRIVATE,
-                eligibility_rule_version="FICTIONAL_2026_V1",
-            )
-            SandboxBuyerSGOProgram.objects.create(
-                partner=partner, program=program,
-            )
-            SGOFamilyGrant.objects.create(
-                program=program, user=parent, student_key=student.pk,
-                school_key=workspace.school_id, consent_version="FICTIONAL_CONSENT_V1",
-                active=True,
-            )
-            # Processor authority is explicit and scoped only to the invented
-            # program. Do not grant an SGO organization membership or award role.
-            for role in ("finance_director", "school_admin"):
-                if role in roles:
-                    processor = UserAccount.objects.get(
-                        username=buyer_username(workspace.school_id, role),
-                        school=workspace.school,
-                    )
-                    SGOProcessorAssignment.objects.create(
-                        program=program, user=processor, active=True,
-                    )
+            for state, state_name in (("DE", "Delaware"), ("PA", "Pennsylvania")):
+                organization = SGOOrganization.objects.create(
+                    legal_name=f"Fictional External {state_name} SGO (buyer test)",
+                    state_of_domicile=state, active=True,
+                )
+                partner = SandboxBuyerSGOPartner.objects.create(
+                    workspace=workspace, organization=organization,
+                )
+                program = SGOProgram.objects.create(
+                    organization=organization, name=f"Fictional {state} Partner 2026",
+                    code=f"fictional-partner-{state.lower()}", calendar_year=2026,
+                    funding_source=SGOProgram.PRIVATE,
+                    eligibility_rule_version=f"FICTIONAL_{state}_2026_V1",
+                )
+                SandboxBuyerSGOProgram.objects.create(
+                    partner=partner, program=program,
+                )
+                SGOFamilyGrant.objects.create(
+                    program=program, user=parent, student_key=student.pk,
+                    school_key=workspace.school_id, consent_version=f"FICTIONAL_{state}_CONSENT_V1",
+                    active=True,
+                )
+                # Processor authority is explicit and scoped only to the invented
+                # program. Do not grant an SGO organization membership or award role.
+                for role in ("finance_director", "school_admin"):
+                    if role in roles:
+                        processor = UserAccount.objects.get(
+                            username=buyer_username(workspace.school_id, role),
+                            school=workspace.school,
+                        )
+                        SGOProcessorAssignment.objects.create(
+                            program=program, user=processor, active=True,
+                        )
         self.stdout.write(
             "FICTIONAL_JIREH_FIXTURES_CREATED: buyer school, one household, "
-            "one external partner and program; release_certified=false"
+            "two independent external partners and programs; release_certified=false"
         )

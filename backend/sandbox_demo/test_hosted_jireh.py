@@ -10,6 +10,7 @@ from unittest.mock import patch
 from uuid import uuid4
 
 from django.core.management import call_command
+from django.core.management.base import CommandError
 from django.test import SimpleTestCase, TestCase, override_settings
 from django.utils import timezone
 from rest_framework.test import APIClient
@@ -206,6 +207,61 @@ class HostedJirehContract(TestCase):
         self.assertEqual(queue.json()["funds_status"], "NONCASH_ONLY")
         self.assertEqual(self.request("GET", SGO + "family/applications/" + app_id + "/", i=1).status_code, 403)
 
+    def test_two_independent_partners_preserve_separate_submissions_and_revisions(self):
+        programs = self.request("GET", SGO + "family/programs/").json()["programs"]
+        self.assertEqual(len(programs), 2)
+        self.assertEqual(len({p["organization_id"] for p in programs}), 2)
+        applications = []
+        for program in programs:
+            payload = {
+                "program_id": program["id"], "grade_level": "7", "consent": True,
+                "consent_version": program["consent_version"], "submission_key": str(uuid4()),
+            }
+            denied = self.request("POST", SGO + "family/submit/", payload={**payload, "consent": False})
+            self.assertEqual(denied.status_code, 400)
+            created = self.request("POST", SGO + "family/submit/", payload=payload)
+            self.assertEqual(created.status_code, 201, created.content)
+            app = created.json()["application"]
+            applications.append(app)
+            readback = self.request("GET", SGO + "family/applications/" + app["id"] + "/")
+            self.assertEqual(readback.json()["application"]["program_id"], program["id"])
+            queue = SGO + "processor/programs/" + program["id"] + "/queue/"
+            rows = self.request("GET", queue, role="finance_director").json()["applications"]
+            self.assertEqual([row["id"] for row in rows], [app["id"]])
+            self.assertEqual(self.request("GET", queue, i=1, role="finance_director").status_code, 404)
+            self.assertEqual(self.request("POST", SGO + "family/submit/", i=1, payload=payload).status_code, 404)
+        self.assertEqual(SGOApplication.objects.count(), 2)
+        first, second = applications
+        corrected = self.request(
+            "POST", SGO + "processor/applications/" + first["id"] + "/request-correction/",
+            role="finance_director",
+            payload={"expected_revision": 1, "reason": "GRADE_UNVERIFIED", "request_key": str(uuid4())},
+        )
+        self.assertEqual(corrected.status_code, 200, corrected.content)
+        self.assertEqual(corrected.json()["application"]["revision"], 2)
+        correction_url = SGO + "family/applications/" + first["id"] + "/correct/"
+        stale = self.request("POST", correction_url, payload={
+            "expected_revision": 1, "grade_level": "8", "correction_key": str(uuid4()),
+        })
+        self.assertEqual(stale.status_code, 409)
+        resubmitted = self.request("POST", correction_url, payload={
+            "expected_revision": 2, "grade_level": "8", "correction_key": str(uuid4()),
+        })
+        self.assertEqual(resubmitted.status_code, 200, resubmitted.content)
+        self.assertEqual(resubmitted.json()["application"]["revision"], 3)
+        other = self.request("GET", SGO + "family/applications/" + second["id"] + "/").json()["application"]
+        self.assertEqual(other["revision"], 1)
+        self.assertEqual(other["grade_level"], "7")
+
+    def test_two_partner_fixture_cannot_be_reseeded_or_reset(self):
+        workspace, _ = self.bindings[0]
+        before = list(SGOFamilyGrant.objects.order_by("id").values_list("id", flat=True))
+        with patch(SEED + "._require_existing_dev_runtime"), patch("sys.stdin", StringIO(workspace.invite_id + "\n")):
+            with self.assertRaises(CommandError):
+                call_command("seed_hosted_jireh_buyer", "--expected-sha", SHA, "--invite-stdin", "--apply", stdout=StringIO())
+        self.assertEqual(list(SGOFamilyGrant.objects.order_by("id").values_list("id", flat=True)), before)
+        self.assertEqual(SGOFamilyGrant.objects.filter(school_key=workspace.school_id).count(), 2)
+
     def test_sgo_cross_partner_and_missing_grants_fail_closed(self):
         a = self.request("GET", SGO + "family/programs/").json()["programs"][0]
         b = self.request("GET", SGO + "family/programs/", i=1).json()["programs"][0]
@@ -219,7 +275,9 @@ class HostedJirehContract(TestCase):
         grant = SGOFamilyGrant.objects.get(program_id=a["id"])
         grant.active = False
         grant.save(update_fields=["active"])
-        self.assertEqual(self.request("GET", SGO + "family/programs/").json()["programs"], [])
+        remaining = self.request("GET", SGO + "family/programs/").json()["programs"]
+        self.assertEqual(len(remaining), 1)
+        self.assertNotIn(a["id"], [item["id"] for item in remaining])
         self.assertFalse(SGOApplication.objects.exists())
 
     def test_sgo_no_implicit_processor_authority_and_correction_revision(self):
