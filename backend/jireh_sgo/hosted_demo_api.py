@@ -10,6 +10,8 @@ from django.db.models import F
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.exceptions import NotFound, ValidationError
 from rest_framework.permissions import IsAuthenticated
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema
 
 from core.models import Student
 from sandbox_demo.hosted_jireh import (
@@ -86,6 +88,7 @@ def _processor_intake(workspace, user, application_id):
     return intake
 
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def hosted_family_programs(request):
@@ -114,6 +117,7 @@ def hosted_family_programs(request):
     })
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def hosted_family_submit(request):
@@ -136,6 +140,7 @@ def hosted_family_submit(request):
     return response
 
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def hosted_family_application(request, application_id):
@@ -146,6 +151,7 @@ def hosted_family_application(request, application_id):
     })
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def hosted_family_correct(request, application_id):
@@ -164,6 +170,7 @@ def hosted_family_correct(request, application_id):
     })
 
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def hosted_processor_programs(request):
@@ -185,6 +192,7 @@ def hosted_processor_programs(request):
     })
 
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def hosted_processor_queue(request, program_id):
@@ -207,6 +215,7 @@ def hosted_processor_queue(request, program_id):
     })
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def hosted_processor_request_correction(request, application_id):
