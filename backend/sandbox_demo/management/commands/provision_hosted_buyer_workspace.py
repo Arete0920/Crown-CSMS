@@ -17,7 +17,7 @@ from django.utils import timezone
 from core.models import School, UserAccount, UserRole
 from sandbox_demo.buyer_workspace import buyer_username
 from sandbox_demo.catalog import SANDBOX_PERSONAS
-from sandbox_demo.models import SandboxBuyerWorkspace, SandboxInvite
+from sandbox_demo.models import SandboxBuyerWorkspace, SandboxEvent, SandboxInvite
 
 _SHA = re.compile(r"[0-9a-f]{40}\Z")
 _INVITE = re.compile(r"sbx_inv_[A-Za-z0-9]{1,24}\Z")
@@ -124,6 +124,13 @@ class Command(BaseCommand):
                 invite=locked, school=school,
                 source_sha=options["expected_sha"],
                 provisioned_at=timezone.now(),
+            )
+            SandboxEvent.objects.create(
+                invite=locked,
+                event="buyer_workspace_provisioned",
+                track="school", guidance="ops",
+                persona="operator", school=str(school.id),
+                tour="", route="",
             )
 
         self.stdout.write(
