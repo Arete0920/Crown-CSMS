@@ -111,10 +111,7 @@ def test_missing_seed_command_cannot_claim_success(monkeypatch, tmp_path):
 def test_missing_five_module_source_fails_before_install_or_database_mutation(monkeypatch, tmp_path, capsys):
     launcher = load_launcher()
     monkeypatch.setattr(launcher, "ROOT", tmp_path)
-    monkeypatch.setattr(
-        launcher.sys, "argv",
-        ["start_heritage_local.py", "--prepare-only", "--five-module-preflight"],
-    )
+    monkeypatch.setattr(launcher.sys, "argv", ["start_heritage_local.py", "--prepare-only", "--five-module-preflight"])
     monkeypatch.setattr(
         launcher, "local_environment",
         lambda: pytest.fail("Missing source must stop before creating local credentials"),
@@ -246,10 +243,7 @@ def test_successful_opt_in_launch_preserves_strict_sequence(monkeypatch, tmp_pat
     """Source-only launch-order proof; does not claim real browser acceptance."""
     launcher = load_launcher()
     monkeypatch.setattr(launcher, "STATE", tmp_path)
-    monkeypatch.setattr(
-        launcher.sys, "argv",
-        ["start_heritage_local.py", "--five-module-demo", "--no-browser"],
-    )
+    monkeypatch.setattr(launcher.sys, "argv", ["start_heritage_local.py", "--five-module-demo", "--no-browser"])
     monkeypatch.setattr(launcher, "available_ports", lambda: None)
     monkeypatch.setattr(launcher, "require_five_module_sources", lambda: None)
     monkeypatch.setattr(launcher, "source_sha", lambda: "a" * 40)
@@ -298,7 +292,12 @@ def test_successful_opt_in_launch_preserves_strict_sequence(monkeypatch, tmp_pat
     monkeypatch.setattr(launcher, "wait_ready", ready)
     monkeypatch.setattr(launcher.time, "sleep", lambda *_: (_ for _ in ()).throw(KeyboardInterrupt()))
     assert launcher.main() == 0
-    assert calls == [
-        "seed", "strict", "backend", "frontend",
-        "ready-backend", "ready-frontend", "stop-frontend", "stop-backend",
-    ]
+    assert calls == ["seed", "strict", "backend", "frontend",
+                     "ready-backend", "ready-frontend", "stop-frontend", "stop-backend"]
+
+def test_archive_identity_cannot_be_replaced_by_parent_git(monkeypatch, tmp_path):
+    launcher = load_launcher()
+    monkeypatch.setattr(launcher, "ROOT", tmp_path)
+    (tmp_path / "HERITAGE_SOURCE_COMMIT.txt").write_text("a" * 40)
+    monkeypatch.setattr(launcher.subprocess, "check_output", lambda *a, **kw: pytest.fail("Parent Git is not archive provenance"))
+    assert launcher.source_sha() == "a" * 40

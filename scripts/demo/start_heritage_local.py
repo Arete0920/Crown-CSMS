@@ -25,6 +25,8 @@ URL = "http://localhost:4173/sandbox"
 
 def source_sha() -> str:
     try:
+        if not (ROOT / ".git").exists():
+            raise OSError("Packaged source must use its pinned source marker.")
         sha = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True, stderr=subprocess.DEVNULL).strip()
     except (OSError, subprocess.CalledProcessError):
         marker = ROOT / "HERITAGE_SOURCE_COMMIT.txt"

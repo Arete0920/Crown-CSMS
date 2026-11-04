@@ -254,8 +254,7 @@ def test_windows_upload_is_bound_to_tested_source_instead_of_historical_basic_zi
     ({"VITE_BUILD_SHA": "a" * 40, "GITHUB_SHA": "b" * 40}, "a" * 40),
     ({"BUILD_SHA": "a" * 40, "GITHUB_SHA": "b" * 40}, "a" * 40),
     ({"GITHUB_SHA": "a" * 40}, "a" * 40),
-    ({"VITE_BUILD_SHA": "invalid", "GITHUB_SHA": "a" * 40}, None),
-    ({}, None),
+    ({"VITE_BUILD_SHA": "invalid", "GITHUB_SHA": "a" * 40}, None), ({}, None),
 ])
 def test_gitless_frontend_build_identity(tmp_path, variables, expected):
     env = {k: v for k, v in os.environ.items() if k not in {"VITE_BUILD_SHA", "BUILD_SHA", "GITHUB_SHA", "GIT_DIR", "GIT_WORK_TREE"}}
