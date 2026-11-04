@@ -37,6 +37,26 @@ class SandboxInvite(models.Model):
         self.save(update_fields=["last_used_at"])
 
 
+
+class SandboxBuyerWorkspace(models.Model):
+    """Guarded binding for one fictional buyer invite and one isolated school.
+
+    Creating this record is not provisioning or proof of safe buyer access.
+    Hosted sessions remain blocked unless the existing school and actor are
+    independently verified. Existing historical invites are not bound.
+    """
+
+    invite = models.OneToOneField(
+        SandboxInvite, on_delete=models.PROTECT, related_name="buyer_workspace"
+    )
+    school = models.OneToOneField(
+        "core.School", on_delete=models.PROTECT, related_name="buyer_sandbox_workspace"
+    )
+    source_sha = models.CharField(max_length=40)
+    provisioned_at = models.DateTimeField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+
 class SandboxEvent(models.Model):
     event = models.CharField(max_length=80)
     invite = models.ForeignKey(SandboxInvite, null=True, blank=True, on_delete=models.SET_NULL)
