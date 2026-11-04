@@ -30,17 +30,14 @@ def local_env(runtime):
         "DATABASE_URL": "sqlite:///" + (runtime.launcher.STATE / "heritage.sqlite3").as_posix(),
     }
 
-
 def evidence(runtime):
     return {"checks": dict.fromkeys(runtime.UPSTREAM_BROWSER_CHECKS, True), "result": "FAIL"}
-
 
 def test_five_module_mode_requires_real_browser_option(runtime, monkeypatch):
     monkeypatch.setattr(runtime.sys, "argv", ["verify", "--five-module"])
     with pytest.raises(SystemExit) as error:
         runtime.main()
     assert error.value.code == 2
-
 
 def test_missing_module_source_stops_before_local_keys_or_servers(runtime, monkeypatch):
     monkeypatch.setattr(runtime.sys, "argv", ["verify", "--browser", "--five-module"])
@@ -52,7 +49,6 @@ def test_missing_module_source_stops_before_local_keys_or_servers(runtime, monke
     monkeypatch.setattr(runtime.subprocess, "Popen", lambda *a, **kw: pytest.fail("No servers"))
     assert runtime.main() == 1
     assert '"release_certified": false' in (runtime.launcher.STATE / "rehearsal-result.json").read_text()
-
 
 def test_stale_fixture_source_blocks_runtime_before_key_preparation(runtime, monkeypatch):
     monkeypatch.setattr(runtime.sys, "argv", ["verify", "--browser", "--five-module"])

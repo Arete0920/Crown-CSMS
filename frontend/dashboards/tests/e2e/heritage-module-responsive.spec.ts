@@ -1,6 +1,7 @@
 import { expect, test, type Page, type TestInfo } from "@playwright/test";
-import { readFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 const required = process.env.CROWN_REQUIRE_SGO_BROWSER_PROOF === "1";
+let capture = 0;
 async function login(page: Page, role: string) {
   await page.goto("/login");
   await page.locator("#login-role").selectOption(role);
@@ -8,13 +9,14 @@ async function login(page: Page, role: string) {
   await page.waitForURL(url => !url.pathname.endsWith("/login"));
 }
 async function inspect(page: Page, path: string, info: TestInfo) {
+  const output = info.outputPath(`${++capture}-${path.replaceAll("/", "_")}`);
   await page.goto(path, { waitUntil: "networkidle" });
   await page.evaluate(() => document.fonts.ready);
   await expect(page.locator("main")).toHaveCount(1);
   await expect(page.locator("main h1, main h2").first()).toBeVisible();
-  await info.attach("layout.json", { body: JSON.stringify(await page.evaluate(() => ({ path: location.pathname, width: innerWidth, sidebars: document.querySelectorAll("aside").length, font: getComputedStyle(document.body).fontFamily, main: getComputedStyle(document.querySelector("main")!).padding }))), contentType: "application/json" });
+  writeFileSync(output + ".json", JSON.stringify({ source_sha: process.env.CROWN_EXPECTED_FRONTEND_SHA, ...(await page.evaluate(() => ({ path: location.pathname, width: innerWidth, sidebars: document.querySelectorAll("aside").length, font: getComputedStyle(document.body).fontFamily, main: getComputedStyle(document.querySelector("main")!).padding }))) }));
   expect(await page.evaluate(() => Math.max(document.body.scrollWidth, document.documentElement.scrollWidth) - innerWidth)).toBeLessThanOrEqual(1);
-  await info.attach(path.replaceAll("/", "_") + ".png", { body: await page.screenshot({ fullPage: true }), contentType: "image/png" });
+  await page.screenshot({ path: output + ".png", fullPage: true });
 }
 for (const [width, height] of [[1440, 900], [1024, 768], [390, 844]]) {
   test(`real-role module layouts ${width}x${height}`, async ({ page, context, request }, info) => {
