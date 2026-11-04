@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import CrownLogo from "../brand/CrownLogo.jsx";
 import { authenticatedFetch } from "../../utils/authClient.js";
 import { getAccessToken, getSelectedSchoolId } from "../../utils/authClient.js";
 import "../../styles/operational-dashboard-canonical.css";
@@ -186,7 +187,7 @@ export default function CrownLayout({ title, subtitle, right, children, mainClas
         }}
       >
         <div className="crown-sidebar-header">
-          <h1>Crown</h1>
+          <h1 className="crown-sidebar-brand"><CrownLogo variant="monochromeWhite" className="crown-sidebar-brand-mark" /></h1>
           <button
             type="button"
             className="crown-sidebar-close"
@@ -264,6 +265,11 @@ export default function CrownLayout({ title, subtitle, right, children, mainClas
       </>}
 
       <main className={`crown-main ${operationalLayoutClass} ${mainClassName}`.trim()}>
+        {standalone && (
+          <div className="crown-standalone-brand">
+            <CrownLogo placement="topnavHorizontal" className="crown-standalone-brand-mark" />
+          </div>
+        )}
         <div style={{ maxWidth: 1200, margin: "0 auto", padding: "4px 0 8px" }}>
           <div className="crown-utility-row" style={{ marginBottom: 10, alignItems: "center" }}>
             <div className="crown-breadcrumbs" aria-label="Breadcrumb" style={{ fontSize: 12, opacity: 0.9 }}>
