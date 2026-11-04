@@ -1,5 +1,5 @@
 CROWN HERITAGE LOCAL DEMO
-Updated November 2, 2026 — five-module refresh pending full acceptance
+Updated November 4, 2026 - source/operator guidance; release NOT certified
 
 START ON A DEMO COMPUTER
 1. Install Python 3.12 and Node.js 24 with npm if missing.
@@ -7,8 +7,11 @@ START ON A DEMO COMPUTER
    Python downloads: https://www.python.org/downloads/
    Node downloads: https://nodejs.org/en/download
 2. Extract the downloaded ZIP completely into a normal writable folder.
-3. Double-click Start-Heritage.cmd in the extracted CROWN folder.
-   Do not use Start-Heritage-Demo.cmd in this outer source archive.
+3. Double-click Start-Heritage.cmd in the extracted CROWN folder for a BASIC
+   historical sales demo. This default basic source pin is NOT the current
+   five-module integration. For five modules use a reviewed candidate with
+   five_module_candidate=true in HERITAGE-SALES-MANIFEST.json, or the
+   explicit local source-checkout command below.
 4. Keep the startup window open. First setup requires internet and can take
    several minutes while it downloads source/dependencies and creates the database.
 5. The browser opens http://localhost:4173/sandbox. Select a role; no password
@@ -25,102 +28,85 @@ Payments in the demonstrated flow are local manual demo entries; no external
 payment is processed. Internet is required for initial installation.
 Full offline operation of every integration has not been verified.
 
-FIVE-MODULE RELEASE SCOPE AND VERIFICATION (NOVEMBER 2)
-The immutable source pin for this candidate is
-a1bf22fc1e520eba149ce943edcd747dbf75c1e5.
-Verify that HERITAGE-SALES-MANIFEST.json has this exact source_sha before
-using a candidate. This identifies the application source, not PR head.
-Unmerged Camp PR #611 and Diadem pickup PR #612 are NOT included and cannot
-be demonstrated as implemented features. A dashboard route alone does not
-constitute full workflow acceptance. No real family/childcare records.
+FIVE-MODULE SOURCE AND VERIFICATION
+The accepted main branch contains Camp #611, Diadem #612, Extended Care
+#613, Jireh SGO family/processor #616/#622 and parent Financial Aid #620.
+The joined Windows candidate is coordinated through issue #617 and PR #615.
+Confirm the current GitHub merge/source status before presenting.
 
-The canonical Windows GitHub Actions job must pass a STRICT five-module
-fictional-data preflight, verify ZIP and source-download identity, and pass
-the existing browser buyer rehearsal before its distributable ZIP artifact
-is accepted. The preflight checks routes and synthetic record availability;
-it does NOT prove five-module browser completion, permission boundaries,
-persisted edits or safe failure behavior. Those workflows require separate
-browser tests and actual laptop rehearsal. Until both pass, label this ZIP
-a CANDIDATE, not a certified interactive five-module demonstration.
+A route or merged feature is not proof of an operational demonstration.
+Use a source-matched ZIP manifest and completed Windows browser evidence,
+then independently verify the owner's physical laptop and staff roles.
+The starter remains UNCERTIFIED until a separate release decision. No real
+children/families, SGO scholarships, funds, payment provider or Azure access.
 
-For a reproducible strict check after starter extraction and first source
-download, open PowerShell in the extracted Heritage-<12-character SHA> source
-folder (not the parent folder containing Start-Heritage.cmd):
-  py -3.12 scripts/demo/start_heritage_local.py --prepare-only --five-module-preflight
-The command must exit 0; save its output. If it fails, NO-GO. This does
-not replace a real browser workflow rehearsal. Perform it in the isolated
-fictional Heritage database only; do not alter a real school database.
-For an explicitly authorized, reviewed and assembled five-module source
-checkout (NOT the older pinned candidate), launch its opt-in functional demo:
+For an exact reviewed integrated Git checkout, from the repository root:
+  git rev-parse HEAD
   py -3.12 scripts/demo/start_heritage_local.py --five-module-demo
-That command must successfully seed all fictional modules and pass strict
-preflight before starting the servers; if either fails, do not present a
-five-module demo. The default Start-Heritage.cmd remains a basic demo,
-not an automatic five-module certification.
-Confirm http://localhost:4173/sandbox and inspect actual workflows with
-authorized personas, save/reload and denial tests.
+This explicit mode seeds guarded fictional data, runs the STRICT source/data
+preflight and starts only the loopback services after all gates pass.
+The ordinary Start-Heritage.cmd/basic launcher may not enable SGO intake.
 
-The release acceptance checklist is: Diadem Daycare center/room setup and
-custody checks; Extended Care AM/PM enrollment and attendance; Summer Camp
-session, registration and saved state; Jireh Financial Aid application,
-recommendation and persisted state; Jireh SGO organization/case visibility
-and denied unauthorized operations. Do NOT claim SGO family submission or
-processor case-management workflows without actual implementation and tests.
-A functional gap in any module blocks the FULL five-module certification;
-it must be disclosed instead of being represented by a dashboard tour.
+For a non-browser preflight on a FRESH isolated checkout:
+  py -3.12 scripts/demo/start_heritage_local.py --prepare-only --five-module-preflight
+Do not execute both modes successively on an in-use fictional database:
+five-module seeding may regenerate local SGO account credentials.
+Do not remove failed gates, fake tenant/guardian permission or replace
+blocked custody/health records with invented clearance.
 
 STOP AND RESTART
-Press Ctrl+C in the startup window to stop both servers. Saved fictional data
-remains for the next session. Start again using the same Start-Heritage.cmd.
-Only one demo should be running. Ports 8000 and 4173 must be available.
-For a fresh rehearsal, extract this ZIP into a new folder and use a private
-browser window. Preserve the old folder if its saved records are needed.
-Avoid resetting during a presentation.
+Press Ctrl+C to stop both servers. Preserve fictional audit and custody
+records, and use a fresh isolated folder for a new source revision.
+Ports 8000 and 4173 must be free. Do not rerun explicit SGO seeding in the
+middle of a presentation: it can invalidate earlier local credentials.
 
 FIVE-MODULE FUNCTIONAL REHEARSAL (45 MINUTES; CANDIDATE ONLY)
-These are required acceptance checks, not claims that all workflows exist.
-Use only fictional Heritage data, document exact role and visible URL,
-and record the outcome. Do not bypass a missing control or permission gate.
+This is an OWNER LAPTOP acceptance script, not a claim that the owner has
+already manually completed the workflows. Use synthetic Heritage data.
 
 1. Diadem Daycare (10 min)
-   Visit /diadem/daycare/setup and /diadem/daycare. Under an authorized
-   director persona, inspect site and room setup; create or change only
-   disposable synthetic configuration, then reload and verify stored state.
-   Inspect actual roster and custody controls and expected denial cases.
-   Pickup review and audited release changes from draft PR #612 are NOT
-   present in this pinned release; do not demonstrate them as available.
+   Visit /diadem/daycare/setup as an authorized director, then
+   /diadem/daycare as a specifically authorized DAYCARE_STAFF identity.
+   Verify guardian identity, persisted one-time custody release, audit,
+   and revoked/expired/foreign-school denial. The basic /sandbox role
+   selector does NOT issue DAYCARE_STAFF access. While the five-module
+   servers remain running, open a second terminal in the same source folder:
+     py -3.12 scripts/demo/start_heritage_local.py --daycare-presenter
+   Install Chromium first if absent: from frontend/dashboards run
+     npx playwright install chromium
+   The explicit command creates at most one private fictional pickup scenario,
+   checks its signed staff identity, exact source, real roster and guardian
+   readback, then opens a dedicated visible Chromium window. No token appears
+   in URLs or logs. Close this browser to end staff entry. Existing, expired,
+   released or failed scenarios are not reset; retain their audit and use a
+   fresh isolated folder for another rehearsal. No admin role is broadened.
 
 2. Extended Care / Beforecare / Aftercare (9 min)
-   Visit /before-care/dashboard and /after-care/dashboard and their roster
-   pages. Verify separately scoped AM and PM enrollment, attendance, roles,
-   saved/reloaded changes, stale-action rejection and forbidden-role denial.
-   Do not claim draft PR #613 staff-isolation hardening is included.
+   Inspect /before-care/dashboard and /after-care/dashboard and rosters.
+   Verify separate AM/PM staff sessions, authorized custody changes,
+   independent GET after POST, reload and stale/foreign-school denial.
 
 3. Summer Camp (8 min)
    Visit /summer-camp-dashboard/setup and /summer-camp-dashboard/roster.
-   Check school-scoped sessions and synthetic registrations, perform an
-   authorized existing action if available, verify reload and a denied
-   cross-school or unauthorized action. Draft PR #611 workflows are NOT
-   included; a read-only tour cannot pass an interactive workflow gate.
+   Save and read back setup and fictional registration; prove blocked
+   check-in remains blocked pending health/guardian/staff clearance.
 
 4. Jireh Financial Aid (9 min)
-   Visit /parent/financial-aid and /financial-aid with appropriate separate
-   roles. Verify available family preparation, application, student-specific
-   recommendation and award state; exercise an authorized save/reload, input
-   validation and role denial. Do not claim that any award was actually paid.
+   Under a fictional parent open /parent/financial-aid and submit;
+   confirm the exact authorized saved application GET and reload.
+   Under approved school role inspect /financial-aid. No award posting
+   or disbursement is implied by an offered synthetic sample.
 
 5. Jireh SGO (9 min)
-   Visit /jireh-sgo. Verify school/organization membership, program
-   visibility and noncash application aggregates; verify unauthorized access
-   is denied. At this pinned source, family-facing SGO intake and delegated
-   processor case management are NOT demonstrated as complete. These are
-   outstanding functional gaps and block full five-module certification.
+   Arete processes applications FOR existing independent partner SGOs.
+   Use /jireh-sgo/sign-in and private local fictional credentials from
+   .local-backups/heritage-demo/sgo-credentials.txt, NOT /sandbox.
+   Show family consent/POST/GET, delegated processor correction,
+   family resubmission, saved revision and cross-SGO denial.
+   Never describe Arete as holding funds or deciding scholarship awards.
 
-Use /sandbox to change demo personas. Some dashboard cards may display
-explicitly labeled examples or fallback summaries, not persisted records.
-A route loading successfully does not satisfy save/reload or authorization.
-Stop the presentation as a full functional certification if a required flow
-is unavailable; disclose the scope instead of improvising a dashboard tour.
+If a required live operation, role boundary, or saved-record verification
+fails on the laptop, do NOT substitute a dashboard tour. Release stays NO-GO.
 
 SCHOOL PROFILE
 Heritage Christian Academy; PK-12; school year 2026-2027.
@@ -128,15 +114,15 @@ Seed counts, scenario records and displayed aggregates can differ between
 source revisions and after demo transactions. Verify them in the isolated
 local database; do not promise fixed enrollment or tuition totals.
 
-VERIFICATION STATUS — NOVEMBER 2 CANDIDATE
-The earlier October 15 Heritage distribution had historical test evidence
-for a broader school buyer walkthrough. That evidence belongs to the older
-source revision; none of its numeric pass counts certifies this new pin,
-the five-module workflows, or the owner's physical Windows laptop.
-For this candidate, accept only current exact-head Windows CI evidence,
-a passing strict local five-module preflight, package/download identity
-verification, and separately evidenced real-browser five-module actions.
-No production, Azure, payment or real-school certification is claimed.
+VERIFICATION STATUS - ENGINEERING, NOT RELEASE
+Current integrated-source CI/Windows browser evidence is tracked in #617,
+including actual protected role, custody, data and responsive tests.
+A new source commit requires fresh exact-head checks; historical successes
+do not certify a later ZIP or a physical Windows laptop.
+Outstanding buyer-release acceptance includes actual Windows verification
+of the private Diadem entry, visual/navigation consistency, exact SHA package audit,
+owner-operated full walkthrough and final release signoff.
+No Azure/production/real-school/payment certification is implied.
 
 LIMITS
 Native Windows/macOS execution still needs a check on the actual demo computer.
