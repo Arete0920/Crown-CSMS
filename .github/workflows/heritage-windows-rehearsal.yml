@@ -2,7 +2,8 @@ name: Heritage Windows Demo Rehearsal
 
 on:
   pull_request:
-    branches: [main]
+    # Certify a stacked presenter PR without retargeting it to protected main.
+    branches: [main, 'fix/heritage-five-module-source-pin-20261102']
     paths:
       - 'scripts/demo/**'
       - 'Install-and-Start-Heritage.py'
