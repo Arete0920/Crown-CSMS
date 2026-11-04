@@ -175,7 +175,6 @@ def test_explicit_five_module_launch_must_complete_strict_audit_before_servers(m
     assert launcher.main() == 1
     assert calls == [("seed", python), ("audit", ["five_module_demo_preflight", "--strict"])]
 
-
 @pytest.mark.parametrize(("mode", "stale_marker"), [
     (["--five-module-demo"], "seed.complete"),
     (["--five-module-demo"], "relationships.complete"),
@@ -215,7 +214,6 @@ def test_marker_without_db_refused(monkeypatch, tmp_path):
     with pytest.raises(RuntimeError, match="without local database"):
         launcher.require_fresh_five_module_source("a" * 40)
 
-
 def test_fresh_revision_or_matching_completed_markers_allowed(monkeypatch, tmp_path):
     launcher = load_launcher()
     monkeypatch.setattr(launcher, "STATE", tmp_path)
@@ -225,13 +223,11 @@ def test_fresh_revision_or_matching_completed_markers_allowed(monkeypatch, tmp_p
         (tmp_path / name).write_text("a" * 40 + "\n", encoding="utf-8")
     assert launcher.require_fresh_five_module_source("a" * 40) is None
 
-
 def test_malformed_source_sha_refused(monkeypatch, tmp_path):
     launcher = load_launcher()
     monkeypatch.setattr(launcher, "STATE", tmp_path)
     with pytest.raises(RuntimeError, match="exact source SHA"):
         launcher.require_fresh_five_module_source("unknown")
-
 
 def test_default_prepare_does_not_activate_five_module_fixtures(monkeypatch, tmp_path):
     launcher = load_launcher()

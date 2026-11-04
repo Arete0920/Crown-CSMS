@@ -71,11 +71,12 @@ def complete_five_module_browser_checks(browser_env: dict[str, str], evidence: d
         "CROWN_SGO_LOCAL_E2E": "1", "CROWN_REQUIRE_SGO_BROWSER_PROOF": "1",
         "CROWN_SGO_LOCAL_CREDENTIALS": str((launcher.STATE / "sgo-credentials.txt").resolve()),
     })
-    subprocess.run(
-        launcher.npm_command() + ["run", "test:e2e", "--", *FIVE_MODULE_BROWSER_SOURCES[4:],
-                                  "--workers=1", "--reporter=line"],
-        cwd=launcher.FRONTEND, env=scoped, timeout=600, check=True,
-    )
+    for sources in (FIVE_MODULE_BROWSER_SOURCES[4:6], FIVE_MODULE_BROWSER_SOURCES[6:]):
+        subprocess.run(
+            launcher.npm_command() + ["run", "test:e2e", "--", *sources,
+                                      "--workers=1", "--reporter=line"],
+            cwd=launcher.FRONTEND, env=scoped, timeout=600, check=True,
+        )
     evidence["checks"]["five_module_responsive_real_role_browser_audit"] = True
     evidence["checks"]["extended_care_real_am_pm_browser_custody_and_reload"] = True
     evidence["checks"]["jireh_sgo_independent_partners_submission_correction_and_resubmission"] = True

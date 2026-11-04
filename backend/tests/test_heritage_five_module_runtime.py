@@ -5,7 +5,6 @@ import subprocess
 
 import pytest
 
-
 @pytest.fixture
 def runtime(monkeypatch, tmp_path):
     root = Path(__file__).resolve().parents[2]
@@ -22,7 +21,6 @@ def runtime(monkeypatch, tmp_path):
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text("// Test-only source inventory placeholder.\n")
     return module
-
 
 def local_env(runtime):
     return {
@@ -130,28 +128,34 @@ def test_success_runs_care_and_sgo_once_with_required_proof_flags(runtime, monke
     original_env = {"CROWN_EXPECTED_FRONTEND_SHA": "a" * 40}
     proof = evidence(runtime)
     runtime.complete_five_module_browser_checks(original_env, proof)
-    assert len(calls) == 1
+    assert len(calls) == 2
     command, options = calls[0]
     assert command == ["npm", "run", "test:e2e", "--",
                        "tests/e2e/extended-care-local-custody.spec.ts",
                        "tests/e2e/jireh-sgo-local-intake.spec.ts",
-                       "tests/e2e/heritage-module-responsive.spec.ts",
                        "--workers=1", "--reporter=line"]
+    assert calls[1] == (["npm", "run", "test:e2e", "--", "tests/e2e/heritage-module-responsive.spec.ts", "--workers=1", "--reporter=line"], options)
     assert options["env"]["CROWN_REQUIRE_CARE_BROWSER_PROOF"] == "1"
     assert options["env"]["CROWN_REQUIRE_SGO_BROWSER_PROOF"] == "1"
     assert options["env"]["CROWN_SGO_LOCAL_CREDENTIALS"] == str((runtime.launcher.STATE / "sgo-credentials.txt").resolve())
     assert options["check"] is True
     assert original_env == {"CROWN_EXPECTED_FRONTEND_SHA": "a" * 40}
+    assert proof["checks"]["five_module_responsive_real_role_browser_audit"] is True
     assert proof["checks"]["extended_care_real_am_pm_browser_custody_and_reload"] is True
     assert proof["checks"]["jireh_sgo_independent_partners_submission_correction_and_resubmission"] is True
 
 
-def test_failed_browser_does_not_record_module_success(runtime, monkeypatch):
+@pytest.mark.parametrize("failure_call", [1, 2])
+def test_failed_browser_does_not_record_module_success(runtime, monkeypatch, failure_call):
     proof = evidence(runtime)
+    calls = []
     def fail(command, **kwargs):
-        raise subprocess.CalledProcessError(1, command)
+        calls.append(command)
+        if len(calls) == failure_call:
+            raise subprocess.CalledProcessError(1, command)
     monkeypatch.setattr(runtime.subprocess, "run", fail)
     with pytest.raises(subprocess.CalledProcessError):
         runtime.complete_five_module_browser_checks({}, proof)
+    assert "five_module_responsive_real_role_browser_audit" not in proof["checks"]
     assert "extended_care_real_am_pm_browser_custody_and_reload" not in proof["checks"]
     assert "jireh_sgo_independent_partners_submission_correction_and_resubmission" not in proof["checks"]
