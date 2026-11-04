@@ -12,7 +12,7 @@ if (!fs.existsSync(dist)) {
 
 function safe(cmd, fallback = "") {
   try {
-    return execSync(cmd, { encoding: "utf8" }).trim();
+    return execSync(cmd, { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim();
   } catch {
     return fallback;
   }

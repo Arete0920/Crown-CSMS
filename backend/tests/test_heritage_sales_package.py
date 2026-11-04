@@ -91,9 +91,7 @@ def test_sale_audit_accepts_unchanged_starter_without_executing_zip_entry(monkey
     "Start-Heritage.cmd",
     "HERITAGE-LOCAL-DEMO-README.txt",
 ])
-def test_sale_audit_rejects_swapped_executable_or_instructions_without_execution(
-    monkeypatch, tmp_path, changed,
-):
+def test_sale_audit_rejects_swapped_executable_or_instructions_without_execution(monkeypatch, tmp_path, changed):
     auditor, archive, destination = _audit_fixture(monkeypatch, tmp_path)
     with zipfile.ZipFile(archive) as original:
         entries = [(x.filename, original.read(x.filename)) for x in original.infolist()]
@@ -266,6 +264,7 @@ def test_gitless_frontend_build_identity(tmp_path, variables, expected):
     target = tmp_path / "dist/build.json"
     if expected:
         assert result.returncode == 0, result.stderr
+        assert not result.stderr
         data = json.loads(target.read_text())
         assert (data["build_sha"], data["build_sha_short"]) == (expected, expected[:7])
     else:
