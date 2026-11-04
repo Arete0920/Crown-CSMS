@@ -258,7 +258,25 @@ export async function authenticatedFetch(input, init = {}) {
       && String(requestInit.method || "GET").toUpperCase() === "GET"
       && /^\/api\/v1\/jireh-sgo\/organizations(?:\/[0-9a-fA-F]{8}-(?:[0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}\/overview)?\/?$/.test(input)
     );
-    if (omitSchoolContext && !isPlatformOperatorRequest && !isSgoGrantorRead) {
+    // Local fictional SGO endpoints: explicit method/path allowlist, no wildcard.
+    const sgoUuid = "[0-9a-fA-F]{8}-(?:[0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}";
+    const sgoPath = typeof input === "string"
+      ? (input.endsWith("/") ? input.slice(0, -1) : input) : "";
+    const method = String(requestInit.method || "GET").toUpperCase();
+    const isLocalSgoIntake = import.meta.env.VITE_LOCAL_DEMO === "1" && (
+      (method === "GET" && (
+        sgoPath === "/api/v1/jireh-sgo/family/programs"
+        || sgoPath === "/api/v1/jireh-sgo/processor/programs"
+        || new RegExp("^/api/v1/jireh-sgo/family/applications/" + sgoUuid + "$").test(sgoPath)
+        || new RegExp("^/api/v1/jireh-sgo/processor/programs/" + sgoUuid + "/queue$").test(sgoPath)
+      ))
+      || (method === "POST" && (
+        sgoPath === "/api/v1/jireh-sgo/family/submit"
+        || new RegExp("^/api/v1/jireh-sgo/family/applications/" + sgoUuid + "/correct$").test(sgoPath)
+        || new RegExp("^/api/v1/jireh-sgo/processor/applications/" + sgoUuid + "/request-correction$").test(sgoPath)
+      ))
+    );
+    if (omitSchoolContext && !isPlatformOperatorRequest && !isSgoGrantorRead && !isLocalSgoIntake) {
       throw new Error("Schoolless requests are restricted to explicit authorized endpoints.");
     }
     if (omitSchoolContext) {
