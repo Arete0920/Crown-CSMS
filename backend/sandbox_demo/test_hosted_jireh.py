@@ -159,6 +159,16 @@ class HostedJirehContract(TestCase):
         self.assertEqual(AidFinancialProfile.objects.count(), 1)
         self.assertEqual(self.request("GET", AID, role="finance_director").status_code, 404)
 
+    def test_seed_supplies_canonical_parent_journey_identity_without_cross_buyer_access(self):
+        from parent360.identity import resolve_household_for_account
+        first = resolve_household_for_account(self.bindings[0][1]["parent"])
+        second = resolve_household_for_account(self.bindings[1][1]["parent"])
+        self.assertNotEqual(first.pk, second.pk)
+        self.assertEqual(first.school_id, self.bindings[0][0].school_id)
+        client, headers = self.client_as()
+        response = client.get("/api/v1/parent360/me/overview/", **headers)
+        self.assertEqual(response.status_code, 200, response.content[:500])
+
     def test_school_aid_two_buyers_and_foreign_students_cannot_mix(self):
         with patch("sandbox_demo.hosted_jireh.hosted_jireh_runtime", return_value=True):
             one = self.aid_payload(0)

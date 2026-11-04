@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import JirehSGOIntakePage from "./JirehSGOIntakePage.jsx";
 import { authenticatedFetch, getAccessToken } from "../utils/authClient.js";
 vi.mock("../utils/authClient.js", () => ({
@@ -207,6 +207,26 @@ describe("Jireh SGO interactive fictional intake", () => {
 });
 
 describe("Hosted SGO refusal", () => {
+  it("discards a stale hosted processor queue after switching partner", async () => {
+    vi.stubEnv("VITE_LOCAL_DEMO", "0"); vi.stubEnv("VITE_HOSTED_JIREH_DEMO", "1");
+    const otherProgram = "28dc4c1b-0b8a-4db0-82aa-0ed85c7a05a1", otherApp = "b2222222-964f-457f-8e78-a6f73a5a2cc1";
+    let finishOld;
+    const old = new Promise((resolve) => { finishOld = resolve; });
+    authenticatedFetch.mockImplementation(async (url) => {
+      if (url.endsWith("/family/programs/")) throw Object.assign(new Error("Not found"), { status: 404 });
+      if (url.endsWith("/processor/programs/")) return response({ programs: [{ id: PID }, { id: otherProgram }], authority: "PROCESSOR_VERIFICATION_ONLY" });
+      if (url.includes(PID)) return old;
+      return response({ program_id: otherProgram, authority: "PROCESSOR_VERIFICATION_ONLY", applications: [{ ...saved, id: otherApp, program_id: otherProgram }] });
+    });
+    render(<JirehSGOIntakePage />);
+    const select = await screen.findByLabelText("Assigned partner program");
+    await waitFor(() => expect(authenticatedFetch.mock.calls.some(([url]) => url.includes(PID) && url.endsWith("/queue/"))).toBe(true));
+    fireEvent.change(select, { target: { value: otherProgram } });
+    expect(await screen.findByText(/^b2222222/)).toBeTruthy();
+    await act(async () => finishOld(response({ program_id: PID, authority: "PROCESSOR_VERIFICATION_ONLY", applications: [saved] })));
+    expect(screen.queryByText(new RegExp("^" + APP.slice(0, 8)))).toBeNull();
+    expect(screen.getByText(/^b2222222/)).toBeTruthy();
+  });
   it.each([403, 500])("refuses partial grants when counterpart returns HTTP %s", async (status) => {
     vi.stubEnv("VITE_LOCAL_DEMO", "0");
     vi.stubEnv("VITE_HOSTED_JIREH_DEMO", "1");

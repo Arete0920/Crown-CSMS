@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import CrownLayout from "../components/crown/CrownLayout.jsx";
 import { authenticatedFetch, clearBrowserAuthState, getAccessToken } from "../utils/authClient.js";
 const hostedDemo = () => import.meta.env.VITE_LOCAL_DEMO !== "1" && import.meta.env.VITE_HOSTED_JIREH_DEMO === "1";
@@ -33,6 +33,8 @@ export default function JirehSGOIntakePage() {
   const [families, setFamilies] = useState([]), [processors, setProcessors] = useState([]);
   const [familyProgram, setFamilyProgram] = useState("");
   const [processorProgram, setProcessorProgram] = useState("");
+  const queueScope = useRef(null);
+  queueScope.current = { token, processorProgram };
   const [grade, setGrade] = useState("K"), [correctionGrade, setCorrectionGrade] = useState("K");
   const [consent, setConsent] = useState(false);
   const [application, setApplication] = useState(null);
@@ -111,7 +113,8 @@ export default function JirehSGOIntakePage() {
         || result.program_id !== processorProgram || !Array.isArray(result.applications)) {
       throw new Error("Processor scope mismatch.");
     }
-    if (getAccessToken() === token) setQueue(result.applications);
+    if (getAccessToken() === token && queueScope.current.token === token
+        && queueScope.current.processorProgram === processorProgram) setQueue(result.applications);
     return result.applications;
   }, [authorized, processorProgram, token]);
   useEffect(() => {

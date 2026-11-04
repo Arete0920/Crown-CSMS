@@ -15,6 +15,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from core.models import AcademicYear, Family, Guardian, School, Student, UserAccount
+from households.models import Guardian as PortalGuardian, Household, Student as PortalStudent
 from jireh_sgo.models import (
     SGOFamilyGrant, SGOOrganization, SGOProcessorAssignment, SGOProgram,
 )
@@ -72,6 +73,7 @@ class Command(BaseCommand):
             or Family.objects.filter(school=workspace.school).exists()
             or Guardian.objects.filter(school=workspace.school).exists()
             or Student.objects.filter(school=workspace.school).exists()
+            or Household.objects.filter(school_id=workspace.school_id).exists()
         ):
             raise CommandError("Not an empty fictional buyer workspace; no reset or overwrite allowed.")
         if not options["apply"]:
@@ -92,6 +94,7 @@ class Command(BaseCommand):
                 or Family.objects.filter(school=workspace.school).exists()
                 or Student.objects.filter(school=workspace.school).exists()
                 or AcademicYear.objects.filter(school=workspace.school).exists()
+                or Household.objects.filter(school_id=workspace.school_id).exists()
             ):
                 raise CommandError("Existing buyer module records are never overwritten.")
 
@@ -124,6 +127,20 @@ class Command(BaseCommand):
             )
             parent.guardian = guardian
             parent.save(update_fields=["guardian"])
+            # Parent360 requires its own canonical account relationship; the
+            # core guardian alone must not bypass the parent journey guard.
+            household = Household.objects.create(
+                school_id=workspace.school_id, name=family.family_name,
+            )
+            PortalGuardian.objects.create(
+                school_id=workspace.school_id, household=household, account=parent,
+                first_name=guardian.first_name, last_name=guardian.last_name,
+                email=parent.email, is_primary=True,
+            )
+            PortalStudent.objects.create(
+                school_id=workspace.school_id, household=household,
+                first_name=student.first_name, last_name=student.last_name, grade_level="7",
+            )
             SandboxBuyerAidFamily.objects.create(
                 workspace=workspace, family=family, guardian=guardian,
             )
