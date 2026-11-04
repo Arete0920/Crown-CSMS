@@ -14,6 +14,7 @@ from rest_framework.views import APIView
 from core.models import UserAccount
 
 from .catalog import SANDBOX_PERSONAS, SANDBOX_SCHOOLS, catalog_payload, get_school
+from .buyer_workspace import BuyerWorkspaceDenied, hosted_buyer_mode, hosted_buyer_session
 from .models import SandboxEvent, SandboxFeedback, SandboxInvite
 from .parent_enrollment import (
     SandboxParentEnrollmentError,
@@ -166,7 +167,6 @@ def _validate_invite(
             status=403,
         )
 
-    invite.mark_used()
     return None
 
 
@@ -353,27 +353,39 @@ class SandboxSessionView(APIView):
         if invite_error:
             return invite_error
 
-        ensure_sandbox_role_permissions(persona.role_code)
-        session = create_sandbox_session(
-            persona_key=role,
-            school_key_or_id=school_key,
-            guidance=guidance,
-            tour=tour,
-        )
-
-        sandbox_user = UserAccount.objects.filter(
-            school_id=session["school_id"],
-            username=persona.email,
-            is_active=True,
-        ).first()
-        if sandbox_user is None:
-            return Response(
-                {
-                    "detail": "Sandbox persona account was not created.",
-                    "code": "sandbox_persona_account_missing",
-                },
-                status=500,
+        if hosted_buyer_mode():
+            # Never create a session on the shared Heritage tenant for an
+            # emailed evaluator. No seeding or principal creation on GET/POST.
+            try:
+                session, sandbox_user, hosted_ttl = hosted_buyer_session(
+                    invite, persona_key=role, guidance=guidance, tour=tour
+                )
+            except BuyerWorkspaceDenied as exc:
+                return Response(
+                    {"detail": "An isolated buyer workspace is required.", "code": str(exc)},
+                    status=403,
+                )
+        else:
+            ensure_sandbox_role_permissions(persona.role_code)
+            session = create_sandbox_session(
+                persona_key=role,
+                school_key_or_id=school_key,
+                guidance=guidance,
+                tour=tour,
             )
+            sandbox_user = UserAccount.objects.filter(
+                school_id=session["school_id"],
+                username=persona.email,
+                is_active=True,
+            ).first()
+            if sandbox_user is None:
+                return Response(
+                    {
+                        "detail": "Sandbox persona account was not created.",
+                        "code": "sandbox_persona_account_missing",
+                    },
+                    status=500,
+                )
 
         django_request = request._request
         django_login(
@@ -381,6 +393,10 @@ class SandboxSessionView(APIView):
             sandbox_user,
             backend="django.contrib.auth.backends.ModelBackend",
         )
+        if hosted_buyer_mode():
+            # Django's session cookie must not outlive the invitation-capped
+            # access token and silently extend browser authorization.
+            django_request.session.set_expiry(hosted_ttl)
         get_token(django_request)
 
         SandboxEvent.objects.create(
@@ -393,7 +409,8 @@ class SandboxSessionView(APIView):
             tour=session.get("tour", ""),
             route=session.get("route", ""),
         )
-
+        if invite is not None:
+            invite.mark_used()
         return Response(session, status=201)
 
 
