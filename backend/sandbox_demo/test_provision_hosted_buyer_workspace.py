@@ -13,7 +13,7 @@ from django.test import TestCase
 from django.utils import timezone
 
 from core.models import School, UserAccount, UserRole
-from sandbox_demo.models import SandboxBuyerWorkspace, SandboxInvite
+from sandbox_demo.models import SandboxBuyerWorkspace, SandboxEvent, SandboxInvite
 
 SHA = "b" * 40
 COMMAND = "sandbox_demo.management.commands.provision_hosted_buyer_workspace"
@@ -48,6 +48,7 @@ class HostedBuyerProvisionerTests(TestCase):
         self.assertEqual(UserAccount.objects.count(), 0)
         self.assertEqual(UserRole.objects.count(), 0)
         self.assertEqual(SandboxBuyerWorkspace.objects.count(), 0)
+        self.assertEqual(SandboxEvent.objects.count(), 0)
         self.assertNotIn(invite.id, result)
 
     def test_explicit_apply_creates_isolated_empty_workspace_and_unusable_users(self):
@@ -61,6 +62,13 @@ class HostedBuyerProvisionerTests(TestCase):
         self.assertEqual(School.objects.count(), 1)
         self.assertEqual(UserRole.objects.filter(school=workspace.school).count(), 2)
         self.assertEqual(UserAccount.objects.filter(school=workspace.school).count(), 2)
+        self.assertEqual(
+            SandboxEvent.objects.filter(
+                invite=invite, event="buyer_workspace_provisioned",
+                school=str(workspace.school_id),
+            ).count(),
+            1,
+        )
         for user in UserAccount.objects.filter(school=workspace.school):
             self.assertFalse(user.has_usable_password())
             self.assertFalse(user.is_staff)
@@ -85,6 +93,7 @@ class HostedBuyerProvisionerTests(TestCase):
             self.execute(invite.id, apply=True)
         self.assertEqual(list(UserAccount.objects.values_list("id", flat=True)), state)
         self.assertEqual(SandboxBuyerWorkspace.objects.count(), 1)
+        self.assertEqual(SandboxEvent.objects.filter(event="buyer_workspace_provisioned").count(), 1)
 
     def test_reject_expired_revoked_and_invalid_scope_without_writes(self):
         for kind in ("expired", "revoked", "empty", "foreign", "duplicated", "non_string"):
