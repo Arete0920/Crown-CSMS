@@ -9,7 +9,6 @@ from __future__ import annotations
 import os
 import re
 from dataclasses import asdict, replace
-from datetime import timedelta
 
 from django.conf import settings
 from django.utils import timezone
@@ -30,11 +29,9 @@ class BuyerWorkspaceDenied(Exception):
 def hosted_buyer_mode() -> bool:
     """Enforce binding in every hosted runtime, including a misconfigured DEV."""
     env = str(getattr(settings, "CROWN_ENV", "") or "").strip().lower()
-    return (
-        not settings.DEBUG
-        or bool(os.environ.get("WEBSITE_HOSTNAME"))
-        or env in {"dev", "staging", "sandbox", "prod", "production", "live"}
-    )
+    return bool(os.environ.get("WEBSITE_HOSTNAME")) or env in {
+        "dev", "staging", "sandbox", "prod", "production", "live"
+    }
 
 
 def buyer_username(school_id, persona_key: str) -> str:
