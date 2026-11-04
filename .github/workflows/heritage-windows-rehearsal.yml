@@ -203,6 +203,6 @@ jobs:
             .local-backups/heritage-demo/rehearsal-result.json
             .local-backups/heritage-demo/buyer-browser-authority.json
             frontend/dashboards/test-results/**/*.png
-            frontend/dashboards/test-results/**/*.json
+            frontend/dashboards/test-results/**/*.layout.json
           if-no-files-found: error
           retention-days: 7

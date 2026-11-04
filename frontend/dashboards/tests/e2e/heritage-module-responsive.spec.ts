@@ -14,7 +14,7 @@ async function inspect(page: Page, path: string, info: TestInfo) {
   await page.evaluate(() => document.fonts.ready);
   await expect(page.locator("main")).toHaveCount(1);
   await expect(page.locator("main h1, main h2").first()).toBeVisible();
-  writeFileSync(output + ".json", JSON.stringify({ source_sha: process.env.CROWN_EXPECTED_FRONTEND_SHA, ...(await page.evaluate(() => ({ path: location.pathname, width: innerWidth, sidebars: document.querySelectorAll("aside").length, font: getComputedStyle(document.body).fontFamily, main: getComputedStyle(document.querySelector("main")!).padding }))) }));
+  writeFileSync(output + ".layout.json", JSON.stringify({ source_sha: process.env.CROWN_EXPECTED_FRONTEND_SHA, ...(await page.evaluate(() => ({ path: location.pathname, width: innerWidth, sidebars: document.querySelectorAll("aside").length, font: getComputedStyle(document.body).fontFamily, main: getComputedStyle(document.querySelector("main")!).padding }))) }));
   expect(await page.evaluate(() => Math.max(document.body.scrollWidth, document.documentElement.scrollWidth) - innerWidth)).toBeLessThanOrEqual(1);
   await page.screenshot({ path: output + ".png", fullPage: true });
 }
