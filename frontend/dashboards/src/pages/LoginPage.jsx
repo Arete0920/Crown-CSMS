@@ -539,7 +539,7 @@ export default function LoginPage() {
         .login-root button,
         .login-root input,
         .login-root select {
-          font-family: inherit;
+          font-family: var(--crown-font-family);
         }
 
         .field-grid {
