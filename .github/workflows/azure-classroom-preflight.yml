@@ -14,6 +14,8 @@ on:
       - 'scripts/ops/test_jireh_azure_site_preflight.py'
       - 'scripts/ops/verify_dev_owner_runtime.py'
       - 'scripts/ops/test_verify_dev_owner_runtime.py'
+      - 'scripts/ops/verify_hosted_buyer_sandbox.py'
+      - 'scripts/ops/test_verify_hosted_buyer_sandbox.py'
       - 'scripts/ops/verify_dev_ops_credential_retirement.py'
       - 'scripts/ops/test_verify_dev_ops_credential_retirement.py'
       - 'scripts/ops/verify_dev_redis_controlplane.py'
@@ -33,6 +35,8 @@ on:
       - 'scripts/ops/test_jireh_azure_site_preflight.py'
       - 'scripts/ops/verify_dev_owner_runtime.py'
       - 'scripts/ops/test_verify_dev_owner_runtime.py'
+      - 'scripts/ops/verify_hosted_buyer_sandbox.py'
+      - 'scripts/ops/test_verify_hosted_buyer_sandbox.py'
       - 'scripts/ops/verify_dev_ops_credential_retirement.py'
       - 'scripts/ops/test_verify_dev_ops_credential_retirement.py'
       - 'scripts/ops/verify_dev_redis_controlplane.py'
@@ -44,6 +48,11 @@ on:
     inputs:
       dev_owner_runtime_precheck:
         description: "Read-only public DEV owner runtime precheck; skip privileged Azure inventory"
+        type: boolean
+        required: false
+        default: false
+      dev_buyer_public_precheck:
+        description: "Read-only hosted buyer sandbox precheck; no sessions, writes, or deployment"
         type: boolean
         required: false
         default: false
@@ -88,6 +97,9 @@ jobs:
 
       - name: Verify DEV owner public precheck contracts offline
         run: python -m unittest discover -s scripts/ops -p test_verify_dev_owner_runtime.py -v
+
+      - name: Verify hosted buyer preview public gate and release-claim contracts
+        run: python -m unittest discover -s scripts/ops -p test_verify_hosted_buyer_sandbox.py -v
 
       - name: Verify DEV schoolless credential probe contracts offline
         run: python -m unittest discover -s scripts/ops -p test_verify_dev_ops_credential_retirement.py -v
@@ -252,6 +264,57 @@ jobs:
           path: ${{ runner.temp }}/dev-owner-runtime-precheck.json
           retention-days: 7
           if-no-files-found: warn
+
+  dev-buyer-public-precheck:
+    # Existing hosts only; never creates buyer sessions or cloud resources.
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.dev_buyer_public_precheck == true
+    needs: collector-tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout current protected main without credentials
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Refuse stale or malformed DEV source request
+        shell: bash
+        env:
+          EXPECTED_SHA: ${{ inputs.expected_dev_sha }}
+        run: |
+          set -euo pipefail
+          [[ "$EXPECTED_SHA" =~ ^[0-9a-f]{40}$ ]] || { echo 'BLOCKED: full lowercase SHA required'; exit 1; }
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SHA" || { echo 'BLOCKED: checkout differs'; exit 1; }
+          git fetch --no-tags origin refs/heads/main:refs/remotes/origin/main
+          test "$(git rev-parse origin/main)" = "$EXPECTED_SHA" || { echo 'BLOCKED: main advanced'; exit 1; }
+      - name: Inspect existing Azure buyer preview (no writes)
+        shell: bash
+        env:
+          EXPECTED_SHA: ${{ inputs.expected_dev_sha }}
+        run: |
+          set -euo pipefail
+          report="$RUNNER_TEMP/hosted-buyer-public-precheck.json"
+          set +e
+          python3 scripts/ops/verify_hosted_buyer_sandbox.py --expected-sha "$EXPECTED_SHA" > "$report"
+          result=$?
+          set -e
+          python3 - "$report" <<'PY'
+          import json, os, sys
+          from pathlib import Path
+          p = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+          lines = [
+              "## Azure DEV buyer sandbox - public precheck (not certification)",
+              "Expected source: " + p["expected_source_sha"],
+              "Public checks: **" + p["public_precheck"] + "**",
+              "Full buyer-demo email link: **NO-GO** pending hosted authenticated five-module acceptance",
+          ]
+          lines.extend(f"- {k}: {v}" for k, v in sorted(p["public_checks"].items()))
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as output:
+              output.write("\n".join(lines) + "\n")
+          PY
+          exit "$result"
 
   azure-inventory:
     if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.dev_owner_runtime_precheck != true && inputs.dev_redis_controlplane_precheck != true
