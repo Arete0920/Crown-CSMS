@@ -77,7 +77,8 @@ def _audit_fixture(monkeypatch, tmp_path):
     monkeypatch.setattr(auditor, "ROOT", tmp_path)
     return auditor, archive, destination
 
-def test_sale_audit_accepts_unchanged_starter_without_executing_zip_entry(monkeypatch, tmp_path):
+@pytest.mark.parametrize("missing", ["pinned_revision", "render_installer", "render_readme"])
+def test_sale_audit_accepts_unchanged_starter_without_executing_zip_entry(monkeypatch, tmp_path, missing):
     auditor, archive, destination = _audit_fixture(monkeypatch, tmp_path)
     result = auditor.verify(download=False)
     assert result["source_sha"] == loader().pinned_revision()
@@ -85,27 +86,28 @@ def test_sale_audit_accepts_unchanged_starter_without_executing_zip_entry(monkey
     assert result["downloaded_source_identity_and_reinstall"] == "NOT_RUN"
     assert (destination / "heritage-starter-audit.json").is_file()
     assert archive.is_file()
+    with patch.object(auditor, missing, side_effect=FileNotFoundError("missing reviewed template")):
+        with pytest.raises(FileNotFoundError):
+            auditor.verify(download=False)
+    assert not (destination / "heritage-starter-audit.json").exists()
 
-@pytest.mark.parametrize("changed", [
-    "Install-and-Start-Heritage.py",
-    "Start-Heritage.cmd",
-    "HERITAGE-LOCAL-DEMO-README.txt",
-])
-def test_sale_audit_rejects_swapped_executable_or_instructions_without_execution(monkeypatch, tmp_path, changed):
-    auditor, archive, destination = _audit_fixture(monkeypatch, tmp_path)
+def _reject_substituted_entry(auditor, archive, changed, **options):
     with zipfile.ZipFile(archive) as original:
         entries = [(x.filename, original.read(x.filename)) for x in original.infolist()]
     with zipfile.ZipFile(archive, "w") as altered:
         for name, content in entries:
-            if name == changed:
-                content += b"\n# untrusted substituted ZIP entry\n"
-            altered.writestr(name, content)
-    # The verification must reject a modified ZIP before executing an
-    # installer extracted from that ZIP (or any installer at all).
-    with patch.object(auditor.runpy, "run_path", side_effect=AssertionError("untrusted ZIP executed")) as run_path:
+            altered.writestr(name, content + b"\n# untrusted ZIP entry\n" if name == changed else content)
+    with patch.object(auditor.runpy, "run_path", side_effect=AssertionError("untrusted ZIP executed")) as runner:
         with pytest.raises(RuntimeError, match="differs from the reviewed source template"):
-            auditor.verify(download=False)
-        run_path.assert_not_called()
+            auditor.verify(**options)
+        runner.assert_not_called()
+
+@pytest.mark.parametrize("changed", [
+    "Install-and-Start-Heritage.py", "Start-Heritage.cmd", "HERITAGE-LOCAL-DEMO-README.txt",
+])
+def test_sale_audit_rejects_swapped_executable_or_instructions_without_execution(monkeypatch, tmp_path, changed):
+    auditor, archive, destination = _audit_fixture(monkeypatch, tmp_path)
+    _reject_substituted_entry(auditor, archive, changed, download=False)
     assert not (destination / "heritage-starter-audit.json").exists()
 
 def test_source_stamped_candidate_keeps_legacy_starter_unmodified(monkeypatch, tmp_path):
@@ -158,20 +160,12 @@ def test_stamped_candidate_audit_rejects_modified_installer_before_execution(mon
     # _audit_fixture exercises the unchanged legacy ZIP contract. Build a separate
     # source-stamped archive into the same disposable output directory.
     archive = packager.build(destination, source_sha=candidate_sha, five_module_candidate=True)
-    with zipfile.ZipFile(archive) as source:
-        contents = [(info.filename, source.read(info.filename)) for info in source.infolist()]
-    with zipfile.ZipFile(archive, "w") as rewritten:
-        for filename, payload in contents:
-            if filename == "Install-and-Start-Heritage.py":
-                payload += b"\\n# forbidden post-stamp code substitution\\n"
-            rewritten.writestr(filename, payload)
-    with patch.object(auditor.runpy, "run_path", side_effect=AssertionError("tampered installer executed")) as runner:
-        with pytest.raises(RuntimeError, match="differs from the reviewed source template"):
-            auditor.verify(source_sha=candidate_sha, five_module_candidate=True)
-        runner.assert_not_called()
-    assert not (destination / "heritage-starter-audit.json").exists()
+    _reject_substituted_entry(auditor, archive, "Install-and-Start-Heritage.py",
+                              source_sha=candidate_sha, five_module_candidate=True)
+    assert not (destination / "heritage-five-module-candidate-audit.json").exists()
 
-def test_source_stamped_candidate_audit_accepts_exact_reviewed_template(monkeypatch, tmp_path):
+@pytest.mark.parametrize("missing", ["render_installer", "render_readme"])
+def test_source_stamped_candidate_audit_accepts_exact_reviewed_template(monkeypatch, tmp_path, missing):
     packager = loader()
     monkeypatch.setattr(packager, "require_exact_candidate_checkout", lambda sha: None)
     candidate_sha = "a" * 40
@@ -183,6 +177,21 @@ def test_source_stamped_candidate_audit_accepts_exact_reviewed_template(monkeypa
     assert proof["release_certified"] is False
     assert proof["downloaded_source_critical_git_blobs"] == "NOT_RUN"
     assert proof["five_module_browser_acceptance"] == "NOT_RUN_BY_THIS_SCRIPT"
+    with patch.object(auditor, missing, side_effect=FileNotFoundError("missing reviewed template")):
+        with pytest.raises(FileNotFoundError):
+            auditor.verify(source_sha=candidate_sha, five_module_candidate=True)
+    assert not (destination / "heritage-five-module-candidate-audit.json").exists()
+
+def test_candidate_rejects_gitless_source_inside_clean_parent_checkout(monkeypatch, tmp_path):
+    packager = loader()
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    subprocess.run(["git", "-C", str(tmp_path), "-c", "user.name=Fictional QA", "-c", "user.email=qa@example.invalid", "commit", "--allow-empty", "-qm", "Fictional parent"], check=True)
+    sha = subprocess.check_output(["git", "-C", str(tmp_path), "rev-parse", "HEAD"], text=True).strip()
+    nested = tmp_path / "extracted-source"
+    nested.mkdir()
+    monkeypatch.setattr(packager, "ROOT", nested)
+    with pytest.raises(RuntimeError, match="own Git checkout"):
+        packager.require_exact_candidate_checkout(sha)
 
 def test_source_stamped_candidate_rejects_dirty_tracked_checkout(monkeypatch, tmp_path):
     """Matching HEAD is insufficient when reviewed tracked files differ."""

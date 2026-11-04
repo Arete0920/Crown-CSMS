@@ -54,6 +54,8 @@ def render_installer(source_sha: str, *, five_module_candidate: bool = False) ->
 
 def require_exact_candidate_checkout(source_sha: str) -> None:
     """Do not stamp one Git revision into a package built from another."""
+    if not (ROOT / ".git").exists():
+        raise RuntimeError("Candidate packaging requires its own Git checkout")
     try:
         result = subprocess.run(
             ["git", "rev-parse", "HEAD"], cwd=ROOT, capture_output=True,
