@@ -31,7 +31,8 @@ function errorMessage(error) {
   return error instanceof Error ? error.message : "The request could not be completed.";
 }
 
-function LocalFictionalFinancialAidPage() {
+function FictionalFinancialAidPage({ hosted = false }) {
+  const endpoint = hosted ? "/api/v1/buyer-demo/jireh/aid/family/" : ENDPOINT;
   const parentShell = getDashboardTemplate("parent");
   const [record, setRecord] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -66,8 +67,8 @@ function LocalFictionalFinancialAidPage() {
   }
 
   async function readback(origin, revision) {
-    const response = await apiFetch(ENDPOINT);
-    const data = await response.json();
+    const response = await apiFetch(endpoint);
+    let data = await response.json();
     if (discardStale(origin, revision)) return null;
     if (
       data?.demo_only !== true
@@ -77,6 +78,14 @@ function LocalFictionalFinancialAidPage() {
       || !Array.isArray(data.applications)
     ) {
       throw new Error("The fictional Financial Aid readback returned an invalid contract.");
+    }
+    if (hosted) {
+      if (data.synthetic_only !== true || typeof data.household !== "string") {
+        throw new Error("The hosted fictional household could not be verified.");
+      }
+      data = { ...data, household_name: data.household, applications: data.applications.map((app) => ({
+        ...app, academic_year_name: data.academic_years.find((year) => year.id === app.academic_year_id)?.name || app.academic_year_id,
+      })) };
     }
     setRecord(data);
     setYearId((previous) =>
@@ -177,7 +186,7 @@ function LocalFictionalFinancialAidPage() {
     let attempted = false;
     try {
       attempted = true;
-      const response = await apiFetch(ENDPOINT, {
+      const response = await apiFetch(endpoint, {
         method: "POST",
         body: JSON.stringify({
           academic_year_id: requestedYear,
@@ -265,7 +274,7 @@ function LocalFictionalFinancialAidPage() {
             <h1>Family Financial Aid demonstration</h1>
             <p className="crown-dashboard-purpose">
               Submit a fictional application and review its saved status.
-              This isolated local demo is not a real Financial Aid application.
+              This fictional demonstration is not a real Financial Aid application.
             </p>
           </div>
         </header>
@@ -344,7 +353,8 @@ function LocalFictionalFinancialAidPage() {
               </form>
               {needsReconciliation ? <p role="status">Submission outcome unresolved. Refresh the saved status before proceeding; do not submit again.</p> : null}
               <section aria-label="Saved Jireh applications" data-testid="jireh-saved-applications">
-                <h2>Saved applications and offered awards</h2>
+                <h2>{hosted ? "Saved fictional applications" : "Saved applications and offered awards"}</h2>
+                {hosted && <p>No awards, eligibility decisions or funds are processed by this demonstration.</p>}
                 {record.applications.length === 0 ? <p>No school Financial Aid applications submitted yet.</p> : null}
                 {record.applications.map((application) => (
                   <article key={application.id} className="learning-record-detail-card">
@@ -354,6 +364,7 @@ function LocalFictionalFinancialAidPage() {
                     <p>Selected applicant students: {application.student_ids.map(
                       (studentId) => record.students.find((item) => item.id === studentId)?.name || "Student"
                     ).join(", ") || "Previously recorded application"}</p>
+                    {!hosted && <>
                     <p>Offered-award records: {application.awards.length} (fictional, no funds posted)</p>
                     {application.awards.map((award) => (
                       <p key={award.id}>
@@ -362,6 +373,7 @@ function LocalFictionalFinancialAidPage() {
                         }
                       </p>
                     ))}
+                    </>}
                   </article>
                 ))}
               </section>
@@ -374,11 +386,10 @@ function LocalFictionalFinancialAidPage() {
   );
 }
 
-// Retain the established production/DEV aid status surface. The fictional
-// application form is exclusively a local packaged-demo experience; the
-// backend separately enforces its local sandbox and guardian authorization.
+// Both fictional experiences require an explicit build option; backend
+// runtime, invitation and guardian checks remain the authorization boundary.
 export default function ParentFinancialAidPreparationPage() {
-  return import.meta.env.VITE_LOCAL_DEMO === "1"
-    ? <LocalFictionalFinancialAidPage />
-    : <ParentJourneyOverviewPage focus="aid" />;
+  const local = import.meta.env.VITE_LOCAL_DEMO === "1";
+  const hosted = !local && import.meta.env.VITE_HOSTED_JIREH_DEMO === "1";
+  return local || hosted ? <FictionalFinancialAidPage hosted={hosted} /> : <ParentJourneyOverviewPage focus="aid" />;
 }

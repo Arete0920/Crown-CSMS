@@ -256,3 +256,41 @@ describe("Fictional parent Financial Aid saved-record truth", () => {
   });
 
 });
+
+describe("Explicit hosted fictional Aid", () => {
+  beforeEach(() => {
+    vi.stubEnv("VITE_LOCAL_DEMO", "0");
+    vi.stubEnv("VITE_HOSTED_JIREH_DEMO", "1");
+  });
+  function hostedSnapshot(applications = []) {
+    return { ...snapshot(), household_name: undefined, household: "Fictional Family", synthetic_only: true,
+      applications: applications.map((app) => ({ id: app.id, status: app.status,
+        academic_year_id: app.academic_year_id, student_ids: app.student_ids, submitted_at: app.submitted_at })),
+    };
+  }
+  it("submits to guarded hosted API, independently reads and survives remount", async () => {
+    let stored = false;
+    apiFetch.mockImplementation(async (path, options = {}) => {
+      expect(path).toBe("/api/v1/buyer-demo/jireh/aid/family/");
+      if (options.method === "POST") {
+        stored = true;
+        return jsonResponse({ demo_only: true, application: saved });
+      }
+      return jsonResponse(hostedSnapshot(stored ? [saved] : []));
+    });
+    await submitFictionalApplication();
+    expect((await screen.findByTestId("jireh-submit-confirmation")).textContent).toContain("independently verified");
+    expect(apiFetch.mock.calls.map(([, opts]) => opts?.method || "GET")).toEqual(["GET", "POST", "GET"]);
+    expect(screen.queryByText(/Offered-award records:/)).toBeNull();
+    cleanup();
+    render(<ParentFinancialAidPreparationPage />);
+    expect(await screen.findByText(/Duplicate submission is disabled/)).toBeTruthy();
+    expect(screen.getByText("Fictional Family")).toBeTruthy();
+  });
+  it("refuses hosted readback missing the synthetic-only contract", async () => {
+    apiFetch.mockResolvedValue(jsonResponse({ ...hostedSnapshot(), synthetic_only: false }));
+    render(<ParentFinancialAidPreparationPage />);
+    expect(await screen.findByRole("alert")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Submit fictional Financial Aid application" })).toBeNull();
+  });
+});

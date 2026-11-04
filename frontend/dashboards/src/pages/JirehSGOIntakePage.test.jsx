@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import JirehSGOIntakePage from "./JirehSGOIntakePage.jsx";
 import { authenticatedFetch, getAccessToken } from "../utils/authClient.js";
 vi.mock("../utils/authClient.js", () => ({
@@ -36,12 +36,15 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 describe("Jireh SGO interactive fictional intake", () => {
-  it("submits explicitly consented application and shows persisted readback", async () => {
+  it.each([false, true])("submits explicitly consented application and shows persisted readback (hosted=%s)", async (hosted) => {
+    vi.stubEnv("VITE_LOCAL_DEMO", hosted ? "0" : "1");
+    vi.stubEnv("VITE_HOSTED_JIREH_DEMO", hosted ? "1" : "0");
     authenticatedFetch.mockImplementation(async (url) => {
       if (url.endsWith("/family/programs/")) {
         return response({ programs: [FAMILY], synthetic_only: true, funds_status: "NONCASH_ONLY" });
       }
       if (url.endsWith("/processor/programs/")) {
+        if (hosted) throw Object.assign(new Error("Not found"), { status: 404 });
         return response({ programs: [], authority: "PROCESSOR_VERIFICATION_ONLY", funds_status: "NONCASH_ONLY" });
       }
       if (url.endsWith("/family/submit/")) return response({ application: saved, created: true });
@@ -57,7 +60,7 @@ describe("Jireh SGO interactive fictional intake", () => {
     fireEvent.click(submit);
     await waitFor(() => expect(authenticatedFetch.mock.calls.some(
       ([url, opts]) => url.endsWith("/family/submit/") && opts.method === "POST"
-        && opts.omitSchoolContext === true
+        && opts.omitSchoolContext === !hosted
         && JSON.parse(opts.body).consent_version === "DEMO_CONSENT_V1",
     )).toBe(true));
     expect(await screen.findByText(/Persistent application readback/)).toBeTruthy();
@@ -165,11 +168,14 @@ describe("Jireh SGO interactive fictional intake", () => {
     expect(await screen.findByText(/Correction request not confirmed/)).toBeTruthy();
     expect(screen.queryByText(/Nonbinding verification correction request recorded and read back/)).toBeNull();
   });
-  it("records a delegated correction request without any award workflow", async () => {
+  it.each([false, true])("records a delegated correction request without any award workflow (hosted=%s)", async (hosted) => {
+    vi.stubEnv("VITE_LOCAL_DEMO", hosted ? "0" : "1");
+    vi.stubEnv("VITE_HOSTED_JIREH_DEMO", hosted ? "1" : "0");
     let status = "SUBMITTED";
     getAccessToken.mockReturnValue("processor-session-a");
     authenticatedFetch.mockImplementation(async (url) => {
       if (url.endsWith("/family/programs/")) {
+        if (hosted) throw Object.assign(new Error("Not found"), { status: 404 });
         return response({ programs: [], synthetic_only: true, funds_status: "NONCASH_ONLY" });
       }
       if (url.endsWith("/processor/programs/")) {
@@ -197,5 +203,48 @@ describe("Jireh SGO interactive fictional intake", () => {
     )).toBe(true));
     expect(await screen.findByText(/Nonbinding verification correction request recorded/)).toBeTruthy();
     expect(screen.getByText(/No award, eligibility determination, or disbursement authority/)).toBeTruthy();
+  });
+});
+
+describe("Hosted SGO refusal", () => {
+  it("discards a stale hosted processor queue after switching partner", async () => {
+    vi.stubEnv("VITE_LOCAL_DEMO", "0"); vi.stubEnv("VITE_HOSTED_JIREH_DEMO", "1");
+    const otherProgram = "28dc4c1b-0b8a-4db0-82aa-0ed85c7a05a1", otherApp = "b2222222-964f-457f-8e78-a6f73a5a2cc1";
+    let finishOld;
+    const old = new Promise((resolve) => { finishOld = resolve; });
+    authenticatedFetch.mockImplementation(async (url) => {
+      if (url.endsWith("/family/programs/")) throw Object.assign(new Error("Not found"), { status: 404 });
+      if (url.endsWith("/processor/programs/")) return response({ programs: [{ id: PID }, { id: otherProgram }], authority: "PROCESSOR_VERIFICATION_ONLY" });
+      if (url.includes(PID)) return old;
+      return response({ program_id: otherProgram, authority: "PROCESSOR_VERIFICATION_ONLY", applications: [{ ...saved, id: otherApp, program_id: otherProgram }] });
+    });
+    render(<JirehSGOIntakePage />);
+    const select = await screen.findByLabelText("Assigned partner program");
+    await waitFor(() => expect(authenticatedFetch.mock.calls.some(([url]) => url.includes(PID) && url.endsWith("/queue/"))).toBe(true));
+    fireEvent.change(select, { target: { value: otherProgram } });
+    expect(await screen.findByText(/^b2222222/)).toBeTruthy();
+    await act(async () => finishOld(response({ program_id: PID, authority: "PROCESSOR_VERIFICATION_ONLY", applications: [saved] })));
+    expect(screen.queryByText(new RegExp("^" + APP.slice(0, 8)))).toBeNull();
+    expect(screen.getByText(/^b2222222/)).toBeTruthy();
+  });
+  it.each([403, 500])("refuses partial grants when counterpart returns HTTP %s", async (status) => {
+    vi.stubEnv("VITE_LOCAL_DEMO", "0");
+    vi.stubEnv("VITE_HOSTED_JIREH_DEMO", "1");
+    authenticatedFetch.mockImplementation(async (url) => {
+      if (url.endsWith("/family/programs/")) return response({ programs: [FAMILY], synthetic_only: true, funds_status: "NONCASH_ONLY" });
+      throw Object.assign(new Error("Denied"), { status });
+    });
+    render(<JirehSGOIntakePage />);
+    expect(await screen.findByText("Fictional partner-program access could not be verified.")).toBeTruthy();
+    expect(screen.queryByLabelText("Partner SGO and program")).toBeNull();
+  });
+  it.each([403, 404, 500])("does not authorize intake after HTTP %s", async (status) => {
+    vi.stubEnv("VITE_LOCAL_DEMO", "0");
+    vi.stubEnv("VITE_HOSTED_JIREH_DEMO", "1");
+    authenticatedFetch.mockRejectedValue(Object.assign(new Error("Denied"), { status }));
+    render(<JirehSGOIntakePage />);
+    expect(await screen.findByText("Fictional partner-program access could not be verified.")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Submit fictional application" })).toBeNull();
+    expect(screen.queryByLabelText("Partner SGO and program")).toBeNull();
   });
 });
