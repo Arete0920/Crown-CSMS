@@ -127,6 +127,8 @@ def test_missing_five_module_source_fails_before_install_or_database_mutation(mo
 def test_source_prerequisite_rejects_camp_placeholder_but_accepts_declared_fixture(tmp_path):
     launcher = load_launcher()
     paths = [
+        "frontend/dashboards/scripts/heritage-daycare-presenter.mjs",
+        "backend/sandbox_demo/management/commands/seed_local_diadem_pickup.py",
         "backend/sandbox_demo/management/commands/seed_heritage_module_samples.py",
         "backend/crown_api/management/commands/seed_fictional_sgo_intake.py",
         "backend/sandbox_demo/management/commands/five_module_demo_preflight.py",

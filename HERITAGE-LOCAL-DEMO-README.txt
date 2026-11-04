@@ -69,8 +69,17 @@ already manually completed the workflows. Use synthetic Heritage data.
    /diadem/daycare as a specifically authorized DAYCARE_STAFF identity.
    Verify guardian identity, persisted one-time custody release, audit,
    and revoked/expired/foreign-school denial. The basic /sandbox role
-   selector does NOT issue DAYCARE_STAFF access. A separately verified
-   local-only presenter handoff is REQUIRED; never grant this to an admin.
+   selector does NOT issue DAYCARE_STAFF access. While the five-module
+   servers remain running, open a second terminal in the same source folder:
+     py -3.12 scripts/demo/start_heritage_local.py --daycare-presenter
+   Install Chromium first if absent: from frontend/dashboards run
+     npx playwright install chromium
+   The explicit command creates at most one private fictional pickup scenario,
+   checks its signed staff identity, exact source, real roster and guardian
+   readback, then opens a dedicated visible Chromium window. No token appears
+   in URLs or logs. Close this browser to end staff entry. Existing, expired,
+   released or failed scenarios are not reset; retain their audit and use a
+   fresh isolated folder for another rehearsal. No admin role is broadened.
 
 2. Extended Care / Beforecare / Aftercare (9 min)
    Inspect /before-care/dashboard and /after-care/dashboard and rosters.
@@ -110,8 +119,8 @@ Current integrated-source CI/Windows browser evidence is tracked in #617,
 including actual protected role, custody, data and responsive tests.
 A new source commit requires fresh exact-head checks; historical successes
 do not certify a later ZIP or a physical Windows laptop.
-Outstanding buyer-release acceptance includes a usable local Diadem
-presenter entry, visual/navigation consistency, exact SHA package audit,
+Outstanding buyer-release acceptance includes actual Windows verification
+of the private Diadem entry, visual/navigation consistency, exact SHA package audit,
 owner-operated full walkthrough and final release signoff.
 No Azure/production/real-school/payment certification is implied.
 

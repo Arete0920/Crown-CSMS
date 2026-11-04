@@ -10,6 +10,8 @@ import json
 import os
 import re
 import secrets
+import shutil
+import subprocess
 from datetime import timedelta
 from pathlib import Path
 from uuid import UUID, uuid4
@@ -19,6 +21,7 @@ from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 from django.utils import timezone
 from rest_framework_simplejwt.tokens import AccessToken
+from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from audit.models import AuditLog
 from aftercare.daycare_checkin import checkin_child
@@ -27,15 +30,52 @@ from aftercare.models import (
     DaycareRelease, DaycareRoom, DaycareRoomStaffCoverage, DaycareSite,
 )
 from core.models import CrownPermission, RolePermission, School, UserAccount, UserRole
+from core.permissions import user_has_permission
 from households.models import Guardian, Household
 from subscriptions.models import EntitlementOverride, Feature, Plan, TenantSubscription
 from tenants.models import TenantProfile
 from sandbox_demo.catalog import SANDBOX_SCHOOLS
+from scripts.demo import start_heritage_local as local_launcher
 from sandbox_demo.management.commands.five_module_demo_preflight import (
     LOCAL_DB, _require_isolated_local_database,
 )
 
 MANIFEST = LOCAL_DB.parent / "diadem-pickup-session.json"
+
+
+def presenter_scenario():
+    """Explicit one-use preparation or readback; never replace an existing scenario."""
+    require_local_demo()
+    try:
+        local_launcher.require_presenter_preparation()
+        if local_launcher.source_sha() != os.environ["BUILD_SHA"]:
+            raise RuntimeError("Different source")
+    except (OSError, RuntimeError):
+        raise CommandError("Presenter requires exact-source prepared local data; nothing was reset.") from None
+    if any(os.environ.get(key) for key in ("WEBSITE_HOSTNAME", "WEBSITE_INSTANCE_ID", "AZURE_CLIENT_ID")):
+        raise CommandError("Daycare presenter is unavailable on hosted environments.")
+    if MANIFEST.is_symlink():
+        raise CommandError("Presenter manifest must be a private local regular file.")
+    if not MANIFEST.exists():
+        # Exclusive reservation prevents concurrent presenters from reseeding.
+        fd = os.open(MANIFEST, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+        with os.fdopen(fd, "w", encoding="utf-8") as destination:
+            json.dump(build_scenario(), destination)
+    try:
+        data = json.loads(MANIFEST.read_text(encoding="utf-8"))
+        token = AccessToken(data["staff_access"])
+        user = JWTAuthentication().get_user(token)
+        school = str(user.school_id)
+        if (data.get("fictional_only") is not True or data.get("source_sha") != os.environ["BUILD_SHA"]
+                or school != SANDBOX_SCHOOLS["heritage-core"].id
+                or data.get("school_id") != school or token.get("school_id") != school
+                or not user.roles.filter(school_id=school, role_code="DAYCARE_STAFF").exists()
+                or not all(user_has_permission(user, code, school=user.school) for code in
+                           ("diadem.daycare.view", "diadem.daycare.release"))):
+            raise ValueError("Invalid staff scope")
+    except Exception:
+        raise CommandError("Presenter refused: existing scenario/source/staff identity is invalid or expired; nothing was reset.") from None
+    return data
 
 
 def ensure_local_diadem_entitlement(school, feature):
@@ -244,6 +284,8 @@ class Command(BaseCommand):
     help = "Seed or verify a one-use fictional Diadem pickup in isolated local Heritage SQLite."
 
     def add_arguments(self, parser):
+        parser.add_argument("--presenter", action="store_true", help="Open a verified private local staff browser; never reseed an existing scenario.")
+        parser.add_argument("--presenter-check", action="store_true", help="Verify browser entry, then close without releasing custody.")
         parser.add_argument(
             "--verify", action="store_true",
             help="Read back custody and audit evidence after authenticated browser execution.",
@@ -251,6 +293,22 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         require_local_demo()
+        if options.get("presenter_check") and not options["presenter"]:
+            raise CommandError("Presenter verification requires explicit private presenter entry.")
+        if options["presenter"]:
+            if options["verify"]:
+                raise CommandError("Choose presenter or audit verification separately.")
+            node = shutil.which("node")
+            if not node:
+                raise CommandError("Install the supported local Node runtime first.")
+            data = presenter_scenario()
+            script = LOCAL_DB.parents[2] / "frontend/dashboards/scripts/heritage-daycare-presenter.mjs"
+            try:
+                subprocess.run([node, str(script), *(["--check"] if options.get("presenter_check") else [])],
+                               input=json.dumps(data), text=True, check=True)
+            except subprocess.CalledProcessError:
+                raise CommandError("Private staff browser entry refused; existing state retained.") from None
+            return
         if options["verify"]:
             scenario = verify_scenario()
             self.stdout.write(self.style.SUCCESS(

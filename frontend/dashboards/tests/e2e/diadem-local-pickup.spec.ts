@@ -1,8 +1,11 @@
 import { expect, test } from "@playwright/test";
 import { readFileSync } from "node:fs";
+import { enterPresenter, verifyPresenter } from "../../scripts/heritage-daycare-presenter.mjs";
 
 const manifestPath = process.env.CROWN_DIADEM_PICKUP_MANIFEST || "";
 const required = process.env.CROWN_REQUIRE_DIADEM_PICKUP_PROOF === "1";
+// Exercise the presenter entry in visible Chromium on the Windows rehearsal.
+test.use({ headless: process.platform !== "win32" });
 if (required && !manifestPath) {
   throw new Error("Diadem live-browser proof requires a local fictional scenario manifest.");
 }
@@ -58,7 +61,7 @@ test.describe.serial("Diadem authenticated local fictional pickup", () => {
 
   test("positive: roster -> current guardian -> identity attestation -> POST -> refreshed roster", async ({ page, request }) => {
     const scenario = loadScenario();
-    await staffSession(page, scenario);
+    await enterPresenter(page, scenario, process.env.CROWN_EXPECTED_FRONTEND_SHA);
     const row = page.getByRole("row").filter({
       has: page.getByRole("cell", { name: scenario.cases.approved.child_name, exact: true }),
     });
@@ -93,6 +96,7 @@ test.describe.serial("Diadem authenticated local fictional pickup", () => {
     expect(result.release_id).toMatch(/^[0-9a-f-]{36}$/i);
     await expect(page.getByText(/Server-confirmed handoff/)).toBeVisible();
     await expect(page.getByText(scenario.cases.approved.child_name, { exact: true })).toHaveCount(0);
+    await expect(verifyPresenter(scenario, process.env.CROWN_EXPECTED_FRONTEND_SHA)).rejects.toThrow(/already released/);
 
     const roster = await request.get(
       "/api/v1/aftercare/daycare/sites/" + scenario.site_id + "/roster/",

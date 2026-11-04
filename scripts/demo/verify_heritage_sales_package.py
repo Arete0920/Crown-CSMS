@@ -29,6 +29,8 @@ SOURCE_BLOB_PATHS = (
     "frontend/dashboards/src/pages/JirehSGODashboard.jsx",
 )
 FIVE_MODULE_SOURCE_BLOB_PATHS = (
+    "frontend/dashboards/scripts/heritage-daycare-presenter.mjs",
+    "backend/sandbox_demo/management/commands/seed_local_diadem_pickup.py",
     "frontend/dashboards/scripts/write-build-json.mjs",
     "backend/sandbox_demo/management/commands/seed_heritage_module_samples.py",
     "backend/crown_api/management/commands/seed_fictional_sgo_intake.py",

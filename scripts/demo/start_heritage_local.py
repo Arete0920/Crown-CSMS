@@ -260,6 +260,8 @@ def require_five_module_sources(root: Path | None = None) -> None:
     """
     root = ROOT if root is None else root
     required = (
+        "frontend/dashboards/scripts/heritage-daycare-presenter.mjs",
+        "backend/sandbox_demo/management/commands/seed_local_diadem_pickup.py",
         "backend/sandbox_demo/management/commands/seed_heritage_module_samples.py",
         "backend/crown_api/management/commands/seed_fictional_sgo_intake.py",
         "backend/sandbox_demo/management/commands/five_module_demo_preflight.py",
@@ -296,16 +298,46 @@ def stop(process: subprocess.Popen) -> None:
             process.wait()
 
 
+def require_presenter_preparation() -> None:
+    """Shared by launcher and direct management-command entry; no writes."""
+    if any(os.environ.get(key) for key in ("WEBSITE_HOSTNAME", "WEBSITE_INSTANCE_ID", "AZURE_CLIENT_ID")):
+        raise RuntimeError("Daycare presenter is unavailable on hosted environments.")
+    require_fresh_five_module_source(source_sha())
+    if not all((STATE / name).is_file() for name in ("heritage.sqlite3", "django.key", "seed.complete", "relationships.complete")):
+        raise RuntimeError("Start the reviewed five-module local demo before staff entry.")
+
+
+def daycare_presenter(*, check: bool = False) -> None:
+    """Attach to prepared loopback servers without installs, SGO seeding or rotation."""
+    require_presenter_preparation()
+    python = ROOT / ".venv" / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
+    run([str(python), str(ROOT / "backend/manage.py"), "seed_local_diadem_pickup", "--presenter",
+         *(["--presenter-check"] if check else [])], local_environment())
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--no-browser", action="store_true")
     parser.add_argument("--skip-install", action="store_true", help="Use already-installed dependencies.")
     parser.add_argument("--prepare-only", action="store_true")
+    parser.add_argument("--daycare-presenter", action="store_true", help="Open private signed staff entry into an already running local demo.")
+    parser.add_argument("--daycare-presenter-check", action="store_true", help="Verify staff browser entry then close without a custody write.")
     parser.add_argument("--five-module-preflight", action="store_true",
                         help="After preparation, run the strict isolated five-module demo audit.")
     parser.add_argument("--five-module-demo", action="store_true",
                         help="Explicit local-only five-module seed and strict audit before opening the demo.")
     args = parser.parse_args()
+    if args.daycare_presenter or args.daycare_presenter_check:
+        if args.daycare_presenter and args.daycare_presenter_check:
+            parser.error("Choose interactive staff entry or staff-entry verification separately")
+        if args.prepare_only or args.five_module_demo or args.five_module_preflight or args.no_browser or args.skip_install:
+            parser.error("Run --daycare-presenter separately against the prepared local servers")
+        try:
+            daycare_presenter(check=args.daycare_presenter_check)
+            return 0
+        except (OSError, RuntimeError, subprocess.CalledProcessError):
+            print("Daycare presenter refused; verify local preparation, source, staff expiry and unconsumed custody. No credentials were printed.", file=sys.stderr)
+            return 1
     if args.five_module_preflight and not args.prepare_only:
         parser.error("--five-module-preflight requires --prepare-only")
     if args.five_module_preflight and args.five_module_demo:
