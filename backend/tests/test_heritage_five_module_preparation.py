@@ -112,10 +112,8 @@ def test_missing_five_module_source_fails_before_install_or_database_mutation(mo
     launcher = load_launcher()
     monkeypatch.setattr(launcher, "ROOT", tmp_path)
     monkeypatch.setattr(launcher.sys, "argv", ["start_heritage_local.py", "--prepare-only", "--five-module-preflight"])
-    monkeypatch.setattr(
-        launcher, "local_environment",
-        lambda: pytest.fail("Missing source must stop before creating local credentials"),
-    )
+    monkeypatch.setattr(launcher, "local_environment",
+                        lambda: pytest.fail("Missing source must stop before creating local credentials"))
     monkeypatch.setattr(
         launcher, "prepare",
         lambda *_: pytest.fail("Missing source must stop before installs and migrations"),
