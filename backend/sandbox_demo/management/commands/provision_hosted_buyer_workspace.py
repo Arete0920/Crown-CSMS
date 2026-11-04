@@ -54,8 +54,8 @@ def _validate_invite(invite):
         or invite.allowed_seed_packs != ["heritage-core"]
         or not isinstance(roles, list)
         or not roles
-        or len(roles) != len(set(roles))
         or any(not isinstance(role, str) or role not in SANDBOX_PERSONAS for role in roles)
+        or len(roles) != len(set(roles))
     ):
         raise CommandError("Invitation has an invalid, empty or expanding scope.")
     return roles
