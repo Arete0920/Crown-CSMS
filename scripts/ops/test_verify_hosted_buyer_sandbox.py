@@ -22,8 +22,9 @@ def catalog():
 
 
 class FakeRead:
-    def __init__(self, *, cat=None, page=200, cors=204, hdr=None, invite=None, invite_status=200):
+    def __init__(self, *, cat=None, page=200, cors=204, hdr=None, invite=None, invite_status=200, request_id=INVITE):
         self.calls = []
+        self.request_id = request_id
         self.cat = catalog() if cat is None else cat
         self.page = page
         self.cors = cors
@@ -34,7 +35,7 @@ class FakeRead:
             'Access-Control-Allow-Headers': 'content-type,authorization',
         }
         self.invite = invite if invite is not None else {
-            'invite_id': INVITE, 'usable': True, 'track': 'school',
+            'invite_id': request_id, 'usable': True, 'track': 'school',
             'allowed_roles': ['school_admin', 'parent'],
             'allowed_seed_packs': ['heritage-core'], 'revoked_at': None,
         }
@@ -55,7 +56,7 @@ class FakeRead:
                 'Access-Control-Request-Headers': 'content-type',
             }
             return self.cors, self.headers, None
-        if url == existing.API + '/api/v1/sandbox/invites/' + INVITE + '/':
+        if url == existing.API + '/api/v1/sandbox/invites/' + self.request_id + '/':
             return self.invite_status, {}, self.invite
         raise AssertionError('Unexpected URL ' + url)
 
@@ -94,6 +95,15 @@ class HostedBuyerSecurityTests(unittest.TestCase):
         self.assertEqual(report['email_full_demo_link'], 'NO_GO')
         self.assertEqual(len(fake.calls), 4)
         self.assertNotIn(INVITE, json.dumps(report))
+
+    def test_valid_shorter_legacy_invite_id_is_accepted_without_release_claim(self):
+        # make_invite_id removes URL-safe base64 punctuation after token creation;
+        # therefore a valid stored ID can have fewer than 24 suffix characters.
+        short = 'sbx_inv_' + 'B' * 22
+        report = run(FakeRead(request_id=short), invite=short)
+        self.assertEqual(report['invite_precheck'], 'PASS')
+        self.assertEqual(report['email_full_demo_link'], 'NO_GO')
+        self.assertNotIn(short, json.dumps(report))
 
     def test_invalid_invite_rejected_before_any_requests(self):
         for value in ('', 'sbx_inv', 'a' * 80, '../escape', INVITE + '\n', INVITE + '?secret=x'):
