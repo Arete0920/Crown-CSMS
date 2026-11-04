@@ -68,18 +68,18 @@ def verify(
     *, download: bool = False, source_sha: str | None = None,
     five_module_candidate: bool = False,
 ):
+    distribution = ROOT / ".local-backups" / "heritage-sales"
+    report = distribution / (
+        "heritage-five-module-candidate-audit.json" if five_module_candidate
+        else "heritage-starter-audit.json"
+    )
+    report.unlink(missing_ok=True)  # Invalidate before pin/template validation.
     if five_module_candidate and source_sha is None:
         raise RuntimeError("Five-module audit requires explicit tested-source SHA")
     sha = source_sha if source_sha is not None else pinned_revision()
     expected_installer = render_installer(sha, five_module_candidate=five_module_candidate)
     expected_readme = render_readme(sha, five_module_candidate=five_module_candidate)
-    distribution = ROOT / ".local-backups" / "heritage-sales"
     package = distribution / archive_name(sha, five_module_candidate=five_module_candidate)
-    report = distribution / (
-        "heritage-five-module-candidate-audit.json" if five_module_candidate
-        else "heritage-starter-audit.json"
-    )
-    report.unlink(missing_ok=True)  # A failed rerun must not leave stale PASS evidence.
     if not package.is_file():
         raise RuntimeError("Build the exact ZIP before auditing it.")
     with zipfile.ZipFile(package) as archive:
