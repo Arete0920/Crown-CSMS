@@ -101,3 +101,24 @@ class SandboxFeedback(models.Model):
             models.Index(fields=["rating", "created_at"]),
             models.Index(fields=["track", "persona", "created_at"]),
         ]
+
+class SandboxBuyerAidFamily(models.Model):
+    """A single explicitly authorized invented family per buyer workspace."""
+    workspace = models.OneToOneField(SandboxBuyerWorkspace, on_delete=models.PROTECT, related_name="fictional_aid_family")
+    family = models.OneToOneField("core.Family", on_delete=models.PROTECT, related_name="fictional_buyer_aid_family")
+    guardian = models.OneToOneField("core.Guardian", on_delete=models.PROTECT, related_name="fictional_buyer_guardian")
+
+
+class SandboxBuyerSGOPartner(models.Model):
+    """Fictional external SGO partner bound to the buyer, not school authority."""
+    workspace = models.ForeignKey(SandboxBuyerWorkspace, on_delete=models.PROTECT, related_name="fictional_sgo_partners")
+    organization = models.OneToOneField("jireh_sgo.SGOOrganization", on_delete=models.PROTECT, related_name="fictional_buyer_partner")
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=["workspace", "organization"], name="unique_buyer_sgo_partner")]
+
+
+class SandboxBuyerSGOProgram(models.Model):
+    """Exact delegated fictional program provenance."""
+    partner = models.ForeignKey(SandboxBuyerSGOPartner, on_delete=models.PROTECT, related_name="programs")
+    program = models.OneToOneField("jireh_sgo.SGOProgram", on_delete=models.PROTECT, related_name="sandbox_buyer_program")

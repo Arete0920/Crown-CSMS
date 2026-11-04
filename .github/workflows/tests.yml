@@ -322,6 +322,7 @@ jobs:
         run: >-
           python -m pytest -v
           backend/aid/tests/test_option_a_aid_student_accounts_bridge.py
+          backend/sandbox_demo/test_hosted_jireh.py
           backend/crown_api/tests/test_director_actions_auth_required.py
           backend/crown_api/tests/test_director_aid_posting_integrity.py
           backend/finance/tests/test_finance_settlement_authorization.py
