@@ -34,7 +34,7 @@ def hosted_jireh_runtime() -> bool:
     return bool(
         getattr(settings, "CROWN_HOSTED_JIREH_DEMO_ENABLED", False)
         and getattr(settings, "CROWN_ENV", "") == "dev"
-        and str(getattr(settings, "DJANGO_ENV", "") or "").lower() in ("", "dev")
+        and str(getattr(settings, "DJANGO_ENV", "") or "").lower() in ("", "dev", "development")
         and str(os.environ.get("AZURE_ENVIRONMENT", "") or "").lower() in ("", "dev")
         and os.environ.get("WEBSITE_HOSTNAME", "").strip().lower() == _DEV_HOST
         and settings.DEBUG is False

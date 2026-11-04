@@ -5,11 +5,12 @@ Actual Azure DEV PostgreSQL and browser acceptance remain separate NO-GO gates.
 """
 from datetime import timedelta
 from io import StringIO
+from types import SimpleNamespace
 from unittest.mock import patch
 from uuid import uuid4
 
 from django.core.management import call_command
-from django.test import TestCase, override_settings
+from django.test import SimpleTestCase, TestCase, override_settings
 from django.utils import timezone
 from rest_framework.test import APIClient
 
@@ -25,6 +26,53 @@ SHA = "e" * 40
 SEED = "sandbox_demo.management.commands.seed_hosted_jireh_buyer"
 AID = "/api/v1/buyer-demo/jireh/aid/family/"
 SGO = "/api/v1/buyer-demo/jireh/sgo/"
+
+
+@override_settings(
+    CROWN_ENV="dev", DJANGO_ENV="development", DEBUG=False, BUILD_SHA=SHA,
+    CROWN_SANDBOX_ALLOW_OPEN_SESSION=False, CROWN_DEMO_MODE=False,
+    CROWN_HOSTED_JIREH_DEMO_ENABLED=True,
+)
+class HostedJirehRuntimeGuardTests(SimpleTestCase):
+    def setUp(self):
+        self.environment = patch.dict("os.environ", {
+            "WEBSITE_HOSTNAME": "crown-api-dev.azurewebsites.net",
+            "AZURE_ENVIRONMENT": "dev",
+        })
+        self.environment.start()
+        self.addCleanup(self.environment.stop)
+        self.vendor = patch(
+            "sandbox_demo.hosted_jireh.connection", SimpleNamespace(vendor="postgresql")
+        )
+        self.vendor.start()
+        self.addCleanup(self.vendor.stop)
+
+    def test_canonical_dev_deploy_label_is_allowed(self):
+        from sandbox_demo.hosted_jireh import hosted_jireh_runtime
+        self.assertTrue(hosted_jireh_runtime())
+
+    def test_unsafe_settings_remain_denied(self):
+        from sandbox_demo.hosted_jireh import hosted_jireh_runtime
+        for change in (
+            {"CROWN_ENV": "production"}, {"DJANGO_ENV": "production"},
+            {"DJANGO_ENV": "staging"}, {"DEBUG": True},
+            {"CROWN_SANDBOX_ALLOW_OPEN_SESSION": True}, {"CROWN_DEMO_MODE": True},
+            {"CROWN_HOSTED_JIREH_DEMO_ENABLED": False}, {"BUILD_SHA": "unknown"},
+        ):
+            with self.subTest(change=change), override_settings(**change):
+                self.assertFalse(hosted_jireh_runtime())
+
+    def test_wrong_host_azure_environment_and_local_sqlite_remain_denied(self):
+        from sandbox_demo.hosted_jireh import hosted_jireh_runtime
+        for change in (
+            {"WEBSITE_HOSTNAME": "crown-api-prod.azurewebsites.net"},
+            {"WEBSITE_HOSTNAME": "localhost"},
+            {"AZURE_ENVIRONMENT": "production"},
+        ):
+            with self.subTest(change=change), patch.dict("os.environ", change):
+                self.assertFalse(hosted_jireh_runtime())
+        with patch("sandbox_demo.hosted_jireh.connection.vendor", "sqlite"):
+            self.assertFalse(hosted_jireh_runtime())
 
 
 @override_settings(
