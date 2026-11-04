@@ -14,7 +14,7 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name="SandboxBuyerWorkspace",
             fields=[
-                ("id", models.BigAutoField(primary_key=True, serialize=False)),
+                ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
                 ("source_sha", models.CharField(max_length=40)),
                 ("provisioned_at", models.DateTimeField()),
                 ("created_at", models.DateTimeField(auto_now_add=True)),
