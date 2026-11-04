@@ -205,7 +205,11 @@ class HostedJirehContract(TestCase):
 
     def test_local_guards_remain_closed_on_hosted_runtime(self):
         self.assertEqual(self.request("GET", "/api/v1/aid/family/demo-intake/").status_code, 404)
-        self.assertEqual(self.request("GET", "/api/v1/jireh-sgo/family/programs/").status_code, 404)
+        # The legacy standalone SGO guard rejects untrusted school selector
+        # headers before reaching the local-only runtime check.
+        self.assertEqual(self.request("GET", "/api/v1/jireh-sgo/family/programs/").status_code, 400)
+        client, _ = self.client_as()
+        self.assertEqual(client.get("/api/v1/jireh-sgo/family/programs/").status_code, 404)
 
     @override_settings(CROWN_HOSTED_JIREH_DEMO_ENABLED=False)
     def test_hosted_endpoints_disabled_by_default(self):
