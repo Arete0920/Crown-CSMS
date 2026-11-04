@@ -13,6 +13,8 @@ from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.exceptions import ValidationError, NotFound
 from rest_framework.permissions import IsAuthenticated
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema
 from rest_framework.response import Response
 
 from aid.models import (
@@ -117,6 +119,7 @@ def _parse_submission(data, family, school_id):
     return year, [students_by_id[key] for key in ids], size, _CASES[scenario]
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
 @api_view(["GET", "POST"])
 @permission_classes([IsAuthenticated])
 def hosted_aid_family(request):
