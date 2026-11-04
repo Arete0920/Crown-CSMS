@@ -309,6 +309,7 @@ MIDDLEWARE = [
     "core.observability.middleware.RequestCorrelationMiddleware",
     'core.middleware.TenantIsolationMiddleware',
     'crown_api.auth_middleware.JwtAuthMiddleware',  # JWT authentication (after Django auth, coexists with SimpleJWT)
+    'sandbox_demo.buyer_session_guard.HostedBuyerSessionGuardMiddleware',  # fail closed on revoked hosted evaluator identity
     'core.tenant_header_middleware.TenantHeaderRequiredMiddleware',  # Tenant guard -- after auth so user.school_id is available for header-less fallback
     'crown_api.tenant_middleware.TenantContextMiddleware',  # Tenant resolution (after JWT auth)
     'audit.middleware.AuditMiddleware',  # Audit logging (after auth)
