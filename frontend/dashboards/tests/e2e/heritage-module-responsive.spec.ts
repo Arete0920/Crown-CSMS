@@ -12,9 +12,9 @@ async function inspect(page: Page, path: string, info: TestInfo) {
   const output = info.outputPath(`${++capture}-${path.replaceAll("/", "_")}`);
   await page.goto(path, { waitUntil: "networkidle" });
   await page.evaluate(() => document.fonts.ready);
-  await expect(page.locator("main")).toHaveCount(1);
+  await expect(page.locator("main")).toHaveCount(1); await expect(page.locator(".launch-sidebar,.crown-sidebar")).toHaveCount(path.startsWith("/jireh-sgo/") ? 0 : 1);
   await expect(page.locator("main h1, main h2").first()).toBeVisible();
-  writeFileSync(output + ".layout.json", JSON.stringify({ source_sha: process.env.CROWN_EXPECTED_FRONTEND_SHA, ...(await page.evaluate(() => ({ path: location.pathname, width: innerWidth, sidebars: document.querySelectorAll("aside").length, font: getComputedStyle(document.body).fontFamily, main: getComputedStyle(document.querySelector("main")!).padding }))) }));
+  writeFileSync(output + ".layout.json", JSON.stringify({ source_sha: process.env.CROWN_EXPECTED_FRONTEND_SHA, ...(await page.evaluate(() => ({ path: location.pathname, width: innerWidth, sidebars: document.querySelectorAll(".launch-sidebar,.crown-sidebar").length, font: getComputedStyle(document.body).fontFamily, main: getComputedStyle(document.querySelector("main")!).padding }))) }));
   expect(await page.evaluate(() => Math.max(document.body.scrollWidth, document.documentElement.scrollWidth) - innerWidth)).toBeLessThanOrEqual(1);
   await page.screenshot({ path: output + ".png", fullPage: true });
 }
