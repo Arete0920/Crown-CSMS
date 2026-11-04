@@ -49,6 +49,14 @@ def hosted_buyer_session(invite, *, persona_key: str, guidance: str, tour: str |
     """
     if invite is None or not invite.is_usable():
         raise BuyerWorkspaceDenied("sandbox_buyer_invite_required")
+    if (
+        invite.track != "school"
+        or not isinstance(invite.allowed_roles, list)
+        or not invite.allowed_roles
+        or persona_key not in invite.allowed_roles
+        or invite.allowed_seed_packs != ["heritage-core"]
+    ):
+        raise BuyerWorkspaceDenied("sandbox_buyer_invite_scope_invalid")
     try:
         workspace = SandboxBuyerWorkspace.objects.select_related("school").get(invite=invite)
     except SandboxBuyerWorkspace.DoesNotExist as exc:
