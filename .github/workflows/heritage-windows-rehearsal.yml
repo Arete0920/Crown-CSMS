@@ -208,6 +208,7 @@ jobs:
             .local-backups/heritage-demo/five-module-preflight.json
             .local-backups/heritage-demo/rehearsal-result.json
             .local-backups/heritage-demo/buyer-browser-authority.json
+            .local-backups/heritage-demo/presenter-entry.png
             frontend/dashboards/test-results/**/*.png
             frontend/dashboards/test-results/**/*.layout.json
           if-no-files-found: error

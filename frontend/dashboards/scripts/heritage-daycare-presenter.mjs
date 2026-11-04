@@ -62,12 +62,21 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
     for await (const chunk of process.stdin) input += chunk;
     const scenario = JSON.parse(input);
     await verifyPresenter(scenario, process.env.BUILD_SHA);
-    browser = await chromium.launch({ headless: false });
+    const check = process.argv.includes("--check");
+    // Windows acceptance must exercise a visible window, just like the presenter.
+    const headless = check && process.platform !== "win32";
+    browser = await chromium.launch({ headless });
     const page = await browser.newPage();
     await enterPresenter(page, scenario, process.env.BUILD_SHA);
     page.once("close", () => browser.close().catch(() => {}));
     console.log(`Verified fictional DAYCARE_STAFF; source ${scenario.source_sha}; scenario ${scenario.scenario}. Close the browser to end this session.`);
-    await new Promise(done => browser.on("disconnected", done));
+    console.log(JSON.stringify({ presenter_entry: "PASS", source_sha: scenario.source_sha,
+      scenario: scenario.scenario, visible_browser: !headless, custody_write_performed: false }));
+    if (check) {
+      await page.screenshot({ path: fileURLToPath(new URL("../../../.local-backups/heritage-demo/presenter-entry.png", import.meta.url)), fullPage: true });
+      await browser.close();
+    }
+    else await new Promise(done => browser.on("disconnected", done));
   } catch {
     console.error("Presenter entry refused. Check local source, staff authorization, expiry and unconsumed scenario; no credentials were printed.");
     await browser?.close();

@@ -125,13 +125,15 @@ def test_node_preflight_requires_source_authenticated_roster_and_current_guardia
     assert result.returncode == 0, result.stderr
 
 
-def test_presenter_command_uses_private_stdin_not_argv_or_environment(scenario, monkeypatch):
+@pytest.mark.parametrize("check", [False, True])
+def test_presenter_command_uses_private_stdin_not_argv_or_environment(scenario, monkeypatch, check):
     calls = []
     monkeypatch.setattr(pickup.shutil, "which", lambda name: "/local/node")
     monkeypatch.setattr(pickup.subprocess, "run", lambda cmd, **kw: calls.append((cmd, kw)))
-    pickup.Command().handle(presenter=True, verify=False)
+    pickup.Command().handle(presenter=True, verify=False, presenter_check=check)
     command, options = calls[0]
-    assert len(command) == 2 and command[-1].endswith("heritage-daycare-presenter.mjs")
+    assert command[1].endswith("heritage-daycare-presenter.mjs")
+    assert command[2:] == (["--check"] if check else [])
     assert json.loads(options["input"]) == scenario[0]
     assert options["check"] and options["text"] and "env" not in options
     assert scenario[0]["staff_access"] not in str(command)

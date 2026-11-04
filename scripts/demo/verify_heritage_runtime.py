@@ -278,6 +278,11 @@ def main() -> int:
                 cwd=ROOT, env=env, timeout=120, check=True,
             )
             browser_env["CROWN_DIADEM_PICKUP_MANIFEST"] = str(state / "diadem-pickup-session.json")
+            # Exercise the actual human command, including Django source/identity
+            # guards and visible Windows Chromium, before the custody journey.
+            subprocess.run([str(python), str(ROOT / "scripts/demo/start_heritage_local.py"),
+                            "--daycare-presenter-check"], cwd=ROOT, env=env, check=True, timeout=120)
+            evidence["checks"]["diadem_private_staff_presenter_browser_entry"] = True
             browser_env["CROWN_REQUIRE_DIADEM_PICKUP_PROOF"] = "1"
             subprocess.run(
                 launcher.npm_command() + [

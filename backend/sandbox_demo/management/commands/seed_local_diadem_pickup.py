@@ -285,6 +285,7 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument("--presenter", action="store_true", help="Open a verified private local staff browser; never reseed an existing scenario.")
+        parser.add_argument("--presenter-check", action="store_true", help="Verify browser entry, then close without releasing custody.")
         parser.add_argument(
             "--verify", action="store_true",
             help="Read back custody and audit evidence after authenticated browser execution.",
@@ -292,6 +293,8 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         require_local_demo()
+        if options.get("presenter_check") and not options["presenter"]:
+            raise CommandError("Presenter verification requires explicit private presenter entry.")
         if options["presenter"]:
             if options["verify"]:
                 raise CommandError("Choose presenter or audit verification separately.")
@@ -300,7 +303,8 @@ class Command(BaseCommand):
                 raise CommandError("Install the supported local Node runtime first.")
             data = presenter_scenario()
             script = LOCAL_DB.parents[2] / "frontend/dashboards/scripts/heritage-daycare-presenter.mjs"
-            subprocess.run([node, str(script)], input=json.dumps(data), text=True, check=True)
+            subprocess.run([node, str(script), *(["--check"] if options.get("presenter_check") else [])],
+                           input=json.dumps(data), text=True, check=True)
             return
         if options["verify"]:
             scenario = verify_scenario()
