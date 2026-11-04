@@ -9,7 +9,7 @@ from unittest.mock import patch
 
 from django.core.management import call_command
 from django.core.management.base import CommandError
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.utils import timezone
 
 from core.models import School, UserAccount, UserRole
@@ -128,3 +128,31 @@ class HostedBuyerProvisionerTests(TestCase):
         )
         with self.assertRaises(CommandError):
             _require_existing_dev_runtime(SHA)
+
+    def test_existing_azure_dev_deployment_label_requires_all_safety_guards(self):
+        """The existing DEV deploy sets DJANGO_ENV=development, not dev."""
+        from sandbox_demo.management.commands.provision_hosted_buyer_workspace import (
+            _require_existing_dev_runtime,
+        )
+        with override_settings(
+            BUILD_SHA=SHA, CROWN_ENV="dev", DJANGO_ENV="development",
+            DEBUG=False, CROWN_SANDBOX_ALLOW_OPEN_SESSION=False,
+            CROWN_DEMO_MODE=False,
+        ):
+            with patch.dict("os.environ", {
+                "WEBSITE_HOSTNAME": "crown-api-dev.azurewebsites.net",
+                "AZURE_ENVIRONMENT": "dev",
+            }):
+                # Mock the database vendor only; no Azure or fixture mutation.
+                with patch(COMMAND + ".connection.vendor", "postgresql"):
+                    _require_existing_dev_runtime(SHA)
+                    with patch.dict("os.environ", {
+                        "WEBSITE_HOSTNAME": "crown-api-prod.azurewebsites.net",
+                    }):
+                        with self.assertRaises(CommandError):
+                            _require_existing_dev_runtime(SHA)
+                    with override_settings(CROWN_ENV="production"):
+                        with self.assertRaises(CommandError):
+                            _require_existing_dev_runtime(SHA)
+                    with self.assertRaises(CommandError):
+                        _require_existing_dev_runtime("a" * 40)
