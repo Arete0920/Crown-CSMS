@@ -165,7 +165,7 @@ class HostedBuyerSecurityTests(unittest.TestCase):
     def test_invite_wrong_scope_revoked_or_expired_fails(self):
         variants = (
             {'usable': False}, {'track': 'other'},
-            {'allowed_roles': ['daycare_staff']}, {'allowed_roles': []},
+            {'allowed_roles': ['unknown_privileged_role']}, {'allowed_roles': []},
             {'allowed_seed_packs': ['another-school']},
             {'allowed_seed_packs': ['heritage-core', 'another-school']},
             {'revoked_at': '2026-01-01T00:00:00+00:00'}, {'invite_id': 'another'},
@@ -174,6 +174,14 @@ class HostedBuyerSecurityTests(unittest.TestCase):
             with self.subTest(delta=delta):
                 payload = dict(FakeRead().invite, **delta)
                 self.assertEqual(run(FakeRead(invite=payload), invite=INVITE)['invite_precheck'], 'BLOCKED')
+
+    def test_explicit_hosted_daycare_invite_is_only_metadata_evidence(self):
+        fake = FakeRead()
+        fake.invite["allowed_roles"] = ["daycare_director"]
+        report = run(fake, invite=INVITE)
+        self.assertEqual(report["invite_precheck"], "PASS")
+        self.assertFalse(report["release_certified"])
+        self.assertEqual(report["email_full_demo_link"], "NO_GO")
 
     def test_error_or_404_invite_never_exposes_identifier(self):
         fake = FakeRead(invite_status=404)
