@@ -27,7 +27,9 @@ _CARE_ROLES = {"daycare_director": "DAYCARE_DIRECTOR", "daycare_staff": "DAYCARE
 
 def _checked_workspace(invite_id: str, expected_sha: str):
     """Require a bound active fictional school and real scoped buyer identities."""
-    invite = SandboxInvite.objects.filter(pk=invite_id).first()
+    # Lock invite authorization before validation and keep the lock through
+    # entitlement commit; concurrent revocation or scope updates must serialize.
+    invite = SandboxInvite.objects.select_for_update().filter(pk=invite_id).first()
     roles = _validate_invite(invite)
     granted = [key for key in roles if key in _CARE_ROLES]
     if not granted:
