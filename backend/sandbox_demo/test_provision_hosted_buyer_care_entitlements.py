@@ -87,6 +87,7 @@ def test_explicit_apply_is_school_isolated_and_repeat_denied(buyer):
     }
     assert not SchoolModule.objects.filter(school=other).exists()
     assert not TenantSubscription.objects.filter(school_id=other.id).exists()
+    assert all(module.is_active for module in SchoolModule.objects.filter(school=school))
     with pytest.raises(CommandError, match="Existing tenant or entitlement state"):
         run(invite, apply=True)
     assert TenantSubscription.objects.filter(school_id=school.pk).count() == 1
@@ -135,6 +136,7 @@ def test_invalid_buyer_state_fails_without_entitlement_writes(buyer, mutation):
 @pytest.mark.django_db
 def test_transaction_failure_rolls_back_plan_profile_feature_and_modules(buyer):
     school, invite, _, _ = buyer
+    feature_existed = Feature.objects.filter(key="diadem.daycare").exists()
     with patch(
         "sandbox_demo.management.commands.provision_hosted_buyer_care_entitlements.SchoolModule.objects.create",
         side_effect=RuntimeError("simulated synthetic staging failure"),
@@ -145,7 +147,7 @@ def test_transaction_failure_rolls_back_plan_profile_feature_and_modules(buyer):
     assert not TenantProfile.objects.filter(school=school).exists()
     assert not TenantSubscription.objects.filter(school_id=school.pk).exists()
     assert not SchoolModule.objects.filter(school=school).exists()
-    assert not Feature.objects.filter(key="diadem.daycare").exists()
+    assert Feature.objects.filter(key="diadem.daycare").exists() is feature_existed
 
 
 @pytest.mark.django_db
