@@ -7,6 +7,9 @@ import pytest
 from django.core.management import call_command
 from django.core.management.base import CommandError
 from django.utils import timezone
+from rest_framework.exceptions import PermissionDenied
+
+from aftercare.daycare_checkin import require_entitlement
 
 from core.models import School, UserAccount, UserRole
 from sandbox_demo.buyer_workspace import buyer_username
@@ -91,6 +94,27 @@ def test_explicit_apply_is_school_isolated_and_repeat_denied(buyer):
     with pytest.raises(CommandError, match="Existing tenant or entitlement state"):
         run(invite, apply=True)
     assert TenantSubscription.objects.filter(school_id=school.pk).count() == 1
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("module_state", ("expired", "inactive", "missing"))
+def test_fictional_daycare_rechecks_seven_day_module_authority(buyer, module_state):
+    school, invite, _, _ = buyer
+    run(invite, apply=True)
+    # A fresh exact-school trial is authorized; the seven-day module is
+    # independently required even while its plan feature stays enabled.
+    require_entitlement(school.id)
+    module = SchoolModule.objects.get(school=school, module_key="little_lambs")
+    if module_state == "expired":
+        module.expiry_date = timezone.now() - timedelta(seconds=1)
+        module.save(update_fields=["expiry_date"])
+    elif module_state == "inactive":
+        module.status = "inactive"
+        module.save(update_fields=["status"])
+    else:
+        module.delete()
+    with pytest.raises(PermissionDenied, match="Diadem Daycare entitlement required"):
+        require_entitlement(school.id)
 
 
 @pytest.mark.django_db
