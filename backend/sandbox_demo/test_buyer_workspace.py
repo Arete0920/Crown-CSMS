@@ -83,6 +83,33 @@ class HostedBuyerWorkspaceContract(TestCase):
             format="json",
         )
 
+    def test_explicit_daycare_director_invitation_is_school_scoped(self):
+        """The director grant is per-invite, per-school, never the shared Heritage role."""
+        invite = self.make_invite(roles=["daycare_director"])
+        workspace, _ = self.make_workspace(invite, principal=False)
+        username = buyer_username(workspace.school_id, "daycare_director")
+        principal = UserAccount.objects.create(
+            username=username, email=username, school=workspace.school,
+            is_active=True, is_staff=False, is_superuser=False,
+        )
+        principal.set_unusable_password()
+        principal.save(update_fields=["password"])
+        UserRole.objects.create(
+            user=principal, school=workspace.school, role_code="DAYCARE_DIRECTOR",
+        )
+        self.assertEqual(self.enter(invite, role="daycare_staff").status_code, 403)
+        allowed = self.enter(invite, role="daycare_director")
+        self.assertEqual(allowed.status_code, 201)
+        self.assertEqual(allowed.data["route"], "/diadem/daycare/setup")
+        self.assertEqual(allowed.data["role_code"], "DAYCARE_DIRECTOR")
+        self.assertEqual(allowed.data["school_id"], str(workspace.school_id))
+        self.assertEqual(allowed.data["refresh"], "")
+        claims = decode_access(allowed.data["access"])
+        self.assertTrue(claims.ok)
+        self.assertEqual(claims.payload["sub"], str(principal.pk))
+        self.assertEqual(claims.payload["school_id"], str(workspace.school_id))
+        self.assertEqual(claims.payload["role"], "daycare_director")
+
     def test_uninvited_hosted_open_mode_cannot_access_shared_heritage(self):
         response = self.enter(open_session=True)
         self.assertEqual(response.status_code, 403)
