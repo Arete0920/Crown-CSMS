@@ -6,6 +6,7 @@ NOT hosted five-module application certification or invitation distribution.
 from __future__ import annotations
 
 import uuid
+from contextlib import nullcontext
 from datetime import timedelta
 
 from django.db import IntegrityError, transaction
@@ -72,16 +73,20 @@ class HostedBuyerWorkspaceContract(TestCase):
 
     def enter(self, invite=None, *, role="teacher", open_session=None, school="heritage-core"):
         client = APIClient()
-        if open_session is not None:
-            self.settings_context = override_settings(CROWN_SANDBOX_ALLOW_OPEN_SESSION=open_session)
-            self.settings_context.enable()
-            self.addCleanup(self.settings_context.disable)
-        return client.post(
-            reverse("sandbox-session"),
-            {"invite_id": invite.id if invite else None,
-             "role": role, "school": school, "track": "school"},
-            format="json",
+        # Scope the override to this request. Deferring disable until
+        # addCleanup() can restore a method-level CROWN_ENV override after
+        # its decorator exits, leaking local mode into later hosted tests.
+        setting_scope = (
+            override_settings(CROWN_SANDBOX_ALLOW_OPEN_SESSION=open_session)
+            if open_session is not None else nullcontext()
         )
+        with setting_scope:
+            return client.post(
+                reverse("sandbox-session"),
+                {"invite_id": invite.id if invite else None,
+                 "role": role, "school": school, "track": "school"},
+                format="json",
+            )
 
     def test_explicit_daycare_director_invitation_is_school_scoped(self):
         """The director grant is per-invite, per-school, never the shared Heritage role."""
