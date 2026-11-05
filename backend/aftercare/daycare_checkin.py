@@ -8,7 +8,7 @@ from django.utils import timezone
 from rest_framework.exceptions import PermissionDenied
 from core.models import School, UserAccount
 from core.permissions import user_has_permission
-from subscriptions.models import Feature, TenantSubscription
+from subscriptions.models import Feature, SchoolModule, TenantSubscription
 from subscriptions.services import EntitlementsService
 from tenants.models import TenantProfile
 from audit.models import AuditLog
@@ -38,6 +38,19 @@ def require_entitlement(school_id):
             if not subscription.plan.is_active or subscription.started_at > timezone.now():
                 raise PermissionError("Inactive subscription")
             EntitlementsService.assert_enabled(school_id,"diadem.daycare")
+            # Fictional buyer-care plans are time-boxed by their own
+            # school-specific Daycare module, not just by the plan feature.
+            # Ordinary customer plans keep their existing entitlement contract.
+            if subscription.plan.code.startswith("buyer-care-"):
+                expected_code = f"buyer-care-{str(school_id).replace('-', '').lower()}"
+                module_active = SchoolModule.objects.filter(
+                    school_id=school_id,
+                    module_key="little_lambs",
+                    status="active",
+                    expiry_date__gt=timezone.now(),
+                ).exists()
+                if subscription.plan.code != expected_code or not module_active:
+                    raise PermissionError("Fictional Daycare module expired or absent")
         except (PermissionError,Feature.DoesNotExist,TenantSubscription.DoesNotExist,
                 TenantSubscription.MultipleObjectsReturned):
             raise PermissionDenied("Diadem Daycare entitlement required.") from None
