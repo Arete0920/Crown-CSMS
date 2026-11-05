@@ -33,7 +33,7 @@ def _checked_workspace(invite_id: str, expected_sha: str):
     if not granted:
         raise CommandError("An explicitly invited childcare role is required.")
     workspace = (
-        SandboxBuyerWorkspace.objects.select_related("school")
+        SandboxBuyerWorkspace.objects.select_related("school").select_for_update()
         .filter(invite=invite).first()
     )
     if (
