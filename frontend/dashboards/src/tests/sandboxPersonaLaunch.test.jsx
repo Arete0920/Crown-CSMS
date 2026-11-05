@@ -61,6 +61,37 @@ describe("Sandbox persona launch", () => {
     expect(window.location.href).toBe("/school-admin-dashboard");
   });
 
+  it("shows no persona launch buttons for an unusable hosted invitation", async () => {
+    window.location.search = "?invite=sbx_inv_expired";
+    vi.stubGlobal("fetch", vi.fn(() => Promise.resolve(new Response(JSON.stringify({
+      organization_label: "Expired fictional evaluator",
+      track: "school",
+      usable: false,
+      allowed_roles: ["daycare_director"],
+    }), { status: 200, headers: { "Content-Type": "application/json" } }))));
+    const { default: SandboxLandingPage } = await import("../pages/SandboxLandingPage.jsx");
+    render(<SandboxLandingPage />);
+    await screen.findByText(/Invite loaded for Expired fictional evaluator/);
+    expect(screen.queryByRole("button", { name: /Start guided/ })).toBeNull();
+    expect(screen.queryByText("Diadem Daycare Director")).toBeNull();
+  });
+
+  it("shows only explicitly invited hosted childcare roles", async () => {
+    window.location.search = "?invite=sbx_inv_director";
+    vi.stubGlobal("fetch", vi.fn(() => Promise.resolve(new Response(JSON.stringify({
+      organization_label: "Fictional director evaluator",
+      track: "school",
+      usable: true,
+      allowed_roles: ["daycare_director"],
+    }), { status: 200, headers: { "Content-Type": "application/json" } }))));
+    const { default: SandboxLandingPage } = await import("../pages/SandboxLandingPage.jsx");
+    render(<SandboxLandingPage />);
+    await screen.findByText(/Invite loaded for Fictional director evaluator/);
+    expect(screen.getByText("Diadem Daycare Director")).toBeTruthy();
+    expect(screen.queryByText("Diadem Daycare Staff")).toBeNull();
+    expect(screen.getAllByRole("button", { name: /Start guided/ })).toHaveLength(1);
+  });
+
   it("sends authenticated tenant-scoped sandbox feedback telemetry from the command center", async () => {
     sessionStorage.setItem("crown.jwt.access", "feedback-test-access");
     sessionStorage.setItem("crown.school.id", "19801b59-8c05-4c84-9312-5d792e4e839d");

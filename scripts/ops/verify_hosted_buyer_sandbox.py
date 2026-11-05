@@ -21,7 +21,7 @@ import verify_dev_owner_runtime as existing
 INVITE_ID = re.compile(r"sbx_inv_[A-Za-z0-9]{1,24}\Z")
 EXPECTED_ROLES = frozenset({
     "school_admin", "admissions_director", "finance_director", "teacher",
-    "parent", "student", "board",
+    "parent", "student", "board", "daycare_director", "daycare_staff",
 })
 FIVE_MODULES = (
     "diadem_daycare", "extended_care_am_pm", "summer_camp",
