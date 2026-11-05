@@ -110,6 +110,17 @@ class HostedBuyerWorkspaceContract(TestCase):
         self.assertEqual(claims.payload["school_id"], str(workspace.school_id))
         self.assertEqual(claims.payload["role"], "daycare_director")
 
+    def test_internal_local_session_helper_rejects_hosted_roles(self):
+        """Rehearsal code cannot bypass invite binding by invoking local token mint."""
+        from sandbox_demo.services import create_sandbox_session
+
+        for key in ("daycare_director", "daycare_staff"):
+            with self.assertRaisesRegex(ValueError, "invite-owned workspace"):
+                create_sandbox_session(
+                    persona_key=key, school_key_or_id="heritage-core",
+                    guidance="guided",
+                )
+
     @override_settings(CROWN_ENV="")
     def test_local_open_mode_refuses_hosted_daycare_personas(self):
         """A local open sandbox cannot log in as a hosted-only buyer care role."""
