@@ -119,7 +119,7 @@ jobs:
         run: python -m pip install -r backend/requirements.txt
       - name: Verify the reviewed graph and legacy INSERTs on populated PG15
         env:
-          CROWN_REHEARSAL_TEST_PORT: ${{ job.services.postgres.ports[5432] }}
+          CROWN_REHEARSAL_TEST_PORT: ${{ job.services.postgres.ports['5432'] }}
         run: python -m unittest discover -s scripts/ops -p test_rehearse_dev_heritage_migrations.py -v
 
   dev-operational-restore:
@@ -184,7 +184,7 @@ jobs:
           CONFIRMATION: ${{ inputs.confirm_dev_restore }}
           SYNTHETIC_CONFIRMED: ${{ inputs.synthetic_dev_confirmed }}
           POSTGRES_CONTAINER_ID: ${{ job.services.postgres.id }}
-          CROWN_REHEARSAL_PG_PORT: ${{ job.services.postgres.ports[5432] }}
+          CROWN_REHEARSAL_PG_PORT: ${{ job.services.postgres.ports['5432'] }}
           REHEARSE: ${{ inputs.rehearse_reviewed_migrations }}
         run: |
           umask 077
