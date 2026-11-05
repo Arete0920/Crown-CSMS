@@ -8,6 +8,7 @@ from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
 
+from applications.services import _provision_student_identity, has_verified_student_enrollments
 from applications.models import (
     Application,
     Applicant,
@@ -15,7 +16,16 @@ from applications.models import (
     EnrollmentContract,
     EnrollmentContractStatus,
 )
-from core.models import AcademicYear, UserAccount
+from core.models import (
+    AcademicYear,
+    Enrollment as CoreEnrollment,
+    GradeLevel,
+    HouseholdFamilyLink,
+    School,
+    Student as CoreStudent,
+    StudentIdentityLink,
+    UserAccount,
+)
 from households.models import Household, Student
 
 from .catalog import SANDBOX_PERSONAS, SANDBOX_SCHOOLS
@@ -110,13 +120,6 @@ def _student_for_application(application: Application) -> Student | None:
     applicant = application.applicants.order_by("created_at").first()
     if applicant and applicant.student_id:
         return applicant.student
-    if applicant:
-        return Student.objects.filter(
-            school_id=application.school_id,
-            household=application.household,
-            first_name=applicant.first_name,
-            last_name=applicant.last_name,
-        ).first()
     return None
 
 
@@ -124,6 +127,7 @@ def serialize_parent_enrollment_state(application: Application) -> SandboxEnroll
     payload = _latest_enrollment_payload(application)
     child = _student_for_application(application)
     enrolled = _is_enrolled(application)
+    authoritative_ready = enrolled and has_verified_student_enrollments(application)
     classroom_ready = ApplicationEvent.objects.filter(
         school_id=application.school_id,
         application=application,
@@ -143,9 +147,9 @@ def serialize_parent_enrollment_state(application: Application) -> SandboxEnroll
         lifecycle_stage="enrolled" if enrolled else "accepted",
         contract_status=str(payload.get("contract_status") or "not_started"),
         deposit_status=str(payload.get("deposit_status") or "pending"),
-        applicant_to_student_status="completed" if enrolled and child else ("ready" if _is_accepted(application) else "pending"),
-        classroom_readiness_status="completed" if classroom_ready else ("in_progress" if enrolled else "pending"),
-        parent_portal_activation_status="completed" if portal_active else ("in_progress" if enrolled else "pending"),
+        applicant_to_student_status="completed" if authoritative_ready and child else ("in_progress" if enrolled else ("ready" if _is_accepted(application) else "pending")),
+        classroom_readiness_status="completed" if authoritative_ready and classroom_ready else ("in_progress" if enrolled else "pending"),
+        parent_portal_activation_status="completed" if authoritative_ready and portal_active else ("in_progress" if enrolled else "pending"),
         child_id=str(child.id) if child else None,
         child_name=child_name,
         demo_payment_processed=False,
@@ -216,26 +220,87 @@ def _event_once(application: Application, event_type: str, payload: dict) -> Non
     )
 
 
-def _ensure_household_student(application: Application) -> Student:
-    applicant = application.applicants.order_by("created_at").first()
-    if applicant is None:
-        raise SandboxParentEnrollmentError("applicant_not_found")
-    if applicant.student_id:
-        return applicant.student
-    student, _ = Student.objects.update_or_create(
+def _provision_verified_parent_applicant(application: Application):
+    """Use the canonical admissions writer; never identify a child by name."""
+    from applications.views_admissions import _resolve_or_create_legacy_family
+
+    applicants = list(application.applicants.order_by("created_at", "id"))
+    if len(applicants) != 1:
+        raise SandboxParentEnrollmentError("single_verified_applicant_required")
+    applicant = applicants[0]
+    if applicant.dob is None:
+        raise SandboxParentEnrollmentError("verified_date_of_birth_required")
+    school = School.objects.filter(id=application.school_id).first()
+    if school is None:
+        raise SandboxParentEnrollmentError("school_not_found")
+    family = _resolve_or_create_legacy_family(
+        school=school, household=application.household
+    )
+    if family is None:
+        raise SandboxParentEnrollmentError("verified_family_required")
+    student_number = f"APP-{str(application.id).replace('-', '')[:6]}-01"
+    try:
+        compatibility_student, core_student, _created = _provision_student_identity(
+            application=application,
+            applicant=applicant,
+            family=family,
+            student_numbers={str(applicant.id): student_number},
+        )
+    except ValueError as exc:
+        raise SandboxParentEnrollmentError("verified_student_identity_required") from exc
+    if (
+        core_student.school_id != application.school_id
+        or core_student.family_id != family.id
+        or core_student.dob != applicant.dob
+    ):
+        raise SandboxParentEnrollmentError("canonical_identity_mismatch")
+    return compatibility_student, core_student, applicant
+
+
+def _ensure_core_enrollment(
+    application: Application, core_student: CoreStudent, applicant: Applicant, legacy_bridge: dict
+):
+    """Persist the authoritative school-year enrollment, not only a legacy flag."""
+    from admissions.models import AdmissionsApplication
+
+    synced_ids = legacy_bridge.get("application_ids") or []
+    if len(synced_ids) != 1:
+        raise SandboxParentEnrollmentError("legacy_application_count_mismatch")
+    legacy = AdmissionsApplication.objects.filter(
+        pk=synced_ids[0], school_id=application.school_id
+    ).select_related("academic_year").first()
+    if legacy is None or legacy.student_id != core_student.id:
+        raise SandboxParentEnrollmentError("legacy_student_identity_mismatch")
+    year = legacy.academic_year
+    grade = GradeLevel.objects.filter(
+        school_id=application.school_id, code=applicant.grade_applying_for
+    ).first()
+    if (
+        year is None or year.school_id != application.school_id
+        or grade is None or core_student.school_id != application.school_id
+    ):
+        raise SandboxParentEnrollmentError("canonical_enrollment_configuration_missing")
+    if core_student.current_grade_level_id not in (None, grade.id):
+        raise SandboxParentEnrollmentError("canonical_grade_conflict")
+    if core_student.current_grade_level_id is None:
+        core_student.current_grade_level = grade
+        core_student.save(update_fields=["current_grade_level", "updated_at"])
+    start_date = max(timezone.localdate(), year.start_date)
+    if start_date > year.end_date:
+        raise SandboxParentEnrollmentError("academic_year_expired")
+    enrollment, _created = CoreEnrollment.objects.get_or_create(
         school_id=application.school_id,
-        household=application.household,
-        first_name=applicant.first_name,
-        last_name=applicant.last_name,
+        student=core_student,
+        academic_year=year,
         defaults={
-            "grade_level": applicant.grade_applying_for,
-            "is_active": True,
+            "grade_level": grade,
+            "start_date": start_date,
+            "status": "ENROLLED",
         },
     )
-    applicant.student = student
-    applicant.save(update_fields=["student", "updated_at"])
-    return student
-
+    if enrollment.grade_level_id != grade.id or enrollment.status != "ENROLLED":
+        raise SandboxParentEnrollmentError("canonical_enrollment_conflict")
+    return enrollment
 
 @transaction.atomic
 def complete_parent_enrollment_demo(user, application_id: str, accepted_terms: bool) -> SandboxEnrollmentState:
@@ -290,7 +355,7 @@ def complete_parent_enrollment_demo(user, application_id: str, accepted_terms: b
         {"amount_cents": 25000, "payment_processed": False, "updated_by": "sandbox-demo-orchestrator"},
     )
 
-    student = _ensure_household_student(application)
+    student, core_student, applicant = _provision_verified_parent_applicant(application)
 
     from admissions.models import AdmissionsApplication
     from applications.views_admissions import (
@@ -329,10 +394,13 @@ def complete_parent_enrollment_demo(user, application_id: str, accepted_terms: b
         actor_user=school_actor,
         target_status=AdmissionsApplication.STATUS_ENROLLED,
     )
-    if bridge.get("state") != "enrolled" or int(bridge.get("count") or 0) < 1:
+    if bridge.get("state") != "enrolled" or int(bridge.get("count") or 0) != 1:
         raise SandboxParentEnrollmentError("enrollment_bridge_failed")
+    _ensure_core_enrollment(application, core_student, applicant, bridge)
 
     state = serialize_parent_enrollment_state(application)
+    if state.applicant_to_student_status != "completed":
+        raise SandboxParentEnrollmentError("canonical_enrollment_verification_failed")
     if state.child_id != str(student.id):
         raise SandboxParentEnrollmentError("resulting_student_context_failed")
     return state
@@ -351,9 +419,39 @@ def reset_parent_enrollment_scenario() -> None:
         .distinct()
     )
     household_ids = {app.household_id for app in apps}
+    from admissions.models import AdmissionsApplication
+
+    # Delete only evidenced identities belonging to this synthetic application.
+    # Never remove another child's record on a same-name match.
     for application in apps:
+        for applicant in application.applicants.all():
+            if not applicant.student_id:
+                continue
+            link = StudentIdentityLink.objects.filter(
+                school_id=SCHOOL_ID,
+                compatibility_student_id=applicant.student_id,
+                source=StudentIdentityLink.SOURCE_ADMISSIONS,
+                evidence_reference=f"application:{application.id}:applicant:{applicant.id}",
+            ).first()
+            if link is None:
+                continue
+            core_student = link.core_student
+            AdmissionsApplication.objects.filter(
+                school_id=SCHOOL_ID,
+                student=core_student,
+                notes_internal__contains=f"canonical_application_id={application.id}",
+            ).delete()
+            CoreEnrollment.objects.filter(
+                school_id=SCHOOL_ID, student=core_student,
+            ).delete()
+            link.delete()
+            core_student.delete()
         application.delete()
     if household_ids:
+        HouseholdFamilyLink.objects.filter(
+            school_id=SCHOOL_ID, household_id__in=household_ids,
+            source=HouseholdFamilyLink.SOURCE_ADMISSIONS,
+        ).delete()
         Student.objects.filter(school_id=SCHOOL_ID, household_id__in=household_ids).delete()
         Household.objects.filter(
             school_id=SCHOOL_ID,
@@ -378,6 +476,11 @@ def seed_parent_enrollment_scenario() -> dict[str, str]:
             "is_current": True,
         },
     )
+    GradeLevel.objects.get_or_create(
+        school_id=SCHOOL_ID,
+        code=ENROLLMENT_DEMO_GRADE,
+        defaults={"label": "Grade 7", "sort_order": 7},
+    )
 
     household = Household.objects.create(
         school_id=SCHOOL_ID,
@@ -401,6 +504,7 @@ def seed_parent_enrollment_scenario() -> dict[str, str]:
         first_name=ENROLLMENT_DEMO_STUDENT_FIRST,
         last_name=ENROLLMENT_DEMO_STUDENT_LAST,
         grade_applying_for=ENROLLMENT_DEMO_GRADE,
+        dob=date(2013, 2, 15),  # Explicit, fictional fixture DOB, never inferred.
         source="church_referral",
         flags={
             "guardians": [
