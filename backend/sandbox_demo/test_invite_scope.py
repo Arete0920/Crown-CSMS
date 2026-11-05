@@ -9,7 +9,7 @@ from django.urls import reverse
 from django.utils import timezone
 from rest_framework.test import APIClient
 
-from sandbox_demo.catalog import SANDBOX_PERSONAS
+from sandbox_demo.catalog import DEFAULT_SANDBOX_INVITE_ROLES
 from sandbox_demo.models import SandboxInvite
 
 
@@ -69,9 +69,21 @@ def test_omitted_scope_preserves_operator_defaults(invite_store):
 
     assert response.status_code == 201
     kwargs = invite_store.call_args.kwargs
-    assert kwargs["allowed_roles"] == list(SANDBOX_PERSONAS)
+    assert kwargs["allowed_roles"] == list(DEFAULT_SANDBOX_INVITE_ROLES)
     assert kwargs["allowed_seed_packs"] == ["heritage-core"]
     assert kwargs["track"] == "school"
+
+
+def test_hosted_daycare_roles_require_explicit_operator_scope(invite_store):
+    """A new role never appears in omitted defaults; a named grant is preserved."""
+    assert "daycare_director" not in DEFAULT_SANDBOX_INVITE_ROLES
+    assert "daycare_staff" not in DEFAULT_SANDBOX_INVITE_ROLES
+    response = create_invite({
+        "allowed_roles": ["daycare_director"],
+        "allowed_seed_packs": ["heritage-core"],
+    })
+    assert response.status_code == 201
+    assert invite_store.call_args.kwargs["allowed_roles"] == ["daycare_director"]
 
 
 def test_explicit_restricted_scope_is_preserved(invite_store):
