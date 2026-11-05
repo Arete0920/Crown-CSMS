@@ -6,6 +6,7 @@ qualification, commercial billing or external processor is modified.
 from __future__ import annotations
 
 import sys
+from datetime import timedelta
 
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
@@ -110,9 +111,11 @@ class Command(BaseCommand):
             TenantSubscription.objects.create(
                 school_id=school.pk, plan=plan, started_at=timezone.now(), is_trial=True,
             )
+            expires_at = timezone.now() + timedelta(days=7)
             for key in _CARE_KEYS:
                 SchoolModule.objects.create(
                     school=school, module_key=key, status="active",
+                    expiry_date=expires_at,
                     notes="Fictional invite-bound DEV proof only; not a license or policy attestation.",
                 )
 
