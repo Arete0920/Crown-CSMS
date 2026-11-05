@@ -33,6 +33,7 @@ from finance.models import (
 
 from .catalog import (
     DEFAULT_SANDBOX_INVITE_ROLES,
+    HOSTED_ONLY_PERSONA_KEYS,
     SANDBOX_PERSONAS,
     SANDBOX_SCHOOLS,
     SandboxPersona,
@@ -178,6 +179,10 @@ def ensure_persona_user(school: School, persona: SandboxPersona) -> UserAccount:
 def create_sandbox_session(
     *, persona_key: str, school_key_or_id: str, guidance: str, tour: str | None = None
 ) -> dict:
+    # The local Heritage helper must never mint a buyer-only role, even if
+    # called outside the normal SandboxSessionView (e.g. by a rehearsal script).
+    if persona_key in HOSTED_ONLY_PERSONA_KEYS:
+        raise ValueError("Hosted-only buyer persona requires an invite-owned workspace.")
     persona = get_persona(persona_key)
     school_spec = get_school(school_key_or_id)
     school = ensure_demo_school(school_spec)
