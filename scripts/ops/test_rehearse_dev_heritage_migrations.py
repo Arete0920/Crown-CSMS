@@ -26,6 +26,40 @@ def plan():
 
 
 class RestoredCopyContracts(unittest.TestCase):
+    def test_seed_row_multiset_detects_original_row_mutation_with_unchanged_count(self):
+        """Adding reviewed grants is allowed; altering an existing grant is not."""
+        class FakeCursor:
+            def __init__(self, rows):
+                self.rows = list(rows)
+                self.query = None
+            def __enter__(self):
+                return self
+            def __exit__(self, *_):
+                return False
+            def execute(self, query):
+                self.query = query
+            def fetchmany(self, size):
+                chunk, self.rows = self.rows[:size], self.rows[size:]
+                return [(value,) for value in chunk]
+
+        class FakeConnection:
+            ops = SimpleNamespace(quote_name=lambda name: '"' + name + '"')
+            def __init__(self, values):
+                self.values = values
+            def cursor(self):
+                return FakeCursor(self.values)
+
+        old_rows = ['{"id":1,"enabled":false}', '{"id":1,"enabled":false}', '{"id":2,"enabled":true}']
+        amended = ['{"id":1,"enabled":false}', '{"id":1,"enabled":true}', '{"id":2,"enabled":true}']
+        extended = old_rows + ['{"id":3,"enabled":true}']
+        def fingerprint(rows):
+            return module.seed_row_multiset(FakeConnection(rows), "core_rolepermission", ["id", "enabled"])
+
+        original = fingerprint(old_rows)
+        self.assertTrue(original - fingerprint(amended))
+        self.assertFalse(original - fingerprint(extended))
+        self.assertEqual(sum(original.values()), 3)
+
     def test_default_live_deploy_still_rejects_entire_graph(self):
         with self.assertRaises(UnreviewedPlan):
             validate_plan(plan())
@@ -98,6 +132,7 @@ class RestoredCopyContracts(unittest.TestCase):
     def test_uncertain_failed_or_forged_child_receipt_is_denied_without_private_text(self):
         good = dict(result="PASS", source_sha=SHA, remaining_pending=0, reviewed_migrations=21,
                     target_postgres_major=15, existing_nonseed_table_values_preserved=True,
+                    existing_seed_rows_preserved=True,
                     existing_table_counts_preserved=True, live_schema_write_performed=False,
                     baseline_migration_records=245, migrated_records=266, atomic_graph=True, legacy_inserts_preserved=True,
                     baseline_public_tables=467, baseline_fingerprint="c" * 64)
@@ -108,6 +143,7 @@ class RestoredCopyContracts(unittest.TestCase):
                            ("reviewed_migrations", 18), ("target_postgres_major", 16),
                            ("existing_table_counts_preserved", False),
                            ("existing_nonseed_table_values_preserved", False),
+                           ("existing_seed_rows_preserved", False),
                            ("remaining_pending", False), ("migrated_records", 267),
                            ("baseline_public_tables", False), ("baseline_public_tables", 0),
                            ("baseline_fingerprint", "PRIVATE"), ("baseline_fingerprint", None),
