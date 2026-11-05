@@ -157,13 +157,14 @@ def scalar(container, env, database, query):
     return value.decode().strip()
 
 
-def target_identity(container, env):
+def target_identity(container, env, *, expected_major=16):
     value = scalar(container, env, "postgres",
                    "SELECT current_database() || '|' || current_user || '|' || "
                    "host(inet_server_addr()) || '|' || current_setting('server_version_num')")
     pieces = value.split("|")
     if (len(pieces) != 4 or pieces[:3] != ["postgres", "crown_drill", "127.0.0.1"]
-            or not pieces[3].isdigit() or not 160000 <= int(pieces[3]) < 170000):
+            or expected_major not in (15, 16) or not pieces[3].isdigit()
+            or int(pieces[3]) // 10000 != expected_major):
         raise RestoreBlocked("disposable_postgres_identity_mismatch")
 
 
@@ -252,7 +253,7 @@ def disposable_database(container, env, database, evidence, *, action=execute):
                 raise RestoreBlocked("disposable_database_cleanup_failed") from exc
 
 
-def restore_archive(container, env, database, archive, facts, evidence):
+def restore_archive(container, env, database, archive, facts, evidence, *, after_restore=None):
     with disposable_database(container, env, database, evidence):
         with archive.open("rb") as source:
             execute(container, env, ["pg_restore", "--dbname", database, "--exit-on-error",
@@ -264,6 +265,8 @@ def restore_archive(container, env, database, archive, facts, evidence):
         evidence.update(public_tables_verified=table_count, row_counts_match=True,
                         column_definitions_match=True, migration_history_match=True,
                         migration_records_verified=len(migrations))
+        if after_restore is not None:
+            after_restore()
 
 
 @contextmanager
@@ -277,11 +280,15 @@ def private_archive(environ, evidence):
             evidence["ephemeral_backup_removed"] = not archive.exists()
 
 
-def perform(container, database, evidence, environ):
+def perform(container, database, evidence, environ, *, rehearse=False):
     import psycopg
     target_env = target_environment(environ)
     evidence["recovery_stage"] = "disposable_target_identity"
-    target_identity(container, target_env)  # Before reading DEV credentials or creating any DB.
+    # Verify the disposable target before reading DEV credentials or creating a DB.
+    if rehearse:
+        target_identity(container, target_env, expected_major=15)
+    else:
+        target_identity(container, target_env)
     evidence["recovery_stage"] = "source_client_prerequisites"
     source_client_prerequisites(container, target_env)
     evidence["recovery_stage"] = "source_setting_validation"
@@ -296,6 +303,8 @@ def perform(container, database, evidence, environ):
         ) as connection:
             evidence["recovery_stage"] = "source_snapshot"
             facts = read_snapshot(connection)
+            if rehearse and facts[4] // 10000 != 15:
+                raise RestoreBlocked("rehearsal_source_must_be_postgresql15")
             evidence.update(source_snapshot_at_utc=facts[5], source_tls_verified=True,
                             source_transaction_read_only=True, source_postgres_version=facts[4])
             evidence["backup_started_at_utc"] = now()
@@ -318,7 +327,26 @@ def perform(container, database, evidence, environ):
         with archive.open("rb") as source:
             execute(container, target_env, ["pg_restore", "--list"], stdin=source)
         evidence["recovery_stage"] = "disposable_restore_and_validation"
-        restore_archive(container, target_env, database, archive, facts, evidence)
+        if rehearse:
+            def migration_rehearsal():
+                from rehearse_dev_heritage_migrations import RehearsalBlocked, rehearse_clone
+                cluster = scalar(container, target_env, database,
+                                 "SELECT system_identifier FROM pg_control_system()")
+                evidence["recovery_stage"] = "restored_copy_migration_rehearsal"
+                evidence["restore_integrity_scope"] = "before_migration_rehearsal"
+                try:
+                    evidence["migration_rehearsal"] = rehearse_clone(
+                        database, environ.get("CROWN_REHEARSAL_PG_PORT", ""), cluster,
+                        evidence["source_sha"], environ,
+                    )
+                except RehearsalBlocked as error:
+                    if hasattr(error, "receipt"):
+                        evidence["migration_rehearsal"] = error.receipt
+                    raise RestoreBlocked(str(error)) from None
+            restore_archive(container, target_env, database, archive, facts, evidence,
+                            after_restore=migration_rehearsal)
+        else:
+            restore_archive(container, target_env, database, archive, facts, evidence)
     if not evidence["ephemeral_backup_removed"]:
         raise RestoreBlocked("ephemeral_backup_cleanup_failed")
     evidence["recovery_stage"] = "completed"
@@ -330,6 +358,8 @@ def main(argv=None):
     parser.add_argument("--confirmation", required=True)
     parser.add_argument("--synthetic-dev-confirmed", required=True)
     parser.add_argument("--evidence-path", required=True)
+    parser.add_argument("--rehearse-reviewed-migrations", action="store_true",
+                        help="Apply only the reviewed migration graph to the disposable PG15 copy, never DEV.")
     args = parser.parse_args(argv)
     started = time.monotonic()
     evidence = {
@@ -338,6 +368,7 @@ def main(argv=None):
         "source_app": DEV_APP, "source_database_identity_sha256": SOURCE_IDENTITY,
         "data_origin": "owner_attested_synthetic_dev" if args.synthetic_dev_confirmed == "true" else "NOT_VERIFIED",
         "source_write_performed": False,
+        "migration_rehearsal_requested": args.rehearse_reviewed_migrations,
         "disposable_database_created": False, "disposable_database_dropped": False,
         "application_rollback_compatibility": "NOT_TESTED", "release_readiness": "NOT_VERIFIED",
     }
@@ -345,7 +376,10 @@ def main(argv=None):
         container, database = authority(args.expected_sha, args.confirmation,
                                         args.synthetic_dev_confirmed, os.environ)
         verify_accepted_source(args.expected_sha)
-        perform(container, database, evidence, os.environ)
+        if args.rehearse_reviewed_migrations:
+            perform(container, database, evidence, os.environ, rehearse=True)
+        else:
+            perform(container, database, evidence, os.environ)
         evidence["result"] = "PASS"
     except Exception as exc:
         # Never expose PostgreSQL, Azure, URLs, row values, traceback or exception text.

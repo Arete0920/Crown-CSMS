@@ -13,6 +13,8 @@ on:
       - "docs/operations/ISOLATED_POSTGRES_RESTORE_DRILL.md"
       - "scripts/ops/dev_backup_restore.py"
       - "scripts/ops/test_dev_backup_restore.py"
+      - "scripts/ops/rehearse_dev_heritage_migrations.py"
+      - "scripts/ops/test_rehearse_dev_heritage_migrations.py"
   push:
     branches: [main]
     paths:
@@ -25,6 +27,8 @@ on:
       - "docs/operations/ISOLATED_POSTGRES_RESTORE_DRILL.md"
       - "scripts/ops/dev_backup_restore.py"
       - "scripts/ops/test_dev_backup_restore.py"
+      - "scripts/ops/rehearse_dev_heritage_migrations.py"
+      - "scripts/ops/test_rehearse_dev_heritage_migrations.py"
   workflow_dispatch:
     inputs:
       dev_operational_restore:
@@ -41,6 +45,10 @@ on:
         default: ""
       synthetic_dev_confirmed:
         description: "Owner confirmed source DEV contains synthetic test data only"
+        type: boolean
+        default: false
+      rehearse_reviewed_migrations:
+        description: "Rehearse the reviewed migration graph on a disposable PG15 restore only; never DEV"
         type: boolean
         default: false
 
@@ -72,14 +80,51 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
         with:
           python-version: '3.12'
+      - name: Refuse rehearsal without explicit operational restore mode
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          REHEARSE: ${{ inputs.rehearse_reviewed_migrations }}
+          OPERATIONAL: ${{ inputs.dev_operational_restore }}
+        run: test "$REHEARSE" != true || test "$OPERATIONAL" = true
       - name: Verify operational recovery privacy and target boundaries offline
         env:
           CROWN_RESTORE_TEST_CONTAINER: ${{ job.services.postgres.id }}
         run: python -m unittest discover -s scripts/ops -p test_dev_backup_restore.py -v
+      - name: Verify restored-copy migration deny and privacy contracts
+        run: python -m unittest discover -s scripts/ops -p test_rehearse_dev_heritage_migrations.py -v
+
+  reviewed-migration-pg15-contracts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres@sha256:40e8c839f86c404f9bd1c456bb83f11b205f2cd95d753b34c2d074e89ecee786
+        ports:
+          - "127.0.0.1::5432"
+        env:
+          POSTGRES_USER: crown_drill
+          POSTGRES_PASSWORD: crown-drill-password
+          POSTGRES_DB: postgres
+        options: >-
+          --health-cmd "pg_isready -U crown_drill -d postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: '3.12'
+      - name: Install accepted dependencies for synthetic PG15 migration fixture
+        run: python -m pip install -r backend/requirements.txt
+      - name: Verify the reviewed graph and legacy INSERTs on populated PG15
+        env:
+          CROWN_REHEARSAL_TEST_PORT: ${{ job.services.postgres.ports[5432] }}
+        run: python -m unittest discover -s scripts/ops -p test_rehearse_dev_heritage_migrations.py -v
 
   dev-operational-restore:
     if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.dev_operational_restore == true
-    needs: dev-restore-contracts
+    needs: [dev-restore-contracts, reviewed-migration-pg15-contracts]
     runs-on: ubuntu-latest
     environment: dev
     permissions:
@@ -88,7 +133,9 @@ jobs:
     timeout-minutes: 25
     services:
       postgres:
-        image: postgres:16
+        image: ${{ inputs.rehearse_reviewed_migrations == true && 'postgres@sha256:40e8c839f86c404f9bd1c456bb83f11b205f2cd95d753b34c2d074e89ecee786' || 'postgres:16' }}
+        ports:
+          - "127.0.0.1::5432"
         env:
           POSTGRES_USER: crown_drill
           POSTGRES_PASSWORD: crown-drill-password
@@ -121,6 +168,9 @@ jobs:
           python-version: '3.12'
       - name: Install pinned metadata client only
         run: python -m pip install 'psycopg[binary]==3.3.6'
+      - name: Install accepted Django dependencies for restored-copy rehearsal only
+        if: inputs.rehearse_reviewed_migrations == true
+        run: python -m pip install -r backend/requirements.txt
       - name: Authenticate existing DEV read identity
         id: azure_login
         uses: azure/login@a457da9ea143d694b1b9c7c869ebb04ebe844ef5
@@ -134,13 +184,18 @@ jobs:
           CONFIRMATION: ${{ inputs.confirm_dev_restore }}
           SYNTHETIC_CONFIRMED: ${{ inputs.synthetic_dev_confirmed }}
           POSTGRES_CONTAINER_ID: ${{ job.services.postgres.id }}
+          CROWN_REHEARSAL_PG_PORT: ${{ job.services.postgres.ports[5432] }}
+          REHEARSE: ${{ inputs.rehearse_reviewed_migrations }}
         run: |
           umask 077
+          rehearsal_args=()
+          if [[ "$REHEARSE" == true ]]; then rehearsal_args+=(--rehearse-reviewed-migrations); fi
           python scripts/ops/dev_backup_restore.py \
             --expected-sha "$EXPECTED_SHA" \
             --confirmation "$CONFIRMATION" \
             --synthetic-dev-confirmed "$SYNTHETIC_CONFIRMED" \
-            --evidence-path "$RUNNER_TEMP/dev-restore-evidence.json"
+            --evidence-path "$RUNNER_TEMP/dev-restore-evidence.json" \
+            "${rehearsal_args[@]}"
       - name: Retain sanitized operational result only
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9

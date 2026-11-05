@@ -9,6 +9,40 @@
 
 ## Freshness boundary
 
+### Explicit DEV restored-copy migration rehearsal
+
+The existing workflow has a default-OFF `rehearse_reviewed_migrations` input.
+Use it only with `dev_operational_restore=true`, the exact current `expected_dev_sha`,
+`confirm_dev_restore=restore-dev-backup-in-ci`, and the owner's synthetic-only
+DEV attestation. It uses the pinned PostgreSQL 15 service matching the observed
+DEV major version. The ordinary PostgreSQL 16 recovery mode remains unchanged.
+
+The source snapshot and dump remain read-only. After the restored copy's table
+counts, column definitions and migration history match, the optional rehearsal:
+
+1. verifies the copy's unique database, local port, cluster identity and PG15;
+2. verifies all twenty-one migration file hashes (nineteen observed plus two compatibility fixes) recorded in the reviewed source;
+3. rejects extra, missing, duplicate or backward migration nodes;
+4. applies that graph only to the disposable copy;
+5. verifies zero pending nodes and the exact migration-history increment;
+6. verifies pre-existing non-seed table values and table counts are preserved;
+7. drops the restored database and removes the private dump on success or failure.
+
+Only the reviewed permission and default-off feature seeds may increase their
+existing table counts. Row values, credentials and process exception text are
+withheld from the retained receipt. Failure diagnostics contain only a reviewed
+migration identity, fixed reason code and SQLSTATE. Synthetic PG15 integration
+tests preserve a historical PM pickup and late fee through the full graph. Legacy attendance/configuration/enrollment and staff INSERTs are
+rehearsed in a rolled-back savepoint; empty evidence and false handoff defaults
+never clear staff or guardian readiness. The graph and preservation checks are
+executed in one PostgreSQL transaction.
+
+This mode never changes DEV schema or applies the default deployment allowlist.
+The original restore comparison is explicitly scoped before the clone migrations;
+the separate `migration_rehearsal` receipt records the transformed copy. A passing
+rehearsal does not authorize live migration, deployment, payments or buyer access.
+Retained rollback capability and application rollback require separate evidence.
+
 Before this runbook or linked evidence is used operationally, verify the current repository identity, workflow definition, PostgreSQL version, artifact retention, backup identity, target environment, and whether a later canonical runbook supersedes it. Evidence from an older source SHA, predecessor issue campaign, or synthetic fixture must remain explicitly historical and must not be treated as current operational-backup proof.
 
 ## Purpose
