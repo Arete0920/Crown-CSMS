@@ -110,6 +110,16 @@ class HostedBuyerWorkspaceContract(TestCase):
         self.assertEqual(claims.payload["school_id"], str(workspace.school_id))
         self.assertEqual(claims.payload["role"], "daycare_director")
 
+    @override_settings(CROWN_ENV="")
+    def test_local_open_mode_refuses_hosted_daycare_personas(self):
+        """A local open sandbox cannot log in as a hosted-only buyer care role."""
+        for role in ("daycare_director", "daycare_staff"):
+            response = self.enter(role=role, open_session=True)
+            self.assertEqual(response.status_code, 403, response.content[:300])
+            self.assertEqual(
+                response.data["code"], "sandbox_hosted_role_invite_required"
+            )
+
     def test_uninvited_hosted_open_mode_cannot_access_shared_heritage(self):
         response = self.enter(open_session=True)
         self.assertEqual(response.status_code, 403)
