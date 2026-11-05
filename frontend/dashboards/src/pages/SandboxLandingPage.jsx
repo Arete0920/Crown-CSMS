@@ -99,8 +99,12 @@ export default function SandboxLandingPage() {
     }
   }
 
-  const visiblePersonas = invite?.allowed_roles?.length
-    ? personas.filter((persona) => invite.allowed_roles.includes(persona.value))
+  // A supplied invite is never a fallback to the unrestricted local selector.
+  // Only a usable invitation with an explicit role list may display its roles.
+  const visiblePersonas = inviteId
+    ? (invite?.usable === true && Array.isArray(invite.allowed_roles)
+      ? personas.filter((persona) => invite.allowed_roles.includes(persona.value))
+      : [])
     : personas;
 
   return (
