@@ -6,6 +6,7 @@ and process exception text never leave the child. Default deployment stays close
 from __future__ import annotations
 
 import hashlib
+from collections import Counter
 import json
 import os
 from pathlib import Path
@@ -118,6 +119,7 @@ def rehearse_clone(database, port, cluster, source_sha, environ, *, run=subproce
             or not isinstance(receipt.get("baseline_fingerprint"), str)
             or not re.fullmatch(r"[0-9a-f]{64}", receipt.get("baseline_fingerprint", ""))
             or receipt.get("migrated_records") != receipt.get("baseline_migration_records", 0) + len(MIGRATIONS)
+            or receipt.get("existing_seed_rows_preserved") is not True
             or receipt.get("existing_nonseed_table_values_preserved") is not True
             or receipt.get("existing_table_counts_preserved") is not True
             or receipt.get("atomic_graph") is not True or receipt.get("legacy_inserts_preserved") is not True
@@ -163,6 +165,26 @@ def row_digest(connection, table, columns):
                 digest.update(str(len(raw)).encode() + b":" + raw)
                 count += 1
     return count, digest.hexdigest()
+
+
+def seed_row_multiset(connection, table, columns):
+    """Preserve every preexisting seed row; reviewed migrations may ADD rows.
+
+    A row-count-only check misses updates to existing permission or feature
+    records. Preserve a multiset of hashes over the original column projection,
+    including duplicate records, without publishing data or raw row values.
+    """
+    quote = connection.ops.quote_name
+    counts = Counter()
+    with connection.cursor() as cursor:
+        cursor.execute(
+            "SELECT row_to_json(t)::text FROM (SELECT " +
+            ",".join(quote(c) for c in columns) + " FROM public." +
+            quote(table) + ") t"
+        )
+        while rows := cursor.fetchmany(500):
+            counts.update(hashlib.sha256(value.encode()).digest() for (value,) in rows)
+    return counts
 
 
 def data_fingerprint(columns, rows):
@@ -242,6 +264,10 @@ def migrate_restored_copy():
     before_history = set(MigrationRecorder(connection).applied_migrations())
     columns = table_facts(connection)
     baseline = {table: row_digest(connection, table, names) for table, names in columns.items()}
+    seed_baseline = {
+        table: seed_row_multiset(connection, table, columns[table])
+        for table in SEED_TABLES if table in columns
+    }
     with transaction.atomic(using=connection.alias):
         try:
             executor.migrate(targets)
@@ -261,7 +287,7 @@ def migrate_restored_copy():
                 if after[0] != baseline[table][0] + len(planned):
                     raise RehearsalBlocked("migration_history_changed")
             elif table in SEED_TABLES:
-                if after[0] < baseline[table][0]:
+                if seed_baseline[table] - seed_row_multiset(connection, table, names):
                     raise RehearsalBlocked("existing_data_changed")
             elif after != baseline[table]:
                 raise RehearsalBlocked("existing_data_changed")
@@ -270,7 +296,8 @@ def migrate_restored_copy():
                     reviewed_migrations=len(planned), remaining_pending=0,
                     baseline_migration_records=len(before_history), migrated_records=len(after_history),
                     baseline_fingerprint=data_fingerprint(columns, baseline), baseline_public_tables=len(columns),
-                    existing_nonseed_table_values_preserved=True, existing_table_counts_preserved=True,
+                    existing_nonseed_table_values_preserved=True, existing_seed_rows_preserved=True,
+                    existing_table_counts_preserved=True,
                     live_schema_write_performed=False, atomic_graph=True, legacy_inserts_preserved=True)
 
 
