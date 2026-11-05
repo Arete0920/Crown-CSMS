@@ -45,7 +45,10 @@ export default function SandboxLandingPage() {
     [selectedTrackKey]
   );
   const trackSchools = useMemo(() => getTrackSchools(selectedTrack.key), [selectedTrack.key]);
-  const personas = useMemo(() => getTrackPersonas(selectedTrack.key), [selectedTrack.key]);
+  const personas = useMemo(
+    () => getTrackPersonas(selectedTrack.key, { includeHosted: invite?.usable === true }),
+    [selectedTrack.key, invite?.usable]
+  );
   const defaultSchool = getSandboxSchool(selectedTrack.primarySchoolKey);
 
   useEffect(() => {
