@@ -45,7 +45,10 @@ export default function SandboxLandingPage() {
     [selectedTrackKey]
   );
   const trackSchools = useMemo(() => getTrackSchools(selectedTrack.key), [selectedTrack.key]);
-  const personas = useMemo(() => getTrackPersonas(selectedTrack.key), [selectedTrack.key]);
+  const personas = useMemo(
+    () => getTrackPersonas(selectedTrack.key, { includeHosted: invite?.usable === true }),
+    [selectedTrack.key, invite?.usable]
+  );
   const defaultSchool = getSandboxSchool(selectedTrack.primarySchoolKey);
 
   useEffect(() => {
@@ -96,8 +99,12 @@ export default function SandboxLandingPage() {
     }
   }
 
-  const visiblePersonas = invite?.allowed_roles?.length
-    ? personas.filter((persona) => invite.allowed_roles.includes(persona.value))
+  // A supplied invite is never a fallback to the unrestricted local selector.
+  // Only a usable invitation with an explicit role list may display its roles.
+  const visiblePersonas = inviteId
+    ? (invite?.usable === true && Array.isArray(invite.allowed_roles)
+      ? personas.filter((persona) => invite.allowed_roles.includes(persona.value))
+      : [])
     : personas;
 
   return (

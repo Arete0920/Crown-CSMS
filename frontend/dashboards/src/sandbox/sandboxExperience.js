@@ -87,6 +87,38 @@ export const SANDBOX_PERSONAS = [
     ],
   },
   {
+    value: "daycare_director",
+    label: "Diadem Daycare Director",
+    loginLabel: "Daycare Director",
+    trackKeys: ["school"],
+    route: "/diadem/daycare/setup",
+    email: "daycare.director@fictional.crown.invalid",
+    defaultSchoolId: DEMO_SCHOOL_ID,
+    hostedOnly: true,
+    promise: "Configure a fictional buyer-school daycare and verify room, custody, and pickup workflows.",
+    tourTitle: "Fictional childcare setup and custody operations",
+    steps: [
+      { label: "Review fictional daycare setup.", route: "/diadem/daycare/setup" },
+      { label: "Inspect authenticated room custody and pickup decisions.", route: "/diadem/daycare" },
+    ],
+  },
+  {
+    value: "daycare_staff",
+    label: "Diadem Daycare Staff",
+    loginLabel: "Daycare Staff",
+    trackKeys: ["school"],
+    route: "/diadem/daycare",
+    email: "daycare.staff@fictional.crown.invalid",
+    defaultSchoolId: DEMO_SCHOOL_ID,
+    hostedOnly: true,
+    promise: "Perform only authorized custody operations in an explicitly provisioned fictional room.",
+    tourTitle: "Fictional childcare room and pickup verification",
+    steps: [
+      { label: "Review assigned room custody.", route: "/diadem/daycare" },
+      { label: "Confirm verified guardian release and audit evidence.", route: "/diadem/daycare" },
+    ],
+  },
+  {
     value: "teacher",
     label: "Teacher / Staff",
     loginLabel: "Teacher",
@@ -166,8 +198,10 @@ export function getTrackSchools(trackKey) {
   return SANDBOX_SCHOOL_ARCHETYPES.filter((school) => school.track === trackKey);
 }
 
-export function getTrackPersonas(trackKey) {
-  return SANDBOX_PERSONAS.filter((persona) => persona.trackKeys.includes(trackKey));
+export function getTrackPersonas(trackKey, { includeHosted = false } = {}) {
+  return SANDBOX_PERSONAS.filter((persona) =>
+    persona.trackKeys.includes(trackKey) && (includeHosted || !persona.hostedOnly)
+  );
 }
 
 export function getSandboxLoginHref(

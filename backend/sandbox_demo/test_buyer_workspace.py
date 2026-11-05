@@ -6,6 +6,7 @@ NOT hosted five-module application certification or invitation distribution.
 from __future__ import annotations
 
 import uuid
+from contextlib import nullcontext
 from datetime import timedelta
 
 from django.db import IntegrityError, transaction
@@ -72,16 +73,68 @@ class HostedBuyerWorkspaceContract(TestCase):
 
     def enter(self, invite=None, *, role="teacher", open_session=None, school="heritage-core"):
         client = APIClient()
-        if open_session is not None:
-            self.settings_context = override_settings(CROWN_SANDBOX_ALLOW_OPEN_SESSION=open_session)
-            self.settings_context.enable()
-            self.addCleanup(self.settings_context.disable)
-        return client.post(
-            reverse("sandbox-session"),
-            {"invite_id": invite.id if invite else None,
-             "role": role, "school": school, "track": "school"},
-            format="json",
+        # Scope the override to this request. Deferring disable until
+        # addCleanup() can restore a method-level CROWN_ENV override after
+        # its decorator exits, leaking local mode into later hosted tests.
+        setting_scope = (
+            override_settings(CROWN_SANDBOX_ALLOW_OPEN_SESSION=open_session)
+            if open_session is not None else nullcontext()
         )
+        with setting_scope:
+            return client.post(
+                reverse("sandbox-session"),
+                {"invite_id": invite.id if invite else None,
+                 "role": role, "school": school, "track": "school"},
+                format="json",
+            )
+
+    def test_explicit_daycare_director_invitation_is_school_scoped(self):
+        """The director grant is per-invite, per-school, never the shared Heritage role."""
+        invite = self.make_invite(roles=["daycare_director"])
+        workspace, _ = self.make_workspace(invite, principal=False)
+        username = buyer_username(workspace.school_id, "daycare_director")
+        principal = UserAccount.objects.create(
+            username=username, email=username, school=workspace.school,
+            is_active=True, is_staff=False, is_superuser=False,
+        )
+        principal.set_unusable_password()
+        principal.save(update_fields=["password"])
+        UserRole.objects.create(
+            user=principal, school=workspace.school, role_code="DAYCARE_DIRECTOR",
+        )
+        self.assertEqual(self.enter(invite, role="daycare_staff").status_code, 403)
+        allowed = self.enter(invite, role="daycare_director")
+        self.assertEqual(allowed.status_code, 201)
+        self.assertEqual(allowed.data["route"], "/diadem/daycare/setup")
+        self.assertEqual(allowed.data["role_code"], "DAYCARE_DIRECTOR")
+        self.assertEqual(allowed.data["school_id"], str(workspace.school_id))
+        self.assertEqual(allowed.data["refresh"], "")
+        claims = decode_access(allowed.data["access"])
+        self.assertTrue(claims.ok)
+        self.assertEqual(claims.payload["sub"], str(principal.pk))
+        self.assertEqual(claims.payload["school_id"], str(workspace.school_id))
+        self.assertEqual(claims.payload["role"], "daycare_director")
+
+    def test_internal_local_session_helper_rejects_hosted_roles(self):
+        """Rehearsal code cannot bypass invite binding by invoking local token mint."""
+        from sandbox_demo.services import create_sandbox_session
+
+        for key in ("daycare_director", "daycare_staff"):
+            with self.assertRaisesRegex(ValueError, "invite-owned workspace"):
+                create_sandbox_session(
+                    persona_key=key, school_key_or_id="heritage-core",
+                    guidance="guided",
+                )
+
+    @override_settings(CROWN_ENV="")
+    def test_local_open_mode_refuses_hosted_daycare_personas(self):
+        """A local open sandbox cannot log in as a hosted-only buyer care role."""
+        for role in ("daycare_director", "daycare_staff"):
+            response = self.enter(role=role, open_session=True)
+            self.assertEqual(response.status_code, 403, response.content[:300])
+            self.assertEqual(
+                response.data["code"], "sandbox_hosted_role_invite_required"
+            )
 
     def test_uninvited_hosted_open_mode_cannot_access_shared_heritage(self):
         response = self.enter(open_session=True)

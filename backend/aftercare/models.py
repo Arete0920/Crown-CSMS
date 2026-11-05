@@ -42,8 +42,8 @@ class AftercareProgramConfig(models.Model):
         db_column="school_uuid_id",
     )
 
-    before_start_time = models.TimeField(default="07:00")
-    before_end_time = models.TimeField(default="08:30")
+    before_start_time = models.TimeField(default="07:00", db_default="07:00")
+    before_end_time = models.TimeField(default="08:30", db_default="08:30")
     start_time = models.TimeField(default="15:00")
     end_time = models.TimeField(default="18:00")
     late_fee_per_10_min = models.DecimalField(max_digits=8, decimal_places=2, default=10.00)
@@ -83,7 +83,7 @@ class AftercareEnrollment(models.Model):
     )
     start_date = models.DateField()
     end_date = models.DateField(null=True, blank=True)
-    care_session = models.CharField(max_length=2, choices=CARE_SESSION_CHOICES, default="PM", db_index=True)
+    care_session = models.CharField(max_length=2, choices=CARE_SESSION_CHOICES, default="PM", db_default="PM", db_index=True)
     days_of_week = models.JSONField(default=list)
     billing_model = models.CharField(max_length=20, choices=BILLING_MODELS)
     monthly_rate = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
@@ -142,7 +142,7 @@ class AftercareAttendance(models.Model):
         related_name="aftercare_attendance", db_column="student_uuid_id",
     )
     date = models.DateField(db_index=True)
-    care_session = models.CharField(max_length=2, choices=CARE_SESSION_CHOICES, default="PM", db_index=True)
+    care_session = models.CharField(max_length=2, choices=CARE_SESSION_CHOICES, default="PM", db_default="PM", db_index=True)
     checkin_time = models.DateTimeField()
     checkout_time = models.DateTimeField(null=True, blank=True)
     handoff_time = models.DateTimeField(null=True, blank=True)
@@ -150,7 +150,7 @@ class AftercareAttendance(models.Model):
         settings.AUTH_USER_MODEL, on_delete=models.PROTECT, null=True, blank=True,
         related_name="extended_care_handoffs_received",
     )
-    handoff_verified = models.BooleanField(default=False)
+    handoff_verified = models.BooleanField(default=False, db_default=False)
     pickup_contact_id = models.IntegerField(null=True, blank=True)
     pickup_contact_fk = models.ForeignKey(
         AftercarePickupContact, on_delete=models.PROTECT, null=True, blank=True,

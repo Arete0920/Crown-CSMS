@@ -5,7 +5,7 @@ from django.urls import reverse
 from rest_framework.test import APIClient
 
 from core.models import CrownPermission, RolePermission, School, UserAccount
-from sandbox_demo.catalog import SANDBOX_PERSONAS, SANDBOX_SCHOOLS
+from sandbox_demo.catalog import DEFAULT_SANDBOX_INVITE_ROLES, SANDBOX_SCHOOLS
 from sandbox_demo.models import SandboxEvent
 
 
@@ -32,9 +32,9 @@ def test_invalid_selector_rejected_before_writes(settings, field, value):
 
 
 @pytest.mark.django_db
-@pytest.mark.parametrize("role", tuple(SANDBOX_PERSONAS))
+@pytest.mark.parametrize("role", tuple(DEFAULT_SANDBOX_INVITE_ROLES))
 def test_known_persona_can_create_session(settings, role):
-    """Validation preserves every supported persona and the Heritage alias."""
+    """Local session validation preserves the seven open-mode personas."""
     settings.CROWN_SANDBOX_ALLOW_OPEN_SESSION = True
 
     response = APIClient().post(

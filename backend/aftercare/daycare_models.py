@@ -74,10 +74,10 @@ class DaycareSite(DaycareScopedRecord):
     is_active = models.BooleanField(default=False)
 
     # Blank means historical/unknown, never an inferred operating or legal mode.
-    operating_mode = models.CharField(max_length=16, blank=True, default="", choices=[
+    operating_mode = models.CharField(max_length=16, blank=True, default="", db_default="", choices=[
         ("STANDALONE", "Standalone childcare"), ("INTEGRATED", "CROWN integrated"),
     ])
-    jurisdiction = models.CharField(max_length=16, blank=True, default="")
+    jurisdiction = models.CharField(max_length=16, blank=True, default="", db_default="")
 
     class Meta:
         constraints = [

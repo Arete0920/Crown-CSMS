@@ -13,7 +13,8 @@ from rest_framework.views import APIView
 
 from core.models import UserAccount
 
-from .catalog import SANDBOX_PERSONAS, SANDBOX_SCHOOLS, catalog_payload, get_school
+from .catalog import (DEFAULT_SANDBOX_INVITE_ROLES, HOSTED_ONLY_PERSONA_KEYS,
+                      SANDBOX_PERSONAS, SANDBOX_SCHOOLS, catalog_payload, get_school)
 from .buyer_workspace import BuyerWorkspaceDenied, hosted_buyer_mode, hosted_buyer_session
 from .models import SandboxEvent, SandboxFeedback, SandboxInvite
 from .parent_enrollment import (
@@ -201,7 +202,7 @@ class SandboxInviteCreateView(APIView):
                 status=400,
             )
 
-        roles = request.data.get("allowed_roles", list(SANDBOX_PERSONAS))
+        roles = request.data.get("allowed_roles", list(DEFAULT_SANDBOX_INVITE_ROLES))
         seed_packs = request.data.get("allowed_seed_packs", ["heritage-core"])
         for field, values, catalog in (
             ("allowed_roles", roles, SANDBOX_PERSONAS),
@@ -317,6 +318,14 @@ class SandboxSessionView(APIView):
                 status=400,
             )
         persona = SANDBOX_PERSONAS[role]
+        if role in HOSTED_ONLY_PERSONA_KEYS and not hosted_buyer_mode():
+            return Response(
+                {
+                    "detail": "An explicitly invited hosted buyer workspace is required.",
+                    "code": "sandbox_hosted_role_invite_required",
+                },
+                status=403,
+            )
 
         requested_school_key = request.data.get("school", "heritage-core")
         heritage_id = SANDBOX_SCHOOLS["heritage-core"].id

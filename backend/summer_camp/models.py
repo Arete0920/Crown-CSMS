@@ -239,7 +239,7 @@ class SummerCampStaffAssignment(models.Model):
         related_name="summer_camp_staff_credentials_verified",
     )
     credential_verified_at = models.DateTimeField(null=True, blank=True)
-    credential_evidence_ref = models.CharField(max_length=160, blank=True, default="")
+    credential_evidence_ref = models.CharField(max_length=160, blank=True, default="", db_default="")
     assigned_date = models.DateField(default=timezone.now)
 
     class Meta:
