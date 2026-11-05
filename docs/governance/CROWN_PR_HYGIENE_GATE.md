@@ -79,11 +79,11 @@ Engineering support, architecture, review, and evidence audit are advisory. Appr
 
 ## 6. Required Enforcement
 
-The `PR Hygiene Gate` workflow must run on pull requests.
+The `Repository Policy` workflow (`.github/workflows/repository-policy.yml`) runs on pull-request events. Its `repository-policy` job invokes `python scripts/ci/pr_hygiene_gate.py` in the **Run pull-request hygiene** step. The check evaluates the pull request's exact source-head SHA, maintained title/body, source diff, default 20-file threshold, and applicable evidence restrictions. `PR Hygiene Gate` describes this embedded control; it is not the name of a separate Actions workflow.
 
-The check should be treated as required for merge once repository rulesets are updated.
+The same `repository-policy` job runs on selected protected-`main` pushes, but its pull-request-specific step is skipped on push. A green post-merge repository-policy job cannot, by itself, prove that a pull request's metadata and source-diff checks ran. Approved, narrowly scoped exception paths remain subject to their documented conditions; this explanation grants no new waiver.
 
-Until it is required by ruleset, any PR failing this gate remains draft, blocked, or NO-GO.
+An exact-head pull-request hygiene failure, missing result, or stale result is **NO-GO**, regardless of whether GitHub administration currently marks the context as required. The repository owner must verify the actual required-check configuration in the authorized branch-protection or ruleset view; a branch's `protected` flag does not prove which checks are required. Do not self-approve or bypass required protections. Use the approved solo-developer review procedure and retain the decision evidence.
 
 ## 7. Dashboard-Specific Rule
 
@@ -92,3 +92,9 @@ Dashboard certification PRs must not commit generated certification truth dumps 
 Dashboard certification work should remain in one coherent, independently reversible pull request containing the implementation, evidence-generation scripts, compact evidence summary, denominator/state reconciliation, and certification promotion required for the same outcome. A separate pull request requires an independent risk, authority, or rollback boundary under `docs/governance/CHANGE_MANAGEMENT.md`.
 
 A dashboard is not certified until route, permission, tenant, runtime/browser, evidence packet, state/matrix, and solo-developer workaround record all agree.
+
+## 8. Current PR narrative language
+
+The title and description of a newly opened or edited pull request must satisfy the same reference-language control as tracked first-party source. Repository Policy evaluates both fields in the pull-request event and blocks prohibited provider or method branding, including references split across lines. Descriptions must state implemented behavior and verified evidence, not tool-generated promotional copy, unearned contributor credit, or unsupported completion claims.
+
+This check is prospective. It does not remove historical third-party attribution, dependency release notes, signed provenance, commit authors, or past discussion events. Required factual disclosure belongs in controlled technical records; exceptions need an owner-reviewed, evidence-backed decision rather than a silent bypass. See `docs/governance/PUBLIC_LANGUAGE_POLICY.md`.

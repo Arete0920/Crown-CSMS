@@ -262,7 +262,7 @@ def test_heritage_board_bearer_renewal_preserves_foreign_tenant_denials(settings
             verify_session(session)
 
 
-def test_board_bearer_cannot_read_foreign_household_while_genuine_support_can(settings):
+def test_board_and_support_tenant_override_do_not_grant_private_household_access(settings):
     from crown_api.jwt_utils import build_access_token
 
     session = _issue_heritage_board_session(settings)
@@ -290,9 +290,12 @@ def test_board_bearer_cannot_read_foreign_household_while_genuine_support_can(se
     support.refresh_from_db()
     assert support.staff_id == staff.id
     client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
-    allowed = client.get(route, HTTP_X_SCHOOL_ID=str(foreign.id))
-    assert allowed.status_code == 200, allowed.content
-    assert allowed.json()["id"] == str(household.id)
+    # Cross-tenant selection does not itself confer protected household
+    # directory privileges, even to genuine staff with SUPPORT duties.
+    denied_support = client.get(route, HTTP_X_SCHOOL_ID=str(foreign.id))
+    assert denied_support.status_code == 404, denied_support.content
+    assert str(household.id) not in str(denied_support.content)
+    assert household.name not in str(denied_support.content)
 
 
 @pytest.mark.parametrize("persona_key,staff_role", [("teacher", "TEACHER"), ("school_admin", "ADMIN")])

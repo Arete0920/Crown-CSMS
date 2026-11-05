@@ -2,16 +2,19 @@
 
 **Status:** Local development and fictional Heritage demonstration only; not a production or Azure release certification.
 **Authority:** [Engineering setup](engineering/DEV_SETUP.md), [current release status](CURRENT_RELEASE_STATUS.md), and exact current GitHub `main`.
-**Last reviewed:** October 9, 2026. The documented commands have not been executed on the owner's Windows laptop by this review.
+**Last reviewed:** November 2, 2026 (source documentation only; owner laptop execution not independently verified).
 
 ## Choose the correct local workflow
 
 CROWN currently runs locally. No Azure subscription, resource group, cloud database, or deployment credential is needed for the local Heritage demonstration. **Do not mistake successful GitHub CI or an older demo snapshot for proof of local Windows operation.**
 
-Two toolchain contracts coexist:
+The current backend and dashboard setup requires the same supported toolchain for development and the local Heritage demo:
 
-- **General development:** Python 3.12 and Node.js 20 LTS, as specified in `engineering/DEV_SETUP.md`.
-- **Heritage local demonstration launcher:** Python 3.11+ and Node.js **22.12+**, enforced by `scripts/demo/start_heritage_local.py`. Python 3.12 is the tested Python target. Use Node.js 22.12+ for this path; don't assume Node 20 can run the launcher.
+- **Python:** 3.12. The packaged Heritage starter rejects Python versions below 3.12.
+- **Node.js:** 22.22.2+ on the Node 22 line, 24.15.0+ on Node 24, or Node 26+. The repository's default is **Node 22.23.3** (`.nvmrc`); the frontend `package.json` engines and Heritage launcher enforce this range. Node 20 and Node 22.12 are not supported for this frontend.
+- **npm:** Use the version bundled with a compatible Node.js installation.
+
+These version requirements reflect the executable launcher and `frontend/dashboards/package.json`. The physical Windows laptop still requires its own successful preparation and browser rehearsal.
 
 Install Git, Python and Node.js using their official installers. Work from a normal writable, **trusted** local directory. PowerShell and the standard Windows command prompt are sufficient; no editor or Azure connection is required.
 
@@ -32,11 +35,11 @@ The launcher creates an isolated local `.venv`, SQLite database, synthetic Herit
 
 Use **fictional data only**. The passwordless sandbox is for the same computer; do not port-forward it or expose it on a public network. External payment processing is not part of this demo. Do not assume that every optional integration works offline.
 
-If you are starting from an old copied ZIP instead of an active checkout, obtain the intended source first and record its exact SHA. The separate `Start-Heritage.cmd` downloader intentionally pins revision `5e49157f440c549b9394f3cea7259c09d409b6bd`: that historical demo is **not** current-`main` proof. Its existing README documents Linux rehearsal and explicitly states native Windows execution has not been verified.
+If you are starting from an old copied ZIP instead of an active checkout, obtain the intended source first and record its exact SHA. The sales starter in this candidate branch pins immutable source revision `a1bf22fc1e520eba149ce943edcd747dbf75c1e5`, rather than tracking moving `main`. Check `HERITAGE-SALES-MANIFEST.json` inside the audited ZIP, then execute `py -3.12 scripts/demo/start_heritage_local.py --prepare-only --five-module-preflight` from the extracted source folder. The five-module preflight alone is not browser or Windows-laptop certification. On an explicitly authorized, **integrated and reviewed** source revision (not the older pinned candidate), use `py -3.12 scripts/demo/start_heritage_local.py --five-module-demo` to seed the five fictional modules, run the same strict source/data gate, and only then start the servers. If the seed or gate fails, the launcher must not open a functional demo. The default launcher remains the basic Heritage demonstration and is not certified five-module preparation. Inspect the exact-head Windows Actions run and exercise actual persisted saved/reloaded workflows and denials on the laptop. Rebuild and recertify after accepted source merges; never silently substitute unmerged PRs.
 
 ### B. Validate general source development without launching Azure
 
-For the canonical Python 3.12 / Node 20 development toolchain:
+For Python 3.12 and a supported Node.js 22/24/26 runtime:
 
 ```powershell
 py -3.12 -m venv .venv

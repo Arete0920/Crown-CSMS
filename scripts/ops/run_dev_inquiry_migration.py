@@ -171,6 +171,23 @@ def validate_plan(plan):
     return identities
 
 
+def validate_inventory_plan(plan):
+    """Inventory-only: accept forward identifiers for observation, never deployment."""
+    if len(plan) > 512:
+        raise Blocked("migration_inventory_too_large")
+    if any(backwards for _, backwards in plan):
+        raise UnreviewedPlan(plan)
+    identities = []
+    for item, _ in plan:
+        if not all(
+            isinstance(value, str) and re.fullmatch(r"[A-Za-z0-9_]{1,128}", value)
+            for value in (item.app_label, item.name)
+        ):
+            raise Blocked("migration_inventory_identifier_invalid")
+        identities.append((item.app_label, item.name))
+    return identities
+
+
 def validate_blacklist_plan(plan):
     # The explicit DEV schema stage accepts *only* a contiguous upstream
     # SimpleJWT 5.5.1 migration suffix; no unrelated or backwards migrations.
@@ -255,7 +272,9 @@ def verify_ddl_authority(connection, pending, *, legacy_stage=False, apply_black
 
 def migrate_on_dev(database_url, secret, database_name, source_sha, *,
                    check_only=False, apply_blacklist=False, hosted_blacklist_enabled=False,
-                   legacy_stage=False, support_stage=False):
+                   legacy_stage=False, support_stage=False, inventory_only=False):
+    if inventory_only and (not check_only or apply_blacklist or legacy_stage or support_stage):
+        raise Blocked("conflicting_dev_migration_modes")
     if (check_only and (apply_blacklist or support_stage)) or (apply_blacklist and legacy_stage) or (support_stage and (apply_blacklist or legacy_stage)):
         raise Blocked("conflicting_dev_migration_modes")
     if not isinstance(hosted_blacklist_enabled, bool):
@@ -266,6 +285,11 @@ def migrate_on_dev(database_url, secret, database_name, source_sha, *,
     if not ca_bundle.is_file():
         raise Blocked("trusted_database_ca_unavailable")
     options = {"sslmode": "verify-full", "sslrootcert": str(ca_bundle), "connect_timeout": 15}
+    if inventory_only:
+        # Enforce read-only at the PostgreSQL connection boundary, not just
+        # through Python's no-migration command path. A future accidental
+        # write then fails closed at the database.
+        options["options"] = "-c default_transaction_read_only=on"
     # Enforce verified TLS before Django loads any application ready() hooks.
     runner_url = urlsplit(database_url)._replace(query=urlencode(options)).geturl()
     # Credentials live only in this process; never write them to artifacts or
@@ -275,7 +299,7 @@ def migrate_on_dev(database_url, secret, database_name, source_sha, *,
                       DJANGO_ENV="development", ENVIRONMENT="dev", DJANGO_DEBUG="false",
                       DEBUG="false", BUILD_SHA=source_sha,
                       CROWN_SIMPLEJWT_BLACKLIST_ENABLED=(
-                          "true" if (apply_blacklist or (check_only and not legacy_stage)
+                          "true" if (apply_blacklist or (check_only and not legacy_stage and not inventory_only)
                                      or hosted_blacklist_enabled) else "false"
                       ))
     if legacy_stage:
@@ -315,20 +339,27 @@ def migrate_on_dev(database_url, secret, database_name, source_sha, *,
             cursor.execute("SELECT ssl FROM pg_stat_ssl WHERE pid = pg_backend_pid()")
             if cursor.fetchone() != (True,):
                 raise Blocked("database_tls_not_verified")
+            if inventory_only:
+                cursor.execute("SHOW transaction_read_only")
+                if cursor.fetchone() != ("on",):
+                    raise Blocked("inventory_database_not_read_only")
             cursor.execute("SET lock_timeout = '15s'")
             cursor.execute("SET statement_timeout = '300s'")
 
     def read_plan():
         executor = MigrationExecutor(connection)
         executor.loader.check_consistent_history(connection)
-        try:
-            validate_blacklist_preflight(
-                connection,
-                executor.loader,
-                installed=apps.is_installed('rest_framework_simplejwt.token_blacklist'),
-            )
-        except BlacklistBoundaryError as exc:
-            raise Blocked(str(exc)) from exc
+        # Inventory is observational and must not require enabling a disabled
+        # vendor feature; normal migration/apply paths retain the strict gate.
+        if not inventory_only:
+            try:
+                validate_blacklist_preflight(
+                    connection,
+                    executor.loader,
+                    installed=apps.is_installed('rest_framework_simplejwt.token_blacklist'),
+                )
+            except BlacklistBoundaryError as exc:
+                raise Blocked(str(exc)) from exc
         if legacy_stage:
             try:
                 validate_legacy_preflight(connection, executor.loader)
@@ -373,7 +404,8 @@ def migrate_on_dev(database_url, secret, database_name, source_sha, *,
             ),
             read_plan=read_plan,
             invoke=call_command, check_only=check_only,
-            plan_validator=(validate_blacklist_plan if apply_blacklist else
+            plan_validator=(validate_inventory_plan if inventory_only else
+                            validate_blacklist_plan if apply_blacklist else
                             validate_legacy_plan if legacy_stage else validate_plan),
             post_verify=((lambda: verify_applied_schema(connection)) if apply_blacklist else
                          (lambda: verify_legacy_applied_schema(connection)) if
@@ -392,6 +424,8 @@ def main(argv=None):
                         help="Must equal migrate-dev-support to authorize DEV support stage")
     parser.add_argument("--check-only", action="store_true",
                         help="Read-only DEV migration preflight; never apply migrations")
+    parser.add_argument("--inspect-all-migrations", action="store_true",
+                        help="Inventory all DEV pending migrations without approving or applying them")
     parser.add_argument("--apply-reviewed-blacklist", action="store_true",
                         help="Explicit guarded DEV-only SimpleJWT schema stage")
     parser.add_argument("--confirm-dev-blacklist", default="",
@@ -407,6 +441,9 @@ def main(argv=None):
     try:
         legacy_stage = args.inspect_reviewed_legacy_refresh or args.apply_reviewed_legacy_refresh
         support_stage = args.apply_reviewed_support
+        if args.inspect_all_migrations and (args.check_only or support_stage
+                or args.apply_reviewed_blacklist or legacy_stage):
+            raise Blocked("conflicting_dev_migration_modes")
         if ((support_stage and (args.check_only or args.apply_reviewed_blacklist or legacy_stage))
                 or (args.check_only and (args.apply_reviewed_blacklist or legacy_stage))
                 or (args.apply_reviewed_blacklist and legacy_stage)
@@ -442,7 +479,8 @@ def main(argv=None):
         if os.environ.get("GITHUB_ACTIONS", "").strip().lower() == "true":
             for value in (database_url, secret):
                 print("::add-mask::" + value.replace("%", "%25"), flush=True)
-        stage = "database_plan_and_migration"
+        stage = ("database_plan_read_only" if args.inspect_all_migrations
+                 else "database_plan_and_migration")
         with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
             if support_stage:
                 applied = migrate_on_dev(database_url, secret, database_name,
@@ -455,6 +493,10 @@ def main(argv=None):
             elif args.check_only:
                 applied = migrate_on_dev(database_url, secret, database_name,
                                          args.expected_sha, check_only=True)
+            elif args.inspect_all_migrations:
+                applied = migrate_on_dev(database_url, secret, database_name,
+                                         args.expected_sha, check_only=True, inventory_only=True,
+                                         hosted_blacklist_enabled=hosted_blacklist_enabled)
             elif args.apply_reviewed_blacklist:
                 applied = migrate_on_dev(database_url, secret, database_name,
                                          args.expected_sha, apply_blacklist=True)
@@ -465,8 +507,10 @@ def main(argv=None):
             else:
                 applied = migrate_on_dev(database_url, secret, database_name, args.expected_sha,
                                          hosted_blacklist_enabled=hosted_blacklist_enabled)
-        result = {"status": "PASS", "source_sha": args.expected_sha, "target_app": DEV_APP,
-                  "mode": ("reviewed_dev_support" if support_stage else
+        result = {"status": ("COLLECTED" if args.inspect_all_migrations else "PASS"),
+                  "source_sha": args.expected_sha, "target_app": DEV_APP,
+                  "mode": ("inventory_all_read_only" if args.inspect_all_migrations else
+                           "reviewed_dev_support" if support_stage else
                             "read_only" if args.check_only else
                            "reviewed_dev_legacy_inspect" if args.inspect_reviewed_legacy_refresh else
                            "reviewed_dev_legacy_apply" if args.apply_reviewed_legacy_refresh else
@@ -482,13 +526,21 @@ def main(argv=None):
                 remaining_migrations=applied["remaining"],
                 remaining_pending=len(applied["remaining"]),
             )
+        elif args.inspect_all_migrations:
+            # Django's plan is limited to installed applications for the
+            # effective runtime flags. Disabled optional apps are not included.
+            result.update(pending_migrations=applied, remaining_pending=len(applied),
+                          inventory_scope="enabled_django_app_graph",
+                          optional_blacklist_graph_included=hosted_blacklist_enabled,
+                          schema_change_authorized=False, operational_certified=False)
         elif args.check_only or args.inspect_reviewed_legacy_refresh:
             result.update(reviewed_pending_migrations=applied, remaining_pending=len(applied))
         else:
             result.update(applied_migrations=applied, remaining_pending=0)
     except (Exception, SystemExit) as exc:
         result = {"status": "BLOCKED",
-                  "mode": ("read_only" if args.check_only else
+                  "mode": ("inventory_all_read_only" if args.inspect_all_migrations else
+                           "read_only" if args.check_only else
                            "reviewed_dev_legacy_inspect" if args.inspect_reviewed_legacy_refresh else
                            "reviewed_dev_legacy_apply" if args.apply_reviewed_legacy_refresh else
                            "reviewed_dev_blacklist" if args.apply_reviewed_blacklist else "migrate"),
@@ -502,7 +554,7 @@ def main(argv=None):
         for name in ("DATABASE_URL", "DJANGO_SECRET_KEY"):
             os.environ.pop(name, None)
     print(json.dumps(result, sort_keys=True))
-    return 0 if result["status"] == "PASS" else 1
+    return 0 if result["status"] in {"PASS", "COLLECTED"} else 1
 
 
 if __name__ == "__main__":

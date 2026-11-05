@@ -48,6 +48,10 @@ on:
         description: "Deploy an isolated preview on the EXISTING SWA against DEV; never production"
         type: boolean
         default: false
+      dev_deploy_only:
+        description: "DEV preview deployment and read-only checks only; no CORS changes, browser writes or fixture creation"
+        type: boolean
+        default: true
       dev_source_sha:
         description: "Full accepted source SHA already deployed to DEV (preview only)"
         type: string
@@ -68,8 +72,10 @@ on:
       - ".github/workflows/deploy-dashboard.yml"
 
 concurrency:
-  group: crown-dashboard-swa-deploy-${{ inputs.dev_certification_preview == true && 'dev-certification' || github.ref_type }}
-  cancel-in-progress: true
+  # Tag and manual production dispatches share one non-cancelling mutex.
+  # DEV certification previews are isolated from production deployments.
+  group: crown-dashboard-swa-deploy-${{ inputs.dev_certification_preview == true && 'dev-certification' || 'production' }}
+  cancel-in-progress: false
 
 jobs:
   resolve-certified-backend:
@@ -143,6 +149,7 @@ jobs:
 
   build-and-deploy:
     name: "Build + deploy dashboard  ${{ github.ref_name }}"
+    environment: production
     needs: resolve-certified-backend
     runs-on: ubuntu-latest
     timeout-minutes: 45
@@ -399,10 +406,18 @@ jobs:
           ref: ${{ inputs.dev_source_sha }}
           persist-credentials: false
           fetch-depth: 0
-      - name: Require accepted main ancestry
+      - name: Require exact current protected main
         env:
           SOURCE_SHA: ${{ inputs.dev_source_sha }}
-        run: git merge-base --is-ancestor "$SOURCE_SHA" origin/main
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin refs/heads/main:refs/remotes/origin/main
+          CURRENT_MAIN_SHA="$(git rev-parse refs/remotes/origin/main)"
+          if [[ "$SOURCE_SHA" != "$CURRENT_MAIN_SHA" ]]; then
+            echo 'BLOCKED: DEV preview must use exact current protected main, not a stale ancestor' >&2
+            exit 1
+          fi
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
         with:
           node-version: "22.23.3"
@@ -452,6 +467,18 @@ jobs:
           with open(os.environ['GITHUB_OUTPUT'], 'a') as out:
               out.write('token=' + token + '\n')
           PYCODE
+      - name: Recheck exact main before preview upload
+        env:
+          SOURCE_SHA: ${{ inputs.dev_source_sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin refs/heads/main:refs/remotes/origin/main
+          CURRENT_MAIN_SHA="$(git rev-parse refs/remotes/origin/main)"
+          if [[ "$SOURCE_SHA" != "$CURRENT_MAIN_SHA" ]]; then
+            echo 'BLOCKED: DEV preview must use exact current protected main, not a stale ancestor' >&2
+            exit 1
+          fi
       - name: Deploy preview on existing SWA only
         id: preview
         uses: Azure/static-web-apps-deploy@4d27395796ac319302594769cfe812bd207490b1
@@ -464,6 +491,7 @@ jobs:
           skip_app_build: true
           deployment_environment: dev-certification
       - name: Configure exact owned DEV preview origin
+        if: toJSON(inputs.dev_deploy_only) == 'false'
         env:
           PREVIEW_URL: ${{ steps.preview.outputs.static_web_app_url }}
           WORKFLOW_SHA: ${{ github.sha }}
@@ -497,7 +525,7 @@ jobs:
             pwsh -NoProfile -File tools/appsettings_allowlist_gate.ps1 -AppSettingsJsonPath appsettings.dev-preview.json -AllowedKeysFile appsettings.preview.allowlist.json -AllowedKeySet dev
             az webapp config appsettings set --resource-group crown-rg --name crown-api-dev --settings @appsettings.dev-preview.json --output none --only-show-errors
           fi
-      - name: Wait for pinned DEV API after configuration
+      - name: Verify pinned DEV API and existing CORS
         env:
           SOURCE_SHA: ${{ inputs.dev_source_sha }}
           PREVIEW_URL: ${{ steps.preview.outputs.static_web_app_url }}
@@ -519,10 +547,56 @@ jobs:
           else:
               raise SystemExit('DEV did not recover matching healthy runtime after origin configuration')
           PYCODE
+      - name: Verify deployed DEV frontend identity without writes
+        env:
+          SOURCE_SHA: ${{ inputs.dev_source_sha }}
+          PREVIEW_URL: ${{ steps.preview.outputs.static_web_app_url }}
+        run: |
+          python3 - <<'PYCODE'
+          import json, os, urllib.request
+          expected_origin = 'https://yellow-forest-0eecc8b0f-devcertification.eastus2.7.azurestaticapps.net'
+          origin = os.environ['PREVIEW_URL'].rstrip('/')
+          if origin != expected_origin:
+              raise SystemExit('Unexpected DEV preview origin')
+          expected_url = origin + '/build.json'
+          with urllib.request.urlopen(expected_url, timeout=30) as response:
+              if response.geturl() != expected_url:
+                  raise SystemExit('DEV preview build identity redirected')
+              payload = json.load(response)
+              if response.status != 200 or payload.get('build_sha') != os.environ['SOURCE_SHA']:
+                  raise SystemExit('Deployed DEV frontend identity mismatch')
+          print('DEV frontend identity verified; runtime journeys require separate certification')
+          PYCODE
+      - name: Load pinned DEV evidence exporter
+        id: dev-evidence-exporter
+        if: toJSON(inputs.dev_deploy_only) == 'false'
+        env:
+          WORKFLOW_SHA: ${{ github.sha }}
+        run: |
+          python3 - <<'PYCODE'
+          import os, re, subprocess
+          from pathlib import Path
+          source = os.environ['WORKFLOW_SHA']
+          if not re.fullmatch(r'[0-9a-f]{40}', source):
+              raise SystemExit('Invalid evidence exporter source')
+          paths = (
+              'frontend/dashboards/scripts/browser-evidence-schema.mjs',
+              'frontend/dashboards/scripts/dev-browser-evidence-reporter.mjs',
+              'frontend/dashboards/scripts/run-dev-browser-evidence.mjs',
+              'frontend/dashboards/playwright.dev-evidence.config.ts',
+          )
+          # Resolve every pinned file before replacing any checkout file.
+          resolved = [(Path(path), subprocess.check_output(['git', 'show', source + ':' + path])) for path in paths]
+          for path, content in resolved:
+              path.write_bytes(content)
+          PYCODE
       - name: Install existing Playwright browser
+        if: toJSON(inputs.dev_deploy_only) == 'false'
         working-directory: frontend/dashboards
         run: npx playwright install chromium --with-deps
       - name: Execute existing live certification against DEV preview
+        id: dev-certification-evidence
+        if: toJSON(inputs.dev_deploy_only) == 'false' && steps.dev-evidence-exporter.outcome == 'success'
         working-directory: frontend/dashboards
         env:
           CI: '1'
@@ -533,23 +607,24 @@ jobs:
           CROWN_LIVE_API_BASE_URL: https://crown-api-dev.azurewebsites.net
           CROWN_CERTIFICATION_TENANT_MODE: sandbox
           CROWN_LIVE_USE_SANDBOX_CREDENTIALS: '1'
+          CROWN_EVIDENCE_RUNTIME_SHA: ${{ inputs.dev_source_sha }}
+          CROWN_EVIDENCE_TEST_SHA: ${{ inputs.dev_source_sha }}
+          CROWN_EVIDENCE_EXPORTER_SHA: ${{ github.sha }}
         run: |
           test -n "$CROWN_LIVE_FRONTEND_URL"
-          npm run certify:production
+          node scripts/run-dev-browser-evidence.mjs --suite certification
       - name: Upload DEV execution evidence
-        if: always()
+        if: always() && toJSON(inputs.dev_deploy_only) == 'false' && steps.dev-certification-evidence.outputs.evidence_valid == 'true'
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
-          name: dev-certification-${{ inputs.dev_source_sha }}-${{ github.run_id }}
-          path: |
-            audit-artifacts/production-certification/current/
-            frontend/dashboards/test-results/
-            frontend/dashboards/playwright-report/
-          if-no-files-found: warn
+          name: dev-certification-${{ inputs.dev_source_sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ steps.dev-certification-evidence.outputs.evidence_path }}
+          if-no-files-found: error
           retention-days: 30
 
       - name: Execute existing buyer persistence journeys on DEV
-        if: always() && steps.preview.outcome == 'success'
+        id: dev-buyer-evidence
+        if: always() && toJSON(inputs.dev_deploy_only) == 'false' && steps.preview.outcome == 'success' && steps.dev-evidence-exporter.outcome == 'success'
         working-directory: frontend/dashboards
         env:
           CI: '1'
@@ -557,30 +632,31 @@ jobs:
           CROWN_LIVE_API_BASE_URL: https://crown-api-dev.azurewebsites.net
           CROWN_BROWSER_AUTHORITY_OUTPUT: test-results/buyer-sandbox-browser-authority.json
           CROWN_REHEARSAL_TEST_SHA: ${{ github.sha }}
+          CROWN_EVIDENCE_RUNTIME_SHA: ${{ inputs.dev_source_sha }}
+          CROWN_EVIDENCE_TEST_SHA: ${{ github.sha }}
+          CROWN_EVIDENCE_EXPORTER_SHA: ${{ github.sha }}
         run: |
           git show "$CROWN_REHEARSAL_TEST_SHA:frontend/dashboards/tests/certification/buyer-sandbox-browser-authority.spec.ts" > tests/certification/buyer-sandbox-browser-authority.spec.ts
-          npm run certify:buyer-sandbox-browser
+          node scripts/run-dev-browser-evidence.mjs --suite buyer
       - name: Upload DEV buyer persistence evidence
-        if: always() && steps.preview.outcome == 'success'
+        if: always() && toJSON(inputs.dev_deploy_only) == 'false' && steps.preview.outcome == 'success' && steps.dev-buyer-evidence.outputs.evidence_valid == 'true'
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
-          name: dev-buyer-persistence-${{ inputs.dev_source_sha }}-${{ github.run_id }}
-          path: |
-            frontend/dashboards/test-results/
-            frontend/dashboards/playwright-report/
+          name: dev-buyer-persistence-${{ inputs.dev_source_sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ steps.dev-buyer-evidence.outputs.evidence_path }}
           if-no-files-found: error
           retention-days: 30
 
       - name: Set up existing backend fixture runtime
-        if: always() && steps.preview.outcome == 'success'
+        if: always() && toJSON(inputs.dev_deploy_only) == 'false' && steps.preview.outcome == 'success'
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
         with:
           python-version: '3.12'
       - name: Install accepted backend dependencies for synthetic fixtures
-        if: always() && steps.preview.outcome == 'success'
+        if: always() && toJSON(inputs.dev_deploy_only) == 'false' && steps.preview.outcome == 'success'
         run: python -m pip install -r backend/requirements.txt
       - name: Prepare two synthetic DEV tenants using existing models
-        if: always() && steps.preview.outcome == 'success'
+        if: always() && toJSON(inputs.dev_deploy_only) == 'false' && steps.preview.outcome == 'success'
         env:
           WORKFLOW_SHA: ${{ github.sha }}
           SOURCE_SHA: ${{ inputs.dev_source_sha }}
@@ -628,7 +704,8 @@ jobs:
               raise SystemExit(1)
           PYCODE
       - name: Execute existing Playwright framework for two-tenant HTTP isolation
-        if: always() && steps.preview.outcome == 'success'
+        id: dev-tenant-evidence
+        if: always() && toJSON(inputs.dev_deploy_only) == 'false' && steps.preview.outcome == 'success' && steps.dev-evidence-exporter.outcome == 'success'
         working-directory: frontend/dashboards
         env:
           CI: '1'
@@ -636,15 +713,16 @@ jobs:
           CROWN_LIVE_FRONTEND_URL: ${{ steps.preview.outputs.static_web_app_url }}
           CROWN_LIVE_API_BASE_URL: https://crown-api-dev.azurewebsites.net
           CROWN_DEV_TENANT_FIXTURE: ${{ runner.temp }}/crown-dev-tenant-fixtures.json
-        run: npx playwright test tests/certification/production-tenant-isolation.spec.ts --workers=1 --reporter=line,html
+          CROWN_EVIDENCE_RUNTIME_SHA: ${{ inputs.dev_source_sha }}
+          CROWN_EVIDENCE_TEST_SHA: ${{ github.sha }}
+          CROWN_EVIDENCE_EXPORTER_SHA: ${{ github.sha }}
+        run: node scripts/run-dev-browser-evidence.mjs --suite tenant-isolation
       - name: Upload two-tenant execution results
-        if: always() && steps.preview.outcome == 'success'
+        if: always() && toJSON(inputs.dev_deploy_only) == 'false' && steps.preview.outcome == 'success' && steps.dev-tenant-evidence.outputs.evidence_valid == 'true'
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
-          name: dev-two-tenant-isolation-${{ inputs.dev_source_sha }}-${{ github.run_id }}
-          path: |
-            frontend/dashboards/test-results/
-            frontend/dashboards/playwright-report/
+          name: dev-two-tenant-isolation-${{ inputs.dev_source_sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ steps.dev-tenant-evidence.outputs.evidence_path }}
           if-no-files-found: error
           retention-days: 30
       - name: Remove ephemeral synthetic actor tokens
@@ -652,3 +730,11 @@ jobs:
         env:
           FIXTURE_PATH: ${{ runner.temp }}/crown-dev-tenant-fixtures.json
         run: rm -f -- "$FIXTURE_PATH"
+      - name: Record DEV deployment scope
+        if: always()
+        env:
+          DEPLOY_ONLY: ${{ inputs.dev_deploy_only }}
+        run: |
+          if [[ "$DEPLOY_ONLY" != "false" ]]; then
+            echo 'DEV deployment-only: CORS mutation, browser journeys and synthetic fixtures skipped. This run does not certify tenant isolation or owner workflows.' >> "$GITHUB_STEP_SUMMARY"
+          fi

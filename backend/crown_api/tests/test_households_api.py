@@ -1,7 +1,7 @@
 from django.test import TestCase
 from rest_framework.test import APIClient
 
-from core.models import School, UserAccount, UserRole
+from core.models import CrownPermission, RolePermission, School, UserAccount, UserRole
 from households.models import Guardian, Household, Student
 
 
@@ -23,6 +23,11 @@ class HouseholdsApiTests(TestCase):
             is_staff=True,
             school=self.school,
         )
+        # Authorized school duties, not a Django staff bit, permit these reads.
+        UserRole.objects.create(user=self.staff_user, school=self.school, role_code="REGISTRAR")
+        for code in ("households.view", "guardians.view"):
+            permission, _ = CrownPermission.objects.get_or_create(code=code)
+            RolePermission.objects.get_or_create(role_code="REGISTRAR", permission=permission)
 
         # Non-staff user with school context — guardian-scoped (PARENT role required)
         self.nonstaff_user = UserAccount.objects.create_user(
@@ -68,10 +73,11 @@ class HouseholdsApiTests(TestCase):
             is_primary=False,
         )
 
-        # Guardian for other_household matching nonstaff_user email
+        # Guardian explicitly linked to nonstaff_user in other_household
         self.normal_guardian = Guardian.objects.create(
             school_id=self.school.id,
             household=self.other_household,
+            account=self.nonstaff_user,
             first_name="Normal",
             last_name="User",
             email="normal@example.com",
@@ -116,13 +122,13 @@ class HouseholdsApiTests(TestCase):
         self.assertEqual(body["name"], "The Test Family")
 
     def test_list_households_nonstaff_scoped(self):
-        """Non-staff users only see households where guardian email matches."""
+        """Non-staff users only see their verified account-linked household."""
         self.client.force_authenticate(user=self.nonstaff_user)
         resp = self.client.get("/api/households/")
         self.assertEqual(resp.status_code, 200)
         body = resp.json()
         self.assertIsInstance(body, list)
-        # nonstaff_user email is normal@example.com, matches normal_guardian in other_household
+        # normal_guardian.account explicitly links nonstaff_user to other_household
         self.assertEqual({row["id"] for row in body}, {str(self.other_household.id)})
         self.assertEqual(len(body), 1)
 
@@ -130,7 +136,7 @@ class HouseholdsApiTests(TestCase):
         """Non-staff must not learn existence of out-of-scope households."""
         self.client.force_authenticate(user=self.nonstaff_user)
 
-        # In-scope detail (normal@example.com matches guardian in other_household)
+        # In-scope detail authorized by the persisted guardian account link
         ok = self.client.get(f"/api/households/{self.other_household.id}/")
         self.assertEqual(ok.status_code, 200)
 

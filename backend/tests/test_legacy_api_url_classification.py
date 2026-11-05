@@ -50,7 +50,6 @@ DEPRECATED_DIRECTOR_ROUTES = {
     "director/priority/",
     "director/actions/",
     "director/timeline/",
-    "director/force_seed_user/",
 }
 
 NON_V1_NESTED_INCLUDES = {
@@ -82,8 +81,8 @@ def test_legacy_api_urlpatterns_have_controlled_mutually_exclusive_counts():
     direct = [pattern for pattern in patterns if isinstance(pattern, URLPattern)]
     includes = [pattern for pattern in patterns if isinstance(pattern, URLResolver)]
 
-    assert len(patterns) == 118
-    assert len(direct) == 104
+    assert len(patterns) == 117
+    assert len(direct) == 103
     assert len(includes) == 14
 
     internally_v1 = [
@@ -107,10 +106,10 @@ def test_legacy_api_urlpatterns_have_controlled_mutually_exclusive_counts():
     assert len(internally_v1) == 29
     assert sum(isinstance(pattern, URLPattern) for pattern in internally_v1) == 28
     assert sum(isinstance(pattern, URLResolver) for pattern in internally_v1) == 1
-    assert len(director) == 8
+    assert len(director) == 7
     assert len(other_direct) == 68
     assert len(other_includes) == 13
-    assert 29 + 8 + 68 + 13 == 118
+    assert 29 + 7 + 68 + 13 == 117
 
 
 def test_internal_v1_and_deprecated_route_sets_are_exact():

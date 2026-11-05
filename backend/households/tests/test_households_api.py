@@ -3,7 +3,7 @@ import pytest
 from django.contrib.auth import get_user_model
 from rest_framework.test import APIClient
 
-from core.models import School
+from core.models import CrownPermission, RolePermission, School, UserRole
 from households.models import Household, Guardian, Student
 
 
@@ -21,11 +21,16 @@ def _mk_user_with_school_id(school_id):
         email=f"user-{uuid.uuid4()}@example.com",
         password="pass12345!",
         school=school,
+        is_staff=True,
     )
     # Attach school_id if the model supports it
     if hasattr(u, "school_id"):
         setattr(u, "school_id", school_id)
         u.save(update_fields=["school_id"])
+    UserRole.objects.create(user=u, school=school, role_code="REGISTRAR")
+    for code in ("households.view", "guardians.view"):
+        permission, _ = CrownPermission.objects.get_or_create(code=code)
+        RolePermission.objects.get_or_create(role_code="REGISTRAR", permission=permission)
     return u
 
 

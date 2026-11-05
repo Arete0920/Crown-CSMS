@@ -51,11 +51,47 @@ jobs:
           ALLOWED_HOSTS: localhost,127.0.0.1
           DATABASE_URL: sqlite:///./ci.sqlite3
         run: |
+          # The full gate already fails on tenant AST tripwires (checks 4-6).
           python tools/verify_backend_gate.py
 
-      - name: "Tenant tripwires (structural AST checks)"
+      # The source branch may add the acceptance file before the parent
+      # feature is merged; never replace this check with a new top-level
+      # workflow (the canonical repository inventory has 49 workflows).
+      - name: Certify fictional SGO family and processor JWT intake on SQLite
+        if: ${{ hashFiles('backend/jireh_sgo/tests/test_fictional_intake_seed.py') != '' }}
+        env:
+          DJANGO_SETTINGS_MODULE: crown_api.settings
+          SECRET_KEY: ci-only-not-production
+          DJANGO_SECRET_KEY: ci-only-not-production
+          PYTHONPATH: ${{ github.workspace }}/backend
+          DEBUG: '1'
+          CROWN_ENV: local
+          DJANGO_ENV: local
+          CROWN_DEMO_MODE: 'false'
+          CROWN_SGO_FICTIONAL_INTAKE_ENABLED: 'true'
+          DATABASE_URL: sqlite:///./sgo-ci.sqlite3
+          ALLOWED_HOSTS: localhost,127.0.0.1,testserver
         run: |
-          # Checks 4+5 from verify_backend_gate.py €” multi-line-safe AST analysis.
-          # Replaces grep-based tripwires that could false-positive on multi-line calls.
-          python tools/verify_backend_gate.py --tenant-checks-only
+          python - <<'PY'
+          import django
+          django.setup()
+          from django.conf import settings
+          from django.db import connection
+          assert connection.vendor == 'sqlite', 'SGO acceptance must use isolated SQLite'
+          assert settings.DEBUG and settings.CROWN_ENV == settings.DJANGO_ENV == 'local'
+          assert settings.CROWN_SGO_FICTIONAL_INTAKE_ENABLED, 'Explicit fictional intake flag required'
+          print('SGO test environment: explicit local disposable SQLite')
+          PY
+          python -m pytest -q \
+            backend/jireh_sgo/tests/test_fictional_intake_api.py \
+            backend/jireh_sgo/tests/test_fictional_intake_seed.py \
+            --junitxml=sgo-fictional-acceptance.xml
 
+      - name: Preserve SGO exact-head fictional JWT acceptance evidence
+        if: ${{ always() && hashFiles('backend/jireh_sgo/tests/test_fictional_intake_seed.py') != '' }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: sgo-fictional-acceptance-${{ github.sha }}
+          path: sgo-fictional-acceptance.xml
+          if-no-files-found: warn
+          retention-days: 14

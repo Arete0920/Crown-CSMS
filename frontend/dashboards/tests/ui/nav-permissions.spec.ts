@@ -125,6 +125,8 @@ test.describe("Nav is permission-derived — sidebar reflects role, not all link
 
     const aside = page.locator("aside.crown-sidebar");
     await expect(aside).toBeVisible();
+    await expect(aside.locator("img.crown-sidebar-brand-mark")).toBeVisible();
+    await expect(aside.locator("img.crown-sidebar-brand-mark")).toHaveAttribute("src", /crown-logo-monochrome-white\.svg$/);
     await expect(aside.getByText("Family", { exact: true })).toBeVisible();
     await expect(aside.locator('a[href="/parent"]')).toBeVisible();
     await expect(aside.locator("a")).toHaveCount(1);

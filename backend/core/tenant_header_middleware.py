@@ -6,6 +6,7 @@ import re
 
 from django.conf import settings
 from django.http import JsonResponse
+from rest_framework.authentication import get_authorization_header
 from rest_framework.exceptions import APIException
 
 from core.models import School
@@ -60,6 +61,45 @@ def _is_platform_operator_path(path: str) -> bool:
     )
 
 
+def _sgo_grantor_read_route(path, method):
+    if method != "GET":
+        return False
+    return path == "/api/v1/jireh-sgo/organizations" or bool(re.fullmatch(
+        r"/api/v1/jireh-sgo/organizations/[0-9a-fA-F]{8}-(?:[0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}/overview",
+        path,
+    ))
+
+
+
+def _sgo_fictional_intake_route(path, method):
+    # Exact non-school endpoints; only bypass tenant headers in verified LOCAL
+    # fictional-intake mode. These are never public or staff-role authorizations.
+    uuid_pattern = (
+        r"[0-9a-fA-F]{8}-(?:[0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}"
+    )
+    if method == "GET" and path in {
+        "/api/v1/jireh-sgo/family/programs", "/api/v1/jireh-sgo/processor/programs",
+    }:
+        return True
+    if method == "POST" and path == "/api/v1/jireh-sgo/family/submit":
+        return True
+    if method == "GET" and re.fullmatch(
+        rf"/api/v1/jireh-sgo/family/applications/{uuid_pattern}", path,
+    ):
+        return True
+    if method == "POST" and re.fullmatch(
+        rf"/api/v1/jireh-sgo/family/applications/{uuid_pattern}/correct", path,
+    ):
+        return True
+    if method == "GET" and re.fullmatch(
+        rf"/api/v1/jireh-sgo/processor/programs/{uuid_pattern}/queue", path,
+    ):
+        return True
+    return bool(method == "POST" and re.fullmatch(
+        rf"/api/v1/jireh-sgo/processor/applications/{uuid_pattern}/request-correction", path,
+    ))
+
+
 def _record_tenant_decision(request, *, outcome: str, reason: str, required: bool = False) -> bool:
     """Persist tenant decisions; authorized overrides fail closed when evidence cannot persist."""
     try:
@@ -105,7 +145,6 @@ class TenantHeaderRequiredMiddleware:
         "/api/schema",
         "/api/docs",
         "/api/redoc",
-        "/api/director/force_seed_user",
         "/api/v1/admissions/submit",
         "/api/admissions/submit",
         "/api/v1/admissions/public-config",
@@ -146,7 +185,8 @@ def enforce_tenant_context(request) -> None:
     """Apply the same tenant contract before views and after late bearer auth.
 
     Authentication policy belongs to the existing middleware/authenticator chain.
-    This guard neither authenticates requests nor relaxes its early denials.
+    Exact custody-resolution routes may defer inactive-school resolution until
+    the existing bearer authenticator supplies a validated principal.
     """
     if request.method == "OPTIONS":
         return
@@ -168,6 +208,23 @@ def enforce_tenant_context(request) -> None:
                 request,
                 {"detail": "School selector forbidden on global operations.",
                  "code": "platform_tenant_selector_forbidden"},
+                status=400,
+            )
+        return
+
+    # Independent grantor API: existing membership-scoped reads plus exact
+    # fictional-intake paths in a verified, explicitly enabled LOCAL runtime.
+    # View-level grants still enforce actor/program authorization.
+    is_sgo_intake = _sgo_fictional_intake_route(normalized_path, request.method)
+    allowed_fictional_intake = False
+    if is_sgo_intake:
+        from jireh_sgo.family_intake_api import fictional_intake_enabled
+        allowed_fictional_intake = fictional_intake_enabled()
+    if _sgo_grantor_read_route(normalized_path, request.method) or allowed_fictional_intake:
+        if "HTTP_X_SCHOOL_ID" in request.META or "HTTP_X_CROWN_SCHOOL_ID" in request.META:
+            raise _tenant_context_error(
+                request,
+                {"detail": "School selector forbidden for SGO.", "code": "sgo_school_selector_forbidden"},
                 status=400,
             )
         return
@@ -255,6 +312,74 @@ def enforce_tenant_context(request) -> None:
         .only("id", "name", "is_active")
         .first()
     )
+    # An already-admitted child's custody must remain resolvable after a
+    # school is deactivated. Admit no new children: allow only verified release,
+    # exact school-bound open-custody rosters and the narrowly restricted
+    # unresolved-custody site directory needed to find those roster URLs.
+    # The DRF views still require active, explicitly authorized Diadem staff,
+    # current staff coverage for room rosters, and verified release authority.
+    is_diadem_release = (
+        request.method == "POST"
+        and normalized_path == "/api/v1/aftercare/daycare/attendance/release"
+    )
+    is_diadem_open_custody_roster = (
+        request.method == "GET"
+        and re.fullmatch(
+            r"/api/v1/aftercare/daycare/sites/"
+            r"[0-9a-fA-F]{8}-(?:[0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}/roster",
+            normalized_path,
+        ) is not None
+    )
+    is_diadem_custody_directory = (
+        request.method == "GET"
+        and normalized_path == "/api/v1/aftercare/daycare/sites"
+    )
+    # Inactive-school custody resolution must also permit a narrowly scoped
+    # pickup-candidate GET. The downstream view still requires authenticated,
+    # school-bound staff, release RBAC, room visibility, and open attendance.
+    # Never use a path prefix or permit other HTTP methods here.
+    is_diadem_release_candidates = (
+        request.method == "GET"
+        and re.fullmatch(
+            r"/api/v1/aftercare/daycare/sites/"
+            r"[0-9a-fA-F]{8}-(?:[0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}"
+            r"/attendance/"
+            r"[0-9a-fA-F]{8}-(?:[0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}"
+            r"/release-authorities",
+            normalized_path,
+        ) is not None
+    )
+    is_diadem_custody_resolution = (
+        is_diadem_release
+        or is_diadem_open_custody_roster
+        or is_diadem_custody_directory
+        or is_diadem_release_candidates
+    )
+    if (
+        school is None
+        and is_diadem_custody_resolution
+        and context.actor_type == "anonymous"
+    ):
+        authorization = get_authorization_header(request).split()
+        if len(authorization) == 2 and authorization[0].lower() == b"bearer":
+            # Django middleware runs before DRF bearer authentication. Do not
+            # bind an inactive school or trust token claims here. The existing
+            # DRF authenticator revalidates tenant scope, and these exact views
+            # require authenticated school-bound staff, grants and custody policy.
+            clear_tenant_school_binding(request)
+            clear_current_school()
+            return
+    if (
+        school is None
+        and is_diadem_custody_resolution
+        and context.principal_school_id is not None
+        and context.principal_school_id == context.school_id
+        and not context.override_requested
+        and context.actor_type != "anonymous"
+    ):
+        school = School.objects.filter(pk=context.school_id).only(
+            "id", "name", "is_active"
+        ).first()
     if school is None:
         _record_tenant_decision(request, outcome="denied", reason="tenant_inactive_or_unknown")
         raise _tenant_context_error(

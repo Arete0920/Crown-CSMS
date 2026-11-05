@@ -1,0 +1,63 @@
+# Jireh SGO — local fictional partner-intake acceptance slice
+**Status:** Source-only development slice. It is not a partner-approved, public-family, Azure, regulatory, or payments capability. Historical issue [#182](https://github.com/Arete0920/Crown-CSMS/issues/182) remains the product-scope authority. Arete processes *for* independent SGOs; Arete does not operate an SGO.
+## What the slice does
+- Preserves existing `SGOOrganization`, `SGOProgram`, and `SGOApplication` records. The application's program is the canonical organization boundary.
+- Adds explicitly provisioned `SGOFamilyGrant` (user + program + opaque synthetic student/school keys + consent version) and `SGOProcessorAssignment` (user + program). **Neither derives from school roles, superuser, SGO membership, SGO ADMIN, or SGO REVIEWER.**
+- Captures a strictly bounded grade and versioned demonstration consent, persists it against the existing application, and exposes a private readback across sessions. Repeated submissions with the same UUID4 key return the original application without another audit event; conflicting requests return HTTP 409.
+- Allows only an explicitly assigned processor to request one of three non-sensitive correction reasons. The family can correct/resubmit under optimistic revision and UUID4 retry protection; events carry only a revision and fixed reason.
+- Holds application eligibility at `UNREVIEWED`; no eligibility determinations, final SGO award decisions, donations, committed funds, disbursements, or attachments are created by this intake path.
+- Ensures all listed, read, or mutated cases are restricted to a current per-program family grant or processor assignment. All successful response payloads are marked `Cache-Control: private, no-store`.
+## Hard runtime boundary
+This feature requires **all** of the following:
+- `CROWN_SGO_FICTIONAL_INTAKE_ENABLED=true` (default false)
+- `DEBUG=true`
+- `CROWN_ENV=local` and `DJANGO_ENV=local`
+- No `WEBSITE_HOSTNAME` or `WEBSITE_INSTANCE_ID`
+- `CROWN_DEMO_MODE=false` (ordinary Django demo mode intentionally blocks writes)
+Django's tenant middleware grants schoolless routing only to exact fictional family/processor paths while this gate holds; the API separately rechecks runtime, rejects caller-supplied school headers, and requires an authenticated, active principal with the specified grant. The frontend schoolless transport is restricted to exact routes and methods when `VITE_LOCAL_DEMO=1`. These conditions are not partner authentication or a future production authorization design.
+## Reproducible isolated Heritage demonstration
+Use a *fresh, reviewed and assembled local source revision*, not an outdated installer pin. This PR alone cannot satisfy the five-module source gate. On the development laptop:
+1. From the repository root, run **`py scripts/demo/start_heritage_local.py --five-module-demo` once** (use `python` on POSIX), on a fresh isolated Heritage SQLite database. This explicit, guarded command checks for all five module sources before dependency installation, prepares/migrates the fictional database, builds the local frontend with `VITE_LOCAL_DEMO=1`, seeds two synthetic partner SGOs and their grants, runs `five_module_demo_preflight --strict`, then starts the loopback backend and frontend. The ordinary `--prepare-only` and ordinary launcher commands **do not** enable fictional SGO intake or create its credentials; do not substitute them. A subsequent explicit five-module preparation can regenerate fictional account credentials, so do not rerun it during one browser acceptance sequence.
+2. Read `.local-backups/heritage-demo/sgo-credentials.txt` locally after the explicit five-module preparation succeeds. Account passwords are written to a file under the Git-ignored local state directory. On POSIX the seeder requests mode 0600; **Windows does not provide equivalent ACL protection through Python chmod alone**. These are fictional-only credentials: keep the file on the development laptop, verify local filesystem permissions, and never commit or distribute it. The six accounts are fictional partner admin, family, and delegated processor accounts for Delaware and Pennsylvania. Never copy this file into a PR or transcript.
+3. With the **same guarded launcher process still running**, open `http://localhost:4173/jireh-sgo/sign-in` (the launcher also opens the regular sandbox page). **Do not start a second ordinary Heritage launcher.** Use the dedicated local fictional SGO sign-in (existing SimpleJWT endpoint and clearing prior school-session context). The regular Heritage `/login` is a passwordless school-role selector and **cannot authenticate fictional SGO accounts**. Enter Delaware family credentials from the private local file to reach `/jireh-sgo/intake`.
+4. Select the Delaware fictional partner and program; select grade, affirm the displayed demonstration consent version, submit, and verify the **saved application ID, revision, and consent date**. Reload or sign out and back in: the application should read back from the database.
+5. Select **Switch fictional SGO account** and sign in as `sgo_demo_de_processor`. Open the same intake route; select Delaware, refresh its case queue, and request a non-sensitive correction. This records a request, **not a scholarship decision**.
+6. Switch accounts and sign back in as `sgo_demo_de_family`, reload the same case, update or confirm the fictional grade, and resubmit. Verify status `RESUBMITTED` and incremented revision.
+7. Repeat with the Pennsylvania family and processor. The Delaware accounts must not list or access Pennsylvania records (and vice versa). The partner ADMIN account alone must not submit family intake or operate the processor queue.
+If the dedicated local SGO sign-in cannot authenticate the seeded accounts against the existing JWT endpoint, **do not claim a certified demonstration**. Diagnose the existing authentication contract without enabling unauthenticated or school-bypassing API access.
+## HTTP contract
+- `GET /api/v1/jireh-sgo/family/programs/` — only active explicit family grants, with current application IDs
+- `POST /api/v1/jireh-sgo/family/submit/` — `{program_id, grade_level, consent: true, consent_version, submission_key: UUID4}`
+- `GET /api/v1/jireh-sgo/family/applications/<uuid>/` — family-authenticated durable readback
+- `POST /api/v1/jireh-sgo/family/applications/<uuid>/correct/` — `{expected_revision, grade_level, correction_key: UUID4}`
+- `GET /api/v1/jireh-sgo/processor/programs/` — explicit delegated processor assignments
+- `GET /api/v1/jireh-sgo/processor/programs/<uuid>/queue/` — partner-program-scoped cases
+- `POST /api/v1/jireh-sgo/processor/applications/<uuid>/request-correction/` — `{expected_revision, reason, request_key: UUID4}`
+The correction reason is one of `GRADE_UNVERIFIED`, `PROGRAM_DETAIL_MISMATCH`, `OTHER_NON_SENSITIVE`. Request bodies reject unknown fields, including unintended PII/document data.
+## Verification required before merge
+Run from the repository:
+```bash
+cd backend
+python manage.py check
+python manage.py makemigrations --check --dry-run
+python -m pytest jireh_sgo/tests/test_services.py jireh_sgo/tests/test_read_only_api.py jireh_sgo/tests/test_fictional_intake_api.py jireh_sgo/tests/test_fictional_intake_seed.py -q
+cd ../frontend/dashboards
+npm ci
+npm test -- src/pages/JirehSGOIntakePage.test.jsx src/pages/JirehSGOLoginPage.test.jsx src/pages/JirehSGODashboard.test.jsx
+npm run build
+```
+CI and a genuine browser replay from a fresh local database are independent acceptance gates. Do not equate source, seeded fixture presence, or five-module preflight with functionality.
+## Open partner/production dependencies
+Signed partner processing and data-sharing authority, adult/family identity proofing, real SGO program selection and published policies, legally reviewed consent, secure upload/document screening, school-to-student authority mapping, retention and privacy notices, audited partner-controlled final eligibility/award/appeal decisions, accessible household UX, and approved source-of-truth integration remain **not implemented**. The fictional local flags, credentials, and synthetic grants cannot be reused as live partner authorization. No Azure or production deployment, live partner provisioning, payments, or fundraising is authorized by this slice.
+
+## Evidence lineage: inventory versus applicant submission
+The local seeder deliberately creates two **administrator-owned, synthetic SGOApplication inventory rows** bound to the fictional Heritage school, one per partner. Their deterministic `*-inventory` student keys are separate from the applicants' granted student keys. Neither inventory record has a `SGOFamilyIntake`, consent, or a family-submitted claim. These records satisfy a limited administrative preflight **count**, not family workflow acceptance.
+
+Only a real authenticated fictional family's POST creates its own `SGOApplication` and related `SGOFamilyIntake`, with recorded consent and revision. The acceptance contract requires two inventory applications and **zero** family intakes after seeding; a successful first family POST then requires three `SGOApplication` rows, **one** family intake, matching applicant grant/school/program references, a family-authored `INTAKE_SUBMITTED` audit, and no `SGOAward`. Staff must not present inventory rows as submitted, reviewed, eligible, paid, or family-authorized scholarships.
+
+The dedicated regression is executed under the existing canonical `backend-gate` workflow on isolated SQLite; no additional top-level GitHub Actions workflow is permitted. Green CI is not a substitute for a joined Windows browser demonstration.
+
+## Optional real-browser SGO acceptance (fresh local database only)
+The SGO API/JWT test job is distinct from a real-browser rehearsal. The opt-in Playwright spec `frontend/dashboards/tests/e2e/jireh-sgo-local-intake.spec.ts` exercises the real UI and backend without stubbing APIs. Start the final reviewed **assembled** five-module Heritage local server via `--five-module-demo`, with an isolated, freshly prepared SQLite database; ordinary launcher mode leaves SGO intake disabled. Ensure `VITE_LOCAL_DEMO=1` was present when building the frontend and `CROWN_SGO_FICTIONAL_INTAKE_ENABLED=true` is enabled **only** through the verified five-module local opt-in. The test consumes the fictional Delaware family grant; to repeat, use a fresh isolated database (never delete audit records to make it pass).
+
+In PowerShell from `frontend/dashboards`, set `$env:CROWN_SGO_LOCAL_E2E="1"`, `$env:CROWN_REQUIRE_SGO_BROWSER_PROOF="1"`, and `$env:CROWN_SGO_LOCAL_CREDENTIALS=(Resolve-Path ../../.local-backups/heritage-demo/sgo-credentials.txt).Path`. Run `npm run test:e2e -- tests/e2e/jireh-sgo-local-intake.spec.ts --workers=1 --reporter=line` while the local backend and frontend are running. The test deliberately uses loopback ports only, requires the single Heritage school catalog, reads private fictional credentials locally without printing them, and fails on reused applications, denied writes, stale readback, session leakage or cross-SGO access. **Passing API tests or merely adding this spec does not certify the browser:** retain the actual Playwright result and source SHA before releasing any Windows package.

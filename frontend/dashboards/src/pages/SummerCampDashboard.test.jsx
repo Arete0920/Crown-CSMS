@@ -1,0 +1,86 @@
+// @vitest-environment jsdom
+import { cleanup, render, screen } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import SummerCampDashboard from "./SummerCampDashboard.jsx";
+import { fetchSummerCampBoardSummary } from "../api/summerCampApi.js";
+
+vi.mock("../api/summerCampApi.js", () => ({
+  fetchSummerCampBoardSummary: vi.fn(),
+}));
+vi.mock("../components/crown/CrownLayout.jsx", () => ({
+  default: ({ children }) => <div>{children}</div>,
+}));
+vi.mock("../components/layout/DashboardSection.jsx", () => ({
+  default: ({ title, children }) => <section><h2>{title}</h2>{children}</section>,
+}));
+
+const baseSummary = {
+  as_of: "2026-10-31",
+  registered_campers: 4,
+  sessions: 2,
+  waitlist_count: 1,
+  missing_forms: 0,
+  health_review_count: 0,
+  outstanding_balances: 2,
+  incidents_mtd: 0,
+  gross_revenue_cents: 12500,
+};
+
+beforeEach(() => {
+  vi.mocked(fetchSummerCampBoardSummary).mockResolvedValue(baseSummary);
+});
+afterEach(() => {
+  cleanup();
+  vi.clearAllMocks();
+});
+
+describe("Summer Camp board finance truth", () => {
+  it("labels ledger-linked charges as obligations, not collected revenue", async () => {
+    render(<SummerCampDashboard />);
+    expect(await screen.findByText("$125.00")).toBeTruthy();
+    expect(screen.getByText("Ledger-linked charges (not collected)")).toBeTruthy();
+    expect(screen.getByText("Enrollments with balance due")).toBeTruthy();
+    expect(screen.getByText(/not payment or settlement totals/)).toBeTruthy();
+    expect(screen.queryByText("Gross Revenue")).toBeNull();
+  });
+
+  it.each([null, undefined, -1, "12500", 12.5, NaN, Infinity, Number.MAX_SAFE_INTEGER + 1])(
+    "does not convert missing or invalid charges (%s) into zero cash",
+    async (amount) => {
+      vi.mocked(fetchSummerCampBoardSummary).mockResolvedValue({
+        ...baseSummary,
+        gross_revenue_cents: amount,
+      });
+      render(<SummerCampDashboard />);
+      expect(await screen.findByText("Not available")).toBeTruthy();
+      expect(screen.queryByText("$0.00")).toBeNull();
+    },
+  );
+
+  it("displays an explicit zero only when the API actually returns zero linked charges", async () => {
+    vi.mocked(fetchSummerCampBoardSummary).mockResolvedValue({
+      ...baseSummary, gross_revenue_cents: 0,
+    });
+    render(<SummerCampDashboard />);
+    expect(await screen.findByText("$0.00")).toBeTruthy();
+    expect(screen.getByText("Ledger-linked charges (not collected)")).toBeTruthy();
+  });
+});
+
+it("keeps operational links available when summary loading fails", async () => {
+  vi.mocked(fetchSummerCampBoardSummary).mockRejectedValue(new Error("Summary unavailable"));
+  render(<SummerCampDashboard />);
+  await screen.findByRole("alert");
+  expect(screen.getByRole("link", { name: "Configure camp" }).getAttribute("href")).toBe("/summer-camp-dashboard/setup");
+  expect(screen.getByRole("link", { name: "Open attendance and authorized pickup" }).getAttribute("href")).toBe("/summer-camp-dashboard/roster");
+});
+
+it("identifies registration rows rather than incorrectly counting them as unique campers", async () => {
+  vi.mocked(fetchSummerCampBoardSummary).mockResolvedValue({
+    ...baseSummary, registered_campers: 3,
+  });
+  render(<SummerCampDashboard />);
+  expect(await screen.findByText("Registration records")).toBeTruthy();
+  expect(screen.getByText("3")).toBeTruthy();
+  expect(screen.queryByText("Registered Campers")).toBeNull();
+});

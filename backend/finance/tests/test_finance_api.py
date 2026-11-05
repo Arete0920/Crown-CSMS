@@ -22,7 +22,10 @@ from datetime import date, timedelta
 from django.test import TestCase
 from rest_framework.test import APIClient
 
-from core.models import School, UserAccount
+from core.models import (
+    CrownPermission, Family, Guardian as CoreGuardian,
+    HouseholdFamilyLink, RolePermission, School, UserAccount, UserRole,
+)
 from households.models import Guardian as HouseholdGuardian, Household
 from ledger.models import LedgerAccount
 from finance.models import (
@@ -56,23 +59,43 @@ def _user(username, *, is_staff=False):
 
 
 def _link_payer_to_household(school, payer):
+    """Synthetic finance fixture with a real persisted family/household link."""
     existing = HouseholdGuardian.objects.filter(
-        school_id=school.id,
-        email__iexact=payer.email,
+        school_id=school.id, email__iexact=payer.email,
     ).select_related("household").first()
     if existing:
-        hh = existing.household
+        household = existing.household
     else:
-        hh = Household.objects.create(school_id=school.id, name=f"HH-{payer.username}")
-        HouseholdGuardian.objects.create(
-            school_id=school.id,
-            household=hh,
-            first_name="Test",
-            last_name="Guardian",
-            email=payer.email,
-            is_primary=True,
+        household = Household.objects.create(
+            school_id=school.id, name=f"HH-{payer.username}",
         )
-    LedgerAccount.objects.get_or_create(school_id=school.id, household=hh)
+        HouseholdGuardian.objects.create(
+            school_id=school.id, household=household,
+            first_name="Test", last_name="Guardian",
+            email=payer.email, is_primary=True,
+        )
+
+    if payer.guardian_id:
+        guardian = CoreGuardian.objects.get(pk=payer.guardian_id)
+        if guardian.school_id != school.pk:
+            raise ValueError("Synthetic guardian cannot cross schools")
+    else:
+        family = Family.objects.create(
+            school=school, family_name=f"Linked family for {payer.username}",
+        )
+        guardian = CoreGuardian.objects.create(
+            school=school, family=family,
+            first_name="Test", last_name="Guardian",
+            email=payer.email, relationship="OTHER",
+        )
+        payer.guardian = guardian
+        payer.save(update_fields=["guardian"])
+
+    HouseholdFamilyLink.objects.get_or_create(
+        school=school, family=guardian.family, household_id=household.pk,
+        defaults={"source": HouseholdFamilyLink.SOURCE_MANUAL},
+    )
+    LedgerAccount.objects.get_or_create(school_id=school.id, household=household)
 
 
 def _obligation(school, payer, *, amount_cents=10_000, days=30):
@@ -105,6 +128,18 @@ def _auth_client(user):
     return c
 
 
+def _grant_finance(staff, school):
+    UserRole.objects.get_or_create(user=staff, school=school, role_code="FINANCE_DIRECTOR")
+    for code in ("finance.view", "finance.edit"):
+        permission, _ = CrownPermission.objects.get_or_create(code=code)
+        RolePermission.objects.get_or_create(role_code="FINANCE_DIRECTOR", permission=permission)
+
+
+def _authorize_payer(payer, school):
+    UserRole.objects.get_or_create(user=payer, school=school, role_code="PARENT")
+
+
+
 def _json_post(client, url, data, school_id):
     return client.post(
         url,
@@ -123,11 +158,13 @@ class TestObligationsEndpoint(TestCase):
         self.school = _school()
         self.staff = _user("o_staff", is_staff=True)
         self.parent = _user("o_parent")
+        _grant_finance(self.staff, self.school)
+        _authorize_payer(self.parent, self.school)
 
     def test_list_returns_only_school_obligations(self):
         other_school = _school("Other")
         _obligation(self.school, self.staff, amount_cents=1_000)
-        _obligation(other_school, self.staff, amount_cents=9_999)
+        _obligation(other_school, _user("o_other_school_payer"), amount_cents=9_999)
 
         c = _auth_client(self.staff)
         r = c.get("/api/finance/obligations/", HTTP_X_SCHOOL_ID=str(self.school.id))
@@ -189,6 +226,8 @@ class TestInvoiceCreateEndpoint(TestCase):
         self.school = _school()
         self.staff = _user("inv_staff", is_staff=True)
         self.payer = _user("inv_payer")
+        _grant_finance(self.staff, self.school)
+        _authorize_payer(self.payer, self.school)
 
     def test_create_invoice_from_obligations_returns_201(self):
         ob1 = _obligation(self.school, self.payer, amount_cents=3_000)
@@ -280,6 +319,7 @@ class TestPaymentIntentEndpoint(TestCase):
     def setUp(self):
         self.school = _school()
         self.parent = _user("pi_parent")
+        _link_payer_to_household(self.school, self.parent)
 
     def test_creates_pending_payment(self):
         c = _auth_client(self.parent)
@@ -319,6 +359,7 @@ class TestPaymentSettleEndpoint(TestCase):
         self.school = _school()
         self.staff = _user("settle_staff", is_staff=True)
         self.payer = _user("settle_payer")
+        _grant_finance(self.staff, self.school)
 
     def test_settle_payment_with_allocation(self):
         ob = _obligation(self.school, self.payer, amount_cents=10_000)
@@ -368,6 +409,7 @@ class TestRefundEndpoint(TestCase):
         self.school = _school()
         self.staff = _user("ref_staff", is_staff=True)
         self.payer = _user("ref_payer")
+        _grant_finance(self.staff, self.school)
 
     def _make_settled_payment(self, amount_cents=10_000):
         ob = _obligation(self.school, self.payer, amount_cents=amount_cents)
@@ -410,6 +452,7 @@ class TestDonationEndpoint(TestCase):
         self.school = _school()
         self.donor = _user("donor_user")
         self.staff = _user("don_staff", is_staff=True)
+        _grant_finance(self.staff, self.school)
 
     def test_create_donation_returns_201(self):
         c = _auth_client(self.donor)

@@ -23,6 +23,9 @@ DEV_RESET_WORKFLOWS = {
     pathlib.Path(".github/workflows/ops-reset-dev.yml"),
 }
 
+DASHBOARD_DEPLOY_WORKFLOW = pathlib.Path(".github/workflows/deploy-dashboard.yml")
+DASHBOARD_DEPLOY_GROUP = "crown-dashboard-swa-deploy-${{ inputs.dev_certification_preview == true && 'dev-certification' || 'production' }}"
+
 PRODUCTION_DEPLOY_GROUP = "crown-api-prod-deploy"
 PRODUCTION_DEPLOY_WORKFLOWS = {
     pathlib.Path(".github/workflows/deploy-prod.yml"),
@@ -265,6 +268,27 @@ def check_file(path: pathlib.Path) -> tuple[list[str], str | None, str | None]:
             errors.append(f"{rel}: DEV reset workflow must not publish reset response bodies")
         if re.search(r"(?m)^\s*(?:-\s+run:\s+)?echo\s+[^\n]*\$(?:\{)?response\b", text):
             errors.append(f"{rel}: DEV reset workflow must not echo reset response bodies")
+
+    if rel == DASHBOARD_DEPLOY_WORKFLOW:
+        if group != DASHBOARD_DEPLOY_GROUP:
+            errors.append(f"{rel}: dashboard production and preview runs must use the controlled deployment mutex")
+        if not re.search(r"(?m)^  cancel-in-progress:\s*false\s*$", text):
+            errors.append(f"{rel}: dashboard deployment must not cancel an active release")
+        for job_name, environment in (
+            ("build-and-deploy", "production"),
+            ("dev-certification-preview", "dev"),
+        ):
+            job_block = re.search(
+                rf"(?ms)^  {job_name}:\s*\n(.*?)(?=^  [A-Za-z0-9_-]+:\s*$|\Z)",
+                text,
+            )
+            if not job_block or not re.search(
+                rf"(?m)^    environment:\s*{environment}\s*$",
+                job_block.group(1),
+            ):
+                errors.append(
+                    f"{rel}: {job_name} must declare environment: {environment}"
+                )
 
     errors.extend(_check_curl_safety(text, rel))
 

@@ -152,7 +152,9 @@ CORS_ALLOW_HEADERS = list(default_headers) + [
     "x-crown-school-id",
     "x-demo-key",
     "x-demo-role",
+    "if-match",
 ]
+CORS_EXPOSE_HEADERS = ["etag"]
 
 # Azure reverse-proxy HTTPS handling
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
@@ -167,6 +169,12 @@ CROWN_ENV = os.getenv("CROWN_ENV", "")
 CROWN_DEMO_MODE = _env_bool("CROWN_DEMO_MODE", default=False)
 _assert_not_prod_true("CROWN_DEMO_MODE", CROWN_DEMO_MODE)
 CROWN_DEMO_KEY = os.getenv("CROWN_DEMO_KEY", "").strip()
+
+# Explicit fictional SGO application writes: local demo ONLY, default disabled.
+# API additionally verifies both local runtime markers and absence of Azure markers.
+CROWN_SGO_FICTIONAL_INTAKE_ENABLED = _env_bool("CROWN_SGO_FICTIONAL_INTAKE_ENABLED", default=False)
+CROWN_HOSTED_JIREH_DEMO_ENABLED = _env_bool("CROWN_HOSTED_JIREH_DEMO_ENABLED", default=False)
+_assert_not_prod_true("CROWN_SGO_FICTIONAL_INTAKE_ENABLED", CROWN_SGO_FICTIONAL_INTAKE_ENABLED)
 
 # Tenant header enforcement
 # When True, TenantHeaderRequiredMiddleware requires X-School-Id on /api/v1/* routes.
@@ -302,6 +310,7 @@ MIDDLEWARE = [
     "core.observability.middleware.RequestCorrelationMiddleware",
     'core.middleware.TenantIsolationMiddleware',
     'crown_api.auth_middleware.JwtAuthMiddleware',  # JWT authentication (after Django auth, coexists with SimpleJWT)
+    'sandbox_demo.buyer_session_guard.HostedBuyerSessionGuardMiddleware',  # fail closed on revoked hosted evaluator identity
     'core.tenant_header_middleware.TenantHeaderRequiredMiddleware',  # Tenant guard -- after auth so user.school_id is available for header-less fallback
     'crown_api.tenant_middleware.TenantContextMiddleware',  # Tenant resolution (after JWT auth)
     'audit.middleware.AuditMiddleware',  # Audit logging (after auth)
@@ -540,6 +549,7 @@ if _env_is_prod():
                 traces_sample_rate=0.2,
                 send_default_pii=False,
                 before_send=before_send,
+                before_send_transaction=before_send,
                 release=BUILD_SHA,
             )
         except ImportError:
@@ -608,6 +618,12 @@ if _CROWN_CACHE_URL:
             "TIMEOUT": 300,
         }
     }
+
+# A process-local cache cannot provide a shared authentication throttle across
+# hosted workers. Fail closed until a shared Redis backend is configured.
+CROWN_AUTH_RATE_LIMIT_REQUIRE_SHARED_CACHE = (
+    _CROWN_HARDENED_RUNTIME or _CROWN_HOSTED_RUNTIME
+)
 
 
 # ---------------------------------------------------------------------------

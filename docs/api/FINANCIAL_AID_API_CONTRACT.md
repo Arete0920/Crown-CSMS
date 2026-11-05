@@ -472,6 +472,6 @@ These tests prevent "but the doc says..." bugs by ensuring the contract is **enf
 ## Support
 
 - **Issues:** See [INTEGRATION_GUIDE.md](../INTEGRATION_GUIDE.md)
-- **Changes:** Coordinate with @tcmegahan before breaking edits
+- **Changes:** Coordinate with the current CROWN repository owner, @Arete0920, before breaking edits
 - **Smoke Tests:** Run `test_azure_smoke.ps1` post-deployment
 

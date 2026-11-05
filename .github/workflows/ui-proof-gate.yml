@@ -15,7 +15,7 @@ concurrency:
 jobs:
   ui-smoke:
     name: Proof Smoke (Playwright)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     defaults:
       run:
@@ -40,10 +40,25 @@ jobs:
         run: npm ci
 
       - name: Verify crawler inventory and dashboard authorization contracts
-        run: npx vitest run tests/certification/crawler-coverage-contract.test.ts --reporter=verbose
+        run: npx vitest run tests/certification/crawler-coverage-contract.test.ts src/tests/sandboxRoutes.test.jsx --reporter=verbose
 
       - name: Install Playwright browsers
         run: npx playwright install chromium --with-deps
+
+      - name: Browser-render CROWN standalone SVG assets in image context
+        run: npx playwright test tests/ui/crown-standalone-svg.spec.ts --reporter=line
+        env:
+          CI: "1"
+          VITE_DEV_BASE_URL: "http://localhost:4173"
+
+      - name: Upload CROWN SVG render evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: crown-svg-render-proof-${{ github.run_id }}
+          path: frontend/dashboards/crown-svg-proof/
+          retention-days: 7
+          if-no-files-found: warn
 
       - name: Browser-verify Jireh marketing-site desktop and mobile presentation
         run: npx playwright test --config playwright.jireh.config.ts --reporter=line
@@ -68,6 +83,12 @@ jobs:
           CROWN_DEMO_TOKEN: "playwright-demo-token"
           VITE_SANDBOX_MODE: "1"
           VITE_DEMO_MODE: "sandbox"
+
+      - name: Browser-verify standalone Jireh SGO shell at desktop and mobile
+        run: npx playwright test tests/ui/jireh-sgo-standalone-shell.spec.ts --reporter=line
+        env:
+          CI: "1"
+          VITE_DEV_BASE_URL: "http://localhost:4173"
 
       - name: Browser-check navigation and anonymous school-route denial
         run: npx playwright test tests/ui/nav-permissions.spec.ts tests/ui/anonymous-specialist-route-access.spec.ts --grep "anonymous public home|missing authority|anonymous CROWN school route denial" --reporter=line

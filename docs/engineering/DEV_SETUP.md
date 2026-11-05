@@ -68,4 +68,4 @@ Use placeholders or approved development values only. Never commit secrets, prod
 9. Deploy only through approved workflows.
 10. Capture exact deployed identity and runtime evidence when applicable.
 
-Payment processing remains disabled until a provider is selected, contracted, implemented, and certified.
+Payment processing remains disabled and fail closed. CompuWerx is the owner-designated intended gateway, but contracting, merchant credentials, verified provider terms, integration acceptance, and payment certification remain outstanding. No external money movement is authorized.

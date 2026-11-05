@@ -7,6 +7,8 @@ from rest_framework.test import APIClient
 
 from core.models import School
 from platform_ops.models import AuditEvent, ProvisioningJob
+from comms.models import OutboxMessage
+from support.models import SupportTicket
 from subscriptions.models import Plan, TenantSubscription
 from tenants.models import TenantProfile
 
@@ -71,6 +73,33 @@ class PlatformOperatorBoundaryTests(TestCase):
         self.assertEqual(first.data["state"], "queued")
         profile = TenantProfile.objects.get(school_id=first.data["school_id"])
         self.assertEqual(profile.status, "pending")
+        school = School.objects.get(pk=first.data["school_id"])
+        self.assertFalse(school.is_active)
+        # A newly created tenant must not be accessible before provisioning,
+        # even to a valid user assigned to that tenant. This tests the real
+        # middleware boundary, not merely model state.
+        preactive_staff = get_user_model().objects.create_user(
+            username="synthetic-pending-staff",
+            school=school,
+            is_staff=True,
+        )
+        pending_response = self.client_for(preactive_staff).get(
+            f"/api/v1/onboarding/{school.pk}/progress/",
+            HTTP_X_SCHOOL_ID=str(school.pk),
+        )
+        self.assertEqual(pending_response.status_code, 404)
+        # Gradebook is exempt from early tenant-header middleware. Its shared
+        # request-school resolver must also reject inactive pending tenants.
+        from core.models import UserRole
+        UserRole.objects.create(
+            school=school, user=preactive_staff, role_code="HEAD_OF_SCHOOL"
+        )
+        exempt_gradebook = self.client_for(preactive_staff).get(
+            "/api/v1/gradebook/sections/",
+            HTTP_X_SCHOOL_ID=str(school.pk),
+        )
+        self.assertEqual(exempt_gradebook.status_code, 404)
+        self.assertTrue(School.objects.get(pk=self.school.pk).is_active)
 
     def test_intake_rejects_untrusted_fields_without_side_effects(self):
         """Reject bad types, unauthorized provider, and unsupported metadata."""
@@ -251,6 +280,50 @@ class PlatformOperatorBoundaryTests(TestCase):
             body["external_payments"]["provisioning_policy"], "disabled"
         )
 
+    def test_overview_support_pulse_counts_without_exposing_ticket_contents(self):
+        from datetime import timedelta
+        from django.utils import timezone
+
+        now = timezone.now()
+        critical = SupportTicket.objects.create(
+            school_id=self.school.pk, title="PRIVATE critical title",
+            description="PRIVATE critical description", priority="critical",
+        )
+        SupportTicket.objects.filter(pk=critical.pk).update(
+            created_at=now - timedelta(hours=3)
+        )
+        SupportTicket.objects.create(
+            school_id=self.other.pk, title="PRIVATE open title",
+            description="PRIVATE open description", priority="medium",
+        )
+        SupportTicket.objects.create(
+            school_id=self.other.pk, title="PRIVATE escalated title",
+            description="PRIVATE escalated description", priority="high",
+            status=SupportTicket.STATUS_ESCALATED,
+        )
+        SupportTicket.objects.create(
+            school_id=self.school.pk, title="PRIVATE closed title",
+            description="PRIVATE closed description", priority="low",
+            status=SupportTicket.STATUS_CLOSED,
+        )
+        response = self.client_for(self.owner).get("/api/platform/overview")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["support"], {
+            "data_state": "available",
+            "scope": "current_database",
+            "unresolved": 3,
+            "open": 2,
+            "escalated": 1,
+            "critical_unresolved": 1,
+            "overdue_open": 1,
+            "alert_delivery": "not_certified",
+        })
+        self.assertNotIn("PRIVATE", str(response.data))
+        self.assertEqual(
+            self.client_for(self.staff).get("/api/platform/overview").status_code,
+            403,
+        )
+
     def test_overview_denies_anonymous_staff_inactive_and_tenant_header(self):
         self.assertIn(
             self.client_for().get("/api/platform/overview").status_code,
@@ -398,3 +471,56 @@ class PlatformOperatorBoundaryTests(TestCase):
                 school_id=self.other.id, ended_at__isnull=True
             ).plan_id, self.plan.id,
         )
+
+    def test_owner_outbox_pulse_is_aggregate_without_recipient_or_message(self):
+        from datetime import timedelta
+        from django.utils import timezone
+
+        old = OutboxMessage.objects.create(
+            school_id=str(self.school.id), channel="EMAIL",
+            to="PRIVATE_RECIPIENT", subject="PRIVATE_SUBJECT",
+            body="PRIVATE_BODY", idempotency_key="synthetic-due",
+        )
+        OutboxMessage.objects.filter(pk=old.pk).update(
+            created_at=timezone.now() - timedelta(minutes=8),
+            attempts=2, last_error="PRIVATE_RETRY_ERROR",
+        )
+        OutboxMessage.objects.create(
+            school_id=str(self.other.id), channel="SMS",
+            to="PRIVATE", body="PRIVATE", idempotency_key="synthetic-future",
+            next_attempt_at=timezone.now() + timedelta(hours=1),
+        )
+        OutboxMessage.objects.create(
+            school_id=str(self.other.id), channel="EMAIL",
+            to="PRIVATE", body="PRIVATE", idempotency_key="synthetic-dead",
+            status=OutboxMessage.STATUS_DEAD,
+        )
+        OutboxMessage.objects.create(
+            school_id=str(self.other.id), channel="EMAIL",
+            to="PRIVATE", body="PRIVATE", idempotency_key="synthetic-failed",
+            status=OutboxMessage.STATUS_FAILED,
+        )
+        response = self.client_for(self.owner).get("/api/platform/overview")
+        self.assertEqual(response.status_code, 200)
+        pulse = response.data["outbox"]
+        self.assertEqual(
+            (pulse["pending"], pulse["due"], pulse["deferred"],
+             pulse["retrying"], pulse["failed"], pulse["dead"]),
+            (2, 1, 1, 1, 1, 1),
+        )
+        self.assertGreaterEqual(pulse["oldest_due_age_seconds"], 470)
+        self.assertEqual(pulse["worker_status"], "not_verified")
+        self.assertEqual(pulse["beat_status"], "not_verified")
+        self.assertNotIn("PRIVATE", str(response.data))
+        self.assertEqual(
+            self.client_for(self.staff).get("/api/platform/overview").status_code,
+            403,
+        )
+
+    def test_empty_outbox_is_not_worker_health_proof(self):
+        response = self.client_for(self.owner).get("/api/platform/overview")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["outbox"]["pending"], 0)
+        self.assertIsNone(response.data["outbox"]["oldest_due_age_seconds"])
+        self.assertIsNone(response.data["provisioning"]["oldest_queued_age_seconds"])
+        self.assertEqual(response.data["outbox"]["worker_status"], "not_verified")

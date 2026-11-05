@@ -402,5 +402,8 @@
   --crown-compat-scope-dd4c73a119: 12px;
   --crown-compat-scope-f52347a046: 0 18px 45px rgba(15, 23, 42, 0.08);
   --crown-font-family: Inter, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  /* Legacy crown.css consumers must resolve to the same canonical tokens. */
+  --crown-font: var(--crown-font-family);
+  --crown-ink: var(--crown-text);
   --crown-font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace;
 }

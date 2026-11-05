@@ -38,7 +38,7 @@ Preserve proportional scaling, approved clear space, cross/crown geometry and le
 ## Preservation and reproduction warnings
 
 - The active nine canonical file names are separate from *legacy compatibility alias files* under `public/brand/` and `public/brand/crown/ui/`. Do not delete these aliases without dependency, rendered-output, rollback and deployment verification.
-- The full-color SVG lockups inspected on 2026-10-23 embed PNG imagery; they are SVG containers, not fully editable vector artwork. The inspected royal monochrome SVG uses a relative reference to the horizontal SVG. Test portability in email, presentation, print/export and offline conversion before representing the supplied set as standalone editable masters.
+- The full-color SVG lockups inspected on 2026-10-23 embed PNG imagery; they are SVG containers, not fully editable vector artwork. The square mark and royal monochrome SVG were made self-contained in accepted PR #452; they embed image data rather than relying on relative SVG image references. This source-level portability repair does not establish fully editable vector masters or certify rendering in email, presentations, print/export, and offline conversion. Test those contexts separately before making external transfer or editability claims.
 - Do not alter the logo merely to resolve visual differences between historical creative material and the active application.
 - Metadata or matching filenames do not establish copyright, trademark rights, source-image licenses or executed IP assignment. Buyer use requires separately documented rights/provenance.
 

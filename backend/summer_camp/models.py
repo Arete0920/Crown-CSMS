@@ -181,7 +181,12 @@ class SummerCampAttendance(models.Model):
     checkin_time = models.DateTimeField()
     checkout_time = models.DateTimeField(null=True, blank=True)
     pickup_verified = models.BooleanField(default=False)
-    pickup_contact = models.ForeignKey(SummerCampPickupContact, on_delete=models.SET_NULL, null=True, blank=True)
+    # Preserve the identity of the authorized person in historical release records.
+    pickup_contact = models.ForeignKey(SummerCampPickupContact, on_delete=models.PROTECT, null=True, blank=True)
+    pickup_verified_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, null=True, blank=True,
+        related_name="verified_summer_camp_pickups",
+    )
     notes = models.CharField(max_length=240, blank=True)
 
     class Meta:
@@ -213,11 +218,28 @@ class SummerCampGroupAssignment(models.Model):
 
 
 class SummerCampStaffAssignment(models.Model):
+    # An unreviewed status string alone never establishes safe supervision.
+    CREDENTIAL_PENDING = "PENDING"
+    CREDENTIAL_VERIFIED = "VERIFIED"
+    CREDENTIAL_REVOKED = "REVOKED"
+    CREDENTIAL_STATUS_CHOICES = [
+        (CREDENTIAL_PENDING, "Pending review"),
+        (CREDENTIAL_VERIFIED, "Verified"),
+        (CREDENTIAL_REVOKED, "Revoked"),
+    ]
     school = models.ForeignKey("core.School", on_delete=models.CASCADE, related_name="summer_camp_staff_assignments")
     session = models.ForeignKey(SummerCampSession, on_delete=models.CASCADE, related_name="staff_assignments")
     staff_user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="summer_camp_staff_assignments")
     role = models.CharField(max_length=64)
-    credential_status = models.CharField(max_length=64, default="PENDING")
+    credential_status = models.CharField(
+        max_length=64, choices=CREDENTIAL_STATUS_CHOICES, default=CREDENTIAL_PENDING,
+    )
+    credential_verified_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, null=True, blank=True,
+        related_name="summer_camp_staff_credentials_verified",
+    )
+    credential_verified_at = models.DateTimeField(null=True, blank=True)
+    credential_evidence_ref = models.CharField(max_length=160, blank=True, default="")
     assigned_date = models.DateField(default=timezone.now)
 
     class Meta:

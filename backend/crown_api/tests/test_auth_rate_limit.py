@@ -239,3 +239,66 @@ def test_legacy_replay_rate_limit_after_one_use():
     assert blocked.status_code == 429
     assert blocked.json()["error"] == "rate_limited"
     assert blocked["Retry-After"] == "60"
+
+
+@pytest.mark.parametrize(
+    "path,payload,error_key",
+    [
+        ("/api/auth/login/", {"email": "missing@example.test", "password": "bad"}, "error"),
+        ("/api/v1/auth/token/", {"username": "missing@example.test", "password": "bad"}, "code"),
+        ("/api/auth/refresh/", {"refresh": "invalid"}, "error"),
+        ("/api/v1/auth/token/refresh/", {"refresh": "invalid"}, "code"),
+    ],
+)
+def test_hosted_auth_fails_closed_with_process_local_cache(path, payload, error_key):
+    from django.test import override_settings
+
+    with override_settings(
+        CROWN_AUTH_RATE_LIMIT_REQUIRE_SHARED_CACHE=True,
+        CACHES={"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}},
+    ), patch("crown_api.auth_rate_limit.cache.get") as get:
+        result = Client().post(
+            path, data=payload, content_type="application/json",
+            REMOTE_ADDR="203.0.113.91",
+        )
+    assert result.status_code == 503
+    assert result.json()[error_key] == "auth_temporarily_unavailable"
+    assert result["Retry-After"] == "60"
+    get.assert_not_called()
+
+
+def test_hosted_failure_recording_rejects_process_local_cache():
+    from django.test import override_settings
+    from django.test.client import RequestFactory
+    from crown_api.auth_rate_limit import AuthRateLimitBackendUnavailable, record_auth_failure
+
+    with override_settings(
+        CROWN_AUTH_RATE_LIMIT_REQUIRE_SHARED_CACHE=True,
+        CACHES={"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}},
+    ), patch("crown_api.auth_rate_limit.cache.add") as add:
+        with pytest.raises(AuthRateLimitBackendUnavailable, match="Shared Redis"):
+            record_auth_failure(
+                RequestFactory().post("/", REMOTE_ADDR="203.0.113.92"),
+                scope="crown-login", identity="synthetic@example.invalid",
+            )
+    add.assert_not_called()
+
+
+def test_hosted_shared_redis_configuration_accepts_successful_cache_read():
+    from django.test import override_settings
+    from django.test.client import RequestFactory
+    from crown_api.auth_rate_limit import check_auth_rate_limit
+
+    with override_settings(
+        CROWN_AUTH_RATE_LIMIT_REQUIRE_SHARED_CACHE=True,
+        CACHES={"default": {
+            "BACKEND": "django.core.cache.backends.redis.RedisCache",
+            "LOCATION": "redis://127.0.0.1:63999/0",
+        }},
+    ), patch("crown_api.auth_rate_limit.cache.get", return_value=0) as read:
+        decision = check_auth_rate_limit(
+            RequestFactory().post("/", REMOTE_ADDR="203.0.113.93"),
+            scope="crown-login", identity="synthetic@example.invalid",
+        )
+    assert decision.allowed and decision.backend_available
+    assert read.call_count == 2

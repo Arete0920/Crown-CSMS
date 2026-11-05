@@ -239,10 +239,12 @@ def platform_overview(request: Request) -> Response:
     """
     from datetime import timedelta
 
-    from django.db.models import Count
+    from django.db.models import Count, Min, Q
     from django.utils import timezone
 
     from platform_ops.models import AuditEvent, ProvisioningJob
+    from comms.models import OutboxMessage
+    from support.models import SLA_HOURS, SupportTicket
     from tenants.models import TenantProfile
 
     now = timezone.now()
@@ -261,6 +263,50 @@ def platform_overview(request: Request) -> Response:
         total=Count("pk")
     ):
         jobs_by_state[entry["state"]] = entry["total"]
+
+    # One aggregate query supplies an owner-only, PII-free support pulse.
+    # Match the school's existing SLA thresholds; this does not certify that
+    # Celery, on-call notification or external message delivery is operating.
+    overdue_open = Q(pk__in=[])
+    for priority, hours in SLA_HOURS.items():
+        overdue_open |= Q(
+            status=SupportTicket.STATUS_OPEN,
+            priority=priority,
+            created_at__lte=now - timedelta(hours=hours),
+        )
+    ticket_counts = SupportTicket.objects.aggregate(
+        open=Count("pk", filter=Q(status=SupportTicket.STATUS_OPEN)),
+        escalated=Count("pk", filter=Q(status=SupportTicket.STATUS_ESCALATED)),
+        critical_unresolved=Count(
+            "pk", filter=Q(
+                status__in=(SupportTicket.STATUS_OPEN, SupportTicket.STATUS_ESCALATED),
+                priority="critical",
+            ),
+        ),
+        overdue_open=Count("pk", filter=overdue_open),
+    )
+
+    due_filter = Q(status=OutboxMessage.STATUS_PENDING, next_attempt_at__lte=now)
+    counts = OutboxMessage.objects.aggregate(
+        pending=Count("pk", filter=Q(status=OutboxMessage.STATUS_PENDING)),
+        due=Count("pk", filter=due_filter),
+        dead=Count("pk", filter=Q(status=OutboxMessage.STATUS_DEAD)),
+        failed=Count("pk", filter=Q(status=OutboxMessage.STATUS_FAILED)),
+        retrying=Count("pk", filter=Q(status=OutboxMessage.STATUS_PENDING, attempts__gt=0)),
+        oldest_due=Min("created_at", filter=due_filter),
+    )
+    oldest_due = counts.pop("oldest_due")
+    oldest_due_seconds = (
+        max(0, int((now - oldest_due).total_seconds()))
+        if oldest_due is not None else None
+    )
+    oldest_queued = ProvisioningJob.objects.filter(
+        state=ProvisioningJob.STATE_QUEUED
+    ).aggregate(oldest=Min("created_at"))["oldest"]
+    queued_age_seconds = (
+        max(0, int((now - oldest_queued).total_seconds()))
+        if oldest_queued is not None else None
+    )
 
     recent_jobs = [
         {
@@ -284,11 +330,35 @@ def platform_overview(request: Request) -> Response:
             "provisioning": {
                 "by_state": jobs_by_state,
                 "recent_jobs": recent_jobs,
+                "oldest_queued_age_seconds": queued_age_seconds,
+            },
+            "outbox": {
+                "data_state": "available",
+                "scope": "current_database",
+                "pending": counts["pending"],
+                "due": counts["due"],
+                "deferred": counts["pending"] - counts["due"],
+                "failed": counts["failed"],
+                "retrying": counts["retrying"],
+                "dead": counts["dead"],
+                "oldest_due_age_seconds": oldest_due_seconds,
+                "worker_status": "not_verified",
+                "beat_status": "not_verified",
             },
             "audit": {
                 "events_last_7_days": AuditEvent.objects.filter(
                     created_at__gte=now - timedelta(days=7)
                 ).count(),
+            },
+            "support": {
+                "data_state": "available",
+                "scope": "current_database",
+                "unresolved": ticket_counts["open"] + ticket_counts["escalated"],
+                "open": ticket_counts["open"],
+                "escalated": ticket_counts["escalated"],
+                "critical_unresolved": ticket_counts["critical_unresolved"],
+                "overdue_open": ticket_counts["overdue_open"],
+                "alert_delivery": "not_certified",
             },
             "company_finance": {
                 "data_state": "not_configured",

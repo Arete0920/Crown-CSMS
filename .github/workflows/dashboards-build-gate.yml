@@ -37,6 +37,21 @@ jobs:
       - name: Install
         run: npm ci
 
+      - name: Verify DEV browser evidence privacy and failure handling
+        run: node --test scripts/dev-browser-evidence.test.mjs
+
+      - name: Verify CROWN canonical SVG favicon contract
+        run: npm run test -- src/brand/faviconContract.test.js
+
+      - name: Verify CROWN standalone logo asset integrity
+        run: npm run test -- src/brand/standaloneSvgAssets.test.js
+
+      - name: Verify buyer asset review manifest integrity
+        run: npm run test -- src/brand/buyerAssetManifest.test.js
+
+      - name: Run full frontend Vitest regression suite
+        run: npm run test
+
       - name: Stage 1 regression guard - no silent catch handlers
         working-directory: .
         run: |

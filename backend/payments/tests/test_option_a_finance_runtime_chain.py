@@ -41,6 +41,9 @@ def _user(username):
 
 
 def _link_household(school, payer):
+    # Persist the same-school identity link required by finance ledger posting.
+    payer.school = school
+    payer.save(update_fields=["school"])
     household = Household.objects.create(school_id=school.id, name=f"HH-{payer.username}")
     HouseholdGuardian.objects.create(
         school_id=school.id,
@@ -48,6 +51,7 @@ def _link_household(school, payer):
         first_name="Runtime",
         last_name="Guardian",
         email=payer.email,
+        account=payer,
         is_primary=True,
     )
     account = LedgerAccount.objects.create(school_id=school.id, household=household)

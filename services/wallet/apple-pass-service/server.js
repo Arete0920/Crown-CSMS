@@ -92,7 +92,7 @@ import fs from "fs";
 import rateLimit from "express-rate-limit";
 import { pathToFileURL } from "node:url";
 
-const app = express();
+export const app = express();
 app.use(express.json({ limit: "1mb" }));
 app.set("trust proxy", 1);
 
@@ -131,7 +131,7 @@ app.post("/pkpass", pkpassRateLimiter, async (req, res) => {
       purchaserEmail = "",
       seatLabel = "",
       qrValue,
-    } = req.body;
+    } = req.body ?? {};
 
     if (!ticketId && !serialNumber) {
       return res.status(400).json({ ok: false, message: "ticketId is required" });

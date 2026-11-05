@@ -4,8 +4,8 @@ finance/api_views.py â€” Finance & Tuition module API endpoints.
 Tenant isolation: every view calls get_request_school_id(request, required=True),
 which raises MissingSchoolContext (HTTP 400) or NotFound (HTTP 404) on failure.
 
-Auth: IsAuthenticated guards all endpoints.
-Admin-only routes additionally check request.user.is_staff.
+Auth: IsAuthenticated guards all endpoints. Schoolwide reads and financial
+mutations require the corresponding school-scoped Crown finance grant.
 
 Ledger posting: explicit via services.py â€” no signals, no side-effects in views.
 """
@@ -22,6 +22,7 @@ from rest_framework.response import Response
 from rest_framework import status
 
 from households.scoping import get_request_school_id, MissingSchoolContext
+from core.permissions import CrownModulePermission
 from finance.models import (
     FinanceAllocation,
     FinanceDonation,
@@ -54,14 +55,27 @@ from finance.services import (
 
 logger = logging.getLogger(__name__)
 
-DETAIL_ADMIN_REQUIRED = "Admin required."
 DETAIL_SCHOOL_NOT_FOUND = "School not found."
 DETAIL_AMOUNT_NOT_INT = "amount_cents must be an integer."
 DETAIL_AMOUNT_POSITIVE = "amount_cents must be > 0."
 
 
-def _is_staff(request) -> bool:
-    return bool(getattr(request, "user", None) and request.user.is_authenticated and request.user.is_staff)
+def _authorized_payer(payer, school_id) -> bool:
+    """A persisted school role or guardian/account link, never email equality."""
+    if not payer.is_active:
+        return False
+    from core.models import Guardian, UserRole
+    from households.models import Guardian as HouseholdGuardian
+
+    if UserRole.objects.filter(user=payer, school_id=school_id, role_code="PARENT").exists():
+        return True
+    if payer.guardian_id and Guardian.objects.filter(
+        pk=payer.guardian_id, school_id=school_id, family__school_id=school_id,
+    ).exists():
+        return True
+    return HouseholdGuardian.objects.filter(
+        account=payer, school_id=school_id, household__school_id=school_id,
+    ).exists()
 
 
 def _build_client_secret(payment: FinancePayment) -> str | None:
@@ -78,7 +92,7 @@ def _build_client_secret(payment: FinancePayment) -> str | None:
 
 @extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
 @api_view(["GET", "POST"])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, CrownModulePermission("finance.view", write_code="finance.edit")])
 def obligations(request):
     """
     GET  â€” Admin: list all obligations for school.
@@ -87,15 +101,10 @@ def obligations(request):
     school = get_request_school_id(request, required=True)
 
     if request.method == "GET":
-        if not _is_staff(request):
-            return Response({"detail": DETAIL_ADMIN_REQUIRED}, status=403)
         qs = FinanceObligation.objects.filter(school_id=school).order_by("due_date")
         return Response(ObligationSerializer(qs, many=True).data)
 
     # POST â€” create
-    if not _is_staff(request):
-        return Response({"detail": DETAIL_ADMIN_REQUIRED}, status=403)
-
     required = ["payer_user_id", "obligation_type", "description", "due_date", "amount_cents"]
     for field in required:
         if not request.data.get(field) and request.data.get(field) != 0:
@@ -118,6 +127,8 @@ def obligations(request):
     try:
         payer = UserAccount.objects.get(pk=request.data["payer_user_id"])
     except (UserAccount.DoesNotExist, ValueError, TypeError):
+        return Response({"detail": "payer_user not found."}, status=404)
+    if not _authorized_payer(payer, school):
         return Response({"detail": "payer_user not found."}, status=404)
 
     ob = FinanceObligation.objects.create(
@@ -144,7 +155,7 @@ def obligations(request):
 
 @extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, CrownModulePermission("finance.edit", write_code="finance.edit")])
 def invoice_create_from_obligations(request):
     """
     POST â€” Create an invoice by grouping existing obligations.
@@ -156,9 +167,6 @@ def invoice_create_from_obligations(request):
       due_date        date string (required)
       obligation_ids  list[int]   (required)
     """
-    if not _is_staff(request):
-        return Response({"detail": DETAIL_ADMIN_REQUIRED}, status=403)
-
     school = get_request_school_id(request, required=True)
 
     payer_user_id = request.data.get("payer_user_id")
@@ -179,6 +187,13 @@ def invoice_create_from_obligations(request):
         payer = UserAccount.objects.get(pk=payer_user_id)
     except (UserAccount.DoesNotExist, ValueError, TypeError):
         return Response({"detail": "payer_user not found."}, status=404)
+    if not _authorized_payer(payer, school):
+        return Response({"detail": "payer_user not found."}, status=404)
+
+    if not isinstance(obligation_ids, list) or not obligation_ids:
+        return Response({"detail": "obligation_ids must be a nonempty list."}, status=400)
+    if len(obligation_ids) != len(set(map(str, obligation_ids))):
+        return Response({"detail": "Duplicate obligation ids."}, status=400)
 
     obs = list(
         FinanceObligation.objects.filter(
@@ -187,6 +202,8 @@ def invoice_create_from_obligations(request):
             id__in=obligation_ids,
         ).order_by("due_date")
     )
+    if len(obs) != len(obligation_ids):
+        return Response({"detail": "Obligations not found."}, status=404)
     inv = create_invoice_from_obligations(
         school=school_obj,
         payer_user=payer,
@@ -201,11 +218,9 @@ def invoice_create_from_obligations(request):
 
 @extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["GET"])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, CrownModulePermission("finance.view")])
 def invoice_list(request):
     """GET â€” Admin: list invoices for school."""
-    if not _is_staff(request):
-        return Response({"detail": DETAIL_ADMIN_REQUIRED}, status=403)
     school = get_request_school_id(request, required=True)
     qs = FinanceInvoice.objects.prefetch_related("lines").filter(school_id=school).order_by("due_date")
     return Response(InvoiceSerializer(qs, many=True).data)
@@ -312,16 +327,13 @@ def payment_intent_create(request):
 
 @extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, CrownModulePermission("finance.edit", write_code="finance.edit")])
 def payment_settle(request, payment_id: int):
     """
     POST â€” Admin: settle a payment and allocate to obligations.
     Body: allocations = [{"obligation_id": int, "amount_cents": int}, ...]
     Idempotent: already-settled payments return 200.
     """
-    if not _is_staff(request):
-        return Response({"detail": DETAIL_ADMIN_REQUIRED}, status=403)
-
     school = get_request_school_id(request, required=True)
 
     try:
@@ -350,16 +362,13 @@ def payment_settle(request, payment_id: int):
 
 @extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, CrownModulePermission("finance.edit", write_code="finance.edit")])
 def refund_create(request, payment_id: int):
     """
     POST â€” Admin: initiate a refund against a settled payment.
     Body: amount_cents, idempotency_key (optional)
     Raises 409 if refund would exceed original payment amount.
     """
-    if not _is_staff(request):
-        return Response({"detail": DETAIL_ADMIN_REQUIRED}, status=403)
-
     school = get_request_school_id(request, required=True)
 
     try:
@@ -434,11 +443,9 @@ def donation_create(request):
 
 @extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["GET"])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, CrownModulePermission("finance.view")])
 def donation_list(request):
     """GET â€” Admin: list donations for school."""
-    if not _is_staff(request):
-        return Response({"detail": DETAIL_ADMIN_REQUIRED}, status=403)
     school = get_request_school_id(request, required=True)
     qs = FinanceDonation.objects.filter(school_id=school).order_by("-created_at")
     return Response(DonationSerializer(qs, many=True).data)

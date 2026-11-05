@@ -198,7 +198,18 @@ def test_local_seed_links_real_classroom_relationships_and_preserves_denials(set
     settings.DEBUG = True
     from sandbox_demo.finance import apply_demo_payment
     director = UserAccount.objects.get(username=SANDBOX_PERSONAS["finance_director"].email)
-    assert apply_demo_payment(director)["reconciliation_status"] == "reconciled"
+    receipt = apply_demo_payment(director)
+    assert receipt["reconciliation_status"] == "reconciled"
+    from ledger.models import Payment as LedgerPayment
+    ledger_payment = LedgerPayment.objects.get(
+        school_id=parent.school_id,
+        reference=f"finance_payment:{receipt['payment_id']}",
+    )
+    # Preserve the enrolled/classroom identity split without posting synthetic
+    # money to an email-matched but unverified enrollment household.
+    assert ledger_payment.account.household_id == HouseholdGuardian.objects.get(
+        account=parent,
+    ).household_id
     for role in ("parent", "student"):
         client = APIClient()
         session = client.post("/api/v1/sandbox/session/", {"role": role, "school": "heritage-core"}, format="json").json()

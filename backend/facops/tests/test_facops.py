@@ -17,7 +17,7 @@ import pytest
 from django.contrib.auth import get_user_model
 from rest_framework.test import APIClient
 
-from core.models import School
+from core.models import School, UserRole, CrownPermission, RolePermission
 from facops.models import (
     Alert,
     Asset,
@@ -42,18 +42,28 @@ def _school(name: str = "Crown Academy") -> School:
 def _user(username: str, is_staff: bool = False):
     return User.objects.create_user(
         username=username,
+        email=f"{username}@example.invalid",
         password="testpass",
         is_staff=is_staff,
     )
 
 
 def _client(user, school: School, role: str = "admin") -> APIClient:
+    # Positive legacy fixtures now establish a real school affiliation and
+    # persisted school-scoped write duties, not an untrusted header role.
+    if user.school_id is None:
+        user.school = school
+        user.save(update_fields=["school"])
+    if user.is_staff and user.school_id == school.pk:
+        UserRole.objects.get_or_create(user=user, school=school, role_code="school_admin")
+        for code in ("facilities.edit", "safety.edit"):
+            permission, _ = CrownPermission.objects.get_or_create(code=code)
+            RolePermission.objects.get_or_create(
+                role_code="school_admin", permission=permission,
+            )
     c = APIClient()
     c.force_authenticate(user=user)
-    c.credentials(
-        HTTP_X_SCHOOL_ID=str(school.id),
-        HTTP_X_ROLE=role,
-    )
+    c.credentials(HTTP_X_SCHOOL_ID=str(school.id), HTTP_X_ROLE=role)
     return c
 
 
@@ -206,8 +216,11 @@ class TestWorkOrders:
         s = _school("WO Create")
         u = _user("teacher1", is_staff=False)
         c = _client(u, s, role="teacher")
-        resp = c.post(self.URL, {"title": "Broken door", "priority": "NORMAL"}, format="json")
-        assert resp.status_code == 201
+        # Ordinary school users may report a repair but cannot override
+        # internal priority or lifecycle fields without facilities.edit.
+        resp = c.post(self.URL, {"title": "Broken door"}, format="json")
+        assert resp.status_code == 201, resp.content
+        assert resp.json()["priority"] == WorkOrder.PRIORITY_NORMAL
 
     def test_filter_by_status(self):
         s = _school("WO Filter")
@@ -412,6 +425,53 @@ class TestAlerts:
         resp = c.post(f"{self.URL}emit/", {"body": "No title"}, format="json")
         assert resp.status_code == 400
 
+    @pytest.mark.parametrize("payload", [
+        [],
+        {"title": []},
+        {"title": {"unexpected": "object"}},
+        {"title": " "},
+        {"title": "X" * 201},
+        {"title": "Alert", "body": {"unexpected": "object"}},
+        {"title": "Alert", "channel": []},
+        {"title": "Alert", "channel": "X" * 51},
+    ])
+    def test_emit_rejects_invalid_payload_without_persisting_alert(self, payload):
+        s = _school("Alert Invalid Payload")
+        u = _user("invalid_alert_emitter", is_staff=True)
+        client = _client(u, s, role="safety_officer")
+
+        response = client.post(f"{self.URL}emit/", payload, format="json")
+
+        assert response.status_code == 400
+        assert not Alert.objects.filter(school=s).exists()
+
+    def test_emit_preserves_server_owned_fields_and_default_channel(self):
+        s = _school("Alert Server Attribution")
+        u = _user("attributed_alert_emitter", is_staff=True)
+        client = _client(u, s, role="safety_officer")
+
+        response = client.post(
+            f"{self.URL}emit/",
+            {
+                "title": "  Server-owned alert  ",
+                "body": "  Valid message  ",
+                "kind": "FACILITIES",
+                "school": "untrusted-school",
+                "emitted_by": "untrusted-actor",
+                "external_ref": "unverified-delivery",
+            },
+            format="json",
+        )
+
+        assert response.status_code == 201
+        alert = Alert.objects.get(school=s)
+        assert alert.title == "Server-owned alert"
+        assert alert.body == "Valid message"
+        assert alert.channel == "TEAMS"
+        assert alert.kind == "SECURITY"
+        assert alert.emitted_by_id == u.pk
+        assert alert.external_ref == ""
+
     def test_readonly_cannot_emit(self):
         s = _school("Alert RO")
         u = _user("emit_ro", is_staff=False)
@@ -465,3 +525,4 @@ class TestSecuritySummary:
         c = _anon_client(s)
         resp = c.get(self.URL)
         assert resp.status_code in (401, 403)
+

@@ -503,19 +503,59 @@ class DevMigrationBoundaryTests(unittest.TestCase):
         with self.assertRaisesRegex(migration.Blocked, "legacy_refresh_must_be_disabled"):
             migration.load_dev_settings(read=fake_read, legacy_stage=True)
 
+    def test_dev_readonly_inspection_provisions_yaml_before_offline_tests(self):
+        import yaml
+
+        workflow = yaml.safe_load(
+            (migration.ROOT / ".github/workflows/dev-blacklist-database-inventory.yml").read_text()
+        )
+        steps = workflow["jobs"]["inspect"]["steps"]
+        dependencies = next(
+            i for i, step in enumerate(steps)
+            if step.get("name") == "Install accepted migration inspection dependencies"
+        )
+        offline_tests = next(
+            i for i, step in enumerate(steps)
+            if step.get("name") == "Verify migration inspection boundary (offline)"
+        )
+        azure_login = next(
+            i for i, step in enumerate(steps)
+            if step.get("name") == "Authenticate to existing DEV Azure"
+        )
+        self.assertEqual(steps[dependencies].get("if"), "inputs.inspect_migration_plan")
+        self.assertEqual(steps[offline_tests].get("if"), "inputs.inspect_migration_plan")
+        self.assertLess(dependencies, offline_tests)
+        self.assertLess(offline_tests, azure_login)
+        self.assertIn("python -m pip install pyyaml==6.0.3", steps[dependencies]["run"])
+        self.assertIn(
+            "python -m pip install -r backend/requirements.txt", steps[dependencies]["run"]
+        )
+        self.assertIn(
+            "python -m unittest discover -s scripts/ops -p test_run_dev_inquiry_migration.py -v",
+            steps[offline_tests]["run"],
+        )
+
     def test_workflow_checks_source_then_schema_before_any_runtime_mutation(self):
+        """Require current main, never ancestor/RC, at each DEV write boundary."""
         import yaml
         workflow = yaml.safe_load((migration.ROOT / ".github/workflows/deploy-dev.yml").read_text())
         triggers = workflow.get("on", workflow.get(True))
-        self.assertEqual(set(triggers), {"push", "workflow_dispatch"})
-        self.assertEqual(triggers["push"]["branches"], ["rc/**"])
+        self.assertEqual(set(triggers), {"workflow_dispatch"})
+        self.assertTrue(triggers["workflow_dispatch"]["inputs"]["ref"]["required"])
         job = workflow["jobs"]["build-and-deploy"]
         self.assertEqual(job["environment"], "dev")
         steps = job["steps"]
         source = next(i for i, step in enumerate(steps) if step.get("name") == "Verify accepted DEV source")
         gate = next(i for i, step in enumerate(steps) if "run_dev_inquiry_migration.py --expected-sha" in step.get("run", ""))
         self.assertIn("git fetch --no-tags origin refs/heads/main:refs/remotes/origin/main", steps[source]["run"])
-        self.assertIn('git merge-base --is-ancestor "$SOURCE_SHA" origin/main', steps[source]["run"])
+        source_script = steps[source]["run"]
+        self.assertIn('CURRENT_MAIN_SHA="$(git rev-parse refs/remotes/origin/main)"', source_script)
+        self.assertIn('"$GITHUB_EVENT_NAME" != "workflow_dispatch"', source_script)
+        self.assertIn('"$GITHUB_REF" != "refs/heads/main"', source_script)
+        self.assertIn('"$SOURCE_SHA" != "$WORKFLOW_SHA"', source_script)
+        self.assertIn('"$SOURCE_SHA" != "$CURRENT_MAIN_SHA"', source_script)
+        self.assertNotIn("git merge-base --is-ancestor", source_script)
+        self.assertLess(source, gate)
         self.assertNotIn("if", steps[gate])
         self.assertNotIn("continue-on-error", steps[gate])
         for index, step in enumerate(steps):
@@ -526,8 +566,147 @@ class DevMigrationBoundaryTests(unittest.TestCase):
                     or "docker/build-push-action@" in action or "az webapp start" in command):
                 self.assertLess(gate, index)
         guard = steps[0]
-        self.assertEqual(guard["env"]["INPUT_REF"], "${{ github.event.inputs.ref }}")
-        self.assertNotIn("${{ github.event.inputs.ref }}", guard["run"])
+        self.assertEqual(guard["name"], "Guard exact protected-main dispatch")
+        self.assertEqual(guard["env"]["INPUT_REF"], "$" + "{{ inputs.ref }}")
+        self.assertIn('"$GITHUB_REF" != "refs/heads/main"', guard["run"])
+        self.assertNotIn("$" + "{{ inputs.ref }}", guard["run"])
+
+        names = [step.get("name") for step in steps]
+        for mutation, check in (
+            ("Build and push Docker image", "DEV image push"),
+            ("Apply only reviewed DEV inquiry migration before deployment", "DEV migration"),
+            ("Apply appsettings (allowlisted only)", "DEV appsettings"),
+            ("Deploy to Azure Web App (managed identity pull)", "DEV container deployment"),
+        ):
+            index = names.index(mutation)
+            self.assertEqual(names[index - 1], "Reverify protected main before " + check)
+            self.assertEqual(steps[index - 1]["env"]["EXPECTED_DEV_SHA"],
+                             "$" + "{{ steps.vars.outputs.deploy_sha }}")
+            self.assertIn('"$(git rev-parse refs/remotes/origin/main)" != "$EXPECTED_DEV_SHA"',
+                          steps[index - 1]["run"])
+            self.assertIn('"$GITHUB_SHA" != "$EXPECTED_DEV_SHA"', steps[index - 1]["run"])
+            self.assertIn('"$(git rev-parse HEAD)" != "$EXPECTED_DEV_SHA"', steps[index - 1]["run"])
+
+
+    def test_inventory_plan_is_observation_only_and_normal_apply_still_rejects_diadem(self):
+        plan = [
+            (SimpleNamespace(app_label="aftercare", name="0012_diadem_visit_reentry_foundation"), False),
+            (SimpleNamespace(app_label="aftercare", name="0013_daycare_setup_proposals"), False),
+        ]
+        expected = ["aftercare.0012_diadem_visit_reentry_foundation",
+                    "aftercare.0013_daycare_setup_proposals"]
+        self.assertEqual(
+            self._execute([plan], check_only=True, plan_validator=migration.validate_inventory_plan),
+            expected,
+        )
+        self.assertEqual(self.events, ["lock", "identity", "plan", "unlock"])
+        with self.assertRaises(migration.UnreviewedPlan):
+            migration.validate_plan(plan)  # The DEV deployment is still blocked.
+        with self.assertRaises(migration.UnreviewedPlan):
+            migration.validate_inventory_plan([(plan[0][0], True)])
+        for invalid in (SimpleNamespace(app_label="unsafe;DROP", name="0001"),
+                        SimpleNamespace(app_label="aftercare", name="bad\nprivate-password")):
+            with self.assertRaisesRegex(migration.Blocked, "identifier_invalid"):
+                migration.validate_inventory_plan([(invalid, False)])
+        with self.assertRaisesRegex(migration.Blocked, "too_large"):
+            migration.validate_inventory_plan([plan[0]] * 513)
+
+    def test_inventory_cli_collects_plan_without_approval_or_database_writes(self):
+        output = io.StringIO()
+        pending = ["aftercare.0012_diadem_visit_reentry_foundation",
+                   "aftercare.0013_daycare_setup_proposals"]
+        # Explicitly exercise ordinary terminal output. In GitHub Actions
+        # the helper must emit ::add-mask:: directives before redacted JSON;
+        # those commands are expected to contain the values being masked.
+        with patch.dict(os.environ, {"GITHUB_ACTIONS": "false"}), patch.object(
+            migration, "validate_source"
+        ) as source, patch.object(
+            migration, "load_dev_settings", return_value=(URL, "synthetic-secret", "crown", False)
+        ) as settings, patch.object(
+            migration, "migrate_on_dev", return_value=pending
+        ) as runner, contextlib.redirect_stdout(output):
+            self.assertEqual(migration.main(["--expected-sha", SHA, "--inspect-all-migrations"]), 0)
+        source.assert_called_once_with(SHA)
+        settings.assert_called_once_with()
+        runner.assert_called_once_with(
+            URL, "synthetic-secret", "crown", SHA, check_only=True, inventory_only=True,
+            hosted_blacklist_enabled=False,
+        )
+        packet = json.loads(output.getvalue().splitlines()[-1])
+        self.assertEqual(packet["status"], "COLLECTED")
+        self.assertEqual(packet["mode"], "inventory_all_read_only")
+        self.assertEqual(packet["pending_migrations"], pending)
+        self.assertEqual(packet["remaining_pending"], 2)
+        self.assertFalse(packet["schema_change_authorized"])
+        self.assertFalse(packet["operational_certified"])
+        self.assertEqual(packet["inventory_scope"], "enabled_django_app_graph")
+        self.assertFalse(packet["optional_blacklist_graph_included"])
+        self.assertNotIn("private-password", output.getvalue())
+        for flags in (
+            ["--inspect-all-migrations", "--check-only"],
+            ["--inspect-all-migrations", "--inspect-reviewed-legacy-refresh"],
+            ["--inspect-all-migrations", "--apply-reviewed-blacklist",
+             "--confirm-dev-blacklist", "migrate-dev-blacklist"],
+        ):
+            with self.subTest(flags=flags), patch.object(migration, "load_dev_settings") as read, \
+                 contextlib.redirect_stdout(io.StringIO()):
+                self.assertEqual(migration.main(["--expected-sha", SHA, *flags]), 1)
+                read.assert_not_called()
+
+    def test_inventory_actions_output_masks_only_commands_and_not_evidence(self):
+        output = io.StringIO()
+        with patch.dict(os.environ, {"GITHUB_ACTIONS": "true"}), patch.object(
+            migration, "validate_source"
+        ), patch.object(
+            migration, "load_dev_settings",
+            return_value=(URL, "synthetic-secret", "crown", False)
+        ), patch.object(
+            migration, "migrate_on_dev", return_value=[]
+        ), contextlib.redirect_stdout(output):
+            self.assertEqual(
+                migration.main(["--expected-sha", SHA, "--inspect-all-migrations"]), 0
+            )
+        lines = output.getvalue().splitlines()
+        self.assertEqual(lines[:2], ["::add-mask::" + URL, "::add-mask::synthetic-secret"])
+        packet = json.loads(lines[-1])
+        self.assertEqual(packet["mode"], "inventory_all_read_only")
+        self.assertEqual(packet["pending_migrations"], [])
+        self.assertNotIn(URL, lines[-1])
+        self.assertNotIn("synthetic-secret", lines[-1])
+        self.assertNotIn("private-password", lines[-1])
+
+    def test_inventory_preserves_hosted_blacklist_setting_without_database_access(self):
+        def stopped():
+            self.assertEqual(os.environ["CROWN_SIMPLEJWT_BLACKLIST_ENABLED"], "false")
+            target = migration.urlsplit(os.environ["DATABASE_URL"])
+            options = dict(migration.parse_qsl(target.query))
+            self.assertEqual(options["sslmode"], "verify-full")
+            self.assertEqual(options["options"], "-c default_transaction_read_only=on")
+            raise RuntimeError("stop before database access")
+
+        with patch.dict(os.environ, {}, clear=True), patch.dict(
+            "sys.modules", {"django": SimpleNamespace(setup=stopped)}
+        ), patch.object(migration.Path, "is_file", return_value=True):
+            with self.assertRaisesRegex(RuntimeError, "stop before database access"):
+                migration.migrate_on_dev(URL, "synthetic-secret", "crown", SHA,
+                                         check_only=True, inventory_only=True,
+                                         hosted_blacklist_enabled=False)
+        with self.assertRaisesRegex(migration.Blocked, "conflicting_dev_migration_modes"):
+            migration.migrate_on_dev(URL, "synthetic-secret", "crown", SHA,
+                                     inventory_only=True, check_only=False)
+
+    def test_dev_inventory_workflow_does_not_dispatch_a_schema_change(self):
+        import yaml
+        workflow = yaml.safe_load(
+            (migration.ROOT / ".github/workflows/dev-blacklist-database-inventory.yml").read_text()
+        )
+        steps = workflow["jobs"]["inspect"]["steps"]
+        target = next(s for s in steps
+                      if s.get("name") == "Inspect all pending DEV migrations without applying")
+        self.assertEqual(target["if"], "inputs.inspect_migration_plan")
+        self.assertIn("--inspect-all-migrations", target["run"])
+        self.assertNotIn("--apply-", target["run"])
+        self.assertNotIn("migrate_with_lock", target["run"])
 
 
 if __name__ == "__main__":

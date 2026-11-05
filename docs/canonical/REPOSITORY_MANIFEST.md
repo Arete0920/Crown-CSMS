@@ -21,7 +21,7 @@ This manifest explains the intended role of the repository's major areas after o
 | `docs/security/` | Security | Security policies, controls, hardening guidance, and evidence boundaries. |
 | `docs/ownership/` | Ownership transfer | Successor handoff, external-service transfer, and release-restart requirements. |
 | `docs/canonical/` | Document authority | Canonical document index, repository manifest, and authority rules. |
-| `docs/provenance/` | Provenance | Human contribution, development lineage, and supporting attribution records. |
+| `docs/engineering/CONTRIBUTION_EVIDENCE_LEDGER.md` and `docs/governance/REPOSITORY_OWNERSHIP_AND_ATTRIBUTION.md` | Provenance | Evidence-backed contribution, original authorship, and current/historical repository attribution. |
 | `scripts/` | Active automation | Development, validation, maintenance, release, and recovery scripts still required by current workflows or operations. |
 | `tools/` | Engineering tools | Repository and application utilities required by active engineering processes. |
 

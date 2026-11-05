@@ -229,6 +229,13 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isBusy, setIsBusy] = useState(false);
+  const expiredSession = !IS_SANDBOX && (() => {
+    try {
+      return new URLSearchParams(globalThis.location.search).get("reason") === "session-expired";
+    } catch {
+      return false;
+    }
+  })();
 
   useEffect(() => {
     if (!IS_SANDBOX) return;
@@ -528,6 +535,13 @@ export default function LoginPage() {
           margin-bottom: 14px;
         }
 
+        /* Native form controls must inherit the same product typography as the page. */
+        .login-root button,
+        .login-root input,
+        .login-root select {
+          font-family: var(--crown-font-family);
+        }
+
         .field-grid {
           display: grid;
           grid-template-columns: 1fr;
@@ -709,6 +723,11 @@ export default function LoginPage() {
               <div className="warning-banner">Use demo data only. Do not enter real school records.</div>
             )}
 
+            {expiredSession && !error && (
+              <div className="warning-banner" role="status">
+                Your session has ended. Sign in again to continue.
+              </div>
+            )}
             {error && <div className="error-banner" role="alert">{error}</div>}
 
             <div className="field-grid">

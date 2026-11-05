@@ -73,6 +73,7 @@ def apply_financial_aid_to_billing_run(*, school_id, billing_run_id: UUID) -> di
         awards = list(
             AidAward.objects.filter(
                 school_id=school_id,
+                application__school_id=school_id,
                 application__household_id=household_id,
             )
         )

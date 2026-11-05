@@ -52,6 +52,8 @@ def test_create_school_idempotent(django_user_model):
 
     # Both calls must return the same job
     assert job1.id == job2.id, "Idempotency failure: two distinct jobs created for the same key"
+    from core.models import School
+    assert School.objects.get(pk=job1.school_id).is_active is False
 
     # Only one ProvisioningJob should exist for this key
     job_count = ProvisioningJob.objects.filter(idempotency_key=key).count()
@@ -97,6 +99,8 @@ def test_provisioning_job_runs_to_succeeded(django_user_model, platform_operator
 
     # TenantProfile must be activated
     profile = TenantProfile.objects.get(school_id=job.school_id)
+    from core.models import School
+    assert School.objects.get(pk=job.school_id).is_active is True
     assert profile.status == "active", f"Expected TenantProfile.status='active', got '{profile.status}'"
 
     # finished_at must be set
@@ -167,6 +171,8 @@ def test_provisioning_audit_failure_rolls_back_activation(monkeypatch, platform_
     job.refresh_from_db()
     assert job.state == "queued"
     assert TenantProfile.objects.get(school_id=job.school_id).status == "pending"
+    from core.models import School
+    assert School.objects.get(pk=job.school_id).is_active is False
 
 
 @pytest.mark.django_db

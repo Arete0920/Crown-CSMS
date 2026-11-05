@@ -75,7 +75,7 @@ def test_communications_staff_thread_read_is_tenant_scoped():
     school_b = _school("Comms school B")
     thread_a = _thread_for_school(school_a, "A")
     thread_b = _thread_for_school(school_b, "B")
-    user = _user(school_a)
+    user = _user(school_a, is_staff=True)
     _grant_communications(user, school_a)
 
     response = _client(user, school_a).get("/api/threads/")
@@ -107,3 +107,14 @@ def test_arbitrary_recipient_smoke_email_route_is_retired_fail_closed():
         format="json",
     )
     assert response.status_code == 404
+
+
+
+def test_school_wide_communications_permission_requires_staff():
+    school = _school("Comms privilege isolation")
+    _thread_for_school(school, "Private staff communications")
+    parent = _user(school, is_staff=False)
+    _grant_communications(parent, school)
+    response = _client(parent, school).get("/api/threads/")
+    assert response.status_code == 403
+    assert "Private staff communications" not in str(response.content)

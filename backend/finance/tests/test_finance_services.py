@@ -13,7 +13,7 @@ from datetime import date, timedelta
 
 from django.test import TestCase
 
-from core.models import School, UserAccount
+from core.models import Family, Guardian as CoreGuardian, HouseholdFamilyLink, School, UserAccount
 from households.models import Guardian as HouseholdGuardian, Household
 from ledger.models import Allocation as LedgerAllocation
 from ledger.models import Charge as LedgerCharge
@@ -78,23 +78,43 @@ def _payment(school, payer, *, amount_cents=10_000):
 
 
 def _link_payer_to_household(school, payer):
+    """Synthetic finance fixture with a real persisted family/household link."""
     existing = HouseholdGuardian.objects.filter(
-        school_id=school.id,
-        email__iexact=payer.email,
+        school_id=school.id, email__iexact=payer.email,
     ).select_related("household").first()
     if existing:
-        hh = existing.household
+        household = existing.household
     else:
-        hh = Household.objects.create(school_id=school.id, name=f"HH-{payer.username}")
-        HouseholdGuardian.objects.create(
-            school_id=school.id,
-            household=hh,
-            first_name="Test",
-            last_name="Guardian",
-            email=payer.email,
-            is_primary=True,
+        household = Household.objects.create(
+            school_id=school.id, name=f"HH-{payer.username}",
         )
-    LedgerAccount.objects.get_or_create(school_id=school.id, household=hh)
+        HouseholdGuardian.objects.create(
+            school_id=school.id, household=household,
+            first_name="Test", last_name="Guardian",
+            email=payer.email, is_primary=True,
+        )
+
+    if payer.guardian_id:
+        guardian = CoreGuardian.objects.get(pk=payer.guardian_id)
+        if guardian.school_id != school.pk:
+            raise ValueError("Synthetic guardian cannot cross schools")
+    else:
+        family = Family.objects.create(
+            school=school, family_name=f"Linked family for {payer.username}",
+        )
+        guardian = CoreGuardian.objects.create(
+            school=school, family=family,
+            first_name="Test", last_name="Guardian",
+            email=payer.email, relationship="OTHER",
+        )
+        payer.guardian = guardian
+        payer.save(update_fields=["guardian"])
+
+    HouseholdFamilyLink.objects.get_or_create(
+        school=school, family=guardian.family, household_id=household.pk,
+        defaults={"source": HouseholdFamilyLink.SOURCE_MANUAL},
+    )
+    LedgerAccount.objects.get_or_create(school_id=school.id, household=household)
 
 
 # ---------------------------------------------------------------------------

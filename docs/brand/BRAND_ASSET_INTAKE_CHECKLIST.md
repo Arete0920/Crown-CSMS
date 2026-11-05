@@ -1,12 +1,12 @@
 # Brand Asset Intake and Buyer IP Evidence Checklist
 
-Status: INTERNAL WORKING CONTROL, audit dated **2026-10-23**. No assurance that the whole Drive, past Git history, Azure deployed content, laptops, websites, legal files, or outside storage has been inspected. Do not circulate unapproved files as buyer-ready.
+Status: INTERNAL WORKING CONTROL, original audit dated **2026-10-23**, source correction **2026-10-26** after protected merges #451, #452 and #453. No assurance that the whole Drive, past Git history, Azure deployed content, laptops, websites, legal files, or outside storage has been inspected. Do not circulate unapproved files as buyer-ready.
 
 ## Required production asset intake
 
-1. **CROWN favicon set:** `frontend/dashboards/public/brand/crown/favicon/favicon.ico`, `favicon-16x16.png`, `favicon-32x32.png`, `apple-touch-icon.png`, `android-chrome-192x192.png`, `android-chrome-512x512.png`. None of those paths appeared in the audited default-branch tree; this is **missing-file evidence**, not proof that no favicon is deployed elsewhere.
+1. **CROWN favicon set:** `frontend/dashboards/index.html` already references the present `/brand/crown/logo/crown-logo-mark-shield.svg` as its browser favicon (source merged in #451). Six *additional* named export paths remain absent from the reviewed repository tree: `frontend/dashboards/public/brand/crown/favicon/favicon.ico`, `favicon-16x16.png`, `favicon-32x32.png`, `apple-touch-icon.png`, `android-chrome-192x192.png`, `android-chrome-512x512.png`. Missing these alternate-size ICO/PNG assets does **not** mean the existing SVG browser favicon is absent. Browser/device/PWA, export, distribution and deployed-asset acceptance remain unverified.
 2. **Microsoft third-party assets:** the existing `frontend/dashboards/public/brand/third-party/microsoft/manifest.json` lists 17 entries with null paths. Acquire original official Microsoft artwork only where licensed/authorized and record asset, origin, retrieval date, permitted use and reviewer in the source register. Do not generate replacements. Text fallback remains safer than unverifiable marks.
-3. **CROWN nine canonical SVG variants:** present in default-branch tree. Test actual render, cross-device backgrounds, image export/print, packaging, accessibility/alt text, source-file portability and rights provenance. Some full-color SVGs embed PNG data; some monochrome assets reference other files.
+3. **CROWN nine canonical SVG variants:** present in the reviewed default-branch tree and hash-listed in `docs/brand/CROWN_BUYER_ASSET_REVIEW_MANIFEST.json` (#453). Accepted #452 embedded formerly relative image references in the square and monochrome variants so those reviewed canonical SVGs are self-contained at source level; this does **not** prove fully editable vector masters. Some SVG containers embed raster/data-URI imagery. Continue testing actual rendered contexts, cross-device backgrounds, image export/print, packaging, accessibility/alt text, and legal rights provenance. All nine manifest assets remain on buyer-distribution **HOLD**.
 
 ## Verified 2026-10-23 non-destructive repository evidence
 

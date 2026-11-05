@@ -7,6 +7,10 @@ on:
         description: "School UUID to reseed"
         required: true
         type: string
+      confirm_school_id:
+        description: "Re-enter the same synthetic school UUID to explicitly confirm this destructive operation"
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -17,17 +21,37 @@ concurrency:
   cancel-in-progress: false
 jobs:
   reset:
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
+    environment: dev
+    concurrency:
+      group: crown-api-dev-deploy
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
     steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+      - name: Verify current source, runtime and synthetic-school authority
+        shell: bash
+        env:
+          SCHOOL_ID: ${{ inputs.school_id }}
+          CONFIRM_SCHOOL_ID: ${{ inputs.confirm_school_id }}
+          DEV_RESET_ALLOWED_SCHOOL_IDS: ${{ vars.DEV_RESET_ALLOWED_SCHOOL_IDS }}
+        run: |
+          set -euo pipefail
+          python3 scripts/ops/verify_dev_reset_authority.py
       - name: Call demo reset API
         env:
           API_BASE: https://crown-api-dev.azurewebsites.net
           OPS_SECRET: ${{ secrets.DEV_OPS_SECRET }}
           SCHOOL_ID: ${{ inputs.school_id }}
+          CONFIRM_SCHOOL_ID: ${{ inputs.confirm_school_id }}
+          DEV_RESET_ALLOWED_SCHOOL_IDS: ${{ vars.DEV_RESET_ALLOWED_SCHOOL_IDS }}
         run: |
           set -euo pipefail
+          python3 scripts/ops/verify_dev_reset_authority.py
           # The endpoint may include migration and seed command-output tails.
           # Withhold the unredacted JSON body from public Actions logs.
           response="$(curl --max-time 30 -f -sS -X POST "$API_BASE/api/v1/system/demo-reset/?verbosity=2" \
@@ -47,8 +71,11 @@ jobs:
           DEMO_USERNAME: head@crown-demo.local
           DEMO_PASSWORD: ${{ secrets.DEV_DEMO_PASSWORD }}
           SCHOOL_ID: ${{ inputs.school_id }}
+          CONFIRM_SCHOOL_ID: ${{ inputs.confirm_school_id }}
+          DEV_RESET_ALLOWED_SCHOOL_IDS: ${{ vars.DEV_RESET_ALLOWED_SCHOOL_IDS }}
         run: |
           set -euo pipefail
+          python3 scripts/ops/verify_dev_reset_authority.py
 
           TOKEN="$(curl --max-time 30 -f -sS -X POST "$API_BASE/api/v1/auth/token/" \
             -H "Content-Type: application/json" \

@@ -165,35 +165,31 @@ class SchedulingApiTests(TestCase):
         SectionEnrollment.objects.create(section=self.section_math_b, student=self.student_b, active=True)
 
     def test_staff_terms_sections_and_schedule(self):
-        self.client.force_authenticate(user=self.staff_user)
+        self.client.force_login(self.staff_user)
+        self.client.credentials(HTTP_X_SCHOOL_ID=str(self.school.id))
 
         resp_terms = self.client.get("/api/terms/")
         self.assertEqual(resp_terms.status_code, 200)
-        self.assertEqual({t["code"] for t in resp_terms.json()}, {"2026-SPR", "2025-FALL"})
+        # Legacy global terms have no school owner and cannot be enumerated.
+        self.assertEqual(resp_terms.json(), [])
 
         resp_sections = self.client.get(f"/api/terms/{self.term_active.id}/sections/")
-        self.assertEqual(resp_sections.status_code, 200)
-        section_ids = {row["section_id"] for row in resp_sections.json()}
-        self.assertEqual(
-            section_ids,
-            {str(self.section_math_a.id), str(self.section_math_b.id), str(self.section_ela_a.id)},
-        )
+        self.assertEqual(resp_sections.status_code, 404)
 
         resp_sched = self.client.get(f"/api/students/{self.student_a.id}/schedule/")
         self.assertEqual(resp_sched.status_code, 200)
 
     def test_parent_scoped_terms_sections_and_schedule(self):
-        self.client.force_authenticate(user=self.parent_user)
+        self.client.force_login(self.parent_user)
+        self.client.credentials(HTTP_X_SCHOOL_ID=str(self.school.id))
 
         resp_terms = self.client.get("/api/terms/")
         self.assertEqual(resp_terms.status_code, 200)
         # Non-staff sees active terms only
-        self.assertEqual({t["code"] for t in resp_terms.json()}, {"2026-SPR"})
+        self.assertEqual(resp_terms.json(), [])
 
         resp_sections = self.client.get(f"/api/terms/{self.term_active.id}/sections/")
-        self.assertEqual(resp_sections.status_code, 200)
-        section_ids = {row["section_id"] for row in resp_sections.json()}
-        self.assertEqual(section_ids, {str(self.section_math_a.id), str(self.section_ela_a.id)})
+        self.assertEqual(resp_sections.status_code, 404)
 
         resp_sched = self.client.get(f"/api/students/{self.student_a.id}/schedule/")
         self.assertEqual(resp_sched.status_code, 200)

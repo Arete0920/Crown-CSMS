@@ -3,21 +3,19 @@ import CrownLayout from "../../components/crown/CrownLayout.jsx";
 import DashboardSection from "../../components/layout/DashboardSection.jsx";
 import { fetchSummerCampWizard, submitSummerCampWizard } from "../../api/summerCampApi.js";
 
-const STEPS = ["Program", "Registration", "Operations", "Review"];
+import { CAMP_SETUP_KEYS, CAMP_WIZARD_STEPS, readCampSetup, readCampWizardState, verifyCampSetupReadback } from "./campSetupReadback.js";
+
+const STEPS = CAMP_WIZARD_STEPS;
 
 const defaults = {
-  camp_name: "",
-  season_year: new Date().getFullYear(),
-  season_label: "Summer",
-  registration_window_open: true,
-  allow_waitlist: true,
-  auto_promote_waitlist: true,
-  require_immunization_review: true,
-  pickup_authorization_required: true,
-  default_ratio_numerator: 1,
-  default_ratio_denominator: 12,
-  cancellation_policy: "",
+  camp_name: "Summer Camp",
+  default_capacity: 30,
+  default_staff_ratio: 10,
+  public_registration_enabled: false,
+  billing_policy: "PER_SESSION",
 };
+const CONFIG_KEYS = CAMP_SETUP_KEYS;
+
 
 export default function SummerCampSetupWizard() {
   const [step, setStep] = useState(0);
@@ -26,6 +24,7 @@ export default function SummerCampSetupWizard() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [savedAt, setSavedAt] = useState("");
+  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -34,7 +33,13 @@ export default function SummerCampSetupWizard() {
       try {
         const wizard = await fetchSummerCampWizard();
         if (!cancelled) {
-          setData((previous) => ({ ...previous, ...(wizard.config || {}) }));
+          const config = readCampSetup(wizard);
+          const progress = readCampWizardState(wizard);
+          setData(config);
+          // Reopen at the last persisted step instead of silently restarting
+          // from Program and overwriting valid completion progress on Save.
+          setStep(Math.max(0, progress.completed_steps.length - 1));
+          setLoaded(true);
           setError(null);
         }
       } catch (e) {
@@ -55,22 +60,49 @@ export default function SummerCampSetupWizard() {
     return data.camp_name.trim().length > 0;
   }, [data.camp_name, step]);
 
+  function changeStep(direction) {
+    // A successful readback applies only to the configuration and wizard
+    // progress actually submitted, not to a subsequently selected step.
+    setSavedAt("");
+    setStep((current) => Math.max(0, Math.min(STEPS.length - 1, current + direction)));
+  }
+
   function updateField(event) {
+    setSavedAt("");
     const { name, value, type, checked } = event.target;
     setData((previous) => ({
       ...previous,
-      [name]: type === "checkbox" ? checked : value,
+      [name]: type === "checkbox" ? checked : type === "number" ? Number(value) : value,
     }));
   }
 
   async function saveWizard() {
+    if (!loaded || saving) return;
+    setSavedAt("");
+    // Invalid edits have not touched the server. Keep the form available
+    // for correction instead of claiming an uncertain network write.
+    const submitted = {
+      config: Object.fromEntries(CONFIG_KEYS.map((key) => [key, data[key]])),
+      completed_steps: STEPS.slice(0, step + 1),
+      is_completed: step === STEPS.length - 1,
+    };
+    submitted.config.camp_name = submitted.config.camp_name.trim();
+    try {
+      readCampSetup(submitted);
+    } catch {
+      setError("Correct the camp name, positive whole-number capacity and staff ratio, and registration/billing settings. Nothing was submitted.");
+      return;
+    }
     setSaving(true);
     setError(null);
     try {
-      await submitSummerCampWizard(data);
+      await submitSummerCampWizard(submitted);
+      const readback = await fetchSummerCampWizard();
+      setData(verifyCampSetupReadback(readback, submitted));
       setSavedAt(new Date().toLocaleString());
     } catch (e) {
-      setError(e.message);
+      setLoaded(false);
+      setError(`${e.message} Reload this page to verify the current server state before saving again.`);
     } finally {
       setSaving(false);
     }
@@ -89,66 +121,60 @@ export default function SummerCampSetupWizard() {
 
         {loading && <span>Loading wizard...</span>}
         {error && (
-          <div style={{ color: "var(--crown-danger)", background: "var(--crown-danger-bg)", padding: "10px 14px", borderRadius: 4, marginBottom: 10 }}>
+          <div role="alert" style={{ color: "var(--crown-danger)", background: "var(--crown-danger-bg)", padding: "10px 14px", borderRadius: 4, marginBottom: 10 }}>
             {error}
           </div>
         )}
 
-        {!loading && (
+        {!loading && loaded && (
           <form onSubmit={(event) => event.preventDefault()}>
+            <fieldset disabled={saving}>
+              <legend>Camp configuration</legend>
             {step === 0 && (
               <>
                 <label htmlFor="camp_name">Camp Name</label>
                 <input id="camp_name" name="camp_name" value={data.camp_name} onChange={updateField} style={{ display: "block", width: "100%", marginBottom: 10 }} />
-                <label htmlFor="season_year">Season Year</label>
-                <input id="season_year" name="season_year" type="number" value={data.season_year} onChange={updateField} style={{ display: "block", width: "100%", marginBottom: 10 }} />
-                <label htmlFor="season_label">Season Label</label>
-                <input id="season_label" name="season_label" value={data.season_label} onChange={updateField} style={{ display: "block", width: "100%", marginBottom: 10 }} />
               </>
             )}
 
             {step === 1 && (
               <>
                 <label style={{ display: "block", marginBottom: 8 }}>
-                  <input name="registration_window_open" type="checkbox" checked={data.registration_window_open} onChange={updateField} /> Registration Open
+                  <input name="public_registration_enabled" type="checkbox" checked={data.public_registration_enabled} onChange={updateField} /> Public Registration Enabled
                 </label>
-                <label style={{ display: "block", marginBottom: 8 }}>
-                  <input name="allow_waitlist" type="checkbox" checked={data.allow_waitlist} onChange={updateField} /> Allow Waitlist
-                </label>
-                <label style={{ display: "block", marginBottom: 8 }}>
-                  <input name="auto_promote_waitlist" type="checkbox" checked={data.auto_promote_waitlist} onChange={updateField} /> Auto Promote Waitlist
-                </label>
-                <label htmlFor="cancellation_policy">Cancellation Policy</label>
-                <textarea id="cancellation_policy" name="cancellation_policy" value={data.cancellation_policy} onChange={updateField} style={{ display: "block", width: "100%", minHeight: 120 }} />
+                <label htmlFor="billing_policy">Billing Policy</label>
+                <select id="billing_policy" name="billing_policy" value={data.billing_policy} onChange={updateField} style={{ display: "block", marginBottom: 10 }}>
+                  <option value="PER_SESSION">Per Session</option>
+                  <option value="PER_WEEK">Per Week</option>
+                  <option value="FULL_CAMP">Full Camp</option>
+                </select>
               </>
             )}
 
             {step === 2 && (
               <>
-                <label style={{ display: "block", marginBottom: 8 }}>
-                  <input name="require_immunization_review" type="checkbox" checked={data.require_immunization_review} onChange={updateField} /> Require Immunization Review
-                </label>
-                <label style={{ display: "block", marginBottom: 8 }}>
-                  <input name="pickup_authorization_required" type="checkbox" checked={data.pickup_authorization_required} onChange={updateField} /> Pickup Authorization Required
-                </label>
-                <label htmlFor="default_ratio_numerator">Default Ratio (numerator)</label>
-                <input id="default_ratio_numerator" name="default_ratio_numerator" type="number" value={data.default_ratio_numerator} onChange={updateField} style={{ display: "block", width: "100%", marginBottom: 10 }} />
-                <label htmlFor="default_ratio_denominator">Default Ratio (denominator)</label>
-                <input id="default_ratio_denominator" name="default_ratio_denominator" type="number" value={data.default_ratio_denominator} onChange={updateField} style={{ display: "block", width: "100%", marginBottom: 10 }} />
+                <label htmlFor="default_capacity">Default Session Capacity</label>
+                <input id="default_capacity" name="default_capacity" type="number" min="1" value={data.default_capacity} onChange={updateField} style={{ display: "block", width: "100%", marginBottom: 10 }} />
+                <label htmlFor="default_staff_ratio">Maximum Campers per Staff Member</label>
+                <input id="default_staff_ratio" name="default_staff_ratio" type="number" min="1" value={data.default_staff_ratio} onChange={updateField} style={{ display: "block", width: "100%", marginBottom: 10 }} />
               </>
             )}
 
             {step === 3 && (
-              <pre style={{ background: "var(--crown-surface-muted)", border: "1px solid var(--crown-border)", borderRadius: 6, padding: 12, overflowX: "auto" }}>
-                {JSON.stringify(data, null, 2)}
-              </pre>
+              <dl>
+                <dt>Camp name</dt><dd>{data.camp_name}</dd>
+                <dt>Session capacity</dt><dd>{data.default_capacity}</dd>
+                <dt>Maximum campers per staff member</dt><dd>{data.default_staff_ratio}</dd>
+                <dt>Public registration</dt><dd>{data.public_registration_enabled ? "Enabled in configuration" : "Disabled"}</dd>
+                <dt>Billing policy</dt><dd>{{ PER_SESSION: "Per session", PER_WEEK: "Per week", FULL_CAMP: "Full camp" }[data.billing_policy]}</dd>
+              </dl>
             )}
 
             <div style={{ marginTop: 16, display: "flex", gap: 8 }}>
-              <button type="button" onClick={() => setStep((current) => Math.max(0, current - 1))} disabled={step === 0}>
+              <button type="button" onClick={() => changeStep(-1)} disabled={step === 0}>
                 Back
               </button>
-              <button type="button" onClick={() => setStep((current) => Math.min(STEPS.length - 1, current + 1))} disabled={!canGoNext || step === STEPS.length - 1}>
+              <button type="button" onClick={() => changeStep(1)} disabled={!canGoNext || step === STEPS.length - 1}>
                 Next
               </button>
               <button type="button" onClick={saveWizard} disabled={saving}>
@@ -156,9 +182,10 @@ export default function SummerCampSetupWizard() {
               </button>
             </div>
 
+            </fieldset>
             {savedAt && (
               <div style={{ marginTop: 10, color: "var(--crown-success)" }}>
-                Saved at {savedAt}
+                Saved and verified against server records at {savedAt}
               </div>
             )}
           </form>

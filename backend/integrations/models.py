@@ -1,5 +1,7 @@
 from __future__ import annotations
 import uuid
+from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.db import models
 
 
@@ -38,3 +40,121 @@ class TeamsPreviewAudit(models.Model):
 
     def __str__(self) -> str:
         return f"TeamsPreview({self.event_type}, {self.created_at})"
+
+
+class MicrosoftTenantBinding(models.Model):
+    """Bind one CROWN school to a Microsoft Entra tenant."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    school = models.ForeignKey(
+        "core.School",
+        on_delete=models.PROTECT,
+        related_name="microsoft_tenant_bindings",
+    )
+    tenant_id = models.UUIDField()
+    display_name = models.CharField(max_length=255, blank=True, default="")
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["school", "tenant_id"],
+                name="uniq_microsoft_school_tenant",
+            ),
+            models.UniqueConstraint(
+                fields=["school"],
+                condition=models.Q(is_active=True),
+                name="uniq_active_microsoft_tenant_per_school",
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["tenant_id", "is_active"], name="integration_tenant__ee9b98_idx"),
+            models.Index(fields=["school", "is_active"], name="integration_school__67d95b_idx"),
+        ]
+
+    def save(self, *args, **kwargs):
+        if self.pk:
+            original = type(self).objects.filter(pk=self.pk).values("school_id", "tenant_id").first()
+            if original and (
+                original["school_id"] != self.school_id
+                or original["tenant_id"] != self.tenant_id
+            ):
+                raise ValidationError(
+                    "Microsoft tenant binding school and tenant_id are immutable after creation."
+                )
+        self.full_clean()
+        return super().save(*args, **kwargs)
+
+    def __str__(self) -> str:
+        return f"{self.school_id}:{self.tenant_id}"
+
+
+class MicrosoftIdentityLink(models.Model):
+    """Immutable Entra object-to-CROWN-user mapping within a school tenant binding."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    binding = models.ForeignKey(
+        MicrosoftTenantBinding,
+        on_delete=models.PROTECT,
+        related_name="identity_links",
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="microsoft_identity_links",
+    )
+    object_id = models.UUIDField()
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["binding", "object_id"],
+                name="uniq_microsoft_binding_object",
+            ),
+            models.UniqueConstraint(
+                fields=["binding", "user"],
+                name="uniq_microsoft_binding_user",
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["object_id", "is_active"], name="integration_object__8e587f_idx"),
+            models.Index(fields=["user", "is_active"], name="integration_user_id_635f6e_idx"),
+        ]
+
+    def clean(self):
+        super().clean()
+        if not self.binding_id or not self.user_id:
+            return
+        school_id = self.binding.school_id
+        direct_school_id = getattr(self.user, "school_id", None)
+        if direct_school_id == school_id:
+            return
+        if self.user.roles.filter(school_id=school_id).exists():
+            return
+        raise ValidationError(
+            {"user": "Microsoft identity user must belong to the bound CROWN school."}
+        )
+
+    def save(self, *args, **kwargs):
+        if self.pk:
+            original = type(self).objects.filter(pk=self.pk).values(
+                "binding_id", "user_id", "object_id"
+            ).first()
+            if original and (
+                original["binding_id"] != self.binding_id
+                or original["user_id"] != self.user_id
+                or original["object_id"] != self.object_id
+            ):
+                raise ValidationError(
+                    "Microsoft identity binding, user, and object_id are immutable after creation."
+                )
+        self.full_clean()
+        return super().save(*args, **kwargs)
+
+    def __str__(self) -> str:
+        return f"{self.binding.tenant_id}:{self.object_id}->{self.user_id}"

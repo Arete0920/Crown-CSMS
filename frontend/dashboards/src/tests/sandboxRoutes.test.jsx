@@ -8,6 +8,8 @@ import { dashboardRoutes } from "../routes/dashboardRoutes.jsx";
 import { PATHS } from "../routes/paths";
 import RoleRouteGuard from "../components/routing/RoleRouteGuard";
 import BillingDashboard from "../pages/BillingDashboard";
+import { ADMISSIONS_PIPELINE_ALLOWED_ROLES } from "../pages/AdmissionsPipelineList.jsx";
+import { hasAnyRole } from "../auth/roleAccess";
 
 
 vi.mock("../components/brand/CrownLogo", () => ({
@@ -60,6 +62,23 @@ describe("assembled application route ownership", () => {
     expect(billing[0].element.props.allowedRoles).toContain("finance_director");
     expect(billing[0].element.props.allowedRoles).not.toContain("parent");
     expect(billing[0].element.props.children.type).toBe(BillingDashboard);
+  });
+
+  it("allows registrar through both admissions route and page-level authorization", () => {
+    const canonical = router.routes.filter((route) => route.path === PATHS.ADMISSIONS_PIPELINE);
+    expect(canonical).toHaveLength(1);
+    // The top-level route has an authenticated-school wrapper and a nested
+    // role guard. The page's independent check must not reject allowed roles.
+    const schoolGuard = canonical[0].element;
+    const roleGuard = schoolGuard.props.children;
+    expect(roleGuard.type).toBe(RoleRouteGuard);
+    expect(roleGuard.props.allowedRoles).toContain("registrar");
+    for (const allowed of roleGuard.props.allowedRoles) {
+      expect(hasAnyRole([allowed], ADMISSIONS_PIPELINE_ALLOWED_ROLES)).toBe(true);
+    }
+    expect(hasAnyRole(["registrar"], ADMISSIONS_PIPELINE_ALLOWED_ROLES)).toBe(true);
+    expect(hasAnyRole(["parent"], ADMISSIONS_PIPELINE_ALLOWED_ROLES)).toBe(false);
+    expect(hasAnyRole([], ADMISSIONS_PIPELINE_ALLOWED_ROLES)).toBe(false);
   });
 
   it("keeps the registry role and release-state element on the school admin dashboard", () => {

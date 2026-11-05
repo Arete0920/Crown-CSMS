@@ -10,7 +10,7 @@ CROWN is maintained under controlled software-engineering and release-management
 - Security and dependency controls: enforced through CI and review gates
 - Current release identity: exact Git/GitHub source at the decision point
 - Production deployment/runtime identity: environment-specific and separately verified
-- Payment processing: disabled until provider selection, contracting, implementation, and provider-specific certification are complete
+- Payment processing: disabled and fail closed. CompuWerx is the owner-designated intended gateway; contracting, verified provider specifications, implementation, merchant terms, and provider-specific security and payment certification remain open. No external money movement is authorized.
 
 ## Start here
 

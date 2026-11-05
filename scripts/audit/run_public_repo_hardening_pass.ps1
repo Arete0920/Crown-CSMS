@@ -352,19 +352,19 @@ if (Test-Path ".github/CODEOWNERS") {
 }
 
 @'
-* @tcmegahan
+* @Arete0920
 
-.github/** @tcmegahan
-SECURITY.md @tcmegahan
-README.md @tcmegahan
-.env.example @tcmegahan
-docs/security/** @tcmegahan
-docs/governance/** @tcmegahan
-docs/release/** @tcmegahan
-docs/dashboard/** @tcmegahan
-docs/engineering/** @tcmegahan
-scripts/** @tcmegahan
-contracts/** @tcmegahan
+.github/** @Arete0920
+SECURITY.md @Arete0920
+README.md @Arete0920
+.env.example @Arete0920
+docs/security/** @Arete0920
+docs/governance/** @Arete0920
+docs/release/** @Arete0920
+docs/dashboard/** @Arete0920
+docs/engineering/** @Arete0920
+scripts/** @Arete0920
+contracts/** @Arete0920
 '@ | Set-Content ".github/CODEOWNERS" -Encoding UTF8
 
 Write-Host "Hardening local ruleset JSON files where possible..." -ForegroundColor Yellow

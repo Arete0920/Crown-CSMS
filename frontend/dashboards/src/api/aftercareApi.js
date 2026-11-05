@@ -55,8 +55,9 @@ export async function createPickupContact(studentId, data) {
 }
 
 // Today's roster
-export async function fetchRosterToday() {
-  return requestJson("/roster/today/");
+export async function fetchRosterToday(careSession = "PM") {
+  if (!["AM", "PM"].includes(careSession)) throw new Error("Invalid care session");
+  return requestJson("/roster/today/?care_session=" + careSession);
 }
 
 // Check in/out
@@ -66,6 +67,11 @@ export async function checkinStudent(payload) {
 
 export async function checkoutStudent(payload) {
   return requestJson("/attendance/checkout/", { method: "POST", body: payload });
+}
+
+// Self-attesting, authenticated receiving school staff; never accept a proxy ID.
+export async function handoffToSchool(payload) {
+  return requestJson("/attendance/school-handoff/", { method: "POST", body: payload });
 }
 
 // Incidents
@@ -78,8 +84,9 @@ export async function createIncident(data) {
 }
 
 // Board summary (no PII)
-export async function getAftercareBoardSummary({ token, schoolId } = {}) {
-  return requestJson("/board/summary/", {
+export async function getAftercareBoardSummary({ token, schoolId, careSession } = {}) {
+  if (careSession && !["AM", "PM"].includes(careSession)) throw new Error("Invalid care session");
+  return requestJson("/board/summary/" + (careSession ? "?care_session=" + careSession : ""), {
     headers: {
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...(schoolId ? { "X-School-Id": String(schoolId) } : {}),

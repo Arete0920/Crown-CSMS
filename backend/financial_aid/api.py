@@ -5,7 +5,7 @@ import logging
 from decimal import Decimal
 from uuid import UUID
 
-from django.db.models import Avg, Count, Sum
+from django.db.models import Avg, Count, Q, Sum
 from django.http import JsonResponse, HttpRequest
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods
@@ -57,13 +57,14 @@ def _app_to_dict(a: FinancialAidApplication) -> dict:
     }
 
 
-def _award_to_dict(w: AidAward) -> dict:
+def _award_to_dict(w: AidAward, *, include_rationale: bool = False) -> dict:
     return {
         "id": str(w.id),
         "school_id": str(w.school_id),
         "bucket": w.bucket,
         "amount": str(w.amount),
-        "rationale": w.rationale,
+        # Award rationale is case-sensitive; a basic aid reader may not see it.
+        "rationale": w.rationale if include_rationale else None,
         "approved_by_user_id": str(w.approved_by_user_id) if w.approved_by_user_id else None,
         "application_id": str(w.application_id) if w.application_id else None,
         "created_at": w.created_at.isoformat() if w.created_at else None,
@@ -85,6 +86,13 @@ def aid_applications(request):
     return _envelope([_app_to_dict(a) for a in qs], status=200)
 
 
+def _school_owned_awards(school_id):
+    """Exclude awards linked to another school's application; retain unlinked awards."""
+    return AidAward.objects.filter(school_id=school_id).filter(
+        Q(application__isnull=True) | Q(application__school_id=school_id)
+    )
+
+
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def aid_awards(request):
@@ -95,8 +103,17 @@ def aid_awards(request):
     if permission_error is not None:
         return permission_error
 
-    qs = AidAward.objects.filter(school_id=sid).select_related("application").order_by("-created_at")
-    return _envelope([_award_to_dict(w) for w in qs], status=200)
+    qs = _school_owned_awards(sid).select_related("application").order_by("-created_at")
+    # Keep the stable response contract but redact the sensitive rationale
+    # unless this reader also holds the school-scoped rationale-specific grant.
+    school = School.objects.get(pk=sid)
+    include_rationale = user_has_permission(
+        request.user, "financial_aid.view_rationale", school=school
+    )
+    return _envelope(
+        [_award_to_dict(w, include_rationale=include_rationale) for w in qs],
+        status=200,
+    )
 
 
 @api_view(["POST"])
@@ -141,7 +158,7 @@ def financial_aid_metrics(request: HttpRequest):
         decided_count = apps.filter(status="decided").count()
         overdue_count = apps.filter(status="in_review", submitted_at__lt=overdue_cutoff).count()
 
-        awards = AidAward.objects.filter(school_id=sid)
+        awards = _school_owned_awards(sid)
         budget_awarded = awards.aggregate(total=Sum("amount"))["total"] or Decimal("0")
         avg_award_raw = awards.aggregate(avg=Avg("amount"))["avg"] or Decimal("0")
         avg_award = int(avg_award_raw.quantize(Decimal("1")))
@@ -179,7 +196,7 @@ def financial_aid_metrics(request: HttpRequest):
                 "applications_in_review": in_review_count,
                 "applications_decided": decided_count,
                 "decisions_overdue": overdue_count,
-                "budget_awarded": str(budget_awarded),
+                "budget_awarded": str(budget_awarded.quantize(Decimal("0.01"))),
                 "avg_award": avg_award,
                 "needs_buckets": needs_buckets,
                 "alerts": alerts,

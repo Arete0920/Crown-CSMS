@@ -150,6 +150,11 @@ def demo_school(request):
     DEV-only ops endpoint that returns the canonical demo school UUID.
     Used to set CI_SMOKE_SCHOOL_ID deterministically.
     """
+    # A DEV label cannot override a conflicting production marker or Azure host.
+    # Use the same fail-closed runtime boundary as the CI-user token endpoint.
+    from django.http import Http404
+    if not demo_ops_runtime_allowed():
+        raise Http404
     env = os.getenv("ENVIRONMENT", "").lower()
     if env not in {"dev", "development"}:
         return JsonResponse({"detail": "not allowed outside dev"}, status=403)

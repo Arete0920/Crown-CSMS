@@ -135,3 +135,49 @@ class TestModuleGate(TestCase):
         result = get_school_modules(self.school.id)
         self.assertEqual(result["financial_aid"], "active")
         self.assertEqual(result["gradebook_pro"], "trial")
+
+
+class StandaloneCareEntitlementTests(TestCase):
+    def setUp(self):
+        self.school = School.objects.create(name="Standalone Care Tenant")
+
+    def test_both_independent_keys_default_disabled(self):
+        keys = {k for k, _ in SchoolModule.MODULE_CHOICES}
+        self.assertTrue({"before_care", "after_care", "little_lambs"}.issubset(keys))
+        self.assertFalse(school_has_module(self.school.id, "before_care"))
+        self.assertFalse(school_has_module(self.school.id, "after_care"))
+        self.assertFalse(school_has_module(self.school.id, "little_lambs"))
+
+    def test_am_only_never_unlocks_pm_or_diadem(self):
+        SchoolModule.objects.create(
+            school=self.school, module_key="before_care", status="active",
+            expiry_date=timezone.now() + timezone.timedelta(days=30),
+        )
+        self.assertTrue(school_has_module(self.school.id, "before_care"))
+        self.assertFalse(school_has_module(self.school.id, "after_care"))
+        self.assertFalse(school_has_module(self.school.id, "little_lambs"))
+
+    def test_care_trial_expiry_suspension_and_missing_expiry_fail_closed(self):
+        for key in ("before_care", "after_care"):
+            module = SchoolModule.objects.create(school=self.school, module_key=key, status="trial")
+            self.assertFalse(school_has_module(self.school.id, key))
+            module.expiry_date = timezone.now() + timezone.timedelta(days=7)
+            module.save(update_fields=["expiry_date"])
+            self.assertTrue(school_has_module(self.school.id, key))
+            module.status = "suspended"
+            module.save(update_fields=["status"])
+            self.assertFalse(school_has_module(self.school.id, key))
+            module.status = "active"
+            module.expiry_date = timezone.now() - timezone.timedelta(seconds=1)
+            module.save(update_fields=["status", "expiry_date"])
+            self.assertFalse(school_has_module(self.school.id, key))
+
+    def test_inactive_care_tenant_not_entitled(self):
+        module = SchoolModule.objects.create(
+            school=self.school, module_key="after_care", status="active",
+            expiry_date=timezone.now() + timezone.timedelta(days=30),
+        )
+        assert module.is_active
+        self.school.is_active = False
+        self.school.save(update_fields=["is_active"])
+        self.assertFalse(school_has_module(self.school.id, "after_care"))

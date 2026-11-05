@@ -1,4 +1,5 @@
-﻿from django.conf import settings
+﻿import logging
+from django.conf import settings
 from django.db import transaction
 from django.db.models import Count, Sum, Q
 from django.db.models.functions import Coalesce
@@ -7,17 +8,19 @@ from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from decimal import Decimal
+from uuid import UUID
 
-from aid.models import AidApplication, AidAuditEvent, AidAward, AidDocument
+from crown_api.tenant import build_tenant_context
+
+from aid.models import AidApplication, AidAward, AidDocument
+from aid.services.ledger_bridge import ensure_accepted_award_credit
 from admissions.models import AdmissionsApplication
-from ledger.models import Allocation as LedgerAllocation
-from ledger.models import LedgerAccount, Payment
 from core.models import (
     AcademicYear,
+    School,
     Enrollment,
     Family,
     GradeLevel,
@@ -29,35 +32,74 @@ from crown_api.director_roles import ALLOWED_DIRECTOR_ROLE_CODES
 
 
 ALLOWED_ROLE_CODES = ALLOWED_DIRECTOR_ROLE_CODES
+logger = logging.getLogger(__name__)
+
+
+def _authorized_director_school(request, raw_school_id):
+    """Require an active target school and an actor's school-specific authority.
+
+    The legacy director API is exempt from the early tenant-header middleware.
+    Resolve the authenticated actor here; a role in another school never grants
+    access to the selected school. The developer-open flag is not authorization.
+    """
+    user = getattr(request, "user", None)
+    if (
+        user is None
+        or not getattr(user, "is_authenticated", False)
+        or not getattr(user, "is_active", False)
+    ):
+        return False
+
+    try:
+        school_id = UUID(str(raw_school_id))
+    except (TypeError, ValueError, AttributeError):
+        return False
+
+    if not School.objects.filter(pk=school_id, is_active=True).exists():
+        return False
+
+    # Reject malformed, conflicting, and mismatched legacy/canonical selectors
+    # even when the actor has the platform superuser role.
+    meta = getattr(request, "META", {})
+    for header in ("HTTP_X_SCHOOL_ID", "HTTP_X_CROWN_SCHOOL_ID"):
+        value = meta.get(header)
+        if value is None:
+            continue
+        try:
+            if UUID(str(value)) != school_id:
+                return False
+        except (TypeError, ValueError, AttributeError):
+            return False
+
+    # Global director authority is reserved for an active, schoolless owner.
+    # A school-assigned superuser must establish a matching director role;
+    # Django's superuser bit alone never crosses the tenant boundary.
+    if getattr(user, "is_superuser", False) and getattr(user, "school_id", None) is None:
+        return True
+
+    # Resolve after DRF authenticates (the early middleware may have bound an
+    # anonymous context on this exempt route). Do not trust that stale context.
+    context = build_tenant_context(request)
+    if (
+        context.school_id != school_id
+        or context.source == "header_invalid"
+        or (context.override_requested and not context.override_authorized)
+    ):
+        return False
+
+    return UserRole.objects.filter(
+        user_id=user.pk,
+        school_id=school_id,
+        role_code__in=ALLOWED_ROLE_CODES,
+    ).exists()
 
 
 def crown_director_allowed(request):
-    """
-    Check if user is allowed to access director APIs.
-
-    Allows:
-    1. Dev mode (CROWN_DEV_OPEN_API=1 env var)
-    2. Superuser
-    3. Users with director role codes
-    """
-    user = request.user
-
-    # Dev override (explicit toggle)
-    if getattr(settings, "CROWN_DEV_OPEN_API", False):
-        return True
-
-    # Superuser always allowed
-    if user and getattr(user, "is_superuser", False):
-        return True
-
-    # Check authenticated + role
-    if not user or not user.is_authenticated:
-        return False
-
-    user_id = getattr(user, "id", None)
-    if not user_id:
-        return False
-    return UserRole.objects.filter(user_id=user_id, role_code__in=ALLOWED_ROLE_CODES).exists()
+    """Authorize the selected active tenant, not a director role in any school."""
+    query = getattr(request, "query_params", None)
+    if query is None:
+        query = getattr(request, "GET", {})
+    return _authorized_director_school(request, query.get("school_id"))
 
 
 def user_has_director_role(user):
@@ -715,63 +757,6 @@ def director_priority(request):
     })
 
 
-def _post_award_to_new_ledger_pipeline(*, award, school_id, actor_user):
-    """
-    Post an accepted AidAward to the new ledger pipeline (ledger.Payment + Allocation).
-
-    Creates a ledger.Payment(source='FINANCIAL_AID') and, if a non-voided Charge
-    exists for the household's ledger account, a ledger.Allocation against it.
-
-    Idempotent: uses AidAuditEvent(action='DIRECTOR_LEDGER_POSTED') as guard.
-    Must be called inside a transaction.atomic() block.
-    """
-    already_posted = AidAuditEvent.objects.filter(
-        school=award.school,
-        entity_type=AidAuditEvent.ENTITY_AWARD,
-        entity_id=award.id,
-        action="DIRECTOR_LEDGER_POSTED",
-    ).exists()
-    if already_posted:
-        return
-
-    household = award.student.household
-    ledger_account, _ = LedgerAccount.objects.get_or_create(
-        household=household,
-        defaults={"school_id": school_id},
-    )
-
-    amount = Decimal(award.awarded_cents) / Decimal("100")
-    payment = Payment.objects.create(
-        school_id=school_id,
-        account=ledger_account,
-        amount=amount,
-        source="FINANCIAL_AID",
-        reference=f"director:award:{award.id}",
-    )
-
-    charge = ledger_account.charges.filter(is_void=False).order_by("-created_at").first()
-    if charge:
-        LedgerAllocation.objects.get_or_create(
-            school_id=school_id,
-            payment=payment,
-            charge=charge,
-            defaults={"amount": amount},
-        )
-
-    AidAuditEvent.log(
-        school=award.school,
-        entity_type=AidAuditEvent.ENTITY_AWARD,
-        entity_id=award.id,
-        action="DIRECTOR_LEDGER_POSTED",
-        actor_user=actor_user,
-        details={
-            "payment_id": str(payment.id),
-            "amount": str(amount),
-            "household_id": str(household.id),
-        },
-    )
-
-
 @extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
@@ -815,6 +800,16 @@ def director_actions(request):
                 {"error": "Missing required field: action"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+        if not school_id:
+            return Response(
+                {"detail": "school_id is required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if not _authorized_director_school(request, school_id):
+            return Response(
+                {"detail": "Forbidden"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
 
         if action == "POST_ACCEPTED_AWARDS":
             if not ids:
@@ -829,7 +824,11 @@ def director_actions(request):
 
                 for award_id in ids:
                     try:
-                        award = AidAward.objects.get(pk=award_id, school_id=school_id)
+                        # Hold the award row lock through the outer transaction so
+                        # concurrent retries observe the first committed posting.
+                        award = AidAward.objects.select_for_update().get(
+                            pk=award_id, school_id=school_id,
+                        )
 
                         if year_id and str(award.academic_year_id) != str(year_id):
                             errors.append({
@@ -849,16 +848,16 @@ def director_actions(request):
 
                         actor_user = request.user if getattr(request.user, "is_authenticated", False) else None
 
-                        # Post to ledger (idempotent; will not double-post)
-                        award.mark_accepted_and_post(actor_user=actor_user)
-
-                        # Also post to new ledger pipeline (idempotent)
-                        _post_award_to_new_ledger_pipeline(
-                            award=award, school_id=school_id, actor_user=actor_user
-                        )
-
-                        if was_unposted and award.ledger_entry_id is not None:
-                            posted_count += 1
+                        # Each award needs its own savepoint: a failed credit
+                        # projection must not commit its preceding legacy post.
+                        with transaction.atomic():
+                            if was_unposted:
+                                award.mark_accepted_and_post(actor_user=actor_user)
+                            # Canonical aid is a non-cash Credit, never a Payment.
+                            # Missing verified household mapping is audited as deferred.
+                            ensure_accepted_award_credit(award=award, actor_user=actor_user)
+                            if was_unposted and award.ledger_entry_id is not None:
+                                posted_count += 1
                     except AidAward.DoesNotExist:
                         errors.append({
                             "award_id": award_id,
@@ -1224,95 +1223,4 @@ def director_timeline(request):
         },
         "timeline": items,
     }, status=status.HTTP_200_OK)
-
-
-import os
-import logging
-from django.conf import settings
-from rest_framework.decorators import api_view, permission_classes, authentication_classes
-from rest_framework.response import Response
-from rest_framework import status
-
-logger = logging.getLogger(__name__)
-
-def _crown_env() -> str:
-    crown_env = getattr(settings, "CROWN_ENV", None) or os.environ.get("CROWN_ENV")
-    if crown_env:
-        return str(crown_env).strip().lower()
-    return "dev" if getattr(settings, "DEBUG", False) else "prod"
-
-
-def _is_dev_env() -> bool:
-    env = _crown_env()
-    if env == "prod":
-        # Absolute deny: never allow seeding behaviors in prod
-        return False
-    return env == "dev"
-
-
-@extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
-@api_view(["POST"])
-@permission_classes([AllowAny])
-@authentication_classes([])       # prevent DRF from requiring JWT automatically
-def force_seed_user(request):
-    """
-    DEV-only emergency seeding endpoint.
-    AuthZ: (JWT staff/superuser) OR (X-Dev-Seed-Key matches DEV_SEED_KEY).
-    Never returns credentials.
-    """
-    if not _is_dev_env():
-        # Hide existence outside DEV
-        return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
-
-    # Authorization path A: authenticated staff/superuser
-    user = getattr(request, "user", None)
-    jwt_ok = bool(user and getattr(user, "is_authenticated", False) and (getattr(user, "is_staff", False) or getattr(user, "is_superuser", False)))
-
-    # Authorization path B: dev seed key
-    provided = request.headers.get("X-Dev-Seed-Key") or request.headers.get("X-DEV-SEED-KEY")
-    expected = os.environ.get("DEV_SEED_KEY") or getattr(settings, "DEV_SEED_KEY", None)
-    key_ok = bool(expected and provided and provided == expected)
-
-    if not (jwt_ok or key_ok):
-        return Response({"detail": "Forbidden."}, status=status.HTTP_403_FORBIDDEN)
-
-    admin_password = os.environ.get("DEV_ADMIN_PASSWORD")
-    if not admin_password or not admin_password.strip():
-        return Response(
-            {"ok": False, "message": "Development seed password is not configured."},
-            status=status.HTTP_503_SERVICE_UNAVAILABLE,
-        )
-
-    try:
-        from django.core.management import call_command
-        from django.core.management.base import CommandError
-
-        # Run migrations
-        call_command('migrate', verbosity=1)
-
-        # Run dev_bootstrap to create admin user
-        call_command('dev_bootstrap', admin_password=admin_password, verbosity=1)
-
-        logger.warning(
-            "DEV_SEED invoked: actor=%s auth=%s",
-            getattr(user, "username", None) if jwt_ok else None,
-            "jwt" if jwt_ok else "seed_key"
-        )
-
-        return Response(
-            {
-                "ok": True,
-                "message": "Seed operation completed (details suppressed).",
-                "already_seeded": False,   # or True if you detect it
-            },
-            status=status.HTTP_200_OK
-        )
-    except CommandError as e:
-        logger.exception("DEV_SEED failed: %s", str(e))
-        return Response(
-            {"ok": False, "message": "Seed operation failed."},
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR
-        )
-
-
 

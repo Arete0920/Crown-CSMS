@@ -21,6 +21,7 @@ from core.models import (
     Guardian as CoreGuardian,
     School,
     UserAccount,
+    UserRole,
 )
 from core.scoping import (
     DOMAIN_FINANCIAL,
@@ -109,24 +110,27 @@ class TestScopingStudentsTeacher(TestCase):
 
 
 # ---------------------------------------------------------------------------
-# Test: Parent → Students via Guardian.email → Household
-# Status: IMPLEMENTED (household__guardians__email__iexact)
+# Test: Parent → Students via Guardian.account → Household
+# Status: IMPLEMENTED (verified same-school account link)
 # ---------------------------------------------------------------------------
 
 class TestScopingStudentsParent(TestCase):
     def setUp(self):
-        self.school_id = uuid.uuid4()
+        self.school = School.objects.create(name="Synthetic Parent Scope School")
+        self.school_id = self.school.pk
 
         self.parent = UserAccount.objects.create_user(
-            username="parent_scope_test", password=TEST_AUTH_SECRET, email="mama@family.com"
+            username="parent_scope_test", password=TEST_AUTH_SECRET, email="mama@family.com",
+            school=self.school,
         )
-        self.parent.role = "PARENT"
+        UserRole.objects.create(user=self.parent, school=self.school, role_code="PARENT")
 
-        # Own household — guardian email matches parent user email.
+        # Own household requires a persisted authenticated account link.
         own_hh = Household.objects.create(school_id=self.school_id, name="Own Family")
         HouseholdsGuardian.objects.create(
             school_id=self.school_id,
             household=own_hh,
+            account=self.parent,
             first_name="Mama", last_name="Smith",
             email="mama@family.com",
         )
@@ -149,8 +153,8 @@ class TestScopingStudentsParent(TestCase):
         self.assertIn(self.own_student.id, ids)
         self.assertNotIn(self.other_student.id, ids)
 
-    def test_parent_email_match_is_case_insensitive(self):
-        """Guardian email stored as 'mama@family.com', user.email as 'MAMA@Family.com'"""
+    def test_parent_email_match_without_account_link_grants_nothing(self):
+        """Case-insensitive email equality is not an authenticated identity link."""
         case_parent = UserAccount.objects.create_user(
             username="case_parent_scope_test", password=TEST_AUTH_SECRET,
             email="MAMA@Family.com",
@@ -158,7 +162,7 @@ class TestScopingStudentsParent(TestCase):
         case_parent.role = "PARENT"
         qs = Student.objects.filter(school_id=self.school_id)
         result = scope_queryset(case_parent, qs, DOMAIN_STUDENTS)
-        self.assertIn(self.own_student.id, set(result.values_list("id", flat=True)))
+        self.assertEqual(list(result), [])
 
     def test_parent_with_no_guardian_record_sees_nothing(self):
         orphan = UserAccount.objects.create_user(
@@ -171,25 +175,27 @@ class TestScopingStudentsParent(TestCase):
 
 
 # ---------------------------------------------------------------------------
-# Test: Parent → FinancialAidApplication via Guardian.email → household_id
-# Status: IMPLEMENTED (lazy households.Guardian lookup by email → household_id__in)
+# Test: Parent → FinancialAidApplication via Guardian.account → household_id
+# Status: IMPLEMENTED (school-bound account link → household_id__in)
 # ---------------------------------------------------------------------------
 
 class TestScopingFinancialAidParent(TestCase):
     def setUp(self):
-        self.school_id = uuid.uuid4()
+        self.school = School.objects.create(name="Synthetic Parent Aid Scope School")
+        self.school_id = self.school.pk
 
         self.parent = UserAccount.objects.create_user(
             username="aid_parent_scope_test", password=TEST_AUTH_SECRET,
-            email="guardian@family.com",
+            email="guardian@family.com", school=self.school,
         )
-        self.parent.role = "PARENT"
+        UserRole.objects.create(user=self.parent, school=self.school, role_code="PARENT")
 
-        # Own household — guardian email matches.
+        # Own household is linked to the authenticated parent.
         own_hh = Household.objects.create(school_id=self.school_id, name="Own Family")
         HouseholdsGuardian.objects.create(
             school_id=self.school_id,
             household=own_hh,
+            account=self.parent,
             first_name="Guardian", last_name="Smith",
             email="guardian@family.com",
         )

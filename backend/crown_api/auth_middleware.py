@@ -8,6 +8,7 @@ from rest_framework.authentication import BaseAuthentication
 from rest_framework.exceptions import AuthenticationFailed
 
 from audit.models import AuditLog
+from audit.request_logging import record_request_audit
 from core.models import UserRole
 from crown_api.auth_models import CrownUser
 from crown_api.director_roles import ALLOWED_DIRECTOR_ROLE_CODES
@@ -151,17 +152,22 @@ def _director_actions_allowed(user, school_id: str) -> bool:
 
 
 def _audit_early_director_response(request, response):
-    """Mirror AuditMiddleware for responses returned before downstream middleware."""
-    try:
-        AuditLog.objects.create(
-            user_id=getattr(getattr(request, "user", None), "id", None),
-            action=request.method,
-            model=request.path,
-            metadata={"status_code": response.status_code},
-        )
-    except Exception:
-        # Auditing must never turn a rejected request into an application error.
-        pass
+    """Audit early denials with fixed labels rather than caller-controlled URLs."""
+    # These exact registered aliases are safe before URL resolution. Prefixes
+    # accepted by the legacy interceptor are deliberately not copied into logs.
+    safe_routes = {
+        "/api/director/actions": "/api/director/actions",
+        "/api/director/actions/": "/api/director/actions/",
+        "/api/v1/director/actions": "/api/v1/director/actions",
+        "/api/v1/director/actions/": "/api/v1/director/actions/",
+    }
+    route_template = safe_routes.get(getattr(request, "path", ""))
+    record_request_audit(
+        request,
+        response,
+        create=AuditLog.objects.create,
+        route_template=route_template,
+    )
     return response
 
 

@@ -66,9 +66,9 @@ def onboarding_progress(request, school_id):
         return Response({"detail": "School not found."}, status=status.HTTP_404_NOT_FOUND)
 
     tasks = OnboardingTask.objects.filter(school=school)
-    if not tasks.exists():
-        seed_onboarding_tasks(school)
-        tasks = OnboardingTask.objects.filter(school=school)
+    # Restore missing canonical tasks without resetting existing progress.
+    seed_onboarding_tasks(school)
+    tasks = OnboardingTask.objects.filter(school=school)
 
     total = tasks.count()
     completed = tasks.filter(status=OnboardingTask.STATUS_COMPLETE).count()
@@ -126,9 +126,16 @@ def activation_gate(request, school_id):
         return Response({"detail": "School not found."}, status=status.HTTP_404_NOT_FOUND)
 
     ready = can_activate_school(school)
-    pending = list(
-        OnboardingTask.objects.filter(school=school, status=OnboardingTask.STATUS_PENDING)
-        .values_list("task_name", flat=True)
+    from onboarding.models_tasks import DEFAULT_TASKS
+
+    current = dict(
+        OnboardingTask.objects.filter(school=school).values_list("task_name", "status")
+    )
+    pending = [name for name in DEFAULT_TASKS
+               if current.get(name) != OnboardingTask.STATUS_COMPLETE]
+    pending.extend(
+        name for name, task_status in current.items()
+        if name not in DEFAULT_TASKS and task_status != OnboardingTask.STATUS_COMPLETE
     )
 
     return Response({

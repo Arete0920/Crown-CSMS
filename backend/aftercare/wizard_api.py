@@ -4,6 +4,7 @@ from rest_framework.response import Response
 
 from core.models import School
 from core.permissions import user_has_permission
+from .entitlements import disallowed_config_session, entitled_sessions, visible_sessions
 
 from .serializers import AftercareProgramConfigSerializer
 from .services import ensure_config
@@ -33,16 +34,26 @@ def aftercare_setup_wizard(request):
     if request.method == "GET":
         if not _has_permission(request, "extended_care.view", school):
             return _forbidden()
+        if not visible_sessions(school_id):
+            return Response({"detail": "Extended Care not enabled.", "code": "CARE_SESSION_NOT_ENABLED"}, status=403)
         cfg = ensure_config(school_id)
         return Response({"config": AftercareProgramConfigSerializer(cfg).data})
 
     if not _has_permission(request, "extended_care.edit", school):
         return _forbidden()
+    if not entitled_sessions(school_id):
+        return Response({"detail": "Extended Care not enabled.", "code": "CARE_SESSION_NOT_ENABLED"}, status=403)
 
     cfg = ensure_config(school_id)
     config_data = request.data.get("config", request.data)
     serializer = AftercareProgramConfigSerializer(cfg, data=config_data, partial=True)
     serializer.is_valid(raise_exception=True)
+    restricted = disallowed_config_session(serializer, cfg, school_id)
+    if restricted:
+        return Response({
+            "detail": "Care session not enabled.", "code": "CARE_SESSION_NOT_ENABLED",
+            "care_session": restricted,
+        }, status=403)
     cfg = serializer.save()
 
     return Response(

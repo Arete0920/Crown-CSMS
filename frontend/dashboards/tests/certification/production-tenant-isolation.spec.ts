@@ -38,6 +38,68 @@ for (const school of schools) {
 }
 
 
+// Hosted DEV privacy acceptance: the same-school wrong family, foreign tenant,
+// co-guardian contacts, and email-only identity must not authorize a parent.
+// Existing fixture secrets remain short-lived, masked, and excluded from artifacts.
+for (const school of schools) {
+  const foreign = schools.find((candidate) => candidate.school_id !== school.school_id);
+  for (const prefix of ["/api/", "/api/v1/"] as const) {
+    test(school.school_id + " " + prefix + " parent household privacy", async ({ request }) => {
+      const headers = { Authorization: "Bearer " + school.actors.parent.token, "X-School-Id": school.school_id };
+      const targets = [
+        { resource: "households", own: school.household_id, denied: [school.other_household_id, foreign.household_id] },
+        { resource: "guardians", own: school.guardian_id, denied: [school.other_guardian_id, school.co_guardian_id, foreign.guardian_id] },
+        { resource: "students", own: school.student_id, denied: [school.other_student_id, foreign.student_id] },
+      ];
+      for (const target of targets) {
+        const list = await request.get(api + prefix + target.resource + "/", { headers });
+        expect(list.status(), prefix + target.resource + " list").toBe(200);
+        const records = await list.json();
+        expect(Array.isArray(records)).toBe(true);
+        const visibleIds = records.map((record: { id: string }) => record.id);
+        expect(visibleIds).toContain(target.own);
+        const ownDetail = await request.get(api + prefix + target.resource + "/" + target.own + "/", { headers });
+        expect(ownDetail.status(), prefix + target.resource + " own detail").toBe(200);
+        for (const forbiddenId of target.denied) {
+          expect(visibleIds).not.toContain(forbiddenId);
+          const forbidden = await request.get(api + prefix + target.resource + "/" + forbiddenId + "/", { headers });
+          expect(forbidden.status(), prefix + target.resource + " forbidden detail").toBe(404);
+        }
+      }
+      const ownHousehold = await request.get(api + prefix + "households/" + school.household_id + "/", { headers });
+      expect(ownHousehold.status()).toBe(200);
+      expect(JSON.stringify(await ownHousehold.json())).not.toContain(school.co_guardian_email);
+
+      // The email matches an unlinked co-guardian, but no Guardian.account link exists.
+      const unlinkedHeaders = {
+        Authorization: "Bearer " + school.actors.email_only_parent.token,
+        "X-School-Id": school.school_id,
+      };
+      for (const target of targets) {
+        const list = await request.get(api + prefix + target.resource + "/", { headers: unlinkedHeaders });
+        expect(list.status(), prefix + target.resource + " unlinked list").toBe(200);
+        expect(await list.json()).toEqual([]);
+        const denied = await request.get(
+          api + prefix + target.resource + "/" + target.own + "/", { headers: unlinkedHeaders }
+        );
+        expect(denied.status(), prefix + target.resource + " unlinked detail").toBe(404);
+      }
+    });
+  }
+
+  // Platform owner API permissions are server-side; a school persona is never
+  // a schoolless, active platform superuser, regardless of UI navigation.
+  test(school.school_id + " school personas denied platform owner APIs", async ({ request }) => {
+    for (const role of ["school_admin", "board", "parent"] as const) {
+      const headers = { Authorization: "Bearer " + school.actors[role].token, "X-School-Id": school.school_id };
+      for (const route of ["/api/platform/overview", "/api/platform/schools/list"]) {
+        const denied = await request.get(api + route, { headers });
+        expect(denied.status(), role + " " + route).toBe(403);
+      }
+    }
+  });
+}
+
 test('Heritage Board renewal preserves least privilege and tenant isolation', async ({ playwright }) => {
   // A separate context prevents cookies from another persona masking authorization.
   const context = await playwright.request.newContext();

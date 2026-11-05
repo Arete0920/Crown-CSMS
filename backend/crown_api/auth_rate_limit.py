@@ -1,6 +1,7 @@
 import hashlib
 from dataclasses import dataclass
 
+from django.conf import settings
 from django.core.cache import cache
 
 
@@ -37,7 +38,19 @@ def _ip_key(scope: str, request) -> str:
     return f"crown:auth-rate:{scope}:ip:{_digest(_client_ip(request))}"
 
 
+def _require_shared_auth_counter() -> None:
+    """Require a shared cache in hosted/hardened authentication contexts."""
+    if not getattr(settings, "CROWN_AUTH_RATE_LIMIT_REQUIRE_SHARED_CACHE", False):
+        return
+    backend = (settings.CACHES.get("default") or {}).get("BACKEND")
+    if backend != "django.core.cache.backends.redis.RedisCache":
+        raise AuthRateLimitBackendUnavailable(
+            "Shared Redis authentication rate-limit storage is required."
+        )
+
+
 def _get_count(key: str) -> int:
+    _require_shared_auth_counter()
     try:
         return int(cache.get(key, 0) or 0)
     except Exception as exc:
@@ -47,6 +60,7 @@ def _get_count(key: str) -> int:
 
 
 def _increment(key: str, window_seconds: int) -> int:
+    _require_shared_auth_counter()
     try:
         if cache.add(key, 1, timeout=window_seconds):
             return 1

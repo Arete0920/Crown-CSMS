@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import api, wizard_api
+from . import api, wizard_api, pickup_choices
 
 
 urlpatterns = [
@@ -15,6 +15,7 @@ urlpatterns = [
     path("sessions/<int:session_id>/roster/", api.session_roster_view, name="summer_camp_session_roster"),
 
     path("enrollments/", api.enrollments_view, name="summer_camp_enrollments"),
+    path("enrollments/<int:enrollment_id>/pickup-choices/", pickup_choices.pickup_choices, name="camp_pickup_choices"),
 
     path("roster/today/", api.roster_today_view, name="summer_camp_roster_today"),
     path("attendance/checkin/", api.attendance_checkin_view, name="summer_camp_attendance_checkin"),

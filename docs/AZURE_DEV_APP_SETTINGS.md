@@ -146,3 +146,32 @@ The final deployment JSON evidence records source SHA, DEV app, verified databas
 If blocked, retain the current API image and inspect the sanitized failure stage. Do not toggle the obsolete `RUN_MIGRATE` setting, weaken startup `migrate --check`, use the production migration workflow for DEV, or widen the permitted plan. Unexpected migration or permission requirements need their own reviewed disposition. If schema application succeeds and a later image deployment fails, preserve the additive schema and captured data. The persistent defaults and historical-model test establish the legacy `MarketingLead` INSERT/read boundary only; they do not certify every previous-image endpoint against new inquiry data or complete an Azure rollback. The operator must verify the chosen rollback image against the retained schema before relying on it. A later deployment failure does not authorize reversing the migration and deleting captured data.
 
 Local boundary proof (no database or Azure execution): `python -m unittest discover -s scripts/ops -p test_run_dev_inquiry_migration.py -v`.
+
+## Hosted authentication rate-limit shared cache
+
+The protected shared-counter change tracked in PR #467 requires a shared Redis
+cache for hosted/hardened API authentication. Authentication login and refresh
+must **fail closed with HTTP 503** when the hosted process has no configured
+shared Redis backend or the cache cannot be read/written. A default Django
+process-local cache is permitted only for isolated local/test runtimes.
+
+Before deploying the source change, the authorized Azure operator must:
+
+1. Verify that a shared Redis service is configured for **all API instances and
+   workers** via `CROWN_CACHE_URL`, `REDIS_URL`, or an explicitly configured
+   Redis `CELERY_BROKER_URL` (the source honors this precedence). Do not assume
+   that the default Celery broker fallback configures the Django cache.
+2. Confirm secret handling, TLS and reachability through controlled Azure
+   settings; never print connection credentials into logs or evidence.
+3. Certify through isolated synthetic identities that invalid login/refresh
+   requests accumulate the same rate-limit counters across workers, return 429
+   after the configured threshold, and still fail closed with 503 if Redis is
+   unavailable. Validate a successful login and token refresh separately.
+4. Record the selected app/runtime SHA and safe rollback prerequisites. If the
+   shared Redis prerequisite is missing, leave the operational release blocked
+   rather than disabling the authentication gate or silently reverting to
+   process-local counters.
+
+Repository CI verifies source and simulated counters, **not** Azure Redis
+topology, credentials, cross-instance consistency, or hosted acceptance. No
+Azure configuration change is authorized by this documentation.

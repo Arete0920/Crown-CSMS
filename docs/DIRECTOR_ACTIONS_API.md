@@ -16,26 +16,26 @@ The Director Actions API (`POST /api/director/actions/`) provides a unified endp
 
 ### 1. POST_ACCEPTED_AWARDS
 
-Post accepted financial aid awards to the ledger, making them effective for the student's account.
+Post accepted financial aid awards to the legacy aid ledger. When a unique, same-school family-to-household link exists, also project the award into Student Accounts as a **non-cash Credit**. Without a valid link, retain the legacy posting and record an auditable deferred-credit exception. This action never creates a cash Payment or sends money externally.
 
 #### Request Payload
 
 ```json
 {
   "action": "POST_ACCEPTED_AWARDS",
-  "school_id": "uuid (optional)",
+  "school_id": "uuid (required)",
   "year_id": "uuid (optional)",
-  "ids": ["award-uuid-1", "award-uuid-2", ...]
+  "ids": ["award-primary-key-1", "award-primary-key-2", ...]
 }
 ```
 
 **Required Fields:**
 - `action`: Must be `"POST_ACCEPTED_AWARDS"`
-- `ids`: Array of StudentAid UUIDs to post
+- `ids`: Nonempty list of `AidAward` primary-key identifiers to post
+- `school_id`: Explicit active school UUID; the authenticated director must be authorized for this school, and supplied tenant headers must agree
 
 **Optional Fields:**
-- `school_id`: Filter/validate awards belong to this school
-- `year_id`: Academic year context (informational)
+- `year_id`: When supplied, each award must belong to that academic year
 
 #### Response
 
@@ -96,8 +96,9 @@ Post accepted financial aid awards to the ledger, making them effective for the 
 4. **Processing:** For `POST_ACCEPTED_AWARDS`:
    - Iterates through requested award IDs
    - Verifies award exists and belongs to correct school
-   - Calls `post_award_to_ledger()` helper
-   - Tracks successes and errors
+   - Posts the legacy award once; projects an idempotent non-cash Student Accounts Credit through the canonical verified family-to-household bridge, or records a deferred-credit audit
+   - Rolls back each award's writes if its projection raises an error, while processing other requested awards independently
+   - Tracks newly posted legacy awards and per-award errors; a valid retry can reconcile a previously deferred credit
 5. **Response:** Returns summary with posted count and any errors
 
 ### Error Handling
@@ -105,7 +106,7 @@ Post accepted financial aid awards to the ledger, making them effective for the 
 - **Award not found:** Logged in errors array, continues processing
 - **School mismatch:** Award skipped with error message
 - **Ledger posting error:** Caught and returned in errors array
-- **Transaction:** All operations within single atomic transaction
+- **Transaction:** The batch is transaction-scoped with a nested atomic savepoint per award. An unexpected projection error rolls back that award's legacy posting and audit, and is returned in the errors array. A response with status 200 can still contain per-award errors; check `errors` and `posted_count` together.
 
 ## Usage Examples
 
@@ -118,7 +119,7 @@ import json
 url = "http://localhost:8000/api/director/actions/"
 headers = {
     "Content-Type": "application/json",
-    "Authorization": f"Token {auth_token}"
+    "Authorization": f"Bearer {access_token}"
 }
 
 payload = {
@@ -149,7 +150,7 @@ const response = await fetch(url, {
   method: "POST",
   headers: {
     "Content-Type": "application/json",
-    "Authorization": `Token ${token}`
+    "Authorization": `Bearer ${token}`
   },
   body: JSON.stringify(payload)
 });

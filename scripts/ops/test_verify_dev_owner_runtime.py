@@ -33,6 +33,7 @@ class FakeOpener:
             "Access-Control-Allow-Origin": runtime.PREVIEW,
             "Access-Control-Allow-Credentials": "true",
             "Access-Control-Allow-Headers": "content-type, authorization",
+            "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
         }
 
     def open(self, request, timeout):
@@ -66,6 +67,9 @@ class OwnerRuntimePrecheckTests(unittest.TestCase):
         self.assertEqual(result["overall_release_certification"], "NOT_VERIFIED")
         self.assertEqual(result["owner_console_authenticated_acceptance"], "NOT_TESTED")
         self.assertEqual(result["school_provisioning_execution"], "NOT_TESTED")
+        self.assertEqual(result["observed_build_shas"], {
+            "backend": SHA, "backend_artifact": SHA, "dev_preview": SHA,
+        })
         self.assertEqual(len(client.calls), 5)
         for url, method, headers, timeout in client.calls:
             self.assertIn(method, ("GET", "OPTIONS"))
@@ -81,7 +85,24 @@ class OwnerRuntimePrecheckTests(unittest.TestCase):
         result = runtime.probe(SHA, opener=client)
         self.assertEqual(result["precheck"], "BLOCKED")
         self.assertEqual(result["checks"]["backend_build_sha"], "MISMATCH")
+        self.assertEqual(result["observed_build_shas"]["backend"], "b" * 40)
         self.assertNotIn("DO_NOT_LOG", json.dumps(result))
+
+    def test_invalid_identity_fields_are_withheld_from_public_receipt(self):
+        for value in (None, 7, {"private": "DO_NOT_LOG"}, "DO_NOT_LOG", "A" * 40,
+                      "a" * 39, "a" * 40 + "\n"):
+            with self.subTest(value=value):
+                client = safe_opener(
+                    health={"ok": True, "db": "ok", "env": "dev", "build_sha": value,
+                            "artifact_build_sha": value},
+                    frontend={"build_sha": value},
+                )
+                result = runtime.probe(SHA, opener=client)
+                self.assertEqual(result["observed_build_shas"], {
+                    "backend": None, "backend_artifact": None, "dev_preview": None,
+                })
+                self.assertEqual(result["precheck"], "BLOCKED")
+                self.assertNotIn("DO_NOT_LOG", json.dumps(result))
 
     def test_no_owner_authority_is_exposed_anonymously(self):
         client = safe_opener()
@@ -104,6 +125,35 @@ class OwnerRuntimePrecheckTests(unittest.TestCase):
         self.assertEqual(result["checks"]["backend_environment"], "NOT_VERIFIED")
         self.assertEqual(result["precheck"], "BLOCKED")
 
+    def test_owner_probes_never_read_response_bodies(self):
+        class StatusOnlyResponse(FakeResponse):
+            def read(self, *args, **kwargs):
+                raise AssertionError("Owner probe must inspect status only")
+
+        for path, check in (
+            ("/api/platform/overview", "anonymous_overview"),
+            ("/api/platform/schools/list", "anonymous_school_directory"),
+        ):
+            for status in (200, 204, 302, 401, 403, 500):
+                with self.subTest(path=path, status=status):
+                    client = safe_opener()
+                    response = StatusOnlyResponse(status=status)
+
+                    def client_open(request, timeout):
+                        if request.full_url == runtime.API + path and request.get_method() == "GET":
+                            return response
+                        return FakeOpener.open(client, request, timeout)
+
+                    client.open = client_open
+                    result = runtime.probe(SHA, opener=client)
+                    expected = (
+                        "DENIED" if status in (401, 403)
+                        else "EXPOSED" if status == 200 else "NOT_VERIFIED"
+                    )
+                    self.assertEqual(result["checks"][check], expected)
+                    self.assertEqual(result["precheck"], "PASS" if expected == "DENIED" else "BLOCKED")
+                    self.assertTrue(response.closed)
+
     def test_frontend_mismatch_and_invalid_cors_block(self):
         client = safe_opener(frontend={"build_sha": "b" * 40}, cors_headers={
             "Access-Control-Allow-Origin": "https://unapproved.example",
@@ -114,6 +164,23 @@ class OwnerRuntimePrecheckTests(unittest.TestCase):
         self.assertEqual(result["checks"]["dev_preview_build_sha"], "MISMATCH")
         self.assertEqual(result["checks"]["dev_preview_cors"], "NOT_VERIFIED")
         self.assertEqual(result["precheck"], "BLOCKED")
+
+    def test_cors_must_allow_get_not_just_origin_credentials_and_headers(self):
+        client = safe_opener(cors_headers={
+            "Access-Control-Allow-Origin": runtime.PREVIEW,
+            "Access-Control-Allow-Credentials": "true",
+            "Access-Control-Allow-Headers": "authorization",
+            "Access-Control-Allow-Methods": "POST, OPTIONS",
+        })
+        result = runtime.probe(SHA, opener=client)
+        self.assertEqual(result["checks"]["dev_preview_cors"], "NOT_VERIFIED")
+        self.assertEqual(result["precheck"], "BLOCKED")
+
+        # Header tokens are case-insensitive; an explicit GET restores readiness.
+        client.cors_headers["Access-Control-Allow-Methods"] = "post, gEt"
+        result = runtime.probe(SHA, opener=client)
+        self.assertEqual(result["checks"]["dev_preview_cors"], "READY")
+        self.assertEqual(result["precheck"], "PASS")
 
     def test_unavailable_and_redirect_are_blocked_without_following(self):
         client = safe_opener()
@@ -151,6 +218,37 @@ class OwnerRuntimePrecheckTests(unittest.TestCase):
                            'az webapp', 'database_url:', 'POST /api/'):
             self.assertNotIn(prohibited, owner_job)
         self.assertIn('verify_dev_owner_runtime.py --expected-sha', owner_job)
+
+    def test_repository_freshness_checks_dev_runtime_without_privileges(self):
+        workflow = (
+            Path(__file__).resolve().parents[2]
+            / ".github/workflows/repository-freshness.yml"
+        ).read_text(encoding="utf-8")
+        self.assertIn("  dev-runtime-drift:", workflow)
+        job = workflow.split("  dev-runtime-drift:", 1)[1].split(
+            "  report-stale-branches:", 1
+        )[0]
+        # Main pushes and daily checks report drift; no PR write/merge dependency.
+        self.assertIn("github.event_name == 'push'", job)
+        self.assertIn("github.event_name == 'schedule'", job)
+        self.assertIn("github.event.schedule == '17 6 * * *'", job)
+        self.assertNotIn("github.event_name == 'pull_request'", job)
+        self.assertIn('persist-credentials: false', job)
+        self.assertIn('contents: read', job)
+        self.assertIn('verify_dev_owner_runtime.py --expected-sha', job)
+        self.assertIn('GITHUB_STEP_SUMMARY', job)
+        self.assertIn('exit "$probe_exit"', job)
+        self.assertIn('not certification', job)
+        for forbidden in (
+            'id-token: write',
+            'secrets.',
+            'azure/login@',
+            'az webapp',
+            'az rest',
+            'POST /api/',
+            'school_id',
+        ):
+            self.assertNotIn(forbidden, job)
 
     def test_only_full_lowercase_commit_shas_are_allowed(self):
         for sha in ("", "main", "a" * 7, "A" * 40, "a" * 39 + "\n"):

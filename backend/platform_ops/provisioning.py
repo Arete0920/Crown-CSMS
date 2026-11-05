@@ -143,7 +143,8 @@ def create_school_and_queue_provisioning(
     # ── Create core.School ──────────────────────────────────────────────────
     from core.models import School  # noqa: PLC0415
 
-    school = School.objects.create(name=name)
+    # Queued onboarding is not an authorized, active school session.
+    school = School.objects.create(name=name, is_active=False)
 
     # ── Create TenantProfile ────────────────────────────────────────────────
     TenantProfile.objects.create(
@@ -270,6 +271,7 @@ def run_provisioning_job(
     """
     from platform_ops.models import ProvisioningJob
     from tenants.models import SchoolSettings, TenantProfile
+    from core.models import School
 
     _require_platform_operator(actor_user_id)
 
@@ -325,6 +327,10 @@ def run_provisioning_job(
 
             profile.status = "active"
             profile.save(update_fields=["status", "updated_at"])
+
+            # Keep core tenant access fail-closed until this transaction and
+            # the required success audit both commit; a failure rolls back.
+            School.objects.filter(pk=locked.school_id).update(is_active=True)
 
             _record_provisioning_audit(
                 "provisioning.succeeded",

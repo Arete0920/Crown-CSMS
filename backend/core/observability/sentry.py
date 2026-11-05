@@ -6,6 +6,17 @@ SENSITIVE_HEADER_NAMES = {
     "x-demo-key",
     "x-csrf-token",
     "x-csrftoken",
+    "x-admin-ops-secret",
+    "x-ops-secret",
+    "x-devops-secret",
+    "x-crown-ops-secret",
+    # URLs can carry sensitive path identifiers and query values.
+    "referer",
+    "referrer",
+    "x-original-url",
+    "x-original-uri",
+    "x-rewrite-url",
+    "x-forwarded-uri",
 }
 
 
@@ -15,7 +26,8 @@ def _redact_headers(headers):
             key: ("[Filtered]" if str(key).lower() in SENSITIVE_HEADER_NAMES else value)
             for key, value in headers.items()
         }
-    return headers
+    # Unknown header representations must never bypass privacy filtering.
+    return {}
 
 
 def before_send(event, hint):
@@ -25,6 +37,8 @@ def before_send(event, hint):
         request.pop("data", None)
         request.pop("cookies", None)
         request.pop("query_string", None)
+        # Even without query_string, the raw URL can expose tokens or record IDs.
+        request.pop("url", None)
         if "headers" in request:
             request["headers"] = _redact_headers(request.get("headers"))
 

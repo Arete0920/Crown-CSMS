@@ -29,6 +29,7 @@ from rest_framework.test import APIClient
 
 from core.models import School
 from finance.models import FinancePayment
+from households.models import Guardian as HouseholdGuardian, Household
 
 User = get_user_model()
 
@@ -38,6 +39,17 @@ PAYMENT_INTENT_URL = "/api/finance/payments/intent/"
 # ---------------------------------------------------------------------------
 # Shared base
 # ---------------------------------------------------------------------------
+
+def _link_verified_payer(school, payer):
+    """Persist an account-backed same-school household; email is not identity."""
+    household = Household.objects.create(
+        school_id=school.pk, name=f"Synthetic payer household {payer.username}",
+    )
+    HouseholdGuardian.objects.create(
+        school_id=school.pk, household=household, account=payer,
+        first_name="Synthetic", last_name="Guardian", email=payer.email,
+    )
+
 
 class _IdempotencyBase(TestCase):
     """One school, one authenticated user for payment tests."""
@@ -52,6 +64,7 @@ class _IdempotencyBase(TestCase):
         )
         self.client = APIClient()
         self.client.force_authenticate(user=self.user)
+        _link_verified_payer(self.school, self.user)
 
     def _post_intent(self, key: str | None = None, amount: int = 5000) -> tuple:
         """Helper: POST a payment intent with optional idempotency_key."""
@@ -238,6 +251,8 @@ class IdempotencyKeyScopingTests(TestCase):
             school_id=self.school_b.id,
         )
         self.client = APIClient()
+        _link_verified_payer(self.school_a, self.user_a)
+        _link_verified_payer(self.school_b, self.user_b)
 
     def test_same_key_across_schools_creates_two_payments(self):
         """
@@ -266,11 +281,8 @@ class IdempotencyKeyScopingTests(TestCase):
             HTTP_X_SCHOOL_ID=str(self.school_b.id),
         )
 
-        if resp_a.status_code not in (200, 201) or resp_b.status_code not in (200, 201):
-            self.skipTest(
-                f"Payment intent creation failed (a:{resp_a.status_code} b:{resp_b.status_code}). "
-                f"Skipping cross-school key scoping test."
-            )
+        self.assertEqual(resp_a.status_code, 201, resp_a.content[:300])
+        self.assertEqual(resp_b.status_code, 201, resp_b.content[:300])
 
         # Verify both schools each have exactly 1 payment with this key
         count_a = FinancePayment.objects.filter(

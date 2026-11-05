@@ -139,6 +139,45 @@ def test_apply_aid_creates_payment_and_allocation():
     assert evt.message == str(run.id)
 
 
+
+def test_cross_school_linked_award_does_not_create_aid_payment():
+    school_id = _sid()
+    foreign_school_id = _sid()
+    household = _make_household(school_id)
+    account = _make_ledger_account(school_id, household)
+    run = _make_billing_run(school_id)
+    _make_invoice_with_charge(school_id, run, household, account)
+    foreign_application = FinancialAidApplication.objects.create(
+        school_id=foreign_school_id,
+        household_id=household.id,
+        academic_year="2025-26",
+        status="decided",
+        household_income=Decimal("50000.00"),
+        household_size=4,
+    )
+    mismatched_award = AidAward.objects.create(
+        school_id=school_id,
+        application=foreign_application,
+        bucket="need",
+        amount=Decimal("3000.00"),
+    )
+
+    result = apply_financial_aid_to_billing_run(
+        school_id=school_id,
+        billing_run_id=run.id,
+    )
+    assert result["payments_created"] == 0
+    assert result["allocations_created"] == 0
+    assert result["events_created"] == 0
+    assert result["disbursed_total"] == "0.00"
+    assert not Payment.objects.filter(school_id=school_id, source="FINANCIAL_AID").exists()
+    assert not AidAuditEvent.objects.filter(
+        school_id=school_id,
+        event_type="DISBURSED_TO_BILLING_RUN",
+        entity_id=mismatched_award.id,
+    ).exists()
+
+
 # ---------------------------------------------------------------------------
 # Test 2: Idempotency — calling twice must not double-post
 # ---------------------------------------------------------------------------

@@ -245,7 +245,7 @@ export default {
     {
       title: 'Review Pipeline',
       eyebrow: 'Quick action',
-      description: 'Open application pipeline â€” 12 items need principal signoff today.',
+      description: 'Review current applications and their next admissions steps.',
       actionLabel: 'Review Pipeline',
       href: '/admissions/pipeline',
       allowedRoles: ['admissions'],
