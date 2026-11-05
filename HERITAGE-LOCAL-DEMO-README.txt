@@ -54,6 +54,23 @@ five-module seeding may regenerate local SGO account credentials.
 Do not remove failed gates, fake tenant/guardian permission or replace
 blocked custody/health records with invented clearance.
 
+AUTOMATED QA AND LIVE PRESENTATION USE SEPARATE FRESH FOLDERS
+Use the same reviewed source revision in both folders. In the QA folder,
+with ports 8000 and 4173 free, run from the repository root:
+  py -3.12 scripts/demo/start_heritage_local.py --prepare-only --five-module-preflight
+  pushd frontend\dashboards
+  npx playwright install chromium
+  popd
+  py -3.12 scripts/demo/verify_heritage_runtime.py --browser --five-module
+The verifier starts and stops its own servers. Do NOT run it alongside
+--five-module-demo: that launcher already occupies the required ports.
+QA performs real writes and consumes the one-use Diadem release. Preserve
+that folder and its audit; do not reset it or use its database to present.
+For the live presentation, use the SECOND fresh isolated source folder and
+start --five-module-demo there. During Diadem, run --daycare-presenter in
+a second terminal as described below. Never copy the QA database or private
+credentials into the presentation folder. Neither run certifies a release.
+
 STOP AND RESTART
 Press Ctrl+C to stop both servers. Preserve fictional audit and custody
 records, and use a fresh isolated folder for a new source revision.
