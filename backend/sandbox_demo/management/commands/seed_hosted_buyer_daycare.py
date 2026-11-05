@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import sys
 from datetime import date, timedelta
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
@@ -104,6 +105,10 @@ class Command(BaseCommand):
                 return
 
             now = timezone.now()
+            try:
+                care_day = timezone.localtime(now, ZoneInfo(school.timezone)).date()
+            except (TypeError, ValueError, ZoneInfoNotFoundError) as exc:
+                raise CommandError("A valid fictional school timezone is required.") from exc
             director = director_and_staff["daycare_director"]
             staff = director_and_staff["daycare_staff"]
             site = DaycareSite.objects.create(
@@ -136,8 +141,8 @@ class Command(BaseCommand):
             DaycareEnrollment.objects.create(
                 school=school, site=site, child=child, program=program,
                 room=room, status="ACTIVE", readiness="READY",
-                start_date=timezone.localdate(now) - timedelta(days=1),
-                end_date=timezone.localdate(now) + timedelta(days=7),
+                start_date=care_day - timedelta(days=1),
+                end_date=care_day + timedelta(days=7),
                 weekdays=list(range(7)),
             )
             DaycareGuardianAuthority.objects.create(
