@@ -15,6 +15,7 @@ import subprocess
 import sys
 
 ROOT = Path(__file__).resolve().parents[2]
+STANDALONE_CARE_MIGRATION_SHA256 = "c4e6f05d1c3c4a13f51beeccbc960ae6cf0e9d5a808360436b2bf7f23789ab6f"
 MIGRATIONS = {
     "core.0019_seed_summer_camp_permissions": "6a1b145b18725205749a031148166e1b08bd1b6fe8c22abeab2d3f138a21e9c0",
     "core.0020_diadem_daycare_staff_roles": "a106a5be72fd043ae3a644cd29bd143c98223ab03581ed3cfbca9bf42528038a",
@@ -32,7 +33,7 @@ MIGRATIONS = {
     "jireh_sgo.0002_fictional_family_intake": "08817b858d9f863024bbdc4e296a407765f7ded649ff395a6b494a0df17e600e",
     "sandbox_demo.0005_sandboxbuyerworkspace": "7d83346019abd52600c172361c69eababbeb3735783bc0e695324a01ed3b5722",
     "sandbox_demo.0006_hosted_jireh_bindings": "d6b31c7ede84977e3a5b28c6460139e779577756722103ca5e73324a9e6b3aa7",
-    "subscriptions.0006_alter_schoolmodule_module_key_standalone_care": "c4e6f05d1c3c4a13f51beeccbc960ae6cf0e9d5a808360436b2bf7f23789ab6f",
+    "subscriptions.0006_alter_schoolmodule_module_key_standalone_care": STANDALONE_CARE_MIGRATION_SHA256,
     "summer_camp.0002_pickup_verification_actor": "37ac05a32e08b1a6bc8489998e0dcc56dc71a131c68f2768d2378b62df954d25",
     "summer_camp.0003_staff_credential_review_evidence": "ff7104d13428987d47a593b6144372884a1028571e442ea74753486aeb1c46a2",
     "aftercare.0014_legacy_insert_defaults": "56e5452016ee85b3f1a22a9a0b79be1560b2aba5476287a6447f4931cf750966",

@@ -16,6 +16,10 @@
 # 4. Request CODEOWNER review for .gitleaksignore changes
 
 # Current exclusions:
+# PR #632: public SHA256 of subscriptions migration 0006; reproduced with
+# sha256sum backend/subscriptions/migrations/0006_alter_schoolmodule_module_key_standalone_care.py
+# Exact historical finding only; no credential or scanner rule/path exemption.
+d472fca42e0ba7bdb3db18107ae9b4af7b24d775:scripts/ops/rehearse_dev_heritage_migrations.py:generic-api-key:35
 # Documentation files with example/placeholder tokens and connection strings (not real credentials)
 # Format: <commit-sha>:<file>:<rule-id>:<line> (when scanning full history with --log-opts="--all")
 6bc615ae0d8e82ae750bd35252f9ab38c7754fac:scripts/README.md:project-db-credential:41

@@ -43,6 +43,13 @@ the separate `migration_rehearsal` receipt records the transformed copy. A passi
 rehearsal does not authorize live migration, deployment, payments or buyer access.
 Retained rollback capability and application rollback require separate evidence.
 
+PR #632's original secret-scan finding was reproduced with Gitleaks 8.18.4:
+the public SHA256 of the subscriptions 0006 migration matched `generic-api-key`
+because its migration identifier contains `module_key`. The digest is verified
+from the checked-in migration bytes. Its exact historical fingerprint is recorded
+in `.gitleaksignore` for CODEOWNER review; rules and path scanning remain enabled.
+The current manifest uses a named SHA256 constant to avoid this ambiguity.
+
 Before this runbook or linked evidence is used operationally, verify the current repository identity, workflow definition, PostgreSQL version, artifact retention, backup identity, target environment, and whether a later canonical runbook supersedes it. Evidence from an older source SHA, predecessor issue campaign, or synthetic fixture must remain explicitly historical and must not be treated as current operational-backup proof.
 
 ## Purpose
