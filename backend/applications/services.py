@@ -4,11 +4,39 @@ from dataclasses import dataclass
 from django.db import transaction
 from django.utils import timezone
 
-from core.models import HouseholdFamilyLink, Student as CoreStudent, StudentIdentityLink
+from core.models import Enrollment as CoreEnrollment, HouseholdFamilyLink, Student as CoreStudent, StudentIdentityLink
 from households.models import Student as CompatibilityStudent
 from ledger.models import LedgerAccount, Charge
 
 from .models import Application, ApplicationEvent, ApplicationStatus
+
+
+def has_verified_student_enrollments(application: Application) -> bool:
+    """Require school-scoped, evidenced identity and an actual SIS enrollment.
+
+    A lifecycle event or legacy wizard status is insufficient proof of a
+    canonical student enrollment. This read is fail-closed by design.
+    """
+    applicants = list(application.applicants.all())
+    if not applicants:
+        return False
+    for applicant in applicants:
+        if not applicant.student_id:
+            return False
+        identity = StudentIdentityLink.objects.filter(
+            school_id=application.school_id,
+            compatibility_student_id=applicant.student_id,
+            verification_status=StudentIdentityLink.STATUS_VERIFIED,
+        ).first()
+        if identity is None or not identity.evidence_reference.strip():
+            return False
+        if not CoreEnrollment.objects.filter(
+            school_id=application.school_id,
+            student_id=identity.core_student_id,
+            status="ENROLLED",
+        ).exists():
+            return False
+    return True
 
 
 @dataclass(frozen=True)
