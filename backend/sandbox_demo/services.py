@@ -32,6 +32,7 @@ from finance.models import (
 )
 
 from .catalog import (
+    DEFAULT_SANDBOX_INVITE_ROLES,
     SANDBOX_PERSONAS,
     SANDBOX_SCHOOLS,
     SandboxPersona,
@@ -448,7 +449,8 @@ def seed_heritage_flagship(*, reset: bool = False) -> dict:
             )
             student_index += 1
 
-    for persona in SANDBOX_PERSONAS.values():
+    for persona_key in DEFAULT_SANDBOX_INVITE_ROLES:
+        persona = SANDBOX_PERSONAS[persona_key]
         ensure_persona_user(school, persona)
 
     parent_user = UserAccount.objects.filter(
@@ -684,7 +686,8 @@ def assert_flagship_proof() -> list[dict]:
             }
         )
 
-    for persona in SANDBOX_PERSONAS.values():
+    for persona_key in DEFAULT_SANDBOX_INVITE_ROLES:
+        persona = SANDBOX_PERSONAS[persona_key]
         session = create_sandbox_session(
             persona_key=persona.key,
             school_key_or_id=str(school.id),
