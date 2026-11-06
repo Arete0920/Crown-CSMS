@@ -87,6 +87,16 @@ def _version(value):
     return value
 
 
+def _pagination_offset(request):
+    try:
+        offset = int(request.query_params.get("offset", "0"))
+    except (ValueError, TypeError):
+        raise ValidationError("offset must be a nonnegative integer.")
+    if offset < 0 or offset > 100000:
+        raise ValidationError("offset out of range.")
+    return offset
+
+
 def _fingerprint(action, data):
     raw = json.dumps({"action": action, "payload": data}, sort_keys=True, separators=(",", ":"), ensure_ascii=True)
     return hashlib.sha256(raw.encode("utf-8")).hexdigest()
@@ -220,12 +230,7 @@ def cycles(request):
         if assigned_grant:
             allowed |= Q(assignment__school=school, assignment__evaluator=request.user)
         queryset = queryset.filter(allowed).distinct()
-        try:
-            offset = int(request.query_params.get("offset", "0"))
-        except (ValueError, TypeError):
-            raise ValidationError("offset must be a nonnegative integer.")
-        if offset < 0 or offset > 100000:
-            raise ValidationError("offset out of range.")
+        offset = _pagination_offset(request)
         total = queryset.count()
         rows = queryset.select_related("staff", "academic_year").order_by("-created_at", "id")[offset:offset+MAX_PAGE]
         return Response({
@@ -302,7 +307,9 @@ def cycle_detail(request, cycle_id):
     qs = TeacherObservation.objects.filter(school=school, cycle=cycle)
     if not is_evaluator:
         qs = qs.filter(status="submitted")
-    rows = list(qs.order_by("-observed_at", "id")[:MAX_PAGE])
+    offset = _pagination_offset(request)
+    total = qs.count()
+    rows = list(qs.order_by("-observed_at", "id")[offset:offset + MAX_PAGE])
     response_by_id = {
         r.observation_id: _response_data(r)
         for r in TeacherObservationResponse.objects.filter(
@@ -317,6 +324,8 @@ def cycle_detail(request, cycle_id):
             for row in rows
         ],
         "observations_limit": MAX_PAGE,
+        "observations_total": total,
+        "observations_next_offset": offset + MAX_PAGE if offset + MAX_PAGE < total else None,
     })
 
 

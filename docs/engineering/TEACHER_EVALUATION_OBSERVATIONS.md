@@ -17,7 +17,7 @@ Status: **Draft source, not certified.** This additive implementation intentiona
 
 - `POST /api/v1/teacher-evaluations/cycles/`: create a school/year/teacher cycle and designated evaluator; one cycle per teacher and year in this initial slice.
 - `GET /api/v1/teacher-evaluations/cycles/`: limited, school-scoped list with per-actor filtering.
-- `GET /api/v1/teacher-evaluations/cycles/<uuid>/`: subject/evaluator details; drafts excluded from subject views.
+- `GET /api/v1/teacher-evaluations/cycles/<uuid>/`: subject/evaluator details with bounded `offset` pagination (100 observations/page, `observations_total` and `observations_next_offset`). Pagination and totals apply **after** school and viewer filtering; drafts are excluded from a subject teacher's views and counts.
 - `POST /api/v1/teacher-evaluations/cycles/<uuid>/observations/`: create unscored private observation draft with evidence narrative and school-year-valid timestamp.
 - `POST /api/v1/teacher-evaluations/observations/<uuid>/submit/`: publish a draft to the subject teacher; version-checked and final.
 - `POST /api/v1/teacher-evaluations/observations/<uuid>/responses/`: subject-only receipt acknowledgment or disputed statement; one response per observation.

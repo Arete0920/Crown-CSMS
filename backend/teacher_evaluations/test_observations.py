@@ -327,6 +327,70 @@ def test_failed_validation_has_no_partial_mutation(scenario):
     assert TeacherEvaluationEvent.objects.count() == 1
 
 
+def test_cycle_detail_paginates_authorized_observations_without_draft_leakage(scenario):
+    s = scenario
+    cycle = create_cycle(s).data["id"]
+    base = timezone.now()
+    submitted = []
+    for index in range(101):
+        submitted.append(TeacherObservation.objects.create(
+            school=s["school"], cycle_id=cycle, evaluator=s["evaluator"],
+            observed_at=base - timedelta(minutes=index + 1),
+            narrative=f"Fictional submitted observation {index}",
+            status="submitted", submitted_at=base,
+        ))
+    oldest = submitted[-1]
+    TeacherObservationResponse.objects.create(
+        school=s["school"], observation=oldest, teacher=s["teacher"],
+        choice="disputed", comment="Please correct the documented context.",
+    )
+    draft = TeacherObservation.objects.create(
+        school=s["school"], cycle_id=cycle, evaluator=s["evaluator"],
+        observed_at=base, narrative="Confidential evaluator-only draft",
+    )
+    route = BASE + f"cycles/{cycle}/"
+
+    evaluator_first = get(s["evaluator"], s["school"], route)
+    assert evaluator_first.status_code == 200
+    assert evaluator_first.data["observations_total"] == 102
+    assert evaluator_first.data["observations_next_offset"] == 100
+    assert len(evaluator_first.data["observations"]) == 100
+    assert str(draft.pk) in {item["id"] for item in evaluator_first.data["observations"]}
+    evaluator_second = get(s["evaluator"], s["school"], route, {"offset": "100"})
+    assert evaluator_second.status_code == 200
+    assert len(evaluator_second.data["observations"]) == 2
+    assert evaluator_second.data["observations_next_offset"] is None
+    assert str(oldest.pk) in {item["id"] for item in evaluator_second.data["observations"]}
+
+    teacher_first = get(s["teacher"], s["school"], route)
+    assert teacher_first.status_code == 200
+    assert teacher_first.data["observations_total"] == 101
+    assert teacher_first.data["observations_next_offset"] == 100
+    assert len(teacher_first.data["observations"]) == 100
+    assert all(item["status"] == "submitted" for item in teacher_first.data["observations"])
+    teacher_second = get(s["teacher"], s["school"], route, {"offset": "100"})
+    assert teacher_second.status_code == 200
+    assert teacher_second.data["observations_total"] == 101
+    assert teacher_second.data["observations_next_offset"] is None
+    assert len(teacher_second.data["observations"]) == 1
+    assert teacher_second.data["observations"][0]["id"] == str(oldest.pk)
+    assert teacher_second.data["observations"][0]["teacher_response"]["choice"] == "disputed"
+    assert str(draft.pk) not in {
+        item["id"] for item in (
+            teacher_first.data["observations"] + teacher_second.data["observations"]
+        )
+    }
+    assert "no-store" in teacher_second["Cache-Control"]
+    assert "private" in teacher_second["Cache-Control"]
+
+    assert get(s["teacher"], s["school"], route, {"offset": "-1"}).status_code == 400
+    assert get(s["teacher"], s["school"], route, {"offset": "garbled"}).status_code == 400
+    assert get(s["teacher"], s["school"], route, {"offset": "100001"}).status_code == 400
+    assert get(s["unrelated"], s["school"], route, {"offset": "100"}).status_code == 404
+    assert get(s["outsider"], s["other"], route, {"offset": "100"}).status_code == 404
+    assert get(s["hr"], s["school"], route, {"offset": "100"}).status_code == 404
+
+
 @pytest.mark.django_db(transaction=True)
 def test_postgresql_concurrent_observation_retry_commits_one_event(scenario):
     """Two real DB connections sharing a retry key must persist one observation."""
