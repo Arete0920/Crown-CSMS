@@ -522,8 +522,8 @@ class DevMigrationBoundaryTests(unittest.TestCase):
             i for i, step in enumerate(steps)
             if step.get("name") == "Authenticate to existing DEV Azure"
         )
-        self.assertEqual(steps[dependencies].get("if"), "inputs.inspect_migration_plan")
-        self.assertEqual(steps[offline_tests].get("if"), "inputs.inspect_migration_plan")
+        self.assertEqual(steps[dependencies].get("if"), "github.event_name == 'push' || inputs.inspect_migration_plan")
+        self.assertEqual(steps[offline_tests].get("if"), "github.event_name == 'push' || inputs.inspect_migration_plan")
         self.assertLess(dependencies, offline_tests)
         self.assertLess(offline_tests, azure_login)
         self.assertIn("python -m pip install pyyaml==6.0.3", steps[dependencies]["run"])
@@ -703,7 +703,7 @@ class DevMigrationBoundaryTests(unittest.TestCase):
         steps = workflow["jobs"]["inspect"]["steps"]
         target = next(s for s in steps
                       if s.get("name") == "Inspect all pending DEV migrations without applying")
-        self.assertEqual(target["if"], "inputs.inspect_migration_plan")
+        self.assertEqual(target["if"], "github.event_name == 'push' || inputs.inspect_migration_plan")
         self.assertIn("--inspect-all-migrations", target["run"])
         self.assertNotIn("--apply-", target["run"])
         self.assertNotIn("migrate_with_lock", target["run"])
