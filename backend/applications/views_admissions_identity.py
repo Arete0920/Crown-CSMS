@@ -220,6 +220,7 @@ def _upsert_verified_legacy_admissions(
     context: VerifiedAdmissionsContext,
     actor_user,
     target_status: str,
+    academic_year=None,
 ) -> tuple[dict[str, Any] | None, Response | None]:
     try:
         from admissions.models import AdmissionsApplication
@@ -229,10 +230,11 @@ def _upsert_verified_legacy_admissions(
             status=503,
         )
 
-    academic_year = legacy_views._resolve_legacy_academic_year(school=school)
     if academic_year is None:
+        academic_year = legacy_views._resolve_legacy_academic_year(school=school)
+    if academic_year is None or academic_year.school_id != school.pk:
         return None, _identity_conflict(
-            "Enrollment conversion requires an authoritative academic year.",
+            "Enrollment conversion requires an authoritative same-school academic year.",
             code="academic_year_required",
         )
 
