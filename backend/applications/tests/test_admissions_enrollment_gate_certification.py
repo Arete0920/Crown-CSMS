@@ -11,10 +11,12 @@ from applications.views_admissions import ENROLLMENT_STATE_EVENT_TYPE
 from core.models import (
     AcademicYear,
     CrownPermission,
+    Enrollment as CoreEnrollment,
     Family,
     HouseholdFamilyLink,
     RolePermission,
     School,
+    GradeLevel,
     Student as CoreStudent,
     StudentIdentityLink,
     UserRole,
@@ -82,8 +84,16 @@ def _attach_verified_identity(*, school, household, applicant):
         compatibility_student=compatibility_student,
         source=StudentIdentityLink.SOURCE_ADMISSIONS,
         verification_status=StudentIdentityLink.STATUS_VERIFIED,
-        evidence_reference="certification:admissions-enrollment-gate",
+        evidence_reference=(
+            f"application:{applicant.application_id}:applicant:{applicant.id}"
+        ),
     )
+    grade, _ = GradeLevel.objects.get_or_create(
+        school=school, code=applicant.grade_applying_for,
+        defaults={"label": "Grade 5", "sort_order": 5},
+    )
+    academic_year = AcademicYear.objects.get(school=school, is_current=True)
+    return core_student, grade, academic_year
 
 
 def test_canonical_enrollment_confirmation_fails_closed_then_bridges_after_readiness():
@@ -144,12 +154,35 @@ def test_canonical_enrollment_confirmation_fails_closed_then_bridges_after_readi
             "note": "certification fixture",
         },
     )
-    _attach_verified_identity(
+    core_student, grade, academic_year = _attach_verified_identity(
         school=school,
         household=household,
         applicant=applicant,
     )
 
+    # Accepted contract and identity evidence are still insufficient
+    # until a matching authoritative school-year enrollment is persisted.
+    unpersisted = client.post(
+        url,
+        {"mark_enrollment_confirmed": True},
+        format="json",
+        HTTP_X_SCHOOL_ID=str(school.id),
+    )
+    assert unpersisted.status_code == 409, unpersisted.data
+    assert unpersisted.data["code"] == "canonical_enrollment_required"
+    assert not ApplicationEvent.objects.filter(
+        school=school, application=application,
+        event_type="enrollment_confirmed",
+    ).exists()
+    assert not AdmissionsApplication.objects.filter(
+        school=school, status=AdmissionsApplication.STATUS_ENROLLED,
+    ).exists()
+
+    enrolled = CoreEnrollment.objects.create(
+        school=school, student=core_student,
+        academic_year=academic_year, grade_level=grade,
+        start_date=academic_year.start_date, status="ENROLLED",
+    )
     confirmed = client.post(
         url,
         {
@@ -163,6 +196,8 @@ def test_canonical_enrollment_confirmation_fails_closed_then_bridges_after_readi
     )
 
     assert confirmed.status_code == 200, confirmed.data
+    enrolled.refresh_from_db()
+    assert enrolled.status == "ENROLLED"
     assert confirmed.data["applicant_to_student_status"] == "completed"
     assert confirmed.data["classroom_readiness_status"] == "completed"
     assert confirmed.data["parent_portal_activation_status"] == "completed"
