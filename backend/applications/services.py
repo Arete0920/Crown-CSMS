@@ -121,9 +121,9 @@ def _family_for_application(application):
             household_id=application.household_id,
         )
     )
-    if len(links) != 1:
+    if len(links) != 1 or links[0].family.school_id != application.school_id:
         raise ValueError(
-            "Application acceptance requires exactly one verified household-to-family link."
+            "Application acceptance requires exactly one verified same-school household-to-family link."
         )
     return links[0].family
 
@@ -140,12 +140,26 @@ def _provision_student_identity(*, application, applicant, family, student_numbe
             compatibility_student=compatibility_student,
         ).first()
         if existing_link is not None:
+            core = existing_link.core_student
             if (
-                existing_link.school_id != application.school_id
+                applicant.school_id != application.school_id
+                or applicant.dob is None
+                or existing_link.school_id != application.school_id
                 or existing_link.verification_status != StudentIdentityLink.STATUS_VERIFIED
+                or not str(existing_link.evidence_reference or "").strip()
+                or core.school_id != application.school_id
+                or core.family_id != family.id
+                or core.dob != applicant.dob
+                or core.status != "ACTIVE"
+                or str(core.first_name or "").strip().casefold()
+                   != str(applicant.first_name or "").strip().casefold()
+                or str(core.last_name or "").strip().casefold()
+                   != str(applicant.last_name or "").strip().casefold()
             ):
-                raise ValueError("Applicant student identity link is not verified for this school.")
-            return compatibility_student, existing_link.core_student, False
+                raise ValueError(
+                    "Existing student identity requires verified evidence, matching family, DOB, status and name."
+                )
+            return compatibility_student, core, False
 
     if applicant.dob is None:
         raise ValueError(
@@ -211,14 +225,22 @@ def decide_application(
     if decision not in ("ACCEPT", "DENY"):
         raise ValueError("decision must be ACCEPT or DENY")
 
-    if application.status != ApplicationStatus.SUBMITTED:
-        raise ValueError("Only SUBMITTED applications can be decided")
-
     normalized_student_numbers = student_numbers or {}
     if not isinstance(normalized_student_numbers, dict):
         raise ValueError("student_numbers must be an object keyed by applicant id")
 
     with transaction.atomic():
+        # The caller's Application instance may be stale after another worker
+        # decided it. Serialize both accept and deny against the same DB row.
+        locked_status = (
+            Application.objects.select_for_update()
+            .filter(id=application.id, school_id=application.school_id)
+            .values_list("status", flat=True)
+            .get()
+        )
+        if locked_status != ApplicationStatus.SUBMITTED:
+            raise ValueError("Only SUBMITTED applications can be decided.")
+
         if decision == "DENY":
             application.status = ApplicationStatus.DECIDED
             application.decided_at = timezone.now()

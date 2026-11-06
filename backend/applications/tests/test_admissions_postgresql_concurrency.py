@@ -258,3 +258,105 @@ class SandboxParentEnrollmentPostgresConcurrencyTests(TransactionTestCase):
                 1,
                 event_type,
             )
+
+
+
+class CanonicalDecisionPostgresConcurrencyTests(TransactionTestCase):
+    """Lock the canonical application before creating student and fee evidence."""
+
+    def setUp(self):
+        if connection.vendor != "postgresql":
+            self.skipTest("Requires PostgreSQL row-lock semantics")
+        from datetime import date
+        from django.contrib.auth import get_user_model
+        from core.models import Family, HouseholdFamilyLink
+        from households.models import Household
+        from applications.models import ApplicationStatus
+
+        self.school = School.objects.create(name="Concurrent Decision School")
+        household = Household.objects.create(
+            school_id=self.school.id, name="Concurrent Decision Household"
+        )
+        family = Family.objects.create(
+            school=self.school, family_name="Concurrent Decision Family"
+        )
+        HouseholdFamilyLink.objects.create(
+            school=self.school, household_id=household.id, family=family,
+            source=HouseholdFamilyLink.SOURCE_ADMISSIONS,
+        )
+        self.application = Application.objects.create(
+            school_id=self.school.id,
+            household=household,
+            status=ApplicationStatus.SUBMITTED,
+        )
+        self.applicant = Applicant.objects.create(
+            school_id=self.school.id,
+            application=self.application,
+            first_name="Row",
+            last_name="Lock",
+            grade_applying_for="4",
+            dob=date(2016, 4, 10),
+        )
+        User = get_user_model()
+        self.user = User.objects.create_user(
+            username="concurrent-decision-test", password="TestOnlySecure!"
+        )
+        self.user.school = self.school
+        self.user.save(update_fields=["school"])
+
+    def test_two_acceptance_posts_create_exactly_one_student_and_fee(self):
+        from django.test import Client
+        from applications.models import ApplicationEvent, ApplicationStatus
+        from core.models import Student as CanonicalStudent, StudentIdentityLink
+        from ledger.models import Charge, LedgerAccount
+
+        barrier = Barrier(2)
+        request_payload = {
+            "decision": "ACCEPT",
+            "student_numbers": {str(self.applicant.id): "S-CONCURRENT-001"},
+            "enrollment_fee": "25.00",
+        }
+
+        def post_in_own_connection():
+            close_old_connections()
+            try:
+                client = Client()
+                client.force_login(self.user)
+                barrier.wait(timeout=15)
+                response = client.post(
+                    f"/api/v1/applications/{self.application.id}/decision/",
+                    data=deepcopy(request_payload),
+                    content_type="application/json",
+                )
+                return response.status_code
+            finally:
+                connections.close_all()
+
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            futures = [pool.submit(post_in_own_connection) for _ in range(2)]
+            statuses = sorted(f.result(timeout=90) for f in futures)
+
+        self.assertEqual(statuses, [200, 400])
+        self.application.refresh_from_db()
+        self.assertEqual(self.application.status, ApplicationStatus.DECIDED)
+        self.assertEqual(
+            CanonicalStudent.objects.filter(school=self.school).count(), 1,
+        )
+        self.assertEqual(
+            StudentIdentityLink.objects.filter(school=self.school).count(), 1,
+        )
+        self.assertEqual(
+            ApplicationEvent.objects.filter(
+                application=self.application, event_type="APPLICATION_ACCEPTED",
+            ).count(), 1,
+        )
+        self.assertEqual(
+            LedgerAccount.objects.filter(
+                school_id=self.school.id, household_id=self.application.household_id,
+            ).count(), 1,
+        )
+        self.assertEqual(
+            Charge.objects.filter(
+                school_id=self.school.id, account__household_id=self.application.household_id,
+            ).count(), 1,
+        )
