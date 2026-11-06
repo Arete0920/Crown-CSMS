@@ -421,7 +421,7 @@ def test_parent_reset_preserves_extra_application_event():
     )
     assert response.status_code == 200, response.data
     extra = ApplicationEvent.objects.create(
-        school=school, application_id=application_id,
+        school_id=school.id, application_id=application_id,
         event_type="decision_made", payload={"decision": "accepted", "note": "later review"},
     )
     with pytest.raises(
@@ -439,7 +439,7 @@ def test_parent_reset_refuses_added_applicant_and_preserves_all_records():
     application = Application.objects.get(pk=application_id)
     original = application.applicants.get()
     other = Applicant.objects.create(
-        school=school, application=application,
+        school_id=school.id, application=application,
         first_name="Unrelated", last_name="Child",
         dob=date(2014, 3, 18), grade_applying_for="6",
     )
