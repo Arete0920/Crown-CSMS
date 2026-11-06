@@ -30,6 +30,33 @@ class DeployOnlyBoundaryTests(unittest.TestCase):
     def test_deploy_only_defaults_to_true(self):
         self.assertRegex(WORKFLOW, r'dev_deploy_only:\n[^\n]*\n        type: boolean\n        default: true')
 
+    def test_hosted_jireh_preview_requires_opt_in_and_never_enables_production(self):
+        self.assertRegex(
+            WORKFLOW,
+            r'dev_hosted_jireh_preview:\n[^\n]*\n        type: boolean\n        default: false',
+        )
+        self.assertIn(
+            "VITE_HOSTED_JIREH_DEMO: ${{ inputs.dev_hosted_jireh_preview == true && '1' || '0' }}",
+            step('Build pinned frontend for DEV'),
+        )
+        production = WORKFLOW.split('  dev-certification-preview:\n', 1)[0]
+        self.assertNotIn('VITE_HOSTED_JIREH_DEMO:', production)
+        match = re.search(
+            r'^      - name: Reject hosted Jireh preview outside DEV\n(.*?)(?=^      - name: Checkout deploy ref)',
+            production, re.M | re.S,
+        )
+        self.assertIsNotNone(match)
+        self.assertIn('HOSTED_JIREH: ${{ inputs.dev_hosted_jireh_preview }}', match.group(1))
+        shell = textwrap.dedent(match.group(1).split('run: |\n', 1)[1])
+        for value, permitted in [('true', False), ('false', True), ('', True)]:
+            with self.subTest(value=value):
+                outcome = subprocess.run(
+                    ['bash', '-c', shell],
+                    env=dict(os.environ, HOSTED_JIREH=value),
+                    capture_output=True, text=True, check=False,
+                )
+                self.assertEqual(outcome.returncode == 0, permitted)
+
     def test_all_mutating_certification_steps_require_explicit_opt_in(self):
         names = [
             'Configure exact owned DEV preview origin',
