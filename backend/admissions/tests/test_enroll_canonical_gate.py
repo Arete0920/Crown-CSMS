@@ -76,10 +76,23 @@ def test_enroll_rejects_unlinked_accepted_legacy_application():
 
 
 def test_enroll_rejects_canonical_application_without_contract_deposit_readiness():
-    school = _school(); year = _year(school); legacy = _legacy_application(school, year); canonical = _link_canonical(legacy, ready=False)
-    response = _client(_editor(school), school).post("/api/admissions/enroll/", {"application_id": legacy.id}, format="json")
-    assert response.status_code == 409; assert response.data["canonical_application_id"] == str(canonical.id)
-    legacy.refresh_from_db(); assert legacy.status == AdmissionsApplication.STATUS_ACCEPTED
+    school = _school()
+    year = _year(school)
+    legacy = _legacy_application(school, year)
+    canonical = _link_canonical(legacy, ready=False)
+    # This must reach the contract/deposit check, not fail earlier on identity.
+    _verified_enrollment(legacy, canonical, year)
+    response = _client(_editor(school), school).post(
+        "/api/admissions/enroll/", {"application_id": legacy.id}, format="json",
+    )
+    assert response.status_code == 409
+    assert response.data["canonical_application_id"] == str(canonical.id)
+    assert response.data["detail"] == "Canonical enrollment readiness is incomplete."
+    legacy.refresh_from_db()
+    assert legacy.status == AdmissionsApplication.STATUS_ACCEPTED
+    assert not ApplicationEvent.objects.filter(
+        application=canonical, event_type=ENROLLMENT_CONFIRMED_EVENT_TYPE,
+    ).exists()
 
 
 def _verified_enrollment(legacy, canonical, year, *, add_enrollment=True):
