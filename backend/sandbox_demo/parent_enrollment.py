@@ -24,6 +24,8 @@ from core.models import (
     School,
     Student as CoreStudent,
     StudentIdentityLink,
+    StudentTuition,
+    LedgerEntry,
     UserAccount,
 )
 from households.models import Household, Student
@@ -90,13 +92,30 @@ def _is_enrolled(application: Application) -> bool:
     ).exists()
 
 
-def _find_application(application_id: str | None = None) -> Application:
-    qs = Application.objects.select_related("household").filter(
+def _scenario_application_ids():
+    """Identify this seeded scenario by both applicant and explicit seed evidence."""
+    return Application.objects.filter(
         school_id=SCHOOL_ID,
         household__name=ENROLLMENT_DEMO_HOUSEHOLD,
+        applicants__first_name=ENROLLMENT_DEMO_STUDENT_FIRST,
+        applicants__last_name=ENROLLMENT_DEMO_STUDENT_LAST,
+        applicants__flags__sandbox_demo=True,
+        events__event_type="application_submitted",
+        events__payload__via="sandbox_parent_enrollment_scenario",
+    ).values_list("id", flat=True)
+
+
+def _find_application(
+    application_id: str | None = None, *, for_update: bool = False
+) -> Application:
+    # An IN subquery avoids DISTINCT on the locked PostgreSQL outer query.
+    qs = Application.objects.select_related("household").filter(
+        school_id=SCHOOL_ID, id__in=_scenario_application_ids()
     )
     if application_id:
         qs = qs.filter(id=application_id)
+    if for_update:
+        qs = qs.select_for_update(of=("self",))
     for application in qs.order_by("-created_at"):
         if _is_accepted(application) or _is_enrolled(application):
             return application
@@ -308,12 +327,15 @@ def complete_parent_enrollment_demo(user, application_id: str, accepted_terms: b
     if not accepted_terms:
         raise SandboxParentEnrollmentError("enrollment_terms_required")
 
-    application = _find_application(application_id)
+    application = _find_application(application_id, for_update=True)
     if not _is_accepted(application) and not _is_enrolled(application):
         raise SandboxParentEnrollmentError("application_not_accepted")
 
     if _is_enrolled(application):
-        return serialize_parent_enrollment_state(application)
+        state = serialize_parent_enrollment_state(application)
+        if state.applicant_to_student_status != "completed":
+            raise SandboxParentEnrollmentError("canonical_enrollment_verification_failed")
+        return state
 
     contract = _ensure_contract(application, parent_user)
     now = timezone.now()
@@ -408,58 +430,113 @@ def complete_parent_enrollment_demo(user, application_id: str, accepted_terms: b
 
 @transaction.atomic
 def reset_parent_enrollment_scenario() -> None:
-    """Delete only the deterministic accepted-applicant scenario before a flagship rebuild."""
-    apps = list(
-        Application.objects.filter(
-            school_id=SCHOOL_ID,
-            applicants__first_name=ENROLLMENT_DEMO_STUDENT_FIRST,
-            applicants__last_name=ENROLLMENT_DEMO_STUDENT_LAST,
-        )
-        .select_related("household")
-        .distinct()
-    )
-    household_ids = {app.household_id for app in apps}
+    """Reset only explicit synthetic records; reject externally reused identity."""
     from admissions.models import AdmissionsApplication
 
-    # Delete only evidenced identities belonging to this synthetic application.
-    # Never remove another child's record on a same-name match.
+    apps = list(
+        Application.objects.select_for_update(of=("self",))
+        .filter(school_id=SCHOOL_ID, id__in=_scenario_application_ids())
+        .select_related("household")
+        .order_by("id")
+    )
+    app_ids = {app.id for app in apps}
+    household_ids = {app.household_id for app in apps}
+    owned_compatibility_ids = set()
+
+    # Validate all dependencies before deleting anything; atomicity also
+    # guarantees rollback if a later database constraint rejects a delete.
+    deletions = []
     for application in apps:
         for applicant in application.applicants.all():
             if not applicant.student_id:
                 continue
-            link = StudentIdentityLink.objects.filter(
+            link = (
+                StudentIdentityLink.objects.select_related(
+                    "core_student", "compatibility_student"
+                )
+                .filter(
+                    school_id=SCHOOL_ID,
+                    compatibility_student_id=applicant.student_id,
+                    source=StudentIdentityLink.SOURCE_ADMISSIONS,
+                    evidence_reference=(
+                        f"application:{application.id}:applicant:{applicant.id}"
+                    ),
+                )
+                .first()
+            )
+            if (
+                link is None
+                or link.compatibility_student.household_id != application.household_id
+                or link.compatibility_student.account_id is not None
+                or link.core_student.school_id != SCHOOL_ID
+            ):
+                raise SandboxParentEnrollmentError("reset_identity_not_exclusively_synthetic")
+            if Applicant.objects.filter(student_id=applicant.student_id).exclude(
+                application_id__in=app_ids
+            ).exists():
+                raise SandboxParentEnrollmentError("reset_student_referenced_elsewhere")
+            owned_legacy = AdmissionsApplication.objects.filter(
                 school_id=SCHOOL_ID,
-                compatibility_student_id=applicant.student_id,
-                source=StudentIdentityLink.SOURCE_ADMISSIONS,
-                evidence_reference=f"application:{application.id}:applicant:{applicant.id}",
-            ).first()
-            if link is None:
-                continue
-            core_student = link.core_student
-            AdmissionsApplication.objects.filter(
-                school_id=SCHOOL_ID,
-                student=core_student,
+                student=link.core_student,
                 notes_internal__contains=f"canonical_application_id={application.id}",
-            ).delete()
-            CoreEnrollment.objects.filter(
-                school_id=SCHOOL_ID, student=core_student,
-            ).delete()
-            link.delete()
-            core_student.delete()
-        application.delete()
-    if household_ids:
-        HouseholdFamilyLink.objects.filter(
-            school_id=SCHOOL_ID, household_id__in=household_ids,
-            source=HouseholdFamilyLink.SOURCE_ADMISSIONS,
+            )
+            owned_legacy_ids = list(owned_legacy.values_list("id", flat=True))
+            owned_year_ids = list(owned_legacy.values_list("academic_year_id", flat=True))
+            if AdmissionsApplication.objects.filter(
+                student=link.core_student
+            ).exclude(id__in=owned_legacy_ids).exists():
+                raise SandboxParentEnrollmentError("reset_legacy_student_shared")
+            if CoreEnrollment.objects.filter(
+                student=link.core_student
+            ).exclude(academic_year_id__in=owned_year_ids).exists():
+                raise SandboxParentEnrollmentError("reset_student_has_external_enrollment")
+            if (
+                StudentTuition.objects.filter(student=link.core_student).exists()
+                or LedgerEntry.objects.filter(student=link.core_student).exists()
+            ):
+                raise SandboxParentEnrollmentError("reset_student_has_financial_history")
+            owned_compatibility_ids.add(applicant.student_id)
+            deletions.append((link, owned_legacy_ids, owned_year_ids))
+
+    for link, legacy_ids, year_ids in deletions:
+        core_student = link.core_student
+        AdmissionsApplication.objects.filter(id__in=legacy_ids).delete()
+        CoreEnrollment.objects.filter(
+            student=core_student, academic_year_id__in=year_ids
         ).delete()
-        Student.objects.filter(school_id=SCHOOL_ID, household_id__in=household_ids).delete()
-        Household.objects.filter(
-            school_id=SCHOOL_ID,
-            id__in=household_ids,
-            applications__isnull=True,
-            students__isnull=True,
+        link.delete()
+        core_student.delete()
+    for application in apps:
+        application.delete()
+
+    # Never delete other compatibility students merely because they share a
+    # household, student name or school with the fictional scenario.
+    if owned_compatibility_ids:
+        Student.objects.filter(
+            school_id=SCHOOL_ID, id__in=owned_compatibility_ids
         ).delete()
 
+    for link in HouseholdFamilyLink.objects.filter(
+        school_id=SCHOOL_ID, household_id__in=household_ids,
+        source=HouseholdFamilyLink.SOURCE_ADMISSIONS,
+    ):
+        if (
+            CoreStudent.objects.filter(family_id=link.family_id).exists()
+            or Application.objects.filter(household_id=link.household_id).exists()
+            or Student.objects.filter(household_id=link.household_id).exists()
+            or Household.objects.filter(
+                id=link.household_id, guardians__isnull=False
+            ).exists()
+        ):
+            continue
+        link.delete()
+    Household.objects.filter(
+        school_id=SCHOOL_ID,
+        id__in=household_ids,
+        applications__isnull=True,
+        students__isnull=True,
+        guardians__isnull=True,
+    ).delete()
 
 @transaction.atomic
 def seed_parent_enrollment_scenario() -> dict[str, str]:

@@ -12,32 +12,75 @@ from .models import Application, ApplicationEvent, ApplicationStatus
 
 
 def has_verified_student_enrollments(application: Application) -> bool:
-    """Require school-scoped, evidenced identity and an actual SIS enrollment.
+    """Require application-bound identity, family and school-year SIS enrollment.
 
-    A lifecycle event or legacy wizard status is insufficient proof of a
-    canonical student enrollment. This read is fail-closed by design.
+    Matching names, an arbitrary verified identity link, a previous-year
+    enrollment or a lifecycle event alone never establish completion.
     """
+    from admissions.models import AdmissionsApplication
+
     applicants = list(application.applicants.all())
     if not applicants:
         return False
-    for applicant in applicants:
-        if not applicant.student_id:
-            return False
-        identity = StudentIdentityLink.objects.filter(
+    family_ids = list(
+        HouseholdFamilyLink.objects.filter(
             school_id=application.school_id,
-            compatibility_student_id=applicant.student_id,
-            verification_status=StudentIdentityLink.STATUS_VERIFIED,
-        ).first()
-        if identity is None or not identity.evidence_reference.strip():
+            household_id=application.household_id,
+        ).values_list("family_id", flat=True)
+    )
+    if len(family_ids) != 1:
+        return False
+
+    for applicant in applicants:
+        if (
+            applicant.school_id != application.school_id
+            or not applicant.student_id
+            or applicant.dob is None
+        ):
             return False
+        identity = (
+            StudentIdentityLink.objects.select_related(
+                "core_student", "compatibility_student"
+            )
+            .filter(
+                school_id=application.school_id,
+                compatibility_student_id=applicant.student_id,
+                verification_status=StudentIdentityLink.STATUS_VERIFIED,
+                source=StudentIdentityLink.SOURCE_ADMISSIONS,
+                evidence_reference=(
+                    f"application:{application.id}:applicant:{applicant.id}"
+                ),
+            )
+            .first()
+        )
+        if identity is None:
+            return False
+        if (
+            identity.compatibility_student.school_id != application.school_id
+            or identity.compatibility_student.household_id != application.household_id
+            or identity.core_student.school_id != application.school_id
+            or identity.core_student.family_id != family_ids[0]
+            or identity.core_student.dob != applicant.dob
+        ):
+            return False
+
+        legacy_year_ids = AdmissionsApplication.objects.filter(
+            school_id=application.school_id,
+            student_id=identity.core_student_id,
+            status=AdmissionsApplication.STATUS_ENROLLED,
+            notes_internal__contains=f"canonical_application_id={application.id}",
+        ).values_list("academic_year_id", flat=True)
         if not CoreEnrollment.objects.filter(
             school_id=application.school_id,
             student_id=identity.core_student_id,
+            academic_year_id__in=legacy_year_ids,
+            academic_year__school_id=application.school_id,
+            grade_level__school_id=application.school_id,
+            grade_level__code=applicant.grade_applying_for,
             status="ENROLLED",
         ).exists():
             return False
     return True
-
 
 @dataclass(frozen=True)
 class TransitionResult:
