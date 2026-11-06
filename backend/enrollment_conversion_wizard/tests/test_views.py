@@ -6,13 +6,17 @@ from django.test import TestCase
 from rest_framework.test import APIClient
 
 from admissions.models import AdmissionsApplication, AdmissionsAuditEvent
-from applications.models import Application, ApplicationEvent, ApplicationStatus
+from applications.models import Application, Applicant, ApplicationEvent, ApplicationStatus
 from applications.views_admissions import (
     CONTRACT_COUNTERSIGNED, DEPOSIT_PAID, ENROLLMENT_STATE_EVENT_TYPE,
     ENROLLMENT_CONFIRMED_EVENT_TYPE,
 )
-from households.models import Household
-from core.models import AcademicYear, CrownPermission, Family, RolePermission, School, UserRole
+from households.models import Household, Student as CompatibilityStudent
+from core.models import (
+    AcademicYear, CrownPermission, Enrollment as CoreEnrollment, Family,
+    GradeLevel, HouseholdFamilyLink, RolePermission, School,
+    Student as CoreStudent, StudentIdentityLink, UserRole,
+)
 from enrollment_conversion_wizard.models import EnrollmentConversionWizardSession
 from enrollment_conversion_wizard.permissions import can_manage_enrollment_conversion
 
@@ -77,6 +81,40 @@ def _link_canonical(legacy, *, ready=True):
     canonical = Application.objects.create(
         school_id=legacy.school_id, household=household, status=ApplicationStatus.DECIDED
     )
+    grade, _ = GradeLevel.objects.get_or_create(
+        school_id=legacy.school_id, code="5",
+        defaults={"label": "Grade 5", "sort_order": 5},
+    )
+    core = CoreStudent.objects.create(
+        school_id=legacy.school_id, family=legacy.family,
+        student_number=f"ECW-{uuid.uuid4().hex[:10]}",
+        first_name="Taylor", last_name="Student",
+        dob=date(2014, 4, 9), status="ACTIVE", current_grade_level=grade,
+    )
+    legacy.student = core
+    legacy.save(update_fields=["student", "updated_at"])
+    HouseholdFamilyLink.objects.create(
+        school_id=legacy.school_id, household_id=household.pk,
+        family=legacy.family, source=HouseholdFamilyLink.SOURCE_ADMISSIONS,
+    )
+    compatibility = CompatibilityStudent.objects.create(
+        school_id=legacy.school_id, household=household,
+        first_name="Taylor", last_name="Student", grade_level="5",
+    )
+    applicant = Applicant.objects.create(
+        school_id=legacy.school_id, application=canonical, student=compatibility,
+        first_name="Taylor", last_name="Student", dob=core.dob, grade_applying_for="5",
+    )
+    StudentIdentityLink.objects.create(
+        school_id=legacy.school_id, core_student=core, compatibility_student=compatibility,
+        source=StudentIdentityLink.SOURCE_ADMISSIONS,
+        verification_status=StudentIdentityLink.STATUS_VERIFIED,
+        evidence_reference=f"application:{canonical.id}:applicant:{applicant.id}",
+    )
+    CoreEnrollment.objects.create(
+        school_id=legacy.school_id, student=core, academic_year=legacy.academic_year,
+        grade_level=grade, start_date=legacy.academic_year.start_date, status="ENROLLED",
+    )
     ApplicationEvent.objects.create(
         school_id=legacy.school_id, application=canonical,
         event_type="decision_made", payload={"decision": "accepted"},
@@ -90,7 +128,6 @@ def _link_canonical(legacy, *, ready=True):
     legacy.notes_internal = f"canonical_application_id={canonical.id}"
     legacy.save(update_fields=["notes_internal", "updated_at"])
     return canonical
-
 
 def _advance_to_configured(client, school_id):
     r = client.post(BASE_URL, **_headers(school_id))
@@ -441,3 +478,111 @@ class EnrollmentConversionCanonicalGateTest(TestCase):
         self.assertEqual(response.status_code, 409)
         session = EnrollmentConversionWizardSession.objects.get(id=sid)
         self.assertEqual(session.academic_year_label, "2026-2027")
+
+class EnrollmentConversionCoreIdentityProofTests(TestCase):
+    """The wizard may report success only for persisted verified SIS records."""
+
+    def _ready(self, second=False):
+        school = _make_school()
+        year = _make_academic_year(school)
+        first = _make_application(school, year)
+        first_app = _link_canonical(first)
+        second_app = None
+        if second:
+            another = _make_application(school, year)
+            second_app = _link_canonical(another)
+        client = _client_for(school)
+        session_id = _advance_to_loaded(client, school.pk)
+        return school, year, first, first_app, second_app, client, session_id
+
+    def _commit(self, client, session_id, school):
+        return client.post(
+            f"{BASE_URL}{session_id}/commit/",
+            {"confirm": True}, format="json", **_headers(school.pk),
+        )
+
+    def test_verified_canonical_enrollment_survives_commit_and_replay(self):
+        school, year, legacy, canonical, _, client, sid = self._ready()
+        first = self._commit(client, sid, school)
+        self.assertEqual(first.status_code, 200, first.data)
+        enrollment = CoreEnrollment.objects.get(
+            school=school, student=legacy.student, academic_year=year,
+        )
+        self.assertEqual(enrollment.status, "ENROLLED")
+        self.assertEqual(self._commit(client, sid, school).data["converted"], 1)
+        self.assertEqual(CoreEnrollment.objects.filter(school=school).count(), 1)
+
+    def test_missing_canonical_enrollment_fails_before_any_legacy_write(self):
+        school, year, legacy, canonical, _, client, sid = self._ready()
+        CoreEnrollment.objects.filter(school=school).delete()
+        response = self._commit(client, sid, school)
+        self.assertEqual(response.status_code, 409, response.data)
+        legacy.refresh_from_db()
+        self.assertEqual(legacy.status, AdmissionsApplication.STATUS_ACCEPTED)
+        self.assertFalse(ApplicationEvent.objects.filter(
+            application=canonical, event_type=ENROLLMENT_CONFIRMED_EVENT_TYPE,
+        ).exists())
+
+    def test_second_applicant_missing_dob_rolls_back_entire_cohort(self):
+        school, year, legacy, canonical, second, client, sid = self._ready(second=True)
+        applicant = second.applicants.get()
+        applicant.dob = None
+        applicant.save(update_fields=["dob", "updated_at"])
+        response = self._commit(client, sid, school)
+        self.assertEqual(response.status_code, 409, response.data)
+        legacy.refresh_from_db()
+        self.assertEqual(legacy.status, AdmissionsApplication.STATUS_ACCEPTED)
+        self.assertFalse(ApplicationEvent.objects.filter(
+            application=canonical, event_type=ENROLLMENT_CONFIRMED_EVENT_TYPE,
+        ).exists())
+
+    def test_wrong_identity_cannot_reuse_same_name_student(self):
+        school, year, legacy, canonical, _, client, sid = self._ready()
+        identity = StudentIdentityLink.objects.get(core_student=legacy.student)
+        identity.delete()
+        response = self._commit(client, sid, school)
+        self.assertEqual(response.status_code, 409)
+        legacy.refresh_from_db()
+        self.assertEqual(legacy.status, AdmissionsApplication.STATUS_ACCEPTED)
+
+    def test_identity_associated_with_wrong_family_fails_closed(self):
+        school, year, legacy, canonical, _, client, sid = self._ready()
+        foreign = Family.objects.create(school=school, family_name="Other family")
+        legacy.student.family = foreign
+        legacy.student.save(update_fields=["family", "updated_at"])
+        self.assertEqual(self._commit(client, sid, school).status_code, 409)
+        self.assertEqual(CoreEnrollment.objects.filter(school=school).count(), 1)
+
+    def test_wrong_grade_rejected_without_reassigning_existing_enrollment(self):
+        school, year, legacy, canonical, _, client, sid = self._ready()
+        applicant = canonical.applicants.get()
+        applicant.grade_applying_for = "12"
+        applicant.save(update_fields=["grade_applying_for", "updated_at"])
+        self.assertEqual(self._commit(client, sid, school).status_code, 409)
+        self.assertEqual(CoreEnrollment.objects.get(school=school).grade_level.code, "5")
+
+    def test_verify_and_replay_reject_missing_sis_evidence(self):
+        school, year, legacy, canonical, _, client, sid = self._ready()
+        self.assertEqual(self._commit(client, sid, school).status_code, 200)
+        CoreEnrollment.objects.filter(school=school).delete()
+        check = client.get(f"{BASE_URL}{sid}/verify/", **_headers(school.pk))
+        self.assertEqual(check.status_code, 409, check.data)
+        self.assertFalse(check.data["all_enrolled"])
+        self.assertEqual(self._commit(client, sid, school).status_code, 409)
+
+    def test_ambiguous_historical_provenance_preserves_legacy_record(self):
+        school, year, legacy, canonical, _, client, sid = self._ready()
+        legacy.notes_internal += f"\ncanonical_application_id={uuid.uuid4()}"
+        legacy.save(update_fields=["notes_internal", "updated_at"])
+        self.assertEqual(self._commit(client, sid, school).status_code, 409)
+        legacy.refresh_from_db()
+        self.assertEqual(legacy.status, AdmissionsApplication.STATUS_ACCEPTED)
+
+    def test_cross_school_identity_cannot_pass_enrollment_gate(self):
+        school, year, legacy, canonical, _, client, sid = self._ready()
+        other_school = _make_school()
+        identity = StudentIdentityLink.objects.get(core_student=legacy.student)
+        identity.school = other_school
+        # Bypass model validation only to represent a corrupted historical row.
+        StudentIdentityLink.objects.filter(pk=identity.pk).update(school=other_school)
+        self.assertEqual(self._commit(client, sid, school).status_code, 409)
