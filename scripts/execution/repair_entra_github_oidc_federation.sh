@@ -56,9 +56,12 @@ LEGACY_SUBJECTS=(
 # subjects belong to a DIFFERENT repository. The LEGACY_PREFIX above cannot
 # match them. Do not auto-delete these: historic workflow ownership/dependencies
 # are unverified and targeted retirement requires separate authorization.
+HISTORICAL_OWNER_NAME="tcmegahan"
+HISTORICAL_REPO_NAME="Crown2026"
+HISTORICAL_PREFIX="repo:${HISTORICAL_OWNER_NAME}/${HISTORICAL_REPO_NAME}"
 HISTORICAL_REPO_SUBJECTS=(
-  "repo:tcmegahan/Crown2026:ref:refs/heads/main"
-  "repo:tcmegahan/Crown2026:environment:prod"
+  "${HISTORICAL_PREFIX}:ref:refs/heads/main"
+  "${HISTORICAL_PREFIX}:environment:prod"
 )
 
 command -v az >/dev/null 2>&1 || {
