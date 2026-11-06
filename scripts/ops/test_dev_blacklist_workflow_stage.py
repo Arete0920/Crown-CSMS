@@ -57,6 +57,43 @@ class DevBlacklistWorkflowStageTests(unittest.TestCase):
         self.assertEqual(self.stage["environment"], "dev")
         self.assertEqual(self.stage["permissions"]["id-token"], "write")
 
+    def test_push_can_only_collect_current_main_without_schema_writes(self):
+        data = workflow()
+        triggers = data.get("on", data.get(True))
+        self.assertEqual(triggers["push"]["branches"], ["main"])
+        self.assertEqual(
+            triggers["push"]["paths"],
+            [".github/workflows/dev-blacklist-database-inventory.yml"],
+        )
+        self.assertEqual(self.inspect["environment"], "dev")
+        self.assertIn("github.ref == 'refs/heads/main'", self.inspect["if"])
+        self.assertIn("github.event_name == 'push'", self.inspect["if"])
+        self.assertIn("github.event_name == 'workflow_dispatch'", self.inspect["if"])
+        self.assertNotIn("github.event_name == 'push'", self.stage["if"])
+        self.assertIn("github.event_name == 'workflow_dispatch'", self.stage["if"])
+        steps = self.inspect["steps"]
+        verify = next(step for step in steps if step.get("name") == "Verify accepted main identity")
+        checkout = next(step for step in steps if str(step.get("uses", "")).startswith("actions/checkout@"))
+        self.assertEqual(
+            checkout["with"]["ref"],
+            "${{ github.event_name == 'push' && github.sha || inputs.expected_sha }}",
+        )
+        self.assertEqual(
+            verify["env"]["SHA"],
+            "${{ github.event_name == 'push' && github.sha || inputs.expected_sha }}",
+        )
+        for name in (
+            "Install accepted migration inspection dependencies",
+            "Verify migration inspection boundary (offline)",
+            "Inspect all pending DEV migrations without applying",
+        ):
+            step = next(step for step in steps if step.get("name") == name)
+            self.assertEqual(step.get("if"), "github.event_name == 'push' || inputs.inspect_migration_plan")
+        command = next(step["run"] for step in steps
+                       if step.get("name") == "Inspect all pending DEV migrations without applying")
+        self.assertIn("--inspect-all-migrations", command)
+        self.assertNotIn("--apply-", command)
+
     def test_only_explicit_single_mode_authorized(self):
         valid = [
             dict(BLACKLIST_MODE="true", CONFIRM_BLACKLIST="migrate-dev-blacklist",
