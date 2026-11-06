@@ -28,12 +28,12 @@ Status: **Draft source, not certified.** This additive implementation intentiona
 ## Known limitations and policy decisions
 
 - **No observation narrative amendment in v1.** A versioned correction procedure that retains both old and new content must be designed and reviewed before enabling it.
-- **No rubric, weighted criterion, employment consequence, comparative teacher ranking, personal faith score, or AI-generated employment decision.** No third-party copyrighted rubric is included.
+- **No rubric, weighted criterion, employment consequence, comparative teacher ranking, personal faith score, or automated employment decision.** No third-party copyrighted rubric is included.
 - **No attachment, classroom-video, student data import, confidential classroom-coaching import, mass export, cross-tenant aggregate, or personnel record transfer.** All input is structured and bounded.
 - The response API's idempotent replay returns stored response **metadata** (without confidential teacher comment text); clients can read full authorized comments through the cycle detail route.
 - School policy for personnel privacy, retention, grievance/dispute resolution, evaluator recusal, legal hold, and signatures remains **OPEN**. A first-slice feature cannot be marked suitable for live school personnel records without these decisions.
 - School-managed activation is deliberately absent. The presence of code in source does not authorize deployment or any user role grant.
-- No backend test run, migration execution, Playwright certification, actual customer access, or hosted SHA parity is claimed until verified separately. Source-only acceptance is not deployment certification.
+- Source code alone is not test, deployment, or personnel-policy certification. Preserve exact-source CI, migration, PostgreSQL and independent review evidence for each revision. Browser verification, live customer permissions, hosted SHA parity and school-level policy approval remain separate requirements.
 
 ## Required acceptance
 
