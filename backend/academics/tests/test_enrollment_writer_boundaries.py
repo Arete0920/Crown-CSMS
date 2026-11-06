@@ -238,5 +238,7 @@ def test_legacy_roster_enroll_rejects_disabled_school_even_with_registrar_grant(
         content_type="application/json",
         HTTP_X_SCHOOL_ID=str(school.id),
     )
-    assert response.status_code == 403
+    # Tenant scoping rejects an inactive school as unknown (404) before
+    # roster RBAC is evaluated; both layers must remain fail-closed.
+    assert response.status_code == 404
     assert not Enrollment.objects.filter(school_id=school.id, section=section, student=student).exists()
