@@ -136,7 +136,7 @@ def test_authenticated_care_service_can_checkin_and_release_only_synthetic_child
     assert persisted.guardian_authority_id == guardian.pk
     assert persisted.actor_id == staff.pk
     assert persisted.identity_verified is True
-    assert DaycareAttendance.objects.get(pk=checked_in.pk).custody_release_id == released.pk
+    assert DaycareAttendance.objects.get(pk=checked_in.pk).custody_release.pk == released.pk
     assert AuditLog.objects.filter(
         user_id=staff.pk, action="diadem.daycare.checkin", object_id=str(checked_in.pk),
     ).count() == 1
