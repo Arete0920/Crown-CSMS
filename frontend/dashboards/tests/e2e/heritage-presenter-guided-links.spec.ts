@@ -103,7 +103,7 @@ test.describe("Heritage six-persona guided presenter links, click by click", () 
           await expect(page).not.toHaveURL(/\/(login|sandbox\/command-center)(?:\?|$)/);
           // Some legitimate operational pages use MUI Box instead of a semantic main.
           // Require a visible document heading and actual page content, not one tag name.
-          const headingNode = page.locator("h1, h2, h3, h4, [role='heading']").first();
+          const headingNode = page.locator("h1, h2, h3, h4, [role='heading']").filter({ hasText: /\S.{2,}/ }).first();
           await expect(headingNode).toBeVisible();
           const observed = new URL(page.url()).pathname;
           const accepted = [href!, ...(knownRedirects[href!] || [])];
