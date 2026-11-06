@@ -433,6 +433,26 @@ def test_parent_reset_preserves_extra_application_event():
 
 
 @override_settings(CROWN_SANDBOX_ALLOW_OPEN_SESSION=True)
+def test_parent_reset_refuses_added_applicant_and_preserves_all_records():
+    school, _, application_id = _setup()
+    application = Application.objects.get(pk=application_id)
+    original = application.applicants.get()
+    other = Applicant.objects.create(
+        school=school, application=application,
+        first_name="Unrelated", last_name="Child",
+        dob=date(2014, 3, 18), grade_applying_for="6",
+    )
+    with pytest.raises(
+        SandboxParentEnrollmentError,
+        match="reset_application_history_not_synthetic",
+    ):
+        seed_parent_enrollment_scenario()
+    assert Application.objects.filter(pk=application.pk).exists()
+    assert Applicant.objects.filter(pk=original.pk).exists()
+    assert Applicant.objects.filter(pk=other.pk).exists()
+
+
+@override_settings(CROWN_SANDBOX_ALLOW_OPEN_SESSION=True)
 def test_reset_blocks_cross_year_student_deletion_and_rolls_back():
     school, parent, application_id = _setup()
     client = _client(parent, school)

@@ -431,9 +431,10 @@ def complete_parent_enrollment_demo(user, application_id: str, accepted_terms: b
 
 def _require_pristine_parent_scenario_events(application: Application) -> None:
     """Never erase an unexpected, duplicated or edited application event."""
-    applicant = application.applicants.order_by("created_at", "id").first()
-    if applicant is None:
+    applicants = list(application.applicants.order_by("created_at", "id")[:2])
+    if len(applicants) != 1:
         raise SandboxParentEnrollmentError("reset_application_history_not_synthetic")
+    applicant = applicants[0]
     seed = [
         ("application_submitted", {
             "via": "sandbox_parent_enrollment_scenario", "applicant_id": str(applicant.id),
