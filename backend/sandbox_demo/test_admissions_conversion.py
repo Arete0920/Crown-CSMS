@@ -2,9 +2,13 @@ import pytest
 from rest_framework.test import APIClient
 
 from admissions.models import AdmissionsApplication
-from applications.models import ApplicationEvent
-from core.models import UserAccount
-from sandbox_demo.admissions_conversion_seed import SCHOOL_ID, seed_heritage_admissions_conversion_scenario
+from applications.models import Application, Applicant, ApplicationEvent
+from core.models import Enrollment, HouseholdFamilyLink, StudentIdentityLink, UserAccount
+from households.models import Household
+from sandbox_demo.admissions_conversion_seed import (
+    SCHOOL_ID, FIXTURE_MARKER, reset_heritage_admissions_conversion_scenario,
+    seed_heritage_admissions_conversion_scenario,
+)
 from sandbox_demo.services import create_sandbox_session, seed_heritage_flagship
 
 pytestmark = pytest.mark.django_db(transaction=True)
@@ -40,3 +44,71 @@ def test_parent_cannot_execute_staff_enrollment_conversion(settings):
     response = _client(parent).post("/api/admissions/enroll/", {"application_id": seeded["admissions_conversion_legacy_application_id"]}, format="json")
     assert response.status_code == 403; assert response.data["detail"] == "Permission denied."
     legacy = AdmissionsApplication.objects.get(id=seeded["admissions_conversion_legacy_application_id"]); assert legacy.status == AdmissionsApplication.STATUS_ACCEPTED
+
+
+def test_seed_has_real_verified_identity_and_school_year_enrollment(settings):
+    seeded = _seed(settings)
+    canonical = Application.objects.get(pk=seeded["admissions_conversion_canonical_application_id"])
+    applicant = canonical.applicants.get()
+    assert applicant.dob is not None
+    assert applicant.flags["heritage_conversion_fixture"] == FIXTURE_MARKER
+    assert applicant.student_id is not None
+    link = StudentIdentityLink.objects.get(compatibility_student_id=applicant.student_id)
+    assert link.verification_status == StudentIdentityLink.STATUS_VERIFIED
+    assert link.source == StudentIdentityLink.SOURCE_ADMISSIONS
+    assert link.evidence_reference == f"application:{canonical.id}:applicant:{applicant.id}"
+    assert link.core_student_id == seeded["admissions_conversion_student_id"]
+    assert HouseholdFamilyLink.objects.filter(
+        school_id=SCHOOL_ID, household_id=canonical.household_id,
+        family_id=link.core_student.family_id,
+    ).count() == 1
+    assert Enrollment.objects.filter(
+        pk=seeded["admissions_conversion_enrollment_id"],
+        school_id=SCHOOL_ID, student_id=link.core_student_id,
+        grade_level__code="8", status="ENROLLED",
+    ).exists()
+
+
+def test_marked_reset_preserves_unrelated_same_name_application(settings):
+    seeded = _seed(settings)
+    other_household = Household.objects.create(
+        school_id=SCHOOL_ID, name="Unrelated same-name household",
+    )
+    unrelated = Application.objects.create(
+        school_id=SCHOOL_ID, household=other_household,
+    )
+    sibling = Applicant.objects.create(
+        school_id=SCHOOL_ID, application=unrelated,
+        first_name="Taylor", last_name="Mercer", grade_applying_for="8",
+    )
+
+    reset_heritage_admissions_conversion_scenario()
+    assert Application.objects.filter(pk=unrelated.pk).exists()
+    assert Applicant.objects.filter(pk=sibling.pk).exists()
+    assert not Application.objects.filter(
+        pk=seeded["admissions_conversion_canonical_application_id"]
+    ).exists()
+    assert not Enrollment.objects.filter(
+        pk=seeded["admissions_conversion_enrollment_id"]
+    ).exists()
+    assert not StudentIdentityLink.objects.filter(
+        core_student_id=seeded["admissions_conversion_student_id"]
+    ).exists()
+
+
+def test_repeated_seed_replaces_only_explicit_fictional_fixture(settings):
+    original = _seed(settings)
+    later = seed_heritage_admissions_conversion_scenario()
+    assert original["admissions_conversion_legacy_application_id"] != later[
+        "admissions_conversion_legacy_application_id"
+    ]
+    assert Enrollment.objects.filter(
+        pk=later["admissions_conversion_enrollment_id"]
+    ).exists()
+    assert not Enrollment.objects.filter(
+        pk=original["admissions_conversion_enrollment_id"]
+    ).exists()
+    assert Applicant.objects.filter(
+        school_id=SCHOOL_ID,
+        flags__heritage_conversion_fixture=FIXTURE_MARKER,
+    ).count() == 1
