@@ -512,6 +512,19 @@ class EnrollmentConversionCoreIdentityProofTests(TestCase):
         self.assertEqual(self._commit(client, sid, school).data["converted"], 1)
         self.assertEqual(CoreEnrollment.objects.filter(school=school).count(), 1)
 
+    def test_malformed_legacy_identifier_fails_closed(self):
+        school, year, legacy, canonical, _, client, sid = self._ready()
+        session = EnrollmentConversionWizardSession.objects.get(pk=sid)
+        session.application_ids = ["not-a-legacy-integer"]
+        session.save(update_fields=["application_ids", "updated_at"])
+        response = self._commit(client, sid, school)
+        self.assertEqual(response.status_code, 409, response.data)
+        legacy.refresh_from_db()
+        self.assertEqual(legacy.status, AdmissionsApplication.STATUS_ACCEPTED)
+        self.assertFalse(ApplicationEvent.objects.filter(
+            application=canonical, event_type=ENROLLMENT_CONFIRMED_EVENT_TYPE,
+        ).exists())
+
     def test_missing_canonical_enrollment_fails_before_any_legacy_write(self):
         school, year, legacy, canonical, _, client, sid = self._ready()
         CoreEnrollment.objects.filter(school=school).delete()

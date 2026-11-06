@@ -125,7 +125,13 @@ def verified_cohort(session, school_id, *, enrolled_only=False):
     if not isinstance(raw, list) or not raw:
         raise BulkEnrollmentProofError("A nonempty fixed cohort is required.")
     try:
-        identifiers = [UUID(str(item)) for item in raw]
+        # AdmissionsApplication inherits the implicit integer Django PK.
+        # UUIDs are for canonical Application records, not legacy rows.
+        if any(isinstance(item, bool) or not str(item).isdigit() for item in raw):
+            raise ValueError("Non-integer legacy admissions application ID")
+        identifiers = [int(item) for item in raw]
+        if any(item <= 0 for item in identifiers):
+            raise ValueError("Legacy admissions application ID must be positive")
     except (ValueError, TypeError, AttributeError) as exc:
         raise BulkEnrollmentProofError("Selected admissions application ID is invalid.") from exc
     if len(identifiers) != len(set(identifiers)):
