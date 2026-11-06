@@ -69,7 +69,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: '3.12'
       - name: Install pinned test-only YAML parser
@@ -102,7 +102,7 @@ jobs:
           test "$(git rev-parse HEAD)" = "$SHA"
           git fetch --no-tags origin refs/heads/main:refs/remotes/origin/main
           test "$(git rev-parse origin/main)" = "$SHA"
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: '3.12'
       - name: Verify collector boundary (offline)
@@ -135,14 +135,14 @@ jobs:
           set -euo pipefail
           umask 077
           python scripts/ops/read_dev_blacklist_state.py --expected-sha "$SHA" > dev-blacklist-state.json
-      - name: Inspect pending DEV migrations without applying
+      - name: Inspect all pending DEV migrations without applying
         if: inputs.inspect_migration_plan
         env:
           SHA: ${{ inputs.expected_sha }}
-        # Keep stdout attached to Actions: the runner emits credential masking
-        # commands before its redacted JSON. Never redirect raw stdout to artifacts.
-        # A blocked plan fails the run and reports pending identifiers in the log.
-        run: python scripts/ops/run_dev_inquiry_migration.py --expected-sha "$SHA" --inspect-reviewed-legacy-refresh
+        # No schema change: this displays the full pending Django migration graph,
+        # not an allowlist. Existing exact-source, TLS and identity checks apply.
+        # Masking commands must stay on Actions stdout, never in stored artifacts.
+        run: python scripts/ops/run_dev_inquiry_migration.py --expected-sha "$SHA" --inspect-all-migrations
       - name: Preserve redacted evidence
         if: always() && hashFiles('dev-blacklist-state.json') != ''
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -222,7 +222,7 @@ jobs:
           test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
           git fetch --no-tags origin refs/heads/main:refs/remotes/origin/main
           test "$(git rev-parse origin/main)" = "$EXPECTED_SHA"
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: '3.12'
       - name: Verify both fail-closed migration-stage contracts without Azure

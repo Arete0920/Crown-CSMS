@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import ast
 import hashlib
 import os
 from pathlib import Path
@@ -24,6 +25,8 @@ URL = "http://localhost:4173/sandbox"
 
 def source_sha() -> str:
     try:
+        if not (ROOT / ".git").exists():
+            raise OSError("Packaged source must use its pinned source marker.")
         sha = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True, stderr=subprocess.DEVNULL).strip()
     except (OSError, subprocess.CalledProcessError):
         marker = ROOT / "HERITAGE_SOURCE_COMMIT.txt"
@@ -136,6 +139,35 @@ def wait_ready(url: str, process: subprocess.Popen, timeout: int = 90) -> None:
     raise RuntimeError(f"Timed out waiting for {url}. Read the demo logs.")
 
 
+def require_fresh_five_module_source(commit_sha: str) -> None:
+    """Fail closed on stale local fixture provenance in opt-in demos only.
+
+    These marker checks are prerequisites, not full database certification.
+    """
+    if not re.fullmatch(r"[0-9a-f]{40}", commit_sha):
+        raise RuntimeError("Five-module demo requires an exact source SHA.")
+    database = STATE / "heritage.sqlite3"
+    seed = STATE / "seed.complete"
+    relationships = STATE / "relationships.complete"
+    if not database.exists() and (seed.exists() or relationships.exists()):
+        raise RuntimeError("Heritage seed marker exists without local database; use a fresh isolated folder.")
+    if database.exists() and not database.is_file():
+        raise RuntimeError("Heritage local database path is not a regular file.")
+    if database.exists() and (not seed.is_file() or not relationships.is_file()):
+        raise RuntimeError("Heritage database has incomplete seed markers; use a fresh isolated folder.")
+    for marker in (seed, relationships):
+        if not marker.exists():
+            continue
+        if not marker.is_file():
+            raise RuntimeError("Heritage source marker is not a regular file.")
+        try:
+            actual = marker.read_text(encoding="utf-8").strip()
+        except (OSError, UnicodeError) as exc:
+            raise RuntimeError("Cannot inspect Heritage source marker.") from exc
+        if actual != commit_sha:
+            raise RuntimeError("Heritage data was seeded using another source revision; use a fresh isolated folder.")
+
+
 def prepare(env: dict[str, str], npm: list[str], skip_install: bool) -> Path:
     python = ROOT / ".venv" / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
     create_venv = not python.exists()
@@ -165,8 +197,95 @@ def prepare(env: dict[str, str], npm: list[str], skip_install: bool) -> Path:
     if not relationships.exists():
         run(manage + ["shell", "--command", "from sandbox_demo.services import seed_local_heritage_relationships; seed_local_heritage_relationships()"], env)
         relationships.write_text(env["BUILD_SHA"], encoding="utf-8")
+    # Fictional Camp fixtures depend on the local household crosswalk above.
+    # This helper refuses nonlocal databases and never enables payment processing.
+    run(manage + ["shell", "--command", "from sandbox_demo.services import seed_local_heritage_camp; seed_local_heritage_camp()"], env)
     run(npm + ["run", "build"], env, FRONTEND)
     return python
+
+
+def enable_five_module_runtime(env: dict[str, str]) -> None:
+    """Activate only an explicitly selected, exact local Heritage environment."""
+    expected_database = "sqlite:///" + (STATE / "heritage.sqlite3").as_posix()
+    if (
+        env.get("DJANGO_ENV") != "local"
+        or env.get("CROWN_ENV") != "local"
+        or env.get("DJANGO_DEBUG") != "true"
+        or env.get("CROWN_DEMO_MODE") != "false"
+        or env.get("CROWN_SANDBOX_ALLOW_OPEN_SESSION") != "true"
+        or env.get("VITE_LOCAL_DEMO") != "1"
+        or env.get("DATABASE_URL") != expected_database
+    ):
+        raise RuntimeError(
+            "Five-module fictional preparation requires the exact isolated Heritage local settings."
+        )
+    # This opt-in setting is only available after the exact local-only
+    # Heritage SQLite guard above; the default launcher never enables it.
+    # The same scoped environment is then used by the SGO seeder and demo server.
+    env["CROWN_SGO_FICTIONAL_INTAKE_ENABLED"] = "true"
+
+
+def seed_five_module_fixtures(env: dict[str, str], python: Path) -> None:
+    """Explicit guarded preparation; verification must never seed credentials again."""
+    enable_five_module_runtime(env)
+    manage = [str(python), str(ROOT / "backend/manage.py")]
+
+    # Never fabricate childcare readiness, release authority or awarded funds.
+    # The explicit local-only module seeder supplies an unposted Jireh OFFERED
+    # sample, AM/PM records and a deliberately BLOCKED daycare enrollment.
+    run(manage + ["seed_heritage_module_samples", "--fictional-local-only",
+                  "--enable-fictional-care-entitlements"], env)
+
+    # Camp setup is a separate guarded fictional fixture and deliberately
+    # leaves missing health, forms and pickup authority as BLOCKED.
+    run(manage + [
+        "shell", "--command",
+        "from sandbox_demo.services import seed_local_heritage_camp; seed_local_heritage_camp()",
+    ], env)
+
+    # SGO seed uses independent partner organizations, grant-scoped fictional
+    # applicants and delegated processors; it never accepts or posts an award.
+    # Credentials remain in the ignored per-machine state directory.
+    run(manage + [
+        "seed_fictional_sgo_intake", "--credentials-file",
+        str(STATE / "sgo-credentials.txt"),
+    ], env)
+
+
+
+def require_five_module_sources(root: Path | None = None) -> None:
+    """Detect missing reviewed source before dependency installs or migrations.
+
+    The static check does NOT certify seed behavior, custody, or the browser.
+    """
+    root = ROOT if root is None else root
+    required = (
+        "frontend/dashboards/scripts/heritage-daycare-presenter.mjs",
+        "backend/sandbox_demo/management/commands/seed_local_diadem_pickup.py",
+        "backend/sandbox_demo/management/commands/seed_heritage_module_samples.py",
+        "backend/crown_api/management/commands/seed_fictional_sgo_intake.py",
+        "backend/sandbox_demo/management/commands/five_module_demo_preflight.py",
+    )
+    missing = [name for name in required if not (root / name).is_file()]
+    camp_source = root / "backend/sandbox_demo/services.py"
+    if not camp_source.is_file():
+        missing.append("backend/sandbox_demo/services.py [Camp seeder]")
+    else:
+        try:
+            tree = ast.parse(camp_source.read_text(encoding="utf-8"), filename=str(camp_source))
+        except (OSError, SyntaxError, UnicodeError) as exc:
+            raise RuntimeError("Five-module Camp fixture source cannot be inspected.") from exc
+        if not any(
+            isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+            and node.name == "seed_local_heritage_camp"
+            for node in tree.body
+        ):
+            missing.append("backend/sandbox_demo/services.py::seed_local_heritage_camp")
+    if missing:
+        raise RuntimeError(
+            "Five-module demonstration source is incomplete; integrate the existing "
+            "module PRs before preparing or certifying Windows: " + ", ".join(missing)
+        )
 
 
 def stop(process: subprocess.Popen) -> None:
@@ -179,16 +298,58 @@ def stop(process: subprocess.Popen) -> None:
             process.wait()
 
 
+def require_presenter_preparation() -> None:
+    """Shared by launcher and direct management-command entry; no writes."""
+    if any(os.environ.get(key) for key in ("WEBSITE_HOSTNAME", "WEBSITE_INSTANCE_ID", "AZURE_CLIENT_ID")):
+        raise RuntimeError("Daycare presenter is unavailable on hosted environments.")
+    require_fresh_five_module_source(source_sha())
+    if not all((STATE / name).is_file() for name in ("heritage.sqlite3", "django.key", "seed.complete", "relationships.complete")):
+        raise RuntimeError("Start the reviewed five-module local demo before staff entry.")
+
+
+def daycare_presenter(*, check: bool = False) -> None:
+    """Attach to prepared loopback servers without installs, SGO seeding or rotation."""
+    require_presenter_preparation()
+    python = ROOT / ".venv" / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
+    run([str(python), str(ROOT / "backend/manage.py"), "seed_local_diadem_pickup", "--presenter",
+         *(["--presenter-check"] if check else [])], local_environment())
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--no-browser", action="store_true")
     parser.add_argument("--skip-install", action="store_true", help="Use already-installed dependencies.")
     parser.add_argument("--prepare-only", action="store_true")
+    parser.add_argument("--daycare-presenter", action="store_true", help="Open private signed staff entry into an already running local demo.")
+    parser.add_argument("--daycare-presenter-check", action="store_true", help="Verify staff browser entry then close without a custody write.")
     parser.add_argument("--five-module-preflight", action="store_true",
                         help="After preparation, run the strict isolated five-module demo audit.")
+    parser.add_argument("--five-module-demo", action="store_true",
+                        help="Explicit local-only five-module seed and strict audit before opening the demo.")
     args = parser.parse_args()
+    if args.daycare_presenter or args.daycare_presenter_check:
+        if args.daycare_presenter and args.daycare_presenter_check:
+            parser.error("Choose interactive staff entry or staff-entry verification separately")
+        if args.prepare_only or args.five_module_demo or args.five_module_preflight or args.no_browser or args.skip_install:
+            parser.error("Run --daycare-presenter separately against the prepared local servers")
+        try:
+            daycare_presenter(check=args.daycare_presenter_check)
+            return 0
+        except (OSError, RuntimeError, subprocess.CalledProcessError):
+            print("Daycare presenter refused; verify local preparation, source, staff expiry and unconsumed custody. No credentials were printed.", file=sys.stderr)
+            return 1
     if args.five_module_preflight and not args.prepare_only:
         parser.error("--five-module-preflight requires --prepare-only")
+    if args.five_module_preflight and args.five_module_demo:
+        parser.error("Choose --five-module-preflight or --five-module-demo, not both")
+    if args.five_module_preflight or args.five_module_demo:
+        try:
+            require_five_module_sources()
+            # Before creating keys, installing packages, migrating, or seeding.
+            require_fresh_five_module_source(source_sha())
+        except RuntimeError as exc:
+            print(f"Heritage could not start: {exc}", file=sys.stderr)
+            return 1
     if sys.version_info < (3, 11):
         print("Python 3.11 or newer is required.", file=sys.stderr)
         return 1
@@ -199,7 +360,10 @@ def main() -> int:
         env = local_environment()
         npm = npm_command()
         python = prepare(env, npm, args.skip_install)
-        if args.five_module_preflight:
+        if args.five_module_preflight or args.five_module_demo:
+            # A failed seeder or strict audit aborts BEFORE starting any server.
+            # Never claim a complete five-module demo on route presence alone.
+            seed_five_module_fixtures(env, python)
             run([str(python), str(ROOT / "backend/manage.py"),
                  "five_module_demo_preflight", "--strict"], env)
         if args.prepare_only:

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import CrownLayout from "../components/crown/CrownLayout.jsx";
 import DashboardSection from "../components/layout/DashboardSection.jsx";
+import SummerCampDemoRegistration from "./SummerCampDemoRegistration.jsx";
 import {
   checkinSummerCamper,
   checkoutSummerCamper,
@@ -175,6 +176,8 @@ export default function SummerCampRosterPage() {
         </div>
 
         <button type="button" disabled={loading || busy || !selectedSession} onClick={() => { void reloadRoster(); }}>Refresh custody roster</button>
+        <SummerCampDemoRegistration key={selectedSession} session={selected} rows={rows}
+          disabled={busy || loading || Boolean(error)} onSaved={reloadRoster} />
         {loading && <span role="status">Loading roster...</span>}
         {error && (
           <div style={{ color: "var(--crown-danger)", background: "var(--crown-danger-bg)", padding: "10px 14px", borderRadius: 4 }}>
@@ -187,6 +190,7 @@ export default function SummerCampRosterPage() {
             <h3>Open Camp custody across sessions</h3>
             <p>These are school-reported open custody records, including prior-day,
               other-session and cancelled registrations. No release is authorized by this list.</p>
+            <div role="region" aria-label="Open Camp custody table" tabIndex={0} style={{ overflowX: "auto" }}>
             <table style={tableStyle}>
               <thead><tr><th style={thtdStyle}>Camper</th><th style={thtdStyle}>Session</th>
                 <th style={thtdStyle}>Check-in date</th><th style={thtdStyle}>Required action</th></tr></thead>
@@ -205,10 +209,12 @@ export default function SummerCampRosterPage() {
                 ))}
               </tbody>
             </table>
+            </div>
           </section>
         )}
 
         {!loading && !error && (
+          <div role="region" aria-label="Camp registration table" tabIndex={0} style={{ overflowX: "auto" }}>
           <table style={tableStyle}>
             <thead>
               <tr>
@@ -239,6 +245,7 @@ export default function SummerCampRosterPage() {
               ); })}
             </tbody>
           </table>
+          </div>
         )}
         {pickup && pickup.sessionId === selectedSession && (
           <section role="region" aria-label="Verify Camp pickup">

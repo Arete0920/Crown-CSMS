@@ -30,7 +30,21 @@ from crown_api.dev_token_views import dev_token
 from crown_api.system_views import whoami
 from solomon.guidance_views import guidance_view
 from jireh_sgo.read_only_api import organizations as sgo_organizations, overview as sgo_overview
+from jireh_sgo.family_intake_api import (
+    family_programs as sgo_family_programs, family_submit as sgo_family_submit,
+    family_application as sgo_family_application, family_correct as sgo_family_correct,
+    processor_program_list as sgo_processor_programs,
+    processor_application_queue as sgo_processor_queue,
+    processor_request_correction as sgo_processor_request_correction,
+)
 
+
+from aid.hosted_demo_intake import hosted_aid_family
+from jireh_sgo.hosted_demo_api import (
+    hosted_family_programs, hosted_family_submit, hosted_family_application,
+    hosted_family_correct, hosted_processor_programs, hosted_processor_queue,
+    hosted_processor_request_correction,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -125,8 +139,23 @@ urlpatterns = [
     path("api/v1/little-lambs/", include("aftercare.urls")),
     path("api/little-lambs/", include("aftercare.urls")),
     # Canonical API. Specific dashboard routes must precede each broad alias.
+    path("api/v1/buyer-demo/jireh/aid/family/", hosted_aid_family, name="hosted-buyer-aid-family"),
+    path("api/v1/buyer-demo/jireh/sgo/family/programs/", hosted_family_programs, name="hosted-buyer-sgo-family-programs"),
+    path("api/v1/buyer-demo/jireh/sgo/family/submit/", hosted_family_submit, name="hosted-buyer-sgo-family-submit"),
+    path("api/v1/buyer-demo/jireh/sgo/family/applications/<uuid:application_id>/", hosted_family_application, name="hosted-buyer-sgo-family-application"),
+    path("api/v1/buyer-demo/jireh/sgo/family/applications/<uuid:application_id>/correct/", hosted_family_correct, name="hosted-buyer-sgo-family-correct"),
+    path("api/v1/buyer-demo/jireh/sgo/processor/programs/", hosted_processor_programs, name="hosted-buyer-sgo-processor-programs"),
+    path("api/v1/buyer-demo/jireh/sgo/processor/programs/<uuid:program_id>/queue/", hosted_processor_queue, name="hosted-buyer-sgo-processor-queue"),
+    path("api/v1/buyer-demo/jireh/sgo/processor/applications/<uuid:application_id>/request-correction/", hosted_processor_request_correction, name="hosted-buyer-sgo-processor-request-correction"),
     path("api/v1/jireh-sgo/organizations/", sgo_organizations, name="sgo-organizations"),
     path("api/v1/jireh-sgo/organizations/<uuid:organization_id>/overview/", sgo_overview, name="sgo-overview"),
+    path("api/v1/jireh-sgo/family/programs/", sgo_family_programs, name="sgo-family-programs"),
+    path("api/v1/jireh-sgo/family/submit/", sgo_family_submit, name="sgo-family-submit"),
+    path("api/v1/jireh-sgo/family/applications/<uuid:application_id>/", sgo_family_application, name="sgo-family-application"),
+    path("api/v1/jireh-sgo/family/applications/<uuid:application_id>/correct/", sgo_family_correct, name="sgo-family-correct"),
+    path("api/v1/jireh-sgo/processor/programs/", sgo_processor_programs, name="sgo-processor-programs"),
+    path("api/v1/jireh-sgo/processor/programs/<uuid:program_id>/queue/", sgo_processor_queue, name="sgo-processor-queue"),
+    path("api/v1/jireh-sgo/processor/applications/<uuid:application_id>/request-correction/", sgo_processor_request_correction, name="sgo-processor-request-correction"),
     path("api/v1/dashboards/", include("crown_api.dashboards.urls")),
     path("api/v1/", include("crown_api.api_v1_urls")),
     # Back-compat alias: /api/dashboards/* mirrors /api/v1/dashboards/*.

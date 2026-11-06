@@ -29,7 +29,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       - name: Set up Python
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
         with:
           python-version: "3.12"
           cache: pip
@@ -89,7 +89,7 @@ jobs:
           df -h || true
 
       - name: Set up Python
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
         with:
           python-version: "3.12"
           cache: pip
@@ -231,7 +231,7 @@ jobs:
       PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/backend
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
         with:
           python-version: '3.12'
           cache: pip
@@ -300,7 +300,7 @@ jobs:
       PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/backend
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
         with:
           python-version: '3.12'
           cache: pip
@@ -322,6 +322,7 @@ jobs:
         run: >-
           python -m pytest -v
           backend/aid/tests/test_option_a_aid_student_accounts_bridge.py
+          backend/sandbox_demo/test_hosted_jireh.py
           backend/crown_api/tests/test_director_actions_auth_required.py
           backend/crown_api/tests/test_director_aid_posting_integrity.py
           backend/finance/tests/test_finance_settlement_authorization.py
@@ -365,7 +366,9 @@ jobs:
               if proc.returncode == 0:
                   changed = proc.stdout.decode('utf-8', errors='replace').split('\0')
                   roots = ('backend/aftercare/', 'backend/core/', 'backend/tenants/', 'backend/subscriptions/', 'backend/households/', 'backend/audit/', 'backend/crown_api/')
-                  exact = {'backend/requirements.txt', 'backend/conftest.py', 'backend/tests/conftest.py', 'pytest.ini', '.github/workflows/tests.yml'}
+                  exact = {'backend/requirements.txt', 'backend/conftest.py', 'backend/tests/conftest.py', 'pytest.ini', '.github/workflows/tests.yml',
+                           'backend/sandbox_demo/management/commands/seed_hosted_buyer_daycare.py',
+                           'backend/sandbox_demo/test_seed_hosted_buyer_daycare.py'}
                   required = any(path in exact or path.startswith(roots) for path in changed)
           with open(os.environ['GITHUB_OUTPUT'], 'a') as out:
               out.write('required=' + str(required).lower() + '\n')
@@ -404,7 +407,7 @@ jobs:
       - name: Checkout exact source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Setup Python 3.12
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: '3.12'
           cache: pip
@@ -449,6 +452,7 @@ jobs:
             backend/aftercare/tests/test_am_pm_sessions.py \
             backend/aftercare/tests/test_daycare_api.py \
             backend/aftercare/tests/test_daycare_setup.py \
+            backend/sandbox_demo/test_seed_hosted_buyer_daycare.py \
             --junitxml=diadem-postgresql-junit.xml
       - name: Enforce executed (not skipped) PostgreSQL concurrency tests
         run: |
@@ -462,6 +466,13 @@ jobs:
               "test_postgresql_simultaneous_custody_release_has_one_winner",
               "test_postgresql_preexisting_custody_survives_visit_migration",
               "test_postgresql_concurrent_configuration_retry_has_one_record_and_audit",
+              "test_preflight_is_read_only_then_apply_is_one_time_and_isolated",
+              "test_authenticated_care_service_can_checkin_and_release_only_synthetic_child",
+              "test_injected_failure_rolls_back_entire_synthetic_custody_fixture",
+              "test_customer_plan_substitution_never_bypasses_buyer_module_expiry",
+              "test_invalid_school_timezone_fails_read_only_preflight",
+              "test_expired_buyer_module_blocks_admission_after_fixture_staging",
+              "test_postgresql_concurrent_fixture_writers_serialize",
           ]
           for name in names:
               case = cases.get(name)

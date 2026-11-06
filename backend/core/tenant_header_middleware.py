@@ -70,6 +70,36 @@ def _sgo_grantor_read_route(path, method):
     ))
 
 
+
+def _sgo_fictional_intake_route(path, method):
+    # Exact non-school endpoints; only bypass tenant headers in verified LOCAL
+    # fictional-intake mode. These are never public or staff-role authorizations.
+    uuid_pattern = (
+        r"[0-9a-fA-F]{8}-(?:[0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}"
+    )
+    if method == "GET" and path in {
+        "/api/v1/jireh-sgo/family/programs", "/api/v1/jireh-sgo/processor/programs",
+    }:
+        return True
+    if method == "POST" and path == "/api/v1/jireh-sgo/family/submit":
+        return True
+    if method == "GET" and re.fullmatch(
+        rf"/api/v1/jireh-sgo/family/applications/{uuid_pattern}", path,
+    ):
+        return True
+    if method == "POST" and re.fullmatch(
+        rf"/api/v1/jireh-sgo/family/applications/{uuid_pattern}/correct", path,
+    ):
+        return True
+    if method == "GET" and re.fullmatch(
+        rf"/api/v1/jireh-sgo/processor/programs/{uuid_pattern}/queue", path,
+    ):
+        return True
+    return bool(method == "POST" and re.fullmatch(
+        rf"/api/v1/jireh-sgo/processor/applications/{uuid_pattern}/request-correction", path,
+    ))
+
+
 def _record_tenant_decision(request, *, outcome: str, reason: str, required: bool = False) -> bool:
     """Persist tenant decisions; authorized overrides fail closed when evidence cannot persist."""
     try:
@@ -182,9 +212,15 @@ def enforce_tenant_context(request) -> None:
             )
         return
 
-    # Independent grantor API: only exact read routes may omit school tenancy.
-    # Authorization is enforced again by active organization membership in the views.
-    if _sgo_grantor_read_route(normalized_path, request.method):
+    # Independent grantor API: existing membership-scoped reads plus exact
+    # fictional-intake paths in a verified, explicitly enabled LOCAL runtime.
+    # View-level grants still enforce actor/program authorization.
+    is_sgo_intake = _sgo_fictional_intake_route(normalized_path, request.method)
+    allowed_fictional_intake = False
+    if is_sgo_intake:
+        from jireh_sgo.family_intake_api import fictional_intake_enabled
+        allowed_fictional_intake = fictional_intake_enabled()
+    if _sgo_grantor_read_route(normalized_path, request.method) or allowed_fictional_intake:
         if "HTTP_X_SCHOOL_ID" in request.META or "HTTP_X_CROWN_SCHOOL_ID" in request.META:
             raise _tenant_context_error(
                 request,
@@ -298,10 +334,26 @@ def enforce_tenant_context(request) -> None:
         request.method == "GET"
         and normalized_path == "/api/v1/aftercare/daycare/sites"
     )
+    # Inactive-school custody resolution must also permit a narrowly scoped
+    # pickup-candidate GET. The downstream view still requires authenticated,
+    # school-bound staff, release RBAC, room visibility, and open attendance.
+    # Never use a path prefix or permit other HTTP methods here.
+    is_diadem_release_candidates = (
+        request.method == "GET"
+        and re.fullmatch(
+            r"/api/v1/aftercare/daycare/sites/"
+            r"[0-9a-fA-F]{8}-(?:[0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}"
+            r"/attendance/"
+            r"[0-9a-fA-F]{8}-(?:[0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}"
+            r"/release-authorities",
+            normalized_path,
+        ) is not None
+    )
     is_diadem_custody_resolution = (
         is_diadem_release
         or is_diadem_open_custody_roster
         or is_diadem_custody_directory
+        or is_diadem_release_candidates
     )
     if (
         school is None

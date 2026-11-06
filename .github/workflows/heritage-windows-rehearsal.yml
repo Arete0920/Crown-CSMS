@@ -2,7 +2,8 @@ name: Heritage Windows Demo Rehearsal
 
 on:
   pull_request:
-    branches: [main]
+    # Certify a stacked presenter PR without retargeting it to protected main.
+    branches: [main, 'fix/heritage-five-module-source-pin-20261102']
     paths:
       - 'scripts/demo/**'
       - 'Install-and-Start-Heritage.py'
@@ -35,6 +36,48 @@ permissions:
   contents: read
 
 jobs:
+  # Supply a reproducible, source-audited QA starter even when the full
+  # five-module data/browser gate remains red. This is NOT a release artifact.
+  source-audited-candidate:
+    name: Source-audited Windows starter candidate (NOT five-module certified)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with:
+          python-version: '3.12'
+      - name: Assemble starter and check independent source identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          python scripts/demo/package_heritage_sales.py
+          PIN_SHA="$(PYTHONPATH=scripts/demo python -c 'from package_heritage_sales import pinned_revision; print(pinned_revision())')"
+          git fetch --no-tags --depth=1 origin "$PIN_SHA"
+          python scripts/demo/verify_heritage_sales_package.py --download
+      - name: Exercise source-stamped five-module candidate contract (NOT certified)
+        shell: bash
+        run: |
+          set -euo pipefail
+          CHECKOUT_SHA="$(git rev-parse HEAD)"
+          test "$CHECKOUT_SHA" = "$GITHUB_SHA"
+          python scripts/demo/package_heritage_sales.py --source-sha "$CHECKOUT_SHA" --five-module-candidate
+          python scripts/demo/verify_heritage_sales_package.py --source-sha "$CHECKOUT_SHA" --five-module-candidate
+          # Never upload this candidate: the existing upload path only includes
+          # the historical source-audited basic ZIP, not this unaccepted build.
+      - name: Upload explicitly uncertified QA candidate
+        if: success()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: heritage-source-audited-UNCERTIFIED-candidate
+          path: |
+            .local-backups/heritage-sales/CROWN-Heritage-Sales-Demo-*.zip
+            .local-backups/heritage-sales/heritage-starter-audit.json
+          if-no-files-found: error
+          retention-days: 7
+
   windows-local-demo:
     runs-on: windows-latest
     timeout-minutes: 65
@@ -42,9 +85,33 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
         with:
           python-version: '3.12'
+      - name: Reject incomplete module source before installs, migrations or build
+        shell: pwsh
+        run: |
+          # This uses only Python's standard library. A pre-integration PR
+          # must fail here, NOT after preparing a disposable database.
+          $evidence = Join-Path $env:GITHUB_WORKSPACE ".local-backups/heritage-demo"
+          New-Item -ItemType Directory -Force -Path $evidence | Out-Null
+          $log = Join-Path $evidence "five-module-source-preflight.log"
+          $PSNativeCommandUseErrorActionPreference = $false
+          & python -c "from scripts.demo.start_heritage_local import require_five_module_sources; from scripts.demo.verify_heritage_runtime import require_five_module_browser_sources; require_five_module_sources(); require_five_module_browser_sources()" *> $log
+          $exitCode = $LASTEXITCODE
+          Get-Content -Path $log | ForEach-Object { Write-Host $_ }
+          $result = [ordered]@{
+            schema_version = 1
+            evidence_scope = "before_install_migrate_build"
+            checkout_sha = $env:GITHUB_SHA
+            source_dependencies_passed = ($exitCode -eq 0)
+            browser_acceptance_performed = $false
+            release_certified = $false
+          }
+          $result | ConvertTo-Json -Depth 3 | Set-Content -Encoding utf8 (Join-Path $evidence "five-module-source-preflight.json")
+          if ($exitCode -ne 0) {
+            throw "Five-module source prerequisites are missing; integrate governed module PRs before Windows preparation."
+          }
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
         with:
           node-version: '24'
@@ -55,21 +122,62 @@ jobs:
           node --version
           npm --version
           python scripts/demo/start_heritage_local.py --prepare-only
+      - name: Run strict fictional five-module source and data preflight
+        shell: pwsh
+        run: |
+          # Preserve the true result on failure; never mark a browser run certified.
+          $evidence = Join-Path $env:GITHUB_WORKSPACE ".local-backups/heritage-demo"
+          New-Item -ItemType Directory -Force -Path $evidence | Out-Null
+          $log = Join-Path $evidence "five-module-preflight.log"
+          # GitHub's pwsh error preference must not skip our failure evidence.
+          $PSNativeCommandUseErrorActionPreference = $false
+          & python scripts/demo/start_heritage_local.py --prepare-only --five-module-preflight *> $log
+          $exitCode = $LASTEXITCODE
+          Get-Content -Path $log | ForEach-Object { Write-Host $_ }
+          $result = [ordered]@{
+            schema_version = 1
+            evidence_scope = "five_module_source_and_data_preflight_only"
+            checkout_sha = $env:GITHUB_SHA
+            preflight_exit_code = $exitCode
+            preflight_passed = ($exitCode -eq 0)
+            browser_acceptance_performed = $false
+            release_certified = $false
+          }
+          $result | ConvertTo-Json -Depth 4 | Set-Content -Encoding utf8 (Join-Path $evidence "five-module-preflight.json")
+          if ($exitCode -ne 0) {
+            throw "Strict five-module preflight failed ($exitCode); see uploaded non-certification evidence."
+          }
+      - name: Build and audit source-stamped Heritage candidate
+        id: tested_package
+        shell: pwsh
+        run: |
+          $checkoutSha = git rev-parse HEAD
+          if ($LASTEXITCODE -ne 0) { throw 'Could not identify tested source' }
+          if ($checkoutSha -ne $env:GITHUB_SHA) { throw 'Checkout differs from workflow source' }
+          python scripts/demo/package_heritage_sales.py --source-sha $checkoutSha --five-module-candidate
+          if ($LASTEXITCODE -ne 0) { throw 'Starter package build failed' }
+          python scripts/demo/verify_heritage_sales_package.py --source-sha $checkoutSha --five-module-candidate --download
+          if ($LASTEXITCODE -ne 0) { throw 'Starter source identity audit failed' }
+          "archive=.local-backups/heritage-sales/CROWN-Heritage-Five-Module-UNCERTIFIED-$($checkoutSha.Substring(0,12)).zip" >> $env:GITHUB_OUTPUT
+      - name: Verify canonical frontend visual tokens
+        working-directory: frontend/dashboards
+        run: npm run check:visual-system
       - name: Verify guarded Heritage listener boundary
         shell: pwsh
         run: .\.venv\Scripts\python.exe -m pytest -q backend/crown_api/tests/test_heritage_runserver.py
       - name: Verify immutable sales-starter ZIP contract
         shell: pwsh
         run: .\.venv\Scripts\python.exe -m pytest -q backend/tests/test_heritage_sales_package.py
-      - name: Verify synthetic Heritage fixture and launcher integrity
+      - name: Verify fixture, Board, Financial Aid and presenter backend contracts (isolated SQLite)
         shell: pwsh
-        run: .\.venv\Scripts\python.exe -m pytest -q backend/sandbox_demo/test_seed_realism.py
-      - name: Verify Heritage Board cross-tenant bearer regressions
-        shell: pwsh
+        # One pytest process preserves every prior selector and avoids repeating
+        # the full disposable database migration for each contract group.
         run: >
           .\.venv\Scripts\python.exe -m pytest -q
-          backend/academics/tests/test_classroom_experience.py
-          -k "heritage_board_bearer_renewal or board_bearer_cannot_read_foreign_household"
+          backend/sandbox_demo/test_seed_realism.py
+          backend/academics/tests/test_classroom_experience.py::test_heritage_board_bearer_renewal_preserves_foreign_tenant_denials
+          backend/aid/tests/test_family_demo_intake.py
+          backend/tests/test_heritage_daycare_presenter.py
       - name: Install Playwright Chromium for full buyer browser certification
         shell: pwsh
         working-directory: frontend/dashboards
@@ -77,7 +185,17 @@ jobs:
       - name: Launch servers and verify local role-based demo
         shell: pwsh
         run: |
-          python scripts/demo/verify_heritage_runtime.py --browser
+          python scripts/demo/verify_heritage_runtime.py --browser --five-module
+      - name: Upload audited Windows Heritage starter ZIP
+        if: success()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: heritage-windows-buyer-rehearsed-candidate
+          path: |
+            ${{ steps.tested_package.outputs.archive }}
+            .local-backups/heritage-sales/heritage-five-module-candidate-audit.json
+          if-no-files-found: error
+          retention-days: 7
       - name: Upload local rehearsal evidence
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
@@ -85,7 +203,12 @@ jobs:
           name: heritage-windows-rehearsal
           path: |
             .local-backups/heritage-demo/*.log
+            .local-backups/heritage-demo/five-module-source-preflight.json
+            .local-backups/heritage-demo/five-module-preflight.json
             .local-backups/heritage-demo/rehearsal-result.json
             .local-backups/heritage-demo/buyer-browser-authority.json
+            .local-backups/heritage-demo/presenter-entry.png
+            frontend/dashboards/test-results/**/*.png
+            frontend/dashboards/test-results/**/*.layout.json
           if-no-files-found: error
           retention-days: 7
