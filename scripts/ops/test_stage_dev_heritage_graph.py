@@ -1,5 +1,8 @@
 """Hermetic authority/receipt/plan tests; never contacts Azure or PostgreSQL."""
 import copy
+import hashlib
+from io import BytesIO
+from zipfile import ZipFile, ZIP_DEFLATED
 import json
 import os
 from pathlib import Path
@@ -12,10 +15,14 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import stage_dev_heritage_graph as stage
 
 SHA = 'a' * 40
-RUN = '42238301088'
+RUN = '42273955790'
+STAGE_RUN = '42280000000'
+ARTIFACT_ID = '13532038006'
 ENV = {
     'GITHUB_ACTIONS': 'true', 'GITHUB_EVENT_NAME': 'workflow_dispatch',
-    'GITHUB_REF': 'refs/heads/main', 'GITHUB_SHA': SHA, 'GITHUB_RUN_ID': RUN,
+    'GITHUB_REF': 'refs/heads/main', 'GITHUB_SHA': SHA,
+    'GITHUB_RUN_ID': STAGE_RUN, 'GITHUB_REPOSITORY': stage.REPO,
+    'GITHUB_REPOSITORY_ID': str(stage.REPO_ID),
 }
 
 
@@ -63,6 +70,104 @@ class StageContractTests(unittest.TestCase):
                        ('not-sha', stage.CONFIRMATION, 'true', 'true', 'true', RUN)]:
             with self.subTest(kwargs=kwargs), self.assertRaises(stage.StageBlocked):
                 stage.authority(*kwargs, ENV)
+
+    def test_prior_run_must_be_distinct_and_repository_pinned(self):
+        self.assertEqual(stage.authority(
+            SHA, stage.CONFIRMATION, 'true', 'true', 'true', RUN, ENV,
+        ), int(RUN))
+        for rejected_run in (STAGE_RUN, str(int(STAGE_RUN) + 1), '0', 'invalid'):
+            with self.subTest(rejected_run=rejected_run), self.assertRaises(stage.StageBlocked):
+                stage.authority(SHA, stage.CONFIRMATION, 'true', 'true', 'true',
+                                rejected_run, ENV)
+        for key, value in (
+            ('GITHUB_REPOSITORY', 'other/project'),
+            ('GITHUB_REPOSITORY_ID', '999'),
+            ('GITHUB_RUN_ID', RUN),
+        ):
+            with self.subTest(key=key), self.assertRaises(stage.StageBlocked):
+                stage.authority(SHA, stage.CONFIRMATION, 'true', 'true', 'true',
+                                RUN, dict(ENV, **{key: value}))
+
+    def test_authenticated_prior_rehearsal_archive_accepts_exact_github_proof(self):
+        stream = BytesIO()
+        with ZipFile(stream, 'w', compression=ZIP_DEFLATED) as z:
+            z.writestr(stage.REHEARSAL_RECEIPT_NAME, json.dumps(receipt()))
+        archive = stream.getvalue()
+        digest = 'sha256:' + hashlib.sha256(archive).hexdigest()
+        run = {
+            'id': int(RUN), 'status': 'completed', 'conclusion': 'success',
+            'event': 'workflow_dispatch', 'head_branch': 'main', 'head_sha': SHA,
+            'path': stage.REHEARSAL_WORKFLOW + '@refs/heads/main',
+            'repository': {'id': stage.REPO_ID, 'full_name': stage.REPO},
+            'head_repository': {'id': stage.REPO_ID},
+        }
+        artifact = {
+            'id': int(ARTIFACT_ID), 'name': 'dev-operational-restore-' + RUN,
+            'expired': False, 'size_in_bytes': len(archive), 'digest': digest,
+            'workflow_run': {
+                'id': int(RUN), 'repository_id': stage.REPO_ID,
+                'head_repository_id': stage.REPO_ID, 'head_branch': 'main',
+                'head_sha': SHA,
+            },
+        }
+        inventory = {'total_count': 1, 'artifacts': [artifact]}
+        env = dict(ENV, CROWN_STAGE_GITHUB_TOKEN='ghs_testonly')
+        with patch.object(stage, '_github_api_json', side_effect=[run, inventory]) as api, \
+             patch.object(stage, '_fetch_artifact_zip', return_value=archive) as fetch:
+            self.assertEqual(
+                stage.authenticated_rehearsal_receipt(RUN, ARTIFACT_ID, SHA, env),
+                receipt(),
+            )
+            self.assertEqual(api.call_count, 2)
+            fetch.assert_called_once_with(ARTIFACT_ID, 'ghs_testonly')
+
+        # Never use arbitrary local JSON, caller checksum, or metadata without
+        # a successful authenticated Actions run and an authenticated ZIP hash.
+        for key, invalid in (
+            ('status', 'queued'),
+            ('conclusion', 'failure'),
+            ('event', 'push'),
+            ('head_sha', 'c' * 40),
+            ('path', '.github/workflows/unrelated.yml@main'),
+            ('head_branch', 'other'),
+        ):
+            bad = copy.deepcopy(run)
+            bad[key] = invalid
+            with self.subTest(run_field=key), \
+                 patch.object(stage, '_github_api_json', return_value=bad), \
+                 patch.object(stage, '_fetch_artifact_zip') as fetch, \
+                 self.assertRaises(stage.StageBlocked):
+                stage.authenticated_rehearsal_receipt(RUN, ARTIFACT_ID, SHA, env)
+                fetch.assert_not_called()
+        for key, invalid in (
+            ('digest', 'sha256:' + '0' * 64),
+            ('id', int(ARTIFACT_ID) + 1),
+            ('expired', True),
+            ('name', 'unrelated'),
+        ):
+            bad_artifact = copy.deepcopy(artifact)
+            bad_artifact[key] = invalid
+            bad_inventory = {'total_count': 1, 'artifacts': [bad_artifact]}
+            with self.subTest(artifact_field=key), \
+                 patch.object(stage, '_github_api_json',
+                              side_effect=[run, bad_inventory]), \
+                 patch.object(stage, '_fetch_artifact_zip',
+                              return_value=archive), \
+                 self.assertRaises(stage.StageBlocked):
+                stage.authenticated_rehearsal_receipt(RUN, ARTIFACT_ID, SHA, env)
+        for archive_payload in (b'not-a-zip', archive + b'forged'):
+            with self.subTest(archive_size=len(archive_payload)), \
+                 patch.object(stage, '_github_api_json',
+                              side_effect=[run, inventory]), \
+                 patch.object(stage, '_fetch_artifact_zip',
+                              return_value=archive_payload), \
+                 self.assertRaises(stage.StageBlocked):
+                stage.authenticated_rehearsal_receipt(RUN, ARTIFACT_ID, SHA, env)
+        with patch.object(stage, '_github_api_json', side_effect=AssertionError('must not call')):
+            with self.assertRaises(stage.StageBlocked):
+                stage.authenticated_rehearsal_receipt(
+                    RUN, ARTIFACT_ID, SHA, ENV,
+                )
 
     def test_rehearsal_receipt_is_exact_and_never_claims_rollback(self):
         self.assertTrue(stage.receipt_contract(receipt(), SHA))
@@ -151,12 +256,12 @@ class StageContractTests(unittest.TestCase):
 
     def test_cli_rejects_without_action_authority_before_reading_receipt(self):
         with patch.dict(os.environ, {'GITHUB_ACTIONS':'false'}, clear=True), \
-             patch.object(stage.Path, 'open', side_effect=AssertionError('must not read')):
+             patch.object(stage, '_github_api_json', side_effect=AssertionError('must not call')):
             import io
             from contextlib import redirect_stdout
             output=io.StringIO()
             with redirect_stdout(output):
-                code=stage.main(['--expected-sha', SHA, '--rehearsal-receipt', '/invalid/path'])
+                code=stage.main(['--expected-sha', SHA, '--rehearsal-artifact-id', ARTIFACT_ID])
             self.assertEqual(code,1)
             self.assertEqual(json.loads(output.getvalue())['result'],'BLOCKED')
 
