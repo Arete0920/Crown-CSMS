@@ -24,8 +24,7 @@ from applications.models import Application
 from applications.views_admissions import (
     CONTRACT_COUNTERSIGNED, DEPOSIT_PAID, DEPOSIT_WAIVED,
     _apply_lifecycle_chain_updates, _application_is_post_acceptance,
-    _latest_enrollment_state_for_application, _resolve_legacy_academic_year,
-    _validate_lifecycle_chain_request,
+    _latest_enrollment_state_for_application, _validate_lifecycle_chain_request,
 )
 from applications.views_admissions_identity import (
     _upsert_verified_legacy_admissions, _verified_admissions_context,
@@ -140,11 +139,11 @@ def enroll_applicant(request):
         if readiness_error is not None:
             return readiness_error
 
-        current_year = _resolve_legacy_academic_year(school=school)
+        # Admissions has an explicit target year; a future-year enrollment
+        # must not silently be reinterpreted as the school's current year.
+        target_year = app.academic_year
         if (
-            current_year is None
-            or app.academic_year_id != current_year.id
-            or app.academic_year.school_id != school.pk
+            target_year.school_id != school.pk
             or app.family_id != context.family.id
             or app.student_id not in {identity.core_student.pk for identity in context.identities}
         ):
@@ -158,9 +157,11 @@ def enroll_applicant(request):
         # create core.Enrollment. Deny rather than reporting false SIS success.
         for identity in context.identities:
             grade = str(identity.applicant.grade_applying_for or "").strip().upper()
-            enrolled = grade and CoreEnrollment.objects.select_for_update().filter(
+            enrolled = grade and CoreEnrollment.objects.select_for_update(
+                of=("self",)
+            ).filter(
                 school=school, student=identity.core_student,
-                academic_year=current_year, grade_level__school=school,
+                academic_year=target_year, grade_level__school=school,
                 grade_level__code=grade, status="ENROLLED",
             ).exists()
             if not enrolled:
@@ -188,6 +189,7 @@ def enroll_applicant(request):
         bridge, bridge_error = _upsert_verified_legacy_admissions(
             school=school, context=context, actor_user=request.user,
             target_status=AdmissionsApplication.STATUS_ENROLLED,
+            academic_year=target_year,
         )
         if bridge_error is not None:
             transaction.set_rollback(True)
