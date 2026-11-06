@@ -22,12 +22,15 @@ from admissions.models import AdmissionsApplication
 from admissions.services import finalize_enrollment
 from applications.models import Application
 from applications.views_admissions import (
-    _apply_lifecycle_chain_updates,
-    _latest_enrollment_state_for_application,
-    _upsert_legacy_admissions_applications,
+    CONTRACT_COUNTERSIGNED, DEPOSIT_PAID, DEPOSIT_WAIVED,
+    _apply_lifecycle_chain_updates, _application_is_post_acceptance,
+    _latest_enrollment_state_for_application, _resolve_legacy_academic_year,
     _validate_lifecycle_chain_request,
 )
-from core.models import School
+from applications.views_admissions_identity import (
+    _upsert_verified_legacy_admissions, _verified_admissions_context,
+)
+from core.models import Enrollment as CoreEnrollment, School
 from core.permissions import user_has_permission
 from households.scoping import get_request_school_id
 
@@ -65,33 +68,141 @@ def enroll_applicant(request):
     if not application_id:
         return Response({"ok": False, "detail": "application_id is required."}, status=status.HTTP_400_BAD_REQUEST)
 
+    # Resolve the canonical application first. The authoritative conversion
+    # path locks canonical identity before legacy rows; preserve that order.
+    candidate = AdmissionsApplication.objects.filter(
+        id=application_id, school=school,
+    ).first()
+    if candidate is None:
+        return Response({"ok": False, "detail": "Application not found."},
+                        status=status.HTTP_404_NOT_FOUND)
+    canonical = _canonical_application_for_legacy(candidate, school_id)
+    if canonical is None:
+        return Response(
+            {"ok": False, "detail": "Enrollment requires a linked canonical admissions application.",
+             "current_status": candidate.status},
+            status=status.HTTP_409_CONFLICT,
+        )
+
     with transaction.atomic():
-        try:
-            app = AdmissionsApplication.objects.select_for_update().get(id=application_id, school=school)
-        except AdmissionsApplication.DoesNotExist:
-            return Response({"ok": False, "detail": "Application not found."}, status=status.HTTP_404_NOT_FOUND)
+        context, identity_error = _verified_admissions_context(
+            school=school, application_id=canonical.id,
+        )
+        if identity_error is not None:
+            return identity_error
+        assert context is not None
 
-        if app.status not in {AdmissionsApplication.STATUS_ACCEPTED, AdmissionsApplication.STATUS_ENROLLED}:
-            return Response({"ok": False, "detail": "Enrollment is not permitted from the current application status.", "current_status": app.status}, status=status.HTTP_409_CONFLICT)
+        # Re-lock and revalidate all untrusted legacy linkage and stage data.
+        app = AdmissionsApplication.objects.select_for_update().filter(
+            id=application_id, school=school,
+        ).first()
+        if app is None:
+            return Response({"ok": False, "detail": "Application not found."},
+                            status=status.HTTP_404_NOT_FOUND)
+        if app.status not in {
+            AdmissionsApplication.STATUS_ACCEPTED, AdmissionsApplication.STATUS_ENROLLED,
+        }:
+            return Response(
+                {"ok": False, "detail": "Enrollment is not permitted from the current application status.",
+                 "current_status": app.status},
+                status=status.HTTP_409_CONFLICT,
+            )
+        linked = _canonical_application_for_legacy(app, school_id)
+        if linked is None or linked.id != context.application.id:
+            return Response(
+                {"ok": False, "detail": "Canonical admissions linkage changed during enrollment."},
+                status=status.HTTP_409_CONFLICT,
+            )
+        if not _application_is_post_acceptance(context.application):
+            return Response(
+                {"ok": False, "detail": "Canonical admissions acceptance is required."},
+                status=status.HTTP_409_CONFLICT,
+            )
 
-        canonical = _canonical_application_for_legacy(app, school_id)
-        if canonical is None:
-            return Response({"ok": False, "detail": "Enrollment requires a linked canonical admissions application.", "current_status": app.status}, status=status.HTTP_409_CONFLICT)
-
-        canonical_state = _latest_enrollment_state_for_application(canonical)
-        readiness_error = _validate_lifecycle_chain_request(app=canonical, state=canonical_state, requested_enrollment=True, requested_classroom_ready=False, requested_portal_activation=False)
+        canonical_state = _latest_enrollment_state_for_application(context.application)
+        # An old ENROLLMENT_CONFIRMED event cannot waive current policy gates.
+        if (
+            canonical_state.get("contract_status") != CONTRACT_COUNTERSIGNED
+            or canonical_state.get("deposit_status") not in {DEPOSIT_PAID, DEPOSIT_WAIVED}
+        ):
+            return Response(
+                {"ok": False, "detail": "Canonical enrollment readiness is incomplete.",
+                 "canonical_application_id": str(context.application.id),
+                 "contract_status": canonical_state.get("contract_status"),
+                 "deposit_status": canonical_state.get("deposit_status")},
+                status=status.HTTP_409_CONFLICT,
+            )
+        readiness_error = _validate_lifecycle_chain_request(
+            app=context.application, state=canonical_state,
+            requested_enrollment=True, requested_classroom_ready=False,
+            requested_portal_activation=False,
+        )
         if readiness_error is not None:
-            payload = dict(getattr(readiness_error, "data", {}) or {})
-            return Response({"ok": False, "detail": payload.get("detail") or "Canonical enrollment readiness is incomplete.", "canonical_application_id": str(canonical.id), "contract_status": payload.get("contract_status", canonical_state.get("contract_status")), "deposit_status": payload.get("deposit_status", canonical_state.get("deposit_status"))}, status=status.HTTP_409_CONFLICT)
+            return readiness_error
 
-        _events, lifecycle_error = _apply_lifecycle_chain_updates(app=canonical, actor_user=request.user, note="Admissions pipeline enrollment action", request_payload={"mark_enrollment_confirmed": True})
+        current_year = _resolve_legacy_academic_year(school=school)
+        if (
+            current_year is None
+            or app.academic_year_id != current_year.id
+            or app.academic_year.school_id != school.pk
+            or app.family_id != context.family.id
+            or app.student_id not in {identity.core_student.pk for identity in context.identities}
+        ):
+            return Response(
+                {"ok": False, "detail": "Legacy student, family, or year does not match verified canonical identity.",
+                 "code": "canonical_enrollment_identity_mismatch"},
+                status=status.HTTP_409_CONFLICT,
+            )
+
+        # finalize_enrollment alone changes an admissions status; it does not
+        # create core.Enrollment. Deny rather than reporting false SIS success.
+        for identity in context.identities:
+            grade = str(identity.applicant.grade_applying_for or "").strip().upper()
+            enrolled = grade and CoreEnrollment.objects.select_for_update().filter(
+                school=school, student=identity.core_student,
+                academic_year=current_year, grade_level__school=school,
+                grade_level__code=grade, status="ENROLLED",
+            ).exists()
+            if not enrolled:
+                return Response(
+                    {"ok": False,
+                     "detail": "Verified canonical school-year enrollment is required.",
+                     "code": "canonical_enrollment_required",
+                     "applicant_id": str(identity.applicant.id)},
+                    status=status.HTTP_409_CONFLICT,
+                )
+
+        _events, lifecycle_error = _apply_lifecycle_chain_updates(
+            app=context.application, actor_user=request.user,
+            note="Admissions pipeline enrollment action",
+            request_payload={"mark_enrollment_confirmed": True},
+        )
         if lifecycle_error is not None:
+            transaction.set_rollback(True)
             return lifecycle_error
+        app, converted = finalize_enrollment(
+            app, actor_user=request.user,
+            details={"source": "admissions_enroll_api",
+                     "canonical_application_id": str(context.application.id)},
+        )
+        bridge, bridge_error = _upsert_verified_legacy_admissions(
+            school=school, context=context, actor_user=request.user,
+            target_status=AdmissionsApplication.STATUS_ENROLLED,
+        )
+        if bridge_error is not None:
+            transaction.set_rollback(True)
+            return bridge_error
 
-        app, converted = finalize_enrollment(app, actor_user=request.user, details={"source": "admissions_enroll_api", "canonical_application_id": str(canonical.id)})
-        _upsert_legacy_admissions_applications(app=canonical, actor_user=request.user, target_status=AdmissionsApplication.STATUS_ENROLLED)
         student = app.student or app.sis_student
         student_id = str(student.id) if student else None
         student_name = str(student) if student else None
 
-    return Response({"ok": True, "already_enrolled": not converted, "student_id": student_id, "name": student_name, "canonical_application_id": str(canonical.id), "canonical_gate": "contract_countersigned_and_deposit_paid_or_waived", "message": "Enrolled successfully." if converted else "Already enrolled."}, status=status.HTTP_200_OK)
+    return Response(
+        {"ok": True, "already_enrolled": not converted,
+         "student_id": student_id, "name": student_name,
+         "canonical_application_id": str(context.application.id),
+         "canonical_gate": "verified_identity_and_core_enrollment",
+         "legacy_conversion_bridge": bridge,
+         "message": "Enrolled successfully." if converted else "Already enrolled."},
+        status=status.HTTP_200_OK,
+    )
