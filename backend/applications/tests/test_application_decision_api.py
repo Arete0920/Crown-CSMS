@@ -169,7 +169,8 @@ def test_accept_rejects_existing_student_number_without_guessing_identity():
     assert StudentIdentityLink.objects.filter(school=school).count() == 0
 
 
-def test_accept_reuses_existing_verified_identity_link_without_new_number():
+@pytest.mark.parametrize("canonical_status", ["ACTIVE", "APPLICANT"])
+def test_accept_reuses_existing_verified_identity_link_without_new_number(canonical_status):
     school, hh, family, app, applicant = _mk_application_with_family_bridge()
     compatibility_student = Student.objects.create(
         school_id=school.id,
@@ -189,7 +190,7 @@ def test_accept_reuses_existing_verified_identity_link_without_new_number():
         first_name=applicant.first_name,
         last_name=applicant.last_name,
         dob=applicant.dob,
-        status="ACTIVE",
+        status=canonical_status,
     )
     StudentIdentityLink.objects.create(
         school=school,

@@ -150,7 +150,7 @@ def _provision_student_identity(*, application, applicant, family, student_numbe
                 or core.school_id != application.school_id
                 or core.family_id != family.id
                 or core.dob != applicant.dob
-                or core.status != "ACTIVE"
+                or core.status not in {"APPLICANT", "ACTIVE"}
                 or str(core.first_name or "").strip().casefold()
                    != str(applicant.first_name or "").strip().casefold()
                 or str(core.last_name or "").strip().casefold()
