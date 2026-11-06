@@ -4,6 +4,7 @@ from types import SimpleNamespace
 from uuid import uuid4
 
 import pytest
+from django.core.exceptions import ValidationError
 
 from admissions.models import AdmissionsApplication
 from applications.models import Application, Applicant
@@ -135,7 +136,12 @@ def test_cross_school_reuse_rejected(case):
         first_name="Alex", last_name="Student", grade_level="5",
     )
     case.applicant.student = student
-    case.applicant.save(update_fields=["student", "updated_at"])
+    # Normal writes must reject a cross-school applicant relation.
+    with pytest.raises(ValidationError, match="same school"):
+        case.applicant.save(update_fields=["student", "updated_at"])
+    # An older imported row could already have a corrupt FK: bypass model save
+    # *only in this synthetic test* to verify the conversion bridge fails closed.
+    Applicant.objects.filter(pk=case.applicant.pk).update(student=student)
     rejected(case)
 
 
