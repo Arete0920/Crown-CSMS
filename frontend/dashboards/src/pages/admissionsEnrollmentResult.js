@@ -75,7 +75,16 @@ export async function performVerifiedAdmissionsEnrollment({ applicationId, enrol
   const outcome = verifyAdmissionsEnrollmentResponse(response);
   if (!outcome.ok) return outcome;
   try {
-    await readback(applicationId);
+    const refreshed = await readback(applicationId);
+    // This is a second API observation of the *legacy admissions status*,
+    // not a direct database read of core.Enrollment or identity provenance.
+    if (String(refreshed?.id ?? '') !== String(applicationId)
+      || refreshed?.status !== 'ENROLLED') {
+      return {
+        ok: false,
+        message: 'The server reported verified SIS enrollment, but the refreshed admissions application is missing or not ENROLLED. Reconcile the admissions and SIS records before proceeding.',
+      };
+    }
   } catch {
     return {
       ok: false,

@@ -354,6 +354,7 @@ function AdmissionsPipelineContent() {
     const match = source.find((row) => String(row.id) === String(applicationId));
     await reload();
     if (match) setSelected(match);
+    return match ?? null;
   }
 
   async function handleReviewUpdate(applicationId) {

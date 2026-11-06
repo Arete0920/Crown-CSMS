@@ -16,7 +16,7 @@ const valid = {
 describe('Admissions Enroll Child verified SIS feedback', () => {
   it('accepts only a verified SIS result and refreshes the selected record', async () => {
     const enroll = vi.fn().mockResolvedValue(valid);
-    const readback = vi.fn().mockResolvedValue(undefined);
+    const readback = vi.fn().mockResolvedValue({ id: 17, status: 'ENROLLED' });
     const result = await performVerifiedAdmissionsEnrollment({
       applicationId: 17, enroll, readback,
     });
@@ -90,6 +90,21 @@ describe('Admissions Enroll Child verified SIS feedback', () => {
     expect(result.ok).toBe(false);
     expect(result.message).toContain('canonical SIS enrollment');
     expect(readback).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    [null, 'missing list row'],
+    [{ id: 2, status: 'ACCEPTED' }, 'stale accepted row'],
+    [{ id: 93, status: 'ENROLLED' }, 'wrong application row'],
+    [{ id: 2, status: 'WAITLISTED' }, 'wrong status'],
+  ])('rejects server success when independent admissions readback is %s (%s)', async (readbackResult) => {
+    const outcome = await performVerifiedAdmissionsEnrollment({
+      applicationId: 2,
+      enroll: vi.fn().mockResolvedValue(valid),
+      readback: vi.fn().mockResolvedValue(readbackResult),
+    });
+    expect(outcome.ok).toBe(false);
+    expect(outcome.message).toContain('refreshed admissions application');
   });
 
   it('does not claim independent readback if refreshing the admissions list fails', async () => {
