@@ -99,6 +99,28 @@ def receipt_contract(receipt, expected_sha):
     return True
 
 
+def live_baseline_contract(receipt, fingerprint, migration_records, public_tables):
+    """Refuse a stale restored-copy rehearsal before any live schema mutation.
+
+    The fingerprint hashes the original public columns and row digests, using
+    the same data_fingerprint() implementation as the disposable PG15 drill.
+    A matching DB hostname alone cannot establish the same data baseline.
+    """
+    rehearsal = receipt.get('migration_rehearsal') if isinstance(receipt, dict) else None
+    if (
+        not isinstance(rehearsal, dict)
+        or not isinstance(fingerprint, str)
+        or re.fullmatch(r'[0-9a-f]{64}', fingerprint) is None
+        or type(migration_records) is not int
+        or type(public_tables) is not int
+        or fingerprint != rehearsal.get('baseline_fingerprint')
+        or migration_records != rehearsal.get('baseline_migration_records')
+        or public_tables != rehearsal.get('baseline_public_tables')
+    ):
+        raise StageBlocked('live_dev_baseline_differs_from_rehearsal')
+    return True
+
+
 def plan_contract(plan, reviewed):
     """Accept precisely the reviewed non-reverse DAG, never a partial suffix."""
     if not isinstance(plan, list) or len(plan) != EXPECTED_COUNT:
@@ -130,7 +152,7 @@ def verify_current_main(expected_sha, *, run=subprocess.run):
 def execute_stage(expected_sha, receipt, *, get_dev_settings=None):
     """Transactional migration under the existing PostgreSQL advisory lock."""
     from rehearse_dev_heritage_migrations import (MIGRATIONS, SEED_TABLES, verify_manifest,
-        table_facts, row_digest, seed_row_multiset)
+        table_facts, row_digest, seed_row_multiset, data_fingerprint)
     from run_dev_inquiry_migration import (load_dev_settings, validate_database_url,
                                             DEV_HOST, Blocked as DevConfigBlocked)
     verify_manifest()  # Exact 21 pinned file digests before Azure appsettings reads.
@@ -206,6 +228,10 @@ def execute_stage(expected_sha, receipt, *, get_dev_settings=None):
                       for table, names in columns.items()}
             seed_before = {table: seed_row_multiset(connection, table, columns[table])
                            for table in SEED_TABLES if table in columns}
+            # Match the exact data baseline rehearsed on the disposable copy,
+            # not merely its database name, migration graph or receipt shape.
+            live_baseline_contract(receipt, data_fingerprint(columns, before),
+                                   len(history), len(columns))
             verify_current_main(expected_sha)  # race protection immediately before schema mutation
             with transaction.atomic(using=connection.alias):
                 executor.migrate(targets)

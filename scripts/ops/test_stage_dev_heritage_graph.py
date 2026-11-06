@@ -100,6 +100,29 @@ class StageContractTests(unittest.TestCase):
                 with self.assertRaises(stage.StageBlocked):
                     stage.receipt_contract(bad, SHA)
 
+    def test_live_baseline_requires_exact_rehearsed_data_and_schema(self):
+        baseline = receipt()
+        self.assertTrue(stage.live_baseline_contract(
+            baseline, 'b' * 64, 245, 467,
+        ))
+        for fingerprint, history, tables in [
+            ('a' * 64, 245, 467),  # same graph, stale table/data contents
+            ('b' * 64, 244, 467),  # changed migration-history count
+            ('b' * 64, 246, 467),
+            ('b' * 64, 245, 466),  # schema table count drift
+            ('b' * 64, 245, 468),
+            ('bad', 245, 467),
+            ('b' * 64, True, 467),
+            ('b' * 64, 245, True),
+        ]:
+            with self.subTest(fingerprint=fingerprint, history=history, tables=tables):
+                with self.assertRaisesRegex(
+                    stage.StageBlocked, 'live_dev_baseline_differs_from_rehearsal'
+                ):
+                    stage.live_baseline_contract(baseline, fingerprint, history, tables)
+        self.assertRaises(stage.StageBlocked, stage.live_baseline_contract,
+                          {'migration_rehearsal': None}, 'b' * 64, 245, 467)
+
     def test_only_entire_forward_21_item_graph_can_write(self):
         reviewed = [f'app{i:02}.0001' for i in range(21)]
         plan = [(SimpleNamespace(app_label=f'app{i:02}', name='0001'), False)
