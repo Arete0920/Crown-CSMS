@@ -175,18 +175,6 @@ jobs:
       - name: Verify SimpleJWT migration allowlist without database access
         run: python -m unittest discover -s scripts/ops -p test_reviewed_blacklist_migrations.py -v
 
-      - name: Reverify protected main before DEV migration
-        shell: bash
-        env:
-          EXPECTED_DEV_SHA: ${{ steps.vars.outputs.deploy_sha }}
-        run: |
-          set -euo pipefail
-          git fetch --no-tags origin refs/heads/main:refs/remotes/origin/main
-          if [[ "$GITHUB_REF" != "refs/heads/main" || "$GITHUB_SHA" != "$EXPECTED_DEV_SHA" || "$(git rev-parse HEAD)" != "$EXPECTED_DEV_SHA" || "$(git rev-parse refs/remotes/origin/main)" != "$EXPECTED_DEV_SHA" ]]; then
-            echo "::error::Protected main moved: refusing DEV migration" >&2
-            exit 1
-          fi
-
       - name: Verify reviewed21 source-only authority and evidence contracts
         if: inputs.apply_reviewed_heritage21 == true
         run: python -m unittest discover -s scripts/ops -p test_stage_dev_heritage_graph.py -v
@@ -224,6 +212,18 @@ jobs:
           path: ${{ runner.temp }}/reviewed-dev-schema-stage.json
           retention-days: 7
           if-no-files-found: warn
+
+      - name: Reverify protected main before DEV migration
+        shell: bash
+        env:
+          EXPECTED_DEV_SHA: ${{ steps.vars.outputs.deploy_sha }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin refs/heads/main:refs/remotes/origin/main
+          if [[ "$GITHUB_REF" != "refs/heads/main" || "$GITHUB_SHA" != "$EXPECTED_DEV_SHA" || "$(git rev-parse HEAD)" != "$EXPECTED_DEV_SHA" || "$(git rev-parse refs/remotes/origin/main)" != "$EXPECTED_DEV_SHA" ]]; then
+            echo "::error::Protected main moved: refusing DEV migration" >&2
+            exit 1
+          fi
 
       - name: Apply only reviewed DEV inquiry migration before deployment
         env:
