@@ -43,7 +43,7 @@ def reset_heritage_admissions_conversion_scenario() -> None:
         return
     marked = list(
         Applicant.objects.select_related("application__household", "student")
-        .filter(school_id=SCHOOL_ID, flags__heritage_conversion_fixture=FIXTURE_MARKER)
+        .filter(school_id=school.pk, flags__heritage_conversion_fixture=FIXTURE_MARKER)
         .order_by("pk")[:2]
     )
     if not marked:
@@ -138,7 +138,7 @@ def seed_heritage_admissions_conversion_scenario() -> dict[str, str]:
     if (
         Family.objects.filter(school=school, family_name=FAMILY_NAME).exists()
         or Student.objects.filter(school=school, student_number=STUDENT_NUMBER).exists()
-        or Household.objects.filter(school_id=SCHOOL_ID, name=HOUSEHOLD_NAME).exists()
+        or Household.objects.filter(school_id=school.pk, name=HOUSEHOLD_NAME).exists()
     ):
         raise ValueError("Unmarked Heritage enrollment fixture exists; use a fresh isolated sandbox.")
 
@@ -165,7 +165,7 @@ def seed_heritage_admissions_conversion_scenario() -> dict[str, str]:
         dob=STUDENT_DOB, status="APPLICANT", current_grade_level=grade,
     )
     household = Household.objects.create(
-        school_id=SCHOOL_ID, name=HOUSEHOLD_NAME,
+        school_id=school.pk, name=HOUSEHOLD_NAME,
         address1="800 Enrollment Way", city="Fairview", state="PA",
         postal_code="19000", is_active=True,
     )
@@ -174,17 +174,17 @@ def seed_heritage_admissions_conversion_scenario() -> dict[str, str]:
         source=HouseholdFamilyLink.SOURCE_ADMISSIONS,
     )
     compatibility = CompatibilityStudent.objects.create(
-        school_id=SCHOOL_ID, household=household,
+        school_id=school.pk, household=household,
         first_name=STUDENT_FIRST, last_name=STUDENT_LAST,
         grade_level=GRADE_CODE, is_active=True,
     )
     canonical = Application.objects.create(
-        school_id=SCHOOL_ID, household=household,
+        school_id=school.pk, household=household,
         status=ApplicationStatus.DECIDED,
         submitted_at=timezone.now(), decided_at=timezone.now(),
     )
     applicant = Applicant.objects.create(
-        school_id=SCHOOL_ID, application=canonical, student=compatibility,
+        school_id=school.pk, application=canonical, student=compatibility,
         first_name=STUDENT_FIRST, last_name=STUDENT_LAST,
         dob=STUDENT_DOB, grade_applying_for=GRADE_CODE,
         source="church_referral",
@@ -204,15 +204,15 @@ def seed_heritage_admissions_conversion_scenario() -> dict[str, str]:
         grade_level=grade, start_date=year.start_date, status="ENROLLED",
     )
     ApplicationEvent.objects.create(
-        school_id=SCHOOL_ID, application=canonical, event_type="application_submitted",
+        school_id=school.pk, application=canonical, event_type="application_submitted",
         payload={"via": "sandbox_admissions_conversion", "applicant_id": str(applicant.id)},
     )
     ApplicationEvent.objects.create(
-        school_id=SCHOOL_ID, application=canonical, event_type="decision_made",
+        school_id=school.pk, application=canonical, event_type="decision_made",
         payload={"decision": "accepted", "updated_by": director.email},
     )
     contract = EnrollmentContract.objects.create(
-        school_id=SCHOOL_ID, application=canonical, version=1,
+        school_id=school.pk, application=canonical, version=1,
         status=EnrollmentContractStatus.COUNTERSIGNED,
         line_items=[{
             "label": "Grade 8 Published Tuition", "category": "tuition",
@@ -229,7 +229,7 @@ def seed_heritage_admissions_conversion_scenario() -> dict[str, str]:
         countersigned_at=timezone.now(), created_by=director.email,
     )
     ApplicationEvent.objects.create(
-        school_id=SCHOOL_ID, application=canonical, event_type="enrollment_state_updated",
+        school_id=school.pk, application=canonical, event_type="enrollment_state_updated",
         payload={
             "contract_status": "countersigned", "deposit_status": "paid",
             "note": "Fictional readiness; no payment provider transaction.",

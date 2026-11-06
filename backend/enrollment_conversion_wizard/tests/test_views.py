@@ -591,6 +591,15 @@ class EnrollmentConversionCoreIdentityProofTests(TestCase):
         legacy.refresh_from_db()
         self.assertEqual(legacy.status, AdmissionsApplication.STATUS_ACCEPTED)
 
+    def test_malformed_second_provenance_reference_fails_closed(self):
+        school, year, legacy, canonical, _, client, sid = self._ready()
+        legacy.notes_internal += "\ncanonical_application_id=not-a-uuid"
+        legacy.save(update_fields=["notes_internal", "updated_at"])
+        response = self._commit(client, sid, school)
+        self.assertEqual(response.status_code, 409, response.data)
+        legacy.refresh_from_db()
+        self.assertEqual(legacy.status, AdmissionsApplication.STATUS_ACCEPTED)
+
     def test_cross_school_identity_cannot_pass_enrollment_gate(self):
         school, year, legacy, canonical, _, client, sid = self._ready()
         other_school = _make_school()

@@ -273,4 +273,3 @@ def verify_session(request, session_id):
             status=status.HTTP_409_CONFLICT,
         )
     return Response(result)
-

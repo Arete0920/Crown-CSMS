@@ -6,10 +6,10 @@ legacy admissions rows -> core school-year enrollments. No identity or
 enrollment is created from legacy names, inferred birth dates or statuses.
 """
 from dataclasses import dataclass
+import re
 from uuid import UUID
 
 from admissions.models import AdmissionsApplication
-from admissions.views_enroll import _CANONICAL_APPLICATION_RE
 from applications.models import Application, Applicant
 from applications.views_admissions import (
     CONTRACT_COUNTERSIGNED,
@@ -33,10 +33,19 @@ class VerifiedMember:
     enrollment: Enrollment
 
 
+_CANONICAL_REF_PREFIX = re.compile(r"(?<!\S)canonical_application_id=")
+_CANONICAL_REF_VALUE = re.compile(
+    r"(?<!\S)canonical_application_id=([0-9a-fA-F-]{36})(?!\S)"
+)
+
+
 def _canonical_reference(legacy):
-    references = _CANONICAL_APPLICATION_RE.findall(str(legacy.notes_internal or ""))
-    if len(references) != 1:
-        raise BulkEnrollmentProofError("Exactly one canonical application reference is required.")
+    notes = str(legacy.notes_internal or "")
+    # The previous consuming whitespace boundary could hide adjacent references.
+    # Count every prefix, including ones followed by malformed UUID values.
+    references = _CANONICAL_REF_VALUE.findall(notes)
+    if len(_CANONICAL_REF_PREFIX.findall(notes)) != 1 or len(references) != 1:
+        raise BulkEnrollmentProofError("Exactly one valid canonical application reference is required.")
     try:
         return UUID(references[0])
     except (ValueError, TypeError) as exc:
