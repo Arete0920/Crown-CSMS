@@ -37,10 +37,11 @@ def grant(user, *codes):
             code=code, defaults={"description": "Scoped evaluation test grant"}
         )
         RolePermission.objects.create(role_code=role, permission=permission)
-        TeacherEvaluationAccessEvent.objects.create(
-            school=user.school, user=user, authorized_by=authorizer,
-            permission_code=code, action="grant", reason="Fictional test setup only",
-        )
+        if code in dict(TeacherEvaluationAccessEvent.CAPABILITIES):
+            TeacherEvaluationAccessEvent.objects.create(
+                school=user.school, user=user, authorized_by=authorizer,
+                permission_code=code, action="grant", reason="Fictional test setup only",
+            )
     return role
 
 
