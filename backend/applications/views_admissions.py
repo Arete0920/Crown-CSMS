@@ -2088,11 +2088,11 @@ def _sync_legacy_admissions_application(*, app: Application, academic_year, fami
         raise LegacyStudentIdentityError("Duplicate historical admissions records require reconciliation.")
     if existing:
         legacy_app = existing[0]
-        recorded = {
+        recorded = [
             line.strip() for line in str(legacy_app.notes_internal or "").splitlines()
-            if line.strip().startswith("canonical_application_id=")
-        }
-        if recorded != {reference}:
+            if "canonical_application_id=" in line
+        ]
+        if recorded != [reference]:
             raise LegacyStudentIdentityError("Historical admissions provenance requires reconciliation.")
         if (
             legacy_app.status == AdmissionsApplication.STATUS_ENROLLED

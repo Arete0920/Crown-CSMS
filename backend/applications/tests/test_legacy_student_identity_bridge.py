@@ -194,3 +194,25 @@ def test_enrolled_historical_record_not_downgraded(case):
     assert bridge(case)["state"] == "identity_verification_required"
     legacy.refresh_from_db()
     assert legacy.status == AdmissionsApplication.STATUS_ENROLLED
+
+
+@pytest.mark.parametrize("note_template", [
+    "{ref}\n{ref}",
+    "{ref}\nHistorical ;canonical_application_id={foreign}",
+    "{ref}\n(canonical_application_id={foreign})",
+    "{ref};canonical_application_id={foreign}",
+])
+def test_ambiguous_historical_provenance_rejected(case, note_template):
+    reference = f"canonical_application_id={case.application.id}"
+    notes = note_template.format(ref=reference, foreign=uuid4())
+    legacy = AdmissionsApplication.objects.create(
+        school=case.school, academic_year=case.year, family=case.family,
+        student=case.core, status=AdmissionsApplication.STATUS_ACCEPTED,
+        notes_internal=notes,
+    )
+    result = bridge(case, status="ENROLLED")
+    assert result["state"] == "identity_verification_required"
+    legacy.refresh_from_db()
+    assert legacy.status == AdmissionsApplication.STATUS_ACCEPTED
+    assert legacy.notes_internal == notes
+    assert AdmissionsApplication.objects.filter(school=case.school).count() == 1
