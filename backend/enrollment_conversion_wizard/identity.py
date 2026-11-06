@@ -33,24 +33,40 @@ class VerifiedMember:
     enrollment: Enrollment
 
 
-_CANONICAL_REF_PREFIX = re.compile(r"canonical_application_id=")
-_CANONICAL_REF_VALUE = re.compile(
-    r"(?<!\S)canonical_application_id=([0-9a-fA-F-]{36})(?!\S)"
+_CANONICAL_REF_LINE = re.compile(
+    r"canonical_application_id=([0-9a-fA-F-]{36})"
 )
 
 
 def _canonical_reference(legacy):
     notes = str(legacy.notes_internal or "")
-    # The previous consuming whitespace boundary could hide adjacent references.
-    # Count every occurrence, including punctuation-adjacent or malformed tokens.
-    references = _CANONICAL_REF_VALUE.findall(notes)
-    if len(_CANONICAL_REF_PREFIX.findall(notes)) != 1 or len(references) != 1:
-        raise BulkEnrollmentProofError("Exactly one valid canonical application reference is required.")
+    # Match the single-enrollment identity contract: the historical marker
+    # must be a whole line, never a descriptive or punctuated note fragment.
+    # Count every line containing the marker, including malformed duplicates.
+    recorded = [
+        line.strip() for line in notes.splitlines()
+        if "canonical_application_id=" in line
+    ]
+    if len(recorded) != 1:
+        raise BulkEnrollmentProofError(
+            "Exactly one standalone canonical application reference is required."
+        )
+    match = _CANONICAL_REF_LINE.fullmatch(recorded[0])
+    if match is None:
+        raise BulkEnrollmentProofError(
+            "Canonical application reference must occupy a full line."
+        )
     try:
-        return UUID(references[0])
+        canonical_id = UUID(match.group(1))
     except (ValueError, TypeError) as exc:
         raise BulkEnrollmentProofError("Invalid canonical application reference.") from exc
-
+    # Enforce the canonical lower-case, hyphenated UUID form also required by
+    # the exact-marker comparison in the single-enrollment integration path.
+    if recorded[0] != f"canonical_application_id={canonical_id}":
+        raise BulkEnrollmentProofError(
+            "Canonical application reference must be normalized."
+        )
+    return canonical_id
 
 def _identity_for_application(app, school_id):
     if app.school_id != school_id or app.household.school_id != school_id:

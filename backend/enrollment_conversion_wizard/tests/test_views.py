@@ -621,6 +621,66 @@ class EnrollmentConversionCoreIdentityProofTests(TestCase):
                     event_type=ENROLLMENT_CONFIRMED_EVENT_TYPE,
                 ).exists())
 
+    def test_embedded_canonical_provenance_fails_closed(self):
+        school, year, legacy, canonical, _, client, sid = self._ready()
+        for notes in (
+            f"historical note canonical_application_id={canonical.id} extra",
+            f"canonical_application_id={canonical.id} trailing text",
+            f"prefix canonical_application_id={canonical.id}",
+            f"(canonical_application_id={canonical.id})",
+            f"canonical_application_id={str(canonical.id).upper()}",
+        ):
+            with self.subTest(notes=notes):
+                legacy.notes_internal = notes
+                legacy.save(update_fields=["notes_internal", "updated_at"])
+                response = self._commit(client, sid, school)
+                self.assertEqual(response.status_code, 409, response.data)
+                legacy.refresh_from_db()
+                self.assertEqual(legacy.notes_internal, notes)
+                self.assertEqual(legacy.status, AdmissionsApplication.STATUS_ACCEPTED)
+                self.assertFalse(ApplicationEvent.objects.filter(
+                    application=canonical,
+                    event_type=ENROLLMENT_CONFIRMED_EVENT_TYPE,
+                ).exists())
+                self.assertEqual(
+                    EnrollmentConversionWizardSession.objects.get(pk=sid).status,
+                    EnrollmentConversionWizardSession.STATUS_APPLICANTS_LOADED,
+                )
+
+    def test_embedded_second_cohort_marker_rolls_back_all_students(self):
+        school, year, legacy, canonical, second, client, sid = self._ready(second=True)
+        other = AdmissionsApplication.objects.filter(school=school).exclude(
+            pk=legacy.pk,
+        ).get()
+        other.notes_internal = f"legacy note canonical_application_id={second.id} extra"
+        other.save(update_fields=["notes_internal", "updated_at"])
+        response = self._commit(client, sid, school)
+        self.assertEqual(response.status_code, 409, response.data)
+        legacy.refresh_from_db()
+        other.refresh_from_db()
+        self.assertEqual(legacy.status, AdmissionsApplication.STATUS_ACCEPTED)
+        self.assertEqual(other.status, AdmissionsApplication.STATUS_ACCEPTED)
+        self.assertFalse(ApplicationEvent.objects.filter(
+            school_id=school.id, event_type=ENROLLMENT_CONFIRMED_EVENT_TYPE,
+        ).exists())
+        self.assertEqual(
+            EnrollmentConversionWizardSession.objects.get(pk=sid).status,
+            EnrollmentConversionWizardSession.STATUS_APPLICANTS_LOADED,
+        )
+
+    def test_unrelated_historical_note_lines_preserve_standalone_marker(self):
+        school, year, legacy, canonical, _, client, sid = self._ready()
+        legacy.notes_internal = (
+            "Reviewed evidence on a fictional record\n"
+            f"  canonical_application_id={canonical.id}  \n"
+            "Original non-provenance notes retained"
+        )
+        legacy.save(update_fields=["notes_internal", "updated_at"])
+        response = self._commit(client, sid, school)
+        self.assertEqual(response.status_code, 200, response.data)
+        legacy.refresh_from_db()
+        self.assertEqual(legacy.status, AdmissionsApplication.STATUS_ENROLLED)
+
     def test_cross_school_identity_cannot_pass_enrollment_gate(self):
         school, year, legacy, canonical, _, client, sid = self._ready()
         other_school = _make_school()
