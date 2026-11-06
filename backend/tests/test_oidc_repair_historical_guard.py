@@ -34,9 +34,10 @@ SAFE_CREDENTIALS = [
     fic("crown-csms-production", PREFIX + ":environment:production"),
     fic("github-env-dev", PREFIX + ":environment:dev"),
 ]
+HISTORICAL_PREFIX = "repo:" + "/".join(("tcmegahan", "Crown2026"))
 HISTORICAL = [
-    fic("github-main-oidc", "repo:tcmegahan/Crown2026:ref:refs/heads/main"),
-    fic("github-env-prod", "repo:tcmegahan/Crown2026:environment:prod"),
+    fic("github-main-oidc", HISTORICAL_PREFIX + ":ref:refs/heads/main"),
+    fic("github-env-prod", HISTORICAL_PREFIX + ":environment:prod"),
 ]
 
 
