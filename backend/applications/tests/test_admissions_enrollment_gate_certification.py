@@ -171,7 +171,7 @@ def test_canonical_enrollment_confirmation_fails_closed_then_bridges_after_readi
     assert unpersisted.status_code == 409, unpersisted.data
     assert unpersisted.data["code"] == "canonical_enrollment_required"
     assert not ApplicationEvent.objects.filter(
-        school=school, application=application,
+        school_id=school.id, application=application,
         event_type="enrollment_confirmed",
     ).exists()
     assert not AdmissionsApplication.objects.filter(
