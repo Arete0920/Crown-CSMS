@@ -53,6 +53,11 @@ def local_environment() -> dict[str, str]:
         "DJANGO_DEBUG": "true", "DJANGO_ENV": "local", "CROWN_ENV": "local",
         "DJANGO_SECRET_KEY": secret_path.read_text(encoding="utf-8").strip(),
         "DJANGO_ALLOWED_HOSTS": "localhost,127.0.0.1,testserver",
+        # The browser uses a separate loopback port (4173) from Django's API
+        # listener (8000). After Django login, its session-authenticated POSTs
+        # enforce CSRF Origin validation. Trust only the two fixed local
+        # presenter origins; never alter hosted/production CSRF configuration.
+        "DJANGO_CSRF_TRUSTED_ORIGINS": "http://127.0.0.1:4173,http://localhost:4173",
         "DATABASE_URL": "sqlite:///" + (STATE / "heritage.sqlite3").as_posix(),
         "CROWN_SANDBOX_ALLOW_OPEN_SESSION": "true", "CROWN_DEMO_MODE": "false",
         "CROWN_DEV_OPEN_API": "false", "TENANT_HEADER_REQUIRED": "true",
