@@ -64,6 +64,32 @@ describe("Sandbox persona launch", () => {
     expect(window.location.href).toContain("guidance=guided");
   });
 
+  it("carries the Django CSRF cookie when changing authenticated sandbox roles", async () => {
+    document.cookie = "csrftoken=second%2Dsession%2Dtoken; path=/";
+    sessionStorage.setItem("crown.jwt.access", "previous-school-admin-jwt");
+
+    const { createSandboxSession } = await import("../sandbox/sandboxApi.js");
+    const response = await createSandboxSession({
+      inviteId: "",
+      role: "parent",
+      school: "heritage-core",
+      track: "school",
+      guidance: "guided",
+      tour: "Family experience proof path",
+    });
+    expect(response).toBeTruthy();
+    const [, options] = globalThis.fetch.mock.calls.find(
+      ([url]) => String(url).includes("/api/v1/sandbox/session/"),
+    );
+    const headers = new Headers(options.headers);
+    expect(headers.get("X-CSRFToken")).toBe("second-session-token");
+    expect(headers.get("Content-Type")).toBe("application/json");
+    expect(headers.get("Authorization")).toBeNull();
+    expect(options.credentials).toBe("same-origin");
+    expect(JSON.parse(options.body).role).toBe("parent");
+    document.cookie = "csrftoken=; Max-Age=0; path=/";
+  });
+
   it("preserves the server-issued dashboard route for self-guided demo", async () => {
     const { default: SandboxLandingPage } = await import("../pages/SandboxLandingPage.jsx");
     render(<SandboxLandingPage />);

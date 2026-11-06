@@ -17,10 +17,33 @@ export async function resolveSandboxInvite(inviteId) {
   return response.json();
 }
 
+function sameOriginSandboxCsrfHeaders(url) {
+  // A first session mints a Django session and sets the CSRF cookie. The next
+  // role switch is an authenticated session POST and must pass the normal
+  // CSRF guard. Do not send tokens to arbitrary cross-origin API hosts.
+  const headers = { "Content-Type": "application/json" };
+  if (typeof document === "undefined" || typeof location === "undefined") return headers;
+  const target = new URL(url, location.href);
+  if (target.origin !== location.origin) return headers;
+  const cookie = document.cookie.split(";")
+    .map((part) => part.trim())
+    .find((part) => part.startsWith("csrftoken="));
+  if (cookie) {
+    try {
+      headers["X-CSRFToken"] = decodeURIComponent(cookie.slice("csrftoken=".length));
+    } catch {
+      // Malformed cookie: let the server reject the protected operation.
+    }
+  }
+  return headers;
+}
+
 export async function createSandboxSession({ inviteId, role, school, track, guidance, tour }) {
-  const response = await globalThis.fetch(apiUrl("/api/v1/sandbox/session/"), {
+  const url = apiUrl("/api/v1/sandbox/session/");
+  const response = await globalThis.fetch(url, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    credentials: "same-origin",
+    headers: sameOriginSandboxCsrfHeaders(url),
     body: JSON.stringify({
       invite_id: inviteId || null,
       role,
