@@ -6,7 +6,7 @@ import pytest
 from django.test import override_settings
 from rest_framework.test import APIClient
 
-from admissions.models import AdmissionsApplication
+from admissions.models import AdmissionsApplication, AdmissionsAuditEvent
 from applications.models import Application, Applicant, ApplicationEvent, EnrollmentContract, EnrollmentContractStatus
 from applications.services import has_verified_student_enrollments
 from enrollment_conversion_wizard.models import EnrollmentConversionWizardSession
@@ -381,6 +381,55 @@ def test_seed_reset_preserves_same_name_application_and_other_household_student(
     assert Student.objects.filter(pk=unrelated_child.id).exists()
     assert Household.objects.filter(pk=scenario.household_id).exists()
     assert not Student.objects.filter(pk=completed.data["child_id"]).exists()
+
+
+@override_settings(CROWN_SANDBOX_ALLOW_OPEN_SESSION=True)
+def test_parent_reset_preserves_legacy_audit_history():
+    school, parent, application_id = _setup()
+    response = _client(parent, school).post(
+        "/api/v1/sandbox/parent/enrollment/",
+        {"application_id": application_id, "accepted_terms": True},
+        format="json",
+    )
+    assert response.status_code == 200, response.data
+    legacy = AdmissionsApplication.objects.get(
+        school=school,
+        notes_internal__contains=f"canonical_application_id={application_id}",
+    )
+    receipt = AdmissionsAuditEvent.log(
+        school=school, entity_type=AdmissionsAuditEvent.ENTITY_APPLICATION,
+        entity_id=legacy.pk, action="TEST_HISTORICAL_RECEIPT",
+    )
+    with pytest.raises(
+        SandboxParentEnrollmentError,
+        match="reset_historical_admissions_audit_exists",
+    ):
+        seed_parent_enrollment_scenario()
+    assert Application.objects.filter(pk=application_id).exists()
+    assert AdmissionsApplication.objects.filter(pk=legacy.pk).exists()
+    assert AdmissionsAuditEvent.objects.filter(pk=receipt.pk).exists()
+
+
+@override_settings(CROWN_SANDBOX_ALLOW_OPEN_SESSION=True)
+def test_parent_reset_preserves_extra_application_event():
+    school, parent, application_id = _setup()
+    response = _client(parent, school).post(
+        "/api/v1/sandbox/parent/enrollment/",
+        {"application_id": application_id, "accepted_terms": True},
+        format="json",
+    )
+    assert response.status_code == 200, response.data
+    extra = ApplicationEvent.objects.create(
+        school=school, application_id=application_id,
+        event_type="decision_made", payload={"decision": "accepted", "note": "later review"},
+    )
+    with pytest.raises(
+        SandboxParentEnrollmentError,
+        match="reset_application_history_not_synthetic",
+    ):
+        seed_parent_enrollment_scenario()
+    assert Application.objects.filter(pk=application_id).exists()
+    assert ApplicationEvent.objects.filter(pk=extra.pk).exists()
 
 
 @override_settings(CROWN_SANDBOX_ALLOW_OPEN_SESSION=True)
