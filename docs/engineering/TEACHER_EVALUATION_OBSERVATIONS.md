@@ -41,3 +41,18 @@ Status: **Draft source, not certified.** This additive implementation intentiona
 Run `python manage.py check`, `python manage.py makemigrations --check --dry-run`, and the focused `backend/teacher_evaluations/test_observations.py` tests on PostgreSQL in the repository's governed environment. Confirm school A/B isolation, teacher A/B isolation, HR-only denial, evaluator revocation, missing-tenant denial, exact-key replay and conflict, duplicate cycle/response denial, submitted-record immutability, no unapproved grants, and independent saved GET/reload behavior. Extend the first slice with real authenticated Playwright teacher/evaluator flows **before** labeling the frontend implemented.
 
 Do not merge this draft until exact-head checks, migration/schema checks, code review, and the separate personnel policy questions have acceptable evidence. Keep #617 / #427 and the enrollment/demo PRs as separately owned work.
+
+## Successor security hardening: ordered access decisions (draft)
+
+This dependent change serializes each individual access decision on the evaluated
+account's database row, allocates a strictly increasing decision version for the
+school/user/capability tuple, and reads the highest version—not timestamps or
+UUID order—to determine current permission. It retains confidential event
+history without creating a public grant/revoke route or granting default roles.
+
+A migration refuses to infer the order of **existing** access events. Such
+historical records require a separate reviewed conversion rather than an
+unverifiable automatic ordering. Concurrency and fixed-timestamp tests must pass
+on PostgreSQL before promoting this successor. School authorization policy,
+independent approval, retention/dispute rules and browser verification remain
+required for live use.

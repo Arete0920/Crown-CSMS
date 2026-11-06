@@ -511,3 +511,149 @@ def test_access_event_rejects_cross_school_and_is_append_only(scenario):
     with pytest.raises(DjangoValidationError):
         event.delete()
 
+
+def test_access_decision_timestamp_and_uuid_tie_cannot_restore_old_grant(scenario):
+    """The newest committed version wins even if UUID order is reversed."""
+    from unittest.mock import patch
+
+    s = scenario
+    cycle = create_cycle(s).data["id"]
+    moment = timezone.now()
+    with patch("django.db.models.fields.timezone.now", return_value=moment):
+        granted = TeacherEvaluationAccessEvent.objects.create(
+            id=uuid.UUID("ffffffff-ffff-ffff-ffff-ffffffffffff"),
+            school=s["school"], user=s["evaluator"], authorized_by=s["admin"],
+            permission_code="evaluation.observe", action="grant",
+            reason="Synthetic fixed-time access test",
+        )
+        revoked = TeacherEvaluationAccessEvent.objects.create(
+            id=uuid.UUID("00000000-0000-0000-0000-000000000001"),
+            school=s["school"], user=s["evaluator"], authorized_by=s["admin"],
+            permission_code="evaluation.observe", action="revoke",
+            reason="Synthetic later revocation",
+        )
+    assert granted.created_at == revoked.created_at
+    assert revoked.decision_version == granted.decision_version + 1
+    assert create_observation(s, cycle).status_code == 404
+    assert TeacherEvaluationAccessEvent.objects.filter(
+        school=s["school"], user=s["evaluator"],
+        permission_code="evaluation.observe",
+    ).first().action == "revoke"
+
+
+@pytest.mark.django_db(transaction=True)
+def test_postgresql_simultaneous_access_decisions_are_serialized(scenario):
+    """Independent PostgreSQL connections must produce unique ordered versions."""
+    from concurrent.futures import ThreadPoolExecutor
+    from threading import Barrier
+    from django.db import connection, connections
+
+    if connection.vendor != "postgresql":
+        pytest.skip("Authorization ordering proof requires PostgreSQL row locks.")
+
+    s = scenario
+    cycle = create_cycle(s).data["id"]
+    school_id = s["school"].pk
+    target_id = s["evaluator"].pk
+    grantor_id = s["admin"].pk
+    last_before = TeacherEvaluationAccessEvent.objects.filter(
+        school_id=school_id, user_id=target_id,
+        permission_code="evaluation.observe",
+    ).order_by("-decision_version").values_list("decision_version", flat=True).first()
+    barrier = Barrier(2)
+
+    def writer(action):
+        connections.close_all()
+        try:
+            barrier.wait(timeout=20)
+            entry = TeacherEvaluationAccessEvent.objects.create(
+                school_id=school_id, user_id=target_id, authorized_by_id=grantor_id,
+                permission_code="evaluation.observe", action=action,
+                reason=f"Fictional simultaneous {action}",
+            )
+            return entry.decision_version, entry.action
+        finally:
+            connections.close_all()
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        futures = [executor.submit(writer, action) for action in ("grant", "revoke")]
+        decisions = [future.result(timeout=45) for future in futures]
+
+    assert sorted(version for version, _ in decisions) == [last_before + 1, last_before + 2]
+    final_action = max(decisions)[1]
+    latest = TeacherEvaluationAccessEvent.objects.filter(
+        school_id=school_id, user_id=target_id,
+        permission_code="evaluation.observe",
+    ).first()
+    assert (latest.decision_version, latest.action) == (last_before + 2, final_action)
+    assert create_observation(s, cycle).status_code == (201 if final_action == "grant" else 404)
+
+@pytest.mark.parametrize("first_action", ["grant", "revoke"])
+@pytest.mark.django_db(transaction=True)
+def test_postgresql_both_access_decision_commit_orders(scenario, first_action):
+    """Force both committed orders while a competing writer waits on the same account."""
+    from concurrent.futures import ThreadPoolExecutor
+    from threading import Event
+    from django.db import connection, connections, transaction
+
+    if connection.vendor != "postgresql":
+        pytest.skip("Row-lock decision-order proof requires PostgreSQL.")
+
+    s = scenario
+    cycle = create_cycle(s).data["id"]
+    target_id = s["evaluator"].pk
+    school_id = s["school"].pk
+    authorizer_id = s["admin"].pk
+    second_action = "revoke" if first_action == "grant" else "grant"
+    locked, started, release = Event(), Event(), Event()
+
+    def write(action, must_hold_first):
+        connections.close_all()
+        try:
+            if must_hold_first:
+                with transaction.atomic():
+                    UserAccount.objects.select_for_update().get(pk=target_id)
+                    locked.set()
+                    if not release.wait(timeout=20):
+                        raise RuntimeError("Competing writer did not start")
+                    record = TeacherEvaluationAccessEvent.objects.create(
+                        school_id=school_id, user_id=target_id,
+                        authorized_by_id=authorizer_id,
+                        permission_code="evaluation.observe", action=action,
+                        reason=f"Synthetic ordered {action}",
+                    )
+                return record.decision_version
+
+            if not locked.wait(timeout=20):
+                raise RuntimeError("Initial account lock was not acquired")
+            started.set()
+            record = TeacherEvaluationAccessEvent.objects.create(
+                school_id=school_id, user_id=target_id,
+                authorized_by_id=authorizer_id,
+                permission_code="evaluation.observe", action=action,
+                reason=f"Synthetic competing {action}",
+            )
+            return record.decision_version
+        finally:
+            connections.close_all()
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        first = pool.submit(write, first_action, True)
+        second = pool.submit(write, second_action, False)
+        try:
+            assert started.wait(timeout=20)
+        finally:
+            release.set()
+        first_version = first.result(timeout=45)
+        second_version = second.result(timeout=45)
+
+    assert second_version == first_version + 1
+    current = TeacherEvaluationAccessEvent.objects.filter(
+        school_id=school_id, user_id=target_id,
+        permission_code="evaluation.observe",
+    ).first()
+    assert current.action == second_action
+    assert current.decision_version == second_version
+    assert create_observation(s, cycle).status_code == (
+        201 if second_action == "grant" else 404
+    )
