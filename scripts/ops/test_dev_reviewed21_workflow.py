@@ -77,8 +77,13 @@ class Reviewed21WorkflowContracts(unittest.TestCase):
         })
         for name in ("apply_reviewed_heritage21", "synthetic_dev_confirmed",
                      "backup_recovery_verified", "maintenance_window_confirmed"):
-            entry = source.split("      " + name + ":\n",1)[1].split("\n      ",1)[0]
-            self.assertIn("default: false", entry)
+            match = re.search(
+                r"(?ms)^      " + re.escape(name) +
+                r":\n(.*?)(?=^      [a-z][a-z0-9_]*:\s*$|\Z)",
+                source,
+            )
+            self.assertIsNotNone(match, name)
+            self.assertRegex(match.group(1), r"(?m)^        default: false$")
 
     def test_explicit_stage_authority_and_negative_cases(self):
         self.assertEqual(self.run_guard().returncode, 0)
