@@ -22,6 +22,7 @@ from core.models import AcademicYear, Staff, UserAccount
 from core.permissions import user_has_permission
 
 from .models import (
+    TeacherEvaluationAccessEvent,
     TeacherEvaluationAssignment,
     TeacherEvaluationCycle,
     TeacherEvaluationEvent,
@@ -53,8 +54,20 @@ def _school(request):
     return school
 
 
-def _grant(user, code, school):
+def _has_evaluation_permission(user, code, school):
+    """A global role grant is necessary but never sufficient for personnel access."""
+    if not user.is_active or user.school_id != school.pk:
+        return False
     if not user_has_permission(user, code, school):
+        return False
+    latest = TeacherEvaluationAccessEvent.objects.filter(
+        school=school, user=user, permission_code=code
+    ).order_by("-created_at", "-id").values_list("action", flat=True).first()
+    return latest == "grant"
+
+
+def _grant(user, code, school):
+    if not _has_evaluation_permission(user, code, school):
         raise PermissionDenied("Explicit teacher-evaluation permission required.")
 
 
@@ -147,13 +160,13 @@ def _evaluator(user, cycle):
 
 def _can_read(user, cycle, school):
     return (
-        (_subject(user, cycle) and user_has_permission(user, "evaluation.read_self", school))
-        or (_evaluator(user, cycle) and user_has_permission(user, "evaluation.read_assigned", school))
+        (_subject(user, cycle) and _has_evaluation_permission(user, "evaluation.read_self", school))
+        or (_evaluator(user, cycle) and _has_evaluation_permission(user, "evaluation.read_assigned", school))
     )
 
 
 def _can_observe(user, cycle, school):
-    return _evaluator(user, cycle) and user_has_permission(user, "evaluation.observe", school)
+    return _evaluator(user, cycle) and _has_evaluation_permission(user, "evaluation.observe", school)
 
 
 def _ensure_read(user, cycle, school):
@@ -219,8 +232,8 @@ def _error(exc):
 def cycles(request):
     school = _school(request)
     if request.method == "GET":
-        self_grant = user_has_permission(request.user, "evaluation.read_self", school)
-        assigned_grant = user_has_permission(request.user, "evaluation.read_assigned", school)
+        self_grant = _has_evaluation_permission(request.user, "evaluation.read_self", school)
+        assigned_grant = _has_evaluation_permission(request.user, "evaluation.read_assigned", school)
         if not self_grant and not assigned_grant:
             raise PermissionDenied("Explicit teacher-evaluation read permission required.")
         queryset = TeacherEvaluationCycle.objects.filter(school=school)
@@ -264,7 +277,7 @@ def cycles(request):
             evaluator = get_object_or_404(
                 UserAccount, school=school, pk=evaluator_id, is_active=True
             )
-            if not user_has_permission(evaluator, "evaluation.observe", school):
+            if not _has_evaluation_permission(evaluator, "evaluation.observe", school):
                 raise PermissionDenied("Evaluator must have explicit observation authority.")
             if actor.staff_id == staff.pk or evaluator.staff_id == staff.pk:
                 raise PermissionDenied("Self-evaluation assignment is prohibited.")
@@ -301,7 +314,7 @@ def cycle_detail(request, cycle_id):
     school = _school(request)
     cycle = _cycle(school, cycle_id)
     _ensure_read(request.user, cycle, school)
-    is_evaluator = _evaluator(request.user, cycle) and user_has_permission(
+    is_evaluator = _evaluator(request.user, cycle) and _has_evaluation_permission(
         request.user, "evaluation.read_assigned", school
     )
     qs = TeacherObservation.objects.filter(school=school, cycle=cycle)
@@ -455,7 +468,7 @@ def observation_response(request, observation_id):
                 TeacherObservation.objects.select_for_update().select_related("cycle"),
                 school=school, pk=observation_id, status="submitted"
             )
-            if not _subject(actor, row.cycle) or not user_has_permission(
+            if not _subject(actor, row.cycle) or not _has_evaluation_permission(
                 actor, "evaluation.respond_self", school
             ):
                 raise NotFound()

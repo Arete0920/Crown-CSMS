@@ -8,8 +8,10 @@ from django.utils import timezone
 from rest_framework.test import APIClient
 
 from core.models import AcademicYear, CrownPermission, RolePermission, School, Staff, UserAccount, UserRole
+from core.permissions import user_has_permission
 from hr.models import Employee
 from teacher_evaluations.models import (
+    TeacherEvaluationAccessEvent,
     TeacherEvaluationAssignment,
     TeacherEvaluationCycle,
     TeacherEvaluationEvent,
@@ -22,14 +24,23 @@ BASE = "/api/v1/teacher-evaluations/"
 
 
 def grant(user, *codes):
-    """Create a private, school-bound role so test grants cannot leak to other users."""
+    """Create paired generic and person/school-specific grants for synthetic tests."""
     role = f"evaluation-{uuid.uuid4().hex[:12]}"
     UserRole.objects.create(user=user, school=user.school, role_code=role)
+    authorizer = UserAccount.objects.create_user(
+        username=f"eval-grantor-{uuid.uuid4().hex[:12]}",
+        email=f"eval-grantor-{uuid.uuid4().hex}@example.test",
+        school=user.school,
+    )
     for code in codes:
         permission, _ = CrownPermission.objects.get_or_create(
             code=code, defaults={"description": "Scoped evaluation test grant"}
         )
         RolePermission.objects.create(role_code=role, permission=permission)
+        TeacherEvaluationAccessEvent.objects.create(
+            school=user.school, user=user, authorized_by=authorizer,
+            permission_code=code, action="grant", reason="Fictional test setup only",
+        )
     return role
 
 
@@ -429,3 +440,67 @@ def test_postgresql_concurrent_observation_retry_commits_one_event(scenario):
     assert TeacherEvaluationEvent.objects.filter(
         cycle_id=cycle_id, action="observation_draft"
     ).count() == 1
+
+def test_shared_role_code_does_not_transfer_evaluation_authority_to_another_school(scenario):
+    s = scenario
+    code = "evaluation.assign"
+    p, _ = CrownPermission.objects.get_or_create(code=code)
+    RolePermission.objects.get_or_create(role_code="HEAD_OF_SCHOOL", permission=p)
+    UserRole.objects.create(user=s["admin"], school=s["school"], role_code="HEAD_OF_SCHOOL")
+    foreign_head = UserAccount.objects.create_user(
+        username=f"foreign-head-{uuid.uuid4().hex[:12]}", school=s["other"],
+    )
+    UserRole.objects.create(user=foreign_head, school=s["other"], role_code="HEAD_OF_SCHOOL")
+    assert user_has_permission(s["admin"], code, school=s["school"])
+    assert user_has_permission(foreign_head, code, school=s["other"])
+    assert post(foreign_head, s["other"], BASE + "cycles/", {
+        "request_key": key(), "staff_id": str(s["staff_other"].pk),
+        "academic_year_id": str(s["year"].pk),
+        "evaluator_id": str(s["evaluator"].pk), "title": "Forbidden",
+    }).status_code == 403
+    assert get(foreign_head, s["other"], BASE + "cycles/").status_code == 403
+    assert create_cycle(s).status_code == 201
+    assert TeacherEvaluationCycle.objects.count() == 1
+
+
+def test_school_user_specific_revoke_overrides_unchanged_role_grants(scenario):
+    s = scenario
+    cycle = create_cycle(s).data["id"]
+    observation = create_observation(s, cycle).data["id"]
+    assert user_has_permission(s["evaluator"], "evaluation.observe", school=s["school"])
+    TeacherEvaluationAccessEvent.objects.create(
+        school=s["school"], user=s["evaluator"], authorized_by=s["admin"],
+        permission_code="evaluation.observe", action="revoke",
+        reason="Fictional access reassignment",
+    )
+    assert user_has_permission(s["evaluator"], "evaluation.observe", school=s["school"])
+    assert create_observation(s, cycle).status_code == 404
+    assert submit(s, observation).status_code == 404
+    assert TeacherObservation.objects.get(pk=observation).status == "draft"
+    TeacherEvaluationAccessEvent.objects.create(
+        school=s["school"], user=s["teacher"], authorized_by=s["admin"],
+        permission_code="evaluation.read_self", action="revoke",
+        reason="Fictional access suspension",
+    )
+    assert get(s["teacher"], s["school"], BASE + f"cycles/{cycle}/").status_code == 404
+    assert get(s["teacher"], s["school"], BASE + "cycles/").status_code == 403
+    TeacherEvaluationAccessEvent.objects.create(
+        school=s["school"], user=s["evaluator"], authorized_by=s["admin"],
+        permission_code="evaluation.observe", action="grant",
+        reason="Fictional access reinstatement",
+    )
+    assert create_observation(s, cycle).status_code == 201
+
+def test_access_event_rejects_cross_school_and_is_append_only(scenario):
+    s = scenario
+    with pytest.raises(DjangoValidationError):
+        TeacherEvaluationAccessEvent.objects.create(
+            school=s["school"], user=s["outsider"], authorized_by=s["admin"],
+            permission_code="evaluation.assign", action="grant", reason="Forbidden",
+        )
+    event = TeacherEvaluationAccessEvent.objects.filter(user=s["admin"]).first()
+    with pytest.raises(DjangoValidationError):
+        event.save()
+    with pytest.raises(DjangoValidationError):
+        event.delete()
+

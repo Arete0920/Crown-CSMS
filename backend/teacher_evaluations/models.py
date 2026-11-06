@@ -211,3 +211,48 @@ class TeacherEvaluationEvent(AppendOnlyEvidence):
             raise ValidationError("Event actor must belong to this school.")
         if self.observation_id and self.cycle_id and self.observation.cycle_id != self.cycle_id:
             raise ValidationError("Event observation must belong to its cycle.")
+
+class TeacherEvaluationAccessEvent(AppendOnlyEvidence):
+    """Additional school/user/capability gate; no public grant endpoint in this release."""
+
+    CAPABILITIES = [
+        ("evaluation.assign", "Assign confidential observations"),
+        ("evaluation.observe", "Observe assigned teacher"),
+        ("evaluation.read_assigned", "Read designated evaluations"),
+        ("evaluation.read_self", "Read personal submitted observations"),
+        ("evaluation.respond_self", "Respond to personal observations"),
+    ]
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    school = models.ForeignKey("core.School", on_delete=models.PROTECT)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT,
+        related_name="teacher_evaluation_access_history",
+    )
+    authorized_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT,
+        related_name="teacher_evaluation_access_authorizations",
+    )
+    permission_code = models.CharField(max_length=40, choices=CAPABILITIES)
+    action = models.CharField(max_length=8, choices=[("grant", "Grant"), ("revoke", "Revoke")])
+    reason = models.CharField(max_length=240)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at", "-id"]
+        indexes = [
+            models.Index(fields=["school", "user", "permission_code", "created_at"], name="te_access_scope_idx"),
+        ]
+
+    def clean(self):
+        if self.school_id and self.user_id and self.user.school_id != self.school_id:
+            raise ValidationError("Evaluation access user must belong to the school.")
+        if self.school_id and self.authorized_by_id and (
+            self.authorized_by.school_id != self.school_id or not self.authorized_by.is_active
+        ):
+            raise ValidationError("Evaluation access author must be active in this school.")
+        if self.user_id and self.authorized_by_id and self.user_id == self.authorized_by_id:
+            raise ValidationError("Evaluation access decisions must not be self-authorized.")
+        if self.action == "grant" and self.user_id and not self.user.is_active:
+            raise ValidationError("Cannot grant evaluation access to an inactive user.")
+        if not isinstance(self.reason, str) or not self.reason.strip():
+            raise ValidationError("Evaluation access decisions require a reason.")
