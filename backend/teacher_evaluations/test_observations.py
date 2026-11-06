@@ -588,3 +588,72 @@ def test_postgresql_simultaneous_access_decisions_are_serialized(scenario):
     assert (latest.decision_version, latest.action) == (last_before + 2, final_action)
     assert create_observation(s, cycle).status_code == (201 if final_action == "grant" else 404)
 
+@pytest.mark.parametrize("first_action", ["grant", "revoke"])
+@pytest.mark.django_db(transaction=True)
+def test_postgresql_both_access_decision_commit_orders(scenario, first_action):
+    """Force both committed orders while a competing writer waits on the same account."""
+    from concurrent.futures import ThreadPoolExecutor
+    from threading import Event
+    from django.db import connection, connections, transaction
+
+    if connection.vendor != "postgresql":
+        pytest.skip("Row-lock decision-order proof requires PostgreSQL.")
+
+    s = scenario
+    cycle = create_cycle(s).data["id"]
+    target_id = s["evaluator"].pk
+    school_id = s["school"].pk
+    authorizer_id = s["admin"].pk
+    second_action = "revoke" if first_action == "grant" else "grant"
+    locked, started, release = Event(), Event(), Event()
+
+    def write(action, must_hold_first):
+        connections.close_all()
+        try:
+            if must_hold_first:
+                with transaction.atomic():
+                    UserAccount.objects.select_for_update().get(pk=target_id)
+                    locked.set()
+                    if not release.wait(timeout=20):
+                        raise RuntimeError("Competing writer did not start")
+                    record = TeacherEvaluationAccessEvent.objects.create(
+                        school_id=school_id, user_id=target_id,
+                        authorized_by_id=authorizer_id,
+                        permission_code="evaluation.observe", action=action,
+                        reason=f"Synthetic ordered {action}",
+                    )
+                return record.decision_version
+
+            if not locked.wait(timeout=20):
+                raise RuntimeError("Initial account lock was not acquired")
+            started.set()
+            record = TeacherEvaluationAccessEvent.objects.create(
+                school_id=school_id, user_id=target_id,
+                authorized_by_id=authorizer_id,
+                permission_code="evaluation.observe", action=action,
+                reason=f"Synthetic competing {action}",
+            )
+            return record.decision_version
+        finally:
+            connections.close_all()
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        first = pool.submit(write, first_action, True)
+        second = pool.submit(write, second_action, False)
+        try:
+            assert started.wait(timeout=20)
+        finally:
+            release.set()
+        first_version = first.result(timeout=45)
+        second_version = second.result(timeout=45)
+
+    assert second_version == first_version + 1
+    current = TeacherEvaluationAccessEvent.objects.filter(
+        school_id=school_id, user_id=target_id,
+        permission_code="evaluation.observe",
+    ).first()
+    assert current.action == second_action
+    assert current.decision_version == second_version
+    assert create_observation(s, cycle).status_code == (
+        201 if second_action == "grant" else 404
+    )
