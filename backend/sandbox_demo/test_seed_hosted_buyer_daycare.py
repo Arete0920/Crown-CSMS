@@ -35,8 +35,7 @@ GUARD_SEED = "sandbox_demo.management.commands.seed_hosted_buyer_daycare._requir
 GUARD_ENTITLE = "sandbox_demo.management.commands.provision_hosted_buyer_care_entitlements._require_existing_dev_runtime"
 
 
-@pytest.fixture
-def buyer(db):
+def _create_buyer():
     school = School.objects.create(name=_SCHOOL_NAME, is_active=True)
     invite = SandboxInvite.objects.create(
         organization_label="Fictional Daycare buyer",
@@ -62,6 +61,16 @@ def buyer(db):
     return school, invite, workspace, principals
 
 
+@pytest.fixture
+def buyer(db):
+    return _create_buyer()
+
+
+@pytest.fixture
+def transactional_buyer(transactional_db):
+    return _create_buyer()
+
+
 def run(invite, command=SEED, *, apply=False):
     guard = GUARD_SEED if command == SEED else GUARD_ENTITLE
     output = StringIO()
@@ -73,7 +82,7 @@ def run(invite, command=SEED, *, apply=False):
 @pytest.mark.django_db
 def test_not_entitled_cannot_seed_or_preflight(buyer):
     school, invite, _, _ = buyer
-    with pytest.raises(Exception):
+    with pytest.raises(PermissionDenied, match="Active Diadem tenant required"):
         run(invite)
     assert not DaycareSite.objects.filter(school=school).exists()
     assert not DaycareRoomStaffCoverage.objects.filter(school=school).exists()
@@ -87,6 +96,8 @@ def test_preflight_is_read_only_then_apply_is_one_time_and_isolated(buyer):
     result = run(invite)
     assert "PRECHECK_ONLY" in result and "created=0" in result
     assert not DaycareSite.objects.filter(school=school).exists()
+    assert not Household.objects.filter(school_id=school.pk).exists()
+    assert not SandboxEvent.objects.filter(invite=invite, event="fictional_daycare_custody_seeded").exists()
 
     result = run(invite, apply=True)
     assert "FICTIONAL_DAYCARE_STAGED" in result
@@ -182,7 +193,10 @@ def test_revoked_or_unscoped_workspace_never_seeds_custody(buyer, mutation):
         UserAccount.objects.filter(pk=principals["daycare_staff"].pk).update(is_active=False)
     elif mutation == "tenant_suspended":
         TenantProfile.objects.filter(school=school).update(status="suspended")
-    with pytest.raises(Exception):
+    expected_error = (PermissionDenied if mutation in {
+        "entitlement", "module_expired", "tenant_suspended"
+    } else CommandError)
+    with pytest.raises(expected_error):
         run(invite, apply=True)
     assert not DaycareSite.objects.filter(school=school).exists()
 
@@ -258,3 +272,55 @@ def test_expired_buyer_module_blocks_admission_after_fixture_staging(buyer):
             program_code="DAYCARE", request_key=uuid4(),
         )
     assert not DaycareAttendance.objects.filter(school=school).exists()
+
+
+@pytest.mark.django_db(transaction=True)
+def test_postgresql_concurrent_fixture_writers_serialize(transactional_buyer):
+    """Two independent database connections may stage only one custody fixture."""
+    from concurrent.futures import ThreadPoolExecutor
+    from threading import Barrier
+    from django.db import connection, close_old_connections, connections
+
+    if connection.vendor != "postgresql":
+        pytest.skip("Real PostgreSQL row locking is required for the concurrent fixture proof.")
+    school, invite, _, _ = transactional_buyer
+    run(invite, ENTITLE, apply=True)
+    barrier = Barrier(2)
+
+    class SharedFixedInvite:
+        def readline(self, size=-1):
+            return f"{invite.pk}\n"
+
+    def attempt():
+        close_old_connections()
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT pg_backend_pid()")
+                backend_pid = cursor.fetchone()[0]
+            barrier.wait(timeout=25)
+            try:
+                call_command(
+                    SEED, expected_sha=SHA, invite_stdin=True,
+                    apply=True, stdout=StringIO(),
+                )
+                return backend_pid, "created"
+            except CommandError as exc:
+                if "Existing school custody" not in str(exc):
+                    raise
+                return backend_pid, "denied_repeat"
+        finally:
+            connections.close_all()
+
+    with patch(GUARD_SEED), patch("sys.stdin", SharedFixedInvite()):
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            first = pool.submit(attempt)
+            second = pool.submit(attempt)
+            outcomes = [first.result(timeout=65), second.result(timeout=65)]
+    assert len({pid for pid, _ in outcomes}) == 2, outcomes
+    assert sorted(status for _, status in outcomes) == ["created", "denied_repeat"]
+    assert DaycareSite.objects.filter(school=school).count() == 1
+    assert DaycareRoomStaffCoverage.objects.filter(school=school).count() == 1
+    assert Household.objects.filter(school_id=school.pk, name=_HOUSEHOLD).count() == 1
+    assert SandboxEvent.objects.filter(
+        invite=invite, event="fictional_daycare_custody_seeded",
+    ).count() == 1
