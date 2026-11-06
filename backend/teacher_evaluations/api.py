@@ -474,7 +474,12 @@ def observation_response(request, observation_id):
                 raise NotFound()
             replay = _retry(school, actor, key, fingerprint)
             if replay is not None:
-                return replay
+                if replay.status_code != 200:
+                    return replay
+                original = get_object_or_404(
+                    TeacherObservationResponse, school=school, observation=row, teacher=actor
+                )
+                return Response(_response_data(original), status=200)
             if TeacherObservationResponse.objects.filter(
                 school=school, observation=row
             ).exists():

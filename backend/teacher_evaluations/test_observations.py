@@ -263,8 +263,11 @@ def test_observation_and_response_idempotency_stale_versions_and_mutation_guards
     assert submit(s, oid).status_code == 409
     assert submit(s, oid, version=True).status_code == 400
     rkey = key()
-    assert respond(s, oid, request_key=rkey, choice="disputed", comment="I disagree with the observation.").status_code == 201
-    assert respond(s, oid, request_key=rkey, choice="disputed", comment="I disagree with the observation.").status_code == 200
+    first_response = respond(s, oid, request_key=rkey, choice="disputed", comment="I disagree with the observation.")
+    replay_response = respond(s, oid, request_key=rkey, choice="disputed", comment="I disagree with the observation.")
+    assert first_response.status_code == 201
+    assert replay_response.status_code == 200
+    assert replay_response.data == first_response.data
     assert respond(s, oid, choice="acknowledged_receipt").status_code == 409
     row = TeacherObservation.objects.get(pk=oid)
     row.narrative = "Rewritten"
