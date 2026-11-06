@@ -10,7 +10,7 @@ from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
-from django.views.decorators.cache import never_cache
+from django.views.decorators.cache import cache_control, never_cache
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema
 from rest_framework.decorators import api_view, permission_classes
@@ -200,6 +200,7 @@ def _error(exc):
     raise exc
 
 
+@cache_control(private=True, no_store=True)
 @never_cache
 @extend_schema(methods=["GET"], responses=OpenApiTypes.OBJECT)
 @extend_schema(methods=["POST"], request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
@@ -286,6 +287,7 @@ def cycles(request):
         _error(exc)
 
 
+@cache_control(private=True, no_store=True)
 @never_cache
 @extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["GET"])
@@ -318,6 +320,7 @@ def cycle_detail(request, cycle_id):
     })
 
 
+@cache_control(private=True, no_store=True)
 @never_cache
 @extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
@@ -375,6 +378,7 @@ def observations(request, cycle_id):
         return Response({"detail": "Conflicting request key."}, status=409)
 
 
+@cache_control(private=True, no_store=True)
 @never_cache
 @extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
@@ -417,6 +421,7 @@ def submit_observation(request, observation_id):
         return Response({"detail": "Conflicting request key."}, status=409)
 
 
+@cache_control(private=True, no_store=True)
 @never_cache
 @extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
