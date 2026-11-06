@@ -88,7 +88,7 @@ def test_stale_fixture_source_blocks_runtime_before_key_preparation(runtime, mon
     monkeypatch.setattr(runtime.launcher, "local_environment", lambda: pytest.fail("No keys for stale fixtures"))
     assert runtime.main() == 1
 
-@pytest.mark.parametrize("index", range(7))
+@pytest.mark.parametrize("index", range(9))
 def test_each_missing_browser_source_blocks_completion(runtime, monkeypatch, index):
     (runtime.launcher.FRONTEND / runtime.FIVE_MODULE_BROWSER_SOURCES[index]).unlink()
     monkeypatch.setattr(runtime.subprocess, "run", lambda *a, **kw: pytest.fail("No browser with incomplete source"))
@@ -145,6 +145,32 @@ def test_success_runs_care_and_sgo_once_with_required_proof_flags(runtime, monke
     monkeypatch.setattr(runtime.subprocess, "run", lambda cmd, **kw: calls.append((cmd, kw)))
     original_env = {"CROWN_EXPECTED_FRONTEND_SHA": "a" * 40}
     proof = evidence(runtime)
+    for role, count in runtime.GUIDED_LINK_COUNTS.items():
+        (runtime.launcher.STATE / f"presenter-links-{role}.json").write_text(
+            __import__("json").dumps({
+                "source_sha": "a" * 40, "role": role, "result": "PASS",
+                "expected_links": count, "clicked_links": count,
+                "pages": [{"requested": "/test", "observed": "/test",
+                           "heading": "Test-only fictional page"}] * count,
+                "browser_errors": [], "server_errors": [],
+            }), encoding="utf-8",
+        )
+    # The runner clears stale files before each browser check; simulate its
+    # real tests generating current-source reports after that cleanup.
+    def collect(command, **kwargs):
+        calls.append((command, kwargs))
+        if len(calls) == 2:
+            for role, count in runtime.GUIDED_LINK_COUNTS.items():
+                (runtime.launcher.STATE / f"presenter-links-{role}.json").write_text(
+                    __import__("json").dumps({
+                        "source_sha": "a" * 40, "role": role, "result": "PASS",
+                        "expected_links": count, "clicked_links": count,
+                        "pages": [{"requested": "/test", "observed": "/test",
+                                   "heading": "Test-only fictional page"}] * count,
+                        "browser_errors": [], "server_errors": [],
+                    }), encoding="utf-8",
+                )
+    monkeypatch.setattr(runtime.subprocess, "run", collect)
     runtime.complete_five_module_browser_checks(original_env, proof)
     assert len(calls) == 2
     command, options = calls[0]
@@ -156,6 +182,7 @@ def test_success_runs_care_and_sgo_once_with_required_proof_flags(runtime, monke
         "npm", "run", "test:e2e", "--",
         "tests/e2e/heritage-module-responsive.spec.ts",
         "tests/e2e/heritage-presenter-launcher.spec.ts",
+        "tests/e2e/heritage-presenter-guided-links.spec.ts",
         "--workers=1", "--reporter=line",
     ], options)
     assert options["env"]["CROWN_REQUIRE_CARE_BROWSER_PROOF"] == "1"
@@ -165,6 +192,8 @@ def test_success_runs_care_and_sgo_once_with_required_proof_flags(runtime, monke
     assert options["env"]["CROWN_SGO_LOCAL_CREDENTIALS"] == str((runtime.launcher.STATE / "sgo-credentials.txt").resolve())
     assert options["check"] is True
     assert original_env == {"CROWN_EXPECTED_FRONTEND_SHA": "a" * 40}
+    assert proof["checks"]["six_persona_guided_links_clicked_and_verified"] is True
+    assert proof["guided_links_clicked"] == sum(runtime.GUIDED_LINK_COUNTS.values())
     assert proof["checks"]["local_presenter_authenticated_click_path"] is True
     assert proof["checks"]["five_module_responsive_real_role_browser_audit"] is True
     assert proof["checks"]["extended_care_real_am_pm_browser_custody_and_reload"] is True
@@ -181,6 +210,7 @@ def test_failed_browser_does_not_record_module_success(runtime, monkeypatch, fai
     monkeypatch.setattr(runtime.subprocess, "run", fail)
     with pytest.raises(subprocess.CalledProcessError):
         runtime.complete_five_module_browser_checks({}, proof)
+    assert "six_persona_guided_links_clicked_and_verified" not in proof["checks"]
     assert "local_presenter_authenticated_click_path" not in proof["checks"]
     assert "five_module_responsive_real_role_browser_audit" not in proof["checks"]
     assert "extended_care_real_am_pm_browser_custody_and_reload" not in proof["checks"]
