@@ -259,6 +259,16 @@ def commit_session(request, session_id):
     return Response({"session_id": str(session.id), "status": session.status, **result})
 
 
+def _roster_verification_conflict():
+    return Response(
+        {
+            "error": "Staged roster changes do not match persisted section membership.",
+            "code": "roster_verification_mismatch",
+        },
+        status=status.HTTP_409_CONFLICT,
+    )
+
+
 @extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["GET"])
 @authentication_classes(_AUTH)
@@ -268,30 +278,83 @@ def verify_session(request, session_id):
     from core.models import School
 
     school = get_object_or_404(School, id=school_id)
-    session = _get_session(session_id, school_id)
     if not user_has_permission(request.user, "academics.view", school=school):
         raise PermissionDenied("You do not have permission to perform this action.")
 
-    if session.status not in (
-        SectionAssignWizardSession.STATUS_COMMITTED,
-        SectionAssignWizardSession.STATUS_VERIFIED,
-    ):
-        return Response(
-            {"error": f"Session must be committed before verify (current: {session.status})"},
-            status=status.HTTP_400_BAD_REQUEST,
+    with transaction.atomic():
+        # A whole-section count cannot prove that this session's selected
+        # additions and removals actually persisted. Lock the session while
+        # validating its specific cohort and advancing its verification state.
+        session = get_object_or_404(
+            SectionAssignWizardSession.objects.select_for_update(),
+            id=session_id,
+            school_id=school_id,
         )
+        if session.status not in (
+            SectionAssignWizardSession.STATUS_COMMITTED,
+            SectionAssignWizardSession.STATUS_VERIFIED,
+        ):
+            return Response(
+                {"error": f"Session must be committed before verify (current: {session.status})"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
-    enrollment_count = Enrollment.objects.filter(
-        section_id=session.section_id, school_id=school_id
-    ).count()
+        changes = session.roster_changes
+        if not isinstance(changes, list) or not changes:
+            return _roster_verification_conflict()
 
-    if session.status == SectionAssignWizardSession.STATUS_COMMITTED:
-        session.status = SectionAssignWizardSession.STATUS_VERIFIED
-        session.save()
+        expected = {}
+        for change in changes:
+            if not isinstance(change, dict) or change.get("action") not in VALID_ACTIONS:
+                return _roster_verification_conflict()
+            student_id, error = _parse_uuid(change.get("student_id"), "student_id")
+            if error or student_id in expected:
+                return _roster_verification_conflict()
+            expected[student_id] = change["action"]
 
-    return Response({
-        "session_id": str(session.id),
-        "status": session.status,
-        "enrollment_count": enrollment_count,
-        **(session.commit_result or {}),
-    })
+        # Never certify a deleted/foreign section or a foreign-school student,
+        # even when the old commit_result claims that records were written.
+        if not Section.objects.filter(
+            id=session.section_id, school_id=school_id, course__school_id=school_id,
+        ).exists():
+            return _roster_verification_conflict()
+
+        valid_students = set(
+            Student.objects.filter(
+                id__in=expected, school_id=school_id, household__school_id=school_id,
+            ).values_list("id", flat=True)
+        )
+        if valid_students != set(expected):
+            return _roster_verification_conflict()
+
+        persisted = set(
+            Enrollment.objects.select_for_update(of=("self",)).filter(
+                school_id=school_id,
+                section_id=session.section_id,
+                section__school_id=school_id,
+                student__school_id=school_id,
+                student_id__in=expected,
+            ).values_list("student_id", flat=True)
+        )
+        if any(
+            (action == "add") != (student_id in persisted)
+            for student_id, action in expected.items()
+        ):
+            return _roster_verification_conflict()
+
+        # Preserve the documented response contract: enrollment_count is the
+        # entire section count; correctness comes from the per-staged-row proof.
+        enrollment_count = Enrollment.objects.filter(
+            section_id=session.section_id, school_id=school_id,
+        ).count()
+
+        if session.status == SectionAssignWizardSession.STATUS_COMMITTED:
+            session.status = SectionAssignWizardSession.STATUS_VERIFIED
+            session.save(update_fields=["status", "updated_at"])
+
+        return Response({
+            "session_id": str(session.id),
+            "status": session.status,
+            "enrollment_count": enrollment_count,
+            **(session.commit_result or {}),
+        })
