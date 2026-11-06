@@ -2,8 +2,9 @@
 import uuid
 
 from django.conf import settings
+from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
-from django.db import models
+from django.db import models, transaction
 
 
 class GuardedEvidenceQuerySet(models.QuerySet):
@@ -234,13 +235,21 @@ class TeacherEvaluationAccessEvent(AppendOnlyEvidence):
     )
     permission_code = models.CharField(max_length=40, choices=CAPABILITIES)
     action = models.CharField(max_length=8, choices=[("grant", "Grant"), ("revoke", "Revoke")])
+    decision_version = models.PositiveBigIntegerField(default=0, editable=False)
     reason = models.CharField(max_length=240)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        ordering = ["-created_at", "-id"]
-        indexes = [
-            models.Index(fields=["school", "user", "permission_code", "created_at"], name="te_access_scope_idx"),
+        ordering = ["-decision_version"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["school", "user", "permission_code", "decision_version"],
+                name="te_access_version_once",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(decision_version__gte=1),
+                name="te_access_version_positive",
+            ),
         ]
 
     def clean(self):
@@ -256,3 +265,22 @@ class TeacherEvaluationAccessEvent(AppendOnlyEvidence):
             raise ValidationError("Cannot grant evaluation access to an inactive user.")
         if not isinstance(self.reason, str) or not self.reason.strip():
             raise ValidationError("Evaluation access decisions require a reason.")
+
+    def save(self, *args, **kwargs):
+        """Serialize each decision using the same account lock as API mutations."""
+        if not self._state.adding:
+            raise ValidationError("Evaluation access history is append-only.")
+        with transaction.atomic():
+            if not self.user_id:
+                raise ValidationError("Evaluation access requires a subject account.")
+            subject = get_user_model().objects.select_for_update().get(pk=self.user_id)
+            if subject.school_id != self.school_id:
+                raise ValidationError("Evaluation access user must belong to the school.")
+            if self.action == "grant" and not subject.is_active:
+                raise ValidationError("Cannot grant evaluation access to an inactive user.")
+            previous = type(self).objects.filter(
+                school_id=self.school_id, user_id=self.user_id,
+                permission_code=self.permission_code,
+            ).order_by("-decision_version").values_list("decision_version", flat=True).first()
+            self.decision_version = (previous or 0) + 1
+            return super().save(*args, **kwargs)

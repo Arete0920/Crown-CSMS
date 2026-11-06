@@ -511,3 +511,80 @@ def test_access_event_rejects_cross_school_and_is_append_only(scenario):
     with pytest.raises(DjangoValidationError):
         event.delete()
 
+
+def test_access_decision_timestamp_and_uuid_tie_cannot_restore_old_grant(scenario):
+    """The newest committed version wins even if UUID order is reversed."""
+    from unittest.mock import patch
+
+    s = scenario
+    cycle = create_cycle(s).data["id"]
+    moment = timezone.now()
+    with patch("django.db.models.fields.timezone.now", return_value=moment):
+        granted = TeacherEvaluationAccessEvent.objects.create(
+            id=uuid.UUID("ffffffff-ffff-ffff-ffff-ffffffffffff"),
+            school=s["school"], user=s["evaluator"], authorized_by=s["admin"],
+            permission_code="evaluation.observe", action="grant",
+            reason="Synthetic fixed-time access test",
+        )
+        revoked = TeacherEvaluationAccessEvent.objects.create(
+            id=uuid.UUID("00000000-0000-0000-0000-000000000001"),
+            school=s["school"], user=s["evaluator"], authorized_by=s["admin"],
+            permission_code="evaluation.observe", action="revoke",
+            reason="Synthetic later revocation",
+        )
+    assert granted.created_at == revoked.created_at
+    assert revoked.decision_version == granted.decision_version + 1
+    assert create_observation(s, cycle).status_code == 404
+    assert TeacherEvaluationAccessEvent.objects.filter(
+        school=s["school"], user=s["evaluator"],
+        permission_code="evaluation.observe",
+    ).first().action == "revoke"
+
+
+@pytest.mark.django_db(transaction=True)
+def test_postgresql_simultaneous_access_decisions_are_serialized(scenario):
+    """Independent PostgreSQL connections must produce unique ordered versions."""
+    from concurrent.futures import ThreadPoolExecutor
+    from threading import Barrier
+    from django.db import connection, connections
+
+    if connection.vendor != "postgresql":
+        pytest.skip("Authorization ordering proof requires PostgreSQL row locks.")
+
+    s = scenario
+    cycle = create_cycle(s).data["id"]
+    school_id = s["school"].pk
+    target_id = s["evaluator"].pk
+    grantor_id = s["admin"].pk
+    last_before = TeacherEvaluationAccessEvent.objects.filter(
+        school_id=school_id, user_id=target_id,
+        permission_code="evaluation.observe",
+    ).order_by("-decision_version").values_list("decision_version", flat=True).first()
+    barrier = Barrier(2)
+
+    def writer(action):
+        connections.close_all()
+        try:
+            barrier.wait(timeout=20)
+            entry = TeacherEvaluationAccessEvent.objects.create(
+                school_id=school_id, user_id=target_id, authorized_by_id=grantor_id,
+                permission_code="evaluation.observe", action=action,
+                reason=f"Fictional simultaneous {action}",
+            )
+            return entry.decision_version, entry.action
+        finally:
+            connections.close_all()
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        futures = [executor.submit(writer, action) for action in ("grant", "revoke")]
+        decisions = [future.result(timeout=45) for future in futures]
+
+    assert sorted(version for version, _ in decisions) == [last_before + 1, last_before + 2]
+    final_action = max(decisions)[1]
+    latest = TeacherEvaluationAccessEvent.objects.filter(
+        school_id=school_id, user_id=target_id,
+        permission_code="evaluation.observe",
+    ).first()
+    assert (latest.decision_version, latest.action) == (last_before + 2, final_action)
+    assert create_observation(s, cycle).status_code == (201 if final_action == "grant" else 404)
+
