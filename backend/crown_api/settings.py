@@ -248,6 +248,7 @@ INSTALLED_APPS = [
     'executive360',
     'graduation',
     'hr.apps.HrConfig',
+    'teacher_evaluations.apps.TeacherEvaluationsConfig',
     'student_health',
     'advancement.apps.AdvancementConfig',
     'pdhub.apps.PdhubConfig',

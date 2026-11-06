@@ -1,0 +1,316 @@
+"""Behavioral contract for unscored, school-bound and append-only teacher observations."""
+import uuid
+from datetime import timedelta
+
+import pytest
+from django.core.exceptions import ValidationError as DjangoValidationError
+from django.utils import timezone
+from rest_framework.test import APIClient
+
+from core.models import AcademicYear, CrownPermission, RolePermission, School, Staff, UserAccount, UserRole
+from hr.models import Employee
+from teacher_evaluations.models import (
+    TeacherEvaluationAssignment,
+    TeacherEvaluationCycle,
+    TeacherEvaluationEvent,
+    TeacherObservation,
+    TeacherObservationResponse,
+)
+
+pytestmark = pytest.mark.django_db
+BASE = "/api/v1/teacher-evaluations/"
+
+
+def grant(user, *codes):
+    """Create a private, school-bound role so test grants cannot leak to other users."""
+    role = f"evaluation-{uuid.uuid4().hex[:12]}"
+    UserRole.objects.create(user=user, school=user.school, role_code=role)
+    for code in codes:
+        permission, _ = CrownPermission.objects.get_or_create(
+            code=code, defaults={"description": "Scoped evaluation test grant"}
+        )
+        RolePermission.objects.create(role_code=role, permission=permission)
+    return role
+
+
+def client(user, school=None):
+    instance = APIClient()
+    instance.force_authenticate(user=user)
+    return instance
+
+
+def get(user, school, uri, params=None):
+    return client(user).get(uri, data=params or {}, HTTP_X_SCHOOL_ID=str(school.pk))
+
+
+def post(user, school, uri, payload):
+    return client(user).post(uri, payload, format="json", HTTP_X_SCHOOL_ID=str(school.pk))
+
+
+def key():
+    return str(uuid.uuid4())
+
+
+@pytest.fixture
+def scenario():
+    school = School.objects.create(name="Teacher Evaluation Fictional One", timezone="UTC")
+    other = School.objects.create(name="Teacher Evaluation Fictional Two", timezone="UTC")
+    today = timezone.now().date()
+    year = AcademicYear.objects.create(
+        school=school, name="Fictional Evaluation Year",
+        start_date=today - timedelta(days=90), end_date=today + timedelta(days=90)
+    )
+    staff = Staff.objects.create(
+        school=school, first_name="Grace", last_name="Sample",
+        email="grace-eval@example.test", role_type="TEACHER"
+    )
+    unrelated_staff = Staff.objects.create(
+        school=school, first_name="Other", last_name="Sample",
+        email="other-eval@example.test", role_type="TEACHER"
+    )
+    staff_other = Staff.objects.create(
+        school=other, first_name="Cross", last_name="School",
+        email="cross-eval@example.test", role_type="TEACHER"
+    )
+    def user(label, school_id=school, linked=None):
+        u = UserAccount.objects.create_user(
+            username=f"teacher-eval-{label}-{uuid.uuid4().hex[:6]}",
+            email=f"teacher-eval-{label}-{uuid.uuid4().hex[:6]}@example.test",
+            school=school_id,
+        )
+        if linked is not None:
+            u.staff = linked
+            u.save(update_fields=["staff"])
+        return u
+    admin = user("admin")
+    evaluator = user("evaluator")
+    teacher = user("subject", linked=staff)
+    unrelated = user("unrelated", linked=unrelated_staff)
+    outsider = user("outsider", school_id=other, linked=staff_other)
+    hr = user("hr")
+    grant(admin, "evaluation.assign")
+    grant(evaluator, "evaluation.observe", "evaluation.read_assigned")
+    grant(teacher, "evaluation.read_self", "evaluation.respond_self")
+    grant(unrelated, "evaluation.read_self", "evaluation.respond_self")
+    grant(outsider, "evaluation.read_self", "evaluation.respond_self")
+    grant(hr, "hr.view", "hr.edit", "pd.view", "classroom.view")
+    return {
+        "school": school, "other": other, "year": year, "staff": staff,
+        "unrelated_staff": unrelated_staff, "staff_other": staff_other,
+        "admin": admin, "evaluator": evaluator, "teacher": teacher,
+        "unrelated": unrelated, "outsider": outsider, "hr": hr,
+    }
+
+
+def create_cycle(s, **overrides):
+    payload = {
+        "request_key": key(),
+        "staff_id": str(s["staff"].pk),
+        "academic_year_id": str(s["year"].pk),
+        "evaluator_id": str(s["evaluator"].pk),
+        "title": "Instructional practice: unscored annual observation",
+        **overrides,
+    }
+    return post(s["admin"], s["school"], BASE + "cycles/", payload)
+
+
+def create_observation(s, cycle_id, **overrides):
+    return post(s["evaluator"], s["school"], BASE + f"cycles/{cycle_id}/observations/", {
+        "request_key": key(),
+        "observed_at": timezone.now().isoformat(),
+        "narrative": "Observed an explicit lesson objective and an evidence-based learning check.",
+        **overrides,
+    })
+
+
+def submit(s, observation_id, **overrides):
+    return post(s["evaluator"], s["school"], BASE + f"observations/{observation_id}/submit/", {
+        "request_key": key(), "version": 1, **overrides
+    })
+
+
+def respond(s, observation_id, **overrides):
+    return post(s["teacher"], s["school"], BASE + f"observations/{observation_id}/responses/", {
+        "request_key": key(), "choice": "acknowledged_receipt", "comment": "", **overrides
+    })
+
+
+def test_full_persisted_cycle_and_immutable_history(scenario):
+    s = scenario
+    created = create_cycle(s)
+    assert created.status_code == 201
+    cycle_id = created.data["id"]
+    assert TeacherEvaluationAssignment.objects.get(cycle_id=cycle_id).evaluator == s["evaluator"]
+    assert get(s["teacher"], s["school"], BASE + "cycles/").data["total"] == 1
+    observation = create_observation(s, cycle_id)
+    assert observation.status_code == 201
+    obs_id = observation.data["id"]
+    own_draft = get(s["teacher"], s["school"], BASE + f"cycles/{cycle_id}/")
+    assert own_draft.status_code == 200
+    assert own_draft.data["observations"] == []
+    assert get(s["evaluator"], s["school"], BASE + f"cycles/{cycle_id}/").data["observations"][0]["status"] == "draft"
+    sent = submit(s, obs_id)
+    assert sent.status_code == 200 and sent.data["status"] == "submitted" and sent.data["version"] == 2
+    received = respond(s, obs_id)
+    assert received.status_code == 201 and received.data["choice"] == "acknowledged_receipt"
+    readback = get(s["teacher"], s["school"], BASE + f"cycles/{cycle_id}/")
+    assert readback.status_code == 200
+    item = readback.data["observations"][0]
+    assert item["narrative"] == observation.data["narrative"]
+    assert item["teacher_response"]["choice"] == "acknowledged_receipt"
+    assert TeacherEvaluationEvent.objects.filter(cycle_id=cycle_id).count() == 4
+    assert all("narrative" not in e.after for e in TeacherEvaluationEvent.objects.all())
+    assert not Employee.objects.exists()
+
+
+def test_unauthorized_hr_unassigned_and_outsider_cannot_read_or_mutate(scenario):
+    s = scenario
+    cycle = create_cycle(s).data["id"]
+    obs = create_observation(s, cycle).data["id"]
+    assert get(s["hr"], s["school"], BASE + "cycles/").status_code == 403
+    assert get(s["hr"], s["school"], BASE + f"cycles/{cycle}/").status_code == 404
+    assert get(s["unrelated"], s["school"], BASE + "cycles/").data["total"] == 0
+    assert get(s["unrelated"], s["school"], BASE + f"cycles/{cycle}/").status_code == 404
+    assert get(s["outsider"], s["other"], BASE + f"cycles/{cycle}/").status_code == 404
+    assert get(s["outsider"], s["other"], BASE + "cycles/").data["total"] == 0
+    assert post(s["unrelated"], s["school"], BASE + f"observations/{obs}/responses/", {
+        "request_key": key(), "choice": "disputed", "comment": "Unauthorized"
+    }).status_code == 404
+    assert post(s["teacher"], s["school"], BASE + f"observations/{obs}/responses/", {
+        "request_key": key(), "choice": "acknowledged_receipt", "comment": ""
+    }).status_code == 404  # draft never reachable for teacher response
+    assert TeacherObservationResponse.objects.count() == 0
+    assert TeacherEvaluationEvent.objects.count() == 2
+
+
+def test_cross_school_write_and_forged_tenant_are_denied(scenario):
+    s = scenario
+    foreign = create_cycle(s, staff_id=str(s["staff_other"].pk))
+    assert foreign.status_code == 404
+    assert TeacherEvaluationCycle.objects.count() == 0
+    fake = client(s["admin"]).post(BASE + "cycles/", {
+        "request_key": key(), "staff_id": str(s["staff"].pk),
+        "academic_year_id": str(s["year"].pk), "evaluator_id": str(s["evaluator"].pk),
+        "title": "Untrusted"
+    }, format="json", HTTP_X_SCHOOL_ID=str(s["other"].pk))
+    assert fake.status_code in (403, 404)
+    assert TeacherEvaluationEvent.objects.count() == 0
+
+
+def test_missing_header_and_default_role_grants_fail_closed(scenario):
+    s = scenario
+    assert client(s["admin"]).get(BASE + "cycles/").status_code == 400
+    assert client(s["teacher"]).get(BASE + "cycles/").status_code == 400
+    assert get(s["admin"], s["school"], BASE + "cycles/").status_code == 403
+    assert post(s["hr"], s["school"], BASE + "cycles/", {
+        "request_key": key(), "staff_id": str(s["staff"].pk),
+        "academic_year_id": str(s["year"].pk), "evaluator_id": str(s["evaluator"].pk),
+        "title": "Forbidden"
+    }).status_code == 403
+
+
+def test_idempotent_cycle_conflict_and_immutable_records(scenario):
+    s = scenario
+    request_key = key()
+    created = create_cycle(s, request_key=request_key)
+    assert created.status_code == 201
+    assert create_cycle(s, request_key=request_key).status_code == 200
+    assert create_cycle(s, request_key=request_key, title="Changed").status_code == 409
+    assert create_cycle(s).status_code == 409
+    assert TeacherEvaluationCycle.objects.count() == 1
+    assert TeacherEvaluationEvent.objects.count() == 1
+    event = TeacherEvaluationEvent.objects.get()
+    with pytest.raises(DjangoValidationError):
+        event.save()
+    with pytest.raises(DjangoValidationError):
+        event.delete()
+    with pytest.raises(DjangoValidationError):
+        TeacherEvaluationEvent.objects.all().update(action="rewritten")
+    with pytest.raises(DjangoValidationError):
+        TeacherEvaluationCycle.objects.all().delete()
+
+
+def test_observation_and_response_idempotency_stale_versions_and_mutation_guards(scenario):
+    s = scenario
+    cycle = create_cycle(s).data["id"]
+    idem = key()
+    recorded_time = timezone.now().isoformat()
+    obs = create_observation(s, cycle, request_key=idem, observed_at=recorded_time)
+    assert obs.status_code == 201
+    oid = obs.data["id"]
+    assert create_observation(s, cycle, request_key=idem, observed_at=recorded_time).status_code == 200
+    assert create_observation(s, cycle, request_key=idem, observed_at=recorded_time, narrative="Changed").status_code == 409
+    submit_idem = key()
+    assert submit(s, oid, request_key=submit_idem).status_code == 200
+    assert submit(s, oid, request_key=submit_idem).status_code == 200
+    assert submit(s, oid).status_code == 409
+    assert submit(s, oid, version=True).status_code == 400
+    rkey = key()
+    assert respond(s, oid, request_key=rkey, choice="disputed", comment="I disagree with the observation.").status_code == 201
+    assert respond(s, oid, request_key=rkey, choice="disputed", comment="I disagree with the observation.").status_code == 200
+    assert respond(s, oid, choice="acknowledged_receipt").status_code == 409
+    row = TeacherObservation.objects.get(pk=oid)
+    row.narrative = "Rewritten"
+    with pytest.raises(DjangoValidationError):
+        row.save()
+    with pytest.raises(DjangoValidationError):
+        TeacherObservation.objects.filter(pk=oid).update(status="draft")
+    with pytest.raises(DjangoValidationError):
+        TeacherObservationResponse.objects.get().delete()
+    assert TeacherEvaluationEvent.objects.filter(cycle_id=cycle).count() == 4
+
+
+def test_permission_revocation_blocks_existing_evaluator_and_teacher(scenario):
+    s = scenario
+    cycle = create_cycle(s).data["id"]
+    obs = create_observation(s, cycle).data["id"]
+    RolePermission.objects.filter(
+        role_code__in=s["evaluator"].roles.values_list("role_code", flat=True),
+        permission__code="evaluation.observe"
+    ).delete()
+    assert create_observation(s, cycle).status_code == 404
+    assert submit(s, obs).status_code == 404
+    assert TeacherObservation.objects.get(pk=obs).status == "draft"
+    RolePermission.objects.filter(
+        role_code__in=s["teacher"].roles.values_list("role_code", flat=True),
+        permission__code="evaluation.read_self"
+    ).delete()
+    assert get(s["teacher"], s["school"], BASE + f"cycles/{cycle}/").status_code == 404
+
+
+def test_no_self_review_and_rejects_wrong_actor_or_year(scenario):
+    s = scenario
+    s["admin"].staff = s["staff"]
+    s["admin"].save(update_fields=["staff"])
+    assert create_cycle(s).status_code == 403
+    s["admin"].staff = None
+    s["admin"].save(update_fields=["staff"])
+    assert create_cycle(s, evaluator_id=str(s["teacher"].pk)).status_code == 403
+    assert create_cycle(s, title="").status_code == 400
+    assert create_cycle(s, title="A" * 161).status_code == 400
+    s["staff"].status = "INACTIVE"
+    s["staff"].save(update_fields=["status"])
+    assert create_cycle(s).status_code == 404
+    assert TeacherEvaluationCycle.objects.count() == 0
+
+
+def test_dispute_requires_text_and_observation_year_is_checked(scenario):
+    s = scenario
+    cycle = create_cycle(s).data["id"]
+    old_date = (timezone.now() - timedelta(days=366)).isoformat()
+    assert create_observation(s, cycle, observed_at=old_date).status_code == 400
+    obs = create_observation(s, cycle).data["id"]
+    assert submit(s, obs).status_code == 200
+    assert respond(s, obs, choice="disputed", comment="").status_code == 400
+    assert TeacherObservationResponse.objects.count() == 0
+    assert respond(s, obs, choice="disputed", comment="Please review the documented lesson context.").status_code == 201
+    assert TeacherEvaluationEvent.objects.filter(cycle_id=cycle).count() == 4
+
+
+def test_failed_validation_has_no_partial_mutation(scenario):
+    s = scenario
+    cycle = create_cycle(s).data["id"]
+    assert create_observation(s, cycle, narrative="").status_code == 400
+    assert create_observation(s, cycle, observed_at="not-a-date").status_code == 400
+    assert TeacherObservation.objects.count() == 0
+    assert TeacherEvaluationEvent.objects.count() == 1
