@@ -112,3 +112,48 @@ def test_repeated_seed_replaces_only_explicit_fictional_fixture(settings):
         school_id=SCHOOL_ID,
         flags__heritage_conversion_fixture=FIXTURE_MARKER,
     ).count() == 1
+
+
+def test_marked_reset_refuses_conversion_history_and_keeps_audit(settings):
+    seeded = _seed(settings)
+    from admissions.services import finalize_enrollment
+    from admissions.models import AdmissionsAuditEvent
+
+    legacy_id = seeded["admissions_conversion_legacy_application_id"]
+    legacy = AdmissionsApplication.objects.get(pk=legacy_id)
+    converted, changed = finalize_enrollment(legacy)
+    assert changed is True
+    assert converted.status == AdmissionsApplication.STATUS_ENROLLED
+    audit = AdmissionsAuditEvent.objects.get(
+        school_id=SCHOOL_ID,
+        entity_type=AdmissionsAuditEvent.ENTITY_APPLICATION,
+        entity_id=str(legacy.pk),
+        action="STATUS_ENROLLED",
+    )
+    with pytest.raises(ValueError, match="audit history"):
+        reset_heritage_admissions_conversion_scenario()
+    assert AdmissionsApplication.objects.filter(
+        pk=legacy_id, status=AdmissionsApplication.STATUS_ENROLLED
+    ).exists()
+    assert AdmissionsAuditEvent.objects.filter(pk=audit.pk).exists()
+    assert Enrollment.objects.filter(
+        pk=seeded["admissions_conversion_enrollment_id"]
+    ).exists()
+    assert StudentIdentityLink.objects.filter(
+        core_student_id=seeded["admissions_conversion_student_id"]
+    ).exists()
+
+
+def test_marked_reset_refuses_unexpected_workflow_events(settings):
+    seeded = _seed(settings)
+    ApplicationEvent.objects.create(
+        school_id=SCHOOL_ID,
+        application_id=seeded["admissions_conversion_canonical_application_id"],
+        event_type="enrollment_confirmed",
+        payload={"source": "fictional_history_regression"},
+    )
+    with pytest.raises(ValueError, match="audit history"):
+        reset_heritage_admissions_conversion_scenario()
+    assert Application.objects.filter(
+        pk=seeded["admissions_conversion_canonical_application_id"]
+    ).exists()

@@ -10,7 +10,7 @@ from datetime import date
 from django.db import transaction
 from django.utils import timezone
 
-from admissions.models import AdmissionsApplication
+from admissions.models import AdmissionsApplication, AdmissionsAuditEvent
 from applications.models import (
     Application, Applicant, ApplicationEvent, ApplicationStatus,
     EnrollmentContract, EnrollmentContractStatus,
@@ -110,6 +110,33 @@ def reset_heritage_admissions_conversion_scenario() -> None:
         or StudentIdentityLink.objects.filter(core_student=core).count() != 1
     ):
         raise ValueError("Heritage fixture is not fully proven; historical records preserved.")
+
+    # Historical admissions audit events have string entity IDs, not FKs.
+    # Deleting a converted legacy row would orphan immutable audit evidence.
+    # Never reset an already converted or otherwise updated fixture.
+    historical_audit = AdmissionsAuditEvent.objects.filter(
+        school=school,
+        entity_type=AdmissionsAuditEvent.ENTITY_APPLICATION,
+        entity_id=str(legacy[0].pk),
+    ).exists()
+    post_seed_events = ApplicationEvent.objects.filter(
+        school_id=school.pk, application=application
+    ).exclude(
+        event_type__in=(
+            "application_submitted",
+            "decision_made",
+            "enrollment_state_updated",
+        )
+    ).exists()
+    if (
+        legacy[0].status != AdmissionsApplication.STATUS_ACCEPTED
+        or historical_audit
+        or post_seed_events
+    ):
+        raise ValueError(
+            "Heritage fixture has completed enrollment or audit history; "
+            "preserve records and use a fresh isolated sandbox."
+        )
 
     # Deletions are only for this exact, explicitly marked fictional fixture.
     # The surrounding atomic transaction rolls back on any protected relation.
