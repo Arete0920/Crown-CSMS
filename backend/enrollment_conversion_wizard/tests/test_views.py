@@ -600,6 +600,27 @@ class EnrollmentConversionCoreIdentityProofTests(TestCase):
         legacy.refresh_from_db()
         self.assertEqual(legacy.status, AdmissionsApplication.STATUS_ACCEPTED)
 
+    def test_punctuated_duplicate_provenance_rejected(self):
+        school, year, legacy, canonical, _, client, sid = self._ready()
+        original_notes = legacy.notes_internal
+        for suffix in (
+            f" ;canonical_application_id={uuid.uuid4()}",
+            f" (canonical_application_id={uuid.uuid4()})",
+        ):
+            with self.subTest(suffix=suffix):
+                legacy.notes_internal = original_notes + suffix
+                legacy.save(update_fields=["notes_internal", "updated_at"])
+                response = self._commit(client, sid, school)
+                self.assertEqual(response.status_code, 409, response.data)
+                legacy.refresh_from_db()
+                self.assertEqual(
+                    legacy.status, AdmissionsApplication.STATUS_ACCEPTED
+                )
+                self.assertFalse(ApplicationEvent.objects.filter(
+                    application=canonical,
+                    event_type=ENROLLMENT_CONFIRMED_EVENT_TYPE,
+                ).exists())
+
     def test_cross_school_identity_cannot_pass_enrollment_gate(self):
         school, year, legacy, canonical, _, client, sid = self._ready()
         other_school = _make_school()

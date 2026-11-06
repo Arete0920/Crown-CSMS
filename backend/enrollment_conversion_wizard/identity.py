@@ -33,7 +33,7 @@ class VerifiedMember:
     enrollment: Enrollment
 
 
-_CANONICAL_REF_PREFIX = re.compile(r"(?<!\S)canonical_application_id=")
+_CANONICAL_REF_PREFIX = re.compile(r"canonical_application_id=")
 _CANONICAL_REF_VALUE = re.compile(
     r"(?<!\S)canonical_application_id=([0-9a-fA-F-]{36})(?!\S)"
 )
@@ -42,7 +42,7 @@ _CANONICAL_REF_VALUE = re.compile(
 def _canonical_reference(legacy):
     notes = str(legacy.notes_internal or "")
     # The previous consuming whitespace boundary could hide adjacent references.
-    # Count every prefix, including ones followed by malformed UUID values.
+    # Count every occurrence, including punctuation-adjacent or malformed tokens.
     references = _CANONICAL_REF_VALUE.findall(notes)
     if len(_CANONICAL_REF_PREFIX.findall(notes)) != 1 or len(references) != 1:
         raise BulkEnrollmentProofError("Exactly one valid canonical application reference is required.")
