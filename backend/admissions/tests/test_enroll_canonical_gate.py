@@ -5,6 +5,7 @@ from datetime import date
 
 import pytest
 from django.contrib.auth import get_user_model
+from django.db import connection
 from rest_framework.test import APIClient
 
 from admissions.models import AdmissionsApplication
@@ -274,3 +275,40 @@ def test_enroll_denies_user_without_admissions_edit_permission():
     user = User.objects.create_user(username=f"parent-{uuid.uuid4().hex[:8]}@example.test", password="CanonicalEnrollmentTestOnly!"); UserRole.objects.create(user=user, school=school, role_code="PARENT")
     response = _client(user, school).post("/api/admissions/enroll/", {"application_id": legacy.id}, format="json")
     assert response.status_code == 403; assert response.data["detail"] == "Permission denied."
+
+
+
+@pytest.mark.django_db(transaction=True)
+def test_postgresql_nullable_student_join_preserves_identity_lock_and_denial():
+    """PostgreSQL forbids FOR UPDATE on a nullable select_related join."""
+    if connection.vendor != "postgresql":
+        pytest.skip("Requires PostgreSQL row locking")
+    school = _school()
+    year = _year(school)
+    legacy = _legacy_application(school, year)
+    canonical = _link_canonical(legacy, ready=True)
+    HouseholdFamilyLink.objects.create(
+        school=school,
+        household_id=canonical.household_id,
+        family=legacy.family,
+        source=HouseholdFamilyLink.SOURCE_ADMISSIONS,
+    )
+    canonical.applicants.create(
+        school_id=school.id,
+        first_name="Absent",
+        last_name="Student",
+        grade_applying_for="5",
+        dob=date(2015, 3, 10),
+    )
+    response = _client(_editor(school), school).post(
+        "/api/admissions/enroll/",
+        {"application_id": legacy.id},
+        format="json",
+    )
+    assert response.status_code == 409, response.data
+    assert response.data["code"] == "student_identity_link_required"
+    legacy.refresh_from_db()
+    assert legacy.status == AdmissionsApplication.STATUS_ACCEPTED
+    assert not ApplicationEvent.objects.filter(
+        application=canonical, event_type=ENROLLMENT_CONFIRMED_EVENT_TYPE,
+    ).exists()
