@@ -119,19 +119,46 @@ def reset_heritage_admissions_conversion_scenario() -> None:
         entity_type=AdmissionsAuditEvent.ENTITY_APPLICATION,
         entity_id=str(legacy[0].pk),
     ).exists()
-    post_seed_events = ApplicationEvent.objects.filter(
-        school_id=school.pk, application=application
-    ).exclude(
-        event_type__in=(
-            "application_submitted",
-            "decision_made",
-            "enrollment_state_updated",
+    # An extra event using an existing type still represents historical
+    # evidence. Require the exact three original events and unchanged payloads
+    # before this synthetic fixture may be deleted.
+    expected_events = {
+        "application_submitted": {
+            "via": "sandbox_admissions_conversion",
+            "applicant_id": str(applicant.id),
+        },
+        "decision_made": {
+            "decision": "accepted",
+            "updated_by": SANDBOX_PERSONAS["admissions_director"].email,
+        },
+        "enrollment_state_updated": {
+            "contract_status": "countersigned",
+            "deposit_status": "paid",
+            "note": "Fictional readiness; no payment provider transaction.",
+            "transition_reason": "sandbox_admissions_conversion_seed",
+            "updated_by": SANDBOX_PERSONAS["admissions_director"].email,
+            "demo_payment_processed": False,
+        },
+    }
+    recorded_events = list(
+        ApplicationEvent.objects.filter(
+            school_id=school.pk, application=application
+        ).values_list("event_type", "payload")
+    )
+    event_types = [event_type for event_type, _ in recorded_events]
+    pristine_seed_events = (
+        len(recorded_events) == len(expected_events)
+        and len(set(event_types)) == len(expected_events)
+        and all(
+            event_type in expected_events
+            and payload == expected_events[event_type]
+            for event_type, payload in recorded_events
         )
-    ).exists()
+    )
     if (
         legacy[0].status != AdmissionsApplication.STATUS_ACCEPTED
         or historical_audit
-        or post_seed_events
+        or not pristine_seed_events
     ):
         raise ValueError(
             "Heritage fixture has completed enrollment or audit history; "

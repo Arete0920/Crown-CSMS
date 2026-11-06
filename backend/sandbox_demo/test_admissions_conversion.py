@@ -157,3 +157,45 @@ def test_marked_reset_refuses_unexpected_workflow_events(settings):
     assert Application.objects.filter(
         pk=seeded["admissions_conversion_canonical_application_id"]
     ).exists()
+
+
+def test_reset_refuses_duplicate_event_of_allowed_type(settings):
+    seeded = _seed(settings)
+    app_id = seeded["admissions_conversion_canonical_application_id"]
+    original = ApplicationEvent.objects.get(
+        application_id=app_id, event_type="decision_made",
+    )
+    added = ApplicationEvent.objects.create(
+        school_id=SCHOOL_ID,
+        application_id=app_id,
+        event_type="decision_made",
+        payload={"decision": "accepted", "updated_by": "real_workflow"},
+    )
+    with pytest.raises(ValueError, match="audit history"):
+        reset_heritage_admissions_conversion_scenario()
+    assert ApplicationEvent.objects.filter(pk=original.pk).exists()
+    assert ApplicationEvent.objects.filter(pk=added.pk).exists()
+    assert AdmissionsApplication.objects.filter(
+        pk=seeded["admissions_conversion_legacy_application_id"],
+        status=AdmissionsApplication.STATUS_ACCEPTED,
+    ).exists()
+
+
+def test_reset_refuses_modified_seed_event_evidence(settings):
+    seeded = _seed(settings)
+    submitted = ApplicationEvent.objects.get(
+        application_id=seeded["admissions_conversion_canonical_application_id"],
+        event_type="application_submitted",
+    )
+    submitted.payload = {
+        "via": "modified_workflow",
+        "applicant_id": submitted.payload["applicant_id"],
+    }
+    submitted.save(update_fields=["payload", "updated_at"])
+    with pytest.raises(ValueError, match="audit history"):
+        reset_heritage_admissions_conversion_scenario()
+    submitted.refresh_from_db()
+    assert submitted.payload["via"] == "modified_workflow"
+    assert Enrollment.objects.filter(
+        pk=seeded["admissions_conversion_enrollment_id"],
+    ).exists()
