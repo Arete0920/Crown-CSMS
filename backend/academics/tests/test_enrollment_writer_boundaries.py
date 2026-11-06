@@ -150,3 +150,95 @@ def test_section_assign_wizard_commits_same_school_student():
         section=section,
         student=student,
     ).exists()
+
+
+def test_legacy_roster_enroll_denies_authenticated_parent_in_same_school():
+    school = School.objects.create(name="Roster Authorization School")
+    section = _section(school, "R-101")
+    student = _student(school, "AuthorizedStudent")
+    user = User.objects.create_user(
+        username=f"parent-{uuid.uuid4()}", password="pass12345!", school=school,
+    )
+    UserRole.objects.create(user=user, school=school, role_code="PARENT")
+    client = Client()
+    client.force_login(user)
+
+    response = client.post(
+        "/api/v1/academics/enroll/",
+        data=json.dumps({"section_id": str(section.id), "student_id": str(student.id)}),
+        content_type="application/json",
+        HTTP_X_SCHOOL_ID=str(school.id),
+    )
+
+    assert response.status_code == 403
+    assert response.json()["ok"] is False
+    assert Enrollment.objects.filter(school_id=school.id, section=section, student=student).count() == 0
+
+
+def test_legacy_roster_enroll_denies_unrelated_school_permission():
+    school = School.objects.create(name="Roster Teacher Scope School")
+    section = _section(school, "R-201")
+    student = _student(school, "StudentA")
+    user = User.objects.create_user(
+        username=f"teacher-{uuid.uuid4()}", password="pass12345!", school=school,
+    )
+    role_code = "ACADEMICS_ONLY_ROSTER_TEST"
+    UserRole.objects.create(user=user, school=school, role_code=role_code)
+    permission, _ = CrownPermission.objects.get_or_create(
+        code="academics.edit",
+        defaults={"description": "Edit academic work, not classroom membership"},
+    )
+    RolePermission.objects.get_or_create(role_code=role_code, permission=permission)
+    client = Client()
+    client.force_login(user)
+
+    response = client.post(
+        "/api/v1/academics/enroll/",
+        data=json.dumps({"section_id": str(section.id), "student_id": str(student.id)}),
+        content_type="application/json",
+        HTTP_X_SCHOOL_ID=str(school.id),
+    )
+
+    assert response.status_code == 403
+    assert Enrollment.objects.filter(school_id=school.id, section=section, student=student).count() == 0
+
+
+def test_legacy_roster_enroll_allows_explicit_registrar_and_is_idempotent():
+    school = School.objects.create(name="Roster Authorized School")
+    section = _section(school, "R-301")
+    student = _student(school, "StudentA")
+    client = Client()
+    client.force_login(_user(school, "registrar"))
+    payload = json.dumps({"section_id": str(section.id), "student_id": str(student.id)})
+
+    first = client.post(
+        "/api/v1/academics/enroll/", data=payload, content_type="application/json",
+        HTTP_X_SCHOOL_ID=str(school.id),
+    )
+    second = client.post(
+        "/api/v1/academics/enroll/", data=payload, content_type="application/json",
+        HTTP_X_SCHOOL_ID=str(school.id),
+    )
+
+    assert first.status_code == 201, first.content
+    assert second.status_code == 201, second.content
+    assert first.json()["data"]["enrollment_id"] == second.json()["data"]["enrollment_id"]
+    assert Enrollment.objects.filter(school_id=school.id, section=section, student=student).count() == 1
+
+
+def test_legacy_roster_enroll_rejects_disabled_school_even_with_registrar_grant():
+    school = School.objects.create(name="Inactive School", is_active=False)
+    section = _section(school, "R-401")
+    student = _student(school, "StudentA")
+    client = Client()
+    client.force_login(_user(school, "registrar"))
+    response = client.post(
+        "/api/v1/academics/enroll/",
+        data=json.dumps({"section_id": str(section.id), "student_id": str(student.id)}),
+        content_type="application/json",
+        HTTP_X_SCHOOL_ID=str(school.id),
+    )
+    # Tenant scoping rejects an inactive school as unknown (404) before
+    # roster RBAC is evaluated; both layers must remain fail-closed.
+    assert response.status_code == 404
+    assert not Enrollment.objects.filter(school_id=school.id, section=section, student=student).exists()
