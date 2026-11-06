@@ -181,6 +181,10 @@ def _verified_admissions_context(
     )
 
 
+class HistoricalAdmissionsProvenanceError(ValueError):
+    """An existing admissions record cannot be safely claimed or changed."""
+
+
 def _sync_verified_legacy_application(
     *,
     context: VerifiedAdmissionsContext,
@@ -191,17 +195,50 @@ def _sync_verified_legacy_application(
     from admissions.models import AdmissionsApplication
 
     app = context.application
-    legacy_app, _ = AdmissionsApplication.objects.get_or_create(
-        school=academic_year.school,
-        academic_year=academic_year,
-        family=context.family,
-        student=identity.core_student,
-        defaults={
-            "status": target_status,
-            "submitted_at": app.submitted_at,
-            "notes_internal": f"canonical_application_id={app.id}",
-        },
+    canonical_note = f"canonical_application_id={app.id}"
+    candidates = list(
+        AdmissionsApplication.objects.select_for_update(of=("self",))
+        .filter(
+            school=academic_year.school,
+            academic_year=academic_year,
+            family=context.family,
+            student=identity.core_student,
+        )
+        .order_by("pk")[:2]
     )
+    if len(candidates) > 1:
+        raise HistoricalAdmissionsProvenanceError(
+            "Duplicate historical admissions records require manual reconciliation."
+        )
+    if candidates:
+        legacy_app = candidates[0]
+        # An unrelated or unmarked historical record is never appropriated.
+        # Count all markers, including malformed, duplicate or embedded ones.
+        recorded = [
+            line.strip() for line in str(legacy_app.notes_internal or "").splitlines()
+            if "canonical_application_id=" in line
+        ]
+        if recorded != [canonical_note]:
+            raise HistoricalAdmissionsProvenanceError(
+                "Historical admissions provenance does not uniquely match the application."
+            )
+        if (
+            legacy_app.status == AdmissionsApplication.STATUS_ENROLLED
+            and target_status != AdmissionsApplication.STATUS_ENROLLED
+        ):
+            raise HistoricalAdmissionsProvenanceError(
+                "An enrolled historical record cannot be downgraded."
+            )
+    else:
+        legacy_app = AdmissionsApplication.objects.create(
+            school=academic_year.school,
+            academic_year=academic_year,
+            family=context.family,
+            student=identity.core_student,
+            status=target_status,
+            submitted_at=app.submitted_at,
+            notes_internal=canonical_note,
+        )
     update_fields: list[str] = []
     if legacy_app.status != target_status:
         legacy_app.status = target_status
@@ -209,12 +246,6 @@ def _sync_verified_legacy_application(
     if legacy_app.submitted_at is None and app.submitted_at is not None:
         legacy_app.submitted_at = app.submitted_at
         update_fields.append("submitted_at")
-    canonical_note = f"canonical_application_id={app.id}"
-    if canonical_note not in str(legacy_app.notes_internal or ""):
-        legacy_app.notes_internal = (
-            f"{legacy_app.notes_internal}\n{canonical_note}".strip()
-        )
-        update_fields.append("notes_internal")
     if update_fields:
         legacy_app.save(update_fields=update_fields + ["updated_at"])
     return str(legacy_app.id)
@@ -244,24 +275,32 @@ def _upsert_verified_legacy_admissions(
             code="academic_year_required",
         )
 
-    synced_ids = [
-        _sync_verified_legacy_application(
-            context=context,
-            academic_year=academic_year,
-            identity=identity,
-            target_status=target_status,
-        )
-        for identity in context.identities
-    ]
+    # The savepoint makes a rejected second applicant roll back all earlier
+    # applicant upserts, even if the caller has already opened a transaction.
+    try:
+        with transaction.atomic():
+            synced_ids = [
+                _sync_verified_legacy_application(
+                    context=context,
+                    academic_year=academic_year,
+                    identity=identity,
+                    target_status=target_status,
+                )
+                for identity in context.identities
+            ]
 
-    session_state = None
-    if target_status == AdmissionsApplication.STATUS_ENROLLED and synced_ids:
-        session_state = legacy_views._create_legacy_conversion_session(
-            school=school,
-            actor_user=actor_user,
-            academic_year=academic_year,
-            application_ids=synced_ids,
-            target_status=target_status,
+            session_state = None
+            if target_status == AdmissionsApplication.STATUS_ENROLLED and synced_ids:
+                session_state = legacy_views._create_legacy_conversion_session(
+                    school=school,
+                    actor_user=actor_user,
+                    academic_year=academic_year,
+                    application_ids=synced_ids,
+                    target_status=target_status,
+                )
+    except HistoricalAdmissionsProvenanceError as exc:
+        return None, _identity_conflict(
+            str(exc), code="historical_admissions_provenance_conflict"
         )
 
     return {
