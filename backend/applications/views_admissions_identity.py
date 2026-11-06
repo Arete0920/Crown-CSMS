@@ -279,6 +279,33 @@ def _upsert_verified_legacy_admissions(
     # applicant upserts, even if the caller has already opened a transaction.
     try:
         with transaction.atomic():
+            # A lifecycle event and a verified identity link alone are not
+            # authoritative school-year enrollment. Prove the persisted SIS
+            # record for every applicant before touching any legacy row.
+            if target_status == AdmissionsApplication.STATUS_ENROLLED:
+                from core.models import Enrollment as CoreEnrollment
+
+                for identity in context.identities:
+                    grade = str(
+                        identity.applicant.grade_applying_for or ""
+                    ).strip().upper()
+                    enrolled = bool(grade) and CoreEnrollment.objects.select_for_update(
+                        of=("self",)
+                    ).filter(
+                        school=school,
+                        student=identity.core_student,
+                        academic_year=academic_year,
+                        grade_level__school=school,
+                        grade_level__code=grade,
+                        status="ENROLLED",
+                    ).exists()
+                    if not enrolled:
+                        return None, _identity_conflict(
+                            "Verified school-year CoreEnrollment is required before enrollment confirmation.",
+                            code="canonical_enrollment_required",
+                            applicant_id=identity.applicant.id,
+                        )
+
             synced_ids = [
                 _sync_verified_legacy_application(
                     context=context,
