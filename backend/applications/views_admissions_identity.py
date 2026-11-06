@@ -70,7 +70,9 @@ def _verified_admissions_context(
     family = family_links[0].family
 
     applicants = list(
-        app.applicants.select_for_update()
+        # Applicant.student is nullable. Locking the joined nullable row with
+        # FOR UPDATE fails on PostgreSQL; lock only the applicant row instead.
+        app.applicants.select_for_update(of=("self",))
         .select_related("student")
         .order_by("created_at", "id")
     )
