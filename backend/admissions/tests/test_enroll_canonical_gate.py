@@ -188,6 +188,33 @@ def test_enroll_rejects_unverified_identity_without_writing_events():
     ).exists()
 
 
+def test_enroll_rejects_another_application_identity_evidence_without_side_effects():
+    school = _school()
+    year = _year(school)
+    legacy = _legacy_application(school, year)
+    canonical = _link_canonical(legacy, ready=True)
+    _, core = _verified_enrollment(legacy, canonical, year)
+    link = StudentIdentityLink.objects.get(core_student=core)
+    link.evidence_reference = (
+        f"application:{uuid.uuid4()}:applicant:{uuid.uuid4()}"
+    )
+    link.save(update_fields=["evidence_reference", "updated_at"])
+
+    response = _client(_editor(school), school).post(
+        "/api/admissions/enroll/", {"application_id": legacy.id}, format="json",
+    )
+    assert response.status_code == 409, response.data
+    assert response.data["code"] == "student_identity_evidence_required"
+    legacy.refresh_from_db()
+    assert legacy.status == AdmissionsApplication.STATUS_ACCEPTED
+    assert CoreEnrollment.objects.filter(
+        school=school, student=core, academic_year=year, status="ENROLLED",
+    ).count() == 1
+    assert not ApplicationEvent.objects.filter(
+        application=canonical, event_type=ENROLLMENT_CONFIRMED_EVENT_TYPE,
+    ).exists()
+
+
 def test_enroll_rejects_missing_core_enrollment():
     school = _school()
     year = _year(school)
