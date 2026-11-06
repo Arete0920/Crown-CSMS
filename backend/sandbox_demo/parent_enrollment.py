@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import uuid
 from dataclasses import dataclass
 from datetime import date
@@ -428,10 +429,74 @@ def complete_parent_enrollment_demo(user, application_id: str, accepted_terms: b
     return state
 
 
+def _require_pristine_parent_scenario_events(application: Application) -> None:
+    """Never erase an unexpected, duplicated or edited application event."""
+    applicant = application.applicants.order_by("created_at", "id").first()
+    if applicant is None:
+        raise SandboxParentEnrollmentError("reset_application_history_not_synthetic")
+    seed = [
+        ("application_submitted", {
+            "via": "sandbox_parent_enrollment_scenario", "applicant_id": str(applicant.id),
+        }),
+        ("decision_made", {
+            "decision": "accepted", "updated_by": "sandbox-demo-orchestrator",
+        }),
+        ("enrollment_state_updated", {
+            "contract_status": "sent", "deposit_status": "invoiced",
+            "note": "Enrollment agreement ready for parent action.",
+            "transition_reason": "sandbox_seed",
+            "updated_by": "sandbox-demo-orchestrator",
+            "demo_payment_processed": False,
+        }),
+    ]
+    observed = list(ApplicationEvent.objects.filter(
+        school_id=SCHOOL_ID, application=application,
+    ).values_list("event_type", "payload"))
+
+    def fingerprint(events):
+        return sorted((kind, json.dumps(payload, sort_keys=True)) for kind, payload in events)
+
+    if fingerprint(observed) == fingerprint(seed):
+        return
+    for actor in {PARENT_EMAIL, SANDBOX_PERSONAS["school_admin"].email}:
+        completed = seed + [
+            ("parent_enrollment_agreement_signed", {
+                "updated_by": PARENT_EMAIL, "demo_only": True,
+            }),
+            ("enrollment_state_updated", {
+                "contract_status": "countersigned", "deposit_status": "paid",
+                "note": "Protected sandbox deposit simulation; no payment provider called.",
+                "transition_reason": "sandbox_parent_enrollment_demo",
+                "owner_assignment": "Admissions / Finance automation",
+                "updated_by": "sandbox-demo-orchestrator",
+                "demo_payment_processed": False,
+            }),
+            ("sandbox_demo_deposit_simulated", {
+                "amount_cents": 25000, "payment_processed": False,
+                "updated_by": "sandbox-demo-orchestrator",
+            }),
+            ("enrollment_confirmed", {
+                "note": "Protected sandbox accepted-applicant enrollment after parent agreement; no external payment processed.",
+                "updated_by": actor,
+            }),
+            ("classroom_readiness_completed", {
+                "note": "Protected sandbox post-enrollment readiness transition.",
+                "updated_by": actor,
+            }),
+            ("parent_portal_activated", {
+                "note": "Protected sandbox post-enrollment readiness transition.",
+                "updated_by": actor,
+            }),
+        ]
+        if fingerprint(observed) == fingerprint(completed):
+            return
+    raise SandboxParentEnrollmentError("reset_application_history_not_synthetic")
+
+
 @transaction.atomic
 def reset_parent_enrollment_scenario() -> None:
-    """Reset only explicit synthetic records; reject externally reused identity."""
-    from admissions.models import AdmissionsApplication
+    """Reset only exact fictional records; reject unrelated audit history."""
+    from admissions.models import AdmissionsApplication, AdmissionsAuditEvent
 
     apps = list(
         Application.objects.select_for_update(of=("self",))
@@ -447,6 +512,7 @@ def reset_parent_enrollment_scenario() -> None:
     # guarantees rollback if a later database constraint rejects a delete.
     deletions = []
     for application in apps:
+        _require_pristine_parent_scenario_events(application)
         for applicant in application.applicants.all():
             if not applicant.student_id:
                 continue
@@ -481,6 +547,12 @@ def reset_parent_enrollment_scenario() -> None:
                 notes_internal__contains=f"canonical_application_id={application.id}",
             )
             owned_legacy_ids = list(owned_legacy.values_list("id", flat=True))
+            if AdmissionsAuditEvent.objects.filter(
+                school_id=SCHOOL_ID,
+                entity_type=AdmissionsAuditEvent.ENTITY_APPLICATION,
+                entity_id__in=[str(legacy_id) for legacy_id in owned_legacy_ids],
+            ).exists():
+                raise SandboxParentEnrollmentError("reset_historical_admissions_audit_exists")
             owned_year_ids = list(owned_legacy.values_list("academic_year_id", flat=True))
             if AdmissionsApplication.objects.filter(
                 student=link.core_student
