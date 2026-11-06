@@ -258,7 +258,8 @@ def _provision_verified_parent_applicant(application: Application):
     )
     if family is None:
         raise SandboxParentEnrollmentError("verified_family_required")
-    student_number = f"APP-{str(application.id).replace('-', '')[:6]}-01"
+    # Unique, school-scoped fictional number; not a provisional APP- identity.
+    student_number = f"HCA-DEMO-{application.id.hex}"
     try:
         compatibility_student, core_student, _created = _provision_student_identity(
             application=application,

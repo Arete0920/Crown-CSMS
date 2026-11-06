@@ -117,6 +117,7 @@ def test_parent_enrollment_api_completes_real_records_without_external_payment(s
     assert identity.evidence_reference == f"application:{application_id}:applicant:{applicant.id}"
     assert identity.core_student.school_id == school.id
     assert identity.core_student.dob == date(2013, 2, 15)
+    assert identity.core_student.student_number == f"HCA-DEMO-{application_id.replace('-', '')}"
     canonical_enrollment = CoreEnrollment.objects.get(
         school_id=school.id, student=identity.core_student,
     )
@@ -212,7 +213,7 @@ def test_parent_enrollment_missing_dob_fails_closed_without_core_writes():
     assert response.data["code"] == "verified_date_of_birth_required"
     assert not CoreStudent.objects.filter(
         school_id=school.id,
-        student_number__startswith=f"APP-{str(application_id).replace('-', '')[:6]}",
+        student_number=f"HCA-DEMO-{application_id.replace('-', '')}",
     ).exists()
     assert not ApplicationEvent.objects.filter(
         application_id=application_id, event_type="enrollment_confirmed",
