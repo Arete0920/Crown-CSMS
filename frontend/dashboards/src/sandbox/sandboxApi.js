@@ -23,7 +23,7 @@ function sameOriginSandboxCsrfHeaders(url) {
   // CSRF guard. Do not send tokens to arbitrary cross-origin API hosts.
   const headers = { "Content-Type": "application/json" };
   if (typeof document === "undefined" || typeof location === "undefined") return headers;
-  const target = new URL(url, location.href);
+  const target = new URL(url, location.origin);
   if (target.origin !== location.origin) return headers;
   const cookie = document.cookie.split(";")
     .map((part) => part.trim())
