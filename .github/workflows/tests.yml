@@ -366,7 +366,9 @@ jobs:
               if proc.returncode == 0:
                   changed = proc.stdout.decode('utf-8', errors='replace').split('\0')
                   roots = ('backend/aftercare/', 'backend/core/', 'backend/tenants/', 'backend/subscriptions/', 'backend/households/', 'backend/audit/', 'backend/crown_api/')
-                  exact = {'backend/requirements.txt', 'backend/conftest.py', 'backend/tests/conftest.py', 'pytest.ini', '.github/workflows/tests.yml'}
+                  exact = {'backend/requirements.txt', 'backend/conftest.py', 'backend/tests/conftest.py', 'pytest.ini', '.github/workflows/tests.yml',
+                           'backend/sandbox_demo/management/commands/seed_hosted_buyer_daycare.py',
+                           'backend/sandbox_demo/test_seed_hosted_buyer_daycare.py'}
                   required = any(path in exact or path.startswith(roots) for path in changed)
           with open(os.environ['GITHUB_OUTPUT'], 'a') as out:
               out.write('required=' + str(required).lower() + '\n')
@@ -450,6 +452,7 @@ jobs:
             backend/aftercare/tests/test_am_pm_sessions.py \
             backend/aftercare/tests/test_daycare_api.py \
             backend/aftercare/tests/test_daycare_setup.py \
+            backend/sandbox_demo/test_seed_hosted_buyer_daycare.py \
             --junitxml=diadem-postgresql-junit.xml
       - name: Enforce executed (not skipped) PostgreSQL concurrency tests
         run: |
@@ -463,6 +466,12 @@ jobs:
               "test_postgresql_simultaneous_custody_release_has_one_winner",
               "test_postgresql_preexisting_custody_survives_visit_migration",
               "test_postgresql_concurrent_configuration_retry_has_one_record_and_audit",
+              "test_preflight_is_read_only_then_apply_is_one_time_and_isolated",
+              "test_authenticated_care_service_can_checkin_and_release_only_synthetic_child",
+              "test_injected_failure_rolls_back_entire_synthetic_custody_fixture",
+              "test_customer_plan_substitution_never_bypasses_buyer_module_expiry",
+              "test_invalid_school_timezone_fails_read_only_preflight",
+              "test_expired_buyer_module_blocks_admission_after_fixture_staging",
           ]
           for name in names:
               case = cases.get(name)
