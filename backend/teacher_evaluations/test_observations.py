@@ -238,7 +238,10 @@ def test_observation_and_response_idempotency_stale_versions_and_mutation_guards
     obs = create_observation(s, cycle, request_key=idem, observed_at=recorded_time)
     assert obs.status_code == 201
     oid = obs.data["id"]
-    assert create_observation(s, cycle, request_key=idem, observed_at=recorded_time).status_code == 200
+    replayed = create_observation(s, cycle, request_key=idem, observed_at=recorded_time)
+    assert replayed.status_code == 200
+    assert replayed.data["id"] == oid
+    assert replayed.data["narrative"] == obs.data["narrative"]
     assert create_observation(s, cycle, request_key=idem, observed_at=recorded_time, narrative="Changed").status_code == 409
     submit_idem = key()
     assert submit(s, oid, request_key=submit_idem).status_code == 200
@@ -314,3 +317,43 @@ def test_failed_validation_has_no_partial_mutation(scenario):
     assert create_observation(s, cycle, observed_at="not-a-date").status_code == 400
     assert TeacherObservation.objects.count() == 0
     assert TeacherEvaluationEvent.objects.count() == 1
+
+
+@pytest.mark.django_db(transaction=True)
+def test_postgresql_concurrent_observation_retry_commits_one_event(scenario):
+    """Two real DB connections sharing a retry key must persist one observation."""
+    from concurrent.futures import ThreadPoolExecutor
+    from threading import Barrier
+    from django.db import connection, connections
+
+    if connection.vendor != "postgresql":
+        pytest.skip("Real row-lock and retry proof requires PostgreSQL.")
+    s = scenario
+    cycle_id = create_cycle(s).data["id"]
+    idem = key()
+    observed_at = timezone.now().isoformat()
+    barrier = Barrier(2)
+
+    def worker():
+        connections.close_all()
+        try:
+            barrier.wait(timeout=15)
+            result = post(s["evaluator"], s["school"], BASE + f"cycles/{cycle_id}/observations/", {
+                "request_key": idem,
+                "observed_at": observed_at,
+                "narrative": "Observed an independently verifiable classroom practice.",
+            })
+            return result.status_code, result.data
+        finally:
+            connections.close_all()
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        futures = [pool.submit(worker) for _ in range(2)]
+        responses = [future.result(timeout=30) for future in futures]
+    assert sorted(code for code, _ in responses) == [200, 201]
+    assert responses[0][1]["id"] == responses[1][1]["id"]
+    assert responses[0][1]["narrative"] == responses[1][1]["narrative"]
+    assert TeacherObservation.objects.filter(cycle_id=cycle_id).count() == 1
+    assert TeacherEvaluationEvent.objects.filter(
+        cycle_id=cycle_id, action="observation_draft"
+    ).count() == 1

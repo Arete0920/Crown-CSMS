@@ -333,6 +333,12 @@ def observations(request, cycle_id):
                 cycle = _cycle(school, cycle_id)
                 if not _can_observe(actor, cycle, school):
                     raise NotFound()
+                if replay.status_code == 200:
+                    original = get_object_or_404(
+                        TeacherObservation, pk=replay.data["id"], school=school,
+                        cycle=cycle, evaluator=actor,
+                    )
+                    return Response(_observation_data(original), status=200)
                 return replay
             cycle = _cycle(school, cycle_id)
             if not _can_observe(actor, cycle, school):
