@@ -88,6 +88,34 @@ class StageContractTests(unittest.TestCase):
                 stage.authority(SHA, stage.CONFIRMATION, 'true', 'true', 'true',
                                 RUN, dict(ENV, **{key: value}))
 
+    def test_github_rest_token_is_never_forwarded_by_redirect(self):
+        class JsonResponse:
+            def __enter__(self):
+                return self
+            def __exit__(self, exc_type, exc, tb):
+                return False
+            def read(self, limit):
+                return b'{"accepted":true}'
+
+        opener = Mock()
+        opener.open.return_value = JsonResponse()
+        # NoRedirect must refuse every status/code, including cross-origin 302.
+        redirect = stage._NoRedirect()
+        for status in (301, 302, 303, 307, 308):
+            with self.subTest(status=status):
+                self.assertIsNone(redirect.redirect_request(
+                    None, None, status, 'redirect', {}, 'https://untrusted.example/evidence'
+                ))
+        with patch.object(stage, 'build_opener', return_value=opener) as make_opener, \
+             patch.object(stage, 'urlopen', side_effect=AssertionError('must not use default opener')):
+            response = stage._github_api_json('runs/' + RUN, 'ghs_testonly')
+        self.assertEqual(response, {'accepted': True})
+        self.assertIsInstance(make_opener.call_args.args[0], stage._NoRedirect)
+        request = opener.open.call_args.args[0]
+        self.assertEqual(request.full_url,
+                         'https://api.github.com/repos/' + stage.REPO + '/actions/runs/' + RUN)
+        self.assertEqual(request.get_header('Authorization'), 'Bearer ghs_testonly')
+
     def test_authenticated_prior_rehearsal_archive_accepts_exact_github_proof(self):
         stream = BytesIO()
         with ZipFile(stream, 'w', compression=ZIP_DEFLATED) as z:
