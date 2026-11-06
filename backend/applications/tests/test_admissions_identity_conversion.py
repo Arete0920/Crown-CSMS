@@ -1,4 +1,5 @@
 from datetime import date
+from uuid import uuid4
 
 import pytest
 from django.db import transaction
@@ -18,7 +19,7 @@ from households.models import Household, Student as CompatibilityStudent
 pytestmark = pytest.mark.django_db
 
 
-def _identity_fixture(*, student_number="S-1001", evidence="application:test"):
+def _identity_fixture(*, student_number="S-1001", evidence=None):
     school = School.objects.create(name="Identity School")
     household = Household.objects.create(
         school_id=school.id,
@@ -70,7 +71,10 @@ def _identity_fixture(*, student_number="S-1001", evidence="application:test"):
         compatibility_student=compatibility_student,
         source=StudentIdentityLink.SOURCE_ADMISSIONS,
         verification_status=StudentIdentityLink.STATUS_VERIFIED,
-        evidence_reference=evidence,
+        evidence_reference=(
+            f"application:{application.id}:applicant:{applicant.id}"
+            if evidence is None else evidence
+        ),
     )
     return (
         school,
@@ -98,6 +102,34 @@ def test_verified_context_accepts_explicit_bridge_and_authoritative_identity():
     assert len(context.identities) == 1
     assert context.identities[0].applicant.id == applicant.id
     assert context.identities[0].core_student.id == core_student.id
+
+
+@pytest.mark.parametrize(
+    "mutation",
+    ("different_application", "different_applicant", "manual_source"),
+)
+def test_verified_context_rejects_unbound_or_nonadmissions_evidence(mutation):
+    school, _, _, application, applicant, _, core_student = _identity_fixture()
+    link = StudentIdentityLink.objects.get(core_student=core_student)
+    if mutation == "different_application":
+        link.evidence_reference = f"application:{uuid4()}:applicant:{applicant.id}"
+    elif mutation == "different_applicant":
+        link.evidence_reference = f"application:{application.id}:applicant:{uuid4()}"
+    else:
+        link.source = StudentIdentityLink.SOURCE_MANUAL
+    link.save(update_fields=["source", "evidence_reference", "updated_at"])
+
+    with transaction.atomic():
+        context, error = _verified_admissions_context(
+            school=school,
+            application_id=application.id,
+        )
+
+    assert context is None
+    assert error is not None
+    assert error.status_code == 409
+    assert error.data["code"] == "student_identity_evidence_required"
+    assert error.data["applicant_id"] == str(applicant.id)
 
 
 def test_verified_context_fails_closed_without_student_bridge():
