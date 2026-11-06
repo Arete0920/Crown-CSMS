@@ -11,7 +11,7 @@ from applications.views_admissions_identity import (
     _verified_admissions_context, _upsert_verified_legacy_admissions,
 )
 from core.models import (
-    AcademicYear, Family,
+    AcademicYear, Enrollment as CoreEnrollment, Family, GradeLevel,
     HouseholdFamilyLink,
     School,
     Student as CoreStudent,
@@ -217,6 +217,14 @@ def _legacy_sync_fixture():
         school=school, name="2026-2027", start_date=date(2026, 8, 15),
         end_date=date(2027, 6, 15), is_current=True,
     )
+    grade = GradeLevel.objects.create(
+        school=school, code=applicant.grade_applying_for,
+        label="Grade 5", sort_order=5,
+    )
+    CoreEnrollment.objects.create(
+        school=school, student=core_student, academic_year=year,
+        grade_level=grade, start_date=year.start_date, status="ENROLLED",
+    )
     with transaction.atomic():
         context, error = _verified_admissions_context(
             school=school, application_id=application.id,
@@ -344,6 +352,11 @@ def test_verified_legacy_sync_rolls_back_first_member_on_second_member_conflict(
         evidence_reference=(
             f"application:{application.id}:applicant:{other_applicant.id}"
         ),
+    )
+    CoreEnrollment.objects.create(
+        school=school, student=other_core, academic_year=year,
+        grade_level=GradeLevel.objects.get(school=school, code="5"),
+        start_date=year.start_date, status="ENROLLED",
     )
     conflict = AdmissionsApplication.objects.create(
         school=school, family=family, student=other_core, academic_year=year,
