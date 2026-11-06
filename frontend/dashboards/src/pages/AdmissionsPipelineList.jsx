@@ -8,6 +8,7 @@ import { csvEscape, downloadTextFile } from '../lib/export/csv';
 import { useAsyncPageData } from '../hooks/useAsyncPageData';
 import { usePersistentTableState } from '../hooks/usePersistentTableState';
 import { useApiAction } from '../hooks/useApiAction';
+import { performVerifiedAdmissionsEnrollment } from './admissionsEnrollmentResult.js';
 import { getCurrentUserRoles } from '../auth/roleAdapter';
 import { hasAnyRole } from '../auth/roleAccess';
 
@@ -105,7 +106,6 @@ function HouseholdReviewDrawer({
   expandedChildren,
   setExpandedChildren,
   enrollResult,
-  enrollError,
   enrolling,
   directorResult,
   directorBusy,
@@ -143,12 +143,6 @@ function HouseholdReviewDrawer({
         {enrollResult ? (
           <div role="alert" style={{ padding: '8px 16px', borderRadius: '4px', background: enrollResult.ok ? 'var(--crown-compat-color-df49e3f406)' : 'var(--crown-compat-color-14a5dafae2)', color: enrollResult.ok ? 'var(--crown-compat-color-e81fcc6b0b)' : 'var(--crown-compat-color-bf645a12ce)', border: `1px solid ${enrollResult.ok ? 'var(--crown-compat-color-09dff71fa9)' : 'var(--crown-compat-color-b5cf969cd7)'}`, marginBottom: '8px' }}>
             {enrollResult.message}
-          </div>
-        ) : null}
-
-        {enrollError ? (
-          <div role="alert" style={{ padding: '8px 16px', borderRadius: '4px', background: 'var(--crown-compat-color-14a5dafae2)', color: 'var(--crown-compat-color-bf645a12ce)', border: '1px solid var(--crown-compat-color-b5cf969cd7)', marginBottom: '8px' }}>
-            {enrollError.message}
           </div>
         ) : null}
 
@@ -270,7 +264,7 @@ function AdmissionsPipelineContent() {
 
   const { loading, error, data, reload } = useAsyncPageData(loadAdmissionsApplications, []);
 
-  const { run: runEnroll, loading: enrolling, error: enrollError } = useApiAction(
+  const { run: runEnroll, loading: enrolling } = useApiAction(
     async (applicationId) => {
       return enrollApplicant(applicationId);
     },
@@ -313,7 +307,7 @@ function AdmissionsPipelineContent() {
       key: 'actions',
       label: 'Actions',
       render: (row) => (
-        <button type="button" style={SM} onClick={() => { setSelected(row); setDirectorResult(''); }}>Open</button>
+        <button type="button" style={SM} onClick={() => { setSelected(row); setDirectorResult(''); setEnrollResult(null); }}>Open</button>
       ),
     },
   ];
@@ -360,6 +354,7 @@ function AdmissionsPipelineContent() {
     const match = source.find((row) => String(row.id) === String(applicationId));
     await reload();
     if (match) setSelected(match);
+    return match ?? null;
   }
 
   async function handleReviewUpdate(applicationId) {
@@ -394,13 +389,12 @@ function AdmissionsPipelineContent() {
     if (!applicationId) return;
     setEnrollResult(null);
 
-    try {
-      const result = await runEnroll(applicationId);
-      setEnrollResult({ ok: true, message: result.message || 'Applicant enrolled.' });
-      await refreshSelected(applicationId);
-    } catch {
-      setEnrollResult({ ok: false, message: 'Unable to enroll applicant.' });
-    }
+    const outcome = await performVerifiedAdmissionsEnrollment({
+      applicationId,
+      enroll: runEnroll,
+      readback: refreshSelected,
+    });
+    setEnrollResult(outcome);
   }
 
   return (
@@ -432,7 +426,6 @@ function AdmissionsPipelineContent() {
         expandedChildren={expandedChildren}
         setExpandedChildren={setExpandedChildren}
         enrollResult={enrollResult}
-        enrollError={enrollError}
         enrolling={enrolling}
         directorResult={directorResult}
         directorBusy={directorBusy}
