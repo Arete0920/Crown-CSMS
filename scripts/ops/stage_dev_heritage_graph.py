@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import argparse
 from contextlib import redirect_stdout, redirect_stderr
+from io import BytesIO
 import hashlib
 import io
 import json
@@ -17,11 +18,19 @@ import re
 import subprocess
 import sys
 from urllib.parse import urlencode, urlsplit
+from urllib.error import HTTPError
+from urllib.request import Request, HTTPRedirectHandler, build_opener, urlopen
+from zipfile import BadZipFile, ZipFile
 
 ROOT = Path(__file__).resolve().parents[2]
 DEV_APP = 'crown-api-dev'
 EXPECTED_COUNT = 21
 CONFIRMATION = 'migrate-dev-reviewed-21'
+REPO = 'Arete0920/Crown-CSMS'
+REPO_ID = 1339719218
+REHEARSAL_WORKFLOW = '.github/workflows/isolated-postgres-restore-drill.yml'
+REHEARSAL_RECEIPT_NAME = 'dev-restore-evidence.json'
+MAX_EVIDENCE_ZIP = 64 * 1024
 
 class StageBlocked(RuntimeError):
     """Only a fixed non-sensitive reason code is exported."""
@@ -43,9 +52,15 @@ def authority(expected_sha, confirmation, synthetic, backup, maintenance, run_id
     if (confirmation != CONFIRMATION or synthetic != 'true' or backup != 'true'
             or maintenance != 'true'):
         raise StageBlocked('owner_approval_or_recovery_evidence_missing')
+    stage_run = environ.get('GITHUB_RUN_ID', '')
     if (not isinstance(run_id, str) or not re.fullmatch(r'[1-9][0-9]{5,19}', run_id)
-            or run_id != environ.get('GITHUB_RUN_ID')):
-        raise StageBlocked('reviewed_rehearsal_run_id_required')
+            or not isinstance(stage_run, str) or not re.fullmatch(r'[1-9][0-9]{5,19}', stage_run)
+            or int(run_id) >= int(stage_run)):
+        # The prior RESTORED-COPY run and this future SCHEMA-STAGE run are distinct.
+        raise StageBlocked('prior_reviewed_rehearsal_run_id_required')
+    if (environ.get('GITHUB_REPOSITORY') != REPO
+            or environ.get('GITHUB_REPOSITORY_ID') != str(REPO_ID)):
+        raise StageBlocked('trusted_repository_identity_required')
     return int(run_id)
 
 
@@ -97,6 +112,148 @@ def receipt_contract(receipt, expected_sha):
     if type(receipt.get('source_postgres_version')) is not int or receipt['source_postgres_version'] // 10000 != 15:
         raise StageBlocked('source_postgresql15_not_verified')
     return True
+
+
+
+def _github_api_json(path, token):
+    """Read GitHub Actions evidence using a repository-scoped Actions read token."""
+    request = Request(
+        f'https://api.github.com/repos/{REPO}/actions/{path}',
+        headers={'Accept': 'application/vnd.github+json',
+                 'Authorization': 'Bearer ' + token,
+                 'X-GitHub-Api-Version': '2022-11-28',
+                 'User-Agent': 'CROWN-DEV-427-review'},
+    )
+    try:
+        with urlopen(request, timeout=20) as response:
+            body = response.read(256 * 1024 + 1)
+        if len(body) > 256 * 1024:
+            raise StageBlocked('rehearsal_github_metadata_too_large')
+        return json.loads(body)
+    except StageBlocked:
+        raise
+    except Exception:
+        raise StageBlocked('rehearsal_github_metadata_unverified') from None
+
+
+class _NoRedirect(HTTPRedirectHandler):
+    """Never forward the GitHub token to a storage-service redirect."""
+
+    def redirect_request(self, request, fp, code, message, headers, new_url):
+        return None
+
+
+def _fetch_artifact_zip(artifact_id, token):
+    request = Request(
+        f'https://api.github.com/repos/{REPO}/actions/artifacts/{artifact_id}/zip',
+        headers={'Accept': 'application/vnd.github+json',
+                 'Authorization': 'Bearer ' + token,
+                 'User-Agent': 'CROWN-DEV-427-review'},
+    )
+    try:
+        with build_opener(_NoRedirect()).open(request, timeout=20):
+            raise StageBlocked('rehearsal_artifact_redirect_required')
+    except HTTPError as error:
+        if error.code != 302:
+            raise StageBlocked('rehearsal_artifact_download_denied') from None
+        location = error.headers.get('Location', '')
+    except StageBlocked:
+        raise
+    except Exception:
+        raise StageBlocked('rehearsal_artifact_download_denied') from None
+
+    target = urlsplit(location)
+    host = (target.hostname or '').lower()
+    if (target.scheme != 'https' or not host
+            or not (host.endswith('.blob.core.windows.net')
+                    or host.endswith('.githubusercontent.com'))
+            or target.username or target.password):
+        raise StageBlocked('rehearsal_artifact_storage_origin_denied')
+    # This second request intentionally carries NO Authorization header.
+    try:
+        with urlopen(Request(location, headers={'User-Agent': 'CROWN-DEV-427-review'}),
+                     timeout=30) as response:
+            final = urlsplit(response.geturl())
+            if final.scheme != 'https' or (final.hostname or '').lower() != host:
+                raise StageBlocked('rehearsal_artifact_storage_origin_denied')
+            body = response.read(MAX_EVIDENCE_ZIP + 1)
+        if len(body) > MAX_EVIDENCE_ZIP:
+            raise StageBlocked('rehearsal_artifact_too_large')
+        return body
+    except StageBlocked:
+        raise
+    except Exception:
+        raise StageBlocked('rehearsal_artifact_download_denied') from None
+
+
+def authenticated_rehearsal_receipt(run_id, artifact_id, expected_sha, environ):
+    """Bind a prior successful restore to GitHub run, ZIP digest and receipt.
+
+    The schema-stage run must have its own GITHUB_RUN_ID. A local JSON path or
+    operator-provided checksum alone never establishes the prior run's identity.
+    """
+    token = environ.get('CROWN_STAGE_GITHUB_TOKEN', '')
+    if (not isinstance(token, str) or not token or any(ord(ch) <= 32 for ch in token)
+            or not isinstance(artifact_id, str)
+            or not re.fullmatch(r'[1-9][0-9]{5,19}', run_id)
+            or not re.fullmatch(r'[1-9][0-9]{5,19}', artifact_id)):
+        raise StageBlocked('authenticated_rehearsal_artifact_required')
+    run = _github_api_json(f'runs/{run_id}', token)
+    if (not isinstance(run, dict)
+            or type(run.get('id')) is not int or run['id'] != int(run_id)
+            or run.get('status') != 'completed' or run.get('conclusion') != 'success'
+            or run.get('event') != 'workflow_dispatch'
+            or run.get('head_branch') != 'main' or run.get('head_sha') != expected_sha
+            or not isinstance(run.get('path'), str)
+            or run['path'].split('@')[0] != REHEARSAL_WORKFLOW
+            or not isinstance(run.get('repository'), dict)
+            or run['repository'].get('id') != REPO_ID
+            or run['repository'].get('full_name') != REPO
+            or not isinstance(run.get('head_repository'), dict)
+            or run['head_repository'].get('id') != REPO_ID):
+        raise StageBlocked('rehearsal_workflow_identity_unverified')
+    listing = _github_api_json(f'runs/{run_id}/artifacts?per_page=100', token)
+    if (not isinstance(listing, dict) or type(listing.get('total_count')) is not int
+            or not isinstance(listing.get('artifacts'), list)
+            or listing['total_count'] != len(listing['artifacts'])):
+        raise StageBlocked('rehearsal_artifact_inventory_unverified')
+    matches = [item for item in listing['artifacts']
+               if isinstance(item, dict)
+               and item.get('name') == 'dev-operational-restore-' + run_id]
+    if len(matches) != 1:
+        raise StageBlocked('rehearsal_artifact_ambiguous')
+    artifact = matches[0]
+    provenance = artifact.get('workflow_run')
+    digest = artifact.get('digest')
+    if (type(artifact.get('id')) is not int or artifact['id'] != int(artifact_id)
+            or artifact.get('expired') is not False
+            or type(artifact.get('size_in_bytes')) is not int
+            or not 0 < artifact['size_in_bytes'] <= MAX_EVIDENCE_ZIP
+            or not isinstance(digest, str)
+            or not re.fullmatch(r'sha256:[0-9a-f]{64}', digest)
+            or not isinstance(provenance, dict)
+            or provenance.get('id') != int(run_id)
+            or provenance.get('repository_id') != REPO_ID
+            or provenance.get('head_repository_id') != REPO_ID
+            or provenance.get('head_branch') != 'main'
+            or provenance.get('head_sha') != expected_sha):
+        raise StageBlocked('rehearsal_artifact_metadata_unverified')
+    archive = _fetch_artifact_zip(artifact_id, token)
+    if hashlib.sha256(archive).hexdigest() != digest.split(':', 1)[1]:
+        raise StageBlocked('rehearsal_artifact_digest_mismatch')
+    try:
+        with ZipFile(BytesIO(archive)) as z:
+            entries = z.infolist()
+            if (len(entries) != 1 or entries[0].filename != REHEARSAL_RECEIPT_NAME
+                    or entries[0].is_dir() or entries[0].file_size > 16 * 1024):
+                raise StageBlocked('rehearsal_receipt_archive_invalid')
+            receipt = json.loads(z.read(entries[0]))
+    except StageBlocked:
+        raise
+    except (BadZipFile, ValueError, UnicodeError, OSError):
+        raise StageBlocked('rehearsal_receipt_archive_invalid') from None
+    receipt_contract(receipt, expected_sha)
+    return receipt
 
 
 def live_baseline_contract(receipt, fingerprint, migration_records, public_tables):
@@ -275,7 +432,7 @@ def main(argv=None):
     parser.add_argument('--backup-recovery-verified', default='false')
     parser.add_argument('--maintenance-window-confirmed', default='false')
     parser.add_argument('--rehearsal-run-id', default='')
-    parser.add_argument('--rehearsal-receipt', required=True)
+    parser.add_argument('--rehearsal-artifact-id', required=True)
     parser.add_argument('--evidence-path', default='')
     args = parser.parse_args(argv)
     status = dict(result='BLOCKED', source_sha=args.expected_sha if _allowed_sha(args.expected_sha) else None,
@@ -284,9 +441,9 @@ def main(argv=None):
         authority(args.expected_sha, args.confirmation, args.synthetic_dev_confirmed,
                   args.backup_recovery_verified, args.maintenance_window_confirmed,
                   args.rehearsal_run_id, os.environ)
-        with Path(args.rehearsal_receipt).open('r', encoding='utf-8') as f:
-            receipt = json.load(f)
-        receipt_contract(receipt, args.expected_sha)
+        receipt = authenticated_rehearsal_receipt(
+            args.rehearsal_run_id, args.rehearsal_artifact_id, args.expected_sha, os.environ,
+        )
         with redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
             outcome = execute_stage(args.expected_sha, receipt)
         status.update(outcome, live_dev_schema_write_performed=True)
