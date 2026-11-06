@@ -1,6 +1,6 @@
 # Teacher Evaluation — Unscored Observation Slice (#642)
 
-Status: **Draft source, not certified.** This additive implementation intentionally does **not** establish a complete formal teacher evaluation, rubric, summative rating, teacher growth plan, professional development attendance verification, or Rediker interoperability.
+Status: **Draft source, not certified.** This additive implementation intentionally does **not** establish a complete formal teacher evaluation, rubric, summative rating, teacher growth plan, professional development attendance verification, or third-party evaluation interoperability.
 
 ## Existing identity and privacy contracts
 
@@ -9,6 +9,8 @@ Status: **Draft source, not certified.** This additive implementation intentiona
 - Exactly one designated evaluator is assigned per teacher/cycle in this initial version. New assignments require an active school-bound account with the independently granted `evaluation.observe` permission.
 - School administration and evaluator authority are **not** inherited from `hr.view`, `hr.edit`, `pd.view`, `classroom.view`, `is_staff`, or `is_superuser`. The initial permission seed registers capability names but grants **none** to any default role.
 - Restricted capability names are `evaluation.assign`, `evaluation.observe`, `evaluation.read_assigned`, `evaluation.read_self`, and `evaluation.respond_self`. School leadership must explicitly authorize specific roles; this implementation does not self-grant access.
+- **Critical activation restriction:** CROWN's `RolePermission` maps `role_code` globally rather than per school. A future evaluation grant to a shared role code (for example, a default leadership role) would propagate the capability to that role in other schools. The feature is **not authorized for live grant setup** until a school-specific evaluation entitlement and audited grant/revocation policy are implemented and tested. The current tests use unique per-user role codes; those do not constitute an approved production role system.
+- All evaluation API responses, including private observation narratives, set private `Cache-Control: no-store` using Django's never-cache response wrapper. Test readback checks response headers.
 - Subject teachers see only their submitted observations; designated evaluators can see their own drafts. Other staff, unrelated evaluators, students, parents, board, and unrelated HR personnel are excluded. Acknowledgment records receipt, not agreement.
 
 ## State transitions and audit

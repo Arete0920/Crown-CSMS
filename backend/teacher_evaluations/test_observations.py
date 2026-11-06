@@ -155,6 +155,8 @@ def test_full_persisted_cycle_and_immutable_history(scenario):
     assert received.status_code == 201 and received.data["choice"] == "acknowledged_receipt"
     readback = get(s["teacher"], s["school"], BASE + f"cycles/{cycle_id}/")
     assert readback.status_code == 200
+    assert "no-store" in readback["Cache-Control"]
+    assert "private" in readback["Cache-Control"]
     item = readback.data["observations"][0]
     assert item["narrative"] == observation.data["narrative"]
     assert item["teacher_response"]["choice"] == "acknowledged_receipt"
@@ -283,9 +285,15 @@ def test_permission_revocation_blocks_existing_evaluator_and_teacher(scenario):
 
 def test_no_self_review_and_rejects_wrong_actor_or_year(scenario):
     s = scenario
-    s["admin"].staff = s["staff"]
+    # UserAccount.staff is one-to-one; use a separate canonical staff target
+    # instead of assigning the already-linked subject to a second account.
+    self_staff = Staff.objects.create(
+        school=s["school"], first_name="Self", last_name="Review",
+        email=f"self-{uuid.uuid4().hex}@example.test", role_type="TEACHER",
+    )
+    s["admin"].staff = self_staff
     s["admin"].save(update_fields=["staff"])
-    assert create_cycle(s).status_code == 403
+    assert create_cycle(s, staff_id=str(self_staff.pk)).status_code == 403
     s["admin"].staff = None
     s["admin"].save(update_fields=["staff"])
     assert create_cycle(s, evaluator_id=str(s["teacher"].pk)).status_code == 403

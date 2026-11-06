@@ -10,6 +10,9 @@ from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
+from django.views.decorators.cache import never_cache
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.exceptions import NotFound, PermissionDenied, ValidationError
 from rest_framework.permissions import IsAuthenticated
@@ -197,6 +200,9 @@ def _error(exc):
     raise exc
 
 
+@never_cache
+@extend_schema(methods=["GET"], responses=OpenApiTypes.OBJECT)
+@extend_schema(methods=["POST"], request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
 @api_view(["GET", "POST"])
 @permission_classes([IsAuthenticated])
 def cycles(request):
@@ -280,6 +286,8 @@ def cycles(request):
         _error(exc)
 
 
+@never_cache
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def cycle_detail(request, cycle_id):
@@ -310,6 +318,8 @@ def cycle_detail(request, cycle_id):
     })
 
 
+@never_cache
+@extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def observations(request, cycle_id):
@@ -365,6 +375,8 @@ def observations(request, cycle_id):
         return Response({"detail": "Conflicting request key."}, status=409)
 
 
+@never_cache
+@extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def submit_observation(request, observation_id):
@@ -405,6 +417,8 @@ def submit_observation(request, observation_id):
         return Response({"detail": "Conflicting request key."}, status=409)
 
 
+@never_cache
+@extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def observation_response(request, observation_id):
