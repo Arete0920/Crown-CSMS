@@ -235,6 +235,39 @@ def test_enroll_rejects_same_name_wrong_legacy_student():
     ).exists()
 
 
+def test_enroll_valid_upcoming_year_without_switching_school_current_year():
+    school = _school()
+    current_year = _year(school)
+    upcoming_year = AcademicYear.objects.create(
+        school=school, name="2027-2028", start_date=date(2027, 8, 15),
+        end_date=date(2028, 6, 15), is_current=False,
+    )
+    legacy = _legacy_application(school, upcoming_year)
+    canonical = _link_canonical(legacy, ready=True)
+    _, core = _verified_enrollment(legacy, canonical, upcoming_year)
+    response = _client(_editor(school), school).post(
+        "/api/admissions/enroll/", {"application_id": legacy.id}, format="json",
+    )
+    assert response.status_code == 200, response.data
+    legacy.refresh_from_db()
+    assert legacy.status == AdmissionsApplication.STATUS_ENROLLED
+    assert CoreEnrollment.objects.filter(
+        school=school, student=core, academic_year=upcoming_year,
+        status="ENROLLED",
+    ).exists()
+    assert not CoreEnrollment.objects.filter(
+        school=school, student=core, academic_year=current_year,
+    ).exists()
+    assert AdmissionsApplication.objects.filter(
+        school=school, student=core, academic_year=upcoming_year,
+        status=AdmissionsApplication.STATUS_ENROLLED,
+    ).count() == 1
+    assert not AdmissionsApplication.objects.filter(
+        school=school, student=core, academic_year=current_year,
+    ).exists()
+    assert response.data["legacy_conversion_bridge"]["state"] == "enrolled"
+
+
 def test_enroll_rejects_prior_year_enrollment():
     school = _school()
     year = _year(school)
