@@ -278,18 +278,19 @@ def verify_session(request, session_id):
     from core.models import School
 
     school = get_object_or_404(School, id=school_id)
-    if not user_has_permission(request.user, "academics.view", school=school):
-        raise PermissionDenied("You do not have permission to perform this action.")
-
     with transaction.atomic():
-        # A whole-section count cannot prove that this session's selected
-        # additions and removals actually persisted. Lock the session while
-        # validating its specific cohort and advancing its verification state.
+        # Resolve tenant-scoped session existence before checking the user's
+        # role: never disclose a foreign-school session with a 403 response.
         session = get_object_or_404(
             SectionAssignWizardSession.objects.select_for_update(),
             id=session_id,
             school_id=school_id,
         )
+        if not user_has_permission(request.user, "academics.view", school=school):
+            raise PermissionDenied("You do not have permission to perform this action.")
+
+        # A whole-section count cannot prove that this session's selected
+        # additions and removals actually persisted.
         if session.status not in (
             SectionAssignWizardSession.STATUS_COMMITTED,
             SectionAssignWizardSession.STATUS_VERIFIED,
