@@ -57,7 +57,7 @@ def test_seed_has_real_verified_identity_and_school_year_enrollment(settings):
     assert link.verification_status == StudentIdentityLink.STATUS_VERIFIED
     assert link.source == StudentIdentityLink.SOURCE_ADMISSIONS
     assert link.evidence_reference == f"application:{canonical.id}:applicant:{applicant.id}"
-    assert link.core_student_id == seeded["admissions_conversion_student_id"]
+    assert str(link.core_student_id) == seeded["admissions_conversion_student_id"]
     assert HouseholdFamilyLink.objects.filter(
         school_id=SCHOOL_ID, household_id=canonical.household_id,
         family_id=link.core_student.family_id,
@@ -165,7 +165,7 @@ def test_marked_reset_refuses_conversion_history_and_keeps_audit(settings):
 def test_marked_reset_refuses_unexpected_workflow_events(settings):
     seeded = _seed(settings)
     ApplicationEvent.objects.create(
-        school_id=SCHOOL_ID,
+        school_id=Application.objects.get(pk=seeded["admissions_conversion_canonical_application_id"]).school_id,
         application_id=seeded["admissions_conversion_canonical_application_id"],
         event_type="enrollment_confirmed",
         payload={"source": "fictional_history_regression"},
@@ -184,7 +184,7 @@ def test_reset_refuses_duplicate_event_of_allowed_type(settings):
         application_id=app_id, event_type="decision_made",
     )
     added = ApplicationEvent.objects.create(
-        school_id=SCHOOL_ID,
+        school_id=Application.objects.get(pk=app_id).school_id,
         application_id=app_id,
         event_type="decision_made",
         payload={"decision": "accepted", "updated_by": "real_workflow"},
