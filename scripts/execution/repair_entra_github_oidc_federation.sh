@@ -12,6 +12,9 @@ set -euo pipefail
 # Audit mode is the default. --apply creates the required immutable federated
 # credentials, verifies them, then removes only exact legacy Crown-CSMS
 # name-only subjects that are superseded by the immutable subjects.
+# Cross-repository predecessor credentials are NEVER automatically pruned;
+# their presence blocks both audit success and --apply until separately retired
+# under a verified owner-approved operational change.
 
 MODE="audit"
 if [[ "${1:-}" == "--apply" ]]; then
@@ -47,6 +50,15 @@ LEGACY_SUBJECTS=(
   "${LEGACY_PREFIX}:ref:refs/heads/main"
   "${LEGACY_PREFIX}:environment:production"
   "${LEGACY_PREFIX}:environment:dev"
+)
+
+# Actual November 2026 Entra evidence showed two historical credentials whose
+# subjects belong to a DIFFERENT repository. The LEGACY_PREFIX above cannot
+# match them. Do not auto-delete these: historic workflow ownership/dependencies
+# are unverified and targeted retirement requires separate authorization.
+HISTORICAL_REPO_SUBJECTS=(
+  "repo:tcmegahan/Crown2026:ref:refs/heads/main"
+  "repo:tcmegahan/Crown2026:environment:prod"
 )
 
 command -v az >/dev/null 2>&1 || {
@@ -90,6 +102,27 @@ has_exact_subject() {
     "$current" >/dev/null
 }
 
+assert_no_historical_repository_trust() {
+  local matches
+  # Check exact issuer and either observed historical subject, regardless of
+  # credential display name. Refuse unknown renames instead of trusting labels.
+  matches="$(jq -r \
+    --arg issuer "$ISSUER" \
+    --arg previous_main "${HISTORICAL_REPO_SUBJECTS[0]}" \
+    --arg previous_prod "${HISTORICAL_REPO_SUBJECTS[1]}" \
+    '.[] | select(.issuer == $issuer and (.subject == $previous_main or .subject == $previous_prod)) | "\(.name // "unnamed") :: \(.subject)"' \
+    "$current")" || {
+    echo "ERROR: federated credential inventory could not be validated" >&2
+    return 1
+  }
+  if [[ -n "$matches" ]]; then
+    echo "BLOCK: historical cross-repository OIDC trusts remain on the application:" >&2
+    printf '%s\n' "$matches" >&2
+    echo "Separate owner-approved targeted retirement is required. No --apply changes made." >&2
+    return 1
+  fi
+}
+
 create_subject() {
   local name="$1"
   local subject="$2"
@@ -110,6 +143,7 @@ create_subject() {
 }
 
 refresh
+assert_no_historical_repository_trust
 
 echo "CROWN Entra OIDC federation audit"
 echo "  repository: ${OWNER_NAME}/${REPO_NAME} (${REPO_ID})"
@@ -150,6 +184,7 @@ fi
 
 # Refresh after creation and fail closed before deleting anything legacy.
 refresh
+assert_no_historical_repository_trust
 for subject in "${DESIRED_SUBJECTS[@]}"; do
   has_exact_subject "$subject" || {
     echo "ERROR: immutable federation verification failed for: $subject" >&2
@@ -181,6 +216,7 @@ for legacy_subject in "${LEGACY_SUBJECTS[@]}"; do
 done
 
 refresh
+assert_no_historical_repository_trust
 
 # Final proof: all desired subjects exist; no exact legacy Crown-CSMS subjects remain.
 for subject in "${DESIRED_SUBJECTS[@]}"; do
