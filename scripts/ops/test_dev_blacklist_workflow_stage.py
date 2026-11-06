@@ -93,6 +93,10 @@ class DevBlacklistWorkflowStageTests(unittest.TestCase):
                        if step.get("name") == "Inspect all pending DEV migrations without applying")
         self.assertIn("--inspect-all-migrations", command)
         self.assertNotIn("--apply-", command)
+        migration_tool = (ROOT / "scripts/ops/run_dev_inquiry_migration.py").read_text(encoding="utf-8")
+        self.assertIn('options["options"] = "-c default_transaction_read_only=on"', migration_tool)
+        self.assertIn('if cursor.fetchone() != ("on",):', migration_tool)
+        self.assertIn("inventory_database_not_read_only", migration_tool)
 
     def test_only_explicit_single_mode_authorized(self):
         valid = [
