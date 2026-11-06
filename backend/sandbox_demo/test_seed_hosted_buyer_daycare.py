@@ -10,6 +10,8 @@ from django.core.management.base import CommandError
 from django.utils import timezone
 
 from aftercare.daycare_checkin import checkin_child
+from aftercare.daycare_release_models import DaycareRelease
+from audit.models import AuditLog
 from aftercare.daycare_release import release_child
 from aftercare.daycare_checkin_models import DaycareAttendance, DaycareRoomStaffCoverage
 from aftercare.daycare_models import (
@@ -17,10 +19,14 @@ from aftercare.daycare_models import (
     DaycareProgram, DaycareRoom, DaycareSite,
 )
 from core.models import School, UserAccount, UserRole
+from households.models import Guardian, Household
+from rest_framework.exceptions import PermissionDenied
 from sandbox_demo.buyer_workspace import buyer_username
 from sandbox_demo.management.commands.provision_hosted_buyer_workspace import _SCHOOL_NAME
+from sandbox_demo.management.commands.seed_hosted_buyer_daycare import _HOUSEHOLD
 from sandbox_demo.models import SandboxBuyerWorkspace, SandboxInvite, SandboxEvent
-from subscriptions.models import SchoolModule
+from subscriptions.models import Feature, Plan, PlanEntitlement, SchoolModule, TenantSubscription
+from tenants.models import TenantProfile
 
 SHA = "e" * 40
 SEED = "seed_hosted_buyer_daycare"
@@ -124,10 +130,27 @@ def test_authenticated_care_service_can_checkin_and_release_only_synthetic_child
     assert not DaycareAttendance.objects.filter(
         pk=checked_in.pk, custody_release__isnull=True,
     ).exists()
+    persisted = DaycareRelease.objects.get(pk=released.pk)
+    assert persisted.school_id == school.pk
+    assert persisted.attendance_id == checked_in.pk
+    assert persisted.guardian_authority_id == guardian.pk
+    assert persisted.actor_id == staff.pk
+    assert persisted.identity_verified is True
+    assert DaycareAttendance.objects.get(pk=checked_in.pk).custody_release_id == released.pk
+    assert AuditLog.objects.filter(
+        user_id=staff.pk, action="diadem.daycare.checkin", object_id=str(checked_in.pk),
+    ).count() == 1
+    assert AuditLog.objects.filter(
+        user_id=staff.pk, action="diadem.daycare.release", object_id=str(released.pk),
+    ).count() == 1
 
 
 @pytest.mark.django_db
-@pytest.mark.parametrize("mutation", ("revoked", "expired", "source", "role", "entitlement"))
+@pytest.mark.parametrize("mutation", (
+    "revoked", "expired", "source", "role", "director_role",
+    "entitlement", "module_expired", "missing_director_invite",
+    "staff_disabled", "tenant_suspended",
+))
 def test_revoked_or_unscoped_workspace_never_seeds_custody(buyer, mutation):
     school, invite, workspace, principals = buyer
     run(invite, ENTITLE, apply=True)
@@ -142,10 +165,23 @@ def test_revoked_or_unscoped_workspace_never_seeds_custody(buyer, mutation):
         workspace.save(update_fields=["source_sha"])
     elif mutation == "role":
         UserRole.objects.filter(user=principals["daycare_staff"]).delete()
+    elif mutation == "director_role":
+        UserRole.objects.filter(user=principals["daycare_director"]).delete()
     elif mutation == "entitlement":
         module = SchoolModule.objects.get(school=school, module_key="little_lambs")
         module.status = "inactive"
         module.save(update_fields=["status"])
+    elif mutation == "module_expired":
+        SchoolModule.objects.filter(school=school, module_key="little_lambs").update(
+            expiry_date=timezone.now() - timedelta(seconds=1),
+        )
+    elif mutation == "missing_director_invite":
+        invite.allowed_roles = ["daycare_staff"]
+        invite.save(update_fields=["allowed_roles"])
+    elif mutation == "staff_disabled":
+        UserAccount.objects.filter(pk=principals["daycare_staff"].pk).update(is_active=False)
+    elif mutation == "tenant_suspended":
+        TenantProfile.objects.filter(school=school).update(status="suspended")
     with pytest.raises(Exception):
         run(invite, apply=True)
     assert not DaycareSite.objects.filter(school=school).exists()
@@ -164,6 +200,61 @@ def test_injected_failure_rolls_back_entire_synthetic_custody_fixture(buyer):
     for model in (DaycareSite, DaycareRoom, DaycareChild, DaycareEnrollment,
                   DaycareProgram, DaycareGuardianAuthority, DaycareRoomStaffCoverage):
         assert not model.objects.filter(school=school).exists()
+    assert not Household.objects.filter(school_id=school.pk, name=_HOUSEHOLD).exists()
+    assert not Guardian.objects.filter(school_id=school.pk).exists()
     assert not SandboxEvent.objects.filter(
         invite=invite, event="fictional_daycare_custody_seeded",
     ).exists()
+
+
+@pytest.mark.django_db
+def test_customer_plan_substitution_never_bypasses_buyer_module_expiry(buyer):
+    school, invite, _, _ = buyer
+    run(invite, ENTITLE, apply=True)
+    ordinary = Plan.objects.create(
+        code="fictional-bypass-probe", name="Test ordinary Daycare plan", is_active=True,
+    )
+    PlanEntitlement.objects.create(
+        plan=ordinary, feature=Feature.objects.get(key="diadem.daycare"), enabled=True,
+    )
+    TenantSubscription.objects.filter(school_id=school.pk, ended_at__isnull=True).update(
+        plan=ordinary,
+    )
+    SchoolModule.objects.filter(school=school, module_key="little_lambs").update(
+        expiry_date=timezone.now() - timedelta(seconds=1),
+    )
+    with pytest.raises(CommandError, match="buyer-care subscription"):
+        run(invite, apply=True)
+    assert not DaycareSite.objects.filter(school=school).exists()
+    assert not Household.objects.filter(school_id=school.pk, name=_HOUSEHOLD).exists()
+
+
+@pytest.mark.django_db
+def test_invalid_school_timezone_fails_read_only_preflight(buyer):
+    school, invite, _, _ = buyer
+    run(invite, ENTITLE, apply=True)
+    school.timezone = "Invalid/Unrecognized_Timezone"
+    school.save(update_fields=["timezone"])
+    with pytest.raises(CommandError, match="timezone"):
+        run(invite)
+    assert not DaycareSite.objects.filter(school=school).exists()
+
+
+@pytest.mark.django_db
+def test_expired_buyer_module_blocks_admission_after_fixture_staging(buyer):
+    school, invite, _, principals = buyer
+    run(invite, ENTITLE, apply=True)
+    run(invite, apply=True)
+    SchoolModule.objects.filter(school=school, module_key="little_lambs").update(
+        expiry_date=timezone.now() - timedelta(seconds=1),
+    )
+    site = DaycareSite.objects.get(school=school)
+    room = DaycareRoom.objects.get(school=school)
+    child = DaycareChild.objects.get(school=school)
+    with pytest.raises(PermissionDenied):
+        checkin_child(
+            school_id=school.pk, actor_id=principals["daycare_staff"].pk,
+            site_id=site.pk, room_id=room.pk, child_id=child.pk,
+            program_code="DAYCARE", request_key=uuid4(),
+        )
+    assert not DaycareAttendance.objects.filter(school=school).exists()

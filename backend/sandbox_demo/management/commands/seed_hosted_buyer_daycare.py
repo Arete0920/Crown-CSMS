@@ -21,7 +21,7 @@ from aftercare.daycare_models import (
     DaycareChild, DaycareEnrollment, DaycareGuardianAuthority,
     DaycareProgram, DaycareRoom, DaycareSite,
 )
-from core.models import School, UserAccount
+from core.models import School, UserAccount, UserRole
 from households.models import Guardian, Household
 from sandbox_demo.buyer_workspace import buyer_username
 from sandbox_demo.management.commands.provision_hosted_buyer_care_entitlements import (
@@ -31,6 +31,7 @@ from sandbox_demo.management.commands.provision_hosted_buyer_workspace import (
     _INVITE, _require_existing_dev_runtime,
 )
 from sandbox_demo.models import SandboxEvent
+from subscriptions.models import SchoolModule, TenantSubscription
 
 _HOUSEHOLD = "FICTIONAL DEMO ONLY - Daycare Household"
 _SOURCE = "FICTIONAL TEST POLICY - NOT A REGULATORY OR LICENSING APPROVAL"
@@ -55,6 +56,14 @@ def _principals(school, invite):
             raise CommandError("The exact-school fictional care principal is missing.") from exc
     if accounts["daycare_director"].pk == accounts["daycare_staff"].pk:
         raise CommandError("Independent fictional care principals required.")
+    # Lock each exact assignment through commit, not just the user account.
+    # Otherwise a role revocation could race the earlier workspace validation.
+    for key, account in accounts.items():
+        role = "DAYCARE_DIRECTOR" if key == "daycare_director" else "DAYCARE_STAFF"
+        if not UserRole.objects.select_for_update().filter(
+            school=school, user=account, role_code=role,
+        ).exists():
+            raise CommandError("The invited fictional care role was revoked.")
     return accounts
 
 
@@ -95,7 +104,30 @@ class Command(BaseCommand):
             # The real Daycare service checks the tenant, plan feature and
             # independently expiring buyer-school module; never bypass it.
             require_entitlement(school.pk)
+            # A buyer workspace must never fall back to ordinary customer
+            # entitlement semantics if its demo subscription was replaced.
+            active = list(
+                TenantSubscription.objects.select_related("plan").select_for_update()
+                .filter(school_id=school.pk, ended_at__isnull=True)[:2]
+            )
+            if len(active) != 1 or active[0].plan.code != f"buyer-care-{school.pk.hex}":
+                raise CommandError("An exact buyer-care subscription is required.")
+            care_module = SchoolModule.objects.select_for_update().filter(
+                school=school, module_key="little_lambs",
+            ).first()
+            if (
+                care_module is None
+                or care_module.status != "active"
+                or care_module.expiry_date is None
+                or care_module.expiry_date <= timezone.now()
+            ):
+                raise CommandError("A current time-boxed fictional Daycare module is required.")
             _empty_synthetic_care(school)
+            now = timezone.now()
+            try:
+                care_day = timezone.localtime(now, ZoneInfo(school.timezone)).date()
+            except (TypeError, ValueError, ZoneInfoNotFoundError) as exc:
+                raise CommandError("A valid fictional school timezone is required.") from exc
 
             if not options["apply"]:
                 self.stdout.write(
@@ -104,11 +136,6 @@ class Command(BaseCommand):
                 )
                 return
 
-            now = timezone.now()
-            try:
-                care_day = timezone.localtime(now, ZoneInfo(school.timezone)).date()
-            except (TypeError, ValueError, ZoneInfoNotFoundError) as exc:
-                raise CommandError("A valid fictional school timezone is required.") from exc
             director = director_and_staff["daycare_director"]
             staff = director_and_staff["daycare_staff"]
             site = DaycareSite.objects.create(
