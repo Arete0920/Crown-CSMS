@@ -69,6 +69,24 @@ def test_seed_has_real_verified_identity_and_school_year_enrollment(settings):
     ).exists()
 
 
+def test_seed_uses_exact_canonical_provenance_contract(settings):
+    """Single enrollment must never adopt a descriptive or ambiguous marker."""
+    seeded = _seed(settings)
+    legacy = AdmissionsApplication.objects.get(
+        pk=seeded["admissions_conversion_legacy_application_id"]
+    )
+    canonical = seeded["admissions_conversion_canonical_application_id"]
+    expected_reference = f"canonical_application_id={canonical}"
+    assert legacy.notes_internal == expected_reference
+    # Mirrors the historical-provenance guard in the single-enroll API.
+    recorded = [
+        line.strip()
+        for line in legacy.notes_internal.splitlines()
+        if "canonical_application_id=" in line
+    ]
+    assert recorded == [expected_reference]
+
+
 def test_marked_reset_preserves_unrelated_same_name_application(settings):
     seeded = _seed(settings)
     other_household = Household.objects.create(

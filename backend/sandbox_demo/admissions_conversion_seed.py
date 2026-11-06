@@ -296,10 +296,9 @@ def seed_heritage_admissions_conversion_scenario() -> dict[str, str]:
         status=AdmissionsApplication.STATUS_ACCEPTED,
         gpa="3.80", test_score=91, essay_received=True,
         recommendations_received=2, transcript_received=True,
-        notes_internal=(
-            f"Protected sandbox enrollment-ready applicant. "
-            f"canonical_application_id={canonical.id}"
-        ),
+        # Preserve the strict, unique canonical provenance token as a
+        # standalone line, matching the guarded single-enroll upsert contract.
+        notes_internal=f"canonical_application_id={canonical.id}",
     )
     legacy.submitted_at = legacy.created_at
     legacy.save(update_fields=["submitted_at", "updated_at"])
