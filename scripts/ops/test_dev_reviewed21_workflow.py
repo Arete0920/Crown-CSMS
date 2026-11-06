@@ -59,7 +59,7 @@ class Reviewed21WorkflowContracts(unittest.TestCase):
         self.assertEqual(self.wf["permissions"]["id-token"], "write")
         self.assertEqual(self.wf["permissions"]["actions"], "read")
         self.assertNotIn("pull_request:", self.source)
-        self.assertNotIn("push:", self.source)
+        self.assertNotIn("push", self.events)
 
     def test_new_stage_is_optional_default_off_and_source_is_exact_main(self):
         inputs = self.events["workflow_dispatch"]["inputs"]
