@@ -64,7 +64,9 @@ def key():
 
 
 @pytest.fixture
-def scenario():
+def scenario(settings):
+    # Full-suite tests/conftest disables this globally; confidential APIs must opt in.
+    settings.TENANT_HEADER_REQUIRED = True
     school = School.objects.create(name="Teacher Evaluation Fictional One", timezone="UTC")
     other = School.objects.create(name="Teacher Evaluation Fictional Two", timezone="UTC")
     today = timezone.now().date()
@@ -268,6 +270,7 @@ def test_observation_and_response_idempotency_stale_versions_and_mutation_guards
     assert first_response.status_code == 201
     assert replay_response.status_code == 200
     assert replay_response.data == first_response.data
+    assert "I disagree with the observation." not in str(TeacherEvaluationEvent.objects.get(action="teacher_response").after)
     assert respond(s, oid, choice="acknowledged_receipt").status_code == 409
     row = TeacherObservation.objects.get(pk=oid)
     row.narrative = "Rewritten"
