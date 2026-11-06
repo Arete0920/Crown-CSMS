@@ -30,7 +30,8 @@ beforeEach(() => {
   delete window.location;
   window.location = {
     href: "",
-    origin: "http://localhost",
+    origin: "http://127.0.0.1:4173",
+    hostname: "127.0.0.1",
     search: "",
     assign(url) {
       this.href = url;
@@ -58,7 +59,33 @@ describe("Sandbox persona launch", () => {
     });
 
     expect(sessionStorage.getItem("crown.school.id")).toBe("19801b59-8c05-4c84-9312-5d792e4e839d");
-    expect(window.location.href).toBe("/school-admin-dashboard");
+    expect(window.location.href).toContain("/sandbox/command-center?");
+    expect(window.location.href).toContain("role=school_admin");
+    expect(window.location.href).toContain("guidance=guided");
+  });
+
+  it("preserves the server-issued dashboard route for self-guided demo", async () => {
+    const { default: SandboxLandingPage } = await import("../pages/SandboxLandingPage.jsx");
+    render(<SandboxLandingPage />);
+    fireEvent.click(screen.getByText("Self-guided exploration"));
+    fireEvent.click(screen.getAllByText("Start self-guided")[0]);
+    await waitFor(() => expect(window.location.href).toBe("/school-admin-dashboard"));
+  });
+
+  it("preserves the server-issued route even for a hosted invite opened on loopback", async () => {
+    window.location.search = "?invite=sbx_inv_test";
+    vi.stubGlobal("fetch", vi.fn((url) => Promise.resolve(new Response(JSON.stringify(
+      String(url).includes("/api/v1/sandbox/invites/")
+        ? { organization_label: "Fictional hosted evaluator", track: "school", usable: true, allowed_roles: ["school_admin"] }
+        : String(url).includes("/api/v1/sandbox/session/")
+          ? { access: "access", refresh: "refresh", school_id: "19801b59-8c05-4c84-9312-5d792e4e839d", role: "school_admin", route: "/school-admin-dashboard" }
+          : { ok: true },
+    ), { status: 200, headers: { "Content-Type": "application/json" } }))));
+    const { default: SandboxLandingPage } = await import("../pages/SandboxLandingPage.jsx");
+    render(<SandboxLandingPage />);
+    await screen.findByText(/Invite loaded for Fictional hosted evaluator/);
+    fireEvent.click(screen.getByRole("button", { name: "Start guided" }));
+    await waitFor(() => expect(window.location.href).toBe("/school-admin-dashboard"));
   });
 
   it("shows no persona launch buttons for an unusable hosted invitation", async () => {

@@ -6,6 +6,7 @@ import {
   getSandboxSchool,
   getTrackPersonas,
   getTrackSchools,
+  getSandboxLoginHref,
 } from "../sandbox/sandboxExperience";
 import {
   createSandboxSession,
@@ -89,7 +90,15 @@ export default function SandboxLandingPage() {
         route: session.route,
       });
 
-      const targetRoute = session.route || persona.route || "/school-admin-dashboard";
+      // Keep hosted invitations and self-guided sessions on their server-issued
+      // route. Only the owner's loopback-guided presentation starts at the
+      // existing transactional command center after authentication succeeds.
+      const loopbackPresenter = !inviteId
+        && selectedMode === "guided"
+        && ["127.0.0.1", "localhost"].includes(globalThis.location?.hostname);
+      const targetRoute = loopbackPresenter
+        ? getSandboxLoginHref(persona.value, selectedTrack.key, selectedMode)
+        : (session.route || persona.route || "/school-admin-dashboard");
       if (typeof globalThis.location?.assign === "function") {
         globalThis.location.assign(targetRoute);
       }
@@ -131,7 +140,7 @@ export default function SandboxLandingPage() {
           <aside className="sandbox-experience-steps" aria-label="Demonstration steps">
             <div className="sandbox-step is-active"><span>1</span><div><strong>Choose the track</strong><small style={ACCESSIBLE_SUPPORT_STYLE}>Select the client scenario.</small></div></div>
             <div className="sandbox-step"><span>2</span><div><strong>Choose guidance</strong><small style={ACCESSIBLE_SUPPORT_STYLE}>Use a guided or independent path.</small></div></div>
-            <div className="sandbox-step"><span>3</span><div><strong>Launch a role</strong><small style={ACCESSIBLE_SUPPORT_STYLE}>Enter the actual CROWN workspace.</small></div></div>
+            <div className="sandbox-step"><span>3</span><div><strong>Launch a role</strong><small style={ACCESSIBLE_SUPPORT_STYLE}>On the local guided demo, open the authenticated transaction proof path.</small></div></div>
             <div className="sandbox-workspace-preview">
               <CrownIcon name="dashboard" size={24} />
               <div>
@@ -182,7 +191,7 @@ export default function SandboxLandingPage() {
             </section>
 
             <section className="sandbox-section">
-              <div className="sandbox-section-heading"><span>3</span><div><h2>Start as a role</h2><p>The role launch creates a protected demo session before opening the dashboard.</p></div></div>
+              <div className="sandbox-section-heading"><span>3</span><div><h2>Start as a role</h2><p>The role launch creates a protected demo session first. Local guided mode opens the transactional proof path; self-guided mode opens the role dashboard.</p></div></div>
               <div className="sandbox-persona-grid">
                 {visiblePersonas.map((persona) => (
                   <article className="sandbox-persona-card persona-card" key={persona.value}>
