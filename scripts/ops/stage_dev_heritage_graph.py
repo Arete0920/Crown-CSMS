@@ -125,7 +125,10 @@ def _github_api_json(path, token):
                  'User-Agent': 'CROWN-DEV-427-review'},
     )
     try:
-        with urlopen(request, timeout=20) as response:
+        # Fail closed on every API redirect. urllib's default redirect handler
+        # can copy Authorization to a different host; an Actions token must
+        # remain on api.github.com, including when an upstream responds 302.
+        with build_opener(_NoRedirect()).open(request, timeout=20) as response:
             body = response.read(256 * 1024 + 1)
         if len(body) > 256 * 1024:
             raise StageBlocked('rehearsal_github_metadata_too_large')
