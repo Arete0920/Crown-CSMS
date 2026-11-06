@@ -116,9 +116,15 @@ def _verified_admissions_context(
                 code="student_identity_link_required",
                 applicant_id=applicant.id,
             )
-        if not str(link.evidence_reference or "").strip():
+        # A verified crosswalk for a different student intake, or a manual
+        # source, cannot establish this application's applicant identity.
+        if (
+            link.source != StudentIdentityLink.SOURCE_ADMISSIONS
+            or link.evidence_reference
+            != f"application:{app.id}:applicant:{applicant.id}"
+        ):
             return None, _identity_conflict(
-                "Verified student identity mapping is missing evidence provenance.",
+                "Verified identity evidence must reference this exact admissions applicant.",
                 code="student_identity_evidence_required",
                 applicant_id=applicant.id,
             )
