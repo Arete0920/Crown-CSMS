@@ -87,7 +87,7 @@ export const SANDBOX_PERSONAS = [
     steps: [
       { label: "Review the live finance operating picture.", route: "/finance" },
       { label: "Open family invoices and authoritative balances.", route: "/finance/invoices" },
-      { label: "Inspect a family account and payment/allocation history.", route: "/finance/family-account" },
+      { label: "Inspect the fictional Reed family balance, payment and allocation history in the live finance transaction panel.", route: "/finance" },
       { label: "Work an exception or payment-risk item.", route: "/finance/exceptions" },
       { label: "Review bank or payout reconciliation context.", route: "/finance/bank-reconciliation" },
     ],
