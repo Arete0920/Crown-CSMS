@@ -30,6 +30,42 @@ class SystemSchemaOpsSecurityTests(SimpleTestCase):
         self.assertEqual(response.status_code, 403)
         connection_mock.cursor.assert_not_called()
 
+    @override_settings(CROWN_OPS_SECRET="", OPS_SECRET="retired-credential")
+    @patch("crown_api.system_views.connection")
+    def test_diagnose_rejects_legacy_fallback_credential(self, connection_mock):
+        request = self.factory.get(
+            "/api/v1/system/diagnose-db-tables/",
+            HTTP_X_OPS_SECRET="retired-credential",
+        )
+        response = diagnose_db_tables_view(request)
+        self.assertEqual(response.status_code, 403)
+        connection_mock.cursor.assert_not_called()
+
+    @override_settings(CROWN_OPS_SECRET="replacement-credential", OPS_SECRET="retired-credential")
+    @patch("crown_api.system_views.connection")
+    def test_diagnose_never_accepts_legacy_when_replacement_present(self, connection_mock):
+        request = self.factory.get(
+            "/api/v1/system/diagnose-db-tables/",
+            HTTP_X_OPS_SECRET="retired-credential",
+        )
+        response = diagnose_db_tables_view(request)
+        self.assertEqual(response.status_code, 403)
+        connection_mock.cursor.assert_not_called()
+
+    @override_settings(CROWN_OPS_SECRET="", OPS_SECRET="retired-credential")
+    @patch("crown_api.system_views.call_command")
+    @patch("crown_api.system_views._is_dev_env", return_value=True)
+    def test_demo_reset_rejects_legacy_fallback_without_writes(self, _dev, commands):
+        from crown_api.system_views import demo_reset_view
+
+        request = self.factory.post(
+            "/api/v1/system/demo-reset/",
+            HTTP_X_ADMIN_OPS_SECRET="retired-credential",
+        )
+        response = demo_reset_view(request)
+        self.assertEqual(response.status_code, 403)
+        commands.assert_not_called()
+
     @override_settings(CROWN_OPS_SECRET="expected-secret", OPS_SECRET="")
     @patch("crown_api.system_views.connection")
     def test_diagnose_rejects_wrong_secret(self, connection_mock):

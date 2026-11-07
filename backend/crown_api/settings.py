@@ -181,7 +181,9 @@ _assert_not_prod_true("CROWN_SGO_FICTIONAL_INTAKE_ENABLED", CROWN_SGO_FICTIONAL_
 TENANT_HEADER_REQUIRED = _env_bool("TENANT_HEADER_REQUIRED", default=True)
 CROWN_DEMO_SCHOOL_ID = os.getenv("CROWN_DEMO_SCHOOL_ID", "19801b59-8c05-4c84-9312-5d792e4e839d")
 DJANGO_ENV = os.getenv("DJANGO_ENV", "")
-CROWN_OPS_SECRET = os.getenv("CROWN_OPS_SECRET", "") or os.getenv("OPS_SECRET", "")
+# Never re-enable an older OPS_SECRET if CROWN_OPS_SECRET is absent.
+# DEV ops credentials are explicitly rotated and scoped; fail closed instead.
+CROWN_OPS_SECRET = os.getenv("CROWN_OPS_SECRET", "")
 ENVIRONMENT = os.getenv("ENVIRONMENT", "")
 DEV_OPS_SECRET = os.getenv("DEV_OPS_SECRET", "")
 
