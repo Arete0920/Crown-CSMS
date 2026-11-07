@@ -128,6 +128,40 @@ def reset_heritage_admissions_conversion_scenario() -> None:
             "relationships; preserve records."
         )
 
+    # A seeded enrollment contract cascades with the canonical application.
+    # Refuse extra versions, amendments or changes to the fictional contract
+    # before deletion: contract history must never be inferred from the event.
+    contracts = list(application.enrollment_contracts.select_for_update().order_by("version")[:2])
+    contract_guard_verified = (
+        len(contracts) == 1
+        and contracts[0].school_id == school.pk
+        and contracts[0].version == 1
+        and contracts[0].status == EnrollmentContractStatus.COUNTERSIGNED
+        and contracts[0].amended_from_id is None
+        and contracts[0].net_amount_cents == 995000
+        and contracts[0].currency == "USD"
+        and contracts[0].line_items == [{
+            "label": "Grade 8 Published Tuition",
+            "category": "tuition",
+            "amount_cents": 995000,
+        }]
+        and contracts[0].contract_totals == {
+            "gross_tuition_cents": 995000,
+            "net_family_obligation_cents": 995000,
+        }
+        and contracts[0].responsible_payer == "fictional.guardian@heritage.example.org"
+        and contracts[0].note == "Protected fictional sandbox contract; no external payment."
+        and contracts[0].issued_at is not None
+        and contracts[0].signed_at is not None
+        and contracts[0].countersigned_at is not None
+        and contracts[0].created_by == SANDBOX_PERSONAS["admissions_director"].email
+    )
+    if not contract_guard_verified:
+        raise ValueError(
+            "Heritage fixture has altered or additional enrollment contracts; "
+            "preserve contract history."
+        )
+
     # Historical admissions audit events have string entity IDs, not FKs.
     # Deleting a converted legacy row would orphan immutable audit evidence.
     # Never reset an already converted or otherwise updated fixture.

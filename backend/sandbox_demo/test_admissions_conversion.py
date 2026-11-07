@@ -2,7 +2,7 @@ import pytest
 from rest_framework.test import APIClient
 
 from admissions.models import AdmissionsApplication
-from applications.models import Application, Applicant, ApplicationEvent
+from applications.models import Application, Applicant, ApplicationEvent, EnrollmentContract, EnrollmentContractStatus
 from core.models import Enrollment, Family, Guardian, HouseholdFamilyLink, Student, StudentIdentityLink, UserAccount
 from households.models import Household
 from sandbox_demo.admissions_conversion_seed import (
@@ -165,6 +165,43 @@ def test_reset_refuses_ambiguous_historical_provenance(settings):
     assert "not-this-fixture" in legacy.notes_internal
     assert Application.objects.filter(
         pk=seeded["admissions_conversion_canonical_application_id"]
+    ).exists()
+
+
+def test_reset_refuses_added_contract_version(settings):
+    seeded = _seed(settings)
+    application = Application.objects.get(
+        pk=seeded["admissions_conversion_canonical_application_id"]
+    )
+    original = application.enrollment_contracts.get(version=1)
+    added = EnrollmentContract.objects.create(
+        school_id=SCHOOL_ID, application=application,
+        version=2, amended_from=original,
+        status=EnrollmentContractStatus.DRAFT,
+        note="Independent pending amendment",
+    )
+    with pytest.raises(ValueError, match="enrollment contracts"):
+        reset_heritage_admissions_conversion_scenario()
+    assert EnrollmentContract.objects.filter(pk=added.pk).exists()
+    assert EnrollmentContract.objects.filter(pk=original.pk).exists()
+    assert Application.objects.filter(pk=application.pk).exists()
+
+
+def test_reset_refuses_modified_contract_evidence(settings):
+    seeded = _seed(settings)
+    application = Application.objects.get(
+        pk=seeded["admissions_conversion_canonical_application_id"]
+    )
+    contract = application.enrollment_contracts.get(version=1)
+    contract.net_amount_cents += 100
+    contract.save(update_fields=["net_amount_cents", "updated_at"])
+    with pytest.raises(ValueError, match="enrollment contracts"):
+        reset_heritage_admissions_conversion_scenario()
+    contract.refresh_from_db()
+    assert contract.net_amount_cents == 995100
+    assert Application.objects.filter(pk=application.pk).exists()
+    assert Enrollment.objects.filter(
+        pk=seeded["admissions_conversion_enrollment_id"]
     ).exists()
 
 
