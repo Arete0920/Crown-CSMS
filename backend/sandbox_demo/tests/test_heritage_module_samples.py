@@ -96,7 +96,7 @@ def test_local_module_samples_are_idempotent_and_do_not_authorize_custody(
         student_fk_id=fixed_id("extended-care-student")
     ))
     assert len(care_samples) == 2
-    assert all(row.days_of_week == ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"] for row in care_samples
+    assert all(row.days_of_week == ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"] for row in care_samples)
     assert DaycareSite.objects.get(pk=fixed_id("daycare-site")).school_id == HERITAGE_ID
     room = DaycareRoom.objects.get(pk=fixed_id("daycare-room-unapproved"))
     assert not room.is_active
