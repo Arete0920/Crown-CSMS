@@ -64,9 +64,18 @@ def reset_heritage_admissions_conversion_scenario() -> None:
              flags__heritage_conversion_fixture=FIXTURE_MARKER)
     )
     household = application.household
-    compatibility = applicant.student
-    family = Family.objects.filter(school=school, family_name=FAMILY_NAME).first()
-    core = Student.objects.filter(school=school, student_number=STUDENT_NUMBER).first()
+    compatibility = (
+        CompatibilityStudent.objects.select_for_update()
+        .filter(pk=applicant.student_id, school_id=school.pk).first()
+    )
+    # Lock both deletion principals before inspecting dependent records.
+    # New FK-backed guardian, roster, or SIS writes cannot race the proof.
+    family = Family.objects.select_for_update().filter(
+        school=school, family_name=FAMILY_NAME,
+    ).first()
+    core = Student.objects.select_for_update().filter(
+        school=school, student_number=STUDENT_NUMBER,
+    ).first()
     if (
         family is None or core is None or compatibility is None
         or application.school_id != school.pk
@@ -91,12 +100,12 @@ def reset_heritage_admissions_conversion_scenario() -> None:
         raise ValueError("Heritage fixture has unexpected identity relationships; manual review required.")
 
     associations = list(
-        HouseholdFamilyLink.objects.filter(
+        HouseholdFamilyLink.objects.select_for_update().filter(
             school=school, household_id=household.pk, family=family
         )[:2]
     )
     links = list(
-        StudentIdentityLink.objects.filter(
+        StudentIdentityLink.objects.select_for_update().filter(
             school=school, core_student=core,
             compatibility_student=compatibility,
             source=StudentIdentityLink.SOURCE_ADMISSIONS,
@@ -105,12 +114,15 @@ def reset_heritage_admissions_conversion_scenario() -> None:
         )[:2]
     )
     legacy = list(
-        AdmissionsApplication.objects.filter(
+        AdmissionsApplication.objects.select_for_update().filter(
             school=school, family=family, student=core,
             notes_internal__contains=f"canonical_application_id={application.id}",
         )[:2]
     )
-    enrollments = list(CoreEnrollment.objects.filter(school=school, student=core)[:2])
+    enrollments = list(
+        CoreEnrollment.objects.select_for_update()
+        .filter(school=school, student=core)[:2]
+    )
     if (
         len(associations) != 1 or len(links) != 1 or len(legacy) != 1
         or len(enrollments) != 1
@@ -202,7 +214,7 @@ def reset_heritage_admissions_conversion_scenario() -> None:
         },
     }
     recorded_events = list(
-        ApplicationEvent.objects.filter(
+        ApplicationEvent.objects.select_for_update().filter(
             school_id=school.pk, application=application
         ).values_list("event_type", "payload")
     )
@@ -254,16 +266,45 @@ def reset_heritage_admissions_conversion_scenario() -> None:
                     "Heritage application has dependent update evidence; preserve records."
                 )
 
-    # Deletions are only for this exact, explicitly marked fictional fixture.
-    # The surrounding atomic transaction rolls back on any protected relation.
+    def _require_standalone_delete(record, label):
+        # The application preflight above does not cover records reachable from
+        # the separate student/family/household delete operations below.
+        # Check each *after* the expected dependents were explicitly removed.
+        plan = Collector(using=record._state.db)
+        plan.collect([record])
+        planned = {}
+        for model, records in plan.data.items():
+            if records:
+                planned[model] = planned.get(model, 0) + len(records)
+        for queryset in plan.fast_deletes:
+            planned[queryset.model] = (
+                planned.get(queryset.model, 0) + queryset.count()
+            )
+        if planned != {type(record): 1}:
+            raise ValueError(
+                f"Heritage {label} has unrelated dependent records; preserve records."
+            )
+        for groups in plan.field_updates.values():
+            for records in groups:
+                if records.exists() if hasattr(records, "exists") else bool(records):
+                    raise ValueError(
+                        f"Heritage {label} has dependent updates; preserve records."
+                    )
+
+    # All deletes share the same atomic transaction. If any later preflight
+    # refuses, earlier deletes are rolled back, preserving the complete fixture.
     legacy[0].delete()
     enrollments[0].delete()
     links[0].delete()
     application.delete()
+    _require_standalone_delete(compatibility, "compatibility student")
     compatibility.delete()
     associations[0].delete()
+    _require_standalone_delete(household, "household")
     household.delete()
+    _require_standalone_delete(core, "canonical student")
     core.delete()
+    _require_standalone_delete(family, "family")
     family.delete()
 
 

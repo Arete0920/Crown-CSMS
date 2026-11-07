@@ -1,3 +1,5 @@
+import uuid
+
 import pytest
 from rest_framework.test import APIClient
 
@@ -6,6 +8,7 @@ from applications.models import (
     Application, Applicant, ApplicationChecklistItem, ApplicationEvent,
     EnrollmentContract, EnrollmentContractStatus,
 )
+from classroom.models import Classroom, ClassroomEnrollment
 from core.models import Enrollment, Family, Guardian, HouseholdFamilyLink, Student, StudentIdentityLink, UserAccount
 from households.models import Household
 from sandbox_demo.admissions_conversion_seed import (
@@ -231,6 +234,36 @@ def test_reset_refuses_unexpected_application_checklist_cascade(settings):
         pk=seeded["admissions_conversion_enrollment_id"]
     ).exists()
     assert Application.objects.filter(pk=application.pk).exists()
+
+
+
+def test_reset_refuses_cascading_canonical_classroom_membership(settings):
+    seeded = _seed(settings)
+    school = Student.objects.get(
+        pk=seeded["admissions_conversion_student_id"]
+    ).school
+    classroom = Classroom.objects.create(
+        school=school,
+        name=f"Independent classroom {uuid.uuid4().hex[:8]}",
+        grade_level="8",
+    )
+    entry = ClassroomEnrollment.objects.create(
+        classroom=classroom,
+        student_id=seeded["admissions_conversion_student_id"],
+    )
+    with pytest.raises(ValueError, match="canonical student.*unrelated dependent"):
+        reset_heritage_admissions_conversion_scenario()
+    assert ClassroomEnrollment.objects.filter(pk=entry.pk).exists()
+    assert AdmissionsApplication.objects.filter(
+        pk=seeded["admissions_conversion_legacy_application_id"]
+    ).exists()
+    assert Enrollment.objects.filter(
+        pk=seeded["admissions_conversion_enrollment_id"]
+    ).exists()
+    assert StudentIdentityLink.objects.filter(
+        core_student_id=seeded["admissions_conversion_student_id"]
+    ).exists()
+
 
 def test_repeated_seed_replaces_only_explicit_fictional_fixture(settings):
     original = _seed(settings)
