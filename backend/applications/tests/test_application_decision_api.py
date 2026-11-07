@@ -200,7 +200,7 @@ def test_accept_refuses_unlinked_sibling_or_inactive_compatibility_student(inval
     assert CoreStudent.objects.filter(school=school).count() == 0
     assert StudentIdentityLink.objects.filter(school=school).count() == 0
     assert not LedgerAccount.objects.filter(household=household).exists()
-    assert not Charge.objects.filter(school=school).exists()
+    assert not Charge.objects.filter(school_id=school.id).exists()
 
 
 @pytest.mark.parametrize("canonical_status", ["ACTIVE", "APPLICANT"])
