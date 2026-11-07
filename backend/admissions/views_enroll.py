@@ -11,6 +11,7 @@ deposit.
 """
 
 import re
+from uuid import UUID
 
 from django.db import transaction
 from rest_framework import status
@@ -33,7 +34,7 @@ from core.models import Enrollment as CoreEnrollment, School
 from core.permissions import user_has_permission
 from households.scoping import get_request_school_id
 
-_CANONICAL_APPLICATION_RE = re.compile(r"(?:^|\s)canonical_application_id=([0-9a-fA-F-]{36})(?:\s|$)")
+_CANONICAL_APPLICATION_RE = re.compile(r"canonical_application_id=([0-9a-fA-F-]{36})")
 
 
 def _require_enrollment_access(request, school):
@@ -48,10 +49,24 @@ def _require_enrollment_access(request, school):
 
 
 def _canonical_application_for_legacy(app, school_id):
-    match = _CANONICAL_APPLICATION_RE.search(str(getattr(app, "notes_internal", "") or ""))
+    # Historical notes are untrusted: one exact, normalized marker line only.
+    markers = [
+        line.strip()
+        for line in str(getattr(app, "notes_internal", "") or "").splitlines()
+        if "canonical_application_id=" in line
+    ]
+    if len(markers) != 1:
+        return None
+    match = _CANONICAL_APPLICATION_RE.fullmatch(markers[0])
     if match is None:
         return None
-    return Application.objects.filter(id=match.group(1), school_id=school_id).first()
+    try:
+        canonical_id = UUID(match.group(1))
+    except (TypeError, ValueError):
+        return None
+    if markers[0] != f"canonical_application_id={canonical_id}":
+        return None
+    return Application.objects.filter(id=canonical_id, school_id=school_id).first()
 
 
 @api_view(["POST"])
@@ -64,8 +79,20 @@ def enroll_applicant(request):
         return denied
 
     application_id = request.data.get("application_id")
-    if not application_id:
+    if application_id is None or application_id == "":
         return Response({"ok": False, "detail": "application_id is required."}, status=status.HTTP_400_BAD_REQUEST)
+    raw_id = str(application_id)
+    if (
+        isinstance(application_id, bool)
+        or not isinstance(application_id, (str, int))
+        or re.fullmatch(r"[0-9]{1,19}", raw_id) is None
+        or not 1 <= int(raw_id) <= 9223372036854775807
+    ):
+        return Response(
+            {"ok": False, "detail": "application_id must be a positive integer."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    application_id = int(raw_id)
 
     # Resolve the canonical application first. The authoritative conversion
     # path locks canonical identity before legacy rows; preserve that order.

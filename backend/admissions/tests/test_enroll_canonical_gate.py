@@ -63,6 +63,20 @@ def test_enroll_rejects_missing_application_id():
     assert response.status_code == 400; assert response.data["detail"] == "application_id is required."
 
 
+@pytest.mark.parametrize("invalid_id", [
+    "not-an-integer", "1.2", -1, True, [], {},
+    "99999999999999999999", "9223372036854775808",
+])
+def test_enroll_rejects_invalid_id_before_query_or_mutation(invalid_id):
+    school = _school()
+    response = _client(_editor(school), school).post(
+        "/api/admissions/enroll/", {"application_id": invalid_id}, format="json",
+    )
+    assert response.status_code == 400
+    assert response.data["detail"] == "application_id must be a positive integer."
+    assert not AdmissionsApplication.objects.filter(school=school).exists()
+
+
 def test_enroll_rejects_wrong_legacy_stage():
     school = _school(); year = _year(school); legacy = _legacy_application(school, year, status=AdmissionsApplication.STATUS_UNDER_REVIEW)
     response = _client(_editor(school), school).post("/api/admissions/enroll/", {"application_id": legacy.id}, format="json")
@@ -73,6 +87,51 @@ def test_enroll_rejects_unlinked_accepted_legacy_application():
     school = _school(); year = _year(school); legacy = _legacy_application(school, year)
     response = _client(_editor(school), school).post("/api/admissions/enroll/", {"application_id": legacy.id}, format="json")
     assert response.status_code == 409; assert response.data["detail"] == "Enrollment requires a linked canonical admissions application."
+
+
+@pytest.mark.parametrize("notes", [
+    "canonical_application_id={id}\\ncanonical_application_id={id}",
+    "canonical_application_id={id};canonical_application_id=not-a-uuid",
+    "(canonical_application_id={id})",
+    "untrusted text canonical_application_id={id}",
+    "canonical_application_id=not-a-uuid",
+    "canonical_application_id={id}\\ncanonical_application_id=not-a-uuid",
+])
+def test_enroll_rejects_ambiguous_or_embedded_canonical_reference(notes):
+    school = _school()
+    year = _year(school)
+    legacy = _legacy_application(school, year)
+    canonical = _link_canonical(legacy, ready=True)
+    _verified_enrollment(legacy, canonical, year)
+    legacy.notes_internal = notes.format(id=canonical.id).replace("\\n", "\n")
+    legacy.save(update_fields=["notes_internal", "updated_at"])
+
+    response = _client(_editor(school), school).post(
+        "/api/admissions/enroll/", {"application_id": legacy.id}, format="json",
+    )
+    assert response.status_code == 409, response.data
+    assert response.data["detail"] == "Enrollment requires a linked canonical admissions application."
+    legacy.refresh_from_db()
+    assert legacy.status == AdmissionsApplication.STATUS_ACCEPTED
+    assert not ApplicationEvent.objects.filter(
+        application=canonical, event_type=ENROLLMENT_CONFIRMED_EVENT_TYPE,
+    ).exists()
+
+
+def test_enroll_allows_unrelated_notes_with_one_exact_canonical_reference():
+    school = _school()
+    year = _year(school)
+    legacy = _legacy_application(school, year)
+    canonical = _link_canonical(legacy, ready=True)
+    _verified_enrollment(legacy, canonical, year)
+    legacy.notes_internal = f"Unrelated intake note\ncanonical_application_id={canonical.id}"
+    legacy.save(update_fields=["notes_internal", "updated_at"])
+
+    response = _client(_editor(school), school).post(
+        "/api/admissions/enroll/", {"application_id": legacy.id}, format="json",
+    )
+    assert response.status_code == 200, response.data
+    assert response.data["canonical_application_id"] == str(canonical.id)
 
 
 def test_enroll_rejects_canonical_application_without_contract_deposit_readiness():

@@ -91,10 +91,12 @@ def test_local_module_samples_are_idempotent_and_do_not_authorize_custody(
         entity_id=application.pk,
         event_type="APPLICATION_READY_FOR_REVIEW",
     ).count() == 1
-    assert AftercareEnrollment.objects.filter(
+    care_samples = list(AftercareEnrollment.objects.filter(
         school_fk_id=HERITAGE_ID, is_active=True, care_session__in=["AM", "PM"],
         student_fk_id=fixed_id("extended-care-student")
-    ).count() == 2
+    ))
+    assert len(care_samples) == 2
+    assert all(row.days_of_week == ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"] for row in care_samples)
     assert DaycareSite.objects.get(pk=fixed_id("daycare-site")).school_id == HERITAGE_ID
     room = DaycareRoom.objects.get(pk=fixed_id("daycare-room-unapproved"))
     assert not room.is_active
@@ -115,7 +117,7 @@ def test_local_module_samples_are_idempotent_and_do_not_authorize_custody(
 
 @pytest.mark.parametrize("session,tamper", [
     ("AM", "inactive"), ("PM", "start_date"), ("AM", "paid_rate"),
-    ("PM", "end_date"),
+    ("PM", "end_date"), ("AM", "care_days"),
 ])
 def test_extended_care_sample_reseed_rejects_mutated_enrollment(
     monkeypatch, settings, session, tamper,
@@ -128,6 +130,7 @@ def test_extended_care_sample_reseed_rejects_mutated_enrollment(
         "start_date": {"start_date": "2026-08-02"},
         "paid_rate": {"monthly_rate": "10.00"},
         "end_date": {"end_date": "2026-08-15"},
+        "care_days": {"days_of_week": ["MON", "TUE", "WED", "THU", "FRI"]},
     }
     with _setup_local(monkeypatch, settings):
         seed_heritage_module_samples()
@@ -150,6 +153,8 @@ def test_extended_care_sample_reseed_rejects_mutated_enrollment(
         assert str(mutated.start_date) == "2026-08-02"
     elif tamper == "paid_rate":
         assert str(mutated.monthly_rate) == "10.00"
+    elif tamper == "care_days":
+        assert mutated.days_of_week == ["MON", "TUE", "WED", "THU", "FRI"]
     else:
         assert str(mutated.end_date) == "2026-08-15"
 

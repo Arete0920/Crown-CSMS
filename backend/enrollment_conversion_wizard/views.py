@@ -1,4 +1,4 @@
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from django.shortcuts import get_object_or_404
 from rest_framework import status
 from rest_framework.authentication import SessionAuthentication
@@ -9,8 +9,6 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from admissions.models import AdmissionsApplication
 from admissions.services import finalize_enrollment
-from admissions.views_enroll import _canonical_application_for_legacy
-from applications.models import Application
 from applications.views_admissions import (
     _apply_lifecycle_chain_updates,
     _latest_enrollment_state_for_application,
@@ -18,6 +16,7 @@ from applications.views_admissions import (
 )
 from households.scoping import get_request_school_id
 
+from .identity import BulkEnrollmentProofError, verified_cohort
 from .models import EnrollmentConversionWizardSession
 from .permissions import require_enrollment_conversion_access
 from drf_spectacular.utils import extend_schema
@@ -168,28 +167,24 @@ def load_applicants(request, session_id):
 def commit_session(request, session_id):
     school_id = get_request_school_id(request)
     session = _get_session(session_id, school_id)
-
     denied = require_enrollment_conversion_access(request, session.school)
     if denied is not None:
         return denied
-
     if request.data.get("confirm") is not True:
         return Response({"error": "confirm must be true"}, status=status.HTTP_400_BAD_REQUEST)
 
     try:
         with transaction.atomic():
-            # Serialize commits with configure/load/other commit calls. A retry must
-            # return the first immutable receipt, not overwrite converted with zero.
             session = _get_session_locked(session_id, school_id)
             if session.status in (
                 EnrollmentConversionWizardSession.STATUS_COMMITTED,
                 EnrollmentConversionWizardSession.STATUS_VERIFIED,
             ):
                 if not isinstance(session.commit_result, dict):
-                    return Response(
-                        {"error": "The committed conversion receipt is missing."},
-                        status=status.HTTP_409_CONFLICT,
-                    )
+                    raise BulkEnrollmentProofError("The earlier conversion receipt is missing.")
+                members = verified_cohort(session, school_id, enrolled_only=True)
+                if len(members) != session.commit_result.get("selected"):
+                    raise BulkEnrollmentProofError("Stored receipt differs from verified SIS cohort.")
                 return Response({"status": session.status, **session.commit_result})
             if session.status != EnrollmentConversionWizardSession.STATUS_APPLICANTS_LOADED:
                 return Response(
@@ -197,159 +192,87 @@ def commit_session(request, session_id):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
-            expected_count = len(session.application_ids)
-            if expected_count == 0:
-                return Response(
-                    {"error": "No accepted applications were selected for enrollment."},
-                    status=status.HTTP_409_CONFLICT,
-                )
-
-            # Do not join nullable sis_student when locking PostgreSQL rows:
-            # FOR UPDATE cannot target the nullable side of an outer join.
-            applications = list(
-                AdmissionsApplication.objects.select_for_update()
-                .filter(
-                    id__in=session.application_ids,
-                    school_id=school_id,
-                    academic_year__school_id=school_id,
-                    academic_year__name=session.academic_year_label,
-                    family__school_id=school_id,
-                )
-                .order_by("id")
-            )
-            if len(applications) != expected_count:
-                return Response(
-                    {"error": "One or more selected applications changed school or academic year."},
-                    status=status.HTTP_409_CONFLICT,
-                )
-            if any(
-                app.status not in (
-                    AdmissionsApplication.STATUS_ACCEPTED,
-                    AdmissionsApplication.STATUS_ENROLLED,
-                )
-                for app in applications
-            ):
-                return Response(
-                    {"error": "Enrollment conversion requires ACCEPTED applications."},
-                    status=status.HTTP_409_CONFLICT,
-                )
-
-            # Validate the entire selected cohort before the first enrollment
-            # write, using the SAME canonical readiness gate as single enrollment.
-            ready = []
-            for app in applications:
-                linked = _canonical_application_for_legacy(app, school_id)
-                if linked is None:
-                    return Response(
-                        {"error": "A selected application has no linked canonical admissions record."},
-                        status=status.HTTP_409_CONFLICT,
-                    )
-                canonical = Application.objects.select_for_update().filter(
-                    pk=linked.pk, school_id=school_id
-                ).first()
-                if canonical is None:
-                    return Response(
-                        {"error": "A selected canonical application is unavailable."},
-                        status=status.HTTP_409_CONFLICT,
-                    )
-                readiness_error = _validate_lifecycle_chain_request(
-                    app=canonical,
-                    state=_latest_enrollment_state_for_application(canonical),
-                    requested_enrollment=True,
-                    requested_classroom_ready=False,
-                    requested_portal_activation=False,
-                )
-                if readiness_error is not None:
-                    return Response(
-                        {"error": "A selected application lacks canonical contract/deposit readiness."},
-                        status=status.HTTP_409_CONFLICT,
-                    )
-                ready.append((app, canonical))
-
+            # All canonical applications, applicant identities and SIS records
+            # must exist before this routine changes any legacy enrollment.
+            members = verified_cohort(session, school_id)
             converted = 0
-            for app, canonical in ready:
-                _events, lifecycle_error = _apply_lifecycle_chain_updates(
-                    app=canonical,
-                    actor_user=request.user,
-                    note="Enrollment conversion wizard",
-                    request_payload={"mark_enrollment_confirmed": True},
-                )
-                if lifecycle_error is not None:
-                    # Returning inside atomic would commit earlier cohort writes.
-                    raise _EnrollmentReadinessChanged()
+            confirmed = set()
+            for member in members:
+                if member.canonical.pk not in confirmed:
+                    _events, error = _apply_lifecycle_chain_updates(
+                        app=member.canonical,
+                        actor_user=request.user,
+                        note="Verified SIS enrollment conversion wizard",
+                        request_payload={"mark_enrollment_confirmed": True},
+                    )
+                    if error is not None:
+                        raise _EnrollmentReadinessChanged()
+                    confirmed.add(member.canonical.pk)
                 _app, changed = finalize_enrollment(
-                    app,
+                    member.legacy,
                     actor_user=request.user,
                     details={
                         "source": "enrollment_conversion_wizard",
-                        "session_id": str(session.id),
-                        "canonical_application_id": str(canonical.id),
+                        "session_id": str(session.pk),
+                        "canonical_application_id": str(member.canonical.pk),
                     },
                 )
                 converted += int(changed)
 
-            result = {"converted": converted, "selected": expected_count}
+            verified_cohort(session, school_id, enrolled_only=True)
+            result = {"converted": converted, "selected": len(members)}
             session.commit_result = result
             session.status = EnrollmentConversionWizardSession.STATUS_COMMITTED
             session.save()
-    except _EnrollmentReadinessChanged:
-        return Response(
-            {"error": "Canonical enrollment readiness changed; no cohort changes were committed."},
-            status=status.HTTP_409_CONFLICT,
-        )
-
+    except (BulkEnrollmentProofError, _EnrollmentReadinessChanged, IntegrityError) as exc:
+        detail = str(exc) if isinstance(exc, BulkEnrollmentProofError) else "Enrollment readiness changed; no cohort changes were committed."
+        return Response({"error": detail}, status=status.HTTP_409_CONFLICT)
     return Response({"status": session.status, **result})
 
 @extend_schema(responses=OpenApiTypes.OBJECT)
-@api_view(["GET"])
+@api_view(["GET", "POST"])
 @authentication_classes(_AUTH)
 @permission_classes(_PERM)
 def verify_session(request, session_id):
     school_id = get_request_school_id(request)
     session = _get_session(session_id, school_id)
-
     denied = require_enrollment_conversion_access(request, session.school)
     if denied is not None:
         return denied
-
-    if session.status not in (
-        EnrollmentConversionWizardSession.STATUS_COMMITTED,
-        EnrollmentConversionWizardSession.STATUS_VERIFIED,
-    ):
-        return Response(
-            {"error": f"Cannot verify from status '{session.status}'"},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
-
-    enrolled_count = AdmissionsApplication.objects.filter(
-        id__in=session.application_ids,
-        school__id=school_id,
-        academic_year__name=session.academic_year_label,
-        status=AdmissionsApplication.STATUS_ENROLLED,
-    ).count()
-
-    selected_count = len(session.application_ids)
-    all_enrolled = selected_count > 0 and enrolled_count == selected_count
-    if not all_enrolled:
-        return Response(
-            {
+    if request.method == "POST" and request.data.get("confirm") is not True:
+        return Response({"error": "confirm must be true"}, status=status.HTTP_400_BAD_REQUEST)
+    try:
+        with transaction.atomic():
+            session = _get_session_locked(session_id, school_id)
+            if session.status not in (
+                EnrollmentConversionWizardSession.STATUS_COMMITTED,
+                EnrollmentConversionWizardSession.STATUS_VERIFIED,
+            ):
+                return Response(
+                    {"error": f"Cannot verify from status '{session.status}'"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            members = verified_cohort(session, school_id, enrolled_only=True)
+            if (
+                not isinstance(session.commit_result, dict)
+                or len(members) != session.commit_result.get("selected")
+            ):
+                raise BulkEnrollmentProofError("Commit receipt or canonical enrollment proof is incomplete.")
+            if request.method == "POST" and session.status != EnrollmentConversionWizardSession.STATUS_VERIFIED:
+                session.status = EnrollmentConversionWizardSession.STATUS_VERIFIED
+                session.save(update_fields=["status", "updated_at"])
+            result = {
                 "status": session.status,
-                "enrolled_count": enrolled_count,
-                "selected_count": selected_count,
-                "all_enrolled": False,
-                "error": "Enrollment verification failed for one or more selected applications.",
-            },
+                "enrolled_count": len(members),
+                "selected_count": len(members),
+                "all_enrolled": True,
+                "academic_year_label": session.academic_year_label,
+                "commit_result": session.commit_result,
+            }
+    except (BulkEnrollmentProofError, IntegrityError) as exc:
+        detail = str(exc) if isinstance(exc, BulkEnrollmentProofError) else "Verified SIS enrollment proof failed."
+        return Response(
+            {"all_enrolled": False, "error": detail},
             status=status.HTTP_409_CONFLICT,
         )
-
-    session.status = EnrollmentConversionWizardSession.STATUS_VERIFIED
-    session.save()
-
-    return Response({
-        "status": session.status,
-        "enrolled_count": enrolled_count,
-        "selected_count": selected_count,
-        "all_enrolled": True,
-        "academic_year_label": session.academic_year_label,
-        "commit_result": session.commit_result,
-    })
+    return Response(result)
