@@ -256,7 +256,7 @@ test.describe('CROWN buyer sandbox live browser authority', () => {
     const enrolled = await response.json();
     expect(enrolled.ok).toBe(true);
     expect(enrolled.student_id).toBeTruthy();
-    expect(enrolled.canonical_gate).toBe('contract_countersigned_and_deposit_paid_or_waived');
+    expect(enrolled.canonical_gate).toBe('verified_identity_and_core_enrollment');
     await page.reload({ waitUntil: 'networkidle' });
     await expect(row.getByRole('cell', { name: 'Enrolled', exact: true })).toBeVisible();
     actionProofs.push('admissions_conversion_persists');
