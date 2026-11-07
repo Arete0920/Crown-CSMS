@@ -7,6 +7,8 @@ from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse, HttpRequest
 from django.views.decorators.http import require_http_methods
 
+from core.models import School
+from core.permissions import user_has_permission
 from households.scoping import get_request_school_id
 from households.models import Student
 from .models import Course, Section, Enrollment
@@ -138,6 +140,15 @@ def enroll(request: HttpRequest):
     sid = get_request_school_id(request)
     if not sid:
         return _json_error("school_id could not be derived for request", status=403)
+
+    # Roster mutation requires the same explicit school-scoped grant as the
+    # Section Assignment Wizard. Authentication and a valid school ID alone
+    # cannot authorize writes to other students' classroom memberships.
+    school = School.objects.filter(pk=sid, is_active=True).first()
+    if school is None or not user_has_permission(
+        request.user, "rosters.edit", school=school
+    ):
+        return _json_error("Permission denied.", status=403)
 
     payload = _parse_json(request)
     if payload is None:

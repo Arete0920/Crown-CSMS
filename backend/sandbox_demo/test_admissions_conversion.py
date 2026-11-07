@@ -1,10 +1,21 @@
+import uuid
+
 import pytest
+from core.tenant_models import tenant_context
 from rest_framework.test import APIClient
 
 from admissions.models import AdmissionsApplication
-from applications.models import ApplicationEvent
-from core.models import UserAccount
-from sandbox_demo.admissions_conversion_seed import SCHOOL_ID, seed_heritage_admissions_conversion_scenario
+from applications.models import (
+    Application, Applicant, ApplicationChecklistItem, ApplicationEvent,
+    EnrollmentContract, EnrollmentContractStatus,
+)
+from classroom.models import Classroom, ClassroomEnrollment
+from core.models import Enrollment, Family, Guardian, HouseholdFamilyLink, Student, StudentIdentityLink, UserAccount
+from households.models import Household
+from sandbox_demo.admissions_conversion_seed import (
+    SCHOOL_ID, FIXTURE_MARKER, reset_heritage_admissions_conversion_scenario,
+    seed_heritage_admissions_conversion_scenario,
+)
 from sandbox_demo.services import create_sandbox_session, seed_heritage_flagship
 
 pytestmark = pytest.mark.django_db(transaction=True)
@@ -40,3 +51,322 @@ def test_parent_cannot_execute_staff_enrollment_conversion(settings):
     response = _client(parent).post("/api/admissions/enroll/", {"application_id": seeded["admissions_conversion_legacy_application_id"]}, format="json")
     assert response.status_code == 403; assert response.data["detail"] == "Permission denied."
     legacy = AdmissionsApplication.objects.get(id=seeded["admissions_conversion_legacy_application_id"]); assert legacy.status == AdmissionsApplication.STATUS_ACCEPTED
+
+
+def test_seed_has_real_verified_identity_and_school_year_enrollment(settings):
+    seeded = _seed(settings)
+    canonical = Application.objects.get(pk=seeded["admissions_conversion_canonical_application_id"])
+    applicant = canonical.applicants.get()
+    assert applicant.dob is not None
+    assert applicant.flags["heritage_conversion_fixture"] == FIXTURE_MARKER
+    assert applicant.student_id is not None
+    link = StudentIdentityLink.objects.get(compatibility_student_id=applicant.student_id)
+    assert link.verification_status == StudentIdentityLink.STATUS_VERIFIED
+    assert link.source == StudentIdentityLink.SOURCE_ADMISSIONS
+    assert link.evidence_reference == f"application:{canonical.id}:applicant:{applicant.id}"
+    assert str(link.core_student_id) == seeded["admissions_conversion_student_id"]
+    assert HouseholdFamilyLink.objects.filter(
+        school_id=SCHOOL_ID, household_id=canonical.household_id,
+        family_id=link.core_student.family_id,
+    ).count() == 1
+    assert Enrollment.objects.filter(
+        pk=seeded["admissions_conversion_enrollment_id"],
+        school_id=SCHOOL_ID, student_id=link.core_student_id,
+        grade_level__code="8", status="ENROLLED",
+    ).exists()
+
+
+def test_seed_uses_exact_canonical_provenance_contract(settings):
+    """Single enrollment must never adopt a descriptive or ambiguous marker."""
+    seeded = _seed(settings)
+    legacy = AdmissionsApplication.objects.get(
+        pk=seeded["admissions_conversion_legacy_application_id"]
+    )
+    canonical = seeded["admissions_conversion_canonical_application_id"]
+    expected_reference = f"canonical_application_id={canonical}"
+    assert legacy.notes_internal == expected_reference
+    # Mirrors the historical-provenance guard in the single-enroll API.
+    recorded = [
+        line.strip()
+        for line in legacy.notes_internal.splitlines()
+        if "canonical_application_id=" in line
+    ]
+    assert recorded == [expected_reference]
+
+
+def test_marked_reset_preserves_unrelated_same_name_application(settings):
+    seeded = _seed(settings)
+    other_household = Household.objects.create(
+        school_id=SCHOOL_ID, name="Unrelated same-name household",
+    )
+    unrelated = Application.objects.create(
+        school_id=SCHOOL_ID, household=other_household,
+    )
+    sibling = Applicant.objects.create(
+        school_id=SCHOOL_ID, application=unrelated,
+        first_name="Taylor", last_name="Mercer", grade_applying_for="8",
+    )
+
+    reset_heritage_admissions_conversion_scenario()
+    assert Application.objects.filter(pk=unrelated.pk).exists()
+    assert Applicant.objects.filter(pk=sibling.pk).exists()
+    assert not Application.objects.filter(
+        pk=seeded["admissions_conversion_canonical_application_id"]
+    ).exists()
+    assert not Enrollment.objects.filter(
+        pk=seeded["admissions_conversion_enrollment_id"]
+    ).exists()
+    assert not StudentIdentityLink.objects.filter(
+        core_student_id=seeded["admissions_conversion_student_id"]
+    ).exists()
+
+
+def test_reset_refuses_unrelated_guardian_cascade(settings):
+    seeded = _seed(settings)
+    student = Student.objects.get(pk=seeded["admissions_conversion_student_id"])
+    guardian = Guardian.objects.create(
+        school_id=SCHOOL_ID, family=student.family,
+        first_name="Independent", last_name="Guardian",
+        email="independent.guardian@example.org", relationship="OTHER",
+    )
+    with pytest.raises(ValueError, match="unrelated family"):
+        reset_heritage_admissions_conversion_scenario()
+    assert Guardian.objects.filter(pk=guardian.pk).exists()
+    assert Application.objects.filter(
+        pk=seeded["admissions_conversion_canonical_application_id"]
+    ).exists()
+    assert Enrollment.objects.filter(
+        pk=seeded["admissions_conversion_enrollment_id"]
+    ).exists()
+
+
+def test_reset_refuses_orphaning_external_household_family_link(settings):
+    seeded = _seed(settings)
+    canonical = Application.objects.get(
+        pk=seeded["admissions_conversion_canonical_application_id"]
+    )
+    external_family = Family.objects.create(
+        school_id=SCHOOL_ID, family_name="External manual association",
+    )
+    external_link = HouseholdFamilyLink.objects.create(
+        school_id=SCHOOL_ID, household_id=canonical.household_id,
+        family=external_family, source=HouseholdFamilyLink.SOURCE_MANUAL,
+    )
+    with pytest.raises(ValueError, match="unrelated family"):
+        reset_heritage_admissions_conversion_scenario()
+    assert HouseholdFamilyLink.objects.filter(pk=external_link.pk).exists()
+    assert Application.objects.filter(pk=canonical.pk).exists()
+
+
+def test_reset_refuses_ambiguous_historical_provenance(settings):
+    seeded = _seed(settings)
+    legacy = AdmissionsApplication.objects.get(
+        pk=seeded["admissions_conversion_legacy_application_id"]
+    )
+    legacy.notes_internal += "\ncanonical_application_id=not-this-fixture"
+    legacy.save(update_fields=["notes_internal", "updated_at"])
+    with pytest.raises(ValueError, match="provenance relationships"):
+        reset_heritage_admissions_conversion_scenario()
+    legacy.refresh_from_db()
+    assert legacy.status == AdmissionsApplication.STATUS_ACCEPTED
+    assert "not-this-fixture" in legacy.notes_internal
+    assert Application.objects.filter(
+        pk=seeded["admissions_conversion_canonical_application_id"]
+    ).exists()
+
+
+def test_reset_refuses_added_contract_version(settings):
+    seeded = _seed(settings)
+    application = Application.objects.get(
+        pk=seeded["admissions_conversion_canonical_application_id"]
+    )
+    original = application.enrollment_contracts.get(version=1)
+    added = EnrollmentContract.objects.create(
+        school_id=application.school_id, application=application,
+        version=2, amended_from=original,
+        status=EnrollmentContractStatus.DRAFT,
+        note="Independent pending amendment",
+    )
+    with pytest.raises(ValueError, match="enrollment contracts"):
+        reset_heritage_admissions_conversion_scenario()
+    assert EnrollmentContract.objects.filter(pk=added.pk).exists()
+    assert EnrollmentContract.objects.filter(pk=original.pk).exists()
+    assert Application.objects.filter(pk=application.pk).exists()
+
+
+def test_reset_refuses_modified_contract_evidence(settings):
+    seeded = _seed(settings)
+    application = Application.objects.get(
+        pk=seeded["admissions_conversion_canonical_application_id"]
+    )
+    contract = application.enrollment_contracts.get(version=1)
+    contract.net_amount_cents += 100
+    contract.save(update_fields=["net_amount_cents", "updated_at"])
+    with pytest.raises(ValueError, match="enrollment contracts"):
+        reset_heritage_admissions_conversion_scenario()
+    contract.refresh_from_db()
+    assert contract.net_amount_cents == 995100
+    assert Application.objects.filter(pk=application.pk).exists()
+    assert Enrollment.objects.filter(
+        pk=seeded["admissions_conversion_enrollment_id"]
+    ).exists()
+
+
+
+def test_reset_refuses_unexpected_application_checklist_cascade(settings):
+    seeded = _seed(settings)
+    application = Application.objects.get(
+        pk=seeded["admissions_conversion_canonical_application_id"]
+    )
+    checklist = ApplicationChecklistItem.objects.create(
+        school_id=application.school_id, application=application,
+        item_key="separate_history", title="Independent admissions evidence",
+    )
+    with pytest.raises(ValueError, match="unexpected dependent data"):
+        reset_heritage_admissions_conversion_scenario()
+    assert ApplicationChecklistItem.objects.filter(pk=checklist.pk).exists()
+    assert EnrollmentContract.objects.filter(
+        pk=seeded["admissions_conversion_contract_id"]
+    ).exists()
+    assert AdmissionsApplication.objects.filter(
+        pk=seeded["admissions_conversion_legacy_application_id"]
+    ).exists()
+    assert Enrollment.objects.filter(
+        pk=seeded["admissions_conversion_enrollment_id"]
+    ).exists()
+    assert Application.objects.filter(pk=application.pk).exists()
+
+
+
+def test_reset_refuses_cascading_canonical_classroom_membership(settings):
+    seeded = _seed(settings)
+    school = Student.objects.get(
+        pk=seeded["admissions_conversion_student_id"]
+    ).school
+    with tenant_context(school):
+        classroom = Classroom.objects.create(
+            school=school,
+            name=f"Independent classroom {uuid.uuid4().hex[:8]}",
+            grade_level="8",
+        )
+    entry = ClassroomEnrollment.objects.create(
+        classroom=classroom,
+        student_id=seeded["admissions_conversion_student_id"],
+    )
+    with pytest.raises(ValueError, match="canonical student.*unrelated dependent"):
+        reset_heritage_admissions_conversion_scenario()
+    assert ClassroomEnrollment.objects.filter(pk=entry.pk).exists()
+    assert AdmissionsApplication.objects.filter(
+        pk=seeded["admissions_conversion_legacy_application_id"]
+    ).exists()
+    assert Enrollment.objects.filter(
+        pk=seeded["admissions_conversion_enrollment_id"]
+    ).exists()
+    assert StudentIdentityLink.objects.filter(
+        core_student_id=seeded["admissions_conversion_student_id"]
+    ).exists()
+
+
+def test_repeated_seed_replaces_only_explicit_fictional_fixture(settings):
+    original = _seed(settings)
+    later = seed_heritage_admissions_conversion_scenario()
+    assert original["admissions_conversion_legacy_application_id"] != later[
+        "admissions_conversion_legacy_application_id"
+    ]
+    assert Enrollment.objects.filter(
+        pk=later["admissions_conversion_enrollment_id"]
+    ).exists()
+    assert not Enrollment.objects.filter(
+        pk=original["admissions_conversion_enrollment_id"]
+    ).exists()
+    assert Applicant.objects.filter(
+        school_id=SCHOOL_ID,
+        flags__heritage_conversion_fixture=FIXTURE_MARKER,
+    ).count() == 1
+
+
+def test_marked_reset_refuses_conversion_history_and_keeps_audit(settings):
+    seeded = _seed(settings)
+    from admissions.services import finalize_enrollment
+    from admissions.models import AdmissionsAuditEvent
+
+    legacy_id = seeded["admissions_conversion_legacy_application_id"]
+    legacy = AdmissionsApplication.objects.get(pk=legacy_id)
+    converted, changed = finalize_enrollment(legacy)
+    assert changed is True
+    assert converted.status == AdmissionsApplication.STATUS_ENROLLED
+    audit = AdmissionsAuditEvent.objects.get(
+        school_id=SCHOOL_ID,
+        entity_type=AdmissionsAuditEvent.ENTITY_APPLICATION,
+        entity_id=str(legacy.pk),
+        action="STATUS_ENROLLED",
+    )
+    with pytest.raises(ValueError, match="audit history"):
+        reset_heritage_admissions_conversion_scenario()
+    assert AdmissionsApplication.objects.filter(
+        pk=legacy_id, status=AdmissionsApplication.STATUS_ENROLLED
+    ).exists()
+    assert AdmissionsAuditEvent.objects.filter(pk=audit.pk).exists()
+    assert Enrollment.objects.filter(
+        pk=seeded["admissions_conversion_enrollment_id"]
+    ).exists()
+    assert StudentIdentityLink.objects.filter(
+        core_student_id=seeded["admissions_conversion_student_id"]
+    ).exists()
+
+
+def test_marked_reset_refuses_unexpected_workflow_events(settings):
+    seeded = _seed(settings)
+    ApplicationEvent.objects.create(
+        school_id=Application.objects.get(pk=seeded["admissions_conversion_canonical_application_id"]).school_id,
+        application_id=seeded["admissions_conversion_canonical_application_id"],
+        event_type="enrollment_confirmed",
+        payload={"source": "fictional_history_regression"},
+    )
+    with pytest.raises(ValueError, match="audit history"):
+        reset_heritage_admissions_conversion_scenario()
+    assert Application.objects.filter(
+        pk=seeded["admissions_conversion_canonical_application_id"]
+    ).exists()
+
+
+def test_reset_refuses_duplicate_event_of_allowed_type(settings):
+    seeded = _seed(settings)
+    app_id = seeded["admissions_conversion_canonical_application_id"]
+    original = ApplicationEvent.objects.get(
+        application_id=app_id, event_type="decision_made",
+    )
+    added = ApplicationEvent.objects.create(
+        school_id=Application.objects.get(pk=app_id).school_id,
+        application_id=app_id,
+        event_type="decision_made",
+        payload={"decision": "accepted", "updated_by": "real_workflow"},
+    )
+    with pytest.raises(ValueError, match="audit history"):
+        reset_heritage_admissions_conversion_scenario()
+    assert ApplicationEvent.objects.filter(pk=original.pk).exists()
+    assert ApplicationEvent.objects.filter(pk=added.pk).exists()
+    assert AdmissionsApplication.objects.filter(
+        pk=seeded["admissions_conversion_legacy_application_id"],
+        status=AdmissionsApplication.STATUS_ACCEPTED,
+    ).exists()
+
+
+def test_reset_refuses_modified_seed_event_evidence(settings):
+    seeded = _seed(settings)
+    submitted = ApplicationEvent.objects.get(
+        application_id=seeded["admissions_conversion_canonical_application_id"],
+        event_type="application_submitted",
+    )
+    submitted.payload = {
+        "via": "modified_workflow",
+        "applicant_id": submitted.payload["applicant_id"],
+    }
+    submitted.save(update_fields=["payload", "updated_at"])
+    with pytest.raises(ValueError, match="audit history"):
+        reset_heritage_admissions_conversion_scenario()
+    submitted.refresh_from_db()
+    assert submitted.payload["via"] == "modified_workflow"
+    assert Enrollment.objects.filter(
+        pk=seeded["admissions_conversion_enrollment_id"],
+    ).exists()

@@ -1,7 +1,7 @@
 import { expect, test, request as isolatedRequest, type APIRequestContext, type Page } from "@playwright/test";
 
 // Destructive acceptance on a fresh isolated Heritage SQLite instance only.
-// #618 owns this learner and its weekday schedules; both local care entitlements must be active.
+// #618 owns this fictional learner; daily QA schedule enables weekday/weekend browser proof.
 // No intercepted APIs, arbitrary children, live families or payment operations.
 const FRONTEND = "http://127.0.0.1:4173";
 const BACKEND = "http://127.0.0.1:8000";
@@ -35,7 +35,7 @@ async function row(request: APIRequestContext, headers: Record<string, string>, 
   const body = await response.json();
   expect(body.care_session).toBe(care);
   const rows = body.rows.filter((item: { student_id: string }) => item.student_id === CHILD);
-  expect(rows, "Run #618 canonical samples on a fresh weekday Heritage database").toHaveLength(1);
+  expect(rows, "Run #618 canonical daily samples on a fresh isolated Heritage database").toHaveLength(1);
   expect(rows[0].student_name).toBe("Sample Learner");
   return rows[0];
 }
