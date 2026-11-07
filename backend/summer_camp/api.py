@@ -150,6 +150,14 @@ def config_view(request):
     return Response(serializer.data)
 
 
+def _camp_configuration_denied():
+    # Do not reveal whether a foreign-school configuration record exists.
+    return Response(
+        {"detail": "Camp school, program or capacity is invalid."},
+        status=status.HTTP_400_BAD_REQUEST,
+    )
+
+
 @extend_schema(methods=["GET"], responses=SummerCampProgramSerializer(many=True))
 @extend_schema(methods=["POST"], request=SummerCampProgramSerializer, responses=SummerCampProgramSerializer)
 @api_view(["GET", "POST"])
@@ -170,7 +178,10 @@ def programs_view(request):
 
     serializer = SummerCampProgramSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
-    program = create_program(school_id, serializer.validated_data)
+    try:
+        program = create_program(school_id, serializer.validated_data)
+    except ValueError:
+        return _camp_configuration_denied()
     return Response(SummerCampProgramSerializer(program).data, status=status.HTTP_201_CREATED)
 
 
@@ -195,7 +206,10 @@ def program_detail_view(request, program_id):
 
     payload = SummerCampProgramSerializer(data=request.data)
     payload.is_valid(raise_exception=True)
-    program = update_program(school_id, program_id, payload.validated_data)
+    try:
+        program = update_program(school_id, program_id, payload.validated_data)
+    except ValueError:
+        return _camp_configuration_denied()
     return Response(SummerCampProgramSerializer(program).data)
 
 
@@ -219,7 +233,10 @@ def sessions_view(request):
 
     serializer = SummerCampSessionSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
-    session = create_session(school_id, serializer.validated_data)
+    try:
+        session = create_session(school_id, serializer.validated_data)
+    except ValueError:
+        return _camp_configuration_denied()
     return Response(SummerCampSessionSerializer(session).data, status=status.HTTP_201_CREATED)
 
 
@@ -244,7 +261,10 @@ def session_detail_view(request, session_id):
 
     serializer = SummerCampSessionSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
-    session = update_session(school_id, session_id, serializer.validated_data)
+    try:
+        session = update_session(school_id, session_id, serializer.validated_data)
+    except ValueError:
+        return _camp_configuration_denied()
     return Response(SummerCampSessionSerializer(session).data)
 
 
