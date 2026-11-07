@@ -178,6 +178,9 @@ def test_enrollment_transition_marks_application_enrolled_and_activates_student(
     )
 
     user = _staff_user(school, username=f"enroll-{uuid.uuid4()}")
+    edit, _ = CrownPermission.objects.get_or_create(code="admissions.edit")
+    RolePermission.objects.get_or_create(role_code="REGISTRAR", permission=edit)
+    UserRole.objects.get_or_create(school=school, user=user, role_code="REGISTRAR")
     client = APIClient()
     client.force_authenticate(user=user)
     response = client.post(
