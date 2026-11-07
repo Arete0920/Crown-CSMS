@@ -146,7 +146,9 @@ def _provision_student_identity(*, application, applicant, family, student_numbe
                 or applicant.dob is None
                 or existing_link.school_id != application.school_id
                 or existing_link.verification_status != StudentIdentityLink.STATUS_VERIFIED
-                or not str(existing_link.evidence_reference or "").strip()
+                or existing_link.source != StudentIdentityLink.SOURCE_ADMISSIONS
+                or existing_link.evidence_reference
+                   != f"application:{application.id}:applicant:{applicant.id}"
                 or core.school_id != application.school_id
                 or core.family_id != family.id
                 or core.dob != applicant.dob
@@ -157,7 +159,7 @@ def _provision_student_identity(*, application, applicant, family, student_numbe
                    != str(applicant.last_name or "").strip().casefold()
             ):
                 raise ValueError(
-                    "Existing student identity requires verified evidence, matching family, DOB, status and name."
+                    "Existing student identity requires exact applicant-bound admissions evidence, matching family, DOB, status and name."
                 )
             return compatibility_student, core, False
 

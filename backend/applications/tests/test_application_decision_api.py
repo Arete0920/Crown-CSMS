@@ -196,9 +196,9 @@ def test_accept_reuses_existing_verified_identity_link_without_new_number(canoni
         school=school,
         core_student=canonical_student,
         compatibility_student=compatibility_student,
-        source=StudentIdentityLink.SOURCE_MANUAL,
+        source=StudentIdentityLink.SOURCE_ADMISSIONS,
         verification_status=StudentIdentityLink.STATUS_VERIFIED,
-        evidence_reference="test:preverified",
+        evidence_reference=f"application:{app.id}:applicant:{applicant.id}",
     )
 
     c = _client_for_school(school.id)
@@ -250,7 +250,8 @@ def test_deny_creates_no_students_or_charges():
 
 @pytest.mark.parametrize(
     "invalid",
-    ["missing_dob", "wrong_dob", "wrong_family", "wrong_name", "blank_evidence", "withdrawn"],
+    ["missing_dob", "wrong_dob", "wrong_family", "wrong_name", "blank_evidence",
+     "wrong_application", "manual_source", "withdrawn"],
 )
 def test_accept_reused_identity_rejects_unverified_child_context(invalid):
     school, hh, family, app, applicant = _mk_application_with_family_bridge()
@@ -276,9 +277,9 @@ def test_accept_reused_identity_rejects_unverified_child_context(invalid):
         school=school,
         core_student=core,
         compatibility_student=compatibility_student,
-        source=StudentIdentityLink.SOURCE_MANUAL,
+        source=StudentIdentityLink.SOURCE_ADMISSIONS,
         verification_status=StudentIdentityLink.STATUS_VERIFIED,
-        evidence_reference="verified:explicit-test-record",
+        evidence_reference=f"application:{app.id}:applicant:{applicant.id}",
     )
 
     if invalid == "missing_dob":
@@ -297,6 +298,14 @@ def test_accept_reused_identity_rejects_unverified_child_context(invalid):
     elif invalid == "blank_evidence":
         # Simulate an invalid historical row without bypassing service validation.
         StudentIdentityLink.objects.filter(pk=link.pk).update(evidence_reference="")
+    elif invalid == "wrong_application":
+        StudentIdentityLink.objects.filter(pk=link.pk).update(
+            evidence_reference=f"application:{uuid.uuid4()}:applicant:{applicant.id}",
+        )
+    elif invalid == "manual_source":
+        StudentIdentityLink.objects.filter(pk=link.pk).update(
+            source=StudentIdentityLink.SOURCE_MANUAL,
+        )
     else:
         core.status = "WITHDRAWN"
         core.save(update_fields=["status"])
