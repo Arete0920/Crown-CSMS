@@ -3,7 +3,7 @@ from rest_framework.test import APIClient
 
 from admissions.models import AdmissionsApplication
 from applications.models import Application, Applicant, ApplicationEvent
-from core.models import Enrollment, HouseholdFamilyLink, StudentIdentityLink, UserAccount
+from core.models import Enrollment, Family, Guardian, HouseholdFamilyLink, Student, StudentIdentityLink, UserAccount
 from households.models import Household
 from sandbox_demo.admissions_conversion_seed import (
     SCHOOL_ID, FIXTURE_MARKER, reset_heritage_admissions_conversion_scenario,
@@ -111,6 +111,60 @@ def test_marked_reset_preserves_unrelated_same_name_application(settings):
     ).exists()
     assert not StudentIdentityLink.objects.filter(
         core_student_id=seeded["admissions_conversion_student_id"]
+    ).exists()
+
+
+def test_reset_refuses_unrelated_guardian_cascade(settings):
+    seeded = _seed(settings)
+    student = Student.objects.get(pk=seeded["admissions_conversion_student_id"])
+    guardian = Guardian.objects.create(
+        school_id=SCHOOL_ID, family=student.family,
+        first_name="Independent", last_name="Guardian",
+        email="independent.guardian@example.org", relationship="OTHER",
+    )
+    with pytest.raises(ValueError, match="unrelated family"):
+        reset_heritage_admissions_conversion_scenario()
+    assert Guardian.objects.filter(pk=guardian.pk).exists()
+    assert Application.objects.filter(
+        pk=seeded["admissions_conversion_canonical_application_id"]
+    ).exists()
+    assert Enrollment.objects.filter(
+        pk=seeded["admissions_conversion_enrollment_id"]
+    ).exists()
+
+
+def test_reset_refuses_orphaning_external_household_family_link(settings):
+    seeded = _seed(settings)
+    canonical = Application.objects.get(
+        pk=seeded["admissions_conversion_canonical_application_id"]
+    )
+    external_family = Family.objects.create(
+        school_id=SCHOOL_ID, family_name="External manual association",
+    )
+    external_link = HouseholdFamilyLink.objects.create(
+        school_id=SCHOOL_ID, household_id=canonical.household_id,
+        family=external_family, source=HouseholdFamilyLink.SOURCE_MANUAL,
+    )
+    with pytest.raises(ValueError, match="unrelated family"):
+        reset_heritage_admissions_conversion_scenario()
+    assert HouseholdFamilyLink.objects.filter(pk=external_link.pk).exists()
+    assert Application.objects.filter(pk=canonical.pk).exists()
+
+
+def test_reset_refuses_ambiguous_historical_provenance(settings):
+    seeded = _seed(settings)
+    legacy = AdmissionsApplication.objects.get(
+        pk=seeded["admissions_conversion_legacy_application_id"]
+    )
+    legacy.notes_internal += "\ncanonical_application_id=not-this-fixture"
+    legacy.save(update_fields=["notes_internal", "updated_at"])
+    with pytest.raises(ValueError, match="provenance relationships"):
+        reset_heritage_admissions_conversion_scenario()
+    legacy.refresh_from_db()
+    assert legacy.status == AdmissionsApplication.STATUS_ACCEPTED
+    assert "not-this-fixture" in legacy.notes_internal
+    assert Application.objects.filter(
+        pk=seeded["admissions_conversion_canonical_application_id"]
     ).exists()
 
 

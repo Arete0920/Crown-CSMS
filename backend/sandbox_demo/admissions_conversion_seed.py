@@ -111,6 +111,23 @@ def reset_heritage_admissions_conversion_scenario() -> None:
     ):
         raise ValueError("Heritage fixture is not fully proven; historical records preserved.")
 
+    # A marked fictional applicant does not authorize deletion of unrelated
+    # guardians, immutable finance entries, student tuition or household links.
+    # Family/Student deletes can cascade; a UUID-only household bridge would
+    # otherwise be orphaned. Stop *before* deleting any fixture record.
+    if (
+        family.guardians.exists()
+        or family.ledger_entries.exists()
+        or core.tuitions.exists()
+        or HouseholdFamilyLink.objects.filter(household_id=household.pk).count() != 1
+        or str(legacy[0].notes_internal or "").strip()
+           != f"canonical_application_id={application.id}"
+    ):
+        raise ValueError(
+            "Heritage fixture has unrelated family, household or provenance "
+            "relationships; preserve records."
+        )
+
     # Historical admissions audit events have string entity IDs, not FKs.
     # Deleting a converted legacy row would orphan immutable audit evidence.
     # Never reset an already converted or otherwise updated fixture.
