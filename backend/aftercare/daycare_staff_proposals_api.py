@@ -4,7 +4,7 @@ No endpoint here can approve credentials, activate coverage or affect custody.
 """
 import re
 
-from django.utils import timezone
+from drf_spectacular.utils import OpenApiTypes, extend_schema
 from rest_framework import serializers
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
@@ -38,6 +38,8 @@ class StaffProposalInput(serializers.Serializer):
         return values
 
 
+@extend_schema(methods=["GET"], responses=OpenApiTypes.OBJECT)
+@extend_schema(methods=["POST"], request=StaffProposalInput, responses=OpenApiTypes.OBJECT)
 @api_view(["GET", "POST"])
 @permission_classes([IsAuthenticated])
 def setup_staff_proposals(request, site_id, room_id):
