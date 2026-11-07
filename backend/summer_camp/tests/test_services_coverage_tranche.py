@@ -30,9 +30,12 @@ def test_config_program_and_session_services(monkeypatch):
     session_manager = MagicMock()
     created_session = object()
     session_manager.create.return_value = created_session
-    session = SimpleNamespace(capacity=10, save=MagicMock())
-    session_manager.get.return_value = session
+    session = SimpleNamespace(id="session-1", capacity=10, save=MagicMock())
+    session_manager.select_for_update.return_value.get.return_value = session
     monkeypatch.setattr(services.SummerCampSession, "objects", session_manager)
+    seats_manager = MagicMock()
+    seats_manager.filter.return_value.count.return_value = 0
+    monkeypatch.setattr(services.SummerCampEnrollment, "objects", seats_manager)
     assert services.create_session("school-1", {"capacity": 20}) is created_session
     assert services.update_session("school-1", "session-1", {"capacity": 25}) is session
     assert session.capacity == 25
