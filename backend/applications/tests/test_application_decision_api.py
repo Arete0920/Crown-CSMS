@@ -169,7 +169,8 @@ def test_accept_rejects_existing_student_number_without_guessing_identity():
     assert StudentIdentityLink.objects.filter(school=school).count() == 0
 
 
-def test_accept_reuses_existing_verified_identity_link_without_new_number():
+@pytest.mark.parametrize("canonical_status", ["ACTIVE", "APPLICANT"])
+def test_accept_reuses_existing_verified_identity_link_without_new_number(canonical_status):
     school, hh, family, app, applicant = _mk_application_with_family_bridge()
     compatibility_student = Student.objects.create(
         school_id=school.id,
@@ -189,7 +190,7 @@ def test_accept_reuses_existing_verified_identity_link_without_new_number():
         first_name=applicant.first_name,
         last_name=applicant.last_name,
         dob=applicant.dob,
-        status="ACTIVE",
+        status=canonical_status,
     )
     StudentIdentityLink.objects.create(
         school=school,
@@ -244,3 +245,97 @@ def test_deny_creates_no_students_or_charges():
     assert StudentIdentityLink.objects.count() == 0
     assert LedgerAccount.objects.count() == 0
     assert Charge.objects.count() == 0
+
+
+
+@pytest.mark.parametrize(
+    "invalid",
+    ["missing_dob", "wrong_dob", "wrong_family", "wrong_name", "blank_evidence", "withdrawn"],
+)
+def test_accept_reused_identity_rejects_unverified_child_context(invalid):
+    school, hh, family, app, applicant = _mk_application_with_family_bridge()
+    compatibility_student = Student.objects.create(
+        school_id=school.id,
+        household=hh,
+        first_name=applicant.first_name,
+        last_name=applicant.last_name,
+        grade_level=applicant.grade_applying_for,
+    )
+    applicant.student = compatibility_student
+    applicant.save(update_fields=["student", "updated_at"])
+    core = CoreStudent.objects.create(
+        school=school,
+        family=family,
+        student_number="S-VERIFIED-REUSE",
+        first_name=applicant.first_name,
+        last_name=applicant.last_name,
+        dob=applicant.dob,
+        status="ACTIVE",
+    )
+    link = StudentIdentityLink.objects.create(
+        school=school,
+        core_student=core,
+        compatibility_student=compatibility_student,
+        source=StudentIdentityLink.SOURCE_MANUAL,
+        verification_status=StudentIdentityLink.STATUS_VERIFIED,
+        evidence_reference="verified:explicit-test-record",
+    )
+
+    if invalid == "missing_dob":
+        applicant.dob = None
+        applicant.save(update_fields=["dob", "updated_at"])
+    elif invalid == "wrong_dob":
+        applicant.dob = date(2014, 1, 2)
+        applicant.save(update_fields=["dob", "updated_at"])
+    elif invalid == "wrong_family":
+        other_family = Family.objects.create(school=school, family_name="Other family")
+        core.family = other_family
+        core.save(update_fields=["family"])
+    elif invalid == "wrong_name":
+        applicant.last_name = "Unrelated"
+        applicant.save(update_fields=["last_name", "updated_at"])
+    elif invalid == "blank_evidence":
+        # Simulate an invalid historical row without bypassing service validation.
+        StudentIdentityLink.objects.filter(pk=link.pk).update(evidence_reference="")
+    else:
+        core.status = "WITHDRAWN"
+        core.save(update_fields=["status"])
+
+    response = _client_for_school(school.id).post(
+        f"/api/v1/applications/{app.id}/decision/",
+        data={"decision": "ACCEPT"},
+        content_type="application/json",
+    )
+    assert response.status_code == 400, response.content
+    app.refresh_from_db()
+    assert app.status == ApplicationStatus.SUBMITTED
+    assert CoreStudent.objects.filter(school=school).count() == 1
+    assert Student.objects.filter(household=hh).count() == 1
+    assert StudentIdentityLink.objects.filter(school=school).count() == 1
+    assert not LedgerAccount.objects.filter(household=hh).exists()
+    assert not Charge.objects.filter(school_id=school.id).exists()
+
+
+def test_accept_rejects_cross_school_family_bridge_before_student_creation():
+    school, hh, family, app, applicant = _mk_application_with_family_bridge()
+    other_school = School.objects.create(name=f"Another School-{uuid.uuid4()}")
+    other_family = Family.objects.create(
+        school=other_school, family_name="Wrong school family",
+    )
+    HouseholdFamilyLink.objects.filter(
+        school=school, household_id=hh.id,
+    ).update(family=other_family)
+
+    response = _client_for_school(school.id).post(
+        f"/api/v1/applications/{app.id}/decision/",
+        data={
+            "decision": "ACCEPT",
+            "student_numbers": {str(applicant.id): "S-NO-CROSS-TENANT"},
+        },
+        content_type="application/json",
+    )
+    assert response.status_code == 400, response.content
+    app.refresh_from_db()
+    assert app.status == ApplicationStatus.SUBMITTED
+    assert not CoreStudent.objects.filter(school=school).exists()
+    assert not StudentIdentityLink.objects.filter(school=school).exists()
