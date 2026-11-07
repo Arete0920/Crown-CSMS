@@ -53,6 +53,7 @@ def list_staff_proposals(*, school_id, actor_id, site_id, room_id):
         rows = DaycareRoomStaffCoverage.objects.filter(
             school=school, site=site, room=room,
             is_active=False, is_qualified=False, verified_by__isnull=True,
+            verified_at__isnull=True, qualification_evidence="",
         ).order_by("starts_at", "pk")
         return {
             "school_id": str(school.pk),
@@ -95,6 +96,7 @@ def create_staff_proposal(*, school_id, actor_id, site_id, room_id,
         ).first()
         if exact is not None:
             if (exact.is_active or exact.is_qualified or
+                    bool(exact.qualification_evidence.strip()) or
                     exact.verified_by_id is not None or exact.verified_at is not None):
                 raise StaffProposalConflict("Existing reviewed assignment is not a proposal.")
             if overlaps.exclude(pk=exact.pk).exists():
