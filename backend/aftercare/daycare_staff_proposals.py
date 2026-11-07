@@ -18,6 +18,9 @@ class StaffProposalConflict(Exception):
     pass
 
 
+_PROPOSAL_AUDIT_ACTION = "diadem.daycare.staff_proposal.created"
+
+
 def _site_and_room(school, site_id, room_id, *, lock=False):
     sites = DaycareSite.objects
     rooms = DaycareRoom.objects
@@ -50,11 +53,31 @@ def list_staff_proposals(*, school_id, actor_id, site_id, room_id):
     with transaction.atomic():
         school, _actor = require_configuration(school_id, actor_id)
         site, room = _site_and_room(school, site_id, room_id)
-        rows = DaycareRoomStaffCoverage.objects.filter(
+        rows = list(DaycareRoomStaffCoverage.objects.filter(
             school=school, site=site, room=room,
             is_active=False, is_qualified=False, verified_by__isnull=True,
             verified_at__isnull=True, qualification_evidence="",
-        ).order_by("starts_at", "pk")
+        ).order_by("starts_at", "pk"))
+        # A revoked or legacy unqualified shift is not automatically a
+        # director-created proposal. Require its attributed creation event.
+        provenance = set()
+        if rows:
+            events = AuditLog.objects.filter(
+                action=_PROPOSAL_AUDIT_ACTION,
+                model="DaycareRoomStaffCoverage",
+                object_id__in=[str(row.pk) for row in rows],
+                metadata__school_id=str(school.pk),
+                metadata__site_id=str(site.pk),
+                metadata__room_id=str(room.pk),
+            ).values_list("object_id", "metadata")
+            provenance = {
+                (object_id, metadata.get("staff_id"))
+                for object_id, metadata in events if isinstance(metadata, dict)
+            }
+        rows = [
+            row for row in rows
+            if (str(row.pk), str(row.staff_id)) in provenance
+        ]
         return {
             "school_id": str(school.pk),
             "site_id": str(site.pk),
@@ -101,6 +124,16 @@ def create_staff_proposal(*, school_id, actor_id, site_id, room_id,
                 raise StaffProposalConflict("Existing reviewed assignment is not a proposal.")
             if overlaps.exclude(pk=exact.pk).exists():
                 raise StaffProposalConflict("Staff already has overlapping coverage.")
+            if not AuditLog.objects.filter(
+                action=_PROPOSAL_AUDIT_ACTION,
+                model="DaycareRoomStaffCoverage",
+                object_id=str(exact.pk),
+                metadata__school_id=str(school.pk),
+                metadata__site_id=str(site.pk),
+                metadata__room_id=str(room.pk),
+                metadata__staff_id=str(staff.pk),
+            ).exists():
+                raise StaffProposalConflict("Existing coverage is not a director proposal.")
             return exact, False
         if overlaps.exists():
             raise StaffProposalConflict("Staff already has overlapping coverage.")
@@ -111,7 +144,7 @@ def create_staff_proposal(*, school_id, actor_id, site_id, room_id,
             verified_by=None, verified_at=None,
         )
         AuditLog.objects.create(
-            user_id=actor.pk, action="diadem.daycare.staff_proposal.created",
+            user_id=actor.pk, action=_PROPOSAL_AUDIT_ACTION,
             model="DaycareRoomStaffCoverage", object_id=str(proposal.pk),
             metadata={
                 "school_id": str(school.pk), "site_id": str(site.pk),
