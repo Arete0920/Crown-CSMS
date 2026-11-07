@@ -270,6 +270,7 @@ urlpatterns = [
     # placing real includes first ensures Django first-match resolves to real views.
     path("board/", include("board_oversight.urls")),
     path("hr/", include("hr.urls")),
+    path("teacher-evaluations/", include("teacher_evaluations.urls")),
     path("student-health/", include("student_health.urls")),
     path("advancement/", include("advancement.urls")),
     path("crownpass/", include("crownpass.urls")),
