@@ -26,8 +26,11 @@ def _build():
     school, director, client, profile, entitlement = tenant()
     site_id = post_site(client).data["site_id"]
     room_id = client.post(room_url(site_id), ROOM, format="json").data["room_id"]
+    staff_key = uuid4().hex
     staff = UserAccount.objects.create_user(
-        username=f"diadem-staff-{uuid4().hex}", school=school,
+        username=f"diadem-staff-{staff_key}",
+        email=f"diadem-staff-{staff_key}@example.test",
+        school=school,
     )
     UserRole.objects.create(user=staff, school=school, role_code="DAYCARE_STAFF")
     starts = timezone.now() + timedelta(days=2)
