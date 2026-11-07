@@ -101,6 +101,21 @@ test.describe("Heritage six-persona guided presenter links, click by click", () 
           await expect(link).toBeVisible();
           await link.click();
           await expect(page).not.toHaveURL(/\/(login|sandbox\/command-center)(?:\?|$)/);
+          // Wait for protected parent-journey API guards to resolve before
+          // measuring page content. Their real loading state intentionally
+          // renders only "Checking parent journey state…" (30 characters).
+          // Never reduce the content requirement or accept a loading guard
+          // as evidence of a working linked page.
+          const contentRoot = page.locator("main, [role='main']").first();
+          const readPageText = async () => String(await (await contentRoot.count()
+            ? contentRoot.innerText() : page.locator("body").innerText()) || "").trim();
+          await expect.poll(async () => {
+            if (await page.locator('section[aria-busy="true"]').count()) return 0;
+            return (await readPageText()).length;
+          }, {
+            message: `Wait for ${persona.role} proof route ${href} to finish loading`,
+            timeout: 20_000,
+          }).toBeGreaterThan(35);
           // Some legitimate operational pages use MUI Box instead of a semantic main.
           // Require a visible document heading and actual page content, not one tag name.
           const headingNode = page.locator("h1, h2, h3, h4, [role='heading']").filter({ hasText: /\S.{2,}/ }).first();
@@ -111,9 +126,7 @@ test.describe("Heritage six-persona guided presenter links, click by click", () 
           const heading = String(await headingNode.textContent() || "").trim();
           expect(heading.length).toBeGreaterThan(2);
           expect(heading).not.toMatch(/^(404|not found|unauthorized|access denied)$/i);
-          const contentRoot = page.locator("main, [role='main']").first();
-          const mainText = String(await (await contentRoot.count()
-            ? contentRoot.innerText() : page.locator("body").innerText()) || "").trim();
+          const mainText = await readPageText();
           expect(mainText.length).toBeGreaterThan(35);
           expect(mainText).not.toMatch(/missing household_id in query string|not authorized|access denied/i);
           if (persona.role === "finance_director" && index === 2) {
