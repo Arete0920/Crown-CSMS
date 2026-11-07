@@ -633,6 +633,25 @@ def record_incident(
     health_followup_required=False,
     category="",
 ):
+    # Never persist a cross-school session or a child absent from the
+    # referenced Camp program. A nullable student denotes a site-only event.
+    if not SummerCampSession.objects.filter(
+        pk=session_id, school_id=school_id, program__school_id=school_id,
+    ).exists():
+        raise ValueError("Camp incident session is invalid.")
+    if student_id is not None:
+        valid_camper = (
+            Student.objects.filter(
+                pk=student_id, school_id=school_id,
+                household__school_id=school_id,
+            ).exists()
+            and SummerCampEnrollment.objects.filter(
+                school_id=school_id, session_id=session_id,
+                student_id=student_id, session__school_id=school_id,
+            ).exists()
+        )
+        if not valid_camper:
+            raise ValueError("Camp incident camper is invalid.")
     incident = SummerCampIncident.objects.create(
         school_id=school_id,
         student_id=student_id,
