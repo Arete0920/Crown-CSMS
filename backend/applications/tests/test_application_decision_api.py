@@ -169,6 +169,40 @@ def test_accept_rejects_existing_student_number_without_guessing_identity():
     assert StudentIdentityLink.objects.filter(school=school).count() == 0
 
 
+@pytest.mark.parametrize(
+    "invalid",
+    ["different_first_name", "different_last_name", "inactive_student"],
+)
+def test_accept_refuses_unlinked_sibling_or_inactive_compatibility_student(invalid):
+    school, household, _family, app, applicant = _mk_application_with_family_bridge()
+    first_name = "Sibling" if invalid == "different_first_name" else applicant.first_name
+    last_name = "Other" if invalid == "different_last_name" else applicant.last_name
+    existing = Student.objects.create(
+        school_id=school.id, household=household,
+        first_name=first_name, last_name=last_name,
+        grade_level="5", is_active=invalid != "inactive_student",
+    )
+    applicant.student = existing
+    applicant.save(update_fields=["student", "updated_at"])
+
+    response = _client_for_school(school.id).post(
+        f"/api/v1/applications/{app.id}/decision/",
+        data={
+            "decision": "ACCEPT",
+            "student_numbers": {str(applicant.id): "S-DO-NOT-REUSE-SIBLING"},
+        },
+        content_type="application/json",
+    )
+    assert response.status_code == 400, response.content
+    app.refresh_from_db()
+    assert app.status == ApplicationStatus.SUBMITTED
+    assert Student.objects.filter(household=household).count() == 1
+    assert CoreStudent.objects.filter(school=school).count() == 0
+    assert StudentIdentityLink.objects.filter(school=school).count() == 0
+    assert not LedgerAccount.objects.filter(household=household).exists()
+    assert not Charge.objects.filter(school=school).exists()
+
+
 @pytest.mark.parametrize("canonical_status", ["ACTIVE", "APPLICANT"])
 def test_accept_reuses_existing_verified_identity_link_without_new_number(canonical_status):
     school, hh, family, app, applicant = _mk_application_with_family_bridge()

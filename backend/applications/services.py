@@ -129,12 +129,27 @@ def _family_for_application(application):
 
 
 def _provision_student_identity(*, application, applicant, family, student_numbers):
+    if applicant.school_id != application.school_id:
+        raise ValueError("Applicant belongs to a different school.")
     compatibility_student = applicant.student
     if compatibility_student is not None:
         if compatibility_student.school_id != application.school_id:
             raise ValueError("Applicant student belongs to a different school.")
         if compatibility_student.household_id != application.household_id:
             raise ValueError("Applicant student belongs to a different household.")
+        # A legacy household student can be a sibling (or an inactive record).
+        # Being in the same family is not sufficient evidence to bind it to the
+        # current applicant; require an explicit identity reconciliation.
+        if (
+            not compatibility_student.is_active
+            or str(compatibility_student.first_name or "").strip().casefold()
+               != str(applicant.first_name or "").strip().casefold()
+            or str(compatibility_student.last_name or "").strip().casefold()
+               != str(applicant.last_name or "").strip().casefold()
+        ):
+            raise ValueError(
+                "Applicant compatibility student requires an active, matching identity."
+            )
 
         existing_link = StudentIdentityLink.objects.select_related("core_student").filter(
             compatibility_student=compatibility_student,
