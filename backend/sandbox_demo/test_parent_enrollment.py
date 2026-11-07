@@ -80,9 +80,7 @@ def test_parent_enrollment_api_completes_real_records_without_external_payment(s
     assert completed.data["lifecycle_stage"] == "enrolled"
     assert completed.data["contract_status"] == "countersigned"
     assert completed.data["deposit_status"] == "paid"
-    assert completed.data["applicant_to_student_status"] == "completed"
-    assert completed.data["classroom_readiness_status"] == "completed"
-    assert completed.data["parent_portal_activation_status"] == "completed"
+    _assert_continuity(completed.data, "completed")
     assert completed.data["child_id"]
     assert completed.data["demo_payment_processed"] is False
 
@@ -151,18 +149,12 @@ def test_parent_enrollment_api_completes_real_records_without_external_payment(s
         f"/api/v1/sandbox/parent/enrollment/?application_id={application_id}"
     )
     assert reread.status_code == 200, reread.data
-    assert reread.data["applicant_to_student_status"] == "completed"
-    assert reread.data["classroom_readiness_status"] == "completed"
-    assert reread.data["parent_portal_activation_status"] == "completed"
+    _assert_continuity(reread.data, "completed")
     overview = client.get("/api/v1/parent360/me/overview/")
     assert overview.status_code == 200, overview.data
-    row = next(
-        row for row in overview.data["admissions_continuity"]["applications"]
-        if row["application_id"] == str(application_id)
-    )
-    assert row["applicant_to_student_status"] == "completed"
-    assert row["classroom_readiness_status"] == "completed"
-    assert row["parent_portal_activation_status"] == "completed"
+    rows = overview.data["admissions_continuity"]["applications"]
+    row = next(item for item in rows if item["application_id"] == str(application_id))
+    _assert_continuity(row, "completed")
     assert ApplicationEvent.objects.filter(
         application_id=application_id,
         event_type="enrollment_confirmed",
@@ -196,6 +188,17 @@ def test_parent_enrollment_api_rejects_non_parent_persona():
     assert response.data["code"] == "heritage_parent_required"
 
 
+def _post_parent_enrollment(client, application_id, *, accepted_terms=True):
+    payload = {"application_id": application_id, "accepted_terms": accepted_terms}
+    return client.post("/api/v1/sandbox/parent/enrollment/", payload, format="json")
+
+
+def _assert_continuity(data, expected):
+    for key in ("applicant_to_student_status", "classroom_readiness_status",
+                "parent_portal_activation_status"):
+        assert data[key] == expected
+
+
 @override_settings(CROWN_SANDBOX_ALLOW_OPEN_SESSION=True)
 def test_parent_enrollment_missing_dob_fails_closed_without_core_writes():
     school, parent, application_id = _setup()
@@ -204,11 +207,7 @@ def test_parent_enrollment_missing_dob_fails_closed_without_core_writes():
     applicant.save(update_fields=["dob", "updated_at"])
     client = _client(parent, school)
 
-    response = client.post(
-        "/api/v1/sandbox/parent/enrollment/",
-        {"application_id": application_id, "accepted_terms": True},
-        format="json",
-    )
+    response = _post_parent_enrollment(client, application_id)
     assert response.status_code == 409, response.data
     assert response.data["code"] == "verified_date_of_birth_required"
     assert not CoreStudent.objects.filter(
@@ -218,9 +217,7 @@ def test_parent_enrollment_missing_dob_fails_closed_without_core_writes():
     assert not ApplicationEvent.objects.filter(
         application_id=application_id, event_type="enrollment_confirmed",
     ).exists()
-    reread = client.get(
-        f"/api/v1/sandbox/parent/enrollment/?application_id={application_id}"
-    )
+    reread = client.get(f"/api/v1/sandbox/parent/enrollment/?application_id={application_id}")
     assert reread.status_code == 200
     assert reread.data["lifecycle_stage"] == "accepted"
 
@@ -230,44 +227,28 @@ def test_parent_enrollment_readback_does_not_certify_deleted_identity(settings, 
     _dev_parent_overview_runtime(settings, monkeypatch)
     school, parent, application_id = _setup()
     client = _client(parent, school)
-    done = client.post(
-        "/api/v1/sandbox/parent/enrollment/",
-        {"application_id": application_id, "accepted_terms": True},
-        format="json",
-    )
+    done = _post_parent_enrollment(client, application_id)
     assert done.status_code == 200, done.data
     identity = StudentIdentityLink.objects.get(
         school_id=school.id, compatibility_student_id=done.data["child_id"],
     )
     identity.delete()
-    reread = client.get(
-        f"/api/v1/sandbox/parent/enrollment/?application_id={application_id}"
-    )
+    reread = client.get(f"/api/v1/sandbox/parent/enrollment/?application_id={application_id}")
     assert reread.status_code == 200
     assert reread.data["lifecycle_stage"] == "enrolled"
-    assert reread.data["applicant_to_student_status"] == "in_progress"
-    assert reread.data["classroom_readiness_status"] == "in_progress"
-    assert reread.data["parent_portal_activation_status"] == "in_progress"
+    _assert_continuity(reread.data, "in_progress")
     overview = client.get("/api/v1/parent360/me/overview/")
     assert overview.status_code == 200, overview.data
-    row = next(
-        row for row in overview.data["admissions_continuity"]["applications"]
-        if row["application_id"] == str(application_id)
-    )
-    assert row["applicant_to_student_status"] == "in_progress"
-    assert row["classroom_readiness_status"] == "in_progress"
-    assert row["parent_portal_activation_status"] == "in_progress"
+    rows = overview.data["admissions_continuity"]["applications"]
+    row = next(item for item in rows if item["application_id"] == str(application_id))
+    _assert_continuity(row, "in_progress")
 
 
 @override_settings(CROWN_SANDBOX_ALLOW_OPEN_SESSION=True)
 def test_parent_synthetic_scenario_can_reset_after_verified_enrollment():
     school, parent, old_id = _setup()
     client = _client(parent, school)
-    done = client.post(
-        "/api/v1/sandbox/parent/enrollment/",
-        {"application_id": old_id, "accepted_terms": True},
-        format="json",
-    )
+    done = _post_parent_enrollment(client, old_id)
     assert done.status_code == 200, done.data
     old_child_id = done.data["child_id"]
     old_core_id = StudentIdentityLink.objects.get(
@@ -285,18 +266,12 @@ def test_parent_synthetic_scenario_can_reset_after_verified_enrollment():
     assert before.status_code == 200
     assert before.data["lifecycle_stage"] == "accepted"
 
-
-
 @pytest.mark.parametrize("tamper", ["identity_evidence", "identity_family", "academic_year"])
 @override_settings(CROWN_SANDBOX_ALLOW_OPEN_SESSION=True)
 def test_completed_enrollment_rejects_unrelated_canonical_proof(tamper):
     school, parent, application_id = _setup()
     client = _client(parent, school)
-    completed = client.post(
-        "/api/v1/sandbox/parent/enrollment/",
-        {"application_id": application_id, "accepted_terms": True},
-        format="json",
-    )
+    completed = _post_parent_enrollment(client, application_id)
     assert completed.status_code == 200, completed.data
     applicant = Applicant.objects.get(application_id=application_id)
     identity = StudentIdentityLink.objects.get(
@@ -315,11 +290,8 @@ def test_completed_enrollment_rejects_unrelated_canonical_proof(tamper):
         identity.core_student.save(update_fields=["family"])
     else:
         prior_year = AcademicYear.objects.create(
-            school=school,
-            name="2024-2025",
-            start_date=date(2024, 8, 15),
-            end_date=date(2025, 6, 5),
-            is_current=False,
+            school=school, name="2024-2025", start_date=date(2024, 8, 15),
+            end_date=date(2025, 6, 5), is_current=False,
         )
         enrollment = CoreEnrollment.objects.get(student=identity.core_student)
         enrollment.academic_year = prior_year
@@ -327,18 +299,10 @@ def test_completed_enrollment_rejects_unrelated_canonical_proof(tamper):
 
     application = Application.objects.get(pk=application_id)
     assert not has_verified_student_enrollments(application)
-    reread = client.get(
-        f"/api/v1/sandbox/parent/enrollment/?application_id={application_id}"
-    )
+    reread = client.get(f"/api/v1/sandbox/parent/enrollment/?application_id={application_id}")
     assert reread.status_code == 200, reread.data
-    assert reread.data["applicant_to_student_status"] == "in_progress"
-    assert reread.data["classroom_readiness_status"] == "in_progress"
-    assert reread.data["parent_portal_activation_status"] == "in_progress"
-    replay = client.post(
-        "/api/v1/sandbox/parent/enrollment/",
-        {"application_id": application_id, "accepted_terms": True},
-        format="json",
-    )
+    _assert_continuity(reread.data, "in_progress")
+    replay = _post_parent_enrollment(client, application_id)
     assert replay.status_code == 409, replay.data
     assert replay.data["code"] == "canonical_enrollment_verification_failed"
 
@@ -347,11 +311,7 @@ def test_completed_enrollment_rejects_unrelated_canonical_proof(tamper):
 def test_seed_reset_preserves_same_name_application_and_other_household_student():
     school, parent, application_id = _setup()
     client = _client(parent, school)
-    completed = client.post(
-        "/api/v1/sandbox/parent/enrollment/",
-        {"application_id": application_id, "accepted_terms": True},
-        format="json",
-    )
+    completed = _post_parent_enrollment(client, application_id)
     assert completed.status_code == 200, completed.data
     scenario = Application.objects.get(pk=application_id)
     unrelated_child = Student.objects.create(
@@ -368,12 +328,9 @@ def test_seed_reset_preserves_same_name_application_and_other_household_student(
         school_id=school.id, household=unrelated_household
     )
     Applicant.objects.create(
-        school_id=school.id,
-        application=unrelated_app,
-        first_name="Jordan",
-        last_name="Reed",
-        grade_applying_for="7",
-        dob=date(2013, 2, 15),
+        school_id=school.id, application=unrelated_app,
+        first_name="Jordan", last_name="Reed",
+        grade_applying_for="7", dob=date(2013, 2, 15),
     )
     new_scenario = seed_parent_enrollment_scenario()
     assert new_scenario["parent_enrollment_application_id"] != str(application_id)
@@ -387,11 +344,7 @@ def test_seed_reset_preserves_same_name_application_and_other_household_student(
 @override_settings(CROWN_SANDBOX_ALLOW_OPEN_SESSION=True)
 def test_parent_reset_preserves_legacy_audit_history():
     school, parent, application_id = _setup()
-    response = _client(parent, school).post(
-        "/api/v1/sandbox/parent/enrollment/",
-        {"application_id": application_id, "accepted_terms": True},
-        format="json",
-    )
+    response = _post_parent_enrollment(_client(parent, school), application_id)
     assert response.status_code == 200, response.data
     legacy = AdmissionsApplication.objects.get(
         school=school,
@@ -401,10 +354,7 @@ def test_parent_reset_preserves_legacy_audit_history():
         school=school, entity_type=AdmissionsAuditEvent.ENTITY_APPLICATION,
         entity_id=legacy.pk, action="TEST_HISTORICAL_RECEIPT",
     )
-    with pytest.raises(
-        SandboxParentEnrollmentError,
-        match="reset_historical_admissions_audit_exists",
-    ):
+    with pytest.raises(SandboxParentEnrollmentError, match="reset_historical_admissions_audit_exists"):
         seed_parent_enrollment_scenario()
     assert Application.objects.filter(pk=application_id).exists()
     assert AdmissionsApplication.objects.filter(pk=legacy.pk).exists()
@@ -414,20 +364,13 @@ def test_parent_reset_preserves_legacy_audit_history():
 @override_settings(CROWN_SANDBOX_ALLOW_OPEN_SESSION=True)
 def test_parent_reset_preserves_extra_application_event():
     school, parent, application_id = _setup()
-    response = _client(parent, school).post(
-        "/api/v1/sandbox/parent/enrollment/",
-        {"application_id": application_id, "accepted_terms": True},
-        format="json",
-    )
+    response = _post_parent_enrollment(_client(parent, school), application_id)
     assert response.status_code == 200, response.data
     extra = ApplicationEvent.objects.create(
         school_id=school.id, application_id=application_id,
         event_type="decision_made", payload={"decision": "accepted", "note": "later review"},
     )
-    with pytest.raises(
-        SandboxParentEnrollmentError,
-        match="reset_application_history_not_synthetic",
-    ):
+    with pytest.raises(SandboxParentEnrollmentError, match="reset_application_history_not_synthetic"):
         seed_parent_enrollment_scenario()
     assert Application.objects.filter(pk=application_id).exists()
     assert ApplicationEvent.objects.filter(pk=extra.pk).exists()
@@ -443,10 +386,7 @@ def test_parent_reset_refuses_added_applicant_and_preserves_all_records():
         first_name="Unrelated", last_name="Child",
         dob=date(2014, 3, 18), grade_applying_for="6",
     )
-    with pytest.raises(
-        SandboxParentEnrollmentError,
-        match="reset_application_history_not_synthetic",
-    ):
+    with pytest.raises(SandboxParentEnrollmentError, match="reset_application_history_not_synthetic"):
         seed_parent_enrollment_scenario()
     assert Application.objects.filter(pk=application.pk).exists()
     assert Applicant.objects.filter(pk=original.pk).exists()
@@ -457,35 +397,22 @@ def test_parent_reset_refuses_added_applicant_and_preserves_all_records():
 def test_reset_blocks_cross_year_student_deletion_and_rolls_back():
     school, parent, application_id = _setup()
     client = _client(parent, school)
-    completed = client.post(
-        "/api/v1/sandbox/parent/enrollment/",
-        {"application_id": application_id, "accepted_terms": True},
-        format="json",
-    )
+    completed = _post_parent_enrollment(client, application_id)
     assert completed.status_code == 200, completed.data
     identity = StudentIdentityLink.objects.get(
         school_id=school.id, compatibility_student_id=completed.data["child_id"]
     )
     original = CoreEnrollment.objects.get(student=identity.core_student)
     prior_year = AcademicYear.objects.create(
-        school=school,
-        name="2025-2026",
-        start_date=date(2025, 8, 15),
-        end_date=date(2026, 6, 5),
-        is_current=False,
+        school=school, name="2025-2026", start_date=date(2025, 8, 15),
+        end_date=date(2026, 6, 5), is_current=False,
     )
     older = CoreEnrollment.objects.create(
-        school=school,
-        student=identity.core_student,
-        academic_year=prior_year,
-        grade_level=original.grade_level,
-        start_date=date(2025, 8, 15),
+        school=school, student=identity.core_student, academic_year=prior_year,
+        grade_level=original.grade_level, start_date=date(2025, 8, 15),
         status="ENROLLED",
     )
-    with pytest.raises(
-        SandboxParentEnrollmentError,
-        match="reset_student_has_external_enrollment",
-    ):
+    with pytest.raises(SandboxParentEnrollmentError, match="reset_student_has_external_enrollment"):
         seed_parent_enrollment_scenario()
     assert Application.objects.filter(pk=application_id).exists()
     assert CoreStudent.objects.filter(pk=identity.core_student_id).exists()
