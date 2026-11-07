@@ -8,6 +8,7 @@ from __future__ import annotations
 from datetime import date
 
 from django.db import transaction
+from django.db.models.deletion import Collector
 from django.utils import timezone
 
 from admissions.models import AdmissionsApplication, AdmissionsAuditEvent
@@ -51,8 +52,17 @@ def reset_heritage_admissions_conversion_scenario() -> None:
     if len(marked) != 1:
         raise ValueError("Ambiguous marked Heritage fixture; do not delete.")
 
-    applicant = marked[0]
-    application = applicant.application
+    # Serialize fixture cleanup with new application-owned records. A parent
+    # row lock blocks concurrent FK inserts on PostgreSQL until this commits.
+    application = (
+        Application.objects.select_related("household").select_for_update()
+        .get(pk=marked[0].application_id, school_id=school.pk)
+    )
+    applicant = (
+        Applicant.objects.select_related("student").select_for_update(of=("self",))
+        .get(pk=marked[0].pk, school_id=school.pk, application=application,
+             flags__heritage_conversion_fixture=FIXTURE_MARKER)
+    )
     household = application.household
     compatibility = applicant.student
     family = Family.objects.filter(school=school, family_name=FAMILY_NAME).first()
@@ -215,6 +225,34 @@ def reset_heritage_admissions_conversion_scenario() -> None:
             "Heritage fixture has completed enrollment or audit history; "
             "preserve records and use a fresh isolated sandbox."
         )
+
+    # Inspect the ORM's actual application cascade before authorizing it.
+    # An independent checklist/document, receipt or additional FK relation
+    # must never be silently erased by fictional scenario reset.
+    collector = Collector(using=application._state.db)
+    collector.collect([application])
+    affected = {}
+    for model, objects in collector.data.items():
+        if objects:
+            affected[model] = affected.get(model, 0) + len(objects)
+    for queryset in collector.fast_deletes:
+        affected[queryset.model] = (
+            affected.get(queryset.model, 0) + queryset.count()
+        )
+    expected = {
+        Application: 1, Applicant: 1, ApplicationEvent: 3,
+        EnrollmentContract: 1,
+    }
+    if affected != expected:
+        raise ValueError(
+            "Heritage application has unexpected dependent data; preserve records."
+        )
+    for groups in collector.field_updates.values():
+        for records in groups:
+            if records.exists() if hasattr(records, "exists") else bool(records):
+                raise ValueError(
+                    "Heritage application has dependent update evidence; preserve records."
+                )
 
     # Deletions are only for this exact, explicitly marked fictional fixture.
     # The surrounding atomic transaction rolls back on any protected relation.

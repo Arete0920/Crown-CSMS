@@ -2,7 +2,10 @@ import pytest
 from rest_framework.test import APIClient
 
 from admissions.models import AdmissionsApplication
-from applications.models import Application, Applicant, ApplicationEvent, EnrollmentContract, EnrollmentContractStatus
+from applications.models import (
+    Application, Applicant, ApplicationChecklistItem, ApplicationEvent,
+    EnrollmentContract, EnrollmentContractStatus,
+)
 from core.models import Enrollment, Family, Guardian, HouseholdFamilyLink, Student, StudentIdentityLink, UserAccount
 from households.models import Household
 from sandbox_demo.admissions_conversion_seed import (
@@ -204,6 +207,30 @@ def test_reset_refuses_modified_contract_evidence(settings):
         pk=seeded["admissions_conversion_enrollment_id"]
     ).exists()
 
+
+
+def test_reset_refuses_unexpected_application_checklist_cascade(settings):
+    seeded = _seed(settings)
+    application = Application.objects.get(
+        pk=seeded["admissions_conversion_canonical_application_id"]
+    )
+    checklist = ApplicationChecklistItem.objects.create(
+        school_id=application.school_id, application=application,
+        item_key="separate_history", title="Independent admissions evidence",
+    )
+    with pytest.raises(ValueError, match="unexpected dependent data"):
+        reset_heritage_admissions_conversion_scenario()
+    assert ApplicationChecklistItem.objects.filter(pk=checklist.pk).exists()
+    assert EnrollmentContract.objects.filter(
+        pk=seeded["admissions_conversion_contract_id"]
+    ).exists()
+    assert AdmissionsApplication.objects.filter(
+        pk=seeded["admissions_conversion_legacy_application_id"]
+    ).exists()
+    assert Enrollment.objects.filter(
+        pk=seeded["admissions_conversion_enrollment_id"]
+    ).exists()
+    assert Application.objects.filter(pk=application.pk).exists()
 
 def test_repeated_seed_replaces_only_explicit_fictional_fixture(settings):
     original = _seed(settings)
