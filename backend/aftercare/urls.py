@@ -1,11 +1,12 @@
 from django.urls import path
 
 from . import api, wizard_api, daycare_api
-from . import daycare_setup_api
+from . import daycare_setup_api, daycare_staff_proposals_api
 
 urlpatterns = [
     path("daycare/setup/sites/", daycare_setup_api.setup_sites, name="diadem_setup_sites"),
     path("daycare/setup/sites/<uuid:site_id>/rooms/", daycare_setup_api.setup_rooms, name="diadem_setup_rooms"),
+    path("daycare/setup/sites/<uuid:site_id>/rooms/<uuid:room_id>/staff-proposals/", daycare_staff_proposals_api.setup_staff_proposals, name="diadem_setup_staff_proposals"),
     path("daycare/sites/", daycare_api.daycare_sites, name="diadem_sites"),
     path("daycare/sites/<uuid:site_id>/roster/", daycare_api.daycare_open_roster, name="diadem_open_roster"),
     path("daycare/sites/<uuid:site_id>/attendance/<uuid:attendance_id>/release-authorities/", daycare_api.daycare_release_authorities, name="diadem_release_authorities"),
