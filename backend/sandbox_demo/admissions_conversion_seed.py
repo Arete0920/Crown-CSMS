@@ -248,9 +248,9 @@ def reset_heritage_admissions_conversion_scenario() -> None:
         if objects:
             affected[model] = affected.get(model, 0) + len(objects)
     for queryset in collector.fast_deletes:
-        affected[queryset.model] = (
-            affected.get(queryset.model, 0) + queryset.count()
-        )
+        count = queryset.count()
+        if count:
+            affected[queryset.model] = affected.get(queryset.model, 0) + count
     expected = {
         Application: 1, Applicant: 1, ApplicationEvent: 3,
         EnrollmentContract: 1,
@@ -277,9 +277,9 @@ def reset_heritage_admissions_conversion_scenario() -> None:
             if records:
                 planned[model] = planned.get(model, 0) + len(records)
         for queryset in plan.fast_deletes:
-            planned[queryset.model] = (
-                planned.get(queryset.model, 0) + queryset.count()
-            )
+            count = queryset.count()
+            if count:
+                planned[queryset.model] = planned.get(queryset.model, 0) + count
         if planned != {type(record): 1}:
             raise ValueError(
                 f"Heritage {label} has unrelated dependent records; preserve records."

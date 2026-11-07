@@ -1,6 +1,7 @@
 import uuid
 
 import pytest
+from core.tenant_models import tenant_context
 from rest_framework.test import APIClient
 
 from admissions.models import AdmissionsApplication
@@ -181,7 +182,7 @@ def test_reset_refuses_added_contract_version(settings):
     )
     original = application.enrollment_contracts.get(version=1)
     added = EnrollmentContract.objects.create(
-        school_id=SCHOOL_ID, application=application,
+        school_id=application.school_id, application=application,
         version=2, amended_from=original,
         status=EnrollmentContractStatus.DRAFT,
         note="Independent pending amendment",
@@ -242,11 +243,12 @@ def test_reset_refuses_cascading_canonical_classroom_membership(settings):
     school = Student.objects.get(
         pk=seeded["admissions_conversion_student_id"]
     ).school
-    classroom = Classroom.objects.create(
-        school=school,
-        name=f"Independent classroom {uuid.uuid4().hex[:8]}",
-        grade_level="8",
-    )
+    with tenant_context(school):
+        classroom = Classroom.objects.create(
+            school=school,
+            name=f"Independent classroom {uuid.uuid4().hex[:8]}",
+            grade_level="8",
+        )
     entry = ClassroomEnrollment.objects.create(
         classroom=classroom,
         student_id=seeded["admissions_conversion_student_id"],
