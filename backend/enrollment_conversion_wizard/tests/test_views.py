@@ -1,8 +1,12 @@
 import uuid
+from concurrent.futures import ThreadPoolExecutor
 from datetime import date
 
 from django.contrib.auth import get_user_model
-from django.test import TestCase
+from django.db import (
+    OperationalError, close_old_connections, connection, connections, transaction,
+)
+from django.test import TestCase, TransactionTestCase
 from rest_framework.test import APIClient
 
 from admissions.models import AdmissionsApplication, AdmissionsAuditEvent
@@ -17,6 +21,7 @@ from core.models import (
     GradeLevel, HouseholdFamilyLink, RolePermission, School,
     Student as CoreStudent, StudentIdentityLink, UserRole,
 )
+from enrollment_conversion_wizard.identity import verified_cohort
 from enrollment_conversion_wizard.models import EnrollmentConversionWizardSession
 from enrollment_conversion_wizard.permissions import can_manage_enrollment_conversion
 
@@ -689,3 +694,52 @@ class EnrollmentConversionCoreIdentityProofTests(TestCase):
         # Bypass model validation only to represent a corrupted historical row.
         StudentIdentityLink.objects.filter(pk=identity.pk).update(school=other_school)
         self.assertEqual(self._commit(client, sid, school).status_code, 409)
+
+
+class EnrollmentConversionPostgresRowLockTests(TransactionTestCase):
+    """Check each verified identity row against a real second PG connection."""
+
+    def test_held_conversion_proof_blocks_concurrent_identity_rewrites(self):
+        if connection.vendor != "postgresql":
+            self.skipTest("Requires PostgreSQL; SQLite cannot prove row locks")
+        school = _make_school()
+        year = _make_academic_year(school)
+        legacy = _make_application(school, year)
+        canonical = _link_canonical(legacy)
+        session_id = _advance_to_loaded(_client_for(school), school.pk)
+        applicant = canonical.applicants.get()
+        enrollment = CoreEnrollment.objects.get(student=legacy.student)
+
+        def writer(model, pk, values):
+            close_old_connections()
+            try:
+                try:
+                    with transaction.atomic():
+                        with connection.cursor() as cursor:
+                            cursor.execute("SET LOCAL lock_timeout = '500ms'")
+                        model.objects.filter(pk=pk).update(**values)
+                    return "unexpected-write"
+                except OperationalError as exc:
+                    if "lock timeout" in str(exc).lower():
+                        return "blocked"
+                    raise
+            finally:
+                connections.close_all()
+
+        protected = (
+            (Household, canonical.household_id, {"name": "Concurrent change"}),
+            (Family, legacy.family_id, {"family_name": "Concurrent change"}),
+            (CoreStudent, legacy.student_id, {"last_name": "Concurrent"}),
+            (CompatibilityStudent, applicant.student_id, {"last_name": "Concurrent"}),
+            (GradeLevel, enrollment.grade_level_id, {"label": "Concurrent change"}),
+        )
+        for model, pk, changes in protected:
+            with self.subTest(model=model._meta.label):
+                with transaction.atomic():
+                    session = EnrollmentConversionWizardSession.objects.select_for_update().get(
+                        pk=session_id,
+                    )
+                    self.assertEqual(len(verified_cohort(session, school.pk)), 1)
+                    with ThreadPoolExecutor(max_workers=1) as workers:
+                        result = workers.submit(writer, model, pk, changes).result(timeout=15)
+                    self.assertEqual(result, "blocked", model._meta.label)

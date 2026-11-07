@@ -19,7 +19,6 @@ from applications.views_admissions import (
     _latest_enrollment_state_for_application,
 )
 from core.models import Enrollment, GradeLevel, HouseholdFamilyLink, StudentIdentityLink
-from households.models import Student as CompatibilityStudent
 
 
 class BulkEnrollmentProofError(ValueError):
@@ -79,7 +78,7 @@ def _identity_for_application(app, school_id):
     ):
         raise BulkEnrollmentProofError("Accepted decision, countersigned contract and paid/waived deposit required.")
     links = list(
-        HouseholdFamilyLink.objects.select_for_update(of=("self",))
+        HouseholdFamilyLink.objects.select_related("family").select_for_update()
         .filter(school_id=school_id, household_id=app.household_id)
         .order_by("pk")[:2]
     )
@@ -97,16 +96,12 @@ def _identity_for_application(app, school_id):
     for applicant in applicants:
         if applicant.dob is None or applicant.student_id is None:
             raise BulkEnrollmentProofError("Applicant must have an actual DOB and linked student identity.")
-        compatibility = CompatibilityStudent.objects.filter(
-            pk=applicant.student_id,
-            school_id=school_id,
-            household_id=app.household_id,
-        ).first()
-        if compatibility is None:
-            raise BulkEnrollmentProofError("Applicant compatibility student belongs to another household or school.")
+        # Lock the identity crosswalk and both joined students together,
+        # matching the single-enrollment API order; never lock one first.
         link = (
-            StudentIdentityLink.objects.select_for_update(of=("self",))
-            .select_related("core_student")
+            StudentIdentityLink.objects.select_related(
+                "core_student", "compatibility_student",
+            ).select_for_update()
             .filter(
                 school_id=school_id,
                 compatibility_student_id=applicant.student_id,
@@ -118,6 +113,12 @@ def _identity_for_application(app, school_id):
         )
         if link is None:
             raise BulkEnrollmentProofError("Exact verified applicant-bound canonical identity is required.")
+        compatibility = link.compatibility_student
+        if (
+            compatibility.school_id != school_id
+            or compatibility.household_id != app.household_id
+        ):
+            raise BulkEnrollmentProofError("Applicant compatibility student belongs to another household or school.")
         core = link.core_student
         if (
             core.school_id != school_id
@@ -132,7 +133,7 @@ def _identity_for_application(app, school_id):
                != str(applicant.last_name or "").strip().casefold()
         ):
             raise BulkEnrollmentProofError("Canonical student differs by family, DOB, name, school, status or number.")
-        grade = GradeLevel.objects.filter(
+        grade = GradeLevel.objects.select_for_update(of=("self",)).filter(
             school_id=school_id,
             code=str(applicant.grade_applying_for or "").strip().upper(),
         ).first()
@@ -175,8 +176,7 @@ def verified_cohort(session, school_id, *, enrolled_only=False):
     references = {row.pk: _canonical_reference(row) for row in snapshots}
     canonical_ids = set(references.values())
     canonical_rows = list(
-        Application.objects.select_for_update(of=("self",))
-        .select_related("household")
+        Application.objects.select_related("household").select_for_update()
         .filter(pk__in=canonical_ids, school_id=school_id)
         .order_by("pk")
     )
