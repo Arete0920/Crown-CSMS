@@ -69,3 +69,13 @@ export async function verifyEnrollmentConversionSession(sessionId) {
   const res = await wizardFetch(url, { method: "GET" });
   return checkResponse(res, url);
 }
+ 
+export async function finalizeEnrollmentConversionVerification(sessionId) {
+  const url = `${SESSIONS}${sessionId}/verify/`;
+  const res = await wizardFetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ confirm: true }),
+  });
+  return checkResponse(res, url);
+}

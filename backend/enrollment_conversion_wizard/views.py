@@ -230,7 +230,7 @@ def commit_session(request, session_id):
     return Response({"status": session.status, **result})
 
 @extend_schema(responses=OpenApiTypes.OBJECT)
-@api_view(["GET"])
+@api_view(["GET", "POST"])
 @authentication_classes(_AUTH)
 @permission_classes(_PERM)
 def verify_session(request, session_id):
@@ -239,6 +239,8 @@ def verify_session(request, session_id):
     denied = require_enrollment_conversion_access(request, session.school)
     if denied is not None:
         return denied
+    if request.method == "POST" and request.data.get("confirm") is not True:
+        return Response({"error": "confirm must be true"}, status=status.HTTP_400_BAD_REQUEST)
     try:
         with transaction.atomic():
             session = _get_session_locked(session_id, school_id)
@@ -256,8 +258,9 @@ def verify_session(request, session_id):
                 or len(members) != session.commit_result.get("selected")
             ):
                 raise BulkEnrollmentProofError("Commit receipt or canonical enrollment proof is incomplete.")
-            session.status = EnrollmentConversionWizardSession.STATUS_VERIFIED
-            session.save(update_fields=["status", "updated_at"])
+            if request.method == "POST" and session.status != EnrollmentConversionWizardSession.STATUS_VERIFIED:
+                session.status = EnrollmentConversionWizardSession.STATUS_VERIFIED
+                session.save(update_fields=["status", "updated_at"])
             result = {
                 "status": session.status,
                 "enrolled_count": len(members),

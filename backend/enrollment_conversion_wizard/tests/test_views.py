@@ -397,10 +397,29 @@ class EnrollmentConversionVerifyTest(TestCase):
         _link_canonical(_make_application(school, ay, status="ACCEPTED"))
         c = _client_for(school)
         sid = _advance_to_committed(c, school.id)
-        r = c.get(f"{BASE_URL}{sid}/verify/", **_headers(school.id))
-        self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.data["status"], EnrollmentConversionWizardSession.STATUS_VERIFIED)
-        self.assertIn("enrolled_count", r.data)
+        session = EnrollmentConversionWizardSession.objects.get(pk=sid)
+        original_updated_at = session.updated_at
+        verify_url = f"{BASE_URL}{sid}/verify/"
+        read = c.get(verify_url, **_headers(school.id))
+        self.assertEqual(read.status_code, 200)
+        self.assertEqual(read.data["status"], EnrollmentConversionWizardSession.STATUS_COMMITTED)
+        self.assertTrue(read.data["all_enrolled"])
+        session.refresh_from_db()
+        self.assertEqual(session.status, EnrollmentConversionWizardSession.STATUS_COMMITTED)
+        self.assertEqual(session.updated_at, original_updated_at)
+
+        invalid = c.post(verify_url, {"confirm": "true"}, format="json", **_headers(school.id))
+        self.assertEqual(invalid.status_code, 400)
+        written = c.post(verify_url, {"confirm": True}, format="json", **_headers(school.id))
+        self.assertEqual(written.status_code, 200)
+        self.assertEqual(written.data["status"], EnrollmentConversionWizardSession.STATUS_VERIFIED)
+        session.refresh_from_db()
+        persisted_updated_at = session.updated_at
+        repeat = c.post(verify_url, {"confirm": True}, format="json", **_headers(school.id))
+        self.assertEqual(repeat.status_code, 200)
+        session.refresh_from_db()
+        self.assertEqual(session.updated_at, persisted_updated_at)
+        self.assertEqual(c.get(verify_url, **_headers(school.id)).data["status"], EnrollmentConversionWizardSession.STATUS_VERIFIED)
 
     def test_verify_from_draft_rejected(self):
         school = _make_school()
@@ -409,6 +428,9 @@ class EnrollmentConversionVerifyTest(TestCase):
         sid = r.data["session_id"]
         r2 = c.get(f"{BASE_URL}{sid}/verify/", **_headers(school.id))
         self.assertEqual(r2.status_code, 400)
+        denial = c.post(f"{BASE_URL}{sid}/verify/", {"confirm": True}, format="json", **_headers(school.id))
+        self.assertEqual(denial.status_code, 400)
+        self.assertEqual(EnrollmentConversionWizardSession.objects.get(pk=sid).status, EnrollmentConversionWizardSession.STATUS_DRAFT)
 
 
 class EnrollmentConversionCanonicalGateTest(TestCase):

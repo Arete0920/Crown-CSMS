@@ -48,7 +48,13 @@ test('Enrollment Conversion validates, loads, commits, and verifies against the 
   await expect(page.getByRole('heading', { name: /verify/i })).toBeVisible();
   await expect(page.locator('.crown-success-box')).toContainText('2026-2027');
   await expect(page.locator('.crown-success-box')).toContainText('1 applicant(s) enrolled');
-  await expect(page.locator('.crown-success-box')).toContainText(/status/i);
+  await expect(page.locator('.crown-success-box')).toContainText('Status: committed');
+  const finalizePromise = page.waitForResponse(r => r.url().includes('/verify/') && r.request().method() === 'POST');
+  await page.getByRole('button', { name: /record verified status/i }).click();
+  const finalizeResponse = await finalizePromise;
+  expect(finalizeResponse.ok()).toBeTruthy();
+  expect((await finalizeResponse.json()).status).toBe('verified');
+  await expect(page.locator('.crown-success-box')).toContainText('Status: verified');
 });
 
 test('Enrollment Conversion denies an unauthorized Heritage Teacher', async ({ page }) => {
