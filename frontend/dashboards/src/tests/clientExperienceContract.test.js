@@ -48,7 +48,14 @@ describe('shared client experience contract', () => {
     expect(commandCenter).toContain('CrownIcon');
     expect(commandCenter).toContain('sandbox-experience-header');
     expect(commandCenter).toContain('sandbox-experience-panel');
-    expect(commandCenter).toContain('getSandboxLoginHref');
+    // The proof center must not let a user switch authorization via URL
+    // parameters. A new role requires a fresh server-issued sandbox session.
+    const sandboxLanding = readProjectFile('src/pages/SandboxLandingPage.jsx');
+    expect(commandCenter).not.toContain('getSandboxLoginHref');
+    expect(commandCenter).toContain('to="/sandbox"');
+    expect(commandCenter).toContain('Choose another authorized role');
+    expect(sandboxLanding).toContain('createSandboxSession');
+    expect(sandboxLanding).toContain('getSandboxLoginHref');
     expect(commandCenter).toContain('submitSandboxFeedback');
     expect(commandCenter).toContain('recordSandboxEvent');
     expect(commandCenter).toContain('Return to evaluator');
