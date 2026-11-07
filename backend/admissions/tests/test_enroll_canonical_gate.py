@@ -321,6 +321,40 @@ def test_enroll_rejects_same_name_wrong_legacy_student():
     ).exists()
 
 
+@pytest.mark.parametrize("staff,superuser", [(True, False), (True, True)])
+def test_school_staff_without_admissions_edit_cannot_enroll(staff, superuser):
+    school = _school()
+    year = _year(school)
+    legacy = _legacy_application(school, year)
+    user = User.objects.create_user(
+        username=f"ungranted-staff-{uuid.uuid4().hex[:8]}",
+        email=f"ungranted-staff-{uuid.uuid4().hex}@example.test",
+        school=school, is_staff=staff, is_superuser=superuser,
+    )
+    response = _client(user, school).post(
+        "/api/admissions/enroll/", {"application_id": legacy.id}, format="json",
+    )
+    assert response.status_code == 403, response.data
+    assert response.data["detail"] == "Permission denied."
+    legacy.refresh_from_db()
+    assert legacy.status == AdmissionsApplication.STATUS_ACCEPTED
+
+
+def test_schoolless_platform_operator_retains_explicit_admissions_override():
+    school = _school()
+    user = User.objects.create_superuser(
+        username=f"enrollment-platform-{uuid.uuid4().hex[:8]}",
+        email=f"enrollment-platform-{uuid.uuid4().hex}@example.test",
+        password="synthetic-test-only",
+    )
+    response = _client(user, school).post(
+        "/api/admissions/enroll/", {}, format="json",
+    )
+    # Platform authorization passed; required payload validation runs.
+    assert response.status_code == 400, response.data
+    assert response.data["detail"] == "application_id is required."
+
+
 def test_enroll_valid_upcoming_year_without_switching_school_current_year():
     school = _school()
     current_year = _year(school)

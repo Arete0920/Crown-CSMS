@@ -3,8 +3,8 @@
 POST /api/admissions/enroll/
 Body: {"application_id": <int>}
 
-Requires tenant-scoped ``admissions.edit`` authority (staff/superuser remains
-an explicit administrative override). A legacy admissions row may be enrolled
+Requires tenant-scoped ``admissions.edit`` authority or the canonical
+active, schoolless platform-operator override. Django staff alone is insufficient. A legacy admissions row may be enrolled
 only when it is linked to the canonical applications lifecycle and that
 canonical application has a countersigned contract plus a paid or waived
 deposit.
@@ -31,7 +31,7 @@ from applications.views_admissions_identity import (
     _upsert_verified_legacy_admissions, _verified_admissions_context,
 )
 from core.models import Enrollment as CoreEnrollment, School
-from core.permissions import user_has_permission
+from core.permissions import IsPlatformOperator, user_has_permission
 from households.scoping import get_request_school_id
 
 _CANONICAL_APPLICATION_RE = re.compile(r"canonical_application_id=([0-9a-fA-F-]{36})")
@@ -41,9 +41,10 @@ def _require_enrollment_access(request, school):
     user = getattr(request, "user", None)
     if not getattr(user, "is_authenticated", False):
         return Response({"ok": False, "detail": "Authentication credentials were not provided."}, status=status.HTTP_401_UNAUTHORIZED)
-    if getattr(user, "is_staff", False) or getattr(user, "is_superuser", False):
-        return None
-    if user_has_permission(user, "admissions.edit", school=school):
+    if (
+        user_has_permission(user, "admissions.edit", school=school)
+        or IsPlatformOperator().has_permission(request, None)
+    ):
         return None
     return Response({"ok": False, "detail": "Permission denied."}, status=status.HTTP_403_FORBIDDEN)
 
