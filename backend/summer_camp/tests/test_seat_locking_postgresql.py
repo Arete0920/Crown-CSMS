@@ -14,7 +14,7 @@ from django.db import close_old_connections, connection, connections, transactio
 from core.models import School
 from households.models import Household, Student
 from summer_camp.models import SummerCampEnrollment, SummerCampProgram, SummerCampSession
-from summer_camp.services import cancel_enrollment, enroll_camper, move_waitlist_if_capacity_available
+from summer_camp.services import cancel_enrollment, enroll_camper, move_waitlist_if_capacity_available, update_session
 
 
 def _setup_seats():
@@ -75,16 +75,38 @@ def test_postgresql_camp_promotion_waits_for_session_capacity_lock():
             blocked_by_session = not completed.wait(timeout=0.5)
             # This transaction wins the freed seat while holding the session lock.
             replacement = enroll_camper(school.id, children[2].id, session.id, {})
-            assert replacement.status == "REGISTERED"
+            assert replacement.status == "WAITLISTED"
         promotion_occurred = future.result(timeout=15)
 
     assert blocked_by_session, "Promotion read capacity without waiting on the session lock"
     assert promotion_occurred is False
     waitlisted.refresh_from_db()
-    assert waitlisted.status == "WAITLISTED"
+    assert waitlisted.status == "REGISTERED"
+    replacement.refresh_from_db()
+    assert replacement.status == "WAITLISTED"
     assert SummerCampEnrollment.objects.filter(
         school=school, session=session, status="REGISTERED",
     ).count() == 1
+
+
+@pytest.mark.django_db
+def test_capacity_increase_promotes_oldest_waitlist_before_new_registration():
+    school, session, children, registered, waitlisted = _setup_seats()
+    assert session.capacity == 1
+    assert registered.status == "REGISTERED"
+    assert waitlisted.status == "WAITLISTED"
+
+    update_session(school.id, session.id, {"capacity": 2})
+    waitlisted.refresh_from_db()
+    assert waitlisted.status == "REGISTERED"
+    assert waitlisted.waitlist_position is None
+
+    later = enroll_camper(school.id, children[2].id, session.id, {})
+    assert later.status == "WAITLISTED"
+    assert later.waitlist_position is not None
+    assert SummerCampEnrollment.objects.filter(
+        school=school, session=session, status="REGISTERED",
+    ).count() == 2
 
 
 @pytest.mark.django_db(transaction=True)

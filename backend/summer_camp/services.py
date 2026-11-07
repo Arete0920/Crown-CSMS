@@ -113,9 +113,13 @@ def update_session(school_id, session_id, payload: dict):
         _require_school_camp_program(school_id, {"program_id": session.program_id})
     _require_school_camp_program(school_id, data)
     _check_camp_session_capacity(school_id, session.id, data)
+    previous_capacity = session.capacity
     for key, value in data.items():
         setattr(session, key, value)
     session.save()
+    if getattr(session, "status", None) == "PUBLISHED" and session.capacity > previous_capacity:
+        # Capacity increases must offer seats to the existing waitlist first.
+        _promote_waitlist_into_open_seats(school_id, session.id)
     return session
 
 
@@ -192,6 +196,12 @@ def enroll_camper(school_id, student_id, session_id, payload: dict):
         raise ValueError("Camper is already registered or waitlisted in this session.")
 
     state = compute_session_capacity(school_id, session.id)
+    if state.has_open_capacity and state.waitlisted_count:
+        # Never allocate a newly available place ahead of an older waitlist.
+        # The session lock taken above serializes this with cancellations and
+        # concurrent new registrations.
+        _promote_waitlist_into_open_seats(school_id, session.id)
+        state = compute_session_capacity(school_id, session.id)
     if not state.has_open_capacity and state.waitlisted_count >= session.waitlist_capacity:
         raise ValueError("Camp session and waitlist have no remaining capacity.")
     status = "REGISTERED" if state.has_open_capacity else "WAITLISTED"
@@ -232,6 +242,15 @@ def cancel_enrollment(school_id, enrollment_id, reason=""):
     enrollment.save(update_fields=["status", "readiness_status", "readiness_blockers"])
     move_waitlist_if_capacity_available(school_id, enrollment.session_id)
     return enrollment
+
+def _promote_waitlist_into_open_seats(school_id, session_id):
+    """Fill available seats FIFO while the caller holds the session-first lock.
+
+    The move helper re-locks the same session in this transaction; readiness
+    is recomputed without granting health, payment or pickup clearance.
+    """
+    while move_waitlist_if_capacity_available(school_id, session_id) is not None:
+        pass
 
 
 @transaction.atomic
