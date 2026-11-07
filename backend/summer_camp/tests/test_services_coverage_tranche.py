@@ -110,6 +110,7 @@ def test_cancel_and_promote_waitlist(monkeypatch):
         readiness_status="READY",
         readiness_blockers=[],
         session_id="session-1",
+        student_id="student-1",
         save=MagicMock(),
     )
     manager = MagicMock()
@@ -119,12 +120,19 @@ def test_cancel_and_promote_waitlist(monkeypatch):
     session_manager = MagicMock()
     session_manager.select_for_update.return_value.get.return_value = SimpleNamespace(id="session-1")
     monkeypatch.setattr(services.SummerCampSession, "objects", session_manager)
+    attendance_manager = MagicMock()
+    attendance_manager.filter.return_value.exists.return_value = False
+    monkeypatch.setattr(services.SummerCampAttendance, "objects", attendance_manager)
     real_move_waitlist = services.move_waitlist_if_capacity_available
     move = MagicMock()
     monkeypatch.setattr(services, "move_waitlist_if_capacity_available", move)
     assert services.cancel_enrollment("school-1", "enrollment-1", "parent request") is enrollment
     assert enrollment.readiness_blockers == ["CANCELLED", "REASON:parent request"]
     move.assert_called_once_with("school-1", "session-1")
+    attendance_manager.filter.assert_called_once_with(
+        school_id="school-1", session_id="session-1",
+        student_id="student-1", checkout_time__isnull=True,
+    )
     # Cancellation locks session before enrollment to avoid lock-order inversion.
     session_manager.select_for_update.return_value.get.assert_called_with(
         id="session-1", school_id="school-1",

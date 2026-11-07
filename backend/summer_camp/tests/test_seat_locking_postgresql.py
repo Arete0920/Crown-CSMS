@@ -5,15 +5,16 @@ The real two-connection tests must run (not skip) in the existing
 Diadem PostgreSQL CI safety job.
 """
 from concurrent.futures import ThreadPoolExecutor
-from datetime import date, time
+from datetime import date, datetime, time, timedelta
 from threading import Event
 
 import pytest
 from django.db import close_old_connections, connection, connections, transaction
+from django.utils import timezone
 
 from core.models import School
 from households.models import Household, Student
-from summer_camp.models import SummerCampEnrollment, SummerCampProgram, SummerCampSession
+from summer_camp.models import SummerCampAttendance, SummerCampEnrollment, SummerCampProgram, SummerCampSession
 from summer_camp.services import cancel_enrollment, enroll_camper, move_waitlist_if_capacity_available, update_session
 
 
@@ -107,6 +108,34 @@ def test_capacity_increase_promotes_oldest_waitlist_before_new_registration():
     assert SummerCampEnrollment.objects.filter(
         school=school, session=session, status="REGISTERED",
     ).count() == 2
+
+
+@pytest.mark.django_db
+def test_open_custody_blocks_cancellation_until_checkout_is_recorded():
+    school, session, children, registered, waitlisted = _setup_seats()
+    morning = timezone.make_aware(datetime(2026, 6, 2, 9, 0))
+    custody = SummerCampAttendance.objects.create(
+        school=school, session=session, student=children[0],
+        date=date(2026, 6, 2), checkin_time=morning,
+    )
+
+    with pytest.raises(ValueError, match="Open camp custody"):
+        cancel_enrollment(school.id, registered.id, "future enrollment change")
+
+    registered.refresh_from_db()
+    waitlisted.refresh_from_db()
+    custody.refresh_from_db()
+    assert registered.status == "REGISTERED"
+    assert waitlisted.status == "WAITLISTED"
+    assert custody.checkout_time is None
+
+    # A completed checkout releases the registration for ordinary cancellation
+    # and restores the usual FIFO promotion; no artificial clearance is made.
+    custody.checkout_time = morning + timedelta(hours=2)
+    custody.save(update_fields=["checkout_time"])
+    assert cancel_enrollment(school.id, registered.id).status == "CANCELLED"
+    waitlisted.refresh_from_db()
+    assert waitlisted.status == "REGISTERED"
 
 
 @pytest.mark.django_db(transaction=True)

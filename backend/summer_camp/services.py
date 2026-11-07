@@ -233,6 +233,14 @@ def cancel_enrollment(school_id, enrollment_id, reason=""):
     enrollment = SummerCampEnrollment.objects.select_for_update().get(
         id=enrollment_id, school_id=school_id, session_id=session_id,
     )
+    # An open custody record requires a registered camper to remain available
+    # for the ordinary authorized pickup and verification workflow. Never
+    # promote another camper into this seat before verified checkout.
+    if SummerCampAttendance.objects.filter(
+        school_id=school_id, session_id=session_id,
+        student_id=enrollment.student_id, checkout_time__isnull=True,
+    ).exists():
+        raise ValueError("Open camp custody requires verified checkout before cancellation.")
     enrollment.status = "CANCELLED"
     blockers = ["CANCELLED"]
     if reason:
