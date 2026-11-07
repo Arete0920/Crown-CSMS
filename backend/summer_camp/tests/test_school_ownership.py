@@ -218,3 +218,52 @@ def test_incident_api_rejects_unverified_parent_notification(scope, monkeypatch)
     allowed = api.incidents_view(allowed_request)
     assert allowed.status_code == 201, allowed.data
     assert allowed.data["parent_notified"] is False
+
+
+def test_parent_readback_rejects_corrupted_foreign_household_link(scope, monkeypatch):
+    """An imported/modified household link cannot confer Camp parent access."""
+    own, other, _, _, session = scope
+    from households.models import Guardian, Household, Student
+
+    family = Household.objects.create(
+        school_id=own.pk, name="Verified Camp Household",
+    )
+    camper = Student.objects.create(
+        school_id=own.pk, household=family,
+        first_name="Safe", last_name="Camper", grade_level="4",
+    )
+    parent = get_user_model().objects.create_user(
+        username="camp-parent-household-scope",
+        email="camp-parent-household-scope@example.test",
+        password="unused", school=own,
+    )
+    Guardian.objects.create(
+        school_id=own.pk, household=family, account=parent,
+        first_name="Camper", last_name="Guardian",
+    )
+    SummerCampEnrollment.objects.create(
+        school=own, session=session, household=family,
+        student=camper, status="REGISTERED",
+    )
+    monkeypatch.setattr(
+        api, "school_id_from_request", lambda _request, required=True: own.pk,
+    )
+    monkeypatch.setattr(api, "camp_entitlement_error", lambda _school: None)
+    monkeypatch.setattr(api, "_require_role", lambda _request, _allowed: False)
+
+    def read():
+        request = APIRequestFactory().get(
+            f"/api/v1/summer-camp/parent/{camper.pk}/",
+        )
+        force_authenticate(request, user=parent)
+        return api.parent_student_view(request, student_id=camper.pk)
+
+    allowed = read()
+    assert allowed.status_code == 200, allowed.data
+    assert len(allowed.data["rows"]) == 1
+
+    # Model validation rejects this on normal writes. Simulate a historical
+    # or imported corrupt FK by modifying only this synthetic test fixture.
+    Household.objects.filter(pk=family.pk).update(school_id=other.pk)
+    denied = read()
+    assert denied.status_code == 403

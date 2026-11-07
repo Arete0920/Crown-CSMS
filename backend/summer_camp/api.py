@@ -516,6 +516,8 @@ def parent_student_view(request, student_id):
         and getattr(user, "is_active", False)
         and Guardian.objects.filter(
             account=user, school_id=school_id,
+            household__school_id=school_id,
+            household__is_active=True,
             household__students__id=student_id,
             household__students__school_id=school_id,
             household__students__is_active=True,
