@@ -110,14 +110,25 @@ def test_cancel_and_promote_waitlist(monkeypatch):
         save=MagicMock(),
     )
     manager = MagicMock()
+    manager.filter.return_value.values_list.return_value.get.return_value = "session-1"
     manager.select_for_update.return_value.get.return_value = enrollment
     monkeypatch.setattr(services.SummerCampEnrollment, "objects", manager)
+    session_manager = MagicMock()
+    session_manager.select_for_update.return_value.get.return_value = SimpleNamespace(id="session-1")
+    monkeypatch.setattr(services.SummerCampSession, "objects", session_manager)
     real_move_waitlist = services.move_waitlist_if_capacity_available
     move = MagicMock()
     monkeypatch.setattr(services, "move_waitlist_if_capacity_available", move)
     assert services.cancel_enrollment("school-1", "enrollment-1", "parent request") is enrollment
     assert enrollment.readiness_blockers == ["CANCELLED", "REASON:parent request"]
     move.assert_called_once_with("school-1", "session-1")
+    # Cancellation locks session before enrollment to avoid lock-order inversion.
+    session_manager.select_for_update.return_value.get.assert_called_with(
+        id="session-1", school_id="school-1",
+    )
+    manager.select_for_update.return_value.get.assert_called_with(
+        id="enrollment-1", school_id="school-1", session_id="session-1",
+    )
     monkeypatch.setattr(services, "move_waitlist_if_capacity_available", real_move_waitlist)
 
     promoted = SimpleNamespace(id="enrollment-2", status="WAITLISTED", waitlist_position=1, save=MagicMock())
