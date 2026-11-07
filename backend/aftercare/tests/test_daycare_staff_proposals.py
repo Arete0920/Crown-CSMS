@@ -64,6 +64,27 @@ def test_director_proposes_inactive_staff_and_gets_persisted_scoped_readback():
     assert not DaycareAttendance.objects.exists()
 
 
+def test_legacy_inactive_coverage_is_not_labeled_or_replayed_as_proposal():
+    school, _, client, _, _, staff, starts, ends, url, values = _build()
+    room = DaycareRoom.objects.get(school=school)
+    legacy = DaycareRoomStaffCoverage.objects.create(
+        school=school, site=room.site, room=room, staff=staff,
+        starts_at=starts, ends_at=ends,
+        is_active=False, is_qualified=False, qualification_evidence="",
+        verified_by=None, verified_at=None,
+    )
+    response = client.get(url)
+    assert response.status_code == 200, response.data
+    assert response.data["proposals"] == []
+    replay = client.post(url, values, format="json")
+    assert replay.status_code == 409, replay.data
+    legacy.refresh_from_db()
+    assert not legacy.is_active and not legacy.is_qualified
+    assert AuditLog.objects.filter(
+        action="diadem.daycare.staff_proposal.created",
+    ).count() == 0
+
+
 def test_identical_retry_is_idempotent_and_overlapping_shifts_conflict():
     _, _, client, _, _, _, _, _, url, values = _build()
     first = client.post(url, values, format="json")
