@@ -30,7 +30,7 @@ def _setup_seats():
     for label in ("Registered", "Waitlisted", "Replacement"):
         household = Household.objects.create(school_id=school.id, name=f"Synthetic {label}")
         children.append(Student.objects.create(
-            school=school, household=household, first_name="Synthetic",
+            school_id=school.id, household=household, first_name="Synthetic",
             last_name=label, grade_level="4",
         ))
     registered = enroll_camper(school.id, children[0].id, session.id, {})
