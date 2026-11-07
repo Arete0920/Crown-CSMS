@@ -30,9 +30,12 @@ def test_config_program_and_session_services(monkeypatch):
     session_manager = MagicMock()
     created_session = object()
     session_manager.create.return_value = created_session
-    session = SimpleNamespace(capacity=10, save=MagicMock())
-    session_manager.get.return_value = session
+    session = SimpleNamespace(id="session-1", capacity=10, save=MagicMock())
+    session_manager.select_for_update.return_value.get.return_value = session
     monkeypatch.setattr(services.SummerCampSession, "objects", session_manager)
+    seats_manager = MagicMock()
+    seats_manager.filter.return_value.count.return_value = 0
+    monkeypatch.setattr(services.SummerCampEnrollment, "objects", seats_manager)
     assert services.create_session("school-1", {"capacity": 20}) is created_session
     assert services.update_session("school-1", "session-1", {"capacity": 25}) is session
     assert session.capacity == 25
@@ -107,17 +110,36 @@ def test_cancel_and_promote_waitlist(monkeypatch):
         readiness_status="READY",
         readiness_blockers=[],
         session_id="session-1",
+        student_id="student-1",
         save=MagicMock(),
     )
     manager = MagicMock()
+    manager.filter.return_value.values_list.return_value.get.return_value = "session-1"
     manager.select_for_update.return_value.get.return_value = enrollment
     monkeypatch.setattr(services.SummerCampEnrollment, "objects", manager)
+    session_manager = MagicMock()
+    session_manager.select_for_update.return_value.get.return_value = SimpleNamespace(id="session-1")
+    monkeypatch.setattr(services.SummerCampSession, "objects", session_manager)
+    attendance_manager = MagicMock()
+    attendance_manager.filter.return_value.exists.return_value = False
+    monkeypatch.setattr(services.SummerCampAttendance, "objects", attendance_manager)
     real_move_waitlist = services.move_waitlist_if_capacity_available
     move = MagicMock()
     monkeypatch.setattr(services, "move_waitlist_if_capacity_available", move)
     assert services.cancel_enrollment("school-1", "enrollment-1", "parent request") is enrollment
     assert enrollment.readiness_blockers == ["CANCELLED", "REASON:parent request"]
     move.assert_called_once_with("school-1", "session-1")
+    attendance_manager.filter.assert_called_once_with(
+        school_id="school-1", session_id="session-1",
+        student_id="student-1", checkout_time__isnull=True,
+    )
+    # Cancellation locks session before enrollment to avoid lock-order inversion.
+    session_manager.select_for_update.return_value.get.assert_called_with(
+        id="session-1", school_id="school-1",
+    )
+    manager.select_for_update.return_value.get.assert_called_with(
+        id="enrollment-1", school_id="school-1", session_id="session-1",
+    )
     monkeypatch.setattr(services, "move_waitlist_if_capacity_available", real_move_waitlist)
 
     promoted = SimpleNamespace(id="enrollment-2", status="WAITLISTED", waitlist_position=1, save=MagicMock())
