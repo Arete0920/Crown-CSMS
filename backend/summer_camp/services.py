@@ -37,15 +37,58 @@ def ensure_config(school_id):
     return config
 
 
+def _school_scoped_camp_payload(school_id, payload: dict) -> dict:
+    """Never trust caller-provided school fields, even after API authorization."""
+    data = dict(payload)
+    for key in ("school", "school_id"):
+        if key in data:
+            selected = data.pop(key)
+            if str(getattr(selected, "pk", selected)) != str(school_id):
+                raise ValueError("Camp school ownership cannot be reassigned.")
+    return data
+
+
+def _require_school_camp_program(school_id, payload: dict) -> None:
+    """A session may never reference a program owned by another school."""
+    for key in ("program", "program_id"):
+        if key in payload:
+            selected = payload[key]
+            program_id = getattr(selected, "pk", selected)
+            if not SummerCampProgram.objects.filter(
+                pk=program_id, school_id=school_id,
+            ).exists():
+                raise ValueError("Camp program does not belong to this school.")
+
+
+def _check_camp_session_capacity(school_id, session_id, data: dict) -> None:
+    """Do not silently eject enrolled or waitlisted children by editing limits."""
+    for field, enrollment_status in (
+        ("capacity", "REGISTERED"), ("waitlist_capacity", "WAITLISTED"),
+    ):
+        if field not in data:
+            continue
+        requested = data[field]
+        if type(requested) is not int or requested < 0:
+            raise ValueError("Camp capacity must be nonnegative.")
+        if session_id is not None:
+            occupied = SummerCampEnrollment.objects.filter(
+                school_id=school_id, session_id=session_id, status=enrollment_status,
+            ).count()
+            if requested < occupied:
+                raise ValueError("Camp capacity cannot fall below existing placements.")
+
+
 @transaction.atomic
 def create_program(school_id, payload: dict):
-    return SummerCampProgram.objects.create(school_id=school_id, **payload)
+    data = _school_scoped_camp_payload(school_id, payload)
+    return SummerCampProgram.objects.create(school_id=school_id, **data)
 
 
 @transaction.atomic
 def update_program(school_id, program_id, payload: dict):
+    data = _school_scoped_camp_payload(school_id, payload)
     program = SummerCampProgram.objects.get(id=program_id, school_id=school_id)
-    for key, value in payload.items():
+    for key, value in data.items():
         setattr(program, key, value)
     program.save()
     return program
@@ -53,13 +96,24 @@ def update_program(school_id, program_id, payload: dict):
 
 @transaction.atomic
 def create_session(school_id, payload: dict):
-    return SummerCampSession.objects.create(school_id=school_id, **payload)
+    data = _school_scoped_camp_payload(school_id, payload)
+    _require_school_camp_program(school_id, data)
+    _check_camp_session_capacity(school_id, None, data)
+    return SummerCampSession.objects.create(school_id=school_id, **data)
 
 
 @transaction.atomic
 def update_session(school_id, session_id, payload: dict):
-    session = SummerCampSession.objects.get(id=session_id, school_id=school_id)
-    for key, value in payload.items():
+    # Session edit, registration, cancellation and promotion use the same lock.
+    session = SummerCampSession.objects.select_for_update().get(
+        id=session_id, school_id=school_id,
+    )
+    data = _school_scoped_camp_payload(school_id, payload)
+    if getattr(session, "program_id", None) is not None:
+        _require_school_camp_program(school_id, {"program_id": session.program_id})
+    _require_school_camp_program(school_id, data)
+    _check_camp_session_capacity(school_id, session.id, data)
+    for key, value in data.items():
         setattr(session, key, value)
     session.save()
     return session
