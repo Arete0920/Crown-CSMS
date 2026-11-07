@@ -157,7 +157,18 @@ def enroll_camper(school_id, student_id, session_id, payload: dict):
 
 @transaction.atomic
 def cancel_enrollment(school_id, enrollment_id, reason=""):
-    enrollment = SummerCampEnrollment.objects.select_for_update().get(id=enrollment_id, school_id=school_id)
+    # Every seat-changing writer must acquire the session lock FIRST.
+    # Read only the session id before locking, then verify the enrollment
+    # still belongs to that same school/session under the row lock.
+    session_id = (
+        SummerCampEnrollment.objects.filter(id=enrollment_id, school_id=school_id)
+        .values_list("session_id", flat=True)
+        .get()
+    )
+    SummerCampSession.objects.select_for_update().get(id=session_id, school_id=school_id)
+    enrollment = SummerCampEnrollment.objects.select_for_update().get(
+        id=enrollment_id, school_id=school_id, session_id=session_id,
+    )
     enrollment.status = "CANCELLED"
     blockers = ["CANCELLED"]
     if reason:
@@ -171,6 +182,10 @@ def cancel_enrollment(school_id, enrollment_id, reason=""):
 
 @transaction.atomic
 def move_waitlist_if_capacity_available(school_id, session_id):
+    # Serialize promotion against enroll_camper and cancel_enrollment.
+    # Taking the session lock before counting seats prevents registration
+    # and a waitlist promotion from both allocating the last available seat.
+    SummerCampSession.objects.select_for_update().get(id=session_id, school_id=school_id)
     state = compute_session_capacity(school_id, session_id)
     if not state.has_open_capacity:
         return None
