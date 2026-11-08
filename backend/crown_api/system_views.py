@@ -50,7 +50,8 @@ class SeedStatusView(APIView):
 
 
 def _get_ops_secret() -> str:
-    return getattr(settings, "CROWN_OPS_SECRET", "") or getattr(settings, "OPS_SECRET", "") or ""
+    # A legacy OPS_SECRET must not silently authorize reset or diagnostics.
+    return getattr(settings, "CROWN_OPS_SECRET", "") or ""
 
 
 def _is_dev_env() -> bool:

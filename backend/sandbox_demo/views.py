@@ -12,6 +12,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from core.models import UserAccount
+from core.permissions import IsPlatformOperator
 
 from .catalog import (DEFAULT_SANDBOX_INVITE_ROLES, HOSTED_ONLY_PERSONA_KEYS,
                       SANDBOX_PERSONAS, SANDBOX_SCHOOLS, catalog_payload, get_school)
@@ -50,10 +51,9 @@ def _ops_allowed(request) -> bool:
     provided = request.headers.get("X-Crown-Ops-Secret", "")
     if expected and provided and provided == expected:
         return True
-    user = getattr(request, "user", None)
-    return bool(
-        getattr(user, "is_staff", False) or getattr(user, "is_superuser", False)
-    )
+    # School staff (including school-bound superusers) are not platform ops.
+    # Reuse the canonical active, schoolless superuser authorization contract.
+    return IsPlatformOperator().has_permission(request, None)
 
 
 def _get_invite(invite_id: str | None):

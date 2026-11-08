@@ -37,15 +37,58 @@ def ensure_config(school_id):
     return config
 
 
+def _school_scoped_camp_payload(school_id, payload: dict) -> dict:
+    """Never trust caller-provided school fields, even after API authorization."""
+    data = dict(payload)
+    for key in ("school", "school_id"):
+        if key in data:
+            selected = data.pop(key)
+            if str(getattr(selected, "pk", selected)) != str(school_id):
+                raise ValueError("Camp school ownership cannot be reassigned.")
+    return data
+
+
+def _require_school_camp_program(school_id, payload: dict) -> None:
+    """A session may never reference a program owned by another school."""
+    for key in ("program", "program_id"):
+        if key in payload:
+            selected = payload[key]
+            program_id = getattr(selected, "pk", selected)
+            if not SummerCampProgram.objects.filter(
+                pk=program_id, school_id=school_id,
+            ).exists():
+                raise ValueError("Camp program does not belong to this school.")
+
+
+def _check_camp_session_capacity(school_id, session_id, data: dict) -> None:
+    """Do not silently eject enrolled or waitlisted children by editing limits."""
+    for field, enrollment_status in (
+        ("capacity", "REGISTERED"), ("waitlist_capacity", "WAITLISTED"),
+    ):
+        if field not in data:
+            continue
+        requested = data[field]
+        if type(requested) is not int or requested < 0:
+            raise ValueError("Camp capacity must be nonnegative.")
+        if session_id is not None:
+            occupied = SummerCampEnrollment.objects.filter(
+                school_id=school_id, session_id=session_id, status=enrollment_status,
+            ).count()
+            if requested < occupied:
+                raise ValueError("Camp capacity cannot fall below existing placements.")
+
+
 @transaction.atomic
 def create_program(school_id, payload: dict):
-    return SummerCampProgram.objects.create(school_id=school_id, **payload)
+    data = _school_scoped_camp_payload(school_id, payload)
+    return SummerCampProgram.objects.create(school_id=school_id, **data)
 
 
 @transaction.atomic
 def update_program(school_id, program_id, payload: dict):
+    data = _school_scoped_camp_payload(school_id, payload)
     program = SummerCampProgram.objects.get(id=program_id, school_id=school_id)
-    for key, value in payload.items():
+    for key, value in data.items():
         setattr(program, key, value)
     program.save()
     return program
@@ -53,15 +96,30 @@ def update_program(school_id, program_id, payload: dict):
 
 @transaction.atomic
 def create_session(school_id, payload: dict):
-    return SummerCampSession.objects.create(school_id=school_id, **payload)
+    data = _school_scoped_camp_payload(school_id, payload)
+    _require_school_camp_program(school_id, data)
+    _check_camp_session_capacity(school_id, None, data)
+    return SummerCampSession.objects.create(school_id=school_id, **data)
 
 
 @transaction.atomic
 def update_session(school_id, session_id, payload: dict):
-    session = SummerCampSession.objects.get(id=session_id, school_id=school_id)
-    for key, value in payload.items():
+    # Session edit, registration, cancellation and promotion use the same lock.
+    session = SummerCampSession.objects.select_for_update().get(
+        id=session_id, school_id=school_id,
+    )
+    data = _school_scoped_camp_payload(school_id, payload)
+    if getattr(session, "program_id", None) is not None:
+        _require_school_camp_program(school_id, {"program_id": session.program_id})
+    _require_school_camp_program(school_id, data)
+    _check_camp_session_capacity(school_id, session.id, data)
+    previous_capacity = session.capacity
+    for key, value in data.items():
         setattr(session, key, value)
     session.save()
+    if getattr(session, "status", None) == "PUBLISHED" and session.capacity > previous_capacity:
+        # Capacity increases must offer seats to the existing waitlist first.
+        _promote_waitlist_into_open_seats(school_id, session.id)
     return session
 
 
@@ -138,6 +196,12 @@ def enroll_camper(school_id, student_id, session_id, payload: dict):
         raise ValueError("Camper is already registered or waitlisted in this session.")
 
     state = compute_session_capacity(school_id, session.id)
+    if state.has_open_capacity and state.waitlisted_count:
+        # Never allocate a newly available place ahead of an older waitlist.
+        # The session lock taken above serializes this with cancellations and
+        # concurrent new registrations.
+        _promote_waitlist_into_open_seats(school_id, session.id)
+        state = compute_session_capacity(school_id, session.id)
     if not state.has_open_capacity and state.waitlisted_count >= session.waitlist_capacity:
         raise ValueError("Camp session and waitlist have no remaining capacity.")
     status = "REGISTERED" if state.has_open_capacity else "WAITLISTED"
@@ -157,7 +221,26 @@ def enroll_camper(school_id, student_id, session_id, payload: dict):
 
 @transaction.atomic
 def cancel_enrollment(school_id, enrollment_id, reason=""):
-    enrollment = SummerCampEnrollment.objects.select_for_update().get(id=enrollment_id, school_id=school_id)
+    # Every seat-changing writer must acquire the session lock FIRST.
+    # Read only the session id before locking, then verify the enrollment
+    # still belongs to that same school/session under the row lock.
+    session_id = (
+        SummerCampEnrollment.objects.filter(id=enrollment_id, school_id=school_id)
+        .values_list("session_id", flat=True)
+        .get()
+    )
+    SummerCampSession.objects.select_for_update().get(id=session_id, school_id=school_id)
+    enrollment = SummerCampEnrollment.objects.select_for_update().get(
+        id=enrollment_id, school_id=school_id, session_id=session_id,
+    )
+    # An open custody record requires a registered camper to remain available
+    # for the ordinary authorized pickup and verification workflow. Never
+    # promote another camper into this seat before verified checkout.
+    if SummerCampAttendance.objects.filter(
+        school_id=school_id, session_id=session_id,
+        student_id=enrollment.student_id, checkout_time__isnull=True,
+    ).exists():
+        raise ValueError("Open camp custody requires verified checkout before cancellation.")
     enrollment.status = "CANCELLED"
     blockers = ["CANCELLED"]
     if reason:
@@ -168,9 +251,22 @@ def cancel_enrollment(school_id, enrollment_id, reason=""):
     move_waitlist_if_capacity_available(school_id, enrollment.session_id)
     return enrollment
 
+def _promote_waitlist_into_open_seats(school_id, session_id):
+    """Fill available seats FIFO while the caller holds the session-first lock.
+
+    The move helper re-locks the same session in this transaction; readiness
+    is recomputed without granting health, payment or pickup clearance.
+    """
+    while move_waitlist_if_capacity_available(school_id, session_id) is not None:
+        pass
+
 
 @transaction.atomic
 def move_waitlist_if_capacity_available(school_id, session_id):
+    # Serialize promotion against enroll_camper and cancel_enrollment.
+    # Taking the session lock before counting seats prevents registration
+    # and a waitlist promotion from both allocating the last available seat.
+    SummerCampSession.objects.select_for_update().get(id=session_id, school_id=school_id)
     state = compute_session_capacity(school_id, session_id)
     if not state.has_open_capacity:
         return None
@@ -545,6 +641,25 @@ def record_incident(
     health_followup_required=False,
     category="",
 ):
+    # Never persist a cross-school session or a child absent from the
+    # referenced Camp program. A nullable student denotes a site-only event.
+    if not SummerCampSession.objects.filter(
+        pk=session_id, school_id=school_id, program__school_id=school_id,
+    ).exists():
+        raise ValueError("Camp incident session is invalid.")
+    if student_id is not None:
+        valid_camper = (
+            Student.objects.filter(
+                pk=student_id, school_id=school_id,
+                household__school_id=school_id,
+            ).exists()
+            and SummerCampEnrollment.objects.filter(
+                school_id=school_id, session_id=session_id,
+                student_id=student_id, session__school_id=school_id,
+            ).exists()
+        )
+        if not valid_camper:
+            raise ValueError("Camp incident camper is invalid.")
     incident = SummerCampIncident.objects.create(
         school_id=school_id,
         student_id=student_id,

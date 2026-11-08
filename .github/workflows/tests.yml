@@ -366,7 +366,7 @@ jobs:
               proc = subprocess.run(['git', 'diff', '--name-only', '-z', base, 'HEAD'], capture_output=True)
               if proc.returncode == 0:
                   changed = proc.stdout.decode('utf-8', errors='replace').split('\0')
-                  roots = ('backend/aftercare/', 'backend/core/', 'backend/tenants/', 'backend/subscriptions/', 'backend/households/', 'backend/audit/', 'backend/crown_api/')
+                  roots = ('backend/aftercare/', 'backend/summer_camp/', 'backend/core/', 'backend/tenants/', 'backend/subscriptions/', 'backend/households/', 'backend/audit/', 'backend/crown_api/')
                   exact = {'backend/requirements.txt', 'backend/conftest.py', 'backend/tests/conftest.py', 'pytest.ini', '.github/workflows/tests.yml',
                            'backend/sandbox_demo/management/commands/seed_hosted_buyer_daycare.py',
                            'backend/sandbox_demo/test_seed_hosted_buyer_daycare.py'}
@@ -453,7 +453,9 @@ jobs:
             backend/aftercare/tests/test_am_pm_sessions.py \
             backend/aftercare/tests/test_daycare_api.py \
             backend/aftercare/tests/test_daycare_setup.py \
+            backend/aftercare/tests/test_daycare_staff_proposals.py \
             backend/sandbox_demo/test_seed_hosted_buyer_daycare.py \
+            backend/summer_camp/tests/test_seat_locking_postgresql.py \
             --junitxml=diadem-postgresql-junit.xml
       - name: Enforce executed (not skipped) PostgreSQL concurrency tests
         run: |
@@ -474,6 +476,9 @@ jobs:
               "test_invalid_school_timezone_fails_read_only_preflight",
               "test_expired_buyer_module_blocks_admission_after_fixture_staging",
               "test_postgresql_concurrent_fixture_writers_serialize",
+              "test_postgresql_concurrent_staff_proposal_retry_is_unique_and_audited",
+              "test_postgresql_camp_promotion_waits_for_session_capacity_lock",
+              "test_postgresql_camp_cancel_uses_session_first_lock_order",
           ]
           for name in names:
               case = cases.get(name)
