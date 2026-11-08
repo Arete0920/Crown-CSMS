@@ -62,7 +62,7 @@ def _has_evaluation_permission(user, code, school):
         return False
     latest = TeacherEvaluationAccessEvent.objects.filter(
         school=school, user=user, permission_code=code
-    ).order_by("-created_at", "-id").values_list("action", flat=True).first()
+    ).order_by("-decision_version").values_list("action", flat=True).first()
     return latest == "grant"
 
 
