@@ -2,7 +2,7 @@ name: Classroom Verification
 
 on:
   pull_request:
-    branches: [main, 'feat/teacher-evaluations-observation-642']
+    branches: [main]
     paths:
       - 'backend/academics/**'
       - 'backend/hr/**'
