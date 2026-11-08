@@ -184,3 +184,87 @@ def test_cli_explicit_childcare_grant_is_preserved_but_unknown_role_is_blocked()
             stdout=StringIO(),
         )
     assert SandboxInvite.objects.count() == before
+
+
+@pytest.mark.django_db
+def test_school_staff_cannot_administer_buyer_invitations(settings):
+    """Django staff and school-bound superusers are not global operators."""
+    from core.models import School, UserAccount
+
+    settings.CROWN_OPS_SECRET = ""
+    settings.DEV_OPS_SECRET = ""
+    school = School.objects.create(name="Synthetic invite authority school")
+    staff = UserAccount.objects.create_user(
+        username="synthetic-invite-staff",
+        email="invite-staff@example.test",
+        school=school, is_staff=True,
+    )
+    bound_superuser = UserAccount.objects.create_user(
+        username="synthetic-invite-bound-superuser",
+        email="invite-bound-superuser@example.test",
+        school=school, is_staff=True, is_superuser=True,
+    )
+    invite = SandboxInvite.objects.create(
+        organization_label="Synthetic buyer invitation",
+        track="school",
+        allowed_roles=["teacher"],
+        allowed_seed_packs=["heritage-core"],
+        expires_at=timezone.now() + timedelta(days=7),
+    )
+    initial_count = SandboxInvite.objects.count()
+
+    for actor in (staff, bound_superuser):
+        client = APIClient()
+        client.force_authenticate(user=actor)
+        create = client.post(
+            reverse("sandbox-invite-create"), {"days": 7}, format="json",
+        )
+        assert create.status_code == 403
+        assert create.json()["code"] == "sandbox_ops_required"
+        revoke = client.post(
+            reverse("sandbox-invite-revoke", kwargs={"invite_id": invite.pk}),
+            {}, format="json",
+        )
+        assert revoke.status_code == 403
+        assert revoke.json()["code"] == "sandbox_ops_required"
+        assert SandboxInvite.objects.count() == initial_count
+        invite.refresh_from_db()
+        assert invite.revoked_at is None
+
+
+@pytest.mark.django_db
+def test_active_schoolless_platform_operator_can_administer_buyer_invitations(settings):
+    """An active schoolless superuser retains the established platform pathway."""
+    from core.models import UserAccount
+
+    settings.CROWN_OPS_SECRET = ""
+    settings.DEV_OPS_SECRET = ""
+    owner = UserAccount.objects.create_superuser(
+        username="synthetic-invite-platform-owner",
+        email="invite-platform-owner@example.test",
+        password="synthetic-not-used",
+    )
+    client = APIClient()
+    client.force_authenticate(user=owner)
+    created = client.post(
+        reverse("sandbox-invite-create"),
+        {"days": 7, "allowed_roles": ["teacher"],
+         "allowed_seed_packs": ["heritage-core"]},
+        format="json",
+    )
+    assert created.status_code == 201, created.data
+    invite_id = created.data["invite_id"]
+    assert SandboxInvite.objects.get(pk=invite_id).revoked_at is None
+    revoked = client.post(
+        reverse("sandbox-invite-revoke", kwargs={"invite_id": invite_id}),
+        {}, format="json",
+    )
+    assert revoked.status_code == 200, revoked.data
+    assert SandboxInvite.objects.get(pk=invite_id).revoked_at is not None
+
+    owner.is_active = False
+    owner.save(update_fields=["is_active"])
+    denied = client.post(
+        reverse("sandbox-invite-create"), {"days": 7}, format="json",
+    )
+    assert denied.status_code in (401, 403)
