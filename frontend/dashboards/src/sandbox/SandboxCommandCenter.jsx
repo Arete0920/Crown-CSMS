@@ -3,11 +3,9 @@ import { Link } from "react-router";
 import CrownLogo from "../components/brand/CrownLogo";
 import CrownIcon from "../components/icons/CrownIcon.jsx";
 import {
-  getSandboxLoginHref,
   getSandboxPersona,
   getSandboxSchool,
   getSandboxTrack,
-  getTrackPersonas,
 } from "./sandboxExperience";
 import { recordSandboxEvent, submitSandboxFeedback } from "./sandboxApi";
 
@@ -38,7 +36,6 @@ function normalizeStep(step) {
 
 export default function SandboxCommandCenter({ compact = false }) {
   const { track, persona, school, guidance, tour } = getQueryContext();
-  const personas = getTrackPersonas(track.key);
   const guided = guidance !== "self-guided";
   const steps = Array.isArray(persona.steps) ? persona.steps.map(normalizeStep) : [];
   const [showFeedback, setShowFeedback] = useState(false);
@@ -137,16 +134,14 @@ export default function SandboxCommandCenter({ compact = false }) {
       <section className="sandbox-section">
         <div className="sandbox-section-heading">
           <span><CrownIcon name="user" size={18} /></span>
-          <div><h2>Change proof-path role</h2><p>Load another role's transactional proof path, then launch its protected workspace.</p></div>
+          <div><h2>Change proof-path role</h2><p>Return to the sandbox launcher to create a new authenticated session for the next permitted role. A URL change alone never changes authorization.</p></div>
         </div>
         <div className="sandbox-persona-grid">
-          {personas.map((entry) => (
-            <Link className="sandbox-choice-card launch-hero-action-btn" key={entry.value} to={getSandboxLoginHref(entry.value, track.key, guidance)}>
-              <CrownIcon name="user" size={22} />
-              <strong>{entry.value === "school_admin" ? (entry.loginLabel || entry.label) : entry.label}</strong>
-              <span>{entry.value === persona.value ? "Current proof context" : "Load this role's proof path"}</span>
-            </Link>
-          ))}
+          <Link className="sandbox-choice-card launch-hero-action-btn" to="/sandbox">
+            <CrownIcon name="user" size={22} />
+            <strong>Choose another authorized role</strong>
+            <span>Return to the launcher; create a new verified role session before opening protected workflows.</span>
+          </Link>
         </div>
       </section>
 

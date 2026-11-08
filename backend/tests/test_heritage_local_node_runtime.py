@@ -84,3 +84,27 @@ def test_ordinary_heritage_launcher_never_enables_fictional_sgo(monkeypatch, tmp
     monkeypatch.setattr(launcher, "source_sha", lambda: "a" * 40)
     monkeypatch.setenv("CROWN_SGO_FICTIONAL_INTAKE_ENABLED", inherited)
     assert launcher.local_environment().get("CROWN_SGO_FICTIONAL_INTAKE_ENABLED") is None
+
+
+def test_heritage_local_trusts_only_its_two_loopback_browser_origins(monkeypatch, tmp_path):
+    """Session-authenticated role changes use Django's strict Origin check.
+
+    The launcher constructs an entirely fresh local env; do not inherit
+    external or hosted CSRF allowances or silently disable CSRF middleware.
+    """
+    launcher = load_launcher()
+    monkeypatch.setattr(launcher, "STATE", tmp_path)
+    monkeypatch.setattr(launcher, "source_sha", lambda: "a" * 40)
+    monkeypatch.setenv("CSRF_TRUSTED_ORIGINS", "https://unrelated-host.example")
+    monkeypatch.setenv("DJANGO_CSRF_TRUSTED_ORIGINS", "https://unrelated-host.example")
+
+    env = launcher.local_environment()
+    assert env["DJANGO_CSRF_TRUSTED_ORIGINS"].split(",") == [
+        "http://127.0.0.1:4173",
+        "http://localhost:4173",
+    ]
+    assert "CSRF_TRUSTED_ORIGINS" not in env
+    assert env["DJANGO_ALLOWED_HOSTS"] == "localhost,127.0.0.1,testserver"
+    assert env["CROWN_ENV"] == env["DJANGO_ENV"] == "local"
+    assert env["CROWN_SANDBOX_ALLOW_OPEN_SESSION"] == "true"
+    assert "https://unrelated-host.example" not in str(env)

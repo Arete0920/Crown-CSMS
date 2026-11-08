@@ -45,9 +45,12 @@ describe("SandboxCommandCenter", () => {
     const evaluatorLink = screen.getByRole("link", { name: /Return to evaluator/i });
     expect(evaluatorLink.getAttribute("href")).toBe("/sandbox");
 
-    const teacherProofLink = screen.getByRole("link", { name: /Teacher \/ Staff.*Load this role's proof path/i });
-    expect(teacherProofLink.getAttribute("href")).toContain("/sandbox/command-center?");
-    expect(teacherProofLink.getAttribute("href")).toContain("role=teacher");
+    const roleSwitchLink = screen.getByRole("link", { name: /Choose another authorized role/i });
+    expect(roleSwitchLink.getAttribute("href")).toBe("/sandbox");
+    expect(screen.queryByRole("link", { name: /Teacher \/ Staff.*Load this role's proof path/i })).toBeNull();
+    expect(screen.getByRole("link", { name: /Open live Summer Camp setup/i }).getAttribute("href")).toBe("/summer-camp-dashboard/setup");
+    expect(screen.getByRole("link", { name: /Open Before Care \(AM\) roster/i }).getAttribute("href")).toBe("/before-care/roster");
+    expect(screen.queryByRole("link", { name: /Diadem Daycare staff release/i })).toBeNull();
 
     expect(screen.queryByText("Switch track")).toBeNull();
     expect(screen.queryByText("Open this role workspace")).toBeNull();
