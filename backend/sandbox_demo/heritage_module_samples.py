@@ -26,6 +26,8 @@ from sandbox_demo.management.commands.five_module_demo_preflight import (
 HERITAGE_ID = uuid.UUID("19801b59-8c05-4c84-9312-5d792e4e839d")
 NAMESPACE = uuid.UUID("6f4445a7-1dcc-42dd-87ac-3cfe5fa4e9e1")
 SAMPLE_START = date(2026, 8, 1)
+# Fictional custody QA has a daily schedule; real school defaults are unchanged.
+SAMPLE_CARE_DAYS = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"]
 
 
 def fixed_id(label: str) -> uuid.UUID:
@@ -280,7 +282,7 @@ def seed_heritage_module_samples(*, enable_care_entitlements: bool = False) -> d
                 existing.start_date != SAMPLE_START
                 or existing.end_date is not None
                 or not existing.is_active
-                or existing.days_of_week != ["MON", "TUE", "WED", "THU", "FRI"]
+                or existing.days_of_week != SAMPLE_CARE_DAYS
                 or existing.billing_model != "FLAT_MONTHLY"
                 or existing.monthly_rate != Decimal("0.00")
                 or existing.prepaid_sessions_balance != 0
@@ -292,7 +294,7 @@ def seed_heritage_module_samples(*, enable_care_entitlements: bool = False) -> d
         else:
             AftercareEnrollment.objects.create(
                 **identity, end_date=None,
-                days_of_week=["MON", "TUE", "WED", "THU", "FRI"],
+                days_of_week=list(SAMPLE_CARE_DAYS),
                 billing_model="FLAT_MONTHLY", monthly_rate=Decimal("0.00"),
                 is_active=True,
             )

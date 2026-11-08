@@ -1,16 +1,29 @@
+"""Fictional Heritage enrollment-conversion proof fixture.
+
+Never select/reset records by a student's name alone. Older unmarked fixture
+records are intentionally left intact and require an isolated demo reset.
+"""
 from __future__ import annotations
 
 from datetime import date
 
 from django.db import transaction
+from django.db.models.deletion import Collector
 from django.utils import timezone
 
-from admissions.models import AdmissionsApplication
-from applications.models import Application, Applicant, ApplicationEvent, ApplicationStatus, EnrollmentContract, EnrollmentContractStatus
-from core.models import AcademicYear, Family, GradeLevel, School, Student, UserAccount
-from households.models import Household
+from admissions.models import AdmissionsApplication, AdmissionsAuditEvent
+from applications.models import (
+    Application, Applicant, ApplicationEvent, ApplicationStatus,
+    EnrollmentContract, EnrollmentContractStatus,
+)
+from core.models import (
+    AcademicYear, Enrollment as CoreEnrollment, Family, GradeLevel,
+    HouseholdFamilyLink, School, Student, StudentIdentityLink, UserAccount,
+)
+from households.models import Household, Student as CompatibilityStudent
 from .catalog import SANDBOX_PERSONAS, SANDBOX_SCHOOLS
 from .permissions import ensure_sandbox_role_permissions
+
 
 SCHOOL_ID = SANDBOX_SCHOOLS["heritage-core"].id
 FAMILY_NAME = "Mercer Enrollment Conversion Demo Family"
@@ -19,37 +32,411 @@ STUDENT_NUMBER = "HCA-ENR-001"
 STUDENT_FIRST = "Taylor"
 STUDENT_LAST = "Mercer"
 GRADE_CODE = "8"
+STUDENT_DOB = date(2012, 3, 14)
+FIXTURE_MARKER = "heritage-enrollment-conversion-v2"
 
 
+@transaction.atomic
 def reset_heritage_admissions_conversion_scenario() -> None:
+    """Delete only a fully proven fixture; refuse mixed/unmarked relationships."""
     school = School.objects.filter(pk=SCHOOL_ID).first()
-    if school is None: return
-    canonical_apps = list(Application.objects.filter(school_id=SCHOOL_ID, applicants__first_name=STUDENT_FIRST, applicants__last_name=STUDENT_LAST).select_related("household").distinct())
-    household_ids = {app.household_id for app in canonical_apps if app.household_id}
-    for app in canonical_apps: app.delete()
-    if household_ids: Household.objects.filter(school_id=SCHOOL_ID, id__in=household_ids, applications__isnull=True).delete()
-    family = Family.objects.filter(school=school, family_name=FAMILY_NAME).first()
-    if family is not None:
-        AdmissionsApplication.objects.filter(school=school, family=family).delete(); Student.objects.filter(school=school, family=family, student_number=STUDENT_NUMBER).delete(); family.delete()
+    if school is None:
+        return
+    marked = list(
+        Applicant.objects.select_related("application__household", "student")
+        .filter(school_id=school.pk, flags__heritage_conversion_fixture=FIXTURE_MARKER)
+        .order_by("pk")[:2]
+    )
+    if not marked:
+        return
+    if len(marked) != 1:
+        raise ValueError("Ambiguous marked Heritage fixture; do not delete.")
+
+    # Serialize fixture cleanup with new application-owned records. A parent
+    # row lock blocks concurrent FK inserts on PostgreSQL until this commits.
+    application = (
+        Application.objects.select_related("household").select_for_update()
+        .get(pk=marked[0].application_id, school_id=school.pk)
+    )
+    applicant = (
+        Applicant.objects.select_related("student").select_for_update(of=("self",))
+        .get(pk=marked[0].pk, school_id=school.pk, application=application,
+             flags__heritage_conversion_fixture=FIXTURE_MARKER)
+    )
+    household = application.household
+    compatibility = (
+        CompatibilityStudent.objects.select_for_update()
+        .filter(pk=applicant.student_id, school_id=school.pk).first()
+    )
+    # Lock both deletion principals before inspecting dependent records.
+    # New FK-backed guardian, roster, or SIS writes cannot race the proof.
+    family = Family.objects.select_for_update().filter(
+        school=school, family_name=FAMILY_NAME,
+    ).first()
+    core = Student.objects.select_for_update().filter(
+        school=school, student_number=STUDENT_NUMBER,
+    ).first()
+    if (
+        family is None or core is None or compatibility is None
+        or application.school_id != school.pk
+        or household.school_id != school.pk
+        or household.name != HOUSEHOLD_NAME
+        or applicant.application_id != application.id
+        or applicant.first_name != STUDENT_FIRST
+        or applicant.last_name != STUDENT_LAST
+        or applicant.dob != STUDENT_DOB
+        or applicant.grade_applying_for != GRADE_CODE
+        or compatibility.school_id != school.pk
+        or compatibility.household_id != household.pk
+        or core.family_id != family.id
+        or core.dob != STUDENT_DOB
+        or core.first_name != STUDENT_FIRST
+        or core.last_name != STUDENT_LAST
+        or application.applicants.count() != 1
+        or household.applications.count() != 1
+        or household.students.count() != 1
+        or family.students.count() != 1
+    ):
+        raise ValueError("Heritage fixture has unexpected identity relationships; manual review required.")
+
+    associations = list(
+        HouseholdFamilyLink.objects.select_for_update().filter(
+            school=school, household_id=household.pk, family=family
+        )[:2]
+    )
+    links = list(
+        StudentIdentityLink.objects.select_for_update().filter(
+            school=school, core_student=core,
+            compatibility_student=compatibility,
+            source=StudentIdentityLink.SOURCE_ADMISSIONS,
+            verification_status=StudentIdentityLink.STATUS_VERIFIED,
+            evidence_reference=f"application:{application.id}:applicant:{applicant.id}",
+        )[:2]
+    )
+    legacy = list(
+        AdmissionsApplication.objects.select_for_update().filter(
+            school=school, family=family, student=core,
+            notes_internal__contains=f"canonical_application_id={application.id}",
+        )[:2]
+    )
+    enrollments = list(
+        CoreEnrollment.objects.select_for_update()
+        .filter(school=school, student=core)[:2]
+    )
+    if (
+        len(associations) != 1 or len(links) != 1 or len(legacy) != 1
+        or len(enrollments) != 1
+        or enrollments[0].academic_year_id != legacy[0].academic_year_id
+        or enrollments[0].status != "ENROLLED"
+        or AdmissionsApplication.objects.filter(school=school, student=core).count() != 1
+        or StudentIdentityLink.objects.filter(core_student=core).count() != 1
+    ):
+        raise ValueError("Heritage fixture is not fully proven; historical records preserved.")
+
+    # A marked fictional applicant does not authorize deletion of unrelated
+    # guardians, immutable finance entries, student tuition or household links.
+    # Family/Student deletes can cascade; a UUID-only household bridge would
+    # otherwise be orphaned. Stop *before* deleting any fixture record.
+    if (
+        family.guardians.exists()
+        or family.ledger_entries.exists()
+        or core.tuitions.exists()
+        or HouseholdFamilyLink.objects.filter(household_id=household.pk).count() != 1
+        or str(legacy[0].notes_internal or "").strip()
+           != f"canonical_application_id={application.id}"
+    ):
+        raise ValueError(
+            "Heritage fixture has unrelated family, household or provenance "
+            "relationships; preserve records."
+        )
+
+    # A seeded enrollment contract cascades with the canonical application.
+    # Refuse extra versions, amendments or changes to the fictional contract
+    # before deletion: contract history must never be inferred from the event.
+    contracts = list(application.enrollment_contracts.select_for_update().order_by("version")[:2])
+    contract_guard_verified = (
+        len(contracts) == 1
+        and contracts[0].school_id == school.pk
+        and contracts[0].version == 1
+        and contracts[0].status == EnrollmentContractStatus.COUNTERSIGNED
+        and contracts[0].amended_from_id is None
+        and contracts[0].net_amount_cents == 995000
+        and contracts[0].currency == "USD"
+        and contracts[0].line_items == [{
+            "label": "Grade 8 Published Tuition",
+            "category": "tuition",
+            "amount_cents": 995000,
+        }]
+        and contracts[0].contract_totals == {
+            "gross_tuition_cents": 995000,
+            "net_family_obligation_cents": 995000,
+        }
+        and contracts[0].responsible_payer == "fictional.guardian@heritage.example.org"
+        and contracts[0].note == "Protected fictional sandbox contract; no external payment."
+        and contracts[0].issued_at is not None
+        and contracts[0].signed_at is not None
+        and contracts[0].countersigned_at is not None
+        and contracts[0].created_by == SANDBOX_PERSONAS["admissions_director"].email
+    )
+    if not contract_guard_verified:
+        raise ValueError(
+            "Heritage fixture has altered or additional enrollment contracts; "
+            "preserve contract history."
+        )
+
+    # Historical admissions audit events have string entity IDs, not FKs.
+    # Deleting a converted legacy row would orphan immutable audit evidence.
+    # Never reset an already converted or otherwise updated fixture.
+    historical_audit = AdmissionsAuditEvent.objects.filter(
+        school=school,
+        entity_type=AdmissionsAuditEvent.ENTITY_APPLICATION,
+        entity_id=str(legacy[0].pk),
+    ).exists()
+    # An extra event using an existing type still represents historical
+    # evidence. Require the exact three original events and unchanged payloads
+    # before this synthetic fixture may be deleted.
+    expected_events = {
+        "application_submitted": {
+            "via": "sandbox_admissions_conversion",
+            "applicant_id": str(applicant.id),
+        },
+        "decision_made": {
+            "decision": "accepted",
+            "updated_by": SANDBOX_PERSONAS["admissions_director"].email,
+        },
+        "enrollment_state_updated": {
+            "contract_status": "countersigned",
+            "deposit_status": "paid",
+            "note": "Fictional readiness; no payment provider transaction.",
+            "transition_reason": "sandbox_admissions_conversion_seed",
+            "updated_by": SANDBOX_PERSONAS["admissions_director"].email,
+            "demo_payment_processed": False,
+        },
+    }
+    recorded_events = list(
+        ApplicationEvent.objects.select_for_update().filter(
+            school_id=school.pk, application=application
+        ).values_list("event_type", "payload")
+    )
+    event_types = [event_type for event_type, _ in recorded_events]
+    pristine_seed_events = (
+        len(recorded_events) == len(expected_events)
+        and len(set(event_types)) == len(expected_events)
+        and all(
+            event_type in expected_events
+            and payload == expected_events[event_type]
+            for event_type, payload in recorded_events
+        )
+    )
+    if (
+        legacy[0].status != AdmissionsApplication.STATUS_ACCEPTED
+        or historical_audit
+        or not pristine_seed_events
+    ):
+        raise ValueError(
+            "Heritage fixture has completed enrollment or audit history; "
+            "preserve records and use a fresh isolated sandbox."
+        )
+
+    # Inspect the ORM's actual application cascade before authorizing it.
+    # An independent checklist/document, receipt or additional FK relation
+    # must never be silently erased by fictional scenario reset.
+    collector = Collector(using=application._state.db)
+    collector.collect([application])
+    affected = {}
+    for model, objects in collector.data.items():
+        if objects:
+            affected[model] = affected.get(model, 0) + len(objects)
+    for queryset in collector.fast_deletes:
+        count = queryset.count()
+        if count:
+            affected[queryset.model] = affected.get(queryset.model, 0) + count
+    expected = {
+        Application: 1, Applicant: 1, ApplicationEvent: 3,
+        EnrollmentContract: 1,
+    }
+    if affected != expected:
+        raise ValueError(
+            "Heritage application has unexpected dependent data; preserve records."
+        )
+    for groups in collector.field_updates.values():
+        for records in groups:
+            if records.exists() if hasattr(records, "exists") else bool(records):
+                raise ValueError(
+                    "Heritage application has dependent update evidence; preserve records."
+                )
+
+    def _require_standalone_delete(record, label):
+        # The application preflight above does not cover records reachable from
+        # the separate student/family/household delete operations below.
+        # Check each *after* the expected dependents were explicitly removed.
+        plan = Collector(using=record._state.db)
+        plan.collect([record])
+        planned = {}
+        for model, records in plan.data.items():
+            if records:
+                planned[model] = planned.get(model, 0) + len(records)
+        for queryset in plan.fast_deletes:
+            count = queryset.count()
+            if count:
+                planned[queryset.model] = planned.get(queryset.model, 0) + count
+        if planned != {type(record): 1}:
+            raise ValueError(
+                f"Heritage {label} has unrelated dependent records; preserve records."
+            )
+        for groups in plan.field_updates.values():
+            for records in groups:
+                if records.exists() if hasattr(records, "exists") else bool(records):
+                    raise ValueError(
+                        f"Heritage {label} has dependent updates; preserve records."
+                    )
+
+    # All deletes share the same atomic transaction. If any later preflight
+    # refuses, earlier deletes are rolled back, preserving the complete fixture.
+    legacy[0].delete()
+    enrollments[0].delete()
+    links[0].delete()
+    application.delete()
+    _require_standalone_delete(compatibility, "compatibility student")
+    compatibility.delete()
+    associations[0].delete()
+    _require_standalone_delete(household, "household")
+    household.delete()
+    _require_standalone_delete(core, "canonical student")
+    core.delete()
+    _require_standalone_delete(family, "family")
+    family.delete()
 
 
 @transaction.atomic
 def seed_heritage_admissions_conversion_scenario() -> dict[str, str]:
     school = School.objects.get(pk=SCHOOL_ID)
-    director = UserAccount.objects.get(school=school, username=SANDBOX_PERSONAS["admissions_director"].email)
-    ensure_sandbox_role_permissions(SANDBOX_PERSONAS["admissions_director"].role_code); reset_heritage_admissions_conversion_scenario()
-    year = AcademicYear.objects.filter(school=school, is_current=True).order_by("-start_date").first()
-    if year is None: year = AcademicYear.objects.create(school=school, name="2026-2027", start_date=date(2026, 8, 15), end_date=date(2027, 6, 15), is_current=True)
-    grade = GradeLevel.objects.filter(school=school, code=GRADE_CODE).first()
-    family = Family.objects.create(school=school, family_name=FAMILY_NAME, address_line1="800 Enrollment Way", city="Fairview", state="PA", zip_code="19000", status="ACTIVE")
-    core_student = Student.objects.create(school=school, family=family, student_number=STUDENT_NUMBER, first_name=STUDENT_FIRST, last_name=STUDENT_LAST, dob=date(2012, 3, 14), status="APPLICANT", current_grade_level=grade)
-    household = Household.objects.create(school_id=SCHOOL_ID, name=HOUSEHOLD_NAME, address1="800 Enrollment Way", city="Fairview", state="PA", postal_code="19000", is_active=True)
-    canonical = Application.objects.create(school_id=SCHOOL_ID, household=household, status=ApplicationStatus.DECIDED, submitted_at=timezone.now(), decided_at=timezone.now())
-    applicant = Applicant.objects.create(school_id=SCHOOL_ID, application=canonical, first_name=STUDENT_FIRST, last_name=STUDENT_LAST, grade_applying_for=GRADE_CODE, source="church_referral", flags={"sandbox_demo": True, "conversion_ready": True})
-    ApplicationEvent.objects.create(school_id=SCHOOL_ID, application=canonical, event_type="application_submitted", payload={"via": "sandbox_admissions_conversion", "applicant_id": str(applicant.id)})
-    ApplicationEvent.objects.create(school_id=SCHOOL_ID, application=canonical, event_type="decision_made", payload={"decision": "accepted", "updated_by": director.email})
-    contract = EnrollmentContract.objects.create(school_id=SCHOOL_ID, application=canonical, version=1, status=EnrollmentContractStatus.COUNTERSIGNED, line_items=[{"label": "Grade 8 Published Tuition", "category": "tuition", "amount_cents": 995000}], contract_totals={"gross_tuition_cents": 995000, "net_family_obligation_cents": 995000}, net_amount_cents=995000, currency="USD", responsible_payer="fictional.guardian@heritage.example.org", note="Protected fictional sandbox contract; no external payment is processed.", issued_at=timezone.now(), signed_at=timezone.now(), countersigned_at=timezone.now(), created_by=director.email)
-    ApplicationEvent.objects.create(school_id=SCHOOL_ID, application=canonical, event_type="enrollment_state_updated", payload={"contract_status": "countersigned", "deposit_status": "paid", "note": "Protected fictional sandbox readiness; no provider transaction.", "transition_reason": "sandbox_admissions_conversion_seed", "updated_by": director.email, "demo_payment_processed": False})
-    legacy = AdmissionsApplication.objects.create(school=school, academic_year=year, family=family, student=core_student, status=AdmissionsApplication.STATUS_ACCEPTED, gpa="3.80", test_score=91, essay_received=True, recommendations_received=2, transcript_received=True, notes_internal=f"Protected sandbox enrollment-ready applicant. canonical_application_id={canonical.id}")
-    legacy.submitted_at = legacy.created_at; legacy.save(update_fields=["submitted_at", "updated_at"])
-    return {"admissions_conversion_legacy_application_id": str(legacy.id), "admissions_conversion_canonical_application_id": str(canonical.id), "admissions_conversion_contract_id": str(contract.id), "admissions_conversion_student_id": str(core_student.id), "admissions_conversion_director_email": director.email}
+    director = UserAccount.objects.get(
+        school=school, username=SANDBOX_PERSONAS["admissions_director"].email
+    )
+    ensure_sandbox_role_permissions(SANDBOX_PERSONAS["admissions_director"].role_code)
+    reset_heritage_admissions_conversion_scenario()
+
+    # Legacy fixtures created before marker-based cleanup are never claimed by
+    # name; require a new isolated sandbox rather than deleting those records.
+    if (
+        Family.objects.filter(school=school, family_name=FAMILY_NAME).exists()
+        or Student.objects.filter(school=school, student_number=STUDENT_NUMBER).exists()
+        or Household.objects.filter(school_id=school.pk, name=HOUSEHOLD_NAME).exists()
+    ):
+        raise ValueError("Unmarked Heritage enrollment fixture exists; use a fresh isolated sandbox.")
+
+    year, _ = AcademicYear.objects.get_or_create(
+        school=school, name="2026-2027",
+        defaults={
+            "start_date": date(2026, 8, 15),
+            "end_date": date(2027, 6, 15),
+            "is_current": True,
+        },
+    )
+    grade, _ = GradeLevel.objects.get_or_create(
+        school=school, code=GRADE_CODE,
+        defaults={"label": "Grade 8", "sort_order": 8},
+    )
+    family = Family.objects.create(
+        school=school, family_name=FAMILY_NAME,
+        address_line1="800 Enrollment Way", city="Fairview",
+        state="PA", zip_code="19000", status="ACTIVE",
+    )
+    core = Student.objects.create(
+        school=school, family=family, student_number=STUDENT_NUMBER,
+        first_name=STUDENT_FIRST, last_name=STUDENT_LAST,
+        dob=STUDENT_DOB, status="APPLICANT", current_grade_level=grade,
+    )
+    household = Household.objects.create(
+        school_id=school.pk, name=HOUSEHOLD_NAME,
+        address1="800 Enrollment Way", city="Fairview", state="PA",
+        postal_code="19000", is_active=True,
+    )
+    HouseholdFamilyLink.objects.create(
+        school=school, household_id=household.pk, family=family,
+        source=HouseholdFamilyLink.SOURCE_ADMISSIONS,
+    )
+    compatibility = CompatibilityStudent.objects.create(
+        school_id=school.pk, household=household,
+        first_name=STUDENT_FIRST, last_name=STUDENT_LAST,
+        grade_level=GRADE_CODE, is_active=True,
+    )
+    canonical = Application.objects.create(
+        school_id=school.pk, household=household,
+        status=ApplicationStatus.DECIDED,
+        submitted_at=timezone.now(), decided_at=timezone.now(),
+    )
+    applicant = Applicant.objects.create(
+        school_id=school.pk, application=canonical, student=compatibility,
+        first_name=STUDENT_FIRST, last_name=STUDENT_LAST,
+        dob=STUDENT_DOB, grade_applying_for=GRADE_CODE,
+        source="church_referral",
+        flags={
+            "sandbox_demo": True, "conversion_ready": True,
+            "heritage_conversion_fixture": FIXTURE_MARKER,
+        },
+    )
+    StudentIdentityLink.objects.create(
+        school=school, core_student=core, compatibility_student=compatibility,
+        source=StudentIdentityLink.SOURCE_ADMISSIONS,
+        verification_status=StudentIdentityLink.STATUS_VERIFIED,
+        evidence_reference=f"application:{canonical.id}:applicant:{applicant.id}",
+    )
+    canonical_enrollment = CoreEnrollment.objects.create(
+        school=school, student=core, academic_year=year,
+        grade_level=grade, start_date=year.start_date, status="ENROLLED",
+    )
+    ApplicationEvent.objects.create(
+        school_id=school.pk, application=canonical, event_type="application_submitted",
+        payload={"via": "sandbox_admissions_conversion", "applicant_id": str(applicant.id)},
+    )
+    ApplicationEvent.objects.create(
+        school_id=school.pk, application=canonical, event_type="decision_made",
+        payload={"decision": "accepted", "updated_by": director.email},
+    )
+    contract = EnrollmentContract.objects.create(
+        school_id=school.pk, application=canonical, version=1,
+        status=EnrollmentContractStatus.COUNTERSIGNED,
+        line_items=[{
+            "label": "Grade 8 Published Tuition", "category": "tuition",
+            "amount_cents": 995000,
+        }],
+        contract_totals={
+            "gross_tuition_cents": 995000,
+            "net_family_obligation_cents": 995000,
+        },
+        net_amount_cents=995000, currency="USD",
+        responsible_payer="fictional.guardian@heritage.example.org",
+        note="Protected fictional sandbox contract; no external payment.",
+        issued_at=timezone.now(), signed_at=timezone.now(),
+        countersigned_at=timezone.now(), created_by=director.email,
+    )
+    ApplicationEvent.objects.create(
+        school_id=school.pk, application=canonical, event_type="enrollment_state_updated",
+        payload={
+            "contract_status": "countersigned", "deposit_status": "paid",
+            "note": "Fictional readiness; no payment provider transaction.",
+            "transition_reason": "sandbox_admissions_conversion_seed",
+            "updated_by": director.email, "demo_payment_processed": False,
+        },
+    )
+    legacy = AdmissionsApplication.objects.create(
+        school=school, academic_year=year, family=family, student=core,
+        status=AdmissionsApplication.STATUS_ACCEPTED,
+        gpa="3.80", test_score=91, essay_received=True,
+        recommendations_received=2, transcript_received=True,
+        # Preserve the strict, unique canonical provenance token as a
+        # standalone line, matching the guarded single-enroll upsert contract.
+        notes_internal=f"canonical_application_id={canonical.id}",
+    )
+    legacy.submitted_at = legacy.created_at
+    legacy.save(update_fields=["submitted_at", "updated_at"])
+    return {
+        "admissions_conversion_legacy_application_id": str(legacy.id),
+        "admissions_conversion_canonical_application_id": str(canonical.id),
+        "admissions_conversion_contract_id": str(contract.id),
+        "admissions_conversion_student_id": str(core.id),
+        "admissions_conversion_director_email": director.email,
+        "admissions_conversion_enrollment_id": str(canonical_enrollment.id),
+    }

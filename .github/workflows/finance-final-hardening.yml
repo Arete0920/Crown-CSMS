@@ -160,12 +160,13 @@ jobs:
       - name: Verify migrations are complete
         run: python manage.py makemigrations --check --dry-run
 
-      - name: Run PostgreSQL period-control and runtime proofs
+      - name: Run PostgreSQL finance and canonical identity lock proofs
         run: >-
           python -m pytest -q
           journal/tests/test_accounting_period_controls.py
           payments/tests/test_option_a_finance_runtime_chain.py
           payments/tests/test_option_a_compatibility_audit.py
+          enrollment_conversion_wizard/tests/test_views.py::EnrollmentConversionPostgresRowLockTests::test_held_conversion_proof_blocks_concurrent_identity_rewrites
 
       # The PostgreSQL canonical payment test above provisions an isolated
       # tenant-keyed school, settles/refunds a real manual payment, and runs the
