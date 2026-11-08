@@ -453,6 +453,7 @@ jobs:
             backend/aftercare/tests/test_am_pm_sessions.py \
             backend/aftercare/tests/test_daycare_api.py \
             backend/aftercare/tests/test_daycare_setup.py \
+            backend/aftercare/tests/test_daycare_staff_proposals.py \
             backend/sandbox_demo/test_seed_hosted_buyer_daycare.py \
             --junitxml=diadem-postgresql-junit.xml
       - name: Enforce executed (not skipped) PostgreSQL concurrency tests
@@ -474,6 +475,7 @@ jobs:
               "test_invalid_school_timezone_fails_read_only_preflight",
               "test_expired_buyer_module_blocks_admission_after_fixture_staging",
               "test_postgresql_concurrent_fixture_writers_serialize",
+              "test_postgresql_concurrent_staff_proposal_retry_is_unique_and_audited",
           ]
           for name in names:
               case = cases.get(name)
