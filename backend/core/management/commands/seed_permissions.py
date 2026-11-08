@@ -96,6 +96,12 @@ PERMISSIONS = [
     ("classroom.view", "View classroom roster and snapshot data"),
     ("hr.view", "View HR / staff directory dashboard"),
     ("hr.edit", "Create and edit employee records"),
+    ("evaluation.assign", "Assign confidential teacher-evaluation cycles"),
+    ("evaluation.observe", "Create and submit assigned teacher observations"),
+    ("evaluation.read_assigned", "Read own explicitly assigned teacher evaluations"),
+    ("evaluation.read_self", "Read own submitted teacher evaluation evidence"),
+    ("evaluation.respond_self", "Acknowledge or dispute own teacher observation"),
+
     ("safety.view", "View campus safety / incident dashboard"),
     ("safety.edit", "Create and resolve safety incidents"),
     ("security.view", "View security / safety dashboard"),
