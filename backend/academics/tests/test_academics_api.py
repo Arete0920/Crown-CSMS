@@ -44,12 +44,14 @@ def test_create_course_section_enroll_and_roster():
     )
     assert resp.status_code == 405
 
+    # An authenticated account without the explicit roster grant cannot
+    # mutate enrollments, even before any student/section lookup.
     resp = c.post(
         "/api/v1/academics/enroll/",
         data={"section_id": str(uuid.uuid4()), "student_id": str(uuid.uuid4())},
         content_type="application/json",
     )
-    assert resp.status_code == 404
+    assert resp.status_code == 403
 
 
 def test_courses_list_includes_spine_fields():

@@ -36,6 +36,7 @@ const cases = [
   [enrollmentConversion.loadApplicants, ['s1'], '/api/v1/enrollment-conversion-wizard/sessions/s1/load/', 'POST', {}],
   [enrollmentConversion.commitEnrollmentConversionSession, ['s1'], '/api/v1/enrollment-conversion-wizard/sessions/s1/commit/', 'POST', { confirm: true }],
   [enrollmentConversion.verifyEnrollmentConversionSession, ['s1'], '/api/v1/enrollment-conversion-wizard/sessions/s1/verify/', 'GET', undefined],
+  [enrollmentConversion.finalizeEnrollmentConversionVerification, ['s1'], '/api/v1/enrollment-conversion-wizard/sessions/s1/verify/', 'POST', { confirm: true }],
 ];
 
 function apiPath(url) {
