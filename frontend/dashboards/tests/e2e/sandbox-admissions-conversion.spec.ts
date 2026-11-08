@@ -27,7 +27,7 @@ test("Admissions Director converts a canonical-ready accepted applicant from the
   const enrollPromise = page.waitForResponse((response) => response.url().includes("/api/admissions/enroll/") && response.request().method() === "POST", { timeout: 30000 });
   await page.getByRole("button", { name: "Enroll Child" }).first().click();
   const enrollResponse = await enrollPromise; expect(enrollResponse.status(), "canonical enrollment POST must succeed").toBe(200);
-  const enrollment = await enrollResponse.json(); expect(enrollment.ok).toBe(true); expect(enrollment.already_enrolled).toBe(false); expect(enrollment.student_id).toBeTruthy(); expect(enrollment.canonical_application_id).toBeTruthy(); expect(enrollment.canonical_gate).toBe("contract_countersigned_and_deposit_paid_or_waived");
+  const enrollment = await enrollResponse.json(); expect(enrollment.ok).toBe(true); expect(enrollment.already_enrolled).toBe(false); expect(enrollment.student_id).toBeTruthy(); expect(enrollment.canonical_application_id).toBeTruthy(); expect(enrollment.canonical_gate).toBe("verified_identity_and_core_enrollment");
   await expect(page.getByRole("alert").filter({ hasText: /Enrolled successfully/i })).toBeVisible();
   await page.reload({ waitUntil: "networkidle" });
   const enrolledRow = page.getByRole("row").filter({ hasText: targetFamily }).filter({ hasText: "Enrolled" }).first();
