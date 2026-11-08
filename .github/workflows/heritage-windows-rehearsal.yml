@@ -16,7 +16,7 @@ on:
       - 'frontend/dashboards/**'
       - '.github/workflows/heritage-windows-rehearsal.yml'
   push:
-    branches: [main]
+    branches: [main, 'qa/accept-636-640-windows-20261107']
     paths:
       - 'scripts/demo/**'
       - 'Install-and-Start-Heritage.py'
