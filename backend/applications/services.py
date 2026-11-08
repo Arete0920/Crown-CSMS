@@ -4,12 +4,83 @@ from dataclasses import dataclass
 from django.db import transaction
 from django.utils import timezone
 
-from core.models import HouseholdFamilyLink, Student as CoreStudent, StudentIdentityLink
+from core.models import Enrollment as CoreEnrollment, HouseholdFamilyLink, Student as CoreStudent, StudentIdentityLink
 from households.models import Student as CompatibilityStudent
 from ledger.models import LedgerAccount, Charge
 
 from .models import Application, ApplicationEvent, ApplicationStatus
 
+
+def has_verified_student_enrollments(application: Application) -> bool:
+    """Require application-bound identity, family and school-year SIS enrollment.
+
+    Matching names, an arbitrary verified identity link, a previous-year
+    enrollment or a lifecycle event alone never establish completion.
+    """
+    from admissions.models import AdmissionsApplication
+
+    applicants = list(application.applicants.all())
+    if not applicants:
+        return False
+    family_ids = list(
+        HouseholdFamilyLink.objects.filter(
+            school_id=application.school_id,
+            household_id=application.household_id,
+        ).values_list("family_id", flat=True)
+    )
+    if len(family_ids) != 1:
+        return False
+
+    for applicant in applicants:
+        if (
+            applicant.school_id != application.school_id
+            or not applicant.student_id
+            or applicant.dob is None
+        ):
+            return False
+        identity = (
+            StudentIdentityLink.objects.select_related(
+                "core_student", "compatibility_student"
+            )
+            .filter(
+                school_id=application.school_id,
+                compatibility_student_id=applicant.student_id,
+                verification_status=StudentIdentityLink.STATUS_VERIFIED,
+                source=StudentIdentityLink.SOURCE_ADMISSIONS,
+                evidence_reference=(
+                    f"application:{application.id}:applicant:{applicant.id}"
+                ),
+            )
+            .first()
+        )
+        if identity is None:
+            return False
+        if (
+            identity.compatibility_student.school_id != application.school_id
+            or identity.compatibility_student.household_id != application.household_id
+            or identity.core_student.school_id != application.school_id
+            or identity.core_student.family_id != family_ids[0]
+            or identity.core_student.dob != applicant.dob
+        ):
+            return False
+
+        legacy_year_ids = AdmissionsApplication.objects.filter(
+            school_id=application.school_id,
+            student_id=identity.core_student_id,
+            status=AdmissionsApplication.STATUS_ENROLLED,
+            notes_internal__contains=f"canonical_application_id={application.id}",
+        ).values_list("academic_year_id", flat=True)
+        if not CoreEnrollment.objects.filter(
+            school_id=application.school_id,
+            student_id=identity.core_student_id,
+            academic_year_id__in=legacy_year_ids,
+            academic_year__school_id=application.school_id,
+            grade_level__school_id=application.school_id,
+            grade_level__code=applicant.grade_applying_for,
+            status="ENROLLED",
+        ).exists():
+            return False
+    return True
 
 @dataclass(frozen=True)
 class TransitionResult:
@@ -50,31 +121,62 @@ def _family_for_application(application):
             household_id=application.household_id,
         )
     )
-    if len(links) != 1:
+    if len(links) != 1 or links[0].family.school_id != application.school_id:
         raise ValueError(
-            "Application acceptance requires exactly one verified household-to-family link."
+            "Application acceptance requires exactly one verified same-school household-to-family link."
         )
     return links[0].family
 
 
 def _provision_student_identity(*, application, applicant, family, student_numbers):
+    if applicant.school_id != application.school_id:
+        raise ValueError("Applicant belongs to a different school.")
     compatibility_student = applicant.student
     if compatibility_student is not None:
         if compatibility_student.school_id != application.school_id:
             raise ValueError("Applicant student belongs to a different school.")
         if compatibility_student.household_id != application.household_id:
             raise ValueError("Applicant student belongs to a different household.")
+        # A legacy household student can be a sibling (or an inactive record).
+        # Being in the same family is not sufficient evidence to bind it to the
+        # current applicant; require an explicit identity reconciliation.
+        if (
+            not compatibility_student.is_active
+            or str(compatibility_student.first_name or "").strip().casefold()
+               != str(applicant.first_name or "").strip().casefold()
+            or str(compatibility_student.last_name or "").strip().casefold()
+               != str(applicant.last_name or "").strip().casefold()
+        ):
+            raise ValueError(
+                "Applicant compatibility student requires an active, matching identity."
+            )
 
         existing_link = StudentIdentityLink.objects.select_related("core_student").filter(
             compatibility_student=compatibility_student,
         ).first()
         if existing_link is not None:
+            core = existing_link.core_student
             if (
-                existing_link.school_id != application.school_id
+                applicant.school_id != application.school_id
+                or applicant.dob is None
+                or existing_link.school_id != application.school_id
                 or existing_link.verification_status != StudentIdentityLink.STATUS_VERIFIED
+                or existing_link.source != StudentIdentityLink.SOURCE_ADMISSIONS
+                or existing_link.evidence_reference
+                   != f"application:{application.id}:applicant:{applicant.id}"
+                or core.school_id != application.school_id
+                or core.family_id != family.id
+                or core.dob != applicant.dob
+                or core.status not in {"APPLICANT", "ACTIVE"}
+                or str(core.first_name or "").strip().casefold()
+                   != str(applicant.first_name or "").strip().casefold()
+                or str(core.last_name or "").strip().casefold()
+                   != str(applicant.last_name or "").strip().casefold()
             ):
-                raise ValueError("Applicant student identity link is not verified for this school.")
-            return compatibility_student, existing_link.core_student, False
+                raise ValueError(
+                    "Existing student identity requires exact applicant-bound admissions evidence, matching family, DOB, status and name."
+                )
+            return compatibility_student, core, False
 
     if applicant.dob is None:
         raise ValueError(
@@ -140,14 +242,22 @@ def decide_application(
     if decision not in ("ACCEPT", "DENY"):
         raise ValueError("decision must be ACCEPT or DENY")
 
-    if application.status != ApplicationStatus.SUBMITTED:
-        raise ValueError("Only SUBMITTED applications can be decided")
-
     normalized_student_numbers = student_numbers or {}
     if not isinstance(normalized_student_numbers, dict):
         raise ValueError("student_numbers must be an object keyed by applicant id")
 
     with transaction.atomic():
+        # The caller's Application instance may be stale after another worker
+        # decided it. Serialize both accept and deny against the same DB row.
+        locked_status = (
+            Application.objects.select_for_update()
+            .filter(id=application.id, school_id=application.school_id)
+            .values_list("status", flat=True)
+            .get()
+        )
+        if locked_status != ApplicationStatus.SUBMITTED:
+            raise ValueError("Only SUBMITTED applications can be decided.")
+
         if decision == "DENY":
             application.status = ApplicationStatus.DECIDED
             application.decided_at = timezone.now()

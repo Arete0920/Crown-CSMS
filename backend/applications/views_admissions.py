@@ -1994,69 +1994,127 @@ def _resolve_legacy_grade_level(*, school, grade_code: str):
     return GradeLevel.objects.filter(school=school, code=normalized).first()
 
 
+class LegacyStudentIdentityError(ValueError):
+    """An applicant cannot be mapped to a proven core student."""
+
+
 def _resolve_or_create_legacy_student(*, school, family, applicant: Applicant, ordinal: int):
-    from core.models import Student as CoreStudent
+    """Resolve only an applicant-bound verified crosswalk; never guess or create.
+
+    ordinal is retained for compatibility but never used to generate IDs.
+    The sandbox may reuse its own verified APP-numbered fixture, but neither
+    this bridge nor the authoritative public conversion can invent identity.
+    """
+    from core.models import HouseholdFamilyLink, StudentIdentityLink
 
     if family is None:
         return None
+    if (
+        applicant.dob is None
+        or applicant.student_id is None
+        or applicant.school_id != school.pk
+        or family.school_id != school.pk
+    ):
+        raise LegacyStudentIdentityError("Applicant DOB and same-school student mapping are required.")
 
-    existing = CoreStudent.objects.filter(
-        school=school,
-        family=family,
-        first_name__iexact=applicant.first_name,
-        last_name__iexact=applicant.last_name,
-    ).first()
-    if existing is not None:
-        return existing
+    application = applicant.application
+    if application.school_id != school.pk or application.household.school_id != school.pk:
+        raise LegacyStudentIdentityError("Application and household must belong to the same school.")
 
-    student_number = f"APP-{str(applicant.application_id).replace('-', '')[:6]}-{ordinal + 1:02d}"
-    grade_level = _resolve_legacy_grade_level(school=school, grade_code=applicant.grade_applying_for)
-    return CoreStudent.objects.create(
-        school=school,
-        family=family,
-        student_number=student_number,
-        first_name=applicant.first_name,
-        last_name=applicant.last_name,
-        dob=applicant.dob or timezone.localdate(),
-        status="ACTIVE",
-        current_grade_level=grade_level,
+    associated_family_ids = list(
+        HouseholdFamilyLink.objects.filter(
+            school_id=school.pk, household_id=application.household_id
+        ).values_list("family_id", flat=True)[:2]
     )
+    if associated_family_ids != [family.pk]:
+        raise LegacyStudentIdentityError("Exactly one matching household-family link is required.")
 
+    identity = (
+        StudentIdentityLink.objects.select_related("core_student", "compatibility_student")
+        .filter(
+            school_id=school.pk,
+            compatibility_student_id=applicant.student_id,
+            verification_status=StudentIdentityLink.STATUS_VERIFIED,
+            source=StudentIdentityLink.SOURCE_ADMISSIONS,
+            evidence_reference=f"application:{application.id}:applicant:{applicant.id}",
+        )
+        .first()
+    )
+    if identity is None:
+        raise LegacyStudentIdentityError("Exact verified applicant-bound provenance is required.")
+
+    core_student = identity.core_student
+    compatibility_student = identity.compatibility_student
+    if (
+        compatibility_student.school_id != school.pk
+        or compatibility_student.household_id != application.household_id
+        or core_student.school_id != school.pk
+        or core_student.family_id != family.pk
+        or core_student.dob != applicant.dob
+        or core_student.status not in {"APPLICANT", "ACTIVE"}
+        or not str(core_student.student_number or "").strip()
+        or str(core_student.first_name or "").strip().casefold()
+        != str(applicant.first_name or "").strip().casefold()
+        or str(core_student.last_name or "").strip().casefold()
+        != str(applicant.last_name or "").strip().casefold()
+    ):
+        raise LegacyStudentIdentityError("Student evidence conflicts with identity, DOB, school or family.")
+    return core_student
 
 def _sync_legacy_admissions_application(*, app: Application, academic_year, family, applicant: Applicant, ordinal: int, target_status: str):
     from admissions.models import AdmissionsApplication
 
-    legacy_student = _resolve_or_create_legacy_student(
-        school=academic_year.school,
-        family=family,
-        applicant=applicant,
-        ordinal=ordinal,
+    if applicant.application_id != app.id or academic_year.school_id != app.school_id:
+        raise LegacyStudentIdentityError("Application and academic-year evidence do not match.")
+    student = _resolve_or_create_legacy_student(
+        school=academic_year.school, family=family, applicant=applicant, ordinal=ordinal,
     )
-    legacy_app, _ = AdmissionsApplication.objects.get_or_create(
-        school=academic_year.school,
-        academic_year=academic_year,
-        family=family,
-        student=legacy_student,
-        defaults={
-            "status": target_status,
-            "submitted_at": app.submitted_at,
-            "notes_internal": f"canonical_application_id={app.id}",
-        },
+    if student is None:
+        raise LegacyStudentIdentityError("Verified student identity is required.")
+
+    # Existing rows with missing/conflicting provenance must be preserved for
+    # independent reconciliation, not silently claimed by this application.
+    existing = list(
+        AdmissionsApplication.objects.select_for_update()
+        .filter(
+            school=academic_year.school,
+            academic_year=academic_year,
+            family=family,
+            student=student,
+        ).order_by("pk")[:2]
     )
-    update_fields = []
+    reference = f"canonical_application_id={app.id}"
+    if len(existing) > 1:
+        raise LegacyStudentIdentityError("Duplicate historical admissions records require reconciliation.")
+    if existing:
+        legacy_app = existing[0]
+        recorded = [
+            line.strip() for line in str(legacy_app.notes_internal or "").splitlines()
+            if "canonical_application_id=" in line
+        ]
+        if recorded != [reference]:
+            raise LegacyStudentIdentityError("Historical admissions provenance requires reconciliation.")
+        if (
+            legacy_app.status == AdmissionsApplication.STATUS_ENROLLED
+            and target_status != AdmissionsApplication.STATUS_ENROLLED
+        ):
+            raise LegacyStudentIdentityError("Historical enrollment cannot be downgraded.")
+    else:
+        legacy_app = AdmissionsApplication.objects.create(
+            school=academic_year.school, academic_year=academic_year,
+            family=family, student=student, status=target_status,
+            submitted_at=app.submitted_at, notes_internal=reference,
+        )
+    updates = []
     if legacy_app.status != target_status:
         legacy_app.status = target_status
-        update_fields.append("status")
+        updates.append("status")
     if legacy_app.submitted_at is None and app.submitted_at is not None:
         legacy_app.submitted_at = app.submitted_at
-        update_fields.append("submitted_at")
-    if f"canonical_application_id={app.id}" not in str(legacy_app.notes_internal or ""):
-        legacy_app.notes_internal = f"{legacy_app.notes_internal}\ncanonical_application_id={app.id}".strip()
-        update_fields.append("notes_internal")
-    if update_fields:
-        legacy_app.save(update_fields=update_fields + ["updated_at"])
+        updates.append("submitted_at")
+    if updates:
+        legacy_app.save(update_fields=updates + ["updated_at"])
     return str(legacy_app.id)
-
 
 def _create_legacy_conversion_session(*, school, actor_user, academic_year, application_ids: list[str], target_status: str):
     from admissions.models import AdmissionsApplication
@@ -2082,48 +2140,60 @@ def _create_legacy_conversion_session(*, school, actor_user, academic_year, appl
 def _upsert_legacy_admissions_applications(*, app: Application, actor_user, target_status: str):
     try:
         from admissions.models import AdmissionsApplication
+        from core.models import HouseholdFamilyLink
     except Exception:
         return {"state": "legacy_admissions_unavailable", "count": 0}
 
-    school = School.objects.filter(id=app.school_id).first()
-    household = getattr(app, "household", None)
-    if school is None or household is None:
-        return {"state": "legacy_bridge_unavailable", "count": 0}
+    try:
+        with transaction.atomic():
+            # Serialize repeated calls for this exact canonical application.
+            app = (
+                Application.objects.select_for_update().select_related("household")
+                .filter(pk=app.pk, school_id=app.school_id).first()
+            )
+            if app is None:
+                return {"state": "legacy_bridge_unavailable", "count": 0}
+            school = School.objects.filter(id=app.school_id).first()
+            if school is None or app.household.school_id != school.pk:
+                raise LegacyStudentIdentityError("Legacy bridge school/household mismatch.")
+            academic_year = _resolve_legacy_academic_year(school=school)
+            if academic_year is None:
+                return {"state": "legacy_bridge_unavailable", "count": 0}
 
-    academic_year = _resolve_legacy_academic_year(school=school)
-    family = _resolve_or_create_legacy_family(school=school, household=household)
-    if academic_year is None or family is None:
-        return {"state": "legacy_bridge_unavailable", "count": 0}
-
-    synced_ids = [
-        _sync_legacy_admissions_application(
-            app=app,
-            academic_year=academic_year,
-            family=family,
-            applicant=applicant,
-            ordinal=ordinal,
-            target_status=target_status,
-        )
-        for ordinal, applicant in enumerate(app.applicants.order_by("created_at", "id"))
-    ]
-
-    session_state = None
-    if target_status == AdmissionsApplication.STATUS_ENROLLED and synced_ids:
-        session_state = _create_legacy_conversion_session(
-            school=school,
-            actor_user=actor_user,
-            academic_year=academic_year,
-            application_ids=synced_ids,
-            target_status=target_status,
-        )
-
-    return {
-        "state": target_status.lower(),
-        "count": len(synced_ids),
-        "application_ids": synced_ids,
-        "conversion_session": session_state,
-    }
-
+            # No implicit Family creation or first-match among ambiguous links.
+            links = list(
+                HouseholdFamilyLink.objects.select_for_update()
+                .select_related("family")
+                .filter(school=school, household_id=app.household_id)[:2]
+            )
+            if len(links) != 1 or links[0].family.school_id != school.pk:
+                raise LegacyStudentIdentityError("Exactly one verified household-family link is required.")
+            family = links[0].family
+            applicants = list(app.applicants.select_for_update().order_by("created_at", "id"))
+            if not applicants:
+                raise LegacyStudentIdentityError("A verified applicant is required.")
+            synced_ids = [
+                _sync_legacy_admissions_application(
+                    app=app, academic_year=academic_year, family=family,
+                    applicant=applicant, ordinal=ordinal, target_status=target_status,
+                )
+                for ordinal, applicant in enumerate(applicants)
+            ]
+            session_state = None
+            if target_status == AdmissionsApplication.STATUS_ENROLLED and synced_ids:
+                session_state = _create_legacy_conversion_session(
+                    school=school, actor_user=actor_user, academic_year=academic_year,
+                    application_ids=synced_ids, target_status=target_status,
+                )
+            return {
+                "state": target_status.lower(), "count": len(synced_ids),
+                "application_ids": synced_ids, "conversion_session": session_state,
+            }
+    except LegacyStudentIdentityError as exc:
+        # The nested atomic block has already rolled back every applicant write.
+        # The calling sandbox also rejects this explicit state and rolls back
+        # its prior lifecycle work; no silent success is returned.
+        return {"state": "identity_verification_required", "count": 0, "detail": str(exc)}
 
 def _lifecycle_chain_request_flags(request_payload: dict) -> tuple[bool, bool, bool]:
     return (
