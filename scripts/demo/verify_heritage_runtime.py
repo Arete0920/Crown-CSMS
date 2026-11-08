@@ -29,7 +29,18 @@ FIVE_MODULE_BROWSER_SOURCES = (
     "tests/e2e/extended-care-local-custody.spec.ts",
     "tests/e2e/jireh-sgo-local-intake.spec.ts",
     "tests/e2e/heritage-module-responsive.spec.ts",
+    "tests/e2e/heritage-presenter-launcher.spec.ts",
+    "tests/e2e/heritage-presenter-guided-links.spec.ts",
 )
+GUIDED_LINK_COUNTS = {
+    "school_admin": 10,
+    "admissions_director": 5,
+    "finance_director": 5,
+    "teacher": 7,
+    "parent": 8,
+    "student": 6,
+}
+
 UPSTREAM_BROWSER_CHECKS = (
     "six_role_buyer_browser_routes_and_mobile",
     "teacher_attendance_and_classwork_persist_after_reload",
@@ -59,6 +70,28 @@ def prepare_five_module_verification(env: dict[str, str], python: Path) -> None:
     )
 
 
+def verify_guided_link_audit(scoped: dict[str, str]) -> int:
+    """Reject missing, stale, partial, or failing six-persona browser evidence."""
+    directory = Path(scoped["CROWN_PRESENTER_LINK_AUDIT_DIR"])
+    source = scoped.get("CROWN_EXPECTED_FRONTEND_SHA")
+    count = 0
+    for role, expected_links in GUIDED_LINK_COUNTS.items():
+        record = directory / f"presenter-links-{role}.json"
+        if not record.is_file():
+            raise RuntimeError(f"Missing guided presenter link evidence for {role}")
+        data = json.loads(record.read_text(encoding="utf-8"))
+        if (data.get("result") != "PASS" or data.get("source_sha") != source
+                or data.get("role") != role or data.get("expected_links") != expected_links
+                or data.get("clicked_links") != expected_links
+                or len(data.get("pages", [])) != expected_links
+                or data.get("browser_errors") or data.get("server_errors")
+                or any(not p.get("requested") or not p.get("observed") or not p.get("heading")
+                       for p in data["pages"])):
+            raise RuntimeError(f"Guided presenter link evidence is incomplete for {role}")
+        count += expected_links
+    return count
+
+
 def complete_five_module_browser_checks(browser_env: dict[str, str], evidence: dict) -> None:
     """Run after the existing #611/#612/#620 proof blocks, preserving each journey."""
     missing = [name for name in UPSTREAM_BROWSER_CHECKS if evidence["checks"].get(name) is not True]
@@ -70,13 +103,21 @@ def complete_five_module_browser_checks(browser_env: dict[str, str], evidence: d
         "CROWN_CARE_LOCAL_E2E": "1", "CROWN_REQUIRE_CARE_BROWSER_PROOF": "1",
         "CROWN_SGO_LOCAL_E2E": "1", "CROWN_REQUIRE_SGO_BROWSER_PROOF": "1",
         "CROWN_SGO_LOCAL_CREDENTIALS": str((launcher.STATE / "sgo-credentials.txt").resolve()),
+        "CROWN_LOCAL_PRESENTER_E2E": "1", "CROWN_REQUIRE_LOCAL_PRESENTER_PROOF": "1",
+        "CROWN_PRESENTER_LINK_AUDIT_DIR": str(launcher.STATE.resolve()),
     })
+    # A successful previous run cannot stand in for this source's browser proof.
+    for role in GUIDED_LINK_COUNTS:
+        (launcher.STATE / f"presenter-links-{role}.json").unlink(missing_ok=True)
     for sources in (FIVE_MODULE_BROWSER_SOURCES[4:6], FIVE_MODULE_BROWSER_SOURCES[6:]):
         subprocess.run(
             launcher.npm_command() + ["run", "test:e2e", "--", *sources,
                                       "--workers=1", "--reporter=line"],
             cwd=launcher.FRONTEND, env=scoped, timeout=600, check=True,
         )
+    evidence["guided_links_clicked"] = verify_guided_link_audit(scoped)
+    evidence["checks"]["six_persona_guided_links_clicked_and_verified"] = True
+    evidence["checks"]["local_presenter_authenticated_click_path"] = True
     evidence["checks"]["five_module_responsive_real_role_browser_audit"] = True
     evidence["checks"]["extended_care_real_am_pm_browser_custody_and_reload"] = True
     evidence["checks"]["jireh_sgo_independent_partners_submission_correction_and_resubmission"] = True
