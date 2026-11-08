@@ -222,6 +222,8 @@ def test_enroll_ready_canonical_application_persists_enrollment():
     )
     assert repeated.status_code == 200, repeated.data
     assert repeated.data["already_enrolled"] is True
+    from enrollment_conversion_wizard.models import EnrollmentConversionWizardSession
+    assert EnrollmentConversionWizardSession.objects.filter(school=school).count() == 1
     assert CoreEnrollment.objects.filter(
         school=school, student=core, academic_year=year,
     ).count() == 1
@@ -478,3 +480,51 @@ def test_postgresql_nullable_student_join_preserves_identity_lock_and_denial():
     assert not ApplicationEvent.objects.filter(
         application=canonical, event_type=ENROLLMENT_CONFIRMED_EVENT_TYPE,
     ).exists()
+
+
+@pytest.mark.django_db(transaction=True)
+def test_two_concurrent_registrar_enrollments_create_one_conversion_session():
+    """Two PostgreSQL transactions must not duplicate verified conversion sessions."""
+    if connection.vendor != "postgresql":
+        pytest.skip("Requires real PostgreSQL row locking")
+
+    from concurrent.futures import ThreadPoolExecutor
+    from threading import Barrier
+    from django.db import close_old_connections, connections
+    from enrollment_conversion_wizard.models import EnrollmentConversionWizardSession
+
+    school = _school()
+    year = _year(school)
+    legacy = _legacy_application(school, year)
+    canonical = _link_canonical(legacy, ready=True)
+    _, student = _verified_enrollment(legacy, canonical, year)
+    editor = _editor(school)
+    barrier = Barrier(2)
+
+    def submit():
+        close_old_connections()
+        try:
+            client = _client(editor, school)
+            barrier.wait(timeout=15)
+            response = client.post(
+                "/api/admissions/enroll/", {"application_id": legacy.pk}, format="json"
+            )
+            return response.status_code, dict(response.data)
+        finally:
+            connections.close_all()
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        first = pool.submit(submit)
+        second = pool.submit(submit)
+        results = [first.result(timeout=90), second.result(timeout=90)]
+
+    assert [code for code, _ in results] == [200, 200], results
+    assert sorted(body["already_enrolled"] for _, body in results) == [False, True]
+    assert all(body["canonical_gate"] == "verified_identity_and_core_enrollment" for _, body in results)
+    assert CoreEnrollment.objects.filter(
+        school=school, student=student, academic_year=year, status="ENROLLED"
+    ).count() == 1
+    assert ApplicationEvent.objects.filter(
+        application=canonical, event_type=ENROLLMENT_CONFIRMED_EVENT_TYPE
+    ).count() == 1
+    assert EnrollmentConversionWizardSession.objects.filter(school=school).count() == 1
