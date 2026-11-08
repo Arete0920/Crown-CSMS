@@ -15,7 +15,11 @@ from applications.views_admissions import (
     DEPOSIT_PAID,
     ENROLLMENT_STATE_EVENT_TYPE,
 )
-from core.models import AcademicYear, CrownPermission, Family, GradeLevel, RolePermission, School, StudentIdentityLink, UserRole, Student as CoreStudent
+from core.models import (
+    AcademicYear, CrownPermission, Enrollment as CoreEnrollment, Family, GradeLevel,
+    HouseholdFamilyLink, RolePermission, School, StudentIdentityLink, UserRole,
+    Student as CoreStudent,
+)
 from crown_api.models_households import Household as CrownHousehold, Person, Student as CrownStudent
 from households.models import Household, Student
 
@@ -143,9 +147,40 @@ def test_enrollment_transition_marks_application_enrolled_and_activates_student(
         sis_student=sis_student,
         status=AdmissionsApplication.STATUS_ACCEPTED,
     )
-    _link_ready_canonical_application(app)
+    canonical = _link_ready_canonical_application(app)
+
+    # A completed legacy admissions status is not SIS proof. Supply the
+    # independently persisted, applicant-bound canonical records required
+    # for this deliberately successful golden-path test.
+    HouseholdFamilyLink.objects.create(
+        school=school, household_id=canonical.household_id,
+        family=family, source=HouseholdFamilyLink.SOURCE_ADMISSIONS,
+    )
+    compatibility_student = Student.objects.create(
+        school_id=school.id, household=canonical.household,
+        first_name="Jane", last_name="Doe", grade_level=grade.code,
+    )
+    applicant = Applicant.objects.create(
+        school_id=school.id, application=canonical, student=compatibility_student,
+        first_name="Jane", last_name="Doe", dob=core_student.dob,
+        grade_applying_for=grade.code,
+    )
+    StudentIdentityLink.objects.create(
+        school=school, core_student=core_student,
+        compatibility_student=compatibility_student,
+        source=StudentIdentityLink.SOURCE_ADMISSIONS,
+        verification_status=StudentIdentityLink.STATUS_VERIFIED,
+        evidence_reference=f"application:{canonical.id}:applicant:{applicant.id}",
+    )
+    canonical_enrollment = CoreEnrollment.objects.create(
+        school=school, student=core_student, academic_year=academic_year,
+        grade_level=grade, start_date=academic_year.start_date, status="ENROLLED",
+    )
 
     user = _staff_user(school, username=f"enroll-{uuid.uuid4()}")
+    edit, _ = CrownPermission.objects.get_or_create(code="admissions.edit")
+    RolePermission.objects.get_or_create(role_code="REGISTRAR", permission=edit)
+    UserRole.objects.get_or_create(school=school, user=user, role_code="REGISTRAR")
     client = APIClient()
     client.force_authenticate(user=user)
     response = client.post(
@@ -155,11 +190,18 @@ def test_enrollment_transition_marks_application_enrolled_and_activates_student(
         HTTP_X_SCHOOL_ID=str(school.id),
     )
 
-    assert response.status_code == 200
+    assert response.status_code == 200, response.data
+    assert response.data["ok"] is True
+    assert response.data["canonical_gate"] == "verified_identity_and_core_enrollment"
+    assert response.data["student_id"] == str(core_student.id)
     app.refresh_from_db()
     sis_student.refresh_from_db()
+    canonical_enrollment.refresh_from_db()
     assert app.status == AdmissionsApplication.STATUS_ENROLLED
     assert sis_student.active is True
+    assert canonical_enrollment.status == "ENROLLED"
+    assert canonical_enrollment.school_id == school.id
+    assert canonical_enrollment.student_id == core_student.id
 
 
 def test_billing_run_creation_generates_invoice_for_enrolled_students():

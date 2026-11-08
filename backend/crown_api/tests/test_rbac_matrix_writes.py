@@ -28,7 +28,7 @@ from django.contrib.auth.models import Group
 from django.test import TestCase
 from rest_framework.test import APIClient
 
-from core.models import School
+from core.models import CrownPermission, RolePermission, School, UserRole
 from households.models import Guardian as HouseholdGuardian, Household
 from finance.models import FinancePayment
 
@@ -75,7 +75,7 @@ class _RbacWriteBase(TestCase):
 
 class AdmissionsEnrollRbacTests(_RbacWriteBase):
     """
-    POST /api/v1/admissions/enroll/ — guarded by _require_staff().
+    POST /api/v1/admissions/enroll/ — guarded by explicit admissions.edit authority.
     Verified in views_enroll.py: non-staff returns HTTP 403 explicitly.
     """
 
@@ -121,6 +121,9 @@ class AdmissionsEnrollRbacTests(_RbacWriteBase):
         Will return 400 (bad data — no application_id) or 404 (not found),
         NOT 403 or 401.
         """
+        permission, _ = CrownPermission.objects.get_or_create(code="admissions.edit")
+        RolePermission.objects.get_or_create(role_code="REGISTRAR", permission=permission)
+        UserRole.objects.get_or_create(school=self.school, user=self.staff, role_code="REGISTRAR")
         self.client.force_authenticate(user=self.staff)
         resp = self.client.post(
             ENROLL_URL,

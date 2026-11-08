@@ -328,6 +328,7 @@ jobs:
           backend/finance/tests/test_finance_settlement_authorization.py
           backend/finance/tests/test_finance_payer_authorization.py
           backend/applications/tests/test_admissions_postgresql_concurrency.py
+          backend/admissions/tests/test_enroll_canonical_gate.py::test_two_concurrent_registrar_enrollments_create_one_conversion_session
           backend/tests/test_51x51_evidence_026_aftercare.py::TestMonthlyBillingPostgresConcurrency
           --migrations --create-db --junitxml=finance-postgresql-junit.xml
       - name: Preserve PostgreSQL financial posting evidence

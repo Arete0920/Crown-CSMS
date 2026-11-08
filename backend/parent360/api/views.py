@@ -723,9 +723,38 @@ def _build_admissions_application_row(
     contract_status, deposit_status = _admissions_contract_and_deposit_status(state, lifecycle_stage)
     aid_contract_sync_status, aid_billing_sync_status = _admissions_sync_statuses(aid_award_count, lifecycle_stage)
     sla = _workflow_sla_for_stage(lifecycle_stage)
-    applicant_to_student_status = {"enrolled": "completed", "accepted": "ready"}.get(lifecycle_stage, "pending")
-    classroom_readiness_status = {"enrolled": "in_progress", "accepted": "pending"}.get(lifecycle_stage, "pending")
-    parent_portal_activation_status = {"enrolled": "in_progress", "accepted": "pending"}.get(lifecycle_stage, "pending")
+    # The lifecycle event does not prove that canonical student identity or
+    # enrollment exists. Consult the verified crosswalk and CoreEnrollment.
+    from applications.services import has_verified_student_enrollments
+
+    authoritative_ready = (
+        lifecycle_stage == "enrolled" and has_verified_student_enrollments(app)
+    )
+    completed_events = (
+        set(
+            events.filter(
+                application_id=app.id,
+                event_type__in=[
+                    "classroom_readiness_completed",
+                    "parent_portal_activated",
+                ],
+            ).values_list("event_type", flat=True)
+        )
+        if authoritative_ready else set()
+    )
+    applicant_to_student_status = (
+        "completed" if authoritative_ready
+        else "in_progress" if lifecycle_stage == "enrolled"
+        else "ready" if lifecycle_stage == "accepted" else "pending"
+    )
+    classroom_readiness_status = (
+        "completed" if "classroom_readiness_completed" in completed_events
+        else "in_progress" if lifecycle_stage == "enrolled" else "pending"
+    )
+    parent_portal_activation_status = (
+        "completed" if "parent_portal_activated" in completed_events
+        else "in_progress" if lifecycle_stage == "enrolled" else "pending"
+    )
     parent_status, next_action = _admissions_status_labels(lifecycle_stage)
     assessment_captured, preferred_tour_window, preferred_interview_mode, assessment_status, assessment_next_action = _admissions_assessment_context(flags)
     deadline_at = _admissions_deadline(app, lifecycle_stage)
