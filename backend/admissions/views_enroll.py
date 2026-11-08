@@ -218,6 +218,7 @@ def enroll_applicant(request):
             school=school, context=context, actor_user=request.user,
             target_status=AdmissionsApplication.STATUS_ENROLLED,
             academic_year=target_year,
+            record_conversion_session=converted,
         )
         if bridge_error is not None:
             transaction.set_rollback(True)
