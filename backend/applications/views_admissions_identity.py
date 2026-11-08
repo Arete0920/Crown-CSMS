@@ -258,6 +258,7 @@ def _upsert_verified_legacy_admissions(
     actor_user,
     target_status: str,
     academic_year=None,
+    record_conversion_session=True,
 ) -> tuple[dict[str, Any] | None, Response | None]:
     try:
         from admissions.models import AdmissionsApplication
@@ -317,7 +318,7 @@ def _upsert_verified_legacy_admissions(
             ]
 
             session_state = None
-            if target_status == AdmissionsApplication.STATUS_ENROLLED and synced_ids:
+            if record_conversion_session and target_status == AdmissionsApplication.STATUS_ENROLLED and synced_ids:
                 session_state = legacy_views._create_legacy_conversion_session(
                     school=school,
                     actor_user=actor_user,
