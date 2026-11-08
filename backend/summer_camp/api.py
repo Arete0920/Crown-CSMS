@@ -84,6 +84,15 @@ class SummerCampIncidentCreateSerializer(serializers.Serializer):
     parent_notified = serializers.BooleanField(required=False)
     health_followup_required = serializers.BooleanField(required=False)
 
+    def validate(self, attrs):
+        # The incident creation form cannot attest that a guardian was
+        # notified; that requires a separate verified notification workflow.
+        if attrs.get("parent_notified") is True:
+            raise serializers.ValidationError({
+                "parent_notified": "Notification cannot be verified at incident creation."
+            })
+        return attrs
+
 
 class SummerCampConfigWizardSerializer(serializers.Serializer):
     completed_steps = serializers.ListField(child=serializers.CharField(), required=False)
@@ -150,6 +159,14 @@ def config_view(request):
     return Response(serializer.data)
 
 
+def _camp_configuration_denied():
+    # Do not reveal whether a foreign-school configuration record exists.
+    return Response(
+        {"detail": "Camp school, program or capacity is invalid."},
+        status=status.HTTP_400_BAD_REQUEST,
+    )
+
+
 @extend_schema(methods=["GET"], responses=SummerCampProgramSerializer(many=True))
 @extend_schema(methods=["POST"], request=SummerCampProgramSerializer, responses=SummerCampProgramSerializer)
 @api_view(["GET", "POST"])
@@ -170,7 +187,10 @@ def programs_view(request):
 
     serializer = SummerCampProgramSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
-    program = create_program(school_id, serializer.validated_data)
+    try:
+        program = create_program(school_id, serializer.validated_data)
+    except ValueError:
+        return _camp_configuration_denied()
     return Response(SummerCampProgramSerializer(program).data, status=status.HTTP_201_CREATED)
 
 
@@ -195,7 +215,10 @@ def program_detail_view(request, program_id):
 
     payload = SummerCampProgramSerializer(data=request.data)
     payload.is_valid(raise_exception=True)
-    program = update_program(school_id, program_id, payload.validated_data)
+    try:
+        program = update_program(school_id, program_id, payload.validated_data)
+    except ValueError:
+        return _camp_configuration_denied()
     return Response(SummerCampProgramSerializer(program).data)
 
 
@@ -219,7 +242,10 @@ def sessions_view(request):
 
     serializer = SummerCampSessionSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
-    session = create_session(school_id, serializer.validated_data)
+    try:
+        session = create_session(school_id, serializer.validated_data)
+    except ValueError:
+        return _camp_configuration_denied()
     return Response(SummerCampSessionSerializer(session).data, status=status.HTTP_201_CREATED)
 
 
@@ -244,7 +270,10 @@ def session_detail_view(request, session_id):
 
     serializer = SummerCampSessionSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
-    session = update_session(school_id, session_id, serializer.validated_data)
+    try:
+        session = update_session(school_id, session_id, serializer.validated_data)
+    except ValueError:
+        return _camp_configuration_denied()
     return Response(SummerCampSessionSerializer(session).data)
 
 
@@ -431,16 +460,22 @@ def incidents_view(request):
     serializer = SummerCampIncidentCreateSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
     payload = serializer.validated_data
-    incident = record_incident(
-        school_id=school_id,
-        session_id=payload["session_id"],
-        student_id=payload.get("student_id"),
-        severity=payload.get("severity", "LOW"),
-        category=payload.get("category", ""),
-        description=payload["description"],
-        parent_notified=payload.get("parent_notified", False),
-        health_followup_required=payload.get("health_followup_required", False),
-    )
+    try:
+        incident = record_incident(
+            school_id=school_id,
+            session_id=payload["session_id"],
+            student_id=payload.get("student_id"),
+            severity=payload.get("severity", "LOW"),
+            category=payload.get("category", ""),
+            description=payload["description"],
+            parent_notified=False,
+            health_followup_required=payload.get("health_followup_required", False),
+        )
+    except ValueError:
+        return Response(
+            {"detail": "Camp incident denied: camper or session is invalid."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
     return Response(SummerCampIncidentSerializer(incident).data, status=status.HTTP_201_CREATED)
 
 
@@ -481,6 +516,8 @@ def parent_student_view(request, student_id):
         and getattr(user, "is_active", False)
         and Guardian.objects.filter(
             account=user, school_id=school_id,
+            household__school_id=school_id,
+            household__is_active=True,
             household__students__id=student_id,
             household__students__school_id=school_id,
             household__students__is_active=True,
