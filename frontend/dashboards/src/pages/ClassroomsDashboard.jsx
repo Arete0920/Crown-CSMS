@@ -4,26 +4,13 @@ import { Box, Typography, Grid, Alert, CircularProgress } from "@mui/material";
 import { getSelectedSchoolId } from "../utils/authClient";
 import { listClassrooms, getClassroom } from "../api/classrooms";
 import { KpiStrip } from "../components/dashboard/KpiFlipCard.jsx";
+import { buildClassroomKpis } from "./classroomKpis.js";
 import TeacherClassworkPanel from "../components/teacher/TeacherClassworkPanel.jsx";
 
 import ClassroomCard from "../components/classroom/ClassroomCard";
 import ClassroomDetailDrawer from "../components/classroom/ClassroomDetailDrawer";
 
-/* ── Classrooms KPI flip cards ───────────────────────────────────── */
-const CLASSROOMS_KPI = [
-  { label: "Classrooms",     value: "18",  trend: null, trendUp: null,
-    definition: "Active homeroom classrooms registered for the current school year.",
-    dataSource: "Classrooms Module", dataHref: "/classrooms" },
-  { label: "Students Rostered", value: "247", trend: null, trendUp: null,
-    definition: "Total students rostered across all active classroom sections.",
-    dataSource: "Classrooms Module", dataHref: "/classrooms" },
-  { label: "Teachers",       value: "14",  trend: null, trendUp: null,
-    definition: "Homeroom teachers currently assigned to active classroom sections.",
-    dataSource: "Classrooms Module", dataHref: "/classrooms" },
-  { label: "Announcements",  value: "4",   trend: null, trendUp: null,
-    definition: "Active classroom announcements published to students and parents this week.",
-    dataSource: "Classrooms Module", dataHref: "/classrooms" },
-];
+/* Classroom summary metrics come from the authorized classroom list API. */
 
 function currentSandboxRole() {
   try {
@@ -42,6 +29,10 @@ export default function ClassroomsDashboard() {
   const [openId, setOpenId] = useState(null);
   const [detail, setDetail] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
+  const classroomKpis = useMemo(
+    () => buildClassroomKpis({ classrooms, loading, error }),
+    [classrooms, loading, error],
+  );
 
   useEffect(() => {
     let alive = true;
@@ -56,9 +47,13 @@ export default function ClassroomsDashboard() {
         }
         const data = await listClassrooms({ schoolId });
         const results = data?.results ?? data ?? [];
+        if (!Array.isArray(results)) throw new Error("Invalid classroom list response.");
         if (alive) setClassrooms(results);
       } catch (e) {
-        if (alive) setError(e?.message || "Failed to load classrooms.");
+        if (alive) {
+          setClassrooms([]);
+          setError(e?.message || "Failed to load classrooms.");
+        }
       } finally {
         if (alive) setLoading(false);
       }
@@ -98,7 +93,7 @@ export default function ClassroomsDashboard() {
 
       {teacherSandbox ? <TeacherClassworkPanel /> : null}
 
-      <KpiStrip cards={CLASSROOMS_KPI} />
+      <KpiStrip cards={classroomKpis} />
 
       {!!error && <Alert severity="warning" sx={{ mb: 2 }}>{error}</Alert>}
 
