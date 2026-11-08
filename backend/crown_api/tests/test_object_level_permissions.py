@@ -8,7 +8,7 @@ and test_tenant_isolation_writes.py.
 Scope here: same school_id, different users.
 
 What IS enforced (role-based object access):
-  - Admissions enrollment remains staff-restricted; finance settlement/refund
+  - Admissions enrollment requires a school-scoped admissions.edit grant; finance settlement/refund
     require a school-scoped finance.edit grant rather than the Django staff bit.
   - These are ROLE-based object access controls, not creator-based.
 
@@ -18,7 +18,7 @@ What is NOT currently enforced (documented boundary):
     not owner-scoped. This is a documented architectural decision, not a gap.
 
 Evidence anchors:
-  - admissions/views_enroll.py: _require_staff() checks is_staff/is_superuser.
+  - admissions/views_enroll.py: _require_enrollment_access() checks explicit grant.
   - finance/payment_compat_api.py: registered settlement/refund use finance.edit.
   - discipline/api/views.py: DisciplineIncidentActions — school-scoped only.
 """
@@ -81,6 +81,14 @@ class _ObjPermBase(TestCase):
         )
         self.client = APIClient()
 
+    def _grant_staff_admissions_edit(self):
+        """Test grant is explicit: Django is_staff is not admissions authority."""
+        permission, _ = CrownPermission.objects.get_or_create(code="admissions.edit")
+        RolePermission.objects.get_or_create(role_code="REGISTRAR", permission=permission)
+        UserRole.objects.get_or_create(
+            school=self.school, user=self.user_staff, role_code="REGISTRAR"
+        )
+
 
 # ---------------------------------------------------------------------------
 # 1. Staff-gated actions — non-staff in SAME school receives 403
@@ -119,6 +127,7 @@ class StaffGatedActionsTests(_ObjPermBase):
         Staff user in same school: passes the role gate.
         Returns 400/404 (bad data/not found), NOT 401/403.
         """
+        self._grant_staff_admissions_edit()
         self.client.force_authenticate(user=self.user_staff)
         resp = self.client.post(
             ENROLL_URL,
@@ -329,6 +338,7 @@ class EnrollmentTransitionGuardTests(_ObjPermBase):
 
     def setUp(self):
         super().setUp()
+        self._grant_staff_admissions_edit()
         self.academic_year = AcademicYear.objects.create(
             school=self.school,
             name="2025-2026",

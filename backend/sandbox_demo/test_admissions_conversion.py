@@ -38,7 +38,7 @@ def test_admissions_director_converts_canonical_ready_applicant_and_updates_metr
     response = client.post("/api/admissions/enroll/", {"application_id": seeded["admissions_conversion_legacy_application_id"]}, format="json")
     assert response.status_code == 200, response.data; assert response.data["ok"] is True; assert response.data["already_enrolled"] is False
     assert response.data["student_id"] == seeded["admissions_conversion_student_id"]; assert response.data["canonical_application_id"] == seeded["admissions_conversion_canonical_application_id"]
-    assert response.data["canonical_gate"] == "contract_countersigned_and_deposit_paid_or_waived"
+    assert response.data["canonical_gate"] == "verified_identity_and_core_enrollment"
     legacy = AdmissionsApplication.objects.get(id=seeded["admissions_conversion_legacy_application_id"]); assert legacy.status == AdmissionsApplication.STATUS_ENROLLED
     assert ApplicationEvent.objects.filter(school_id=SCHOOL_ID, application_id=seeded["admissions_conversion_canonical_application_id"], event_type="enrollment_confirmed").exists()
     summary = client.get("/api/v1/admissions/summary/"); assert summary.status_code == 200, summary.data; assert int(summary.data["pipeline"]["by_stage"]["enrolled"]) >= 1
