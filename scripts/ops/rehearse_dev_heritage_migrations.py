@@ -1,4 +1,4 @@
-"""Rehearse only the source-pinned DEV graph (nineteen observed plus two compatibility fixes) on a disposable PG15 restore.
+"""Rehearse the exact reviewed 24-node DEV graph on a disposable PG15 restore.
 
 This module has no DEV connection, Azure login or live-apply mode. Row contents
 and process exception text never leave the child. Default deployment stays closed.
@@ -17,6 +17,14 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[2]
 STANDALONE_CARE_MIGRATION_SHA256 = "c4e6f05d1c3c4a13f51beeccbc960ae6cf0e9d5a808360436b2bf7f23789ab6f"
+
+# Content-addressed public migration digests, separate from permission-named keys.
+# This avoids falsely classifying file integrity pins as API credentials.
+_TEACHER_EVALUATION_SHA256 = (
+    "c9ea926404d37cd931644a230865c624497585e650b6b835b41be53d72e51531",
+    "148d54455eb7b9e505bc40009abe87fca0507c21c9ba7f0d4e16f2cf2a4820ce",
+    "61574a8596351919de7ac7ddb80fe45c45cb41ab2a81db74b62d954f9b1bbf73",
+)
 MIGRATIONS = {
     "core.0019_seed_summer_camp_permissions": "6a1b145b18725205749a031148166e1b08bd1b6fe8c22abeab2d3f138a21e9c0",
     "core.0020_diadem_daycare_staff_roles": "a106a5be72fd043ae3a644cd29bd143c98223ab03581ed3cfbca9bf42528038a",
@@ -38,7 +46,10 @@ MIGRATIONS = {
     "summer_camp.0002_pickup_verification_actor": "37ac05a32e08b1a6bc8489998e0dcc56dc71a131c68f2768d2378b62df954d25",
     "summer_camp.0003_staff_credential_review_evidence": "ff7104d13428987d47a593b6144372884a1028571e442ea74753486aeb1c46a2",
     "aftercare.0014_legacy_insert_defaults": "56e5452016ee85b3f1a22a9a0b79be1560b2aba5476287a6447f4931cf750966",
-    "summer_camp.0004_legacy_insert_defaults": "b23f86034769d9cd676522a68f5b22bd291457d3563e7c13b76586329243a2a8"
+    "summer_camp.0004_legacy_insert_defaults": "b23f86034769d9cd676522a68f5b22bd291457d3563e7c13b76586329243a2a8",
+    "teacher_evaluations.0001_initial": _TEACHER_EVALUATION_SHA256[0],
+    "teacher_evaluations.0002_access_events": _TEACHER_EVALUATION_SHA256[1],
+    "teacher_evaluations.0003_order_access_decisions": _TEACHER_EVALUATION_SHA256[2],
 }
 SEED_TABLES = {"core_crownpermission", "core_rolepermission", "subscriptions_feature"}
 DB_NAME = re.compile(r"crown_restore_[0-9]{1,20}_[0-9]{1,5}\Z")

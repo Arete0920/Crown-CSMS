@@ -11,4 +11,4 @@ OPS_TESTS = Path(__file__).resolve().parents[2] / "scripts" / "ops"
 sys.path.insert(0, str(OPS_TESTS))
 from test_stage_dev_heritage_graph import StageContractTests as TestStageContract
 
-from test_dev_reviewed21_workflow import Reviewed21WorkflowContracts as TestReviewed21Workflow
+from test_dev_reviewed24_workflow import Reviewed24WorkflowContracts as TestReviewed24Workflow
