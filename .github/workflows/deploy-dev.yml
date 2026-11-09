@@ -10,13 +10,13 @@ on:
         description: "Full 40-character protected-main commit SHA (required)"
         required: true
         type: string
-      apply_reviewed_heritage21:
-        description: "Explicitly stage exact reviewed DEV 21-migration graph before backend deploy"
+      apply_reviewed_heritage24:
+        description: "Explicitly stage exact reviewed DEV 24-migration graph before backend deploy"
         required: false
         type: boolean
         default: false
-      confirm_dev_reviewed21:
-        description: "For reviewed21 stage only, type migrate-dev-reviewed-21"
+      confirm_dev_reviewed24:
+        description: "For reviewed24 stage only, type migrate-dev-reviewed-24"
         required: false
         type: string
         default: ""
@@ -89,11 +89,11 @@ jobs:
             exit 1
           fi
 
-      - name: Require reviewed21 owner authority before any Azure credential
+      - name: Require reviewed24 owner authority before any Azure credential
         shell: bash
         env:
-          APPLY_REVIEWED21: ${{ inputs.apply_reviewed_heritage21 }}
-          CONFIRM_REVIEWED21: ${{ inputs.confirm_dev_reviewed21 }}
+          APPLY_REVIEWED24: ${{ inputs.apply_reviewed_heritage24 }}
+          CONFIRM_REVIEWED24: ${{ inputs.confirm_dev_reviewed24 }}
           SYNTHETIC: ${{ inputs.synthetic_dev_confirmed }}
           RECOVERABLE: ${{ inputs.backup_recovery_verified }}
           MAINTENANCE: ${{ inputs.maintenance_window_confirmed }}
@@ -101,8 +101,8 @@ jobs:
           RESTORE_ARTIFACT: ${{ inputs.rehearsal_artifact_id }}
         run: |
           set -euo pipefail
-          if [[ "$APPLY_REVIEWED21" == "true" ]]; then
-            test "$CONFIRM_REVIEWED21" = migrate-dev-reviewed-21
+          if [[ "$APPLY_REVIEWED24" == "true" ]]; then
+            test "$CONFIRM_REVIEWED24" = migrate-dev-reviewed-24
             test "$SYNTHETIC" = true
             test "$RECOVERABLE" = true
             test "$MAINTENANCE" = true
@@ -112,8 +112,8 @@ jobs:
             test "$GITHUB_REPOSITORY" = Arete0920/Crown-CSMS
             test "$GITHUB_REPOSITORY_ID" = 1339719218
           else
-            test "$APPLY_REVIEWED21" = false
-            test -z "$CONFIRM_REVIEWED21"
+            test "$APPLY_REVIEWED24" = false
+            test -z "$CONFIRM_REVIEWED24"
             test "$SYNTHETIC" != true
             test "$RECOVERABLE" != true
             test "$MAINTENANCE" != true
@@ -175,16 +175,16 @@ jobs:
       - name: Verify SimpleJWT migration allowlist without database access
         run: python -m unittest discover -s scripts/ops -p test_reviewed_blacklist_migrations.py -v
 
-      - name: Verify reviewed21 source-only authority and evidence contracts
-        if: inputs.apply_reviewed_heritage21 == true
+      - name: Verify reviewed24 source-only authority and evidence contracts
+        if: inputs.apply_reviewed_heritage24 == true
         run: python -m unittest discover -s scripts/ops -p test_stage_dev_heritage_graph.py -v
 
-      - name: Apply separately owner-authorized reviewed21 DEV schema stage
-        if: inputs.apply_reviewed_heritage21 == true
+      - name: Apply separately owner-authorized reviewed24 DEV schema stage
+        if: inputs.apply_reviewed_heritage24 == true
         shell: bash
         env:
           EXPECTED_SHA: ${{ steps.vars.outputs.deploy_sha }}
-          CONFIRMATION: ${{ inputs.confirm_dev_reviewed21 }}
+          CONFIRMATION: ${{ inputs.confirm_dev_reviewed24 }}
           SYNTHETIC: ${{ inputs.synthetic_dev_confirmed }}
           RECOVERABLE: ${{ inputs.backup_recovery_verified }}
           MAINTENANCE: ${{ inputs.maintenance_window_confirmed }}
@@ -204,8 +204,8 @@ jobs:
             --rehearsal-artifact-id "$RESTORE_ARTIFACT" \
             --evidence-path "$RUNNER_TEMP/reviewed-dev-schema-stage.json"
 
-      - name: Preserve audited reviewed21 DEV schema receipt
-        if: always() && inputs.apply_reviewed_heritage21 == true
+      - name: Preserve audited reviewed24 DEV schema receipt
+        if: always() && inputs.apply_reviewed_heritage24 == true
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: reviewed-dev-schema-stage-${{ github.run_id }}

@@ -65,10 +65,10 @@ class RestoredCopyContracts(unittest.TestCase):
             validate_plan(plan())
 
     def test_exact_graph_accepts_independent_topological_order(self):
-        self.assertEqual(len(module.verify_plan(plan())), 21)
+        self.assertEqual(len(module.verify_plan(plan())), 24)
         changed = plan()
         changed[10], changed[12] = changed[12], changed[10]
-        self.assertEqual(len(module.verify_plan(changed)), 21)
+        self.assertEqual(len(module.verify_plan(changed)), 24)
 
     def test_unreviewed_missing_duplicate_or_backward_graph_is_denied(self):
         for mutation in ("extra", "missing", "duplicate", "backward", "empty"):
@@ -130,11 +130,11 @@ class RestoredCopyContracts(unittest.TestCase):
                 module.child_environment(database, port, "123", SHA, {})
 
     def test_uncertain_failed_or_forged_child_receipt_is_denied_without_private_text(self):
-        good = dict(result="PASS", source_sha=SHA, remaining_pending=0, reviewed_migrations=21,
+        good = dict(result="PASS", source_sha=SHA, remaining_pending=0, reviewed_migrations=24,
                     target_postgres_major=15, existing_nonseed_table_values_preserved=True,
                     existing_seed_rows_preserved=True,
                     existing_table_counts_preserved=True, live_schema_write_performed=False,
-                    baseline_migration_records=245, migrated_records=266, atomic_graph=True, legacy_inserts_preserved=True,
+                    baseline_migration_records=245, migrated_records=269, atomic_graph=True, legacy_inserts_preserved=True,
                     baseline_public_tables=467, baseline_fingerprint="c" * 64)
         def execute(record, code=0):
             return lambda *a, **kw: subprocess.CompletedProcess([], code, json.dumps(record), "PRIVATE")
@@ -292,7 +292,7 @@ print('Entire reviewed graph rolled back after an injected late failure')
                                              capture_output=True, text=True, timeout=120)
                 self.assertEqual(rolled_back.returncode, 0, rolled_back.stderr)
                 receipt = module.rehearse_clone(database, port, cluster, sha, os.environ)
-                self.assertEqual(receipt["reviewed_migrations"], 21)
+                self.assertEqual(receipt["reviewed_migrations"], 24)
                 self.assertEqual(receipt["remaining_pending"], 0)
                 with psycopg.connect(host="127.0.0.1", port=port, dbname=database, user="crown_drill",
                                      password="crown-drill-password") as conn:

@@ -44,12 +44,12 @@ def receipt():
         'application_rollback_compatibility': 'NOT_TESTED',
         'migration_rehearsal': {
             'result': 'PASS', 'source_sha': SHA, 'target_postgres_major': 15,
-            'reviewed_migrations': 21, 'remaining_pending': 0,
+            'reviewed_migrations': 24, 'remaining_pending': 0,
             'existing_seed_rows_preserved': True,
             'existing_nonseed_table_values_preserved': True,
             'existing_table_counts_preserved': True, 'atomic_graph': True,
             'legacy_inserts_preserved': True, 'live_schema_write_performed': False,
-            'baseline_migration_records': 245, 'migrated_records': 266,
+            'baseline_migration_records': 245, 'migrated_records': 269,
             'baseline_public_tables': 467, 'baseline_fingerprint': 'b' * 64,
         },
     }
@@ -256,10 +256,10 @@ class StageContractTests(unittest.TestCase):
         self.assertRaises(stage.StageBlocked, stage.live_baseline_contract,
                           {'migration_rehearsal': None}, 'b' * 64, 245, 467)
 
-    def test_only_entire_forward_21_item_graph_can_write(self):
-        reviewed = [f'app{i:02}.0001' for i in range(21)]
+    def test_only_entire_forward_24_item_graph_can_write(self):
+        reviewed = [f'app{i:02}.0001' for i in range(24)]
         plan = [(SimpleNamespace(app_label=f'app{i:02}', name='0001'), False)
-                for i in range(21)]
+                for i in range(24)]
         self.assertEqual(set(stage.plan_contract(plan, reviewed)), set(reviewed))
         for modified in (plan[:-1], list(reversed(plan[:-1])) + [plan[0]],
                          plan[:1] + [(plan[1][0], True)] + plan[2:],

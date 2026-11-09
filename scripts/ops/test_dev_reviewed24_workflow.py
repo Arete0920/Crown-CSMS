@@ -15,8 +15,8 @@ import unittest
 ROOT = Path(__file__).resolve().parents[2]
 WORKFLOW = ROOT / ".github" / "workflows" / "deploy-dev.yml"
 SHA = "a" * 40
-GUARD = "Require reviewed21 owner authority before any Azure credential"
-STAGE = "Apply separately owner-authorized reviewed21 DEV schema stage"
+GUARD = "Require reviewed24 owner authority before any Azure credential"
+STAGE = "Apply separately owner-authorized reviewed24 DEV schema stage"
 
 
 def step_body(source, name):
@@ -27,8 +27,8 @@ def step_body(source, name):
 
 
 def values(**overrides):
-    result = dict(os.environ, APPLY_REVIEWED21="true",
-                  CONFIRM_REVIEWED21="migrate-dev-reviewed-21",
+    result = dict(os.environ, APPLY_REVIEWED24="true",
+                  CONFIRM_REVIEWED24="migrate-dev-reviewed-24",
                   SYNTHETIC="true", RECOVERABLE="true", MAINTENANCE="true",
                   RESTORE_RUN="42273955790", RESTORE_ARTIFACT="13532038006",
                   GITHUB_RUN_ID="42290000000",
@@ -38,7 +38,7 @@ def values(**overrides):
     return result
 
 
-class Reviewed21WorkflowContracts(unittest.TestCase):
+class Reviewed24WorkflowContracts(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.source = WORKFLOW.read_text(encoding="utf-8")
@@ -70,12 +70,12 @@ class Reviewed21WorkflowContracts(unittest.TestCase):
         source = self.source.split("  workflow_dispatch:\n    inputs:\n",1)[1].split("\nconcurrency:\n",1)[0]
         names = re.findall(r"(?m)^      ([a-z][a-z0-9_]+):\s*$", source)
         self.assertEqual(set(names), {
-            "ref", "apply_reviewed_heritage21", "confirm_dev_reviewed21",
+            "ref", "apply_reviewed_heritage24", "confirm_dev_reviewed24",
             "synthetic_dev_confirmed", "backup_recovery_verified",
             "maintenance_window_confirmed", "rehearsal_run_id",
             "rehearsal_artifact_id",
         })
-        for name in ("apply_reviewed_heritage21", "synthetic_dev_confirmed",
+        for name in ("apply_reviewed_heritage24", "synthetic_dev_confirmed",
                      "backup_recovery_verified", "maintenance_window_confirmed"):
             match = re.search(
                 r"(?ms)^      " + re.escape(name) +
@@ -88,8 +88,8 @@ class Reviewed21WorkflowContracts(unittest.TestCase):
     def test_explicit_stage_authority_and_negative_cases(self):
         self.assertEqual(self.run_guard().returncode, 0)
         for invalid in (
-            dict(CONFIRM_REVIEWED21=""),
-            dict(CONFIRM_REVIEWED21="not-reviewed"),
+            dict(CONFIRM_REVIEWED24=""),
+            dict(CONFIRM_REVIEWED24="not-reviewed"),
             dict(SYNTHETIC="false"),
             dict(RECOVERABLE="false"),
             dict(MAINTENANCE="false"),
@@ -103,11 +103,11 @@ class Reviewed21WorkflowContracts(unittest.TestCase):
                 self.assertNotEqual(self.run_guard(**invalid).returncode, 0)
 
     def test_default_off_path_requires_no_hidden_authorization(self):
-        clean = dict(APPLY_REVIEWED21="false", CONFIRM_REVIEWED21="",
+        clean = dict(APPLY_REVIEWED24="false", CONFIRM_REVIEWED24="",
                      SYNTHETIC="false", RECOVERABLE="false",
                      MAINTENANCE="false", RESTORE_RUN="", RESTORE_ARTIFACT="")
         self.assertEqual(self.run_guard(**clean).returncode, 0)
-        for invalid in (dict(CONFIRM_REVIEWED21="migrate-dev-reviewed-21"),
+        for invalid in (dict(CONFIRM_REVIEWED24="migrate-dev-reviewed-24"),
                         dict(SYNTHETIC="true"), dict(RECOVERABLE="true"),
                         dict(MAINTENANCE="true"),
                         dict(RESTORE_RUN="42273955790"),
@@ -127,7 +127,7 @@ class Reviewed21WorkflowContracts(unittest.TestCase):
                         src.index("      - name: Build and push Docker image"))
         self.assertNotIn("az ", self.guard)
         self.assertNotIn("stage_dev_heritage_graph.py", self.guard)
-        self.assertIn("if: inputs.apply_reviewed_heritage21 == true", self.stage)
+        self.assertIn("if: inputs.apply_reviewed_heritage24 == true", self.stage)
         self.assertIn("CROWN_STAGE_GITHUB_TOKEN: ${{ github.token }}",self.stage)
         for arg in ("--expected-sha", "--confirmation", "--synthetic-dev-confirmed",
                     "--backup-recovery-verified","--maintenance-window-confirmed",
@@ -135,8 +135,8 @@ class Reviewed21WorkflowContracts(unittest.TestCase):
             self.assertIn(arg,self.stage)
 
     def test_evidence_and_existing_release_guards_retained(self):
-        evidence = step_body(self.source,"Preserve audited reviewed21 DEV schema receipt")
-        self.assertIn("if: always() && inputs.apply_reviewed_heritage21 == true",evidence)
+        evidence = step_body(self.source,"Preserve audited reviewed24 DEV schema receipt")
+        self.assertIn("if: always() && inputs.apply_reviewed_heritage24 == true",evidence)
         self.assertIn("retention-days: 7",evidence)
         self.assertIn("reviewed-dev-schema-stage.json",evidence)
         for name in (
