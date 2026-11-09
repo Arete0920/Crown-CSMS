@@ -4,6 +4,7 @@ from __future__ import annotations
 import os
 from pathlib import Path
 import subprocess
+import tempfile
 import unittest
 
 import yaml
@@ -117,6 +118,68 @@ class DevBlacklistWorkflowStageTests(unittest.TestCase):
         self.assertIn("test_dev_blacklist_workflow_stage.py", next(step["run"] for step in self.steps
                       if step.get("name") == "Verify both fail-closed migration-stage contracts without Azure"))
 
+
+    def test_owner_comment_is_a_read_only_explicit_main_request(self):
+        source = WORKFLOW.read_text(encoding="utf-8")
+        self.assertIn("issue_comment:\n    types: [created]", source)
+        self.assertIn("github.event.issue.number == 427", self.inspect["if"])
+        self.assertIn("github.event.comment.user.id == 318664923", self.inspect["if"])
+        self.assertIn("startsWith(github.event.comment.body, '/crown-dev-inventory ')", self.inspect["if"])
+        self.assertIn("github.event_name == 'workflow_dispatch'", self.stage["if"])
+        self.assertNotIn("issue_comment", self.stage["if"])
+        steps = self.inspect["steps"]
+        names = [step.get("name", "") for step in steps]
+        self.assertLess(names.index("Authorize exact DEV read-only request before Azure credentials"),
+                        names.index("Authenticate to existing DEV Azure"))
+        self.assertEqual(steps[0]["id"], "authority")
+        self.assertEqual(self.inspect["environment"], "dev")
+        self.assertEqual(self.inspect["permissions"]["id-token"], "write")
+        self.assertEqual(steps[1]["with"]["ref"], "${{ steps.authority.outputs.sha }}")
+        for step in steps:
+            if step.get("name") in (
+                    "Install accepted migration inspection dependencies",
+                    "Verify migration inspection boundary (offline)",
+                    "Inspect all pending DEV migrations without applying"):
+                self.assertEqual(
+                    step.get("if"),
+                    "github.event_name == 'issue_comment' || inputs.inspect_migration_plan")
+        self.assertIn("git rev-parse origin/main", steps[2]["run"])
+
+    def test_owner_comment_guard_rejects_impostors_and_wrong_source(self):
+        guard = self.inspect["steps"][0]["run"]
+        with tempfile.TemporaryDirectory() as temp:
+            output = Path(temp) / "source.txt"
+            env = {
+                **os.environ, "GITHUB_OUTPUT": str(output),
+                "EVENT_NAME": "issue_comment", "WORKFLOW_REF": "refs/heads/main",
+                "SOURCE_SHA": SHA, "MANUAL_SHA": "",
+                "COMMENT_BODY": "/crown-dev-inventory " + SHA,
+                "COMMENT_USER_ID": "318664923", "COMMENT_ISSUE_NUMBER": "427",
+            }
+            def run(**updates):
+                output.unlink(missing_ok=True)
+                result = subprocess.run(
+                    ["bash", "-e", "-c", guard], env={**env, **updates},
+                    capture_output=True, text=True, timeout=4)
+                return result.returncode, output.read_text() if output.exists() else ""
+            self.assertEqual(run(), (0, "sha=" + SHA + "\n"))
+            self.assertEqual(
+                run(EVENT_NAME="workflow_dispatch", MANUAL_SHA=SHA), (0, "sha=" + SHA + "\n"))
+            for change in (
+                {"COMMENT_USER_ID": "1"}, {"COMMENT_ISSUE_NUMBER": "428"},
+                {"WORKFLOW_REF": "refs/heads/test"},
+                {"SOURCE_SHA": "b" * 40},
+                {"COMMENT_BODY": "/crown-dev-inventory " + SHA + " extra"},
+                {"COMMENT_BODY": "/crown-dev-inventory " + SHA + "\n"},
+                {"COMMENT_BODY": "/crown-dev-inventory " + "A" * 40},
+                {"COMMENT_BODY": "not an operator command"},
+                {"EVENT_NAME": "push"},
+                {"EVENT_NAME": "workflow_dispatch", "MANUAL_SHA": ""},
+            ):
+                with self.subTest(change=change):
+                    code, written = run(**change)
+                    self.assertNotEqual(code, 0)
+                    self.assertFalse(written)
 
 if __name__ == "__main__":
     unittest.main()
