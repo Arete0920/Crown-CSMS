@@ -129,6 +129,10 @@ def rehearse_clone(database, port, cluster, source_sha, environ, *, run=subproce
             or receipt.get("baseline_public_tables", 0) < 1
             or not isinstance(receipt.get("baseline_fingerprint"), str)
             or not re.fullmatch(r"[0-9a-f]{64}", receipt.get("baseline_fingerprint", ""))
+            or not isinstance(receipt.get("baseline_columns_fingerprint"), str)
+            or not re.fullmatch(r"[0-9a-f]{64}", receipt.get("baseline_columns_fingerprint", ""))
+            or not isinstance(receipt.get("baseline_rows_fingerprint"), str)
+            or not re.fullmatch(r"[0-9a-f]{64}", receipt.get("baseline_rows_fingerprint", ""))
             or receipt.get("migrated_records") != receipt.get("baseline_migration_records", 0) + len(MIGRATIONS)
             or receipt.get("existing_seed_rows_preserved") is not True
             or receipt.get("existing_nonseed_table_values_preserved") is not True
@@ -198,10 +202,15 @@ def seed_row_multiset(connection, table, columns):
     return counts
 
 
-def data_fingerprint(columns, rows):
-    """Source/clone comparison receipt; no row contents leave the process."""
-    return hashlib.sha256(json.dumps({"columns": columns, "rows": rows}, sort_keys=True,
+def component_fingerprint(value):
+    """Canonical digest of schema or aggregate row digests, never raw data."""
+    return hashlib.sha256(json.dumps(value, sort_keys=True,
                                     separators=(",", ":")).encode()).hexdigest()
+
+
+def data_fingerprint(columns, rows):
+    """Preserve the original combined baseline fingerprint exactly."""
+    return component_fingerprint({"columns": columns, "rows": rows})
 
 
 def verify_legacy_writes(executor, connection):
@@ -306,7 +315,10 @@ def migrate_restored_copy():
         return dict(result="PASS", source_sha=os.environ["BUILD_SHA"], target_postgres_major=15,
                     reviewed_migrations=len(planned), remaining_pending=0,
                     baseline_migration_records=len(before_history), migrated_records=len(after_history),
-                    baseline_fingerprint=data_fingerprint(columns, baseline), baseline_public_tables=len(columns),
+                    baseline_fingerprint=data_fingerprint(columns, baseline),
+                    baseline_columns_fingerprint=component_fingerprint(columns),
+                    baseline_rows_fingerprint=component_fingerprint(baseline),
+                    baseline_public_tables=len(columns),
                     existing_nonseed_table_values_preserved=True, existing_seed_rows_preserved=True,
                     existing_table_counts_preserved=True,
                     live_schema_write_performed=False, atomic_graph=True, legacy_inserts_preserved=True)

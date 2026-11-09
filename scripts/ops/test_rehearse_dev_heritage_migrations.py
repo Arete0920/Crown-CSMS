@@ -26,6 +26,17 @@ def plan():
 
 
 class RestoredCopyContracts(unittest.TestCase):
+    def test_component_fingerprints_preserve_original_combined_digest(self):
+        columns = {"test_table": ["id", "value"]}
+        rows = {"test_table": (2, "a" * 64)}
+        expected = __import__("hashlib").sha256(json.dumps(
+            {"columns": columns, "rows": rows}, sort_keys=True,
+            separators=(",", ":")).encode()).hexdigest()
+        self.assertEqual(module.data_fingerprint(columns, rows), expected)
+        self.assertRegex(module.component_fingerprint(columns), r"^[0-9a-f]{64}$")
+        self.assertRegex(module.component_fingerprint(rows), r"^[0-9a-f]{64}$")
+        self.assertNotEqual(module.component_fingerprint(columns), module.component_fingerprint(rows))
+
     def test_seed_row_multiset_detects_original_row_mutation_with_unchanged_count(self):
         """Adding reviewed grants is allowed; altering an existing grant is not."""
         class FakeCursor:
@@ -135,7 +146,8 @@ class RestoredCopyContracts(unittest.TestCase):
                     existing_seed_rows_preserved=True,
                     existing_table_counts_preserved=True, live_schema_write_performed=False,
                     baseline_migration_records=245, migrated_records=269, atomic_graph=True, legacy_inserts_preserved=True,
-                    baseline_public_tables=467, baseline_fingerprint="c" * 64)
+                    baseline_public_tables=467, baseline_fingerprint="c" * 64,
+                    baseline_columns_fingerprint="d" * 64, baseline_rows_fingerprint="e" * 64)
         def execute(record, code=0):
             return lambda *a, **kw: subprocess.CompletedProcess([], code, json.dumps(record), "PRIVATE")
         self.assertEqual(module.rehearse_clone(DB, "5432", "123", SHA, {}, run=execute(good)), good)
@@ -147,6 +159,7 @@ class RestoredCopyContracts(unittest.TestCase):
                            ("remaining_pending", False), ("migrated_records", 267),
                            ("baseline_public_tables", False), ("baseline_public_tables", 0),
                            ("baseline_fingerprint", "PRIVATE"), ("baseline_fingerprint", None),
+                           ("baseline_columns_fingerprint", "PRIVATE"), ("baseline_rows_fingerprint", None),
                            ("live_schema_write_performed", True)]:
             with self.subTest(key=key), self.assertRaises(module.RehearsalBlocked):
                 module.rehearse_clone(DB, "5432", "123", SHA, {}, run=execute(dict(good, **{key: value})))
@@ -294,6 +307,8 @@ print('Entire reviewed graph rolled back after an injected late failure')
                 receipt = module.rehearse_clone(database, port, cluster, sha, os.environ)
                 self.assertEqual(receipt["reviewed_migrations"], 24)
                 self.assertEqual(receipt["remaining_pending"], 0)
+                self.assertRegex(receipt["baseline_columns_fingerprint"], r"^[0-9a-f]{64}$")
+                self.assertRegex(receipt["baseline_rows_fingerprint"], r"^[0-9a-f]{64}$")
                 with psycopg.connect(host="127.0.0.1", port=port, dbname=database, user="crown_drill",
                                      password="crown-drill-password") as conn:
                     row = conn.execute('SELECT care_session,pickup_verified,late_fee_cents,handoff_verified '

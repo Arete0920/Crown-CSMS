@@ -107,7 +107,11 @@ def receipt_contract(receipt, expected_sha):
             or not isinstance(receipt.get('source_database_identity_sha256'), str)
             or re.fullmatch(r'[0-9a-f]{64}', receipt['source_database_identity_sha256']) is None
             or not isinstance(rehearsal.get('baseline_fingerprint'), str)
-            or re.fullmatch(r'[0-9a-f]{64}', rehearsal['baseline_fingerprint']) is None):
+            or re.fullmatch(r'[0-9a-f]{64}', rehearsal['baseline_fingerprint']) is None
+            or not isinstance(rehearsal.get('baseline_columns_fingerprint'), str)
+            or re.fullmatch(r'[0-9a-f]{64}', rehearsal['baseline_columns_fingerprint']) is None
+            or not isinstance(rehearsal.get('baseline_rows_fingerprint'), str)
+            or re.fullmatch(r'[0-9a-f]{64}', rehearsal['baseline_rows_fingerprint']) is None):
         raise StageBlocked('reviewed_restore_receipt_invalid')
     if type(receipt.get('source_postgres_version')) is not int or receipt['source_postgres_version'] // 10000 != 15:
         raise StageBlocked('source_postgresql15_not_verified')
@@ -259,25 +263,40 @@ def authenticated_rehearsal_receipt(run_id, artifact_id, expected_sha, environ):
     return receipt
 
 
-def live_baseline_contract(receipt, fingerprint, migration_records, public_tables):
-    """Refuse a stale restored-copy rehearsal before any live schema mutation.
+def live_baseline_contract(receipt, fingerprint, migration_records, public_tables,
+                           columns_fingerprint, rows_fingerprint):
+    """Classify source/clone drift without disclosing data or relaxing denial.
 
-    The fingerprint hashes the original public columns and row digests, using
-    the same data_fingerprint() implementation as the disposable PG15 drill.
-    A matching DB hostname alone cannot establish the same data baseline.
+    A maintenance authorization flag is not a write freeze. Every discrepancy
+    remains a hard stop before migrations; only fixed categories are exported.
     """
     rehearsal = receipt.get('migration_rehearsal') if isinstance(receipt, dict) else None
-    if (
-        not isinstance(rehearsal, dict)
-        or not isinstance(fingerprint, str)
-        or re.fullmatch(r'[0-9a-f]{64}', fingerprint) is None
-        or type(migration_records) is not int
-        or type(public_tables) is not int
-        or fingerprint != rehearsal.get('baseline_fingerprint')
-        or migration_records != rehearsal.get('baseline_migration_records')
-        or public_tables != rehearsal.get('baseline_public_tables')
-    ):
-        raise StageBlocked('live_dev_baseline_differs_from_rehearsal')
+    hashes = (fingerprint, columns_fingerprint, rows_fingerprint)
+    required = ('baseline_fingerprint', 'baseline_columns_fingerprint',
+                'baseline_rows_fingerprint')
+    if (not isinstance(rehearsal, dict)
+            or any(not isinstance(value, str) or re.fullmatch(r'[0-9a-f]{64}', value) is None
+                   for value in hashes)
+            or type(migration_records) is not int or type(public_tables) is not int
+            or any(not isinstance(rehearsal.get(key), str)
+                   or re.fullmatch(r'[0-9a-f]{64}', rehearsal[key]) is None for key in required)
+            or type(rehearsal.get('baseline_migration_records')) is not int
+            or type(rehearsal.get('baseline_public_tables')) is not int):
+        raise StageBlocked('live_dev_baseline_comparison_unverified')
+    if migration_records != rehearsal['baseline_migration_records']:
+        raise StageBlocked('live_dev_migration_history_count_differs_from_rehearsal')
+    if public_tables != rehearsal['baseline_public_tables']:
+        raise StageBlocked('live_dev_public_table_count_differs_from_rehearsal')
+    columns_differ = columns_fingerprint != rehearsal['baseline_columns_fingerprint']
+    rows_differ = rows_fingerprint != rehearsal['baseline_rows_fingerprint']
+    if columns_differ and rows_differ:
+        raise StageBlocked('live_dev_columns_and_rows_differ_from_rehearsal')
+    if columns_differ:
+        raise StageBlocked('live_dev_columns_differ_from_rehearsal')
+    if rows_differ:
+        raise StageBlocked('live_dev_row_values_differ_from_rehearsal')
+    if fingerprint != rehearsal['baseline_fingerprint']:
+        raise StageBlocked('live_dev_combined_fingerprint_inconsistent')
     return True
 
 
@@ -312,7 +331,8 @@ def verify_current_main(expected_sha, *, run=subprocess.run):
 def execute_stage(expected_sha, receipt, *, get_dev_settings=None):
     """Transactional migration under the existing PostgreSQL advisory lock."""
     from rehearse_dev_heritage_migrations import (MIGRATIONS, SEED_TABLES, verify_manifest,
-        table_facts, row_digest, seed_row_multiset, data_fingerprint)
+        table_facts, row_digest, seed_row_multiset, data_fingerprint,
+        component_fingerprint)
     from run_dev_inquiry_migration import (load_dev_settings, validate_database_url,
                                             DEV_HOST, Blocked as DevConfigBlocked)
     verify_manifest()  # Exact 24 pinned file digests before Azure appsettings reads.
@@ -391,7 +411,8 @@ def execute_stage(expected_sha, receipt, *, get_dev_settings=None):
             # Match the exact data baseline rehearsed on the disposable copy,
             # not merely its database name, migration graph or receipt shape.
             live_baseline_contract(receipt, data_fingerprint(columns, before),
-                                   len(history), len(columns))
+                                   len(history), len(columns),
+                                   component_fingerprint(columns), component_fingerprint(before))
             verify_current_main(expected_sha)  # race protection immediately before schema mutation
             with transaction.atomic(using=connection.alias):
                 executor.migrate(targets)
