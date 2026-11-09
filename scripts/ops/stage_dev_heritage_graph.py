@@ -1,4 +1,4 @@
-"""Fail-closed DEV-only reviewed 21-migration stage for issue #427.
+"""Fail-closed DEV-only reviewed 24-migration stage for issue #427.
 
 Never called by ordinary deploy-dev. Cannot self-authorize; GitHub Actions dev
 workflow owns consent, provenance and maintenance window. Does not create Azure
@@ -24,8 +24,8 @@ from zipfile import BadZipFile, ZipFile
 
 ROOT = Path(__file__).resolve().parents[2]
 DEV_APP = 'crown-api-dev'
-EXPECTED_COUNT = 21
-CONFIRMATION = 'migrate-dev-reviewed-21'
+EXPECTED_COUNT = 24
+CONFIRMATION = 'migrate-dev-reviewed-24'
 REPO = 'Arete0920/Crown-CSMS'
 REPO_ID = 1339719218
 REHEARSAL_WORKFLOW = '.github/workflows/isolated-postgres-restore-drill.yml'
@@ -315,7 +315,7 @@ def execute_stage(expected_sha, receipt, *, get_dev_settings=None):
         table_facts, row_digest, seed_row_multiset, data_fingerprint)
     from run_dev_inquiry_migration import (load_dev_settings, validate_database_url,
                                             DEV_HOST, Blocked as DevConfigBlocked)
-    verify_manifest()  # Exact 21 pinned file digests before Azure appsettings reads.
+    verify_manifest()  # Exact 24 pinned file digests before Azure appsettings reads.
     receipt_contract(receipt, expected_sha)
     verify_current_main(expected_sha)
     load_settings = get_dev_settings or load_dev_settings
