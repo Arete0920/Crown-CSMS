@@ -1,5 +1,8 @@
 name: DEV Blacklist Database Inventory (read-only)
 on:
+  # Explicit owner command, never an automatic database check.
+  issue_comment:
+    types: [created]
   pull_request:
     branches: [main]
     paths:
@@ -81,7 +84,16 @@ jobs:
           python -m unittest discover -s scripts/ops -p test_reviewed_legacy_refresh_migrations.py -v
           python -m unittest discover -s scripts/ops -p test_dev_blacklist_workflow_stage.py -v
   inspect:
-    if: github.ref == 'refs/heads/main' && inputs.apply_reviewed_support != true && inputs.apply_reviewed_legacy_refresh != true && inputs.apply_reviewed_blacklist != true
+    if: >-
+      github.ref == 'refs/heads/main' &&
+      ((github.event_name == 'workflow_dispatch' &&
+        inputs.apply_reviewed_support != true &&
+        inputs.apply_reviewed_legacy_refresh != true &&
+        inputs.apply_reviewed_blacklist != true) ||
+       (github.event_name == 'issue_comment' &&
+        github.event.issue.number == 427 &&
+        github.event.comment.user.id == 318664923 &&
+        startsWith(github.event.comment.body, '/crown-dev-inventory ')))
     runs-on: ubuntu-latest
     environment: dev
     timeout-minutes: 15
@@ -89,13 +101,38 @@ jobs:
       contents: read
       id-token: write
     steps:
+      - name: Authorize exact DEV read-only request before Azure credentials
+        id: authority
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          WORKFLOW_REF: ${{ github.ref }}
+          SOURCE_SHA: ${{ github.sha }}
+          MANUAL_SHA: ${{ inputs.expected_sha }}
+          COMMENT_BODY: ${{ github.event.comment.body }}
+          COMMENT_USER_ID: ${{ github.event.comment.user.id }}
+          COMMENT_ISSUE_NUMBER: ${{ github.event.issue.number }}
+        run: |
+          set -euo pipefail
+          [[ "$WORKFLOW_REF" == "refs/heads/main" ]]
+          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            sha="$MANUAL_SHA"
+          elif [[ "$EVENT_NAME" == "issue_comment" ]]; then
+            [[ "$COMMENT_USER_ID" == "318664923" && "$COMMENT_ISSUE_NUMBER" == "427" ]]
+            [[ "$COMMENT_BODY" =~ ^/crown-dev-inventory\ ([0-9a-f]{40})$ ]]
+            sha="${BASH_REMATCH[1]}"
+          else
+            exit 1
+          fi
+          [[ "$sha" =~ ^[0-9a-f]{40}$ && "$sha" == "$SOURCE_SHA" ]]
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ inputs.expected_sha }}
+          ref: ${{ steps.authority.outputs.sha }}
           fetch-depth: 0
       - name: Verify accepted main identity
         env:
-          SHA: ${{ inputs.expected_sha }}
+          SHA: ${{ steps.authority.outputs.sha }}
         run: |
           set -euo pipefail
           [[ "$SHA" =~ ^[0-9a-f]{40}$ ]]
@@ -108,14 +145,14 @@ jobs:
       - name: Verify collector boundary (offline)
         run: python -m unittest discover -s scripts/ops -p test_read_dev_blacklist_state.py -v
       - name: Install accepted migration inspection dependencies
-        if: inputs.inspect_migration_plan
+        if: github.event_name == 'issue_comment' || inputs.inspect_migration_plan
         run: |
           # The migration-boundary regression test imports yaml; the backend
           # requirements deliberately do not provide this test-only parser.
           python -m pip install pyyaml==6.0.3
           python -m pip install -r backend/requirements.txt
       - name: Verify migration inspection boundary (offline)
-        if: inputs.inspect_migration_plan
+        if: github.event_name == 'issue_comment' || inputs.inspect_migration_plan
         run: |
           python -m unittest discover -s scripts/ops -p test_run_dev_inquiry_migration.py -v
           python -m unittest discover -s scripts/ops -p test_reviewed_legacy_refresh_migrations.py -v
@@ -130,15 +167,15 @@ jobs:
         run: python -m pip install 'psycopg[binary]==3.3.6'
       - name: Collect DEV schema (read-only)
         env:
-          SHA: ${{ inputs.expected_sha }}
+          SHA: ${{ steps.authority.outputs.sha }}
         run: |
           set -euo pipefail
           umask 077
           python scripts/ops/read_dev_blacklist_state.py --expected-sha "$SHA" > dev-blacklist-state.json
       - name: Inspect all pending DEV migrations without applying
-        if: inputs.inspect_migration_plan
+        if: github.event_name == 'issue_comment' || inputs.inspect_migration_plan
         env:
-          SHA: ${{ inputs.expected_sha }}
+          SHA: ${{ steps.authority.outputs.sha }}
         # No schema change: this displays the full pending Django migration graph,
         # not an allowlist. Existing exact-source, TLS and identity checks apply.
         # Masking commands must stay on Actions stdout, never in stored artifacts.
