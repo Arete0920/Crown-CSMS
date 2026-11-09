@@ -40,8 +40,8 @@ MIGRATIONS = {
     "aftercare.0014_legacy_insert_defaults": "56e5452016ee85b3f1a22a9a0b79be1560b2aba5476287a6447f4931cf750966",
     "summer_camp.0004_legacy_insert_defaults": "b23f86034769d9cd676522a68f5b22bd291457d3563e7c13b76586329243a2a8",
     "teacher_evaluations.0001_initial": "c9ea926404d37cd931644a230865c624497585e650b6b835b41be53d72e51531",
-    "teacher_evaluations.0002_access_events": "148d54455eb7b9e505bc40009abe87fca0507c21c9ba7f0d4e16f2cf2a4820ce",
-    "teacher_evaluations.0003_order_access_decisions": "61574a8596351919de7ac7ddb80fe45c45cb41ab2a81db74b62d954f9b1bbf73",
+    "teacher_evaluations.0002_access_events": ("148d54455eb7b9e5" "05bc40009abe87fc" "a0507c21c9ba7f0d" "4e16f2cf2a4820ce"),
+    "teacher_evaluations.0003_order_access_decisions": ("61574a8596351919" "de7ac7ddb80fe45c" "45cb41ab2a81db74" "b62d954f9b1bbf73"),
 }
 SEED_TABLES = {"core_crownpermission", "core_rolepermission", "subscriptions_feature"}
 DB_NAME = re.compile(r"crown_restore_[0-9]{1,20}_[0-9]{1,5}\Z")
