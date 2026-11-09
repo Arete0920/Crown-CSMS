@@ -51,6 +51,7 @@ def receipt():
             'legacy_inserts_preserved': True, 'live_schema_write_performed': False,
             'baseline_migration_records': 245, 'migrated_records': 269,
             'baseline_public_tables': 467, 'baseline_fingerprint': 'b' * 64,
+            'baseline_columns_fingerprint': 'c' * 64, 'baseline_rows_fingerprint': 'd' * 64,
         },
     }
 
@@ -226,6 +227,7 @@ class StageContractTests(unittest.TestCase):
             ('existing_table_counts_preserved', False),
             ('legacy_inserts_preserved', False), ('live_schema_write_performed', True),
             ('migrated_records', 265), ('baseline_fingerprint', 'invalid'),
+            ('baseline_columns_fingerprint', 'invalid'), ('baseline_rows_fingerprint', 'invalid'),
         ]:
             with self.subTest(key=key):
                 bad = copy.deepcopy(baseline)
@@ -236,25 +238,31 @@ class StageContractTests(unittest.TestCase):
     def test_live_baseline_requires_exact_rehearsed_data_and_schema(self):
         baseline = receipt()
         self.assertTrue(stage.live_baseline_contract(
-            baseline, 'b' * 64, 245, 467,
+            baseline, 'b' * 64, 245, 467, 'c' * 64, 'd' * 64,
         ))
-        for fingerprint, history, tables in [
-            ('a' * 64, 245, 467),  # same graph, stale table/data contents
-            ('b' * 64, 244, 467),  # changed migration-history count
-            ('b' * 64, 246, 467),
-            ('b' * 64, 245, 466),  # schema table count drift
-            ('b' * 64, 245, 468),
-            ('bad', 245, 467),
-            ('b' * 64, True, 467),
-            ('b' * 64, 245, True),
-        ]:
-            with self.subTest(fingerprint=fingerprint, history=history, tables=tables):
-                with self.assertRaisesRegex(
-                    stage.StageBlocked, 'live_dev_baseline_differs_from_rehearsal'
-                ):
-                    stage.live_baseline_contract(baseline, fingerprint, history, tables)
-        self.assertRaises(stage.StageBlocked, stage.live_baseline_contract,
-                          {'migration_rehearsal': None}, 'b' * 64, 245, 467)
+        cases = [
+            ('a' * 64, 245, 467, 'c' * 64, 'd' * 64, 'live_dev_combined_fingerprint_inconsistent'),
+            ('b' * 64, 244, 467, 'c' * 64, 'd' * 64, 'live_dev_migration_history_count_differs_from_rehearsal'),
+            ('b' * 64, 246, 467, 'c' * 64, 'd' * 64, 'live_dev_migration_history_count_differs_from_rehearsal'),
+            ('b' * 64, 245, 466, 'c' * 64, 'd' * 64, 'live_dev_public_table_count_differs_from_rehearsal'),
+            ('b' * 64, 245, 468, 'c' * 64, 'd' * 64, 'live_dev_public_table_count_differs_from_rehearsal'),
+            ('b' * 64, 245, 467, 'e' * 64, 'd' * 64, 'live_dev_columns_differ_from_rehearsal'),
+            ('b' * 64, 245, 467, 'c' * 64, 'e' * 64, 'live_dev_row_values_differ_from_rehearsal'),
+            ('b' * 64, 245, 467, 'e' * 64, 'e' * 64, 'live_dev_columns_and_rows_differ_from_rehearsal'),
+            ('bad', 245, 467, 'c' * 64, 'd' * 64, 'live_dev_baseline_comparison_unverified'),
+            ('b' * 64, True, 467, 'c' * 64, 'd' * 64, 'live_dev_baseline_comparison_unverified'),
+            ('b' * 64, 245, True, 'c' * 64, 'd' * 64, 'live_dev_baseline_comparison_unverified'),
+            ('b' * 64, 245, 467, 'not-a-hash', 'd' * 64, 'live_dev_baseline_comparison_unverified'),
+        ]
+        for fp, history, tables, columns, rows, code in cases:
+            with self.subTest(code=code):
+                with self.assertRaises(stage.StageBlocked) as denied:
+                    stage.live_baseline_contract(baseline, fp, history, tables, columns, rows)
+                self.assertEqual(str(denied.exception), code)
+                self.assertNotIn('not-a-hash', str(denied.exception))
+        with self.assertRaisesRegex(stage.StageBlocked, 'live_dev_baseline_comparison_unverified'):
+            stage.live_baseline_contract({'migration_rehearsal': None},
+                                         'b' * 64, 245, 467, 'c' * 64, 'd' * 64)
 
     def test_only_entire_forward_24_item_graph_can_write(self):
         reviewed = [f'app{i:02}.0001' for i in range(24)]
