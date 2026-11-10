@@ -12,8 +12,10 @@ GET  /api/v1/finance-setup/wizard/snapshot/   -> alias for status (read-only pre
 import logging
 
 from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_http_methods
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
+
+from core.permissions import CrownModulePermission
 
 from .serializers import FinancePolicySnapshotSerializer, FinanceSetupWizardPayloadSerializer
 from .services import PolicyLockedError, get_policy_snapshot, lock_finance_policies, upsert_finance_policies
@@ -23,23 +25,25 @@ logger = logging.getLogger(__name__)
 
 
 def _json_body(request):
-    import json
-
-    try:
-        return json.loads(request.body or b"{}")
-    except (ValueError, UnicodeDecodeError):
-        return None
+    # DRF has authenticated and parsed the request before the mutating view.
+    # Reject arrays/scalars rather than risking an unhandled .get() error.
+    body = request.data
+    return body if isinstance(body, dict) else None
 
 
-@csrf_exempt
-@require_http_methods(["GET"])
+@api_view(["GET"])
+@permission_classes([IsAuthenticated, CrownModulePermission("finance.view")])
 def wizard_status(request):
+    return _status_response(request)
+
+
+def _status_response(request):
     """
     Return the current finance policy snapshot for the requesting school + academic_year.
     academic_year is passed as a query param: ?year=2026-2027
     """
     school_id = school_id_from_request(request)
-    academic_year = request.GET.get("year", "").strip()
+    academic_year = (request.query_params.get("year") or "").strip()
 
     if not academic_year:
         return JsonResponse({"error": "year query param required (e.g. ?year=2026-2027)"}, status=400)
@@ -56,8 +60,8 @@ def wizard_status(request):
     return JsonResponse({"status": "ok", "data": data})
 
 
-@csrf_exempt
-@require_http_methods(["POST"])
+@api_view(["POST"])
+@permission_classes([IsAuthenticated, CrownModulePermission("finance.view", write_code="finance.configure")])
 def wizard_configure(request):
     """
     Create or update the full finance policy.
@@ -90,8 +94,8 @@ def wizard_configure(request):
     return JsonResponse({"status": "saved", "data": data}, status=200)
 
 
-@csrf_exempt
-@require_http_methods(["POST"])
+@api_view(["POST"])
+@permission_classes([IsAuthenticated, CrownModulePermission("finance.view", write_code="finance.configure")])
 def wizard_lock(request):
     """
     Permanently lock the finance policy for a given school + academic_year.
@@ -103,8 +107,10 @@ def wizard_lock(request):
     if body is None:
         return JsonResponse({"error": "Invalid JSON body."}, status=400)
 
-    academic_year = (body.get("academic_year") or "").strip()
-    locked_by = (body.get("locked_by") or "").strip() or None
+    year_value = body.get("academic_year")
+    academic_year = year_value.strip() if isinstance(year_value, str) else ""
+    # Audit identity is derived from the authenticated actor, not user input.
+    locked_by = str(request.user.pk)
 
     if not academic_year:
         return JsonResponse({"error": "academic_year is required."}, status=400)
@@ -129,11 +135,11 @@ def wizard_lock(request):
     )
 
 
-@csrf_exempt
-@require_http_methods(["GET"])
+@api_view(["GET"])
+@permission_classes([IsAuthenticated, CrownModulePermission("finance.view")])
 def wizard_snapshot(request):
     """
     Read-only alias for wizard_status — returns complete denormalized snapshot.
     Used by reporting surfaces and export pipelines.
     """
-    return wizard_status(request)
+    return _status_response(request)
