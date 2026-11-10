@@ -280,7 +280,9 @@ def private_archive(environ, evidence):
             evidence["ephemeral_backup_removed"] = not archive.exists()
 
 
-def perform(container, database, evidence, environ, *, rehearse=False):
+def perform(container, database, evidence, environ, *, rehearse=False, verify_prior_image=False):
+    if verify_prior_image and not rehearse:
+        raise RestoreBlocked("prior_image_requires_reviewed_rehearsal")
     import psycopg
     target_env = target_environment(environ)
     evidence["recovery_stage"] = "disposable_target_identity"
@@ -343,6 +345,16 @@ def perform(container, database, evidence, environ, *, rehearse=False):
                     if hasattr(error, "receipt"):
                         evidence["migration_rehearsal"] = error.receipt
                     raise RestoreBlocked(str(error)) from None
+                if verify_prior_image:
+                    from probe_dev_prior_image import PriorImageBlocked, probe_prior_image
+                    evidence["recovery_stage"] = "disposable_prior_image_probe"
+                    try:
+                        evidence["prior_image_probe"] = probe_prior_image(
+                            container, database, cluster, evidence["source_sha"], environ,
+                        )
+                    except PriorImageBlocked as error:
+                        evidence["prior_image_probe"] = {"result": "BLOCKED", "reason": str(error)}
+                        raise RestoreBlocked(str(error)) from None
             restore_archive(container, target_env, database, archive, facts, evidence,
                             after_restore=migration_rehearsal)
         else:
@@ -360,6 +372,9 @@ def main(argv=None):
     parser.add_argument("--evidence-path", required=True)
     parser.add_argument("--rehearse-reviewed-migrations", action="store_true",
                         help="Apply only the reviewed migration graph to the disposable PG15 copy, never DEV.")
+    parser.add_argument("--verify-prior-image", action="store_true",
+                        help="Opt-in fixed-digest image probe on the migrated disposable copy only.")
+    parser.add_argument("--confirm-prior-image", default="")
     args = parser.parse_args(argv)
     started = time.monotonic()
     evidence = {
@@ -369,14 +384,22 @@ def main(argv=None):
         "data_origin": "owner_attested_synthetic_dev" if args.synthetic_dev_confirmed == "true" else "NOT_VERIFIED",
         "source_write_performed": False,
         "migration_rehearsal_requested": args.rehearse_reviewed_migrations,
+        "prior_image_probe_requested": args.verify_prior_image,
         "disposable_database_created": False, "disposable_database_dropped": False,
         "application_rollback_compatibility": "NOT_TESTED", "release_readiness": "NOT_VERIFIED",
     }
     try:
+        if args.verify_prior_image or args.confirm_prior_image:
+            from probe_dev_prior_image import CONFIRMATION as PRIOR_CONFIRMATION
+            if (not args.verify_prior_image or not args.rehearse_reviewed_migrations
+                    or args.confirm_prior_image != PRIOR_CONFIRMATION):
+                raise RestoreBlocked("explicit_disposable_prior_image_authority_required")
         container, database = authority(args.expected_sha, args.confirmation,
                                         args.synthetic_dev_confirmed, os.environ)
         verify_accepted_source(args.expected_sha)
-        if args.rehearse_reviewed_migrations:
+        if args.verify_prior_image:
+            perform(container, database, evidence, os.environ, rehearse=True, verify_prior_image=True)
+        elif args.rehearse_reviewed_migrations:
             perform(container, database, evidence, os.environ, rehearse=True)
         else:
             perform(container, database, evidence, os.environ)
