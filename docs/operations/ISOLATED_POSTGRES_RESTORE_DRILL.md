@@ -53,11 +53,15 @@ authority, require `verify_prior_image=true` and
 identity must already have ACR pull access; this mode does not grant permissions.
 
 The fixed image runs its original entrypoint without host ports, mounted source
-credentials, bootstrap flags, or a writable root filesystem. The probe checks its
-served build/artifact identity, database identity, anonymous platform denials,
+credentials, bootstrap flags, or a writable root filesystem. An ownership-labelled
+internal Docker network restricts external connectivity; only the disposable
+database service is attached alongside the app. The probe verifies the network
+is internal before startup, then checks served build/artifact identity,
+database identity, anonymous platform denials,
 and rolled-back legacy Extended Care/Camp inserts using the actual old models.
 The application container is removed before the existing restore cleanup drops
-the database and deletes the temporary archive. Registry credentials are local
+the database and deletes the temporary archive. The task-owned internal network
+is detached and removed as part of cleanup. Registry credentials are local
 to this job and discarded. A pull, identity, probe, or cleanup failure blocks the
 job. Source rows and process diagnostics are not published.
 

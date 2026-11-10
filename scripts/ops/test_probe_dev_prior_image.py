@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 import subprocess
 import sys
+import secrets
 from types import SimpleNamespace
 import unittest
 from unittest.mock import Mock, patch
@@ -29,6 +30,7 @@ ENV = {
 def runner(*, failure=None, receipt=None):
     calls = []
     labels = {}
+    network_labels = {}
     def run(args, **kwargs):
         calls.append((args, kwargs))
         operation = args[3]
@@ -38,6 +40,12 @@ def runner(*, failure=None, receipt=None):
             key, value = args[args.index("--label")+1].split("=", 1)
             labels[key] = value
         if operation == "container": stdout = json.dumps(labels)
+        if operation == "network":
+            if args[4] == "create":
+                key, value = args[args.index("--label")+1].split("=", 1)
+                network_labels[key] = value
+            if args[4] == "inspect":
+                stdout = json.dumps({"Internal": True, "Labels": network_labels})
         if operation == "exec": stdout = json.dumps(receipt or {"result": "PASS"})
         if operation == failure: code, stdout = 1, "PRIVATE"
         return SimpleNamespace(returncode=code, stdout=stdout, stderr="PRIVATE")
@@ -45,6 +53,38 @@ def runner(*, failure=None, receipt=None):
 
 
 class PriorImageContracts(unittest.TestCase):
+    @unittest.skipUnless(os.environ.get("CROWN_PRIOR_IMAGE_TEST_CONTAINER"), "requires disposable PG15")
+    def test_actual_internal_network_and_disposable_database_alias(self):
+        import dev_backup_restore as recovery
+        container = os.environ["CROWN_PRIOR_IMAGE_TEST_CONTAINER"]
+        env = recovery.target_environment(os.environ)
+        recovery.target_identity(container, env, expected_major=15)
+        token = secrets.token_hex(10)
+        network = "crown-prior-net-test-" + token
+        image = "postgres@sha256:40e8c839f86c404f9bd1c456bb83f11b205f2cd95d753b34c2d074e89ecee786"
+        base = module.DOCKER
+        def execute(args, **kwargs):
+            return subprocess.check_output(base + args, text=True, stderr=subprocess.PIPE, timeout=30, **kwargs).strip()
+        with recovery.disposable_database(container, env, DB, {}):
+            execute(["network", "create", "--internal", "--label", "crown.prior-probe="+token, network])
+            try:
+                state = json.loads(execute(["network", "inspect", "--format", "{{json .}}", network]))
+                self.assertIs(state["Internal"], True)
+                self.assertEqual(state["Labels"]["crown.prior-probe"], token)
+                execute(["network", "connect", "--alias", module.DATABASE_ALIAS, network, container])
+                actual = execute(["run", "--rm", "--network", network, "--cap-drop=ALL",
+                    "--security-opt=no-new-privileges", "--entrypoint", "psql", "--env", "PGPASSWORD",
+                    image, "-X", "-A", "-t", "--host", module.DATABASE_ALIAS, "--username", "crown_drill",
+                    "--dbname", DB, "--command", "SELECT current_database()"],
+                    env={**recovery.clean_environment(os.environ), "PGPASSWORD": "crown-drill-password"})
+                self.assertEqual(actual, DB)
+            finally:
+                state = json.loads(execute(["network", "inspect", "--format", "{{json .}}", network]))
+                self.assertEqual(state["Labels"]["crown.prior-probe"], token)
+                subprocess.run(base + ["network", "disconnect", "--force", network, container],
+                               capture_output=True, timeout=30, check=False)
+                execute(["network", "rm", network])
+
     @unittest.skipUnless(os.environ.get("CROWN_PRIOR_IMAGE_TEST_CONTAINER"), "requires disposable PG15")
     def test_actual_pg15_role_database_and_cluster_boundary(self):
         import dev_backup_restore as recovery
@@ -102,14 +142,17 @@ class PriorImageContracts(unittest.TestCase):
         self.assertEqual(calls[0][0], module.DOCKER + ["pull", module.PRIOR_IMAGE])
         args, kwargs = next(c for c in calls if c[0][3] == "run")
         self.assertEqual(args[-1], module.PRIOR_IMAGE)
-        self.assertIn("container:" + CONTAINER, args)
+        self.assertTrue(args[args.index("--network")+1].startswith("crown-prior-net-"))
+        self.assertNotIn("container:" + CONTAINER, args)
+        self.assertTrue(receipt["internal_network_removed"])
+        self.assertTrue(any(args[3:6] == ["network", "create", "--internal"] for args, _ in calls))
         for flag in ("--read-only", "--cap-drop=ALL", "--security-opt=no-new-privileges",
                      "--pids-limit=128", "--memory=768m", "--cpus=1", "--log-driver=none"):
             self.assertIn(flag, args)
         for flag in ("--entrypoint", "--volume", "--mount", "--publish", "--privileged"):
             self.assertNotIn(flag, args)
         self.assertEqual(kwargs["env"]["DATABASE_URL"],
-                         f"postgresql://crown_drill:crown-drill-password@127.0.0.1:5432/{DB}?sslmode=disable")
+                         f"postgresql://crown_drill:crown-drill-password@crown-prior-db:5432/{DB}?sslmode=disable")
         self.assertNotIn("DATABASE_URL=", " ".join(args))
         self.assertNotIn(kwargs["env"]["DJANGO_SECRET_KEY"], " ".join(args))
         self.assertNotIn("PRIVATE", json.dumps(calls))
@@ -130,7 +173,8 @@ class PriorImageContracts(unittest.TestCase):
             calls, run = runner(failure=failure)
             with self.subTest(failure=failure), self.assertRaises(module.PriorImageBlocked):
                 module.probe_prior_image(CONTAINER, DB, "12345", SHA, ENV, run=run, verify_target=Mock())
-            self.assertEqual(calls[-1][0][3:5], ["rm", "--force"])
+            self.assertTrue(any(args[3:5] == ["rm", "--force"] for args, _ in calls))
+            self.assertEqual(calls[-1][0][3:5], ["network", "rm"])
         for receipt in ({"result": "PASS", "extra": "PRIVATE"},
                         {"result": "BLOCKED", "reason": "PRIVATE"},
                         {"result": "BLOCKED", "reason": ["PRIVATE"]}):
@@ -138,7 +182,7 @@ class PriorImageContracts(unittest.TestCase):
             with self.subTest(receipt=receipt), self.assertRaisesRegex(module.PriorImageBlocked,
                                                                      "^prior_image_probe_receipt_invalid$"):
                 module.probe_prior_image(CONTAINER, DB, "12345", SHA, ENV, run=run, verify_target=Mock())
-            self.assertEqual(calls[-1][0][3], "rm")
+            self.assertTrue(any(args[3] == "rm" for args, _ in calls))
 
     def test_only_fixed_failure_codes_cross_child_boundary(self):
         for reason in module.SAFE_REASONS:
@@ -165,6 +209,39 @@ class PriorImageContracts(unittest.TestCase):
                                                            "^prior_image_container_cleanup_unverified$"):
                 module.probe_prior_image(CONTAINER, DB, "12345", SHA, ENV, run=run, verify_target=Mock())
             self.assertFalse(any(args[3] == "rm" for args, _ in calls))
+
+    def test_noninternal_network_never_starts_image_and_network_cleanup_is_required(self):
+        calls, real = runner()
+        def noninternal(args, **kwargs):
+            result = real(args, **kwargs)
+            if args[3:5] == ["network", "inspect"]:
+                value = json.loads(result.stdout)
+                value["Internal"] = False
+                result.stdout = json.dumps(value)
+            return result
+        with self.assertRaisesRegex(module.PriorImageBlocked, "^prior_image_internal_network_unverified$"):
+            module.probe_prior_image(CONTAINER, DB, "12345", SHA, ENV, run=noninternal, verify_target=Mock())
+        self.assertFalse(any(args[3] == "run" for args, _ in calls))
+        self.assertEqual(calls[-1][0][3:5], ["network", "rm"])
+        calls, real = runner()
+        def failed_cleanup(args, **kwargs):
+            result = real(args, **kwargs)
+            if args[3:5] == ["network", "rm"]: result.returncode = 1
+            return result
+        with self.assertRaisesRegex(module.PriorImageBlocked, "^prior_image_network_cleanup_failed$"):
+            module.probe_prior_image(CONTAINER, DB, "12345", SHA, ENV, run=failed_cleanup, verify_target=Mock())
+
+    def test_unowned_network_is_never_connected_or_removed(self):
+        calls, real = runner()
+        def unowned(args, **kwargs):
+            result = real(args, **kwargs)
+            if args[3:5] == ["network", "inspect"]:
+                result.stdout = json.dumps({"Internal": True, "Labels": {"crown.prior-probe": "other"}})
+            return result
+        with self.assertRaisesRegex(module.PriorImageBlocked, "^prior_image_network_cleanup_unverified$"):
+            module.probe_prior_image(CONTAINER, DB, "12345", SHA, ENV, run=unowned, verify_target=Mock())
+        self.assertFalse(any(args[3:5] in (["network", "connect"], ["network", "rm"])
+                             or args[3] == "run" for args, _ in calls))
 
     def test_workflow_dispatch_authority_matrix_executes_without_cloud_access(self):
         import yaml

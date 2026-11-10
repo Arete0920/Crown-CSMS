@@ -15,6 +15,7 @@ PRIOR_IMAGE = ("crownregistry.azurecr.io/crown2026@sha256:"
                "b4586bafd87113b3cb3e6c4df9b1792e683c2ded636c08ef57881c6fc18492cb")
 CONFIRMATION = "test-prior-image-on-disposable-copy"
 DOCKER = ["docker", "--host", "unix:///var/run/docker.sock"]
+DATABASE_ALIAS = "crown-prior-db"
 
 
 class PriorImageBlocked(RuntimeError):
@@ -47,7 +48,7 @@ def process_environment(environ):
 
 def app_environment(database, cluster):
     return {
-        "DATABASE_URL": f"postgresql://crown_drill:crown-drill-password@127.0.0.1:5432/{database}?sslmode=disable",
+        "DATABASE_URL": f"postgresql://crown_drill:crown-drill-password@{DATABASE_ALIAS}:5432/{database}?sslmode=disable",
         "DJANGO_SECRET_KEY": secrets.token_urlsafe(48),
         "DJANGO_SETTINGS_MODULE": "crown_api.settings", "CROWN_ENV": "dev",
         "DJANGO_ENV": "development", "ENVIRONMENT": "dev", "DEBUG": "false",
@@ -74,7 +75,7 @@ def probe():
     from django.apps import apps
     stage[0] = "prior_image_database_identity_failed"
     expected = os.environ["CROWN_PRIOR_IMAGE_DATABASE"]
-    if (connection.vendor != "postgresql" or connection.settings_dict["HOST"] != "127.0.0.1"
+    if (connection.vendor != "postgresql" or connection.settings_dict["HOST"] != "crown-prior-db"
             or str(connection.settings_dict.get("PORT") or "5432") != "5432"
             or connection.settings_dict["NAME"] != expected):
         return "prior_image_database_identity_failed"
@@ -177,6 +178,7 @@ def probe_prior_image(container, database, cluster, source_sha, environ, *,
     app_env = app_environment(database, cluster)
     ownership = secrets.token_hex(10)
     name = "crown-prior-probe-" + ownership
+    network = "crown-prior-net-" + ownership
 
     def invoke(args, *, env=client_env, stdin=None, timeout=180):
         try:
@@ -196,13 +198,30 @@ def probe_prior_image(container, database, cluster, source_sha, environ, *,
         raise PriorImageBlocked("prior_image_digest_unverified")
     args = ["run", "--detach", "--name", name, "--label", "crown.prior-probe=" + ownership,
             "--pull=never",
-            "--network", "container:" + container, "--read-only", "--cap-drop=ALL",
+            "--network", network, "--read-only", "--cap-drop=ALL",
             "--security-opt=no-new-privileges", "--tmpfs", "/tmp:rw,nosuid,nodev,size=64m",
             "--memory=768m", "--cpus=1", "--pids-limit=128", "--log-driver=none"]
     for key in sorted(app_env):
         args += ["--env", key]  # Synthetic values/signing key stay off argv.
-    attempted = False
+    attempted = network_attempted = connect_attempted = False
     try:
+        network_attempted = True
+        if invoke(["network", "create", "--internal", "--label",
+                   "crown.prior-probe=" + ownership, network]).returncode:
+            raise PriorImageBlocked("prior_image_internal_network_unavailable")
+        inspected_network = invoke(["network", "inspect", "--format", "{{json .}}", network])
+        try:
+            network_state = json.loads(inspected_network.stdout)
+        except (ValueError, TypeError):
+            network_state = None
+        if (inspected_network.returncode or not isinstance(network_state, dict)
+                or network_state.get("Internal") is not True
+                or not isinstance(network_state.get("Labels"), dict)
+                or network_state["Labels"].get("crown.prior-probe") != ownership):
+            raise PriorImageBlocked("prior_image_internal_network_unverified")
+        connect_attempted = True
+        if invoke(["network", "connect", "--alias", DATABASE_ALIAS, network, container]).returncode:
+            raise PriorImageBlocked("prior_image_database_network_unavailable")
         attempted = True
         if invoke(args + [PRIOR_IMAGE], env={**client_env, **app_env}).returncode:
             raise PriorImageBlocked("prior_image_container_start_failed")
@@ -217,22 +236,44 @@ def probe_prior_image(container, database, cluster, source_sha, environ, *,
             raise PriorImageBlocked(reason if isinstance(reason, str) and reason in SAFE_REASONS
                                     else "prior_image_probe_receipt_invalid")
     finally:
+        cleanup_error = None
         if attempted:
             # Even an uncertain failed start must never remove an unrelated
             # preexisting container that happened to occupy the requested name.
-            owned = invoke(["container", "inspect", "--format", "{{json .Config.Labels}}", name])
             try:
+                owned = invoke(["container", "inspect", "--format", "{{json .Config.Labels}}", name])
                 labels = json.loads(owned.stdout)
-            except (ValueError, TypeError):
-                labels = None
-            if (owned.returncode or not isinstance(labels, dict)
-                    or labels.get("crown.prior-probe") != ownership):
-                raise PriorImageBlocked("prior_image_container_cleanup_unverified")
-            if invoke(["rm", "--force", name]).returncode:
-                raise PriorImageBlocked("prior_image_container_cleanup_failed")
+                if (owned.returncode or not isinstance(labels, dict)
+                        or labels.get("crown.prior-probe") != ownership):
+                    cleanup_error = "prior_image_container_cleanup_unverified"
+                elif invoke(["rm", "--force", name]).returncode:
+                    cleanup_error = "prior_image_container_cleanup_failed"
+            except (ValueError, TypeError, PriorImageBlocked):
+                cleanup_error = "prior_image_container_cleanup_unverified"
+        if network_attempted:
+            try:
+                owned_network = invoke(["network", "inspect", "--format", "{{json .}}", network])
+                state = json.loads(owned_network.stdout)
+                if (owned_network.returncode or not isinstance(state, dict)
+                        or not isinstance(state.get("Labels"), dict)
+                        or state["Labels"].get("crown.prior-probe") != ownership):
+                    cleanup_error = cleanup_error or "prior_image_network_cleanup_unverified"
+                else:
+                    if connect_attempted:
+                        try:
+                            invoke(["network", "disconnect", "--force", network, container])
+                        except PriorImageBlocked:
+                            pass  # Successful removal below independently proves cleanup.
+                    if invoke(["network", "rm", network]).returncode:
+                        cleanup_error = cleanup_error or "prior_image_network_cleanup_failed"
+            except (ValueError, TypeError, PriorImageBlocked):
+                cleanup_error = cleanup_error or "prior_image_network_cleanup_unverified"
+        if cleanup_error:
+            raise PriorImageBlocked(cleanup_error)
     return {"result": "PASS", "source_sha": source_sha, "prior_image": PRIOR_IMAGE,
             "prior_source_sha": PRIOR_SHA, "startup_and_artifact_verified": True,
             "anonymous_platform_denied": True, "rolled_back_legacy_inserts_verified": True,
-            "probe_container_removed": True, "live_schema_write_performed": False,
+            "probe_container_removed": True, "internal_network_removed": True,
+            "live_schema_write_performed": False,
             "scope": "startup_anonymous_denial_and_rolled_back_legacy_inserts",
             "full_application_rollback": "NOT_VERIFIED"}
