@@ -8,6 +8,19 @@
 
 const TOKEN_KEY = "crown.jwt.access";
 const SCHOOL_KEY = "crown.school.id";
+export const SCHOOL_CONTEXT_CHANGE_EVENT = "crown:school-context-changed";
+export const AUTH_CONTEXT_CHANGE_EVENT = "crown:auth-context-changed";
+
+function notifySchoolContextChanged() {
+  if (typeof window !== "undefined" && typeof window.dispatchEvent === "function") {
+    window.dispatchEvent(new window.Event(SCHOOL_CONTEXT_CHANGE_EVENT));
+  }
+}
+function notifyAuthContextChanged() {
+  if (typeof window !== "undefined" && typeof window.dispatchEvent === "function") {
+    window.dispatchEvent(new window.Event(AUTH_CONTEXT_CHANGE_EVENT));
+  }
+}
 const DEFAULT_TIMEOUT_MS = 15000;
 const AUTH_STORAGE_KEYS = [
   "crown.jwt.access", "crown.jwt.refresh", "crown_auth_token", "access_token",
@@ -33,6 +46,8 @@ export function clearBrowserAuthState() {
       // Storage may be blocked; never prevent a logout/redirect.
     }
   }
+  notifySchoolContextChanged();
+  notifyAuthContextChanged();
 }
 
 function expireBrowserSession() {
@@ -168,6 +183,7 @@ export function getSelectedSchoolId() {
 }
 
 export function setSelectedSchoolId(schoolId) {
+  const previous = getSelectedSchoolId();
   try {
     const value = String(schoolId || "").trim();
     if (value) sessionStorage.setItem(SCHOOL_KEY, value);
@@ -175,6 +191,7 @@ export function setSelectedSchoolId(schoolId) {
   } catch (error) {
     console.error(error);
   }
+  if (getSelectedSchoolId() !== previous) notifySchoolContextChanged();
 }
 
 export function clearSelectedSchoolId() {
@@ -194,12 +211,14 @@ export function getAccessToken() {
 }
 
 export function setAccessToken(token) {
+  const previous = getAccessToken();
   try {
     if (token) sessionStorage.setItem(TOKEN_KEY, token);
     else sessionStorage.removeItem(TOKEN_KEY);
   } catch (error) {
     console.error(error);
   }
+  if (getAccessToken() !== previous) notifyAuthContextChanged();
 }
 
 export function clearAccessToken() {
@@ -234,8 +253,31 @@ export async function authenticatedFetch(input, init = {}) {
       typeof input === "string"
       && /^\/api\/platform\/(?:overview|schools(?:\/list)?)$/.test(input)
     );
-    if (omitSchoolContext && !isPlatformOperatorRequest) {
-      throw new Error("Schoolless requests are restricted to explicit platform endpoints.");
+    const isSgoGrantorRead = (
+      typeof input === "string"
+      && String(requestInit.method || "GET").toUpperCase() === "GET"
+      && /^\/api\/v1\/jireh-sgo\/organizations(?:\/[0-9a-fA-F]{8}-(?:[0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}\/overview)?\/?$/.test(input)
+    );
+    // Local fictional SGO endpoints: explicit method/path allowlist, no wildcard.
+    const sgoUuid = "[0-9a-fA-F]{8}-(?:[0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}";
+    const sgoPath = typeof input === "string"
+      ? (input.endsWith("/") ? input.slice(0, -1) : input) : "";
+    const method = String(requestInit.method || "GET").toUpperCase();
+    const isLocalSgoIntake = import.meta.env.VITE_LOCAL_DEMO === "1" && (
+      (method === "GET" && (
+        sgoPath === "/api/v1/jireh-sgo/family/programs"
+        || sgoPath === "/api/v1/jireh-sgo/processor/programs"
+        || new RegExp("^/api/v1/jireh-sgo/family/applications/" + sgoUuid + "$").test(sgoPath)
+        || new RegExp("^/api/v1/jireh-sgo/processor/programs/" + sgoUuid + "/queue$").test(sgoPath)
+      ))
+      || (method === "POST" && (
+        sgoPath === "/api/v1/jireh-sgo/family/submit"
+        || new RegExp("^/api/v1/jireh-sgo/family/applications/" + sgoUuid + "/correct$").test(sgoPath)
+        || new RegExp("^/api/v1/jireh-sgo/processor/applications/" + sgoUuid + "/request-correction$").test(sgoPath)
+      ))
+    );
+    if (omitSchoolContext && !isPlatformOperatorRequest && !isSgoGrantorRead && !isLocalSgoIntake) {
+      throw new Error("Schoolless requests are restricted to explicit authorized endpoints.");
     }
     if (omitSchoolContext) {
       headers.delete("X-School-Id");

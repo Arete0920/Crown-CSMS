@@ -20,7 +20,7 @@ from academics.models import (
 )
 from core.models import AcademicYear, Family, School, UserAccount
 from households.models import Household, Student
-from sandbox_demo.catalog import SANDBOX_PERSONAS
+from sandbox_demo.catalog import HOSTED_ONLY_PERSONA_KEYS, SANDBOX_PERSONAS
 from sandbox_demo.services import seed_heritage_flagship
 
 
@@ -135,7 +135,7 @@ def test_all_advertised_personas_receive_real_role_aware_sandbox_sessions():
     client = APIClient()
 
     for role, persona in SANDBOX_PERSONAS.items():
-        if role == "board":
+        if role == "board" or role in HOSTED_ONLY_PERSONA_KEYS:
             continue
         session = _sandbox_session(client, role)
         assert session["school_id"] == SCHOOL_ID

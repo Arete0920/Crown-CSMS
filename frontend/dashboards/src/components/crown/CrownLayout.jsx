@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import CrownLogo from "../brand/CrownLogo.jsx";
 import { authenticatedFetch } from "../../utils/authClient.js";
 import { getAccessToken, getSelectedSchoolId } from "../../utils/authClient.js";
 import "../../styles/operational-dashboard-canonical.css";
@@ -100,14 +101,24 @@ function normalizeRoleScopedNav(navData) {
 const BUILD_SHA = (import.meta?.env?.VITE_BUILD_SHA || "dev").slice(0, 7);
 const DEPLOY_TAG = import.meta?.env?.VITE_DEPLOY_TAG || "";
 
-export default function CrownLayout({ title, subtitle, right, children, mainClassName = "" }) {
+export default function CrownLayout({ title, subtitle, right, children, mainClassName = "", navigationScope = "school" }) {
   const [nav, setNav] = useState(null);
   const [navError, setNavError] = useState(false);
   const [navAuthRequired, setNavAuthRequired] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const standalone = navigationScope === "standalone";
 
   useEffect(() => {
     let mounted = true;
+    // A standalone grantor session must never request school-scoped navigation.
+    // Authorization and organization membership remain the responsibility of
+    // its own API and page; this switch only selects the shared presentation.
+    if (standalone) {
+      setNav(EMPTY_ROLE_SCOPED_NAV);
+      setNavAuthRequired(false);
+      setNavError(false);
+      return () => { mounted = false; };
+    }
     // The public home shell is not a school session. Do not call a tenant-
     // protected navigation endpoint without both the bearer and school context.
     // Never infer a permissioned menu from a remembered role or local storage.
@@ -132,20 +143,24 @@ export default function CrownLayout({ title, subtitle, right, children, mainClas
         }
       });
     return () => { mounted = false; };
-  }, []);
+  }, [standalone]);
 
-  const activeNav = nav || (navError ? EMPTY_ROLE_SCOPED_NAV : null);
+  const activeNav = standalone ? EMPTY_ROLE_SCOPED_NAV : (nav || (navError ? EMPTY_ROLE_SCOPED_NAV : null));
   const pathname = typeof window !== "undefined" ? globalThis.location.pathname : "";
-  const breadcrumbs = useMemo(() => buildBreadcrumb(pathname), [pathname]);
+  const breadcrumbs = useMemo(
+    () => standalone ? [{ label: title || "Standalone workspace", href: pathname || "/" }] : buildBreadcrumb(pathname),
+    [standalone, title, pathname],
+  );
   const navGroups = activeNav?.groups || [];
   const hasNavItems = navGroups.some((group) => (group.items || []).length > 0);
-  const profile = getProfile();
+  const profile = standalone ? null : getProfile();
   const operationalLayoutClass = CANONICAL_OPERATIONAL_DASHBOARD_PATHS.has(pathname)
     ? "crown-operational-canonical"
     : "";
 
   return (
     <div className="crown-app">
+      {!standalone && <>
       <button
         type="button"
         className="crown-sidebar-toggle"
@@ -172,7 +187,7 @@ export default function CrownLayout({ title, subtitle, right, children, mainClas
         }}
       >
         <div className="crown-sidebar-header">
-          <h1>Crown</h1>
+          <h1 className="crown-sidebar-brand"><CrownLogo variant="monochromeWhite" className="crown-sidebar-brand-mark" /></h1>
           <button
             type="button"
             className="crown-sidebar-close"
@@ -247,8 +262,14 @@ export default function CrownLayout({ title, subtitle, right, children, mainClas
           ))}
         </nav>
       </aside>
+      </>}
 
       <main className={`crown-main ${operationalLayoutClass} ${mainClassName}`.trim()}>
+        {standalone && (
+          <div className="crown-standalone-brand">
+            <CrownLogo placement="topnavHorizontal" className="crown-standalone-brand-mark" />
+          </div>
+        )}
         <div style={{ maxWidth: 1200, margin: "0 auto", padding: "4px 0 8px" }}>
           <div className="crown-utility-row" style={{ marginBottom: 10, alignItems: "center" }}>
             <div className="crown-breadcrumbs" aria-label="Breadcrumb" style={{ fontSize: 12, opacity: 0.9 }}>
@@ -277,24 +298,26 @@ export default function CrownLayout({ title, subtitle, right, children, mainClas
             })}
           </div>
 
-            <div className="crown-utility-actions" style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            {!standalone && <div className="crown-utility-actions" style={{ display: "flex", gap: 8, alignItems: "center" }}>
             <span className="crown-pill">Notifications</span>
             <span className="crown-pill">{profile.role}</span>
             <span className="crown-pill">{profile.displayName}</span>
-          </div>
+          </div>}
         </div>
 
           {(title || subtitle || right) && (
             <div className="crown-pagehead" style={{ marginBottom: 14, alignItems: "flex-start" }}>
               <div style={{ paddingTop: 2 }}>
-              {title && <h2 className="crown-title">{title}</h2>}
+              {title && (standalone
+                ? <h1 className="crown-title">{title}</h1>
+                : <h2 className="crown-title">{title}</h2>)}
               {subtitle && <p className="crown-subtitle">{subtitle}</p>}
             </div>
               {right && <div style={{ paddingTop: 2 }}>{right}</div>}
             </div>
           )}
 
-          {navError ? (
+          {!standalone && navError ? (
             <div className="crown-global-notice" role="status" style={{ marginBottom: 12 }}>
               Navigation service unavailable. Role-scoped navigation is hidden until the service recovers.
             </div>

@@ -30,9 +30,12 @@ def test_config_program_and_session_services(monkeypatch):
     session_manager = MagicMock()
     created_session = object()
     session_manager.create.return_value = created_session
-    session = SimpleNamespace(capacity=10, save=MagicMock())
-    session_manager.get.return_value = session
+    session = SimpleNamespace(id="session-1", capacity=10, save=MagicMock())
+    session_manager.select_for_update.return_value.get.return_value = session
     monkeypatch.setattr(services.SummerCampSession, "objects", session_manager)
+    seats_manager = MagicMock()
+    seats_manager.filter.return_value.count.return_value = 0
+    monkeypatch.setattr(services.SummerCampEnrollment, "objects", seats_manager)
     assert services.create_session("school-1", {"capacity": 20}) is created_session
     assert services.update_session("school-1", "session-1", {"capacity": 25}) is session
     assert session.capacity == 25
@@ -61,7 +64,20 @@ def test_capacity_and_waitlist_position(monkeypatch):
 
 
 def test_enroll_camper_registers_and_waitlists(monkeypatch):
+    session = SimpleNamespace(id="session-1", waitlist_capacity=10)
+    session_manager = MagicMock()
+    session_manager.select_for_update.return_value.filter.return_value.first.return_value = session
+    monkeypatch.setattr(services.SummerCampSession, "objects", session_manager)
+    student = SimpleNamespace(
+        id="student-1", household_id="family-1",
+        household=SimpleNamespace(school_id="school-1"),
+    )
+    student_manager = MagicMock()
+    student_manager.select_related.return_value.filter.return_value.first.return_value = student
+    monkeypatch.setattr(services.Student, "objects", student_manager)
+
     manager = MagicMock()
+    manager.filter.return_value.exists.return_value = False
     enrollment = SimpleNamespace(id="enrollment-1")
     manager.create.return_value = enrollment
     monkeypatch.setattr(services.SummerCampEnrollment, "objects", manager)
@@ -94,17 +110,36 @@ def test_cancel_and_promote_waitlist(monkeypatch):
         readiness_status="READY",
         readiness_blockers=[],
         session_id="session-1",
+        student_id="student-1",
         save=MagicMock(),
     )
     manager = MagicMock()
+    manager.filter.return_value.values_list.return_value.get.return_value = "session-1"
     manager.select_for_update.return_value.get.return_value = enrollment
     monkeypatch.setattr(services.SummerCampEnrollment, "objects", manager)
+    session_manager = MagicMock()
+    session_manager.select_for_update.return_value.get.return_value = SimpleNamespace(id="session-1")
+    monkeypatch.setattr(services.SummerCampSession, "objects", session_manager)
+    attendance_manager = MagicMock()
+    attendance_manager.filter.return_value.exists.return_value = False
+    monkeypatch.setattr(services.SummerCampAttendance, "objects", attendance_manager)
     real_move_waitlist = services.move_waitlist_if_capacity_available
     move = MagicMock()
     monkeypatch.setattr(services, "move_waitlist_if_capacity_available", move)
     assert services.cancel_enrollment("school-1", "enrollment-1", "parent request") is enrollment
     assert enrollment.readiness_blockers == ["CANCELLED", "REASON:parent request"]
     move.assert_called_once_with("school-1", "session-1")
+    attendance_manager.filter.assert_called_once_with(
+        school_id="school-1", session_id="session-1",
+        student_id="student-1", checkout_time__isnull=True,
+    )
+    # Cancellation locks session before enrollment to avoid lock-order inversion.
+    session_manager.select_for_update.return_value.get.assert_called_with(
+        id="session-1", school_id="school-1",
+    )
+    manager.select_for_update.return_value.get.assert_called_with(
+        id="enrollment-1", school_id="school-1", session_id="session-1",
+    )
     monkeypatch.setattr(services, "move_waitlist_if_capacity_available", real_move_waitlist)
 
     promoted = SimpleNamespace(id="enrollment-2", status="WAITLISTED", waitlist_position=1, save=MagicMock())
@@ -146,7 +181,7 @@ def test_form_and_staff_ratio_status(monkeypatch):
     )
     monkeypatch.setattr(services, "ensure_config", lambda school_id: SimpleNamespace(default_staff_ratio=5))
     staff_manager = MagicMock()
-    staff_manager.filter.return_value.count.return_value = 2
+    staff_manager.filter.return_value.exclude.return_value.values.return_value.distinct.return_value.count.return_value = 2
     monkeypatch.setattr(services.SummerCampStaffAssignment, "objects", staff_manager)
     result = services.compute_staff_ratio_status("school-1", "session-1")
     assert result["required_staff"] == 3
@@ -160,6 +195,7 @@ def test_readiness_blockers_and_ready_state(monkeypatch):
         status="WAITLISTED",
         balance_due_cents=100,
         payment_required_before_attendance=True,
+        payment_status="DEPOSIT_DUE",
         health_status="NEEDS_REVIEW",
         readiness_status="",
         readiness_blockers=[],
@@ -186,6 +222,7 @@ def test_readiness_blockers_and_ready_state(monkeypatch):
 
     enrollment.status = "REGISTERED"
     enrollment.balance_due_cents = 0
+    enrollment.payment_status = "PAID_IN_FULL"
     enrollment.health_status = "APPROVED"
     monkeypatch.setattr(services, "compute_form_status", lambda school_id, enrollment_id: "COMPLETE")
     pickup_manager.filter.return_value.exists.return_value = True

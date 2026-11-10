@@ -52,6 +52,10 @@ on:
         description: "DEV preview deployment and read-only checks only; no CORS changes, browser writes or fixture creation"
         type: boolean
         default: true
+      dev_hosted_jireh_preview:
+        description: "DEV-only opt-in fictional Jireh UI; backend gate separately required"
+        type: boolean
+        default: false
       dev_source_sha:
         description: "Full accepted source SHA already deployed to DEV (preview only)"
         type: string
@@ -87,6 +91,15 @@ jobs:
       expected_api_sha: ${{ steps.release-authority.outputs.expected_api_sha }}
 
     steps:
+      - name: Reject hosted Jireh preview outside DEV
+        shell: bash
+        env:
+          HOSTED_JIREH: ${{ inputs.dev_hosted_jireh_preview }}
+        run: |
+          if [[ "$HOSTED_JIREH" == "true" ]]; then
+            echo "::error::Hosted Jireh preview requires dev_certification_preview=true; production path denied."
+            exit 1
+          fi
       - name: Checkout deploy ref
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -433,6 +446,7 @@ jobs:
           VITE_DEPLOY_TAG: dev-certification-preview
           VITE_SANDBOX_MODE: '1'
           VITE_DEMO_MODE: sandbox
+          VITE_HOSTED_JIREH_DEMO: ${{ inputs.dev_hosted_jireh_preview == true && '1' || '0' }}
           VITE_LAUNCH_UI_TAKEOVER: '1'
         run: |
           set -euo pipefail
@@ -649,7 +663,7 @@ jobs:
 
       - name: Set up existing backend fixture runtime
         if: always() && toJSON(inputs.dev_deploy_only) == 'false' && steps.preview.outcome == 'success'
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
         with:
           python-version: '3.12'
       - name: Install accepted backend dependencies for synthetic fixtures

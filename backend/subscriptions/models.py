@@ -138,6 +138,8 @@ class SchoolModule(models.Model):
         ("home_academy", "Home Academy / Homeschool Affiliation"),
         ("hr_staff", "HR & Staff Management"),
         ("little_lambs", "Diadem Daycare Solutions"),
+        ("before_care", "Before Care (standalone)"),
+        ("after_care", "After Care (standalone)"),
         ("transportation", "Transportation & Bus Routing"),
         ("health_office", "Health Office & Nurse Records"),
         ("alumni", "Alumni Tracking"),
@@ -199,7 +201,11 @@ class SchoolModule(models.Model):
     def is_active(self):
         if self.status != "active":
             return False
-        if self.expiry_date and timezone.now() > self.expiry_date:
+        # Standalone care must have an explicit, non-expired authorization.
+        if self.module_key in ("before_care", "after_care"):
+            if self.expiry_date is None or not self.school.is_active:
+                return False
+        if self.expiry_date and timezone.now() >= self.expiry_date:
             return False
         return True
 
@@ -207,7 +213,10 @@ class SchoolModule(models.Model):
     def is_trial(self):
         if self.status != "trial":
             return False
-        if self.expiry_date and timezone.now() > self.expiry_date:
+        if self.module_key in ("before_care", "after_care"):
+            if self.expiry_date is None or not self.school.is_active:
+                return False
+        if self.expiry_date and timezone.now() >= self.expiry_date:
             return False
         return True
 

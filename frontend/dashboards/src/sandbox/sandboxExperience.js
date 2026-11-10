@@ -42,7 +42,13 @@ export const SANDBOX_PERSONAS = [
     promise: "Resolve representative school operations across enrollment, attendance, academics, finance, and communications.",
     tourTitle: "Daily operating picture",
     steps: [
-      { label: "Review the leadership operating picture.", route: "/school-admin-dashboard" },
+      { label: "Open live Summer Camp setup; save the fictional setup, independently read back, then reload.", route: "/summer-camp-dashboard/setup" },
+      { label: "Open live Camp roster to verify permitted enrollment and blocked clearance.", route: "/summer-camp-dashboard/roster" },
+      { label: "Open Before Care (AM) roster; perform a permitted fictional custody action and verify independent readback.", route: "/before-care/roster" },
+      { label: "Open Aftercare (PM) roster; verify its separate persisted care session.", route: "/aftercare/roster" },
+      { label: "Diadem Daycare staff release requires the separate signed --daycare-presenter flow; do not use an admin token or bypass custody verification.", route: null },
+      { label: "Standalone Jireh SGO uses independently authenticated family and processor accounts; do not use the school administrator token.", route: null },
+      { label: "Review the leadership operating picture (illustrative, not workflow proof).", route: "/school-admin-dashboard" },
       { label: "Open student and enrollment records and verify roster context.", route: "/registrar-dashboard" },
       { label: "Review an attendance exception and the underlying attendance workflow.", route: "/attendance-dashboard" },
       { label: "Review academic and grading context for school leadership.", route: "/gradebook-dashboard" },
@@ -81,9 +87,41 @@ export const SANDBOX_PERSONAS = [
     steps: [
       { label: "Review the live finance operating picture.", route: "/finance" },
       { label: "Open family invoices and authoritative balances.", route: "/finance/invoices" },
-      { label: "Inspect a family account and payment/allocation history.", route: "/finance/family-account" },
+      { label: "Inspect the fictional Reed family balance, payment and allocation history in the live finance transaction panel.", route: "/finance" },
       { label: "Work an exception or payment-risk item.", route: "/finance/exceptions" },
       { label: "Review bank or payout reconciliation context.", route: "/finance/bank-reconciliation" },
+    ],
+  },
+  {
+    value: "daycare_director",
+    label: "Diadem Daycare Director",
+    loginLabel: "Daycare Director",
+    trackKeys: ["school"],
+    route: "/diadem/daycare/setup",
+    email: "daycare.director@fictional.crown.invalid",
+    defaultSchoolId: DEMO_SCHOOL_ID,
+    hostedOnly: true,
+    promise: "Configure a fictional buyer-school daycare and verify room, custody, and pickup workflows.",
+    tourTitle: "Fictional childcare setup and custody operations",
+    steps: [
+      { label: "Review fictional daycare setup.", route: "/diadem/daycare/setup" },
+      { label: "Inspect authenticated room custody and pickup decisions.", route: "/diadem/daycare" },
+    ],
+  },
+  {
+    value: "daycare_staff",
+    label: "Diadem Daycare Staff",
+    loginLabel: "Daycare Staff",
+    trackKeys: ["school"],
+    route: "/diadem/daycare",
+    email: "daycare.staff@fictional.crown.invalid",
+    defaultSchoolId: DEMO_SCHOOL_ID,
+    hostedOnly: true,
+    promise: "Perform only authorized custody operations in an explicitly provisioned fictional room.",
+    tourTitle: "Fictional childcare room and pickup verification",
+    steps: [
+      { label: "Review assigned room custody.", route: "/diadem/daycare" },
+      { label: "Confirm verified guardian release and audit evidence.", route: "/diadem/daycare" },
     ],
   },
   {
@@ -119,6 +157,7 @@ export const SANDBOX_PERSONAS = [
     steps: [
       { label: "Start or resume a family application.", route: "/parent/admissions/start" },
       { label: "Complete the applicant workflow and submit required information.", route: "/admissions/apply" },
+      { label: "Prepare and save a fictional Jireh financial aid application, then verify a readback.", route: "/parent/financial-aid" },
       { label: "Review application status and next required action.", route: "/parent/admissions/status" },
       { label: "Complete the accepted-student enrollment agreement and handoff from the Parent lifecycle center.", route: "/parent/admissions/status" },
       { label: "Return to the family dashboard and verify the resulting student context.", route: "/parent" },
@@ -166,8 +205,10 @@ export function getTrackSchools(trackKey) {
   return SANDBOX_SCHOOL_ARCHETYPES.filter((school) => school.track === trackKey);
 }
 
-export function getTrackPersonas(trackKey) {
-  return SANDBOX_PERSONAS.filter((persona) => persona.trackKeys.includes(trackKey));
+export function getTrackPersonas(trackKey, { includeHosted = false } = {}) {
+  return SANDBOX_PERSONAS.filter((persona) =>
+    persona.trackKeys.includes(trackKey) && (includeHosted || !persona.hostedOnly)
+  );
 }
 
 export function getSandboxLoginHref(

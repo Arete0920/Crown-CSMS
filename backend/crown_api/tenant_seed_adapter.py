@@ -203,6 +203,10 @@ def grant_probe_access_if_required(module_key, user, school_context):
             "AID_DIRECTOR",
             ("financial_aid.view", "financial_aid.edit"),
         ),
+        "enrollment-conversion": (
+            "REGISTRAR",
+            ("admissions.edit",),
+        ),
     }
     grant = grants.get(str(module_key or "").strip())
     if grant is None:

@@ -211,6 +211,8 @@ class UserRole(BaseModel):
         ('PARENT', 'Parent'),
         ('STUDENT', 'Student'),
         ('SUPPORT', 'Support'),
+        ('DAYCARE_DIRECTOR', 'Diadem Daycare Director'),
+        ('DAYCARE_STAFF', 'Diadem Daycare Staff'),
     ]
 
     school = models.ForeignKey(School, on_delete=models.CASCADE, related_name='user_roles')

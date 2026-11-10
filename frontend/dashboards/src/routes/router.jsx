@@ -3,6 +3,9 @@ import { createBrowserRouter, Navigate } from "react-router";
 import RoleDashboardPage from "../pages/RoleDashboardPage.jsx";
 import BillingDashboard from "../pages/BillingDashboard.jsx";
 import FinancialAidDashboard from "../pages/FinancialAidDashboard.jsx";
+import JirehSGODashboard from "../pages/JirehSGODashboard.jsx";
+import JirehSGOIntakePage from "../pages/JirehSGOIntakePage.jsx";
+import JirehSGOLoginPage from "../pages/JirehSGOLoginPage.jsx";
 import { AcademicsDashboard } from "../pages/AcademicsDashboard.jsx";
 import { GradebookRO } from "../pages/GradebookRO.jsx";
 import { TranscriptRO } from "../pages/TranscriptRO.jsx";
@@ -62,6 +65,8 @@ import AcademicSupportDashboard from "../pages/AcademicSupportDashboard.jsx";
 import FineArtsDashboard from "../pages/FineArtsDashboard.jsx";
 import LibraryDashboard from "../pages/LibraryDashboard.jsx";
 import ExtendedCareDashboard from "../pages/ExtendedCareDashboard.jsx";
+import DiademDirectorRosterPage from "../pages/DiademDirectorRosterPage.jsx";
+import DiademSetupPage from "../pages/DiademSetupPage.jsx";
 import SummerCampRosterPage from "../pages/SummerCampRosterPage.jsx";
 import RegistrarDashboard from "../pages/RegistrarDashboard.jsx";
 import CommunicationsDirectorDashboard from "../pages/CommunicationsDirectorDashboard.jsx";
@@ -71,6 +76,7 @@ import HumanResources from "../pages/HumanResources.jsx";
 import SafetyDashboard from "../pages/SafetyDashboard.jsx";
 import BoardExecutiveDashboard from "../pages/BoardExecutiveDashboard.jsx";
 import AftercareRosterPage from "../pages/AftercareRosterPage.jsx";
+import CareSessionDirectorDashboard from "../pages/CareSessionDirectorDashboard.jsx";
 import AftercareSetupWizard from "../pages/wizards/AftercareSetupWizard.jsx";
 import SummerCampSetupWizard from "../pages/wizards/SummerCampSetupWizard.jsx";
 import FinanceSetupWizard from "../pages/wizards/FinanceSetupWizard.jsx";
@@ -458,6 +464,18 @@ export const router = createBrowserRouter([
         <FinancialAidDashboard />
       </RoleRouteGuard>
     ),
+  },
+  {
+    path: PATHS.JIREH_SGO,
+    element: <JirehSGODashboard />,
+  },
+  {
+    path: "/jireh-sgo/intake",
+    element: <JirehSGOIntakePage />,
+  },
+  {
+    path: "/jireh-sgo/sign-in",
+    element: <JirehSGOLoginPage />,
   },
   {
     path: PATHS.ATTENDANCE,
@@ -878,6 +896,24 @@ export const router = createBrowserRouter([
     element: <AuthenticatedSchoolRouteGuard><LibraryDashboard /></AuthenticatedSchoolRouteGuard>,
   },
   {
+    path: PATHS.DIADEM_SETUP,
+    element: (
+      <AuthenticatedSchoolRouteGuard>
+        <RoleRouteGuard allowedRoles={["daycare_director"]}><DiademSetupPage /></RoleRouteGuard>
+      </AuthenticatedSchoolRouteGuard>
+    ),
+  },
+  {
+    path: PATHS.DIADEM_DIRECTOR,
+    element: (
+      <AuthenticatedSchoolRouteGuard>
+        <RoleRouteGuard allowedRoles={["daycare_director", "daycare_staff"]}>
+          <DiademDirectorRosterPage />
+        </RoleRouteGuard>
+      </AuthenticatedSchoolRouteGuard>
+    ),
+  },
+  {
     path: PATHS.EXTENDED_CARE,
     element: <AuthenticatedSchoolRouteGuard><ExtendedCareDashboard /></AuthenticatedSchoolRouteGuard>,
   },
@@ -926,8 +962,20 @@ export const router = createBrowserRouter([
     element: <AuthenticatedSchoolRouteGuard><BoardExecutiveDashboard /></AuthenticatedSchoolRouteGuard>,
   },
   {
+    path: PATHS.BEFORECARE_DIRECTOR,
+    element: <AuthenticatedSchoolRouteGuard><RoleRouteGuard allowedRoles={ROLE_GROUPS.AFTERCARE_STAFF}><CareSessionDirectorDashboard careSession="AM" /></RoleRouteGuard></AuthenticatedSchoolRouteGuard>,
+  },
+  {
+    path: PATHS.AFTERCARE_DIRECTOR,
+    element: <AuthenticatedSchoolRouteGuard><RoleRouteGuard allowedRoles={ROLE_GROUPS.AFTERCARE_STAFF}><CareSessionDirectorDashboard careSession="PM" /></RoleRouteGuard></AuthenticatedSchoolRouteGuard>,
+  },
+  {
+    path: PATHS.BEFORECARE_ROSTER,
+    element: <AuthenticatedSchoolRouteGuard><RoleRouteGuard allowedRoles={ROLE_GROUPS.AFTERCARE_STAFF}><AftercareRosterPage careSession="AM" /></RoleRouteGuard></AuthenticatedSchoolRouteGuard>,
+  },
+  {
     path: PATHS.AFTERCARE_ROSTER,
-    element: <AuthenticatedSchoolRouteGuard><RoleRouteGuard allowedRoles={ROLE_GROUPS.AFTERCARE_STAFF}><AftercareRosterPage /></RoleRouteGuard></AuthenticatedSchoolRouteGuard>,
+    element: <AuthenticatedSchoolRouteGuard><RoleRouteGuard allowedRoles={ROLE_GROUPS.AFTERCARE_STAFF}><AftercareRosterPage careSession="PM" /></RoleRouteGuard></AuthenticatedSchoolRouteGuard>,
   },
   {
     path: PATHS.WIZARD_AFTERCARE_SETUP,

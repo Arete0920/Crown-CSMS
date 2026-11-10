@@ -10,6 +10,41 @@ on:
         description: "Full 40-character protected-main commit SHA (required)"
         required: true
         type: string
+      apply_reviewed_heritage24:
+        description: "Explicitly stage exact reviewed DEV 24-migration graph before backend deploy"
+        required: false
+        type: boolean
+        default: false
+      confirm_dev_reviewed24:
+        description: "For reviewed24 stage only, type migrate-dev-reviewed-24"
+        required: false
+        type: string
+        default: ""
+      synthetic_dev_confirmed:
+        description: "Owner attests existing DEV contains synthetic data only"
+        required: false
+        type: boolean
+        default: false
+      backup_recovery_verified:
+        description: "Owner independently verified durable recovery before LIVE DEV DDL"
+        required: false
+        type: boolean
+        default: false
+      maintenance_window_confirmed:
+        description: "Owner approves bounded DEV-only database maintenance window"
+        required: false
+        type: boolean
+        default: false
+      rehearsal_run_id:
+        description: "Prior successful current-main disposable restored-copy drill run ID"
+        required: false
+        type: string
+        default: ""
+      rehearsal_artifact_id:
+        description: "Exact prior dev-operational-restore artifact ID"
+        required: false
+        type: string
+        default: ""
 
 concurrency:
   group: crown-api-dev-deploy
@@ -54,6 +89,38 @@ jobs:
             exit 1
           fi
 
+      - name: Require reviewed24 owner authority before any Azure credential
+        shell: bash
+        env:
+          APPLY_REVIEWED24: ${{ inputs.apply_reviewed_heritage24 }}
+          CONFIRM_REVIEWED24: ${{ inputs.confirm_dev_reviewed24 }}
+          SYNTHETIC: ${{ inputs.synthetic_dev_confirmed }}
+          RECOVERABLE: ${{ inputs.backup_recovery_verified }}
+          MAINTENANCE: ${{ inputs.maintenance_window_confirmed }}
+          RESTORE_RUN: ${{ inputs.rehearsal_run_id }}
+          RESTORE_ARTIFACT: ${{ inputs.rehearsal_artifact_id }}
+        run: |
+          set -euo pipefail
+          if [[ "$APPLY_REVIEWED24" == "true" ]]; then
+            test "$CONFIRM_REVIEWED24" = migrate-dev-reviewed-24
+            test "$SYNTHETIC" = true
+            test "$RECOVERABLE" = true
+            test "$MAINTENANCE" = true
+            [[ "$RESTORE_RUN" =~ ^[1-9][0-9]{5,19}$ ]]
+            [[ "$RESTORE_ARTIFACT" =~ ^[1-9][0-9]{5,19}$ ]]
+            test "$RESTORE_RUN" -lt "$GITHUB_RUN_ID"
+            test "$GITHUB_REPOSITORY" = Arete0920/Crown-CSMS
+            test "$GITHUB_REPOSITORY_ID" = 1339719218
+          else
+            test "$APPLY_REVIEWED24" = false
+            test -z "$CONFIRM_REVIEWED24"
+            test "$SYNTHETIC" != true
+            test "$RECOVERABLE" != true
+            test "$MAINTENANCE" != true
+            test -z "$RESTORE_RUN"
+            test -z "$RESTORE_ARTIFACT"
+          fi
+
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -95,7 +162,7 @@ jobs:
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
       - name: Set up existing runner for DEV schema verification
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: '3.12'
 
@@ -107,6 +174,44 @@ jobs:
 
       - name: Verify SimpleJWT migration allowlist without database access
         run: python -m unittest discover -s scripts/ops -p test_reviewed_blacklist_migrations.py -v
+
+      - name: Verify reviewed24 source-only authority and evidence contracts
+        if: inputs.apply_reviewed_heritage24 == true
+        run: python -m unittest discover -s scripts/ops -p test_stage_dev_heritage_graph.py -v
+
+      - name: Apply separately owner-authorized reviewed24 DEV schema stage
+        if: inputs.apply_reviewed_heritage24 == true
+        shell: bash
+        env:
+          EXPECTED_SHA: ${{ steps.vars.outputs.deploy_sha }}
+          CONFIRMATION: ${{ inputs.confirm_dev_reviewed24 }}
+          SYNTHETIC: ${{ inputs.synthetic_dev_confirmed }}
+          RECOVERABLE: ${{ inputs.backup_recovery_verified }}
+          MAINTENANCE: ${{ inputs.maintenance_window_confirmed }}
+          RESTORE_RUN: ${{ inputs.rehearsal_run_id }}
+          RESTORE_ARTIFACT: ${{ inputs.rehearsal_artifact_id }}
+          CROWN_STAGE_GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          umask 077
+          python scripts/ops/stage_dev_heritage_graph.py \
+            --expected-sha "$EXPECTED_SHA" \
+            --confirmation "$CONFIRMATION" \
+            --synthetic-dev-confirmed "$SYNTHETIC" \
+            --backup-recovery-verified "$RECOVERABLE" \
+            --maintenance-window-confirmed "$MAINTENANCE" \
+            --rehearsal-run-id "$RESTORE_RUN" \
+            --rehearsal-artifact-id "$RESTORE_ARTIFACT" \
+            --evidence-path "$RUNNER_TEMP/reviewed-dev-schema-stage.json"
+
+      - name: Preserve audited reviewed24 DEV schema receipt
+        if: always() && inputs.apply_reviewed_heritage24 == true
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: reviewed-dev-schema-stage-${{ github.run_id }}
+          path: ${{ runner.temp }}/reviewed-dev-schema-stage.json
+          retention-days: 7
+          if-no-files-found: warn
 
       - name: Reverify protected main before DEV migration
         shell: bash

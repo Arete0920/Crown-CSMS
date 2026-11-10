@@ -40,7 +40,7 @@ jobs:
         run: npm ci
 
       - name: Verify crawler inventory and dashboard authorization contracts
-        run: npx vitest run tests/certification/crawler-coverage-contract.test.ts src/tests/sandboxRoutes.test.jsx --reporter=verbose
+        run: npx vitest run tests/certification/crawler-coverage-contract.test.ts src/tests/sandboxRoutes.test.jsx src/tests/sandboxPersonaLaunch.test.jsx src/tests/sandboxCommandCenter.test.jsx --reporter=verbose
 
       - name: Install Playwright browsers
         run: npx playwright install chromium --with-deps
@@ -83,6 +83,12 @@ jobs:
           CROWN_DEMO_TOKEN: "playwright-demo-token"
           VITE_SANDBOX_MODE: "1"
           VITE_DEMO_MODE: "sandbox"
+
+      - name: Browser-verify standalone Jireh SGO shell at desktop and mobile
+        run: npx playwright test tests/ui/jireh-sgo-standalone-shell.spec.ts --reporter=line
+        env:
+          CI: "1"
+          VITE_DEV_BASE_URL: "http://localhost:4173"
 
       - name: Browser-check navigation and anonymous school-route denial
         run: npx playwright test tests/ui/nav-permissions.spec.ts tests/ui/anonymous-specialist-route-access.spec.ts --grep "anonymous public home|missing authority|anonymous CROWN school route denial" --reporter=line

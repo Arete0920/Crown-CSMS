@@ -114,7 +114,7 @@ jobs:
           echo "No forbidden imports found"
 
       - name: Set up Python 3.12
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: '3.12'
 
@@ -148,20 +148,55 @@ jobs:
 
       - name: Test health endpoint locally
         run: |
+          set -euo pipefail
           source venv/bin/activate
-          python manage.py runserver 8000 &
-          SERVER_PID=$!
-          sleep 5
+          health_log="${RUNNER_TEMP:-/tmp}/crown-ci-health.log"
 
-          response=$(curl --max-time 30 -f http://localhost:8000/api/health/ || echo "FAILED")
-          kill $SERVER_PID || true
+          # Run one supervised process; the autoreloader would fork another.
+          python manage.py runserver --noreload 127.0.0.1:8000 > "$health_log" 2>&1 &
+          server_pid=$!
+          cleanup() {
+            kill "$server_pid" 2>/dev/null || true
+            wait "$server_pid" 2>/dev/null || true
+          }
+          trap cleanup EXIT
 
-          if [[ "$response" == "FAILED" ]]; then
-            echo "Health endpoint failed"
+          # Startup/system checks may exceed the old fixed five-second delay.
+          ready=false
+          response=""
+          for attempt in $(seq 1 45); do
+            if ! kill -0 "$server_pid" 2>/dev/null; then
+              echo "::error::Django exited before health readiness"
+              tail -n 80 "$health_log"
+              exit 1
+            fi
+            if response=$(curl --silent --show-error --fail --connect-timeout 2 --max-time 4 http://127.0.0.1:8000/api/health/ 2>/dev/null); then
+              ready=true
+              break
+            fi
+            sleep 2
+          done
+
+          if [[ "$ready" != true ]]; then
+            echo "::error::Django did not return a healthy HTTP response within the readiness window"
+            tail -n 80 "$health_log"
             exit 1
           fi
 
-          echo "Health endpoint responding: $response"
+          # HTTP 200 alone is insufficient: fail closed on an unhealthy DB.
+          HEALTH_RESPONSE="$response" python - <<'PY'
+          import json
+          import os
+
+          payload = json.loads(os.environ["HEALTH_RESPONSE"])
+          if not (
+              payload.get("ok") is True
+              and payload.get("db") == "ok"
+              and payload.get("status") == "ok"
+          ):
+              raise SystemExit("Health response did not confirm a healthy Django database")
+          print("Health endpoint verified: HTTP 200, status=ok, db=ok")
+          PY
         continue-on-error: false
 
       - name: Fail fast summary

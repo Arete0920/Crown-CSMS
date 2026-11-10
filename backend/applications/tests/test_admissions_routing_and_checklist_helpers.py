@@ -10,6 +10,9 @@ class _Query:
         self.only_args = None
         self.ordering = None
 
+    def __getitem__(self, index):
+        return self.results[index]
+
     def only(self, *args):
         self.only_args = args
         return self
@@ -200,14 +203,14 @@ def test_resolve_school_for_submit_requires_campus_when_tenant_missing(monkeypat
     assert "inquiry.campus" in error.data["detail"]
 
 
-def test_resolve_school_for_submit_uses_exact_then_contains_lookup(monkeypatch):
+def test_resolve_school_for_submit_requires_exact_unique_campus(monkeypatch):
     tenant_error = admissions.Response(
         {"detail": "Missing required header: X-School-Id.", "code": "missing_tenant"},
         status=400,
     )
     monkeypatch.setattr(admissions, "_resolve_school", lambda _request: (None, tenant_error))
 
-    exact_school = SimpleNamespace(id=uuid4(), name="Heritage Christian Academy")
+    exact_school = SimpleNamespace(id=uuid4(), name="Heritage Christian Academy", is_active=True)
     exact_manager = _Manager([[exact_school]])
     monkeypatch.setattr(admissions.School, "objects", exact_manager)
     request = SimpleNamespace()
@@ -221,26 +224,17 @@ def test_resolve_school_for_submit_uses_exact_then_contains_lookup(monkeypatch):
     assert error is None
     assert request.school is exact_school
     assert request.school_id == str(exact_school.id)
-    assert exact_manager.calls == [{"name__iexact": "Heritage Christian Academy"}]
+    assert exact_manager.calls == [{"name__iexact": "Heritage Christian Academy", "is_active": True}]
 
-    contains_school = SimpleNamespace(id=uuid4(), name="Heritage Christian Academy")
-    contains_manager = _Manager([[], [contains_school]])
+    contains_manager = _Manager([[]])
     monkeypatch.setattr(admissions.School, "objects", contains_manager)
     request = SimpleNamespace()
-
     school, error = admissions._resolve_school_for_submit(
-        request,
-        {"inquiry": {"campus": "Heritage"}},
+        request, {"inquiry": {"campus": "Heritage"}}
     )
-
-    assert school is contains_school
-    assert error is None
-    assert request.school is contains_school
-    assert request.school_id == str(contains_school.id)
-    assert contains_manager.calls == [
-        {"name__iexact": "Heritage"},
-        {"name__icontains": "Heritage"},
-    ]
+    assert school is None
+    assert error.status_code == 404
+    assert contains_manager.calls == [{"name__iexact": "Heritage", "is_active": True}]
 
 
 def test_resolve_school_for_submit_rejects_unknown_campus(monkeypatch):
@@ -249,7 +243,7 @@ def test_resolve_school_for_submit_rejects_unknown_campus(monkeypatch):
         status=400,
     )
     monkeypatch.setattr(admissions, "_resolve_school", lambda _request: (None, tenant_error))
-    manager = _Manager([[], []])
+    manager = _Manager([[]])
     monkeypatch.setattr(admissions.School, "objects", manager)
 
     school, error = admissions._resolve_school_for_submit(
@@ -259,7 +253,5 @@ def test_resolve_school_for_submit_rejects_unknown_campus(monkeypatch):
 
     assert school is None
     assert error.status_code == 404
-    assert error.data == {
-        "detail": "Unable to resolve school for campus 'Unknown Campus'.",
-        "code": "invalid_tenant",
-    }
+    assert error.data["code"] == "invalid_tenant"
+    assert manager.calls == [{"name__iexact": "Unknown Campus", "is_active": True}]

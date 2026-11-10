@@ -7,14 +7,18 @@ from rest_framework.test import APIClient
 
 from admissions.models import AdmissionsApplication, AdmissionsAuditEvent
 from admissions.services import InvalidStageTransition, finalize_enrollment
-from applications.models import Application, ApplicationEvent, ApplicationStatus
+from applications.models import Application, Applicant, ApplicationEvent, ApplicationStatus
 from applications.views_admissions import (
     CONTRACT_COUNTERSIGNED,
     DEPOSIT_PAID,
     ENROLLMENT_STATE_EVENT_TYPE,
 )
-from core.models import AcademicYear, CrownPermission, Family, RolePermission, School, UserRole
-from households.models import Household
+from core.models import (
+    AcademicYear, CrownPermission, Enrollment as CoreEnrollment, Family, GradeLevel,
+    HouseholdFamilyLink, RolePermission, School, Student as CoreStudent,
+    StudentIdentityLink, UserRole,
+)
+from households.models import Household, Student as CompatibilityStudent
 
 
 User = get_user_model()
@@ -54,33 +58,59 @@ def _application(school, academic_year, status=AdmissionsApplication.STATUS_ACCE
 
 def _link_ready_canonical_application(legacy):
     household = Household.objects.create(
-        school_id=legacy.school_id,
-        name=f"Canonical Family {uuid.uuid4().hex[:6]}",
+        school_id=legacy.school_id, name=f"Canonical Family {uuid.uuid4().hex[:6]}",
     )
     canonical = Application.objects.create(
-        school_id=legacy.school_id,
-        household=household,
+        school_id=legacy.school_id, household=household,
         status=ApplicationStatus.DECIDED,
     )
-    ApplicationEvent.objects.create(
-        school_id=legacy.school_id,
-        application=canonical,
-        event_type="decision_made",
-        payload={"decision": "accepted"},
+    grade, _ = GradeLevel.objects.get_or_create(
+        school_id=legacy.school_id, code="5",
+        defaults={"label": "Grade 5", "sort_order": 5},
+    )
+    core = CoreStudent.objects.create(
+        school_id=legacy.school_id, family=legacy.family,
+        student_number=f"FIN-{uuid.uuid4().hex[:10]}",
+        first_name="Taylor", last_name="Student",
+        dob=date(2014, 4, 9), status="ACTIVE",
+    )
+    legacy.student = core
+    legacy.save(update_fields=["student", "updated_at"])
+    HouseholdFamilyLink.objects.create(
+        school_id=legacy.school_id, household_id=household.id,
+        family=legacy.family, source=HouseholdFamilyLink.SOURCE_ADMISSIONS,
+    )
+    compatibility = CompatibilityStudent.objects.create(
+        school_id=legacy.school_id, household=household,
+        first_name="Taylor", last_name="Student", grade_level="5",
+    )
+    applicant = Applicant.objects.create(
+        school_id=legacy.school_id, application=canonical,
+        first_name="Taylor", last_name="Student",
+        dob=core.dob, grade_applying_for="5", student=compatibility,
+    )
+    StudentIdentityLink.objects.create(
+        school_id=legacy.school_id, core_student=core, compatibility_student=compatibility,
+        source=StudentIdentityLink.SOURCE_ADMISSIONS,
+        verification_status=StudentIdentityLink.STATUS_VERIFIED,
+        evidence_reference=f"application:{canonical.id}:applicant:{applicant.id}",
+    )
+    CoreEnrollment.objects.create(
+        school_id=legacy.school_id, student=core, academic_year=legacy.academic_year,
+        grade_level=grade, start_date=legacy.academic_year.start_date, status="ENROLLED",
     )
     ApplicationEvent.objects.create(
-        school_id=legacy.school_id,
-        application=canonical,
+        school_id=legacy.school_id, application=canonical,
+        event_type="decision_made", payload={"decision": "accepted"},
+    )
+    ApplicationEvent.objects.create(
+        school_id=legacy.school_id, application=canonical,
         event_type=ENROLLMENT_STATE_EVENT_TYPE,
-        payload={
-            "contract_status": CONTRACT_COUNTERSIGNED,
-            "deposit_status": DEPOSIT_PAID,
-        },
+        payload={"contract_status": CONTRACT_COUNTERSIGNED, "deposit_status": DEPOSIT_PAID},
     )
     legacy.notes_internal = f"canonical_application_id={canonical.id}"
     legacy.save(update_fields=["notes_internal", "updated_at"])
     return canonical
-
 
 def _user_with_permissions(school, *permission_codes):
     user = User.objects.create_user(
@@ -286,6 +316,7 @@ class EnrollmentConversionWizardIntegrityTests(TestCase):
 
     def test_commit_uses_guarded_audited_enrollment_service(self):
         app = _application(self.school, self.year)
+        canonical = _link_ready_canonical_application(app)
         session_id = self._loaded_session(app)
 
         response = self.client.post(
@@ -298,6 +329,12 @@ class EnrollmentConversionWizardIntegrityTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data["converted"], 1)
         self.assertEqual(response.data["selected"], 1)
+        self.assertTrue(
+            ApplicationEvent.objects.filter(
+                application=canonical,
+                event_type="enrollment_confirmed",
+            ).exists()
+        )
         app.refresh_from_db()
         self.assertEqual(app.status, AdmissionsApplication.STATUS_ENROLLED)
         self.assertTrue(

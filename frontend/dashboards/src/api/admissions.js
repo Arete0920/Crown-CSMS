@@ -61,8 +61,10 @@ export function fetchAdmissionsDrilldown(params = {}) {
   return fetchAdmissionsEndpoint("/api/v1/admissions/drilldown/", params);
 }
 
-export function fetchAdmissionsPublicConfig() {
-  return fetchAdmissionsEndpoint("/api/v1/admissions/public-config/");
+export function fetchAdmissionsPublicConfig({ schoolId = "", campus = "", term = "" } = {}) {
+  return fetchAdmissionsEndpoint("/api/v1/admissions/public-config/", {
+    ...(term && (schoolId || campus) ? { ...(schoolId ? { school_id: schoolId } : {}), ...(campus ? { campus } : {}), term } : {}),
+  });
 }
 
 export function fetchAdmissionsPriorityQueue(params = {}) {

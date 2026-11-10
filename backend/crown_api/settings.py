@@ -170,12 +170,20 @@ CROWN_DEMO_MODE = _env_bool("CROWN_DEMO_MODE", default=False)
 _assert_not_prod_true("CROWN_DEMO_MODE", CROWN_DEMO_MODE)
 CROWN_DEMO_KEY = os.getenv("CROWN_DEMO_KEY", "").strip()
 
+# Explicit fictional SGO application writes: local demo ONLY, default disabled.
+# API additionally verifies both local runtime markers and absence of Azure markers.
+CROWN_SGO_FICTIONAL_INTAKE_ENABLED = _env_bool("CROWN_SGO_FICTIONAL_INTAKE_ENABLED", default=False)
+CROWN_HOSTED_JIREH_DEMO_ENABLED = _env_bool("CROWN_HOSTED_JIREH_DEMO_ENABLED", default=False)
+_assert_not_prod_true("CROWN_SGO_FICTIONAL_INTAKE_ENABLED", CROWN_SGO_FICTIONAL_INTAKE_ENABLED)
+
 # Tenant header enforcement
 # When True, TenantHeaderRequiredMiddleware requires X-School-Id on /api/v1/* routes.
 TENANT_HEADER_REQUIRED = _env_bool("TENANT_HEADER_REQUIRED", default=True)
 CROWN_DEMO_SCHOOL_ID = os.getenv("CROWN_DEMO_SCHOOL_ID", "19801b59-8c05-4c84-9312-5d792e4e839d")
 DJANGO_ENV = os.getenv("DJANGO_ENV", "")
-CROWN_OPS_SECRET = os.getenv("CROWN_OPS_SECRET", "") or os.getenv("OPS_SECRET", "")
+# Never re-enable an older OPS_SECRET if CROWN_OPS_SECRET is absent.
+# DEV ops credentials are explicitly rotated and scoped; fail closed instead.
+CROWN_OPS_SECRET = os.getenv("CROWN_OPS_SECRET", "")
 ENVIRONMENT = os.getenv("ENVIRONMENT", "")
 DEV_OPS_SECRET = os.getenv("DEV_OPS_SECRET", "")
 
@@ -242,6 +250,7 @@ INSTALLED_APPS = [
     'executive360',
     'graduation',
     'hr.apps.HrConfig',
+    'teacher_evaluations.apps.TeacherEvaluationsConfig',
     'student_health',
     'advancement.apps.AdvancementConfig',
     'pdhub.apps.PdhubConfig',
@@ -304,6 +313,7 @@ MIDDLEWARE = [
     "core.observability.middleware.RequestCorrelationMiddleware",
     'core.middleware.TenantIsolationMiddleware',
     'crown_api.auth_middleware.JwtAuthMiddleware',  # JWT authentication (after Django auth, coexists with SimpleJWT)
+    'sandbox_demo.buyer_session_guard.HostedBuyerSessionGuardMiddleware',  # fail closed on revoked hosted evaluator identity
     'core.tenant_header_middleware.TenantHeaderRequiredMiddleware',  # Tenant guard -- after auth so user.school_id is available for header-less fallback
     'crown_api.tenant_middleware.TenantContextMiddleware',  # Tenant resolution (after JWT auth)
     'audit.middleware.AuditMiddleware',  # Audit logging (after auth)

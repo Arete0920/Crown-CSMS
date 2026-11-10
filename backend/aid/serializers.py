@@ -21,7 +21,7 @@ from aid.models import (
 
 
 class AidApplicationSerializer(serializers.ModelSerializer):
-    """Read serializer for AidApplication.  Used in admin overview + family portal."""
+    """Staff read serializer for AidApplication; not for family responses."""
 
     class Meta:
         model = AidApplication
@@ -65,6 +65,42 @@ class AidAwardSerializer(serializers.ModelSerializer):
             "decision_status",
             "decided_at",
             "ledger_entry_id",
+            "created_at",
+        ]
+        read_only_fields = fields
+
+
+class FamilyAidApplicationSerializer(serializers.ModelSerializer):
+    """Allowlisted application status, without financial inputs or staff notes."""
+
+    class Meta:
+        model = AidApplication
+        fields = [
+            "id",
+            "family_id",
+            "academic_year_id",
+            "status",
+            "submitted_at",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = fields
+
+
+class FamilyAidAwardSerializer(serializers.ModelSerializer):
+    """Family award status, without recommendations, scores or ledger linkage."""
+
+    class Meta:
+        model = AidAward
+        fields = [
+            "id",
+            "student_id",
+            "academic_year_id",
+            "aid_application_id",
+            "award_type",
+            "awarded_cents",
+            "decision_status",
+            "decided_at",
             "created_at",
         ]
         read_only_fields = fields

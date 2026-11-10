@@ -102,9 +102,14 @@ beforeEach(() => {
 
   mockFetchAdmissionsPublicConfig.mockResolvedValue({
     application_fee: {
+      configured: true,
       required: true,
-      amount: 85,
+      amount: "85.00",
+      additional_child_amount: "50.00",
       currency: "USD",
+      school_id: "cc000000-0000-4000-8000-000000000001",
+      schedule_id: "ee000000-0000-4000-8000-000000000001",
+      term: "2026-2027",
     },
   });
 

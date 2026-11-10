@@ -1,5 +1,6 @@
 """Canonical extended-care service tests."""
 from datetime import date, datetime
+from uuid import uuid4
 
 import pytest
 from django.utils import timezone
@@ -7,7 +8,7 @@ from django.utils import timezone
 from aftercare.integrations import AftercareIntegrationError
 from aftercare.models import AftercareAttendance, AftercareEnrollment, AftercareIncident, AftercarePickupContact
 from aftercare.services import checkin_student, checkout_student, ensure_config, record_incident
-from core.models import School
+from core.models import CrownPermission, RolePermission, School, UserAccount, UserRole
 from households.models import Household, Student
 
 pytestmark = pytest.mark.django_db
@@ -32,6 +33,45 @@ def _enroll(school: School, student: Student, *, days=None):
         billing_model="FLAT_MONTHLY",
         days_of_week=days or ["MON", "TUE", "WED", "THU", "FRI"],
     )
+
+def _authorized_verifier(school):
+    operator = UserAccount.objects.create_user(
+        username=f"aftercare-pickup-{uuid4().hex[:12]}",
+        password="unused", school=school,
+    )
+    role = f"pickup_{uuid4().hex[:12]}"
+    UserRole.objects.create(user=operator, school=school, role_code=role)
+    permission, _ = CrownPermission.objects.get_or_create(code="extended_care.edit")
+    RolePermission.objects.get_or_create(role_code=role, permission=permission)
+    return operator
+
+
+def test_checkout_rejects_missing_foreign_or_ungranted_verifier():
+    school = School.objects.create(name="Pickup Attribution School")
+    student = _student(school, "Audit")
+    _enroll(school, student, days=["WED"])
+    checkin_at = timezone.make_aware(datetime(2025, 9, 3, 15, 0))
+    attendance = checkin_student(school.id, student.id, when=checkin_at)
+    contact = AftercarePickupContact.objects.create(
+        school_fk=school, student_fk=student, name="Authorized Guardian",
+    )
+    foreign_school = School.objects.create(name="Foreign Pickup Operator")
+    foreign = _authorized_verifier(foreign_school)
+    ungranted = UserAccount.objects.create_user(
+        username=f"pickup-ungranted-{uuid4().hex[:8]}", password="unused", school=school,
+    )
+    for verifier in (None, foreign, ungranted):
+        with pytest.raises(ValueError, match="school-authorized pickup verifier"):
+            checkout_student(
+                school.id, student.id, pickup_contact_id=contact.pk,
+                pickup_name_freeform="", pickup_verified=True,
+                verified_by=verifier,
+                when=timezone.make_aware(datetime(2025, 9, 3, 17, 30)),
+            )
+        attendance.refresh_from_db()
+        assert attendance.checkout_time is None
+        assert attendance.pickup_verified_by_id is None
+        assert attendance.late_fee_charge_id is None
 
 
 def test_ensure_config_creates_once():
@@ -70,6 +110,7 @@ def test_checkin_creates_and_is_idempotent():
 
 def test_checkout_rejects_cross_student_pickup_contact():
     school = School.objects.create(name="Pickup School")
+    verifier = _authorized_verifier(school)
     student = _student(school, "A")
     other = _student(school, "B")
     _enroll(school, student, days=["WED"])
@@ -87,13 +128,14 @@ def test_checkout_rejects_cross_student_pickup_contact():
             student.id,
             pickup_contact_id=contact.id,
             pickup_name_freeform="",
-            pickup_verified=True,
+            pickup_verified=True, verified_by=verifier,
             when=timezone.make_aware(datetime(2025, 9, 3, 17, 30)),
         )
 
 
 def test_checkout_sets_time_without_synthetic_finance_write():
     school = School.objects.create(name="Checkout School")
+    verifier = _authorized_verifier(school)
     student = _student(school, "Checkout")
     _enroll(school, student, days=["WED"])
     checkin_student(
@@ -107,7 +149,7 @@ def test_checkout_sets_time_without_synthetic_finance_write():
         student.id,
         pickup_contact_id=contact.id,
         pickup_name_freeform="Untrusted freeform",
-        pickup_verified=True,
+        pickup_verified=True, verified_by=verifier,
         when=timezone.make_aware(datetime(2025, 9, 3, 17, 30)),
     )
     assert attendance.checkout_time is not None
@@ -135,6 +177,7 @@ def test_major_incident_fails_closed_without_verified_discipline_bridge():
 
 def test_checkout_fails_closed_without_verified_active_contact_and_no_fee_side_effect(monkeypatch):
     school = School.objects.create(name="Fail Closed Pickup School")
+    verifier = _authorized_verifier(school)
     student = _student(school, "FailClosed")
     other = _student(school, "Other")
     _enroll(school, student, days=["WED"])
@@ -154,7 +197,7 @@ def test_checkout_fails_closed_without_verified_active_contact_and_no_fee_side_e
     ):
         with pytest.raises(ValueError, match=expected):
             checkout_student(school.id, student.id, pickup_contact_id=contact_id,
-                             pickup_name_freeform="untrusted", pickup_verified=verified, when=checkout)
+                             pickup_name_freeform="untrusted", pickup_verified=verified, verified_by=verifier, when=checkout)
         attendance.refresh_from_db()
         assert attendance.checkout_time is None
         assert attendance.pickup_contact_fk_id is None
@@ -164,6 +207,7 @@ def test_checkout_fails_closed_without_verified_active_contact_and_no_fee_side_e
 
 def test_checkout_rejects_repeat_without_rewriting_pickup_or_billing():
     school = School.objects.create(name="Repeat Pickup School")
+    verifier = _authorized_verifier(school)
     student = _student(school, "Repeat")
     _enroll(school, student, days=["WED"])
     when = timezone.make_aware(datetime(2025, 9, 3, 15, 5))
@@ -171,11 +215,11 @@ def test_checkout_rejects_repeat_without_rewriting_pickup_or_billing():
     contact = AftercarePickupContact.objects.create(school_fk=school, student_fk=student, name="First")
     second = AftercarePickupContact.objects.create(school_fk=school, student_fk=student, name="Second")
     first = checkout_student(school.id, student.id, pickup_contact_id=contact.id,
-                             pickup_name_freeform="", pickup_verified=True,
+                             pickup_name_freeform="", pickup_verified=True, verified_by=verifier,
                              when=timezone.make_aware(datetime(2025, 9, 3, 17, 30)))
     with pytest.raises(ValueError, match="already been checked out"):
         checkout_student(school.id, student.id, pickup_contact_id=second.id,
-                         pickup_name_freeform="", pickup_verified=True,
+                         pickup_name_freeform="", pickup_verified=True, verified_by=verifier,
                          when=timezone.make_aware(datetime(2025, 9, 3, 17, 31)))
     first.refresh_from_db()
     assert first.pickup_contact_fk_id == contact.id

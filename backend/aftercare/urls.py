@@ -1,8 +1,17 @@
 from django.urls import path
 
-from . import api, wizard_api
+from . import api, wizard_api, daycare_api
+from . import daycare_setup_api, daycare_staff_proposals_api
 
 urlpatterns = [
+    path("daycare/setup/sites/", daycare_setup_api.setup_sites, name="diadem_setup_sites"),
+    path("daycare/setup/sites/<uuid:site_id>/rooms/", daycare_setup_api.setup_rooms, name="diadem_setup_rooms"),
+    path("daycare/setup/sites/<uuid:site_id>/rooms/<uuid:room_id>/staff-proposals/", daycare_staff_proposals_api.setup_staff_proposals, name="diadem_setup_staff_proposals"),
+    path("daycare/sites/", daycare_api.daycare_sites, name="diadem_sites"),
+    path("daycare/sites/<uuid:site_id>/roster/", daycare_api.daycare_open_roster, name="diadem_open_roster"),
+    path("daycare/sites/<uuid:site_id>/attendance/<uuid:attendance_id>/release-authorities/", daycare_api.daycare_release_authorities, name="diadem_release_authorities"),
+    path("daycare/attendance/checkin/", daycare_api.daycare_checkin, name="diadem_checkin"),
+    path("daycare/attendance/release/", daycare_api.daycare_release, name="diadem_release"),
     path("config/", api.program_config, name="aftercare_config"),
     path("wizard/setup/", wizard_api.aftercare_setup_wizard, name="aftercare_setup_wizard"),
     path("enrollments/", api.enrollments, name="aftercare_enrollments"),
@@ -10,6 +19,7 @@ urlpatterns = [
     path("roster/today/", api.roster_today, name="aftercare_roster_today"),
     path("attendance/checkin/", api.checkin, name="aftercare_checkin"),
     path("attendance/checkout/", api.checkout, name="aftercare_checkout"),
+    path("attendance/school-handoff/", api.school_handoff, name="beforecare_school_handoff"),
     path("incidents/", api.incidents, name="aftercare_incidents"),
     path("parent/<uuid:student_id>/", api.parent_view, name="aftercare_parent_view"),
     path("board/summary/", api.board_summary, name="aftercare_board_summary"),

@@ -1,7 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import CrownLayout from "../components/crown/CrownLayout.jsx";
 import DashboardSection from "../components/layout/DashboardSection.jsx";
-import { fetchRosterToday, checkinStudent, checkoutStudent, fetchPickupContacts } from "../api/aftercareApi.js";
+import { CareHandoffDialog, CarePickupDialog } from "../components/care/CareCustodyDialogs.jsx";
+import { fetchRosterToday, checkinStudent, checkoutStudent, fetchPickupContacts, handoffToSchool } from "../api/aftercareApi.js";
+import {
+  getAccessToken, getSelectedSchoolId, SCHOOL_CONTEXT_CHANGE_EVENT,
+} from "../utils/authClient.js";
 
 const TAG = {
   base: { display: "inline-block", padding: "2px 8px", borderRadius: 12, fontSize: 12, fontWeight: 600 },
@@ -15,42 +19,273 @@ const TD = { padding: "8px 12px", fontSize: 13, borderBottom: "1px solid var(--c
 const BTN_OUT = { cursor: "pointer", padding: "4px 10px", fontSize: 12, borderRadius: 4, border: "1px solid var(--crown-border)", background: "transparent" };
 const BTN_PRIM = { cursor: "pointer", padding: "4px 10px", fontSize: 12, borderRadius: 4, border: "none", background: "var(--crown-ok)", color: "var(--crown-surface)" };
 
-export default function AftercareRosterPage() {
+
+const CUSTODY_BARRIER_KEY = "crown.extended-care.unconfirmed-custody";
+const CUSTODY_BARRIER_EVENT = "crown:extended-care-custody-changed";
+// Preserve tab-local custody uncertainty if browser storage is blocked.
+// Persist only the scoped operation and opaque student row ID required for
+// post-write verification. Never persist names, contacts or staff credentials.
+let memoryCustodyBarrier = null;
+let custodyMarkerSequence = 0;
+const custodyMessage = "A prior custody operation's outcome is unconfirmed. Return to its originating school and care session for explicit reconciliation; do not retry automatically.";
+
+function readCustodyBarrier() {
+  try {
+    const raw = sessionStorage.getItem(CUSTODY_BARRIER_KEY);
+    if (!raw) return null;
+    const value = JSON.parse(raw);
+    if (value && typeof value.school === "string" && ["AM", "PM"].includes(value.careSession)
+      && ["pending", "unconfirmed"].includes(value.status) && typeof value.id === "string"
+      && ["checkin", "checkout", "school_handoff"].includes(value.operation)
+      && typeof value.studentId === "string" && value.studentId
+      && typeof value.careDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value.careDate)
+      && (value.operation === "checkin" || (typeof value.attendanceId === "string" && value.attendanceId))
+      && (value.operation !== "checkout" || (typeof value.pickupContactId === "string" && value.pickupContactId))) return value;
+    // A malformed marker must not silently enable a new custody write.
+    return { school: "", careSession: "", status: "pending", id: "invalid" };
+  } catch {
+    return memoryCustodyBarrier;
+  }
+}
+
+function updateCustodyBarrier(next) {
+  memoryCustodyBarrier = next;
+  try {
+    if (next) sessionStorage.setItem(CUSTODY_BARRIER_KEY, JSON.stringify(next));
+    else sessionStorage.removeItem(CUSTODY_BARRIER_KEY);
+  } catch {
+    // Preserve the in-memory barrier across same-tab React route unmounts.
+  }
+  window.dispatchEvent(new Event(CUSTODY_BARRIER_EVENT));
+}
+
+function beginCustodyBarrier(identity, careSession, operation, studentId, details = {}) {
+  if (readCustodyBarrier()) return null;
+  const { careDate, attendanceId, pickupContactId } = details;
+  if (typeof careDate !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(careDate)
+    || (operation !== "checkin" && (attendanceId === undefined || attendanceId === null))
+    || (operation === "checkout" && (pickupContactId === undefined || pickupContactId === null || pickupContactId === ""))) return null;
+  const marker = {
+    id: String(++custodyMarkerSequence) + "-" + String(Date.now()),
+    school: identity.school,
+    careSession,
+    operation,
+    studentId: String(studentId),
+    careDate,
+    ...(attendanceId === undefined || attendanceId === null ? {} : { attendanceId: String(attendanceId) }),
+    ...(pickupContactId === undefined || pickupContactId === null ? {} : { pickupContactId: String(pickupContactId) }),
+    status: "pending",
+  };
+  updateCustodyBarrier(marker);
+  return marker;
+}
+
+function finalizeCustodyBarrier(marker, confirmed) {
+  const current = readCustodyBarrier();
+  if (!current || current.id !== marker?.id) return;
+  updateCustodyBarrier(confirmed ? null : { ...current, status: "unconfirmed" });
+}
+
+// A valid 200 response is insufficient: the API also lists previous-day
+// unresolved custody, which must never confirm a different day's write.
+function rosterConfirmsCustody(marker, roster) {
+  if (!marker || roster?.care_session !== marker.careSession || !Array.isArray(roster?.rows)) return false;
+  const matches = roster.rows.filter((entry) => String(entry.student_id) === marker.studentId
+    && entry.attendance && String(entry.attendance.date) === marker.careDate
+    && entry.attendance.id !== undefined && entry.attendance.id !== null
+    && (!marker.attendanceId || String(entry.attendance.id) === marker.attendanceId));
+  if (matches.length !== 1) return false;
+  const attendance = matches[0].attendance;
+  if (marker.operation === "checkin") return Boolean(attendance.checkin_time);
+  if (marker.operation === "checkout") return Boolean(attendance.checkout_time && attendance.pickup_verified
+    && marker.pickupContactId && String(attendance.pickup_contact_id) === marker.pickupContactId);
+  if (marker.operation === "school_handoff") {
+    return Boolean(attendance.checkout_time && attendance.handoff_verified && attendance.handoff_time);
+  }
+  return false;
+}
+
+// A successful POST supplies the authoritative row ID. A failed network
+// response cannot establish the ID, so it stays ambiguous until explicit
+// same-day review and never repeats the POST automatically.
+function rememberAttendanceId(marker, response) {
+  if (response?.id === undefined || response.id === null) return marker;
+  const current = readCustodyBarrier();
+  if (!current || current.id !== marker.id) return marker;
+  const updated = { ...current, attendanceId: String(response.id) };
+  updateCustodyBarrier(updated);
+  return updated;
+}
+
+export default function AftercareRosterPage({ careSession = "PM" }) {
+  const isMorning = careSession === "AM";
+  const sessionLabel = isMorning ? "Before Care" : "After Care";
+  const [handoff, setHandoff] = useState(null);
+  const [handoffBusy, setHandoffBusy] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [roster, setRoster] = useState(null);
+  const [rosterScope, setRosterScope] = useState(null);
+  const [identity, setIdentity] = useState(() => ({
+    school: getSelectedSchoolId(), token: getAccessToken(),
+  }));
+  const identityRef = useRef(identity);
+  // Monotonic scope generation rejects responses from school/token/session ABA switches.
+  const scopeEpochRef = useRef(0);
+  const sameIdentity = (scope = identity) => Boolean(scope.school && scope.token)
+    && scope.school === getSelectedSchoolId() && scope.token === getAccessToken();
   const [pickup, setPickup] = useState(null);
   const [pickupBusy, setPickupBusy] = useState(false);
+  const [checkinBusyId, setCheckinBusyId] = useState(null);
+  const [custodyWarning, setCustodyWarning] = useState(() => readCustodyBarrier() ? custodyMessage : "");
+  const [unconfirmedScope, setUnconfirmedScope] = useState(() => {
+    const marker = readCustodyBarrier();
+    return marker ? { school: marker.school, careSession: marker.careSession } : null;
+  });
+  // A manual custody readback must not outrun an unresolved prior staff write.
+  const [custodyWritePending, setCustodyWritePending] = useState(() => readCustodyBarrier()?.status === "pending");
+  // Keep the request marker outside render state: a remote custody write may
+  // finish even if its originating staff session changes before response.
+  const operationInFlightRef = useRef(null);
+  const blockedStaffTokenRef = useRef(null);
+  const checkinInFlightRef = useRef(false);
+  const sessionRef = useRef(careSession);
+  const mountedRef = useRef(false);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    const syncBarrier = () => {
+      const marker = readCustodyBarrier();
+      setUnconfirmedScope(marker ? { school: marker.school, careSession: marker.careSession } : null);
+      setCustodyWritePending(marker?.status === "pending");
+      // Propagate both lock and unlock notifications, including the originating
+      // page: a confirmed write must not leave a stale warning after readback.
+      setCustodyWarning(marker ? custodyMessage : "");
+    };
+    window.addEventListener(CUSTODY_BARRIER_EVENT, syncBarrier);
+    syncBarrier();
+    return () => {
+      mountedRef.current = false;
+      window.removeEventListener(CUSTODY_BARRIER_EVENT, syncBarrier);
+    };
+  }, []);
+
+  // Existing authentication transport notifies on school changes; the
+  // auth-token change event is also supported once its producer is installed.
+  // Focus/storage catch external identity changes without granting access.
+  useEffect(() => {
+    const reconcileIdentity = () => {
+      const next = { school: getSelectedSchoolId(), token: getAccessToken() };
+      const current = identityRef.current;
+      if (current.school === next.school && current.token === next.token) return;
+      scopeEpochRef.current += 1;
+      if (current.token !== next.token && readCustodyBarrier()) {
+        blockedStaffTokenRef.current = next.token;
+      }
+      if (operationInFlightRef.current) {
+        const pending = operationInFlightRef.current;
+        setUnconfirmedScope({ school: pending.identity.school, careSession: pending.careSession });
+        setCustodyWarning(
+          "A care operation was in flight when the staff session changed. Its outcome is unconfirmed. Return to the originating school and care session for explicit custody reconciliation; do not retry automatically."
+        );
+      }
+      identityRef.current = next;
+      setIdentity(next);
+      setRoster(null);
+      setRosterScope(null);
+      setPickup(null);
+      setHandoff(null);
+      setError(null);
+      setCheckinBusyId(null);
+    };
+    for (const name of [SCHOOL_CONTEXT_CHANGE_EVENT, "crown:auth-context-changed", "focus", "storage"]) {
+      window.addEventListener(name, reconcileIdentity);
+    }
+    return () => {
+      for (const name of [SCHOOL_CONTEXT_CHANGE_EVENT, "crown:auth-context-changed", "focus", "storage"]) {
+        window.removeEventListener(name, reconcileIdentity);
+      }
+    };
+  }, []);
 
   async function load() {
+    const scope = identity;
+    const epoch = scopeEpochRef.current;
+    if (!mountedRef.current || scopeEpochRef.current !== epoch || sessionRef.current !== careSession || !sameIdentity(scope)) return false;
     setLoading(true);
     setError(null);
+    setRoster(null);
+    setRosterScope(null);
     try {
-      const data = await fetchRosterToday();
+      const data = await fetchRosterToday(careSession);
+      if (!mountedRef.current || scopeEpochRef.current !== epoch || sessionRef.current !== careSession || !sameIdentity(scope)) return false;
+      if (data?.care_session !== careSession || !Array.isArray(data?.rows)) {
+        throw new Error("Roster API returned an invalid care session.");
+      }
+      setRosterScope(scope);
       setRoster(data);
+      return data;
     } catch (e) {
-      setError(e.message);
+      if (mountedRef.current && scopeEpochRef.current === epoch && sessionRef.current === careSession && sameIdentity(scope)) setError(e.message);
+      return false;
     } finally {
-      setLoading(false);
+      if (mountedRef.current && scopeEpochRef.current === epoch && sessionRef.current === careSession && sameIdentity(scope)) setLoading(false);
     }
   }
 
   useEffect(() => {
+    const switchedCareSession = sessionRef.current !== careSession;
+    if (switchedCareSession) scopeEpochRef.current += 1;
+    if (switchedCareSession && operationInFlightRef.current) {
+      const pending = operationInFlightRef.current;
+      setUnconfirmedScope({ school: pending.identity.school, careSession: pending.careSession });
+      setCustodyWarning(
+        "A custody operation remained in flight when the care session changed. Its outcome is unconfirmed. Return to the originating school and care session for reconciliation."
+      );
+    }
+    sessionRef.current = careSession;
+    const scope = identity;
+    const epoch = scopeEpochRef.current;
+    setLoading(true);
+    setRoster(null);
+    setRosterScope(null);
+    setError(null);
+    setPickup(null);
+    setHandoff(null);
+    setPickupBusy(false);
+    setHandoffBusy(false);
+    setCheckinBusyId(null);
+    checkinInFlightRef.current = false;
     let cancelled = false;
+    if (!sameIdentity(scope)) {
+      setError("Authenticated school and staff session required before opening care records.");
+      setLoading(false);
+      return () => { cancelled = true; };
+    }
+    if (readCustodyBarrier() && blockedStaffTokenRef.current === scope.token) {
+      // A newly authenticated staff member must explicitly reconcile the old
+      // request; token notification must never initiate its custody readback.
+      setLoading(false);
+      return () => { cancelled = true; };
+    }
 
     async function initialize() {
       try {
-        const data = await fetchRosterToday();
-        if (!cancelled) {
+        const data = await fetchRosterToday(careSession);
+        if (data?.care_session !== careSession || !Array.isArray(data?.rows)) {
+          throw new Error("Roster API returned an invalid care session.");
+        }
+        if (!cancelled && scopeEpochRef.current === epoch && sameIdentity(scope)) {
+          setRosterScope(scope);
           setRoster(data);
           setError(null);
         }
       } catch (e) {
-        if (!cancelled) {
+        if (!cancelled && scopeEpochRef.current === epoch && sameIdentity(scope)) {
           setError(e.message);
         }
       } finally {
-        if (!cancelled) {
+        if (!cancelled && scopeEpochRef.current === epoch && sameIdentity(scope)) {
           setLoading(false);
         }
       }
@@ -60,64 +295,218 @@ export default function AftercareRosterPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [careSession, identity]);
+
+  // Rejected writes may have committed remotely before a timeout or connection loss.
+  // Never expose a retry until a new, explicitly requested authorized roster read.
+  function requireCustodyReadback(attempt) {
+    setUnconfirmedScope({ school: attempt.identity.school, careSession: attempt.careSession });
+    setCustodyWarning(
+      "A custody write did not return a confirmed result. Its outcome is unconfirmed. " +
+      "Return to the originating school and care session for explicit custody reconciliation; do not retry automatically."
+    );
+    setPickup(null);
+    setHandoff(null);
+    finalizeCustodyBarrier(attempt.marker, false);
+  }
 
   async function handleCheckin(studentId) {
+    if (custodyWarning || readCustodyBarrier() || operationInFlightRef.current || checkinInFlightRef.current || sessionRef.current !== careSession || !sameIdentity() || rosterScope !== identity) return;
+    const original = currentRoster?.rows.find((row) => String(row.student_id) === String(studentId));
+    if (!original || original.attendance || original.unscheduled) return;
+    const marker = beginCustodyBarrier(identity, careSession, "checkin", studentId, {
+      careDate: currentRoster.date,
+    });
+    if (!marker) return;
+    const attempt = { operation: "checkin", identity, careSession, epoch: scopeEpochRef.current, marker };
+    operationInFlightRef.current = attempt;
+    setCustodyWritePending(true);
+    checkinInFlightRef.current = true;
+    setCheckinBusyId(studentId);
+    setError(null);
     try {
-      await checkinStudent({ student_id: studentId });
-      await load();
+      const response = await checkinStudent({ student_id: studentId, care_session: careSession });
+      attempt.marker = rememberAttendanceId(marker, response);
+      const fresh = mountedRef.current && scopeEpochRef.current === attempt.epoch && await load();
+      if (rosterConfirmsCustody(attempt.marker, fresh)) finalizeCustodyBarrier(attempt.marker, true);
+      else requireCustodyReadback(attempt);
     } catch (e) {
-      alert(`Check-in failed: ${e.message}`);
+      requireCustodyReadback(attempt);
+      if (sessionRef.current === careSession && sameIdentity()) setError(`Check-in failed: ${e.message}`);
+    } finally {
+      if (operationInFlightRef.current === attempt) {
+        operationInFlightRef.current = null;
+        checkinInFlightRef.current = false;
+        setCustodyWritePending(false);
+      }
+      if (sessionRef.current === careSession && sameIdentity()) {
+        setCheckinBusyId(null);
+      }
     }
   }
 
   async function beginCheckout(studentId) {
+    if (custodyWarning || readCustodyBarrier() || operationInFlightRef.current || sessionRef.current !== careSession || isMorning || !sameIdentity() || rosterScope !== identity) return;
+    const epoch = scopeEpochRef.current;
     setPickupBusy(true);
     setError(null);
     try {
       const contacts = await fetchPickupContacts(studentId);
-      setPickup({ studentId, contacts: Array.isArray(contacts) ? contacts.filter((c) => c.is_active) : [],
+      if (scopeEpochRef.current !== epoch || sessionRef.current !== careSession || !sameIdentity()) return;
+      setPickup({ studentId, careSession, contacts: Array.isArray(contacts) ? contacts.filter((c) => c.is_active) : [],
                   contactId: "", verified: false });
     } catch (e) {
-      setError(`Cannot load authorized pickup contacts: ${e.message}`);
+      if (scopeEpochRef.current === epoch && sessionRef.current === careSession && sameIdentity()) setError(`Cannot load authorized pickup contacts: ${e.message}`);
     } finally {
-      setPickupBusy(false);
+      if (scopeEpochRef.current === epoch && sessionRef.current === careSession && sameIdentity()) setPickupBusy(false);
     }
   }
 
   async function handleCheckout() {
-    if (!pickup?.contactId || !pickup.verified) return;
+    if (custodyWarning || readCustodyBarrier() || operationInFlightRef.current || isMorning || pickup?.careSession !== careSession || !pickup?.contactId || !pickup.verified
+        || !sameIdentity() || rosterScope !== identity) return;
+    const original = currentRoster?.rows.find((row) => String(row.student_id) === String(pickup.studentId));
+    const marker = beginCustodyBarrier(identity, careSession, "checkout", pickup.studentId, {
+      careDate: original?.attendance?.date,
+      attendanceId: original?.attendance?.id,
+      pickupContactId: pickup.contactId,
+    });
+    if (!marker) return;
+    const attempt = { operation: "checkout", identity, careSession, epoch: scopeEpochRef.current, marker };
+    operationInFlightRef.current = attempt;
+    setCustodyWritePending(true);
     setPickupBusy(true);
     try {
-      await checkoutStudent({
+      const response = await checkoutStudent({
         student_id: pickup.studentId,
         pickup_contact_id: pickup.contactId,
         pickup_verified: true,
+        care_session: careSession,
       });
-      setPickup(null);
-      await load();
+      if (response?.id === undefined || String(response.id) !== marker.attendanceId) {
+        requireCustodyReadback(attempt);
+        return;
+      }
+      if (scopeEpochRef.current === attempt.epoch && sessionRef.current === careSession && sameIdentity()) {
+        setPickup(null);
+        const fresh = mountedRef.current && await load();
+        if (rosterConfirmsCustody(marker, fresh)) finalizeCustodyBarrier(marker, true);
+        else requireCustodyReadback(attempt);
+      } else requireCustodyReadback(attempt);
     } catch (e) {
-      setError(`Check-out failed: ${e.message}`);
+      requireCustodyReadback(attempt);
+      if (scopeEpochRef.current === attempt.epoch && sessionRef.current === careSession && sameIdentity()) setError(`Check-out failed: ${e.message}`);
     } finally {
-      setPickupBusy(false);
+      if (operationInFlightRef.current === attempt) {
+        operationInFlightRef.current = null;
+        setCustodyWritePending(false);
+      }
+      if (scopeEpochRef.current === attempt.epoch && sessionRef.current === careSession && sameIdentity()) setPickupBusy(false);
     }
   }
 
-  const rosterTitle = roster
-    ? `Today's Aftercare Roster - ${roster.date} (${roster.dow})`
-    : "Today's Aftercare Roster";
+  async function handleHandoff() {
+    if (custodyWarning || readCustodyBarrier() || operationInFlightRef.current || !isMorning || handoff?.careSession !== careSession || !handoff?.acknowledged
+        || !sameIdentity() || rosterScope !== identity) return;
+    const original = currentRoster?.rows.find((row) => String(row.student_id) === String(handoff.studentId));
+    const marker = beginCustodyBarrier(identity, careSession, "school_handoff", handoff.studentId, {
+      careDate: original?.attendance?.date,
+      attendanceId: original?.attendance?.id,
+    });
+    if (!marker) return;
+    const attempt = { operation: "school_handoff", identity, careSession, epoch: scopeEpochRef.current, marker };
+    operationInFlightRef.current = attempt;
+    setCustodyWritePending(true);
+    setHandoffBusy(true);
+    setError(null);
+    try {
+      const response = await handoffToSchool({ student_id: handoff.studentId });
+      if (response?.id === undefined || String(response.id) !== marker.attendanceId) {
+        requireCustodyReadback(attempt);
+        return;
+      }
+      if (scopeEpochRef.current === attempt.epoch && sessionRef.current === careSession && sameIdentity()) {
+        setHandoff(null);
+        const fresh = mountedRef.current && await load();
+        if (rosterConfirmsCustody(marker, fresh)) finalizeCustodyBarrier(marker, true);
+        else requireCustodyReadback(attempt);
+      } else requireCustodyReadback(attempt);
+    } catch (e) {
+      requireCustodyReadback(attempt);
+      if (scopeEpochRef.current === attempt.epoch && sessionRef.current === careSession && sameIdentity()) setError("School handoff failed: " + e.message);
+    } finally {
+      if (operationInFlightRef.current === attempt) {
+        operationInFlightRef.current = null;
+        setCustodyWritePending(false);
+      }
+      if (scopeEpochRef.current === attempt.epoch && sessionRef.current === careSession && sameIdentity()) setHandoffBusy(false);
+    }
+  }
+
+  // Only the originating school's matching care-session read can resolve a write.
+  const affectedScopeMatches = !unconfirmedScope || (
+    unconfirmedScope.school === identity.school && unconfirmedScope.careSession === careSession
+  );
+  // This is an explicit human-triggered reconcile, not an automatic retry.
+  // Reading the current roster cannot itself certify who received the child.
+  async function reconcileAfterIdentityChange() {
+    const scope = identity;
+    const epoch = scopeEpochRef.current;
+    if (!custodyWarning || !affectedScopeMatches || operationInFlightRef.current || readCustodyBarrier()?.status === "pending" || !sameIdentity(scope) || loading) return;
+    setLoading(true);
+    try {
+      const fresh = await fetchRosterToday(careSession);
+      if (scopeEpochRef.current !== epoch || !sameIdentity(scope) || sessionRef.current !== careSession) return;
+      if (fresh?.care_session !== careSession || !Array.isArray(fresh.rows)) {
+        throw new Error("Invalid care roster from the server.");
+      }
+      const marker = readCustodyBarrier();
+      if (!marker || marker.status !== "unconfirmed" || marker.school !== scope.school
+        || marker.careSession !== careSession || !rosterConfirmsCustody(marker, fresh)) {
+        throw new Error("Fresh roster does not confirm the original custody transition; escalate for supervisor review.");
+      }
+      setRosterScope(scope);
+      setRoster(fresh);
+      setError(null);
+      finalizeCustodyBarrier(marker, true);
+      blockedStaffTokenRef.current = null;
+      setCustodyWarning("");
+      setUnconfirmedScope(null);
+    } catch (error) {
+      if (scopeEpochRef.current === epoch && sameIdentity(scope)) {
+        setError("Custody reconciliation failed: " + error.message);
+      }
+    } finally {
+      if (scopeEpochRef.current === epoch && sameIdentity(scope)) setLoading(false);
+    }
+  }
+
+  // A care-session switch must never temporarily display the previous session's children.
+  const currentRoster = sameIdentity() && rosterScope === identity && roster?.care_session === careSession
+    ? roster : null;
+  const rosterTitle = currentRoster
+    ? "Today's " + sessionLabel + " Roster - " + currentRoster.date + " (" + currentRoster.dow + ")"
+    : "Today's " + sessionLabel + " Roster";
+  const childName = (studentId) => currentRoster?.rows.find((row) => row.student_id === studentId)?.student_name || studentId || "";
 
   return (
-    <CrownLayout title="Aftercare Roster">
+    <CrownLayout title={sessionLabel + " Roster"}>
       <DashboardSection title={rosterTitle}>
-        {loading && <span>Loading...</span>}
-        {error && <div style={{ color: "var(--crown-danger)", background: "var(--crown-danger-bg)", padding: "10px 14px", borderRadius: 4, marginBottom: 12 }}>{error}</div>}
-        {!loading && !error && roster && (
+        {custodyWarning && <div role="alert">
+          <p>{custodyWarning}</p>
+          {custodyWritePending && <p role="status">The previous custody write is still pending; do not reconcile from an earlier roster snapshot.</p>}
+          {!affectedScopeMatches && <p role="status">Return to the originating school and care session before resolving the unconfirmed custody operation.</p>}
+          <button type="button" disabled={loading || custodyWritePending || readCustodyBarrier()?.status === "pending" || !affectedScopeMatches || !sameIdentity()}
+            onClick={reconcileAfterIdentityChange}>Review current custody before continuing</button>
+        </div>}
+        {(loading || (!currentRoster && !error)) && <span>Loading...</span>}
+        {error && <div role="alert" style={{ color: "var(--crown-danger)", background: "var(--crown-danger-bg)", padding: "10px 14px", borderRadius: 4, marginBottom: 12 }}>{error}</div>}
+        {!loading && !error && currentRoster && (
           <div style={{ border: "1px solid var(--crown-border)", borderRadius: 4, overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
                 <tr>
-                  <th style={TH}>Student ID</th>
+                  <th style={TH}>Child</th>
                   <th style={TH}>Billing</th>
                   <th style={TH}>Status</th>
                   <th style={TH}>Late Min</th>
@@ -126,23 +515,33 @@ export default function AftercareRosterPage() {
                 </tr>
               </thead>
               <tbody>
-                {roster.rows.length === 0 && (
+                {currentRoster.rows.length === 0 && (
                   <tr>
                     <td colSpan={6} style={{ ...TD, color: "var(--crown-muted)" }}>No students scheduled today.</td>
                   </tr>
                 )}
-                {roster.rows.map((row) => {
+                {currentRoster.rows.map((row) => {
                   const hasCheckin = !!row.attendance;
-                  const hasCheckout = row.attendance?.checkout_time;
+                  const hasCheckout = Boolean(row.attendance?.checkout_time);
+                   const hasVerifiableRecord = row.attendance?.id !== undefined
+                     && row.attendance?.id !== null && Boolean(row.attendance?.date);
+                  const verifiedClosure = hasCheckout && (isMorning
+                    ? Boolean(row.attendance?.handoff_verified && row.attendance?.handoff_time)
+                    : Boolean(row.attendance?.pickup_verified));
                   const statusChip = !row.attendance
                     ? <span style={{ ...TAG.base, ...TAG.default }}>Not checked in</span>
-                    : row.attendance.checkout_time
-                      ? <span style={{ ...TAG.base, ...TAG.success }}>Checked out</span>
+                    : hasCheckout
+                      ? verifiedClosure
+                        ? <span style={{ ...TAG.base, ...TAG.success }}>{isMorning ? "Handed off" : "Checked out"}</span>
+                        : <span role="alert" style={{ ...TAG.base, ...TAG.default }}>Unverified {isMorning ? "handoff" : "checkout"} — review</span>
                       : <span style={{ ...TAG.base, ...TAG.primary }}>Checked in</span>;
 
                   return (
                     <tr key={row.student_id}>
-                      <td style={TD}>{row.student_id}</td>
+                      <td style={TD}>
+                        {row.student_name || row.student_id}
+                        {row.unscheduled && <div role="alert">Not on an active care schedule; review this custody record.</div>}
+                      </td>
                       <td style={TD}>{row.enrollment?.billing_model}</td>
                       <td style={TD}>{statusChip}</td>
                       <td style={TD}>{row.attendance?.late_minutes ?? "-"}</td>
@@ -152,11 +551,20 @@ export default function AftercareRosterPage() {
                           : "-"}
                       </td>
                       <td style={TD}>
-                        {!hasCheckin && (
-                          <button style={BTN_OUT} onClick={() => handleCheckin(row.student_id)}>Check In</button>
+                        {!hasCheckin && !row.unscheduled && !custodyWarning && !readCustodyBarrier() && (
+                          <button type="button" style={BTN_OUT} disabled={Boolean(checkinBusyId) || custodyWritePending || Boolean(readCustodyBarrier()) || loading || Boolean(custodyWarning)} onClick={() => handleCheckin(row.student_id)}>{checkinBusyId === row.student_id ? "Checking In..." : "Check In"}</button>
                         )}
-                        {hasCheckin && !hasCheckout && (
-                          <button style={BTN_PRIM} onClick={() => beginCheckout(row.student_id)} disabled={pickupBusy}>Verify Pickup</button>
+                        {hasCheckin && !hasCheckout && hasVerifiableRecord && !isMorning && !custodyWarning && !readCustodyBarrier() && (
+                          <button style={BTN_PRIM} onClick={() => beginCheckout(row.student_id)} disabled={pickupBusy || custodyWritePending || Boolean(readCustodyBarrier()) || Boolean(custodyWarning)}>Verify Pickup</button>
+                        )}
+                        {hasCheckin && !hasCheckout && hasVerifiableRecord && isMorning && !custodyWarning && !readCustodyBarrier() && (
+                          <button style={BTN_PRIM} onClick={() => setHandoff({ studentId: row.student_id, careSession, acknowledged: false })} disabled={handoffBusy || custodyWritePending || Boolean(readCustodyBarrier()) || Boolean(custodyWarning)}>Acknowledge School Handoff</button>
+                        )}
+                        {hasCheckin && !hasCheckout && !hasVerifiableRecord && (
+                          <span role="alert">Custody record lacks server identifiers; supervisor review required.</span>
+                        )}
+                        {hasCheckin && hasCheckout && !verifiedClosure && (
+                          <span>Supervisor review required; custody status is unverified.</span>
                         )}
                       </td>
                     </tr>
@@ -166,35 +574,30 @@ export default function AftercareRosterPage() {
             </table>
           </div>
         )}
-        {pickup && (
-          <div role="dialog" aria-modal="true" aria-label="Verify authorized pickup" style={{ border: "1px solid var(--crown-border)", padding: 16, marginTop: 16 }}>
-            <h3>Verify pickup for {pickup.studentId}</h3>
-            <p>Confirm the person's identity against the school's authorized pickup record before releasing a student.</p>
-            {pickup.contacts.length === 0 ? (
-              <p>No active authorized pickup contacts are on file. Checkout is blocked; contact school administration.</p>
-            ) : (
-              <>
-                <label htmlFor="pickup-contact">Authorized pickup contact</label>
-                <select id="pickup-contact" value={pickup.contactId}
-                  onChange={(e) => setPickup((old) => ({ ...old, contactId: e.target.value, verified: false }))}>
-                  <option value="">Select a contact</option>
-                  {pickup.contacts.map((contact) => (
-                    <option key={contact.id} value={contact.id}>{contact.name} — {contact.relationship || "Authorized contact"}</option>
-                  ))}
-                </select>
-                <label style={{ display: "block", marginTop: 12 }}>
-                  <input type="checkbox" checked={pickup.verified}
-                    disabled={!pickup.contactId}
-                    onChange={(e) => setPickup((old) => ({ ...old, verified: e.target.checked }))} />
-                  I have checked this person's identity against the selected authorized pickup record.
-                </label>
-                <button type="button" onClick={handleCheckout}
-                  disabled={pickupBusy || !pickup.contactId || !pickup.verified}>Confirm Checkout</button>
-              </>
-            )}
-            <button type="button" style={{ marginLeft: 12 }} disabled={pickupBusy} onClick={() => setPickup(null)}>Cancel</button>
-          </div>
+        {currentRoster?.unlinked_attendance_count > 0 && (
+          <p role="alert">{currentRoster.unlinked_attendance_count} attendance record(s) cannot be linked to a verified student in this school. Escalate for manual custody reconciliation; identities from other schools are not displayed.</p>
         )}
+        {!custodyWarning && !readCustodyBarrier() && <CareHandoffDialog
+          open={Boolean(handoff && isMorning && currentRoster && handoff.careSession === careSession)}
+          studentName={childName(handoff?.studentId)}
+          acknowledged={Boolean(handoff?.acknowledged)}
+          busy={handoffBusy}
+          onAcknowledge={(acknowledged) => setHandoff((previous) => previous ? { ...previous, acknowledged } : null)}
+          onConfirm={handleHandoff}
+          onCancel={() => setHandoff(null)}
+        />}
+        {!custodyWarning && !readCustodyBarrier() && <CarePickupDialog
+          open={Boolean(pickup && !isMorning && currentRoster && pickup.careSession === careSession)}
+          studentName={childName(pickup?.studentId)}
+          contacts={pickup?.contacts || []}
+          selectedContactId={pickup?.contactId || ""}
+          verified={Boolean(pickup?.verified)}
+          busy={pickupBusy}
+          onSelectContact={(contactId) => setPickup((previous) => previous ? { ...previous, contactId, verified: false } : null)}
+          onVerify={(verified) => setPickup((previous) => previous ? { ...previous, verified } : null)}
+          onConfirm={handleCheckout}
+          onCancel={() => setPickup(null)}
+        />}
       </DashboardSection>
     </CrownLayout>
   );

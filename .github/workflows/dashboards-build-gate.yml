@@ -49,6 +49,9 @@ jobs:
       - name: Verify buyer asset review manifest integrity
         run: npm run test -- src/brand/buyerAssetManifest.test.js
 
+      - name: Run full frontend Vitest regression suite
+        run: npm run test
+
       - name: Stage 1 regression guard - no silent catch handlers
         working-directory: .
         run: |

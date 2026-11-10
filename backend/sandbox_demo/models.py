@@ -37,6 +37,26 @@ class SandboxInvite(models.Model):
         self.save(update_fields=["last_used_at"])
 
 
+
+class SandboxBuyerWorkspace(models.Model):
+    """Guarded binding for one fictional buyer invite and one isolated school.
+
+    Creating this record is not provisioning or proof of safe buyer access.
+    Hosted sessions remain blocked unless the existing school and actor are
+    independently verified. Existing historical invites are not bound.
+    """
+
+    invite = models.OneToOneField(
+        SandboxInvite, on_delete=models.PROTECT, related_name="buyer_workspace"
+    )
+    school = models.OneToOneField(
+        "core.School", on_delete=models.PROTECT, related_name="buyer_sandbox_workspace"
+    )
+    source_sha = models.CharField(max_length=40)
+    provisioned_at = models.DateTimeField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+
 class SandboxEvent(models.Model):
     event = models.CharField(max_length=80)
     invite = models.ForeignKey(SandboxInvite, null=True, blank=True, on_delete=models.SET_NULL)
@@ -81,3 +101,24 @@ class SandboxFeedback(models.Model):
             models.Index(fields=["rating", "created_at"]),
             models.Index(fields=["track", "persona", "created_at"]),
         ]
+
+class SandboxBuyerAidFamily(models.Model):
+    """A single explicitly authorized invented family per buyer workspace."""
+    workspace = models.OneToOneField(SandboxBuyerWorkspace, on_delete=models.PROTECT, related_name="fictional_aid_family")
+    family = models.OneToOneField("core.Family", on_delete=models.PROTECT, related_name="fictional_buyer_aid_family")
+    guardian = models.OneToOneField("core.Guardian", on_delete=models.PROTECT, related_name="fictional_buyer_guardian")
+
+
+class SandboxBuyerSGOPartner(models.Model):
+    """Fictional external SGO partner bound to the buyer, not school authority."""
+    workspace = models.ForeignKey(SandboxBuyerWorkspace, on_delete=models.PROTECT, related_name="fictional_sgo_partners")
+    organization = models.OneToOneField("jireh_sgo.SGOOrganization", on_delete=models.PROTECT, related_name="fictional_buyer_partner")
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=["workspace", "organization"], name="unique_buyer_sgo_partner")]
+
+
+class SandboxBuyerSGOProgram(models.Model):
+    """Exact delegated fictional program provenance."""
+    partner = models.ForeignKey(SandboxBuyerSGOPartner, on_delete=models.PROTECT, related_name="programs")
+    program = models.OneToOneField("jireh_sgo.SGOProgram", on_delete=models.PROTECT, related_name="sandbox_buyer_program")

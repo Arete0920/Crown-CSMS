@@ -2342,3 +2342,29 @@ textarea:focus-visible {
     font-size: 30px;
   }
 }
+
+/* Shared CROWN lockups for the role-scoped and schoolless grantor shells.
+   Presentation only: no school navigation or identity is injected into SGO. */
+.crown-app .crown-sidebar-brand-mark {
+  display: block;
+  width: min(100%, 180px);
+  height: auto;
+  max-height: 54px;
+  object-fit: contain;
+  object-position: left center;
+}
+
+.crown-app .crown-standalone-brand {
+  display: flex;
+  align-items: center;
+  max-width: 1200px;
+  margin: 0 auto 16px;
+}
+
+.crown-app .crown-standalone-brand-mark {
+  display: block;
+  width: min(100%, 200px);
+  height: auto;
+  max-height: 60px;
+  object-fit: contain;
+}

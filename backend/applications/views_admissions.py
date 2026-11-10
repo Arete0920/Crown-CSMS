@@ -3,8 +3,10 @@ from __future__ import annotations
 # pyright: reportMissingImports=false, reportMissingModuleSource=false, reportMissingTypeStubs=false, reportMissingParameterType=false, reportMissingTypeArgument=false, reportUnknownMemberType=false, reportUnknownVariableType=false, reportUnknownArgumentType=false, reportUnknownParameterType=false, reportAttributeAccessIssue=false, reportOptionalMemberAccess=false, reportIndexIssue=false, reportGeneralTypeIssues=false
 
 from dataclasses import dataclass
+import hashlib
+import json
 from datetime import timedelta
-from decimal import Decimal, ROUND_HALF_UP
+from decimal import Decimal, ROUND_HALF_UP, InvalidOperation
 import logging
 import os
 import uuid
@@ -29,12 +31,14 @@ from .models import (
     Applicant,
     ApplicationEvent,
     ApplicationChecklistItem,
+    AdmissionsSubmissionReceipt,
     ApplicationChecklistDocument,
     ChecklistItemStatus,
     EnrollmentContract,
     EnrollmentContractStatus,
 )
 from .aid_projection import build_award_summary_by_household
+from .fee_policy import get_admissions_fee_policy
 
 
 logger = logging.getLogger(__name__)
@@ -203,9 +207,6 @@ SOURCES = [
     "other",
 ]
 
-APPLICATION_FEE_USD = Decimal("85.00")
-FINANCIAL_AID_FEE_USD = Decimal(str(os.getenv("ADMISSIONS_FINANCIAL_AID_FEE_USD", "35.00")))
-ENROLLMENT_FEE_USD = Decimal(str(os.getenv("ADMISSIONS_ENROLLMENT_FEE_USD", "250.00")))
 APPLICATION_FEE_CURRENCY = "USD"
 PAYMENT_INTENT_ENDPOINT = "/api/finance/payments/intent/"
 SUBMIT_IP_RATE_LIMIT = 30
@@ -285,91 +286,88 @@ CHECKLIST_REQUIRED_ITEMS: list[ChecklistRequiredItemDef] = [
 ]
 
 
-def _application_fee_required() -> bool:
-    return APPLICATION_FEE_USD > Decimal("0")
+def _application_fee_required(fee_policy: Any) -> bool:
+    return bool(fee_policy and fee_policy.required)
 
 
-def _financial_aid_fee_required(data: "AdmissionsSubmitData") -> bool:
+def _financial_aid_interest_is_applying(data: "AdmissionsSubmitData") -> bool:
+    # Admissions records intent only. Jireh has a separate household application.
     intent = str((data.financial_aid_interest or {}).get("intent") or "").strip().lower()
-    return FINANCIAL_AID_FEE_USD > Decimal("0") and intent == "applying"
+    return intent == "applying"
 
 
-def _enrollment_fee_required() -> bool:
-    return ENROLLMENT_FEE_USD > Decimal("0")
-
-
-def _child_discount_percent(child_index: int) -> int:
-    if child_index <= 1:
-        return 0
-    if child_index == 2:
-        return 25
-    if child_index == 3:
-        return 50
-    if child_index == 4:
-        return 75
-    return 100
-
-
-def _apply_child_discount(base_amount: Decimal, child_index: int) -> Decimal:
-    discount_percent = Decimal(_child_discount_percent(child_index))
-    multiplier = Decimal("1") - (discount_percent / Decimal("100"))
-    discounted = (base_amount * multiplier).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
-    return max(discounted, Decimal("0.00"))
-
-
-def _fee_rows_for_household(data: "AdmissionsSubmitData", application_ids: list[str]) -> list[dict[str, Any]]:
+def _fee_rows_for_household(
+    data: "AdmissionsSubmitData", application_ids: list[str], fee_policy: Any,
+) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     student_count = max(len(application_ids), len(data.students or []))
     for child_index in range(1, student_count + 1):
         app_id = application_ids[child_index - 1] if child_index - 1 < len(application_ids) else None
-        app_fee = _apply_child_discount(APPLICATION_FEE_USD, child_index) if _application_fee_required() else Decimal("0.00")
-        aid_fee = _apply_child_discount(FINANCIAL_AID_FEE_USD, child_index) if _financial_aid_fee_required(data) else Decimal("0.00")
-        enrollment_fee = _apply_child_discount(ENROLLMENT_FEE_USD, child_index) if _enrollment_fee_required() else Decimal("0.00")
-        rows.append(
-            {
-                "child_index": child_index,
-                "application_id": app_id,
-                "discount_percent": _child_discount_percent(child_index),
-                "application_fee": str(app_fee),
-                "financial_aid_fee": str(aid_fee),
-                "enrollment_fee": str(enrollment_fee),
-                "total": str((app_fee + aid_fee + enrollment_fee).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)),
-            }
-        )
+        app_fee = fee_policy.amount_for_child(child_index)
+        # Financial Aid is one later Jireh family application, not a child charge.
+        # No standard enrollment deposit or unconfigured enrollment fee is due here.
+        rows.append({
+            "child_index": child_index,
+            "application_id": app_id,
+            "discount_percent": 0,
+            "application_fee": str(app_fee),
+            "financial_aid_fee": "0.00",
+            "enrollment_fee": "0.00",
+            "total": str(app_fee),
+        })
     return rows
 
 
-def _application_fee_config() -> dict[str, Any]:
+def _application_fee_config(fee_policy: Any = None) -> dict[str, Any]:
+    if fee_policy is None:
+        return {
+            "configured": False,
+            "required": False,
+            "amount": None,
+            "additional_child_amount": None,
+            "currency": APPLICATION_FEE_CURRENCY,
+            "pricing_rule": "first_child_plus_additional_children",
+            "schedule_id": None,
+            "school_id": None,
+            "term": None,
+            "status": "unconfigured",
+        }
     return {
-        "required": _application_fee_required(),
-        "amount": str(APPLICATION_FEE_USD),
+        "configured": True,
+        "required": fee_policy.required,
+        "amount": str(fee_policy.amount_for_child(1)),
+        "additional_child_amount": str(fee_policy.amount_for_child(2)),
         "currency": APPLICATION_FEE_CURRENCY,
-        "discount_policy": {
-            "description": "2nd child 25% off, 3rd child 50% off, 4th child 75% off, 5th+ free",
-            "tiers": [
-                {"child_index": 1, "discount_percent": 0},
-                {"child_index": 2, "discount_percent": 25},
-                {"child_index": 3, "discount_percent": 50},
-                {"child_index": 4, "discount_percent": 75},
-                {"child_index": 5, "discount_percent": 100, "applies_to": "and_above"},
-            ],
-        },
+        "pricing_rule": "first_child_plus_additional_children",
+        "schedule_id": fee_policy.schedule_id,
+        "school_id": fee_policy.school_id,
+        "term": fee_policy.term,
+        "status": "configured",
     }
 
 
 def _financial_aid_fee_config(data: "AdmissionsSubmitData") -> dict[str, Any]:
+    # This is an admissions-intent notice, not a Jireh fee quote or payment demand.
+    # Never use an unscoped environment variable as a tenant's Jireh price.
     return {
-        "required": _financial_aid_fee_required(data),
-        "amount": str(FINANCIAL_AID_FEE_USD),
+        "required": False,
+        "amount": None,
         "currency": APPLICATION_FEE_CURRENCY,
+        "scope": "family",
+        "billing_stage": "jireh_application",
+        "status": "awaiting_jireh_application" if _financial_aid_interest_is_applying(data) else "not_required",
+        "payable_now": False,
     }
 
 
 def _enrollment_fee_config() -> dict[str, Any]:
+    # Enrollment happens later; no generic $250 charge or deposit may be quoted.
     return {
-        "required": _enrollment_fee_required(),
-        "amount": str(ENROLLMENT_FEE_USD),
+        "required": False,
+        "amount": None,
         "currency": APPLICATION_FEE_CURRENCY,
+        "status": "not_quoted",
+        "billing_stage": "after_acceptance",
     }
 
 
@@ -790,8 +788,9 @@ def _validate_student(student: dict[str, Any], index: int) -> str | None:
     return None
 
 
-def _validate_application_fee(data: AdmissionsSubmitData) -> str | None:
-    if not _application_fee_required():
+def _validate_application_fee(data: AdmissionsSubmitData, fee_policy: Any) -> str | None:
+    # Fee acknowledgment is required only when this household owes an amount.
+    if not any(fee_policy.amount_for_child(i) > 0 for i in range(1, len(data.students) + 1)):
         return None
     policy_accepted = bool(data.application_fee.get("policyAccepted"))
     waiver_requested = bool(data.application_fee.get("waiverRequested"))
@@ -802,7 +801,29 @@ def _validate_application_fee(data: AdmissionsSubmitData) -> str | None:
     return None
 
 
-def _validate_submit_data(data: AdmissionsSubmitData) -> str | None:
+def _fee_quote_matches(data: AdmissionsSubmitData, fee_policy: Any) -> bool:
+    quote = data.application_fee
+    schedule_id = str(quote.get("quoteScheduleId") or "").strip()
+    # Backwards-compatible legacy API clients do not yet send a quote token.
+    # The server always computes its own price; a supplied token must match.
+    if not schedule_id:
+        return True
+    if (
+        schedule_id != fee_policy.schedule_id
+        or str(quote.get("quoteSchoolId") or "") != fee_policy.school_id
+        or str(quote.get("quoteTerm") or "") != fee_policy.term
+    ):
+        return False
+    try:
+        return (
+            Decimal(str(quote.get("quoteFirstAmount"))) == fee_policy.amount_for_child(1)
+            and Decimal(str(quote.get("quoteAdditionalAmount"))) == fee_policy.amount_for_child(2)
+        )
+    except (InvalidOperation, ValueError, TypeError):
+        return False
+
+
+def _validate_submit_data(data: AdmissionsSubmitData, fee_policy: Any) -> str | None:
     if not data.campus:
         return "inquiry.campus is required"
     if not data.start_term:
@@ -823,7 +844,7 @@ def _validate_submit_data(data: AdmissionsSubmitData) -> str | None:
         error = _validate_student(student, index)
         if error:
             return error
-    return _validate_application_fee(data)
+    return _validate_application_fee(data, fee_policy)
 
 
 def _create_admissions_submission_records(school_id: Any, data: AdmissionsSubmitData, *, inquiry_lead=None):
@@ -874,7 +895,7 @@ def _create_admissions_submission_records(school_id: Any, data: AdmissionsSubmit
                 "documents": data.documents,
                 "financial_aid_interest": data.financial_aid_interest,
                 "application_fee": {
-                    "configured_amount": str(APPLICATION_FEE_USD),
+                    "configured_amount": None,
                     "currency": APPLICATION_FEE_CURRENCY,
                     "policy_accepted": bool(data.application_fee.get("policyAccepted")),
                     "waiver_requested": bool(data.application_fee.get("waiverRequested")),
@@ -1204,17 +1225,17 @@ def _application_fee_status_value(fee_required: bool, waiver_requested: bool) ->
     return "not_required"
 
 
-def _build_enrollment_continuity(data: AdmissionsSubmitData) -> dict[str, Any]:
-    fee_required = _application_fee_required()
-    waiver_requested = bool(data.application_fee.get("waiverRequested"))
+def _build_enrollment_continuity(data: AdmissionsSubmitData, fee_policy: Any) -> dict[str, Any]:
+    fee_rows = _fee_rows_for_household(data, [], fee_policy)
+    family_total = sum((Decimal(row["application_fee"]) for row in fee_rows), Decimal("0.00"))
+    fee_required = family_total > 0
+    waiver_requested = fee_required and bool(data.application_fee.get("waiverRequested"))
     fee_status = _application_fee_status_value(fee_required, waiver_requested)
-
-    fee_rows = _fee_rows_for_household(data, [])
 
     return {
         "phase": "admissions_to_enrollment",
         "fee_program": {
-            "application_fee": _application_fee_config(),
+            "application_fee": _application_fee_config(fee_policy),
             "financial_aid_fee": _financial_aid_fee_config(data),
             "enrollment_fee": _enrollment_fee_config(),
             "per_child_schedule": fee_rows,
@@ -1228,15 +1249,17 @@ def _build_enrollment_continuity(data: AdmissionsSubmitData) -> dict[str, Any]:
                 "key": "application_fee",
                 "title": "Application Fee",
                 "status": fee_status,
-                "amount": str(APPLICATION_FEE_USD),
+                "amount": str(family_total),
                 "currency": APPLICATION_FEE_CURRENCY,
             },
             {
                 "key": "financial_aid_fee",
                 "title": "Financial Aid Fee",
-                "status": "pending" if _financial_aid_fee_required(data) else "not_required",
-                "amount": str(FINANCIAL_AID_FEE_USD),
+                "status": "awaiting_jireh_application" if _financial_aid_interest_is_applying(data) else "not_required",
+                "amount": None,
                 "currency": APPLICATION_FEE_CURRENCY,
+                "scope": "family",
+                "billing_stage": "jireh_application",
             },
             {
                 "key": "tour_or_interview",
@@ -1259,8 +1282,8 @@ def _build_enrollment_continuity(data: AdmissionsSubmitData) -> dict[str, Any]:
             {
                 "key": "enrollment_fee",
                 "title": "Enrollment Fee",
-                "status": "pending" if _enrollment_fee_required() else "not_required",
-                "amount": str(ENROLLMENT_FEE_USD),
+                "status": "not_quoted",
+                "amount": None,
                 "currency": APPLICATION_FEE_CURRENCY,
             },
             {
@@ -1425,8 +1448,9 @@ def _build_family_affordability_profile(
     data: AdmissionsSubmitData,
     application_ids: list[str],
     application_fee: dict[str, Any],
+    fee_policy: Any,
 ) -> dict[str, Any]:
-    rows = cast(list[dict[str, Any]], application_fee.get("per_child_schedule") or _fee_rows_for_household(data, application_ids))
+    rows = cast(list[dict[str, Any]], application_fee.get("per_child_schedule") or _fee_rows_for_household(data, application_ids, fee_policy))
 
     def _sum_amount(field: str) -> str:
         total = Decimal("0.00")
@@ -1446,7 +1470,7 @@ def _build_family_affordability_profile(
             "enrollment_fee_total": _sum_amount("enrollment_fee"),
             "total_estimated": _sum_amount("total"),
         },
-        "discount_policy": _application_fee_config().get("discount_policy"),
+        "discount_policy": _application_fee_config(fee_policy).get("discount_policy"),
     }
 
 
@@ -1464,14 +1488,16 @@ def _build_application_fee_status_card(*, application_fee: dict[str, Any]) -> di
     }
 
 
-def _build_application_fee_status(data: AdmissionsSubmitData) -> dict[str, Any]:
+def _build_application_fee_status(data: AdmissionsSubmitData, fee_policy: Any) -> dict[str, Any]:
     waiver_requested = bool(data.application_fee.get("waiverRequested"))
     policy_accepted = bool(data.application_fee.get("policyAccepted"))
-    fee_required = _application_fee_required()
+    config = _application_fee_config(fee_policy)
+    family_total = sum((fee_policy.amount_for_child(i) for i in range(1, len(data.students) + 1)), Decimal("0.00"))
+    fee_required = family_total > 0
     status = _application_fee_status_value(fee_required, waiver_requested)
-    config = _application_fee_config()
     return {
         **config,
+        "total_amount": str(family_total),
         "policy_accepted": policy_accepted,
         "waiver_requested": waiver_requested,
         "status": status,
@@ -1562,9 +1588,13 @@ def _resolve_finance_payer_user(*, school: Any, guardians: list[dict[str, Any]])
     return payer
 
 
-def _create_application_fee_finance_records(*, school: Any, data: AdmissionsSubmitData, application_ids: list[str], correlation_id: str) -> dict[str, Any]:
-    fee_status = _build_application_fee_status(data)
-    if not fee_status["required"]:
+def _create_application_fee_finance_records(*, school: Any, data: AdmissionsSubmitData, application_ids: list[str], correlation_id: str, fee_policy: Any) -> dict[str, Any]:
+    fee_status = _build_application_fee_status(data, fee_policy)
+    # A published schedule may waive the first child but charge additional
+    # children. Do not create a zero-dollar invoice for a one-child family.
+    if Decimal(fee_status["total_amount"]) == 0:
+        fee_status["required"] = False
+        fee_status["status"] = "not_required"
         fee_status["finance"] = {"state": "not_applicable"}
         return fee_status
 
@@ -1594,8 +1624,12 @@ def _create_application_fee_finance_records(*, school: Any, data: AdmissionsSubm
     obligation_rows = []
     amount_cents_total = 0
     for child_index, app_id in enumerate(application_ids or [str(uuid.uuid4())], start=1):
-        discounted_fee = _apply_child_discount(APPLICATION_FEE_USD, child_index)
+        discounted_fee = fee_policy.amount_for_child(child_index)
         fee_cents = int((discounted_fee * 100).quantize(Decimal("1")))
+        if fee_cents == 0:
+            # Zero-fee children stay in the household quote but must not create
+            # finance obligations or invoice lines.
+            continue
         amount_cents_total += fee_cents
         reference = f"admissions_fee:{app_id}"
         obligation = FinanceObligation.objects.filter(
@@ -1626,7 +1660,7 @@ def _create_application_fee_finance_records(*, school: Any, data: AdmissionsSubm
             {
                 "child_index": child_index,
                 "application_id": app_id,
-                "discount_percent": _child_discount_percent(child_index),
+                "discount_percent": 0,
                 "amount": str(discounted_fee),
                 "obligation_id": obligation.id,
             }
@@ -1650,7 +1684,7 @@ def _create_application_fee_finance_records(*, school: Any, data: AdmissionsSubm
         "invoice_id": invoice.id,
         "collection_path": PAYMENT_INTENT_ENDPOINT,
     }
-    fee_status["per_child_schedule"] = _fee_rows_for_household(data, application_ids)
+    fee_status["per_child_schedule"] = _fee_rows_for_household(data, application_ids, fee_policy)
     fee_status["payment_handoff"] = _build_payment_handoff(
         invoice_id=invoice.id,
         amount_cents=amount_cents_total,
@@ -1960,69 +1994,127 @@ def _resolve_legacy_grade_level(*, school, grade_code: str):
     return GradeLevel.objects.filter(school=school, code=normalized).first()
 
 
+class LegacyStudentIdentityError(ValueError):
+    """An applicant cannot be mapped to a proven core student."""
+
+
 def _resolve_or_create_legacy_student(*, school, family, applicant: Applicant, ordinal: int):
-    from core.models import Student as CoreStudent
+    """Resolve only an applicant-bound verified crosswalk; never guess or create.
+
+    ordinal is retained for compatibility but never used to generate IDs.
+    The sandbox may reuse its own verified APP-numbered fixture, but neither
+    this bridge nor the authoritative public conversion can invent identity.
+    """
+    from core.models import HouseholdFamilyLink, StudentIdentityLink
 
     if family is None:
         return None
+    if (
+        applicant.dob is None
+        or applicant.student_id is None
+        or applicant.school_id != school.pk
+        or family.school_id != school.pk
+    ):
+        raise LegacyStudentIdentityError("Applicant DOB and same-school student mapping are required.")
 
-    existing = CoreStudent.objects.filter(
-        school=school,
-        family=family,
-        first_name__iexact=applicant.first_name,
-        last_name__iexact=applicant.last_name,
-    ).first()
-    if existing is not None:
-        return existing
+    application = applicant.application
+    if application.school_id != school.pk or application.household.school_id != school.pk:
+        raise LegacyStudentIdentityError("Application and household must belong to the same school.")
 
-    student_number = f"APP-{str(applicant.application_id).replace('-', '')[:6]}-{ordinal + 1:02d}"
-    grade_level = _resolve_legacy_grade_level(school=school, grade_code=applicant.grade_applying_for)
-    return CoreStudent.objects.create(
-        school=school,
-        family=family,
-        student_number=student_number,
-        first_name=applicant.first_name,
-        last_name=applicant.last_name,
-        dob=applicant.dob or timezone.localdate(),
-        status="ACTIVE",
-        current_grade_level=grade_level,
+    associated_family_ids = list(
+        HouseholdFamilyLink.objects.filter(
+            school_id=school.pk, household_id=application.household_id
+        ).values_list("family_id", flat=True)[:2]
     )
+    if associated_family_ids != [family.pk]:
+        raise LegacyStudentIdentityError("Exactly one matching household-family link is required.")
 
+    identity = (
+        StudentIdentityLink.objects.select_related("core_student", "compatibility_student")
+        .filter(
+            school_id=school.pk,
+            compatibility_student_id=applicant.student_id,
+            verification_status=StudentIdentityLink.STATUS_VERIFIED,
+            source=StudentIdentityLink.SOURCE_ADMISSIONS,
+            evidence_reference=f"application:{application.id}:applicant:{applicant.id}",
+        )
+        .first()
+    )
+    if identity is None:
+        raise LegacyStudentIdentityError("Exact verified applicant-bound provenance is required.")
+
+    core_student = identity.core_student
+    compatibility_student = identity.compatibility_student
+    if (
+        compatibility_student.school_id != school.pk
+        or compatibility_student.household_id != application.household_id
+        or core_student.school_id != school.pk
+        or core_student.family_id != family.pk
+        or core_student.dob != applicant.dob
+        or core_student.status not in {"APPLICANT", "ACTIVE"}
+        or not str(core_student.student_number or "").strip()
+        or str(core_student.first_name or "").strip().casefold()
+        != str(applicant.first_name or "").strip().casefold()
+        or str(core_student.last_name or "").strip().casefold()
+        != str(applicant.last_name or "").strip().casefold()
+    ):
+        raise LegacyStudentIdentityError("Student evidence conflicts with identity, DOB, school or family.")
+    return core_student
 
 def _sync_legacy_admissions_application(*, app: Application, academic_year, family, applicant: Applicant, ordinal: int, target_status: str):
     from admissions.models import AdmissionsApplication
 
-    legacy_student = _resolve_or_create_legacy_student(
-        school=academic_year.school,
-        family=family,
-        applicant=applicant,
-        ordinal=ordinal,
+    if applicant.application_id != app.id or academic_year.school_id != app.school_id:
+        raise LegacyStudentIdentityError("Application and academic-year evidence do not match.")
+    student = _resolve_or_create_legacy_student(
+        school=academic_year.school, family=family, applicant=applicant, ordinal=ordinal,
     )
-    legacy_app, _ = AdmissionsApplication.objects.get_or_create(
-        school=academic_year.school,
-        academic_year=academic_year,
-        family=family,
-        student=legacy_student,
-        defaults={
-            "status": target_status,
-            "submitted_at": app.submitted_at,
-            "notes_internal": f"canonical_application_id={app.id}",
-        },
+    if student is None:
+        raise LegacyStudentIdentityError("Verified student identity is required.")
+
+    # Existing rows with missing/conflicting provenance must be preserved for
+    # independent reconciliation, not silently claimed by this application.
+    existing = list(
+        AdmissionsApplication.objects.select_for_update()
+        .filter(
+            school=academic_year.school,
+            academic_year=academic_year,
+            family=family,
+            student=student,
+        ).order_by("pk")[:2]
     )
-    update_fields = []
+    reference = f"canonical_application_id={app.id}"
+    if len(existing) > 1:
+        raise LegacyStudentIdentityError("Duplicate historical admissions records require reconciliation.")
+    if existing:
+        legacy_app = existing[0]
+        recorded = [
+            line.strip() for line in str(legacy_app.notes_internal or "").splitlines()
+            if "canonical_application_id=" in line
+        ]
+        if recorded != [reference]:
+            raise LegacyStudentIdentityError("Historical admissions provenance requires reconciliation.")
+        if (
+            legacy_app.status == AdmissionsApplication.STATUS_ENROLLED
+            and target_status != AdmissionsApplication.STATUS_ENROLLED
+        ):
+            raise LegacyStudentIdentityError("Historical enrollment cannot be downgraded.")
+    else:
+        legacy_app = AdmissionsApplication.objects.create(
+            school=academic_year.school, academic_year=academic_year,
+            family=family, student=student, status=target_status,
+            submitted_at=app.submitted_at, notes_internal=reference,
+        )
+    updates = []
     if legacy_app.status != target_status:
         legacy_app.status = target_status
-        update_fields.append("status")
+        updates.append("status")
     if legacy_app.submitted_at is None and app.submitted_at is not None:
         legacy_app.submitted_at = app.submitted_at
-        update_fields.append("submitted_at")
-    if f"canonical_application_id={app.id}" not in str(legacy_app.notes_internal or ""):
-        legacy_app.notes_internal = f"{legacy_app.notes_internal}\ncanonical_application_id={app.id}".strip()
-        update_fields.append("notes_internal")
-    if update_fields:
-        legacy_app.save(update_fields=update_fields + ["updated_at"])
+        updates.append("submitted_at")
+    if updates:
+        legacy_app.save(update_fields=updates + ["updated_at"])
     return str(legacy_app.id)
-
 
 def _create_legacy_conversion_session(*, school, actor_user, academic_year, application_ids: list[str], target_status: str):
     from admissions.models import AdmissionsApplication
@@ -2048,48 +2140,60 @@ def _create_legacy_conversion_session(*, school, actor_user, academic_year, appl
 def _upsert_legacy_admissions_applications(*, app: Application, actor_user, target_status: str):
     try:
         from admissions.models import AdmissionsApplication
+        from core.models import HouseholdFamilyLink
     except Exception:
         return {"state": "legacy_admissions_unavailable", "count": 0}
 
-    school = School.objects.filter(id=app.school_id).first()
-    household = getattr(app, "household", None)
-    if school is None or household is None:
-        return {"state": "legacy_bridge_unavailable", "count": 0}
+    try:
+        with transaction.atomic():
+            # Serialize repeated calls for this exact canonical application.
+            app = (
+                Application.objects.select_for_update().select_related("household")
+                .filter(pk=app.pk, school_id=app.school_id).first()
+            )
+            if app is None:
+                return {"state": "legacy_bridge_unavailable", "count": 0}
+            school = School.objects.filter(id=app.school_id).first()
+            if school is None or app.household.school_id != school.pk:
+                raise LegacyStudentIdentityError("Legacy bridge school/household mismatch.")
+            academic_year = _resolve_legacy_academic_year(school=school)
+            if academic_year is None:
+                return {"state": "legacy_bridge_unavailable", "count": 0}
 
-    academic_year = _resolve_legacy_academic_year(school=school)
-    family = _resolve_or_create_legacy_family(school=school, household=household)
-    if academic_year is None or family is None:
-        return {"state": "legacy_bridge_unavailable", "count": 0}
-
-    synced_ids = [
-        _sync_legacy_admissions_application(
-            app=app,
-            academic_year=academic_year,
-            family=family,
-            applicant=applicant,
-            ordinal=ordinal,
-            target_status=target_status,
-        )
-        for ordinal, applicant in enumerate(app.applicants.order_by("created_at", "id"))
-    ]
-
-    session_state = None
-    if target_status == AdmissionsApplication.STATUS_ENROLLED and synced_ids:
-        session_state = _create_legacy_conversion_session(
-            school=school,
-            actor_user=actor_user,
-            academic_year=academic_year,
-            application_ids=synced_ids,
-            target_status=target_status,
-        )
-
-    return {
-        "state": target_status.lower(),
-        "count": len(synced_ids),
-        "application_ids": synced_ids,
-        "conversion_session": session_state,
-    }
-
+            # No implicit Family creation or first-match among ambiguous links.
+            links = list(
+                HouseholdFamilyLink.objects.select_for_update()
+                .select_related("family")
+                .filter(school=school, household_id=app.household_id)[:2]
+            )
+            if len(links) != 1 or links[0].family.school_id != school.pk:
+                raise LegacyStudentIdentityError("Exactly one verified household-family link is required.")
+            family = links[0].family
+            applicants = list(app.applicants.select_for_update().order_by("created_at", "id"))
+            if not applicants:
+                raise LegacyStudentIdentityError("A verified applicant is required.")
+            synced_ids = [
+                _sync_legacy_admissions_application(
+                    app=app, academic_year=academic_year, family=family,
+                    applicant=applicant, ordinal=ordinal, target_status=target_status,
+                )
+                for ordinal, applicant in enumerate(applicants)
+            ]
+            session_state = None
+            if target_status == AdmissionsApplication.STATUS_ENROLLED and synced_ids:
+                session_state = _create_legacy_conversion_session(
+                    school=school, actor_user=actor_user, academic_year=academic_year,
+                    application_ids=synced_ids, target_status=target_status,
+                )
+            return {
+                "state": target_status.lower(), "count": len(synced_ids),
+                "application_ids": synced_ids, "conversion_session": session_state,
+            }
+    except LegacyStudentIdentityError as exc:
+        # The nested atomic block has already rolled back every applicant write.
+        # The calling sandbox also rejects this explicit state and rolls back
+        # its prior lifecycle work; no silent success is returned.
+        return {"state": "identity_verification_required", "count": 0, "detail": str(exc)}
 
 def _lifecycle_chain_request_flags(request_payload: dict) -> tuple[bool, bool, bool]:
     return (
@@ -2995,13 +3099,45 @@ def _build_drilldown_rows(apps, applicants_qs, stage_facts: dict, stage_filter: 
 
 @api_view(["GET"])
 @permission_classes([AllowAny])
-def admissions_public_config(_request):
-    return Response(
-        {
+def admissions_public_config(request):
+    # A public quote is available only for an unambiguous active school and term.
+    # Campus-only applicants receive the school's UUID after exact name resolution.
+    school_id = str(request.query_params.get("school_id") or "").strip()
+    campus = str(request.query_params.get("campus") or "").strip()
+    term = str(request.query_params.get("term") or "").strip()
+    if not term or (not school_id and not campus):
+        response = Response({
             "application_fee": _application_fee_config(),
             "assessment_interview": _assessment_interview_config(),
-        }
-    )
+        })
+        response["Cache-Control"] = "no-store"
+        return response
+
+    if school_id:
+        try:
+            school = School.objects.filter(pk=uuid.UUID(school_id), is_active=True).only("id", "name").first()
+        except (ValueError, AttributeError):
+            return Response({"detail": "Invalid school identifier.", "code": "invalid_school"}, status=400)
+        if school is None:
+            return Response({"detail": "School not found.", "code": "school_not_found"}, status=404)
+        if campus and school.name.casefold() != campus.casefold():
+            return Response({"detail": "School and campus do not match.", "code": "school_mismatch"}, status=409)
+    else:
+        matches = list(School.objects.filter(name__iexact=campus, is_active=True).only("id", "name")[:2])
+        if len(matches) != 1:
+            return Response({
+                "detail": "An unambiguous school selection is required.",
+                "code": "school_ambiguous" if matches else "school_not_found",
+            }, status=409 if matches else 404)
+        school = matches[0]
+
+    fee_policy = get_admissions_fee_policy(school=school, term=term)
+    response = Response({
+        "application_fee": _application_fee_config(fee_policy),
+        "assessment_interview": _assessment_interview_config(),
+    })
+    response["Cache-Control"] = "no-store"
+    return response
 
 
 def _resolve_school(request):
@@ -3054,34 +3190,30 @@ def _resolve_school(request):
 
 def _resolve_school_for_submit(request: Any, payload: dict[str, Any]):
     school, tenant_error = _resolve_school(request)
+    inquiry = payload.get("inquiry") or {}
+    campus = str(inquiry.get("campus") or "").strip()
+
     if school is not None:
+        if not school.is_active or (campus and school.name.casefold() != campus.casefold()):
+            return None, Response({"detail": "School and campus do not match.", "code": "school_mismatch"}, status=409)
         return school, None
 
     error_code = (tenant_error.data or {}).get("code") if hasattr(tenant_error, "data") else None
     if error_code == "invalid_tenant_header":
         return None, tenant_error
-
-    inquiry = payload.get("inquiry") or {}
-    campus = str(inquiry.get("campus") or "").strip()
     if not campus:
         return None, _validation_error(
             "Missing required header: X-School-Id. Provide inquiry.campus for public submit routing.",
             code="missing_tenant",
         )
 
-    school = School.objects.filter(name__iexact=campus).only("id", "name").first()
-    if school is None:
-        school = School.objects.filter(name__icontains=campus).only("id", "name").first()
-
-    if school is None:
-        return None, Response(
-            {
-                "detail": f"Unable to resolve school for campus '{campus}'.",
-                "code": "invalid_tenant",
-            },
-            status=404,
-        )
-
+    matches = list(School.objects.filter(name__iexact=campus, is_active=True).only("id", "name")[:2])
+    if len(matches) != 1:
+        return None, Response({
+            "detail": "An unambiguous active school is required.",
+            "code": "school_ambiguous" if matches else "invalid_tenant",
+        }, status=409 if matches else 404)
+    school = matches[0]
     request.school = school
     request.school_id = str(school.id)
     return school, None
@@ -3437,6 +3569,27 @@ def _admissions_submit_impl(request):
     school, tenant_error = _resolve_school_for_submit(request, payload)
     if tenant_error is not None:
         return _attach_correlation(tenant_error, correlation_id)
+    # Serialize same-school submissions across PostgreSQL workers and keep
+    # durable receipts/financial obligations in the same database transaction.
+    School.objects.select_for_update().get(pk=school.pk)
+    idempotency_key = _idempotency_key(request)
+    request_hash = hashlib.sha256(
+        json.dumps(payload, sort_keys=True, separators=(",", ":"), default=str).encode("utf-8")
+    ).hexdigest()
+    if idempotency_key:
+        existing_receipt = AdmissionsSubmissionReceipt.objects.filter(
+            school_id=school.pk, idempotency_key=idempotency_key,
+        ).first()
+        if existing_receipt:
+            if existing_receipt.request_hash != request_hash:
+                return _attach_correlation(Response({
+                    "detail": "Idempotency key was already used for a different submission.",
+                    "code": "idempotency_conflict",
+                }, status=409), correlation_id)
+            replay = Response(existing_receipt.response_payload, status=200)
+            replay["X-Idempotent-Replay"] = "true"
+            replay["Cache-Control"] = "no-store"
+            return _attach_correlation(replay, correlation_id)
 
     inquiry_lead = None
     if "inquiry_id" in payload or "continuation_token" in payload:
@@ -3459,16 +3612,13 @@ def _admissions_submit_impl(request):
     if abuse_error is not None:
         return abuse_error
 
-    idempotency_key = _idempotency_key(request)
-    if idempotency_key and inquiry_lead is None:
-        cached_response = cache.get(_cache_key_for_submit(school.pk, idempotency_key))
-        if cached_response:
-            replay = Response(cached_response, status=200)
-            replay["X-Idempotent-Replay"] = "true"
-            return _attach_correlation(replay, correlation_id)
-
     submit_data = _extract_submit_data(payload)
-    validation_error = _validate_submit_data(submit_data)
+    fee_policy = get_admissions_fee_policy(school=school, term=submit_data.start_term)
+    if fee_policy is None:
+        return _attach_correlation(Response({"detail": "Admissions fees are not configured for this school and term.", "code": "fee_policy_unavailable"}, status=409), correlation_id)
+    if not _fee_quote_matches(submit_data, fee_policy):
+        return _attach_correlation(Response({"detail": "The quoted fee schedule has changed. Refresh before submitting.", "code": "stale_fee_quote"}, status=409), correlation_id)
+    validation_error = _validate_submit_data(submit_data, fee_policy)
     if validation_error:
         return _attach_correlation(
             _validation_error(validation_error, correlation_id=correlation_id),
@@ -3495,6 +3645,7 @@ def _admissions_submit_impl(request):
 
     application_fee = _create_application_fee_finance_records(
         school=school,
+        fee_policy=fee_policy,
         data=submit_data,
         application_ids=application_ids,
         correlation_id=correlation_id,
@@ -3533,7 +3684,7 @@ def _admissions_submit_impl(request):
         },
         "documents_lifecycle": _build_document_lifecycle(submit_data.documents),
         "assessment_interview": _build_assessment_interview_status(submit_data),
-        "enrollment_continuity": _build_enrollment_continuity(submit_data),
+        "enrollment_continuity": _build_enrollment_continuity(submit_data, fee_policy),
         "post_admission_lifecycle": _build_post_admission_lifecycle(submit_data),
         "communications_dispatch": communications_dispatch,
         "reviewer_summary": _build_reviewer_summary(submit_data, applicants),
@@ -3541,6 +3692,7 @@ def _admissions_submit_impl(request):
             data=submit_data,
             application_ids=application_ids,
             application_fee=application_fee,
+            fee_policy=fee_policy,
         ),
         "application_fee": application_fee,
         "application_fee_status_card": _build_application_fee_status_card(application_fee=application_fee),
@@ -3548,7 +3700,7 @@ def _admissions_submit_impl(request):
             data=submit_data,
             application_fee=application_fee,
         ),
-        "fee_config": _application_fee_config(),
+        "fee_config": _application_fee_config(fee_policy),
         "checklist_hub": {
             "path": "/admissions/checklist",
             "application_id": application_ids[0] if application_ids else None,
@@ -3567,12 +3719,12 @@ def _admissions_submit_impl(request):
         response_payload["inquiry_id"] = str(inquiry_lead.id)
         save_submission_receipt(inquiry_lead, response_payload)
 
-    if idempotency_key and inquiry_lead is None:
-        # Keep replay window short but long enough for user retries and browser retransmits.
-        cache.set(
-            _cache_key_for_submit(school.pk, idempotency_key),
-            response_payload,
-            timeout=10 * 60,
+    if idempotency_key:
+        AdmissionsSubmissionReceipt.objects.create(
+            school_id=school.pk,
+            idempotency_key=idempotency_key,
+            request_hash=request_hash,
+            response_payload=response_payload,
         )
 
     response = _attach_correlation(Response(response_payload, status=201), correlation_id)

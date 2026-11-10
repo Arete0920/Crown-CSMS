@@ -13,6 +13,11 @@ on:
         description: Accepted main SHA (40 characters)
         required: true
         type: string
+      compare_rehearsal_baseline:
+        description: "Compare live DEV baseline components without writing (issue #427)"
+        required: false
+        type: boolean
+        default: false
       apply_reviewed_support:
         description: "Explicit DEV-only support 0002+0003 compatibility stage"
         required: false
@@ -69,7 +74,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: '3.12'
       - name: Install pinned test-only YAML parser
@@ -102,7 +107,7 @@ jobs:
           test "$(git rev-parse HEAD)" = "$SHA"
           git fetch --no-tags origin refs/heads/main:refs/remotes/origin/main
           test "$(git rev-parse origin/main)" = "$SHA"
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: '3.12'
       - name: Verify collector boundary (offline)
@@ -114,6 +119,14 @@ jobs:
           # requirements deliberately do not provide this test-only parser.
           python -m pip install pyyaml==6.0.3
           python -m pip install -r backend/requirements.txt
+      - name: Install baseline comparison dependencies
+        if: inputs.compare_rehearsal_baseline
+        run: |
+          python -m pip install pyyaml==6.0.3
+          python -m pip install -r backend/requirements.txt
+      - name: Verify baseline diagnostic boundary (offline)
+        if: inputs.compare_rehearsal_baseline
+        run: python -m unittest discover -s scripts/ops -p test_inspect_dev_baseline_components.py -v
       - name: Verify migration inspection boundary (offline)
         if: inputs.inspect_migration_plan
         run: |
@@ -135,14 +148,24 @@ jobs:
           set -euo pipefail
           umask 077
           python scripts/ops/read_dev_blacklist_state.py --expected-sha "$SHA" > dev-blacklist-state.json
-      - name: Inspect pending DEV migrations without applying
+      - name: Inspect all pending DEV migrations without applying
         if: inputs.inspect_migration_plan
         env:
           SHA: ${{ inputs.expected_sha }}
-        # Keep stdout attached to Actions: the runner emits credential masking
-        # commands before its redacted JSON. Never redirect raw stdout to artifacts.
-        # A blocked plan fails the run and reports pending identifiers in the log.
-        run: python scripts/ops/run_dev_inquiry_migration.py --expected-sha "$SHA" --inspect-reviewed-legacy-refresh
+        # No schema change: this displays the full pending Django migration graph,
+        # not an allowlist. Existing exact-source, TLS and identity checks apply.
+        # Masking commands must stay on Actions stdout, never in stored artifacts.
+        run: python scripts/ops/run_dev_inquiry_migration.py --expected-sha "$SHA" --inspect-all-migrations
+      - name: Compare DEV baseline components (read-only)
+        if: inputs.compare_rehearsal_baseline
+        env:
+          SHA: ${{ inputs.expected_sha }}
+        run: |
+          python scripts/ops/inspect_dev_baseline_components.py \
+            --expected-sha "$SHA" \
+            --columns 5b3c533fdf3de6c4b015545a2049e21335ece6aed49c430a940d3565c16fcb06 \
+            --rows e80c1574f64ef9445b4bd2b1f2ce3428c14e2bd1216b95cd17bfade48342fb49 \
+            --combined 6e287a66d9c47d57433e0ac68769c5a318a5a4e7f283487d8cf6191dd081c996
       - name: Preserve redacted evidence
         if: always() && hashFiles('dev-blacklist-state.json') != ''
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -222,7 +245,7 @@ jobs:
           test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
           git fetch --no-tags origin refs/heads/main:refs/remotes/origin/main
           test "$(git rev-parse origin/main)" = "$EXPECTED_SHA"
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: '3.12'
       - name: Verify both fail-closed migration-stage contracts without Azure

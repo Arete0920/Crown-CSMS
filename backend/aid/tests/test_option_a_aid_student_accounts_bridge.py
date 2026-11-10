@@ -5,8 +5,8 @@ import pytest
 from django.core.exceptions import ValidationError
 
 from aid.models import AidAuditEvent, AidAward, AidBudgetTracker
-from aid.services.ledger_bridge import approve_award
-from core.models import AcademicYear, Family, HouseholdFamilyLink, School, Student
+from aid.services.ledger_bridge import approve_award, ensure_accepted_award_credit
+from core.models import AcademicYear, Family, HouseholdFamilyLink, LedgerEntry, School, Student
 from finance.models import ChartAccount
 from households.models import Household
 from ledger.models import Credit, LedgerAccount, Payment
@@ -30,6 +30,107 @@ def _fixture(*, linked):
 
 def _credit_qs(school, award):
     return Credit.objects.filter(school_id=school.id, source=Credit.SOURCE_FINANCIAL_AID, reference=f"aid_award:{award.id}")
+
+
+def _financial_snapshot():
+    return [
+        list(model.objects.order_by("pk").values())
+        for model in (
+            AidAward, AidBudgetTracker, LedgerEntry, LedgerAccount,
+            Credit, Payment, AidAuditEvent,
+        )
+    ]
+
+
+@pytest.mark.parametrize("replay", [approve_award, ensure_accepted_award_credit])
+@pytest.mark.parametrize("linked", [False, True])
+@pytest.mark.parametrize("drift", [
+    "student", "recipient", "family", "year", "amount", "source",
+    "entry_school", "account_school", "account_code", "reversal", "reversed_entry",
+])
+def test_accepted_replay_rejects_posting_drift_without_writes(replay, linked, drift):
+    school, award = _fixture(linked=linked)
+    approve_award(award=award, actor_user=None)
+    award.refresh_from_db()
+    original = award.ledger_entry
+
+    # Reproduce pre-existing damage using ordinary ORM writes. The replay must
+    # neither bless the changed facts nor try to repair financial history.
+    if drift in {"student", "recipient"}:
+        family = award.student.family
+        if drift == "recipient":
+            family = Family.objects.create(school=school, family_name="Other")
+        student = Student.objects.create(
+            school=school, family=family, student_number="S002",
+            first_name="Other", last_name="Student", dob=date(2012, 1, 1),
+        )
+        AidAward.objects.filter(pk=award.pk).update(student=student)
+    elif drift == "family":
+        family = Family.objects.create(school=school, family_name="Changed")
+        Student.objects.filter(pk=award.student_id).update(family=family)
+    elif drift == "year":
+        year = AcademicYear.objects.create(
+            school=school, name="2027-28",
+            start_date=date(2027, 8, 1), end_date=date(2028, 5, 31),
+        )
+        AidAward.objects.filter(pk=award.pk).update(academic_year=year)
+    elif drift == "amount":
+        AidAward.objects.filter(pk=award.pk).update(awarded_cents=26_000)
+    elif drift == "source":
+        LedgerEntry.objects.filter(pk=original.pk).update(source=LedgerEntry.SOURCE_PAYMENT)
+    elif drift in {"entry_school", "account_school"}:
+        other = School.objects.create(name="Damaged posting tenant")
+        if drift == "entry_school":
+            LedgerEntry.objects.filter(pk=original.pk).update(school=other)
+        else:
+            ChartAccount.objects.filter(pk=original.account_id).update(school=other)
+    elif drift == "account_code":
+        unrelated_account = ChartAccount.objects.create(
+            school=school, code="TUITION", name="Tuition", account_type="INCOME",
+        )
+        # An original AID posting reclassified within the same tenant is not a
+        # valid accepted-award replay, even though the account school matches.
+        LedgerEntry.objects.filter(pk=original.pk).update(account=unrelated_account)
+    elif drift == "reversal":
+        LedgerEntry.objects.filter(pk=original.pk).update(is_reversal=True)
+    else:
+        LedgerEntry.create_reversal(original)
+
+    before = _financial_snapshot()
+    # Deliberately pass the pre-mutation instance; both services must re-read.
+    with pytest.raises(ValidationError, match="controlled reconciliation"):
+        replay(award=award, actor_user=None)
+    assert _financial_snapshot() == before
+
+
+@pytest.mark.parametrize("replay", [approve_award, ensure_accepted_award_credit])
+@pytest.mark.parametrize("mapping", ["different", "missing", "ambiguous"])
+def test_accepted_replay_rejects_unverified_credit_household(replay, mapping):
+    school, award = _fixture(linked=True)
+    approve_award(award=award, actor_user=None)
+    if mapping != "ambiguous":
+        HouseholdFamilyLink.objects.filter(school=school).delete()
+    if mapping != "missing":
+        household = Household.objects.create(school_id=school.pk, name="Other household")
+        HouseholdFamilyLink.objects.create(
+            school=school, family=award.student.family, household_id=household.pk,
+            source=HouseholdFamilyLink.SOURCE_MANUAL,
+        )
+
+    before = _financial_snapshot()
+    with pytest.raises(ValidationError, match="controlled reconciliation"):
+        replay(award=award, actor_user=None)
+    assert _financial_snapshot() == before
+
+
+@pytest.mark.parametrize("replay", [approve_award, ensure_accepted_award_credit])
+def test_unchanged_accepted_replay_leaves_financial_and_audit_facts_unchanged(replay):
+    _, award = _fixture(linked=True)
+    approve_award(award=award, actor_user=None)
+    before = _financial_snapshot()
+    replay(award=award, actor_user=None)
+    replay(award=award, actor_user=None)
+    assert _financial_snapshot() == before
 
 
 def test_approval_dual_writes_financial_aid_as_credit_not_payment():

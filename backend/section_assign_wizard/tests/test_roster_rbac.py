@@ -190,13 +190,19 @@ def test_verify_uses_tenant_scoped_academics_view_authority():
     user = _user()
     _grant(user, school, "TEACHER", "academics.view")
     section = _section(school)
+    student = _student(school)
+    # A committed session with no selected changes is not proof of anything.
+    # Exercise the valid teacher read authority using a persisted selected add.
+    Enrollment.objects.create(school_id=school.id, section=section, student=student)
     session = SectionAssignWizardSession.objects.create(
         school=school,
         created_by=user,
         section_id=section.id,
         term=section.term,
+        student_pool=[str(student.id)],
+        roster_changes=[{"student_id": str(student.id), "action": "add"}],
         status=SectionAssignWizardSession.STATUS_COMMITTED,
-        commit_result={"enrolled": 0, "removed": 0},
+        commit_result={"enrolled": 1, "removed": 0},
     )
 
     response = _client(user).get(
@@ -204,7 +210,8 @@ def test_verify_uses_tenant_scoped_academics_view_authority():
         **_headers(school),
     )
 
-    assert response.status_code == 200
+    assert response.status_code == 200, response.data
+    assert response.data["enrollment_count"] == 1
     session.refresh_from_db()
     assert session.status == SectionAssignWizardSession.STATUS_VERIFIED
 

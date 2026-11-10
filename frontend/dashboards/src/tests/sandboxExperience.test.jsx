@@ -39,6 +39,16 @@ describe("sandbox experience catalog", () => {
     expect(getTrackPersonas("school").map((persona) => persona.value)).toContain("student");
   });
 
+  it("hides hosted childcare roles from the local open sandbox", () => {
+    const localRoles = getTrackPersonas("school").map((persona) => persona.value);
+    const invitedRoles = getTrackPersonas("school", { includeHosted: true }).map((persona) => persona.value);
+    expect(localRoles).not.toContain("daycare_director");
+    expect(localRoles).not.toContain("daycare_staff");
+    expect(invitedRoles).toContain("daycare_director");
+    expect(invitedRoles).toContain("daycare_staff");
+    expect(getSandboxPersona("daycare_director").route).toBe("/diadem/daycare/setup");
+  });
+
   it("falls back safely to Heritage for unknown keys", () => {
     expect(getSandboxTrack("unknown").key).toBe("school");
     expect(getSandboxPersona("unknown").value).toBe("school_admin");

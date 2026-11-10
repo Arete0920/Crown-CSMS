@@ -114,6 +114,43 @@ SANDBOX_PERSONAS = {
             "Prepare a payment follow-up path.",
         ),
     ),
+    "daycare_director": SandboxPersona(
+        key="daycare_director",
+        label="Diadem Daycare Director",
+        role_code="DAYCARE_DIRECTOR",
+        route="/diadem/daycare/setup",
+        email="daycare.director@fictional.crown.invalid",
+        first_name="Leah",
+        last_name="Morgan",
+        track_keys=("school",),
+        tour_title="Fictional childcare setup and custody operations",
+        promise="Configure an entitled buyer-school daycare and review authenticated custody transactions.",
+        steps=(
+            "Review the fictional buyer school's daycare configuration.",
+            "Verify room rules, staff coverage, and authorized guardians.",
+            "Check a fictional child into an eligible room.",
+            "Confirm persisted custody, verified pickup, and the release audit.",
+            "Verify cross-school and unauthorized-role denials.",
+        ),
+    ),
+    "daycare_staff": SandboxPersona(
+        key="daycare_staff",
+        label="Diadem Daycare Staff",
+        role_code="DAYCARE_STAFF",
+        route="/diadem/daycare",
+        email="daycare.staff@fictional.crown.invalid",
+        first_name="Sarah",
+        last_name="Brooks",
+        track_keys=("school",),
+        tour_title="Fictional childcare room and pickup verification",
+        promise="Inspect the assigned childcare roster and perform only authorized custody actions.",
+        steps=(
+            "Open the assigned room's fictional childcare roster.",
+            "Verify current staffing and authorized guardian evidence.",
+            "Record permitted check-in and verified release transactions.",
+            "Confirm configuration and other schools remain inaccessible.",
+        ),
+    ),
     "teacher": SandboxPersona(
         key="teacher",
         label="Teacher / Staff",
@@ -191,6 +228,14 @@ SANDBOX_PERSONAS = {
         ),
     ),
 }
+
+
+# These additional care roles can only be explicitly invited to hosted buyer workspaces.
+# Omitted invite scope must retain the prior least-privilege seven-role default.
+HOSTED_ONLY_PERSONA_KEYS = frozenset({"daycare_director", "daycare_staff"})
+DEFAULT_SANDBOX_INVITE_ROLES = [
+    key for key in SANDBOX_PERSONAS if key not in HOSTED_ONLY_PERSONA_KEYS
+]
 
 
 def get_track(track_key: str | None) -> dict:

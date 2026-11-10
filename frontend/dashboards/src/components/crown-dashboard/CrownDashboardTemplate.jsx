@@ -20,12 +20,15 @@ import { useMemo } from 'react';
 import PropTypes from 'prop-types';
 import { BASE_COMMUNICATIONS, BASE_FAITH_COMMUNITY, BASE_NOTE } from '../../config/dashboardTemplates/_baseData.js';
 import useDashboardData from '../../hooks/useDashboardData.js';
+import { getSelectedSchoolId } from '../../utils/authClient.js';
+
+const UNVERIFIED_FAITH_COMMUNITY = Object.freeze({ unverified: true });
 
 function getDefaultLastSyncLabel(dataState) {
   const state = String(dataState || '').toLowerCase();
   if (state === 'live') return 'Last synced just now';
   if (state === 'loading') return 'Sync in progress';
-  if (state === 'unavailable') return 'Last sync unavailable';
+  if (state === 'unavailable' || state === 'error') return 'Last sync unavailable';
   return 'Using configured fallback data';
 }
 
@@ -54,15 +57,32 @@ function getAlertTone(level) {
   return 'warn';
 }
 
-function getDashboardDataState(source, payload, error, loading) {
+function getDashboardDataState(source, payload, error, loading, dashboardKey) {
   const servedFrom = String(payload?.meta?.served_from || '').toLowerCase();
 
   if (loading) return 'loading';
+  // A missing request source cannot inherit a stale payload's sample/live claim.
+  if (source === 'none') return error ? 'error' : 'unavailable';
+  // A failed financial-aid refresh cannot retain an earlier live transport claim.
+  if (dashboardKey === 'financialAid' && source === 'live' && error) return 'error';
   if (servedFrom === 'sample') return 'sample';
-  if (source === 'live') return 'live';
+  // A stored snapshot is not a live DB response; seeded sample snapshots
+  // must retain sample provenance even when the transport request succeeded.
+  if (servedFrom === 'snapshot') {
+    const original = String(payload?.meta?.snapshot_derived_from || '').toLowerCase();
+    const seedSource = String(payload?.meta?.seed_source || '').toLowerCase();
+    return (original === 'sample' || seedSource === 'sample-derived-snapshot') ? 'sample' : 'fallback';
+  }
+  if (servedFrom === 'fallback' || servedFrom === 'stale_snapshot') return 'fallback';
+  if (source === 'live') {
+    // An HTTP 200 is not evidence that aid totals came from a live data service.
+    // Keep other dashboard source semantics unchanged.
+    if (dashboardKey === 'financialAid' && (
+      !['live', 'live_db'].includes(servedFrom) || payload?.meta?.live_certified === false
+    )) return 'unavailable';
+    return 'live';
+  }
   if (source === 'fallback') return 'fallback';
-  if (source === 'none' && error) return 'error';
-  if (source === 'none') return 'unavailable';
   return source || 'unavailable';
 }
 
@@ -70,30 +90,29 @@ function getDashboardSourceLabel(dataState, endpoint, payload) {
   const servedFrom = String(payload?.meta?.served_from || '').toLowerCase();
   const snapshotSource = payload?.meta?.snapshot_source;
 
-  if (servedFrom === 'snapshot') {
-    return snapshotSource
-      ? `Dashboard snapshot service (${snapshotSource})`
-      : 'Dashboard snapshot service';
-  }
-
-  if (servedFrom === 'sample') {
-    return `Dashboard summary service sample (${endpoint})`;
-  }
-
-  if (dataState === 'live') {
-    return `Dashboard summary service (${endpoint})`;
+  // A previous response must never override the truth of a failed/loading request.
+  if (dataState === 'error' || dataState === 'unavailable') {
+    return `Dashboard summary service unavailable (${endpoint})`;
   }
 
   if (dataState === 'loading') {
     return `Loading dashboard summary service (${endpoint})`;
   }
 
+  if (dataState === 'sample') {
+    if (servedFrom === 'snapshot') return `Sample-derived dashboard snapshot (not live; ${endpoint})`;
+    return `Dashboard summary service sample (${endpoint})`;
+  }
+
   if (dataState === 'fallback') {
+    if (servedFrom === 'snapshot') return `Dashboard snapshot service (not live; ${snapshotSource || endpoint})`;
+    if (servedFrom === 'stale_snapshot') return `Stale dashboard snapshot (${endpoint})`;
+    if (servedFrom === 'fallback') return `Dashboard summary service fallback (${endpoint})`;
     return `Frontend fallback dashboard data (${endpoint})`;
   }
 
-  if (dataState === 'error' || dataState === 'unavailable') {
-    return `Dashboard summary service unavailable (${endpoint})`;
+  if (dataState === 'live') {
+    return `Dashboard summary service (${endpoint})`;
   }
 
   return 'Static dashboard scaffold';
@@ -150,15 +169,71 @@ function buildLiveDashboardConfig(config, payload, endpointConfig, loading, erro
     return config;
   }
 
-  const dataState = getDashboardDataState(source, payload, error, loading);
+  const requireVerifiedLiveProvenance = config.requireVerifiedLiveProvenance
+    && ['summerCamp', 'extendedCare'].includes(config.key);
+  const programTemplateSafety = requireVerifiedLiveProvenance ? {
+    // The summary API does not supply these template-backed operational claims.
+    activities: [], trendPanels: [], commandModules: [], operations: [],
+    insight: {}, decisionPanel: null, rightRailSections: [], moduleSection: null,
+    heroMessage: null, updatesCount: null,
+    communications: false, faithCommunity: UNVERIFIED_FAITH_COMMUNITY,
+  } : {};
+
+  // Safety-sensitive program dashboards may not display sample/snapshot KPIs
+  // or implied staffing, billing and custody alerts as operational truth.
+  // Require positive server provenance plus an observed-as-of and aggregation
+  // window before treating a response as verified live data.
+  if (requireVerifiedLiveProvenance) {
+    const meta = payload?.meta || {};
+    const servedFrom = String(meta.served_from || '').toLowerCase();
+    const asOf = meta.observed_at || meta.observed_as_of || meta.as_of;
+    const window = meta.aggregation_window;
+    // This comparison only rejects missing/mismatched scope. Authorization
+    // remains enforced by the authenticated endpoint, never by client metadata.
+    const selectedSchoolId = getSelectedSchoolId();
+    const verified = !loading && !error && source === 'live'
+      && selectedSchoolId !== '' && meta.school_id === selectedSchoolId
+      && meta.live_certified !== false
+      && (servedFrom === 'live' || servedFrom === 'live_db')
+      && typeof asOf === 'string' && !Number.isNaN(Date.parse(asOf))
+      && typeof window === 'string' && window.trim() !== '';
+    if (!verified) {
+      const state = loading ? 'loading' : 'unavailable';
+      const sourceLabel = 'Verified school-scoped program metrics unavailable; current request, school scope, source, observed-as-of or aggregation window not established.';
+      return {
+        ...config,
+        dataState: state,
+        sourceLabel,
+        lastSyncLabel: loading ? 'Checking runtime provenance' : 'No verified runtime sync',
+        metrics: (Array.isArray(config.metrics) ? config.metrics : []).map((metric) => ({
+          label: metric.label, value: 'Not available',
+          detail: sourceLabel, accent: metric.accent,
+          dataState: state, sourceLabel,
+        })),
+        ...programTemplateSafety,
+        priorities: [],
+        alerts: [],
+        statuses: [{ label: 'Operational source', state: 'Not available' }],
+        errorState: loading ? null : {
+          title: 'Operational metrics unavailable',
+          message: sourceLabel,
+        },
+      };
+    }
+  }
+
+  const dataState = getDashboardDataState(source, payload, error, loading, config.key);
   const isLiveParent = dataState === 'live' && config.key === 'parent';
   const sourceLabel = getDashboardSourceLabel(dataState, endpointConfig?.endpoint, payload);
   const fallbackMetrics = Array.isArray(config.metrics) ? config.metrics : [];
   const payloadMetrics = Array.isArray(payload?.metrics) ? payload.metrics : [];
-  // A live response with no metrics must not turn configured example figures into live records.
-  const metricInputs = dataState === 'live'
-    ? payloadMetrics
-    : (payloadMetrics.length > 0 ? payloadMetrics : fallbackMetrics);
+  // Never present cached Financial Aid values during loading as if they describe the request in flight.
+  // Other dashboards retain their existing disclosed loading/fallback behavior.
+  const suppressStaleOperationalData = dataState === 'error' || dataState === 'unavailable'
+    || (config.key === 'financialAid' && dataState === 'loading');
+  const metricInputs = suppressStaleOperationalData
+    ? [] // Never show stale operational metrics in an unavailable or sensitive loading state.
+    : (dataState === 'live' ? payloadMetrics : (payloadMetrics.length > 0 ? payloadMetrics : fallbackMetrics));
   const metrics = metricInputs.map((item, index) => ({
     label: item.label,
     value: item.value,
@@ -195,12 +270,13 @@ function buildLiveDashboardConfig(config, payload, endpointConfig, loading, erro
     lastSyncLabel: config.lastSyncLabel || getDefaultLastSyncLabel(dataState),
     note: getDashboardNote(dataState, sourceLabel),
     metrics,
-    priorities: buildPriorityItems(payload?.queue, dataState, sourceLabel),
-    alerts: buildAlertItems(payload?.alerts, sourceLabel),
+    // Failed requests and sensitive loading states must not reuse cached tasks or alerts.
+    priorities: buildPriorityItems(suppressStaleOperationalData ? [] : payload?.queue, dataState, sourceLabel),
+    alerts: buildAlertItems(suppressStaleOperationalData ? [] : payload?.alerts, sourceLabel),
     statuses: [
       { label: 'Dashboard Data State', state: dataState },
       { label: 'Dashboard Data Source', state: sourceLabel },
-      ...(!isLiveParent && Array.isArray(config.statuses) ? config.statuses : []),
+      ...(!isLiveParent && !suppressStaleOperationalData && Array.isArray(config.statuses) ? config.statuses : []),
     ],
     // Parent examples name specific children and balances. Never juxtapose them with
     // live household records, especially when there are no linked students.
@@ -217,7 +293,15 @@ function buildLiveDashboardConfig(config, payload, endpointConfig, loading, erro
           title: 'Dashboard data unavailable',
           message: sourceLabel,
         }
-      : config.errorState,
+      : (dataState === 'loading' ? null : config.errorState),
+    ...(requireVerifiedLiveProvenance ? {
+      // API payload metrics, queue and alerts are the only authorized
+      // data. Template activities, trends, cards and notices are not live.
+      ...programTemplateSafety,
+      sourceLabel: `${sourceLabel}; observed ${payload.meta.observed_at || payload.meta.observed_as_of || payload.meta.as_of}; window ${payload.meta.aggregation_window}`,
+      lastSyncLabel: 'Verified API provenance; independent certification pending',
+      statuses: [{ label: 'Live-data source', state: 'Verified API provenance; certification pending' }],
+    } : {}),
   };
 }
 
@@ -458,7 +542,8 @@ export default function CrownDashboardTemplate({ config, roleKey }) {
   // Rich layout: any dashboard with commandModules gets priorities/alerts/flip-cards/trends.
   const isSchoolAdminCommandCenter = effectiveConfig.key === 'schoolAdministrator';
   const isRichLayout = isSchoolAdminCommandCenter || commandModules.length > 0
-    || (effectiveConfig.key === 'parent' && dataState === 'live');
+    || (effectiveConfig.key === 'parent' && dataState === 'live')
+    || (effectiveConfig.requireVerifiedLiveProvenance && ['summerCamp', 'extendedCare'].includes(effectiveConfig.key));
 
   return (
     <CrownDashboardShell
