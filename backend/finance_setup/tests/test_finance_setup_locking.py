@@ -173,7 +173,8 @@ def test_service_rejects_changes_to_locked_policy(setup_context):
 def test_ungranted_user_cannot_read_configure_or_lock(setup_context):
     c = setup_context
     ungranted = UserAccount.objects.create_user(
-        username="finance-ungranted", password="test-only", school=c["school"],
+        username="finance-ungranted", password="test-only",
+        email="finance-ungranted@example.invalid", school=c["school"],
     )
     client = APIClient()
     client.force_authenticate(user=ungranted)
@@ -196,7 +197,8 @@ def test_read_only_finance_grant_cannot_write_or_lock(setup_context):
     school = c["school"]
     upsert_finance_policies(school_id=school.pk, academic_year=YEAR, payload=FULL_PAYLOAD)
     reader = UserAccount.objects.create_user(
-        username="finance-reader-only", password="test-only", school=school,
+        username="finance-reader-only", password="test-only",
+        email="finance-reader-only@example.invalid", school=school,
     )
     UserRole.objects.create(user=reader, school=school, role_code="FINANCE_SETUP_READER")
     perm, _ = CrownPermission.objects.get_or_create(code="finance.view")
