@@ -14,6 +14,8 @@ import logging
 from django.http import JsonResponse
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema
 
 from core.permissions import CrownModulePermission
 
@@ -31,6 +33,7 @@ def _json_body(request):
     return body if isinstance(body, dict) else None
 
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated, CrownModulePermission("finance.view")])
 def wizard_status(request):
@@ -60,6 +63,7 @@ def _status_response(request):
     return JsonResponse({"status": "ok", "data": data})
 
 
+@extend_schema(request=FinanceSetupWizardPayloadSerializer, responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 @permission_classes([IsAuthenticated, CrownModulePermission("finance.view", write_code="finance.configure")])
 def wizard_configure(request):
@@ -94,6 +98,7 @@ def wizard_configure(request):
     return JsonResponse({"status": "saved", "data": data}, status=200)
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 @permission_classes([IsAuthenticated, CrownModulePermission("finance.view", write_code="finance.configure")])
 def wizard_lock(request):
@@ -135,6 +140,7 @@ def wizard_lock(request):
     )
 
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated, CrownModulePermission("finance.view")])
 def wizard_snapshot(request):
