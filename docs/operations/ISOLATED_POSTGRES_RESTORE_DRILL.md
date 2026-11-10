@@ -43,6 +43,32 @@ the separate `migration_rehearsal` receipt records the transformed copy. A passi
 rehearsal does not authorize live migration, deployment, payments or buyer access.
 Retained rollback capability and application rollback require separate evidence.
 
+### Optional recorded prior-image probe
+
+The existing operational restored-copy job can optionally probe the recorded DEV
+image digest on its migrated disposable PostgreSQL 15 database. It is off by
+default. In addition to the existing operational restore and reviewed-migration
+authority, require `verify_prior_image=true` and
+`confirm_prior_image=test-prior-image-on-disposable-copy`. The existing DEV Azure
+identity must already have ACR pull access; this mode does not grant permissions.
+
+The fixed image runs its original entrypoint without host ports, mounted source
+credentials, bootstrap flags, or a writable root filesystem. The probe checks its
+served build/artifact identity, database identity, anonymous platform denials,
+and rolled-back legacy Extended Care/Camp inserts using the actual old models.
+The application container is removed before the existing restore cleanup drops
+the database and deletes the temporary archive. Registry credentials are local
+to this job and discarded. A pull, identity, probe, or cleanup failure blocks the
+job. Source rows and process diagnostics are not published.
+
+Results appear under `prior_image_probe` in the existing sanitized receipt.
+This is a limited startup/read/write compatibility probe, **not full application
+rollback certification**, durable backup retention, or live DEV authorization.
+The existing `application_rollback_compatibility=NOT_TESTED` and
+`release_readiness=NOT_VERIFIED` fields retain their original meaning. Do not
+repeat the default rehearsal solely for another green run; this opt-in mode
+requires a separate authorized operation to obtain the missing image evidence.
+
 PR #632's original secret-scan finding was reproduced with Gitleaks 8.18.4:
 the public SHA256 of the subscriptions 0006 migration matched `generic-api-key`
 because its migration identifier contains `module_key`. The digest is verified
