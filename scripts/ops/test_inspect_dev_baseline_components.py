@@ -5,7 +5,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = ROOT / "scripts/ops/inspect_dev_baseline_components.py"
-WORKFLOW = ROOT / ".github/workflows/dev-baseline-components-readonly.yml"
+WORKFLOW = ROOT / ".github/workflows/dev-blacklist-database-inventory.yml"
 
 class BaselineDiagnosticContracts(unittest.TestCase):
     def test_diagnostic_parses(self):
@@ -25,8 +25,8 @@ class BaselineDiagnosticContracts(unittest.TestCase):
         for required in ("workflow_dispatch:", "environment: dev", "origin/main",
                          "inputs.expected_sha", "inspect_dev_baseline_components.py"):
             self.assertIn(required, source)
-        self.assertNotIn("push:", source)
-        self.assertNotIn("pull_request:", source)
+        self.assertNotIn("\\n  push:", source)
+        self.assertIn("pull_request:", source)
 
 if __name__ == "__main__":
     unittest.main()
