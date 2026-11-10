@@ -50,6 +50,7 @@ class PriorImageContracts(unittest.TestCase):
         import dev_backup_restore as recovery
         container = os.environ["CROWN_PRIOR_IMAGE_TEST_CONTAINER"]
         env = recovery.target_environment(os.environ)
+        recovery.target_identity(container, env, expected_major=15)
         with recovery.disposable_database(container, env, DB, {}):
             cluster = recovery.scalar(container, env, DB, "SELECT system_identifier FROM pg_control_system()")
             module.verify_disposable_target(container, DB, cluster, os.environ)
