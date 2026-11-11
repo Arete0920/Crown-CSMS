@@ -422,6 +422,9 @@ class DashboardSummaryView(APIView):
                 status=status.HTTP_503_SERVICE_UNAVAILABLE,
             )
         except DatabaseError:
+            if key != 'financial-aid':
+                # Preserve pre-existing behavior for unrelated dashboards.
+                raise
             return Response(
                 {'code': 'financial_aid_live_data_unavailable',
                  'detail': 'Authoritative financial aid data could not be retrieved.'},

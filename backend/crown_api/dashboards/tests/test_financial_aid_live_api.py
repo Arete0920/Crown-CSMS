@@ -1,6 +1,8 @@
 """School-scoped live Jireh dashboard API integration tests (requires Django/DRF)."""
 from datetime import date
+from unittest.mock import patch
 import pytest
+from django.db import DatabaseError
 from django.test import override_settings
 from rest_framework.test import APIClient
 from aid.models import AidApplication, AidAward
@@ -87,3 +89,14 @@ def test_cross_school_family_relation_requires_integrity_review():
     assert r.status_code==503
     assert r.json()['code']=='financial_aid_integrity_review_required'
     assert 'metrics' not in r.json()
+
+@pytest.mark.django_db
+@override_settings(CROWN_DEV_OPEN_API=False, TENANT_HEADER_REQUIRED=True)
+def test_financial_aid_database_error_fails_closed_without_exposing_partial_metrics():
+    school, _, _ = records('ReadFailure')
+    with patch('crown_api.dashboards.views._build_verified_live_payload', side_effect=DatabaseError('database unavailable')):
+        response = client_for(school).get(URL, HTTP_X_SCHOOL_ID=str(school.id))
+    assert response.status_code == 503
+    assert response.json()['code'] == 'financial_aid_live_data_unavailable'
+    assert 'metrics' not in response.json()
+    assert 'database unavailable' not in str(response.content)

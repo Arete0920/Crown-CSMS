@@ -21,6 +21,34 @@ ENV = {
 
 
 class RecoveryBoundaryTests(unittest.TestCase):
+    def test_prior_image_mode_needs_separate_confirmation_and_reviewed_rehearsal(self):
+        import contextlib
+        import io
+        base = ["--expected-sha", SHA, "--confirmation", module.CONFIRMATION,
+                "--synthetic-dev-confirmed", "true"]
+        from probe_dev_prior_image import CONFIRMATION
+        for flags in (["--verify-prior-image"],
+                      ["--verify-prior-image", "--confirm-prior-image", CONFIRMATION],
+                      ["--confirm-prior-image", CONFIRMATION],
+                      ["--verify-prior-image", "--rehearse-reviewed-migrations",
+                       "--confirm-prior-image", "wrong"]):
+            with tempfile.TemporaryDirectory() as directory, patch.object(module, "perform") as perform, \
+                 patch.object(module, "verify_accepted_source") as source, contextlib.redirect_stdout(io.StringIO()):
+                path = str(Path(directory) / "result.json")
+                self.assertEqual(module.main(base + ["--evidence-path", path] + flags), 1)
+                self.assertEqual(json.loads(Path(path).read_text())["reason"],
+                                 "explicit_disposable_prior_image_authority_required")
+                perform.assert_not_called()
+                source.assert_not_called()
+        with tempfile.TemporaryDirectory() as directory, patch.dict(os.environ, ENV, clear=True), \
+             patch.object(module, "perform") as perform, patch.object(module, "verify_accepted_source"), \
+             contextlib.redirect_stdout(io.StringIO()):
+            path = str(Path(directory) / "result.json")
+            self.assertEqual(module.main(base + ["--evidence-path", path, "--verify-prior-image",
+                "--rehearse-reviewed-migrations", "--confirm-prior-image", CONFIRMATION]), 0)
+            self.assertEqual(perform.call_args.kwargs, {"rehearse": True, "verify_prior_image": True})
+            self.assertEqual(json.loads(Path(path).read_text())["application_rollback_compatibility"], "NOT_TESTED")
+
     def test_authority_requires_each_independent_boundary(self):
         self.assertEqual(module.authority(SHA, module.CONFIRMATION, "true", ENV)[1], "crown_restore_123_2")
         for changes in ({"GITHUB_ACTIONS": "false"}, {"GITHUB_REF": "refs/heads/rc/test"},
