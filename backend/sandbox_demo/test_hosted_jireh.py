@@ -263,6 +263,26 @@ class HostedJirehContract(TestCase):
         self.assertEqual(other["revision"], 1)
         self.assertEqual(other["grade_level"], "7")
 
+    def test_buyer_aid_policy_budgets_and_role_are_fictional_and_scoped(self):
+        from aid.models import AidAward, AidBudgetTracker, AidPolicy
+        from finance.models import ChartAccount
+
+        for workspace, users in self.bindings:
+            self.assertEqual(AidPolicy.objects.filter(school_id=workspace.school_id).count(), 1)
+            budgets = AidBudgetTracker.objects.filter(school_id=workspace.school_id)
+            self.assertEqual(budgets.count(), len(AidBudgetTracker.BUCKET_CHOICES))
+            self.assertTrue(all(item.awarded_cents == 0 and item.allocated_cents == 2_000_000 for item in budgets))
+            self.assertTrue(ChartAccount.objects.filter(school_id=workspace.school_id, code="AID").exists())
+            self.assertTrue(UserRole.objects.filter(
+                school_id=workspace.school_id, user=users["finance_director"],
+                role_code="AID_DIRECTOR",
+            ).exists())
+            self.assertFalse(UserRole.objects.filter(
+                school_id=workspace.school_id, user=users["parent"],
+                role_code="AID_DIRECTOR",
+            ).exists())
+            self.assertFalse(AidAward.objects.filter(school_id=workspace.school_id).exists())
+
     def test_two_partner_fixture_cannot_be_reseeded_or_reset(self):
         workspace, _ = self.bindings[0]
         before = list(SGOFamilyGrant.objects.order_by("id").values_list("id", flat=True))
