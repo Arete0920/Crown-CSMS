@@ -545,16 +545,35 @@ def admin_application_review(request, application_id):
         app = (
             AidApplication.objects
             .select_related("financial_profile")
-            .get(pk=application_id, school_id=school_id)
+            .get(
+                pk=application_id, school_id=school_id,
+                family__school_id=school_id,
+                academic_year__school_id=school_id,
+            )
         )
     except AidApplication.DoesNotExist:
         return Response({"detail": "AidApplication not found"}, status=status.HTTP_404_NOT_FOUND)
 
     profile = app.financial_profile
+    if profile is not None and (
+        profile.school_id != school_id
+        or profile.family_id != app.family_id
+        or profile.academic_year_id != app.academic_year_id
+    ):
+        return Response({"detail": "AidApplication not found"}, status=status.HTTP_404_NOT_FOUND)
+    students = list(
+        Student.objects.filter(
+            school_id=school_id, family_id=app.family_id,
+            family__school_id=school_id,
+        ).order_by("last_name", "first_name", "pk").values(
+            "id", "first_name", "last_name", "student_number"
+        )
+    )
     return Response({
         "application_id": app.id,
         "review_signals": build_review_signals(app),
         "financial_profile": AidFinancialProfileSerializer(profile).data if profile else None,
+        "students": [{**student, "id": str(student["id"])} for student in students],
     })
 
 
