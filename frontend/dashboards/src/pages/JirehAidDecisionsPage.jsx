@@ -9,7 +9,7 @@ import {
   verifiedAcceptedAward, acceptedFaceValue,
 } from "./jirehAidChecks.js";
 
-const BOX = { background: "var(--crown-surface, #fff)", border: "1px solid #d8e3f3", borderRadius: 12, padding: 20, marginBottom: 18 };
+const BOX = { background: "var(--crown-surface)", border: "1px solid var(--crown-border)", borderRadius: 12, padding: 20, marginBottom: 18 };
 const ROW = { display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap", marginBottom: 12 };
 const FINANCE_BUCKETS = ["NEED", "MISSION", "MERIT", "HARDSHIP", "MARKETING"];
 const identity = () => String(getSelectedSchoolId()) + ":" + String(getAccessToken());
@@ -188,7 +188,7 @@ export default function JirehAidDecisionsPage() {
   return <CrownLayout title="Jireh Financial Aid — Applications and Awards"
     subtitle="School-scoped operational case review; accepted award face value is not cash disbursement."
     right={<a href="/financial-aid-dashboard">View live aid dashboard</a>}>
-    {error && <p role="alert" style={{ color: "#aa1722", fontWeight: 700 }}>{error}</p>}
+    {error && <p role="alert" style={{ color: "var(--crown-danger)", fontWeight: 700 }}>{error}</p>}
     {notice && <p role="status">{notice}</p>}
     {busy && <p role="status">Verifying the current operation…</p>}
     <section style={BOX}>
@@ -213,7 +213,7 @@ export default function JirehAidDecisionsPage() {
           <button key={app.id} type="button" aria-pressed={String(app.id) === String(applicationId)}
             onClick={() => { setError(""); setNotice(""); setApplicationId(String(app.id)); }}
             style={{ padding: 12, textAlign: "left", borderRadius: 8,
-              border: String(app.id) === String(applicationId) ? "2px solid #17439c" : "1px solid #ccc" }}>
+              border: String(app.id) === String(applicationId) ? "2px solid var(--crown-primary-strong)" : "1px solid var(--crown-border)" }}>
             Application #{app.id} — {app.status} — submitted {app.submitted_at || "not yet"} — household size {app.household_size}
           </button>)}
       </div>
@@ -258,7 +258,7 @@ export default function JirehAidDecisionsPage() {
         record a committee vote, or automatically close a multistudent family application.</p>
       <p>Budget controls: {(overview?.budgets || []).map((budget) =>
         <span key={budget.id} style={{ marginRight: 15 }}>{budget.bucket}: {cash(budget.remaining_cents)} remaining</span>)}</p>
-      {awards.map((award) => <div key={award.id} style={{ borderTop: "1px solid #ddd", padding: "12px 0" }}>
+      {awards.map((award) => <div key={award.id} style={{ borderTop: "1px solid var(--crown-border)", padding: "12px 0" }}>
         <strong>#{award.id}</strong> — {award.award_type}, {cash(award.awarded_cents)} —
         <strong> {award.decision_status}</strong>; ledger {award.ledger_entry_id || "not posted"}
         {award.decision_status === "OFFERED" && Number(award.awarded_cents) > 0 && <>
