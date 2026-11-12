@@ -1,10 +1,43 @@
 import { describe, expect, it } from 'vitest';
 import {
-  requireAidOverview, requireCurrentAidYear, dollarsToCents,
+  requireAidOverview, requireCurrentAidYear, requireLiveAidYear, dollarsToCents,
   verifiedAcceptedAward, acceptedFaceValue,
 } from './jirehAidChecks.js';
 
 const base = { applications: [], budgets: [], awards: [] };
+const SCHOOL = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+const YEAR = '11111111-1111-4111-8111-111111111111';
+const live = {
+  dashboard_key: 'financial-aid',
+  meta: { served_from: 'live_db', school_id: SCHOOL, academic_year_id: YEAR },
+};
+
+describe('live Jireh officer academic-year contract', () => {
+  it('accepts the exact school and authoritative live year identifier', () => {
+    expect(requireLiveAidYear(live, SCHOOL)).toBe(YEAR);
+  });
+  it.each([
+    ['missing payload', undefined],
+    ['missing metadata', { dashboard_key: 'financial-aid' }],
+    ['missing dashboard key', { meta: live.meta }],
+    ['different dashboard', { ...live, dashboard_key: 'academics' }],
+    ['foreign school', { ...live, meta: { ...live.meta, school_id: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb' } }],
+    ...[undefined, null, '', 42, {}].map((school_id) =>
+      ['invalid school ' + JSON.stringify(school_id), { ...live, meta: { ...live.meta, school_id } }]),
+    ...[undefined, 'sample', 'snapshot', 'fallback', 'live'].map((served_from) =>
+      ['non-live provenance ' + served_from, { ...live, meta: { ...live.meta, served_from } }]),
+    ...[undefined, null, '', ' ', 42, {}, [], 'not-a-year', '2026-2027', ' ' + YEAR, YEAR + '\n'].map((academic_year_id) =>
+      ['invalid year ' + JSON.stringify(academic_year_id), { ...live, meta: { ...live.meta, academic_year_id } }]),
+  ])('rejects %s', (_case, payload) => {
+    expect(() => requireLiveAidYear(payload, SCHOOL)).toThrow('live Financial Aid summary');
+  });
+  it.each([undefined, null, '', ' ', 42, {}])('rejects an invalid selected school: %j', (schoolId) => {
+    expect(() => requireLiveAidYear(live, schoolId)).toThrow();
+  });
+  it('does not coerce school identifiers into an apparent match', () => {
+    expect(() => requireLiveAidYear({ ...live, meta: { ...live.meta, school_id: 42 } }, '42')).toThrow();
+  });
+});
 
 describe('canonical Jireh officer readback contracts', () => {
   it('rejects missing arrays instead of showing sample data', () => {

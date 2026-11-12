@@ -37,9 +37,13 @@ def client_for(school, granted=True):
 @pytest.mark.django_db
 @override_settings(CROWN_DEV_OPEN_API=False,TENANT_HEADER_REQUIRED=True)
 def test_current_year_live_records_are_scoped_and_amounts_are_not_disbursements():
-    a,_,_ = records('A')
+    a,year,app = records('A')
     records('B')
-    r = client_for(a).get(URL,HTTP_X_SCHOOL_ID=str(a.id))
+    client = client_for(a)
+    user = UserAccount.objects.get(school=a)
+    assert not user.is_staff and not user.is_superuser
+    assert client.get('/api/v1/academics/years/?limit=100',HTTP_X_SCHOOL_ID=str(a.id)).status_code == 403
+    r = client.get(URL,HTTP_X_SCHOOL_ID=str(a.id))
     assert r.status_code == 200, r.content
     data=r.json()
     metrics={m['label']:m['value'] for m in data['metrics']}
@@ -49,7 +53,12 @@ def test_current_year_live_records_are_scoped_and_amounts_are_not_disbursements(
     assert data['meta']['served_from']=='live_db'
     assert data['meta']['money_basis']=='face_value_not_disbursement'
     assert data['meta']['school_id']==str(a.id)
+    assert data['dashboard_key']=='financial-aid'
+    assert data['meta']['academic_year_id']==str(year.id)
     assert 'B Family' not in str(data)
+    overview = client.get('/api/aid/admin/overview/',{'academic_year_id':str(year.id)},HTTP_X_SCHOOL_ID=str(a.id))
+    assert overview.status_code == 200, overview.content
+    assert [row['id'] for row in overview.json()['applications']] == [app.id]
 
 @pytest.mark.django_db
 @override_settings(CROWN_DEV_OPEN_API=False,TENANT_HEADER_REQUIRED=True)
