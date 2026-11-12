@@ -119,7 +119,9 @@ class TestConcurrentWizardCommit(TransactionTestCase):
             (wizard_result["awards_created"], officer_status),
             (0, 201) if officer_status == 201 else (1, 409),
         )
-\n\nclass TestWizardFinalizationAndReoffer(TestCase):
+
+
+class TestWizardFinalizationAndReoffer(TestCase):
     """State immutability and decline semantics using only synthetic fixtures."""
 
     def setUp(self):
