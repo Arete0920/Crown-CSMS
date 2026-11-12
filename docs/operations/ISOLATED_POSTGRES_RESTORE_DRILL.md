@@ -34,6 +34,32 @@ INSERT/read probes. This proves neither reverse migration with UUID policies
 nor full prior-application rollback. Retained current-baseline recovery remains
 a separate gate; a disposable snapshot is not a retained operational backup.
 
+### Separately authorized DEV Finance Setup stage
+
+The existing `deploy-dev.yml` keeps both migration switches default-OFF.
+For a separately authorized Finance Setup release, select only
+`apply_finance_setup_0003=true`, set
+`confirm_finance_setup_0003=migrate-dev-finance-setup-0003`, and leave
+`apply_reviewed_heritage24=false` with its confirmation blank. Both profiles
+cannot run together. Ordinary deployment still rejects unreviewed migrations.
+
+Before Azure credentials are read, the stage requires explicit synthetic-data,
+verified durable-recovery, and maintenance-window attestations. Supply the exact
+prior successful Finance rehearsal run and artifact IDs for the same protected
+main SHA. The stage authenticates GitHub artifact provenance and digest, rejects
+legacy or mismatched-profile receipts, checks the live database's exact raw
+baseline, and permits only the pinned single forward migration. Under the
+existing migration lock and one PostgreSQL transaction, it verifies the integer
+source column, varchar(36) result, exact history increment, zero pending nodes,
+and preservation of every existing row, including locks and policy children.
+Only the reviewed school identifier representation is normalized for comparison.
+Validation failure rolls back the schema and data changes.
+
+Source availability and a passing disposable test do not authorize this stage,
+deployment, feature configuration, invitations, or buyer certification. A receipt
+continues to record full application rollback as `NOT_TESTED`. Revalidate the
+current exact source and recovery evidence before requesting release authority.
+
 The source snapshot and dump remain read-only. After the restored copy's table
 counts, column definitions and migration history match, the optional rehearsal:
 

@@ -1,10 +1,12 @@
-"""Hermetic authority/receipt/plan tests; never contacts Azure or PostgreSQL."""
+"""Hermetic stage contracts and an opt-in disposable PostgreSQL15 proof; no Azure."""
 import copy
 import hashlib
 from io import BytesIO
 from zipfile import ZipFile, ZIP_DEFLATED
 import json
 import os
+import subprocess
+import tempfile
 from pathlib import Path
 from types import SimpleNamespace
 import sys
@@ -55,7 +57,126 @@ def receipt():
         },
     }
 
+
+def finance_receipt():
+    value = receipt()
+    value['reviewed_migration_profile'] = 'finance_setup_0003'
+    value['migration_rehearsal'].update(
+        reviewed_profile='finance_setup_0003', reviewed_migrations=1,
+        baseline_migration_records=269, migrated_records=270,
+        finance_school_id_semantics_preserved=True,
+    )
+    return value
+
 class StageContractTests(unittest.TestCase):
+    def test_finance_authority_requires_own_confirmation_and_every_existing_gate(self):
+        args = [SHA, 'migrate-dev-finance-setup-0003', 'true', 'true', 'true', RUN]
+        self.assertEqual(stage.authority(*args, ENV, profile='finance_setup_0003'), int(RUN))
+        for index, invalid in ((1, stage.CONFIRMATION), (2, 'false'),
+                               (3, 'false'), (4, 'false')):
+            bad = list(args)
+            bad[index] = invalid
+            with self.subTest(index=index), self.assertRaises(stage.StageBlocked):
+                stage.authority(*bad, ENV, profile='finance_setup_0003')
+        for key, invalid in (('GITHUB_REF', 'refs/heads/other'),
+                             ('GITHUB_SHA', 'b' * 40), ('GITHUB_REPOSITORY_ID', '0')):
+            with self.subTest(key=key), self.assertRaises(stage.StageBlocked):
+                stage.authority(*args, dict(ENV, **{key: invalid}), profile='finance_setup_0003')
+        with patch.object(stage, '_github_api_json') as api, self.assertRaises(stage.StageBlocked):
+            stage.authenticated_rehearsal_receipt(RUN, ARTIFACT_ID, SHA, ENV, profile='unknown')
+        api.assert_not_called()
+
+    def test_finance_receipt_cannot_reuse_legacy_profile_or_unverified_preservation(self):
+        self.assertTrue(stage.receipt_contract(finance_receipt(), SHA, profile='finance_setup_0003'))
+        for value, profile in ((receipt(), 'finance_setup_0003'),
+                               (finance_receipt(), 'heritage24')):
+            with self.subTest(profile=profile), self.assertRaises(stage.StageBlocked):
+                stage.receipt_contract(value, SHA, profile=profile)
+        for scope, key, invalid in (
+            ('outer', 'reviewed_migration_profile', None),
+            ('outer', 'reviewed_migration_profile', 'heritage24'),
+            ('outer', 'source_write_performed', True),
+            ('inner', 'reviewed_profile', None),
+            ('inner', 'finance_school_id_semantics_preserved', False),
+            ('inner', 'finance_school_id_semantics_preserved', 1),
+            ('inner', 'reviewed_migrations', 24),
+            ('inner', 'migrated_records', 293),
+            ('inner', 'remaining_pending', 1),
+        ):
+            bad = finance_receipt()
+            (bad if scope == 'outer' else bad['migration_rehearsal'])[key] = invalid
+            with self.subTest(scope=scope, key=key), self.assertRaises(stage.StageBlocked):
+                stage.receipt_contract(bad, SHA, profile='finance_setup_0003')
+
+    def test_finance_plan_requires_exact_one_forward_pinned_node(self):
+        from rehearse_dev_heritage_migrations import FINANCE_MIGRATIONS
+        node = SimpleNamespace(app_label='finance_setup',
+                               name='0003_financepolicyversion_uuid_compatible_school_id')
+        plan = [(node, False)]
+        self.assertEqual(stage.plan_contract(plan, FINANCE_MIGRATIONS, profile='finance_setup_0003'),
+                         list(FINANCE_MIGRATIONS))
+        for bad in ([], plan * 2, [(node, True)],
+                    [(SimpleNamespace(app_label='other', name=node.name), False)]):
+            with self.subTest(plan=bad), self.assertRaises(stage.StageBlocked):
+                stage.plan_contract(bad, FINANCE_MIGRATIONS, profile='finance_setup_0003')
+        with self.assertRaises(stage.StageBlocked):
+            stage.plan_contract(plan, FINANCE_MIGRATIONS)
+
+    def test_finance_cli_binds_selected_profile_to_authenticated_receipt_and_stage(self):
+        import io
+        from contextlib import redirect_stdout
+        proof = finance_receipt()
+        with patch.dict(os.environ, ENV, clear=True), \
+             patch.object(stage, 'authenticated_rehearsal_receipt', return_value=proof) as fetch, \
+             patch.object(stage, 'execute_stage', return_value={'result': 'PASS'}) as execute, \
+             redirect_stdout(io.StringIO()) as output:
+            code = stage.main(['--expected-sha', SHA, '--profile', 'finance_setup_0003',
+                '--confirmation', 'migrate-dev-finance-setup-0003',
+                '--synthetic-dev-confirmed', 'true', '--backup-recovery-verified', 'true',
+                '--maintenance-window-confirmed', 'true', '--rehearsal-run-id', RUN,
+                '--rehearsal-artifact-id', ARTIFACT_ID])
+        self.assertEqual(code, 0)
+        self.assertEqual(fetch.call_args.kwargs, {'profile': 'finance_setup_0003'})
+        execute.assert_called_once_with(SHA, proof, profile='finance_setup_0003')
+        self.assertIs(json.loads(output.getvalue())['live_dev_schema_write_performed'], True)
+
+    def test_actual_workflow_guard_preserves_default_and_requires_finance_authority(self):
+        import yaml
+        workflow = yaml.safe_load((stage.ROOT / '.github/workflows/deploy-dev.yml').read_text())
+        inputs = workflow.get('on', workflow.get(True))['workflow_dispatch']['inputs']
+        self.assertLessEqual(len(inputs), 10)
+        for name in ('apply_finance_setup_0003', 'apply_reviewed_heritage24'):
+            self.assertIs(inputs[name]['default'], False)
+        steps = workflow['jobs']['build-and-deploy']['steps']
+        guard = next(s for s in steps if s.get('name', '').startswith('Require reviewed migration owner'))
+        login = next(i for i, s in enumerate(steps) if s.get('uses', '').startswith('azure/login@'))
+        self.assertLess(steps.index(guard), login)
+        ordinary = dict(ENV, APPLY_REVIEWED24='false', APPLY_FINANCE='false',
+                        CONFIRM_REVIEWED24='', CONFIRM_FINANCE='', SYNTHETIC='false',
+                        RECOVERABLE='false', MAINTENANCE='false', RESTORE_RUN='', RESTORE_ARTIFACT='')
+        finance = dict(ordinary, APPLY_FINANCE='true', CONFIRM_FINANCE='migrate-dev-finance-setup-0003',
+                       SYNTHETIC='true', RECOVERABLE='true', MAINTENANCE='true',
+                       RESTORE_RUN=RUN, RESTORE_ARTIFACT=ARTIFACT_ID)
+        legacy = dict(finance, APPLY_FINANCE='false', CONFIRM_FINANCE='', APPLY_REVIEWED24='true',
+                      CONFIRM_REVIEWED24=stage.CONFIRMATION)
+        cases = [(ordinary, True, ''), (finance, True, 'finance_setup_0003'),
+                 (legacy, True, 'heritage24')]
+        for key, invalid in (('APPLY_REVIEWED24', 'true'), ('APPLY_FINANCE', 'yes'),
+                             ('CONFIRM_FINANCE', stage.CONFIRMATION), ('CONFIRM_REVIEWED24', 'unexpected'),
+                             ('SYNTHETIC', 'false'), ('RECOVERABLE', 'false'),
+                             ('MAINTENANCE', 'false'), ('RESTORE_RUN', STAGE_RUN),
+                             ('RESTORE_ARTIFACT', ''), ('GITHUB_REPOSITORY_ID', '0')):
+            cases.append((dict(finance, **{key: invalid}), False, ''))
+        cases.append((dict(ordinary, CONFIRM_FINANCE='migrate-dev-finance-setup-0003'), False, ''))
+        for index, (env, allowed, profile) in enumerate(cases):
+            with self.subTest(case=index), tempfile.TemporaryDirectory() as directory:
+                output = Path(directory) / 'environment'
+                result = subprocess.run(['bash', '-c', guard['run']],
+                    env=dict(env, GITHUB_ENV=str(output)), capture_output=True, text=True)
+                self.assertEqual(result.returncode == 0, allowed, result.stderr)
+                if allowed and profile:
+                    self.assertIn('REVIEWED_MIGRATION_PROFILE=' + profile, output.read_text())
+
     def test_required_manual_main_dev_synthetic_backup_and_run(self):
         self.assertEqual(stage.authority(SHA, stage.CONFIRMATION, 'true', 'true', 'true', RUN, ENV), int(RUN))
         for key, value in [('GITHUB_ACTIONS', 'false'), ('GITHUB_REF', 'refs/heads/dev'),
@@ -300,6 +421,87 @@ class StageContractTests(unittest.TestCase):
                 code=stage.main(['--expected-sha', SHA, '--rehearsal-artifact-id', ARTIFACT_ID])
             self.assertEqual(code,1)
             self.assertEqual(json.loads(output.getvalue())['result'],'BLOCKED')
+
+@unittest.skipUnless(os.environ.get('CROWN_STAGE_TEST_PORT'), 'requires disposable PostgreSQL15')
+class PostgreSQL15FinanceStageProof(unittest.TestCase):
+    def test_finance_stage_preserves_values_and_rolls_back_failed_validation(self):
+        import psycopg
+        from psycopg import sql
+        import rehearse_dev_heritage_migrations as rehearsal
+        port = os.environ['CROWN_STAGE_TEST_PORT']
+        database = 'crown_restore_9002_1'
+        with psycopg.connect(host='127.0.0.1', port=port, dbname='postgres', user='crown_drill',
+                             password='crown-drill-password', autocommit=True) as admin:
+            self.assertEqual(int(admin.execute('SHOW server_version_num').fetchone()[0]) // 10000, 15)
+            cluster = str(admin.execute('SELECT system_identifier FROM pg_control_system()').fetchone()[0])
+            admin.execute(sql.SQL('CREATE DATABASE {}').format(sql.Identifier(database)))
+            try:
+                env = rehearsal.child_environment(database, port, cluster, SHA, os.environ)
+                env['PYTHONPATH'] += os.pathsep + str(stage.ROOT / 'scripts/ops')
+                proof = '''
+import django
+django.setup()
+from django.db import connection, transaction
+from django.db.migrations.executor import MigrationExecutor
+from django.db.migrations.recorder import MigrationRecorder
+from scripts.ops import stage_dev_heritage_graph as stage
+from scripts.ops import rehearse_dev_heritage_migrations as rehearsal
+baseline_target = [('finance_setup', '0002_alter_discountpolicy_max_discount_percent_bp_and_more')]
+target = [('finance_setup', '0003_financepolicyversion_uuid_compatible_school_id')]
+executor = MigrationExecutor(connection)
+executor.migrate(baseline_target)
+models = executor.loader.project_state(baseline_target).apps
+policy = models.get_model('finance_setup', 'FinancePolicyVersion').objects.create(
+    school_id=41, academic_year='2026-2027', is_locked=True, locked_by='retained-lock')
+models.get_model('finance_setup', 'ExtendedCarePolicy').objects.create(version_id=policy.pk)
+stage.finance_column_contract(connection)
+columns = rehearsal.table_facts(connection)
+before = {t: rehearsal.row_digest(connection, t, n) for t,n in columns.items()}
+finance_before = rehearsal.row_digest(connection, 'finance_setup_financepolicyversion',
+    columns['finance_setup_financepolicyversion'], finance_school_as_text=True)
+history = set(MigrationRecorder(connection).applied_migrations())
+for changed_table, changed_column, changed_value in (
+    ('finance_setup_financepolicyversion', 'locked_by', 'unexpected-unlock'),
+    ('finance_setup_extendedcarepolicy', 'late_pickup_fee_cents', 999),
+):
+    try:
+        with transaction.atomic():
+            MigrationExecutor(connection).migrate(target)
+            stage.finance_column_contract(connection, migrated=True)
+            with connection.cursor() as cursor:
+                cursor.execute('UPDATE ' + connection.ops.quote_name(changed_table) +
+                    ' SET ' + connection.ops.quote_name(changed_column) + ' = %s', [changed_value])
+            stage.preserve_rows(connection, columns, before, {},
+                profile='finance_setup_0003', finance_before=finance_before)
+    except stage.StageBlocked as error:
+        assert str(error) == 'existing_dev_data_changed'
+    else:
+        raise AssertionError('Injected value mutation was accepted')
+    stage.finance_column_contract(connection)
+    assert set(MigrationRecorder(connection).applied_migrations()) == history
+    assert {t: rehearsal.row_digest(connection,t,n) for t,n in columns.items()} == before
+with transaction.atomic():
+    executor = MigrationExecutor(connection)
+    executor.migrate(target)
+    stage.finance_column_contract(connection, migrated=True)
+    stage.preserve_rows(connection, columns, before, {},
+        profile='finance_setup_0003', finance_before=finance_before)
+    assert set(MigrationRecorder(connection).applied_migrations()) == history | set(target)
+    rehearsal.verify_finance_policy_writes(executor, connection)
+    stage.preserve_rows(connection, columns, before, {},
+        profile='finance_setup_0003', finance_before=finance_before)
+with connection.cursor() as cursor:
+    cursor.execute('SELECT school_id,is_locked,locked_by FROM finance_setup_financepolicyversion')
+    assert cursor.fetchall() == [('41', True, 'retained-lock')]
+print('PG15 Finance stage: values preserved; parent and child mutation rolled back; UUID and numeric writes verified')
+'''
+                result = subprocess.run([sys.executable, '-c', proof], cwd=stage.ROOT, env=env,
+                                        capture_output=True, text=True, timeout=90)
+                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                self.assertIn('parent and child mutation rolled back', result.stdout)
+            finally:
+                admin.execute(sql.SQL('DROP DATABASE {} WITH (FORCE)').format(sql.Identifier(database)))
+
 
 if __name__ == '__main__':
     unittest.main()
