@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import CrownLayout from "../components/crown/CrownLayout.jsx";
 import { apiJson } from "../lib/api.js";
 import {
@@ -33,6 +33,7 @@ export default function JirehAidDecisionsPage() {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [unresolvedWrite, setUnresolvedWrite] = useState(false);
+  const pendingMutation = useRef(null);
   const [revision, setRevision] = useState(0);
   const current = useCallback(() =>
     Boolean(getSelectedSchoolId()) && Boolean(getAccessToken()) && scope === identity(), [scope]);
@@ -50,6 +51,7 @@ export default function JirehAidDecisionsPage() {
   useEffect(() => {
     let active = true;
     setYearId(""); setOverview(null); setDashboardMeta(null);
+    pendingMutation.current = null;
     setApplicationId(""); setReview(null); setError(""); setNotice(""); setUnresolvedWrite(false);
     if (!current()) {
       setError("A verified school session is required.");
@@ -135,6 +137,8 @@ export default function JirehAidDecisionsPage() {
     let gross;
     try { gross = dollarsToCents(tuition); }
     catch (failure) { setError(messageFor(failure)); return; }
+    pendingMutation.current = { kind: "offer", applicationId: String(applicationId),
+      studentId: String(studentId), bucket };
     setBusy(true); setError(""); setNotice(""); setUnresolvedWrite(true);
     try {
       const created = await apiJson("/api/aid/admin/recommend-award/", {
@@ -153,6 +157,7 @@ export default function JirehAidDecisionsPage() {
       if (!award) throw new Error("Offer requires independent saved-record reconciliation.");
       if (!current()) return;
       setNotice("Offer #" + award.id + " saved and independently verified; no financial posting occurred.");
+      pendingMutation.current = null;
       setUnresolvedWrite(false);
     } catch (failure) {
       if (current()) setError("Recommendation outcome needs reconciliation before retry: " + messageFor(failure));
@@ -162,6 +167,8 @@ export default function JirehAidDecisionsPage() {
   async function approve(award) {
     if (busy || unresolvedWrite || !reviewConfirmed || !current() || approvalText !== "APPROVE"
       || award.decision_status !== "OFFERED" || Number(award.awarded_cents) <= 0) return;
+    pendingMutation.current = { kind: "approve", awardId: String(award.id),
+      applicationId: String(applicationId), studentId: String(award.student_id) };
     setBusy(true); setError(""); setNotice(""); setUnresolvedWrite(true);
     try {
       await apiJson("/api/aid/admin/awards/" + encodeURIComponent(award.id) + "/approve/", {
@@ -175,6 +182,7 @@ export default function JirehAidDecisionsPage() {
       }
       if (!current()) return;
       setNotice("Accepted award #" + linked.id + " and noncash ledger credit verified; dashboard face value reconciled. No payment was made.");
+      pendingMutation.current = null;
       setUnresolvedWrite(false);
       setApprovalText(""); setApprovalReason("");
     } catch (failure) {
@@ -191,8 +199,35 @@ export default function JirehAidDecisionsPage() {
     <section style={BOX}>
       <div style={ROW}>
         <h2 style={{ margin: 0 }}>Current aid year: {yearId ? "Verified (live)" : "Not verified"}</h2>
-        <button type="button" disabled={busy || !yearId} onClick={() => {
-          setError(""); setNotice(""); setUnresolvedWrite(false); setRevision((value) => value + 1);
+        <button type="button" disabled={busy || !yearId} onClick={async () => {
+          setError(""); setNotice("");
+          if (!unresolvedWrite) { setRevision((value) => value + 1); return; }
+          setBusy(true);
+          try {
+            const { data, meta } = await readOverview();
+            const attempt = pendingMutation.current;
+            if (attempt?.kind === "offer") {
+              const match = data.awards.find((award) =>
+                String(award.aid_application_id) === attempt.applicationId
+                && String(award.student_id) === attempt.studentId
+                && award.award_type === attempt.bucket
+                && award.decision_status === "OFFERED" && !award.ledger_entry_id);
+              if (!match) throw new Error("No committed matching offer was verified; writes remain disabled.");
+              setNotice("Existing OFFERED award #" + match.id + " independently reconciled; no second request submitted.");
+            } else if (attempt?.kind === "approve") {
+              const linked = verifiedAcceptedAward(data, attempt.awardId, attempt.applicationId, attempt.studentId);
+              if (!linked || !meta || meta.accepted_award_face_value_cents !== acceptedFaceValue(data))
+                throw new Error("Accepted award, ledger and live dashboard did not reconcile; writes remain disabled.");
+              setNotice("Existing accepted award #" + linked.id + " and ledger credit independently reconciled.");
+            } else {
+              throw new Error("The earlier request cannot be identified; writes remain disabled.");
+            }
+            if (!current()) return;
+            pendingMutation.current = null;
+            setUnresolvedWrite(false);
+          } catch (failure) {
+            if (current()) setError("A prior write may have committed. " + messageFor(failure));
+          } finally { if (current()) setBusy(false); }
         }}>Refresh and reconcile records</button>
       </div>
       <p>Dashboard truth: <strong>{dashboardMeta ? "Live canonical records" : "Not verified — fallback is not financial proof"}</strong>.</p>
