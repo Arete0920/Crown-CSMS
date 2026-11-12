@@ -30,6 +30,7 @@ from .live_personas import (
     build_persona_dashboard_payload,
 )
 from .models import DashboardSnapshot
+from .financial_aid_live import FinancialAidDashboardIntegrityError, financial_aid_live_payload
 from .payload_contract import validate_dashboard_payload
 from .program_live_payloads import PROGRAM_PERMISSIONS, build_program_live_payload, validate_program_payload
 from .sample_payloads import SAMPLE_PAYLOAD_BUILDERS
@@ -48,6 +49,7 @@ DASHBOARD_PAYLOAD_BUILDERS = {
 LIVE_RUNTIME_DASHBOARDS = frozenset({
     'billing',
     'school-board',
+    'financial-aid',
 })
 
 STAFF_ONLY_DASHBOARDS = frozenset({
@@ -191,7 +193,12 @@ def _build_verified_live_payload(key, school_id):
     if key not in LIVE_RUNTIME_DASHBOARDS:
         return None
 
-    payload = deepcopy(DASHBOARD_PAYLOAD_BUILDERS[key](school_id))
+    if key == 'financial-aid':
+        payload = financial_aid_live_payload(school_id)
+        if payload is None:
+            return None
+    else:
+        payload = deepcopy(DASHBOARD_PAYLOAD_BUILDERS[key](school_id))
     payload.setdefault('meta', {})
     payload['meta']['school_id'] = school_id
     served_from = str(payload['meta'].get('served_from') or '').strip().lower()
@@ -406,7 +413,23 @@ class DashboardSummaryView(APIView):
             school = _resolve_school_strict(request, allow_dev_open_fallback=False)
             school_id = str(school.id)
 
-        live_payload = _build_verified_live_payload(key, school_id)
+        try:
+            live_payload = _build_verified_live_payload(key, school_id)
+        except FinancialAidDashboardIntegrityError:
+            return Response(
+                {'code': 'financial_aid_integrity_review_required',
+                 'detail': 'Financial Aid dashboard requires controlled record reconciliation.'},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+        except DatabaseError:
+            if key != 'financial-aid':
+                # Preserve pre-existing behavior for unrelated dashboards.
+                raise
+            return Response(
+                {'code': 'financial_aid_live_data_unavailable',
+                 'detail': 'Authoritative financial aid data could not be retrieved.'},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
         if live_payload is not None:
             return Response(live_payload, status=status.HTTP_200_OK)
 
