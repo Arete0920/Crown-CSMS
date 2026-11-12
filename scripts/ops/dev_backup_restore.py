@@ -280,7 +280,12 @@ def private_archive(environ, evidence):
             evidence["ephemeral_backup_removed"] = not archive.exists()
 
 
-def perform(container, database, evidence, environ, *, rehearse=False, verify_prior_image=False):
+def perform(container, database, evidence, environ, *, rehearse=False, verify_prior_image=False,
+            profile="heritage24"):
+    from rehearse_dev_heritage_migrations import profile_manifest
+    profile_manifest(profile)
+    if profile != "heritage24" and (not rehearse or verify_prior_image):
+        raise RestoreBlocked("explicit_finance_rehearsal_only")
     if verify_prior_image and not rehearse:
         raise RestoreBlocked("prior_image_requires_reviewed_rehearsal")
     import psycopg
@@ -337,9 +342,10 @@ def perform(container, database, evidence, environ, *, rehearse=False, verify_pr
                 evidence["recovery_stage"] = "restored_copy_migration_rehearsal"
                 evidence["restore_integrity_scope"] = "before_migration_rehearsal"
                 try:
+                    options = {} if profile == "heritage24" else {"profile": profile}
                     evidence["migration_rehearsal"] = rehearse_clone(
                         database, environ.get("CROWN_REHEARSAL_PG_PORT", ""), cluster,
-                        evidence["source_sha"], environ,
+                        evidence["source_sha"], environ, **options,
                     )
                 except RehearsalBlocked as error:
                     if hasattr(error, "receipt"):
@@ -372,6 +378,8 @@ def main(argv=None):
     parser.add_argument("--evidence-path", required=True)
     parser.add_argument("--rehearse-reviewed-migrations", action="store_true",
                         help="Apply only the reviewed migration graph to the disposable PG15 copy, never DEV.")
+    parser.add_argument("--reviewed-migration-profile", default="heritage24",
+                        choices=("heritage24", "finance_setup_0003"))
     parser.add_argument("--verify-prior-image", action="store_true",
                         help="Opt-in fixed-digest image probe on the migrated disposable copy only.")
     parser.add_argument("--confirm-prior-image", default="")
@@ -384,11 +392,15 @@ def main(argv=None):
         "data_origin": "owner_attested_synthetic_dev" if args.synthetic_dev_confirmed == "true" else "NOT_VERIFIED",
         "source_write_performed": False,
         "migration_rehearsal_requested": args.rehearse_reviewed_migrations,
+        "reviewed_migration_profile": args.reviewed_migration_profile,
         "prior_image_probe_requested": args.verify_prior_image,
         "disposable_database_created": False, "disposable_database_dropped": False,
         "application_rollback_compatibility": "NOT_TESTED", "release_readiness": "NOT_VERIFIED",
     }
     try:
+        if args.reviewed_migration_profile != "heritage24" and (
+                not args.rehearse_reviewed_migrations or args.verify_prior_image or args.confirm_prior_image):
+            raise RestoreBlocked("explicit_finance_rehearsal_only")
         if args.verify_prior_image or args.confirm_prior_image:
             from probe_dev_prior_image import CONFIRMATION as PRIOR_CONFIRMATION
             if (not args.verify_prior_image or not args.rehearse_reviewed_migrations
@@ -400,7 +412,9 @@ def main(argv=None):
         if args.verify_prior_image:
             perform(container, database, evidence, os.environ, rehearse=True, verify_prior_image=True)
         elif args.rehearse_reviewed_migrations:
-            perform(container, database, evidence, os.environ, rehearse=True)
+            options = {} if args.reviewed_migration_profile == "heritage24" else {
+                "profile": args.reviewed_migration_profile}
+            perform(container, database, evidence, os.environ, rehearse=True, **options)
         else:
             perform(container, database, evidence, os.environ)
         evidence["result"] = "PASS"
