@@ -59,6 +59,11 @@ on:
         description: "Opt-in fixed-digest old-image probe on migrated disposable PG15 only; not full rollback certification"
         type: boolean
         default: false
+      reviewed_migration_profile:
+        description: "Exact disposable-copy graph; Finance Setup does not authorize live DDL or old-image proof"
+        type: choice
+        options: [heritage24, finance_setup_0003]
+        default: heritage24
       confirm_prior_image:
         description: "For prior-image probe, type test-prior-image-on-disposable-copy"
         type: string
@@ -99,7 +104,19 @@ jobs:
         env:
           REHEARSE: ${{ inputs.rehearse_reviewed_migrations }}
           OPERATIONAL: ${{ inputs.dev_operational_restore }}
-        run: test "$REHEARSE" != true || test "$OPERATIONAL" = true
+          PROFILE: ${{ inputs.reviewed_migration_profile }}
+          PRIOR_IMAGE: ${{ inputs.verify_prior_image }}
+        run: |
+          set -euo pipefail
+          test "$REHEARSE" != true || test "$OPERATIONAL" = true
+          case "$PROFILE" in
+            heritage24|'') ;;
+            finance_setup_0003)
+              test "$REHEARSE" = true
+              test "$OPERATIONAL" = true
+              test "$PRIOR_IMAGE" != true ;;
+            *) exit 1 ;;
+          esac
       - name: Require explicit disposable prior-image probe authority
         if: github.event_name == 'workflow_dispatch'
         env:
@@ -236,10 +253,12 @@ jobs:
           PRIOR_IMAGE: ${{ inputs.verify_prior_image }}
           PRIOR_CONFIRMATION: ${{ inputs.confirm_prior_image }}
           DOCKER_CONFIG: ${{ runner.temp }}/crown-prior-image-docker
+          PROFILE: ${{ inputs.reviewed_migration_profile }}
         run: |
           umask 077
           rehearsal_args=()
           if [[ "$REHEARSE" == true ]]; then rehearsal_args+=(--rehearse-reviewed-migrations); fi
+          rehearsal_args+=(--reviewed-migration-profile "${PROFILE:-heritage24}")
           if [[ "$PRIOR_IMAGE" == true ]]; then
             rehearsal_args+=(--verify-prior-image --confirm-prior-image "$PRIOR_CONFIRMATION")
           fi
