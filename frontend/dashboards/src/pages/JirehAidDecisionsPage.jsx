@@ -5,7 +5,7 @@ import {
   getAccessToken, getSelectedSchoolId, SCHOOL_CONTEXT_CHANGE_EVENT,
 } from "../utils/authClient.js";
 import {
-  requireAidOverview, requireCurrentAidYear, dollarsToCents,
+  requireAidOverview, requireLiveAidYear, dollarsToCents,
   verifiedAcceptedAward, acceptedFaceValue,
 } from "./jirehAidChecks.js";
 
@@ -19,7 +19,6 @@ const messageFor = (error) => error?.response?.data?.detail || error?.response?.
 export default function JirehAidDecisionsPage() {
   const [scope, setScope] = useState(identity);
   const [yearId, setYearId] = useState("");
-  const [yearName, setYearName] = useState("");
   const [overview, setOverview] = useState(null);
   const [dashboardMeta, setDashboardMeta] = useState(null);
   const [applicationId, setApplicationId] = useState("");
@@ -50,18 +49,16 @@ export default function JirehAidDecisionsPage() {
 
   useEffect(() => {
     let active = true;
-    setYearId(""); setYearName(""); setOverview(null); setDashboardMeta(null);
+    setYearId(""); setOverview(null); setDashboardMeta(null);
     setApplicationId(""); setReview(null); setError(""); setNotice(""); setUnresolvedWrite(false);
     if (!current()) {
       setError("A verified school session is required.");
       return () => { active = false; };
     }
-    apiJson("/api/v1/academics/years/?limit=100")
+    apiJson("/api/v1/dashboards/financial-aid/summary")
       .then((data) => {
         if (!active || !current()) return;
-        const year = requireCurrentAidYear(data, getSelectedSchoolId());
-        setYearId(String(year.year_id));
-        setYearName(year.name);
+        setYearId(requireLiveAidYear(data, getSelectedSchoolId()));
       })
       .catch((failure) => { if (active && current()) setError(messageFor(failure)); });
     return () => { active = false; };
@@ -193,7 +190,7 @@ export default function JirehAidDecisionsPage() {
     {busy && <p role="status">Verifying the current operation…</p>}
     <section style={BOX}>
       <div style={ROW}>
-        <h2 style={{ margin: 0 }}>Current aid year: {yearName || "Not verified"}</h2>
+        <h2 style={{ margin: 0 }}>Current aid year: {yearId ? "Verified (live)" : "Not verified"}</h2>
         <button type="button" disabled={busy || !yearId} onClick={() => {
           setError(""); setNotice(""); setUnresolvedWrite(false); setRevision((value) => value + 1);
         }}>Refresh and reconcile records</button>

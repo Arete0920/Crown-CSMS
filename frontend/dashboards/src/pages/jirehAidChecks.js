@@ -19,6 +19,18 @@ export function requireCurrentAidYear(payload, schoolId) {
   return active[0];
 }
 
+export function requireLiveAidYear(payload, schoolId) {
+  const meta = payload?.meta;
+  const yearId = meta?.academic_year_id;
+  if (payload?.dashboard_key !== 'financial-aid' || meta?.served_from !== 'live_db'
+      || typeof schoolId !== 'string' || !schoolId.trim() || meta.school_id !== schoolId
+      || typeof yearId !== 'string' || yearId.length !== 36
+      || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(yearId)) {
+    throw new Error('A live Financial Aid summary with matching school and valid academic year is required.');
+  }
+  return yearId;
+}
+
 export function dollarsToCents(value) {
   const input = String(value || '').trim();
   if (!/^\d+(?:\.\d{1,2})?$/.test(input)) throw new Error('Enter a valid tuition amount in dollars.');
