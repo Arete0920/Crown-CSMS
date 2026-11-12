@@ -103,4 +103,3 @@ class TestRecommendationConcurrentRetry(TransactionTestCase):
             aid_application=self.application, student=self.student,
             award_type=AidAward.TYPE_NEED,
         ).exclude(decision_status=AidAward.DECISION_DECLINED).count(), 1)
-
