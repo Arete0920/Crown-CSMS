@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - ".github/workflows/isolated-postgres-restore-drill.yml"
+      - ".github/workflows/deploy-dev.yml"
       - "backend/crown_api/management/commands/verify_backup_restore.py"
       - "backend/tests/test_verify_backup_restore_command.py"
       - "backend/crm_marketing/models.py"
@@ -15,12 +16,16 @@ on:
       - "scripts/ops/test_dev_backup_restore.py"
       - "scripts/ops/rehearse_dev_heritage_migrations.py"
       - "scripts/ops/test_rehearse_dev_heritage_migrations.py"
+      - "scripts/ops/stage_dev_heritage_graph.py"
+      - "scripts/ops/test_stage_dev_heritage_graph.py"
+      - "scripts/ops/test_dev_reviewed24_workflow.py"
       - "scripts/ops/probe_dev_prior_image.py"
       - "scripts/ops/test_probe_dev_prior_image.py"
   push:
     branches: [main]
     paths:
       - ".github/workflows/isolated-postgres-restore-drill.yml"
+      - ".github/workflows/deploy-dev.yml"
       - "backend/crown_api/management/commands/verify_backup_restore.py"
       - "backend/tests/test_verify_backup_restore_command.py"
       - "backend/crm_marketing/models.py"
@@ -31,6 +36,9 @@ on:
       - "scripts/ops/test_dev_backup_restore.py"
       - "scripts/ops/rehearse_dev_heritage_migrations.py"
       - "scripts/ops/test_rehearse_dev_heritage_migrations.py"
+      - "scripts/ops/stage_dev_heritage_graph.py"
+      - "scripts/ops/test_stage_dev_heritage_graph.py"
+      - "scripts/ops/test_dev_reviewed24_workflow.py"
       - "scripts/ops/probe_dev_prior_image.py"
       - "scripts/ops/test_probe_dev_prior_image.py"
   workflow_dispatch:
@@ -176,6 +184,12 @@ jobs:
         env:
           CROWN_REHEARSAL_TEST_PORT: ${{ job.services.postgres.ports['5432'] }}
         run: python -m unittest discover -s scripts/ops -p test_rehearse_dev_heritage_migrations.py -v
+      - name: Verify Finance stage preservation and rollback on disposable PG15
+        env:
+          CROWN_STAGE_TEST_PORT: ${{ job.services.postgres.ports['5432'] }}
+        run: |
+          python -m unittest discover -s scripts/ops -p test_dev_reviewed24_workflow.py -v
+          python -m unittest discover -s scripts/ops -p test_stage_dev_heritage_graph.py -v
 
   dev-operational-restore:
     if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.dev_operational_restore == true
