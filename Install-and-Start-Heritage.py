@@ -34,7 +34,7 @@ def _source_token():
                 "Sign in using 'gh auth login' or supply GH_TOKEN securely."
             ) from None
         token = completed.stdout.strip()
-    if not token or any(char in token for char in ("\\r", "\\n")):
+    if not token or any(char in token for char in ("\r", "\n")):
         raise RuntimeError("Valid GitHub source authorization is required")
     return token
 

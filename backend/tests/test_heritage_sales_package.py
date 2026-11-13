@@ -338,3 +338,19 @@ def test_private_starter_missing_auth_fails_closed(monkeypatch):
     with patch.object(installer["subprocess"], "run", side_effect=FileNotFoundError):
         with pytest.raises(RuntimeError, match="gh auth login"):
             installer["_source_token"]()
+
+
+def test_private_starter_rejects_line_breaks_in_authorization(monkeypatch):
+    installer = runpy.run_path(str(ROOT / "Install-and-Start-Heritage.py"))
+    monkeypatch.setenv("GH_TOKEN", "synthetic-token\ninvalid")
+    with pytest.raises(RuntimeError, match="Valid GitHub source authorization"):
+        installer["_source_token"]()
+
+
+def test_private_starter_readmes_require_owner_repository_login():
+    basic = (ROOT / "HERITAGE-LOCAL-DEMO-README.txt").read_text(encoding="utf-8")
+    candidate = loader().render_readme("a" * 40, five_module_candidate=True).decode("utf-8")
+    assert "gh auth login" in basic
+    assert "gh auth login" in candidate
+    assert "PRIVATE" in basic
+    assert "UNCERTIFIED" in candidate

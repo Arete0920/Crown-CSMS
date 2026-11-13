@@ -6,15 +6,20 @@ START ON A DEMO COMPUTER
    Tested runtime: Python 3.12 and Node.js 24.
    Python downloads: https://www.python.org/downloads/
    Node downloads: https://nodejs.org/en/download
-2. Extract the downloaded ZIP completely into a normal writable folder.
-3. Double-click Start-Heritage.cmd in the extracted CROWN folder for a BASIC
+2. The source repository is PRIVATE. On the owner's approved demo laptop,
+   install GitHub CLI, run "gh auth login", then confirm repository access
+   using "gh auth status". Use an authorized Arete account with Contents:read
+   access. Do not place credentials in the ZIP, manifests, scripts or emails.
+   Do not give prospective schools source code or access credentials.
+3. Extract the downloaded ZIP completely into a normal writable folder.
+4. Double-click Start-Heritage.cmd in the extracted CROWN folder for a BASIC
    historical sales demo. This default basic source pin is NOT the current
    five-module integration. For five modules use a reviewed candidate with
    five_module_candidate=true in HERITAGE-SALES-MANIFEST.json, or the
    explicit local source-checkout command below.
-4. Keep the startup window open. First setup requires internet and can take
-   several minutes while it downloads source/dependencies and creates the database.
-5. The browser opens http://localhost:4173/sandbox. Select a role; no password
+5. Keep the startup window open. First setup requires internet, an authorized
+   GitHub CLI login and time to download dependencies and create the database.
+6. The browser opens http://localhost:4173/sandbox. Select a role; no password
    is required. If the browser does not open, enter that URL on this computer.
 
 This is a laptop/desktop demo. localhost refers to the computer running it;
