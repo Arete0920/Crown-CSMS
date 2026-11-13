@@ -223,5 +223,8 @@ jobs:
             .local-backups/heritage-demo/presenter-entry.png
             frontend/dashboards/test-results/**/*.png
             frontend/dashboards/test-results/**/*.layout.json
+            frontend/dashboards/test-results/**/*.webm
+            frontend/dashboards/test-results/**/trace.zip
+            frontend/dashboards/test-results/**/error-context.md
           if-no-files-found: error
           retention-days: 7
