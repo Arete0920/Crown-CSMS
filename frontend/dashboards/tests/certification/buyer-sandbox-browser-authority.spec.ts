@@ -216,13 +216,18 @@ test.describe('CROWN buyer sandbox live browser authority', () => {
 
 
   test('admissions enrollment completes or preserves the same fictional student handoff', async ({ page }) => {
+    // The Windows local SQLite server may queue initial read-only requests.
+    // Do not declare this journey complete unless real navigation and the
+    // seeded family both load; preserve the enrollment mutation and readback.
+    test.setTimeout(120000);
     await launchPersona(page, 'Admissions Director');
     await page.goto('/admissions/pipeline', { waitUntil: 'networkidle' });
+    await expect(page.getByText('Live / Role Scoped', { exact: true })).toBeVisible({ timeout: 45000 });
     const targetFamily = 'Mercer Enrollment Conversion Demo Family';
     const row = page.getByRole('row').filter({
       has: page.getByRole('cell', { name: targetFamily, exact: true }),
     });
-    await expect(row).toBeVisible();
+    await expect(row).toBeVisible({ timeout: 45000 });
     const alreadyEnrolled = await row.getByRole('cell', { name: 'Enrolled', exact: true }).isVisible();
     if (!alreadyEnrolled) {
       await expect(row.getByRole('cell', { name: 'Accepted', exact: true })).toBeVisible();
