@@ -32,6 +32,19 @@ function slug(value: string) {
     .replace(/^-|-$/g, '') || 'root';
 }
 
+function hostedBuyerEntryRoute() {
+  // Hosted Azure personas must use the bound invitation owned by an isolated
+  // fictional buyer school. Never emulate the local Heritage open-session path.
+  if (process.env.CROWN_CERTIFICATION_LIVE_RUNTIME !== '1') {
+    return BUYER_WALKTHROUGH.entryRoute;
+  }
+  const inviteId = String(process.env.CROWN_LIVE_SANDBOX_INVITE_ID || '').trim();
+  if (!/^sbx_inv_[A-Za-z0-9]{1,24}$/.test(inviteId)) {
+    throw new Error('Live buyer certification requires a valid DEV invitation and isolated workspace.');
+  }
+  return `${BUYER_WALKTHROUGH.entryRoute}?invite=${encodeURIComponent(inviteId)}`;
+}
+
 async function assertCrownVisualAuthority(page: Page) {
   const tokens = await page.evaluate(() => {
     const styles = getComputedStyle(document.documentElement);
@@ -60,7 +73,7 @@ async function assertNoHorizontalOverflow(page: Page) {
 }
 
 async function launchPersona(page: Page, label: string) {
-  const entry = await page.goto(BUYER_WALKTHROUGH.entryRoute, { waitUntil: 'networkidle' });
+  const entry = await page.goto(hostedBuyerEntryRoute(), { waitUntil: 'networkidle' });
   expect(entry?.status() ?? 200).toBeLessThan(400);
   await expect(page).not.toHaveURL(/\/login(?:[/?#]|$)/i);
   await expect(page.getByText('No buyer password')).toBeVisible();
@@ -411,7 +424,7 @@ test.describe('CROWN buyer sandbox live browser authority', () => {
 
   test('buyer entry remains usable at mobile width', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
-    const response = await page.goto(BUYER_WALKTHROUGH.entryRoute, { waitUntil: 'networkidle' });
+    const response = await page.goto(hostedBuyerEntryRoute(), { waitUntil: 'networkidle' });
     expect(response?.status() ?? 200).toBeLessThan(400);
     await expect(page.getByText('No buyer password')).toBeVisible();
     await assertCrownVisualAuthority(page);
