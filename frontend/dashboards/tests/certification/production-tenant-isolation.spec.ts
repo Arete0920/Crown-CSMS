@@ -122,6 +122,12 @@ test('Heritage Board renewal preserves least privilege and tenant isolation', as
     expect(health.env).toBe('dev');
     expect(health.build_sha).toBe(health.artifact_build_sha);
     expect(health.db).toBe('ok');
+    // Unlike the loopback Heritage helper, hosted Azure is strictly
+    // invite/workspace-bound. No uninvited Board session is acceptable.
+    const inviteId = String(process.env.CROWN_LIVE_SANDBOX_INVITE_ID || '').trim();
+    if (!/^sbx_inv_[A-Za-z0-9]{1,24}$/.test(inviteId)) {
+      throw new Error('Hosted Board renewal requires an existing authorized DEV buyer invitation.');
+    }
     let schoolId: string | undefined;
     const sessions: { access: string; school_id: string }[] = [];
     for (let renewal = 0; renewal < 2; renewal++) {
@@ -129,7 +135,7 @@ test('Heritage Board renewal preserves least privilege and tenant isolation', as
       let session;
       try {
         const response = await issuer.post(`${api}/api/v1/sandbox/session/`, {
-          data: { role: 'board', school: 'heritage-core', track: 'school' },
+          data: { role: 'board', school: 'heritage-core', track: 'school', invite_id: inviteId },
         });
         expect(response.status(), 'authorized Heritage Board session').toBe(201);
         session = await response.json();
