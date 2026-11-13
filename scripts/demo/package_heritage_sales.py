@@ -136,7 +136,7 @@ def build(
         "product": "CROWN Heritage Christian Academy local sales demo",
         "repository": "Arete0920/Crown-CSMS",
         "source_sha": sha,
-        "source_url": f"https://github.com/Arete0920/Crown-CSMS/archive/{sha}.zip",
+        "source_url": f"https://api.github.com/repos/Arete0920/Crown-CSMS/zipball/{sha}",
         "launch": "Start-Heritage.cmd",
         "entry": "http://localhost:4173/sandbox",
         "type": "isolated fictional-data local demo",

@@ -46,16 +46,23 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
+          fetch-depth: 0
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
         with:
           python-version: '3.12'
+      - name: Refuse privileged source audit from foreign forks
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository
+        shell: bash
+        run: exit 1
       - name: Assemble starter and check independent source identity
         shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           python scripts/demo/package_heritage_sales.py
           PIN_SHA="$(PYTHONPATH=scripts/demo python -c 'from package_heritage_sales import pinned_revision; print(pinned_revision())')"
-          git fetch --no-tags --depth=1 origin "$PIN_SHA"
+          git cat-file -e "${PIN_SHA}^{commit}"
           python scripts/demo/verify_heritage_sales_package.py --download
       - name: Exercise source-stamped five-module candidate contract (NOT certified)
         shell: bash
@@ -88,6 +95,10 @@ jobs:
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
         with:
           python-version: '3.12'
+      - name: Refuse privileged source audit from foreign forks
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository
+        shell: pwsh
+        run: throw 'Private Heritage source audit requires a trusted repository branch'
       - name: Reject incomplete module source before installs, migrations or build
         shell: pwsh
         run: |
@@ -150,6 +161,8 @@ jobs:
       - name: Build and audit source-stamped Heritage candidate
         id: tested_package
         shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           $checkoutSha = git rev-parse HEAD
           if ($LASTEXITCODE -ne 0) { throw 'Could not identify tested source' }
