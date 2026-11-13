@@ -14,6 +14,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from django.utils import timezone
 from django.db.models import Sum
+from django.db import transaction
 
 from aid.models import AidApplication, AidAward, AidPolicy, AidBudgetTracker, AidFinancialProfile
 from aid.serializers import (
@@ -312,6 +313,7 @@ def admin_aid_overview(request):
 @extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 @permission_classes([IsAuthenticated, CrownModulePermission("financial_aid.view", write_code="financial_aid.edit")])
+@transaction.atomic
 def admin_recommend_award(request):
     """
     Generate a new award recommendation via the award engine.
@@ -356,7 +358,7 @@ def admin_recommend_award(request):
         return Response({"detail": "gross_tuition_cents must be > 0"}, status=status.HTTP_400_BAD_REQUEST)
 
     try:
-        app = AidApplication.objects.get(
+        app = AidApplication.objects.select_for_update(of=("self",)).get(
             pk=application_id,
             school_id=school_id,
             family__school_id=school_id,
@@ -365,7 +367,9 @@ def admin_recommend_award(request):
     except (AidApplication.DoesNotExist, ValueError, TypeError):
         return Response({"detail": "AidApplication not found"}, status=status.HTTP_404_NOT_FOUND)
 
-    student = Student.objects.filter(
+    # Application is already locked; also lock student before relying on
+    # its family membership, so concurrent reassignment cannot race the offer.
+    student = Student.objects.select_for_update(of=("self",)).filter(
         pk=student_pk,
         school_id=school_id,
         family_id=app.family_id,
@@ -380,6 +384,17 @@ def admin_recommend_award(request):
         return Response(
             {"detail": "No AidPolicy found for this school and academic year"},
             status=status.HTTP_404_NOT_FOUND,
+        )
+
+    # Serialize offer creation through the parent application: PostgreSQL
+    # must not create two non-declined offers for the same decision key.
+    if AidAward.objects.filter(
+        school_id=school_id, academic_year_id=app.academic_year_id,
+        aid_application_id=app.pk, student_id=student.pk, award_type=bucket,
+    ).exclude(decision_status=AidAward.DECISION_DECLINED).exists():
+        return Response(
+            {"detail": "An active award already exists for this application, student and category."},
+            status=status.HTTP_409_CONFLICT,
         )
 
     engine_app = build_engine_application(app)
