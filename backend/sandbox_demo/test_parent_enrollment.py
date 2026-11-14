@@ -543,4 +543,3 @@ def test_one_parent_application_replayed_by_registrar_keeps_one_canonical_enroll
     )
     assert row["lifecycle_stage"] == "enrolled"
     _assert_continuity(row, "completed")
-
