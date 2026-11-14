@@ -36,12 +36,14 @@ function hostedBuyerEntryRoute() {
   // Hosted Azure personas must use the bound invitation owned by an isolated
   // fictional buyer school. Never emulate the local Heritage open-session path.
   // The Windows Heritage runner reuses the live Playwright mode to target its
-  // already-running preview server. That loopback test is NOT an Azure buyer
-  // session and must retain the controlled local open-session contract.
+  // already-running preview server. Its launcher sets the local runtime
+  // markers before the first buyer suite; presenter-only flags are set later.
+  // A hosted/nonloopback browser still requires an invited buyer workspace.
   const localHeritagePreview =
     process.env.CROWN_LIVE_FRONTEND_URL === 'http://localhost:4173' &&
-    process.env.CROWN_LOCAL_PRESENTER_E2E === '1' &&
-    process.env.CROWN_REQUIRE_LOCAL_PRESENTER_PROOF === '1';
+    process.env.CROWN_ENV === 'local' &&
+    process.env.DJANGO_ENV === 'local' &&
+    process.env.VITE_LOCAL_DEMO === '1';
   if (process.env.CROWN_CERTIFICATION_LIVE_RUNTIME !== '1' || localHeritagePreview) {
     return BUYER_WALKTHROUGH.entryRoute;
   }
