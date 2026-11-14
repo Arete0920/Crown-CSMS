@@ -140,7 +140,7 @@ class DevAutoReleaseEligibilityTests(unittest.TestCase):
                     "repository-freshness.yml").read_text(encoding="utf-8")
         self.assertEqual(workflow.count("  dev-auto-delivery-eligibility:"), 1)
         candidate = workflow.split("  dev-auto-delivery-eligibility:", 1)[1].split(
-            "  report-stale-branches:", 1,
+            "  dev-automatic-code-only-release:", 1,
         )[0]
         self.assertIn("vars.CROWN_AUTO_DEV_CD_ENABLED == 'true'", candidate)
         self.assertIn("github.event_name == 'push'", candidate)
