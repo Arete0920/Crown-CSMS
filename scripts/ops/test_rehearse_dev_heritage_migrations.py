@@ -26,6 +26,92 @@ def plan():
 
 
 class RestoredCopyContracts(unittest.TestCase):
+    def test_finance_profile_requires_exact_pinned_single_node(self):
+        finance = [(SimpleNamespace(app_label="finance_setup",
+                    name="0003_financepolicyversion_uuid_compatible_school_id"), False)]
+        self.assertEqual(module.verify_plan(finance, profile="finance_setup_0003"), list(module.FINANCE_MIGRATIONS))
+        module.verify_manifest(profile="finance_setup_0003")
+        for candidate in ([], finance + plan(), finance * 2, [(finance[0][0], True)]):
+            with self.subTest(candidate=candidate), self.assertRaises(module.RehearsalBlocked):
+                module.verify_plan(candidate, profile="finance_setup_0003")
+        with self.assertRaises(module.RehearsalBlocked):
+            module.verify_plan(finance)  # Historical 24-node default unchanged.
+        with self.assertRaises(module.RehearsalBlocked):
+            module.profile_manifest("unreviewed")
+        with self.assertRaises(UnreviewedPlan):
+            validate_plan(finance)  # Live inquiry stage remains closed.
+
+    def test_finance_manifest_rejects_modified_or_missing_source(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            with self.assertRaises(module.RehearsalBlocked):
+                module.verify_manifest(root, profile="finance_setup_0003")
+            name = next(iter(module.FINANCE_MIGRATIONS)).split(".", 1)[1]
+            dest = root / "backend/finance_setup/migrations" / (name + ".py")
+            dest.parent.mkdir(parents=True)
+            source = module.ROOT / dest.relative_to(root)
+            dest.write_bytes(source.read_bytes() + b"\n")
+            with self.assertRaises(module.RehearsalBlocked):
+                module.verify_manifest(root, profile="finance_setup_0003")
+
+    def test_finance_receipt_cannot_substitute_legacy_or_unverified_proof(self):
+        good = dict(result="PASS", source_sha=SHA, remaining_pending=0, reviewed_migrations=1,
+                    reviewed_profile="finance_setup_0003", finance_school_id_semantics_preserved=True,
+                    target_postgres_major=15, existing_nonseed_table_values_preserved=True,
+                    existing_seed_rows_preserved=True, existing_table_counts_preserved=True,
+                    live_schema_write_performed=False, baseline_migration_records=269,
+                    migrated_records=270, atomic_graph=True, legacy_inserts_preserved=True,
+                    baseline_public_tables=467, baseline_fingerprint="c" * 64,
+                    baseline_columns_fingerprint="d" * 64, baseline_rows_fingerprint="e" * 64)
+        def execute(record):
+            return lambda *a, **kw: subprocess.CompletedProcess([], 0, json.dumps(record), "PRIVATE")
+        self.assertEqual(module.rehearse_clone(DB, "5432", "123", SHA, {},
+                         profile="finance_setup_0003", run=execute(good)), good)
+        for key, value in [("reviewed_migrations", True), ("reviewed_migrations", 24),
+                           ("reviewed_profile", "heritage24"), ("reviewed_profile", None),
+                           ("finance_school_id_semantics_preserved", False), ("migrated_records", 293)]:
+            with self.subTest(key=key), self.assertRaises(module.RehearsalBlocked):
+                module.rehearse_clone(DB, "5432", "123", SHA, {}, profile="finance_setup_0003",
+                                      run=execute(dict(good, **{key: value})))
+
+    def test_finance_mode_refuses_nonrehearsal_or_prior_image_before_source_access(self):
+        with patch.object(recovery, "read_dev_database_setting") as source:
+            for options in ({}, {"rehearse": True, "verify_prior_image": True}):
+                with self.subTest(options=options), self.assertRaises(recovery.RestoreBlocked):
+                    recovery.perform("b" * 64, DB, {}, {}, profile="finance_setup_0003", **options)
+            source.assert_not_called()
+
+    def test_finance_cli_requires_rehearsal_and_preserves_unverified_rollback_status(self):
+        import io
+        from contextlib import redirect_stdout
+        base = ["--expected-sha", SHA, "--confirmation", recovery.CONFIRMATION,
+                "--synthetic-dev-confirmed", "true", "--reviewed-migration-profile", "finance_setup_0003"]
+        with tempfile.TemporaryDirectory() as directory, patch.object(recovery, "authority", return_value=("b" * 64, DB)) as authority, \
+             patch.object(recovery, "verify_accepted_source") as source, patch.object(recovery, "perform") as perform, \
+             redirect_stdout(io.StringIO()):
+            output = str(Path(directory) / "result.json")
+            self.assertEqual(recovery.main(base + ["--evidence-path", output]), 1)
+            self.assertEqual(json.loads(Path(output).read_text())["reason"], "explicit_finance_rehearsal_only")
+            authority.assert_not_called()
+            source.assert_not_called()
+            perform.assert_not_called()
+            self.assertEqual(recovery.main(base + ["--evidence-path", output, "--rehearse-reviewed-migrations"]), 0)
+            self.assertEqual(perform.call_args.kwargs, {"rehearse": True, "profile": "finance_setup_0003"})
+            evidence = json.loads(Path(output).read_text())
+            self.assertEqual(evidence["application_rollback_compatibility"], "NOT_TESTED")
+            self.assertEqual(evidence["release_readiness"], "NOT_VERIFIED")
+
+    def test_component_fingerprints_preserve_original_combined_digest(self):
+        columns = {"test_table": ["id", "value"]}
+        rows = {"test_table": (2, "a" * 64)}
+        expected = __import__("hashlib").sha256(json.dumps(
+            {"columns": columns, "rows": rows}, sort_keys=True,
+            separators=(",", ":")).encode()).hexdigest()
+        self.assertEqual(module.data_fingerprint(columns, rows), expected)
+        self.assertRegex(module.component_fingerprint(columns), r"^[0-9a-f]{64}$")
+        self.assertRegex(module.component_fingerprint(rows), r"^[0-9a-f]{64}$")
+        self.assertNotEqual(module.component_fingerprint(columns), module.component_fingerprint(rows))
+
     def test_seed_row_multiset_detects_original_row_mutation_with_unchanged_count(self):
         """Adding reviewed grants is allowed; altering an existing grant is not."""
         class FakeCursor:
@@ -135,11 +221,13 @@ class RestoredCopyContracts(unittest.TestCase):
                     existing_seed_rows_preserved=True,
                     existing_table_counts_preserved=True, live_schema_write_performed=False,
                     baseline_migration_records=245, migrated_records=269, atomic_graph=True, legacy_inserts_preserved=True,
-                    baseline_public_tables=467, baseline_fingerprint="c" * 64)
+                    baseline_public_tables=467, baseline_fingerprint="c" * 64,
+                    baseline_columns_fingerprint="d" * 64, baseline_rows_fingerprint="e" * 64)
         def execute(record, code=0):
             return lambda *a, **kw: subprocess.CompletedProcess([], code, json.dumps(record), "PRIVATE")
         self.assertEqual(module.rehearse_clone(DB, "5432", "123", SHA, {}, run=execute(good)), good)
         for key, value in [("source_sha", "b" * 40), ("remaining_pending", 1),
+                           ("reviewed_profile", "finance_setup_0003"),
                            ("reviewed_migrations", 18), ("target_postgres_major", 16),
                            ("existing_table_counts_preserved", False),
                            ("existing_nonseed_table_values_preserved", False),
@@ -147,6 +235,7 @@ class RestoredCopyContracts(unittest.TestCase):
                            ("remaining_pending", False), ("migrated_records", 267),
                            ("baseline_public_tables", False), ("baseline_public_tables", 0),
                            ("baseline_fingerprint", "PRIVATE"), ("baseline_fingerprint", None),
+                           ("baseline_columns_fingerprint", "PRIVATE"), ("baseline_rows_fingerprint", None),
                            ("live_schema_write_performed", True)]:
             with self.subTest(key=key), self.assertRaises(module.RehearsalBlocked):
                 module.rehearse_clone(DB, "5432", "123", SHA, {}, run=execute(dict(good, **{key: value})))
@@ -205,14 +294,24 @@ class RestoredCopyContracts(unittest.TestCase):
             recovery.target_identity("b" * 64, {}, expected_major=15)
 
     def test_workflow_denies_rehearsal_without_operational_authority(self):
+        import yaml
         text = (module.ROOT / ".github/workflows/isolated-postgres-restore-drill.yml").read_text()
-        command = next(x.split("run: ", 1)[1] for x in text.splitlines()
-                       if 'run: test "$REHEARSE"' in x)
-        for rehearsal, operational, allowed in [("true", "false", False), ("true", "true", True),
-                                                 ("false", "false", True)]:
+        workflow = yaml.safe_load(text)
+        command = next(step['run'] for step in workflow['jobs']['dev-restore-contracts']['steps']
+                       if step.get('name') == 'Refuse rehearsal without explicit operational restore mode')
+        for rehearsal, operational, profile, prior, allowed in [
+                ("true", "false", "heritage24", "false", False),
+                ("true", "true", "heritage24", "false", True),
+                ("false", "false", "heritage24", "false", True),
+                ("true", "true", "finance_setup_0003", "false", True),
+                ("true", "false", "finance_setup_0003", "false", False),
+                ("false", "true", "finance_setup_0003", "false", False),
+                ("true", "true", "finance_setup_0003", "true", False),
+                ("true", "true", "unknown", "false", False)]:
             result = subprocess.run(["bash", "-c", command], env=dict(os.environ, REHEARSE=rehearsal,
-                                    OPERATIONAL=operational), capture_output=True)
-            self.assertEqual(result.returncode == 0, allowed)
+                                    OPERATIONAL=operational, PROFILE=profile, PRIOR_IMAGE=prior), capture_output=True)
+            with self.subTest(profile=profile,rehearsal=rehearsal,operational=operational,prior=prior):
+                self.assertEqual(result.returncode == 0, allowed)
 
 
 @unittest.skipUnless(os.environ.get("CROWN_REHEARSAL_TEST_PORT"), "requires disposable PostgreSQL15")
@@ -294,6 +393,8 @@ print('Entire reviewed graph rolled back after an injected late failure')
                 receipt = module.rehearse_clone(database, port, cluster, sha, os.environ)
                 self.assertEqual(receipt["reviewed_migrations"], 24)
                 self.assertEqual(receipt["remaining_pending"], 0)
+                self.assertRegex(receipt["baseline_columns_fingerprint"], r"^[0-9a-f]{64}$")
+                self.assertRegex(receipt["baseline_rows_fingerprint"], r"^[0-9a-f]{64}$")
                 with psycopg.connect(host="127.0.0.1", port=port, dbname=database, user="crown_drill",
                                      password="crown-drill-password") as conn:
                     row = conn.execute('SELECT care_session,pickup_verified,late_fee_cents,handoff_verified '
@@ -316,6 +417,48 @@ print('Historical care INSERT contracts passed after full graph')
                 legacy = subprocess.run([sys.executable, "-c", legacy_insert], cwd=module.ROOT, env=env,
                                         capture_output=True, text=True, timeout=60)
                 self.assertEqual(legacy.returncode, 0, legacy.stderr)
+                # Reuse this populated, post-24 fixture for the newly observed
+                # Finance Setup-only graph, rather than migrate another DB.
+                finance_bootstrap = '''
+import django
+django.setup()
+from django.core.management import call_command
+from django.db import connection
+from django.db.migrations.executor import MigrationExecutor
+from django.db.migrations.recorder import MigrationRecorder
+from scripts.ci.verify_finance_setup_uuid_migration import _actual_school_id_type
+import rehearse_dev_heritage_migrations as probe
+call_command('migrate','finance_setup','0002_alter_discountpolicy_max_discount_percent_bp_and_more',verbosity=0)
+old = MigrationExecutor(connection).loader.project_state([
+    ('finance_setup','0002_alter_discountpolicy_max_discount_percent_bp_and_more')]).apps
+old.get_model('finance_setup','FinancePolicyVersion').objects.create(
+    school_id=41,academic_year='2026-2027',is_locked=True,locked_by='retained-lock')
+columns=probe.table_facts(connection)
+before={t:probe.row_digest(connection,t,n) for t,n in columns.items()}
+history=set(MigrationRecorder(connection).applied_migrations())
+def reject(*args): raise probe.RehearsalBlocked('existing_data_changed')
+probe.verify_finance_policy_writes=reject
+try: probe.migrate_restored_copy()
+except probe.RehearsalBlocked as error: assert str(error)=='existing_data_changed'
+else: raise AssertionError('Injected Finance failure did not abort')
+assert _actual_school_id_type()=='integer'
+assert set(MigrationRecorder(connection).applied_migrations())==history
+assert {t:probe.row_digest(connection,t,n) for t,n in columns.items()}==before
+print('Finance late-failure rollback preserved schema, rows and history')
+'''
+                env["CROWN_REHEARSAL_PROFILE"] = "finance_setup_0003"
+                finance_fixture = subprocess.run([sys.executable, "-c", finance_bootstrap], cwd=module.ROOT,
+                                                env=env, capture_output=True, text=True, timeout=120)
+                self.assertEqual(finance_fixture.returncode, 0, finance_fixture.stderr)
+                finance_receipt = module.rehearse_clone(database, port, cluster, sha, os.environ,
+                                                        profile="finance_setup_0003")
+                self.assertEqual(finance_receipt["reviewed_migrations"], 1)
+                self.assertTrue(finance_receipt["finance_school_id_semantics_preserved"])
+                self.assertEqual(finance_receipt["remaining_pending"], 0)
+                with psycopg.connect(host="127.0.0.1", port=port, dbname=database, user="crown_drill",
+                                     password="crown-drill-password") as conn:
+                    row = conn.execute('SELECT school_id,is_locked,locked_by FROM finance_setup_financepolicyversion').fetchall()
+                    self.assertEqual(row, [("41", True, "retained-lock")])
             finally:
                 if created:
                     admin.execute(sql.SQL("DROP DATABASE {} WITH (FORCE)").format(sql.Identifier(database)))

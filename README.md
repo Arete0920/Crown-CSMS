@@ -1,58 +1,47 @@
 # CROWN
 
-Christian School Management Solution
+**Christian School Management Solution**  
+An Arete Advisory Group platform for Christian and Catholic schools.
 
-## Current posture
+CROWN brings school administration, academics, family services, and school programs onto a shared, multi-tenant software foundation. This repository contains application source, tests, and engineering documentation. Source availability and automated checks are not, by themselves, evidence that a particular module or hosted environment has been accepted for release.
 
-CROWN is maintained under controlled software-engineering and release-management practices. The exact current release posture is governed by [docs/CURRENT_RELEASE_STATUS.md](docs/CURRENT_RELEASE_STATUS.md) and the exact repository head being evaluated.
+## Solution areas
 
-- Product and repository engineering baseline: established
-- Security and dependency controls: enforced through CI and review gates
-- Current release identity: exact Git/GitHub source at the decision point
-- Production deployment/runtime identity: environment-specific and separately verified
-- Payment processing: disabled and fail closed. CompuWerx is the owner-designated intended gateway; contracting, verified provider specifications, implementation, merchant terms, and provider-specific security and payment certification remain open. No external money movement is authorized.
+The following describe the solution's product scope; capability and availability must be verified for the specific module and environment being evaluated.
 
-## Start here
+- **School administration:** admissions, enrollment, student and household records, attendance, and staff workflows.
+- **Academics and leadership:** instructional operations, scheduling, dashboards, and school decision support.
+- **Financial aid:** Jireh school financial-aid workflows and the separately governed Jireh SGO offering.
+- **Care and programs:** Diadem daycare, before- and after-school care, and summer camp operations.
 
-1. [Investor Technical Review Guide](docs/INVESTOR_TECHNICAL_REVIEW_GUIDE.md)
-2. [Current Release Status](docs/CURRENT_RELEASE_STATUS.md)
-3. [Canonical Document Index](docs/canonical/CANONICAL_DOCUMENT_INDEX.md)
-4. [Diligence and Evidence Index](docs/canonical/DILIGENCE_EVIDENCE_INDEX.md)
-5. [Architecture Map](docs/architecture/ARCHITECTURE_MAP.md)
-6. [Developer Setup](docs/engineering/DEV_SETUP.md)
-7. [Engineering Accountability Policy](docs/engineering/ENGINEERING_ACCOUNTABILITY_POLICY.md)
-8. [Code Quality Standard](docs/engineering/CODE_QUALITY_AND_REPOSITORY_HYGIENE_STANDARD.md)
-9. [Operations](docs/operations/README.md)
-10. [Owner Handoff](docs/ownership/OWNER_HANDOFF.md)
-11. [Known Limitations](docs/KNOWN_LIMITATIONS.md)
-12. [Security Policy](SECURITY.md)
-13. [Repository Administration Baseline](docs/governance/GITHUB_REPOSITORY_ADMINISTRATION_BASELINE.md)
-14. [Versioning and Release Policy](docs/engineering/VERSIONING_AND_RELEASE_POLICY.md)
-15. [CI Architecture](docs/engineering/CI_ARCHITECTURE.md)
-16. [Public Repository Licensing Decision](docs/governance/PUBLIC_REPOSITORY_LICENSING_DECISION.md)
-17. [School Implementation Runbook](docs/operations/SCHOOL_IMPLEMENTATION_RUNBOOK.md)
+## Evaluation and access
 
-## Authority and claim boundary
+Demonstrations are controlled separately from this source repository. Buyer access is not public or automatically provisioned. Demonstration records must be fictional, and the relevant school, role, invitation, and tenant-access controls must be verified before an external evaluation is authorized.
 
-Current claims must be supported by current repository evidence, exact-head CI results, retained artifacts, and environment-specific runtime evidence where applicable. Historical commits, tags, workflow runs, pull requests, issues, and predecessor documents remain provenance rather than current operating authority.
+For an evidence-based review, start with:
 
-## Supported development toolchain
+- [Technical Review Guide](docs/INVESTOR_TECHNICAL_REVIEW_GUIDE.md)
+- [Architecture Map](docs/architecture/ARCHITECTURE_MAP.md)
+- [Known Limitations](docs/KNOWN_LIMITATIONS.md)
+- [Security Policy](SECURITY.md)
 
-- Python 3.12
-- Node.js 22.23.3 (see `.nvmrc`; Node 24.15+ is also supported by the dashboards)
+## Release and assurance boundaries
 
-See [Developer Setup](docs/engineering/DEV_SETUP.md) for the reproducible local workflow.
+CROWN is maintained through controlled source changes, automated verification, and environment-specific acceptance. Current release claims require the selected exact source revision, applicable checks, and independent deployed-runtime evidence. A successful source-level check does not establish buyer demonstration or production acceptance.
 
-## Repository standards
+**External payment processing remains disabled and fail closed.** Provider activation, merchant arrangements, and payment-specific certification require separate authorization. No independent compliance certification is claimed solely from repository controls.
 
-Use one pull request per coherent, independently reversible outcome. Record the exact base and head, scope, validation, limitations, decision owner, and rollback action. Review changed lines against current repository truth and trace failures to their source before changing code or documentation.
+## Engineering documentation
 
-Automated tests, static analysis, security scans, dependency audits, and other CI checks are engineering evidence. Human owners remain responsible for architectural decisions, business rules, acceptance decisions, and release authority.
+Developers and authorized reviewers can use the [documentation directory](docs/README.md) and [canonical document index](docs/canonical/CANONICAL_DOCUMENT_INDEX.md) to locate the detailed technical material, including:
 
-Never commit secrets, production data, private certificates, confidential communications, payment credentials, copied conversations, or generated proof dumps. Sandbox data must be synthetic and clearly labeled.
+- [Current Release Status](docs/CURRENT_RELEASE_STATUS.md)
+- [Developer Setup](docs/engineering/DEV_SETUP.md)
+- [Contribution and Change Rules](CONTRIBUTING.md)
+- [Engineering Accountability](docs/engineering/ENGINEERING_ACCOUNTABILITY_POLICY.md)
 
-## Ownership and contribution records
+## Ownership and rights
 
-CROWN was created and directed by TC Megahan. Contributor and collaborator attribution must follow durable repository evidence and the current contribution ledger; general early involvement must not be converted into unsupported claims about specific work.
+CROWN was created and is directed by TC Megahan for Arete Advisory Group. Technical contribution and review statements follow documented evidence and human release authority; automated checks do not constitute independent human approval.
 
-Detailed engineering-accountability and attribution records are governed by the [Engineering Accountability Policy](docs/engineering/ENGINEERING_ACCOUNTABILITY_POLICY.md) and the [Contribution Evidence Ledger](docs/engineering/CONTRIBUTION_EVIDENCE_LEDGER.md).
+Copyright © 2026 Arete Advisory Group and repository owner. All rights reserved. Public repository visibility does not grant a software license. See [Proprietary Notice](NOTICE.md) and the [Licensing Decision](docs/governance/PUBLIC_REPOSITORY_LICENSING_DECISION.md).
