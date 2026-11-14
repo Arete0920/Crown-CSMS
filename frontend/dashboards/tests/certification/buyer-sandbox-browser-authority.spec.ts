@@ -249,6 +249,10 @@ if (isRemoteLive) {
       const roster = await page.request.get(
         HOSTED_DEV_API + '/api/v1/aftercare/daycare/sites/' + siteId + '/roster/', { headers: director });
       expect(roster.status()).toBe(200);
+      const custodyRoster = await roster.json();
+      expect(custodyRoster.site_id).toBe(siteId);
+      expect(Array.isArray(custodyRoster.rows)).toBe(true);
+      expect(custodyRoster.children_present).toBe(custodyRoster.rows.length);
       const parent = await launchInvitedBuyer(page, 'Parent / Guardian');
       const denied = await page.request.get(HOSTED_DEV_API + '/api/v1/aftercare/daycare/sites/', { headers: parent });
       expect(denied.status()).toBeGreaterThanOrEqual(400);
@@ -318,16 +322,33 @@ if (isRemoteLive) {
 
     test('AM/PM Extended Care and Camp require real buyer-school scoped reads', async ({ page }) => {
       const admin = await launchInvitedBuyer(page, 'School Administrator');
+      // A 200 response without fictional enrollment/program records is not
+      // five-module acceptance. Check enrollments separately: today's roster
+      // may be empty on weekends even when current AM/PM enrolments exist.
+      const enrolledResponse = await page.request.get(
+        HOSTED_DEV_API + '/api/v1/aftercare/enrollments/', { headers: admin });
+      expect(enrolledResponse.status()).toBe(200);
+      const enrollments = await enrolledResponse.json();
+      expect(Array.isArray(enrollments)).toBe(true);
       for (const session of ['AM', 'PM']) {
+        const active = enrollments.filter(
+          (row: { care_session?: string; is_active?: boolean }) =>
+            row.care_session === session && row.is_active === true,
+        );
+        expect(active.length, session + ' requires a fictional active enrollment').toBeGreaterThan(0);
         const roster = await page.request.get(
           HOSTED_DEV_API + '/api/v1/aftercare/roster/today/?care_session=' + session, { headers: admin });
         expect(roster.status(), session + ' Care roster').toBe(200);
         const body = await roster.json();
         expect(body.care_session).toBe(session);
+        expect(Array.isArray(body.rows)).toBe(true);
+        expect(body.rows.every((row: { care_session?: string }) => row.care_session === session)).toBe(true);
       }
       const camp = await page.request.get(HOSTED_DEV_API + '/api/v1/summer-camp/programs/', { headers: admin });
       expect(camp.status()).toBe(200);
-      expect(Array.isArray(await camp.json())).toBe(true);
+      const programs = await camp.json();
+      expect(Array.isArray(programs)).toBe(true);
+      expect(programs.length, 'Camp requires a fictional school-scoped program').toBeGreaterThan(0);
     });
   });
 } else {
