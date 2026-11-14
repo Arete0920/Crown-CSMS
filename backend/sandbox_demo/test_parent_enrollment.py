@@ -10,7 +10,7 @@ from admissions.models import AdmissionsApplication, AdmissionsAuditEvent
 from applications.models import Application, Applicant, ApplicationEvent, EnrollmentContract, EnrollmentContractStatus
 from applications.services import has_verified_student_enrollments
 from enrollment_conversion_wizard.models import EnrollmentConversionWizardSession
-from core.models import AcademicYear, Enrollment as CoreEnrollment, Family, Student as CoreStudent, StudentIdentityLink
+from core.models import AcademicYear, CrownPermission, Enrollment as CoreEnrollment, Family, RolePermission, Student as CoreStudent, StudentIdentityLink
 from households.models import Household, Student
 
 from sandbox_demo.catalog import SANDBOX_PERSONAS, SANDBOX_SCHOOLS
@@ -418,3 +418,97 @@ def test_reset_blocks_cross_year_student_deletion_and_rolls_back():
     assert CoreStudent.objects.filter(pk=identity.core_student_id).exists()
     assert CoreEnrollment.objects.filter(pk=older.pk).exists()
     assert CoreEnrollment.objects.filter(pk=original.pk).exists()
+
+@override_settings(CROWN_SANDBOX_ALLOW_OPEN_SESSION=True)
+def test_one_parent_application_replayed_by_registrar_keeps_one_canonical_enrollment(settings, monkeypatch):
+    """A real parent -> registrar handoff must preserve the same verified SIS identity."""
+    _dev_parent_overview_runtime(settings, monkeypatch)
+    school, parent, application_id = _setup()
+    registrar = ensure_persona_user(school, SANDBOX_PERSONAS["admissions_director"])
+    permission, _ = CrownPermission.objects.get_or_create(
+        code="admissions.edit", defaults={"description": "Admissions enrollment write"},
+    )
+    RolePermission.objects.get_or_create(role_code="REGISTRAR", permission=permission)
+
+    parent_client = _client(parent, school)
+    registrar_client = _client(registrar, school)
+    before = parent_client.get(
+        f"/api/v1/sandbox/parent/enrollment/?application_id={application_id}"
+    )
+    assert before.status_code == 200, before.data
+    assert before.data["lifecycle_stage"] == "accepted"
+
+    completed = _post_parent_enrollment(parent_client, application_id)
+    assert completed.status_code == 200, completed.data
+    assert completed.data["lifecycle_stage"] == "enrolled"
+    assert completed.data["applicant_to_student_status"] == "completed"
+    assert completed.data["demo_payment_processed"] is False
+
+    applicant = Applicant.objects.get(application_id=application_id)
+    identity = StudentIdentityLink.objects.get(
+        school=school, compatibility_student_id=completed.data["child_id"],
+    )
+    assert identity.verification_status == StudentIdentityLink.STATUS_VERIFIED
+    assert identity.evidence_reference == f"application:{application_id}:applicant:{applicant.id}"
+    legacy = AdmissionsApplication.objects.get(
+        school=school, notes_internal=f"canonical_application_id={application_id}",
+    )
+    assert legacy.status == AdmissionsApplication.STATUS_ENROLLED
+    assert legacy.student_id == identity.core_student_id
+    assert CoreEnrollment.objects.filter(
+        school=school, student_id=identity.core_student_id,
+        academic_year=legacy.academic_year, status="ENROLLED",
+    ).count() == 1
+    sessions_before = EnrollmentConversionWizardSession.objects.filter(
+        school=school, status=EnrollmentConversionWizardSession.STATUS_VERIFIED,
+    ).count()
+    assert sessions_before >= 1
+
+    # Parent cannot exercise the staff conversion endpoint, and registrar replay
+    # must not fabricate a second enrollment, event, identity or wizard record.
+    payload = {"application_id": legacy.id}
+    denied = parent_client.post("/api/admissions/enroll/", payload, format="json")
+    assert denied.status_code == 403, denied.data
+
+    for _ in range(2):
+        replay = registrar_client.post("/api/admissions/enroll/", payload, format="json")
+        assert replay.status_code == 200, replay.data
+        assert replay.data["ok"] is True
+        assert replay.data["already_enrolled"] is True
+        assert replay.data["canonical_application_id"] == str(application_id)
+        assert replay.data["student_id"] == str(identity.core_student_id)
+        assert replay.data["canonical_gate"] == "verified_identity_and_core_enrollment"
+
+    assert AdmissionsApplication.objects.filter(
+        school=school, notes_internal=f"canonical_application_id={application_id}",
+    ).count() == 1
+    assert CoreEnrollment.objects.filter(
+        school=school, student_id=identity.core_student_id,
+        academic_year=legacy.academic_year, status="ENROLLED",
+    ).count() == 1
+    assert StudentIdentityLink.objects.filter(
+        school=school, compatibility_student_id=completed.data["child_id"],
+    ).count() == 1
+    assert ApplicationEvent.objects.filter(
+        application_id=application_id, event_type="enrollment_confirmed",
+    ).count() == 1
+    assert EnrollmentConversionWizardSession.objects.filter(
+        school=school, status=EnrollmentConversionWizardSession.STATUS_VERIFIED,
+    ).count() == sessions_before
+
+    reread = parent_client.get(
+        f"/api/v1/sandbox/parent/enrollment/?application_id={application_id}"
+    )
+    assert reread.status_code == 200, reread.data
+    assert reread.data["lifecycle_stage"] == "enrolled"
+    assert str(reread.data["child_id"]) == str(completed.data["child_id"])
+    _assert_continuity(reread.data, "completed")
+    overview = parent_client.get("/api/v1/parent360/me/overview/")
+    assert overview.status_code == 200, overview.data
+    row = next(
+        item for item in overview.data["admissions_continuity"]["applications"]
+        if item["application_id"] == str(application_id)
+    )
+    assert row["lifecycle_stage"] == "enrolled"
+    _assert_continuity(row, "completed")
+
