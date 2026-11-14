@@ -590,9 +590,9 @@ class DevMigrationBoundaryTests(unittest.TestCase):
                         "Mark automatic release mutation boundary",
                     ],
                 )
-                self.assertIn("inputs.auto_code_only == true",
+                self.assertIn("inputs.confirm_dev_reviewed24 == 'auto-code-only'",
                               steps[guard_index + 1]["if"])
-                self.assertIn("inputs.auto_code_only == true",
+                self.assertIn("inputs.confirm_dev_reviewed24 == 'auto-code-only'",
                               steps[guard_index + 2]["if"])
                 self.assertIn("dev_release_rollback.py capture",
                               steps[guard_index + 1]["run"])
