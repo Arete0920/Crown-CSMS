@@ -134,7 +134,7 @@ def test_collision_and_failed_seed_roll_back(local_runtime):
 def test_reset_refuses_foreign_cascade_and_rolls_back(local_runtime):
     metrics = prepare_presenter(apply=True)
     school = School.objects.create(name="Other fictional school")
-    section = Section.objects.get(pk=metrics["teacher_section_id"])
+    section = Section.objects.get(pk=metrics["teacher_section_id"], school_id=UNIVERSAL_SCHOOL_ID)
     # Corrupt legacy relation: even a cascade with an own-school root must
     # never erase a foreign-school child. Deliberately bypass model validation.
     from academics.models import Enrollment as AcademicEnrollment
