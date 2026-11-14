@@ -60,7 +60,7 @@ def test_preflight_is_read_only_and_duplicate_apply_refuses(local_runtime, capsy
     assert 'PRECHECK_ONLY' in capsys.readouterr().out
     assert not School.objects.exists()
     metrics = prepare_presenter(apply=True)
-    assert metrics["students"] == 700
+    assert metrics["students"] == Student.objects.filter(school_id=UNIVERSAL_SCHOOL_ID).count() == 702
     assert metrics["release_certified"] is False
     with pytest.raises(CommandError, match="already exists"):
         prepare_presenter(apply=True)
