@@ -148,7 +148,6 @@ if (isRemoteLive) {
   }
 
   test.describe('Azure DEV invite-owned buyer smoke and persisted Jireh acceptance', () => {
-    test.use({ trace: 'off', screenshot: 'off', video: 'off' });
 
     test('pins source identities and rejects uninvited sessions', async ({ request }) => {
       const responses = await Promise.all([
