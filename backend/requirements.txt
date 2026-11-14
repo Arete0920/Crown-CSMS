@@ -8,7 +8,7 @@ gunicorn==22.0.0
 dj-database-url==2.3.0
 # Database drivers
 # psycopg (v3) supports Python 3.14; psycopg2-binary is EOL for 3.14+
-psycopg[binary]==3.3.6
+psycopg[binary]==3.3.8
 # Testing
 pytest==9.2.0
 pytest-django==4.14.0
