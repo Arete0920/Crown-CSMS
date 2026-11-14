@@ -1,4 +1,9 @@
+from concurrent.futures import ThreadPoolExecutor
+from threading import Barrier
+
 import pytest
+from django.db import close_old_connections, connection
+from django.test.utils import CaptureQueriesContext
 from rest_framework.test import APIClient
 
 from core.models import StudentIdentityLink, UserAccount
@@ -50,7 +55,15 @@ def test_student_self_service_returns_real_schedule_progress_attendance_and_comm
     assert state["communications"]
     assert all(value is False for value in state["privileged_actions"].values())
 
-    replay = student_self_service_state(student_user)
+    with CaptureQueriesContext(connection) as captured:
+        replay = student_self_service_state(student_user)
+    writes = [
+        query["sql"]
+        for query in captured.captured_queries
+        if query["sql"].lstrip().split()[0].upper()
+        in {"INSERT", "UPDATE", "DELETE", "REPLACE"}
+    ]
+    assert writes == [], "An unchanged student-state read must not rewrite fixtures"
     assert replay["student"]["id"] == state["student"]["id"]
     assert replay["schedule"] == state["schedule"]
     assert replay["attendance"] == state["attendance"]
@@ -94,6 +107,49 @@ def test_student_self_service_api_returns_real_state(settings):
     assert payload["attendance"][0]["status"] == AttendanceRecord.STATUS_PRESENT
     assert payload["communications"]
     assert all(value is False for value in payload["privileged_actions"].values())
+
+
+def test_concurrent_warm_student_requests_succeed_on_sqlite(settings):
+    if connection.vendor != "sqlite":
+        pytest.skip("SQLite local-demo read/write lock regression")
+    settings.CROWN_SANDBOX_ALLOW_OPEN_SESSION = True
+    seed_heritage_flagship(reset=True)
+    student_user = _user("student.avery.reed11@heritage.example.org")
+    expected_id = student_self_service_state(student_user)["student"]["id"]
+    gate = Barrier(2)
+    table = StudentIdentityLink._meta.db_table
+
+    def read():
+        close_old_connections()
+        synchronized = False
+        try:
+            actor = UserAccount.objects.get(pk=student_user.pk)
+
+            def overlap_reads(execute, sql, params, many, context):
+                nonlocal synchronized
+                result = execute(sql, params, many, context)
+                if (
+                    not synchronized
+                    and sql.lstrip().upper().startswith("SELECT")
+                    and table in sql
+                ):
+                    synchronized = True
+                    gate.wait(timeout=10)
+                return result
+
+            client = APIClient()
+            client.force_authenticate(user=actor)
+            with connection.execute_wrapper(overlap_reads):
+                response = client.get("/api/v1/sandbox/student/self-service/")
+            assert synchronized, "Both requests must overlap the identity lookup"
+            assert response.status_code == 200, response.content
+            return response.json()["student"]["id"]
+        finally:
+            connection.close()
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        requests = [pool.submit(read), pool.submit(read)]
+        assert [request.result(timeout=20) for request in requests] == [expected_id, expected_id]
 
 
 def test_student_self_service_api_denies_non_student_persona(settings):
