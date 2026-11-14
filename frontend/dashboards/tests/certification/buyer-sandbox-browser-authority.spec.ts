@@ -131,7 +131,7 @@ if (isRemoteLive) {
     await expect(card).toBeVisible();
     await Promise.all([
       page.waitForURL(url => url.pathname !== '/sandbox', { timeout: 30000 }),
-      card.getByRole('button', { name: /Start guided/i }).click(),
+      card.getByRole('button', { name: /^Start (?:guided|self-guided)$/i }).click(),
     ]);
     await expect(page).not.toHaveURL(/\/(?:login|forbidden|not-authorized)(?:[/?#]|$)/i);
     const actor = await page.evaluate(() => ({
@@ -193,14 +193,20 @@ if (isRemoteLive) {
       expect(after.applications).toHaveLength(1);
       expect(after.applications[0].id).toBeTruthy();
       expect(after.applications[0].submitted_at).toBeTruthy();
+      expect(after.applications[0].status).toBe('SUBMITTED');
+      const foreign = await page.request.get(endpoint, {
+        headers: { ...headers, 'X-School-Id': HERITAGE_SHARED_SCHOOL },
+      });
+      expect(foreign.status()).toBeGreaterThanOrEqual(400);
+      expect(foreign.status()).toBeLessThan(500);
     });
 
     test('Jireh SGO verifies invited partner submission and persisted readback', async ({ page }) => {
-      await launchInvitedBuyer(page, 'Parent / Guardian');
+      const headers = await launchInvitedBuyer(page, 'Parent / Guardian');
       await page.goto('/jireh-sgo/intake', { waitUntil: 'networkidle' });
       const partner = page.getByLabel('Partner SGO and program');
       await expect(partner.locator('option')).toHaveCount(2);
-      const programs = await partner.locator('option').evaluateAll(options => options.map(option => option.value));
+      const programs = await partner.locator('option').evaluateAll(options => options.map(option => (option as HTMLOptionElement).value));
       for (const program of programs) {
         await partner.selectOption(program);
         const submit = page.getByRole('button', { name: 'Submit fictional application', exact: true });
@@ -216,6 +222,20 @@ if (isRemoteLive) {
         await page.reload({ waitUntil: 'networkidle' });
         await partner.selectOption(program);
         await expect(page.getByText(/SUBMITTED|RESUBMITTED|CORRECTION_REQUESTED/).first()).toBeVisible();
+        const savedPrograms = await page.request.get(
+          HOSTED_DEV_API + '/api/v1/buyer-demo/jireh/sgo/family/programs/', { headers });
+        expect(savedPrograms.status()).toBe(200);
+        const grants = await savedPrograms.json();
+        const savedProgram = grants.programs?.find((entry: { id: string }) => entry.id === program);
+        expect(savedProgram?.application_id).toBeTruthy();
+        const savedApplication = await page.request.get(
+          HOSTED_DEV_API + '/api/v1/buyer-demo/jireh/sgo/family/applications/' + encodeURIComponent(savedProgram.application_id) + '/',
+          { headers });
+        expect(savedApplication.status()).toBe(200);
+        const verified = await savedApplication.json();
+        expect(verified.application?.id).toBe(savedProgram.application_id);
+        expect(verified.application?.program_id).toBe(program);
+        expect(['SUBMITTED', 'RESUBMITTED', 'CORRECTION_REQUESTED']).toContain(verified.application?.status);
       }
     });
 
