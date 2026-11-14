@@ -28,15 +28,27 @@ def trusted_evidence():
             },
         },
     }
-    checks = {
+    reviewed_sha = "b" * 40
+    pr_checks = {
         "total_count": len(names),
         "check_runs": [
-            {"name": name, "id": 1000 + i, "head_sha": SHA,
+            {"name": name, "id": 1000 + i, "head_sha": reviewed_sha,
              "status": "completed", "conclusion": "success",
              "app": {"id": eligibility.GITHUB_ACTIONS_APP_ID}}
             for i, name in enumerate(names)
         ],
     }
+    main_runs = copy.deepcopy(pr_checks["check_runs"][:11])
+    for item in main_runs:
+        item["head_sha"] = SHA
+    checks = {"total_count": len(main_runs), "check_runs": main_runs}
+    merged_prs = [{
+        "state": "closed", "merged_at": "2026-11-14T13:10:04Z",
+        "merge_commit_sha": SHA, "head": {"sha": reviewed_sha},
+        "base": {"ref": "main"},
+    }]
+    main_commit = {"sha": SHA, "tree": {"sha": "c" * 40}}
+    pr_commit = {"sha": reviewed_sha, "tree": {"sha": "c" * 40}}
     policy = {
         "schema_version": 1, "enabled": True, "target": "dev",
         "automatic_schema_changes": False,
@@ -45,6 +57,8 @@ def trusted_evidence():
         expected_sha=SHA, event_name="push", ref="refs/heads/main",
         repository=eligibility.REPO, source_policy=policy,
         repository_opt_in=True, branch_data=branch, check_data=checks,
+        merged_prs=merged_prs, main_commit=main_commit,
+        pr_commit=pr_commit, pr_check_data=pr_checks,
     )
 
 
@@ -59,10 +73,12 @@ class DevAutoReleaseEligibilityTests(unittest.TestCase):
         result = eligibility.assess(**trusted_evidence())
         self.assertEqual(result["status"], "ELIGIBLE", result)
         self.assertEqual(result["required_checks"], 17)
+        self.assertEqual(result["post_merge_required_checks"], 11)
 
     def test_fail_closed_cases(self):
         cases = {
             "source-disabled": lambda a: a["source_policy"].update(enabled=False),
+            "main-pending": lambda a: a["check_data"]["check_runs"][0].update(status="in_progress", conclusion=None),
             "repository-disabled": lambda a: a.update(repository_opt_in=False),
             "foreign-repository": lambda a: a.update(repository="other/repo"),
             "pull-request": lambda a: a.update(event_name="pull_request"),
@@ -74,18 +90,32 @@ class DevAutoReleaseEligibilityTests(unittest.TestCase):
             "no-protection": lambda a: a["branch_data"].pop("protection"),
             "weak-enforcement": lambda a: a["branch_data"]["protection"]["required_status_checks"].update(enforcement_level="non_admins"),
             "removed-baseline": lambda a: a["branch_data"]["protection"]["required_status_checks"]["contexts"].pop(),
-            "missing-check": lambda a: (a["check_data"]["check_runs"].pop(), a["check_data"].update(total_count=16)),
-            "queued-required": lambda a: a["check_data"]["check_runs"][0].update(status="queued", conclusion=None),
-            "failed-required": lambda a: a["check_data"]["check_runs"][0].update(conclusion="failure"),
-            "skipped-required": lambda a: a["check_data"]["check_runs"][0].update(conclusion="skipped"),
-            "foreign-check-source": lambda a: a["check_data"]["check_runs"][0].update(head_sha="b" * 40),
-            "untrusted-check-app": lambda a: a["check_data"]["check_runs"][0]["app"].update(id=123),
+            "missing-check": lambda a: (a["pr_check_data"]["check_runs"].pop(), a["pr_check_data"].update(total_count=16)),
+            "queued-required": lambda a: a["pr_check_data"]["check_runs"][0].update(status="queued", conclusion=None),
+            "failed-required": lambda a: a["pr_check_data"]["check_runs"][0].update(conclusion="failure"),
+            "skipped-required": lambda a: a["pr_check_data"]["check_runs"][0].update(conclusion="skipped"),
+            "foreign-check-source": lambda a: a["pr_check_data"]["check_runs"][0].update(head_sha="d" * 40),
+            "untrusted-check-app": lambda a: a["pr_check_data"]["check_runs"][0]["app"].update(id=123),
             "wrong-protection-app": lambda a: a["branch_data"]["protection"]["required_status_checks"]["checks"][0].update(app_id=123),
-            "incomplete-pagination": lambda a: a["check_data"].update(total_count=101),
-            "truncated-response": lambda a: a["check_data"].update(total_count=20),
+            "incomplete-pagination": lambda a: a["pr_check_data"].update(total_count=101),
+            "truncated-response": lambda a: a["pr_check_data"].update(total_count=20),
             "unexpected-policy-key": lambda a: a["source_policy"].update(skip_checks=True),
             "auto-schema-enabled": lambda a: a["source_policy"].update(automatic_schema_changes=True),
             "wrong-target": lambda a: a["source_policy"].update(target="production"),
+            "no-merged-pr": lambda a: a.update(merged_prs=[]),
+            "ambiguous-merge": lambda a: a["merged_prs"].append(copy.deepcopy(a["merged_prs"][0])),
+            "merge-not-closed": lambda a: a["merged_prs"][0].update(state="open"),
+            "merge-sha-mismatch": lambda a: a["merged_prs"][0].update(merge_commit_sha="d" * 40),
+            "merge-pr-base-wrong": lambda a: a["merged_prs"][0]["base"].update(ref="feature"),
+            "merge-tree-changed": lambda a: a["pr_commit"]["tree"].update(sha="d" * 40),
+            "main-commit-sha-wrong": lambda a: a["main_commit"].update(sha="d" * 40),
+            "reviewed-pr-commit-sha-wrong": lambda a: a["pr_commit"].update(sha="d" * 40),
+            "reviewed-pr-checks-absent": lambda a: a.update(pr_check_data={}),
+            "main-postmerge-checks-absent": lambda a: a.update(check_data={}),
+            "main-required-failed": lambda a: a["check_data"]["check_runs"][0].update(conclusion="failure"),
+            "main-required-skipped": lambda a: a["check_data"]["check_runs"][0].update(conclusion="skipped"),
+            "main-foreign-app": lambda a: a["check_data"]["check_runs"][0]["app"].update(id=2),
+            "main-foreign-source": lambda a: a["check_data"]["check_runs"][0].update(head_sha="d" * 40),
         }
         for name, change in cases.items():
             with self.subTest(case=name):
@@ -96,13 +126,13 @@ class DevAutoReleaseEligibilityTests(unittest.TestCase):
 
     def test_latest_check_run_wins_even_if_old_run_succeeded(self):
         arguments = trusted_evidence()
-        previous = copy.deepcopy(arguments["check_data"]["check_runs"][0])
+        previous = copy.deepcopy(arguments["pr_check_data"]["check_runs"][0])
         latest = copy.deepcopy(previous)
         latest["id"] = previous["id"] + 10000
         latest["status"] = "in_progress"
         latest["conclusion"] = None
-        arguments["check_data"]["check_runs"].append(latest)
-        arguments["check_data"]["total_count"] += 1
+        arguments["pr_check_data"]["check_runs"].append(latest)
+        arguments["pr_check_data"]["total_count"] += 1
         self.assertEqual(eligibility.assess(**arguments)["status"], "BLOCKED")
 
     def test_existing_freshness_workflow_is_read_only_and_opted_out(self):
