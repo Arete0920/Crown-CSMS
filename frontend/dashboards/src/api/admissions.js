@@ -15,7 +15,11 @@ function createRequestIdentity() {
  * @returns {Promise<Array>} - array of application objects
  */
 export const getAdmissionsApplications = async () => {
-  return apiGetList(buildApiPath('admissions.applications.list'));
+  // A high-concurrency Windows local demo can queue a real read beyond the
+  // ordinary 15s transport budget. Retain the normal deadline everywhere else.
+  return apiGetList(buildApiPath('admissions.applications.list'), {
+    timeout: import.meta.env.VITE_LOCAL_DEMO === '1' ? 45000 : undefined,
+  });
 };
 
 export const updateApplicantReview = async (applicationId) => {

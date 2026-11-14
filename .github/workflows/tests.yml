@@ -318,10 +318,16 @@ jobs:
               cursor.execute('SELECT version()')
               print(cursor.fetchone()[0])
           PYTHON
+      - name: Rehearse historical Finance Setup UUID migration on disposable PostgreSQL
+        run: python scripts/ci/verify_finance_setup_uuid_migration.py
       - name: Verify financial posting, settlement/refund authority and concurrent retry contracts
         run: >-
           python -m pytest -v
           backend/aid/tests/test_option_a_aid_student_accounts_bridge.py
+          backend/aid/tests/test_recommend_award_retry_guard.py
+          backend/financial_aid_wizard/tests/test_concurrent_offer_guard.py
+          backend/finance_setup/tests/test_finance_setup_locking.py
+          backend/finance_setup/tests/test_finance_setup_demo_seed.py
           backend/sandbox_demo/test_hosted_jireh.py
           backend/crown_api/tests/test_director_actions_auth_required.py
           backend/crown_api/tests/test_director_aid_posting_integrity.py

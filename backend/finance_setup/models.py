@@ -8,7 +8,9 @@ class FinancePolicyVersion(models.Model):
     One immutable policy snapshot per school_id + academic_year.
     Once locked, cannot be edited. New year => new row.
     """
-    school_id = models.IntegerField(db_index=True)
+    # Live CROWN schools use UUIDs. Historical integer IDs remain as inert,
+    # text-preserved legacy rows until an explicitly reviewed mapping is available.
+    school_id = models.CharField(max_length=36, db_index=True)
     academic_year = models.CharField(max_length=9, db_index=True)  # e.g. "2026-2027"
 
     is_locked = models.BooleanField(default=False)

@@ -197,7 +197,7 @@ def _verified_school_role(user, school_id) -> str:
 
 def _linked_guardian_household_ids(user, school_id):
     """Never use email equality to authorize a guardian or parent."""
-    if not school_id or user is None or not getattr(user, "pk", None) or getattr(user, "school_id", None) != school_id:
+    if not school_id or user is None or not getattr(user, "pk", None) or str(getattr(user, "school_id", None)) != str(school_id):
         return None
     from households.models import Guardian
     return Guardian.objects.filter(

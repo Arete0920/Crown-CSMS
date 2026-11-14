@@ -32,6 +32,7 @@ export function getFinancialAidDashboardConfig() {
     communications: false,
     faithCommunity: false,
     quickActions: [
+      { label: 'Review Applications and Awards', href: '/financial-aid/decisions' },
       { label: 'Open Financial Aid Setup', href: '/aid-setup' },
       { label: 'Open Finance', href: '/finance' },
     ],

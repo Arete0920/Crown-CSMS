@@ -619,6 +619,7 @@ jobs:
           CROWN_EXPECTED_API_SHA: ${{ inputs.dev_source_sha }}
           CROWN_LIVE_FRONTEND_URL: ${{ steps.preview.outputs.static_web_app_url }}
           CROWN_LIVE_API_BASE_URL: https://crown-api-dev.azurewebsites.net
+          CROWN_LIVE_SANDBOX_INVITE_ID: ${{ secrets.CROWN_DEV_BUYER_INVITE_ID }}
           CROWN_CERTIFICATION_TENANT_MODE: sandbox
           CROWN_LIVE_USE_SANDBOX_CREDENTIALS: '1'
           CROWN_EVIDENCE_RUNTIME_SHA: ${{ inputs.dev_source_sha }}
@@ -644,6 +645,7 @@ jobs:
           CI: '1'
           CROWN_LIVE_FRONTEND_URL: ${{ steps.preview.outputs.static_web_app_url }}
           CROWN_LIVE_API_BASE_URL: https://crown-api-dev.azurewebsites.net
+          CROWN_LIVE_SANDBOX_INVITE_ID: ${{ secrets.CROWN_DEV_BUYER_INVITE_ID }}
           CROWN_BROWSER_AUTHORITY_OUTPUT: test-results/buyer-sandbox-browser-authority.json
           CROWN_REHEARSAL_TEST_SHA: ${{ github.sha }}
           CROWN_EVIDENCE_RUNTIME_SHA: ${{ inputs.dev_source_sha }}
@@ -726,6 +728,7 @@ jobs:
           CROWN_CERTIFICATION_LIVE_RUNTIME: '1'
           CROWN_LIVE_FRONTEND_URL: ${{ steps.preview.outputs.static_web_app_url }}
           CROWN_LIVE_API_BASE_URL: https://crown-api-dev.azurewebsites.net
+          CROWN_LIVE_SANDBOX_INVITE_ID: ${{ secrets.CROWN_DEV_BUYER_INVITE_ID }}
           CROWN_DEV_TENANT_FIXTURE: ${{ runner.temp }}/crown-dev-tenant-fixtures.json
           CROWN_EVIDENCE_RUNTIME_SHA: ${{ inputs.dev_source_sha }}
           CROWN_EVIDENCE_TEST_SHA: ${{ github.sha }}

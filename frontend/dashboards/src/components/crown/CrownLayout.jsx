@@ -61,7 +61,11 @@ function buildBreadcrumb(pathname) {
 }
 
 async function fetchNav() {
-  const res = await authenticatedFetch("/api/v1/nav/");
+  // Windows fictional demo startup can queue concurrent permissioned reads.
+  // Extend the read-only deadline locally; hosted permission checks are unchanged.
+  const res = await authenticatedFetch("/api/v1/nav/", {
+    timeoutMs: import.meta.env.VITE_LOCAL_DEMO === "1" ? 45000 : undefined,
+  });
   return res.json();
 }
 

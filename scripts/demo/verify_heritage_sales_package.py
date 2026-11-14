@@ -90,7 +90,7 @@ def verify(
                 or set(names) != {*STARTER_FILES, "HERITAGE-SALES-MANIFEST.json"}):
             raise RuntimeError("Unexpected or duplicate ZIP entries.")
         manifest = json.loads(archive.read("HERITAGE-SALES-MANIFEST.json"))
-        source_url = f"https://github.com/Arete0920/Crown-CSMS/archive/{sha}.zip"
+        source_url = f"https://api.github.com/repos/Arete0920/Crown-CSMS/zipball/{sha}"
         if (manifest.get("source_sha") != sha
                 or manifest.get("source_url") != source_url
                 or manifest.get("launch") != "Start-Heritage.cmd"

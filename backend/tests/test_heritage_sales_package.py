@@ -1,5 +1,6 @@
 """Contract for a minimal immutable Heritage Windows sales starter."""
 import ast
+from io import BytesIO
 from unittest.mock import patch
 
 import pytest
@@ -10,6 +11,7 @@ import subprocess
 from pathlib import Path
 import runpy
 import tempfile
+import urllib.request
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -35,7 +37,7 @@ def test_installer_download_url_and_destination_match_immutable_source_pin():
     installer = runpy.run_path(str(ROOT / "Install-and-Start-Heritage.py"))
     source_sha = packager.pinned_revision()
     assert installer["SOURCE_SHA"] == source_sha
-    assert installer["SOURCE_URL"] == f"https://github.com/Arete0920/Crown-CSMS/archive/{source_sha}.zip"
+    assert installer["SOURCE_URL"] == f"https://api.github.com/repos/Arete0920/Crown-CSMS/zipball/{source_sha}"
     assert installer["DESTINATION"].name == f"Heritage-{source_sha[:12]}"
 
 
@@ -49,7 +51,7 @@ def test_starter_package_contains_no_database_secret_or_credential_file():
             assert archive.testzip() is None
             manifest = json.loads(archive.read("HERITAGE-SALES-MANIFEST.json"))
             assert manifest["source_sha"] == packager.pinned_revision()
-            assert manifest["source_url"] == f"https://github.com/Arete0920/Crown-CSMS/archive/{manifest['source_sha']}.zip"
+            assert manifest["source_url"] == f"https://api.github.com/repos/Arete0920/Crown-CSMS/zipball/{manifest['source_sha']}"
             assert manifest["external_payments"] is False
             assert manifest["production_certified"] is False
             assert "Crown-CSMS" in archive.read("Install-and-Start-Heritage.py").decode("utf-8")
@@ -278,3 +280,77 @@ def test_gitless_frontend_build_identity(tmp_path, variables, expected):
     else:
         assert result.returncode != 0 and "Build provenance" in result.stderr
         assert not target.exists()
+
+
+def test_private_starter_redirect_strips_auth_and_rejects_external_hosts():
+    """Neither the owner token nor an arbitrary redirect may escape the API host."""
+    installer = runpy.run_path(str(ROOT / "Install-and-Start-Heritage.py"))
+    request = urllib.request.Request(
+        installer["SOURCE_URL"], headers={"Authorization": "Bearer synthetic-test-token"},
+    )
+    redirect = installer["_ScopedArchiveRedirect"]()
+    redirected = redirect.redirect_request(
+        request, None, 302, "Found", {},
+        "https://codeload.github.com/Arete0920/Crown-CSMS/legacy.zip/a1bf22f",
+    )
+    assert redirected.get_header("Authorization") is None
+    for url in (
+        "http://codeload.github.com/Arete0920/Crown-CSMS/legacy.zip/a1bf22f",
+        "https://malicious.example.invalid/archive",
+        "https://codeload.github.com:444/archive",
+    ):
+        with pytest.raises(RuntimeError, match="redirect destination"):
+            redirect.redirect_request(request, None, 302, "Found", {}, url)
+
+
+def test_private_starter_downloads_approved_commit_without_storing_credentials(monkeypatch, tmp_path):
+    installer = runpy.run_path(str(ROOT / "Install-and-Start-Heritage.py"))
+    source_sha = installer["SOURCE_SHA"]
+    root_name = f"Arete0920-Crown-CSMS-{source_sha[:7]}"
+    content = BytesIO()
+    with zipfile.ZipFile(content, "w") as synthetic:
+        synthetic.writestr(f"{root_name}/scripts/demo/start_heritage_local.py", "# synthetic\\n")
+    seen = []
+
+    class FakeOpener:
+        def open(self, request, timeout):
+            seen.append((request.full_url, request.get_header("Authorization"), timeout))
+            return BytesIO(content.getvalue())
+
+    monkeypatch.setenv("GH_TOKEN", "synthetic-test-token")
+    monkeypatch.setattr(urllib.request, "build_opener", lambda *handlers: FakeOpener())
+    installer["install_source"].__globals__["ROOT"] = tmp_path
+    destination = tmp_path / "installed-source"
+    extracted = installer["install_source"](destination=destination)
+    assert extracted == destination
+    assert (destination / "HERITAGE_SOURCE_COMMIT.txt").read_text().strip() == source_sha
+    assert (destination / "scripts/demo/start_heritage_local.py").is_file()
+    assert seen == [(installer["SOURCE_URL"], "Bearer synthetic-test-token", 120)]
+    assert "synthetic-test-token" not in (destination / "HERITAGE_SOURCE_COMMIT.txt").read_text()
+    with pytest.raises(RuntimeError, match="Unreviewed source URL override"):
+        installer["install_source"](destination=tmp_path / "other", source_url="https://example.invalid")
+
+
+def test_private_starter_missing_auth_fails_closed(monkeypatch):
+    installer = runpy.run_path(str(ROOT / "Install-and-Start-Heritage.py"))
+    monkeypatch.delenv("GH_TOKEN", raising=False)
+    monkeypatch.delenv("GITHUB_TOKEN", raising=False)
+    with patch.object(installer["subprocess"], "run", side_effect=FileNotFoundError):
+        with pytest.raises(RuntimeError, match="gh auth login"):
+            installer["_source_token"]()
+
+
+def test_private_starter_rejects_line_breaks_in_authorization(monkeypatch):
+    installer = runpy.run_path(str(ROOT / "Install-and-Start-Heritage.py"))
+    monkeypatch.setenv("GH_TOKEN", "synthetic-token\ninvalid")
+    with pytest.raises(RuntimeError, match="Valid GitHub source authorization"):
+        installer["_source_token"]()
+
+
+def test_private_starter_readmes_require_owner_repository_login():
+    basic = (ROOT / "HERITAGE-LOCAL-DEMO-README.txt").read_text(encoding="utf-8")
+    candidate = loader().render_readme("a" * 40, five_module_candidate=True).decode("utf-8")
+    assert "gh auth login" in basic
+    assert "gh auth login" in candidate
+    assert "PRIVATE" in basic
+    assert "UNCERTIFIED" in candidate
