@@ -10,6 +10,11 @@ on:
         description: "Full 40-character protected-main commit SHA (required)"
         required: true
         type: string
+      auto_code_only:
+        description: "Guarded automatic code-only DEV run; requires source+repo opt-in and verified prior rollback"
+        required: false
+        type: boolean
+        default: false
       apply_reviewed_heritage24:
         description: "Explicitly stage exact reviewed DEV 24-migration graph before backend deploy"
         required: false
@@ -98,6 +103,27 @@ jobs:
             echo "::error::DEV deployment requested SHA does not match workflow-dispatch SHA" >&2
             exit 1
           fi
+
+      - name: Guard automatic code-only owner authorization before credentials
+        if: inputs.auto_code_only == true
+        shell: bash
+        env:
+          AUTO_ENABLED: ${{ vars.CROWN_AUTO_DEV_CD_ENABLED }}
+          APPLY_REVIEWED24: ${{ inputs.apply_reviewed_heritage24 }}
+          APPLY_FINANCE: ${{ inputs.apply_finance_setup_0003 }}
+        run: |
+          set -euo pipefail
+          test "$AUTO_ENABLED" = true
+          test "$APPLY_REVIEWED24" = false
+          test "$APPLY_FINANCE" = false
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          policy = json.loads(Path("scripts/ops/dev_auto_release_policy.json").read_text())
+          if policy != {"schema_version": 1, "enabled": True, "target": "dev",
+                        "automatic_schema_changes": False}:
+              raise SystemExit("BLOCKED: explicit governed automatic code-only source opt-in required")
+          PY
 
       - name: Require reviewed migration owner authority before any Azure credential
         shell: bash
@@ -357,6 +383,23 @@ jobs:
             exit 1
           fi
 
+      - name: Capture current healthy immutable DEV release before automatic mutation
+        if: inputs.auto_code_only == true
+        shell: bash
+        run: |
+          set -euo pipefail
+          python scripts/ops/dev_release_rollback.py capture \
+            --receipt "$RUNNER_TEMP/crown-dev-auto-rollback.json"
+          test -s "$RUNNER_TEMP/crown-dev-auto-rollback.json"
+
+      - name: Mark automatic release mutation boundary
+        if: inputs.auto_code_only == true
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s "$RUNNER_TEMP/crown-dev-auto-rollback.json"
+          printf 'mutation-attempted\n' > "$RUNNER_TEMP/crown-dev-auto-mutation-attempted"
+
       - name: Apply appsettings (allowlisted only)
         shell: pwsh
         run: |
@@ -468,4 +511,26 @@ jobs:
           echo " crown-api-dev deployed successfully"
           echo "   SHA: ${{ env.DEPLOY_SHA }}"
           echo "   URL: https://${{ env.WEBAPP_NAME }}.azurewebsites.net"
+
+      - name: Restore prior immutable DEV image after failed automatic mutation
+        if: failure() && inputs.auto_code_only == true
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -f "$RUNNER_TEMP/crown-dev-auto-mutation-attempted" ]]; then
+            test -s "$RUNNER_TEMP/crown-dev-auto-rollback.json"
+            python scripts/ops/dev_release_rollback.py restore \
+              --receipt "$RUNNER_TEMP/crown-dev-auto-rollback.json"
+          else
+            echo "Automatic DEV release stopped before runtime mutation; no image rollback required."
+          fi
+
+      - name: Record sanitized automatic rollback evidence
+        if: always() && inputs.auto_code_only == true
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: auto-dev-prior-image-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/crown-dev-auto-rollback.json
+          if-no-files-found: ignore
+          retention-days: 7
 
