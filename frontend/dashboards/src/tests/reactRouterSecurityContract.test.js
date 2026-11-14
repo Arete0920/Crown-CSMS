@@ -24,14 +24,27 @@ describe('React Router security dependency contract', () => {
     expect(manifest.dependencies).not.toHaveProperty(forbiddenPackage);
     expect(manifest.dependencies.react).toBe('19.3.1');
     expect(manifest.dependencies['react-dom']).toBe('19.3.1');
-    expect(manifest.dependencies['@azure/msal-browser']).toBe('5.27.0');
-    expect(manifest.dependencies['@azure/msal-react']).toBe('5.7.4');
+    expect(manifest.dependencies['@azure/msal-browser']).toBe('5.28.0');
+    expect(manifest.dependencies['@azure/msal-react']).toBe('5.8.0');
     expect(manifest.overrides.postcss).toBe('8.5.23');
     expect(lockfile.packages['node_modules/react-router'].version).toBe('8.5.1');
-    expect(lockfile.packages['node_modules/@azure/msal-browser'].version).toBe('5.27.0');
-    expect(lockfile.packages['node_modules/@azure/msal-react'].version).toBe('5.7.4');
+    expect(lockfile.packages['node_modules/@azure/msal-browser'].version).toBe('5.28.0');
+    expect(lockfile.packages['node_modules/@azure/msal-react'].version).toBe('5.8.0');
     expect(lockfile.packages).not.toHaveProperty(`node_modules/${forbiddenPackage}`);
     expect(lockfile.packages['node_modules/postcss'].version).toBe('8.5.23');
+    // npm need not serialize root overrides into package-lock metadata.
+    // Verify both declared protections and every actual transitive resolution.
+    const protectedVersions = {
+      postcss: '8.5.23', 'brace-expansion': '5.0.12', nanoid: '3.3.18',
+      undici: '7.30.1', minimatch: '11.0.5',
+    };
+    for (const [name, version] of Object.entries(protectedVersions)) {
+      expect(manifest.overrides[name]).toBe(version);
+      const resolutions = Object.entries(lockfile.packages)
+        .filter(([key]) => key === `node_modules/${name}` || key.endsWith(`/node_modules/${name}`));
+      expect(resolutions.length).toBeGreaterThan(0);
+      for (const [, dependency] of resolutions) expect(dependency.version).toBe(version);
+    }
   });
 
   it('contains no source imports from the removed compatibility package', () => {
