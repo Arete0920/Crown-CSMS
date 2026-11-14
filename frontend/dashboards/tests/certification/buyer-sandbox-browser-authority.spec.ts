@@ -104,6 +104,254 @@ async function launchPersona(page: Page, label: string) {
   await expect(page).not.toHaveURL(/\/forbidden(?:[/?#]|$)/i);
 }
 
+// The Azure buyer is an invited, independent fictional school. Heritage-only
+// admissions, student and parent fixtures below remain local Windows proofs.
+const HOSTED_DEV_FRONTEND = 'https://yellow-forest-0eecc8b0f-devcertification.eastus2.7.azurestaticapps.net';
+const HOSTED_DEV_API = 'https://crown-api-dev.azurewebsites.net';
+const HERITAGE_SHARED_SCHOOL = '19801b59-8c05-4c84-9312-5d792e4e839d';
+const liveOrigin = String(process.env.CROWN_LIVE_FRONTEND_URL || '').replace(/\/$/, '');
+const isRemoteLive = process.env.CROWN_CERTIFICATION_LIVE_RUNTIME === '1'
+  && !!liveOrigin && !/^https?:\/\/(?:localhost|127\.0\.0\.1)(?::\d+)?(?:\/|$)/.test(liveOrigin);
+if (isRemoteLive) {
+  if (liveOrigin !== HOSTED_DEV_FRONTEND ||
+      String(process.env.CROWN_LIVE_API_BASE_URL || '').replace(/\/$/, '') !== HOSTED_DEV_API) {
+    throw new Error('Hosted buyer browser proof is restricted to the existing Azure DEV origin.');
+  }
+  const invitedId = String(process.env.CROWN_LIVE_SANDBOX_INVITE_ID || '').trim();
+  const expectedDevSha = String(process.env.CROWN_EVIDENCE_RUNTIME_SHA || '');
+  if (!/^sbx_inv_[A-Za-z0-9]{1,24}$/.test(invitedId) || !/^[0-9a-f]{40}$/.test(expectedDevSha)) {
+    throw new Error('Hosted browser proof requires an exact source and active buyer invitation.');
+  }
+
+  async function launchInvitedBuyer(page: Page, label: string) {
+    const entry = await page.goto('/sandbox?invite=' + encodeURIComponent(invitedId), { waitUntil: 'networkidle' });
+    expect(entry?.status()).toBe(200);
+    await expect(page.getByText('No buyer password')).toBeVisible();
+    const card = page.locator('.sandbox-persona-card').filter({ has: page.getByText(label, { exact: true }) });
+    await expect(card).toBeVisible();
+    await Promise.all([
+      page.waitForURL(url => url.pathname !== '/sandbox', { timeout: 30000 }),
+      card.getByRole('button', { name: /^Start (?:guided|self-guided)$/i }).click(),
+    ]);
+    await expect(page).not.toHaveURL(/\/(?:login|forbidden|not-authorized)(?:[/?#]|$)/i);
+    const actor = await page.evaluate(() => ({
+      access: sessionStorage.getItem('crown.jwt.access') || '',
+      school: sessionStorage.getItem('crown.school.id') || '',
+    }));
+    if (!/^[^.]+\.[^.]+\.[^.]+$/.test(actor.access) ||
+        !/^[0-9a-f-]{36}$/i.test(actor.school) ||
+        actor.school.toLowerCase() === HERITAGE_SHARED_SCHOOL) {
+      throw new Error('Hosted browser actor is not a source-bound invited school principal.');
+    }
+    // Never attach or print credentials or tenant identifiers to browser evidence.
+    return { Authorization: 'Bearer ' + actor.access, 'X-School-Id': actor.school };
+  }
+
+  test.describe('Azure DEV invite-owned buyer smoke and persisted Jireh acceptance', () => {
+
+    test('pins source identities and rejects uninvited sessions', async ({ request }) => {
+      const responses = await Promise.all([
+        request.get(HOSTED_DEV_FRONTEND + '/build.json'),
+        request.get(HOSTED_DEV_API + '/api/health/'),
+      ]);
+      for (const response of responses) expect(response.status()).toBe(200);
+      const [frontend, backend] = await Promise.all(responses.map(response => response.json()));
+      expect(frontend.build_sha).toBe(expectedDevSha);
+      expect(backend.build_sha).toBe(expectedDevSha);
+      expect(backend.artifact_build_sha).toBe(expectedDevSha);
+      expect(backend.db).toBe('ok');
+      const uninvited = await request.post(HOSTED_DEV_API + '/api/v1/sandbox/session/', {
+        data: { role: 'parent', track: 'school', school: 'heritage-core' },
+      });
+      expect(uninvited.status()).toBeGreaterThanOrEqual(400);
+      expect(uninvited.status()).toBeLessThan(500);
+    });
+
+    test('Jireh parent submits or independently rechecks a persisted fictional application', async ({ page }) => {
+      const headers = await launchInvitedBuyer(page, 'Parent / Guardian');
+      const endpoint = HOSTED_DEV_API + '/api/v1/buyer-demo/jireh/aid/family/';
+      const initial = await page.request.get(endpoint, { headers });
+      expect(initial.status()).toBe(200);
+      const before = await initial.json();
+      expect(Array.isArray(before.applications)).toBe(true);
+      expect(before.applications.length).toBeLessThanOrEqual(1);
+      await page.goto('/parent/financial-aid', { waitUntil: 'networkidle' });
+      await expect(page.getByTestId('jireh-family-demo')).toBeVisible();
+      if (before.applications.length === 0) {
+        await page.getByRole('checkbox', { name: /I confirm all application/i }).check();
+        const written = page.waitForResponse(response =>
+          response.url() === endpoint && response.request().method() === 'POST');
+        await page.getByRole('button', { name: 'Submit fictional Financial Aid application' }).click();
+        expect((await written).status()).toBe(201);
+        await expect(page.getByTestId('jireh-submit-confirmation')).toContainText('independently verified');
+      }
+      await page.reload({ waitUntil: 'networkidle' });
+      const saved = await page.request.get(endpoint, { headers });
+      expect(saved.status()).toBe(200);
+      const after = await saved.json();
+      expect(after.applications).toHaveLength(1);
+      expect(after.applications[0].id).toBeTruthy();
+      expect(after.applications[0].submitted_at).toBeTruthy();
+      expect(after.applications[0].status).toBe('SUBMITTED');
+      const foreign = await page.request.get(endpoint, {
+        headers: { ...headers, 'X-School-Id': HERITAGE_SHARED_SCHOOL },
+      });
+      expect(foreign.status()).toBeGreaterThanOrEqual(400);
+      expect(foreign.status()).toBeLessThan(500);
+    });
+
+    test('Jireh SGO verifies invited partner submission and persisted readback', async ({ page }) => {
+      const headers = await launchInvitedBuyer(page, 'Parent / Guardian');
+      await page.goto('/jireh-sgo/intake', { waitUntil: 'networkidle' });
+      const partner = page.getByLabel('Partner SGO and program');
+      await expect(partner.locator('option')).toHaveCount(2);
+      const programs = await partner.locator('option').evaluateAll(options => options.map(option => (option as HTMLOptionElement).value));
+      for (const program of programs) {
+        await partner.selectOption(program);
+        const submit = page.getByRole('button', { name: 'Submit fictional application', exact: true });
+        if (await submit.isVisible()) {
+          await page.getByRole('checkbox').check();
+          const posted = page.waitForResponse(response =>
+            response.url().endsWith('/api/v1/buyer-demo/jireh/sgo/family/submit/') &&
+            response.request().method() === 'POST');
+          await submit.click();
+          expect((await posted).status()).toBe(201);
+          await expect(page.getByText('Saved. The submitted fictional application was read back from the server.')).toBeVisible();
+        }
+        await page.reload({ waitUntil: 'networkidle' });
+        await partner.selectOption(program);
+        await expect(page.getByText(/SUBMITTED|RESUBMITTED|CORRECTION_REQUESTED/).first()).toBeVisible();
+        const savedPrograms = await page.request.get(
+          HOSTED_DEV_API + '/api/v1/buyer-demo/jireh/sgo/family/programs/', { headers });
+        expect(savedPrograms.status()).toBe(200);
+        const grants = await savedPrograms.json();
+        const savedProgram = grants.programs?.find((entry: { id: string }) => entry.id === program);
+        expect(savedProgram?.application_id).toBeTruthy();
+        const savedApplication = await page.request.get(
+          HOSTED_DEV_API + '/api/v1/buyer-demo/jireh/sgo/family/applications/' + encodeURIComponent(savedProgram.application_id) + '/',
+          { headers });
+        expect(savedApplication.status()).toBe(200);
+        const verified = await savedApplication.json();
+        expect(verified.application?.id).toBe(savedProgram.application_id);
+        expect(verified.application?.program_id).toBe(program);
+        expect(['SUBMITTED', 'RESUBMITTED', 'CORRECTION_REQUESTED']).toContain(verified.application?.status);
+      }
+    });
+
+    test('Daycare staff identity and school-scoped roster are not shared Heritage records', async ({ page }) => {
+      const director = await launchInvitedBuyer(page, 'Diadem Daycare Director');
+      const sites = await page.request.get(HOSTED_DEV_API + '/api/v1/aftercare/daycare/sites/', { headers: director });
+      expect(sites.status()).toBe(200);
+      const body = await sites.json();
+      expect(body.sites).toHaveLength(1);
+      const siteId = String(body.sites[0]?.site_id || '');
+      if (!/^[0-9a-f-]{36}$/i.test(siteId)) throw new Error('Authorized fictional Daycare site is missing.');
+      const roster = await page.request.get(
+        HOSTED_DEV_API + '/api/v1/aftercare/daycare/sites/' + siteId + '/roster/', { headers: director });
+      expect(roster.status()).toBe(200);
+      const custodyRoster = await roster.json();
+      expect(custodyRoster.site_id).toBe(siteId);
+      expect(Array.isArray(custodyRoster.rows)).toBe(true);
+      expect(custodyRoster.children_present).toBe(custodyRoster.rows.length);
+      const parent = await launchInvitedBuyer(page, 'Parent / Guardian');
+      const denied = await page.request.get(HOSTED_DEV_API + '/api/v1/aftercare/daycare/sites/', { headers: parent });
+      expect(denied.status()).toBeGreaterThanOrEqual(400);
+      expect(denied.status()).toBeLessThan(500);
+    });
+
+    test('Hosted SGO enforces parent, processor and school-scoped authority', async ({ page }) => {
+      // Read-only security-negative checks; no processor or scholarship mutation.
+      const parent = await launchInvitedBuyer(page, 'Parent / Guardian');
+      const familyUrl = HOSTED_DEV_API + '/api/v1/buyer-demo/jireh/sgo/family/programs/';
+      const processorUrl = HOSTED_DEV_API + '/api/v1/buyer-demo/jireh/sgo/processor/programs/';
+      const family = await page.request.get(familyUrl, { headers: parent });
+      expect(family.status()).toBe(200);
+      const familyRecords = await family.json();
+      expect(familyRecords.synthetic_only).toBe(true);
+      expect(familyRecords.funds_status).toBe('NONCASH_ONLY');
+      expect(Array.isArray(familyRecords.programs)).toBe(true);
+      expect(familyRecords.programs.length).toBeGreaterThan(0);
+
+      const deniedProcessor = await page.request.get(processorUrl, { headers: parent });
+      expect([403, 404]).toContain(deniedProcessor.status());
+      const wrongSchool = await page.request.get(familyUrl, {
+        headers: { ...parent, 'X-School-Id': HERITAGE_SHARED_SCHOOL },
+      });
+      expect([400, 403, 404]).toContain(wrongSchool.status());
+
+      const admin = await launchInvitedBuyer(page, 'School Administrator');
+      const deniedFamily = await page.request.get(familyUrl, { headers: admin });
+      expect([403, 404]).toContain(deniedFamily.status());
+      const processor = await page.request.get(processorUrl, { headers: admin });
+      expect(processor.status()).toBe(200);
+      const processing = await processor.json();
+      expect(processing.synthetic_only).toBe(true);
+      expect(processing.authority).toBe('PROCESSOR_VERIFICATION_ONLY');
+      expect(processing.funds_status).toBe('NONCASH_ONLY');
+      expect(Array.isArray(processing.programs)).toBe(true);
+      expect(processing.programs.length).toBeGreaterThan(0);
+    });
+
+    test('Daycare, Extended Care and Camp reject foreign-school and parent staff access', async ({ page }) => {
+      const director = await launchInvitedBuyer(page, 'Diadem Daycare Director');
+      const wrongDaycare = await page.request.get(
+        HOSTED_DEV_API + '/api/v1/aftercare/daycare/sites/', {
+          headers: { ...director, 'X-School-Id': HERITAGE_SHARED_SCHOOL },
+        });
+      expect([400, 403, 404]).toContain(wrongDaycare.status());
+
+      const admin = await launchInvitedBuyer(page, 'School Administrator');
+      const endpoints = [
+        '/api/v1/aftercare/roster/today/?care_session=AM',
+        '/api/v1/aftercare/roster/today/?care_session=PM',
+        '/api/v1/summer-camp/programs/',
+      ];
+      for (const endpoint of endpoints) {
+        const foreign = await page.request.get(HOSTED_DEV_API + endpoint, {
+          headers: { ...admin, 'X-School-Id': HERITAGE_SHARED_SCHOOL },
+        });
+        expect([400, 403, 404], endpoint).toContain(foreign.status());
+      }
+
+      const parent = await launchInvitedBuyer(page, 'Parent / Guardian');
+      for (const endpoint of endpoints) {
+        const denied = await page.request.get(HOSTED_DEV_API + endpoint, { headers: parent });
+        expect([403, 404], endpoint).toContain(denied.status());
+      }
+    });
+
+    test('AM/PM Extended Care and Camp require real buyer-school scoped reads', async ({ page }) => {
+      const admin = await launchInvitedBuyer(page, 'School Administrator');
+      // A 200 response without fictional enrollment/program records is not
+      // five-module acceptance. Check enrollments separately: today's roster
+      // may be empty on weekends even when current AM/PM enrolments exist.
+      const enrolledResponse = await page.request.get(
+        HOSTED_DEV_API + '/api/v1/aftercare/enrollments/', { headers: admin });
+      expect(enrolledResponse.status()).toBe(200);
+      const enrollments = await enrolledResponse.json();
+      expect(Array.isArray(enrollments)).toBe(true);
+      for (const session of ['AM', 'PM']) {
+        const active = enrollments.filter(
+          (row: { care_session?: string; is_active?: boolean }) =>
+            row.care_session === session && row.is_active === true,
+        );
+        expect(active.length, session + ' requires a fictional active enrollment').toBeGreaterThan(0);
+        const roster = await page.request.get(
+          HOSTED_DEV_API + '/api/v1/aftercare/roster/today/?care_session=' + session, { headers: admin });
+        expect(roster.status(), session + ' Care roster').toBe(200);
+        const body = await roster.json();
+        expect(body.care_session).toBe(session);
+        expect(Array.isArray(body.rows)).toBe(true);
+        expect(body.rows.every((row: { care_session?: string }) => row.care_session === session)).toBe(true);
+      }
+      const camp = await page.request.get(HOSTED_DEV_API + '/api/v1/summer-camp/programs/', { headers: admin });
+      expect(camp.status()).toBe(200);
+      const programs = await camp.json();
+      expect(Array.isArray(programs)).toBe(true);
+      expect(programs.length, 'Camp requires a fictional school-scoped program').toBeGreaterThan(0);
+    });
+  });
+} else {
 test.describe('CROWN buyer sandbox live browser authority', () => {
   test.beforeEach(async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 1000 });
@@ -440,3 +688,5 @@ test.describe('CROWN buyer sandbox live browser authority', () => {
     await assertNoHorizontalOverflow(page);
   });
 });
+
+}
