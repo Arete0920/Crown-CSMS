@@ -25,8 +25,8 @@ invited buyer, rather than accepting an independently owned presenter.
 | Extended Care | Same AM/PM implementation, not a separate invented module | No third fabricated care engine; presenter acceptance NOT IMPLEMENTED |
 | Summer Camp | `seed_local_heritage_camp`, `summer-camp-local-readback.spec.ts`, entitled Camp APIs | Existing setup/registration/save/readback; presenter entitlement and date-valid fixtures NOT IMPLEMENTED |
 | Admissions/enrollment | `admissions_seed.py`, `admissions_conversion_seed.py`, canonical admissions APIs | Core enrolled students reused; applicant conversion seed and adapter still Heritage-specific; universal conversion NOT IMPLEMENTED |
-| Academics/grading/teacher | `academic_seed.py`, canonical academics APIs, teacher transaction tests | Teacher roster, course, section, category, curriculum, lesson reused with explicit school/user inputs; assignment POST/PATCH/independent GET and reset tested by new suite; browser, grades and downstream family view NOT VERIFIED |
-| Parent/student portals | `parent_enrollment.py`, `parent_daily.py`, `student_self_service.py` | Distinct least-privilege principals created; Reed guardian identity reused inside own school; portal adapters and complete guardian/student account bridges NOT IMPLEMENTED |
+| Academics/grading/teacher | `academic_seed.py`, canonical academics APIs, teacher transaction tests | Teacher roster, course, section, category, curriculum, lesson reused with explicit school/user inputs; normal login, UI assignment/draft/submission/feedback/reload and parent readback tested locally; numeric grading/downstream readback tested by API; full five-module readiness NOT VERIFIED |
+| Parent/student portals | `parent_enrollment.py`, `parent_daily.py`, `student_self_service.py` | Distinct least-privilege principals created; Reed guardian identity reused inside own school; canonical Reed guardian/student account and verified identity bridges implemented; browser submission/feedback/reload tested; legacy Heritage-only shortcut adapters not ported |
 | Finance without payments | Core tuition and `FinanceObligation`/`FinanceInvoice`, `finance.py` | Twelve fictional parent obligations/invoices reused; finance demo transaction adapter still Heritage-specific; payment processing never activated |
 
 Keep existing persona definitions and deterministic `fictional_identities.py`.
@@ -47,11 +47,17 @@ The original school/catalog and hosted invite workspaces are unchanged.
 The shared generator accepts a school specification and explicit personas.
 The teacher generator accepts a school and teacher, deriving roster UUIDs in
 that school's namespace. Existing Heritage defaults are unchanged. No real
-school data is read or copied. Passwords remain unusable; platform staff and
+school data is read or copied. Passwords remain unusable by default; platform staff and
 superuser privileges are not granted. Ordinary tenant/RBAC controls still
-apply. This increment deliberately adds no presenter login/session issuer;
-owner-restricted access is a remaining release prerequisite. Do not use open
-Heritage sessions to access this school.
+apply. Opt-in `--enable-password-login` initializes only newly generated accounts from
+nine distinct `CROWN_PRESENTER_<PERSONA_KEY_UPPERCASE>_PASSWORD` environment
+variables (20–256 characters each). It requires `--apply`, refuses incomplete or
+reused secrets, prints no credential values and cannot rotate an existing login.
+Use CROWN's normal `/login` with sandbox frontend mode disabled; normal password,
+JWT, server identity and school-role checks remain authoritative. All nine roles
+are seeded; Board and Daycare choices use the same server-verified login policy.
+The cold-start authentication correction in prerequisite PR #693 is required;
+no special presenter token issuer or open Heritage session is used.
 
 External communications are quarantined for the reserved presenter school even
 when host-wide egress suppression is disabled, including users affiliated only
@@ -77,6 +83,8 @@ From `backend/`, with those settings:
 python manage.py prepare_universal_presenter
 python manage.py prepare_universal_presenter --apply
 python manage.py prepare_universal_presenter --apply --reset
+python manage.py prepare_universal_presenter --apply --enable-password-login
+python manage.py prepare_universal_presenter --apply --archive-classroom
 ```
 
 The first command is read-only. Apply refuses an existing tenant without an
@@ -96,6 +104,15 @@ principal IDs are rebuilt, and roster IDs remain school-namespaced. Existing
 JWTs cannot authenticate deleted principals. Never reset live custody/audit or
 financial records just to improve demonstration repeatability.
 
+`--apply --archive-classroom` is the retained-history reset for academic practice
+work: it unpublishes this school's assignments through normal model validation,
+retains immutable submissions/grades/revisions, and preserves all passwords and
+principals. Parent/student browsers reload the cleared visible workspace. Teachers
+retain history; use a new assignment title for the next exercise. Repeat archive
+is safe and reports zero newly archived rows. This is not a whole-school or
+custody/finance reset. The destructive `--reset` remains correctly blocked once
+protected academic history exists.
+
 This is a reset of the implemented foundation only. After new module workflows
 are ported, expand the reset inventory only with explicit lifecycle/retention
 acceptance. Until then the safe behavior is refusal, not forced cleanup.
@@ -112,9 +129,9 @@ rollback and unconditional communications quarantine. API readback is not a
 browser reload claim. Retain existing Heritage seed/cleanup, teacher transaction
 and communications suppression regression suites.
 
-Before universal presentation, port the matrix gaps through explicit school/
-principal inputs in small governed increments. Supply real parent/student
-identity links; canonical Aid family/year/student lineage; two independent
+Before full five-module universal presentation, port the remaining matrix gaps
+through explicit school/principal inputs in governed increments. Retain the new
+canonical parent/student identity links; supply canonical Aid family/year/student lineage; two independent
 fictional SGO programs and processor assignments; entitled, date-valid care and
 Camp fixtures; explicit fictional safety assertions; and owner-restricted access.
 Do not reimplement the engines or reuse buyer invites for the presenter.

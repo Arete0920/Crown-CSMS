@@ -15,7 +15,7 @@ from django.db.models.deletion import Collector, ProtectedError
 
 from core.models import School
 from .academic_seed import seed_heritage_teacher_academics
-from .catalog import DEFAULT_SANDBOX_INVITE_ROLES, SANDBOX_PERSONAS, SANDBOX_SCHOOLS
+from .catalog import SANDBOX_PERSONAS, SANDBOX_SCHOOLS
 from .models import SandboxBuyerWorkspace, SandboxEvent
 from .services import proof_metrics, seed_fictional_school
 from .universal_identity import UNIVERSAL_SCHOOL, UNIVERSAL_SCHOOL_ID, presenter_username
@@ -31,7 +31,7 @@ RESET_MODELS = (
     "academics.AssignmentCategory", "academics.Enrollment", "academics.TeacherAssignment",
     "crown_api.AttendanceRecord", "academics.Section", "academics.Lesson", "academics.Unit", "academics.Course",
     "academics.CurriculumSource", "academics.Term",
-    "households.Student", "households.Household",
+    "households.Guardian", "households.Student", "households.Household",
     "finance.FinanceInvoiceLine", "finance.FinanceInvoice", "finance.FinanceObligation",
     "core.UserRole", "core.UserAccount", "core.StudentTuition", "core.Enrollment",
     "core.Student", "core.Guardian", "core.Staff", "core.Family", "core.TuitionPlan",
@@ -134,13 +134,17 @@ def _reset():
         raise CommandError("Presenter reset refused protected relationships; no data changed.") from exc
 
 
-def prepare_presenter(*, apply=False, reset=False):
+def prepare_presenter(*, apply=False, reset=False, enable_password_login=False):
     require_local_presenter()
-    return _prepare_presenter(apply=apply, reset=reset)
+    if enable_password_login and not apply:
+        raise CommandError("Password initialization requires explicit --apply.")
+    from .universal_access import presenter_passwords
+    passwords = presenter_passwords() if enable_password_login else {}
+    return _prepare_presenter(apply=apply, reset=reset, passwords=passwords)
 
 
 @transaction.atomic
-def _prepare_presenter(*, apply, reset):
+def _prepare_presenter(*, apply, reset, passwords):
     school = _owned_school()
     if reset and (not apply or school is None):
         raise CommandError("Reset requires --apply and an existing owned presenter school.")
@@ -153,15 +157,20 @@ def _prepare_presenter(*, apply, reset):
         _reset()
     personas = {
         key: replace(SANDBOX_PERSONAS[key], email=presenter_username(key))
-        for key in DEFAULT_SANDBOX_INVITE_ROLES
+        for key in SANDBOX_PERSONAS
     }
     metrics = seed_fictional_school(school_spec=UNIVERSAL_SCHOOL, personas=personas)
     metrics.update(seed_heritage_teacher_academics(
         school_id=UNIVERSAL_SCHOOL_ID, teacher_username=presenter_username("teacher"),
     ))
-    metrics.update(proof_metrics(School.objects.get(pk=UNIVERSAL_SCHOOL_ID)))
     SandboxEvent.objects.create(
         event="universal_presenter_reset_v1" if reset else PROVENANCE,
         school=str(UNIVERSAL_SCHOOL_ID), track="school", guidance="ops", persona="operator",
     )
+    from .universal_family import seed_presenter_family
+    metrics.update(seed_presenter_family(School.objects.get(pk=UNIVERSAL_SCHOOL_ID)))
+    metrics.update(proof_metrics(School.objects.get(pk=UNIVERSAL_SCHOOL_ID)))
+    if passwords:
+        from .universal_access import initialize_presenter_passwords
+        initialize_presenter_passwords(School.objects.get(pk=UNIVERSAL_SCHOOL_ID), passwords)
     return {**metrics, "mode": "RESET" if reset else "CREATED", "release_certified": False}

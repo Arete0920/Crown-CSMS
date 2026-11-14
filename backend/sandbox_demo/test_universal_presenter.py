@@ -34,6 +34,7 @@ def test_public_telemetry_cannot_forge_operator_provenance(event):
 def local_runtime(settings, monkeypatch):
     settings.CROWN_ENV = "local"
     settings.DEBUG = True
+    settings.TENANT_HEADER_REQUIRED = True
     settings.CROWN_DEMO_MODE = False
     settings.CROWN_SANDBOX_ALLOW_OPEN_SESSION = False
     settings.CROWN_SANDBOX_OUTBOUND_DISABLED = True
@@ -71,7 +72,7 @@ def test_preflight_is_read_only_and_duplicate_apply_refuses(local_runtime, capsy
     assert 'PRECHECK_ONLY' in capsys.readouterr().out
     assert not School.objects.exists()
     metrics = prepare_presenter(apply=True)
-    assert metrics["students"] == Student.objects.filter(school_id=UNIVERSAL_SCHOOL_ID).count() == 702
+    assert metrics["students"] == Student.objects.filter(school_id=UNIVERSAL_SCHOOL_ID).count() == 703
     assert metrics["release_certified"] is False
     with pytest.raises(CommandError, match="already exists"):
         prepare_presenter(apply=True)
@@ -159,7 +160,7 @@ def test_reset_refuses_foreign_cascade_and_rolls_back(local_runtime):
     with pytest.raises(CommandError, match="foreign cascade"):
         prepare_presenter(apply=True, reset=True)
     assert AcademicEnrollment.objects.filter(pk=foreign.pk).exists()
-    assert Student.objects.filter(school_id=UNIVERSAL_SCHOOL_ID).count() == 702
+    assert Student.objects.filter(school_id=UNIVERSAL_SCHOOL_ID).count() == 703
     assert prepare_presenter()["exists"]
 
 
