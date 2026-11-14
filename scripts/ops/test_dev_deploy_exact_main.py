@@ -117,5 +117,96 @@ class DevDeployExactMainTests(unittest.TestCase):
                         self.workflow.index("- name: Azure Login"))
 
 
+    def test_dev_deploy_requires_read_only_zero_pending_inventory_before_mutations(self):
+        """Ordinary DEV deployment cannot apply schema or advance with unknown migrations."""
+        workflow = WORKFLOW.read_text(encoding="utf-8")
+        source = (WORKFLOW.parents[2] / "scripts" / "ops" /
+                  "run_dev_inquiry_migration.py").read_text(encoding="utf-8")
+        gate = workflow.split(
+            "      - name: Verify zero pending DEV migrations using read-only PostgreSQL connection",
+            1,
+        )[1].split("      - name: Set up Docker Buildx", 1)[0]
+        self.assertIn("--inspect-all-migrations", gate)
+        self.assertIn("remaining_pending", gate)
+        self.assertIn('result["remaining_pending"] != 0', gate)
+        self.assertIn('result.get("schema_change_authorized") is not False', gate)
+        self.assertNotIn("--apply-reviewed", gate)
+        self.assertNotIn('run_dev_inquiry_migration.py --expected-sha "$EXPECTED_SOURCE_SHA"', workflow)
+        # An invented check-only flag is not enough: the inventory connection
+        # itself must be read-only so accidental DDL fails at the DB boundary.
+        self.assertIn('default_transaction_read_only=on', source)
+        self.assertIn('if inventory_only:', source)
+        self.assertLess(
+            workflow.index("      - name: Reverify protected main before DEV migration"),
+            workflow.index("      - name: Verify zero pending DEV migrations using read-only PostgreSQL connection"),
+        )
+        self.assertLess(
+            workflow.index("      - name: Verify zero pending DEV migrations using read-only PostgreSQL connection"),
+            workflow.index("      - name: Build and push Docker image"),
+        )
+
+    def test_dev_image_build_precedes_runtime_setting_and_activation(self):
+        """Never advertise the new SHA before its artifact is built and pushed."""
+        workflow = WORKFLOW.read_text(encoding="utf-8")
+        def location(step):
+            return workflow.index("      - name: " + step)
+        self.assertLess(location("Bake BUILD_SHA into artifact"), location("Build and push Docker image"))
+        self.assertLess(location("Build and push Docker image"), location("Apply appsettings (allowlisted only)"))
+        self.assertLess(location("Apply appsettings (allowlisted only)"),
+                        location("Deploy to Azure Web App (managed identity pull)"))
+        self.assertLess(location("Verify zero pending DEV migrations using read-only PostgreSQL connection"),
+                        location("Apply appsettings (allowlisted only)"))
+        # Preserve existing exact-main guards and approved manual-only activation.
+        self.assertIn('  workflow_dispatch:', workflow)
+        self.assertNotIn('  schedule:', workflow)
+        self.assertIn('  group: crown-api-dev-deploy', workflow)
+        self.assertIn('  cancel-in-progress: false', workflow)
+
+
+    def test_dev_migration_inventory_report_parser_denies_nonzero_and_unknown(self):
+        """Execute the actual workflow receipt classifier without Azure or DB access."""
+        import json
+        import sys
+
+        workflow = WORKFLOW.read_text(encoding="utf-8")
+        marker = """          python - "$report" <<'PY'\n"""
+        self.assertEqual(workflow.count(marker), 1)
+        body = workflow.split(marker, 1)[1].split("\n          PY", 1)[0]
+        script = textwrap.dedent(body)
+        expected = "a" * 40
+        good = {
+            "status": "COLLECTED",
+            "mode": "inventory_all_read_only",
+            "source_sha": expected,
+            "inventory_scope": "enabled_django_app_graph",
+            "schema_change_authorized": False,
+            "operational_certified": False,
+            "remaining_pending": 0,
+        }
+        cases = [
+            ("clean", good, True),
+            ("pending", {**good, "remaining_pending": 1}, False),
+            ("unknown-plan", {**good, "remaining_pending": None}, False),
+            ("boolean-count", {**good, "remaining_pending": False}, False),
+            ("unreviewed", {**good, "schema_change_authorized": True}, False),
+            ("untrusted-source", {**good, "source_sha": "b" * 40}, False),
+            ("incorrect-mode", {**good, "mode": "migrate"}, False),
+            ("not-certified", {**good, "operational_certified": True}, False),
+            ("missing-status", {k: v for k, v in good.items() if k != "status"}, False),
+        ]
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "report.json"
+            for name, payload, should_pass in cases:
+                with self.subTest(name=name):
+                    path.write_text(json.dumps(payload), encoding="utf-8")
+                    completed = subprocess.run(
+                        [sys.executable, "-c", script, str(path)],
+                        env={**os.environ, "EXPECTED_SOURCE_SHA": expected},
+                        capture_output=True, text=True, check=False,
+                    )
+                    self.assertEqual(completed.returncode == 0, should_pass,
+                                     completed.stdout + completed.stderr)
+
+
 if __name__ == "__main__":
     unittest.main()

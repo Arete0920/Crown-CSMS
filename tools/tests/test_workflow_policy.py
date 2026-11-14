@@ -297,7 +297,7 @@ class WorkflowPolicyTests(unittest.TestCase):
 
         for mutation, gate in (
             ("Build and push Docker image", "DEV image push"),
-            ("Apply only reviewed DEV inquiry migration before deployment", "DEV migration"),
+            ("Verify zero pending DEV migrations using read-only PostgreSQL connection", "DEV migration"),
             ("Apply appsettings (allowlisted only)", "DEV appsettings"),
             ("Deploy to Azure Web App (managed identity pull)", "DEV container deployment"),
         ):
