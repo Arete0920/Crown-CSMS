@@ -82,15 +82,27 @@ def create_session(request):
 @api_view(["POST"])
 @authentication_classes(_AUTH)
 @permission_classes(_EDIT_PERM)
+@transaction.atomic
 def configure_session(request, session_id):
     school_id = get_request_school_id(request)
-    session = _get_session(session_id, school_id)
+    session = get_object_or_404(
+        FinancialAidWizardSession.objects.select_for_update(),
+        id=session_id, school_id=school_id,
+    )
+    if session.status in (FinancialAidWizardSession.STATUS_COMMITTED,
+                          FinancialAidWizardSession.STATUS_VERIFIED):
+        return Response({"error": "Finalized wizard sessions cannot be reconfigured"},
+                        status=status.HTTP_409_CONFLICT)
     aid_year = (request.data.get("aid_year") or "").strip()
     if not aid_year:
         return Response({"error": "aid_year is required"}, status=status.HTTP_400_BAD_REQUEST)
     if len(aid_year) > 24:
         return Response({"error": "aid_year must be <= 24 characters"}, status=status.HTTP_400_BAD_REQUEST)
     session.aid_year = aid_year
+    # A new configuration invalidates previously selected buckets and awards.
+    session.active_buckets = []
+    session.awards_config = []
+    session.commit_result = None
     session.status = FinancialAidWizardSession.STATUS_CONFIGURED
     session.save()
     return Response({"session_id": str(session.id), "status": session.status})
@@ -100,9 +112,13 @@ def configure_session(request, session_id):
 @api_view(["POST"])
 @authentication_classes(_AUTH)
 @permission_classes(_EDIT_PERM)
+@transaction.atomic
 def save_buckets(request, session_id):
     school_id = get_request_school_id(request)
-    session = _get_session(session_id, school_id)
+    session = get_object_or_404(
+        FinancialAidWizardSession.objects.select_for_update(),
+        id=session_id, school_id=school_id,
+    )
     if session.status not in (
         FinancialAidWizardSession.STATUS_CONFIGURED,
         FinancialAidWizardSession.STATUS_BUCKETS_SAVED,
@@ -133,9 +149,13 @@ def save_buckets(request, session_id):
 @api_view(["POST"])
 @authentication_classes(_AUTH)
 @permission_classes(_EDIT_PERM)
+@transaction.atomic
 def stage_awards(request, session_id):
     school_id = get_request_school_id(request)
-    session = _get_session(session_id, school_id)
+    session = get_object_or_404(
+        FinancialAidWizardSession.objects.select_for_update(),
+        id=session_id, school_id=school_id,
+    )
     if session.status not in (
         FinancialAidWizardSession.STATUS_BUCKETS_SAVED,
         FinancialAidWizardSession.STATUS_AWARDS_STAGED,
@@ -256,15 +276,55 @@ def commit_session(request, session_id):
     created_count = 0
     skipped_count = 0
     with transaction.atomic():
+        # A second POST must recheck session state under lock; a previous
+        # transaction may have committed after the initial read above.
+        session = FinancialAidWizardSession.objects.select_for_update().get(
+            pk=session.pk, school_id=school_id,
+        )
+        if session.status == FinancialAidWizardSession.STATUS_COMMITTED:
+            return Response({"session_id": str(session.id), "status": session.status, **(session.commit_result or {})})
+        if session.status != FinancialAidWizardSession.STATUS_AWARDS_STAGED or session.awards_config != configured_awards:
+            return Response({"error": "Wizard session changed before commit"}, status=status.HTTP_409_CONFLICT)
+
+        # All award writers lock the same AidApplication row before querying
+        # for an existing award. Lock application IDs in a stable order to
+        # avoid deadlocks when sessions contain multiple children/applications.
+        app_ids = sorted({application.pk for _, application, _, _ in resolved_awards})
+        locked_apps = {
+            app.pk: app for app in AidApplication.objects.select_for_update(of=("self",))
+            .filter(pk__in=app_ids, school_id=school_id, academic_year=academic_year)
+            .order_by("pk")
+        }
+        if set(locked_apps) != set(app_ids):
+            return Response({"error": "Application eligibility changed before commit"}, status=status.HTTP_409_CONFLICT)
+        # Acquire student row locks after application locks, always in a
+        # deterministic order. Concurrent family reassignment must settle before
+        # an award can be created using that student's family membership.
+        student_ids = {student.pk for _, _, student, _ in resolved_awards}
+        locked_students = {
+            student.pk: student for student in Student.objects.select_for_update(of=("self",))
+            .filter(pk__in=student_ids, school_id=school_id)
+            .order_by("pk")
+        }
+        if set(locked_students) != student_ids:
+            return Response({"error": "Student eligibility changed before commit"}, status=status.HTTP_409_CONFLICT)
+        for _award_data, application, student, _award_type in resolved_awards:
+            if locked_students[student.pk].family_id != locked_apps[application.pk].family_id:
+                return Response({"error": "Student eligibility changed before commit"}, status=status.HTTP_409_CONFLICT)
+
         for award_data, application, student, award_type in resolved_awards:
-            existing = AidAward.objects.filter(
+            application = locked_apps[application.pk]
+            student = locked_students[student.pk]
+            # Same active-offer decision key as the officer pathway.
+            # A controlled decline permits a new, independently recorded offer.
+            already_active = AidAward.objects.filter(
                 school_id=school_id,
                 academic_year=academic_year,
                 student=student,
                 aid_application=application,
                 award_type=award_type,
-            ).first()
-            if existing is not None:
+            ).exclude(decision_status=AidAward.DECISION_DECLINED).exists()
+            if already_active:
                 skipped_count += 1
                 continue
 

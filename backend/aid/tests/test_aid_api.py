@@ -695,3 +695,43 @@ class TestFamilyAidStatus(TestCase):
         self.client.logout()
         r = self._get(student_id=str(self.student.id), academic_year_id=str(self.ay.id))
         self.assertIn(r.status_code, (401, 403))
+
+
+class TestAdminApplicationReviewStudentOptions(TestCase):
+    """The officer may select only students in the same canonical family/school."""
+
+    def setUp(self):
+        self.school = _make_school("Officer Review School")
+        self.year = _make_ay(self.school)
+        self.family = _make_family(self.school)
+        self.student = _make_student(self.school, self.family)
+        self.application = _make_application(self.school, self.year, self.family)
+        self.user = _make_staff_user(self.school, "review_student_options")
+        self.client.force_login(self.user)
+
+    def test_scoped_student_selection_and_review_signals(self):
+        unrelated_family = _make_family(self.school, "Unrelated")
+        _make_student(self.school, unrelated_family, number="OTHER")
+        foreign_school = _make_school("Foreign Review School")
+        foreign_family = _make_family(foreign_school)
+        _make_student(foreign_school, foreign_family, number="FOREIGN")
+        response = self.client.get(
+            f"/api/aid/admin/applications/{self.application.pk}/review/",
+            HTTP_X_SCHOOL_ID=str(self.school.pk),
+        )
+        self.assertEqual(response.status_code, 200)
+        body = response.json()
+        self.assertEqual(body["application_id"], self.application.pk)
+        self.assertIsInstance(body["review_signals"], list)
+        self.assertEqual([item["id"] for item in body["students"]], [str(self.student.pk)])
+
+    def test_foreign_school_application_denied(self):
+        foreign_school = _make_school("Other Tenant")
+        foreign_year = _make_ay(foreign_school)
+        foreign_family = _make_family(foreign_school)
+        foreign_application = _make_application(foreign_school, foreign_year, foreign_family)
+        response = self.client.get(
+            f"/api/aid/admin/applications/{foreign_application.pk}/review/",
+            HTTP_X_SCHOOL_ID=str(self.school.pk),
+        )
+        self.assertEqual(response.status_code, 404)

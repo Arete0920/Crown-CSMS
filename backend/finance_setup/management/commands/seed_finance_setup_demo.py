@@ -1,15 +1,20 @@
 """
 management command: seed_finance_setup_demo
 ===========================================
-Populates realistic-but-safe demo data for N schools × 1 academic year.
+Seeds a policy for one already-existing, explicitly selected fictional demo school.
 
 Usage:
-    python manage.py seed_finance_setup_demo --schools 5 --year 2026-2027
+    python manage.py seed_finance_setup_demo --school-id <uuid> --dry-run
+    python manage.py seed_finance_setup_demo --school-id <uuid> --confirm-demo-write
 """
 
-from django.core.management.base import BaseCommand
+from uuid import UUID
 
-from finance_setup.services import upsert_finance_policies
+from django.conf import settings
+from django.core.management.base import BaseCommand, CommandError
+
+from core.models import AcademicYear, School
+from finance_setup.services import PolicyLockedError, get_policy_snapshot, upsert_finance_policies
 
 # Variation table so the N schools look meaningfully different in the UI
 SCHOOL_VARIATIONS = [
@@ -171,53 +176,65 @@ SCHOOL_VARIATIONS = [
     },
 ]
 
-# Cycles through SCHOOL_VARIATIONS for schools > len(SCHOOL_VARIATIONS)
-def _variation_for(school_id: int) -> dict:
-    return SCHOOL_VARIATIONS[(school_id - 1) % len(SCHOOL_VARIATIONS)]
+# Stable fictional sample policy, not the approved Jireh pricing/fee schedule.
+DEMO_VARIATION = SCHOOL_VARIATIONS[0]
 
 
 class Command(BaseCommand):
-    help = "Seed Finance Setup demo data for N schools"
+    help = "Seed one existing configured UUID demo-school finance policy"
 
     def add_arguments(self, parser):
-        parser.add_argument(
-            "--schools",
-            type=int,
-            default=5,
-            help="Number of school IDs to seed (school_id 1..N)",
-        )
-        parser.add_argument(
-            "--year",
-            type=str,
-            default="2026-2027",
-            help="Academic year to seed (YYYY-YYYY format)",
-        )
+        parser.add_argument("--school-id", type=str, help="Existing UUID matching CROWN_DEMO_SCHOOL_ID")
+        parser.add_argument("--schools", type=int, default=None, help="Retired unsafe numeric ID option")
+        parser.add_argument("--year", type=str, default="2026-2027")
+        parser.add_argument("--dry-run", action="store_true", help="Read-only scope and policy validation")
+        parser.add_argument("--confirm-demo-write", action="store_true", help="Local fictional demo only")
 
     def handle(self, *args, **options):
-        n_schools = options["schools"]
-        academic_year = options["year"]
+        if options["schools"] is not None:
+            raise CommandError("Legacy --schools fabricated integer school IDs. Use --school-id.")
+        raw = options["school_id"]
+        if not raw:
+            raise CommandError("--school-id is required; default numeric schools are forbidden.")
+        try:
+            school_id = UUID(raw)
+            configured_id = UUID(str(settings.CROWN_DEMO_SCHOOL_ID))
+        except (TypeError, ValueError, AttributeError) as exc:
+            raise CommandError("Valid canonical UUID and CROWN_DEMO_SCHOOL_ID required.") from exc
+        if str(school_id) != raw.lower() or school_id != configured_id:
+            raise CommandError("Only the explicitly configured CROWN_DEMO_SCHOOL_ID may be seeded.")
 
-        self.stdout.write(
-            self.style.MIGRATE_HEADING(
-                f"Seeding Finance Setup demo: {n_schools} schools × {academic_year}"
-            )
-        )
+        year = options["year"]
+        if not isinstance(year, str) or len(year) != 9 or year[4] != "-" or (
+            not year[:4].isdigit() or not year[5:].isdigit()
+        ) or int(year[5:]) != int(year[:4]) + 1:
+            raise CommandError("--year must be sequential YYYY-YYYY.")
 
-        for school_id in range(1, n_schools + 1):
-            variation = _variation_for(school_id)
-            payload = {
-                "academic_year": academic_year,
-                "tuition": variation["tuition"],
-                "discounts": variation["discounts"],
-                "aid": variation["aid"],
-                "payment_plans": variation["payment_plans"],
-                "extended_care": variation["extended_care"],
-            }
-            upsert_finance_policies(school_id=school_id, academic_year=academic_year, payload=payload)
-            self.stdout.write(
-                self.style.SUCCESS(
-                    f"  ✓ school_id={school_id}  [{variation['label']}]"
-                )
-            )
+        school = School.objects.filter(pk=school_id).first()
+        if school is None:
+            raise CommandError("Existing fictional demo School required; none was provisioned.")
+        if not AcademicYear.objects.filter(school=school, name=year).exists():
+            raise CommandError("Existing AcademicYear for demo school required; none was provisioned.")
+        version = get_policy_snapshot(school_id=school_id, academic_year=year)
+        if version is not None and version.is_locked:
+            raise CommandError("Policy is locked; fixture writes prohibited.")
 
-        self.stdout.write(self.style.SUCCESS("Done."))
+        if options["dry_run"]:
+            self.stdout.write(f"DRY RUN: school_id={school_id} year={year}; no writes.")
+            return
+        if not settings.DEBUG or not options["confirm_demo_write"]:
+            raise CommandError("Local DEBUG=True and --confirm-demo-write required.")
+
+        payload = {
+            "academic_year": year,
+            "tuition": DEMO_VARIATION["tuition"],
+            "discounts": DEMO_VARIATION["discounts"],
+            "aid": DEMO_VARIATION["aid"],
+            "payment_plans": DEMO_VARIATION["payment_plans"],
+            "extended_care": DEMO_VARIATION["extended_care"],
+        }
+        try:
+            upsert_finance_policies(school_id=school_id, academic_year=year, payload=payload)
+        except PolicyLockedError as exc:
+            raise CommandError("Finance policy locked before write.") from exc
+        self.stdout.write(self.style.SUCCESS(f"Seeded fictional demo: {school_id} / {year}."))

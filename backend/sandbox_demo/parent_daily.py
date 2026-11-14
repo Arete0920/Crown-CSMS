@@ -12,7 +12,7 @@ from crown_api.models_comms_core import Message, MessageThread
 from crown_api.models_households import Household as CommsHousehold, Person
 from finance.models import FinanceAllocation, FinanceObligation, MoneyStatus
 
-from .attendance_fixture import ensure_section_attendance_identity
+from .attendance_fixture import ensure_fixture_record, ensure_section_attendance_identity
 from .catalog import SANDBOX_PERSONAS, SANDBOX_SCHOOLS
 
 
@@ -56,7 +56,8 @@ def _ensure_daily_records(parent: UserAccount) -> Student:
         code="7",
         defaults={"label": "Grade 7", "sort_order": 8},
     )
-    student, _ = Student.objects.update_or_create(
+    student, _ = ensure_fixture_record(
+        Student,
         school_id=SCHOOL_ID,
         student_number=STUDENT_NUMBER,
         defaults={
@@ -69,7 +70,8 @@ def _ensure_daily_records(parent: UserAccount) -> Student:
         },
     )
 
-    course, _ = Course.objects.update_or_create(
+    course, _ = ensure_fixture_record(
+        Course,
         course_code=COURSE_CODE,
         defaults={"name": "Grade 7 English Language Arts", "term": "Fall 2026", "active": True},
     )
@@ -80,12 +82,15 @@ def _ensure_daily_records(parent: UserAccount) -> Student:
         grade_band="7",
         evidence_reference=f"sandbox:heritage:parent-daily:{STUDENT_NUMBER}",
     )
-    AttendanceRecord.objects.filter(
+    legacy_attendance = AttendanceRecord.objects.filter(
         student=student,
         date=date(2026, 8, 10),
         section__isnull=True,
-    ).delete()
-    AttendanceRecord.objects.update_or_create(
+    )
+    if legacy_attendance.exists():
+        legacy_attendance.delete()
+    ensure_fixture_record(
+        AttendanceRecord,
         student=student,
         section=section,
         date=date(2026, 8, 10),
@@ -95,7 +100,8 @@ def _ensure_daily_records(parent: UserAccount) -> Student:
             "notes_public": "Heritage family-view section-aware attendance.",
         },
     )
-    GradeRecord.objects.update_or_create(
+    ensure_fixture_record(
+        GradeRecord,
         student=student,
         course=course,
         period="Q1",
@@ -105,12 +111,13 @@ def _ensure_daily_records(parent: UserAccount) -> Student:
             "score": 19,
             "score_max": 20,
             "letter_grade": "A",
-            "posted_at": timezone.now(),
             "notes_public": "Jordan is off to a strong start.",
         },
+        create_defaults={"posted_at": timezone.now},
     )
 
-    household, _ = CommsHousehold.objects.update_or_create(
+    household, _ = ensure_fixture_record(
+        CommsHousehold,
         household_name=COMMS_HOUSEHOLD_NAME,
         defaults={
             "primary_address_line1": "100 Demo Lane",
@@ -119,25 +126,29 @@ def _ensure_daily_records(parent: UserAccount) -> Student:
             "primary_postal_code": "19000",
         },
     )
-    teacher, _ = Person.objects.update_or_create(
+    teacher, _ = ensure_fixture_record(
+        Person,
         email="teacher.lower@heritage.example.org",
         defaults={"first_name": "Eleanor", "last_name": "Lower", "phone": "555-0110"},
     )
-    thread, _ = MessageThread.objects.update_or_create(
+    thread, _ = ensure_fixture_record(
+        MessageThread,
         household=household,
         student=student,
         subject="Jordan Reed - First Week Update",
         defaults={
             "thread_type": "FAMILY_UPDATE",
             "created_by": teacher,
-            "last_message_at": timezone.now(),
         },
+        create_defaults={"last_message_at": timezone.now},
     )
-    Message.objects.update_or_create(
+    ensure_fixture_record(
+        Message,
         thread=thread,
         sender_person=teacher,
         body="Jordan participated well today. Please review the reading notes before Friday.",
-        defaults={"sent_at": timezone.now()},
+        defaults={},
+        create_defaults={"sent_at": timezone.now},
     )
     return student
 

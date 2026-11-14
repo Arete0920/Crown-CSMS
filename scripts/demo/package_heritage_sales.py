@@ -94,16 +94,18 @@ def render_readme(source_sha: str, *, five_module_candidate: bool = False) -> by
         "This ZIP is a TEST CANDIDATE ONLY. It does not certify browser journeys,\n"
         "the downloaded build, an SGO partnership, Azure, payments or physical laptops.\n"
         "\n"
-        "1. On Windows install Python 3.12 and Node.js 24 with npm.\n"
-        "2. Extract the ZIP into a writable folder; run Start-Heritage.cmd.\n"
-        "3. The installer downloads the immutable source SHA above, then invokes\n"
+        "1. On Windows install Python 3.12, Node.js 24 and GitHub CLI.\n"
+        "2. Sign in as an authorized repository owner using gh auth login.\n"
+        "   Keep authentication outside this ZIP; never share GitHub credentials.\n"
+        "3. Extract the ZIP into a writable folder; run Start-Heritage.cmd.\n"
+        "4. The installer downloads the immutable source SHA above, then invokes\n"
         "   scripts/demo/start_heritage_local.py --five-module-demo explicitly.\n"
-        "4. The launcher fails closed if required Camp, Diadem, Care, Financial Aid\n"
+        "5. The launcher fails closed if required Camp, Diadem, Care, Financial Aid\n"
         "   or SGO sources, fictional seed data, or strict preflight are missing.\n"
-        "5. If the local servers start, open http://localhost:4173/sandbox.\n"
+        "6. If the local servers start, open http://localhost:4173/sandbox.\n"
         "   For fictional SGO use http://localhost:4173/jireh-sgo/sign-in and the\n"
         "   locally generated private sgo-credentials.txt; never distribute it.\n"
-        "6. In a second terminal in the downloaded source folder, run:\n"
+        "7. In a second terminal in the downloaded source folder, run:\n"
         "   python scripts/demo/start_heritage_local.py --daycare-presenter\n"
         "   This opens private signed staff entry after real source/roster checks.\n"
         "   Existing or expired custody scenarios are never reset or renewed.\n"
@@ -136,7 +138,7 @@ def build(
         "product": "CROWN Heritage Christian Academy local sales demo",
         "repository": "Arete0920/Crown-CSMS",
         "source_sha": sha,
-        "source_url": f"https://github.com/Arete0920/Crown-CSMS/archive/{sha}.zip",
+        "source_url": f"https://api.github.com/repos/Arete0920/Crown-CSMS/zipball/{sha}",
         "launch": "Start-Heritage.cmd",
         "entry": "http://localhost:4173/sandbox",
         "type": "isolated fictional-data local demo",
