@@ -163,5 +163,50 @@ class DevDeployExactMainTests(unittest.TestCase):
         self.assertIn('  cancel-in-progress: false', workflow)
 
 
+    def test_dev_migration_inventory_report_parser_denies_nonzero_and_unknown(self):
+        """Execute the actual workflow receipt classifier without Azure or DB access."""
+        import json
+        import sys
+
+        workflow = WORKFLOW.read_text(encoding="utf-8")
+        marker = """          python - "$report" <<'PY'\n"""
+        self.assertEqual(workflow.count(marker), 1)
+        body = workflow.split(marker, 1)[1].split("\n          PY", 1)[0]
+        script = textwrap.dedent(body)
+        expected = "a" * 40
+        good = {
+            "status": "COLLECTED",
+            "mode": "inventory_all_read_only",
+            "source_sha": expected,
+            "inventory_scope": "enabled_django_app_graph",
+            "schema_change_authorized": False,
+            "operational_certified": False,
+            "remaining_pending": 0,
+        }
+        cases = [
+            ("clean", good, True),
+            ("pending", {**good, "remaining_pending": 1}, False),
+            ("unknown-plan", {**good, "remaining_pending": None}, False),
+            ("boolean-count", {**good, "remaining_pending": False}, False),
+            ("unreviewed", {**good, "schema_change_authorized": True}, False),
+            ("untrusted-source", {**good, "source_sha": "b" * 40}, False),
+            ("incorrect-mode", {**good, "mode": "migrate"}, False),
+            ("not-certified", {**good, "operational_certified": True}, False),
+            ("missing-status", {k: v for k, v in good.items() if k != "status"}, False),
+        ]
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "report.json"
+            for name, payload, should_pass in cases:
+                with self.subTest(name=name):
+                    path.write_text(json.dumps(payload), encoding="utf-8")
+                    completed = subprocess.run(
+                        [sys.executable, "-c", script, str(path)],
+                        env={**os.environ, "EXPECTED_SOURCE_SHA": expected},
+                        capture_output=True, text=True, check=False,
+                    )
+                    self.assertEqual(completed.returncode == 0, should_pass,
+                                     completed.stdout + completed.stderr)
+
+
 if __name__ == "__main__":
     unittest.main()
