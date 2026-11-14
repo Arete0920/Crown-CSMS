@@ -273,7 +273,7 @@ jobs:
           result = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
           if (result.get("status") != "COLLECTED"
                   or result.get("mode") != "inventory_all_read_only"
-                  or result.get("source_sha") is None
+                  or result.get("source_sha") != __import__("os").environ.get("EXPECTED_SOURCE_SHA")
                   or result.get("inventory_scope") != "enabled_django_app_graph"
                   or result.get("schema_change_authorized") is not False
                   or result.get("operational_certified") is not False
