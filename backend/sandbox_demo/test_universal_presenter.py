@@ -19,6 +19,17 @@ from sandbox_demo.universal_identity import UNIVERSAL_SCHOOL_ID, UNIVERSAL_SCHOO
 pytestmark = pytest.mark.django_db
 
 
+@pytest.mark.parametrize("event", [PROVENANCE, "universal_presenter_reset_v1"])
+def test_public_telemetry_cannot_forge_operator_provenance(event):
+    response = APIClient().post("/api/v1/sandbox/events/", {
+        "event": event, "school": str(UNIVERSAL_SCHOOL_ID),
+        "guidance": "ops", "persona": "operator",
+    }, format="json")
+    assert response.status_code == 400
+    assert response.json()["code"] == "sandbox_event_reserved"
+    assert not SandboxEvent.objects.exists()
+
+
 @pytest.fixture
 def local_runtime(settings, monkeypatch):
     settings.CROWN_ENV = "local"
